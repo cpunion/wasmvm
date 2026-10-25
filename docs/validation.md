@@ -21,7 +21,16 @@ LLGo 解析路径为 `/opt/homebrew/bin/llgo` wrapper，实际二进制为 `/opt
 
 ## 远端 CI
 
-配置两个独立、必须成功的 job：`go / linux-amd64` 与 `llgo / linux-amd64`。两者运行同一 `test -count=1 -timeout=10m ./...`；Go 额外执行 race/vet，LLGo 从固定 revision 安装。创建远端并推送后记录实际运行链接与结论；配置通过 actionlint 不等于云端执行已成功。
+**已实际通过**：[GitHub Actions run 40240658954](https://github.com/cpunion/wasmvm/actions/runs/40240658954)，验证提交 `4968459404a8fc67d6bf6eb27502aeb2a1dd56ea`。
+
+| Job | 结果 | 耗时 |
+| --- | --- | --- |
+| `go / linux-amd64` | success；共同测试、gofmt/vet、race 全部通过 | 38 秒 |
+| `llgo / linux-amd64` | success；固定 revision 安装与核对、共同测试通过 | 2 分 37 秒 |
+
+两者运行同一 `test -count=1 -timeout=10m ./...`；没有 `continue-on-error` 或编译器专属测试跳过。当前 probe 在本地 darwin/arm64 和 CI linux/amd64 上均由 Go/llgo 实际运行。
+
+该运行之后只补充本验证记录与文档链接说明；使用 `[skip ci]` 的文档提交不改动代码、测试或 workflow，也不重新安装工具链。以上结论对应所列验证提交的执行内容。
 
 ## 尚未执行
 
