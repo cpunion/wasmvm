@@ -1,0 +1,84 @@
+name: Go and LLGo
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: '1.27.3'
+  # LLGo v1.0.8; pin the source revision independently of the setup action.
+  LLGO_REVISION: c171abfa130108bc6451e01fcf15a8a3474eb0a7
+
+jobs:
+  test:
+    name: ${{ matrix.compiler }} / linux-amd64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [go, llgo]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Go
+        if: matrix.compiler == 'go'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: Set up LLGo
+        if: matrix.compiler == 'llgo'
+        id: llgo
+        uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
+        with:
+          llgo-version: ${{ env.LLGO_REVISION }}
+          install-method: source
+          go-version: ${{ env.GO_VERSION }}
+          llvm-version: '22'
+          # The design scaffold has no external module dependencies/go.sum.
+          cache: false
+
+      - name: Record and verify toolchains
+        shell: bash
+        env:
+          COMPILER: ${{ matrix.compiler }}
+          ACTUAL_LLGO_REVISION: ${{ steps.llgo.outputs.llgo-revision }}
+        run: |
+          go version
+          if [[ "$COMPILER" == llgo ]]; then
+            test "$ACTUAL_LLGO_REVISION" = "$LLGO_REVISION"
+            llgo version
+            llgo env LLGO_ROOT GOROOT
+          fi
+
+      - name: Format and vet
+        if: matrix.compiler == 'go'
+        shell: bash
+        run: |
+          test -z "$(gofmt -l .)"
+          go vet ./...
+
+      - name: Run the same package tests
+        shell: bash
+        env:
+          COMPILER: ${{ matrix.compiler }}
+        run: |
+          if [[ "$COMPILER" == go ]]; then
+            CGO_ENABLED=0 go test -count=1 -timeout=10m ./...
+          else
+            llgo test -count=1 -timeout=10m ./...
+          fi
+
+      - name: Check Go data races
+        if: matrix.compiler == 'go'
+        run: go test -race -count=1 -timeout=10m ./...
