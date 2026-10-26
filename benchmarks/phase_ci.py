@@ -131,8 +131,11 @@ def invoke(command, timeout):
                             first = bytes(output["stdout"]).split(b"\n", 1)[0]
                             if first != b'{"ready":true}':
                                 raise ValueError("embedded runner readiness protocol mismatch")
-                            process.stdin.write(b"run\n")
-                            process.stdin.close()
+                            try:
+                                process.stdin.write(b"run\n")
+                                process.stdin.close()
+                            except BrokenPipeError as error:
+                                raise ValueError("embedded runner closed before acknowledging readiness") from error
                 remaining = timeout - (time.perf_counter_ns() - started) / 1e9
                 process.wait(timeout=max(remaining, 0.001))
         except BaseException:
