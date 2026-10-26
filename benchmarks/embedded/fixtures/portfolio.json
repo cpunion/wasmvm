@@ -1,0 +1,369 @@
+{
+  "schemaVersion": 1,
+  "portfolioVersion": "core2-v1",
+  "origin": "authored in wasmvm; no third-party benchmark source",
+  "profile": "Core 2.0; no imports, WASI or start function; run(i32,i32)->i32",
+  "generationCommand": "python3 benchmarks/embedded/portfolio/generate.py",
+  "workloads": [
+    {
+      "id": "float-convert",
+      "kind": "float-convert",
+      "family": "numeric",
+      "seed": 305419896,
+      "iterations": 25000,
+      "expectedChecksum": 1078176181,
+      "unit": "ns/iteration",
+      "producer": {
+        "version": "wasm-tools 1.258.0",
+        "flags": [
+          "parse"
+        ]
+      },
+      "wat": "fixtures/float-convert.wat",
+      "wasm": "fixtures/float-convert.wasm",
+      "watSha256": "21cb30b970e2a1cc4987c1fa3348234a65516cbaa3056e75237a7da1a6d00bae",
+      "wasmSha256": "8a22fdc6f9845301135466415d938101bf6b2ee40d04ab1e2d938bcc5fe6c8b3",
+      "source": "portfolio/kernels.py",
+      "sourceSha256": "a4c532081e30ad3f8bfd164b312e6105e185bbb994695228e95524539903714a",
+      "validationCases": [
+        {
+          "seed": 0,
+          "iterations": 1,
+          "expectedChecksum": 1071648768
+        },
+        {
+          "seed": 1,
+          "iterations": 2,
+          "expectedChecksum": 1077418659
+        },
+        {
+          "seed": 4294967295,
+          "iterations": 3,
+          "expectedChecksum": 1074853810
+        },
+        {
+          "seed": 3735928559,
+          "iterations": 17,
+          "expectedChecksum": 1074494915
+        }
+      ]
+    },
+    {
+      "id": "control-multivalue",
+      "kind": "control-multivalue",
+      "family": "control",
+      "seed": 305419896,
+      "iterations": 25000,
+      "expectedChecksum": 2145881115,
+      "unit": "ns/iteration",
+      "producer": {
+        "version": "wasm-tools 1.258.0",
+        "flags": [
+          "parse"
+        ]
+      },
+      "wat": "fixtures/control-multivalue.wat",
+      "wasm": "fixtures/control-multivalue.wasm",
+      "watSha256": "4dd0b2e5d37988491a01cd05e640d5c26077c8322029ec67fb4eb6f14e5bc6af",
+      "wasmSha256": "b757ce0331e413b989c3a8a110575c2c774318fae943c537fc81702d3b876206",
+      "source": "portfolio/kernels.py",
+      "sourceSha256": "a4c532081e30ad3f8bfd164b312e6105e185bbb994695228e95524539903714a",
+      "validationCases": [
+        {
+          "seed": 0,
+          "iterations": 1,
+          "expectedChecksum": 0
+        },
+        {
+          "seed": 1,
+          "iterations": 2,
+          "expectedChecksum": 2098
+        },
+        {
+          "seed": 4294967295,
+          "iterations": 3,
+          "expectedChecksum": 1473321879
+        },
+        {
+          "seed": 3735928559,
+          "iterations": 17,
+          "expectedChecksum": 846055709
+        }
+      ]
+    },
+    {
+      "id": "indirect-reference",
+      "kind": "indirect-reference",
+      "family": "calls-references",
+      "seed": 305419896,
+      "iterations": 25000,
+      "expectedChecksum": 3062960673,
+      "unit": "ns/iteration",
+      "producer": {
+        "version": "wasm-tools 1.258.0",
+        "flags": [
+          "parse"
+        ]
+      },
+      "wat": "fixtures/indirect-reference.wat",
+      "wasm": "fixtures/indirect-reference.wasm",
+      "watSha256": "a6060e75031519ba9fc9d74483b920ce9fa1812920c426a1f6020ec3914898e9",
+      "wasmSha256": "afd7a12c47706c9248d0f25a6083940b06bf6d9a9fd0985672817e041f05fa2c",
+      "source": "portfolio/kernels.py",
+      "sourceSha256": "a4c532081e30ad3f8bfd164b312e6105e185bbb994695228e95524539903714a",
+      "validationCases": [
+        {
+          "seed": 0,
+          "iterations": 1,
+          "expectedChecksum": 0
+        },
+        {
+          "seed": 1,
+          "iterations": 2,
+          "expectedChecksum": 129
+        },
+        {
+          "seed": 4294967295,
+          "iterations": 3,
+          "expectedChecksum": 4294950655
+        },
+        {
+          "seed": 3735928559,
+          "iterations": 17,
+          "expectedChecksum": 90501148
+        }
+      ]
+    },
+    {
+      "id": "simd-shuffle",
+      "kind": "simd-shuffle",
+      "family": "simd",
+      "seed": 305419896,
+      "iterations": 25000,
+      "expectedChecksum": 2642772817,
+      "unit": "ns/iteration",
+      "producer": {
+        "version": "wasm-tools 1.258.0",
+        "flags": [
+          "parse"
+        ]
+      },
+      "wat": "fixtures/simd-shuffle.wat",
+      "wasm": "fixtures/simd-shuffle.wasm",
+      "watSha256": "048aab406fe4aa152157a799718cfa6237ef5f51bbc22db5fbf63888bca2dda1",
+      "wasmSha256": "753a8d0fe09f6fbfcb034791d487b1e1bc7d8f05343d9e6a418334e95d438349",
+      "source": "portfolio/kernels.py",
+      "sourceSha256": "a4c532081e30ad3f8bfd164b312e6105e185bbb994695228e95524539903714a",
+      "validationCases": [
+        {
+          "seed": 0,
+          "iterations": 1,
+          "expectedChecksum": 3894095368
+        },
+        {
+          "seed": 1,
+          "iterations": 2,
+          "expectedChecksum": 703841682
+        },
+        {
+          "seed": 4294967295,
+          "iterations": 3,
+          "expectedChecksum": 4215160848
+        },
+        {
+          "seed": 3735928559,
+          "iterations": 17,
+          "expectedChecksum": 1026868170
+        }
+      ]
+    },
+    {
+      "id": "bulk-unaligned",
+      "kind": "bulk-unaligned",
+      "family": "memory",
+      "seed": 305419896,
+      "iterations": 1000,
+      "expectedChecksum": 984549482,
+      "unit": "ns/iteration",
+      "producer": {
+        "version": "wasm-tools 1.258.0",
+        "flags": [
+          "parse"
+        ]
+      },
+      "wat": "fixtures/bulk-unaligned.wat",
+      "wasm": "fixtures/bulk-unaligned.wasm",
+      "watSha256": "e693a7c4812596050aaad563627875de31f3085b74e88e124c1bf2e1bba00770",
+      "wasmSha256": "24157d26ad1ffc13fe848dfa9f47e33e330b0b13da575a5e015710233b3f330f",
+      "source": "portfolio/kernels.py",
+      "sourceSha256": "a4c532081e30ad3f8bfd164b312e6105e185bbb994695228e95524539903714a",
+      "validationCases": [
+        {
+          "seed": 0,
+          "iterations": 1,
+          "expectedChecksum": 0
+        },
+        {
+          "seed": 1,
+          "iterations": 2,
+          "expectedChecksum": 167772225
+        },
+        {
+          "seed": 4294967295,
+          "iterations": 3,
+          "expectedChecksum": 1056964554
+        },
+        {
+          "seed": 3735928559,
+          "iterations": 17,
+          "expectedChecksum": 3949518989
+        }
+      ]
+    },
+    {
+      "id": "deep-calls",
+      "kind": "deep-calls",
+      "family": "calls-references",
+      "seed": 305419896,
+      "iterations": 2000,
+      "expectedChecksum": 307041136,
+      "unit": "ns/iteration",
+      "producer": {
+        "version": "wasm-tools 1.258.0",
+        "flags": [
+          "parse"
+        ]
+      },
+      "wat": "fixtures/deep-calls.wat",
+      "wasm": "fixtures/deep-calls.wasm",
+      "watSha256": "55baedea752dc0472fb432193757941f6903e835eb4f6ac270de0c6e44d9dc20",
+      "wasmSha256": "f825ec1a4c36eede82587fda264e4ec39251d94a2d347974fa099f9504258d0e",
+      "source": "portfolio/kernels.py",
+      "sourceSha256": "a4c532081e30ad3f8bfd164b312e6105e185bbb994695228e95524539903714a",
+      "validationCases": [
+        {
+          "seed": 0,
+          "iterations": 1,
+          "expectedChecksum": 301067326
+        },
+        {
+          "seed": 1,
+          "iterations": 2,
+          "expectedChecksum": 126
+        },
+        {
+          "seed": 4294967295,
+          "iterations": 3,
+          "expectedChecksum": 301067264
+        },
+        {
+          "seed": 3735928559,
+          "iterations": 17,
+          "expectedChecksum": 3479163497
+        }
+      ]
+    },
+    {
+      "id": "image-filter-c",
+      "kind": "image-filter-c",
+      "family": "applications",
+      "seed": 305419896,
+      "iterations": 40,
+      "expectedChecksum": 2841981324,
+      "unit": "ns/iteration",
+      "producer": {
+        "version": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm@22/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm@22/22.1.8/etc/clang/arm64-apple-darwin27.cfg",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-O2",
+          "-nostdlib",
+          "-Wl,--no-entry",
+          "-Wl,--export=run",
+          "-Wl,--initial-memory=131072",
+          "-Wl,--max-memory=131072",
+          "-Wl,-z,stack-size=65536"
+        ],
+        "compilerSha256": "68bb87f784f09da01b7aea0f70952fb23f606242cdc4f6ff3cc26c372af0706f"
+      },
+      "wat": "fixtures/image-filter-c.wat",
+      "wasm": "fixtures/image-filter-c.wasm",
+      "watSha256": "63711655aab85579928f13141e51fad6f4843fd11f7434ad557da42fe55d9c9c",
+      "wasmSha256": "7b4234898ba0b7729031d9c4e374ce10085475a612072576ba091d5e0229c9d0",
+      "source": "portfolio/image-filter.c",
+      "sourceSha256": "072de090f1f5850bbcc8da78e13a266dfa19e270cb92037755b05ca8bd7f1c5c",
+      "validationCases": [
+        {
+          "seed": 0,
+          "iterations": 1,
+          "expectedChecksum": 2016031908
+        },
+        {
+          "seed": 1,
+          "iterations": 2,
+          "expectedChecksum": 3571481732
+        },
+        {
+          "seed": 4294967295,
+          "iterations": 3,
+          "expectedChecksum": 3345730589
+        },
+        {
+          "seed": 3735928559,
+          "iterations": 17,
+          "expectedChecksum": 4128371070
+        }
+      ]
+    },
+    {
+      "id": "packet-crc-rust",
+      "kind": "packet-crc-rust",
+      "family": "applications",
+      "seed": 305419896,
+      "iterations": 64,
+      "expectedChecksum": 3273213495,
+      "unit": "ns/iteration",
+      "producer": {
+        "version": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+        "flags": [
+          "--edition=2024",
+          "--crate-type=cdylib",
+          "--target=wasm32-unknown-unknown",
+          "-Copt-level=2",
+          "-Cpanic=abort",
+          "-Ctarget-cpu=mvp",
+          "-Clink-arg=--initial-memory=131072",
+          "-Clink-arg=--max-memory=131072",
+          "-Clink-arg=-zstack-size=65536"
+        ]
+      },
+      "wat": "fixtures/packet-crc-rust.wat",
+      "wasm": "fixtures/packet-crc-rust.wasm",
+      "watSha256": "f0ece77d45f1e3ea60f676f9ff34171d1849b6858f4a7afb7102bb06b49474f9",
+      "wasmSha256": "eb3606806dcff64491d8acd1414979f3f0a726ffbd2d31d9c8c1961d9ae274e7",
+      "source": "portfolio/packet-crc.rs",
+      "sourceSha256": "07f7bf3f768f65d002d0b3f551a6792cd06bf4ebe8a67d5117e0f2acc135c3be",
+      "validationCases": [
+        {
+          "seed": 0,
+          "iterations": 1,
+          "expectedChecksum": 1465718408
+        },
+        {
+          "seed": 1,
+          "iterations": 2,
+          "expectedChecksum": 367402491
+        },
+        {
+          "seed": 4294967295,
+          "iterations": 3,
+          "expectedChecksum": 182712109
+        },
+        {
+          "seed": 3735928559,
+          "iterations": 17,
+          "expectedChecksum": 3557872856
+        }
+      ]
+    }
+  ]
+}

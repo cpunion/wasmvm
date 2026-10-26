@@ -545,3 +545,24 @@ the complete Core 2.0 binary corpus, Go vet/race and package coverage checks
 pass. CLI coverage is 99.5% and public VM coverage is 96.8%; all executable core
 packages exceed 90%. Final-head CI remains required before merge. M1 remains
 open for representative owned-engine performance evidence and final acceptance.
+
+
+## M1 representative Core 2.0 portfolio
+
+The owned phase harness adds eight [versioned workloads](../benchmarks/embedded/portfolio/README.md)
+to the original six cases: float/conversion, irregular multi-value control,
+indirect calls/references/globals, SIMD, bulk/unaligned memory, deep calls, a
+Clang-generated image filter and a Rust-generated packet CRC. Exact producer
+versions, flags, source/binary hashes and independent checksums are committed.
+Initialization/reset remains visible inside each call. Existing baseline work
+sizes and repetition counts are unchanged.
+
+The same fourteen inputs run through all fifteen configurations, producing
+630 phase processes and 168 actual CLI processes. PR comments retain primary
+base/head and competitor rows; complete phase data remains in raw JSON.
+Small validation vectors pass locally through both own boundaries under Go
+and LLGo and both wazero backends. Python checks validate provenance, sizes,
+seed/count dependence and an independent zlib CRC cross-check. Full CI C API
+validation and final-head measurements are required before merge. M1 remains
+open for host-callback/preparation-shape baselines and final acceptance; no
+M2 controlled performance or native-backend gate is claimed.

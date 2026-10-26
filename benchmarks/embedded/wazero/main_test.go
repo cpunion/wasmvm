@@ -85,10 +85,6 @@ func TestPureCorpusBackends(t *testing.T) {
 	// This is a repository integration test: all runners consume this shared
 	// corpus. Validation cases stay small; the performance runner uses the main
 	// iteration counts. Repeated calls validate per-invocation state reset.
-	data, err := os.ReadFile(filepath.Join("..", "fixtures", "manifest.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
 	var corpus struct {
 		Workloads []struct {
 			ID              string `json:"id"`
@@ -100,11 +96,20 @@ func TestPureCorpusBackends(t *testing.T) {
 			} `json:"validationCases"`
 		} `json:"workloads"`
 	}
-	if err := json.Unmarshal(data, &corpus); err != nil {
-		t.Fatal(err)
+	for _, name := range []string{"manifest.json", "portfolio.json"} {
+		data, err := os.ReadFile(filepath.Join("..", "fixtures", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		part := corpus
+		part.Workloads = nil
+		if err := json.Unmarshal(data, &part); err != nil {
+			t.Fatal(err)
+		}
+		corpus.Workloads = append(corpus.Workloads, part.Workloads...)
 	}
-	if len(corpus.Workloads) != 6 {
-		t.Fatalf("expected six shared corpus workloads, got %d", len(corpus.Workloads))
+	if len(corpus.Workloads) != 14 {
+		t.Fatalf("expected fourteen shared workloads, got %d", len(corpus.Workloads))
 	}
 	for _, backend := range []string{"interpreter", "compiler"} {
 		t.Run(backend, func(t *testing.T) {

@@ -9,7 +9,7 @@ class ProductionCLIIntegrityTests(unittest.TestCase):
     def test_complete_checked_cli_matrix(self):
         report = complete_report()
         rows = own_cli.summarize(report["productionCLI"], report["ownBuilds"], report["fixtures"])
-        self.assertEqual(len(rows), 24)
+        self.assertEqual(len(rows), 56)
         self.assertTrue(all(row["medianNs"] == 10000 for row in rows))
         text = own_cli.markdown(report["productionCLI"], report["ownBuilds"], report["fixtures"])
         self.assertIn("not subtracted", text)
@@ -40,7 +40,7 @@ class ProductionCLIIntegrityTests(unittest.TestCase):
         series = report["productionCLI"]
         series["runtimes"] = [r for r in series["runtimes"] if r["id"].startswith("head-")]
         series["observations"] = [r for r in series["observations"] if r["runtime"].startswith("head-")]
-        self.assertEqual(len(own_cli.summarize(series, report["ownBuilds"], report["fixtures"])), 12)
+        self.assertEqual(len(own_cli.summarize(series, report["ownBuilds"], report["fixtures"])), 28)
         self.assertIn("unavailable", own_cli.markdown(series, report["ownBuilds"], report["fixtures"]))
         report["ownBuilds"]["head-go"]["cli"]["status"] = "baseline-unavailable"
         with self.assertRaises(ValueError):

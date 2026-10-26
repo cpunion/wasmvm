@@ -26,7 +26,9 @@ ROUNDS = 3
 SAMPLES = 7
 WARMUPS = 2
 WORKLOADS = ("call-control", "integer-loop", "integer-sustained", "function-calls",
-             "memory-load-store", "memory-sustained")
+             "memory-load-store", "memory-sustained", "float-convert", "control-multivalue",
+             "indirect-reference", "simd-shuffle", "bulk-unaligned", "deep-calls",
+             "image-filter-c", "packet-crc-rust")
 PHASES = ("load", "engineSetup", "compileValidate", "instantiate", "exportLookup", "firstCall", "cleanup")
 MAX_OUTPUT = 2 * 1024 * 1024
 OWN_CONFIGURATIONS = tuple(f"wasmvm-{ref}-{compiler}-{mode}"
@@ -42,11 +44,20 @@ def digest(path):
 def load_workloads(head):
     root = (head / "benchmarks/embedded").resolve()
     manifest = json.loads((root / "fixtures/manifest.json").read_text())
+    portfolio = json.loads((root / "fixtures/portfolio.json").read_text())
+    if portfolio.get("schemaVersion") != 1 or portfolio.get("portfolioVersion") != "core2-v1":
+        raise ValueError("invalid Core 2.0 portfolio version")
+    for item in manifest["workloads"]:
+        item["producer"] = {"version": manifest["producer"]}
+    manifest["producer"] = "mixed; see per-workload producer identities"
+    manifest["profile"] = portfolio["profile"]
+    manifest["portfolio"] = portfolio
+    manifest["workloads"].extend(portfolio["workloads"])
     entries = manifest.get("workloads", [])
     if manifest.get("schemaVersion") != 1 or not manifest.get("origin"):
         raise ValueError("invalid embedded fixture provenance")
     if len(entries) != len(WORKLOADS) or {item["id"] for item in entries} != set(WORKLOADS):
-        raise ValueError("embedded fixture matrix must contain exactly the six declared cases")
+        raise ValueError("embedded fixture matrix must contain exactly the declared cases")
     for item in entries:
         for key, upper in (("seed", 2**32 - 1), ("expectedChecksum", 2**32 - 1), ("iterations", 2**31 - 1)):
             if type(item[key]) is not int or not 0 <= item[key] <= upper:
@@ -60,6 +71,10 @@ def load_workloads(head):
             path = (root / item[kind]).resolve()
             if not path.is_relative_to(root / "fixtures") or digest(path) != item[kind + "Sha256"]:
                 raise ValueError("embedded fixture path or hash mismatch")
+    for item in portfolio["workloads"]:
+        source = (root / item["source"]).resolve()
+        if not source.is_relative_to(root / "portfolio") or digest(source) != item["sourceSha256"]:
+            raise ValueError("portfolio source path or hash mismatch")
     return manifest
 
 
@@ -254,7 +269,7 @@ def summarize(report):
             raise ValueError("invalid baseline-unavailable provenance")
     expected_own = {r["id"]: r for r in own_commands(report["ownBuilds"])}
     expected_ids = set(ci.CONFIGURATIONS) | set(expected_own)
-    if len(report["runtimes"]) != len(expected_ids) or set(runtimes) != expected_ids or len(workloads) != 6 or set(workloads) != set(WORKLOADS):
+    if len(report["runtimes"]) != len(expected_ids) or set(runtimes) != expected_ids or len(workloads) != len(WORKLOADS) or set(workloads) != set(WORKLOADS):
         raise ValueError("incomplete embedded runtime/workload configuration")
     for name, expected in expected_own.items():
         if runtimes[name] != expected:
@@ -339,13 +354,13 @@ def markdown(report):
               "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
     for workload in WORKLOADS:
         lines.append(f"| {workload} | {indexed[('wasmvm-head-go-api', workload)]['unit']} | {own_cells(workload, 'go', 'dispatch')} | {own_cells(workload, 'llgo', 'dispatch')} |")
-    lines += ["", "Owned preparation details (milliseconds); the outer preparation interval also includes phase transitions. "
+    lines += ["", "Head owned preparation details (milliseconds); all base/head values remain in JSON; the outer preparation interval also includes phase transitions. "
               "These produce interpreter slot code, not native code. Parts are not added a second time to preparation.", "",
               "| Runtime | Workload | Decode | Validate | IR lowering | Slot allocation |",
               "| --- | --- | ---: | ---: | ---: | ---: |"]
     for row in rows:
         parts = row.get("preparationPartsNs", {})
-        if "decode" in parts:
+        if "decode" in parts and row["runtime"].startswith("wasmvm-head-"):
             values = " | ".join(f"{parts[key] / 1e6:.6f}" for key in ("decode", "validate", "lower", "slots"))
             lines.append(f"| {row['runtime']} | {row['workload']} | {values} |")
     lines += ["", "</details>", "", own_cli.markdown(report["productionCLI"], report["ownBuilds"], report["fixtures"]),
@@ -373,11 +388,13 @@ def markdown(report):
     for workload in WORKLOADS:
         values = " | ".join(f"{indexed[(runtime, workload)]['normalizedNs']:.2f}" for runtime in ("head-interpreter", "head-compiler", "wasmtime-cranelift", "wasmer-cranelift", "wasmedge-interpreter"))
         lines.append(f"| {workload} | {indexed[('head-compiler', workload)]['unit']} | {values} |")
-    lines += ["", "<details><summary>Every API phase, by runtime and workload (milliseconds)</summary>", "",
+    lines += ["", "<details><summary>Head public API phases (milliseconds); full base/head and dispatch phases in JSON</summary>", "",
               "| Runtime | Workload | Process ready | Read | Engine/store | Decode+validate/compile | Instantiate | Lookup | First call | Warm call | Cleanup | Clock pair |",
               "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
     keys = ("processReadyNs", "loadNs", "engineSetupNs", "compileValidateNs", "instantiateNs", "exportLookupNs", "firstCallNs", "warmCallNs", "cleanupNs", "timerPairNs")
     for row in rows:
+        if row["runtime"] not in compared:
+            continue
         values = " | ".join(f"{row[key] / 1e6:.6f}" for key in keys)
         lines.append(f"| {row['runtime']} | {row['workload']} | {values} |")
     lines += ["", "</details>", "",

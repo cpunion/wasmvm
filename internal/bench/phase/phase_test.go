@@ -23,18 +23,23 @@ func optionsFor(path, mode string) options {
 }
 
 func TestBothBoundariesAndEveryOracleVector(t *testing.T) {
-	data, err := os.ReadFile(filepath.Join(fixtures, "manifest.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
 	var manifest struct {
 		Workloads []struct {
 			Wasm            string
 			ValidationCases []struct{ Seed, Iterations, ExpectedChecksum uint32 }
 		}
 	}
-	if err = json.Unmarshal(data, &manifest); err != nil {
-		t.Fatal(err)
+	for _, name := range []string{"manifest.json", "portfolio.json"} {
+		data, err := os.ReadFile(filepath.Join(fixtures, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		part := manifest
+		part.Workloads = nil
+		if err := json.Unmarshal(data, &part); err != nil {
+			t.Fatal(err)
+		}
+		manifest.Workloads = append(manifest.Workloads, part.Workloads...)
 	}
 	for _, mode := range []string{"api", "dispatch"} {
 		for _, workload := range manifest.Workloads {

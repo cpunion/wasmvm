@@ -70,6 +70,14 @@ reported warm median is the median of the three process medians, avoiding the
 claim that 21 calls inside three processes are 21 independent process samples.
 All process/configuration/workload cases are interleaved in seeded random order.
 
+The [Core 2.0 portfolio](portfolio/README.md) adds eight cases to these six
+unchanged controls, including Clang- and Rust-generated compute modules. All
+fourteen run through every selected runtime and both owned boundaries. A full
+matrix contains 630 phase processes and 168 production CLI processes. Per-case
+iteration definitions differ; compare a case across runtimes, not unrelated
+cases by their raw nanoseconds. Full base/head phase values remain in JSON;
+the PR comment displays head public phases and separate dispatch diagnostics.
+
 ## Backends and provenance
 
 - **Owned wasmvm:** exact base/head commits, each built with pinned Go 1.27.3
@@ -96,7 +104,7 @@ All process/configuration/workload cases are interleaved in seeded random order.
   separate series runs each pure fixture in three fresh CLI processes and checks
   the typed JSON result. Its complete wall time includes startup, file I/O,
   compilation, execution, JSON and exit. It is never subtracted from API phases.
-  A usable base/head matrix adds 72 independently measured CLI invocations.
+  The complete fourteen-case base/head matrix adds 168 independently measured CLI invocations.
 
 - Wazero v1.12.0 interpreter/native compiler: the same head runner source is
   compiled separately against the dependency selected by the base and head

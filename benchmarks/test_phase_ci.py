@@ -73,8 +73,8 @@ class PhaseIntegrityTests(unittest.TestCase):
     def test_complete_matrix_uses_only_warm_api_call_samples(self):
         report = complete_report()
         result = phase.summarize(report)
-        self.assertEqual(len(report["observations"]), 270)
-        self.assertEqual(len(result), 90)
+        self.assertEqual(len(report["observations"]), 630)
+        self.assertEqual(len(result), 210)
         for item in result:
             self.assertEqual(item["warmCallNs"], 40)
             self.assertEqual(item["firstCallNs"], 100)
@@ -174,7 +174,7 @@ class PhaseIntegrityTests(unittest.TestCase):
         report["observations"] = [r for r in report["observations"] if not r["runtime"].startswith("wasmvm-base-")]
         report["productionCLI"]["runtimes"] = [r for r in report["productionCLI"]["runtimes"] if not r["id"].startswith("base-")]
         report["productionCLI"]["observations"] = [r for r in report["productionCLI"]["observations"] if not r["runtime"].startswith("base-")]
-        self.assertEqual(len(phase.summarize(report)), 66)
+        self.assertEqual(len(phase.summarize(report)), 154)
         self.assertIn("baseline unavailable", phase.markdown(report))
         report["ownBuilds"]["head-go"]["status"] = "baseline-unavailable"
         with self.assertRaises(ValueError):
@@ -185,6 +185,7 @@ class PhaseIntegrityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             shutil.copytree(PROJECT / "benchmarks/embedded/fixtures", root / "benchmarks/embedded/fixtures")
+            shutil.copytree(PROJECT / "benchmarks/embedded/portfolio", root / "benchmarks/embedded/portfolio")
             phase.load_workloads(root)
             path = root / "benchmarks/embedded/fixtures/call-control.wasm"
             path.write_bytes(b"corrupt")

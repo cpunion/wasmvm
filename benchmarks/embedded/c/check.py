@@ -40,6 +40,7 @@ def main():
     args = parser.parse_args()
     runners = args.runners_dir.resolve()
     workloads = json.loads((EMBEDDED / "fixtures/manifest.json").read_text())["workloads"]
+    workloads += json.loads((EMBEDDED / "fixtures/portfolio.json").read_text())["workloads"]
     # Deduplicate the two sustained rows' small oracle cases; the benchmark
     # itself executes every main workload separately after this validation.
     cases = {}
