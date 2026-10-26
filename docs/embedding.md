@@ -35,6 +35,8 @@ fmt.Println(uint32(bits)) // 42
 
 An Engine supports concurrent compilation. Compilation snapshots the input;
 the caller must not concurrently modify it while the snapshot is taken.
+`Engine.Validate` decodes and statically validates without lowering; `Inspect` adds copied import/export signatures and object limits without linking or executing.
+
 CompiledModule owns immutable code and metadata, can instantiate in multiple
 Stores of its Engine, and returns copied metadata from `Info`. Closing the
 Engine prevents new compilation and Store creation. Existing compiled modules,
@@ -139,7 +141,7 @@ one operation. `MaxReentry` limits additional host-mediated nested calls; zero
 permits the outer call and rejects reentry. Fuel v1 is shared across those
 continuations, charges before Wasm instruction effects, and is reported as
 `CallResult.FuelRemaining`. Every new top-level call resets its supplied fuel.
-Instantiation's start call receives the supplied options; segment application
+Instantiation's start call receives the supplied options. The immutable `Instance.StartFuelRemaining()` receipt can carry its remaining budget into a later call; segment application
 is initialization work rather than instruction fuel.
 
 Context cancellation is checked between bounded compiler/initialization phases,
@@ -155,6 +157,6 @@ Use `errors.Is` for `wasm.ErrMalformed`, `ErrInvalid`, `ErrUnsupported`,
 byte offset when execution supplies them. Context cancellation and user callback
 errors remain distinct from Wasm traps.
 
-M1 remains open for the core CLI, own-engine benchmark integration and final
+M1 remains open for own-engine benchmark integration and final
 acceptance. This API increment does not claim native execution, WASI support,
 controlled performance-gate acceptance or production security review.
