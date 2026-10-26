@@ -15,7 +15,7 @@ Each module computes a checksum, traps if it differs from the independent Python
 
 ## Reproduce
 
-Prerequisites: Python 3.9+, Go compatible with wazero v1.12.0, Wasmtime, Wasmer, and WasmEdge. Regenerating the fixtures also requires `wasm-tools`; the committed fixtures were generated with version 1.258.0.
+Prerequisites: Python 3.12+ for the complete tooling/test suite, Go compatible with wazero v1.12.0, Wasmtime, Wasmer, and WasmEdge. Regenerating the fixtures also requires `wasm-tools`; the committed fixtures were generated with version 1.258.0.
 
 ```sh
 python3 benchmarks/generate.py
