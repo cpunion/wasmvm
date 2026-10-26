@@ -48,12 +48,10 @@ func (e *functionEmitter) floatMove(dst, src byte, wide bool) {
 // Select arithmetic directly in fixed FP registers. Scratch registers 0-2 are
 // excluded from allocation; constrained operations retain the common lowering.
 func (e *functionEmitter) registerFloat(in slots.Instruction) bool {
-	d, dok := e.floatRegisters[in.Dst]
-	l, lok := e.floatRegisters[in.A]
-	r, rok := e.floatRegisters[in.B]
-	if !lok {
+	if !e.canRegisterFloat(in) {
 		return false
 	}
+	d, l, r := e.floatRegisters[in.Dst], e.floatRegisters[in.A], e.floatRegisters[in.B]
 	wide := e.f.Slots[in.A] == wasm.F64
 	op := in.Op
 	if op >= 0x99 && op <= 0xa6 {
@@ -61,11 +59,8 @@ func (e *functionEmitter) registerFloat(in slots.Instruction) bool {
 	} else if op >= 0x61 && op <= 0x66 {
 		op -= 6
 	}
-	if op >= 0x5b && op <= 0x60 && rok && e.a.arch == "arm64" {
-		d, dok = e.registers[in.Dst]
-		if !dok {
-			return false
-		}
+	if op >= 0x5b && op <= 0x60 {
+		d = e.registers[in.Dst]
 		ins := uint32(0x1e202000)
 		if wide {
 			ins |= 1 << 22
@@ -74,9 +69,6 @@ func (e *functionEmitter) registerFloat(in slots.Instruction) bool {
 		conditions := [...]uint32{0, 1, 4, 12, 9, 10}
 		e.a.word(0x1a9f07e0 | (conditions[op-0x5b]^1)<<12 | uint32(d))
 		return true
-	}
-	if !dok || op < 0x8b || op > 0x97 || op >= 0x92 && !rok {
-		return false
 	}
 	if e.a.arch == "arm64" {
 		ins := [...]uint32{0x1e20c000, 0x1e214000, 0x1e24c000, 0x1e254000,
@@ -124,4 +116,29 @@ func floatImmediate(bits uint64, wide bool) (byte, bool) {
 		return 0, false
 	}
 	return byte((bits>>(mantissa+exponent))<<7 | ((exp>>(exponent-1))^1)<<6 | (exp&3)<<4 | (bits>>(mantissa-4))&15), true
+}
+
+// A side-effect-free selection predicate lets a multi-instruction combination
+// check its complete register plan before emitting any part of the sequence.
+func (e *functionEmitter) canRegisterFloat(in slots.Instruction) bool {
+	_, l := e.floatRegisters[in.A]
+	_, r := e.floatRegisters[in.B]
+	_, d := e.floatRegisters[in.Dst]
+	if !l {
+		return false
+	}
+	op := in.Op
+	if op >= 0x99 && op <= 0xa6 {
+		op -= 14
+	} else if op >= 0x61 && op <= 0x66 {
+		op -= 6
+	}
+	if op >= 0x5b && op <= 0x60 {
+		_, d = e.registers[in.Dst]
+		return e.a.arch == "arm64" && d && r
+	}
+	if !d || op < 0x8b || op > 0x97 || op >= 0x92 && !r {
+		return false
+	}
+	return e.a.arch == "arm64" || op == 0x91 || op >= 0x92 && op <= 0x95
 }

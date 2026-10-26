@@ -26,6 +26,7 @@ type CompiledFunction struct {
 	ReferenceSlots             []uint32
 	Helpers, Calls, EdgeCopies uint32
 	FusedIntegers              uint32
+	ForwardedFloats            uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -134,6 +135,20 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 			combinedThrough = end
 			continue
 		}
+		if end, ok := e.combineFloatCopies(pc); ok {
+			out.ForwardedFloats++
+			for entry := pc + 1; entry <= end; entry++ {
+				independentEntries = append(independentEntries, entry)
+			}
+			combinedThrough = end
+			continue
+		}
+		if e.forwardFloatResult(pc) {
+			out.ForwardedFloats++
+			independentEntries = append(independentEntries, pc+1)
+			combinedThrough = pc + 1
+			continue
+		}
 		switch op := in.Op; {
 		case isControl:
 			kind := ir.TermKind(op - slots.ControlBase)
@@ -207,9 +222,18 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 	// A validated function never falls through its final terminator.
 	for _, pc := range independentEntries {
 		a.mark(pcs[pc])
-		if in := f.Code[pc]; in.Op == 0x41 || in.Op == 0x42 {
+		in := f.Code[pc]
+		switch {
+		case in.Op >= 0x41 && in.Op <= 0x44:
 			e.literal(in)
-		} else {
+		case in.Op == 0x20:
+			e.move(in.Dst, slots.Slot(f.Sources[in.Source].Wasm.A))
+		case in.Op == 0x21 || in.Op == 0x22:
+			e.move(slots.Slot(f.Sources[in.Source].Wasm.A), in.A)
+			e.move(in.Dst, in.A)
+		case isFloat(in.Op):
+			e.floating(in)
+		default:
 			e.integer(in)
 		}
 		a.branch(pcs[pc+1], false, 0)
