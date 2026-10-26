@@ -50,4 +50,6 @@ const (
 	ResultHiOffset     = nativeabi.ResultHiOffset
 	PayloadOffset      = nativeabi.PayloadOffset
 	ControlOffset      = nativeabi.ControlOffset
+	MemoryBaseOffset   = nativeabi.MemoryBaseOffset
+	MemorySizeOffset   = nativeabi.MemorySizeOffset
 )

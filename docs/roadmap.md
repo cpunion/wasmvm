@@ -55,11 +55,15 @@ The Store reclaims unescaped failed instances and releases storage after executi
 **Objective:** make both interpretation and Wasm-to-native execution satisfy the [performance contract](design/performance-contract.md), without changing the accepted Core 2.0 semantics.
 
 The development branch now emits all 136 scalar numeric operations on both ISAs
-and actually executes 11,970 official numeric assertions per native tier. The
+plus all 23 scalar memory accesses, memory.size and explicit growth exits.
+It executes 12,068 official scalar assertions per native tier across 13 complete
+scripts; native memory ownership, growth relocation and local bounds proofs are
+covered by targeted tests. The
 shared register/copy/control-flow optimizations approach competitor throughput;
-calibrated acceptance remains open. Complete native memory, calls, SIMD and the
+calibrated acceptance remains open. Complete the memory performance gate, calls, SIMD and the
 public runtime next, then run the full Core 2.0 backend matrix. See the
-[scalar scope and measurements](../benchmarks/native/float-plan.md); no milestone
+[numeric scope](../benchmarks/native/float-plan.md) and
+[memory scope](../benchmarks/native/memory-plan.md); no milestone
 is closed by this instruction subset.
 
 1. **Interpreter performance.** Profile dispatch, copies, bounds checks, calls, slot/frame allocation and code footprint. Compare predecoded stack versus slot prototypes; retain the measured production choice. Add specialization/fusion only with preserved trap/fuel/safepoint behavior and full regression results.

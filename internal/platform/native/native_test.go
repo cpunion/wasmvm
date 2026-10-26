@@ -83,7 +83,7 @@ func TestLayout(t *testing.T) {
 	}
 	offsets := []uintptr{RecordSize, ArenaOffset, CapacityOffset, MaxDepthOffset, UsedOffset, DepthOffset,
 		FunctionOffset, ContinuationOffset, SourceOffset, RootMapOffset, FuelOffset, BudgetOffset,
-		ResultLoOffset, ResultHiOffset, PayloadOffset, ControlOffset}
+		ResultLoOffset, ResultHiOffset, PayloadOffset, ControlOffset, MemoryBaseOffset, MemorySizeOffset}
 	for i, want := range offsets {
 		if got := layout(uint32(i)); got != uint64(want) {
 			t.Fatalf("field %d: C %d Go %d", i, got, want)

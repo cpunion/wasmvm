@@ -74,11 +74,12 @@ func readSlot(t *testing.T, c *native.Context, base uint64, slot slots.Slot) val
 }
 func functionContext(t *testing.T, f *slots.Function, unmetered ...bool) (*CompiledFunction, *native.Lease, *native.Context) {
 	t.Helper()
-	compile := CompileFunction
-	if len(unmetered) != 0 && unmetered[0] {
-		compile = CompileUnmeteredFunction
-	}
-	compiled, err := compile(runtime.GOARCH, f, DefaultLimits())
+	config := Config{Unmetered: len(unmetered) != 0 && unmetered[0]}
+	return configuredContext(t, f, config)
+}
+func configuredContext(t *testing.T, f *slots.Function, config Config) (*CompiledFunction, *native.Lease, *native.Context) {
+	t.Helper()
+	compiled, err := CompileFunctionWithConfig(runtime.GOARCH, f, DefaultLimits(), config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +101,7 @@ func functionContext(t *testing.T, f *slots.Function, unmetered ...bool) (*Compi
 	t.Cleanup(ctx.Close)
 	return compiled, lease, ctx
 }
-func runFunction(t *testing.T, compiled *CompiledFunction, lease *native.Lease, c *native.Context, args []value.Value, fuel uint64, metered bool, budget uint64) ([]value.Value, native.Exit, native.State) {
+func runFunction(t *testing.T, compiled *CompiledFunction, lease *native.Lease, c *native.Context, args []value.Value, fuel uint64, metered bool, budget uint64, memories ...*native.Memory) ([]value.Value, native.Exit, native.State) {
 	t.Helper()
 	base := uint64(16)
 	if err := c.Write(0, make([]byte, len(compiled.Function.Slots)*16+32)); err != nil {
@@ -130,6 +131,24 @@ func runFunction(t *testing.T, compiled *CompiledFunction, lease *native.Lease, 
 			if err := c.SetState(s); err != nil {
 				t.Fatal(err)
 			}
+			continue
+		}
+		if exit == native.GrowMemory && len(memories) != 0 {
+			memory := memories[0]
+			if memory == nil {
+				t.Fatal("grow without memory")
+			}
+			in := compiled.Function.Code[s.Payload[0]]
+			delta := uint32(readSlot(t, c, base, in.A).Lo)
+			size, err := memory.Size()
+			if err != nil {
+				t.Fatal(err)
+			}
+			result := size / 65536
+			if err = memory.Grow(size + uint64(delta)*65536); err != nil {
+				result = 0xffffffff
+			}
+			writeSlot(t, c, base, in.Dst, value.Value{Lo: result})
 			continue
 		}
 		if exit != native.Return {
@@ -270,8 +289,8 @@ func testNativeFunctionValuesAndExits(t *testing.T, fast bool) {
 	}
 	// A suspended helper owns no hidden live registers; results written to the
 	// declared frame slot survive re-entry through the continuation dispatcher.
-	m := functionFixture(module.FuncType{Results: []wasm.ValueType{wasm.I32}}, 0, module.Expr{{Op: 0x3f}, {Op: 0x41, Bits: 1}, {Op: 0x6a}, {Op: 0xb}})
-	m.Memories = []module.Limits{{Min: 1}}
+	m := functionFixture(module.FuncType{Results: []wasm.ValueType{wasm.I32}}, 0, module.Expr{{Op: 0x23}, {Op: 0x41, Bits: 1}, {Op: 0x6a}, {Op: 0xb}})
+	m.Globals = []module.Global{{Type: module.GlobalType{Value: wasm.I32}, Init: module.Expr{{Op: 0x41}, {Op: 0xb}}}}
 	f := functionModule(t, m).Functions[0]
 	compiled, lease, c := functionContext(t, f, fast)
 	_, exit, s := runFunction(t, compiled, lease, c, nil, 10, !fast, 64)

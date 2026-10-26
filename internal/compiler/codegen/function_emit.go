@@ -19,6 +19,12 @@ type functionEmitter struct {
 	exit, bad, zero, overflow int
 	edgeCopies                uint32
 	unmetered                 bool
+	usesMemory                bool
+	memoryMinimum             uint64
+	regionLimit               int
+	provenPCs                 map[int]bool
+	boundsElided              uint32
+	constantRegisters         map[uint64]byte
 	registers                 map[slots.Slot]byte
 	floatRegisters            map[slots.Slot]byte
 	registerSlots             []slots.Slot
@@ -395,6 +401,20 @@ func (e *functionEmitter) literal(in slots.Instruction) {
 				ins |= 1 << 22
 			}
 			e.a.word(ins)
+			return
+		}
+	}
+	if op == 0x41 || op == 0x42 {
+		if op == 0x41 {
+			lo = uint64(uint32(lo))
+		}
+		if r, ok := e.constantRegisters[lo]; ok {
+			if dst, ok := e.registers[in.Dst]; ok {
+				e.registerMove(dst, r, true)
+			} else {
+				e.registerMove(e.operandRegister(0), r, true)
+				e.slotStore(in.Dst, 0, false)
+			}
 			return
 		}
 	}

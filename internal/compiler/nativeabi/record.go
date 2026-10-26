@@ -19,7 +19,7 @@ const (
 	Move
 )
 
-const ABIVersion = 1
+const ABIVersion = 2
 
 // State contains only scalar bits and guest handles. Continuation and RootMap
 // are compiler-owned IDs, never addresses supplied by guest memory. The driver
@@ -38,7 +38,8 @@ type State struct {
 type Record struct {
 	Version, Arena, Capacity, MaxDepth uint64
 	State
-	Control uint64
+	Control                uint64
+	MemoryBase, MemorySize uint64
 }
 
 const (
@@ -58,4 +59,6 @@ const (
 	ResultHiOffset     = unsafe.Offsetof(Record{}.State) + unsafe.Offsetof(State{}.ResultHi)
 	PayloadOffset      = unsafe.Offsetof(Record{}.State) + unsafe.Offsetof(State{}.Payload)
 	ControlOffset      = unsafe.Offsetof(Record{}.Control)
+	MemoryBaseOffset   = unsafe.Offsetof(Record{}.MemoryBase)
+	MemorySizeOffset   = unsafe.Offsetof(Record{}.MemorySize)
 )

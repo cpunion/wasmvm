@@ -127,7 +127,7 @@ and the precise fuel tier never combines instruction boundaries. This is general
 instruction selection, with no workload-specific pattern or competitor fallback.
 
 This is an early architecture improvement, not a complete native runtime.
-Native memory, guest calls, runtime exits, precise metering optimization, global
+Complete native memory integration, guest calls, runtime exits, precise metering optimization, global
 liveness/allocation and the full-profile performance gates remain unfinished.
 Memory operations and guest calls must receive their own same-workload
 competitor comparisons before their development PRs can merge.
@@ -184,10 +184,12 @@ implemented and validated.
 
 ## Local scalar floating-point development
 
-The unsubmitted scalar FP branch emits f32/f64 comparisons, arithmetic, rounding,
+The scalar development branch emits f32/f64 comparisons, arithmetic, rounding,
 min/max, sign changes and bit reinterpretation through the same function emitter.
-It uses baseline SSE2 on amd64 and scalar FP instructions on arm64. Saturating
-and trapping numeric conversions still exit explicitly to runtime helpers.
+It uses baseline SSE2 on amd64 and scalar FP instructions on arm64. All 26
+saturating, trapping, widening and narrowing conversions are emitted natively.
+Together with integer lowering, this covers all 136 Core 2.0 scalar numeric
+operations; runtime calls and SIMD remain separate open work.
 
 Fixed typed FP registers complement the existing integer cache. Entries reload
 retained slots and every exit spills them; FP scratch registers remain separate.
@@ -198,3 +200,45 @@ combined. All 256 ARM scalar FP immediate encodings are checked. Tests cover
 both widths, aliases, register pressure, helper frame updates, every continuation,
 source clobbers, poll boundaries and the scan limit. These implementation results
 are separate from the still-open native runtime and competitor acceptance gates.
+
+
+## Local scalar memory development
+
+ABI version 2 extends the fixed record from 152 to 168 bytes, appending
+`MemoryBase` at offset 152 and `MemorySize` at offset 160. Existing fields retain
+their offsets. The platform verifies the same layout in C, Go and LLGo.
+
+`native.Memory` owns zeroed off-heap storage and copies bytes through idle-only
+accessors. Context bindings retain storage; close retires the owner and waits for
+bindings and active entry to drain. Only one context enters a given memory at a
+time. Growth allocates, copies, commits, and refreshes the context at the next
+entry; failure leaves the previous allocation and size intact. The eventual
+Store must account for peak old-plus-new bytes, instance/aggregate quotas and
+shared/imported ownership. This private-memory owner is not Core Threads support.
+
+The emitter supports all 23 scalar loads/stores, memory.size and the explicit
+GrowMemory exit. A growth exit names the charged instruction and resumes after
+it; the idle driver writes old page count or i32(-1), then reenters. Each entry
+reloads the memory base and length. amd64 reserves r10/r11; arm64 reserves x16/x17.
+Widened address arithmetic checks the entire access before any memory effect.
+
+The unmetered tier can prove bounded addresses from constants, masks, shifts and
+non-wrapping arithmetic in straight-line regions of at most 256 slot instructions.
+Facts never cross CFG entries, polls or helpers. Entry validates the assumed
+minimum memory size. Each interior original PC has a checked cold continuation,
+so independent resumption cannot inherit an unexecuted proof. Shared scalar
+copy forwarding omits only copies overwritten before any read or observable exit.
+The precise fuel tier retains checks and instruction boundaries. On arm64, up to
+eight expensive integer constants occupy otherwise unused caller-saved x1-x8.
+They are immutable, loaded once per entry and excluded from all scratch/slot
+assignments; arbitrary continuations still use their own mutable operand slots.
+
+The shared test driver executes 12,068 assertions per tier from 13 complete pinned
+scalar scripts (27 modules), including store, memory and memory_size; 347 frontend
+commands are counted separately. The full load, memory_trap, memory_grow and
+memory_redundancy scripts still need calls, globals or import/linking in the Store
+driver, and are not claimed as passed. Targeted tests cover all access widths,
+sign extension, raw floating bits, aligned/unaligned bounds, growth relocation,
+fuel-before-store, continuation checks and concurrent memory lifetime. The
+[development scope](../../benchmarks/native/memory-plan.md) records performance
+limitations. Public native selection and M2 acceptance remain open.

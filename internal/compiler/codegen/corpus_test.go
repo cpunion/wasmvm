@@ -61,12 +61,21 @@ func TestCompleteCore2NativeCompilation(t *testing.T) {
 			if compiled.IR != lowered || len(compiled.Functions) != len(lowered.Functions) {
 				t.Fatal("module identity")
 			}
+			config := Config{Unmetered: true}
+			if len(m.Memories) != 0 {
+				config.MemoryMinimumPages = m.Memories[0].Min
+			}
+			for _, imported := range m.Imports {
+				if imported.Kind == 2 {
+					config.MemoryMinimumPages = imported.Memory.Min
+				}
+			}
 			for _, function := range compiled.Functions {
 				native, err := CompileFunction(runtime.GOARCH, function, DefaultLimits())
 				if err != nil {
 					t.Fatal(name, err)
 				}
-				fast, err := CompileUnmeteredFunction(runtime.GOARCH, function, DefaultLimits())
+				fast, err := CompileFunctionWithConfig(runtime.GOARCH, function, DefaultLimits(), config)
 				if err != nil {
 					t.Fatal(name, err)
 				}

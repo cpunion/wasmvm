@@ -100,7 +100,7 @@ void wasmvm_deallocate(void *p) { free(p); }
 void wasmvm_cancel(struct wasmvm_record *ctx) { __atomic_store_n(&ctx->control, 1, __ATOMIC_RELEASE); }
 
 uint32_t wasmvm_enter(const void *entry, struct wasmvm_record *ctx) {
-    if (ctx->version != 1 || ctx->used > ctx->capacity || ctx->depth > ctx->max_depth) return 0;
+    if (ctx->version != 2 || ctx->used > ctx->capacity || ctx->depth > ctx->max_depth) return 0;
     if (__atomic_load_n(&ctx->control, __ATOMIC_ACQUIRE)) return 6; /* Poll */
     fenv_t saved;
     if (fegetenv(&saved) != 0) return 0;
@@ -123,7 +123,8 @@ uint64_t wasmvm_layout(uint32_t field) {
         offsetof(struct wasmvm_record, root_map), offsetof(struct wasmvm_record, fuel),
         offsetof(struct wasmvm_record, budget), offsetof(struct wasmvm_record, result_lo),
         offsetof(struct wasmvm_record, result_hi), offsetof(struct wasmvm_record, payload),
-        offsetof(struct wasmvm_record, control)
+        offsetof(struct wasmvm_record, control),
+        offsetof(struct wasmvm_record, memory_base), offsetof(struct wasmvm_record, memory_size)
     };
     return field < sizeof(offsets)/sizeof(offsets[0]) ? offsets[field] : UINT64_MAX;
 }

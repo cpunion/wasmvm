@@ -119,6 +119,7 @@ type Context struct {
 	mu             sync.Mutex
 	record         *record
 	arena          unsafe.Pointer
+	memory         *Memory
 	size           uint64
 	active, closed bool
 }
@@ -238,6 +239,15 @@ func (c *Context) Enter(l *Lease, entry uint32) (Exit, error) {
 		c.mu.Unlock()
 		return 0, err
 	}
+	if c.memory != nil {
+		base, size, err := c.memory.begin()
+		if err != nil {
+			code.end()
+			c.mu.Unlock()
+			return 0, err
+		}
+		c.record.MemoryBase, c.record.MemorySize = base, size
+	}
 	c.active = true
 	r := c.record
 	c.mu.Unlock()
@@ -245,6 +255,9 @@ func (c *Context) Enter(l *Lease, entry uint32) (Exit, error) {
 	runtime.KeepAlive(c)
 	runtime.KeepAlive(l)
 	code.end()
+	if c.memory != nil {
+		c.memory.end()
+	}
 	c.mu.Lock()
 	c.active = false
 	c.release()
@@ -268,6 +281,10 @@ func (c *Context) Close() {
 
 func (c *Context) release() {
 	if c.closed && !c.active && c.record != nil {
+		if c.memory != nil {
+			c.memory.drop()
+			c.memory = nil
+		}
 		deallocate(c.arena)
 		deallocate(unsafe.Pointer(c.record))
 		c.arena, c.record = nil, nil

@@ -7,7 +7,7 @@ import "github.com/cpunion/wasmvm/internal/compiler/slots"
 // dependency chain. This keeps every slot observable at later exits without a
 // second multiply. Independent entries use the original instruction lowering.
 func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
-	if !e.unmetered || e.a.arch != "arm64" || pc+1 >= len(e.f.Code) {
+	if !e.unmetered || e.a.arch != "arm64" || pc+1 >= e.codeLimit() {
 		return 0, false
 	}
 	end, addend, constant, ok := e.multiplyAddTail(pc)
@@ -25,7 +25,7 @@ func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
 	}
 	result := add.Dst
 	originalEnd := end
-	if end+1 < len(e.f.Code) && (end+1)/256 == pc/256 {
+	if end+1 < e.codeLimit() && (end+1)/256 == pc/256 {
 		next := e.f.Code[end+1]
 		local := slots.Slot(e.f.Sources[next.Source].Wasm.A)
 		if reg, ok := e.registers[local]; ok && (next.Op == 0x21 || next.Op == 0x22) && next.A == add.Dst {
@@ -71,11 +71,10 @@ func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
 // reader, poll, trap or helper exit. Entry at another PC makes no assumption
 // about its value. The 256-instruction poll interval bounds this scan.
 func (e *functionEmitter) overwrittenBeforeExit(pc int, slot slots.Slot) bool {
-	for ; pc < len(e.f.Code) && pc%256 != 0; pc++ {
+	for ; pc < e.codeLimit() && pc%256 != 0; pc++ {
 		in := e.f.Code[pc]
 		op := in.Op
-		if !(op == 1 || op >= 0x1a && op <= 0x1c || op >= 0x20 && op <= 0x22 || op >= 0x41 && op <= 0x44 || isInteger(op)) ||
-			op >= 0x6d && op <= 0x70 || op >= 0x7f && op <= 0x82 {
+		if !plainOpcode(op) || scalarCanTrap(op) || op >= 0x28 && op <= 0x3e && !e.provenPCs[pc] {
 			return false
 		}
 		local := slots.Slot(e.f.Sources[in.Source].Wasm.A)
@@ -92,7 +91,7 @@ func (e *functionEmitter) overwrittenBeforeExit(pc int, slot slots.Slot) bool {
 // Recognize the complete pattern without emitting code. Copy forwarding uses
 // the same selection so a shorter group cannot hide a multiply-add candidate.
 func (e *functionEmitter) multiplyAddTail(pc int) (int, slots.Slot, bool, bool) {
-	if pc+1 >= len(e.f.Code) {
+	if pc+1 >= e.codeLimit() {
 		return 0, slots.NoSlot, false, false
 	}
 	mul := e.f.Code[pc]
@@ -107,7 +106,7 @@ func (e *functionEmitter) multiplyAddTail(pc int) (int, slots.Slot, bool, bool) 
 		}
 		end++
 	}
-	if end >= len(e.f.Code) || pc/256 != end/256 {
+	if end >= e.codeLimit() || pc/256 != end/256 {
 		return 0, slots.NoSlot, false, false
 	}
 	add := e.f.Code[end]

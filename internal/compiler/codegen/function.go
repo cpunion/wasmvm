@@ -26,6 +26,9 @@ type CompiledFunction struct {
 	ReferenceSlots             []uint32
 	Helpers, Calls, EdgeCopies uint32
 	FusedIntegers              uint32
+	UsesMemory                 bool
+	BoundsElided               uint32
+	MemoryGrows                uint32
 	ForwardedScalars           uint32
 }
 
@@ -39,7 +42,7 @@ type CompiledFunction struct {
 // Move publishes a large edge-copy plan in Payload[0] and its destination PC
 // in Continuation; the driver copies it in bounded, cancelable chunks.
 func CompileFunction(arch string, f *slots.Function, limits Limits) (*CompiledFunction, error) {
-	return compileFunction(arch, f, limits, false)
+	return compileFunction(arch, f, limits, Config{})
 }
 
 // CompileUnmeteredFunction emits bounded interrupt polls without periodic host
@@ -48,10 +51,25 @@ func CompileFunction(arch string, f *slots.Function, limits Limits) (*CompiledFu
 // unused. All scalar slots are canonical on exit; vectors retain all 128 bits.
 // This is an internal compiler tier, not a complete public native backend.
 func CompileUnmeteredFunction(arch string, f *slots.Function, limits Limits) (*CompiledFunction, error) {
-	return compileFunction(arch, f, limits, true)
+	return compileFunction(arch, f, limits, Config{Unmetered: true})
 }
 
-func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bool) (out *CompiledFunction, err error) {
+// Config records validated module assumptions. Entry checks the minimum memory
+// length before any optimized access; every resume repeats this binding check.
+type Config struct {
+	Unmetered          bool
+	MemoryMinimumPages uint32
+}
+
+func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
+	return compileFunction(arch, f, limits, config)
+}
+
+func compileFunction(arch string, f *slots.Function, limits Limits, config Config) (out *CompiledFunction, err error) {
+	unmetered := config.Unmetered
+	if config.MemoryMinimumPages > 65536 {
+		return nil, wasm.ErrInvalid
+	}
 	defer func() {
 		if p := recover(); p != nil {
 			if e, ok := p.(*wasm.Error); ok {
@@ -81,26 +99,37 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 		return nil, err
 	}
 	a := assembler{arch: arch, labels: map[int]int{}, bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true}
-	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered}
+	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered, memoryMinimum: uint64(config.MemoryMinimumPages) * 65536}
 	pcs := make([]int, len(f.Code))
 	for i := range pcs {
 		pcs[i] = a.label()
 	}
+	for _, in := range f.Code {
+		if in.Op >= 0x28 && in.Op <= 0x40 {
+			e.usesMemory = true
+			break
+		}
+	}
 	e.header(uint64(len(f.Slots))*16, len(pcs))
+	if e.usesMemory {
+		e.prepareMemory()
+	}
 	if unmetered {
 		e.prepareRegisters()
+		e.prepareConstants()
 		e.contextLoad(0, nativeabi.PayloadOffset+24)
 		e.test(true)
 		e.branch(e.bad, "ne")
 		e.contextLoad(0, nativeabi.ContinuationOffset)
 	}
 	a.dispatch(pcs)
-	out = &CompiledFunction{Function: f, Offsets: make([]uint32, len(pcs))}
+	out = &CompiledFunction{Function: f, Offsets: make([]uint32, len(pcs)), UsesMemory: e.usesMemory}
 	for i, t := range f.Slots {
 		if t.IsReference() {
 			out.ReferenceSlots = append(out.ReferenceSlots, uint32(i))
 		}
 	}
+	regions := e.memoryRegions()
 	var independentEntries []int
 	combinedThrough := -1
 	for pc, in := range f.Code {
@@ -126,6 +155,14 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 			}
 		} else {
 			e.boundary(uint32(pc), src, in.Op == 0x10 || in.Op == 0x11 || isControl)
+		}
+		if region, ok := regions[pc]; ok {
+			e.emitMemoryRegion(pc, region, out)
+			for entry := pc + 1; entry <= region.end; entry++ {
+				independentEntries = append(independentEntries, entry)
+			}
+			combinedThrough = region.end
+			continue
 		}
 		if end, ok := e.combineScalarCopies(pc); ok {
 			out.ForwardedScalars++
@@ -180,30 +217,12 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 					e.edge(in.Extra+uint32(i), pcs, -1)
 				}
 			}
-		case op == 1 || op == 0x1a:
-		case op == 0x20:
-			e.move(in.Dst, slots.Slot(src.Wasm.A))
-		case op == 0x21 || op == 0x22:
-			e.move(slots.Slot(src.Wasm.A), in.A)
-			if in.Dst != slots.NoSlot {
-				e.move(in.Dst, in.A)
-			}
-		case op == 0x1b || op == 0x1c:
-			other, done := a.label(), a.label()
-			e.branchZero(in.C, other)
-			e.move(in.Dst, in.A)
-			a.branch(done, false, 0)
-			a.mark(other)
-			e.move(in.Dst, in.B)
-			a.mark(done)
-		case op >= 0x41 && op <= 0x44 || op == 0xd0 || op == 0xfd000c:
-			e.literal(in)
-		case isInteger(op) || op == 0xd1:
-			e.integer(in)
-		case isFloat(op):
-			e.floating(in)
-		case isConversion(op):
-			e.conversion(in)
+		case plainOpcode(op):
+			e.plain(in, false)
+		case op == 0x40:
+			out.MemoryGrows++
+			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
+			e.leave(nativeabi.GrowMemory, uint64(pc), uint64(pc+1))
 		case op == 0x10 || op == 0x11:
 			out.Calls++
 			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
@@ -219,22 +238,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 	// A validated function never falls through its final terminator.
 	for _, pc := range independentEntries {
 		a.mark(pcs[pc])
-		in := f.Code[pc]
-		switch {
-		case in.Op >= 0x41 && in.Op <= 0x44:
-			e.literal(in)
-		case in.Op == 0x20:
-			e.move(in.Dst, slots.Slot(f.Sources[in.Source].Wasm.A))
-		case in.Op == 0x21 || in.Op == 0x22:
-			e.move(slots.Slot(f.Sources[in.Source].Wasm.A), in.A)
-			e.move(in.Dst, in.A)
-		case isFloat(in.Op):
-			e.floating(in)
-		case isConversion(in.Op):
-			e.conversion(in)
-		default:
-			e.integer(in)
-		}
+		e.plain(f.Code[pc], false)
 
 		a.branch(pcs[pc+1], false, 0)
 	}
@@ -251,6 +255,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 	e.trapCode(wasm.TrapIntegerOverflow)
 	a.mark(e.exit)
 	out.EdgeCopies = e.edgeCopies
+	out.BoundsElided = e.boundsElided
 	body, err := a.finish()
 	if err != nil {
 		return nil, err

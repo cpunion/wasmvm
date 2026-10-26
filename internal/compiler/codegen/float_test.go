@@ -226,7 +226,7 @@ func TestFloatRegisterPressureAndHelperResume(t *testing.T) {
 			appendOp(op, slots.Slot(i), slots.Slot(i), slots.Slot(i%2))
 		}
 		if phase == 0 {
-			appendOp(0x3f, 24, slots.NoSlot, slots.NoSlot)
+			appendOp(0x23, 24, slots.NoSlot, slots.NoSlot)
 		}
 	}
 	appendOp(slots.ControlBase+uint32(ir.Return), slots.NoSlot, slots.NoSlot, slots.NoSlot)

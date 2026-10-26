@@ -1,8 +1,10 @@
 # Native integer architecture gate
 
 This probe runs the existing `integer-mix.wasm` directly through the project
-compiler and C entry adapter. It is not the public VM API: native memory,
-guest-call dispatch and runtime helpers remain incomplete. No unsupported
+compiler and C entry adapter. It is not the public VM API: memory integration,
+guest-call dispatch and runtime helpers remain incomplete. Scalar numeric and
+private-memory development scopes are recorded in [float-plan.md](float-plan.md)
+and [memory-plan.md](memory-plan.md). No unsupported
 operation silently falls back. The one kernel measures the scalar register and
 interrupt-polling changes; it cannot accept the complete native backend.
 

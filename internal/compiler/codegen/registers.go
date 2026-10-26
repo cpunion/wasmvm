@@ -1,6 +1,7 @@
 package codegen
 
 import (
+	"math/bits"
 	"sort"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -44,6 +45,9 @@ func (e *functionEmitter) prepareRegisters() {
 		return order[i] < order[j]
 	})
 	available := []byte{3, 12, 13, 14, 15, 9, 10, 11} // rbx, r12-r15, r9-r11
+	if e.usesMemory {
+		available = available[:6]
+	}
 	if e.a.arch == "arm64" {
 		available = []byte{19, 20, 21, 22, 23, 24, 25, 26, 27, 28}
 	}
@@ -246,10 +250,52 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, value uint64) bool {
 	d, dok := e.registers[dst]
 	l, lok := e.registers[left]
-	if !dok || !lok || !(op >= 0x74 && op <= 0x78 || op >= 0x86 && op <= 0x8a) {
+	if !dok || !lok {
 		return false
 	}
 	wide := integerWide(op)
+	if !wide {
+		value = uint64(uint32(value))
+	}
+	if op == 0x6c || op == 0x7e {
+		if value != 0 && value&(value-1) == 0 {
+			shift := uint32(0x74)
+			if wide {
+				shift = 0x86
+			}
+			return e.registerImmediate(shift, dst, left, uint64(bits.TrailingZeros64(value)))
+		}
+	}
+	if e.a.arch == "arm64" {
+		ins, ok := uint32(0), false
+		switch op {
+		case 0x6a, 0x7c, 0x6b, 0x7d:
+			if value < 4096 {
+				ins, ok = 0x11000000|uint32(value)<<10, true
+				if op == 0x6b || op == 0x7d {
+					ins |= 1 << 30
+				}
+			}
+		case 0x71, 0x83:
+			if value != 0 && value != ^uint64(0) && value&(value+1) == 0 {
+				ins, ok = 0x53000000|uint32(bits.Len64(value)-1)<<10, true
+				if wide {
+					ins |= 1 << 22
+				}
+			}
+		case 0x6c, 0x7e:
+			if value > 2 && (value-1)&(value-2) == 0 {
+				ins, ok = 0x0b000000|uint32(l)<<16|uint32(bits.TrailingZeros64(value-1))<<10, true
+			}
+		}
+		if ok {
+			e.a.arm(wide, ins|uint32(l)<<5|uint32(d))
+			return true
+		}
+	}
+	if !(op >= 0x74 && op <= 0x78 || op >= 0x86 && op <= 0x8a) {
+		return false
+	}
 	first, width := uint32(0x74), uint32(32)
 	if wide {
 		first, width = 0x86, 64

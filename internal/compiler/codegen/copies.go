@@ -11,7 +11,7 @@ func (e *functionEmitter) combineScalarCopies(start int) (int, bool) {
 	}
 	aliases := map[slots.Slot]slots.Slot{}
 	pc := start
-	for ; pc < len(e.f.Code) && pc-start <= 8 && pc/256 == start/256; pc++ {
+	for ; pc < e.codeLimit() && pc-start <= 8 && pc/256 == start/256; pc++ {
 		in := e.f.Code[pc]
 		if in.Op == 0x20 {
 			local := slots.Slot(e.f.Sources[in.Source].Wasm.A)
@@ -32,7 +32,7 @@ func (e *functionEmitter) combineScalarCopies(start int) (int, bool) {
 			break
 		}
 	}
-	if pc >= len(e.f.Code) || pc-start > 8 || pc/256 != start/256 {
+	if pc >= e.codeLimit() || pc-start > 8 || pc/256 != start/256 {
 		return 0, false
 	}
 	if e.a.arch == "arm64" {
@@ -51,35 +51,60 @@ func (e *functionEmitter) combineScalarCopies(start int) (int, bool) {
 		return 0, false
 	}
 	end := pc
-	if pc+1 < len(e.f.Code) && (pc+1)/256 == start/256 {
+	if pc+1 < e.codeLimit() && (pc+1)/256 == start/256 {
 		next := e.f.Code[pc+1]
 		if (next.Op == 0x21 || next.Op == 0x22) && next.A == original.Dst {
 			candidate := in
 			candidate.Dst = slots.Slot(e.f.Sources[next.Source].Wasm.A)
-			if e.canRegisterScalar(candidate) {
+			if e.canRegisterScalar(candidate, pc) {
 				in, end = candidate, pc+1
 			}
 		}
 	}
-	if !e.canRegisterScalar(in) {
+	if !e.canRegisterScalar(in, pc) {
 		return 0, false
 	}
-	for _, copy := range e.f.Code[start:pc] {
+	previous := e.f.Code[pc-1]
+	deferConstant := (previous.Op == 0x41 || previous.Op == 0x42) && previous.Dst == in.B && in.A != previous.Dst
+	for offset, copy := range e.f.Code[start:pc] {
+		if deferConstant && start+offset == pc-1 {
+			continue
+		}
 		if copy.Op == 0x20 {
+			if !scalarCanTrap(in.Op) && copy.Dst != in.A && copy.Dst != in.B && copy.Dst != in.C &&
+				(copy.Dst == in.Dst || e.overwrittenBeforeExit(end+1, copy.Dst)) {
+				continue
+			}
 			e.move(copy.Dst, slots.Slot(e.f.Sources[copy.Source].Wasm.A))
 		} else {
 			e.literal(copy)
 		}
 	}
-	e.registerScalar(in)
+	if deferConstant && e.registerImmediate(in.Op, in.Dst, in.A, e.f.Sources[previous.Source].Wasm.Bits) {
+		if previous.Dst != in.Dst && previous.Dst != original.Dst && !e.overwrittenBeforeExit(end+1, previous.Dst) {
+			e.literal(previous)
+		}
+	} else {
+		if deferConstant {
+			e.literal(previous)
+		}
+		e.registerScalar(in)
+	}
 	if end != pc {
-		e.move(original.Dst, in.Dst)
-		e.move(e.f.Code[end].Dst, in.Dst)
+		if !e.overwrittenBeforeExit(end+1, original.Dst) {
+			e.move(original.Dst, in.Dst)
+		}
+		if !e.overwrittenBeforeExit(end+1, e.f.Code[end].Dst) {
+			e.move(e.f.Code[end].Dst, in.Dst)
+		}
 	}
 	return end, true
 }
 
-func (e *functionEmitter) canRegisterScalar(in slots.Instruction) bool {
+func (e *functionEmitter) canRegisterScalar(in slots.Instruction, pc int) bool {
+	if in.Op >= 0x28 && in.Op <= 0x3e {
+		return e.provenPCs[pc]
+	}
 	if isInteger(in.Op) {
 		return e.canRegisterInteger(in.Op, in.Dst, in.A, in.B)
 	}
@@ -90,7 +115,9 @@ func (e *functionEmitter) canRegisterScalar(in slots.Instruction) bool {
 }
 
 func (e *functionEmitter) registerScalar(in slots.Instruction) {
-	if isInteger(in.Op) {
+	if in.Op >= 0x28 && in.Op <= 0x3e {
+		e.memoryInstruction(in, true)
+	} else if isInteger(in.Op) {
 		e.registerInteger(in.Op, in.Dst, in.A, in.B)
 	} else if isFloat(in.Op) {
 		e.floating(in)
@@ -102,7 +129,7 @@ func (e *functionEmitter) registerScalar(in slots.Instruction) {
 // Redirect a result into its following local destination, retaining its temporary
 // with an off-chain copy. The original local instruction keeps a cold entry.
 func (e *functionEmitter) forwardScalarResult(pc int) bool {
-	if !e.unmetered || pc+1 >= len(e.f.Code) || (pc+1)%256 == 0 {
+	if !e.unmetered || pc+1 >= e.codeLimit() || (pc+1)%256 == 0 {
 		return false
 	}
 	in, next := e.f.Code[pc], e.f.Code[pc+1]
@@ -115,11 +142,21 @@ func (e *functionEmitter) forwardScalarResult(pc int) bool {
 	}
 	forwarded := in
 	forwarded.Dst = dst
-	if !e.canRegisterScalar(forwarded) {
+	if !e.canRegisterScalar(forwarded, pc) {
 		return false
 	}
 	e.registerScalar(forwarded)
-	e.move(in.Dst, dst)
-	e.move(next.Dst, dst)
+	if !e.overwrittenBeforeExit(pc+2, in.Dst) {
+		e.move(in.Dst, dst)
+	}
+	if !e.overwrittenBeforeExit(pc+2, next.Dst) {
+		e.move(next.Dst, dst)
+	}
 	return true
+}
+
+// These operations can exit before producing their result. Copies needed by
+// a trap frame must remain materialized ahead of them.
+func scalarCanTrap(op uint32) bool {
+	return op >= 0x6d && op <= 0x70 || op >= 0x7f && op <= 0x82 || op >= 0xa8 && op <= 0xab || op >= 0xae && op <= 0xb1
 }
