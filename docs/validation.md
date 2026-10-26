@@ -227,3 +227,26 @@ Wasm results. CI requires both packages at 90% coverage and adds lowering fuzz
 checks. Final-head cross-platform CI is still required before merge. M1 remains
 open for slot lowering, complete execution, lifecycle, public API/CLI and
 own-engine performance measurements.
+
+
+## M1 typed slots and branch transfers
+
+`internal/compiler/slots` lowers all 6,236 functions in the 1,716 statically
+valid Core 2.0 corpus modules. A symbolic checker reads every allocated operand
+and simulates every selected edge's sequential moves against simultaneous SSA
+assignment. This includes local reuse, calls/results, references, vector values,
+branches, loops and return tuples without substituting a reference engine.
+
+The corpus's 28,202 SSA values use 18,454 temporary slots, including edge scratch
+and excluding declared locals. This is a storage-layout observation, not a
+runtime speed or memory-usage benchmark. Ten thousand deterministic randomized
+parallel-copy graphs cover overlap, fan-out, identity moves and cycles. Explicit
+typed cyclic-loop tests verify vector/reference scratch and scratch reuse.
+
+Local Go/LLGo, Go race/vet and the per-package coverage gate pass. The slot
+package has 99.4% statement coverage; its defensive unexpected-panic rethrow is
+not deliberately exercised. A 15-second Go fuzz campaign with two workers
+completed 730,957 inputs without failure. CI requires this package's 90% floor
+and adds slot-lowering fuzzing. Final-head cross-platform CI is required before
+merge. Guest execution assertions, runtime lifecycle, public API/CLI and
+own-engine measurements remain open, so M1 is not complete.
