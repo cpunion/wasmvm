@@ -2,6 +2,13 @@
 
 Measurement date: **2026-10-26**, on a local Apple M4 Max (arm64), 16 logical CPUs, 128 GiB RAM, macOS 27.0.1. The official wazero CLI was built with Go 1.27.3. This is a local engineering baseline, not a general ranking of WebAssembly engines.
 
+**The tables below are historical CLI totals, not pure execution efficiency.**
+The current PR benchmark also records [direct embedding phases and warmed
+execution](../../benchmarks/embedded/README.md). It separately times process
+readiness, loading, engine setup, preparation, instantiation, lookup, first/warm
+calls, and cleanup. Use those API-call measurements for execution comparisons;
+do not subtract a startup-control median from these CLI totals.
+
 ## Result and environment qualification
 
 The sustained workloads show a substantial interpreter/native-code gap in this test. Wazero's native compiler is materially faster than its own interpreter on both sustained cases. WasmEdge's interpreter has lower sustained-case medians than wazero's interpreter even though its startup and small-case costs are higher. Workload size therefore changes the interpretation of the small-case results.

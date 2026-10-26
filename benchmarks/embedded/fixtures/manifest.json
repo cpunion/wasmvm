@@ -1,0 +1,275 @@
+{
+  "schemaVersion": 1,
+  "origin": "authored in wasmvm; no third-party benchmark code",
+  "producer": "wasm-tools 1.258.0",
+  "generationCommand": "python3 benchmarks/embedded/generate.py",
+  "profile": "Core MVP; no imports, WASI, start function, or data segments; only run is exported",
+  "api": {
+    "export": "run",
+    "parameters": [
+      "i32",
+      "i32"
+    ],
+    "result": "i32",
+    "seed": "unsigned 32-bit bit pattern",
+    "iterationsMin": 1,
+    "iterationsMax": 2147483647,
+    "controlIterations": 1,
+    "checksum": "compare the result as an unsigned 32-bit bit pattern"
+  },
+  "measurement": {
+    "iteration": "one source workload loop iteration, not one Wasm or native instruction",
+    "control": "one host invocation, without a guest loop; do not divide by a fictitious loop count",
+    "memory": "reset cost is included in every timed call and amortized over its workload iteration count",
+    "hostBoundary": "timed calls include the embedding API boundary; the call control is reported separately"
+  },
+  "workloads": [
+    {
+      "id": "call-control",
+      "kind": "call-control",
+      "description": "one exported host call returning its runtime seed; no guest work loop",
+      "seed": 305419896,
+      "iterations": 1,
+      "expectedChecksum": 305419896,
+      "unit": "ns/call",
+      "memoryResetBytes": 0,
+      "memoryResetIncluded": false,
+      "validationCases": [
+        {
+          "seed": 0,
+          "iterations": 1,
+          "expectedChecksum": 0
+        },
+        {
+          "seed": 1,
+          "iterations": 1,
+          "expectedChecksum": 1
+        },
+        {
+          "seed": 4294967295,
+          "iterations": 1,
+          "expectedChecksum": 4294967295
+        },
+        {
+          "seed": 3735928559,
+          "iterations": 1,
+          "expectedChecksum": 3735928559
+        }
+      ],
+      "wat": "fixtures/call-control.wat",
+      "wasm": "fixtures/call-control.wasm",
+      "watSha256": "7b75bbf87f310dceae25cb5f33ea18be996748177cedbf982fd1a0abd1be478d",
+      "wasmSha256": "bcfd11fc8e3f474ca10508f3cb5afa7245ca2e782b2bf07bdd00686b93513ecc"
+    },
+    {
+      "id": "integer-loop",
+      "kind": "integer-mix",
+      "description": "i32 rotate/xor/multiply/add loop with runtime seed and loop count",
+      "seed": 305419896,
+      "iterations": 250000,
+      "expectedChecksum": 956690092,
+      "unit": "ns/iteration",
+      "memoryResetBytes": 0,
+      "memoryResetIncluded": false,
+      "validationCases": [
+        {
+          "seed": 0,
+          "iterations": 1,
+          "expectedChecksum": 1013904223
+        },
+        {
+          "seed": 1,
+          "iterations": 2,
+          "expectedChecksum": 2005752442
+        },
+        {
+          "seed": 4294967295,
+          "iterations": 17,
+          "expectedChecksum": 3924692978
+        },
+        {
+          "seed": 3735928559,
+          "iterations": 257,
+          "expectedChecksum": 616439776
+        },
+        {
+          "seed": 7,
+          "iterations": 8193,
+          "expectedChecksum": 1282449549
+        }
+      ],
+      "wat": "fixtures/integer-mix.wat",
+      "wasm": "fixtures/integer-mix.wasm",
+      "watSha256": "3324575d764910c74c5238ab8cd4d77da00ee0f8e0041b01135238ab4e062105",
+      "wasmSha256": "93cb3203e87414ce6278795d10232f3fa4c1bab6265636de6d0b7f94b8f02d61"
+    },
+    {
+      "id": "integer-sustained",
+      "kind": "integer-mix",
+      "description": "i32 rotate/xor/multiply/add loop with runtime seed and loop count",
+      "seed": 305419896,
+      "iterations": 5000000,
+      "expectedChecksum": 3219525462,
+      "unit": "ns/iteration",
+      "memoryResetBytes": 0,
+      "memoryResetIncluded": false,
+      "validationCases": [
+        {
+          "seed": 0,
+          "iterations": 1,
+          "expectedChecksum": 1013904223
+        },
+        {
+          "seed": 1,
+          "iterations": 2,
+          "expectedChecksum": 2005752442
+        },
+        {
+          "seed": 4294967295,
+          "iterations": 17,
+          "expectedChecksum": 3924692978
+        },
+        {
+          "seed": 3735928559,
+          "iterations": 257,
+          "expectedChecksum": 616439776
+        },
+        {
+          "seed": 7,
+          "iterations": 8193,
+          "expectedChecksum": 1282449549
+        }
+      ],
+      "wat": "fixtures/integer-mix.wat",
+      "wasm": "fixtures/integer-mix.wasm",
+      "watSha256": "3324575d764910c74c5238ab8cd4d77da00ee0f8e0041b01135238ab4e062105",
+      "wasmSha256": "93cb3203e87414ce6278795d10232f3fa4c1bab6265636de6d0b7f94b8f02d61"
+    },
+    {
+      "id": "function-calls",
+      "kind": "function-calls",
+      "description": "one direct helper call in the source per iteration; native backends may inline",
+      "seed": 305419896,
+      "iterations": 150000,
+      "expectedChecksum": 3359141074,
+      "unit": "ns/iteration",
+      "memoryResetBytes": 0,
+      "memoryResetIncluded": false,
+      "validationCases": [
+        {
+          "seed": 0,
+          "iterations": 1,
+          "expectedChecksum": 2654435769
+        },
+        {
+          "seed": 1,
+          "iterations": 2,
+          "expectedChecksum": 2240537846
+        },
+        {
+          "seed": 4294967295,
+          "iterations": 17,
+          "expectedChecksum": 3830441106
+        },
+        {
+          "seed": 3735928559,
+          "iterations": 257,
+          "expectedChecksum": 1078048333
+        },
+        {
+          "seed": 7,
+          "iterations": 8193,
+          "expectedChecksum": 1199158145
+        }
+      ],
+      "wat": "fixtures/function-calls.wat",
+      "wasm": "fixtures/function-calls.wasm",
+      "watSha256": "8384ed1f72e6da118c698da2701facf1736c6297620187dffd33763698a96e1e",
+      "wasmSha256": "1deda80373e07e6efb3bf0d00aeb60a246e713f160af17adfde17bfb75dd26f7"
+    },
+    {
+      "id": "memory-load-store",
+      "kind": "memory-load-store",
+      "description": "strided read/modify/write over 32 KiB; 8192 reset stores per invocation are included",
+      "seed": 305419896,
+      "iterations": 150000,
+      "expectedChecksum": 936884064,
+      "unit": "ns/iteration",
+      "memoryResetBytes": 32768,
+      "memoryResetIncluded": true,
+      "validationCases": [
+        {
+          "seed": 0,
+          "iterations": 1,
+          "expectedChecksum": 2654435769
+        },
+        {
+          "seed": 1,
+          "iterations": 2,
+          "expectedChecksum": 1013904244
+        },
+        {
+          "seed": 4294967295,
+          "iterations": 17,
+          "expectedChecksum": 2175734959
+        },
+        {
+          "seed": 3735928559,
+          "iterations": 257,
+          "expectedChecksum": 1087058199
+        },
+        {
+          "seed": 7,
+          "iterations": 8193,
+          "expectedChecksum": 765846407
+        }
+      ],
+      "wat": "fixtures/memory-load-store.wat",
+      "wasm": "fixtures/memory-load-store.wasm",
+      "watSha256": "a669eecfde7de59389866b79b96da7efaf74b4f41a7dfc99d783de2b0810f211",
+      "wasmSha256": "77f41da23d5786434f038bdbe95293255fa0074493cf778b2ce4b87b9c27cc83"
+    },
+    {
+      "id": "memory-sustained",
+      "kind": "memory-load-store",
+      "description": "strided read/modify/write over 32 KiB; 8192 reset stores per invocation are included",
+      "seed": 305419896,
+      "iterations": 3000000,
+      "expectedChecksum": 143706136,
+      "unit": "ns/iteration",
+      "memoryResetBytes": 32768,
+      "memoryResetIncluded": true,
+      "validationCases": [
+        {
+          "seed": 0,
+          "iterations": 1,
+          "expectedChecksum": 2654435769
+        },
+        {
+          "seed": 1,
+          "iterations": 2,
+          "expectedChecksum": 1013904244
+        },
+        {
+          "seed": 4294967295,
+          "iterations": 17,
+          "expectedChecksum": 2175734959
+        },
+        {
+          "seed": 3735928559,
+          "iterations": 257,
+          "expectedChecksum": 1087058199
+        },
+        {
+          "seed": 7,
+          "iterations": 8193,
+          "expectedChecksum": 765846407
+        }
+      ],
+      "wat": "fixtures/memory-load-store.wat",
+      "wasm": "fixtures/memory-load-store.wasm",
+      "watSha256": "a669eecfde7de59389866b79b96da7efaf74b4f41a7dfc99d783de2b0810f211",
+      "wasmSha256": "77f41da23d5786434f038bdbe95293255fa0074493cf778b2ce4b87b9c27cc83"
+    }
+  ]
+}

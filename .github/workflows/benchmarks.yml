@@ -47,10 +47,19 @@ jobs:
       - name: Check benchmark tooling
         run: python3 -m unittest discover -s head/benchmarks -p 'test_*.py'
 
+      - name: Check the Go embedding measurement tool
+        shell: bash
+        run: |
+          mkdir -p benchmark-results
+          go -C head/benchmarks/embedded/wazero vet ./...
+          go -C head/benchmarks/embedded/wazero test -race -count=1 -timeout=2m -coverprofile="$GITHUB_WORKSPACE/benchmark-results/embedded-coverage.out" ./...
+          go -C head/benchmarks/embedded/wazero tool cover -func="$GITHUB_WORKSPACE/benchmark-results/embedded-coverage.out" | tee benchmark-results/embedded-coverage.txt
+          awk '/^total:/ { found=1; sub(/%$/, "", $3); if ($3+0 < 90) exit 1 } END { if (!found) exit 2 }' benchmark-results/embedded-coverage.txt
+
       - name: Install pinned competitors
         shell: bash
         run: |
-          python3 head/benchmarks/install_tools.py --destination "$RUNNER_TEMP/wasm-runtime-tools" --github-env
+          python3 head/benchmarks/install_tools.py --sdk --destination "$RUNNER_TEMP/wasm-runtime-tools" --github-env
           mkdir -p benchmark-results
           cp "$RUNNER_TEMP/wasm-runtime-tools/installation.json" benchmark-results/tool-installation.json
 
@@ -62,17 +71,38 @@ jobs:
             --head-dir "$GITHUB_WORKSPACE/head" \
             --base-sha "$(git -C base rev-parse HEAD)" \
             --head-sha "$(git -C head rev-parse HEAD)" \
-            --output-dir "$GITHUB_WORKSPACE/benchmark-results"
+            --output-dir "$GITHUB_WORKSPACE/benchmark-results/cli"
+
+      - name: Measure direct API phases and warmed execution
+        shell: bash
+        run: |
+          python3 head/benchmarks/phase_ci.py \
+            --base-dir "$GITHUB_WORKSPACE/base" \
+            --head-dir "$GITHUB_WORKSPACE/head" \
+            --base-sha "$(git -C base rev-parse HEAD)" \
+            --head-sha "$(git -C head rev-parse HEAD)" \
+            --tools-dir "$RUNNER_TEMP/wasm-runtime-tools" \
+            --output-dir "$GITHUB_WORKSPACE/benchmark-results/phases"
 
       - name: Publish job summary
         if: always()
         shell: bash
         run: |
-          if [[ -f benchmark-results/report.md ]]; then
-            cat benchmark-results/report.md >> "$GITHUB_STEP_SUMMARY"
-          else
-            printf 'Benchmark setup or execution failed before a report was produced. See the job logs.\n' >> "$GITHUB_STEP_SUMMARY"
-          fi
+          mkdir -p benchmark-results
+          {
+            if [[ -f benchmark-results/phases/report.md ]]; then
+              cat benchmark-results/phases/report.md
+            else
+              printf 'Phase measurements are unavailable because setup or execution failed. See the job logs.\n'
+            fi
+            printf '\n---\n\n'
+            if [[ -f benchmark-results/cli/report.md ]]; then
+              cat benchmark-results/cli/report.md
+            else
+              printf 'CLI measurements are unavailable. See the job logs.\n'
+            fi
+          } > benchmark-results/report.md
+          cat benchmark-results/report.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Preserve measurements and report
         if: always()
