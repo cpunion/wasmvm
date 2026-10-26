@@ -26,6 +26,7 @@ type CompiledFunction struct {
 	ReferenceSlots             []uint32
 	Helpers, Calls, EdgeCopies uint32
 	FusedIntegers              uint32
+	ForwardedIntegers          uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -126,6 +127,15 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 		} else {
 			e.boundary(uint32(pc), src, in.Op == 0x10 || in.Op == 0x11 || isControl)
 		}
+		if end, ok := e.combineIntegerCopies(pc); ok {
+			out.ForwardedIntegers++
+			for entry := pc + 1; entry <= end; entry++ {
+				independentEntries = append(independentEntries, entry)
+			}
+			combinedThrough = end
+			continue
+		}
+
 		if end, ok := e.combineMultiplyAdd(pc); ok {
 			out.FusedIntegers++
 			for entry := pc + 1; entry <= end; entry++ {
@@ -143,13 +153,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 			case ir.Trap:
 				e.trap(wasm.TrapUnreachable, uint64(src.Wasm.Offset))
 			case ir.Jump:
-				e.edge(in.Extra, pcs)
+				e.edge(in.Extra, pcs, pc+1)
 			case ir.If:
-				other := a.label()
-				e.branchZero(in.A, other)
-				e.edge(in.Extra, pcs)
-				a.mark(other)
-				e.edge(in.Extra+1, pcs)
+				e.conditionalEdges(in, pcs, pc+1)
 			case ir.Table:
 				targets := make([]int, in.Count)
 				for i := range targets {
@@ -165,7 +171,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 				a.dispatch(targets)
 				for i, l := range targets {
 					a.mark(l)
-					e.edge(in.Extra+uint32(i), pcs)
+					e.edge(in.Extra+uint32(i), pcs, -1)
 				}
 			}
 		case op == 1 || op == 0x1a:
@@ -203,11 +209,20 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 	// A validated function never falls through its final terminator.
 	for _, pc := range independentEntries {
 		a.mark(pcs[pc])
-		if in := f.Code[pc]; in.Op == 0x41 || in.Op == 0x42 {
+
+		in := f.Code[pc]
+		switch {
+		case in.Op == 0x41 || in.Op == 0x42:
 			e.literal(in)
-		} else {
+		case in.Op == 0x20:
+			e.move(in.Dst, slots.Slot(f.Sources[in.Source].Wasm.A))
+		case in.Op == 0x21 || in.Op == 0x22:
+			e.move(slots.Slot(f.Sources[in.Source].Wasm.A), in.A)
+			e.move(in.Dst, in.A)
+		default:
 			e.integer(in)
 		}
+
 		a.branch(pcs[pc+1], false, 0)
 	}
 	e.emitPollExits()

@@ -105,28 +105,41 @@ func (e *functionEmitter) spillRegisters() {
 
 // Common integer operations can name the allocated registers directly. The
 // remaining instructions retain the tested constrained-register lowering.
-func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot) bool {
+func (e *functionEmitter) canRegisterInteger(op uint32, dst, left, right slots.Slot) bool {
 	d, dok := e.registers[dst]
 	l, lok := e.registers[left]
 	r, rok := e.registers[right]
 	if !dok || !lok {
 		return false
 	}
-	if op >= 0x45 && op <= 0x5a && (rok || op == 0x45 || op == 0x50) {
+	if op >= 0x45 && op <= 0x5a {
+		return rok || op == 0x45 || op == 0x50
+	}
+	if !rok || op < 0x67 || op > 0x8a {
+		return false
+	}
+	kind := op - 0x67
+	if integerWide(op) {
+		kind = op - 0x79
+	}
+	return (kind >= 3 && kind <= 5 || kind >= 10 && kind <= 17) && (e.a.arch == "arm64" || d != r || d == l)
+}
+
+func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot) bool {
+	if !e.canRegisterInteger(op, dst, left, right) {
+		return false
+	}
+	d, l, r := e.registers[dst], e.registers[left], e.registers[right]
+	if op >= 0x45 && op <= 0x5a {
 		e.registerCompare(d, l, r, op)
 		return true
-	}
-	if !rok {
-		return false
 	}
 	wide := integerWide(op)
 	kind := op - 0x67
 	if wide {
 		kind = op - 0x79
 	}
-	if op < 0x67 || op > 0x8a {
-		return false
-	}
+
 	a := e.a
 	if a.arch == "arm64" {
 		var ins uint32
@@ -266,23 +279,6 @@ func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, val
 	}
 	a.word(word | uint32(l)<<5 | uint32(d))
 	return true
-}
-
-func (e *functionEmitter) testSlot(slot slots.Slot) {
-	if reg, ok := e.registers[slot]; ok {
-		if e.a.arch == "arm64" {
-			e.a.word(0x7100001f | uint32(reg)<<5)
-		} else {
-			rex := byte(0x40) | (reg>>3)<<2 | reg>>3
-			if rex != 0x40 {
-				e.a.bytes(rex)
-			}
-			e.a.bytes(0x85, 0xc0|(reg&7)<<3|reg&7)
-		}
-		return
-	}
-	e.slotLoad(slot, 0, false, false)
-	e.test(false)
 }
 
 func (e *functionEmitter) registerCompare(dst, left, right byte, op uint32) {

@@ -96,3 +96,18 @@ with longer calls. The next code change branches directly on allocated i32
 condition registers, eliminating scratch copies and, on arm64, the separate
 zero comparison. Cancellation, long-range branches and low-32-bit semantics
 remain intact. The measurement protocol is unchanged.
+
+At `381a7ee`, all four semantic jobs passed and Linux resolved parity against
+all three references (Go/LLGo 1.638/1.636 ns/iteration). The capacity-canceled
+macOS job was rerun once; completed measurements remained blocked: Go/LLGo
+2.195/2.169 versus Wasmtime/Wasmer 1.986/2.005, with unresolved A/A calibration.
+The failed result is retained in run 40363412198.
+
+The next implementation removes redundant control-flow jumps, relaxes near
+arm64 cold branches without moving continuation offsets, and forwards local
+copies and integer multiply-add results out of dependency chains. Every
+original PC retains independent semantics; every original poll remains. Local
+three-block diagnostics are near 1.54 ns/iteration for both host compilers and
+the references, but these observations do not replace the unchanged final-head
+gate. Tests cover all-slot results at every original continuation, aliasing,
+edge copies, branch-range boundaries, fuel and cancellation on both ISAs.
