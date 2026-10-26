@@ -22,7 +22,7 @@ jobs:
   benchmark:
     name: Base, head, and competitors / linux-amd64
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - name: Check out the exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -93,7 +93,7 @@ jobs:
         env:
           WASMVM_LLGO_REVISION: 8b1389c627c77a02e56af03f08d9cdc19edffe77
         run: |
-          python3 head/benchmarks/phase_ci.py \
+          python3 head/benchmarks/phase_ci.py --timeout 180 \
             --base-dir "$GITHUB_WORKSPACE/base" \
             --head-dir "$GITHUB_WORKSPACE/head" \
             --base-sha "$(git -C base rev-parse HEAD)" \

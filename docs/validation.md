@@ -512,3 +512,16 @@ source archives, bad phase accounting and unavailable-baseline substitution.
 Final actual base/head measurements, cross-platform CI and PR publication are
 still required before this increment and M1 can be accepted. Hosted timings
 are advisory; they cannot pass M2's controlled optimization/native gates.
+
+
+The first complete owned-engine hosted run for `982bc81` passed 270 phase
+processes and 72 production CLI processes on an EPYC 9V45 runner
+([raw artifact](https://github.com/cpunion/wasmvm/actions/runs/40289815252)).
+The subsequent documentation-only head `e30d995` hit the 60-second process
+limit on an EPYC 7763 runner after two completed observations
+([failure artifact](https://github.com/cpunion/wasmvm/actions/runs/40293132561)).
+The workflow now allows 180 seconds per measured process and 90 minutes per
+job. Workload sizes, rounds, warmups, measured calls and checksum checks are
+unchanged. Raw reports record the deadline and the active failed phase case.
+This extends the initial-baseline execution budget; it does not pass an M2
+performance gate or erase the failed run. Final-head checks remain required.

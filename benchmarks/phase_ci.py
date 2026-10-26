@@ -409,6 +409,7 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     report = {"schemaVersion": 1, "status": "running", "baseSha": args.base_sha, "headSha": args.head_sha,
               "processRounds": ROUNDS, "samplesPerProcess": SAMPLES, "warmupsPerProcess": WARMUPS,
+              "processDeadlineSeconds": args.timeout,
               "startedAt": datetime.now(timezone.utc).isoformat(), "observations": [],
               "host": {"platform": platform.platform(), "machine": platform.machine(), "logicalCPUs": os.cpu_count()},
               "seed": 20261026, "metric": "direct embedding API phase nanoseconds"}
@@ -442,10 +443,12 @@ def main():
                         "--backend", runtime["backend"], "--iterations", str(workload["iterations"]),
                         "--seed", str(workload["seed"]), "--expected", str(workload["expectedChecksum"]),
                         "--samples", str(SAMPLES), "--warmups", str(WARMUPS)]
+                    report["activeCase"] = {"runtime": runtime["id"], "workload": workload["id"], "round": number, "command": command}
                     item = {**invoke(command, args.timeout), "runtime": runtime["id"], "workload": workload["id"],
                             "round": number, "wasmSha256": workload["wasmSha256"]}
                     validate_observation(item, runtime, workload)
                     report["observations"].append(item)
+                    del report["activeCase"]
                 print(f"Embedded phase round {number+1}/{ROUNDS} complete", flush=True)
             report["productionCLI"] = {"rounds": own_cli.ROUNDS, "runtimes": own_cli.configurations(report["ownBuilds"]), "observations": []}
             own_cli.run(head, report["ownBuilds"], report["fixtures"], args.timeout, report["seed"], report["productionCLI"])
