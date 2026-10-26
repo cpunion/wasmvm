@@ -28,6 +28,32 @@ type pollExit struct {
 	pc    uint32
 }
 
+func (e *functionEmitter) integer(in slots.Instruction) {
+	op := in.Op
+	if op == 0xd1 {
+		op = 0x50
+	}
+	wide := integerWide(op)
+	if e.registerInteger(op, in.Dst, in.A, in.B) {
+		return
+	}
+	if op >= 0x6d && op <= 0x70 || op >= 0x7f && op <= 0x82 {
+		e.contextConst(nativeabi.SourceOffset, uint64(e.f.Sources[in.Source].Wasm.Offset))
+	}
+	e.slotLoad(in.A, 0, false, wide)
+	e.slotLoad(in.B, 1, false, wide)
+	if e.a.arch == "amd64" {
+		integerAMD64Core(e.a, op, wide, e.zero, e.overflow)
+	} else {
+		integerARM64Core(e.a, op, wide, e.zero, e.overflow)
+	}
+	e.slotStore(in.Dst, 0, false)
+	if !e.unmetered {
+		e.constant(0, 0)
+		e.slotStore(in.Dst, 0, true)
+	}
+}
+
 func (e *functionEmitter) constant(reg byte, v uint64) {
 	a := e.a
 	if a.arch == "amd64" {

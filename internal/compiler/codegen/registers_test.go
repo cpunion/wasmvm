@@ -128,6 +128,49 @@ func TestAllocatedIntegerSemantics(t *testing.T) {
 	}
 }
 
+func TestImmediateShiftsAndIndependentContinuation(t *testing.T) {
+	if !native.Available {
+		return
+	}
+	for _, first := range []uint32{0x74, 0x86} {
+		for op := first; op < first+5; op++ {
+			for _, count := range []uint64{0, 1, 31, 32, 33, 63, 64, 65, ^uint64(0)} {
+				for _, dst := range []slots.Slot{0, 1, 2} {
+					f := &slots.Function{Slots: []wasm.ValueType{wasm.I64, wasm.I64, wasm.I64}, Args: []slots.Slot{dst},
+						Sources: []ir.Source{{Wasm: module.Instr{Op: 0x42, Bits: count}}, {Wasm: module.Instr{Op: op}}},
+						Code: []slots.Instruction{
+							{Op: 0x42, Dst: 1, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
+							{Op: op, Source: 1, Dst: dst, A: 0, B: 1, C: slots.NoSlot},
+							{Op: slots.ControlBase + uint32(ir.Return), Count: 1, Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
+						}}
+					compiled, lease, c := functionContext(t, f, true)
+					for _, input := range []uint64{0, ^uint64(0), 1 << 63, 0x123456789abcdef0} {
+						want, _ := numeric.Eval(op, input, count)
+						got, exit, _ := runFunction(t, compiled, lease, c, []value.Value{{Lo: input}}, 0, false, 64)
+						if exit != native.Return || len(got) != 1 || got[0] != (value.Value{Lo: want}) {
+							t.Fatalf("op=%x count=%d dst=%d input=%x: %v %v want=%x", op, count, dst, input, exit, got, want)
+						}
+						// Enter directly at the shift with a different operand. The
+						// preceding constant did not execute and cannot be assumed.
+						writeSlot(t, c, 16, 0, value.Value{Lo: input})
+						writeSlot(t, c, 16, 1, value.Value{Lo: ^count})
+						if err := c.SetState(native.State{Used: 16, Depth: 1, Continuation: 1}); err != nil {
+							t.Fatal(err)
+						}
+						want, _ = numeric.Eval(op, input, ^count)
+						exit, err := c.Enter(lease, 0)
+						if err != nil || exit != native.Return || readSlot(t, c, 16, dst) != (value.Value{Lo: want}) {
+							t.Fatalf("independent entry op=%x count=%d dst=%d: %v %v", op, count, dst, exit, err)
+						}
+					}
+					c.Close()
+					lease.Close()
+				}
+			}
+		}
+	}
+}
+
 func TestRegisterPressureAndDeterminism(t *testing.T) {
 	// More simultaneously live locals and return values than available registers.
 	var body module.Expr

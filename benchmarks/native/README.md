@@ -58,3 +58,8 @@ iteration for Go/LLGo, against 2.362 wazero, 1.914 Wasmtime and 1.925 Wasmer.
 The competitor gap and inconclusive A/A controls blocked merging. The next
 compiler change moves polling exits out of line and acquires cancellation only
 after a nonzero atomic observation; it does not change the workload or gate.
+
+At `a48564a`, arm64 remained slower than Cranelift (2.093/2.107 ns per
+iteration versus 1.710/1.735), with inconclusive A/A controls. Moving cancellation
+exits alone did not close the gap. Immediate shift/rotate selection is evaluated
+next with the same workload, continuations, cancellation policy and thresholds.

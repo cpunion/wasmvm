@@ -217,6 +217,57 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 	return true
 }
 
+// Immediate shift selection is valid only along a proven constant fallthrough.
+// The original slot PC keeps the generic instruction for independent entry.
+func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, value uint64) bool {
+	d, dok := e.registers[dst]
+	l, lok := e.registers[left]
+	if !dok || !lok || !(op >= 0x74 && op <= 0x78 || op >= 0x86 && op <= 0x8a) {
+		return false
+	}
+	wide := integerWide(op)
+	first, width := uint32(0x74), uint32(32)
+	if wide {
+		first, width = 0x86, 64
+	}
+	kind, count := op-first, uint32(value)&(width-1)
+	a := e.a
+	if a.arch == "amd64" {
+		e.registerMove(d, l, wide)
+		rex := byte(0x40) | d>>3
+		if wide {
+			rex |= 8
+		}
+		if rex != 0x40 {
+			a.bytes(rex)
+		}
+		ext := [...]byte{4, 7, 5, 0, 1}[kind]
+		a.bytes(0xc1, 0xc0|ext<<3|d&7, byte(count))
+		return true
+	}
+	var word uint32
+	if kind >= 3 {
+		if kind == 3 {
+			count = (width - count) & (width - 1)
+		}
+		word = 0x13800000 | uint32(l)<<16 | count<<10 // EXTR/ROR
+	} else {
+		immr, imms := count, width-1
+		word = 0x53000000 // UBFM: LSL/LSR
+		if kind == 0 {
+			immr, imms = (width-count)&(width-1), width-1-count
+		} else if kind == 1 {
+			word = 0x13000000 // SBFM: ASR
+		}
+		word |= immr<<16 | imms<<10
+	}
+	if wide {
+		word |= 1<<31 | 1<<22
+	}
+	a.word(word | uint32(l)<<5 | uint32(d))
+	return true
+}
+
 func (e *functionEmitter) testSlot(slot slots.Slot) {
 	if reg, ok := e.registers[slot]; ok {
 		if e.a.arch == "arm64" {

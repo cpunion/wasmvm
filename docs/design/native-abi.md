@@ -112,7 +112,11 @@ handles. Remaining scalars and all vectors use the frame. Scalar `Hi == 0` is th
 existing `value.Value` contract; vector copies retain all 128 bits. The driver
 must preserve that contract on initial entry, helper results and resumption.
 Common arithmetic names allocated registers directly, while constrained
-instructions use the existing checked lowering. There is no workload-specific
+instructions use the existing checked lowering. A constant immediately followed
+by a shift/rotate selects an immediate encoding on that fallthrough path. The
+original shift PC retains a cold generic entry, so a branch or resumed frame
+never inherits an unproved constant. Poll boundaries are not crossed. Both paths
+share the same integer lowering and register map. There is no workload-specific
 pattern or competitor fallback.
 
 This is an early architecture improvement, not a complete native runtime.

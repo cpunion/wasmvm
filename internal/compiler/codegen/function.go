@@ -100,7 +100,18 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 			out.ReferenceSlots = append(out.ReferenceSlots, uint32(i))
 		}
 	}
+	var immediateEntries []int
 	for pc, in := range f.Code {
+		// Only fallthrough from the preceding constant proves an immediate.
+		// Keep the original PC as a generic cold entry for branches/resumption.
+		if unmetered && pc > 0 && pc%256 != 0 {
+			previous := f.Code[pc-1]
+			if (previous.Op == 0x41 || previous.Op == 0x42) && previous.Dst == in.B && in.B != slots.NoSlot &&
+				e.registerImmediate(in.Op, in.Dst, in.A, f.Sources[previous.Source].Wasm.Bits) {
+				immediateEntries = append(immediateEntries, pc)
+				continue
+			}
+		}
 		a.mark(pcs[pc])
 		src := f.Sources[in.Source]
 		isControl := in.Op >= slots.ControlBase
@@ -187,29 +198,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 				e.slotStore(in.Dst, 0, true)
 			}
 		case isInteger(op) || op == 0xd1:
-			if op == 0xd1 {
-				op = 0x50
-			}
-			wide := integerWide(op)
-			if e.registerInteger(op, in.Dst, in.A, in.B) {
-				break
-			}
-			// Only division/remainder can trap; publish their source before entry.
-			if op >= 0x6d && op <= 0x70 || op >= 0x7f && op <= 0x82 {
-				e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
-			}
-			e.slotLoad(in.A, 0, false, wide)
-			e.slotLoad(in.B, 1, false, wide)
-			if arch == "amd64" {
-				integerAMD64Core(&a, op, wide, e.zero, e.overflow)
-			} else {
-				integerARM64Core(&a, op, wide, e.zero, e.overflow)
-			}
-			e.slotStore(in.Dst, 0, false)
-			if !unmetered {
-				e.constant(0, 0)
-				e.slotStore(in.Dst, 0, true)
-			}
+			e.integer(in)
 		case op == 0x10 || op == 0x11:
 			out.Calls++
 			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
@@ -223,6 +212,11 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 		}
 	}
 	// A validated function never falls through its final terminator.
+	for _, pc := range immediateEntries {
+		a.mark(pcs[pc])
+		e.integer(f.Code[pc])
+		a.branch(pcs[pc+1], false, 0)
+	}
 	e.emitPollExits()
 	a.mark(e.bad)
 	e.rawStatus(nativeabi.BadState)
