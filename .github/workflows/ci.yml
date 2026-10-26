@@ -91,6 +91,19 @@ jobs:
         if: matrix.compiler == 'go'
         run: go test -race -count=1 -timeout=10m ./...
 
+      - name: Build and execute the core CLI
+        shell: bash
+        env:
+          COMPILER: ${{ matrix.compiler }}
+        run: |
+          mkdir -p artifacts/cli
+          if [[ "$COMPILER" == go ]]; then
+            CGO_ENABLED=0 go build -o artifacts/cli/wasmvm ./cmd/wasmvm
+          else
+            llgo build -o artifacts/cli/wasmvm ./cmd/wasmvm
+          fi
+          python3 scripts/cli_smoke.py artifacts/cli/wasmvm
+
       - name: Enforce per-package core coverage
         if: matrix.compiler == 'go'
         shell: bash
@@ -100,6 +113,7 @@ jobs:
           CGO_ENABLED=0 go test -count=1 -timeout=10m -coverprofile=artifacts/core/coverage.out ./internal/... ./pkg/...
           python3 scripts/check_coverage.py artifacts/core/coverage.out --minimum 90 \
             --require github.com/cpunion/wasmvm/internal/binary \
+            --require github.com/cpunion/wasmvm/internal/cli \
             --require github.com/cpunion/wasmvm/internal/core/decode \
             --require github.com/cpunion/wasmvm/internal/core/validate \
             --require github.com/cpunion/wasmvm/internal/compiler/ir \

@@ -112,9 +112,14 @@ func (l *Linker) Define(module, name string, ex Extern) error {
 }
 
 type Instance struct {
-	store    *Store
-	instance *state.Instance
+	store              *Store
+	instance           *state.Instance
+	startFuelRemaining uint64
 }
+
+// StartFuelRemaining is the immutable budget receipt from instantiation's
+// start call. Later calls do not change it; it is meaningful when metered.
+func (in *Instance) StartFuelRemaining() uint64 { return in.startFuelRemaining }
 
 func (l *Linker) Instantiate(ctx context.Context, compiled *CompiledModule, options CallOptions) (*Instance, error) {
 	op, err := l.store.begin(ctx, options)
@@ -162,7 +167,7 @@ func (l *Linker) Instantiate(ctx context.Context, compiled *CompiledModule, opti
 	if err = l.store.state.Publish(in); err != nil {
 		return nil, err
 	}
-	return &Instance{store: l.store, instance: in}, nil
+	return &Instance{store: l.store, instance: in, startFuelRemaining: op.fuel}, nil
 }
 func (in *Instance) Export(name string) (Extern, error) {
 	if in == nil || in.store == nil {

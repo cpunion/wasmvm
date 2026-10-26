@@ -72,44 +72,69 @@ func contextOrBackground(ctx context.Context) context.Context {
 // compiler phases. Concurrent compilations never share mutable compiler state.
 func (e *Engine) Compile(ctx context.Context, input []byte) (*CompiledModule, error) {
 	ctx = contextOrBackground(ctx)
-	check := func() error {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		return e.available()
-	}
-	if err := check(); err != nil {
-		return nil, err
-	}
-	m, err := decode.Decode(input, e.config.Decode)
+	v, err := e.frontend(ctx, input)
 	if err != nil {
-		return nil, err
-	}
-	if err = check(); err != nil {
-		return nil, err
-	}
-	v, err := validate.Check(m, e.config.Validate)
-	if err != nil {
-		return nil, err
-	}
-	if err = check(); err != nil {
 		return nil, err
 	}
 	ir, err := lower.Compile(v, e.config.Lower)
 	if err != nil {
 		return nil, err
 	}
-	if err = check(); err != nil {
+	if err = e.check(ctx); err != nil {
 		return nil, err
 	}
 	code, err := slots.Compile(ir, e.config.Slots)
 	if err != nil {
 		return nil, err
 	}
-	if err = check(); err != nil {
+	if err = e.check(ctx); err != nil {
 		return nil, err
 	}
 	return &CompiledModule{engine: e, code: code}, nil
+}
+
+func (e *Engine) check(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return e.available()
+}
+func (e *Engine) frontend(ctx context.Context, input []byte) (*validate.Module, error) {
+	if err := e.check(ctx); err != nil {
+		return nil, err
+	}
+	m, err := decode.Decode(input, e.config.Decode)
+	if err != nil {
+		return nil, err
+	}
+	if err = e.check(ctx); err != nil {
+		return nil, err
+	}
+	v, err := validate.Check(m, e.config.Validate)
+	if err != nil {
+		return nil, err
+	}
+	if err = e.check(ctx); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+// Validate performs binary decoding and static Core 2.0 validation. It does not
+// lower code, resolve imports, instantiate, or execute a start function.
+func (e *Engine) Validate(ctx context.Context, input []byte) error {
+	_, err := e.frontend(contextOrBackground(ctx), input)
+	return err
+}
+
+// Inspect returns copied metadata after static validation, without lowering or
+// executing any code. Missing host imports do not prevent inspection.
+func (e *Engine) Inspect(ctx context.Context, input []byte) (ModuleInfo, error) {
+	v, err := e.frontend(contextOrBackground(ctx), input)
+	if err != nil {
+		return ModuleInfo{}, err
+	}
+	return describeModule(v.Definition()), nil
 }
 
 type CompiledModule struct {
@@ -134,13 +159,20 @@ func (m *CompiledModule) acquire(e *Engine) (*slots.Module, error) {
 	return m.code, nil
 }
 
+type ExternType struct {
+	Kind     ExternKind
+	Function *FunctionType
+	Table    *TableType
+	Memory   *MemoryType
+	Global   *GlobalType
+}
 type ImportInfo struct {
 	Module, Name string
-	Kind         ExternKind
+	ExternType
 }
 type ExportInfo struct {
 	Name string
-	Kind ExternKind
+	ExternType
 }
 type ModuleInfo struct {
 	Backend, Profile string
@@ -155,13 +187,49 @@ func (m *CompiledModule) Info() (ModuleInfo, error) {
 	if err != nil {
 		return ModuleInfo{}, err
 	}
-	d := code.IR.Validated.Definition()
+	return describeModule(code.IR.Validated.Definition()), nil
+}
+func describeModule(d *module.Module) ModuleInfo {
 	info := ModuleInfo{Backend: "interpreter", Profile: "core2", Functions: uint32(len(d.Functions)), HasStart: d.HasStart}
+	objects := [4][]ExternType{}
+	functionType := func(t module.FuncType) ExternType {
+		return ExternType{Kind: FunctionKind, Function: &FunctionType{Params: append([]wasm.ValueType(nil), t.Params...), Results: append([]wasm.ValueType(nil), t.Results...)}}
+	}
 	for _, im := range d.Imports {
-		info.Imports = append(info.Imports, ImportInfo{im.Module, im.Name, ExternKind(im.Kind)})
+		desc := ExternType{Kind: ExternKind(im.Kind)}
+		switch im.Kind {
+		case 0:
+			desc = functionType(d.Types[im.Type])
+		case 1:
+			t := im.Table
+			desc.Table = &t
+		case 2:
+			m := im.Memory
+			desc.Memory = &m
+		case 3:
+			g := im.Global
+			desc.Global = &g
+		}
+		objects[im.Kind] = append(objects[im.Kind], desc)
+		info.Imports = append(info.Imports, ImportInfo{im.Module, im.Name, desc})
+	}
+	for _, f := range d.Functions {
+		objects[0] = append(objects[0], functionType(d.Types[f.Type]))
+	}
+	for _, t := range d.Tables {
+		t := t
+		objects[1] = append(objects[1], ExternType{Kind: TableKind, Table: &t})
+	}
+	for _, m := range d.Memories {
+		m := m
+		objects[2] = append(objects[2], ExternType{Kind: MemoryKind, Memory: &m})
+	}
+	for _, g := range d.Globals {
+		t := g.Type
+		objects[3] = append(objects[3], ExternType{Kind: GlobalKind, Global: &t})
 	}
 	for _, ex := range d.Exports {
-		info.Exports = append(info.Exports, ExportInfo{ex.Name, ExternKind(ex.Kind)})
+		info.Exports = append(info.Exports, ExportInfo{ex.Name, objects[ex.Kind][ex.Index]})
 	}
-	return info, nil
+	return info
 }

@@ -454,3 +454,28 @@ records. Every executable core package remains above 90%, and CI now requires
 `pkg/vm` explicitly. Final-head remote checks are required before merge.
 M1 still requires the core CLI, own-engine phase benchmarks and final acceptance.
 The public call driver has not passed a controlled throughput/allocation gate.
+
+
+## M1 core CLI and static inspection
+
+The embedding API merged in [PR #16](https://github.com/cpunion/wasmvm/pull/16)
+after all six checks passed for `c40acf552203110f89bddbeec6661675ae6ac266`,
+including both compilers on Linux amd64 and macOS arm64.
+
+`cmd/wasmvm` now implements `validate`, `inspect` and typed core `run` through
+`pkg/vm`. Validation/inspection do not lower, link or execute modules. Copied
+metadata includes function signatures and memory/table/global types. Run has
+explicit backend/profile reporting, checked scalar/vector/null-reference
+arguments, exact result bits, context cancellation and one instruction budget
+covering both start and the selected export. No implicit host/WASI imports are
+installed. See the [CLI guide](cli.md).
+
+Local Go/LLGo suites, the complete binary corpus and Go vet/race checks pass.
+Both actual CLI binaries execute validate/inspect/run against the pinned
+call-control fixture; unsupported native selection fails explicitly. CLI
+coverage is 99.5% and public VM coverage is 96.8%; the uncovered CLI branch is
+the defensive Store-creation error after constructing an unclosed local Engine.
+Every executable core package remains above 90%. CI builds and executes the
+CLI with both compilers on both platforms and adds its coverage requirement.
+Final-head CI is required before merge. Own-engine phase benchmarks and final
+M1 acceptance remain open; command wall time is not an engine throughput result.

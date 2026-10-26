@@ -4,7 +4,7 @@ A WebAssembly virtual machine written in Go, designed to build and run with both
 
 **M1 is in progress.** The [embedding API](docs/embedding.md) now provides Engine/Store/module lifetimes, typed host imports and reference roots. The project-owned Core 2.0 frontend, typed IR, slot interpreter and private runtime state pass all **51,139 binary assertions in 148 pinned scripts** under Go and LLGo on Linux amd64 and macOS arm64. This includes scalar/fixed-SIMD execution, calls, references, tables, memory, linking, initialization and expected traps. The 1,091 malformed-text parser assertions are classified separately.
 
-The Store reclaims unreachable failed instances and releases state after active calls leave on close, preserving imported effects and escaped references. The core CLI, own-engine benchmark integration and final M1 acceptance remain required work. Native compilation and later Wasm/WASI profiles remain planned. Separate evaluation modules keep existing engines as semantic/performance references.
+The Store reclaims unreachable failed instances and releases state after active calls leave on close, preserving imported effects and escaped references. The [core CLI](docs/cli.md) supports validate, inspect and typed run commands. Own-engine benchmark integration and final M1 acceptance remain required work. Native compilation and later Wasm/WASI profiles remain planned. Separate evaluation modules keep existing engines as semantic/performance references.
 
 ## Goals
 
@@ -42,7 +42,7 @@ The owner selected a **project-owned core** after M0. Wazero and other engines r
 | --- | --- | --- |
 | Design baseline | Research, architecture, package contracts and compiler probes | Complete; own-core design now replaces reuse-first direction |
 | M0 | Candidate evaluation and reproducible comparison infrastructure | Complete through PRs #1–#3 |
-| M1 | Complete Core 2.0 interpreter, validation, resource limits, API and core CLI | In progress: complete binary corpus and embedding API implemented; CLI, own-engine measurement and final acceptance remain |
+| M1 | Complete Core 2.0 interpreter, validation, resource limits, API and core CLI | In progress: complete binary corpus and embedding API implemented; own-engine measurement and final acceptance remain |
 | M2 | Fast interpreter and complete Core 2.0 native compiler for amd64/arm64 | Planned; required performance gate |
 | M3 | Full Core 3.0 and separate Core Threads on both backends | Planned |
 | M4 | P1, legacy wasi-threads and pinned Go/LLGo guest integration | Planned |
