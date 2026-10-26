@@ -151,6 +151,36 @@ class InstallerTests(unittest.TestCase):
             self.assertIn("/releases/download/", tool["url"])
             self.assertTrue(tool["licenseUrl"].startswith("https://github.com/"))
 
+    def test_sdk_install_is_opt_in_and_pins_c_api_archive(self):
+        cli = install_tools.load_manifest()
+        sdk = install_tools.load_manifest(True)
+        self.assertFalse(cli["sdkEnabled"])
+        self.assertTrue(sdk["sdkEnabled"])
+        self.assertEqual(len(cli["tools"]), 3)
+        self.assertEqual(len(sdk["tools"]), 4)
+        tools = {tool["id"]: tool for tool in sdk["tools"]}
+        self.assertIn("lib/libwasmer.so", tools["wasmer"]["files"])
+        self.assertEqual(tools["wasmedge"]["includeDirectories"], ["include"])
+        capi = tools["wasmtime-c-api"]
+        self.assertEqual(capi["sha256"], "67683d04b416a8b91f0e607e7b4c22bd32f18f947c10b5372eb8c277ae3b883a")
+        self.assertEqual(capi["version"], "48.0.1")
+        bins, libraries = install_tools.paths_for(sdk["tools"], self.root)
+        self.assertEqual(len(bins), 3)
+        self.assertEqual(len(libraries), 3)
+
+    def test_sdk_prefix_extraction_and_missing_prefix_rejection(self):
+        self.make_archive()
+        self.tool["files"] = ["bin/example"]
+        self.tool["filePrefixes"] = ["lib/"]
+        destination = self.root / "installed"
+        install_tools.extract_verified(self.tool, self.archive, destination)
+        self.assertEqual((destination / "lib/libexample.so").read_bytes(), b"library")
+        self.assertFalse((destination / "unused.a").exists())
+        self.tool["filePrefixes"] = ["missing/"]
+        with self.assertRaisesRegex(ValueError, "missing selected archive directory"):
+            install_tools.extract_verified(self.tool, self.archive, self.root / "failed")
+        self.assertFalse((self.root / "failed").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -54,6 +54,7 @@ def extract_verified(tool, archive, destination):
     if digest != tool["sha256"]:
         raise ValueError(f"SHA256 mismatch for {tool['id']}: {digest}")
     expected = {str(safe_path(name)) for name in tool["files"]}
+    prefixes = [str(safe_path(name)).rstrip("/") + "/" for name in tool.get("filePrefixes", [])]
     if len(expected) != len(tool["files"]):
         raise ValueError("duplicate selected archive paths")
     with tarfile.open(archive) as source:
@@ -73,12 +74,18 @@ def extract_verified(tool, archive, destination):
                     raise ValueError(f"unsafe archive symlink: {name}")
         if not expected.issubset(seen):
             raise ValueError(f"missing selected archive files: {sorted(expected - seen)}")
+        for prefix in prefixes:
+            if not any(name.startswith(prefix) for name in seen):
+                raise ValueError(f"missing selected archive directory: {prefix}")
         # Python's data filter also prevents symlink pivots and special modes.
-        source.extractall(destination, members=[m for m in members if str(PurePosixPath(m.name)) in expected], filter="data")
-    executable = destination / safe_path(tool["executable"])
-    if executable.is_symlink() or not executable.is_file() or not os.access(executable, os.X_OK):
-        raise ValueError(f"missing regular executable: {executable}")
-    for directory in tool["libraryDirectories"]:
+        selected = [m for m in members if str(PurePosixPath(m.name)) in expected or
+                    any(str(PurePosixPath(m.name)).startswith(prefix) for prefix in prefixes)]
+        source.extractall(destination, members=selected, filter="data")
+    if "executable" in tool:
+        executable = destination / safe_path(tool["executable"])
+        if executable.is_symlink() or not executable.is_file() or not os.access(executable, os.X_OK):
+            raise ValueError(f"missing regular executable: {executable}")
+    for directory in tool["libraryDirectories"] + tool.get("includeDirectories", []):
         if not (destination / safe_path(directory)).is_dir():
             raise ValueError(f"missing library directory: {directory}")
 
@@ -87,7 +94,8 @@ def paths_for(tools, destination):
     bins, libraries = [], []
     for tool in tools:
         directory = destination / tool["id"]
-        bins.append(str((directory / tool["executable"]).parent))
+        if "executable" in tool:
+            bins.append(str((directory / tool["executable"]).parent))
         libraries.extend(str(directory / path) for path in tool["libraryDirectories"])
     return bins, libraries
 
@@ -120,7 +128,8 @@ def install(destination, manifest):
         _, libraries = paths_for(tools, staging)
         environment = os.environ.copy()
         environment["LD_LIBRARY_PATH"] = os.pathsep.join(libraries)
-        observed = {tool["id"]: verify_version(tool, staging / tool["id"], environment) for tool in tools}
+        observed = {tool["id"]: verify_version(tool, staging / tool["id"], environment)
+                    for tool in tools if "executable" in tool}
         # Keep the pinned provenance next to binaries; avoid ephemeral staging paths.
         report = dict(manifest, observedVersions={key: value.replace(str(staging), str(destination))
                                                 for key, value in observed.items()})
@@ -141,10 +150,27 @@ def github_environment(destination, tools):
         output.write("LD_LIBRARY_PATH=" + os.pathsep.join(libraries) + "\n")
 
 
+def load_manifest(with_sdk=False):
+    manifest = json.loads(MANIFEST.read_text())
+    manifest["sdkEnabled"] = with_sdk
+    sdks = manifest.pop("sdks", [])
+    for tool in manifest["tools"]:
+        sdk = tool.pop("sdk", {})
+        if with_sdk:
+            tool["files"].extend(sdk.get("files", []))
+            tool["filePrefixes"] = sdk.get("filePrefixes", [])
+            tool["includeDirectories"] = sdk.get("includeDirectories", [])
+            tool["libraryDirectories"].extend(sdk.get("libraryDirectories", []))
+    if with_sdk:
+        manifest["tools"].extend(sdks)
+    return manifest
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--destination", type=Path, default=DEFAULT_DESTINATION)
     parser.add_argument("--github-env", action="store_true", help="append paths to GITHUB_PATH and GITHUB_ENV")
+    parser.add_argument("--sdk", action="store_true", help="also install pinned headers and shared libraries for embedded runners")
     args = parser.parse_args()
     if platform.system() != "Linux" or platform.machine() not in {"x86_64", "amd64"}:
         parser.error("these release assets require Linux amd64")
@@ -154,7 +180,7 @@ def main():
     if args.destination.is_symlink():
         parser.error("destination must not be a symlink")
     destination = args.destination.resolve()
-    manifest = json.loads(MANIFEST.read_text())
+    manifest = load_manifest(args.sdk)
     report = install(destination, manifest)
     if args.github_env:
         github_environment(destination, manifest["tools"])

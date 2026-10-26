@@ -39,7 +39,21 @@
       ],
       "executable": "bin/wasmer",
       "libraryDirectories": [],
-      "versionPattern": "^wasmer 7\\.3\\.0(?: |$)"
+      "versionPattern": "^wasmer 7\\.3\\.0(?: |$)",
+      "sdk": {
+        "files": [
+          "lib/libwasmer.so"
+        ],
+        "filePrefixes": [
+          "include/"
+        ],
+        "includeDirectories": [
+          "include"
+        ],
+        "libraryDirectories": [
+          "lib"
+        ]
+      }
     },
     {
       "id": "wasmedge",
@@ -61,7 +75,44 @@
       "libraryDirectories": [
         "lib64"
       ],
-      "versionPattern": "(?:^|/)wasmedge version 0\\.17\\.1$"
+      "versionPattern": "(?:^|/)wasmedge version 0\\.17\\.1$",
+      "sdk": {
+        "files": [],
+        "filePrefixes": [
+          "include/"
+        ],
+        "includeDirectories": [
+          "include"
+        ],
+        "libraryDirectories": []
+      }
+    }
+  ],
+  "sdks": [
+    {
+      "id": "wasmtime-c-api",
+      "version": "48.0.1",
+      "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v48.0.1/wasmtime-v48.0.1-x86_64-linux-c-api.tar.xz",
+      "sha256": "67683d04b416a8b91f0e607e7b4c22bd32f18f947c10b5372eb8c277ae3b883a",
+      "size": 16041804,
+      "sourceUrl": "https://github.com/bytecodealliance/wasmtime/tree/v48.0.1",
+      "releaseUrl": "https://github.com/bytecodealliance/wasmtime/releases/tag/v48.0.1",
+      "license": "Apache-2.0 WITH LLVM-exception",
+      "licenseUrl": "https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/LICENSE",
+      "files": [
+        "wasmtime-v48.0.1-x86_64-linux-c-api/lib/libwasmtime.so",
+        "wasmtime-v48.0.1-x86_64-linux-c-api/LICENSE",
+        "wasmtime-v48.0.1-x86_64-linux-c-api/README.md"
+      ],
+      "filePrefixes": [
+        "wasmtime-v48.0.1-x86_64-linux-c-api/include/"
+      ],
+      "includeDirectories": [
+        "wasmtime-v48.0.1-x86_64-linux-c-api/include"
+      ],
+      "libraryDirectories": [
+        "wasmtime-v48.0.1-x86_64-linux-c-api/lib"
+      ]
     }
   ]
 }
