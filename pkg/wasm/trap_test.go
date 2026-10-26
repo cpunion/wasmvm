@@ -1,6 +1,10 @@
 package wasm
 
-import "testing"
+import (
+	"errors"
+	"strings"
+	"testing"
+)
 
 func TestTrapCodes(t *testing.T) {
 	seen := make(map[string]bool)
@@ -13,5 +17,13 @@ func TestTrapCodes(t *testing.T) {
 	}
 	if TrapCode(255).String() != "unknown trap" {
 		t.Fatal("unknown code")
+	}
+}
+
+func TestTrapMetadata(t *testing.T) {
+	var err error = &Trap{Code: TrapMemoryBounds, Function: 7, Offset: 0x42}
+	var trap *Trap
+	if !errors.Is(err, ErrTrap) || !errors.As(err, &trap) || trap.Code != TrapMemoryBounds || !strings.Contains(err.Error(), "function 7 byte 0x42") {
+		t.Fatal(err)
 	}
 }

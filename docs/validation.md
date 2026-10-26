@@ -352,3 +352,49 @@ Store-wide accounting, chunked cancellation, tables/references, explicit call
 frames, API/CLI and own-engine benchmarks remain required before M1 acceptance.
 CI adds memory coverage and fuzz checks; final-head results are required before
 this increment merges.
+
+
+## M1 complete Core 2.0 interpreter integration
+
+Private memory merged in [PR #13](https://github.com/cpunion/wasmvm/pull/13)
+after all six checks passed for exact head
+`9863399d75b6facd2927ec915640d422902f8923`.
+
+The owned interpreter and runtime state now pass all **51,139 binary assertions
+in all 148 pinned scripts** locally under Go and LLGo. Counts are unchanged:
+45,734 return assertions, 2,408 traps, 15 stack-exhaustion assertions, 2,146
+invalid binaries, 719 malformed binaries, 83 unlinkable modules and 34
+uninstantiable modules. The runner also performs all 1,599 ordinary module,
+155 action and 22 registration commands. Exactly 1,091 malformed-text parser
+assertions remain outside the binary VM's scope; none of the binary assertions
+is skipped. Compiler lowering and actual execution are distinct recorded steps.
+
+The first integrated run exposed two adapter errors: spectest float globals
+must contain 666.6 rather than 666, and logical stack exhaustion includes both
+frame-count and frame-slot limits. Correcting the adapter produced the complete
+passing inventory. The large-frame recursion script remains enabled and hits
+the slot quota without using recursive Go calls.
+
+Additional tests cover all allocation quotas/rollback, import ownership,
+canonical type limits, table overlap/growth, passive/declarative drops, and
+initialization traps that preserve earlier imported-memory/table effects and
+escaped function identity. Interpreter tests cover fuel before side effects,
+bounded polling and partial bulk cancellation, root visitors, host suspension,
+resume errors, nested continuations, explicit abort/panic cleanup and reuse.
+A warmed scalar call performs zero allocations in the Go counter test; this
+is not a throughput benchmark or a performance-gate pass.
+
+Local Go/LLGo tests and Go vet/race pass. Statement coverage is **98.6%** for
+`internal/engine/interp`, **96.0%** for `internal/engine/state`, and **100%** for
+public value/error/trap contracts. Remaining paths defend against corrupted
+internal instructions/references and 32-bit host capacity constraints. A
+15-second two-worker execution fuzz run completed 1,049,762 inputs without
+failure, with bounded frontend, instance, frame, slot and execution budgets.
+
+CI now writes an actual own-core conformance artifact containing the compiler,
+platform, pins checksum, backend, command classifications and passing assertion
+counts. The new core package coverage gates and execution fuzz run are required.
+Final-head remote checks still must pass before merge. M1 remains open for
+public lifecycle/ownership, host roots and close/reclamation (including failed
+instances without escaped references), API/CLI and own-engine benchmarks. The
+existing benchmark PR report still measures reference engines at this point.

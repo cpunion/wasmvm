@@ -52,8 +52,8 @@ wasmvm/
 │   │   ├── value/                 # Implemented: scalar/vector bit storage (reference handles reserved)
 │   │   ├── simd/                  # Implemented: all 214 nonmemory Core 2.0 SIMD operations
 │   │   ├── numeric/               # Implemented: complete scalar Core 2.0 numeric primitives and traps
-│   │   ├── state/                 # Planned: internal Store/Instance/frame state
-│   │   ├── interp/                # Planned: dispatch and resumable frames
+│   │   ├── state/                 # Implemented: private Store/Instance state, typed imports and initialization
+│   │   ├── interp/                # Implemented: full Core 2.0 dispatch, explicit frames, budgets and host exits
 │   │   ├── native/                # Planned: native artifacts, maps and driver
 │   │   │   ├── amd64/             # Planned: Go instruction encoder/target lowering
 │   │   │   └── arm64/             # Planned: Go instruction encoder/target lowering
