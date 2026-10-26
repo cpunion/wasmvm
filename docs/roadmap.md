@@ -1,186 +1,111 @@
 # Development Plan and Acceptance Gates
 
-Plan date: **2026-10-26**. Research, architecture, package declarations, host compatibility probes, and the initial Go/LLGo CI matrix are complete. M0 evaluation artifacts and the [reuse decision](design/reuse-decision.md) are now implemented; acceptance follows the contribution PR's final checks and review. **M1–M5 remain unimplemented and M6 is deferred.** This document is the authoritative implementation sequence; the acceptance summary in the standards report maps its technical scope onto these milestones.
+Plan date: **2026-10-26**. M0 candidate evaluation and benchmark infrastructure are complete through PRs [#1](https://github.com/cpunion/wasmvm/pull/1), [#2](https://github.com/cpunion/wasmvm/pull/2), and [#3](https://github.com/cpunion/wasmvm/pull/3). The owner has selected a [project-owned core](design/own-core.md). **M1–M7 are not implemented.** This plan prioritizes complete core execution and compilation before WASI integration. Design approval does not close an implementation or performance gate.
 
-The plan uses dependencies and measurable exit conditions rather than unvalidated delivery dates. Estimate calendar time after M0 establishes the reuse boundary and M1 provides actual implementation throughput. The existing research is a dated snapshot; translation and planning updates do not constitute a new survey or new runtime validation.
+Implement stages in order. Independent work within a stage can proceed in parallel after agreeing on shared contracts. Small implementation PRs may merge while the stage remains in progress; every required deliverable, supported-platform result, and exit gate must pass before that stage is complete. Do not replace full profiles with convenient instruction subsets or quietly move failing requirements to a later stage.
 
-## Milestone overview
+## Stage overview
 
-| Phase | User-visible outcome | Prerequisite | Primary implementation areas | Exit evidence |
-| --- | --- | --- | --- | --- |
-| M0 | A justified implementation choice and reproducible test inputs | Completed design baseline | Candidate experiments, fixture manifest, test tooling | Reuse decision, compiler results, patch estimates, license inventory |
-| M1 | Run small core modules and a defined P1 CLI subset through an embedding API and CLI | M0 | Core decode/validate, interpreter, memory, VM API, P1 host | Pinned positive/negative tests and minimal Go wasip1 guest on both host compilers |
-| M2a | Run shared-memory workloads and legacy wasi-threads guests | M1 | Memory synchronization, waiters, scheduler, P1 resources, thread ABI | Atomic litmus tests, pthread/TLS fixtures, exit/cancellation tests, Go race checks |
-| M2b | Run GC-enabled modules with typed references and final exception handling | M1 | Type canonicalization, guest heap, roots, reference instructions, EH | Official feature suites, forced collection, host-root lifetime and tail-call tests |
-| M3 | Complete the declared Core 3.0 binary profile and run LLGo-produced guests | M2a + M2b | SIMD, Memory64, multi-memory, remaining Core features, guest integration | Full declared profile results and LLGo threads/GC/panic/I/O integration on both compilers |
-| M4 | Run composed WASI 0.2 applications | M3 for milestone acceptance | Component decode/validate/link, Canonical ABI, resources, P2 host | Versioned WIT/world coverage, cross-language composition, ownership and ABI tests |
-| M5 | Run WASI 0.3 async components | M4 | Component async, futures/streams, P3 host | Async ABI, cancellation/backpressure, lifecycle, CLI and HTTP world results |
-| M6 | Improve measured bottlenecks or add selected experimental features | M3; feature-specific dependencies may require M4/M5 | Optional backend/platform work and separate proposal implementations | Per-feature RFC, benchmark or conformance evidence, preserved default-path portability |
-
-M4 research and ABI prototypes may start earlier, but they must not displace the M1–M3 correctness work or be reported as an accepted runtime milestone. Core Threads and WasmGC are required work in M2, not optional M6 features.
+| Stage | Complete outcome | Required evidence |
+| --- | --- | --- |
+| M0 — Evaluation | Candidate/compiler/feature experiments, pinned inputs, comparison infrastructure | Completed bounded experiments; historical reuse decision superseded by the own-core decision |
+| M1 — Complete portable core | Entire Core 2.0 binary frontend, interpreter, bounded VM lifecycle, embedding API and core CLI | Pinned complete Core 2.0 corpus, Go/LLGo execution, negative/resource/lifecycle tests, actual own-engine benchmarks |
+| M2 — Fast core execution | Optimized interpreter and own amd64/arm64 native compiler for the **same entire Core 2.0 profile** | Full backend/compiler matrix, native ABI/lifetime tests, controlled performance gates |
+| M3 — Modern core and threads | Full Core 3.0 plus separately enabled Core Threads on **both** backends | Official feature suites, GC/root/exception stress, memory-model tests, combined-workload performance |
+| M4 — P1 and LLGo guests | Declared complete P1 host scope, legacy wasi-threads adapter and pinned Go/LLGo guest integration | WITX operation manifest, capability/ABI tests, pthread/TLS/exit/GC/panic/I/O tests |
+| M5 — Components and P2 | Component execution, Canonical ABI and declared WASI 0.2.12 worlds/interfaces | Cross-language composition, resource ownership and ABI tests |
+| M6 — P3 async | WASI 0.3.2 cumulative component async and declared worlds/interfaces | Futures/streams, cancellation/backpressure, reentry and deterministic cleanup tests |
+| M7 — Further optimization and extensions | Separately selected advanced optimizations/platforms/proposals | Independent RFC, evidence and preserved earlier gates |
 
 ```mermaid
 flowchart LR
-    D[Completed design baseline] --> M0[M0: Reuse and test inputs]
-    M0 --> M1[M1: Interpreter and P1 subset]
-    M1 --> M2A[M2a: Threads and P1]
-    M1 --> M2B[M2b: GC and final EH]
-    M2A --> M3[M3: Core 3.0 and LLGo guests]
-    M2B --> M3
-    M3 --> M4[M4: Components and WASI 0.2]
-    M4 --> M5[M5: WASI 0.3 async]
-    M3 --> M6[M6: Optional optimization and experiments]
+    M0[Completed evaluation] --> M1[Complete Core 2.0 interpreter]
+    M1 --> M2[Fast interpreter and native compiler]
+    M2 --> M3[Core 3.0 and Core Threads, both backends]
+    M3 --> M4[P1, legacy threads, LLGo guests]
+    M4 --> M5[Components and WASI 0.2]
+    M5 --> M6[WASI 0.3 async]
+    M6 --> M7[Further optimization and extensions]
 ```
 
-## M0 — Reuse decision and reproducible inputs
+Earlier documents used M1 for a partial core/P1 slice, M2a for threads/P1, M2b for GC/EH, M3 for Core 3.0/LLGo guests, M4/M5 for P2/P3, and M6 for optional optimization. **This table replaces that schedule:** core threads/GC move into M3, P1/legacy threads/guests into M4, P2/P3 into M5/M6. Native compilation is now required in M2, not deferred. Historical evaluation records retain their original numbering.
 
-**Objective:** decide how much engine code to reuse before committing to a full independent implementation. The [implementation survey](research/implementations.md) identifies wazero and Wago as candidates, with different compatibility risks.
+## M0 — Completed evaluation, preserved evidence
 
-| Work package | Work | Deliverable |
-| --- | --- | --- |
-| M0.1 — Candidate baseline | Pin Wago, wazero, and comparison-engine revisions. Separate released, main-branch, and unmerged-PR features. Inventory licenses and notices. | Candidate manifest and reproducible commands |
-| M0.2 — Dual-compiler experiments | Build and attempt to execute the same small API/host-call/P1 examples with Go and LLGo. Evaluate wazero's interpreter first; inspect Wago's native trampoline, ABI, stack, and collector requirements. | Build/run logs, minimal failure cases, and patch-scope estimates |
-| M0.3 — Feature fixtures | Prepare GC, threads/wait-notify, EH, and shared-memory growth fixtures. Record unsupported combinations rather than treating them as passes. | Small versioned corpus with source, producer, expected result, profile, and license |
-| M0.4 — LLGo guest inventory | Produce minimal LLGo guests for threads, GC, panic/recover, and I/O. Inspect imports, shared memory, TLS, EH, SIMD, and entry-point requirements. | Guest ABI/feature manifest and reference-engine results |
-| M0.5 — Decision | Compare a reusable engine with a small compatibility layer, selective code reuse, and an independent interpreter. Consider upkeep, upstream fit, ABI risk, and public/internal package boundaries. | `docs/design/reuse-decision.md` and any architecture amendments |
+Keep the [candidate evaluation](research/wazero-evaluation.md), [immutable input inventory](research/spec-inputs.md), LLGo guest manifest, licenses, upstream issue reproductions, and benchmark raw measurements. M0 did not pass a full engine conformance suite. Its successful compatibility fixes and unsupported-feature findings remain useful even after the implementation route changes. The new [decision](design/own-core.md) selects ownership; it does not invalidate measurements or establish future performance.
 
-The decision document and candidate manifests are now available under `docs/design/reuse-decision.md` and `experiments/`. M0 is a bounded experiment, not a full engine port. An unsuccessful LLGo candidate run is useful evidence; M0 does not require fixing every candidate before making a choice. Existing project probes must remain green, and any candidate failure must retain its exact command, revision, and reason.
+## M1 — Complete portable Core 2.0
 
-**Exit gate:** the decision names the chosen implementation source, reusable assets, rejected alternatives with evidence, outstanding risks, and the impact on `pkg`/`internal` boundaries. Pin the initial Core/proposal/WIT inputs and generation tools. No third-party code is imported without checking its applicable licenses. If the chosen approach changes the portable-interpreter baseline, update the architecture explicitly before M1.
+**Objective:** accept untrusted module bytes and execute the complete Core 2.0 binary profile with bounded resource use through our own interpreter.
 
-## M1 — Executable core and a P1 CLI subset
+1. **Contracts and corpus.** Define feature/backend/error/limit/value contracts, immutable module metadata, ownership, and the common fixture/result format. Import or deterministically generate the complete `test/core` and `test/core/simd` corpus at the pinned `wg-2.0` commit with licenses, file hashes and producer pins. Preserve assertion counts and classifications; missing tooling or fixtures are failures. Text syntax is handled by pinned development tools, not a required runtime WAT parser.
+2. **Decode and validate.** Implement bounded readers and allocations, LEB128, sections, indexes, control and operand typing, unreachable semantics, imports/exports, block signatures, constant expressions, data/element rules and all profile instructions. Fuzz malformed/truncated inputs and resource claims; distinguish malformed, invalid, unsupported and resource errors.
+3. **IR and interpreter.** Implement verified typed control-flow IR, slot lowering, explicit guest call frames, scalar/reference/vector values, all Core 2.0 instructions and traps. This includes fixed SIMD, multiple tables, multi-value, reference types, sign extension, nontrapping conversions, bulk operations and passive/declarative segments. No host-stack recursion for guest calls.
+4. **VM and lifecycle.** Implement Engine/Store/CompiledModule/Linker/Instance/Execution, memory/tables/globals, host imports, start functions, reentry, quotas, deterministic fuel, bounded cancellation and close. Test instantiation failure cleanup without claiming rollback of externally visible imported-state effects. Keep the core independent of WASI.
+5. **Usable interface and measurement.** Deliver working embedding/host-call examples and `cmd/wasmvm validate`, `inspect`, and core `run` with explicit typed arguments/results and backend reporting. Connect the existing phase protocol to a runner built from each exact wasmvm base/head checkout; keep wazero and competitors as separately identified rows. Record interpreter subsystem baselines and representative workloads before optimization.
 
-**Objective:** deliver the first end-to-end path from untrusted module bytes to a controlled execution result.
+**Exit gate:** the complete pinned Core 2.0 binary assertion set passes under Go and LLGo on Linux amd64 and macOS arm64; report script/assertion counts, no unexplained exclusions. Parser/validator/VM limits, trap classifications, reference ownership, host callbacks, cancellation and cleanup pass. Interpreter and compiler logic build with `CGO_ENABLED=0`. Report at least 90% statement coverage for each owned executable core package, plus named missing-path rationale; coverage is not conformance. Own-engine benchmark provenance is verified. No P1 or native execution claim is made at this stage.
 
-1. **M1.1: Core representation and decoder.** Define explicit feature sets, limits, value/reference representations, module IR, checked addresses, and typed errors. Implement bounded readers, LEB128, sections, indexes, and data/code size limits.
-2. **M1.2: Validation.** Implement control/operand stacks, function and block signatures, unreachable code rules, import/export checks, and feature dependencies. Reject malformed and unsupported inputs before execution.
-3. **M1.3: Interpreter and state.** Implement Engine, Store, CompiledModule, Instance, explicit guest frames, calls, tables/globals, private memory, basic host imports, traps, and deterministic cleanup. Check fuel, stack, allocation, and cancellation limits.
-4. **M1.4: Usable vertical slice.** Add embedding examples and `cmd/wasmvm` with `validate`, `inspect`, and `run`. Implement the explicit P1 subset needed by a minimal official-Go wasip1 guest, including argument/environment access, stdio, and exit behavior as required by its imports.
-5. **M1.5: Conformance harness.** Execute the pinned MVP/common Core 2.0 scope under both host compilers, including negative cases and a shared assertion format. Publish the exact supported feature list rather than claiming all Core 2.0 prematurely.
+## M2 — Fast interpreter and complete native compiler
 
-**Deliverables:** working CLI and embedding example, first documented public API, feature/limit report, reproducible P1 guest, and a common semantic test runner. Start the planned `internal/core`, `internal/engine`, `internal/spectest`, `tests`, and `testdata` packages only as needed.
+**Objective:** make both interpretation and Wasm-to-native execution satisfy the [performance contract](design/performance-contract.md), without changing the accepted Core 2.0 semantics.
 
-**Exit gate:** both host compilers execute the same fixture corpus; malformed, invalid, unsupported, link, trap, WASI exit, resource-limit, and cancellation results are distinguishable. The minimal P1 program runs correctly. Excessive memory, stack, and execution requests fail within configured bounds. Remaining unsupported features are explicitly rejected.
+1. **Interpreter performance.** Profile dispatch, copies, bounds checks, calls, slot/frame allocation and code footprint. Compare predecoded stack versus slot prototypes; retain the measured production choice. Add specialization/fusion only with preserved trap/fuel/safepoint behavior and full regression results.
+2. **Native boundary first.** Implement the [native ABI](design/native-abi.md): bounded entry frame, explicit guest frame arena, typed exits, continuation/root maps, host-call marshalling, cancellation polling, executable-memory publication and active-code ownership. Exercise the same ABI probes with Go and LLGo before accepting emitted guest programs.
+3. **Complete code generation.** Implement target legalization, instruction selection, register allocation/spills, branches/relocations and amd64/arm64 code emission for every Core 2.0 operation. Cover floating-point/SIMD corner cases, indirect calls, large frames, long branches and CPU feature checks. Runtime helpers are explicit, measured and semantically tested; they cannot silently interpret unsupported functions.
+4. **Optimization and diagnostics.** Add verified constant/copy propagation, dead-code elimination, block layout and measured optimizations while retaining side effects, traps and deterministic fuel. Publish source/trap/safepoint maps, code/IR size and compilation-memory metrics. Test optimized and unoptimized output against the interpreter and reference engines.
+5. **Performance acceptance.** Expand the PR matrix to own base/head interpreter/native under both host compilers plus pinned competitor configurations. Keep startup, frontend, backend compilation, instantiation, first call, warmed execution, boundary overhead, and policy overhead separate. Run the declared mixed workload suite on controlled amd64 and arm64 hosts and pass every applicable budget.
 
-## M2a — Shared memory, threads, and P1 completion
+**Exit gate:** all M1 fixtures and lifecycle tests pass with each forced backend under Go and LLGo on **Linux amd64 and macOS arm64**. Standard-Go native execution may require `CGO_ENABLED=1` for the small bridge; the interpreter and compiler logic still pass without cgo. Validate GC during native work, host reentry, growth, suspend/resume, close from callbacks, panic cleanup, close/unload races, W^X/cache identity and bounded cancellation. Native mode cannot fall back silently. Both interpreter and native performance gates must pass; a correct but slow native compiler does not complete M2. Compile latency and boundary cost cannot be hidden by warm throughput. Other platform combinations remain unclaimed until tested.
 
-**Objective:** implement the declared P1 interface scope and shared-linear-memory threading without introducing Go data races.
+## M3 — Complete Core 3.0 and separate Core Threads
 
-1. **M2a.1: Shared memory.** Route ordinary and atomic accesses, bulk operations, size/grow, and host memory access through the synchronization domain. Implement alignment/bounds rules, mixed-width operations, atomics, and fence ordering.
-2. **M2a.2: Waiters and lifecycle.** Implement atomic wait registration, notify counts, timeout outcomes, and one-time completion arbitration for notify/cancel/close races. Enforce thread/resource limits and bounded teardown.
-3. **M2a.3: Legacy wasi-threads.** Implement `wasi.thread-spawn` and `wasi_thread_start`, per-thread instances/stacks/TLS, shared process resources, child initialization, and rollback on failed creation.
-4. **M2a.4: P1 host coverage.** Complete the declared P1 APIs, including capability-based filesystem access, fd rights/lifecycle, clocks/random, polling, and specified error behavior. Document host-platform limitations rather than silently emulating unavailable capabilities.
+**Objective:** extend the same frontend, IR and both execution backends to the full pinned Core 3.0 binary profile and the separately enabled Threads profile.
 
-**Deliverables:** separate `pkg/wasi/threads` adapter, P1 operation coverage table, pthread/TLS fixtures, atomic litmus tests, and concurrent lifecycle stress tests.
+- **Types and GC:** recursive type-group canonicalization, explicit subtyping/variance/nullability, typed references, structs/arrays/i31/casts/conversions, stable generation-checked handles, Store-private guest heap, quotas and tracing. Root stacks/locals/globals/tables, host roots, temporary allocation operands, suspended native/interpreter frames and exception payloads. Retire generation-overflow slots. Forced collection at every allocation/safepoint must preserve live objects and reclaim unreachable cycles.
+- **Control flow:** proper tail calls without growing host/guest call stacks, final EH with tag identity, `try_table`, `exnref`, `throw_ref`, unwinding and host boundaries. Legacy EH is not substituted for final EH.
+- **Remaining Core 3.0:** extended constants, Memory64 **and Table64**, multi-memory, relaxed SIMD, and every remaining feature in the pinned profile. Include address/index overflow and permitted nondeterministic numeric outcomes.
+- **Shared memory and threads:** ordinary/atomic accesses, mixed widths, growth, bulk operations and fences share an explicit synchronization domain. Implement wait/notify with no lost wakeups, exact timeout/not-equal/success outcomes, and one-time notify/cancel/close arbitration. Core Threads does not imply a shared WasmGC heap. Do not introduce unsynchronized native accesses while only the Go path holds locks.
+- **Interactions and speed:** run GC/EH/host-reentry, thread/growth/cancellation, multiple memory/table and parallel Store workloads. Extend performance coverage to allocation/collection pauses, casts, exceptions/tail calls, atomic/wait latency and thread scaling; set workload budgets before optimization. Retain all M2 gates for the earlier profile.
 
-**Exit gate:** demonstrate no lost wakeups, correct timeout/not-equal/success results, safe growth during concurrent access, and correct thread-group exit/trap behavior. Validate active data/start/TLS initialization with pinned guest producers. Run all shared tests with Go and LLGo, with Go race checks as an additional diagnostic. Core Threads does not imply shared WasmGC objects or component threading.
+**Exit gate:** full Core 3.0 and Threads scope passes under both backends and host compilers on the accepted platforms. The support manifest covers combinations, not just isolated opcodes. Forced GC, stale/foreign handles, quotas, native root maps, concurrent lifecycle and memory-model tests pass. Go race checks are additional diagnostics, not proof of generated native memory semantics. No WasmGC/Threads feature can be accepted only in the interpreter.
 
-## M2b — WasmGC, typed references, tail calls, and final EH
+## M4 — P1, legacy wasi-threads, and LLGo guests
 
-**Objective:** implement guest reference semantics independently of the host collector and of a guest language's linear-memory GC.
+**Objective:** provide complete declared P1 host interfaces and the actual ABI required by the pinned guest toolchains.
 
-1. **M2b.1: Types.** Implement recursive type-group equivalence/canonicalization, explicit subtyping, nullability, variance, typed function references, casts, and cross-module matching.
-2. **M2b.2: Heap and roots.** Implement the chosen Store-owned guest heap, object identity, generation-checked handles, heap quotas, tracing, and reclamation. Cover stack/local/global/table roots, exceptions, host handles, suspended contexts, and temporary references at allocating instructions.
-3. **M2b.3: Reference instructions.** Implement struct/array operations, packed fields, i31, externref/anyref conversion, reference equality, and host rooting/release contracts.
-4. **M2b.4: Control flow.** Implement proper tail calls and final EH (`try_table`, `exnref`, `throw_ref`), including tag identity, unwinding, host-call boundaries, and reference retention during exceptional paths.
+- Implement the pinned P1 WITX operation set and publish per-operation/platform behavior: arguments/environment, stdio, descriptors/rights/preopens, filesystem, clocks/random, polling, exit and applicable socket operations. Explicitly document specification-permitted unsupported host operations; do not claim full behavior from a hello-world subset.
+- Inject capabilities and enforce directory boundaries using platform-appropriate handles. Test symlink/`..`/TOCTOU escape attempts, rights reduction, fd reuse, partial I/O, ABI pointer overflow, cancellation and resource cleanup.
+- Implement `pkg/wasi/threads` separately from P1: `wasi.thread-spawn`, `wasi_thread_start`, shared process resources, child Store/instance/stack/TLS ownership, data/start initialization rules, failure rollback and group exit. Validate actual pinned wasi-libc/LLGo producers rather than assuming ordinary instantiation is a safe child-start path.
+- Run official-Go wasip1 guests and pinned LLGo guests covering goroutines/pthreads, TLS, linear-memory GC, panic/recover, SIMD and I/O with both backends/host compilers. Guest linear-memory GC is not WasmGC.
+- Deliver CLI WASI execution, embedding examples, deterministic virtual capability fixtures and P1/threads benchmark groups. Distinguish errno, guest exit, exception, trap and host cancellation.
 
-**Deliverables:** type-system tests, official GC/reference/EH fixture coverage, forced-GC stress mode, and explicit host reference-lifetime examples.
+**Exit gate:** complete declared P1 operation/world scope, official tests, guest integrations and lifecycle/escape cases pass. No waiter/thread/fd/root remains after completion or bounded close. Both compiler/backend paths execute the same guests. Update the exact producer/import/profile manifest on guest upgrades.
 
-**Exit gate:** the relevant official suites pass on both compilers. Collection at every supported allocation point preserves all live guest references, including values popped into temporary root scopes. Cycles, stale handles, foreign-Store references, quotas, host reentry, cancellation, and close are tested. Deep tail recursion does not grow the host stack. Legacy EH is not silently accepted as final EH.
+## M5 — Component Model and WASI 0.2
 
-## M3 — Core 3.0 profile and LLGo guest integration
+Implement component binary decoding/validation/composition, imports/exports, Canonical ABI lift/lower, strings/lists/records/variants, realloc/post-return, and resource own/borrow/drop with cleanup on failure. Keep component and core instance boundaries explicit. Pin WASI **0.2.12** WIT; implement the full declared CLI world and its dependencies, then separately reported sockets/HTTP interfaces. Earlier prototypes must not displace required core work.
 
-**Objective:** combine M2a and M2b, close the remaining binary-Core feature gaps, and validate the guest toolchain that motivated the project.
+**Exit gate:** components from at least two pinned guest toolchains compose on both backends and host compilers. Versioned WIT/world/operation coverage, encoding/ownership/reentry/error cases and resource cleanup all pass. Parsing or one sample is not complete component/P2 support.
 
-- Implement fixed/relaxed SIMD, Memory64, multiple memories, extended constants, and any remaining items in the pinned Core 3.0 binary profile. Keep text-format tooling and JS embedding features separate from the VM's binary execution claim.
-- Test feature combinations rather than only isolated instructions: GC with EH/host calls, threads with growth/cancellation, and independently owned GC heaps executing in parallel.
-- Run pinned LLGo guests covering goroutines/pthreads, TLS, guest linear-memory GC, panic/recover, SIMD, and I/O. Preserve producer version, flags, imports, and expected results.
-- Expand the compiler/platform matrix from Linux amd64 and macOS arm64 toward Linux arm64 as runners become available. Record the actual accepted matrix; leave Windows and 32-bit host support unclaimed until separately validated.
-- Establish repeatable cold-start, throughput, memory, GC-pause, and thread-scale benchmarks. Address correctness and resource failures before adding optimized paths.
+## M6 — WASI 0.3 native async
 
-**Exit gate:** publish per-feature and per-platform conformance results for the full declared profile. Both host compilers pass the same LLGo guest integration tests. A profile claim requires all tests assigned to its supported scope to pass; unexplained exclusions prevent that claim. Resource/cancellation tests remain green under combined workloads.
+Pin WASI **0.3.2** and its cumulative Component Model requirements. Implement canonical async lift/lower, task transitions, suspension/resumption, futures/streams, cancellation, backpressure, reentrancy and completion/error behavior. Deliver the declared CLI and HTTP service/middleware scope with explicit versioned bindings; P2 pollables and P3 async remain separate adapters.
 
-## M4 — Component Model and WASI 0.2
+**Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 
-**Objective:** support real component composition rather than only recognizing a component binary.
+## M7 — Further optimization and experimental features
 
-1. **M4.1: Component execution.** Implement binary decoding, validation, instance composition, imports/exports, and linking with explicit core-instance boundaries.
-2. **M4.2: Canonical ABI.** Implement lift/lower, strings/lists/records/variants, realloc/post-return, and resource own/borrow/drop behavior with failure rollback.
-3. **M4.3: P2 CLI.** Pin WASI **0.2.12** WIT and implement the declared `wasi:cli/command` world, including its clock/random/filesystem/I/O dependencies and pollable lifecycles.
-4. **M4.4: Broader interfaces.** Add sockets and HTTP as separately reported interface groups, with explicit host capabilities and cross-language composition fixtures.
+Potential items include better register allocation/optimization, tiering, persistent AOT artifacts, a cgo-free native bridge, improved GC/shared-memory strategies, more platforms, stack switching, Shared-Everything Threads, component threading, legacy EH or WASIX. These are individual decisions with dependencies and evidence, not a bundled commitment. Basic interpreter and native performance are already mandatory in M2.
 
-**Deliverables:** `pkg/component`, P2 bindings, a WIT/world/operation support manifest, component examples, and ABI/resource test suites.
+**Exit gate per item:** a scoped design, feature/backend flag, pinned specification, full affected conformance/lifecycle matrix and performance evidence. Preserve default-path portability and previously accepted behavior. No experimental proposal silently changes a stable profile.
 
-**Exit gate:** components from at least two guest toolchains compose correctly under both host compilers. Validate encodings, ownership transfer, borrow restrictions, post-return, double-drop, errors, and resource cleanup. Distinguish supported CLI/HTTP/interface subsets; parsing or running one component is not a claim of complete WASI 0.2 support.
+## Shared definition of done and review sequence
 
-## M5 — WASI 0.3 native async
+Every supported capability needs pinned scope, positive/negative/limit/lifecycle/interaction tests, actual Go/LLGo execution, provenance and counts, usable API/examples, and current documentation. Keep coverage separate for core packages, evaluator, measurement tools, and foreign engines. A fixture download failure is infrastructure failure, never a skip. The matrix is `host compiler × OS/arch × backend × Core profile × WASI/WIT × guest producer`.
 
-**Objective:** implement the published component async contract rather than mapping it loosely to goroutines or channels.
+Before each PR, run targeted tests and appropriate shared checks; report exact coverage and unsupported paths. Submit a contribution PR, resolve review findings, and merge only after the **final head** passes required checks. Performance-sensitive PRs need the benchmark evidence described in the performance contract; hosted timing noise cannot be relabeled a pass on a controlled performance gate. PRs may advance an incomplete stage, but only the complete acceptance record closes it.
 
-- Pin WASI **0.3.2** WIT and its cumulative Component Model requirements, including features adopted in 0.3.1.
-- Design and implement canonical async lift/lower, task state transitions, suspension/resumption, futures, streams, cancellation, backpressure, reentrancy, and completion/error behavior.
-- Implement P3 bindings by world, starting with CLI and then the applicable HTTP service/middleware scope. Keep P2 pollables and P3 native async as distinct versioned adapters.
-- Add composition chains that exercise async host calls, nested component calls, cancellation propagation, stream closure, partial failure, and shutdown while tasks remain suspended.
+The next work is M1 contracts/corpus and the bounded frontend, followed by complete IR/interpreter/runtime integration. Native ABI design is established here; native implementation follows M1 acceptance. Calendar estimates will use observed implementation and conformance progress, not a lines-of-code extrapolation.
 
-**Deliverables:** an async ABI design supplement, `pkg/wasi/preview3`, versioned P3 coverage, and deterministic lifecycle/leak tests.
-
-**Exit gate:** both compilers pass the same async ABI and declared-world fixtures, with no stranded tasks/resources after completion, cancellation, or close. Preserve tested P2 behavior. P3 acceptance does not require implementing every experimental stack-switching or component-threading proposal.
-
-## M6 — Optional optimization and experimental proposals
-
-Start only when earlier profiling or concrete compatibility needs justify the work. This phase may proceed alongside later component milestones if it does not compromise their correctness work.
-
-Candidates include interpreter specialization, reduced shared-memory lock contention, improved GC strategy, additional platforms, JIT/AOT backends, stack switching, Shared-Everything Threads, legacy EH, or WASIX compatibility. Each is a separate decision and implementation effort, not a bundled promise.
-
-**Exit gate for each item:** a scoped RFC, feature/backend flag, dependencies, benchmark or conformance evidence, and documented compatibility effects. The default portable path and common Go/LLGo semantic suite must keep passing. Experimental proposals use pinned snapshots and never silently alter a stable profile.
-
-## Initial implementation backlog
-
-The M0 experiments below have executable evidence in `experiments/` and the reuse decision. The next implementation work starts with the M1 foundation after the M0 PR gate, not with a new JIT or a full WASI component stack.
-
-| Order | Task | Depends on | Completion artifact |
-| --- | --- | --- | --- |
-| 1 | Define the shared fixture/result manifest and select minimal core/P1/GC/thread/EH cases | Existing research | Reviewed schema and small reproducible fixtures |
-| 2a | Run pinned wazero interpreter experiments with Go and LLGo | 1 | Logs, failure reproductions, and portability assessment |
-| 2b | Run pinned Wago API/native-runtime experiments with Go and LLGo | 1; parallel with 2a | Logs, ABI/GC/stack findings, and adaptation assessment |
-| 3 | Inventory LLGo guest imports/features and reference-engine behavior | 1; parallel with 2a/2b | Producer manifest and guest fixtures |
-| 4 | Write the reuse decision and update the implementation/package boundary | 2a, 2b, 3 | Accepted M0 decision with license and maintenance analysis |
-| 5 | Define foundational feature/value/error/limit contracts and a conformance-runner interface | 4 | Small public/internal API slice with shared tests |
-| 6 | Deliver decode → validate → instantiate → call for a minimal core module | 5 | Working embedding example and negative fixtures |
-| 7 | Add the minimal P1 guest and CLI execution path with cancellation/resource checks | 6 | End-to-end M1 vertical slice |
-
-These are planned work items, not GitHub issues already created. Keep each implementation contribution independently reviewable. If one developer executes the plan, finish M1 and then sequence M2a/M2b as capacity allows; with parallel capacity, split those tracks after agreeing on their shared interfaces.
-
-## Shared definition of done
-
-Each implemented capability needs all of the following before being reported as supported:
-
-- **Scope:** pinned specification/WIT/tool versions, exact feature/world/operation coverage, and explicit unsupported combinations.
-- **Behavior:** positive and negative tests, lifecycle/rollback paths, limits, cancellation, and relevant feature interactions.
-- **Compiler parity:** the same source, fixtures, and assertions execute with Go and LLGo. A compiler-wide skip or build-only result is not parity.
-- **Evidence:** pass/fail/unsupported/skip counts with reasons, fixture provenance, producer flags, and reproducible commands. Missing corpus downloads are infrastructure failures, not silent skips.
-- **API and documentation:** usable examples, ownership/concurrency contracts, diagnostics, current package boundaries, and an updated capability matrix.
-- **Maintenance:** appropriate licenses/notices for imported assets and a bounded plan for any dependency fork or compatibility patch.
-
-Use `host compiler × OS/arch × core profile × WASI/WIT version × guest producer` as the acceptance matrix. Go race and fuzz testing supplement semantic checks; they do not replace LLGo execution or prove the Wasm memory model. Cover malformed modules, disabled features, mismatched imports, excessive resources, stale/foreign handles, repeated drop/close, and cancellation/exit races at the applicable milestones.
-
-## Performance and release readiness
-
-Measure validation/instantiation latency, steady-state execution, per-instance memory, allocation throughput, GC pauses, host stack cost per guest thread, wait/notify latency, and shared-memory contention. Compare Wago's native backend, wazero's interpreter, and Wasmtime with their execution backends and configurations identified. Separate cold/warm paths and host compiler effects; do not promise JIT-like performance before measurement.
-
-At each usable milestone, publish the supported matrix and reproducible examples. Before a release is described as production-ready, resolve known isolation/resource-lifecycle failures, document platform capability limits, establish API compatibility policy and a project license, and review the security-sensitive parser, validator, memory, and filesystem boundaries. A completed milestone is not itself a full security-audit claim. No release tags or publication dates are assigned by this plan.
-
-## Risks and decision points
-
-| Risk | Impact | Planned response |
-| --- | --- | --- |
-| Duplicating an existing Go engine | Excess implementation and maintenance cost | M0 compares reuse with independent implementation before committing |
-| Go/LLGo private ABI differences | Builds pass but runtime behavior fails | Isolate any ABI-specific code; execute both compiler paths from the first slice |
-| GC type/root mistakes | Invalid acceptance, dangling references, or retained objects | Official type suites, forced collection, temporary roots, checked handles |
-| Wasm/Go memory-model mismatch | Host races or incorrect shared-memory semantics | Synchronized reference backend, litmus tests, race checks, cancellation stress |
-| LLGo native thread/stack cost | Host exhaustion under large guest thread counts | Hard quotas, explicit guest frames, measured thread-scale limits |
-| Component/P3 scope growth | Indefinite expansion of the WASI target | Separate versions, worlds, interfaces, and M4/M5 acceptance gates |
-| Incomplete filesystem capabilities | Access outside authorized directories | Directory-handle design and per-platform symlink/TOCTOU negative tests |
-| Toolchain and proposal drift | Regressions and ambiguous compatibility claims | Pinned inputs; explicit upgrade diffs and full affected-profile validation |
-
-Revisit estimates and priorities at each exit gate using actual work completed, unresolved compatibility failures, and available engineering capacity. Preserve the required GC, threads, and dual-compiler goals when adjusting the implementation route.
+Before production release, select a project license, define public API compatibility, resolve isolation/lifecycle failures, review parser/validator/compiler/memory/filesystem boundaries, and publish actual supported platforms. A stage completion is not a security-audit claim or permission to publish a release.

@@ -1,5 +1,8 @@
 # Wazero Reuse Evaluation
 
+**Direction update (2026-10-26):** the owner subsequently selected a [project-owned core](../design/own-core.md). This report preserves candidate evidence and the original evaluation recommendations/milestone numbering; its reuse-first next-work statements are historical. Follow the revised [roadmap](../roadmap.md) for implementation.
+
+
 Evaluation date: **2026-10-26**. This report separates upstream source evidence, executed candidate probes, and requirements that remain for M1–M5. The M0 artifacts include candidate comparisons, an LLGo guest inventory, a compiler compatibility contribution, and a reproducible performance baseline. They do not constitute full engine conformance. This supplements the [implementation survey](implementations.md) and informs the [reuse decision](../design/reuse-decision.md).
 
 ## Conclusion

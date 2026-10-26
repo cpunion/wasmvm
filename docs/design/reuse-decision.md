@@ -1,4 +1,6 @@
-# Reuse Decision: Wazero-First Evaluation
+# Historical Decision: Wazero-First Evaluation
+
+**Superseded by [Project-Owned Core](own-core.md) on 2026-10-26.** The text below preserves the M0 evaluation decision and its original milestone numbering. Its reuse-first instructions and next-work recommendations are historical; the current [roadmap](../roadmap.md) governs implementation.
 
 Date: **2026-10-26**. Status: **M0 evaluation decision, subject to the contribution PR's required checks and review before merge**. Evidence and upstream pins are recorded in the [wazero evaluation](../research/wazero-evaluation.md). This selects the next implementation route; it does not accept M1–M5 or claim complete runtime support.
 

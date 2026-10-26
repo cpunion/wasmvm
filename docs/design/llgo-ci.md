@@ -9,7 +9,7 @@ Verification date: 2026-10-26. This document distinguishes source constraints, o
 | Compile the host VM with LLGo | `llgo test ./...`, followed later by `llgo build ./cmd/wasmvm`, producing and running native programs | Use the same VM source, semantic tests, and fixtures as the standard Go compiler |
 | Execute LLGo-generated guests in the VM | `GOOS=wasip1 GOARCH=wasm llgo build -o fixture.wasm .`, then load and execute it in the VM | Implement the Core instructions and WASI ABI actually required by that guest |
 
-The first target is a CI requirement from project initialization. The second is an integration milestone after the interpreter, WASI P1, threads, EH, and SIMD are implemented. Compiling the host with LLGo does not automatically provide the second capability. Likewise, executing the standard Go compiler's `wasip1/wasm` output does not prove compatibility with LLGo guests.
+The first target is a CI requirement from project initialization. The second is an integration milestone in M4, after both core backends, WASI P1, threads, EH, and SIMD are implemented. Compiling the host with LLGo does not automatically provide the second capability. Likewise, executing the standard Go compiler's `wasip1/wasm` output does not prove compatibility with LLGo guests.
 
 ## Toolchains and source language baseline
 
@@ -25,11 +25,11 @@ Evidence: [LLGo v1.0.8 go.mod](https://github.com/xgo-dev/llgo/blob/c171abfa1301
 
 ## Portable implementation constraints
 
-1. Use ordinary Go for the initial executor, validator, memory, and object management. Avoid the gc compiler's private ABI, assembly call bridges, private `runtime` symbols, and `go:linkname`. Isolate genuine platform differences in `internal/platform` using `//go:build llgo` / `!llgo`, while keeping the higher-level API and tests identical.
+1. Use ordinary Go for the interpreter, validator, compiler and object management. Avoid the gc compiler's private ABI, private `runtime` symbols and `go:linkname`. The required native backend uses the small [C ABI adapter](native-abi.md); standard-Go native execution initially requires cgo, while the interpreter and compiler logic remain buildable without it. Isolate genuine platform differences in `internal/platform` using `//go:build llgo` / `!llgo`, while keeping the higher-level API and tests identical.
 2. Do not retain Go object addresses encoded as `uintptr`, or hide Go pointers in `[]byte`, numeric value slots, or guest linear memory. Objects that must remain reachable to the host GC need real typed references or an explicit root registry. If guest GC objects use handles, the VM owns handle-table release, generation validation, and root scanning.
 3. Do not derive guest semantics from finalizer timing, exact host collection timing, or one compiler's heap statistics. Native LLGo uses conservative BDWGC by default, while standard Go has a different runtime. Guest WasmGC object lifetimes, resource closure, and quotas need explicit contracts.
 4. Use `encoding/binary` and explicit bit operations to interpret little-endian guest memory, and `math.Float32bits` / `Float64bits` for floating-point representations. The default path must not cast byte slices through `unsafe.Pointer` for atomic access, avoiding alignment, host-endianness, and GC-root issues. Add lock-free fast paths only after a reference memory implementation and boundary tests exist.
-5. The VM memory layer implements Wasm atomic semantics. Go's `sync/atomic` is a candidate host mechanism, not a substitute for the complete Wasm memory model. Design mixed atomic/ordinary accesses, overlapping widths, `memory.grow`, and wait/notify registration and wakeup together so that the VM itself has no Go data race.
+5. The VM memory layer implements Wasm atomic semantics on both backends. Go's `sync/atomic` is a candidate host mechanism, not a substitute for the complete Wasm memory model. Design mixed atomic/ordinary accesses, overlapping widths, `memory.grow`, and wait/notify registration and wakeup together so that the VM itself has no Go data race.
 6. Native LLGo maps goroutines 1:1 to OS threads with fixed native stacks. Limit VM workers, guest threads, and recursion depth. Use explicit interpreter frame stacks so unbounded guest recursion cannot exhaust the host stack. Do not assume host goroutines can be created indefinitely at negligible cost.
 
 Sources: [runtime and source compatibility notes at the local snapshot](https://github.com/xgo-dev/llgo/blob/38bfd05ee102e36710a2df5bca47834a622b667c/README.md) and [classification of gc-specific implementation differences](https://github.com/xgo-dev/llgo/blob/38bfd05ee102e36710a2df5bca47834a622b667c/test/goroot/notapplicable.yaml). These constraints are project design decisions; they do not imply that ordinary `unsafe` or standard-library APIs are universally unavailable in LLGo.
@@ -68,6 +68,17 @@ The executable configuration is [ci.yml](../../.github/workflows/ci.yml). Both c
 `CGO_ENABLED=0` applies only to the basic Go test step, not the entire workflow environment. LLGo's LLVM and BDWGC dependencies are consistent with the goal that the VM source should not depend on a cgo-based engine. The root scaffold has no external dependency, while the evaluation modules have their own `go.sum` files. Action caching remains disabled; future caches must include all relevant module sums, compiler revision, LLVM, OS, and architecture.
 
 The current repository probes cover typed atomics and goroutine/lock synchronization, numeric bit patterns and little-endian encoding, reference cycles remaining reachable across explicit GC, condition-variable wakeup, and context cancellation. Future VM tests must cover shared-memory growth, lost wakeups, cancellation propagation, GC roots across host calls/stack growth, EH unwinding, and resource closure. Retain minimal reproductions and issues for gc/LLGo differences; skipping an entire feature does not establish compatibility.
+
+## Required own-core matrix (planned)
+
+The current workflow tests candidate engines and host probes on Linux amd64. It does **not** yet implement this future matrix:
+
+- M1: the complete Core 2.0 interpreter corpus and lifecycle suite under Go/LLGo on Linux amd64 and macOS arm64; Go tests with `CGO_ENABLED=0`.
+- M2: the same full corpus with forced interpreter and native backends on each host/compiler pair, plus the [native ABI gates](native-abi.md). Add standard-Go `CGO_ENABLED=1` native execution and pointer-rule checks while retaining the cgo-free interpreter/compiler job. A cgo-free native-unavailable assertion is not counted as native execution.
+- M3 onward: extend the same matrix to all accepted feature combinations and guest integrations; no whole-feature compiler skips or silent backend fallback.
+- Add controlled performance acceptance separately from advisory hosted PR timing, following the [performance contract](performance-contract.md). Record actual native backend, target CPU profile, bridge mode, emitted-code identity and compiler revision.
+
+Native cancellation/control records use the bridge's defined cross-language atomic handshake. Race-detector success in Go does not prove generated-code memory ordering, root publication or safe executable-code retirement. Architecture-specific tests and forced host/guest collection are mandatory.
 
 ## Local verification evidence and commands
 
