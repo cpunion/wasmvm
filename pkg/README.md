@@ -1,15 +1,15 @@
-# 公共包
+# Public Packages
 
-当前只有包职责声明，没有 VM 功能实现。
+These packages currently declare their intended responsibilities only. They contain no VM implementation.
 
-| 路径 | 规划职责 |
+| Path | Planned responsibility |
 | --- | --- |
-| `wasm` | 公开值/类型与特性集合 |
-| `vm` | 引擎、Store、模块、实例、host imports 和调用 API |
-| `component` | Component Model 的嵌入接口 |
+| `wasm` | Public values/types and feature sets |
+| `vm` | Engine, Store, modules, instances, host imports, and call APIs |
+| `component` | Component Model embedding APIs |
 | `wasi/preview1` | WASI Preview 1 |
-| `wasi/threads` | 独立可选的 legacy wasi-threads |
+| `wasi/threads` | Separate, optional legacy wasi-threads support |
 | `wasi/preview2` | WASI 0.2 |
 | `wasi/preview3` | WASI 0.3 |
 
-完整目录与依赖方向见 [packages.md](../docs/design/packages.md)；当前实现状态见 [README](../README.md)。
+See [packages.md](../docs/design/packages.md) for the complete layout and dependency direction, and [README](../README.md) for the current implementation status.

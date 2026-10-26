@@ -1,244 +1,244 @@
-# WebAssembly / WASI 标准与提案调研
+# WebAssembly and WASI Standards and Proposal Survey
 
-调研日期：**2026-10-26（Asia/Shanghai）**。这是本日实际读取的一手资料快照，不把旧路线图当成已经发生的发布，也不把提案成熟度当成某个引擎的默认支持情况。本文件中的优先级和工程方案是本项目的设计判断。
+Research date: **2026-10-26 (Asia/Shanghai)**. This document records primary sources inspected on that date. It does not treat an old roadmap as evidence that a release has shipped, or proposal maturity as evidence of an engine's default support. Priorities and implementation approaches below are this project's design judgments.
 
-## 结论
+## Findings
 
-建议以 **Core Wasm 3.0 为长期语义目标，以 WASI 0.1 + legacy wasi-threads 为首个实用兼容目标**，随后交付 WasmGC、Component Model / WASI 0.2，再实现已发布的 WASI 0.3。GC 和多线程从第一版数据结构中预留，但分阶段验收；初期支持“GC 模块”和“共享线性内存线程”两种能力，不承诺跨线程共享 WasmGC 对象。
+Use **Core Wasm 3.0 as the long-term semantic target and WASI 0.1 with legacy wasi-threads as the first practical compatibility target**. Add WasmGC, Component Model / WASI 0.2, and then the already released WASI 0.3 through separate acceptance milestones. Account for GC and multithreading in the initial data model, but validate them independently. Initial support for GC modules and shared-linear-memory threads does not promise shared WasmGC objects across threads.
 
-截至调研日，GC、typed function references、tail call、最终版 exception handling、memory64、multi-memory 和 relaxed SIMD 已进入 Core 3.0。Threads 仍为 Phase 4；Shared-Everything Threads 为 Phase 1；Stack Switching 为 Phase 3。不能继续把 GC 写成实验性早期提案，也不能把 shared GC heap 写成已标准化线程能力。[完成提案表](https://github.com/WebAssembly/proposals/blob/main/finished-proposals.md)、[活动提案表](https://github.com/WebAssembly/proposals/blob/main/README.md)。
+At the research date, GC, typed function references, tail calls, final exception handling, memory64, multi-memory, and relaxed SIMD are included in Core 3.0. Threads remains at Phase 4, Shared-Everything Threads at Phase 1, and Stack Switching at Phase 3. GC should no longer be described as an early experimental proposal, and a shared GC heap should not be described as an already standardized threading capability. Sources: [finished proposals](https://github.com/WebAssembly/proposals/blob/main/finished-proposals.md), [active proposals](https://github.com/WebAssembly/proposals/blob/main/README.md).
 
-WASI 0.3.0 已于 **2026-06-11** 发布，最新查到的稳定补丁为 **0.3.2（2026-10-13）**；0.2 最新查到的补丁为 **0.2.12（2026-06-02）**。WASI 0.3 不应再列为“尚未发布”。[0.3.0 发布记录](https://github.com/WebAssembly/WASI/releases/tag/v0.3.0)、[0.3.2 发布记录](https://github.com/WebAssembly/WASI/releases/tag/v0.3.2)、[0.2.12 发布记录](https://github.com/WebAssembly/WASI/releases/tag/v0.2.12)。
+WASI 0.3.0 was released on **2026-06-11**. The latest stable patch found was **0.3.2 (2026-10-13)**; the latest 0.2 patch found was **0.2.12 (2026-06-02)**. WASI 0.3 must no longer be listed as unreleased. Sources: [0.3.0 release](https://github.com/WebAssembly/WASI/releases/tag/v0.3.0), [0.3.2 release](https://github.com/WebAssembly/WASI/releases/tag/v0.3.2), [0.2.12 release](https://github.com/WebAssembly/WASI/releases/tag/v0.2.12).
 
-## 1. “标准化”的三个不同层次
+## 1. Three distinct meanings of standardization
 
-| 层次 | 本次观察 | 项目应如何记录 |
+| Level | Observation | How this project should record it |
 | --- | --- | --- |
-| Core 提案阶段 | Phase 4 表示交由 WG 完成标准化；Phase 5 表示 WG 已达成完成共识，随后并入主规范 | FeatureSet 按具体特性开关，不靠一个“最新版本”布尔值 |
-| Core 语义版本 | 官方 2025-09-17 宣布 Wasm 3.0 完成；当前 live spec 页标注 Release 3.0，2026-10-23 | 固定规范 / 测试集 commit，声明具体通过的特性集合 |
-| W3C 发布状态 | 当前 TR 是 **Candidate Recommendation Draft，2026-10-23**；2019-12-05 的 1.0 是 Recommendation | 不把“Core 3.0 已完成”改写为“3.0 已成为 W3C Recommendation” |
+| Core proposal phase | Phase 4 hands a proposal to the WG for standardization; Phase 5 records WG consensus on completion, before integration into the main specification | Use individual FeatureSet flags rather than a single latest-version switch |
+| Core semantic version | The official announcement declared Wasm 3.0 complete on 2025-09-17; the live specification identifies itself as Release 3.0, dated 2026-10-23 | Pin specification and test-suite commits, and declare the exact feature set that passes |
+| W3C publication status | The current TR is a **Candidate Recommendation Draft, 2026-10-23**; version 1.0 from 2019-12-05 is a Recommendation | Do not rewrite Core 3.0 completion as a claim that 3.0 is a W3C Recommendation |
 
-来源：[阶段流程](https://github.com/WebAssembly/meetings/blob/main/process/phases.md)、[3.0 完成公告](https://webassembly.org/news/2025-09-17-wasm-3.0/)、[当前 Core 文本](https://webassembly.github.io/spec/core/)、[W3C 当前 TR](https://www.w3.org/TR/wasm-core/)、[W3C 发布系列页](https://www.w3.org/TR/wasm-core/all/)。TR 状态说明还明确其 living standard 维护方式；“Candidate Recommendation”与引擎是否适合生产使用是不同问题。
+Sources: [phase process](https://github.com/WebAssembly/meetings/blob/main/process/phases.md), [3.0 completion announcement](https://webassembly.org/news/2025-09-17-wasm-3.0/), [current Core specification](https://webassembly.github.io/spec/core/), [current W3C TR](https://www.w3.org/TR/wasm-core/), [W3C publication series](https://www.w3.org/TR/wasm-core/all/). The TR status section also explains its living-standard maintenance model. Candidate Recommendation status and an engine's production readiness are different questions.
 
-**另一个常见混淆：** Core 3.0 的模块二进制头仍是版本 `1`，不是把头改为 `3`；特性通过类型、指令、段及验证规则扩展。Component 二进制另有封装与版本规则，应由独立 decoder 处理。[Core 二进制模块格式](https://webassembly.github.io/spec/core/binary/modules.html#binary-module)、[Component binary format](https://github.com/WebAssembly/component-model/blob/main/design/mvp/Binary.md)。
+**Another common source of confusion:** the Core 3.0 module binary header still uses version `1`, not `3`. Features extend types, instructions, sections, and validation rules. Components have separate binary framing and version rules and should use a separate decoder. Sources: [Core binary module format](https://webassembly.github.io/spec/core/binary/modules.html#binary-module), [Component binary format](https://github.com/WebAssembly/component-model/blob/main/design/mvp/Binary.md).
 
-## 2. Core / embedding 提案矩阵
+## 2. Core and embedding proposal matrix
 
-以下覆盖官方 `WebAssembly/proposals` 在本次快照列出的完成、活动及 inactive 项目。Phase 0 的开放 issue 不等于受理的完整提案集合，因此只监控，不枚举为已承诺特性。
+This section covers the finished, active, and inactive entries listed by `WebAssembly/proposals` in this snapshot. Open Phase 0 issues are not a complete set of accepted proposals; monitor them without treating them as committed features.
 
-阶段来源固定为 [proposals commit `df6a2aca`](https://github.com/WebAssembly/proposals/tree/df6a2aca1cd9d779eb4f2f3e19dae8277f336015)，对应活动 / 完成表文件最近修改时间 2026-10-06。交叉核对 [官方 feature data](https://github.com/WebAssembly/website/blob/main/features.json)，本次读取显示文件修改于 2026-10-21。
+Proposal phases are pinned to [proposals commit `df6a2aca`](https://github.com/WebAssembly/proposals/tree/df6a2aca1cd9d779eb4f2f3e19dae8277f336015). The active and finished tables were last modified on 2026-10-06. They were cross-checked against the [official feature data](https://github.com/WebAssembly/website/blob/main/features.json), whose observed modification date was 2026-10-21.
 
-### 2.1 已完成并进入 Core 或 embedding 规范的项目
+### 2.1 Completed features integrated into Core or embedding specifications
 
-下表“阶段”均为完成提案；版本和受影响规范见 [官方完成表](https://github.com/WebAssembly/proposals/blob/df6a2aca1cd9d779eb4f2f3e19dae8277f336015/finished-proposals.md)。
+All entries below are completed proposals. Versions and affected specifications are recorded in the [official finished table](https://github.com/WebAssembly/proposals/blob/df6a2aca1cd9d779eb4f2f3e19dae8277f336015/finished-proposals.md).
 
-| 特性 | 版本 / 层次 | 本项目取舍 |
+| Feature | Version / layer | Project approach |
 | --- | --- | --- |
-| MVP | Core 1.0 | 第一阶段执行与验证基础 |
-| Import/Export of Mutable Globals | Core 1.0 | 第一阶段 |
-| Non-trapping float-to-int | Core 2.0 | 第一阶段，注意 NaN 与饱和边界 |
-| Sign-extension operators | Core 2.0 | 第一阶段 |
-| Multi-value | Core 2.0 | 第一阶段，栈帧从一开始允许多返回值 |
-| Reference Types | Core 2.0 | 第一阶段；`externref` 与 `funcref` 生命周期显式化 |
-| Bulk memory operations | Core 2.0 | 第一阶段；支持 passive segments / data count |
-| Fixed-width SIMD | Core 2.0 | 完成 Core 2.0 声明前实现；可先标量解释 |
-| JS BigInt ↔ Wasm i64 | JS API 2.0 | 不属于独立 Go VM 的必要宿主 API |
-| Tail call | Core 3.0 | 早期 IR 保留尾调用；不可用普通递归伪装 |
-| Extended Constant Expressions | Core 3.0 | 与 initializer validator 一起实现 |
-| Typed Function References | Core / JS API 3.0 | 与递归类型、GC 类型系统一起实现 |
-| Garbage collection | Core / JS API 3.0 | 必做；单独的 WasmGC 里程碑 |
-| Multiple memories | Core / JS API 3.0 | 从初期保存 memidx，避免单内存架构锁定 |
-| Relaxed SIMD | Core 3.0 | SIMD 后实现，并明确确定性 profile |
-| Custom Annotation Syntax | 文本格式 3.0 | WAT 工具链阶段；不阻塞二进制执行 |
-| Branch Hinting | Core custom section 3.0 | 可识别并忽略，不改变执行语义 |
-| Exception handling | Core / JS API 3.0 | 实现最终 `try_table` / `exnref` 形式 |
-| JS String Builtins | Core / JS embedding 3.0 | 记录为 embedding 扩展，按需求另做 |
-| Memory64 | Core 3.0 | 内部地址先用 `uint64`，独立开启执行支持 |
+| MVP | Core 1.0 | Foundation for initial execution and validation |
+| Import/Export of Mutable Globals | Core 1.0 | Initial implementation |
+| Non-trapping float-to-int | Core 2.0 | Initial implementation; test NaN and saturation boundaries |
+| Sign-extension operators | Core 2.0 | Initial implementation |
+| Multi-value | Core 2.0 | Initial implementation; support multiple results in frames from the outset |
+| Reference Types | Core 2.0 | Initial implementation; make `externref` and `funcref` lifetimes explicit |
+| Bulk memory operations | Core 2.0 | Initial implementation, including passive segments and data count |
+| Fixed-width SIMD | Core 2.0 | Required before claiming Core 2.0 coverage; scalar interpretation is acceptable initially |
+| JS BigInt ↔ Wasm i64 | JS API 2.0 | Not a required host API for a standalone Go VM |
+| Tail call | Core 3.0 | Preserve tail calls in the initial IR; ordinary recursion is not a substitute |
+| Extended Constant Expressions | Core 3.0 | Implement with initializer validation |
+| Typed Function References | Core / JS API 3.0 | Implement with recursive types and the GC type system |
+| Garbage collection | Core / JS API 3.0 | Required; a separate WasmGC milestone |
+| Multiple memories | Core / JS API 3.0 | Preserve memidx from the outset to avoid a single-memory architecture |
+| Relaxed SIMD | Core 3.0 | Follow SIMD, with an explicit determinism profile |
+| Custom Annotation Syntax | Text format 3.0 | Follow in WAT tooling; does not block binary execution |
+| Branch Hinting | Core custom section 3.0 | May be recognized and ignored without changing execution semantics |
+| Exception handling | Core / JS API 3.0 | Implement the final `try_table` / `exnref` form |
+| JS String Builtins | Core / JS embedding 3.0 | Track as an embedding extension; implement separately if needed |
+| Memory64 | Core 3.0 | Use `uint64` for internal addresses from the outset; gate execution support separately |
 
-### 2.2 活动提案
+### 2.2 Active proposals
 
-每行的阶段均来自 [固定快照活动表](https://github.com/WebAssembly/proposals/blob/df6a2aca1cd9d779eb4f2f3e19dae8277f336015/README.md)。项目链接提供该项原始定义；优先级为本项目判断。
+Each phase comes from the [pinned active table](https://github.com/WebAssembly/proposals/blob/df6a2aca1cd9d779eb4f2f3e19dae8277f336015/README.md). Proposal links provide the original definitions. Priorities are this project's decisions.
 
-| 提案 | Phase | 本项目取舍 |
+| Proposal | Phase | Project approach |
 | --- | ---: | --- |
-| [JS Promise Integration](https://github.com/WebAssembly/js-promise-integration) | 5 | JS embedding 相关；独立 Go VM 无需模拟 Promise |
-| [Web Content Security Policy](https://github.com/WebAssembly/content-security-policy) | 5 | Web embedding 相关 |
-| [Threads](https://github.com/WebAssembly/threads) | 4 | 必做：shared memory、atomics、wait/notify |
-| [Compact Import Section](https://github.com/WebAssembly/compact-import-section) | 4 | 后续 decoder 兼容；独立 feature gate |
-| [Wide Arithmetic](https://github.com/WebAssembly/wide-arithmetic) | 4 | 后续数值扩展，结构上易隔离 |
-| [ESM Integration](https://github.com/WebAssembly/esm-integration) | 3 | JS embedding 相关 |
-| [Stack Switching](https://github.com/WebAssembly/stack-switching) | 3 | 栈帧设计预留 continuation；默认关闭 |
-| [Custom Page Sizes](https://github.com/WebAssembly/custom-page-sizes) | 3 | 内部避免到处硬编码 page shift；实验开关 |
-| [Custom Descriptors and JS Interop](https://github.com/WebAssembly/custom-descriptors) | 3 | GC 后跟进；不纳入首版 GC 声明 |
-| [Relaxed dead code validation](https://github.com/WebAssembly/relaxed-dead-code-validation) | 2 | 暂不放宽 validator；按快照实验 |
-| [Numeric Values in WAT Data Segments](https://github.com/WebAssembly/wat-numeric-values) | 2 | 文本工具层跟进 |
-| [Extended Name Section](https://github.com/WebAssembly/extended-name-section) | 2 | 调试信息可选解析 |
-| [Rounding Variants](https://github.com/WebAssembly/rounding-mode-control) | 2 | 实验数值扩展 |
-| [Compilation Hints](https://github.com/WebAssembly/compilation-hints) | 2 | 解释器先忽略提示，JIT 时评估 |
-| [JS Primitive Builtins](https://github.com/WebAssembly/js-primitive-builtins) | 2 | JS embedding 相关 |
-| [Acquire-Release Atomics](https://github.com/WebAssembly/acquire-release-atomics) | 2 | 不与现有 SC atomics 混淆；后续实验 |
-| [Multibyte Array Access](https://github.com/WebAssembly/multibyte-array-access) | 2 | WasmGC 后再评估 |
-| [FP16](https://github.com/WebAssembly/half-precision) | 2 | SIMD / 数值扩展实验 |
-| [Type Imports](https://github.com/WebAssembly/proposal-type-imports) | 1 | 类型注册表避免绑定单一模块；不承诺实现 |
-| [Component Model](https://github.com/WebAssembly/component-model) | 1 | 必做其已发布 WASI 子集，不能以整体 Phase 1 为由忽略 |
-| [C and C++ API](https://github.com/WebAssembly/wasm-c-api) | 1 | 首版提供 Go API；C ABI 适配以后再做 |
-| [Flexible Vectors](https://github.com/WebAssembly/flexible-vectors) | 1 | 不作为 `v128` 首版范围 |
-| [Memory control](https://github.com/WebAssembly/memory-control) | 1 | 当前资源配额属于 embedding，不假装提案实现 |
-| [Reference-Typed Strings](https://github.com/WebAssembly/stringref) | 1 | 不等于 WasmGC；单独跟踪 |
-| [Profiles](https://github.com/WebAssembly/profiles) | 1 | 更广泛 profile 提案；与 Core 3.0 已有确定性约束分开 |
-| [Shared-Everything Threads](https://github.com/WebAssembly/shared-everything-threads) | 1 | 预留共享标记和 heap ownership，稳定范围外 |
-| [Frozen Values](https://github.com/WebAssembly/frozen-values) | 1 | GC 后研究 |
-| [More Array Constructors](https://github.com/WebAssembly/more-array-constructors) | 1 | GC 后研究 |
-| [JIT Interface](https://github.com/WebAssembly/jit-interface) | 1 | 不作为本 VM 实现内部 JIT 的前置条件 |
-| [Type Reflection for JS API](https://github.com/WebAssembly/js-types) | 1 | JS embedding 相关 |
-| [JS Text Encoding Builtins](https://github.com/WebAssembly/js-text-encoding-builtins) | 1 | JS embedding 相关 |
+| [JS Promise Integration](https://github.com/WebAssembly/js-promise-integration) | 5 | JS embedding; a standalone Go VM need not emulate Promises |
+| [Web Content Security Policy](https://github.com/WebAssembly/content-security-policy) | 5 | Web embedding |
+| [Threads](https://github.com/WebAssembly/threads) | 4 | Required: shared memory, atomics, and wait/notify |
+| [Compact Import Section](https://github.com/WebAssembly/compact-import-section) | 4 | Later decoder compatibility, behind a separate feature gate |
+| [Wide Arithmetic](https://github.com/WebAssembly/wide-arithmetic) | 4 | Later numeric extension with a relatively isolated implementation boundary |
+| [ESM Integration](https://github.com/WebAssembly/esm-integration) | 3 | JS embedding |
+| [Stack Switching](https://github.com/WebAssembly/stack-switching) | 3 | Leave room for continuations in frame design; disabled by default |
+| [Custom Page Sizes](https://github.com/WebAssembly/custom-page-sizes) | 3 | Avoid scattered hard-coded page shifts; experimental flag |
+| [Custom Descriptors and JS Interop](https://github.com/WebAssembly/custom-descriptors) | 3 | Follow GC; outside the first GC support claim |
+| [Relaxed dead code validation](https://github.com/WebAssembly/relaxed-dead-code-validation) | 2 | Keep current validation rules; experiment against a pinned snapshot |
+| [Numeric Values in WAT Data Segments](https://github.com/WebAssembly/wat-numeric-values) | 2 | Follow in text tooling |
+| [Extended Name Section](https://github.com/WebAssembly/extended-name-section) | 2 | Optional debug-information parsing |
+| [Rounding Variants](https://github.com/WebAssembly/rounding-mode-control) | 2 | Experimental numeric extension |
+| [Compilation Hints](https://github.com/WebAssembly/compilation-hints) | 2 | Ignore hints in the initial interpreter; evaluate for a future JIT |
+| [JS Primitive Builtins](https://github.com/WebAssembly/js-primitive-builtins) | 2 | JS embedding |
+| [Acquire-Release Atomics](https://github.com/WebAssembly/acquire-release-atomics) | 2 | Separate from existing SC atomics; later experiment |
+| [Multibyte Array Access](https://github.com/WebAssembly/multibyte-array-access) | 2 | Evaluate after WasmGC |
+| [FP16](https://github.com/WebAssembly/half-precision) | 2 | Experimental SIMD / numeric extension |
+| [Type Imports](https://github.com/WebAssembly/proposal-type-imports) | 1 | Avoid tying the type registry to one module; no implementation commitment |
+| [Component Model](https://github.com/WebAssembly/component-model) | 1 | Implement the subsets required by released WASI versions; overall Phase 1 status is not a reason to omit them |
+| [C and C++ API](https://github.com/WebAssembly/wasm-c-api) | 1 | Start with a Go API; consider a C ABI adapter later |
+| [Flexible Vectors](https://github.com/WebAssembly/flexible-vectors) | 1 | Outside the initial `v128` scope |
+| [Memory control](https://github.com/WebAssembly/memory-control) | 1 | Current resource limits are embedding features, not an implementation of this proposal |
+| [Reference-Typed Strings](https://github.com/WebAssembly/stringref) | 1 | Distinct from WasmGC; track separately |
+| [Profiles](https://github.com/WebAssembly/profiles) | 1 | A broader profiles proposal, separate from existing Core 3.0 determinism constraints |
+| [Shared-Everything Threads](https://github.com/WebAssembly/shared-everything-threads) | 1 | Reserve shared markers and heap ownership boundaries; outside the stable feature set |
+| [Frozen Values](https://github.com/WebAssembly/frozen-values) | 1 | Research after GC |
+| [More Array Constructors](https://github.com/WebAssembly/more-array-constructors) | 1 | Research after GC |
+| [JIT Interface](https://github.com/WebAssembly/jit-interface) | 1 | Not a prerequisite for implementing this VM's internal JIT |
+| [Type Reflection for JS API](https://github.com/WebAssembly/js-types) | 1 | JS embedding |
+| [JS Text Encoding Builtins](https://github.com/WebAssembly/js-text-encoding-builtins) | 1 | JS embedding |
 
-Phase 5 但仍留在活动表的项目表示 WG 已完成，尚未并入主规范；这与“finished 表中的完成提案”位置差异应保留，不能机械地认为活动表全部不稳定。
+Phase 5 entries that remain in the active table have completed the WG process but have not yet been integrated into the main specification. Preserve this distinction from entries in the finished table; not every active-table entry is necessarily unstable.
 
-### 2.3 Inactive / 被替代项目
+### 2.3 Inactive or superseded proposals
 
-下列清单来源：[固定快照 inactive 表](https://github.com/WebAssembly/proposals/blob/df6a2aca1cd9d779eb4f2f3e19dae8277f336015/inactive-proposals.md)。
+Source: [pinned inactive table](https://github.com/WebAssembly/proposals/blob/df6a2aca1cd9d779eb4f2f3e19dae8277f336015/inactive-proposals.md).
 
-| 项目 | 状态 / 替代方向 | 项目决定 |
+| Proposal | Status / successor | Project decision |
 | --- | --- | --- |
-| Unmanaged closures | Typed Function References 替代 | 不实现旧方案 |
-| Conditional sections | 转向 Feature Detection，后者也撤回 | 不实现旧方案 |
-| Feature Detection | 缺少共识而撤回 | 使用宿主 capability API |
-| Module Linking | 转向 Component Model | 采用 Component 路线 |
-| Interface Types | 转向 Component Model | 采用 WIT / Canonical ABI 路线 |
-| Funclets | 转向 multiloop 方向 | 不采用旧编码 |
-| Call Tags | inactive | 观察 |
-| Constant Time | inactive | 不宣称恒定时间执行 |
-| JS Customization for GC Objects | Custom Descriptors 替代 | 不实现旧方案 |
-| Instrument and Tracing Technology | inactive | 使用自己的调试接口，不冒称提案兼容 |
+| Unmanaged closures | Superseded by Typed Function References | Do not implement the old design |
+| Conditional sections | Redirected to Feature Detection, which was later withdrawn | Do not implement the old design |
+| Feature Detection | Withdrawn for lack of consensus | Use a host capability API |
+| Module Linking | Redirected to Component Model | Follow the Component Model |
+| Interface Types | Redirected to Component Model | Follow WIT / Canonical ABI |
+| Funclets | Redirected toward multiloop work | Do not adopt the old encoding |
+| Call Tags | Inactive | Monitor |
+| Constant Time | Inactive | Do not claim constant-time execution |
+| JS Customization for GC Objects | Superseded by Custom Descriptors | Do not implement the old design |
+| Instrument and Tracing Technology | Inactive | Use project debugging APIs without claiming proposal compatibility |
 
-另需显式记录 **legacy EH**：官方 feature data 将旧异常格式列为 inactive；最终 EH explainer 将旧文档单独链接。旧 `try/catch/rethrow/delegate` 不等于 Core 3.0 的 `try_table`、`throw_ref` 和 `exnref`。[最终 EH 文档](https://github.com/WebAssembly/exception-handling/blob/main/proposals/exception-handling/Exceptions.md)、[旧 EH 文档](https://github.com/WebAssembly/exception-handling/blob/main/proposals/exception-handling/legacy/Exceptions.md)。若 llgo 实际产物仍使用旧编码，做显式兼容 feature，分别测试，不混写“EH 支持”。
+Record **legacy EH** explicitly. Official feature data marks the old exception format as inactive, and the final EH explainer links the old documentation separately. The old `try/catch/rethrow/delegate` form is different from Core 3.0 `try_table`, `throw_ref`, and `exnref`. Sources: [final EH documentation](https://github.com/WebAssembly/exception-handling/blob/main/proposals/exception-handling/Exceptions.md), [legacy EH documentation](https://github.com/WebAssembly/exception-handling/blob/main/proposals/exception-handling/legacy/Exceptions.md). If an actual llgo artifact uses the old encoding, provide an explicit compatibility feature and separate tests rather than an undifferentiated EH support claim.
 
-## 3. WASI 与 Component Model
+## 3. WASI and the Component Model
 
-### 3.1 已发布版本和 API 面
+### 3.1 Released versions and API scope
 
-| 版本 | 当前地位 | 二进制 / ABI | 工程目标 |
+| Version | Status in this snapshot | Binary / ABI | Engineering target |
 | --- | --- | --- | --- |
-| WASI 0.1 / Preview 1 | legacy、广泛部署 | core module，`wasi_snapshot_preview1`，WITX | 首个实际可运行目标 |
-| WASI 0.2 / Preview 2 | 稳定，已被 0.3 接续；最新查到 0.2.12 | Component、WIT、资源 handles、Canonical ABI、`wasi:io` polling | 首个组件里程碑 |
-| WASI 0.3 / Preview 3 | 当前稳定系列；最新查到 0.3.2 | 原生 `async func`、`future<T>`、`stream<T>`；移除 `wasi:io` 包 | 独立的异步组件里程碑 |
-| WASI 1.0 | 没有查到已发布 1.0 | 不以未来语义作为当前验收标准 | 跟踪 |
+| WASI 0.1 / Preview 1 | Legacy, widely deployed | Core modules, `wasi_snapshot_preview1`, WITX | First executable compatibility target |
+| WASI 0.2 / Preview 2 | Stable, succeeded by 0.3; latest patch found: 0.2.12 | Components, WIT, resource handles, Canonical ABI, `wasi:io` polling | First component milestone |
+| WASI 0.3 / Preview 3 | Current stable series; latest patch found: 0.3.2 | Native `async func`, `future<T>`, and `stream<T>`; removes the `wasi:io` package | Separate async-component milestone |
+| WASI 1.0 | No released 1.0 found | Do not use future semantics as current acceptance criteria | Monitor |
 
-来源：[0.1 官方说明](https://wasi.dev/releases/wasi-p1)、[0.2 官方说明](https://wasi.dev/releases/wasi-p2)、[0.3 官方说明](https://wasi.dev/releases/wasi-p3)、[WASI 发布页](https://github.com/WebAssembly/WASI/releases)。0.1 不提供通用 connect/listen 和 HTTP；需要完整网络能力时应实现对应 0.2/0.3 接口，而不是把自定义 socket 扩展命名为标准 WASI。
+Sources: [official 0.1 overview](https://wasi.dev/releases/wasi-p1), [official 0.2 overview](https://wasi.dev/releases/wasi-p2), [official 0.3 overview](https://wasi.dev/releases/wasi-p3), [WASI releases](https://github.com/WebAssembly/WASI/releases). Version 0.1 does not provide general connect/listen or HTTP APIs. Full networking should use the corresponding 0.2/0.3 interfaces, rather than labeling a custom socket extension as standard WASI.
 
-“WASI 支持”必须变成 **版本 + world/interface + 操作覆盖 + 测试结果**。建议依次验收 CLI、clocks/random、filesystem、poll/I/O、sockets，再验收 HTTP；只跑通 hello world 不构成整个版本的支持。0.2 的 `wasi:cli/command`、`wasi:http/proxy` 与 0.3 的 `wasi:cli/command`、`wasi:http/service` / `middleware` 分别处理。[0.2 API](https://wasi.dev/releases/wasi-p2)、[0.3 发布说明](https://github.com/WebAssembly/WASI/releases/tag/v0.3.0)。
+A WASI support claim must specify **version + world/interface + operation coverage + test results**. Validate CLI, clocks/random, filesystem, poll/I/O, sockets, and then HTTP. Running hello world does not demonstrate support for an entire version. Treat 0.2 `wasi:cli/command` and `wasi:http/proxy` separately from 0.3 `wasi:cli/command` and `wasi:http/service` / `middleware`. Sources: [0.2 APIs](https://wasi.dev/releases/wasi-p2), [0.3 release notes](https://github.com/WebAssembly/WASI/releases/tag/v0.3.0).
 
-### 3.2 Component Model Phase 1 与稳定子集并不矛盾
+### 3.2 Component Model Phase 1 and stable subsets are compatible statements
 
-Component Model 总体仍处于提案流程 Phase 1，但 WASI 已发布版本依赖的子集具有工具链兼容承诺。按 WASI 版本固定编码和语义，避免直接把整个 Component main 分支当成稳定 ABI。[Component README](https://github.com/WebAssembly/component-model/blob/main/README.md)。
+The overall Component Model proposal remains at Phase 1, while the subsets required by released WASI versions carry toolchain compatibility commitments. Pin encoding and semantics by WASI version rather than treating the entire Component Model main branch as a stable ABI. Source: [Component README](https://github.com/WebAssembly/component-model/blob/main/README.md).
 
-| WASI 起始版本 | 需要的 Component 特性 |
+| First WASI version requiring the feature | Required Component Model features |
 | --- | --- |
-| 0.2.0 | 当时默认、非 gated 的 Component 特性 |
-| 0.3.0 | 再加 async lift/lower、future、stream |
-| 0.3.1 | 再加 `map<K,V>`、`implements` / `external-id` 注解 |
-| 0.3.2 | 累积上述能力；没有从发布记录观察到新增采用项 |
+| 0.2.0 | The default, ungated Component Model features at that release |
+| 0.3.0 | Adds async lift/lower, futures, and streams |
+| 0.3.1 | Adds `map<K,V>` and `implements` / `external-id` annotations |
+| 0.3.2 | Accumulates the above; no newly adopted features were observed in its release record |
 
-来源：[正式采用记录](https://github.com/WebAssembly/WASI/blob/main/docs/ComponentModelFeatures.md)、[0.3.1 发布记录](https://github.com/WebAssembly/WASI/releases/tag/v0.3.1)。这些特性即使暂未出现在某个 WASI interface 内，也属于声明兼容对应版本的要求。
+Sources: [formal adoption record](https://github.com/WebAssembly/WASI/blob/main/docs/ComponentModelFeatures.md), [0.3.1 release](https://github.com/WebAssembly/WASI/releases/tag/v0.3.1). These requirements apply to a compatibility claim for the corresponding version even when a particular WASI interface does not yet use every feature.
 
-以下仍为 gated、不能混入稳定默认实现：threading built-ins、基于 Shared-Everything Threads 的 built-ins、stackful async lift、fixed-length lists、error-context、canonical interface names、Component memory64 等。[Component gated features](https://github.com/WebAssembly/component-model/blob/main/design/mvp/Explainer.md#gated-features)。尤其注意：**Core memory64 已完成，不代表 Component Canonical ABI 的 memory64 已稳定。**
+The following remain gated and must not silently enter the stable default implementation: threading built-ins, built-ins based on Shared-Everything Threads, stackful async lift, fixed-length lists, error-context, canonical interface names, Component memory64, and others. Source: [Component gated features](https://github.com/WebAssembly/component-model/blob/main/design/mvp/Explainer.md#gated-features). In particular, **completed Core memory64 does not mean memory64 in the Component Canonical ABI is stable**.
 
-### 3.3 WASI API 提案概览
+### 3.3 WASI API proposal overview
 
-阶段依据：[WASI proposals](https://github.com/WebAssembly/WASI/blob/main/docs/Proposals.md)，本次读取修改时间 2026-09-08。WASI 的 phase 流程和 Core 流程不是同一个发布承诺，不可仅比较数字。
+Phases come from [WASI proposals](https://github.com/WebAssembly/WASI/blob/main/docs/Proposals.md), whose observed modification date was 2026-09-08. WASI and Core phase processes do not make identical release commitments; comparing their phase numbers alone is misleading.
 
-| Phase | 官方列表中的 API / 扩展 | 本项目范围 |
+| Phase | APIs / extensions in the official list | Project scope |
 | --- | --- | --- |
-| 3 | Clocks、Random、Filesystem、Sockets、CLI、HTTP | 按 0.2 / 0.3 发布接口实现 |
-| 2 | Timezone、HTTP Informational Outbound Response、I2C、Key-value Store、wasi-nn、Runtime Config、WebGPU、Messaging | 作为可选 host plugin 候选，不纳入初始标准承诺 |
-| 1 | Blob Store、Crypto、GPIO、Distributed Lock、Logging、Observe、Parallel、Pattern Match、SPI、SQL、SQL Embed、Threads、TLS、URL、USB、OTel | 仅跟踪；成熟度、版本与稳定 WASI 主包分开 |
-| 4 / 5 | 当前表无条目 | 不称 WASI 0.3 已经是 1.0 / WG 最终标准 |
-| 0 | 当前仓库表没有正式列项 | 不将网页或旧路线图零散链接视作稳定 API |
+| 3 | Clocks, Random, Filesystem, Sockets, CLI, HTTP | Implement published 0.2 / 0.3 interfaces |
+| 2 | Timezone, HTTP Informational Outbound Response, I2C, Key-value Store, wasi-nn, Runtime Config, WebGPU, Messaging | Candidates for optional host plugins, outside initial standard support claims |
+| 1 | Blob Store, Crypto, GPIO, Distributed Lock, Logging, Observe, Parallel, Pattern Match, SPI, SQL, SQL Embed, Threads, TLS, URL, USB, OTel | Monitor; distinguish maturity and versions from stable WASI packages |
+| 4 / 5 | No entries in the observed table | Do not describe WASI 0.3 as 1.0 or as a final WG standard |
+| 0 | No formal entries in the observed repository table | Do not treat scattered website or old-roadmap links as stable APIs |
 
-### 3.4 本次发现的资料不同步
+### 3.4 Documentation discrepancies found during this survey
 
-- [wasi.dev roadmap](https://wasi.dev/roadmap) 仍把 2026-10-13 的 0.3.2 标为 Planned，但 [GitHub 0.3.2](https://github.com/WebAssembly/WASI/releases/tag/v0.3.2) 已有非预发布 release 和 WIT artifact。本报告采用发布事实。
-- [WASI API 列表](https://github.com/WebAssembly/WASI/blob/main/docs/Proposals.md) 的 Threads 链接使用 `wasi-native-threads`；本日访问该地址重定向到 [legacy wasi-threads](https://github.com/WebAssembly/wasi-threads)。不能由链接名称推导出独立且成熟的新线程 API。
-- [wasi-testsuite README](https://github.com/WebAssembly/wasi-testsuite/blob/main/README.md) 仍有 “forthcoming Preview 3” 用语；这不能推翻已存在的 0.3 release。测试接入时读取实际测试目录和固定版本，不只抄 README。
-- W3C 系列封面部分简介仍写 2.0，而当前规范正文为 3.0；本报告分别引用正文版本和 publication status，不从 URL 中的 `core-2` 推断语义版本。
+- The [wasi.dev roadmap](https://wasi.dev/roadmap) still marks 0.3.2, dated 2026-10-13, as Planned, but the [GitHub 0.3.2 release](https://github.com/WebAssembly/WASI/releases/tag/v0.3.2) contains a non-prerelease release and a WIT artifact. This report uses the observed release as evidence.
+- The Threads link in the [WASI API list](https://github.com/WebAssembly/WASI/blob/main/docs/Proposals.md) uses `wasi-native-threads`; on the research date it redirected to [legacy wasi-threads](https://github.com/WebAssembly/wasi-threads). The link name is not evidence of a separate, mature native-threading API.
+- The [wasi-testsuite README](https://github.com/WebAssembly/wasi-testsuite/blob/main/README.md) still refers to a forthcoming Preview 3. This does not invalidate the existing 0.3 release. Integrate tests from actual directories and pinned revisions rather than relying only on the README.
+- Parts of the W3C series overview still mention 2.0, while the current specification body identifies itself as 3.0. This report records semantic version and publication status separately and does not infer a semantic version from `core-2` in a URL.
 
-## 4. GC、线程、异步的边界
+## 4. Boundaries between GC, threads, and async
 
-### 4.1 三种“GC”需要分别命名
+### 4.1 Three different meanings of GC
 
-1. **VM 宿主 GC**：Go 或 llgo 对实现自身 Go 对象的内存管理。
-2. **guest 线性内存 GC**：例如语言运行时在 Wasm linear memory 内自己维护的堆；VM 看到的是字节。
-3. **WasmGC**：Core 指令 / 类型语义中的 struct、array、i31、递归类型、子类型和引用生命周期。
+1. **VM host GC:** Go or llgo memory management for the implementation's own Go objects.
+2. **Guest linear-memory GC:** a language runtime manages its own heap inside Wasm linear memory; the VM sees bytes.
+3. **WasmGC:** Core instruction and type semantics for structs, arrays, i31, recursive types, subtyping, and reference lifetimes.
 
-实现 1 不意味着实现 3；能运行带语言 GC 的 guest 也不代表能运行 WasmGC 模块。WasmGC 与 linear memory 是两个存储域。[Core 3.0 GC 说明](https://webassembly.org/news/2025-09-17-wasm-3.0/)、[GC proposal](https://github.com/WebAssembly/gc)。
+Implementing the first does not implement the third. Running a guest with its own language GC does not prove that the VM can run WasmGC modules. WasmGC and linear memory are separate storage domains. Sources: [Core 3.0 GC overview](https://webassembly.org/news/2025-09-17-wasm-3.0/), [GC proposal](https://github.com/WebAssembly/gc).
 
-工程建议：先实现非移动、精确标记清扫的 guest heap；引用通过可检查的 handle / slot 表表示，明确 store ownership 和 generation，避免将 Go 指针编码进 `uint64` 后依赖宿主保活。操作数栈、帧 locals、globals、tables、异常 payload、host handles 都属于 roots；尾调用、异常展开、host callback、取消和实例销毁都必须维护 root 生命周期。是否采用宿主对象承载部分数据可后续测量，但不能让 Go GC 的扫描规则替代 Wasm 类型和生命周期规则。
+Engineering recommendation: start with a non-moving guest heap using precise mark/sweep. Represent references through checked handle / slot tables with explicit store ownership and generations. Do not encode Go pointers in `uint64` and rely on the host to keep them alive. Operand stacks, frame locals, globals, tables, exception payloads, and host handles are roots. Tail calls, exception unwinding, host callbacks, cancellation, and instance destruction must preserve root lifetimes. Evaluate host objects as backing storage through measurements, but do not substitute the Go collector's scanning rules for Wasm type and lifetime semantics.
 
-### 4.2 三种线程能力
+### 4.2 Three distinct threading capabilities
 
-| 能力 | 标准边界 | 项目实现路线 |
+| Capability | Specification boundary | Project implementation path |
 | --- | --- | --- |
-| Core Threads | shared linear memory、SC atomics、wait/notify；创建 / join 由 embedder 决定 | 实现内存模型与等待队列，线程生命周期独立成层 |
-| legacy wasi-threads | Preview 1 扩展；instance-per-thread，进入 `wasi_thread_start` | 显式可选 ABI，用于现有 llgo / C / Rust 产物 |
-| Shared-Everything Threads | 共享函数 / 表 / globals / GC 引用、TLS、GC 原子操作等；仍 Phase 1 | 设计保留 shared 标记；稳定功能集暂不开放 |
+| Core Threads | Shared linear memory, SC atomics, wait/notify; creation and join are embedding concerns | Implement the memory model and wait queues; keep thread lifecycle in a separate layer |
+| Legacy wasi-threads | Preview 1 extension; one instance per thread, entering `wasi_thread_start` | Explicitly optional ABI for existing llgo / C / Rust artifacts |
+| Shared-Everything Threads | Shared functions, tables, globals, GC references, TLS, GC atomics, and more; still Phase 1 | Reserve shared markers in the design; exclude from the stable feature set |
 
-来源：[Core Threads overview](https://github.com/WebAssembly/threads/blob/main/proposals/threads/Overview.md)、[legacy wasi-threads](https://github.com/WebAssembly/wasi-threads/blob/main/README.md)、[Shared-Everything overview](https://github.com/WebAssembly/shared-everything-threads/blob/main/proposals/shared-everything-threads/Overview.md)。
+Sources: [Core Threads overview](https://github.com/WebAssembly/threads/blob/main/proposals/threads/Overview.md), [legacy wasi-threads](https://github.com/WebAssembly/wasi-threads/blob/main/README.md), [Shared-Everything overview](https://github.com/WebAssembly/shared-everything-threads/blob/main/proposals/shared-everything-threads/Overview.md).
 
-legacy `wasi-threads` 已有 wasi-libc pthreads 及 Wasmtime / WAMR / Wasmer / toywasm 实现经验，但它仍是 legacy Phase 1 扩展，不能因此称它为 WASI 0.2/0.3 的标准 pthreads。ABI 的 spawn 参数、返回值和 child entry 必须按固定版本文档测试。[ABI 定义](https://github.com/WebAssembly/wasi-threads/blob/main/wasi-threads.abi.md)、[实现列表](https://github.com/WebAssembly/wasi-threads#what-has-been-implemented)。
+Legacy `wasi-threads` has implementation experience in wasi-libc pthreads and Wasmtime / WAMR / Wasmer / toywasm. It remains a legacy Phase 1 extension, not standard WASI 0.2/0.3 pthreads. Test spawn parameters, return values, and child entry against a pinned ABI revision. Sources: [ABI definition](https://github.com/WebAssembly/wasi-threads/blob/main/wasi-threads.abi.md), [implementation list](https://github.com/WebAssembly/wasi-threads#what-has-been-implemented).
 
-核心设计要求：
+Core design requirements:
 
-- 线程使用独立 execution context / stack，复用 immutable compiled module；共享内存与进程级 WASI context 不等于共享所有 globals、tables 或 GC refs。
-- shared memory 的普通 load/store 与原子操作都必须经内存访问层，不能一部分直接访问 Go `[]byte`、另一部分用 atomic，从而引入宿主数据竞争。先实现正确的锁或字宽一致策略，之后再优化。
-- 需要为重叠访问宽度、unaligned ordinary accesses、atomic alignment trap、越界、grow、wait 超时、notify 与取消竞态建立具体语义；不能把“用了 goroutine”作为实现线程标准的证据。
-- wait 必须保证检查预期值与注册等待者的协议正确，避免丢失唤醒；退出能唤醒所有等待线程。`proc_exit` / 任一 thread trap 需要按 legacy 进程语义终止整个线程组；应在有界执行检查点和可取消 host 调用上兑现。
-- child 实例建立不能随意重复执行父实例初始化逻辑；遵循 ABI 与 guest 约定，重点检查 active data segment、start section、stack/TLS global。需要专门的重新实例化 fixture。
-- 在 Shared-Everything Threads 实验实现通过之前，跨线程传递非共享 WasmGC ref 必须被拒绝。并行运行互相隔离的 GC 实例仍然可行。
+- Give threads separate execution contexts and stacks while reusing immutable compiled modules. Shared memory and a process-wide WASI context do not imply shared globals, tables, or GC references.
+- Route ordinary shared-memory loads/stores and atomic operations through the same memory-access layer. Mixing direct Go `[]byte` access with atomics can introduce host data races. Establish a correct locking or consistent-width strategy before optimizing.
+- Specify overlapping access widths, unaligned ordinary accesses, atomic alignment traps, bounds checks, grow, wait timeouts, and notify/cancellation races. Using goroutines is not evidence of compliance with the Threads proposal.
+- Checking the expected value and registering a waiter must form a correct protocol that avoids lost wakeups. Exit must wake all waiting threads. Under legacy process semantics, `proc_exit` or a trap in any thread must terminate the entire thread group; bounded execution checkpoints and cancellable host calls must make that effective.
+- Child instantiation must not arbitrarily repeat the parent's initialization. Follow the ABI and guest conventions, especially active data segments, start sections, and stack/TLS globals. Add dedicated re-instantiation fixtures.
+- Reject cross-thread transfer of non-shared WasmGC references until the relevant experimental Shared-Everything Threads implementation passes its tests. Isolated GC instances may still execute in parallel.
 
-以上是本项目设计要求，不是对各引擎当前实现的性能判断。
+These are project design requirements, not performance assessments of existing engines.
 
-### 4.3 WASI 0.3 async 不等于 OS 多线程或 Stack Switching
+### 4.3 WASI 0.3 async is distinct from OS threads and Stack Switching
 
-WASI 0.3 使用组件调用的异步任务、future、stream 语义；Core Stack Switching 提供 continuation 指令；Shared-Everything Threads 解决共享对象和线程模型。三者相关但互不等价。WASI 0.3 稳定采用记录未要求所有未稳定线程 / stackful 特性。[采用记录](https://github.com/WebAssembly/WASI/blob/main/docs/ComponentModelFeatures.md)、[Stack Switching explainer](https://github.com/WebAssembly/stack-switching/blob/main/proposals/stack-switching/Explainer.md)。
+WASI 0.3 supplies async tasks, futures, and streams for component calls. Core Stack Switching supplies continuation instructions. Shared-Everything Threads addresses shared objects and threading semantics. They are related but not equivalent. WASI 0.3's stable adoption record does not require every unstable threading or stackful feature. Sources: [adoption record](https://github.com/WebAssembly/WASI/blob/main/docs/ComponentModelFeatures.md), [Stack Switching explainer](https://github.com/WebAssembly/stack-switching/blob/main/proposals/stack-switching/Explainer.md).
 
-设计上应保留 `Execution` 的显式帧、暂停 / 恢复状态和 host-call 边界；组件异步调度后端可以先使用 Go 的同步机制实现，但外部契约必须按 Canonical ABI，而不是直接把 guest future 映射为任意 goroutine。
+Preserve explicit frames, suspension/resumption state, and host-call boundaries in `Execution`. A component async scheduler may initially use Go synchronization primitives, but its external contract must follow the Canonical ABI rather than equating a guest future with an arbitrary goroutine.
 
-## 5. 现有实现给本项目的验证锚点
+## 5. Existing implementations as validation references
 
-这部分只说明可用于交叉验证的来源；详细引擎调查另见同目录的实现调研。
+This section identifies sources for cross-checking. The detailed engine survey is in [implementations.md](implementations.md).
 
-| 领域 | 可查证实现 / 工具 | 使用方式 |
+| Area | Documented implementations / tools | Intended use |
 | --- | --- | --- |
-| Core 3.0 | 官方 spec reference interpreter 与 testsuite；Wasmtime；浏览器引擎 | 固定 fixture，对比结果、trap、类型接受 / 拒绝 |
-| Core threads | 浏览器、Wasmtime、WAMR 等 | 同步原语及内存语义回归；不能只比较有数据竞争程序单次输出 |
-| legacy wasi-threads | wasi-libc + Wasmtime / WAMR / Wasmer / toywasm | 运行固定 SDK 构建的 pthread fixture |
-| WASI 0.2 | Wasmtime、jco | 标准接口和组件 ABI 对照 |
-| WASI 0.3 | 官方页面列 Wasmtime 46+、jco | 按确切 WIT 版本固定 producer 和 consumer |
+| Core 3.0 | Official specification reference interpreter and test suite; Wasmtime; browser engines | Pin fixtures and compare results, traps, and type acceptance/rejection |
+| Core threads | Browsers, Wasmtime, WAMR, and others | Regress synchronization and memory semantics; a single run of a racy program is not a sufficient oracle |
+| Legacy wasi-threads | wasi-libc with Wasmtime / WAMR / Wasmer / toywasm | Execute pthread fixtures built with a pinned SDK |
+| WASI 0.2 | Wasmtime, jco | Cross-check interfaces and component ABI |
+| WASI 0.3 | Official pages list Wasmtime 46+ and jco | Pin producers and consumers to the exact WIT version |
 
-来源：[官方引擎特性矩阵](https://webassembly.org/features/)、[spec 仓库](https://github.com/WebAssembly/spec)、[wasi-threads 实现说明](https://github.com/WebAssembly/wasi-threads#what-has-been-implemented)、[WASI 0.2](https://wasi.dev/releases/wasi-p2)、[WASI 0.3](https://wasi.dev/releases/wasi-p3)。特性矩阵可能把 flag、部分后端或仅解析实现写在单元格备注中；采用前需回到引擎源码 / 配置确认，不能抹掉这些条件。
+Sources: [official engine feature matrix](https://webassembly.org/features/), [spec repository](https://github.com/WebAssembly/spec), [wasi-threads implementation notes](https://github.com/WebAssembly/wasi-threads#what-has-been-implemented), [WASI 0.2](https://wasi.dev/releases/wasi-p2), [WASI 0.3](https://wasi.dev/releases/wasi-p3). Matrix cells may qualify support with flags, backend restrictions, or parsing-only implementations. Confirm those conditions in engine source and configuration before adopting a reference.
 
-## 6. 里程碑与可验收范围
+## 6. Standards-oriented acceptance milestones
 
-下表是建议顺序，没有给尚未测量的工期或性能数字。每个阶段的同一测试语料都由 Go 和 llgo 编译出的 VM 执行。
+The [development roadmap](../roadmap.md) is the authoritative implementation plan, using M0, M1, M2a, M2b, and M3–M6. The table below summarizes standards coverage and acceptance evidence; it is not a separate schedule. M0 first evaluates reuse and establishes the pinned corpus. No unmeasured duration or performance commitment is implied. Both Go-compiled and llgo-compiled VMs must execute the same corpus at every implementation milestone.
 
-| 阶段 | 交付范围 | 退出条件 |
+| Roadmap stage | Scope | Acceptance evidence |
 | --- | --- | --- |
-| S0：设计与编译器基线 | 包边界、FeatureSet、限制模型、兼容性探针、双编译器 CI | 文档可追溯；两个编译器执行 smoke，不能冒称已有 VM |
-| S1：可用解释器 | MVP + 常用 2.0 特性、资源限额、基本 P1 CLI | decoder / validator 正反例；最小 WASI 程序；trap / exit / timeout 明确分型 |
-| S2：P1 与共享内存线程 | P1 操作覆盖、Core Threads、可选 legacy wasi-threads | 官方 P1 测试、pthread 创建 / join / TLS / wait-notify / trap 和 exit 全线程终止；Go race 审计 |
-| S3：WasmGC 与 3.0 控制流 | recursive types、subtyping、GC、typed refs、tail calls、最终 EH | spec GC / refs / EH 测试；深尾递归无宿主栈增长；跨模块类型、GC roots 与 callback 回归 |
-| S4：补齐 Core 3.0 | SIMD / relaxed SIMD、memory64、multi-memory、extended const 等 | 明确列出完整或缺失能力；只有全套范围通过才宣称 Core 3.0 |
-| S5：Component + WASI 0.2 | component decode / validate / instantiate、WIT 类型、Canonical ABI、resources、CLI 到 sockets/HTTP | 固定 0.2.12 WIT；跨语言组件；own/borrow/drop、字符串 / list 编码、错误路径 |
-| S6：WASI 0.3 | async lift/lower、future/stream、取消 / 背压 / reentrancy；0.3.1 后累计特性 | 固定 0.3.2 WIT；CLI 与 HTTP service / middleware；异步任务 / 资源泄漏及双编译器一致性 |
-| S7：实验提案 | stack switching、shared-everything、Component threads 等 | 独立 feature gate、固定提案 commit、独立兼容性报告 |
+| Design baseline | Package boundaries, FeatureSet, limits model, compatibility probes, dual-compiler CI | Traceable documentation and smoke tests executed by both compilers; no claim that a VM already exists |
+| M1: usable interpreter | MVP, common 2.0 features, resource limits, basic P1 CLI | Positive and negative decoder/validator cases; minimal WASI programs; distinct trap, exit, and timeout results |
+| M2a: P1 and shared-memory threads | P1 operation coverage, Core Threads, optional legacy wasi-threads | Official P1 tests; pthread creation/join/TLS, wait-notify, whole-group termination on trap/exit, and Go race checks |
+| M2b: WasmGC and 3.0 control flow | Recursive types, subtyping, GC, typed refs, tail calls, final EH | Specification GC/ref/EH tests; deep tail recursion without host-stack growth; cross-module types, GC roots, and callback regressions |
+| M3: complete Core 3.0 | SIMD / relaxed SIMD, memory64, multi-memory, extended const, and remaining features | Explicit complete/missing feature list; claim Core 3.0 only after the full target scope passes |
+| M4: Component Model and WASI 0.2 | Component decoding/validation/instantiation, WIT types, Canonical ABI, resources, CLI through sockets/HTTP | Pinned 0.2.12 WIT; cross-language components; own/borrow/drop, string/list encodings, and error paths |
+| M5: WASI 0.3 | Async lift/lower, futures/streams, cancellation, backpressure, reentrancy, and cumulative features adopted from 0.3.1 onward | Pinned 0.3.2 WIT; CLI and HTTP service/middleware; async task/resource-leak checks and dual-compiler consistency |
+| M6: optional extensions | Stack switching, shared-everything, Component threading, and other separately approved experiments | Independent feature gates, pinned proposal commits, and separate compatibility reports |
 
-S2 与 S3 可在 S1 后并行；类型系统、引用布局与内存访问抽象必须在 S0/S1 先确定。性能优化 / JIT 应放在解释器语义和两种编译器一致性已有可靠证据之后。
+M2a and M2b may proceed in parallel after M1. Establish the type system, reference layout, and memory-access abstractions during the design baseline and M1. Optimize performance or add a JIT only after interpreter semantics and dual-compiler consistency have reliable evidence.
 
-## 7. 测试来源与更新规则
+## 7. Test sources and update policy
 
-- Core 语义优先使用 [WebAssembly/spec](https://github.com/WebAssembly/spec) 和 [WebAssembly/testsuite](https://github.com/WebAssembly/testsuite)，Threads、Stack Switching 等未合入特性使用各提案测试目录。记录来源 commit、生成工具版本与许可证。
-- WASI 使用 [WebAssembly/wasi-testsuite](https://github.com/WebAssembly/wasi-testsuite)，legacy threads 加 [专用测试](https://github.com/WebAssembly/wasi-threads/tree/main/test)。Component 使用 [Component test suite](https://github.com/WebAssembly/component-model/tree/main/test) 并补跨语言 golden fixtures。
-- 对未完成特性做**显式拒绝**测试；暂不支持不是静默接受后执行错误。`unsupported feature`、malformed、validation failure、link failure、trap 与 WASI exit 应可区分。
-- 合规报告记录 `compiler × OS/arch × feature profile × spec/WIT revision`。包含 unsupported、known failure、skip 原因与到期复查，不能用排除大量用例的通过率替代兼容声明。
-- 每次准备升级 profile 时重新读取官方提案表、release tag、WIT 和对应测试 commit；不随 CI 自动跟随 main。研究记录中保留“观察日期”，后续修改追加变更原因。
+- Use [WebAssembly/spec](https://github.com/WebAssembly/spec) and [WebAssembly/testsuite](https://github.com/WebAssembly/testsuite) for Core semantics. For features not integrated into the main specification, such as Threads or Stack Switching, use the corresponding proposal test directories. Record source commits, generation-tool versions, and licenses.
+- Use [WebAssembly/wasi-testsuite](https://github.com/WebAssembly/wasi-testsuite) for WASI, with [dedicated legacy-threads tests](https://github.com/WebAssembly/wasi-threads/tree/main/test). Use the [Component test suite](https://github.com/WebAssembly/component-model/tree/main/test) and additional cross-language golden fixtures for components.
+- Add **explicit rejection tests** for unimplemented features. Unsupported input must not be accepted and then executed incorrectly. Distinguish unsupported features, malformed input, validation errors, link errors, traps, and WASI exit.
+- Report conformance as `compiler × OS/arch × feature profile × spec/WIT revision`. Include unsupported cases, known failures, skip reasons, and review deadlines. A pass rate obtained by excluding large groups of cases is not a compatibility claim.
+- Before upgrading a profile, reread the official proposal tables, release tags, WIT, and corresponding test commits. CI must not silently follow main. Preserve observation dates in research records and record the reasons for later changes.
