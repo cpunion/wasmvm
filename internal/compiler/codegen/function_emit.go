@@ -1,6 +1,7 @@
 package codegen
 
 import (
+	"encoding/binary"
 	"math"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
@@ -347,5 +348,32 @@ func (e *functionEmitter) emitPollExits() {
 			e.a.word(0xd50339bf) // dmb ishld: acquire after the atomic load.
 		}
 		e.leave(nativeabi.Poll, 0, uint64(exit.pc))
+	}
+}
+
+func (e *functionEmitter) literal(in slots.Instruction) {
+	src := e.f.Sources[in.Source]
+	op := in.Op
+	lo, hi := src.Wasm.Bits, uint64(0)
+	if op == 0xd0 {
+		lo = 0
+	}
+	if op == 0xfd000c {
+		lo = binary.LittleEndian.Uint64(src.Wasm.Vector[:8])
+		hi = binary.LittleEndian.Uint64(src.Wasm.Vector[8:])
+	}
+	if r, ok := e.registers[in.Dst]; ok {
+		if e.a.arch == "arm64" {
+			e.a.aconst(uint32(r), lo, lo > math.MaxUint32)
+		} else {
+			e.a.xconst(r, lo)
+		}
+	} else {
+		e.constant(0, lo)
+		e.slotStore(in.Dst, 0, false)
+	}
+	if !e.unmetered || e.f.Slots[in.Dst] == wasm.V128 {
+		e.constant(0, hi)
+		e.slotStore(in.Dst, 0, true)
 	}
 }

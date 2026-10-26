@@ -116,8 +116,15 @@ instructions use the existing checked lowering. A constant immediately followed
 by a shift/rotate selects an immediate encoding on that fallthrough path. The
 original shift PC retains a cold generic entry, so a branch or resumed frame
 never inherits an unproved constant. Poll boundaries are not crossed. Both paths
-share the same integer lowering and register map. There is no workload-specific
-pattern or competitor fallback.
+share the same integer lowering and register map.
+
+A bounded integer combiner selects arm64 `MADD` for multiply/add sequences,
+including an intervening constant. If a product slot remains observable, it is
+reconstructed as `sum - addend` modulo the instruction width; otherwise a bounded
+scan must prove an overwrite before any read, trap, helper or poll. The result
+register is written directly. Independent entries retain the original operations,
+and the precise fuel tier never combines instruction boundaries. This is general
+instruction selection, with no workload-specific pattern or competitor fallback.
 
 This is an early architecture improvement, not a complete native runtime.
 Native memory, guest calls, runtime exits, precise metering optimization, global

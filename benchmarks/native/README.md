@@ -63,3 +63,9 @@ At `a48564a`, arm64 remained slower than Cranelift (2.093/2.107 ns per
 iteration versus 1.710/1.735), with inconclusive A/A controls. Moving cancellation
 exits alone did not close the gap. Immediate shift/rotate selection is evaluated
 next with the same workload, continuations, cancellation policy and thresholds.
+
+At `69c8592`, final-head Linux intervals were inconclusive and arm64 remained
+slower. The next implementation adds general integer multiply/add combination
+with preserved intermediate slots and independent continuations. Local M4 Max
+diagnostics were about 1.54 ns/iteration across both host compilers and all three
+references; this is not a replacement for the declared two-target feature gate.

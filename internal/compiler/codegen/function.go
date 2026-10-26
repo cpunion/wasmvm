@@ -1,7 +1,6 @@
 package codegen
 
 import (
-	"encoding/binary"
 	"math"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
@@ -26,6 +25,7 @@ type CompiledFunction struct {
 	Offsets                    []uint32
 	ReferenceSlots             []uint32
 	Helpers, Calls, EdgeCopies uint32
+	FusedIntegers              uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -100,15 +100,19 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 			out.ReferenceSlots = append(out.ReferenceSlots, uint32(i))
 		}
 	}
-	var immediateEntries []int
+	var independentEntries []int
+	combinedThrough := -1
 	for pc, in := range f.Code {
+		if pc <= combinedThrough {
+			continue
+		}
 		// Only fallthrough from the preceding constant proves an immediate.
 		// Keep the original PC as a generic cold entry for branches/resumption.
 		if unmetered && pc > 0 && pc%256 != 0 {
 			previous := f.Code[pc-1]
 			if (previous.Op == 0x41 || previous.Op == 0x42) && previous.Dst == in.B && in.B != slots.NoSlot &&
 				e.registerImmediate(in.Op, in.Dst, in.A, f.Sources[previous.Source].Wasm.Bits) {
-				immediateEntries = append(immediateEntries, pc)
+				independentEntries = append(independentEntries, pc)
 				continue
 			}
 		}
@@ -121,6 +125,14 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 			}
 		} else {
 			e.boundary(uint32(pc), src, in.Op == 0x10 || in.Op == 0x11 || isControl)
+		}
+		if end, ok := e.combineMultiplyAdd(pc); ok {
+			out.FusedIntegers++
+			for entry := pc + 1; entry <= end; entry++ {
+				independentEntries = append(independentEntries, entry)
+			}
+			combinedThrough = end
+			continue
 		}
 		switch op := in.Op; {
 		case isControl:
@@ -175,28 +187,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 			e.move(in.Dst, in.B)
 			a.mark(done)
 		case op >= 0x41 && op <= 0x44 || op == 0xd0 || op == 0xfd000c:
-			lo, hi := src.Wasm.Bits, uint64(0)
-			if op == 0xd0 {
-				lo = 0
-			}
-			if op == 0xfd000c {
-				lo = binary.LittleEndian.Uint64(src.Wasm.Vector[:8])
-				hi = binary.LittleEndian.Uint64(src.Wasm.Vector[8:])
-			}
-			if r, ok := e.registers[in.Dst]; ok {
-				if arch == "arm64" {
-					a.aconst(uint32(r), lo, lo > math.MaxUint32)
-				} else {
-					a.xconst(r, lo)
-				}
-			} else {
-				e.constant(0, lo)
-				e.slotStore(in.Dst, 0, false)
-			}
-			if !unmetered || f.Slots[in.Dst] == wasm.V128 {
-				e.constant(0, hi)
-				e.slotStore(in.Dst, 0, true)
-			}
+			e.literal(in)
 		case isInteger(op) || op == 0xd1:
 			e.integer(in)
 		case op == 0x10 || op == 0x11:
@@ -212,9 +203,13 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 		}
 	}
 	// A validated function never falls through its final terminator.
-	for _, pc := range immediateEntries {
+	for _, pc := range independentEntries {
 		a.mark(pcs[pc])
-		e.integer(f.Code[pc])
+		if in := f.Code[pc]; in.Op == 0x41 || in.Op == 0x42 {
+			e.literal(in)
+		} else {
+			e.integer(in)
+		}
 		a.branch(pcs[pc+1], false, 0)
 	}
 	e.emitPollExits()

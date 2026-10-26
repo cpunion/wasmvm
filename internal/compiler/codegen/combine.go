@@ -1,0 +1,99 @@
+package codegen
+
+import "github.com/cpunion/wasmvm/internal/compiler/slots"
+
+// combineMultiplyAdd selects an integer MADD along an uninterrupted path. It
+// preserves the intermediate product as sum-addend, outside the result's
+// dependency chain. This keeps every slot observable at later exits without a
+// second multiply. Independent entries use the original instruction lowering.
+func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
+	if !e.unmetered || e.a.arch != "arm64" || pc+1 >= len(e.f.Code) {
+		return 0, false
+	}
+	mul := e.f.Code[pc]
+	if mul.Op != 0x6c && mul.Op != 0x7e {
+		return 0, false
+	}
+	end := pc + 1
+	constant := e.f.Code[end].Op == 0x41 || e.f.Code[end].Op == 0x42
+	if constant {
+		if e.f.Code[end].Dst == mul.Dst {
+			return 0, false
+		}
+		end++
+	}
+	if end >= len(e.f.Code) || pc/256 != end/256 {
+		return 0, false
+	}
+	add := e.f.Code[end]
+	if add.Op != mul.Op-2 {
+		return 0, false
+	}
+	addend := add.B
+	if add.A != mul.Dst {
+		if add.B != mul.Dst {
+			return 0, false
+		}
+		addend = add.A
+	}
+	if addend == mul.Dst {
+		return 0, false
+	}
+	l, lok := e.registers[mul.A]
+	r, rok := e.registers[mul.B]
+	p, pok := e.registers[mul.Dst]
+	c, cok := e.registers[addend]
+	d, dok := e.registers[add.Dst]
+	if !lok || !rok || !pok || !cok || !dok {
+		return 0, false
+	}
+	wide := integerWide(mul.Op)
+	keepProduct := mul.Dst != add.Dst && !e.overwrittenBeforeExit(end+1, mul.Dst)
+	if constant {
+		in := e.f.Code[pc+1]
+		// The constant may replace a multiplicand's reusable slot. Save only
+		// the clobbered inputs; x13/x14 are excluded from the register cache.
+		if in.Dst == mul.A {
+			e.registerMove(13, l, wide)
+			l = 13
+		}
+		if in.Dst == mul.B {
+			e.registerMove(14, r, wide)
+			r = 14
+		}
+		e.literal(in)
+	}
+	// Name the result register directly to avoid extending its dependency chain.
+	// Preserve an aliased addend only when the product must also remain live.
+	if keepProduct && d == c {
+		e.registerMove(10, c, wide)
+		c = 10
+	}
+	e.a.arm(wide, 0x1b000000|uint32(r)<<16|uint32(c)<<10|uint32(l)<<5|uint32(d))
+	if keepProduct {
+		e.a.arm(wide, 0x4b000000|uint32(c)<<16|uint32(d)<<5|uint32(p)) // product = sum - addend
+	}
+	return end, true
+}
+
+// A temporary is dead only if normal fallthrough overwrites it before any
+// reader, poll, trap or helper exit. Entry at another PC makes no assumption
+// about its value. The 256-instruction poll interval bounds this scan.
+func (e *functionEmitter) overwrittenBeforeExit(pc int, slot slots.Slot) bool {
+	for ; pc < len(e.f.Code) && pc%256 != 0; pc++ {
+		in := e.f.Code[pc]
+		op := in.Op
+		if !(op == 1 || op >= 0x1a && op <= 0x1c || op >= 0x20 && op <= 0x22 || op >= 0x41 && op <= 0x44 || isInteger(op)) ||
+			op >= 0x6d && op <= 0x70 || op >= 0x7f && op <= 0x82 {
+			return false
+		}
+		local := slots.Slot(e.f.Sources[in.Source].Wasm.A)
+		if in.A == slot || in.B == slot || in.C == slot || op == 0x20 && local == slot {
+			return false
+		}
+		if in.Dst == slot || (op == 0x21 || op == 0x22) && local == slot {
+			return true
+		}
+	}
+	return false
+}
