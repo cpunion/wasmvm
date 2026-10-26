@@ -77,10 +77,18 @@ jobs:
         shell: bash
         env:
           COMPILER: ${{ matrix.compiler }}
+          PLATFORM: ${{ matrix.platform.name }}
           WASMVM_CONFORMANCE_REPORT: ${{ github.workspace }}/artifacts/conformance/core2.json
         run: |
           if [[ "$COMPILER" == go ]]; then
-            CGO_ENABLED=0 go test -count=1 -timeout=10m ./...
+            CGO_ENABLED=0 go build ./...
+            CGO_ENABLED=0 go test -count=1 ./internal/platform/native
+            if [[ "$PLATFORM" == linux-amd64 ]]; then
+              mkdir -p artifacts/core
+              CGO_ENABLED=1 go test -count=1 -timeout=10m -coverprofile=artifacts/core/coverage.out ./internal/... ./pkg/...
+            else
+              CGO_ENABLED=1 go test -count=1 -timeout=10m ./...
+            fi
           else
             llgo test -count=1 -timeout=10m ./...
           fi
@@ -88,6 +96,10 @@ jobs:
       - name: Check Go data races
         if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
         run: go test -race -count=1 -timeout=10m ./...
+
+      - name: Check native pointer ownership
+        if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
+        run: GOEXPERIMENT=cgocheck2 go test -count=1 ./internal/platform/native
 
       - name: Build and execute the core CLI
         shell: bash
@@ -107,8 +119,6 @@ jobs:
         shell: bash
         run: |
           python3 -m unittest discover -s scripts -p 'test_*.py'
-          mkdir -p artifacts/core
-          CGO_ENABLED=0 go test -count=1 -timeout=10m -coverprofile=artifacts/core/coverage.out ./internal/... ./pkg/...
           python3 scripts/check_coverage.py artifacts/core/coverage.out --minimum 90 \
             --require github.com/cpunion/wasmvm/internal/binary \
             --require github.com/cpunion/wasmvm/internal/bench/phase \
@@ -118,11 +128,13 @@ jobs:
             --require github.com/cpunion/wasmvm/internal/compiler/ir \
             --require github.com/cpunion/wasmvm/internal/compiler/lower \
             --require github.com/cpunion/wasmvm/internal/compiler/slots \
+            --require github.com/cpunion/wasmvm/internal/compiler/nativeabi \
             --require github.com/cpunion/wasmvm/internal/engine/numeric \
             --require github.com/cpunion/wasmvm/internal/engine/simd \
             --require github.com/cpunion/wasmvm/internal/engine/memory \
             --require github.com/cpunion/wasmvm/internal/engine/state \
             --require github.com/cpunion/wasmvm/internal/engine/interp \
+            --require github.com/cpunion/wasmvm/internal/platform/native \
             --require github.com/cpunion/wasmvm/pkg/wasm \
             --require github.com/cpunion/wasmvm/pkg/vm
 
@@ -140,7 +152,7 @@ jobs:
           go test -run '^$' -fuzz '^FuzzExecution$' -fuzztime=10s -parallel=2 ./internal/engine/interp
 
       - name: Evaluate unchanged wazero and measure harness coverage
-        if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
+        if: github.event_name == 'workflow_dispatch' && matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
         shell: bash
         run: |
           go -C experiments/wazero vet ./...
@@ -149,11 +161,11 @@ jobs:
           awk '/^total:/ { found=1; sub(/%$/, "", $3); if ($3+0 < 90) exit 1 } END { if (!found) exit 2 }' artifacts/wazero/go-upstream/coverage-summary.txt
 
       - name: Check the alternate candidate's Go smoke probes
-        if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
+        if: github.event_name == 'workflow_dispatch' && matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
         run: go -C experiments/wago test -count=1 -timeout=2m ./...
 
       - name: Run unchanged wazero with the fixed LLGo runtime
-        if: matrix.compiler == 'llgo'
+        if: github.event_name == 'workflow_dispatch' && matrix.compiler == 'llgo'
         run: experiments/wazero/scripts/run.sh llgo upstream
 
       - name: Check benchmark fixtures and harness
@@ -161,7 +173,7 @@ jobs:
         run: python3 -m unittest discover -s benchmarks -p 'test_*.py'
 
       - name: Preserve evaluation evidence
-        if: always() && (matrix.compiler == 'llgo' || matrix.platform.name == 'linux-amd64')
+        if: always() && github.event_name == 'workflow_dispatch' && (matrix.compiler == 'llgo' || matrix.platform.name == 'linux-amd64')
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: wazero-evaluation-${{ matrix.compiler }}-${{ matrix.platform.name }}
