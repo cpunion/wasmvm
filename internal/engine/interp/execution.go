@@ -407,3 +407,11 @@ func (e *Execution) RetainedValues(visit func(wasm.ValueType, value.Value)) {
 		}
 	}
 }
+
+// RetainedInstances preserves the owners of running and suspended function
+// bodies even if their last table/global reference was removed during a call.
+func (e *Execution) RetainedInstances(visit func(*state.Instance)) {
+	for _, f := range e.frames {
+		visit(f.function.Instance)
+	}
+}

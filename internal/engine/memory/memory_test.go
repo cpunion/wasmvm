@@ -79,6 +79,21 @@ func TestLimitsGrowthAndHostAccess(t *testing.T) {
 	}
 }
 
+func TestRelease(t *testing.T) {
+	m, err := New(module.Limits{Min: 1}, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.Release()
+	m.Release()
+	if m.Pages() != 0 || m.bytes != nil || m.Write(0, []byte{1}) {
+		t.Fatal("retained released storage")
+	}
+	if _, ok := m.Grow(1); ok {
+		t.Fatal("released memory grew")
+	}
+}
+
 func TestBulkOperations(t *testing.T) {
 	for _, pair := range [][2]uint64{{2, 0}, {0, 2}, {0, 0}} {
 		initial := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}

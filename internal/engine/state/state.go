@@ -21,23 +21,29 @@ var ErrReference = errors.New("foreign or stale WebAssembly reference")
 
 type Limits struct {
 	MaxTypes                                                                 uint32
+	MaxTables, MaxMemories                                                   uint32
 	MaxFunctions, MaxGlobals, MaxInstances, MaxMemoryPages, MaxTableElements uint32
 	MaxSegmentBytes, MaxSegmentElements                                      uint64
 }
 
 func DefaultLimits() Limits {
-	return Limits{1 << 20, 1 << 20, 1 << 20, 1024, 4096, 1 << 20, 64 << 20, 1 << 20}
+	return Limits{MaxTypes: 1 << 20, MaxTables: 1 << 16, MaxMemories: 1024, MaxFunctions: 1 << 20, MaxGlobals: 1 << 20, MaxInstances: 1024, MaxMemoryPages: 4096, MaxTableElements: 1 << 20, MaxSegmentBytes: 64 << 20, MaxSegmentElements: 1 << 20}
 }
 
 type Usage struct {
+	Tables, Memories                                          uint64
 	Functions, Globals, Instances, MemoryPages, TableElements uint64
 	SegmentBytes, SegmentElements                             uint64
 }
 type Store struct {
+	closed    bool
 	limits    Limits
 	usage     Usage
 	functions []*Function // index zero is the null function reference
 	instances []*Instance
+	tables    []*Table
+	memories  []*Memory
+	globals   []*Global
 	types     map[string]uint32
 }
 
@@ -46,6 +52,9 @@ func New(limits Limits) *Store {
 }
 func (s *Store) Usage() Usage { return s.usage }
 func (s *Store) TypeID(t module.FuncType) uint32 {
+	if s.closed {
+		return 0
+	}
 	key := make([]byte, 0, len(t.Params)+1+len(t.Results))
 	for _, v := range t.Params {
 		key = append(key, byte(v))
@@ -77,19 +86,22 @@ type Function struct {
 	Host      any
 }
 type Global struct {
-	Owner *Store
-	Type  module.GlobalType
-	Value value.Value
+	OwnerInstance *Instance
+	Owner         *Store
+	Type          module.GlobalType
+	Value         value.Value
 }
 type Memory struct {
-	Owner *Store
+	OwnerInstance *Instance
+	Owner         *Store
 	*memory.Memory
 }
 type Table struct {
-	Owner   *Store
-	Type    module.TableType
-	Values  []uint64
-	maximum uint32
+	OwnerInstance *Instance
+	Owner         *Store
+	Type          module.TableType
+	Values        []uint64
+	maximum       uint32
 }
 type Extern struct {
 	Owner    *Store
@@ -100,16 +112,17 @@ type Extern struct {
 	Global   *Global
 }
 type Instance struct {
-	Owner     *Store
-	Compiled  *slots.Module
-	Types     []uint32
-	Functions []uint64
-	Tables    []*Table
-	Memories  []*Memory
-	Globals   []*Global
-	Elements  [][]uint64
-	Data      [][]byte
-	Exports   map[string]Extern
+	published, disposed bool
+	Owner               *Store
+	Compiled            *slots.Module
+	Types               []uint32
+	Functions           []uint64
+	Tables              []*Table
+	Memories            []*Memory
+	Globals             []*Global
+	Elements            [][]uint64
+	Data                [][]byte
+	Exports             map[string]Extern
 }
 
 func (s *Store) Function(ref uint64) (*Function, bool) {
@@ -119,7 +132,10 @@ func (s *Store) Function(ref uint64) (*Function, bool) {
 	return s.functions[ref], true
 }
 func (s *Store) NewHost(t module.FuncType, host any) (Extern, error) {
-	if s.usage.Functions >= uint64(s.limits.MaxFunctions) {
+	if s.closed {
+		return Extern{}, wasm.ErrClosed
+	}
+	if uint64(len(s.functions)-1) >= uint64(s.limits.MaxFunctions) {
 		return Extern{}, limit("functions")
 	}
 	// Copy signatures before publication, so a host cannot mutate call typing.
@@ -141,6 +157,12 @@ func (s *Store) NewHost(t module.FuncType, host any) (Extern, error) {
 	return Extern{Owner: s, Kind: 0, Function: id}, nil
 }
 func (s *Store) NewMemory(t module.Limits) (Extern, error) {
+	if s.closed {
+		return Extern{}, wasm.ErrClosed
+	}
+	if s.usage.Memories >= uint64(s.limits.MaxMemories) {
+		return Extern{}, limit("memories")
+	}
 	if uint64(t.Min) > uint64(s.limits.MaxMemoryPages)-s.usage.MemoryPages {
 		return Extern{}, limit("Store memory pages")
 	}
@@ -149,10 +171,13 @@ func (s *Store) NewMemory(t module.Limits) (Extern, error) {
 		return Extern{}, err
 	}
 	s.usage.MemoryPages += uint64(t.Min)
-	return Extern{Owner: s, Kind: 2, Memory: &Memory{Owner: s, Memory: m}}, nil
+	s.usage.Memories++
+	owned := &Memory{Owner: s, Memory: m}
+	s.memories = append(s.memories, owned)
+	return Extern{Owner: s, Kind: 2, Memory: owned}, nil
 }
 func (s *Store) GrowMemory(m *Memory, delta uint32) (uint32, bool) {
-	if m.Owner != s {
+	if s.closed || m.Owner != s {
 		return 0, false
 	}
 	old := m.Pages()
@@ -166,6 +191,9 @@ func (s *Store) GrowMemory(m *Memory, delta uint32) (uint32, bool) {
 	return old, ok
 }
 func (s *Store) NewGlobal(t module.GlobalType, v value.Value) (Extern, error) {
+	if s.closed {
+		return Extern{}, wasm.ErrClosed
+	}
 	if !t.Value.Valid() {
 		return Extern{}, fmt.Errorf("%w: global type", wasm.ErrInvalid)
 	}
@@ -173,11 +201,19 @@ func (s *Store) NewGlobal(t module.GlobalType, v value.Value) (Extern, error) {
 		return Extern{}, limit("globals")
 	}
 	s.usage.Globals++
-	return Extern{Owner: s, Kind: 3, Global: &Global{Owner: s, Type: t, Value: v}}, nil
+	g := &Global{Owner: s, Type: t, Value: v}
+	s.globals = append(s.globals, g)
+	return Extern{Owner: s, Kind: 3, Global: g}, nil
 }
 func (s *Store) NewTable(t module.TableType) (Extern, error) {
+	if s.closed {
+		return Extern{}, wasm.ErrClosed
+	}
 	if !t.Element.IsReference() || t.Limits.HasMax && t.Limits.Min > t.Limits.Max {
 		return Extern{}, fmt.Errorf("%w: table type", wasm.ErrInvalid)
+	}
+	if s.usage.Tables >= uint64(s.limits.MaxTables) {
+		return Extern{}, limit("tables")
 	}
 	if uint64(t.Limits.Min) > uint64(s.limits.MaxTableElements)-s.usage.TableElements {
 		return Extern{}, limit("Store table elements")
@@ -195,12 +231,14 @@ func (s *Store) NewTable(t module.TableType) (Extern, error) {
 	}
 	table := &Table{Owner: s, Type: t, Values: make([]uint64, int(t.Limits.Min)), maximum: maximum}
 	s.usage.TableElements += uint64(t.Limits.Min)
+	s.usage.Tables++
+	s.tables = append(s.tables, table)
 	return Extern{Owner: s, Kind: 1, Table: table}, nil
 }
 func (s *Store) GrowTable(t *Table, delta uint32, initial uint64) (uint32, bool) {
 	old := uint32(len(t.Values))
 	next := uint64(old) + uint64(delta)
-	if t.Owner != s || next > uint64(t.maximum) || uint64(delta) > uint64(s.limits.MaxTableElements)-s.usage.TableElements {
+	if s.closed || t.Owner != s || next > uint64(t.maximum) || uint64(delta) > uint64(s.limits.MaxTableElements)-s.usage.TableElements {
 		return old, false
 	}
 	if delta == 0 {

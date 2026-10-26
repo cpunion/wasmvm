@@ -15,16 +15,26 @@ type Resolver func(module, name string) (Extern, bool)
 // active segments or calling start. Failure rolls back every new allocation
 // and canonical type; imported objects are never modified in this phase.
 func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *Instance, err error) {
+	if s.closed {
+		return nil, wasm.ErrClosed
+	}
 	if compiled == nil || compiled.IR == nil || compiled.IR.Validated == nil {
 		return nil, fmt.Errorf("%w: missing compiled module", wasm.ErrInvalid)
 	}
 	definition := compiled.IR.Validated.Definition()
 	oldUsage, oldFunctions, oldTypes := s.usage, len(s.functions), len(s.types)
+	oldTables, oldMemories, oldGlobals := len(s.tables), len(s.memories), len(s.globals)
 	defer func() {
 		if err != nil {
 			s.usage = oldUsage
 			clear(s.functions[oldFunctions:])
 			s.functions = s.functions[:oldFunctions]
+			clear(s.tables[oldTables:])
+			s.tables = s.tables[:oldTables]
+			clear(s.memories[oldMemories:])
+			s.memories = s.memories[:oldMemories]
+			clear(s.globals[oldGlobals:])
+			s.globals = s.globals[:oldGlobals]
 			for key, id := range s.types {
 				if int(id) > oldTypes {
 					delete(s.types, key)
@@ -56,7 +66,7 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 	if s.usage.Instances >= uint64(s.limits.MaxInstances) {
 		return nil, limit("instances")
 	}
-	if uint64(len(definition.Functions)) > uint64(s.limits.MaxFunctions)-s.usage.Functions {
+	if uint64(len(definition.Functions)) > uint64(s.limits.MaxFunctions)-uint64(len(s.functions)-1) {
 		return nil, limit("functions")
 	}
 	instance.Types = make([]uint32, len(definition.Types))
@@ -79,6 +89,7 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 		if e != nil {
 			return nil, e
 		}
+		ex.Table.OwnerInstance = instance
 		instance.Tables = append(instance.Tables, ex.Table)
 	}
 	for _, m := range definition.Memories {
@@ -86,6 +97,7 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 		if e != nil {
 			return nil, e
 		}
+		ex.Memory.OwnerInstance = instance
 		instance.Memories = append(instance.Memories, ex.Memory)
 	}
 	for _, g := range definition.Globals {
@@ -93,6 +105,7 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 		if e != nil {
 			return nil, e
 		}
+		ex.Global.OwnerInstance = instance
 		instance.Globals = append(instance.Globals, ex.Global)
 	}
 	instance.Elements = make([][]uint64, len(definition.Elements))
@@ -142,9 +155,12 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 // Initialize applies active segments in the specification's order: active
 // elements, declarative drops, then active data. Earlier imported-state effects
 // survive a later trap. The caller must execute start using its normal budget.
-// Once initialization has begun, function references may have escaped through
-// imported tables; this instance remains Store-owned even when it traps.
+// After start succeeds the caller publishes the instance. On failure, it calls
+// CollectFailed; references that escaped into imported state preserve owners.
 func (in *Instance) Initialize() error {
+	if in.disposed || in.Owner.closed {
+		return wasm.ErrClosed
+	}
 	definition := in.Compiled.IR.Validated.Definition()
 	for i, segment := range definition.Elements {
 		if segment.Mode != module.Active {

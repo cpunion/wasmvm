@@ -398,3 +398,30 @@ Final-head remote checks still must pass before merge. M1 remains open for
 public lifecycle/ownership, host roots and close/reclamation (including failed
 instances without escaped references), API/CLI and own-engine benchmarks. The
 existing benchmark PR report still measures reference engines at this point.
+
+
+## M1 failed-instance reclamation and internal close
+
+The complete interpreter merged in [PR #14](https://github.com/cpunion/wasmvm/pull/14)
+after all six checks passed for `223d46a6ffbfe29eba3220f418a4034757908865`.
+All four [CI execution artifacts](https://github.com/cpunion/wasmvm/actions/runs/40279556265)
+report the same 51,139 passing binary assertions, 148 scripts and pinned-input
+checksum under Go/LLGo on Linux amd64/macOS arm64.
+
+The internal Store now traces successful instances, host tables/globals,
+explicit function roots and active frame owners. Failed instances are reclaimed
+only when unreachable, including unreachable cycles. Imported memory/table
+effects survive failure; escaped functions and imported objects preserve their
+origin instance. Tests cover removal of each root kind, 100 repeated failures
+under one-instance/one-function quotas, bounded identity holes, suspended calls,
+rollback of object registries, empty-object quotas and idempotent final close.
+Reclamation clears backing storage and restores live resource accounting.
+Interned type signatures retain a bounded Store-lifetime cache.
+
+Local shared Go/LLGo tests and Go vet/race pass with the complete corpus still
+enabled. Coverage is 97.6% for state, 98.7% for the interpreter and 99.3% for
+memory; defensive invalid-internal-record and 32-bit host paths remain uncovered.
+Every executable core package exceeds 90%. Final-head CI is required before
+merge. Internal final close assumes no execution lease remains; public
+nonblocking close, lease synchronization, host reference handles, API/CLI and
+own-engine benchmarks are still required M1 work.
