@@ -44,12 +44,13 @@ wasmvm/
 │   ├── compiler/
 │   │   ├── ir/                    # Implemented: typed CFG/SSA, effects/fuel and bounded verifier
 │   │   ├── lower/                 # Implemented: complete validated Core 2.0 to typed IR
+│   │   ├── slots/                 # Implemented: typed reusable slots, flat bytecode and parallel edge moves
 │   │   ├── passes/                # Planned: verified optimizations
 │   │   ├── machine/               # Planned: target IR and instruction selection
 │   │   └── regalloc/              # Planned: liveness, registers, spills and moves
 │   ├── engine/
 │   │   ├── state/                 # Planned: internal Store/Instance/frame state
-│   │   ├── interp/                # Planned: slot lowering, dispatch, resumable frames
+│   │   ├── interp/                # Planned: dispatch and resumable frames
 │   │   ├── native/                # Planned: native artifacts, maps and driver
 │   │   │   ├── amd64/             # Planned: Go instruction encoder/target lowering
 │   │   │   └── arm64/             # Planned: Go instruction encoder/target lowering
@@ -130,7 +131,7 @@ Definitions needed by both public and internal APIs belong in `pkg/wasm`, or in 
 ## Implementation by phase
 
 1. M0: retain existing evaluation modules and comparison tooling as independent references.
-2. M1: implement `binary`, `core/{module,decode,validate}`, `compiler/{ir,lower}`, `engine/{state,interp,memory}`, the core CLI and embedding examples; wire real wasmvm benchmarks. Complete Core 2.0 includes fixed SIMD.
+2. M1: implement `binary`, `core/{module,decode,validate}`, `compiler/{ir,lower,slots}`, `engine/{state,interp,memory}`, the core CLI and embedding examples; wire real wasmvm benchmarks. Complete Core 2.0 includes fixed SIMD.
 3. M2: implement `compiler/{passes,machine,regalloc}`, `engine/native/{amd64,arm64}` and isolated execution adapters; optimize the interpreter and pass the same complete profile plus performance gates.
 4. M3: extend `core/types`, `engine/heap`, scheduling, both backends and memory to full Core 3.0 plus separate Core Threads.
 5. M4: implement P1 and legacy threads adapters, capabilities and Go/LLGo guest integrations.

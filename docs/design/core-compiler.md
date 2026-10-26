@@ -78,6 +78,27 @@ Optimize demonstrated bottlenecks with direct local/constant forms, copy elimina
 
 Keep allocation out of warmed numeric execution after frames/results are reserved. API allocations, growth and host callbacks are measured separately. Private linear memory can use inlined checked access after profiling; shared memory must retain the common synchronization contract. Check address-plus-offset overflow before bounds and host-index conversion. Preserve the specified failure result for expected grow failures.
 
+### Implemented slot lowering
+
+`internal/compiler/slots` emits flat 32-byte instructions, inline ordinary
+operands/results, and separate pools for call/return arguments, edges and moves.
+Every emitted instruction retains its Wasm source/fuel identity. Blocks have
+resolved instruction offsets. Function locals occupy the frame prefix; scalar,
+vector and reference slots keep distinct types for future root scanning.
+
+The initial allocator recycles block-local temporaries by type and last use.
+Cross-block values and block parameters have dedicated slots. This conservative
+policy bounds compilation without constructing a global interference graph;
+whole-function allocation is a later measured optimization. Results do not
+clobber input slots at an instruction or suspended-call boundary. Parallel
+edge copies use a linear expected-time resolver and typed scratch for cycles.
+Per-function frame slots and aggregate lowering/verification work are bounded.
+
+Symbolic tests independently simulate slot reads, writes and edge transfers for
+every valid corpus function. This establishes lowering preservation, not
+instruction execution, runtime rooting or interpreter performance. The complete
+runtime and execution loop remain subsequent work.
+
 ## Native compilation
 
 The complete native pipeline is: typed IR verification, optimization, legalization to target operations, instruction selection, register allocation, spill insertion, frame layout, branch resolution/relocations, code emission, and publication with trap/safepoint/source maps. Implement amd64 and arm64 emitters in Go. The baseline uses linear-scan allocation with separate integer/vector classes, fixed-register constraints, call clobbers, live-range splitting, parallel-move resolution, and verified spill reloads. Target tests check actual execution as well as encoding/disassembly.
