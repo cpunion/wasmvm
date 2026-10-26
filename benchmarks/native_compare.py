@@ -15,6 +15,8 @@ import own_build
 ROUNDS = 20
 MAX_ROUNDS = 60
 BASELINE_ROUNDS = 3
+CANDIDATE_ITERATIONS = 25_000_000
+CANDIDATE_CHECKSUM = 3139208734  # Independent embedded/generate.py oracle.
 # Predeclared practical equivalence and stricter A/A resolution requirements.
 PARITY = 0.005
 CALIBRATION = 0.0025
@@ -22,9 +24,19 @@ REFERENCES = ("head-compiler", "wasmtime-cranelift", "wasmer-cranelift")
 ACCEPTED = {"faster", "parity", "parity-or-faster", "calibrated"}
 
 
+def warm_rate(record):
+    return statistics.median(record["warmCallNs"]) / record["iterations"]
+
+
+def candidate_fixture(fixture):
+    if (fixture["id"], fixture["iterations"], fixture["seed"]) != ("integer-sustained", 5_000_000, 305419896):
+        raise ValueError("native diagnostic workload differs from its declared kernel")
+    return {**fixture, "iterations": CANDIDATE_ITERATIONS, "expectedChecksum": CANDIDATE_CHECKSUM}
+
+
 def compare(rows, rounds=ROUNDS):
     """Compare independent process blocks; require calibrated equivalence."""
-    indexed = {(r["id"], r["round"]): statistics.median(r["record"]["warmCallNs"])
+    indexed = {(r["id"], r["round"]): warm_rate(r["record"])
                for r in rows}
     names = {f"head-{c}{suffix}" for c in ("go", "llgo") for suffix in ("", "-control")} | set(REFERENCES)
     expected = {(name, n) for name in names for n in range(rounds)}
@@ -60,10 +72,9 @@ def compare(rows, rounds=ROUNDS):
 
 def run(head, builds, runtimes, fixture, invoke, timeout):
     """Build only the small native probe in already isolated source trees."""
-    if fixture["id"] != "integer-sustained" or fixture["iterations"] != 5000000:
-        raise ValueError("native diagnostic workload differs from its declared kernel")
+    baseline_fixture, fixture = fixture, candidate_fixture(fixture)
     report = {"scope": "integer compiler architecture; public native VM remains unavailable",
-              "rounds": 0, "plannedLooks": [ROUNDS, MAX_ROUNDS], "looks": [], "baselineRounds": BASELINE_ROUNDS, "parityMargin": PARITY, "calibrationMargin": CALIBRATION, "fixture": fixture, "builds": {}, "observations": [], "status": "running"}
+              "rounds": 0, "plannedLooks": [ROUNDS, MAX_ROUNDS], "looks": [], "baselineRounds": BASELINE_ROUNDS, "parityMargin": PARITY, "calibrationMargin": CALIBRATION, "fixture": fixture, "baselineFixture": baseline_fixture, "builds": {}, "observations": [], "status": "running"}
     commands = {}
     source = (head / "benchmarks/native/main.go").read_text()
     for name in ("base-go", "base-llgo", "head-go", "head-llgo"):
@@ -88,7 +99,8 @@ def run(head, builds, runtimes, fixture, invoke, timeout):
         report["builds"][name] = {"sourceRevision": build["sourceRevision"], "sourceDigest": build["sourceDigest"],
                                   "toolchain": build["toolchain"], "binarySha256": own_build.digest(binary),
                                   "probeSha256": own_build.digest(probe), "tier": tier, "command": command}
-        commands[name] = [str(binary), "--tier", tier, "--budget", "64", "--wasm", str(head / "benchmarks/embedded" / fixture["wasm"]), "--seed", str(fixture["seed"]), "--iterations", str(fixture["iterations"]), "--expected", str(fixture["expectedChecksum"])]
+        case = baseline_fixture if name.startswith("base-") else fixture
+        commands[name] = [str(binary), "--tier", tier, "--budget", "64", "--wasm", str(head / "benchmarks/embedded" / fixture["wasm"]), "--seed", str(fixture["seed"]), "--iterations", str(case["iterations"]), "--expected", str(case["expectedChecksum"])]
     for ref in REFERENCES:
         runtime = next(r for r in runtimes if r["id"] == ref)
         commands[ref] = runtime["command"] + ["--wasm", str(head / "benchmarks/embedded" / fixture["wasm"]),
@@ -107,12 +119,13 @@ def run(head, builds, runtimes, fixture, invoke, timeout):
         for name in order:
             observation = invoke(commands[name], timeout)
             record = observation["record"]
+            case = baseline_fixture if name.startswith("base-") else fixture
             if len(record["warmCallNs"]) != 7 or any(type(x) is not int or x <= 0 for x in record["warmCallNs"]):
                 raise ValueError("invalid native warm samples")
-            if record["iterations"] != fixture["iterations"] or record["seed"] != fixture["seed"]:
+            if record["iterations"] != case["iterations"] or record["seed"] != case["seed"]:
                 raise ValueError("workload parameters differ")
             if name not in REFERENCES:
-                if record["wasmSHA256"] != fixture["wasmSha256"] or record["expected"] != fixture["expectedChecksum"]:
+                if record["wasmSHA256"] != fixture["wasmSha256"] or record["expected"] != case["expectedChecksum"]:
                     raise ValueError("native fixture mismatch")
                 if record["tier"] != report["builds"][name.removesuffix("-control")]["tier"]:
                     raise ValueError("native policy mismatch")
@@ -135,18 +148,20 @@ def markdown(report):
              "Compiler-only integer/register/polling comparison; **not public native API or full-profile acceptance**. "
              "Fuel is disabled. Own code retains bounded cancellation polls; references use their pinned default interruption settings. "
              f"{report['rounds']} interleaved sustained-work blocks plus three baseline blocks; seven warm calls per process. "
+             f"Candidates and A/A controls use {report['fixture']['iterations']:,} iterations per call; descriptive baselines retain "
+             f"{report.get('baselineFixture', report['fixture'])['iterations']:,}. Warm rates and own ratios normalize each record by its own iteration count. "
              "The planned looks are 20 and, only if inconclusive, 60 blocks; intervals adjust for both looks. "
              "Parity requires the entire simultaneous 95% interval within ±0.5%; an interval spanning faster and parity also passes when its upper bound is at most 1.005. A/A controls must resolve ±0.25%. Shared-runner evidence is provisional. "
              "The hard gate covers all three competitors for each host compiler; own baseline ratios are reported separately.", "",
              "| Runtime | Warm ns/iteration | Preparation ms | First call ms |", "| --- | ---: | ---: | ---: |"]
     for name in sorted({r["id"] for r in report["observations"]}):
         records = [r["record"] for r in report["observations"] if r["id"] == name]
-        warm = statistics.median(statistics.median(r["warmCallNs"]) for r in records) / report["fixture"]["iterations"]
+        warm = statistics.median(warm_rate(r) for r in records)
         prep = statistics.median(r["phasesNs"]["compileValidate"] if "phasesNs" in r else r["frontendNs"] + r["backendNs"] for r in records) / 1e6
         first = statistics.median(r["phasesNs"]["firstCall"] if "phasesNs" in r else r["firstCallNs"] for r in records) / 1e6
         lines.append(f"| {labels.get(name,name)} | {warm:.3f} | {prep:.3f} | {first:.3f} |")
     for compiler in ("go", "llgo"):
-        medians = {ref: statistics.median(statistics.median(r["record"]["warmCallNs"]) for r in report["observations"] if r["id"] == f"{ref}-{compiler}") for ref in ("base", "head")}
+        medians = {ref: statistics.median(warm_rate(r["record"]) for r in report["observations"] if r["id"] == f"{ref}-{compiler}") for ref in ("base", "head")}
         lines += [f"Own {compiler} head/base median ratio: {medians['head']/medians['base']:.4f} (three baseline processes; descriptive)."]
     lines += ["", "| Host | Reference | Warm ratio | Simultaneous 95% interval | Gate |", "| --- | --- | ---: | --- | --- |"]
     for r in report["comparisons"]:

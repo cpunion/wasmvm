@@ -12,7 +12,7 @@ def observations(factor):
             value = 10000 * (n + 1)  # Paired host variation must cancel.
             if name.startswith("head-") and name not in native.REFERENCES:
                 value *= factor[n % len(factor)]
-            rows.append({"id": name, "round": n, "record": {"warmCallNs": [value]*7}})
+            rows.append({"id": name, "round": n, "record": {"warmCallNs": [value]*7, "iterations": 1}})
     return rows
 
 
@@ -64,3 +64,32 @@ class NativeGateTests(unittest.TestCase):
                 r["record"]["warmCallNs"] = [x*(.99 if r["round"]%2 else 1.01) for x in r["record"]["warmCallNs"]]
         result = native.compare(rows)
         self.assertEqual({r["status"] for r in result if r["reference"].endswith("-control")}, {"inconclusive"})
+
+    def test_longer_candidates_preserve_bytes_and_seed(self):
+        fixture = {"id": "integer-sustained", "iterations": 5000000, "seed": 305419896,
+                   "expectedChecksum": 3219525462, "wasmSha256": "owned-by-manifest", "wasm": "integer-mix.wasm"}
+        candidate = native.candidate_fixture(fixture)
+        self.assertEqual(candidate["iterations"], 25000000)
+        self.assertEqual(candidate["expectedChecksum"], 3139208734)
+        for key in ("id", "seed", "wasmSha256", "wasm"):
+            self.assertEqual(candidate[key], fixture[key])
+        self.assertEqual(fixture["iterations"], 5000000)
+        with self.assertRaises(ValueError):
+            native.candidate_fixture({**fixture, "seed": 1})
+
+    def test_report_normalizes_descriptive_baseline_separately(self):
+        rows = observations([1.0])
+        for row in rows:
+            count = 5000000 if row["id"].startswith("base-") else 25000000
+            row["record"].update(iterations=count, warmCallNs=[2*count]*7,
+                                 frontendNs=1000, backendNs=2000, firstCallNs=3*count)
+        report = {"observations": rows, "fixture": {"iterations": 25000000},
+                  "baselineFixture": {"iterations": 5000000}, "rounds": native.ROUNDS,
+                  "comparisons": native.compare(rows), "status": "pass"}
+        output = native.markdown(report)
+        self.assertIn("| base-go | 2.000 | 0.003 | 15.000 |", output)
+        self.assertIn("| head-go | 2.000 | 0.003 | 75.000 |", output)
+        self.assertIn("head/base median ratio: 1.0000", output)
+        self.assertIn("25,000,000 iterations", output)
+        self.assertIn("baselines retain 5,000,000", output)
+        self.assertTrue(all(r["status"] in native.ACCEPTED for r in report["comparisons"]))

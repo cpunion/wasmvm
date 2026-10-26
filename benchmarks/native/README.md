@@ -18,8 +18,9 @@ exits. Checksums, initial frame setup and printing are outside the call timer.
 The existing PR phase job reuses its isolated exact-revision source trees and
 pinned wazero 1.12.0, Wasmtime 48.0.1 and Wasmer 7.3.0 compiler runners. It adds
 20 interleaved process blocks (one predeclared extension to 60 when inconclusive)
-for the existing five-million-iteration sustained
-case, plus three own-baseline blocks and publishes raw records and the
+for 25 million iterations of the existing sustained kernel
+(the identical binary and seed for all candidates and A/A controls), plus three
+own-baseline blocks retaining five million iterations and publishes raw records and the
 feature comparison in the same PR comment. Both host compilers must pass every
 competitor comparison and their identical-binary A/A control. Linux processes
 share one allowed CPU through `taskset`; macOS affinity remains uncontrolled. A paired process bootstrap uses simultaneous 95% bounds;
@@ -78,3 +79,13 @@ labelled `parity-or-faster`. The parity margin, A/A requirement, observations,
 bootstrap procedure and planned looks are unchanged. Reclassifying the retained
 `d123e16` Linux observations passes all eight comparisons; this does not accept
 arm64 results or replace final-head checks.
+
+At `fe3b4db`, Linux passed but macOS arm64 remained blocked by noisy A/A controls
+and a slower comparison. A complete local M4 Max run also failed A/A resolution
+at five million iterations. The next protocol increases every candidate and
+control call to 25 million iterations, keeping the same binary, seed, seven
+samples, warmups, planned looks and margins. The independent Python oracle gives
+checksum `3139208734`. Descriptive baseline calls retain five million iterations
+to bound CI cost; their count is disclosed and each record is normalized by its
+own iterations. This improves measurement duration, not generated-code speed;
+earlier failures remain evidence and cannot be replaced by selective reruns.

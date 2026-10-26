@@ -21,7 +21,7 @@ simultaneous 95% paired-bootstrap intervals adjusted for both planned looks, and
 identical-binary A/A controls. Practical parity means the entire interval lies
 within ±0.5%. An interval spanning faster and parity also passes if its upper
 bound is at most 1.005; crossing the boundary between two accepted outcomes is
-not a rejection. A/A intervals must resolve ±0.25% or the gate remains inconclusive.
+not a rejection. A/A intervals must resolve ±0.25% or the gate remains inconclusive. Candidate and control calls use 25 million iterations of the same sustained integer binary and seed; the three descriptive baseline calls retain five million. All warm rates and baseline ratios normalize each record by its own count. The longer candidate duration changes neither acceptance margins nor planned looks; earlier failed measurements remain visible.
 These feature-level equivalence limits do not replace the stricter full-portfolio
 throughput targets below. Record every methodology change with old/new evidence.
 
