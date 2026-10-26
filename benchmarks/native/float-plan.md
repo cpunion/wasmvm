@@ -11,3 +11,14 @@ The initial six owned fixtures use one million iterations, the shared `run(i32 s
 The implementation emits all 44 operations in this scope on both ISAs. amd64 uses only baseline SSE2, including explicit rounding sequences; arm64 uses scalar FP instructions. FP bit reinterpretation and sign operations preserve NaN payloads. SSE min/max handle unordered inputs and signed zeros explicitly. The common compiler continues to enforce fuel boundaries, canonical scalar slots and cancellation. Integer/float numeric conversions, native memory/calls and public runtime integration remain open.
 
 Local implementation evidence at `c8b9a66`: all 44 instructions execute in Go/LLGo arm64 tests and isolated amd64 Go tests. Register caching and copy forwarding reduce the initial 3–6× deficits substantially. The six-case M4 Max diagnostics are close on f32 arithmetic and both rounding cases, but min/max remains about 16–20% slower and f64 arithmetic has a smaller deficit. They do not authorize a PR merge. Raw stage comparisons, 90 alternate-parameter checks and reproduction metadata are retained locally in `artifacts/native-float/`. Exact codegen statement coverage is 94.5%; the public native API and full-profile execution remain incomplete.
+
+## Next scalar conversion scope
+
+Implement all 26 remaining scalar integer/float numeric conversions, including
+promotion/demotion, checked truncation and the eight saturating truncations.
+Extend the affected portfolio with signed/unsigned i32/f32 and i64/f64 conversion
+chains, declared before implementation; retain the six arithmetic cases and the
+integer regression series. Preserve exact trap categories/locations, negative
+fractions truncating to unsigned zero, saturation, NaN policy, fuel and every
+existing continuation guarantee. No conversion feature is accepted on arithmetic
+benchmarks alone.
