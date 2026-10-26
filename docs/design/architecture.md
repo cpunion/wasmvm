@@ -2,15 +2,15 @@
 
 Status: initial design, 2026-10-26. The APIs, types, and behaviors in this document are design constraints, not implemented features. Proposal status and existing implementation capabilities are documented in the [standards survey](../research/standards.md) and [implementation survey](../research/implementations.md), respectively.
 
-Implementation provenance update: [M0 selects reuse of wazero first](reuse-decision.md), with runtime compatibility fixes in LLGo. The independent-engine blueprint below remains a fallback and a source of acceptance contracts, not an instruction to duplicate working decoder/interpreter code. Engine-specific differences must be documented and validated as each milestone is implemented.
+Implementation direction: [project-owned core](own-core.md), with a required portable interpreter and native compiler. The [core compiler](core-compiler.md), [native ABI](native-abi.md), and [performance contract](performance-contract.md) supplement this design. M0 candidate experiments remain reference evidence; they do not implement the production core.
 
 ## 1. Purpose and scope
 
 `wasmvm` is a Wasm runtime intended for embedding in Go applications, with a CLI also planned. Its initial execution backend is a pure Go interpreter, prioritizing verifiable semantics, bounded resource use, and consistent behavior under Go and llgo. Go or llgo compiles the **host VM** into a native executable, which then loads guest `.wasm` modules. Compiling the VM itself to Wasm is a separate goal and is outside the initial scope.
 
-The M0 experiments with Wago and wazero must precede implementation. This document uses an independent interpreter as the baseline for describing package boundaries. Reusing an existing engine must still satisfy the validation, resource, and compatibility contracts defined here; existing functionality should not be rewritten merely to preserve this draft.
+M0 evaluated Wago and wazero. The owner subsequently selected independent implementation for long-term control. Both backends share validated semantics and runtime contracts, with separate interpreter and native lowerings; the native compiler is a required M2 deliverable rather than optional late optimization.
 
-The initial platform targets are Linux and macOS on amd64 and arm64. Required CI checks for both compilers start on Linux amd64, with additional architectures following. Windows, 32-bit hosts, JIT, an AOT compiler, browser hosting, and full POSIX emulation are not initial commitments.
+The first required native acceptance matrix is Linux amd64 and macOS arm64 under both Go and LLGo. Other OS/CPU combinations require separate evidence; Linux arm64 and macOS amd64 follow when runners are available. The interpreter and compiler logic remain buildable with CGO_ENABLED=0; standard-Go native execution initially uses a small cgo bridge. Windows, 32-bit hosts, persistent AOT artifacts, browser hosting, and full POSIX emulation are not initial commitments.
 
 ## 2. Layers and data flow
 
@@ -23,8 +23,13 @@ flowchart TD
     CM --> VM
     W1 --> VM
     VM --> Decode[decode + validate + canonical types]
-    Decode --> Module[Immutable CompiledModule / internal instructions]
-    Module --> Interp[Resumable interpreter]
+    Decode --> Module[Immutable validated module / typed IR]
+    Module --> Interp[Resumable slot interpreter]
+    Module --> Compiler[Optimization / native code generation]
+    Compiler --> Native[Native execution]
+    Native --> Store
+    Native --> Mem
+    Native --> Sched
     Interp --> Store[Store: globals / tables / GC heap / handles]
     Interp --> Mem[Memory: bounds / shared memory / atomics]
     Interp --> Sched[Budgets / scheduling / wait queues]
@@ -32,14 +37,14 @@ flowchart TD
     W23 --> Host
 ```
 
-Dependencies always point from protocol adapters toward the core; the core must not import WASI. Decoding, validation, instantiation, and execution are separate steps. A deserialized module cannot execute directly: only a validated internal representation may enter the interpreter.
+Dependencies always point from protocol adapters toward the core; the core must not import WASI. Decoding, validation, instantiation, and execution are separate steps. A deserialized module cannot execute directly: only a validated internal representation may enter either backend.
 
 ### Key objects
 
 | Object | Lifetime and concurrency contract |
 | --- | --- |
 | `Engine` | Feature profiles, type canonicalization, immutable module cache, and shared-memory atomic ordering coordinator; supports concurrent compilation |
-| `CompiledModule` | Validated, immutable code and metadata, shareable across Stores; the cache key includes content, feature set, and validator version |
+| `CompiledModule` | Validated, immutable code and metadata, shareable across Stores; the cache key includes content, feature set, validator/IR version, backend, compiler version, target CPU features, ABI and budget policy |
 | `Store` | Isolation domain for instances, globals, tables, object handles, and a GC heap; at most one guest continuation executes by default, with no implicit concurrent reentry |
 | `Instance` | A module's instantiated state; binds imports, functions, tag identities, memories, and tables; imports across instances require complete type and ownership-domain checks |
 | `Execution` | Explicit call frames, operand/reference stacks, budgets, cancellation signals, and exception state; can suspend and resume |
@@ -58,7 +63,7 @@ The validator maintains control and operand-type stacks, multi-value block signa
 FeatureSet is an explicit, immutable configuration whose enabled features include their required dependencies. Presets identify exact specification snapshots. An unimplemented feature produces `UnsupportedFeature` before compilation rather than silently becoming a no-op. Candidate profiles are:
 
 - `core2`: the complete Core 2.0 feature set as a testing target; support remains itemized until the full matrix passes.
-- `core3`: Core 3.0, including GC, typed references, tail calls, standard EH, Memory64, multi-memory, and relaxed SIMD.
+- `core3`: Core 3.0, including GC, typed references, tail calls, standard EH, Memory64/Table64, multi-memory, and relaxed SIMD.
 - `threads`: a separate Core Threads switch; enabling core3 does not imply thread support.
 - `llgo-wasip1`: records the exact guest compiler and flags; requires the emitted features, including P1, shared memory, atomics, wasi-threads, standard EH, and SIMD.
 - `component-p2` / `component-p3`: separate manifests for component encoding, Canonical ABI, and WASI WIT versions.
@@ -67,7 +72,7 @@ Legacy EH, WASIX, Shared-Everything Threads, stack switching, and JSPI are not i
 
 ## 4. Interpreter and numeric semantics
 
-Decoded internal instructions carry validated immediates, branch targets, and type indices. The interpreter uses an explicit frame stack for calls and returns so guest recursion does not consume the host Go stack. A tail call replaces the current guest frame. The first implementation uses straightforward instruction dispatch; benchmarks must justify subsequent optimizations.
+Decoded internal instructions carry validated immediates, branch targets, and type indices. The interpreter uses an explicit frame stack for calls and returns so guest recursion does not consume the host Go stack. A tail call replaces the current guest frame. Typed control-flow IR lowers to predecoded register/slot bytecode; dispatch specialization and fusion require measurements and preserved fuel/trap semantics. The native backend uses the same runtime contracts with explicit logical frames and continuation exits. See [core-compiler.md](core-compiler.md) for lowering, optimization and machine-code generation.
 
 Scalar bit patterns and references are stored separately. i32/i64/f32/f64/v128 use explicit bit representations, while reference slots use typed handles instead of storing pointers in `uint64` or `uintptr`. An initial `v128` implementation can use two `uint64` values and scalar lane operations without host assembly.
 
@@ -101,7 +106,7 @@ Core Threads does not imply a shared GC heap. Each thread instance in this desig
 
 Address calculations first perform checked addition in `uint64`, then compare against the actual length, and finally check whether the result fits a host `int`. Memory64 changes guest addressing width; it does not require allocating 2^64 bytes. Memory/table growth must respect specification limits, declared maxima, and host quotas. Expected allocation failures return the specified result rather than crashing the process.
 
-Private memory can initially use a contiguous byte slice. The initial shared-memory implementation can also use a locked slice because all access and growth go through Memory methods, and the host receives no long-lived slice or pointer. Growth, copy/fill, and host I/O reads and writes follow the same rule. Segmented storage may replace this representation later while preserving SIMD, unaligned, cross-page, and bulk-operation semantics.
+In M1, interpreter-only private memory can use a contiguous byte slice. When shared memory is added in M3, an interpreter-only backing may use a locked slice. Before a Memory is exposed to native execution, its common backing must be VM-owned native allocation with the lifetime rules in [native-abi.md](native-abi.md); interpreter instances importing that same Memory use the same backing and synchronization domain. Never cache an unpinned Go-slice pointer in native code, create a separate mirrored memory, or migrate backing while an execution or borrow is active. Backend selection and import compatibility determine backing before instantiation. All access and growth go through the Memory contract, and the host receives no long-lived slice or pointer. Growth, copy/fill, and host I/O reads and writes follow the same rule. Segmented storage may replace this representation later while preserving SIMD, unaligned, cross-page, and bulk-operation semantics.
 
 ### Portable threading baseline
 
@@ -129,7 +134,7 @@ Preview 1 implements the `wasi_snapshot_preview1` linear-memory ABI precisely: l
 
 WASI 0.2 is not a renaming of P1 functions. It requires component binaries, WIT types, Canonical ABI lift/lower, string encodings, realloc/post-return, resource own/borrow, drop, and component composition. Start with CLI worlds pinned to a WIT version, then extend to filesystem, sockets, and HTTP. Running components does not establish support for all WASI interfaces.
 
-WASI 0.3 adds `async func`, `stream<T>`, `future<T>`, and component-level task scheduling, cancellation, and backpressure requirements. P2 pollables and P3 native async require separate adapters. This design reserves suspendable Execution objects and an independent scheduler, but the complete canonical async ABI requires dedicated design work in M5. Async is not equivalent to Core Threads and does not require implementing the Core stack-switching proposal first.
+WASI 0.3 adds `async func`, `stream<T>`, `future<T>`, and component-level task scheduling, cancellation, and backpressure requirements. P2 pollables and P3 native async require separate adapters. This design reserves suspendable Execution objects and an independent scheduler, but the complete canonical async ABI requires dedicated design work in M6. Async is not equivalent to Core Threads and does not require implementing the Core stack-switching proposal first.
 
 The initial WIT parser/code generator can run as an external development tool rather than being embedded in the production VM. The runtime accepts only validated, version-pinned generated metadata. P1-to-component adapters may reuse official toolchain artifacts, but they do not replace this project's component execution capability.
 
@@ -142,7 +147,7 @@ engine, err := vm.NewEngine(vm.Config{Features: profile, Limits: limits})
 defer engine.Close()
 compiled, err := engine.Compile(ctx, wasmBytes)
 store, err := engine.NewStore(storeConfig)
-defer store.Close(ctx) // Cancel execution, wake waits, await exit, close resources.
+defer store.Close() // Nonblocking close request; reclaim when execution leaves.
 linker := vm.NewLinker(engine)
 err = preview1.Register(linker, capabilities)
 instance, err := linker.Instantiate(ctx, store, compiled)
@@ -155,7 +160,7 @@ Errors distinguish at least DecodeError, ValidationError, UnsupportedFeature, Li
 
 ## 9. Resource control and testing
 
-Each Store/ThreadGroup explicitly limits module/function/type counts, nesting depth, code size, memory pages, table elements, live GC objects, host resources, threads, guest stacks, execution fuel, and wall-clock deadlines. Reclamation, close, and cancellation must be idempotent. Report the `Close` waiting limit separately from external callbacks that cannot be canceled.
+Each Store/ThreadGroup explicitly limits module/function/type counts, nesting depth, code size, memory pages, table elements, live GC objects, host resources, threads, guest stacks, execution fuel, and wall-clock deadlines. Reclamation, close, and cancellation must be idempotent. `Close` requests cancellation without waiting and is safe inside a host callback; resources remain owned until callbacks/executions leave. External callers may use `WaitClosed(ctx)` to await reclamation with a deadline. That wait must not be called from an active callback of the same Store. Report its waiting limit separately from external callbacks that cannot be canceled. Host panic propagation still performs deferred execution/root/reentry cleanup.
 
 The validator and interpreter primarily use the official `.wast` suite from the same specification snapshot. Pinned tools convert WAST into committed fixtures or deterministic JSON/wasm artifacts; test execution must not depend on a developer's private tool paths. Failures retain the fixture, feature set, toolchain versions, and random seed. Differential execution uses the common capability subsets of Wasmtime, Wago, and wazero. Judge NaN, relaxed SIMD, and nondeterministic threaded outcomes by the specification rather than treating stdout equality as a universal oracle.
 
@@ -167,12 +172,12 @@ Both compilers execute the same semantic and fixture suites. Go-only `-race` and
 
 | Decision | Reason | Revisit when |
 | --- | --- | --- |
-| Pure Go interpreter first | Simplifies portability across both compilers and semantic checks | M0 establishes whether Wago/wazero can supply the engine |
+| Project-owned portable interpreter and native compiler | Gives control over IR, semantics, resource policy and optimization | Measured upkeep and complete acceptance evidence justify a new decision |
 | Explicit guest GC with host-visible references | Provides stable object identity, guest quotas, and controlled roots | GC stress benchmarks justify generational/incremental collection |
 | Fully synchronized shared-memory backend | Avoids Go races, unsafe access, and architecture-specific behavior | Threads tests and performance baselines are complete |
 | Store-private GC heaps | Matches the current Core Threads boundary | A separate Shared-Everything Threads RFC is accepted |
 | Versioned WASI packages and separate threads adapter | Keeps legacy extensions distinct from stable standards | WIT/specification versions change |
 | Explicit continuation stacks | Supports tail calls, budgets, and future P3 suspension | The P3 Canonical ABI spike |
-| Defer JIT | Limits coupling to host runtime and compiler ABIs | The interpreter is functionally complete and real benchmarks justify it |
+| Native compilation required in M2 | Core throughput is a primary product requirement | ABI tests and performance gates determine readiness, not feature presence alone |
 
-Open questions include whether Wago can compile directly with llgo; the stability of wazero's experimental APIs; throughput of the serialized shared-memory backend; the cost of fully validating WASI 0.3 canonical async; portable capability-directory implementations across hosts; and licenses and version pinning for official tests and tools. The [roadmap](../roadmap.md) turns these questions into tasks with acceptance criteria.
+Open validation work includes the Go/LLGo native call bridge; interpreter dispatch and native frame costs; throughput of the serialized shared-memory backend; full WASI 0.3 canonical async; portable capability-directory implementations; and corpus integration with exact licenses and version pins. The [roadmap](../roadmap.md) turns these questions into tasks with acceptance criteria.

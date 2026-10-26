@@ -226,20 +226,19 @@ Sources: [official engine feature matrix](https://webassembly.org/features/), [s
 
 ## 6. Standards-oriented acceptance milestones
 
-The [development roadmap](../roadmap.md) is the authoritative implementation plan, using M0, M1, M2a, M2b, and M3–M6. The table below summarizes standards coverage and acceptance evidence; it is not a separate schedule. M0 first evaluates reuse and establishes the pinned corpus. No unmeasured duration or performance commitment is implied. Both Go-compiled and llgo-compiled VMs must execute the same corpus at every implementation milestone.
+The [development roadmap](../roadmap.md) is authoritative. Following M0 evaluation, the owner selected a project-owned core with native compilation required early. This table maps unchanged standards targets to the revised sequence; it is not a new standards survey. Both host compilers execute the same corpus, with explicit backend/platform evidence.
 
-| Roadmap stage | Scope | Acceptance evidence |
+| Roadmap stage | Complete scope | Acceptance evidence |
 | --- | --- | --- |
-| Design baseline | Package boundaries, FeatureSet, limits model, compatibility probes, dual-compiler CI | Traceable documentation and smoke tests executed by both compilers; no claim that a VM already exists |
-| M1: usable interpreter | MVP, common 2.0 features, resource limits, basic P1 CLI | Positive and negative decoder/validator cases; minimal WASI programs; distinct trap, exit, and timeout results |
-| M2a: P1 and shared-memory threads | P1 operation coverage, Core Threads, optional legacy wasi-threads | Official P1 tests; pthread creation/join/TLS, wait-notify, whole-group termination on trap/exit, and Go race checks |
-| M2b: WasmGC and 3.0 control flow | Recursive types, subtyping, GC, typed refs, tail calls, final EH | Specification GC/ref/EH tests; deep tail recursion without host-stack growth; cross-module types, GC roots, and callback regressions |
-| M3: complete Core 3.0 | SIMD / relaxed SIMD, memory64, multi-memory, extended const, and remaining features | Explicit complete/missing feature list; claim Core 3.0 only after the full target scope passes |
-| M4: Component Model and WASI 0.2 | Component decoding/validation/instantiation, WIT types, Canonical ABI, resources, CLI through sockets/HTTP | Pinned 0.2.12 WIT; cross-language components; own/borrow/drop, string/list encodings, and error paths |
-| M5: WASI 0.3 | Async lift/lower, futures/streams, cancellation, backpressure, reentrancy, and cumulative features adopted from 0.3.1 onward | Pinned 0.3.2 WIT; CLI and HTTP service/middleware; async task/resource-leak checks and dual-compiler consistency |
-| M6: optional extensions | Stack switching, shared-everything, Component threading, and other separately approved experiments | Independent feature gates, pinned proposal commits, and separate compatibility reports |
+| M1 | Full Core 2.0 binary frontend/interpreter, including fixed SIMD, references, multi-value and bulk operations | Complete pinned `wg-2.0` corpus, resource/lifecycle/negative tests, own-engine benchmark baseline |
+| M2 | Fast interpreter and complete native compiler for that same Core 2.0 profile | Go/LLGo × interpreter/native × Linux amd64/macOS arm64; native ABI and controlled performance gates |
+| M3 | Full Core 3.0, including WasmGC, typed refs, tail calls, final EH, Memory64/Table64, multi-memory, extended const and relaxed SIMD; separate Core Threads | Full profile/feature suites on both backends; forced GC, roots, EH, shared-memory and combined-workload tests |
+| M4 | P1, legacy wasi-threads and pinned Go/LLGo guest ABI | Operation manifest, capability tests, pthread/TLS/exit, guest GC/panic/I/O integrations |
+| M5 | Component Model and WASI 0.2.12 | Cross-language composition, declared worlds/interfaces, ownership and Canonical ABI tests |
+| M6 | WASI 0.3.2 and cumulative component async | Declared CLI/HTTP worlds, futures/streams, cancellation/backpressure and lifecycle tests |
+| M7 | Separately gated optional proposals/platforms/optimizations | Independent pinned scope, correctness and performance evidence |
 
-M2a and M2b may proceed in parallel after M1. Establish the type system, reference layout, and memory-access abstractions during the design baseline and M1. Optimize performance or add a JIT only after interpreter semantics and dual-compiler consistency have reliable evidence.
+The revised sequence completes core mechanisms and performance before WASI integration. A stage cannot close for a small opcode subset, an expected unsupported result, or a passing microbenchmark. See the [compiler design](../design/core-compiler.md) and [performance contract](../design/performance-contract.md).
 
 ## 7. Test sources and update policy
 

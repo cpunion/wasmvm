@@ -2,7 +2,8 @@
 
 - Keep repository documentation, code comments, commit messages, and pull-request descriptions in English.
 - Follow the milestone dependencies and acceptance gates in `docs/roadmap.md`. Do not mark a milestone complete while any required deliverable or validation remains unfinished. Record observed failures and unsupported features explicitly.
-- Prefer reuse when it meets the project contracts. A missing feature or a compiler-specific integration issue alone is not justification for replacing an existing engine.
+- Implement the project-owned core selected in `docs/design/own-core.md`. Keep wazero and other engines as independent semantic and performance references. Do not replace the core with an engine wrapper or silently fall back to a competitor when a backend lacks a feature.
+- Treat interpreter throughput and native compilation/execution as required core deliverables. Follow `docs/design/core-compiler.md`, `native-abi.md`, and `performance-contract.md`; a small instruction subset or a passing microbenchmark does not complete a profile or milestone.
 - Make changes on a contribution branch and submit a pull request. Do not push implementation changes directly to `main`. Merge only after the final PR head has passed its required checks and review findings are resolved.
 - Compile and execute shared semantic tests with both Go and LLGo. A successful build, an expected incompatibility assertion, and actual guest execution are different outcomes; report them separately.
 - Test successful behavior, invalid input, resource limits, cleanup, cancellation, and feature interactions as applicable. Do not hide compiler failures with broad skips or `continue-on-error`.

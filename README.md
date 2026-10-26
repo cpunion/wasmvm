@@ -2,11 +2,11 @@
 
 A WebAssembly virtual machine written in Go, designed to build and run with both Go and LLGo.
 
-**M0 evaluation stage: no production VM API is implemented yet.** This repository contains research, architecture, a development plan, host compatibility probes, and executable candidate evaluations. The `doc.go` files reserve package responsibilities; they do not indicate implemented features. The separate evaluation modules execute real Wasm through existing engines and report their limitations explicitly.
+**Own-core design stage: no production VM API is implemented yet.** This repository contains research, architecture, a development plan, host compatibility probes, and executable candidate evaluations. The `doc.go` files reserve package responsibilities; they do not indicate implemented features. The separate evaluation modules execute real Wasm through existing engines and report their limitations explicitly.
 
 ## Goals
 
-- Start with a portable, pure Go interpreter and work toward WebAssembly Core 3.0, including WasmGC, standard exception handling, SIMD, and Memory64.
+- Build a project-owned Go decoder, validator, fast portable interpreter and native compiler, with complete Core 2.0 first and Core 3.0 next, including WasmGC, final exception handling, SIMD, Memory64 and Table64.
 - Implement Core Threads shared linear memory, atomics, and wait/notify, with a separate legacy `wasi-threads` adapter for existing LLGo guests.
 - Support WASI Preview 1, Component Model-based WASI 0.2, and WASI 0.3 with native async as separate, versioned targets.
 - Run the same source and semantic tests under `go test` and `llgo test`. Building the host VM with LLGo and executing LLGo-produced Wasm guests are separate acceptance targets.
@@ -20,7 +20,10 @@ The research snapshot is dated **2026-10-26**: WASI 0.3 has shipped, GC is part 
 | [Standards and proposals](docs/research/standards.md) | Proposal stages, Core/WASI versions, official sources, and conflicting or outdated material |
 | [Existing implementations](docs/research/implementations.md) | Runtime capability matrix and Wago/wazero reuse assessment |
 | [Wazero evaluation](docs/research/wazero-evaluation.md) | Actual feature and compiler results, known gaps, and reproducible experiments |
-| [Reuse decision](docs/design/reuse-decision.md) | Reuse-first direction, remaining work, and milestone acceptance boundaries |
+| [Own-core decision](docs/design/own-core.md) | Selected implementation ownership, reference-engine role and acceptance boundaries |
+| [Core compiler](docs/design/core-compiler.md) | Typed IR, interpreter dispatch, optimization, native code generation and semantic preservation |
+| [Native ABI](docs/design/native-abi.md) | Go/LLGo bridge, guest frames, roots, continuations and executable-code lifecycle |
+| [Performance contract](docs/design/performance-contract.md) | Subsystem measurements, own base/head comparisons and required performance targets |
 | [Performance comparison](docs/research/performance.md) | Matched startup/small/sustained CLI workloads, raw samples, and measurement limits |
 | [Architecture](docs/design/architecture.md) | Execution, types, GC, threads, WASI, isolation, and draft embedding API |
 | [Package layout](docs/design/packages.md) | Public `pkg` APIs, internal layers, dependency direction, and implementation order |
@@ -28,23 +31,23 @@ The research snapshot is dated **2026-10-26**: WASI 0.3 has shipped, GC is part 
 | [Development plan](docs/roadmap.md) | Milestones, work packages, dependencies, deliverables, acceptance gates, and initial backlog |
 | [Validation record](docs/validation.md) | Actual local and CI results, with their scope and limitations |
 
-The independent pure Go interpreter design is a fallback, not an instruction to rewrite an existing engine. **M0 evaluates reuse first.** Current evidence favors resolving LLGo compatibility and retaining wazero's existing implementation while assessing the remaining feature gaps. The diagnostic interpreter-only patch is a localization experiment, not the proposed permanent fix for missing LLGo runtime symbols.
+The owner selected a **project-owned core** after M0. Wazero and other engines remain independent semantic/performance references. Native compilation is a required early milestone. The interpreter and compiler logic remain usable without cgo; standard-Go native execution initially uses a small C ABI bridge. See the [decision](docs/design/own-core.md) and [historical reuse assessment](docs/design/reuse-decision.md).
 
 ## Development phases
 
 | Phase | Outcome | Status |
 | --- | --- | --- |
-| Design baseline | Research, architecture, package contracts, shared compiler probes, and CI | Complete |
-| M0 | Reuse decision, pinned fixtures, and reproducible candidate experiments | Implemented; acceptance evidence in the contribution PR |
-| M1 | Embeddable interpreter, validation, resource limits, and a usable P1 CLI subset | Planned |
-| M2a | Core Threads, legacy wasi-threads, and the declared P1 interface scope | Planned |
-| M2b | WasmGC, recursive types, typed references, tail calls, and final EH | Planned |
-| M3 | Complete the targeted Core 3.0 profile and validate LLGo guests | Planned |
-| M4 | Component Model and WASI 0.2, delivered by world and interface | Planned |
-| M5 | WASI 0.3 native async, futures, streams, and cumulative component features | Planned |
-| M6 | Optional performance work and separately gated experimental proposals | Deferred |
+| Design baseline | Research, architecture, package contracts and compiler probes | Complete; own-core design now replaces reuse-first direction |
+| M0 | Candidate evaluation and reproducible comparison infrastructure | Complete through PRs #1–#3 |
+| M1 | Complete Core 2.0 interpreter, validation, resource limits, API and core CLI | Planned |
+| M2 | Fast interpreter and complete Core 2.0 native compiler for amd64/arm64 | Planned; required performance gate |
+| M3 | Full Core 3.0 and separate Core Threads on both backends | Planned |
+| M4 | P1, legacy wasi-threads and pinned Go/LLGo guest integration | Planned |
+| M5 | Component Model and WASI 0.2 by declared world/interface | Planned |
+| M6 | WASI 0.3 native async and cumulative component features | Planned |
+| M7 | Further optimization and separately gated experimental proposals | Deferred |
 
-M2a and M2b can proceed in parallel once M1 stabilizes the value, memory, validation, and execution interfaces. LLGo guest compatibility is accepted in M3 because it also requires EH and SIMD. See the [full plan](docs/roadmap.md) for the work breakdown and exit criteria.
+Follow the [full plan](docs/roadmap.md) in order. A small instruction subset or passing microbenchmark does not complete a stage. Existing benchmark jobs compare candidate engines; actual wasmvm base/head execution will be added in M1. The design's performance budgets are requirements to validate, not measured achievements.
 
 ## Local validation
 

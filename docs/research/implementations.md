@@ -1,5 +1,8 @@
 # Existing Implementations and Reuse Assessment
 
+**Direction update (2026-10-26):** the owner subsequently selected a [project-owned core](../design/own-core.md). This report preserves candidate evidence and the original evaluation recommendations/milestone numbering; its reuse-first next-work statements are historical. Follow the revised [roadmap](../roadmap.md) for implementation.
+
+
 Research date: 2026-10-26. This document records observations from official repositories, source code, and documentation on that date. **It is not a certification based on tests rerun by this project.** Documentation on `main` may precede released versions, and support can depend on architecture, backend, and build flags. A final selection requires pinned versions and the M0 comparison experiments.
 
 ## Findings
