@@ -133,3 +133,34 @@ They run alongside the five per-package coverage-gate tests. CI regenerates
 and checks the same fixture bytes on both supported platforms and retains the
 producer executable hash and input/output identities. Final-head CI remains
 required before merging this increment; M1's complete execution gates stay open.
+
+## M1 complete Core 2.0 binary decoding
+
+The owned frontend implements all Core 2.0 sections, segment variants, scalar
+and reference immediates, and all 236 fixed SIMD opcodes. It preserves raw float
+bits and absolute source offsets. An explicit syntax stack bounds control
+nesting without recursive guest parsing. The decoder snapshots input and bounds
+bytes, aggregate decoded nodes, names, nesting and expanded local counts before
+allocation/use; decoded modules are unvalidated and cannot execute.
+
+The complete 148-script corpus checks 4,581 binary modules: 719 malformed
+binaries are rejected, and the remaining 3,862 decode successfully, including
+semantic-invalid and linking/trapping inputs that later stages must reject or
+execute appropriately. No semantic-invalid, linking, trap, or return assertion
+is counted as passed by decoding. Two pinned WABT data-count corrections preserve
+the original semantic-invalid cases; see the [input record](../testdata/core2/README.md).
+
+Local Go and LLGo tests pass. Go statement coverage is 99.6% for
+`internal/core/decode` and 100% for `pkg/wasm`; `internal/core/module` contains only
+type declarations. The decoder's defensive rethrow of unexpected implementation
+panics is not intentionally triggered; a future such panic must fail fuzz/tests,
+not be disguised as malformed guest input. A ten-second Go fuzz run with two
+workers executed 682,250 inputs without failure. These are bounded observations,
+not a semantic conformance or security-audit claim.
+
+Seventeen Python tool tests cover corpus preparation/corrections and coverage
+gates. CI now requires the decoder/public-type coverage packages and fuzzes
+module decoding in addition to the binary primitives. The final head must still
+pass Go/LLGo on Linux amd64 and macOS arm64 before merge. M1 remains open for
+semantic validation, IR/lowering, complete interpreter/runtime lifecycle, public
+embedding API, CLI and actual own-engine benchmarks.

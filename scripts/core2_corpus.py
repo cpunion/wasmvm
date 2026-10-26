@@ -195,6 +195,22 @@ def verify(fixtures, records=RECORDS):
     return manifest
 
 
+def correct_producer_binaries(fixtures, corrections):
+    """Apply only explicitly pinned encoder corrections, never assertion skips."""
+    for name, correction in corrections.items():
+        path = fixtures / relative_path(name)
+        original = path.read_bytes()
+        if hashlib.sha256(original).hexdigest() != correction["beforeSHA256"]:
+            raise ValueError(f"producer correction input changed: {name}")
+        offset = correction["offset"]
+        if offset < 8 or offset > len(original):
+            raise ValueError(f"invalid producer correction offset: {name}")
+        corrected = original[:offset] + bytes.fromhex(correction["insertHex"]) + original[offset:]
+        if hashlib.sha256(corrected).hexdigest() != correction["afterSHA256"]:
+            raise ValueError(f"producer correction output changed: {name}")
+        path.write_bytes(corrected)
+
+
 def prepare(output, records=RECORDS, update=False):
     fixtures = output / "fixtures"
     if fixtures.exists():
@@ -236,6 +252,8 @@ def prepare(output, records=RECORDS, update=False):
             result = subprocess.run(command, cwd=source / "wast", capture_output=True, text=True, timeout=60)
             if result.returncode:
                 raise ValueError(f"corpus conversion failed for {name}:\n{result.stderr}")
+        corrections = pins["producer"].get("binaryCorrections", {})
+        correct_producer_binaries(generated, corrections)
         manifest, files = describe(generated, sources, digest(records / "pins.json"))
         if update:
             (records / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
@@ -246,6 +264,7 @@ def prepare(output, records=RECORDS, update=False):
             verify(generated, records)
         evidence = {"sourceRevision": pins["source"]["revision"],
                     "producerRevision": pins["producer"]["revision"], "producerVersion": version,
+                    "producerBinaryCorrections": corrections,
                     "host": host, "producerBinarySHA256": digest(producer),
                     "pinsSHA256": digest(records / "pins.json"),
                     "manifestSHA256": digest(records / "manifest.json"),

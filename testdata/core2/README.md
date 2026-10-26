@@ -7,6 +7,30 @@ from WebAssembly/spec commit `fffc6e12fa454e475455a7b58d3b5dc343980c10`
 script commands. Its `--no-check` option preserves invalid modules for the VM
 to reject; it does not remove negative assertions.
 
+## Pinned producer corrections
+
+WABT 1.0.41 omits a data-count section when a module has no data segments,
+even when `data.drop` or `memory.init` requires the section. This turns two
+semantic `assert_invalid` cases in `memory_init.wast` (lines 190 and 227) into
+malformed binaries before the intended validation check. The
+[producer source](https://github.com/WebAssembly/wabt/blob/1.0.41/src/binary-writer.cc)
+conditions emission on a nonempty data-segment list; Core 2.0 requires the
+section whenever a data index occurs in code.
+
+The generator inserts `0c 01 00` (data-count = zero) immediately before code in
+`memory_init/script.4.wasm` and `memory_init/script.9.wasm`. Each correction in
+`pins.json` records the exact producer-output hash, insertion offset, inserted
+bytes and corrected-output hash. Both hashes must match; changed producer
+output fails generation. Source WAST, JSON assertions and assertion counts
+are unchanged. The corrected fixtures retain the unknown-data/unknown-memory
+validation failures intended by the source tests. Generation evidence includes
+these corrections, and `files.sha256` identifies the corrected corpus.
+
+This is a producer correction, not an exclusion or acceptance of malformed
+input by the decoder. The decoder separately rejects missing data-count
+sections. Regeneration must retain this record until a newly pinned producer
+emits the correct bytes without the correction.
+
 | Inventory | Count |
 | --- | ---: |
 | WAST scripts, including SIMD | 148 |

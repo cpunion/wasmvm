@@ -14,7 +14,9 @@
     "name": "wast2json",
     "version": "1.0.41",
     "revision": "03a00a1334e6121fb0cce4fccbd6bb109b68acaa",
-    "arguments": ["--no-check"],
+    "arguments": [
+      "--no-check"
+    ],
     "assets": {
       "linux-x86_64": {
         "url": "https://github.com/WebAssembly/wabt/releases/download/1.0.41/wabt-1.0.41-linux-x64.tar.gz",
@@ -27,6 +29,22 @@
         "size": 3871425,
         "sha256": "e5269d6bbe05dfeb179e4f21111b3a641d6ccaa38b0b21d472ae5c65f8c4ff5d",
         "binary": "wabt-1.0.41/bin/wast2json"
+      }
+    },
+    "binaryCorrections": {
+      "memory_init/script.4.wasm": {
+        "beforeSHA256": "47ebb6382fc1d9222cc6e9eed7c405d64f3e468998d058cf734c14c47b50a958",
+        "afterSHA256": "9e78de937e44ce99e09662c1bc467c2aab5669c0e67e21963275f618328a1b90",
+        "offset": 28,
+        "insertHex": "0c0100",
+        "reason": "WABT 1.0.41 omits data-count=0 for data-index instructions without data segments; preserve the original assert_invalid semantic test."
+      },
+      "memory_init/script.9.wasm": {
+        "beforeSHA256": "edd265999b169d67f8e3556b9952c82aa3dc39d1a85c0098a1a98c05e4791d5e",
+        "afterSHA256": "7ae8b8f1e8948ed5d6c8d1c4660555369098a34d8150c708db557eeba94ec67a",
+        "offset": 28,
+        "insertHex": "0c0100",
+        "reason": "WABT 1.0.41 omits data-count=0 for data-index instructions without data segments; preserve the original assert_invalid semantic test."
       }
     }
   }

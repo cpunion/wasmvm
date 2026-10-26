@@ -1,3 +1,3 @@
-// Package wasm is reserved for WebAssembly values, types, and feature profiles.
-// It currently contains no implementation.
+// Package wasm defines WebAssembly value types and frontend error categories.
+// These contracts do not by themselves provide module execution.
 package wasm
