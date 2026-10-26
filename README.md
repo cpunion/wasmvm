@@ -2,7 +2,7 @@
 
 A WebAssembly virtual machine written in Go, designed to build and run with both Go and LLGo.
 
-**Research and design stage: the VM cannot execute Wasm yet.** This repository contains standards and implementation research, architecture and package designs, a development plan, and host compatibility probes shared by both compilers. The `doc.go` files reserve package responsibilities; they do not indicate implemented features.
+**M0 evaluation stage: no production VM API is implemented yet.** This repository contains research, architecture, a development plan, host compatibility probes, and executable candidate evaluations. The `doc.go` files reserve package responsibilities; they do not indicate implemented features. The separate evaluation modules execute real Wasm through existing engines and report their limitations explicitly.
 
 ## Goals
 
@@ -19,20 +19,23 @@ The research snapshot is dated **2026-10-26**: WASI 0.3 has shipped, GC is part 
 | --- | --- |
 | [Standards and proposals](docs/research/standards.md) | Proposal stages, Core/WASI versions, official sources, and conflicting or outdated material |
 | [Existing implementations](docs/research/implementations.md) | Runtime capability matrix and Wago/wazero reuse assessment |
+| [Wazero evaluation](docs/research/wazero-evaluation.md) | Actual feature and compiler results, known gaps, and reproducible experiments |
+| [Reuse decision](docs/design/reuse-decision.md) | Reuse-first direction, remaining work, and milestone acceptance boundaries |
+| [Performance comparison](docs/research/performance.md) | Matched startup/small/sustained CLI workloads, raw samples, and measurement limits |
 | [Architecture](docs/design/architecture.md) | Execution, types, GC, threads, WASI, isolation, and draft embedding API |
 | [Package layout](docs/design/packages.md) | Public `pkg` APIs, internal layers, dependency direction, and implementation order |
 | [Go/LLGo and CI](docs/design/llgo-ci.md) | Compiler constraints, pinned toolchains, and host-versus-guest testing |
 | [Development plan](docs/roadmap.md) | Milestones, work packages, dependencies, deliverables, acceptance gates, and initial backlog |
 | [Validation record](docs/validation.md) | Actual local and CI results, with their scope and limitations |
 
-The current design baseline is an independent pure Go interpreter. **M0 evaluates Wago and wazero before deciding which implementation to build on.** A production JIT, LLVM API binding, or external native VM is not part of the baseline. Using LLGo as a host compiler does not require the VM to call LLVM APIs.
+The independent pure Go interpreter design is a fallback, not an instruction to rewrite an existing engine. **M0 evaluates reuse first.** Current evidence favors resolving LLGo compatibility and retaining wazero's existing implementation while assessing the remaining feature gaps. The diagnostic interpreter-only patch is a localization experiment, not the proposed permanent fix for missing LLGo runtime symbols.
 
 ## Development phases
 
 | Phase | Outcome | Status |
 | --- | --- | --- |
 | Design baseline | Research, architecture, package contracts, shared compiler probes, and CI | Complete |
-| M0 | Reuse decision, pinned fixtures, and reproducible candidate experiments | Planned; next |
+| M0 | Reuse decision, pinned fixtures, and reproducible candidate experiments | Implemented; acceptance evidence in the contribution PR |
 | M1 | Embeddable interpreter, validation, resource limits, and a usable P1 CLI subset | Planned |
 | M2a | Core Threads, legacy wasi-threads, and the declared P1 interface scope | Planned |
 | M2b | WasmGC, recursive types, typed references, tail calls, and final EH | Planned |
@@ -53,6 +56,6 @@ llgo test -count=1 ./...
 ./scripts/check.sh llgo
 ```
 
-Current tests cover host numeric bit patterns, reference reachability, goroutines, locks, atomics, condition variables, and cancellation. Passing these probes does not establish Wasm, WASI, or thread conformance. The development plan defines the later semantic acceptance suites.
+The root tests cover host numeric bit patterns, reference reachability, goroutines, locks, atomics, condition variables, and cancellation. The [wazero evaluator](experiments/wazero/README.md) is a separate module with 13 pinned capability fixtures, negative-path tests, shared-memory concurrency checks, and a bounded cancellation observation. Its owned-code coverage is measured separately from engine conformance. Expected rejection of an unsupported fixture is an assessment result, not feature support.
 
 Module path: `github.com/cpunion/wasmvm`. A project license has not yet been selected. No third-party implementation code is imported at this stage; future reuse must preserve the applicable licenses and notices.

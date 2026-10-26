@@ -1,0 +1,531 @@
+{
+  "observedDate": "2026-10-26",
+  "platform": "darwin/arm64",
+  "candidate": "github.com/tetratelabs/wazero@v1.12.0",
+  "scope": "Candidate smoke fixtures and harness checks, not engine conformance",
+  "manifestSHA256": "c66ecac9df6d8102050c5625b02002572e8e7d540636eec994614225f471afc5",
+  "diagnosticPatchSHA256": "728e8fb0d96b9f7da61786ff2dccbc0f223b3627b95e07b47f6cf902e9aaa5b3",
+  "runs": {
+    "go-upstream": {
+      "exitStatus": 0,
+      "toolchain": [
+        "mode=upstream",
+        "compiler=go",
+        "compiler_path=/opt/homebrew/bin/go",
+        "go version go1.27.3 darwin/arm64"
+      ],
+      "guestExecuted": true,
+      "dependencyModified": false,
+      "evaluation_report": [
+        {
+          "id": "core",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "p1",
+          "phase": "execute",
+          "outcome": "supported",
+          "stdout": "m0-wasi\n",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "gc",
+          "phase": "compile",
+          "outcome": "unsupported",
+          "error": "section type: read 0-th type: invalid byte: 0x5f != 0x60",
+          "expected": {
+            "phase": "compile",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "eh",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "shared-memory",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "host-callback",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "typed-refs",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "memory64",
+          "phase": "compile",
+          "outcome": "unsupported",
+          "error": "section memory: invalid byte for limits: 0x4 not in (0x00, 0x01, 0x02, 0x03)",
+          "expected": {
+            "phase": "compile",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "multi-memory",
+          "phase": "compile",
+          "outcome": "unsupported",
+          "error": "section memory: at most one memory allowed in module, but read 2",
+          "expected": {
+            "phase": "compile",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "relaxed-simd",
+          "phase": "compile",
+          "outcome": "unsupported",
+          "error": "invalid function[0] export[\"run\"]: read block: type index out of range: 3581",
+          "expected": {
+            "phase": "compile",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "component",
+          "phase": "compile",
+          "outcome": "unsupported",
+          "error": "invalid version header",
+          "expected": {
+            "phase": "compile",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "wasi-threads-import",
+          "phase": "instantiate",
+          "outcome": "unsupported",
+          "error": "module[wasi] not instantiated",
+          "expected": {
+            "phase": "instantiate",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "thread-worker",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        }
+      ],
+      "concurrency_report": {
+        "atomicWorkers": 4,
+        "increments": 512,
+        "memoryGrowth": true,
+        "waitNotify": "passed"
+      },
+      "cancellation_report": {
+        "classification": "known cancellation limitation; timing is observational",
+        "contextTimeoutMillis": 20,
+        "elapsedMillis": 1013,
+        "error": "module closed with context deadline exceeded",
+        "guestWaitMillis": 1000,
+        "id": "atomic-wait-cancellation"
+      },
+      "raceDetector": true,
+      "ownedHarnessStatementCoveragePercent": 100.0
+    },
+    "llgo-interpreter-only": {
+      "exitStatus": 0,
+      "toolchain": [
+        "mode=interpreter-only",
+        "compiler=llgo",
+        "compiler_path=/opt/homebrew/bin/llgo",
+        "go version go1.27.3 darwin/arm64",
+        "llgo v1.0.8 darwin/arm64",
+        "/opt/homebrew/Cellar/llgo/1.0.8/libexec",
+        "/opt/homebrew/Cellar/go/1.27.3/libexec"
+      ],
+      "guestExecuted": true,
+      "dependencyModified": true,
+      "evaluation_report": [
+        {
+          "id": "core",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "p1",
+          "phase": "execute",
+          "outcome": "supported",
+          "stdout": "m0-wasi\n",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "gc",
+          "phase": "compile",
+          "outcome": "unsupported",
+          "error": "section type: read 0-th type: invalid byte: 0x5f != 0x60",
+          "expected": {
+            "phase": "compile",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "eh",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "shared-memory",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "host-callback",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "typed-refs",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "memory64",
+          "phase": "compile",
+          "outcome": "unsupported",
+          "error": "section memory: invalid byte for limits: 0x4 not in (0x00, 0x01, 0x02, 0x03)",
+          "expected": {
+            "phase": "compile",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "multi-memory",
+          "phase": "compile",
+          "outcome": "unsupported",
+          "error": "section memory: at most one memory allowed in module, but read 2",
+          "expected": {
+            "phase": "compile",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "relaxed-simd",
+          "phase": "compile",
+          "outcome": "unsupported",
+          "error": "invalid function[0] export[\"run\"]: read block: type index out of range: 3581",
+          "expected": {
+            "phase": "compile",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "component",
+          "phase": "compile",
+          "outcome": "unsupported",
+          "error": "invalid version header",
+          "expected": {
+            "phase": "compile",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "wasi-threads-import",
+          "phase": "instantiate",
+          "outcome": "unsupported",
+          "error": "module[wasi] not instantiated",
+          "expected": {
+            "phase": "instantiate",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "thread-worker",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        }
+      ],
+      "concurrency_report": {
+        "atomicWorkers": 4,
+        "increments": 512,
+        "memoryGrowth": true,
+        "waitNotify": "passed"
+      },
+      "cancellation_report": {
+        "classification": "known cancellation limitation; timing is observational",
+        "contextTimeoutMillis": 20,
+        "elapsedMillis": 1003,
+        "error": "module closed with context deadline exceeded",
+        "guestWaitMillis": 1000,
+        "id": "atomic-wait-cancellation"
+      }
+    },
+    "llgo-upstream": {
+      "exitStatus": 1,
+      "toolchain": [
+        "mode=upstream",
+        "compiler=llgo",
+        "compiler_path=/opt/homebrew/bin/llgo",
+        "go version go1.27.3 darwin/arm64",
+        "llgo v1.0.8 darwin/arm64",
+        "/opt/homebrew/Cellar/llgo/1.0.8/libexec",
+        "/opt/homebrew/Cellar/go/1.27.3/libexec"
+      ],
+      "guestExecuted": false,
+      "dependencyModified": false,
+      "outcome": "link failure before tests",
+      "missingSymbols": [
+        "runtime.getAuxv",
+        "runtime.memmove"
+      ]
+    },
+    "llgo-fixed-upstream": {
+      "exitStatus": 0,
+      "toolchain": [
+        "mode=upstream",
+        "compiler=llgo",
+        "compiler_path=/var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/wasmvm-fixed-llgo-8odjq8iu/llgo",
+        "go version go1.27.3 darwin/arm64",
+        "llgo v1.0.9-0.20261025114344-75e966c4fbcf darwin/arm64",
+        "/Users/lijie/source/goplus/llgo-wt-wazero-runtime-hooks-20261026",
+        "/opt/homebrew/Cellar/go/1.27.3/libexec"
+      ],
+      "guestExecuted": true,
+      "dependencyModified": false,
+      "llgoRuntimeRevision": "bc7c991d8fe91459c8afc1eb7d0e374124d95374",
+      "llgoContribution": "https://github.com/xgo-dev/llgo/pull/2919",
+      "evaluation_report": [
+        {
+          "id": "core",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "p1",
+          "phase": "execute",
+          "outcome": "supported",
+          "stdout": "m0-wasi\n",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "gc",
+          "phase": "compile",
+          "outcome": "unsupported",
+          "error": "section type: read 0-th type: invalid byte: 0x5f != 0x60",
+          "expected": {
+            "phase": "compile",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "eh",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "shared-memory",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "host-callback",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "typed-refs",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "memory64",
+          "phase": "compile",
+          "outcome": "unsupported",
+          "error": "section memory: invalid byte for limits: 0x4 not in (0x00, 0x01, 0x02, 0x03)",
+          "expected": {
+            "phase": "compile",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "multi-memory",
+          "phase": "compile",
+          "outcome": "unsupported",
+          "error": "section memory: at most one memory allowed in module, but read 2",
+          "expected": {
+            "phase": "compile",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "relaxed-simd",
+          "phase": "compile",
+          "outcome": "unsupported",
+          "error": "invalid function[0] export[\"run\"]: read block: type index out of range: 3581",
+          "expected": {
+            "phase": "compile",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "component",
+          "phase": "compile",
+          "outcome": "unsupported",
+          "error": "invalid version header",
+          "expected": {
+            "phase": "compile",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "wasi-threads-import",
+          "phase": "instantiate",
+          "outcome": "unsupported",
+          "error": "module[wasi] not instantiated",
+          "expected": {
+            "phase": "instantiate",
+            "outcome": "unsupported"
+          },
+          "matchesExpected": true
+        },
+        {
+          "id": "thread-worker",
+          "phase": "execute",
+          "outcome": "supported",
+          "expected": {
+            "phase": "execute",
+            "outcome": "supported"
+          },
+          "matchesExpected": true
+        }
+      ],
+      "concurrency_report": {
+        "atomicWorkers": 4,
+        "increments": 512,
+        "memoryGrowth": true,
+        "waitNotify": "passed"
+      },
+      "cancellation_report": {
+        "classification": "known cancellation limitation; timing is observational",
+        "contextTimeoutMillis": 20,
+        "elapsedMillis": 1000,
+        "error": "module closed with context deadline exceeded",
+        "guestWaitMillis": 1000,
+        "id": "atomic-wait-cancellation"
+      }
+    }
+  }
+}

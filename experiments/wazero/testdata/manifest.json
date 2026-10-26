@@ -1,0 +1,381 @@
+{
+  "schemaVersion": 1,
+  "origin": "Project-authored fixtures; no third-party source copied.",
+  "candidate": {
+    "module": "github.com/tetratelabs/wazero",
+    "version": "v1.12.0",
+    "commit": "2ab480b55fa408d6b35df97fe32a60d08bd6e201",
+    "backend": "interpreter",
+    "featureConfiguration": "CoreFeaturesV2 plus all experimental flags exposed by v1.12.0"
+  },
+  "producer": {
+    "name": "wasm-tools",
+    "version": "1.258.0",
+    "command": "wasm-tools parse <wat> -o <wasm>",
+    "validation": "wasm-tools validate --features all <wasm>"
+  },
+  "fixtures": [
+    {
+      "id": "core",
+      "wasm": "core.wasm",
+      "wat": "core.wat",
+      "sha256": "5c38ba2985334d68e8aee6fa370737b37f64fa22d214e11c46caa05c2dc07053",
+      "features": [
+        "core1"
+      ],
+      "expected": {
+        "phase": "execute",
+        "outcome": "supported"
+      },
+      "calls": [
+        {
+          "export": "add",
+          "args": [
+            20,
+            22
+          ],
+          "results": [
+            42
+          ]
+        },
+        {
+          "export": "trap",
+          "args": [],
+          "trap": true
+        }
+      ],
+      "notes": "add tests execution; trap must report a runtime error, not successful execution.",
+      "watSha256": "bde255f028026ee35930054b861d73ac9582cbab2966223f2fb04416438071a0"
+    },
+    {
+      "id": "p1",
+      "wasm": "p1.wasm",
+      "wat": "p1.wat",
+      "sha256": "c04c3752912e8d861016121f969e90fb567fb131780f759765b65a833c1d5b7b",
+      "features": [
+        "core1",
+        "wasi-preview1"
+      ],
+      "expected": {
+        "phase": "execute",
+        "outcome": "supported"
+      },
+      "calls": [],
+      "notes": "Requires wazero wasi_snapshot_preview1 and captured stdout; _start writes exactly m0-wasi followed by LF and exits 0.",
+      "stdout": "m0-wasi\n",
+      "watSha256": "d85a391b5f3ed3f8bd846aa2e8e49f96b64075d9060c1ae29b3844b58782d7b1"
+    },
+    {
+      "id": "gc",
+      "wasm": "gc.wasm",
+      "wat": "gc.wat",
+      "sha256": "ee97b8205564fe003ebbc58ebda6d5139efce0be19985174682433fe60aa961b",
+      "features": [
+        "gc"
+      ],
+      "expected": {
+        "phase": "compile",
+        "outcome": "unsupported"
+      },
+      "calls": [
+        {
+          "export": "run",
+          "args": [],
+          "results": [
+            42
+          ]
+        }
+      ],
+      "notes": "Reference-engine result is 42; expected stable wazero rejection is a capability gap, not a pass for GC.",
+      "watSha256": "7364d234d73827962602960df4ffa5e761a9625957a1d0f8046a75736b09550e"
+    },
+    {
+      "id": "eh",
+      "wasm": "eh.wasm",
+      "wat": "eh.wat",
+      "sha256": "8a88d3123c5c703da3ab32f3007e9318b442611b5bb188a6d68d5d6210d6b6f2",
+      "features": [
+        "exception-handling"
+      ],
+      "expected": {
+        "phase": "execute",
+        "outcome": "supported"
+      },
+      "calls": [
+        {
+          "export": "run",
+          "args": [],
+          "results": [
+            42
+          ]
+        }
+      ],
+      "notes": "Final try_table/catch encoding; this does not probe legacy EH.",
+      "watSha256": "2c3f011581d9cc1b5aa78279705b281aba1eeceee934aa8a69dde42c005d2b35"
+    },
+    {
+      "id": "shared-memory",
+      "wasm": "shared-memory.wasm",
+      "wat": "shared-memory.wat",
+      "sha256": "3d530d2afd5956a40b8d2e8db12a605bdbaec33bd1648f36e953c57979b28a12",
+      "features": [
+        "threads"
+      ],
+      "expected": {
+        "phase": "execute",
+        "outcome": "supported"
+      },
+      "calls": [
+        {
+          "export": "add",
+          "args": [
+            3
+          ],
+          "results": [
+            0
+          ]
+        },
+        {
+          "export": "load",
+          "args": [],
+          "results": [
+            3
+          ]
+        },
+        {
+          "export": "wait",
+          "args": [
+            4,
+            0
+          ],
+          "results": [
+            1
+          ]
+        },
+        {
+          "export": "wait",
+          "args": [
+            3,
+            0
+          ],
+          "results": [
+            2
+          ]
+        },
+        {
+          "export": "notify",
+          "args": [
+            1
+          ],
+          "results": [
+            0
+          ]
+        },
+        {
+          "export": "grow",
+          "args": [
+            1
+          ],
+          "results": [
+            1
+          ]
+        },
+        {
+          "export": "size",
+          "args": [],
+          "results": [
+            2
+          ]
+        }
+      ],
+      "notes": "Calls are sequential on one instance. Separate concurrency tests must use distinct exported Function objects/instances; do not claim parallel threads from these calls alone.",
+      "watSha256": "025db25e9ee4545f3b48480b5984672ffcd1d8ca5f6be3f62ff712381651e7aa"
+    },
+    {
+      "id": "host-callback",
+      "wasm": "host-callback.wasm",
+      "wat": "host-callback.wat",
+      "sha256": "5f381d0fe9ea262d4ac090dc30da790e8b29ddada9640c0fefe408ba895b0c3d",
+      "features": [
+        "core1",
+        "host-function"
+      ],
+      "expected": {
+        "phase": "execute",
+        "outcome": "supported"
+      },
+      "calls": [
+        {
+          "export": "run",
+          "args": [],
+          "results": [
+            42
+          ]
+        }
+      ],
+      "notes": "Requires host.increment(i32)->i32, implemented as input+1. This is an embedding callback probe, not a WASI function.",
+      "watSha256": "e0100137446c0024e25de867a36bbe3ad4b365b1d2a7e45826865be87efd1e04"
+    },
+    {
+      "id": "typed-refs",
+      "wasm": "typed-refs.wasm",
+      "wat": "typed-refs.wat",
+      "sha256": "5e8c869b4d8821f2cba09c5d2995ee695f97cd06aca10ee8ab1aebace946c8e5",
+      "features": [
+        "typed-function-references"
+      ],
+      "expected": {
+        "phase": "execute",
+        "outcome": "supported"
+      },
+      "calls": [
+        {
+          "export": "run",
+          "args": [],
+          "results": [
+            42
+          ]
+        }
+      ],
+      "notes": "Executes ref.func and call_ref; presence of a feature flag alone is not acceptance.",
+      "watSha256": "416008a0e9fa05eacba11a2b8d7b9dea7dc7cd96f69e8a460759c957203827b3"
+    },
+    {
+      "id": "memory64",
+      "wasm": "memory64.wasm",
+      "wat": "memory64.wat",
+      "sha256": "1007b829d97045e3cc7f757fac628cd26796cc527de8d1b22c2c1ac76a9a5cb0",
+      "features": [
+        "memory64"
+      ],
+      "expected": {
+        "phase": "compile",
+        "outcome": "unsupported"
+      },
+      "calls": [
+        {
+          "export": "run",
+          "args": [],
+          "results": [
+            42
+          ]
+        }
+      ],
+      "notes": "Reference-engine result is 42; address operands are i64.",
+      "watSha256": "f81d17a467ad1410f05eadfe03fe34dd298d46b74636f378f571b7fd0263bb3a"
+    },
+    {
+      "id": "multi-memory",
+      "wasm": "multi-memory.wasm",
+      "wat": "multi-memory.wat",
+      "sha256": "d8c10bf3e71cd7d9f249be5cf65146b0a49945b1fd0b0592ae00297137b680d3",
+      "features": [
+        "multi-memory"
+      ],
+      "expected": {
+        "phase": "compile",
+        "outcome": "unsupported"
+      },
+      "calls": [
+        {
+          "export": "run",
+          "args": [],
+          "results": [
+            42
+          ]
+        }
+      ],
+      "notes": "Reference-engine result is 42; accesses explicitly target memory index 1.",
+      "watSha256": "4cba80cbc743699d5b2f26b4180430b2e69d83768b7931ec9ca3cc1b92689327"
+    },
+    {
+      "id": "relaxed-simd",
+      "wasm": "relaxed-simd.wasm",
+      "wat": "relaxed-simd.wat",
+      "sha256": "406b1716eec057f1a7d0bdf01ec5ec7ff505b4e05cca17a1cd835e4b7abcce40",
+      "features": [
+        "relaxed-simd"
+      ],
+      "expected": {
+        "phase": "compile",
+        "outcome": "unsupported"
+      },
+      "calls": [
+        {
+          "export": "run",
+          "args": [],
+          "results": [
+            0
+          ]
+        }
+      ],
+      "notes": "Reference-engine result is deterministically zero for these operands; tests a real relaxed SIMD instruction.",
+      "watSha256": "f7eb1e3b9a33a22101a6c8c882a2e54d1eb1a58ce790c2a0bea5df0499ecad57"
+    },
+    {
+      "id": "component",
+      "wasm": "component.wasm",
+      "wat": "component.wat",
+      "sha256": "24eaf3439a60c96764c4f2c92a0a81b52bd4fe5d5b91f090184a0f6486b1bf29",
+      "features": [
+        "component-model"
+      ],
+      "expected": {
+        "phase": "compile",
+        "outcome": "unsupported"
+      },
+      "calls": [],
+      "notes": "Empty valid component tests binary container acceptance only; it provides no WASI P2/P3 operation coverage.",
+      "watSha256": "53e7063e8f00de24101c5df8adf057dab53cd03748a3f8216541f0d92ea2fb88"
+    },
+    {
+      "id": "wasi-threads-import",
+      "wasm": "wasi-threads-import.wasm",
+      "wat": "wasi-threads-import.wat",
+      "sha256": "7129f19066d0bd0f54ffa824cf3f57854c974ab0895970b3883917edff4c3ab7",
+      "features": [
+        "legacy-wasi-threads"
+      ],
+      "expected": {
+        "phase": "instantiate",
+        "outcome": "unsupported"
+      },
+      "calls": [],
+      "notes": "The required host import is absent from native P1. Do not stub it and call that wasi-threads support. This isolates linkage, not the full pthread lifecycle ABI.",
+      "watSha256": "f5806d299d3565123d7ce81b96d11f328d0ce0a238dccebd51c5ed6cb79cf255"
+    },
+    {
+      "id": "thread-worker",
+      "wasm": "thread-worker.wasm",
+      "wat": "thread-worker.wat",
+      "sha256": "08179867195c6e74702f06c557ce546477ba521bd5003a8a4941593a6f9f5fc9",
+      "features": [
+        "threads"
+      ],
+      "expected": {
+        "phase": "execute",
+        "outcome": "supported"
+      },
+      "calls": [
+        {
+          "export": "add",
+          "args": [
+            1
+          ],
+          "results": [
+            0
+          ]
+        },
+        {
+          "export": "load",
+          "args": [],
+          "results": [
+            1
+          ]
+        }
+      ],
+      "notes": "Instantiate shared-memory.wasm as shared, then instantiate this worker at least twice with distinct names. Use distinct Function handles for concurrent calls. Add bounded wait/notify and memory-grow alias tests. Infinite wait must have explicit notify cleanup.",
+      "watSha256": "04476e1105307de30ff78cdcd7d134593593f64787c1c2327ff6175b901a5f3e"
+    }
+  ]
+}

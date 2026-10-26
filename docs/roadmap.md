@@ -1,6 +1,6 @@
 # Development Plan and Acceptance Gates
 
-Plan date: **2026-10-26**. Research, architecture, package declarations, host compatibility probes, and the initial Go/LLGo CI matrix are complete. **All VM implementation milestones below remain planned.** This document is the authoritative implementation sequence; the acceptance summary in the standards report maps its technical scope onto these milestones.
+Plan date: **2026-10-26**. Research, architecture, package declarations, host compatibility probes, and the initial Go/LLGo CI matrix are complete. M0 evaluation artifacts and the [reuse decision](design/reuse-decision.md) are now implemented; acceptance follows the contribution PR's final checks and review. **M1–M5 remain unimplemented and M6 is deferred.** This document is the authoritative implementation sequence; the acceptance summary in the standards report maps its technical scope onto these milestones.
 
 The plan uses dependencies and measurable exit conditions rather than unvalidated delivery dates. Estimate calendar time after M0 establishes the reuse boundary and M1 provides actual implementation throughput. The existing research is a dated snapshot; translation and planning updates do not constitute a new survey or new runtime validation.
 
@@ -44,7 +44,7 @@ flowchart LR
 | M0.4 — LLGo guest inventory | Produce minimal LLGo guests for threads, GC, panic/recover, and I/O. Inspect imports, shared memory, TLS, EH, SIMD, and entry-point requirements. | Guest ABI/feature manifest and reference-engine results |
 | M0.5 — Decision | Compare a reusable engine with a small compatibility layer, selective code reuse, and an independent interpreter. Consider upkeep, upstream fit, ABI risk, and public/internal package boundaries. | `docs/design/reuse-decision.md` and any architecture amendments |
 
-The decision document and manifests above are planned artifacts, not existing files. M0 is a bounded experiment, not a full engine port. An unsuccessful LLGo candidate run is useful evidence; M0 does not require fixing every candidate before making a choice. Existing project probes must remain green, and any candidate failure must retain its exact command, revision, and reason.
+The decision document and candidate manifests are now available under `docs/design/reuse-decision.md` and `experiments/`. M0 is a bounded experiment, not a full engine port. An unsuccessful LLGo candidate run is useful evidence; M0 does not require fixing every candidate before making a choice. Existing project probes must remain green, and any candidate failure must retain its exact command, revision, and reason.
 
 **Exit gate:** the decision names the chosen implementation source, reusable assets, rejected alternatives with evidence, outstanding risks, and the impact on `pkg`/`internal` boundaries. Pin the initial Core/proposal/WIT inputs and generation tools. No third-party code is imported without checking its applicable licenses. If the chosen approach changes the portable-interpreter baseline, update the architecture explicitly before M1.
 
@@ -136,7 +136,7 @@ Candidates include interpreter specialization, reduced shared-memory lock conten
 
 ## Initial implementation backlog
 
-The next work starts with M0, not with a new JIT or a full WASI component stack.
+The M0 experiments below have executable evidence in `experiments/` and the reuse decision. The next implementation work starts with the M1 foundation after the M0 PR gate, not with a new JIT or a full WASI component stack.
 
 | Order | Task | Depends on | Completion artifact |
 | --- | --- | --- | --- |

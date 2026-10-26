@@ -7,7 +7,7 @@ Verification date: 2026-10-26. This document distinguishes source constraints, o
 | Target | Build and execution path | Acceptance requirement |
 | --- | --- | --- |
 | Compile the host VM with LLGo | `llgo test ./...`, followed later by `llgo build ./cmd/wasmvm`, producing and running native programs | Use the same VM source, semantic tests, and fixtures as the standard Go compiler |
-| Execute LLGo-generated guests in the VM | `llgo build -target wasi -o fixture.wasm ...`, then load and execute it in the VM | Implement the Core instructions and WASI ABI actually required by that guest |
+| Execute LLGo-generated guests in the VM | `GOOS=wasip1 GOARCH=wasm llgo build -o fixture.wasm .`, then load and execute it in the VM | Implement the Core instructions and WASI ABI actually required by that guest |
 
 The first target is a CI requirement from project initialization. The second is an integration milestone after the interpreter, WASI P1, threads, EH, and SIMD are implemented. Compiling the host with LLGo does not automatically provide the second capability. Likewise, executing the standard Go compiler's `wasip1/wasm` output does not prove compatibility with LLGo guests.
 
@@ -15,7 +15,9 @@ The first target is a CI requirement from project initialization. The second is 
 
 - The source design uses Go 1.24 language and standard-library features as a conservative baseline, avoiding new Go 1.27 syntax. The language version declared in `go.mod` is distinct from the CI bootstrap toolchain version and does not establish acceptance on every older toolchain.
 - Both initial CI paths use the Go **1.27.3** GOROOT so their standard-library inputs match. LLGo **v1.0.8** itself declares `go 1.27.0` in its `go.mod`, so the selected source installation cannot be bootstrapped with Go 1.24.
-- Pinned LLGo revision: `c171abfa130108bc6451e01fcf15a8a3474eb0a7`, which `v1.0.8` pointed to when checked. Pinned setup action: `4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91`. LLVM major version: **22**. LLVM and system dependency patch versions still come from the installation sources; the initial setup does not claim a fully reproducible toolchain.
+- The initial scaffold used LLGo v1.0.8 at `c171abfa130108bc6451e01fcf15a8a3474eb0a7`. The expanded M0 CI pins **`bc7c991d8fe91459c8afc1eb7d0e374124d95374`**, the unreleased memory-hook contribution in [LLGo PR #2919](https://github.com/xgo-dev/llgo/pull/2919). This is needed to run unchanged wazero, not just the original host probes. Its upstream review/release status remains explicit.
+- Pinned setup action: `4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91`. LLVM major version: **22**. LLVM and system dependency patch versions still come from the installation sources; the setup does not claim a fully reproducible toolchain.
+- Candidate evaluations use separate modules. Wazero v1.12.0 requires Go 1.25; the root scaffold's `go 1.24.0` declaration is not a minimum-version claim for that dependency.
 - The current workflow covers Ubuntu 24.04 amd64 first, with macOS arm64 and Linux arm64 planned next, followed by Windows acceptance. Installation-action support for a platform is not evidence that the VM supports it.
 - Before formally declaring a minimum host version, add an actual Go 1.24 compatibility job and pin the LLVM patch version and toolchain image. The pinned CI Go version has been exercised; the source baseline still requires verification with the older toolchain.
 
@@ -47,7 +49,7 @@ The local LLGo checkout is at `38bfd05ee102e36710a2df5bca47834a622b667c` (2026-1
 
 The existing documentation lists WasmGC, W64, JSPI, and WASI P2/components as separate work. In this version, the linear-memory GC abandons a collection attempt after a timeout when a C call cannot reach a safepoint. That is a guest-runtime progress limitation; the new VM must still execute its memory and scheduling semantics correctly.
 
-Evidence: [WASI threads execution contract](https://github.com/xgo-dev/llgo/blob/38bfd05ee102e36710a2df5bca47834a622b667c/doc/wasm-wasi-threads.md), [threaded GC contract](https://github.com/xgo-dev/llgo/blob/38bfd05ee102e36710a2df5bca47834a622b667c/doc/wasm-threaded-gc.md), and [Wasm profile/ABI proposal](https://github.com/xgo-dev/llgo/blob/38bfd05ee102e36710a2df5bca47834a622b667c/doc/wasm-proposal.md). These sources describe LLGo guests; this project has not yet implemented or executed such a guest.
+Evidence: [WASI threads execution contract](https://github.com/xgo-dev/llgo/blob/38bfd05ee102e36710a2df5bca47834a622b667c/doc/wasm-wasi-threads.md), [threaded GC contract](https://github.com/xgo-dev/llgo/blob/38bfd05ee102e36710a2df5bca47834a622b667c/doc/wasm-threaded-gc.md), and [Wasm profile/ABI proposal](https://github.com/xgo-dev/llgo/blob/38bfd05ee102e36710a2df5bca47834a622b667c/doc/wasm-proposal.md). M0 now includes an [actual generated guest and successful Wasmer reference run](../../experiments/llgo-guest/README.md), but not a complete wazero threads adapter. Homebrew v1.0.8's named `-target wasi` path lacks its target JSON; the GOOS/GOARCH path above was verified separately.
 
 ## CI requirements
 
@@ -56,12 +58,14 @@ The executable configuration is [ci.yml](../../.github/workflows/ci.yml). Both c
 | Check | Standard Go | LLGo |
 | --- | --- | --- |
 | Shared package tests and future VM fixtures | Required | Required |
+| Unchanged pinned wazero evaluator | Required, with race checking and owned-code coverage >= 90% | Required with the pinned runtime fix; expected link failures do not satisfy this gate |
+| Benchmark harness/fixture integrity and alternate candidate Go probes | Required | Covered by the shared fixture provenance; not an LLGo benchmark claim |
 | Pure-Go core constraint | `CGO_ENABLED=0 go test` | Run in the default native LLGo environment with its C runtime dependencies installed |
 | Formatting and static checks | `gofmt`, `go vet` | Share the checks on the same source |
 | Host data-race checks | `go test -race` | Acceptance of `-race` is not treated as verified race-detection capability |
 | Wasm spec / WASI / LLGo guest corpus | Added by capability milestone | Same fixtures and assertions; no whole-package skips to hide differences |
 
-`CGO_ENABLED=0` applies only to the basic Go test step, not the entire workflow environment. LLGo's LLVM and BDWGC dependencies are consistent with the goal that the VM source should not depend on a cgo-based engine. The current scaffold has no dependency lockfile, so action caching is disabled. Once dependencies are introduced, key caches by `go.sum`, compiler revision, LLVM, OS, and architecture.
+`CGO_ENABLED=0` applies only to the basic Go test step, not the entire workflow environment. LLGo's LLVM and BDWGC dependencies are consistent with the goal that the VM source should not depend on a cgo-based engine. The root scaffold has no external dependency, while the evaluation modules have their own `go.sum` files. Action caching remains disabled; future caches must include all relevant module sums, compiler revision, LLVM, OS, and architecture.
 
 The current repository probes cover typed atomics and goroutine/lock synchronization, numeric bit patterns and little-endian encoding, reference cycles remaining reachable across explicit GC, condition-variable wakeup, and context cancellation. Future VM tests must cover shared-memory growth, lost wakeups, cancellation propagation, GC roots across host calls/stack growth, EH unwinding, and resource closure. Retain minimal reproductions and issues for gc/LLGo differences; skipping an entire feature does not establish compatibility.
 

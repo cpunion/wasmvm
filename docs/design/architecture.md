@@ -2,6 +2,8 @@
 
 Status: initial design, 2026-10-26. The APIs, types, and behaviors in this document are design constraints, not implemented features. Proposal status and existing implementation capabilities are documented in the [standards survey](../research/standards.md) and [implementation survey](../research/implementations.md), respectively.
 
+Implementation provenance update: [M0 selects reuse of wazero first](reuse-decision.md), with runtime compatibility fixes in LLGo. The independent-engine blueprint below remains a fallback and a source of acceptance contracts, not an instruction to duplicate working decoder/interpreter code. Engine-specific differences must be documented and validated as each milestone is implemented.
+
 ## 1. Purpose and scope
 
 `wasmvm` is a Wasm runtime intended for embedding in Go applications, with a CLI also planned. Its initial execution backend is a pure Go interpreter, prioritizing verifiable semantics, bounded resource use, and consistent behavior under Go and llgo. Go or llgo compiles the **host VM** into a native executable, which then loads guest `.wasm` modules. Compiling the VM itself to Wasm is a separate goal and is outside the initial scope.
