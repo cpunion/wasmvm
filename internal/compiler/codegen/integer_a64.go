@@ -11,17 +11,44 @@ func (a *assembler) arm(wide bool, op uint32) {
 	}
 	a.word(op)
 }
+
+// aconst uses the smaller MOVZ/MOVN seed plus only necessary MOVK halves.
+// This is general immediate materialization, independent of guest workload.
 func (a *assembler) aconst(reg uint32, v uint64, wide bool) {
 	count := 2
 	if wide {
 		count = 4
 	}
+	zeros, ones := 0, 0
 	for i := 0; i < count; i++ {
-		op := uint32(0x52800000)
-		if i > 0 {
-			op = 0x72800000
+		part := uint16(v >> (16 * i))
+		if part == 0 {
+			zeros++
 		}
-		a.arm(wide, op|uint32(i)<<21|uint32(uint16(v>>(16*i)))<<5|reg)
+		if part == 0xffff {
+			ones++
+		}
+	}
+	fill, seed := uint16(0), uint32(0x52800000)
+	if ones > zeros {
+		fill, seed = 0xffff, 0x12800000
+	}
+	first := true
+	for i := 0; i < count; i++ {
+		part := uint16(v >> (16 * i))
+		if part == fill {
+			continue
+		}
+		op := uint32(0x72800000)
+		if first {
+			op = seed
+			part ^= fill
+			first = false
+		}
+		a.arm(wide, op|uint32(i)<<21|uint32(part)<<5|reg)
+	}
+	if first {
+		a.arm(wide, seed|reg)
 	}
 }
 

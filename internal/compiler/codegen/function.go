@@ -123,8 +123,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 				e.edge(in.Extra, pcs)
 			case ir.If:
 				other := a.label()
-				e.slotLoad(in.A, 0, false, false)
-				e.test(false)
+				e.testSlot(in.A)
 				e.branch(other, "eq")
 				e.edge(in.Extra, pcs)
 				a.mark(other)
@@ -157,8 +156,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 			}
 		case op == 0x1b || op == 0x1c:
 			other, done := a.label(), a.label()
-			e.slotLoad(in.C, 0, false, false)
-			e.test(false)
+			e.testSlot(in.C)
 			e.branch(other, "eq")
 			e.move(in.Dst, in.A)
 			a.branch(done, false, 0)

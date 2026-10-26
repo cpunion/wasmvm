@@ -109,7 +109,14 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 	d, dok := e.registers[dst]
 	l, lok := e.registers[left]
 	r, rok := e.registers[right]
-	if !dok || !lok || !rok {
+	if !dok || !lok {
+		return false
+	}
+	if op >= 0x45 && op <= 0x5a && (rok || op == 0x45 || op == 0x50) {
+		e.registerCompare(d, l, r, op)
+		return true
+	}
+	if !rok {
 		return false
 	}
 	wide := integerWide(op)
@@ -160,6 +167,20 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 	if d == r && d != l {
 		return false
 	}
+	if kind >= 13 && kind <= 17 {
+		e.registerMove(1, r, false) // Variable shifts and rotates use CL.
+		e.registerMove(d, l, wide)
+		rex := byte(0x40) | d>>3
+		if wide {
+			rex |= 8
+		}
+		if rex != 0x40 {
+			a.bytes(rex)
+		}
+		ext := [...]byte{4, 7, 5, 0, 1}[kind-13]
+		a.bytes(0xd3, 0xc0|ext<<3|d&7)
+		return true
+	}
 	var opcode byte
 	switch kind {
 	case 3:
@@ -194,4 +215,59 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 	}
 	a.bytes(opcode, 0xc0|(src&7)<<3|dest&7)
 	return true
+}
+
+func (e *functionEmitter) testSlot(slot slots.Slot) {
+	if reg, ok := e.registers[slot]; ok {
+		if e.a.arch == "arm64" {
+			e.a.word(0x7100001f | uint32(reg)<<5)
+		} else {
+			rex := byte(0x40) | (reg>>3)<<2 | reg>>3
+			if rex != 0x40 {
+				e.a.bytes(rex)
+			}
+			e.a.bytes(0x85, 0xc0|(reg&7)<<3|reg&7)
+		}
+		return
+	}
+	e.slotLoad(slot, 0, false, false)
+	e.test(false)
+}
+
+func (e *functionEmitter) registerCompare(dst, left, right byte, op uint32) {
+	a := e.a
+	wide := integerWide(op)
+	index := op - 0x45
+	if wide {
+		index = op - 0x50
+	}
+	if a.arch == "arm64" {
+		if index == 0 {
+			a.arm(wide, 0x7100001f|uint32(left)<<5)
+		} else {
+			a.arm(wide, 0x6b00001f|uint32(right)<<16|uint32(left)<<5)
+		}
+		cc := [...]uint32{0, 0, 1, 11, 3, 12, 8, 13, 9, 10, 2}[index]
+		a.word(0x1a9f07e0 | ((cc ^ 1) << 12) | uint32(dst))
+		return
+	}
+	rex := byte(0x40) | left>>3
+	if wide {
+		rex |= 8
+	}
+	if index != 0 {
+		rex |= (right >> 3) << 2
+	}
+	if rex != 0x40 {
+		a.bytes(rex)
+	}
+	if index == 0 {
+		a.bytes(0x83, 0xf8|left&7, 0)
+	} else {
+		a.bytes(0x39, 0xc0|(right&7)<<3|left&7)
+	}
+	cc := [...]byte{4, 4, 5, 12, 2, 15, 7, 14, 6, 13, 3}[index]
+	// REX selects low byte registers, including r12b-r15b, rather than AH-DH.
+	a.bytes(0x40|dst>>3, 0x0f, 0x90+cc, 0xc0|dst&7)
+	a.bytes(0x40|(dst>>3)<<2|dst>>3, 0x0f, 0xb6, 0xc0|(dst&7)<<3|dst&7)
 }
