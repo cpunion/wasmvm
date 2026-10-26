@@ -38,7 +38,12 @@ the caller must not concurrently modify it while the snapshot is taken.
 `Engine.Validate` decodes and statically validates without lowering; `Inspect` adds copied import/export signatures and object limits without linking or executing.
 
 CompiledModule owns immutable code and metadata, can instantiate in multiple
-Stores of its Engine, and returns copied metadata from `Info`. Closing the
+Stores of its Engine, and returns copied metadata from `Info`. Descriptors can
+be shared among entries within one snapshot; copy a descriptor before editing
+it independently. Snapshots never alias engine code or other snapshots. Each
+referenced function signature is copied only once, keeping metadata storage
+linear in the decoded module rather than multiplying signature size by the
+number of functions. `Inspect` follows the same ownership rules. Closing the
 Engine prevents new compilation and Store creation. Existing compiled modules,
 Stores and calls remain usable. Closing a CompiledModule prevents new
 instantiation through that handle; existing instances retain their code.

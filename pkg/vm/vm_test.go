@@ -261,6 +261,9 @@ func TestValueBitsOwnershipAndCollection(t *testing.T) {
 	}
 	v, _ = s.NewExternRef(nil)
 	s.Close()
+	if s.roots != nil || s.externs != nil || !v.ref.released {
+		t.Fatal("closed Store retains reference-table storage or a live root")
+	}
 	if _, err = s.ExternRef(v); !errors.Is(err, wasm.ErrClosed) {
 		t.Fatal(err)
 	}

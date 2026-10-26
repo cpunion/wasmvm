@@ -122,8 +122,9 @@ func (s *Store) closeLocked() {
 	for r := range s.roots {
 		r.released = true
 	}
-	clear(s.roots)
-	clear(s.externs)
+	// Retaining the closed Store must not retain the reference maps' capacity.
+	s.roots = nil
+	s.externs = nil
 	close(s.closed)
 }
 

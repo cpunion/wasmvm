@@ -17,6 +17,12 @@ including import/export signatures, memory/table limits and global types.
 Inspection does not require imports to be available. `run` compiles, instantiates
 and calls the explicitly named export using the public embedding API.
 
+Inspection limits the total number of parameter/result types repeated across
+all import/export JSON signatures to 1,048,576. Exceeding this presentation
+budget reports a resource-limit error before expansion or output; the binary
+can still pass `validate`. This bounds amplification when many functions share
+one large binary signature. All commands retain the frontend's input/node limits.
+
 All commands accept `--backend interpreter`, `--profile core2`, and
 `--timeout 30s`. `--timeout 0` disables the default deadline. Other backends or
 profiles fail explicitly. Core run installs no host imports or WASI capabilities;
