@@ -89,3 +89,10 @@ checksum `3139208734`. Descriptive baseline calls retain five million iterations
 to bound CI cost; their count is disclosed and each record is normalized by its
 own iterations. This improves measurement duration, not generated-code speed;
 earlier failures remain evidence and cannot be replaced by selective reruns.
+
+At `b2d16af`, Linux passed at about 1.87 ns/iteration; arm64 remained blocked
+(Go/LLGo 2.130/2.177 versus Wasmer 2.032), with unresolved A/A controls even
+with longer calls. The next code change branches directly on allocated i32
+condition registers, eliminating scratch copies and, on arm64, the separate
+zero comparison. Cancellation, long-range branches and low-32-bit semantics
+remain intact. The measurement protocol is unchanged.
