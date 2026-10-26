@@ -39,7 +39,7 @@ wasmvm/
 │   ├── core/
 │   │   ├── module/                # Implemented: owned unvalidated Core 2.0 module/instruction records
 │   │   ├── decode/                # Implemented: complete Core 2.0 binary grammar and resource bounds
-│   │   ├── validate/              # Planned: control/type stacks, feature validation
+│   │   ├── validate/              # Implemented: complete Core 2.0 control/operand typing, index and initializer checks
 │   │   └── types/                 # Planned: recursive type canonicalization/subtyping
 │   ├── compiler/
 │   │   ├── ir/                    # Planned: typed CFG/SSA, effects and verifier

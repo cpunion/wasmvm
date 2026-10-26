@@ -164,3 +164,38 @@ module decoding in addition to the binary primitives. The final head must still
 pass Go/LLGo on Linux amd64 and macOS arm64 before merge. M1 remains open for
 semantic validation, IR/lowering, complete interpreter/runtime lifecycle, public
 embedding API, CLI and actual own-engine benchmarks.
+
+## M1 complete Core 2.0 static validation
+
+The decoder increment merged in [PR #7](https://github.com/cpunion/wasmvm/pull/7)
+after all six checks passed for `f5e1833ec1fd0b8198333f6138450e6e0bccdc6e`,
+including Go/LLGo on both supported platforms and the reference-engine
+benchmark/report workflow. The merge commit is
+`8451a83` (full identity is available in the PR).
+
+`internal/core/validate` checks index spaces, exports, limits, constant
+initializers, declared function references, block parameters/results, operand
+typing, unreachable-stack polymorphism, every scalar/reference/SIMD operation,
+lane/alignment bounds and bulk memory/table rules. Validation creates no runtime
+state and executes no guest code. Decoded module ownership transfers to the
+validated-module record; subsequent compiler/runtime consumers must treat all
+module/type slices as immutable. Locals (including parameters), operand-stack
+height and control depth have explicit independent quotas.
+
+The full pinned input inventory contains 719 malformed binaries, 2,146
+semantic-invalid binaries and 1,716 statically valid binaries. All classifications
+pass locally. Valid function bodies include all 236 fixed SIMD opcodes; an
+initial unary/binary classification error for `i8x16.avgr_u` was caught by the
+corpus and now has an explicit arity regression test. Branch-table unknown
+operands, implicit else types, exact quota boundaries and parameter/local index
+overflow have additional regressions. Linking, instantiation, traps and return
+assertions are not counted as executed by static validation.
+
+Go statement coverage for `internal/core/validate` is 96.9%. Remaining paths
+mostly defend against manually corrupted internal module records that the
+decoder cannot produce (invalid value/reference types and segment kinds); the
+unexpected-panic rethrow remains deliberately visible to fuzz/testing. Local Go race/vet checks and the shared Go/LLGo suite pass. A 15-second Go
+fuzz run with two workers completed 1,604,465 inputs without failure; this is a
+bounded observation, not a proof. Final-head cross-platform CI remains required.
+M1 is still open for IR, interpreter, runtime/lifecycle, API, CLI and own-engine
+performance measurements.

@@ -2,7 +2,7 @@
 
 A WebAssembly virtual machine written in Go, designed to build and run with both Go and LLGo.
 
-**M1 implementation has started; no production VM API is available yet.** The owned frontend decodes the full Core 2.0 binary grammar, including all fixed SIMD encodings, with bounded input ownership, allocations and nesting. Shared Go/LLGo tests check all 4,581 corpus binaries, including 719 malformed cases. Semantic validation and execution remain unfinished. `pkg/wasm` now exposes value-type identifiers and frontend error categories; the VM API is still reserved. Separate evaluation modules execute real Wasm through existing engines and report their limitations explicitly.
+**M1 implementation has started; no production VM API is available yet.** The owned frontend decodes the full Core 2.0 binary grammar, including all fixed SIMD encodings, with bounded input ownership, allocations and nesting. Shared Go/LLGo tests check all 4,581 corpus binaries, including 719 malformed cases. The validator checks all Core 2.0 static semantics and rejects all 2,146 semantic-invalid corpus modules. Execution remains unfinished. `pkg/wasm` now exposes value-type identifiers and frontend error categories; the VM API is still reserved. Separate evaluation modules execute real Wasm through existing engines and report their limitations explicitly.
 
 ## Goals
 
@@ -40,7 +40,7 @@ The owner selected a **project-owned core** after M0. Wazero and other engines r
 | --- | --- | --- |
 | Design baseline | Research, architecture, package contracts and compiler probes | Complete; own-core design now replaces reuse-first direction |
 | M0 | Candidate evaluation and reproducible comparison infrastructure | Complete through PRs #1–#3 |
-| M1 | Complete Core 2.0 interpreter, validation, resource limits, API and core CLI | In progress: full binary decoding and complete test inputs; semantic validation and execution remain open |
+| M1 | Complete Core 2.0 interpreter, validation, resource limits, API and core CLI | In progress: full binary decoding and static validation; execution remains open |
 | M2 | Fast interpreter and complete Core 2.0 native compiler for amd64/arm64 | Planned; required performance gate |
 | M3 | Full Core 3.0 and separate Core Threads on both backends | Planned |
 | M4 | P1, legacy wasi-threads and pinned Go/LLGo guest integration | Planned |
@@ -61,6 +61,6 @@ llgo test -count=1 ./...
 ./scripts/check.sh llgo
 ```
 
-The root tests cover full module/instruction decoding, source ownership, section ordering, resource limits, all pinned binary inputs, LEB128 width/sign/padding rules, UTF-8 names, host numeric bit patterns, reference reachability, goroutines, locks, atomics, condition variables, and cancellation. CI runs both compilers on Linux amd64 and macOS arm64, checks each executable core package's statement coverage against 90%, and fuzzes binary primitives and full module decoding with Go. The [wazero evaluator](experiments/wazero/README.md) is a separate module with 13 pinned capability fixtures, negative-path tests, shared-memory concurrency checks, and a bounded cancellation observation. Its owned-code coverage is measured separately from engine conformance. Expected rejection of an unsupported fixture is an assessment result, not feature support.
+The root tests cover full module/instruction decoding and typing, source ownership, section ordering, resource limits, all pinned binary inputs, LEB128 width/sign/padding rules, UTF-8 names, host numeric bit patterns, reference reachability, goroutines, locks, atomics, condition variables, and cancellation. CI runs both compilers on Linux amd64 and macOS arm64, checks each executable core package's statement coverage against 90%, and fuzzes binary primitives and full module decoding and validation with Go. The [wazero evaluator](experiments/wazero/README.md) is a separate module with 13 pinned capability fixtures, negative-path tests, shared-memory concurrency checks, and a bounded cancellation observation. Its owned-code coverage is measured separately from engine conformance. Expected rejection of an unsupported fixture is an assessment result, not feature support.
 
 Module path: `github.com/cpunion/wasmvm`. A project license has not yet been selected. No third-party implementation code is imported at this stage. The generated Core 2.0 tests retain their upstream Apache-2.0 notices; see [input provenance](testdata/core2/README.md#provenance-and-notices).
