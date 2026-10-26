@@ -47,19 +47,31 @@ func (e *functionEmitter) prepareRegisters() {
 	if e.a.arch == "arm64" {
 		available = []byte{19, 20, 21, 22, 23, 24, 25, 26, 27, 28}
 	}
-	if len(order) > len(available) {
-		order = order[:len(available)]
+	floatAvailable := []byte{3, 4, 5, 6, 7, 8, 9, 10}
+	if e.a.arch == "arm64" {
+		floatAvailable = []byte{8, 9, 10, 11, 12, 13, 14, 15, 16, 17}
 	}
-	// Load before installing the map: slotLoad must read the backing frame.
-	for i, s := range order {
-		e.slotLoad(s, 0, false, true)
-		e.registerMove(available[i], e.operandRegister(0), true)
+	integers, floats := map[slots.Slot]byte{}, map[slots.Slot]byte{}
+	// Load before installing either map so every load reads the backing frame.
+	for _, s := range order {
+		t := e.f.Slots[s]
+		floating := t == wasm.F32 || t == wasm.F64
+		if floating && len(floats) < len(floatAvailable) {
+			r := floatAvailable[len(floats)]
+			e.slotLoad(s, 0, false, t == wasm.F64)
+			e.floatFromInteger(r, e.operandRegister(0), t == wasm.F64)
+			floats[s] = r
+		} else if !floating && len(integers) < len(available) {
+			r := available[len(integers)]
+			e.slotLoad(s, 0, false, true)
+			e.registerMove(r, e.operandRegister(0), true)
+			integers[s] = r
+		} else {
+			continue
+		}
+		e.registerSlots = append(e.registerSlots, s)
 	}
-	e.registerSlots = order
-	e.registers = make(map[slots.Slot]byte, len(order))
-	for i, s := range order {
-		e.registers[s] = available[i]
-	}
+	e.registers, e.floatRegisters = integers, floats
 }
 
 func (e *functionEmitter) operandRegister(reg byte) byte {
@@ -88,19 +100,18 @@ func (e *functionEmitter) registerMove(dst, src byte, wide bool) {
 }
 
 func (e *functionEmitter) spillRegisters() {
-	registers := e.registers
-	if len(registers) == 0 {
-		return
-	}
-	e.registers = nil
+	registers, floats := e.registers, e.floatRegisters
+	e.registers, e.floatRegisters = nil, nil
 	// Stable order makes emitted code independent of Go map iteration order.
 	for _, s := range e.registerSlots {
 		if r, ok := registers[s]; ok {
 			e.registerMove(e.operandRegister(0), r, true)
-			e.slotStore(slots.Slot(s), 0, false)
+		} else {
+			e.floatToInteger(e.operandRegister(0), floats[s], e.f.Slots[s] == wasm.F64)
 		}
+		e.slotStore(s, 0, false)
 	}
-	e.registers = registers
+	e.registers, e.floatRegisters = registers, floats
 }
 
 // Common integer operations can name the allocated registers directly. The

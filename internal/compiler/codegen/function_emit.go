@@ -20,6 +20,7 @@ type functionEmitter struct {
 	edgeCopies                uint32
 	unmetered                 bool
 	registers                 map[slots.Slot]byte
+	floatRegisters            map[slots.Slot]byte
 	registerSlots             []slots.Slot
 	pollExits                 []pollExit
 }
@@ -146,6 +147,13 @@ func (e *functionEmitter) slotLoad(slot slots.Slot, reg byte, high, wide bool) {
 			e.constant(reg, 0)
 			return
 		}
+		if r, ok := e.floatRegisters[slot]; ok {
+			e.floatToInteger(e.operandRegister(reg), r, e.f.Slots[slot] == wasm.F64)
+			if !wide {
+				e.registerMove(e.operandRegister(reg), e.operandRegister(reg), false)
+			}
+			return
+		}
 		if r, ok := e.registers[slot]; ok {
 			e.registerMove(e.operandRegister(reg), r, wide)
 			return
@@ -182,6 +190,10 @@ func (e *functionEmitter) slotStore(slot slots.Slot, reg byte, high bool) {
 		if high {
 			return
 		}
+		if r, ok := e.floatRegisters[slot]; ok {
+			e.floatFromInteger(r, e.operandRegister(reg), e.f.Slots[slot] == wasm.F64)
+			return
+		}
 		if r, ok := e.registers[slot]; ok {
 			e.registerMove(r, e.operandRegister(reg), true)
 			return
@@ -209,6 +221,12 @@ func (e *functionEmitter) slotStore(slot slots.Slot, reg byte, high bool) {
 func (e *functionEmitter) move(dst, src slots.Slot) {
 	if dst == slots.NoSlot {
 		return
+	}
+	if d, ok := e.floatRegisters[dst]; ok {
+		if s, ok := e.floatRegisters[src]; ok {
+			e.floatMove(d, s, e.f.Slots[dst] == wasm.F64)
+			return
+		}
 	}
 	if d, ok := e.registers[dst]; ok {
 		if s, ok := e.registers[src]; ok {
@@ -361,6 +379,17 @@ func (e *functionEmitter) literal(in slots.Instruction) {
 	if op == 0xfd000c {
 		lo = binary.LittleEndian.Uint64(src.Wasm.Vector[:8])
 		hi = binary.LittleEndian.Uint64(src.Wasm.Vector[8:])
+	}
+	if r, ok := e.floatRegisters[in.Dst]; ok && e.a.arch == "arm64" {
+		wide := e.f.Slots[in.Dst] == wasm.F64
+		if immediate, ok := floatImmediate(lo, wide); ok {
+			ins := uint32(0x1e201000) | uint32(immediate)<<13 | uint32(r)
+			if wide {
+				ins |= 1 << 22
+			}
+			e.a.word(ins)
+			return
+		}
 	}
 	if r, ok := e.registers[in.Dst]; ok {
 		if e.a.arch == "arm64" {

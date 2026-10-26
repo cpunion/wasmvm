@@ -10,6 +10,9 @@ func isFloat(op uint32) bool {
 // scratch registers never survive an instruction or an exit. The C boundary
 // establishes round-to-nearest, gradual underflow and masked FP exceptions.
 func (e *functionEmitter) floating(in slots.Instruction) {
+	if e.registerFloat(in) {
+		return
+	}
 	op := in.Op
 	wide := op >= 0x61 && op <= 0x66 || op >= 0x99 && op <= 0xa6 || op == 0xbd || op == 0xbf
 	e.slotLoad(in.A, 0, false, wide)
@@ -122,21 +125,29 @@ func (e *functionEmitter) floatARM64(op uint32, wide bool) {
 
 func (a *assembler) xfloatMove(wide bool, toFloat bool, fp, integer byte) {
 	a.bytes(0x66)
+	rex := byte(0x40) | (fp>>3)<<2 | integer>>3
 	if wide {
-		a.bytes(0x48)
+		rex |= 8
+	}
+	if rex != 0x40 {
+		a.bytes(rex)
 	}
 	op := byte(0x6e)
 	if !toFloat {
 		op = 0x7e
 	}
-	a.bytes(0x0f, op, 0xc0|fp<<3|integer)
+	a.bytes(0x0f, op, 0xc0|(fp&7)<<3|(integer&7))
 }
 func (a *assembler) xfloat(wide bool, op, dst, src byte) {
 	prefix := byte(0xf3)
 	if wide {
 		prefix = 0xf2
 	}
-	a.bytes(prefix, 0x0f, op, 0xc0|dst<<3|src)
+	a.bytes(prefix)
+	if rex := byte(0x40) | (dst>>3)<<2 | src>>3; rex != 0x40 {
+		a.bytes(rex)
+	}
+	a.bytes(0x0f, op, 0xc0|(dst&7)<<3|(src&7))
 }
 func (a *assembler) xfloatCompare(wide bool) {
 	if wide {

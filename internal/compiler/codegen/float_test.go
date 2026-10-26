@@ -25,8 +25,24 @@ func floatOps() []uint32 {
 	return ops
 }
 func floatFixture(op uint32, dst slots.Slot) *slots.Function {
+	input, output := wasm.F32, wasm.F32
+	if op >= 0x61 && op <= 0x66 || op >= 0x99 && op <= 0xa6 || op == 0xbd || op == 0xbf {
+		input, output = wasm.F64, wasm.F64
+	}
+	switch {
+	case op <= 0x66 || op == 0xbc:
+		output = wasm.I32
+	case op == 0xbd:
+		output = wasm.I64
+	case op == 0xbe:
+		input = wasm.I32
+	case op == 0xbf:
+		input = wasm.I64
+	}
+	types := []wasm.ValueType{input, input, output}
+	types[dst] = output
 	return &slots.Function{
-		Slots:   []wasm.ValueType{wasm.I64, wasm.I64, wasm.I64},
+		Slots:   types,
 		Sources: []ir.Source{{Wasm: module.Instr{Op: op}}, {Wasm: module.Instr{Op: 0xb}}},
 		Args:    []slots.Slot{dst},
 		Code: []slots.Instruction{
@@ -177,6 +193,124 @@ func TestFloatValidatedFunctionsAndFuelBoundaries(t *testing.T) {
 			}
 			c.Close()
 			lease.Close()
+		}
+	}
+}
+
+func TestFloatRegisterPressureAndHelperResume(t *testing.T) {
+	if !native.Available {
+		return
+	}
+	f := &slots.Function{Slots: make([]wasm.ValueType, 25)}
+	values := make([]value.Value, len(f.Slots))
+	for i := range f.Slots {
+		f.Slots[i] = wasm.F32
+		values[i].Lo = uint64(math.Float32bits(float32(i)/8 - 1))
+		if i%2 != 0 {
+			f.Slots[i] = wasm.F64
+			values[i].Lo = math.Float64bits(float64(i)/8 - 1)
+		}
+		f.Args = append(f.Args, slots.Slot(i))
+	}
+	f.Slots[24] = wasm.I32
+	appendOp := func(op uint32, dst, a, b slots.Slot) {
+		f.Code = append(f.Code, slots.Instruction{Op: op, Source: uint32(len(f.Sources)), A: a, B: b, C: slots.NoSlot, Dst: dst})
+		f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: op}})
+	}
+	for phase := 0; phase < 2; phase++ {
+		for i := 2; i < 24; i++ {
+			op := uint32(0x92)
+			if i%2 != 0 {
+				op = 0xa0
+			}
+			appendOp(op, slots.Slot(i), slots.Slot(i), slots.Slot(i%2))
+		}
+		if phase == 0 {
+			appendOp(0x3f, 24, slots.NoSlot, slots.NoSlot)
+		}
+	}
+	appendOp(slots.ControlBase+uint32(ir.Return), slots.NoSlot, slots.NoSlot, slots.NoSlot)
+	f.Code[len(f.Code)-1].Count = uint32(len(f.Args))
+	for _, fast := range []bool{false, true} {
+		compiled, lease, c := functionContext(t, f, fast)
+		_, exit, state := runFunction(t, compiled, lease, c, values, 0, false, 64)
+		if exit != native.RuntimeHelper {
+			t.Fatal(exit)
+		}
+		want := append([]value.Value(nil), values...)
+		for i := 2; i < 24; i++ {
+			op := f.Code[i-2].Op
+			want[i].Lo, _ = numeric.Eval(op, want[i].Lo, want[i%2].Lo)
+		}
+		for i, v := range want {
+			if got := readSlot(t, c, 16, slots.Slot(i)); got != v {
+				t.Fatal("helper must publish every cached/spilled value", fast, i, got, v)
+			}
+		}
+		// A helper can change the retained frame while no native registers are
+		// active. Resumption must reload both FP widths and high-numbered regs.
+		want[0].Lo, want[1].Lo, want[24].Lo = 0x3f400000, 0x3fe8000000000000, 7
+		for _, i := range []int{0, 1, 24} {
+			writeSlot(t, c, 16, slots.Slot(i), want[i])
+		}
+		for i := 2; i < 24; i++ {
+			want[i].Lo, _ = numeric.Eval(f.Code[i-2].Op, want[i].Lo, want[i%2].Lo)
+		}
+		state.Budget = 64
+		if err := c.SetState(state); err != nil {
+			t.Fatal(err)
+		}
+		if exit, err := c.Enter(lease, 0); err != nil || exit != native.Return {
+			t.Fatal(exit, err)
+		}
+		for i, v := range want {
+			if got := readSlot(t, c, 16, slots.Slot(i)); got != v {
+				t.Fatal("stale or clobbered FP register", fast, i, got, v)
+			}
+		}
+		c.Close()
+		lease.Close()
+	}
+}
+
+func TestFloatImmediateConstants(t *testing.T) {
+	for _, wide := range []bool{false, true} {
+		mantissa, exponent, op, typ := uint(23), uint(8), uint32(0x43), wasm.F32
+		if wide {
+			mantissa, exponent, op, typ = 52, 11, 0x44, wasm.F64
+		}
+		for imm := uint64(0); imm < 256; imm++ {
+			exp := (imm >> 4) & 3
+			if imm&64 == 0 {
+				exp |= 1 << (exponent - 1)
+			} else {
+				exp |= (1 << (exponent - 1)) - 4
+			}
+			bits := (imm>>7)<<(mantissa+exponent) | exp<<mantissa | (imm&15)<<(mantissa-4)
+			if got, ok := floatImmediate(bits, wide); !ok || uint64(got) != imm {
+				t.Fatal(wide, imm, got, ok)
+			}
+			if _, ok := floatImmediate(bits|1, wide); ok {
+				t.Fatal("inexact literal accepted")
+			}
+			f := floatFixture(op, 2)
+			f.Slots[2] = typ
+			f.Sources[0].Wasm.Bits = bits
+			if !native.Available {
+				continue
+			}
+			compiled, lease, c := functionContext(t, f, true)
+			out, exit, _ := runFunction(t, compiled, lease, c, nil, 0, false, 1)
+			if exit != native.Return || out[0] != (value.Value{Lo: bits}) {
+				t.Fatal(wide, imm, bits, out, exit)
+			}
+			c.Close()
+			lease.Close()
+		}
+		for _, bits := range []uint64{0, 1, 1 << 31, 1 << 63, ^uint64(0)} {
+			if _, ok := floatImmediate(bits, wide); ok {
+				t.Fatal("unrepresentable literal", bits)
+			}
 		}
 	}
 }
