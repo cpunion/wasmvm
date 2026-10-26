@@ -218,7 +218,7 @@ def markdown(report):
     versions_equal = builds["base"]["version"] == builds["head"]["version"]
     lines += [f"Official wazero CLI dependency selection: base `{builds['base']['version']}`, "
               f"head `{builds['head']['version']}`; both built with the same Go toolchain.", "",
-              "This measures the candidate dependency and backend, not production wasmvm code; no wasmvm VM/CLI exists yet."]
+              "This measures the candidate dependency and backend, not production wasmvm code. The phase report separately measures the owned wasmvm API and production CLI."]
     if versions_equal:
         lines.append("**The selected wazero version is unchanged. Differences are repeated-run measurements, not evidence of a head engine-code change.**")
     lines += ["", "Same runner and head fixtures for all seven configurations; randomized interleaving, "
