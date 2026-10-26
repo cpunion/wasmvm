@@ -205,6 +205,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 			e.integer(in)
 		case isFloat(op):
 			e.floating(in)
+		case isConversion(op):
+			e.conversion(in)
 		case op == 0x10 || op == 0x11:
 			out.Calls++
 			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
@@ -237,6 +239,10 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 		a.branch(pcs[pc+1], false, 0)
 	}
 	e.emitPollExits()
+	for _, trap := range e.trapExits {
+		a.mark(trap.label)
+		e.trap(trap.code, trap.source)
+	}
 	a.mark(e.bad)
 	e.rawStatus(nativeabi.BadState)
 	a.mark(e.zero)

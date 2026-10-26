@@ -66,6 +66,50 @@
       "expectedChecksum": 1346814725,
       "wasmSha256": "c57b17c79076834aa48872945948aa0d6fd01e13d7fd11b697c330bbf8de856b",
       "sourceSha256": "5c2317b1c44668d265f1b5b19e65a6a54ab3f0ccaf2634ad87ccf0321f879ddc"
+    },
+    {
+      "id": "convert-signed-f32",
+      "family": "convert-signed",
+      "wide": false,
+      "wasm": "convert-signed-f32.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 623406344,
+      "wasmSha256": "57f5b0ff238ed59fa7025eac31dff9cce7f9b8e616984d6fff321138744969ec",
+      "sourceSha256": "78834f3b7b03ef2c85417ecc8a255471e555c11d9104c39b9d744150c79686a1"
+    },
+    {
+      "id": "convert-signed-f64",
+      "family": "convert-signed",
+      "wide": true,
+      "wasm": "convert-signed-f64.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 3308854616,
+      "wasmSha256": "5ef7249fdcf901ba6c72184a11cd9bb587d1e82340c58ff33fcb74e5a7121373",
+      "sourceSha256": "5b77427daf6691ed2b7ce97f1fd1a6edcbeaf1416d319daa03e06a85af8775a5"
+    },
+    {
+      "id": "convert-unsigned-f32",
+      "family": "convert-unsigned",
+      "wide": false,
+      "wasm": "convert-unsigned-f32.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 2997781760,
+      "wasmSha256": "133f8566e98d8ef31c5f5a1c9ff8aaea3b5aa20602ab920f1376151f5595ab8a",
+      "sourceSha256": "dddd346e4623dbe601fc5d31ce10bda43310cfe11ea0241b4ce35a046c94f305"
+    },
+    {
+      "id": "convert-unsigned-f64",
+      "family": "convert-unsigned",
+      "wide": true,
+      "wasm": "convert-unsigned-f64.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 3901338106,
+      "wasmSha256": "b06399c381e7b2d1b8c83696efde1867aed4f3040835f693663965ebb5eeb6a1",
+      "sourceSha256": "207781043dd00fd7ece40e3d65aea05f3bc8c912329f4016fd8970a488c27204"
     }
   ]
 }

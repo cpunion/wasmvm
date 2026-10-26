@@ -8,7 +8,7 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parent
 SEED, ITERATIONS = 305419896, 1_000_000
-FAMILIES = ("arithmetic", "minmax", "rounding")
+FAMILIES = ("arithmetic", "minmax", "rounding", "convert-signed", "convert-unsigned")
 
 
 def initial(seed, wide):
@@ -21,6 +21,8 @@ def initial(seed, wide):
 def checksum(family, wide, seed, iterations):
     def fp(x):
         return x if wide else struct.unpack("<f", struct.pack("<f", x))[0]
+    if family.startswith("convert-"):
+        return conversion_checksum(wide, family.endswith("unsigned"), seed, iterations)
     x = initial(seed, wide)
     for _ in range(iterations):
         if family == "arithmetic":
@@ -36,6 +38,58 @@ def checksum(family, wide, seed, iterations):
     return (bits ^ (bits >> 32)) & 0xffffffff
 
 
+def conversion_checksum(wide, unsigned, seed, iterations):
+    width = 64 if wide else 32
+    mask, top = (1 << width)-1, 1 << (width-1)
+    x = seed * ((1 << 32)+1) if wide else seed
+    multiplier = 6364136223846793005 if wide else 1664525
+    for index in range(iterations):
+        x = (x * multiplier + 1013904223 + index) & mask
+        if unsigned:
+            x = (x & ((top >> 1)-1)) | ((index & 1) * top)
+        else:
+            x = (x & (top-1)) - (top >> 1)
+        number = float(x)
+        if not wide:
+            number = struct.unpack("<f", struct.pack("<f", number))[0]
+        checked = int(number) & mask
+        raw = (checked ^ seed ^ index) & mask
+        number = struct.unpack("<d" if wide else "<f", struct.pack("<Q" if wide else "<I", raw))[0]
+        if math.isnan(number):
+            saturated = 0
+        else:
+            minimum, maximum = (0, mask) if unsigned else (-top, top-1)
+            saturated = minimum if number <= minimum else maximum if number >= maximum else int(number)
+        x = checked ^ (saturated & mask)
+    return (x ^ (x >> 32)) & 0xffffffff
+
+
+def conversion_wat(wide, unsigned):
+    integer, fp = ("i64", "f64") if wide else ("i32", "f32")
+    sign = "u" if unsigned else "s"
+    width = 64 if wide else 32
+    top = 1 << (width-1)
+    seed, index = "local.get $seed", "local.get $i"
+    if wide:
+        seed += " i64.extend_i32_u"
+        index += " i64.extend_i32_u"
+    init = seed
+    if wide:
+        init += " i64.const 4294967297 i64.mul"
+    multiplier = 6364136223846793005 if wide else 1664525
+    body = f"local.get $x {integer}.const {multiplier} {integer}.mul {integer}.const 1013904223 {integer}.add {index} {integer}.add"
+    if unsigned:
+        body += f" {integer}.const {(top >> 1)-1} {integer}.and {index} {integer}.const 1 {integer}.and {integer}.const {width-1} {integer}.shl {integer}.or"
+    else:
+        body += f" {integer}.const {top-1} {integer}.and {integer}.const {top >> 1} {integer}.sub"
+    body += f" {fp}.convert_{integer}_{sign} {integer}.trunc_{fp}_{sign} local.set $x"
+    body += f" local.get $x local.get $x {seed} {integer}.xor {index} {integer}.xor {fp}.reinterpret_{integer} {integer}.trunc_sat_{fp}_{sign} {integer}.xor local.set $x"
+    result = "local.get $x"
+    if wide:
+        result += " local.get $x i64.const 32 i64.shr_u i64.xor i32.wrap_i64"
+    return init, body, result
+
+
 def wat(family, wide):
     t = "f64" if wide else "f32"
     if wide:
@@ -47,7 +101,7 @@ def wat(family, wide):
     elif family == "minmax":
         body = f"""local.get $x {t}.const 0.125 {t}.add {t}.const 2 {t}.min {t}.const -2 {t}.max local.set $x
         local.get $x {t}.const 1.5 {t}.gt if local.get $x {t}.neg local.set $x end"""
-    else:
+    elif family == "rounding":
         body = f"""local.get $x {t}.ceil local.get $x {t}.floor {t}.add
         local.get $x {t}.trunc {t}.add local.get $x {t}.nearest {t}.add local.set $y
         local.get $x local.get $x {t}.mul {t}.const 0.5 {t}.add {t}.sqrt
@@ -55,8 +109,12 @@ def wat(family, wide):
     result = "local.get $x i32.reinterpret_f32"
     if wide:
         result = "local.get $x i64.reinterpret_f64 local.get $x i64.reinterpret_f64 i64.const 32 i64.shr_u i64.xor i32.wrap_i64"
+    x_type = t
+    if family.startswith("convert-"):
+        init, body, result = conversion_wat(wide, family.endswith("unsigned"))
+        x_type = "i64" if wide else "i32"
     return f"""(module (func (export "run") (param $seed i32) (param $iterations i32) (result i32)
-      (local $i i32) (local $x {t}) (local $y {t})
+      (local $i i32) (local $x {x_type}) (local $y {t})
       local.get $iterations i32.const 0 i32.le_s if unreachable end
       {init} local.set $x
       loop $again

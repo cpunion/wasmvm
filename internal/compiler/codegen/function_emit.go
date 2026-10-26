@@ -23,6 +23,7 @@ type functionEmitter struct {
 	floatRegisters            map[slots.Slot]byte
 	registerSlots             []slots.Slot
 	pollExits                 []pollExit
+	trapExits                 []nativeTrapExit
 }
 
 type pollExit struct {
@@ -405,4 +406,18 @@ func (e *functionEmitter) literal(in slots.Instruction) {
 		e.constant(0, hi)
 		e.slotStore(in.Dst, 0, true)
 	}
+}
+
+// Keep source publication and register spills off successful conversion paths.
+// Each trap site retains its original instruction offset.
+type nativeTrapExit struct {
+	label  int
+	code   wasm.TrapCode
+	source uint64
+}
+
+func (e *functionEmitter) trapExit(code wasm.TrapCode, source uint64) int {
+	label := e.a.label()
+	e.trapExits = append(e.trapExits, nativeTrapExit{label, code, source})
+	return label
 }
