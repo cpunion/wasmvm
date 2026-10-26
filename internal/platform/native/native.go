@@ -249,7 +249,7 @@ func (c *Context) Enter(l *Lease, entry uint32) (Exit, error) {
 	c.active = false
 	c.release()
 	c.mu.Unlock()
-	if status < Return || status > GuestGC {
+	if status < Return || status > Move {
 		return 0, ErrInvalid
 	}
 	return status, nil

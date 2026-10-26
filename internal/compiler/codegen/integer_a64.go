@@ -35,6 +35,24 @@ func integerARM64(a *assembler, op uint32, wide bool) {
 	a.word(load | uint32(nativeabi.ResultLoOffset>>shift)<<10 | 9)
 	a.word(load | uint32(nativeabi.ResultHiOffset>>shift)<<10 | 10)
 	zero, overflow, exit := a.label(), a.label(), a.label()
+	divisorCheck, overflowCheck := integerARM64Core(a, op, wide, zero, overflow)
+
+	a.word(0xf9000009 | uint32(nativeabi.ResultLoOffset/8)<<10)
+	a.word(0x52800000 | uint32(nativeabi.Return)<<5)
+	if divisorCheck {
+		a.branch(exit, false, 0)
+		a.mark(zero)
+		atrap(a, wasm.TrapIntegerDivideByZero)
+		if overflowCheck {
+			a.branch(exit, false, 0)
+			a.mark(overflow)
+			atrap(a, wasm.TrapIntegerOverflow)
+		}
+	}
+	a.mark(exit)
+}
+
+func integerARM64Core(a *assembler, op uint32, wide bool, zero, overflow int) (bool, bool) {
 	divisorCheck, overflowCheck := false, false
 	if op <= 0x5a {
 		index := op - 0x45
@@ -134,19 +152,7 @@ func integerARM64(a *assembler, op uint32, wide bool) {
 			a.word(0x93403d29)
 		}
 	}
-	a.word(0xf9000009 | uint32(nativeabi.ResultLoOffset/8)<<10)
-	a.word(0x52800000 | uint32(nativeabi.Return)<<5)
-	if divisorCheck {
-		a.branch(exit, false, 0)
-		a.mark(zero)
-		atrap(a, wasm.TrapIntegerDivideByZero)
-		if overflowCheck {
-			a.branch(exit, false, 0)
-			a.mark(overflow)
-			atrap(a, wasm.TrapIntegerOverflow)
-		}
-	}
-	a.mark(exit)
+	return divisorCheck, overflowCheck
 }
 
 func atrap(a *assembler, trap wasm.TrapCode) {
