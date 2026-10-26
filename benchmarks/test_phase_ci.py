@@ -66,6 +66,8 @@ def complete_report():
                     "result": {"backend": "interpreter", "profile": "core2", "export": "run", "results": [
                         {"type": "i32", "bits": f"0x{checksum:08x}", "value": str(signed)}]}})
     report["productionCLI"] = production
+    from test_subsystems import complete_series
+    report["subsystems"] = complete_series(report["ownBuilds"])
     return report
 
 
@@ -174,6 +176,8 @@ class PhaseIntegrityTests(unittest.TestCase):
         report["observations"] = [r for r in report["observations"] if not r["runtime"].startswith("wasmvm-base-")]
         report["productionCLI"]["runtimes"] = [r for r in report["productionCLI"]["runtimes"] if not r["id"].startswith("base-")]
         report["productionCLI"]["observations"] = [r for r in report["productionCLI"]["observations"] if not r["runtime"].startswith("base-")]
+        report["subsystems"]["runtimes"] = [r for r in report["subsystems"]["runtimes"] if r["id"].startswith("head-")]
+        report["subsystems"]["observations"] = [r for r in report["subsystems"]["observations"] if r["runtime"].startswith("head-")]
         self.assertEqual(len(phase.summarize(report)), 154)
         self.assertIn("baseline unavailable", phase.markdown(report))
         report["ownBuilds"]["head-go"]["status"] = "baseline-unavailable"

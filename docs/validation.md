@@ -566,3 +566,27 @@ seed/count dependence and an independent zlib CRC cross-check. Full CI C API
 validation and final-head measurements are required before merge. M1 remains
 open for host-callback/preparation-shape baselines and final acceptance; no
 M2 controlled performance or native-backend gate is claimed.
+
+## M1 host-callback and preparation-shape baselines
+
+The [owned subsystem series](../benchmarks/embedded/subsystems/README.md) adds
+separate exact-revision Go/LLGo measurements for typed host callbacks and
+fresh Engine/Store preparation across function count/size, control depth,
+locals, imports, tables/globals and active data. Malformed, invalid and resource
+rejections have distinct outcomes and no invented instantiation interval.
+The full matrix is 156 processes; every callback count/checksum, compilation
+classification and module shape is checked. Pure competitor measurements
+remain a separate series. Raw samples retain all actual intervals and logical
+Store usage; no peak RSS or controlled performance acceptance is inferred.
+
+Tests exercise successful and rejected preparation, repeated independent
+instances, exact callback counts, the pure/host boundary, cancellation,
+protocol/output errors and incomplete/corrupt sample matrices under Go/LLGo.
+The phase package has 93.1% statement coverage; remaining paths mainly defend
+against fixed-configuration Store/link failures and impossible typed results.
+The pinned LLGo BDWGC backend leaves allocation-event counts unset, producing
+false-zero AllocsPerRun results (reported as [llgo#2923](https://github.com/xgo-dev/llgo/issues/2923)).
+The existing warmed-reuse test continues executing under both compilers; only
+Go's event counter can currently substantiate its zero-allocation assertion.
+M1 requires completed final-head CI and evidence review; M2's allocation and
+throughput gates remain open.

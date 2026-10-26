@@ -3,6 +3,7 @@ package interp
 import (
 	"context"
 	"errors"
+	"runtime"
 	"testing"
 	"time"
 
@@ -90,7 +91,10 @@ func TestFuelBeforeEffectsAndReuse(t *testing.T) {
 		}
 	}
 	run()
-	if got := testing.AllocsPerRun(100, run); got != 0 {
+	// LLGo BDWGC currently leaves MemStats.Mallocs unset (llgo#2923). Keep
+	// executing the same repetitions, but do not treat its false zero as an
+	// allocation guarantee. M2 needs separate reliable allocation evidence.
+	if got := testing.AllocsPerRun(100, run); runtime.Compiler == "gc" && got != 0 {
 		t.Fatalf("warmed numeric execution allocated %g times", got)
 	}
 	if e.Run() != Done {

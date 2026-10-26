@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "version": "subsystems-v1",
+  "producer": "wasm-tools 1.258.0",
+  "origin": "authored in wasmvm",
+  "generatorSha256": "19b2372454fb8a5e586852a069b7520a29876bf7251fe73f7f1cc2632b161fc9",
+  "host": [
+    {
+      "id": "host-control",
+      "wasm": "subsystems/host-callback.wasm",
+      "wasmSha256": "9477dcda4183799ab7ee238955948e3a6e71a866b61b7b862e3aee8957e6f555",
+      "sourceSha256": "dd1d60b006e3e87317da1feb88536daba119f87a0c66a31e4818311eac4148ab",
+      "inputBytes": 134,
+      "outcome": "valid",
+      "definedFunctions": 1,
+      "imports": 1,
+      "seed": 305419896,
+      "iterations": 1,
+      "expectedChecksum": 2216445360,
+      "unit": "ns/callback iteration",
+      "validationCases": [
+        {
+          "seed": 0,
+          "iterations": 1,
+          "expectedChecksum": 2654435769
+        },
+        {
+          "seed": 1,
+          "iterations": 2,
+          "expectedChecksum": 2240537846
+        },
+        {
+          "seed": 4294967295,
+          "iterations": 17,
+          "expectedChecksum": 3830441106
+        }
+      ]
+    },
+    {
+      "id": "host-loop",
+      "wasm": "subsystems/host-callback.wasm",
+      "wasmSha256": "9477dcda4183799ab7ee238955948e3a6e71a866b61b7b862e3aee8957e6f555",
+      "sourceSha256": "dd1d60b006e3e87317da1feb88536daba119f87a0c66a31e4818311eac4148ab",
+      "inputBytes": 134,
+      "outcome": "valid",
+      "definedFunctions": 1,
+      "imports": 1,
+      "seed": 305419896,
+      "iterations": 1000,
+      "expectedChecksum": 3728423936,
+      "unit": "ns/callback iteration",
+      "validationCases": [
+        {
+          "seed": 0,
+          "iterations": 1,
+          "expectedChecksum": 2654435769
+        },
+        {
+          "seed": 1,
+          "iterations": 2,
+          "expectedChecksum": 2240537846
+        },
+        {
+          "seed": 4294967295,
+          "iterations": 17,
+          "expectedChecksum": 3830441106
+        }
+      ]
+    }
+  ],
+  "preparation": [
+    {
+      "id": "small-module",
+      "wasm": "subsystems/small-module.wasm",
+      "wasmSha256": "aaceec3bbac74451e6dcefcead4220538e643fcb1df8009a7c5c3a5afffc5495",
+      "sourceSha256": "c2082f4315829192eaa603fc50537c86c046aaa79cdb83e932148971a3731b63",
+      "inputBytes": 24,
+      "outcome": "valid",
+      "definedFunctions": 1,
+      "imports": 0
+    },
+    {
+      "id": "many-functions",
+      "wasm": "subsystems/many-functions.wasm",
+      "wasmSha256": "5d236c4c01606072584038082a6bd4e39f82bfabfba00900ac74aedaa78b08ad",
+      "sourceSha256": "ba07fb00487f23d434ea983011134f6c02fe01b99c54d8cad157f1e54e9f4a2b",
+      "inputBytes": 2072,
+      "outcome": "valid",
+      "definedFunctions": 512,
+      "imports": 0
+    },
+    {
+      "id": "large-functions",
+      "wasm": "subsystems/large-functions.wasm",
+      "wasmSha256": "10f7c33d8016fd0b34c4d8347d6f4efc2b161ee02c655f81aa7a0a80e8989793",
+      "sourceSha256": "a15b39d439d23a48c1d7d374a6437995092be86c2d0bac13c65f1d99b463221d",
+      "inputBytes": 24614,
+      "outcome": "valid",
+      "definedFunctions": 2,
+      "imports": 0
+    },
+    {
+      "id": "deep-control",
+      "wasm": "subsystems/deep-control.wasm",
+      "wasmSha256": "e9a253479ddb6cc9fa25da5a0518df2d5209c8d4c69bb397c6937f177a9002b8",
+      "sourceSha256": "893d3cc8af0d4a3a0f0a9a56d30331cb6dba122351a6b7cd4db469a7745922db",
+      "inputBytes": 795,
+      "outcome": "valid",
+      "definedFunctions": 1,
+      "imports": 0
+    },
+    {
+      "id": "many-locals",
+      "wasm": "subsystems/many-locals.wasm",
+      "wasmSha256": "bba0eea8798205a5f794353ed9a61641c2d54cfa79965412077d4dab19098344",
+      "sourceSha256": "160b7574bfa8cc2cec416743d04474659233a109c2d231b8a1bf5166e49b8b48",
+      "inputBytes": 28,
+      "outcome": "valid",
+      "definedFunctions": 1,
+      "imports": 0
+    },
+    {
+      "id": "many-imports",
+      "wasm": "subsystems/many-imports.wasm",
+      "wasmSha256": "f376c0e8c5b8d1b364291273bc27c53b8b2e272d6df4b93bcae1e83dc95ccd71",
+      "sourceSha256": "c5fff72ccb37451b2d26be351bcd75791d104baf06c37d4936f77352393a9094",
+      "inputBytes": 1447,
+      "outcome": "valid",
+      "definedFunctions": 0,
+      "imports": 128
+    },
+    {
+      "id": "tables-globals",
+      "wasm": "subsystems/tables-globals.wasm",
+      "wasmSha256": "edc9d5b35139bc5711694c1df557a43442ef3e10a0cc450a65fe35b5c98dfecc",
+      "sourceSha256": "03576c6af7e21cb10f0ae6f14750dc241297e0f3d4c5cfab18ac01233ea07cba",
+      "inputBytes": 688,
+      "outcome": "valid",
+      "definedFunctions": 0,
+      "imports": 0
+    },
+    {
+      "id": "data-64k",
+      "wasm": "subsystems/data-64k.wasm",
+      "wasmSha256": "b6c8c2de57c3449cd00764435fc7af45e34d8e29b9faad0d1277f91670fbaeca",
+      "sourceSha256": "b7134b66fc88bed77ec0409eba0ddd7b1eedbb3ad87f868ba452a8fb231960e4",
+      "inputBytes": 65562,
+      "outcome": "valid",
+      "definedFunctions": 0,
+      "imports": 0
+    },
+    {
+      "id": "invalid-stack",
+      "wasm": "subsystems/invalid-stack.wasm",
+      "wasmSha256": "e1981c5fbe14c0fa03d8e320b01fd60cdc2665c2608318535e660f8cd6fddae7",
+      "sourceSha256": "cb7dd647b9fd01fba838c7b653ac83fb57f3744d13468ddb8f84441f26e8b336",
+      "inputBytes": 27,
+      "outcome": "invalid",
+      "definedFunctions": 0,
+      "imports": 0
+    },
+    {
+      "id": "excessive-locals",
+      "wasm": "subsystems/excessive-locals.wasm",
+      "wasmSha256": "8a9cc6e4da77e700e9253224a7b3e9de6aadbf09f96c3e5b27286958c6a0d0bb",
+      "sourceSha256": "552abda2f8a7ac73a657488e064d8b1af857f84d479db55095ed05797f83112c",
+      "inputBytes": 28,
+      "outcome": "limit",
+      "definedFunctions": 0,
+      "imports": 0
+    },
+    {
+      "id": "malformed",
+      "wasm": "subsystems/malformed.wasm",
+      "wasmSha256": "4bdc2bf44120e3f2670ac9d79098b842c060fa2bb85704a52c4e2051f05c9e61",
+      "sourceSha256": null,
+      "inputBytes": 10,
+      "outcome": "malformed",
+      "definedFunctions": 0,
+      "imports": 0
+    }
+  ]
+}

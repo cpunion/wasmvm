@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/bits"
 	"os"
 	"runtime"
 	"time"
@@ -62,6 +63,8 @@ type report struct {
 	Samples          int              `json:"samples"`
 	Warmups          int              `json:"warmups"`
 	Phases           phases           `json:"phasesNs"`
+	HostBindingNs    int64            `json:"hostBindingNs,omitempty"`
+	HostCalls        uint64           `json:"hostCalls,omitempty"`
 	PreparationParts map[string]int64 `json:"preparationPartsNs,omitempty"`
 	Result           uint32           `json:"result"`
 	WarmupCallNs     []int64          `json:"warmupCallNs"`
@@ -98,8 +101,8 @@ func parseOptions(args []string, stderr io.Writer) (options, error) {
 	if out.backend != "interpreter" {
 		return out, wasm.ErrUnsupported
 	}
-	if out.mode != "api" && out.mode != "dispatch" {
-		return out, errors.New("mode must be api or dispatch")
+	if out.mode != "api" && out.mode != "dispatch" && out.mode != "host" {
+		return out, errors.New("mode must be api, dispatch or host")
 	}
 	if *iterations == 0 || *iterations > math.MaxInt32 || *seed > math.MaxUint32 || *expected > math.MaxUint32 {
 		return out, errors.New("invalid i32 workload arguments")
@@ -165,10 +168,37 @@ func publicKernel(ctx context.Context, input []byte, args options, out *report) 
 	if err != nil {
 		return nil, close, err
 	}
-	if err = pure(len(info.Imports), info.HasStart); err != nil {
+	linker := vm.NewLinker(store)
+	if args.mode == "host" {
+		if info.HasStart || len(info.Imports) != 1 || info.Imports[0].Module != "host" || info.Imports[0].Name != "mix" || info.Imports[0].Function == nil {
+			return nil, close, errors.New("host fixture requires only host.mix and no start")
+		}
+		if err := signature(*info.Imports[0].Function); err != nil {
+			return nil, close, err
+		}
+		start = time.Now()
+		host, hostErr := store.NewFunction(*info.Imports[0].Function, func(_ *vm.Caller, args []vm.Value) ([]vm.Value, error) {
+			x, _, err := args[0].Bits()
+			if err != nil {
+				return nil, err
+			}
+			i, _, err := args[1].Bits()
+			if err != nil {
+				return nil, err
+			}
+			out.HostCalls++
+			return []vm.Value{vm.I32(bits.RotateLeft32(uint32(x+i), 7) ^ 0x9e3779b9)}, nil
+		})
+		if hostErr != nil {
+			return nil, close, hostErr
+		}
+		if err := linker.Define("host", "mix", host); err != nil {
+			return nil, close, err
+		}
+		out.HostBindingNs = time.Since(start).Nanoseconds()
+	} else if err = pure(len(info.Imports), info.HasStart); err != nil {
 		return nil, close, err
 	}
-	linker := vm.NewLinker(store)
 	start = time.Now()
 	instance, err := linker.Instantiate(ctx, compiled, vm.CallOptions{})
 	out.Phases.Instantiate = time.Since(start).Nanoseconds()
@@ -190,11 +220,15 @@ func publicKernel(ctx context.Context, input []byte, args options, out *report) 
 	}
 	arguments := []vm.Value{vm.I32(args.seed), vm.I32(args.iterations)}
 	return func() (int64, uint32, error) {
+		before := out.HostCalls
 		start := time.Now()
 		result, err := fn.Call(ctx, arguments, vm.CallOptions{})
 		elapsed := time.Since(start).Nanoseconds()
 		if err != nil {
 			return elapsed, 0, err
+		}
+		if args.mode == "host" && out.HostCalls-before != uint64(args.iterations) {
+			return elapsed, 0, errors.New("host callback count mismatch")
 		}
 		lo, _, err := result.Values[0].Bits()
 		if err != nil {
@@ -299,7 +333,7 @@ func benchmark(ctx context.Context, args options) (out report, err error) {
 	}
 	var call kernel
 	var close func()
-	if args.mode == "api" {
+	if args.mode == "api" || args.mode == "host" {
 		call, close, err = publicKernel(ctx, input, args, &out)
 	} else {
 		call, close, err = dispatchKernel(ctx, input, args, &out)
@@ -347,6 +381,9 @@ func RunCLI(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if err != nil || ack != "run\n" {
 		fmt.Fprintln(stderr, "expected run acknowledgement after ready")
 		return 1
+	}
+	if len(args) > 0 && args[0] == "prepare" {
+		return preparationCLI(args[1:], encoder, stderr)
 	}
 	config, err := parseOptions(args, stderr)
 	if errors.Is(err, flag.ErrHelp) {

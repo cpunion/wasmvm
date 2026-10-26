@@ -20,6 +20,7 @@ import time
 import ci
 import own_build
 import own_cli
+import subsystems
 
 
 ROUNDS = 3
@@ -275,6 +276,7 @@ def summarize(report):
         if runtimes[name] != expected:
             raise ValueError("own-engine runtime does not match build provenance")
     own_cli.summarize(report["productionCLI"], report["ownBuilds"], report["fixtures"])
+    subsystems.summarize(report["subsystems"], report["ownBuilds"])
     expected = {(r, w, n) for r in runtimes for w in workloads for n in range(ROUNDS)}
     seen = set()
     for item in report["observations"]:
@@ -364,6 +366,7 @@ def markdown(report):
             values = " | ".join(f"{parts[key] / 1e6:.6f}" for key in ("decode", "validate", "lower", "slots"))
             lines.append(f"| {row['runtime']} | {row['workload']} | {values} |")
     lines += ["", "</details>", "", own_cli.markdown(report["productionCLI"], report["ownBuilds"], report["fixtures"]),
+              subsystems.markdown(report["subsystems"], report["ownBuilds"]),
               "### Wazero dependency selection (reference only)", ""]
     versions = report["builds"]
     lines += [f"wazero base `{versions['base']['version']}`, head `{versions['head']['version']}`; "
@@ -469,6 +472,8 @@ def main():
                 print(f"Embedded phase round {number+1}/{ROUNDS} complete", flush=True)
             report["productionCLI"] = {"rounds": own_cli.ROUNDS, "runtimes": own_cli.configurations(report["ownBuilds"]), "observations": []}
             own_cli.run(head, report["ownBuilds"], report["fixtures"], args.timeout, report["seed"], report["productionCLI"])
+            report["subsystems"] = {}
+            subsystems.run(head, report["ownBuilds"], args.timeout, report["seed"], invoke, report["subsystems"])
             report["summary"] = summarize(report)
             report["status"] = "complete"
     except Exception as error:
