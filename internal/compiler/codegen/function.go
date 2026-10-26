@@ -223,6 +223,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 		}
 	}
 	// A validated function never falls through its final terminator.
+	e.emitPollExits()
 	a.mark(e.bad)
 	e.rawStatus(nativeabi.BadState)
 	a.mark(e.zero)

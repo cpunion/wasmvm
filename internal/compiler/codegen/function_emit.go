@@ -20,6 +20,12 @@ type functionEmitter struct {
 	unmetered                 bool
 	registers                 map[slots.Slot]byte
 	registerSlots             []slots.Slot
+	pollExits                 []pollExit
+}
+
+type pollExit struct {
+	label int
+	pc    uint32
 }
 
 func (e *functionEmitter) constant(reg byte, v uint64) {
@@ -298,16 +304,22 @@ func (e *functionEmitter) edge(index uint32, pcs []int) {
 // sequence has at most 256 slot instructions between polls; every control
 // transfer also polls, so arbitrary forward/backward edges cannot evade it.
 func (e *functionEmitter) interrupt(pc uint32) {
-	a := e.a
-	ok := a.label()
-	if a.arch == "amd64" {
-		e.contextLoad(0, nativeabi.ControlOffset)
-	} else {
-		a.word(0x9100000f | uint32(nativeabi.ControlOffset)<<10)
-		a.word(0xc8dffde9) // ldar x9,[x15]
-	}
+	// An aligned machine load is atomic on both targets. Only a nonzero
+	// observation needs acquire ordering; the cold exit supplies that fence.
+	// Keep register spills and continuation publication outside the hot region.
+	exit := e.a.label()
+	e.contextLoad(0, nativeabi.ControlOffset)
 	e.test(true)
-	e.branch(ok, "eq")
-	e.leave(nativeabi.Poll, 0, uint64(pc))
-	a.mark(ok)
+	e.branch(exit, "ne")
+	e.pollExits = append(e.pollExits, pollExit{exit, pc})
+}
+
+func (e *functionEmitter) emitPollExits() {
+	for _, exit := range e.pollExits {
+		e.a.mark(exit.label)
+		if e.a.arch == "arm64" {
+			e.a.word(0xd50339bf) // dmb ishld: acquire after the atomic load.
+		}
+		e.leave(nativeabi.Poll, 0, uint64(exit.pc))
+	}
 }

@@ -52,3 +52,9 @@ fixed before this new measurement, not derived from observed competitor gaps.
 An interval merely crossing 1 is never a parity pass. This is a disclosed
 measurement-method change, not an instruction-throughput win. Full controlled
 portfolio acceptance remains unchanged.
+
+At `dd4fba8`, the separate macOS arm64 runner measured 2.339/2.381 ns per
+iteration for Go/LLGo, against 2.362 wazero, 1.914 Wasmtime and 1.925 Wasmer.
+The competitor gap and inconclusive A/A controls blocked merging. The next
+compiler change moves polling exits out of line and acquires cancellation only
+after a nonzero atomic observation; it does not change the workload or gate.

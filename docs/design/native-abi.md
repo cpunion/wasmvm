@@ -96,7 +96,13 @@ The compiler pipeline is typed validation output -> control-flow IR -> verified 
 relocations and the C boundary with the sliced baseline. It rejects metered
 entry records; deterministic fuel continues through the existing precise tier.
 The static policy removes per-instruction fuel-flag tests and periodic host
-round trips, while retaining mandatory acquire-load interrupt checks.
+round trips, while retaining mandatory atomic interrupt checks. Poll exits and
+register spills live outside the hot instruction stream. On arm64 an aligned
+relaxed load checks the control word; a nonzero observation executes `DMB ISHLD`
+before publishing the exit, providing acquire ordering on the cold path. A zero
+observation consumes no host-published state and needs no acquire barrier. The
+control word is monotonic until the execution ends. This follows the Arm
+[load-to-load/store barrier mapping](https://support.arm.com/documentation/102336/0100/Limiting-the-scope-of-memory-barriers).
 
 A small fixed allocator assigns the most referenced scalar slots to eight
 amd64 or ten arm64 registers, excluding context, frame and constrained integer

@@ -2,11 +2,13 @@ package codegen
 
 import (
 	"bytes"
+	"encoding/binary"
 	"runtime"
 	"testing"
 	"time"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
+	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/numeric"
@@ -14,6 +16,77 @@ import (
 	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
+
+func TestGeneratedPollContinuationsAndSpills(t *testing.T) {
+	if !native.Available {
+		return
+	}
+	f := &slots.Function{Slots: []wasm.ValueType{wasm.I64}, Args: []slots.Slot{0},
+		Sources: []ir.Source{{Wasm: module.Instr{Op: 1}}, {Wasm: module.Instr{Op: 0x42, Bits: 42}}}}
+	for i := 0; i < 300; i++ {
+		f.Code = append(f.Code, slots.Instruction{Op: 1, Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot})
+	}
+	f.Code[1].Op, f.Code[1].Source, f.Code[1].Dst = 0x42, 1, 0
+	f.Code = append(f.Code, slots.Instruction{Op: slots.ControlBase + uint32(ir.Return), Count: 1,
+		Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot})
+	for _, fast := range []bool{false, true} {
+		compile := CompileFunction
+		if fast {
+			compile = CompileUnmeteredFunction
+		}
+		compiled, err := compile(runtime.GOARCH, f, DefaultLimits())
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Set cancellation after the adapter's entry check, exercising generated
+		// polling rather than the adapter's early return. These are release stores.
+		var prefix []byte
+		if runtime.GOARCH == "arm64" {
+			for _, word := range []uint32{0xd2800029, 0x9100000a | uint32(nativeabi.ControlOffset)<<10, 0xc89ffd49} {
+				prefix = binary.LittleEndian.AppendUint32(prefix, word)
+			}
+		} else {
+			prefix = []byte{0x48, 0xc7, 0x87}
+			prefix = binary.LittleEndian.AppendUint32(prefix, uint32(nativeabi.ControlOffset))
+			prefix = binary.LittleEndian.AppendUint32(prefix, 1)
+		}
+		code, err := native.Publish(append(prefix, compiled.Entry.Code...), []uint32{0}, DefaultLimits().MaxCodeBytes)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(code.Close)
+		lease, err := code.Acquire()
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(lease.Close)
+		for _, start := range []uint64{0, 1, 300} {
+			c, err := native.NewContext(16, 16, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(c.Close)
+			writeSlot(t, c, 0, 0, value.Value{Lo: 7})
+			if err := c.SetState(native.State{Depth: 1, Continuation: start, Budget: 600}); err != nil {
+				t.Fatal(err)
+			}
+			exit, err := c.Enter(lease, 0)
+			state, stateErr := c.State()
+			wantPC, wantValue := uint64(300), uint64(7)
+			if start < 2 {
+				wantValue = 42
+			}
+			if fast && start == 0 {
+				wantPC, wantValue = 0, 7
+			} else if fast && start == 1 {
+				wantPC = 256
+			}
+			if err != nil || stateErr != nil || exit != native.Poll || state.Continuation != wantPC || readSlot(t, c, 0, 0) != (value.Value{Lo: wantValue}) {
+				t.Fatalf("fast=%v start=%d: %v %v %v %+v", fast, start, err, stateErr, exit, state)
+			}
+		}
+	}
+}
 
 func TestAllocatedIntegerSemantics(t *testing.T) {
 	if !native.Available {
