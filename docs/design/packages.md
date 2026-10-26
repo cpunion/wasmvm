@@ -57,7 +57,7 @@ wasmvm/
 │   │   ├── native/                # Planned: native artifacts, maps and driver
 │   │   │   ├── amd64/             # Planned: Go instruction encoder/target lowering
 │   │   │   └── arm64/             # Planned: Go instruction encoder/target lowering
-│   │   ├── memory/                # Planned: private/shared memory, atomics, waiters
+│   │   ├── memory/                # Implemented: private memory and checked accesses; shared/atomics planned
 │   │   ├── heap/                  # Planned: WasmGC, roots, externref, handles
 │   │   └── schedule/              # Planned: task budgets, cancellation, thread lifecycle
 │   ├── component/
