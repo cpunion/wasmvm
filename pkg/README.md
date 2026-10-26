@@ -1,11 +1,11 @@
 # Public Packages
 
-`wasm` implements Core 2.0 value-type identifiers and frontend error categories. The remaining packages reserve their intended responsibilities. No public VM execution API is implemented yet.
+`wasm` implements Core 2.0 type/error contracts. `vm` implements the owned interpreter embedding API, including numeric/reference Values, Engine, Store, CompiledModule, Linker, Instance, Execution, typed host functions, object access and lifecycle management. See the [embedding guide](../docs/embedding.md) and [executable examples](vm/example_test.go). Component and WASI packages remain reserved.
 
-| Path | Planned responsibility |
+| Path | Responsibility |
 | --- | --- |
-| `wasm` | Public values/types and feature sets |
-| `vm` | Engine, Store, modules, instances, host imports, and call APIs |
+| `wasm` | Core 2.0 value-type identifiers, errors and traps |
+| `vm` | Engine/Store lifetimes, modules, instances, executions, typed Values/references, host imports and calls |
 | `component` | Component Model embedding APIs |
 | `wasi/preview1` | WASI Preview 1 |
 | `wasi/threads` | Separate, optional legacy wasi-threads support |

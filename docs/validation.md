@@ -425,3 +425,32 @@ Every executable core package exceeds 90%. Final-head CI is required before
 merge. Internal final close assumes no execution lease remains; public
 nonblocking close, lease synchronization, host reference handles, API/CLI and
 own-engine benchmarks are still required M1 work.
+
+
+## M1 public embedding API and host references
+
+Failed-instance reclamation merged in [PR #15](https://github.com/cpunion/wasmvm/pull/15)
+after all six checks passed for `579c37a1ce30597765f92d342f70df5a3c1b2737`.
+
+`pkg/vm` now exposes Engine, CompiledModule, Store, Linker, Instance, Extern and
+Execution, typed numeric/reference Values, explicit host functions and copied
+memory access. The [embedding guide](embedding.md) specifies ownership, root
+release/collection, shared reentry budgets, nonblocking close and callback
+limits. Two executable external-package examples compile/call a module and
+link/call a guest import without a competitor runtime.
+
+Tests cover concurrent compilation, immutable metadata, closed compiled-module
+leases, cross-Store and released references, root/object quotas, caller-scoped
+result handoff, suspended-local roots during nested collection, escaped
+functions after a failed start, repeated Execution use, combined fuel/frame/
+slot limits, concurrent Caller rejection, host errors/panics and deferred close
+while a callback holds a lease. Start panic cleanup restores instance/memory
+usage. Public calls preserve context and host errors separately from traps.
+
+Local Go/LLGo shared tests and the complete Core 2.0 corpus pass, as do Go
+vet/race checks. Public VM statement coverage is 97.4%; remaining paths include
+cancellation between bounded compilation phases and defensive stale internal
+records. Every executable core package remains above 90%, and CI now requires
+`pkg/vm` explicitly. Final-head remote checks are required before merge.
+M1 still requires the core CLI, own-engine phase benchmarks and final acceptance.
+The public call driver has not passed a controlled throughput/allocation gate.

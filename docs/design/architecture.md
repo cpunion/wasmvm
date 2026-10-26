@@ -138,23 +138,11 @@ WASI 0.3 adds `async func`, `stream<T>`, `future<T>`, and component-level task s
 
 The initial WIT parser/code generator can run as an external development tool rather than being embedded in the production VM. The runtime accepts only validated, version-pinned generated metadata. P1-to-component adapters may reuse official toolchain artifacts, but they do not replace this project's component execution capability.
 
-## 8. Embedding API shape (draft)
+## 8. Embedding API
 
-The following illustrates lifetimes only; **it is not a currently compilable API**:
+The implemented API and checked examples are documented in the [embedding guide](../embedding.md). `vm.NewEngine` selects the complete Core 2.0 interpreter. `Engine.Compile`, `Engine.NewStore`, `vm.NewLinker`, `Linker.Instantiate`, `Instance.Export` and `Extern.Call` form the normal embedding path. Runtime numeric/reference Values live in `pkg/vm`; static value types and error/trap categories live in `pkg/wasm`.
 
-```go
-engine, err := vm.NewEngine(vm.Config{Features: profile, Limits: limits})
-defer engine.Close()
-compiled, err := engine.Compile(ctx, wasmBytes)
-store, err := engine.NewStore(storeConfig)
-defer store.Close() // Nonblocking close request; reclaim when execution leaves.
-linker := vm.NewLinker(engine)
-err = preview1.Register(linker, capabilities)
-instance, err := linker.Instantiate(ctx, store, compiled)
-result, err := instance.Call(ctx, "_start")
-```
-
-Real callers must check every error; those branches are omitted here. Host function bindings use explicit signatures and typed `Value` objects, without default reflection-based inference from Go function signatures. Host memory access uses bounded copy-in/copy-out or short-lived borrows; shared memory exposes no raw slice. Persistent external references use explicit Root/Release interfaces, with documentation explaining the memory-retention consequences of not releasing them.
+Host function bindings use explicit signatures and typed `Value` objects, without default reflection-based inference from Go function signatures. Host memory access uses bounded copy-in/copy-out or short-lived borrows; shared memory exposes no raw slice. Persistent external references use explicit Root/Release interfaces, with documentation explaining the memory-retention consequences of not releasing them.
 
 Errors distinguish at least DecodeError, ValidationError, UnsupportedFeature, LinkError, Trap, GuestException, ExitError, ResourceLimit, and Canceled. They include module/function/byte-offset information or a guest stack. Expected failures must not all be flattened into strings.
 

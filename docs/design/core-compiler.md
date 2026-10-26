@@ -145,11 +145,16 @@ or 512-element table chunks. Bounds traps precheck entire bulk ranges;
 cancellation may leave partial progress. The execution object can be reused;
 a warmed scalar call has zero allocations in the Go allocation-counter test.
 
-These internal mechanisms pass the complete binary corpus locally. They do not
-yet provide the public single-executor/lifecycle driver, host root ownership,
-close/reclamation policy or own-engine performance acceptance. In particular,
-instances that fail after initialization begins remain Store-owned so escaped
-references remain valid. The internal Store now traces published instances, host-owned tables/globals, explicit function roots and active frames before reclaiming unreachable failed instances. Imported object dependencies and escaped function bodies preserve their owning instances; unreachable cycles are reclaimed. The embedding driver must supply its complete root set at serialized safepoints. Final internal close requires drained execution leases. Canonical type signatures remain interned under a Store-lifetime quota; function identity holes and zero-length memory/table objects also have explicit bounds.
+These internal mechanisms pass the complete binary corpus on both supported
+platforms under Go and LLGo. The [public driver](../embedding.md) now supplies
+single-executor admission, callback reentry, shared fuel/frame quotas, opaque
+host roots, safepoint collection, cancellation and deferred close. Active and
+suspended frames preserve instance ownership. Imported effects and escaped
+functions survive failed instantiation; unreachable failed cycles are reclaimed.
+Canonical types retain a bounded Store-lifetime cache, while function identity
+holes and empty memory/table objects have explicit quotas. Public call costs
+are separate from the internal dispatch allocation test and remain to be
+measured by the own-engine benchmark integration.
 
 ## Runtime, lifecycle and observability
 
