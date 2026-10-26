@@ -49,6 +49,7 @@ def main():
             command = ['wasm-tools', 'parse', str(wat), '-o', str(wasm)]
             producer = {'version': 'wasm-tools 1.258.0', 'flags': ['parse']}
         subprocess.run(command, check=True)
+        wasm.chmod(0o644)
         subprocess.run(['wasm-tools', 'validate', str(wasm), '--features=wasm2'], check=True)
         if source:
             subprocess.run(['wasm-tools', 'print', str(wasm), '-o', str(wat)], check=True)

@@ -59,7 +59,7 @@ def checksum(kind, seed, count):
             x = rot(x, 3) ^ (v & MASK) ^ (v >> 32) ^ i
     elif kind == 'deep-calls':
         for i in range(count):
-            # Thirty-two explicit guest frames, with arithmetic on return.
+            # Thirty-two recursive edges (33 helper frames), with arithmetic on return.
             v = (x + i + sum(range(1, 33))) & MASK
             for depth in range(1, 33):
                 v = rot(v, 1) ^ depth
