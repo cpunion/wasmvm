@@ -35,6 +35,23 @@ OWN_CONFIGURATIONS = tuple(f"wasmvm-{ref}-{compiler}-{mode}"
 CONFIGURATIONS = OWN_CONFIGURATIONS + ci.CONFIGURATIONS
 
 
+# These two cases repeat the same integer/memory modules at larger loop counts.
+# Keep all workload families in PRs; reserve sustained load for explicit full runs.
+PR_OMITTED = frozenset({"integer-sustained", "memory-sustained"})
+
+
+def selection(report):
+    suite = report.get("suite", "full")  # Historical reports used the full matrix.
+    if suite not in ("pr", "full"):
+        raise ValueError("unknown benchmark suite")
+    return tuple(w for w in WORKLOADS if suite == "full" or w not in PR_OMITTED)
+
+
+def selected_fixtures(report):
+    names = set(selection(report))
+    return {**report["fixtures"], "workloads": [w for w in report["fixtures"]["workloads"] if w["id"] in names]}
+
+
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -238,7 +255,7 @@ def validate_observation(observation, runtime, workload):
 
 def summarize(report):
     runtimes = {r["id"]: r for r in report["runtimes"]}
-    workloads = {w["id"]: w for w in report["fixtures"]["workloads"]}
+    workloads = {w["id"]: w for w in selected_fixtures(report)["workloads"]}
     required_builds = {f"{ref}-{compiler}" for ref in ("base", "head") for compiler in ("go", "llgo")}
     if set(report.get("ownBuilds", {})) != required_builds:
         raise ValueError("own-engine build provenance is incomplete")
@@ -254,12 +271,12 @@ def summarize(report):
             raise ValueError("invalid baseline-unavailable provenance")
     expected_own = {r["id"]: r for r in own_commands(report["ownBuilds"])}
     expected_ids = set(ci.CONFIGURATIONS) | set(expected_own)
-    if len(report["runtimes"]) != len(expected_ids) or set(runtimes) != expected_ids or len(workloads) != 6 or set(workloads) != set(WORKLOADS):
+    if len(report["runtimes"]) != len(expected_ids) or set(runtimes) != expected_ids or len(workloads) != len(selection(report)) or set(workloads) != set(selection(report)):
         raise ValueError("incomplete embedded runtime/workload configuration")
     for name, expected in expected_own.items():
         if runtimes[name] != expected:
             raise ValueError("own-engine runtime does not match build provenance")
-    own_cli.summarize(report["productionCLI"], report["ownBuilds"], report["fixtures"])
+    own_cli.summarize(report["productionCLI"], report["ownBuilds"], selected_fixtures(report))
     expected = {(r, w, n) for r in runtimes for w in workloads for n in range(ROUNDS)}
     seen = set()
     for item in report["observations"]:
@@ -274,7 +291,7 @@ def summarize(report):
     for runtime in CONFIGURATIONS:
         if runtime not in runtimes:
             continue
-        for workload in WORKLOADS:
+        for workload in selection(report):
             selected = [item for item in report["observations"] if item["runtime"] == runtime and item["workload"] == workload]
             row = {"runtime": runtime, "workload": workload, "processRounds": ROUNDS}
             for phase in PHASES:
@@ -301,6 +318,10 @@ def markdown(report):
     if report.get("status") != "complete":
         return "\n".join(lines + ["**Phase measurement failed; no phase comparison is accepted.** See raw artifacts and job logs.", ""])
     rows = summarize(report)
+    if report.get("suite", "full") == "pr":
+        lines += ["**PR suite:** all workload families, with the duplicate long integer/memory cases reserved for explicit full runs. Loop counts, three processes and seven warm samples for each selected case are unchanged.", ""]
+    else:
+        lines += ["**Full suite:** includes the sustained integer/memory cases.", ""]
     indexed = {(row["runtime"], row["workload"]): row for row in rows}
     lines += ["Owned engines are built from the exact commits above with identical head instrumentation; "
               "Go and LLGo are separate measurements. The primary rows use the public VM API. "
@@ -315,7 +336,7 @@ def markdown(report):
         baseline = base["normalizedNs"]
         delta = f"{ci.median_delta(baseline, head):+.1f}%" if baseline > 0 and head > 0 else "unresolved"
         return f"{baseline:.2f} | {head:.2f} | {delta}"
-    for workload in WORKLOADS:
+    for workload in selection(report):
         unit = indexed[("wasmvm-head-go-api", workload)]["unit"]
         lines.append(f"| {workload} | {unit} | {own_cells(workload, 'go', 'api')} | {own_cells(workload, 'llgo', 'api')} |")
     for compiler in ("go", "llgo"):
@@ -328,7 +349,7 @@ def markdown(report):
     lines += ["", "| Workload | Unit | Own Go API | Own LLGo API | wazero interpreter | wazero native | Wasmtime Cranelift | Wasmer Cranelift | WasmEdge interpreter |",
               "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
     compared = ("wasmvm-head-go-api", "wasmvm-head-llgo-api", "head-interpreter", "head-compiler", "wasmtime-cranelift", "wasmer-cranelift", "wasmedge-interpreter")
-    for workload in WORKLOADS:
+    for workload in selection(report):
         values = " | ".join(f"{indexed[(runtime, workload)]['normalizedNs']:.2f}" for runtime in compared)
         lines.append(f"| {workload} | {indexed[(compared[0], workload)]['unit']} | {values} |")
     lines += ["", "<details><summary>Internal dispatch diagnostics and compiler phases</summary>", "",
@@ -337,7 +358,7 @@ def markdown(report):
               "No medians are subtracted to manufacture a pure instruction or boundary cost.", "",
               "| Workload | Unit | Go base dispatch | Go head dispatch | Delta | LLGo base dispatch | LLGo head dispatch | Delta |",
               "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
-    for workload in WORKLOADS:
+    for workload in selection(report):
         lines.append(f"| {workload} | {indexed[('wasmvm-head-go-api', workload)]['unit']} | {own_cells(workload, 'go', 'dispatch')} | {own_cells(workload, 'llgo', 'dispatch')} |")
     lines += ["", "Owned preparation details (milliseconds); the outer preparation interval also includes phase transitions. "
               "These produce interpreter slot code, not native code. Parts are not added a second time to preparation.", "",
@@ -348,7 +369,7 @@ def markdown(report):
         if "decode" in parts:
             values = " | ".join(f"{parts[key] / 1e6:.6f}" for key in ("decode", "validate", "lower", "slots"))
             lines.append(f"| {row['runtime']} | {row['workload']} | {values} |")
-    lines += ["", "</details>", "", own_cli.markdown(report["productionCLI"], report["ownBuilds"], report["fixtures"]),
+    lines += ["", "</details>", "", own_cli.markdown(report["productionCLI"], report["ownBuilds"], selected_fixtures(report)),
               "### Wazero dependency selection (reference only)", ""]
     versions = report["builds"]
     lines += [f"wazero base `{versions['base']['version']}`, head `{versions['head']['version']}`; "
@@ -364,13 +385,13 @@ def markdown(report):
               "Native compilers may inline source-level calls.", "",
               "| Workload | Unit | Wazero base interpreter | Wazero head interpreter | Delta | Wazero base compiler | Wazero head compiler | Delta |",
               "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
-    for workload in WORKLOADS:
+    for workload in selection(report):
         values = [indexed[(f"{ref}-{mode}", workload)]["normalizedNs"] for mode in ("interpreter", "compiler") for ref in ("base", "head")]
         deltas = [f"{ci.median_delta(values[n], values[n+1]):+.1f}%" if values[n] > 0 and values[n+1] > 0 else "unresolved" for n in (0, 2)]
         lines.append(f"| {workload} | {indexed[('head-compiler', workload)]['unit']} | {values[0]:.2f} | {values[1]:.2f} | {deltas[0]} | {values[2]:.2f} | {values[3]:.2f} | {deltas[1]} |")
     lines += ["", "| Workload | Unit | Head interpreter | Head compiler | Wasmtime Cranelift | Wasmer Cranelift | WasmEdge interpreter |",
               "| --- | --- | ---: | ---: | ---: | ---: | ---: |"]
-    for workload in WORKLOADS:
+    for workload in selection(report):
         values = " | ".join(f"{indexed[(runtime, workload)]['normalizedNs']:.2f}" for runtime in ("head-interpreter", "head-compiler", "wasmtime-cranelift", "wasmer-cranelift", "wasmedge-interpreter"))
         lines.append(f"| {workload} | {indexed[('head-compiler', workload)]['unit']} | {values} |")
     lines += ["", "<details><summary>Every API phase, by runtime and workload (milliseconds)</summary>", "",
@@ -402,12 +423,13 @@ def main():
     for name in ("base-sha", "head-sha"):
         parser.add_argument(f"--{name}", required=True)
     parser.add_argument("--timeout", type=float, default=60)
+    parser.add_argument("--suite", choices=("pr", "full"), default="full")
     args = parser.parse_args()
     if not math.isfinite(args.timeout) or args.timeout <= 0:
         parser.error("timeout must be positive and finite")
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    report = {"schemaVersion": 1, "status": "running", "baseSha": args.base_sha, "headSha": args.head_sha,
+    report = {"schemaVersion": 1, "suite": args.suite, "status": "running", "baseSha": args.base_sha, "headSha": args.head_sha,
               "processRounds": ROUNDS, "samplesPerProcess": SAMPLES, "warmupsPerProcess": WARMUPS,
               "processDeadlineSeconds": args.timeout,
               "startedAt": datetime.now(timezone.utc).isoformat(), "observations": [],
@@ -434,7 +456,7 @@ def main():
             report["cBuild"] = json.loads((c_directory / "build.json").read_text())
             subprocess.run(["python3", str(head / "benchmarks/embedded/c/check.py"),
                             "--runners-dir", str(c_directory)], check=True, timeout=180)
-            cases = [(runtime, workload) for runtime in report["runtimes"] for workload in report["fixtures"]["workloads"]]
+            cases = [(runtime, workload) for runtime in report["runtimes"] for workload in selected_fixtures(report)["workloads"]]
             randomizer = random.Random(report["seed"])
             for number in range(ROUNDS):
                 randomizer.shuffle(cases)
@@ -451,7 +473,7 @@ def main():
                     del report["activeCase"]
                 print(f"Embedded phase round {number+1}/{ROUNDS} complete", flush=True)
             report["productionCLI"] = {"rounds": own_cli.ROUNDS, "runtimes": own_cli.configurations(report["ownBuilds"]), "observations": []}
-            own_cli.run(head, report["ownBuilds"], report["fixtures"], args.timeout, report["seed"], report["productionCLI"])
+            own_cli.run(head, report["ownBuilds"], selected_fixtures(report), args.timeout, report["seed"], report["productionCLI"])
             report["summary"] = summarize(report)
             report["status"] = "complete"
     except Exception as error:

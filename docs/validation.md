@@ -525,3 +525,16 @@ job. Workload sizes, rounds, warmups, measured calls and checksum checks are
 unchanged. Raw reports record the deadline and the active failed phase case.
 This extends the initial-baseline execution budget; it does not pass an M2
 performance gate or erase the failed run. Final-head checks remain required.
+
+
+At the owner's request to keep CI efficient, PR feedback now excludes only the
+two duplicate sustained integer/memory cases; all workload families and all
+selected runtime/compiler configurations remain. Per-case loop counts and
+sampling/checksum rules are unchanged. Explicit full mode retains sustained
+cases and the legacy CLI reference series. The completed full run above remains
+historical evidence. Default PR reports state their narrower scope; no M2 hard
+performance budget is relaxed. Go/LLGo full semantic execution remains on both
+platforms, while pure-Go race/coverage/fuzz/tooling checks run once on Linux.
+Merge pushes no longer repeat already-reviewed workflows. Active contributions
+are processed sequentially, with subsequent work retained on branches until
+the preceding PR passes and merges.

@@ -86,6 +86,24 @@ class PhaseIntegrityTests(unittest.TestCase):
         sustained = next(item for item in result if item["workload"] == "integer-sustained")
         self.assertEqual(sustained["normalizedNs"], 40 / 5_000_000)
 
+    def test_pr_suite_preserves_families_samples_and_strict_completeness(self):
+        report = complete_report()
+        report["suite"] = "pr"
+        omitted = {"integer-sustained", "memory-sustained"}
+        report["observations"] = [x for x in report["observations"] if x["workload"] not in omitted]
+        report["productionCLI"]["observations"] = [x for x in report["productionCLI"]["observations"] if x["workload"] not in omitted]
+        self.assertEqual(len(report["observations"]), 180)
+        self.assertEqual(len(phase.summarize(report)), 60)
+        self.assertEqual(len(report["productionCLI"]["observations"]), 48)
+        self.assertIn("PR suite", phase.markdown(report))
+        self.assertNotIn("| integer-sustained |", phase.markdown(report))
+        report["observations"].pop()
+        with self.assertRaisesRegex(ValueError, "incomplete"):
+            phase.summarize(report)
+        report["suite"] = "unknown"
+        with self.assertRaisesRegex(ValueError, "unknown"):
+            phase.summarize(report)
+
     def test_reject_incomplete_duplicate_and_bad_measurements(self):
         original = complete_report()
         changes = {

@@ -128,6 +128,8 @@ Fuel exhaustion and cancellation tests verify observable correctness even when t
 
 ## 6. Controlled acceptance and hosted PR reports
 
+The PR suite retains every workload family but excludes the duplicate sustained integer/memory variants; explicit full runs retain them. Selected cases keep three processes and seven measured calls. Full and PR scope is labeled in each report, and M2 controlled acceptance still requires the complete declared portfolio.
+
 The existing three-process, seven-call hosted CI series is advisory. Keep it as a reproducible PR signal and correctness gate. It cannot establish a narrow performance budget on shared, uncontrolled hardware.
 
 For performance acceptance, use a recorded controlled machine/runner image, CPU model/microcode, OS, compiler, affinity policy, frequency/power policy, and memory configuration. Run no overlapping benchmark jobs. Record host load and cache policy. Avoid enabling race, coverage, profilers, sanitizers, or debug tracing in timed executables; run those checks separately.

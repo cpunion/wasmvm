@@ -148,3 +148,28 @@ comment with owned public API base/head and competitor comparisons first, intern
 Raw JSON contains every call, every phase, setup metadata, and failure records.
 Three process repetitions and shared hosted hardware provide an engineering
 baseline, not a stable performance budget or a general engine ranking.
+
+
+## PR feedback and full runs
+
+PR workflows select `--suite pr`: retain the call control, integer loop, source
+calls and memory loop under every runtime/compiler/boundary, and reserve only
+the duplicate `integer-sustained` and `memory-sustained` cases for `--suite full`.
+Selected case loop counts, three process repetitions, two warmups, seven warm
+calls and every checksum remain unchanged. The initial PR matrix has 180 phase
+processes plus 48 owned CLI processes; full mode retains 270 plus 72. Reports
+name their suite and cannot silently accept missing selected observations.
+New workload families are included in PR mode by default.
+
+The full suite is available through `workflow_dispatch` with `suite: full` and
+an explicit baseline. It also runs the legacy official-CLI reference series;
+the PR suite already includes all direct API competitors and actual owned CLI
+measurements. Full and PR reports are distinct evidence, not pooled samples.
+This change reduces repetitive sustained work in advisory PR feedback; M2's
+controlled acceptance portfolio and repetition requirements remain unchanged.
+
+Workflows run for PRs or explicit dispatch, without rerunning the same tree on
+every merge to main. Both compilers still execute the complete semantic corpus
+and actual CLI on both supported platforms. Pure-Go vet, race, coverage, fuzz
+and tooling checks run once on Linux; no macOS coverage measurement is claimed.
+Pinned LLGo setup can reuse its cache, with revision verification retained.

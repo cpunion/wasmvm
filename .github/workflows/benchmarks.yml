@@ -2,10 +2,13 @@ name: Runtime benchmarks
 
 on:
   pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
+      suite:
+        description: Benchmark scope (PR families or full sustained runs)
+        type: choice
+        options: [pr, full]
+        default: full
       baseline:
         description: Baseline commit or ref in this repository
         default: main
@@ -13,6 +16,9 @@ on:
 
 permissions:
   contents: read
+
+env:
+  BENCHMARK_SUITE: ${{ github.event_name == 'workflow_dispatch' && inputs.suite || 'pr' }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -52,7 +58,7 @@ jobs:
           install-method: source
           go-version: '1.27.3'
           llvm-version: '22'
-          cache: false
+          cache: true
 
       - name: Verify the benchmark LLGo identity
         env:
@@ -79,6 +85,7 @@ jobs:
           cp "$RUNNER_TEMP/wasm-runtime-tools/installation.json" benchmark-results/tool-installation.json
 
       - name: Measure interleaved baseline, candidate, and competitor cases
+        if: env.BENCHMARK_SUITE == 'full'
         shell: bash
         run: |
           python3 head/benchmarks/ci.py \
@@ -93,7 +100,7 @@ jobs:
         env:
           WASMVM_LLGO_REVISION: 8b1389c627c77a02e56af03f08d9cdc19edffe77
         run: |
-          python3 head/benchmarks/phase_ci.py --timeout 180 \
+          python3 head/benchmarks/phase_ci.py --timeout 180 --suite "$BENCHMARK_SUITE" \
             --base-dir "$GITHUB_WORKSPACE/base" \
             --head-dir "$GITHUB_WORKSPACE/head" \
             --base-sha "$(git -C base rev-parse HEAD)" \
@@ -116,7 +123,7 @@ jobs:
             if [[ -f benchmark-results/cli/report.md ]]; then
               cat benchmark-results/cli/report.md
             else
-              printf 'CLI measurements are unavailable. See the job logs.\n'
+              printf 'The legacy reference CLI series runs only in full mode. Owned CLI timings are in the phase report.\n'
             fi
           } > benchmark-results/report.md
           cat benchmark-results/report.md >> "$GITHUB_STEP_SUMMARY"
