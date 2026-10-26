@@ -4,6 +4,24 @@ Status: **proposed engineering requirements, not implemented capabilities or mea
 
 Correctness and bounded execution are prerequisites. A faster result obtained by omitting validation, bounds checks, fuel obligations, cancellation checks, or required feature semantics cannot satisfy this contract. M1 accepts the full declared Core 2.0 interpreter, M2 accepts the optimized interpreter and native compiler over that same scope, and M3 extends both backends to the declared Core 3.0 and Threads profiles. A small fast subset does not complete a milestone.
 
+## Per-feature merge gate
+
+Every feature-development PR compares the affected capability with pinned
+relevant competitors and the own baseline, using identical guest workloads and
+separate preparation/first/warm measurements. It may merge only after reaching
+parity or better on the affected workloads for both host compilers and required
+targets. Slower, missing or inconclusive evidence blocks merging. A tiny
+noise-bound control cannot establish either a win or a loss; resolve it with
+an appropriate measured workload before deciding. Do not waive a deficit by
+averaging unrelated cases or weakening safety settings.
+
+Keep these checks proportional: reuse existing runners/fixtures and the current
+PR benchmark job, scope comparisons to the changed capability, and retain the
+full-profile controlled acceptance gate below. Begin native register allocation,
+memory access, calls and polling comparisons during their implementation, not
+after completing a slow whole backend. Compact shared stages and runtime
+contracts take precedence over benchmark-specific implementations.
+
 ## 1. Measure wasmvm implementation revisions
 
 The historical CLI harness builds official wazero executables selected by base/head dependency pins. The phase harness now adds exact wasmvm implementation builds under Go and LLGo, retaining wazero/other engines as explicitly separate references. Historical dependency-only results remain labeled as such.

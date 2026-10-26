@@ -10,12 +10,16 @@ import (
 )
 
 // rdi/x0 is the context, rsi/x12 is the current frame, and rax/rcx or x9/x10
-// carry operands. Every value is spilled before an exit or control transfer.
+// carry operands. The unmetered tier retains selected scalar slots in registers across control
+// transfers and spills them only on exits.
 type functionEmitter struct {
 	a                         *assembler
 	f                         *slots.Function
 	exit, bad, zero, overflow int
 	edgeCopies                uint32
+	unmetered                 bool
+	registers                 map[slots.Slot]byte
+	registerSlots             []slots.Slot
 }
 
 func (e *functionEmitter) constant(reg byte, v uint64) {
@@ -104,6 +108,16 @@ func (e *functionEmitter) slotLoad(slot slots.Slot, reg byte, high, wide bool) {
 		e.constant(reg, 0)
 		return
 	}
+	if e.unmetered && e.f.Slots[slot] != wasm.V128 {
+		if high {
+			e.constant(reg, 0)
+			return
+		}
+		if r, ok := e.registers[slot]; ok {
+			e.registerMove(e.operandRegister(reg), r, wide)
+			return
+		}
+	}
 	offset := uint32(slot) * 16
 	if high {
 		offset += 8
@@ -131,6 +145,15 @@ func (e *functionEmitter) slotStore(slot slots.Slot, reg byte, high bool) {
 	if slot == slots.NoSlot {
 		return
 	}
+	if e.unmetered && e.f.Slots[slot] != wasm.V128 {
+		if high {
+			return
+		}
+		if r, ok := e.registers[slot]; ok {
+			e.registerMove(r, e.operandRegister(reg), true)
+			return
+		}
+	}
 	offset := uint32(slot) * 16
 	if high {
 		offset += 8
@@ -154,12 +177,24 @@ func (e *functionEmitter) move(dst, src slots.Slot) {
 	if dst == slots.NoSlot {
 		return
 	}
+	if d, ok := e.registers[dst]; ok {
+		if s, ok := e.registers[src]; ok {
+			e.registerMove(d, s, true)
+			return
+		}
+	}
 	e.slotLoad(src, 0, false, true)
-	e.slotLoad(src, 1, true, true)
+	if !e.unmetered || e.f.Slots[dst] == wasm.V128 {
+		e.slotLoad(src, 1, true, true)
+	}
 	e.slotStore(dst, 0, false)
 	e.slotStore(dst, 1, true)
 }
 func (e *functionEmitter) status(status nativeabi.Exit) {
+	e.spillRegisters()
+	e.rawStatus(status)
+}
+func (e *functionEmitter) rawStatus(status nativeabi.Exit) {
 	if e.a.arch == "amd64" {
 		e.a.bytes(0xb8)
 		e.a.word(uint32(status))
@@ -225,17 +260,7 @@ func (e *functionEmitter) boundary(pc uint32, src ir.Source, control bool) {
 	e.decrement()
 	e.contextStore(0, nativeabi.BudgetOffset)
 	if control {
-		ok := a.label()
-		if a.arch == "amd64" {
-			e.contextLoad(0, nativeabi.ControlOffset)
-		} else {
-			a.word(0x9100000f | uint32(nativeabi.ControlOffset)<<10) // add x15,x0,#control
-			a.word(0xc8dffde9)                                       // ldar x9,[x15]
-		}
-		e.test(true)
-		e.branch(ok, "eq")
-		e.leave(nativeabi.Poll, 0, uint64(pc))
-		a.mark(ok)
+		e.interrupt(pc)
 	}
 	if src.Fuel() == 0 {
 		return
@@ -267,4 +292,22 @@ func (e *functionEmitter) edge(index uint32, pcs []int) {
 		e.move(m.Dst, m.Src)
 	}
 	e.a.branch(pcs[edge.PC], false, 0)
+}
+
+// Interrupt polling is distinct from a scheduling round trip. A straight-line
+// sequence has at most 256 slot instructions between polls; every control
+// transfer also polls, so arbitrary forward/backward edges cannot evade it.
+func (e *functionEmitter) interrupt(pc uint32) {
+	a := e.a
+	ok := a.label()
+	if a.arch == "amd64" {
+		e.contextLoad(0, nativeabi.ControlOffset)
+	} else {
+		a.word(0x9100000f | uint32(nativeabi.ControlOffset)<<10)
+		a.word(0xc8dffde9) // ldar x9,[x15]
+	}
+	e.test(true)
+	e.branch(ok, "eq")
+	e.leave(nativeabi.Poll, 0, uint64(pc))
+	a.mark(ok)
 }

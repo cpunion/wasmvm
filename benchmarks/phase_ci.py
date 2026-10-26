@@ -20,6 +20,7 @@ import time
 import ci
 import own_build
 import own_cli
+import native_compare
 
 
 ROUNDS = 3
@@ -318,6 +319,8 @@ def markdown(report):
     if report.get("status") != "complete":
         return "\n".join(lines + ["**Phase measurement failed; no phase comparison is accepted.** See raw artifacts and job logs.", ""])
     rows = summarize(report)
+    if "nativeFeature" in report:
+        lines += [native_compare.markdown(report["nativeFeature"])]
     if report.get("suite", "full") == "pr":
         lines += ["**PR suite:** all workload families, with the duplicate long integer/memory cases reserved for explicit full runs. Loop counts, three processes and seven warm samples for each selected case are unchanged.", ""]
     else:
@@ -472,6 +475,8 @@ def main():
                     report["observations"].append(item)
                     del report["activeCase"]
                 print(f"Embedded phase round {number+1}/{ROUNDS} complete", flush=True)
+            report["nativeFeature"] = native_compare.run(head, report["ownBuilds"], report["runtimes"],
+                next(w for w in report["fixtures"]["workloads"] if w["id"] == "integer-loop"), invoke, args.timeout)
             report["productionCLI"] = {"rounds": own_cli.ROUNDS, "runtimes": own_cli.configurations(report["ownBuilds"]), "observations": []}
             own_cli.run(head, report["ownBuilds"], selected_fixtures(report), args.timeout, report["seed"], report["productionCLI"])
             report["summary"] = summarize(report)
@@ -485,6 +490,8 @@ def main():
         report["finishedAt"] = datetime.now(timezone.utc).isoformat()
         (output / "results.json").write_text(json.dumps(report, indent=2) + "\n")
         (output / "report.md").write_text(markdown(report))
+    if report["nativeFeature"]["status"] != "pass":
+        raise SystemExit("native feature performance gate blocks merging; see report")
 
 
 if __name__ == "__main__":

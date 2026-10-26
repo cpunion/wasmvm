@@ -37,7 +37,20 @@ type CompiledFunction struct {
 // in Continuation. Return publishes its PC for multi-result marshalling.
 // Move publishes a large edge-copy plan in Payload[0] and its destination PC
 // in Continuation; the driver copies it in bounded, cancelable chunks.
-func CompileFunction(arch string, f *slots.Function, limits Limits) (out *CompiledFunction, err error) {
+func CompileFunction(arch string, f *slots.Function, limits Limits) (*CompiledFunction, error) {
+	return compileFunction(arch, f, limits, false)
+}
+
+// CompileUnmeteredFunction emits bounded interrupt polls without periodic host
+// round trips or dynamic fuel checks. The driver must supply canonical scalar
+// values (Hi == 0), as required by value.Value, and Payload[3] == 0. Budget is
+// unused. All scalar slots are canonical on exit; vectors retain all 128 bits.
+// This is an internal compiler tier, not a complete public native backend.
+func CompileUnmeteredFunction(arch string, f *slots.Function, limits Limits) (*CompiledFunction, error) {
+	return compileFunction(arch, f, limits, true)
+}
+
+func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bool) (out *CompiledFunction, err error) {
 	defer func() {
 		if p := recover(); p != nil {
 			if e, ok := p.(*wasm.Error); ok {
@@ -67,12 +80,19 @@ func CompileFunction(arch string, f *slots.Function, limits Limits) (out *Compil
 		return nil, err
 	}
 	a := assembler{arch: arch, labels: map[int]int{}, bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true}
-	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label()}
+	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered}
 	pcs := make([]int, len(f.Code))
 	for i := range pcs {
 		pcs[i] = a.label()
 	}
 	e.header(uint64(len(f.Slots))*16, len(pcs))
+	if unmetered {
+		e.prepareRegisters()
+		e.contextLoad(0, nativeabi.PayloadOffset+24)
+		e.test(true)
+		e.branch(e.bad, "ne")
+		e.contextLoad(0, nativeabi.ContinuationOffset)
+	}
 	a.dispatch(pcs)
 	out = &CompiledFunction{Function: f, Offsets: make([]uint32, len(pcs))}
 	for i, t := range f.Slots {
@@ -84,7 +104,13 @@ func CompileFunction(arch string, f *slots.Function, limits Limits) (out *Compil
 		a.mark(pcs[pc])
 		src := f.Sources[in.Source]
 		isControl := in.Op >= slots.ControlBase
-		e.boundary(uint32(pc), src, in.Op == 0x10 || in.Op == 0x11 || isControl)
+		if unmetered {
+			if pc%256 == 0 || in.Op == 0x10 || in.Op == 0x11 || isControl {
+				e.interrupt(uint32(pc))
+			}
+		} else {
+			e.boundary(uint32(pc), src, in.Op == 0x10 || in.Op == 0x11 || isControl)
+		}
 		switch op := in.Op; {
 		case isControl:
 			kind := ir.TermKind(op - slots.ControlBase)
@@ -148,15 +174,28 @@ func CompileFunction(arch string, f *slots.Function, limits Limits) (out *Compil
 				lo = binary.LittleEndian.Uint64(src.Wasm.Vector[:8])
 				hi = binary.LittleEndian.Uint64(src.Wasm.Vector[8:])
 			}
-			e.constant(0, lo)
-			e.slotStore(in.Dst, 0, false)
-			e.constant(0, hi)
-			e.slotStore(in.Dst, 0, true)
+			if r, ok := e.registers[in.Dst]; ok {
+				if arch == "arm64" {
+					a.aconst(uint32(r), lo, lo > math.MaxUint32)
+				} else {
+					a.xconst(r, lo)
+				}
+			} else {
+				e.constant(0, lo)
+				e.slotStore(in.Dst, 0, false)
+			}
+			if !unmetered || f.Slots[in.Dst] == wasm.V128 {
+				e.constant(0, hi)
+				e.slotStore(in.Dst, 0, true)
+			}
 		case isInteger(op) || op == 0xd1:
 			if op == 0xd1 {
 				op = 0x50
 			}
 			wide := integerWide(op)
+			if e.registerInteger(op, in.Dst, in.A, in.B) {
+				break
+			}
 			// Only division/remainder can trap; publish their source before entry.
 			if op >= 0x6d && op <= 0x70 || op >= 0x7f && op <= 0x82 {
 				e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
@@ -169,8 +208,10 @@ func CompileFunction(arch string, f *slots.Function, limits Limits) (out *Compil
 				integerARM64Core(&a, op, wide, e.zero, e.overflow)
 			}
 			e.slotStore(in.Dst, 0, false)
-			e.constant(0, 0)
-			e.slotStore(in.Dst, 0, true)
+			if !unmetered {
+				e.constant(0, 0)
+				e.slotStore(in.Dst, 0, true)
+			}
 		case op == 0x10 || op == 0x11:
 			out.Calls++
 			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
@@ -185,7 +226,7 @@ func CompileFunction(arch string, f *slots.Function, limits Limits) (out *Compil
 	}
 	// A validated function never falls through its final terminator.
 	a.mark(e.bad)
-	e.status(nativeabi.BadState)
+	e.rawStatus(nativeabi.BadState)
 	a.mark(e.zero)
 	e.trapCode(wasm.TrapIntegerDivideByZero)
 	a.mark(e.overflow)

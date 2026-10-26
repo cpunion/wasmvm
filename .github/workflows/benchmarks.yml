@@ -149,7 +149,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Download the report when measurements completed
-        if: needs.benchmark.result == 'success'
+        if: needs.benchmark.result == 'success' || needs.benchmark.result == 'failure'
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: runtime-benchmark-comparison
@@ -175,7 +175,7 @@ jobs:
             }
             const runURL = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             let report;
-            if (process.env.BENCHMARK_RESULT === 'success') {
+            if (fs.existsSync('benchmark-results/report.md')) {
               const path = 'benchmark-results/report.md';
               if (fs.statSync(path).size > 50000) throw new Error('Benchmark report exceeds comment size limit');
               report = fs.readFileSync(path, 'utf8');
