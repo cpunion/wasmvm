@@ -2,6 +2,7 @@ name: Go and LLGo
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -14,8 +15,8 @@ concurrency:
 
 env:
   GO_VERSION: '1.27.3'
-  # LLGo v1.0.8; pin the source revision independently of the setup action.
-  LLGO_REVISION: c171abfa130108bc6451e01fcf15a8a3474eb0a7
+  # LLGo memory-hook contribution for xgo-dev/llgo#2918; not a released version.
+  LLGO_REVISION: bc7c991d8fe91459c8afc1eb7d0e374124d95374
 
 jobs:
   test:
@@ -82,3 +83,32 @@ jobs:
       - name: Check Go data races
         if: matrix.compiler == 'go'
         run: go test -race -count=1 -timeout=10m ./...
+
+      - name: Evaluate unchanged wazero and measure harness coverage
+        if: matrix.compiler == 'go'
+        shell: bash
+        run: |
+          go -C experiments/wazero vet ./...
+          experiments/wazero/scripts/run.sh go upstream -race
+          go tool cover -func=artifacts/wazero/go-upstream/coverage.out | tee artifacts/wazero/go-upstream/coverage-summary.txt
+          awk '/^total:/ { found=1; sub(/%$/, "", $3); if ($3+0 < 90) exit 1 } END { if (!found) exit 2 }' artifacts/wazero/go-upstream/coverage-summary.txt
+
+      - name: Check the alternate candidate's Go smoke probes
+        if: matrix.compiler == 'go'
+        run: go -C experiments/wago test -count=1 -timeout=2m ./...
+
+      - name: Run unchanged wazero with the fixed LLGo runtime
+        if: matrix.compiler == 'llgo'
+        run: experiments/wazero/scripts/run.sh llgo upstream
+
+      - name: Check benchmark fixtures and harness
+        if: matrix.compiler == 'go'
+        run: python3 -m unittest discover -s benchmarks -p 'test_*.py'
+
+      - name: Preserve evaluation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: wazero-evaluation-${{ matrix.compiler }}
+          path: artifacts/wazero/
+          if-no-files-found: error

@@ -1,0 +1,6 @@
+# Unified-diff context must retain its original leading/trailing whitespace.
+*.patch -whitespace
+# Keep raw measurements available without obscuring implementation review.
+benchmarks/results/*.json linguist-generated=true
+experiments/*/results/*.json linguist-generated=true
+*.wasm binary

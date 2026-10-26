@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "origin": "authored in wasmvm; no third-party benchmark code",
+  "producer": "wasm-tools 1.258.0",
+  "generationCommand": "python3 benchmarks/generate.py",
+  "profile": "Core MVP + WASI Preview 1 fd_write; one 64 KiB memory",
+  "workloads": [
+    {
+      "id": "startup",
+      "iterations": 0,
+      "description": "startup/P1 output control with no workload loop",
+      "expectedChecksum": 0,
+      "expectedStdout": "startup:0\n",
+      "wat": "fixtures/startup.wat",
+      "wasm": "fixtures/startup.wasm",
+      "watSha256": "093bdcdfad0b7efe0d51b32bc27b0ef8edbf2d0a0e458517f463b65fb1f4309b",
+      "wasmSha256": "f6a4e69121affdf47ffecddca34ee1adc747428827386f04626a56ba1b040791"
+    },
+    {
+      "id": "integer-loop",
+      "iterations": 250000,
+      "description": "i32 rotate/xor/multiply/add loop",
+      "expectedChecksum": 956690092,
+      "expectedStdout": "integer-loop:956690092\n",
+      "wat": "fixtures/integer-loop.wat",
+      "wasm": "fixtures/integer-loop.wasm",
+      "watSha256": "1dd8d5fc90ea22922542cc50f47dee69ad1b4f9544ea6268ad703e65930c92b6",
+      "wasmSha256": "2f17db863bc22eb951ea5e97cadf56bb32d442458b8343c52c294a2b556628df"
+    },
+    {
+      "id": "integer-sustained",
+      "iterations": 5000000,
+      "description": "20x integer-loop work; same operations and state evolution",
+      "expectedChecksum": 3219525462,
+      "expectedStdout": "integer-sustained:3219525462\n",
+      "wat": "fixtures/integer-sustained.wat",
+      "wasm": "fixtures/integer-sustained.wasm",
+      "watSha256": "8731b226013894066acd1e5e034b13bfde087c18172afe4bc418b957cb52feb4",
+      "wasmSha256": "6f694eab718a5fe9eda39d9a8eb479c084266aea9000a830fdeaa7cef1a86402"
+    },
+    {
+      "id": "function-calls",
+      "iterations": 150000,
+      "description": "direct-call source workload; native backends may inline",
+      "expectedChecksum": 811008637,
+      "expectedStdout": "function-calls:811008637\n",
+      "wat": "fixtures/function-calls.wat",
+      "wasm": "fixtures/function-calls.wasm",
+      "watSha256": "fcd2d1876861e0076b48e055385f458083ea58f2f24fb992aafbc5375ec9d3a2",
+      "wasmSha256": "4a91a6a852fd8c7c207ce0a6b6de741f41fdd2cc952ee55ed5fe9c6b14e416e0"
+    },
+    {
+      "id": "memory-load-store",
+      "iterations": 150000,
+      "description": "strided read/modify/write over 32 KiB of linear memory",
+      "expectedChecksum": 1714359784,
+      "expectedStdout": "memory-load-store:1714359784\n",
+      "wat": "fixtures/memory-load-store.wat",
+      "wasm": "fixtures/memory-load-store.wasm",
+      "watSha256": "4428efc0d0d52951435057adb401cc29645b9dad6e257e39a4363aba0ffd79cf",
+      "wasmSha256": "21807d7a82f08a69cb35cc1a65f88b1456cae5a51cf03c79b3b4b329c64d4d7d"
+    },
+    {
+      "id": "memory-sustained",
+      "iterations": 3000000,
+      "description": "20x memory-load-store work over the same 32 KiB region",
+      "expectedChecksum": 2753322400,
+      "expectedStdout": "memory-sustained:2753322400\n",
+      "wat": "fixtures/memory-sustained.wat",
+      "wasm": "fixtures/memory-sustained.wasm",
+      "watSha256": "aa2731dd7134d8da2926eb702f74820949d24137ccbd3f09eff3da815e6dc613",
+      "wasmSha256": "130cb7b5f9e1fbb293043bff8c57feec67b1c891b64fdeb54ce1ff6e1791a7ab"
+    }
+  ]
+}

@@ -1,0 +1,5232 @@
+{
+  "schemaVersion": 1,
+  "startedAt": "2026-10-26T00:39:04.051114+00:00",
+  "metric": "separate-process CLI wall time including startup, validation/compilation, instantiation, guest execution, and shutdown",
+  "cachePolicy": "wazero no compilation-cache directory; Wasmtime cache=n; Wasmer --disable-cache; WasmEdge raw-Wasm interpreter; OS filesystem/executable pages are warmed, not flushed",
+  "warmupsPerCase": 2,
+  "samplesPerCase": 7,
+  "seed": 20261026,
+  "environmentNote": "Repeat after project builds were paused; unrelated video encoding and virtualization were observed active, so this is not an isolated or quiet host.",
+  "p95Method": "nearest rank; with seven samples p95 is the sample maximum",
+  "host": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "logicalCPUs": 16,
+    "go": "go version go1.27.3 darwin/arm64",
+    "python": "3.14.8",
+    "cpu": "Apple M4 Max",
+    "memoryBytes": 137438953472,
+    "osVersion": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0.1\nBuildVersion:\t\t26A434",
+    "loadAverageBefore": [
+      39.3095703125,
+      51.0302734375,
+      51.5078125
+    ],
+    "loadAverageAfter": [
+      35.62890625,
+      48.82568359375,
+      50.6845703125
+    ]
+  },
+  "wazeroBuild": "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero: go1.27.3\n\tpath\tgithub.com/tetratelabs/wazero/cmd/wazero\n\tmod\tgithub.com/tetratelabs/wazero\tv1.12.0\th1:DuWcpNu/FzgEXgGBDp8J1Spc+CWOvvtvVyjKlaZopYU=\n\tdep\tgolang.org/x/sys\tv0.44.0\th1:ildZl3J4uzeKP07r2F++Op7E9B29JRUy+a27EibtBTQ=\n\tbuild\t-buildmode=exe\n\tbuild\t-compiler=gc\n\tbuild\tDefaultGODEBUG=cryptocustomrand=1,httpservecontentmaxranges=1,tlssecpmlkem=0,tracebacklabels=0,urlstrictcolons=0,x509sslcertoverrideplatform=0\n\tbuild\tCGO_ENABLED=1\n\tbuild\tCGO_CFLAGS=\n\tbuild\tCGO_CPPFLAGS=\n\tbuild\tCGO_CXXFLAGS=\n\tbuild\tCGO_LDFLAGS=\n\tbuild\tGOARCH=arm64\n\tbuild\tGOOS=darwin\n\tbuild\tGOARM64=v8.0",
+  "runtimes": [
+    {
+      "id": "wazero-interpreter",
+      "backend": "interpreter",
+      "project": "wazero",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir="
+      ],
+      "version": "v1.12.0"
+    },
+    {
+      "id": "wazero-compiler",
+      "backend": "wazevo native compiler",
+      "project": "wazero",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir="
+      ],
+      "version": "v1.12.0"
+    },
+    {
+      "id": "wasmtime-cranelift",
+      "backend": "Cranelift, opt-level=2",
+      "project": "Wasmtime",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2"
+      ],
+      "version": "wasmtime 48.0.1 (7bac2c277 2026-08-24)"
+    },
+    {
+      "id": "wasmer-cranelift",
+      "backend": "Cranelift",
+      "project": "Wasmer",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty"
+      ],
+      "version": "wasmer 7.3.0"
+    },
+    {
+      "id": "wasmedge-interpreter",
+      "backend": "interpreter (explicit)",
+      "project": "WasmEdge",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter"
+      ],
+      "version": "wasmedge version 0.17.1\n (plugin \"wasi_logging\") version 0.1.0.0"
+    }
+  ],
+  "fixtures": {
+    "schemaVersion": 1,
+    "origin": "authored in wasmvm; no third-party benchmark code",
+    "producer": "wasm-tools 1.258.0",
+    "generationCommand": "python3 benchmarks/generate.py",
+    "profile": "Core MVP + WASI Preview 1 fd_write; one 64 KiB memory",
+    "workloads": [
+      {
+        "id": "startup",
+        "iterations": 0,
+        "description": "startup/P1 output control with no workload loop",
+        "expectedChecksum": 0,
+        "expectedStdout": "startup:0\n",
+        "wat": "fixtures/startup.wat",
+        "wasm": "fixtures/startup.wasm",
+        "watSha256": "093bdcdfad0b7efe0d51b32bc27b0ef8edbf2d0a0e458517f463b65fb1f4309b",
+        "wasmSha256": "f6a4e69121affdf47ffecddca34ee1adc747428827386f04626a56ba1b040791"
+      },
+      {
+        "id": "integer-loop",
+        "iterations": 250000,
+        "description": "i32 rotate/xor/multiply/add loop",
+        "expectedChecksum": 956690092,
+        "expectedStdout": "integer-loop:956690092\n",
+        "wat": "fixtures/integer-loop.wat",
+        "wasm": "fixtures/integer-loop.wasm",
+        "watSha256": "1dd8d5fc90ea22922542cc50f47dee69ad1b4f9544ea6268ad703e65930c92b6",
+        "wasmSha256": "2f17db863bc22eb951ea5e97cadf56bb32d442458b8343c52c294a2b556628df"
+      },
+      {
+        "id": "integer-sustained",
+        "iterations": 5000000,
+        "description": "20x integer-loop work; same operations and state evolution",
+        "expectedChecksum": 3219525462,
+        "expectedStdout": "integer-sustained:3219525462\n",
+        "wat": "fixtures/integer-sustained.wat",
+        "wasm": "fixtures/integer-sustained.wasm",
+        "watSha256": "8731b226013894066acd1e5e034b13bfde087c18172afe4bc418b957cb52feb4",
+        "wasmSha256": "6f694eab718a5fe9eda39d9a8eb479c084266aea9000a830fdeaa7cef1a86402"
+      },
+      {
+        "id": "function-calls",
+        "iterations": 150000,
+        "description": "direct-call source workload; native backends may inline",
+        "expectedChecksum": 811008637,
+        "expectedStdout": "function-calls:811008637\n",
+        "wat": "fixtures/function-calls.wat",
+        "wasm": "fixtures/function-calls.wasm",
+        "watSha256": "fcd2d1876861e0076b48e055385f458083ea58f2f24fb992aafbc5375ec9d3a2",
+        "wasmSha256": "4a91a6a852fd8c7c207ce0a6b6de741f41fdd2cc952ee55ed5fe9c6b14e416e0"
+      },
+      {
+        "id": "memory-load-store",
+        "iterations": 150000,
+        "description": "strided read/modify/write over 32 KiB of linear memory",
+        "expectedChecksum": 1714359784,
+        "expectedStdout": "memory-load-store:1714359784\n",
+        "wat": "fixtures/memory-load-store.wat",
+        "wasm": "fixtures/memory-load-store.wasm",
+        "watSha256": "4428efc0d0d52951435057adb401cc29645b9dad6e257e39a4363aba0ffd79cf",
+        "wasmSha256": "21807d7a82f08a69cb35cc1a65f88b1456cae5a51cf03c79b3b4b329c64d4d7d"
+      },
+      {
+        "id": "memory-sustained",
+        "iterations": 3000000,
+        "description": "20x memory-load-store work over the same 32 KiB region",
+        "expectedChecksum": 2753322400,
+        "expectedStdout": "memory-sustained:2753322400\n",
+        "wat": "fixtures/memory-sustained.wat",
+        "wasm": "fixtures/memory-sustained.wasm",
+        "watSha256": "aa2731dd7134d8da2926eb702f74820949d24137ccbd3f09eff3da815e6dc613",
+        "wasmSha256": "130cb7b5f9e1fbb293043bff8c57feec67b1c891b64fdeb54ce1ff6e1791a7ab"
+      }
+    ]
+  },
+  "observations": [
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-sustained",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 25.386208,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-loop",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 92.510291,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-load-store",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 80.226,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "startup",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 17.149417,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-sustained",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 28.385625,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-sustained",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 554.440916,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-loop",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 50.406125,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-sustained",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 37.48,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-loop",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 28.443084,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-sustained",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 889.648417,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "function-calls",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 44.956708,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-load-store",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 56.847125,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "function-calls",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 12.949292,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "startup",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 36.926708,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-sustained",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 577.612291,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-load-store",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 13.87075,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-load-store",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 9.978625,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-sustained",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 12.275958,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "startup",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 18.143958,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-sustained",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 22.627541,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "startup",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 9.759917,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-sustained",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 860.842625,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-sustained",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 24.717084,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "startup",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 20.000917,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "function-calls",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 19.6115,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-load-store",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 64.138125,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "function-calls",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 15.404084,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-loop",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 19.582167,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-loop",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 56.19725,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "function-calls",
+      "warmup": true,
+      "round": 0,
+      "elapsedMs": 40.681375,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "function-calls",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 38.87025,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-sustained",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 26.568,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "startup",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 19.240333,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-load-store",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 22.659083,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-sustained",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 30.615208,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "startup",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 11.81925,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-loop",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 74.009583,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-sustained",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 33.835791,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-sustained",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 15.938041,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "function-calls",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 15.941333,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-loop",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 10.542458,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-loop",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 15.483291,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "function-calls",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 14.156042,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-sustained",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 945.889625,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-sustained",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 692.347541,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-load-store",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 57.144958,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-sustained",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 31.790708,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-sustained",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 40.333041,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-sustained",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 899.736833,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-loop",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 57.11425,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-load-store",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 8.921042,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "function-calls",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 45.138125,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-load-store",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 63.180959,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-load-store",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 17.175167,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "startup",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 11.678709,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "function-calls",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 13.112166,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-sustained",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 656.516625,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-loop",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 16.00925,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "startup",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 12.8925,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "startup",
+      "warmup": true,
+      "round": 1,
+      "elapsedMs": 33.679875,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 56.011375,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 41.278417,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 26.682708,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 24.708417,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 18.162958,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "startup",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 19.050666,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 900.842875,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 41.644625,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 9.398958,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 11.489875,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "startup",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 8.233666,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 823.202041,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 12.625542,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 55.11175,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 53.327459,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 582.265584,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "startup",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 12.03625,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 29.884083,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 15.301833,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 77.801916,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 70.081166,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "startup",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 36.696375,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 62.071583,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 41.057125,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 81.408792,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "startup",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 32.295,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 579.822667,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 22.34375,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 19.588834,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 0,
+      "elapsedMs": 16.404916,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "startup",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 10.140708,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 860.871959,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "startup",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 10.831625,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 33.039584,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 30.37525,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 31.800291,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 17.572375,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 66.775375,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 19.440166,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 14.326667,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 12.824708,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "startup",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 34.004416,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 51.0165,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 21.335042,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 47.017709,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 16.535416,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 563.379542,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "startup",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 27.001375,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 603.08875,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 21.4125,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 17.481958,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 866.071459,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 33.837708,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 32.531292,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 55.595875,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 72.511166,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 16.221917,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 37.666917,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 38.722125,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "startup",
+      "warmup": false,
+      "round": 1,
+      "elapsedMs": 39.79325,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 59.152375,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 30.831416,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 32.377541,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 48.042709,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 45.519041,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "startup",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 7.946417,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 32.952958,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "startup",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 18.564334,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 561.707833,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 73.905333,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 58.979167,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 24.360708,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 17.603541,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 62.567792,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 9.885583,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "startup",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 21.994667,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "startup",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 35.631458,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 27.262959,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 976.743834,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 17.473084,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 585.038375,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 42.419792,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 14.090667,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 22.258042,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 14.200459,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 29.353708,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 871.997458,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "startup",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 10.586666,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 46.942583,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 2,
+      "elapsedMs": 14.150291,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 28.457459,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 37.083667,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "startup",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 40.245333,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "startup",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 18.16225,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 45.775792,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "startup",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 10.810417,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 16.787583,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 56.392125,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 857.354708,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 26.897041,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 565.211542,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 33.855416,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 55.865917,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 36.933792,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 10.080416,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 25.010709,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 23.789125,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "startup",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 29.294083,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 21.444125,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 17.406042,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 983.180959,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 56.27975,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 11.639834,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 22.212917,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 14.853292,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 18.771291,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 46.983792,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 8.243625,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 609.928583,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "startup",
+      "warmup": false,
+      "round": 3,
+      "elapsedMs": 18.597125,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "startup",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 20.330333,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 80.543125,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 1089.928667,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 36.905,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 19.313834,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 17.807083,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 48.043125,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "startup",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 60.942125,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 17.784833,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 977.507958,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 35.315458,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "startup",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 48.708792,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 12.170542,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 526.441125,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 825.682417,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 36.090958,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 12.911666,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 52.047708,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 34.910292,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "startup",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 31.043833,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "startup",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 19.840458,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 13.143458,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 56.598125,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 20.609292,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 22.339875,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 34.121708,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 93.256375,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 20.441416,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 77.439708,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 4,
+      "elapsedMs": 55.381417,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 38.972375,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 60.578458,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 47.341959,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 65.149584,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 39.978791,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "startup",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 37.374667,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 973.70225,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "startup",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 8.651792,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "startup",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 9.833125,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 10.582584,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 29.801,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 22.388584,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 10.47125,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "startup",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 11.554917,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 13.573834,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 17.656458,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 725.57725,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 647.115167,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 69.516459,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 41.028958,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 948.511416,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 36.074875,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 51.087541,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 35.188208,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 14.451042,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 12.173542,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 75.971083,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "startup",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 36.120417,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 16.204,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 5,
+      "elapsedMs": 24.775458,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 18.224792,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 22.9885,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 33.16675,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 46.864541,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 36.282,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 56.221625,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 11.258208,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 835.666333,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 18.523083,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-sustained",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 592.401792,
+      "exitCode": 0,
+      "stdout": "integer-sustained:3219525462\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 30.038542,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 36.873791,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "startup",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 26.7205,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 1141.231167,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 31.944709,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 62.174,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 52.752625,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 11.755333,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-loop",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 47.18475,
+      "exitCode": 0,
+      "stdout": "integer-loop:956690092\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/integer-loop.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 18.860042,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "-C",
+        "compiler=cranelift",
+        "-O",
+        "opt-level=2",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 55.163917,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 55.627791,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "function-calls",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 22.990166,
+      "exitCode": 0,
+      "stdout": "function-calls:811008637\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/function-calls.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "startup",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 44.715875,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 619.121292,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "startup",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 14.339917,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "startup",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 36.978709,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmedge",
+        "--run-mode",
+        "interpreter",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "startup",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 7.308792,
+      "exitCode": 0,
+      "stdout": "startup:0\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-interpreter",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/startup.wasm"
+      ]
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-sustained",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 17.681125,
+      "exitCode": 0,
+      "stdout": "memory-sustained:2753322400\n",
+      "stderr": "",
+      "command": [
+        "/opt/homebrew/bin/wasmer",
+        "run",
+        "--cranelift",
+        "--disable-cache",
+        "--offline",
+        "--no-tty",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-sustained.wasm"
+      ]
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-load-store",
+      "warmup": false,
+      "round": 6,
+      "elapsedMs": 8.379625,
+      "exitCode": 0,
+      "stdout": "memory-load-store:1714359784\n",
+      "stderr": "",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/benchmark-tools/wazero",
+        "run",
+        "-cachedir=",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/fixtures/memory-load-store.wasm"
+      ]
+    }
+  ],
+  "summary": [
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "startup",
+      "samples": 7,
+      "minMs": 7.308792,
+      "medianMs": 10.810417,
+      "p95Ms": 27.001375
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-loop",
+      "samples": 7,
+      "minMs": 45.775792,
+      "medianMs": 47.18475,
+      "p95Ms": 81.408792
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "integer-sustained",
+      "samples": 7,
+      "minMs": 823.202041,
+      "medianMs": 857.354708,
+      "p95Ms": 948.511416
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "function-calls",
+      "samples": 7,
+      "minMs": 33.039584,
+      "medianMs": 36.933792,
+      "p95Ms": 70.081166
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-load-store",
+      "samples": 7,
+      "minMs": 41.644625,
+      "medianMs": 56.392125,
+      "p95Ms": 93.256375
+    },
+    {
+      "runtime": "wazero-interpreter",
+      "workload": "memory-sustained",
+      "samples": 7,
+      "minMs": 860.871959,
+      "medianMs": 976.743834,
+      "p95Ms": 1141.231167
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "startup",
+      "samples": 7,
+      "minMs": 8.233666,
+      "medianMs": 10.586666,
+      "p95Ms": 19.840458
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-loop",
+      "samples": 7,
+      "minMs": 9.885583,
+      "medianMs": 11.755333,
+      "p95Ms": 17.572375
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "integer-sustained",
+      "samples": 7,
+      "minMs": 22.212917,
+      "medianMs": 22.9885,
+      "p95Ms": 37.666917
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "function-calls",
+      "samples": 7,
+      "minMs": 8.243625,
+      "medianMs": 15.301833,
+      "p95Ms": 22.990166
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-load-store",
+      "samples": 7,
+      "minMs": 8.379625,
+      "medianMs": 12.625542,
+      "p95Ms": 21.444125
+    },
+    {
+      "runtime": "wazero-compiler",
+      "workload": "memory-sustained",
+      "samples": 7,
+      "minMs": 11.489875,
+      "medianMs": 13.573834,
+      "p95Ms": 30.038542
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "startup",
+      "samples": 7,
+      "minMs": 10.831625,
+      "medianMs": 26.7205,
+      "p95Ms": 48.708792
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-loop",
+      "samples": 7,
+      "minMs": 14.451042,
+      "medianMs": 20.441416,
+      "p95Ms": 41.057125
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "integer-sustained",
+      "samples": 7,
+      "minMs": 26.682708,
+      "medianMs": 33.16675,
+      "p95Ms": 39.978791
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "function-calls",
+      "samples": 7,
+      "minMs": 14.150291,
+      "medianMs": 19.440166,
+      "p95Ms": 48.043125
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-load-store",
+      "samples": 7,
+      "minMs": 9.398958,
+      "medianMs": 16.204,
+      "p95Ms": 32.377541
+    },
+    {
+      "runtime": "wasmtime-cranelift",
+      "workload": "memory-sustained",
+      "samples": 7,
+      "minMs": 14.326667,
+      "medianMs": 22.258042,
+      "p95Ms": 55.381417
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "startup",
+      "samples": 7,
+      "minMs": 18.16225,
+      "medianMs": 31.043833,
+      "p95Ms": 44.715875
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-loop",
+      "samples": 7,
+      "minMs": 17.603541,
+      "medianMs": 26.897041,
+      "p95Ms": 56.011375
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "integer-sustained",
+      "samples": 7,
+      "minMs": 29.801,
+      "medianMs": 36.090958,
+      "p95Ms": 56.221625
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "function-calls",
+      "samples": 7,
+      "minMs": 18.224792,
+      "medianMs": 30.831416,
+      "p95Ms": 77.801916
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-load-store",
+      "samples": 7,
+      "minMs": 17.784833,
+      "medianMs": 36.873791,
+      "p95Ms": 47.341959
+    },
+    {
+      "runtime": "wasmer-cranelift",
+      "workload": "memory-sustained",
+      "samples": 7,
+      "minMs": 17.681125,
+      "medianMs": 24.775458,
+      "p95Ms": 34.910292
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "startup",
+      "samples": 7,
+      "minMs": 32.295,
+      "medianMs": 36.978709,
+      "p95Ms": 60.942125
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-loop",
+      "samples": 7,
+      "minMs": 52.752625,
+      "medianMs": 55.865917,
+      "p95Ms": 77.439708
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "integer-sustained",
+      "samples": 7,
+      "minMs": 526.441125,
+      "medianMs": 592.401792,
+      "p95Ms": 647.115167
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "function-calls",
+      "samples": 7,
+      "minMs": 46.983792,
+      "medianMs": 55.163917,
+      "p95Ms": 66.775375
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-load-store",
+      "samples": 7,
+      "minMs": 55.11175,
+      "medianMs": 62.174,
+      "p95Ms": 73.905333
+    },
+    {
+      "runtime": "wasmedge-interpreter",
+      "workload": "memory-sustained",
+      "samples": 7,
+      "minMs": 563.379542,
+      "medianMs": 585.038375,
+      "p95Ms": 1089.928667
+    }
+  ],
+  "limitations": [
+    "Single local machine, no CPU affinity or isolation",
+    "Small synthetic workloads, not an application benchmark suite",
+    "No peak memory or energy measurement",
+    "CLI timing is not warmed in-process guest throughput",
+    "All modes use their actual backend and CLI; runtime startup/host overhead differs"
+  ],
+  "status": "complete",
+  "finishedAt": "2026-10-26T00:39:39.517830+00:00"
+}

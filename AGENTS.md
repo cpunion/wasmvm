@@ -1,0 +1,12 @@
+# Development instructions
+
+- Keep repository documentation, code comments, commit messages, and pull-request descriptions in English.
+- Follow the milestone dependencies and acceptance gates in `docs/roadmap.md`. Do not mark a milestone complete while any required deliverable or validation remains unfinished. Record observed failures and unsupported features explicitly.
+- Prefer reuse when it meets the project contracts. A missing feature or a compiler-specific integration issue alone is not justification for replacing an existing engine.
+- Make changes on a contribution branch and submit a pull request. Do not push implementation changes directly to `main`. Merge only after the final PR head has passed its required checks and review findings are resolved.
+- Compile and execute shared semantic tests with both Go and LLGo. A successful build, an expected incompatibility assertion, and actual guest execution are different outcomes; report them separately.
+- Test successful behavior, invalid input, resource limits, cleanup, cancellation, and feature interactions as applicable. Do not hide compiler failures with broad skips or `continue-on-error`.
+- Report coverage for the exact packages measured. Statement coverage of an evaluation harness is not coverage of wazero, instruction semantics, or the Wasm specification. Keep the evaluation harness at or above the CI threshold; justify any future threshold change in its PR.
+- Pin candidate engines, test producers, fixtures, and toolchains. Keep provenance, checksums, and licenses for reused assets. Use temporary copies for diagnostic dependency patches; never modify a shared Go module cache.
+- Treat experimental patches as evaluation evidence until their full production contracts are implemented and validated. Preserve the distinctions between host GC, guest linear-memory GC, and WasmGC; likewise distinguish Core Threads, legacy wasi-threads, and component async.
+- Follow the repository-owner write policy supplied by the user. Changes to external upstream repositories require an allowed-fork contribution PR; permission to merge this repository's PRs does not authorize merging external upstream PRs.
