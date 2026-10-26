@@ -130,11 +130,16 @@ func (e *Engine) Validate(ctx context.Context, input []byte) error {
 // Inspect returns copied metadata after static validation, without lowering or
 // executing any code. Missing host imports do not prevent inspection.
 func (e *Engine) Inspect(ctx context.Context, input []byte) (ModuleInfo, error) {
-	v, err := e.frontend(contextOrBackground(ctx), input)
+	ctx = contextOrBackground(ctx)
+	v, err := e.frontend(ctx, input)
 	if err != nil {
 		return ModuleInfo{}, err
 	}
-	return describeModule(v.Definition()), nil
+	info := describeModule(v.Definition())
+	if err := e.check(ctx); err != nil {
+		return ModuleInfo{}, err
+	}
+	return info, nil
 }
 
 type CompiledModule struct {
@@ -159,6 +164,9 @@ func (m *CompiledModule) acquire(e *Engine) (*slots.Module, error) {
 	return m.code, nil
 }
 
+// ExternType describes an imported or exported object. Descriptor pointers may
+// be shared within one metadata snapshot, but never alias engine code or another
+// snapshot. Copy before editing if other entries must remain unchanged.
 type ExternType struct {
 	Kind     ExternKind
 	Function *FunctionType
@@ -166,6 +174,7 @@ type ExternType struct {
 	Memory   *MemoryType
 	Global   *GlobalType
 }
+
 type ImportInfo struct {
 	Module, Name string
 	ExternType
@@ -192,14 +201,22 @@ func (m *CompiledModule) Info() (ModuleInfo, error) {
 func describeModule(d *module.Module) ModuleInfo {
 	info := ModuleInfo{Backend: "interpreter", Profile: "core2", Functions: uint32(len(d.Functions)), HasStart: d.HasStart}
 	objects := [4][]ExternType{}
-	functionType := func(t module.FuncType) ExternType {
-		return ExternType{Kind: FunctionKind, Function: &FunctionType{Params: append([]wasm.ValueType(nil), t.Params...), Results: append([]wasm.ValueType(nil), t.Results...)}}
+	// Copy each referenced type once. A short binary can declare many functions
+	// with one large signature; per-function copies would multiply their memory
+	// cost, bypassing the frontend's aggregate byte/node bounds.
+	types := make([]*FunctionType, len(d.Types))
+	functionType := func(index uint32) ExternType {
+		if types[index] == nil {
+			t := d.Types[index]
+			types[index] = &FunctionType{Params: append([]wasm.ValueType(nil), t.Params...), Results: append([]wasm.ValueType(nil), t.Results...)}
+		}
+		return ExternType{Kind: FunctionKind, Function: types[index]}
 	}
 	for _, im := range d.Imports {
 		desc := ExternType{Kind: ExternKind(im.Kind)}
 		switch im.Kind {
 		case 0:
-			desc = functionType(d.Types[im.Type])
+			desc = functionType(im.Type)
 		case 1:
 			t := im.Table
 			desc.Table = &t
@@ -214,7 +231,7 @@ func describeModule(d *module.Module) ModuleInfo {
 		info.Imports = append(info.Imports, ImportInfo{im.Module, im.Name, desc})
 	}
 	for _, f := range d.Functions {
-		objects[0] = append(objects[0], functionType(d.Types[f.Type]))
+		objects[0] = append(objects[0], functionType(f.Type))
 	}
 	for _, t := range d.Tables {
 		t := t

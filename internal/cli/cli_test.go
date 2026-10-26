@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -118,6 +119,61 @@ func TestValidateInspectAndRun(t *testing.T) {
 		if code != want {
 			t.Fatal(args, code, want)
 		}
+	}
+}
+
+func TestInspectBoundsRepeatedSignaturesBeforeJSONExpansion(t *testing.T) {
+	// Both binaries are small and valid. A large signature shared by many
+	// imports/exports must not expand without a presentation resource limit.
+	const params = 1024
+	typ := append([]byte{1, 0x60}, leb(params)...)
+	typ = append(typ, bytes.Repeat([]byte{0x7f}, params)...)
+	typ = append(typ, 0)
+	for _, repeatedImports := range []bool{false, true} {
+		count := maxInspectionTypeValues/params + 1
+		imports := []byte{1, 1, 'h', 1, 'f', 0, 0}
+		exports := leb(count)
+		if repeatedImports {
+			imports = leb(count)
+		}
+		for i := 0; i < count; i++ {
+			if repeatedImports {
+				imports = append(imports, 1, 'h', 1, 'f', 0, 0)
+			} else {
+				name := strconv.Itoa(i)
+				exports = append(exports, leb(len(name))...)
+				exports = append(exports, name...)
+				exports = append(exports, 0, 0)
+			}
+		}
+		data := binary(section(1, typ), section(2, imports))
+		if !repeatedImports {
+			data = append(data, section(7, exports)...)
+		}
+		path := writeModule(t, data)
+		if code, _, err := invoke(t, nil, "validate", path); code != 0 {
+			t.Fatal(code, err)
+		}
+		if code, out, err := invoke(t, nil, "inspect", path); code != 1 || out != "" || !strings.Contains(err, "expanded inspection signature values") {
+			t.Fatal(code, len(out), err)
+		}
+	}
+}
+
+func TestInspectSignatureExpansionIncludesResultsAndExactLimit(t *testing.T) {
+	params := make([]wasm.ValueType, maxInspectionTypeValues/2)
+	for i := range params {
+		params[i] = wasm.I32
+	}
+	signature := &vm.FunctionType{Params: params, Results: params}
+	info := vm.ModuleInfo{Exports: []vm.ExportInfo{{Name: "f", ExternType: vm.ExternType{Kind: vm.FunctionKind, Function: signature}}}}
+	out, err := describe(info)
+	if err != nil || len(out["exports"].([]map[string]any)[0]["results"].([]string)) != len(params) {
+		t.Fatal("exact expansion limit rejected", err)
+	}
+	signature.Results = append(signature.Results, wasm.I32)
+	if out, err := describe(info); out != nil || !errors.Is(err, wasm.ErrLimit) {
+		t.Fatal("result expansion exceeds budget", err)
 	}
 }
 

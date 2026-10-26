@@ -118,7 +118,11 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		if err != nil {
 			return failure(stderr, err)
 		}
-		return output(stdout, stderr, describe(info))
+		metadata, err := describe(info)
+		if err != nil {
+			return failure(stderr, err)
+		}
+		return output(stdout, stderr, metadata)
 	default:
 		compiled, err := engine.Compile(ctx, input)
 		if err != nil {
@@ -183,7 +187,34 @@ func output(stdout, stderr io.Writer, v any) int {
 	}
 	return 0
 }
-func describe(info vm.ModuleInfo) map[string]any {
+
+// Inspection repeats signatures in JSON. Bound that expansion before allocating
+// strings or encoding: many exports can share one large binary type definition.
+const maxInspectionTypeValues = 1 << 20
+
+func describe(info vm.ModuleInfo) (map[string]any, error) {
+	remaining := uint64(maxInspectionTypeValues)
+	charge := func(t vm.ExternType) bool {
+		if t.Kind != vm.FunctionKind {
+			return true
+		}
+		n := uint64(len(t.Function.Params)) + uint64(len(t.Function.Results))
+		if n > remaining {
+			return false
+		}
+		remaining -= n
+		return true
+	}
+	for _, im := range info.Imports {
+		if !charge(im.ExternType) {
+			return nil, &wasm.Error{Kind: wasm.ErrLimit, Detail: "expanded inspection signature values"}
+		}
+	}
+	for _, ex := range info.Exports {
+		if !charge(ex.ExternType) {
+			return nil, &wasm.Error{Kind: wasm.ErrLimit, Detail: "expanded inspection signature values"}
+		}
+	}
 	imports := make([]map[string]any, 0, len(info.Imports))
 	exports := make([]map[string]any, 0, len(info.Exports))
 	for _, im := range info.Imports {
@@ -197,7 +228,7 @@ func describe(info vm.ModuleInfo) map[string]any {
 		d["name"] = ex.Name
 		exports = append(exports, d)
 	}
-	return map[string]any{"backend": info.Backend, "profile": info.Profile, "definedFunctions": info.Functions, "hasStart": info.HasStart, "imports": imports, "exports": exports}
+	return map[string]any{"backend": info.Backend, "profile": info.Profile, "definedFunctions": info.Functions, "hasStart": info.HasStart, "imports": imports, "exports": exports}, nil
 }
 func describeType(t vm.ExternType) map[string]any {
 	result := make(map[string]any)
