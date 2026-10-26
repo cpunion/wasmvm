@@ -39,6 +39,24 @@ class NativeGateTests(unittest.TestCase):
         self.assertEqual({r["status"] for r in result if r["compiler"]=="go" and not r["reference"].endswith("-control")}, {"faster"})
         self.assertEqual({r["status"] for r in result if r["compiler"]=="llgo" and not r["reference"].endswith("-control")}, {"slower"})
 
+    def test_interval_spanning_faster_and_parity_has_no_rejection_gap(self):
+        result = native.compare(observations([.99, 1.0]))
+        comparisons = [r for r in result if not r["reference"].endswith("-control")]
+        for r in comparisons:
+            self.assertLess(r["lower"], 1-native.PARITY)
+            self.assertGreater(r["upper"], 1-native.PARITY)
+            self.assertLessEqual(r["upper"], 1+native.PARITY)
+            self.assertEqual(r["status"], "parity-or-faster")
+        self.assertTrue(all(r["status"] in native.ACCEPTED for r in result))
+
+    def test_possible_slowdown_still_blocks_with_a_fast_lower_bound(self):
+        comparisons = native.compare(observations([.97, 1.03]))
+        for r in comparisons:
+            if not r["reference"].endswith("-control"):
+                self.assertLess(r["lower"], 1-native.PARITY)
+                self.assertGreater(r["upper"], 1+native.PARITY)
+                self.assertEqual(r["status"], "inconclusive")
+
     def test_noisy_identical_binary_blocks_equivalence(self):
         rows = observations([1.0])
         for r in rows:

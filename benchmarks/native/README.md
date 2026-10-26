@@ -69,3 +69,12 @@ slower. The next implementation adds general integer multiply/add combination
 with preserved intermediate slots and independent continuations. Local M4 Max
 diagnostics were about 1.54 ns/iteration across both host compilers and all three
 references; this is not a replacement for the declared two-target feature gate.
+
+The gate originally had a classification gap: an interval such as 0.993–0.998
+was neither wholly inside the ±0.5% equivalence band nor wholly below 0.995,
+and was incorrectly rejected despite containing only faster/equivalent outcomes.
+The classifier now accepts that union when the upper bound is at most 1.005,
+labelled `parity-or-faster`. The parity margin, A/A requirement, observations,
+bootstrap procedure and planned looks are unchanged. Reclassifying the retained
+`d123e16` Linux observations passes all eight comparisons; this does not accept
+arm64 results or replace final-head checks.

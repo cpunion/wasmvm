@@ -19,6 +19,7 @@ BASELINE_ROUNDS = 3
 PARITY = 0.005
 CALIBRATION = 0.0025
 REFERENCES = ("head-compiler", "wasmtime-cranelift", "wasmer-cranelift")
+ACCEPTED = {"faster", "parity", "parity-or-faster", "calibrated"}
 
 
 def compare(rows, rounds=ROUNDS):
@@ -44,7 +45,14 @@ def compare(rows, rounds=ROUNDS):
             if calibration:
                 status = "calibrated" if 1-CALIBRATION <= lower <= upper <= 1+CALIBRATION else "inconclusive"
             else:
-                status = "faster" if upper < 1-PARITY else "parity" if 1-PARITY <= lower <= upper <= 1+PARITY else "slower" if lower > 1+PARITY else "inconclusive"
+                if upper < 1-PARITY:
+                    status = "faster"
+                elif upper <= 1+PARITY:
+                    # The union of faster and equivalent is also acceptable.
+                    # Crossing their internal boundary cannot imply a slowdown.
+                    status = "parity" if lower >= 1-PARITY else "parity-or-faster"
+                else:
+                    status = "slower" if lower > 1+PARITY else "inconclusive"
             result.append({"compiler": compiler, "reference": ref,
                            "ratio": math.exp(statistics.mean(logs)), "lower": lower, "upper": upper, "status": status})
     return result
@@ -117,7 +125,7 @@ def run(head, builds, runtimes, fixture, invoke, timeout):
             report["looks"].append({"rounds": n+1, "comparisons": report["comparisons"]})
             statuses = {r["status"] for r in report["comparisons"]}
             if "slower" in statuses or "inconclusive" not in statuses: break
-    report["status"] = "pass" if all(r["status"] in ("faster", "parity", "calibrated") for r in report["comparisons"]) else "blocked"
+    report["status"] = "pass" if all(r["status"] in ACCEPTED for r in report["comparisons"]) else "blocked"
     return report
 
 
@@ -128,7 +136,7 @@ def markdown(report):
              "Fuel is disabled. Own code retains bounded cancellation polls; references use their pinned default interruption settings. "
              f"{report['rounds']} interleaved sustained-work blocks plus three baseline blocks; seven warm calls per process. "
              "The planned looks are 20 and, only if inconclusive, 60 blocks; intervals adjust for both looks. "
-             "Parity requires the entire simultaneous 95% interval within ±0.5%; A/A controls must resolve ±0.25%. Shared-runner evidence is provisional. "
+             "Parity requires the entire simultaneous 95% interval within ±0.5%; an interval spanning faster and parity also passes when its upper bound is at most 1.005. A/A controls must resolve ±0.25%. Shared-runner evidence is provisional. "
              "The hard gate covers all three competitors for each host compiler; own baseline ratios are reported separately.", "",
              "| Runtime | Warm ns/iteration | Preparation ms | First call ms |", "| --- | ---: | ---: | ---: |"]
     for name in sorted({r["id"] for r in report["observations"]}):

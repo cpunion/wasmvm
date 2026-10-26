@@ -19,7 +19,9 @@ The initial native integer feature gate uses the existing sustained workload,
 20 interleaved process blocks (one predeclared extension to 60 if inconclusive),
 simultaneous 95% paired-bootstrap intervals adjusted for both planned looks, and
 identical-binary A/A controls. Practical parity means the entire interval lies
-within ±0.5%; A/A intervals must resolve ±0.25% or the gate remains inconclusive.
+within ±0.5%. An interval spanning faster and parity also passes if its upper
+bound is at most 1.005; crossing the boundary between two accepted outcomes is
+not a rejection. A/A intervals must resolve ±0.25% or the gate remains inconclusive.
 These feature-level equivalence limits do not replace the stricter full-portfolio
 throughput targets below. Record every methodology change with old/new evidence.
 
