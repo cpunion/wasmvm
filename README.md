@@ -2,7 +2,7 @@
 
 A WebAssembly virtual machine written in Go, designed to build and run with both Go and LLGo.
 
-**M1 implementation has started; no production VM API is available yet.** The owned frontend decodes the full Core 2.0 binary grammar, including all fixed SIMD encodings, with bounded input ownership, allocations and nesting. Shared Go/LLGo tests check all 4,581 corpus binaries, including 719 malformed cases. The validator checks all Core 2.0 static semantics and rejects all 2,146 semantic-invalid corpus modules. Typed SSA lowering and its dominance/type verifier cover all 6,236 defined functions in the statically valid corpus. Typed slot allocation and branch-move lowering also cover those functions. All 136 scalar numeric operations pass 11,621 direct official numeric assertions under Go and LLGo. The complete interpreter/runtime remains unfinished. `pkg/wasm` now exposes value-type identifiers and frontend error categories; the VM API is still reserved. Separate evaluation modules execute real Wasm through existing engines and report their limitations explicitly.
+**M1 implementation has started; no production VM API is available yet.** The owned frontend decodes the full Core 2.0 binary grammar, including all fixed SIMD encodings, with bounded input ownership, allocations and nesting. Shared Go/LLGo tests check all 4,581 corpus binaries, including 719 malformed cases. The validator checks all Core 2.0 static semantics and rejects all 2,146 semantic-invalid corpus modules. Typed SSA lowering and its dominance/type verifier cover all 6,236 defined functions in the statically valid corpus. Typed slot allocation and branch-move lowering also cover those functions. All 136 scalar numeric operations pass 11,621 direct official numeric assertions under Go and LLGo. The 214 nonmemory SIMD operations pass 22,924 pure-expression assertions. The complete interpreter/runtime remains unfinished. `pkg/wasm` now exposes value-type identifiers and frontend error categories; the VM API is still reserved. Separate evaluation modules execute real Wasm through existing engines and report their limitations explicitly.
 
 ## Goals
 
@@ -40,7 +40,7 @@ The owner selected a **project-owned core** after M0. Wazero and other engines r
 | --- | --- | --- |
 | Design baseline | Research, architecture, package contracts and compiler probes | Complete; own-core design now replaces reuse-first direction |
 | M0 | Candidate evaluation and reproducible comparison infrastructure | Complete through PRs #1–#3 |
-| M1 | Complete Core 2.0 interpreter, validation, resource limits, API and core CLI | In progress: full binary decoding, static validation, typed IR/slots and scalar numeric primitives; full execution remains open |
+| M1 | Complete Core 2.0 interpreter, validation, resource limits, API and core CLI | In progress: full binary decoding, static validation, typed IR/slots and scalar/SIMD numeric primitives; full execution remains open |
 | M2 | Fast interpreter and complete Core 2.0 native compiler for amd64/arm64 | Planned; required performance gate |
 | M3 | Full Core 3.0 and separate Core Threads on both backends | Planned |
 | M4 | P1, legacy wasi-threads and pinned Go/LLGo guest integration | Planned |

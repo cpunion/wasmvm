@@ -49,6 +49,8 @@ wasmvm/
 │   │   ├── machine/               # Planned: target IR and instruction selection
 │   │   └── regalloc/              # Planned: liveness, registers, spills and moves
 │   ├── engine/
+│   │   ├── value/                 # Implemented: scalar/vector bit storage (reference handles reserved)
+│   │   ├── simd/                  # Implemented: all 214 nonmemory Core 2.0 SIMD operations
 │   │   ├── numeric/               # Implemented: complete scalar Core 2.0 numeric primitives and traps
 │   │   ├── state/                 # Planned: internal Store/Instance/frame state
 │   │   ├── interp/                # Planned: dispatch and resumable frames

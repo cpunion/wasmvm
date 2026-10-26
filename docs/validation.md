@@ -291,3 +291,35 @@ completed 1,199,022 operand pairs across every scalar opcode without host panics
 CI requires numeric package coverage and fuzz checks. Final-head CI remains
 required; complete SIMD, memory/table state, control/call execution, lifecycle,
 API/CLI and own-engine measurements remain open within M1.
+
+
+## M1 nonmemory fixed-SIMD primitives
+
+Scalar numeric primitives merged in [PR #11](https://github.com/cpunion/wasmvm/pull/11)
+after all six checks passed for exact head
+`0ab925fe2cc0a552915faed0a6a660886c762a4b`, including both compilers on both
+supported platforms and the existing reference benchmark/report job.
+
+`internal/engine/simd` implements all 214 nonmemory fixed-SIMD opcodes, including
+lane operations, shuffle/swizzle, comparisons, integer wrap/saturation, Q15
+rounding, dot products, widening/narrowing, pairwise addition, extended
+multiplication, float arithmetic/rounding/pseudo-min/max and conversions.
+`internal/engine/value` holds exact 128-bit storage; it does not implement
+Store reference ownership. The other 22 SIMD instructions access memory and
+remain part of the subsequent checked memory implementation.
+
+The primitive adapter explicitly selects the first pure-expression module in
+40 named official scripts and executes all its 22,924 return assertions. It
+requires state-free modules, pure expressions, fixed counts and all 214
+nonmemory opcodes; an unexpected function shape or command fails. Later modules
+exercise globals, structured control and memory and remain required for the
+complete execution suite. They are not counted as executed by this adapter.
+Malformed/invalid classification is already checked by the full frontend test.
+
+Shared Go/LLGo tests pass locally. The SIMD package has 97.3% statement coverage;
+uncovered branches defensively reject opcode groups already excluded by the
+entry inventory guard. A 15-second two-worker fuzz campaign completed 455,375
+operand tuples across all 214 operations without failure. Go vet/race and
+per-package coverage checks pass. CI adds the SIMD coverage floor and fuzz
+campaign; final-head CI is required before merge. M1 remains open for checked
+memory, full interpreter/runtime lifecycle, API/CLI and own-engine benchmarks.
