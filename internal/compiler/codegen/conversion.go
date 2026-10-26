@@ -32,6 +32,9 @@ func (e *functionEmitter) storeFloat(slot slots.Slot, register byte, wide bool) 
 	}
 }
 func (e *functionEmitter) conversion(in slots.Instruction) {
+	if e.registerConversion(in) {
+		return
+	}
 	op := in.Op
 	if op == 0xb6 || op == 0xbb {
 		wide := op == 0xbb
@@ -67,8 +70,14 @@ func (e *functionEmitter) conversion(in slots.Instruction) {
 	}
 	floatWide, integerWide, unsigned := variant&2 != 0, variant&4 != 0, variant&1 != 0
 	e.loadFloat(in.A, 0, floatWide)
-	e.truncateFloat(floatWide, integerWide, unsigned, saturating, e.f.Sources[in.Source].Wasm.Offset)
-	e.slotStore(in.Dst, 0, false)
+	target, cached := e.registers[in.Dst]
+	if e.a.arch != "arm64" || !cached {
+		target, cached = e.operandRegister(0), false
+	}
+	e.truncateFloat(floatWide, integerWide, unsigned, saturating, e.f.Sources[in.Source].Wasm.Offset, target)
+	if !cached {
+		e.slotStore(in.Dst, 0, false)
+	}
 	if !e.unmetered {
 		e.constant(0, 0)
 		e.slotStore(in.Dst, 0, true)
@@ -167,8 +176,14 @@ func (e *functionEmitter) floatBranch(label int, condition string) {
 	e.a.branch(label, true, cc)
 }
 
-func (e *functionEmitter) truncateFloat(floatWide, integerWide, unsigned, saturating bool, source uint64) {
+func (e *functionEmitter) truncateFloat(floatWide, integerWide, unsigned, saturating bool, source uint64, target byte) {
 	a := e.a
+	if saturating && a.arch == "arm64" {
+		// FCVTZS/ZU already clamp overflow and return zero for NaN under
+		// the boundary's masked FP environment. Keep checked casts distinct.
+		e.truncateARM64(floatWide, integerWide, unsigned, target, 0)
+		return
+	}
 	width := 32
 	if integerWide {
 		width = 64
@@ -209,17 +224,7 @@ func (e *functionEmitter) truncateFloat(floatWide, integerWide, unsigned, satura
 	e.compareFloatConstant(upper, floatWide)
 	e.floatBranch(high, "ge")
 	if a.arch == "arm64" {
-		ins := uint32(0x1e380009) // fcvtzs w9, s0
-		if floatWide {
-			ins |= 1 << 22
-		}
-		if integerWide {
-			ins |= 1 << 31
-		}
-		if unsigned {
-			ins |= 1 << 16
-		}
-		a.word(ins)
+		e.truncateARM64(floatWide, integerWide, unsigned, target, 0)
 	} else {
 		prefix := byte(0xf3)
 		if floatWide {
@@ -257,4 +262,74 @@ func (e *functionEmitter) truncateFloat(floatWide, integerWide, unsigned, satura
 		e.constant(0, maximum)
 		a.mark(done)
 	}
+}
+
+func (e *functionEmitter) truncateARM64(floatWide, integerWide, unsigned bool, target, source byte) {
+	ins := uint32(0x1e380000) | uint32(source)<<5 | uint32(target) // fcvtzs w9, s0
+	if floatWide {
+		ins |= 1 << 22
+	}
+	if integerWide {
+		ins |= 1 << 31
+	}
+	if unsigned {
+		ins |= 1 << 16
+	}
+	e.a.word(ins)
+}
+
+// Nontrapping ARM conversions can name their allocated registers directly.
+// Checked conversions still pass through explicit bounds/trap selection.
+func (e *functionEmitter) registerConversion(in slots.Instruction) bool {
+	if e.a.arch != "arm64" {
+		return false
+	}
+	op := in.Op
+	if op == 0xb6 || op == 0xbb {
+		s, sok := e.floatRegisters[in.A]
+		d, dok := e.floatRegisters[in.Dst]
+		if !sok || !dok {
+			return false
+		}
+		ins := uint32(0x1e624000)
+		if op == 0xbb {
+			ins = 0x1e22c000
+		}
+		e.a.word(ins | uint32(s)<<5 | uint32(d))
+		return true
+	}
+	if op >= 0xb2 && op <= 0xba {
+		s, sok := e.registers[in.A]
+		d, dok := e.floatRegisters[in.Dst]
+		if !sok || !dok {
+			return false
+		}
+		wide, variant := op >= 0xb7, op-0xb2
+		if wide {
+			variant = op - 0xb7
+		}
+		ins := uint32(0x1e220000) | uint32(s)<<5 | uint32(d)
+		if variant >= 2 {
+			ins |= 1 << 31
+		}
+		if variant&1 != 0 {
+			ins |= 1 << 16
+		}
+		if wide {
+			ins |= 1 << 22
+		}
+		e.a.word(ins)
+		return true
+	}
+	if op >= 0xfc0000 && op <= 0xfc0007 {
+		s, sok := e.floatRegisters[in.A]
+		d, dok := e.registers[in.Dst]
+		if !sok || !dok {
+			return false
+		}
+		variant := op - 0xfc0000
+		e.truncateARM64(variant&2 != 0, variant&4 != 0, variant&1 != 0, d, s)
+		return true
+	}
+	return false
 }

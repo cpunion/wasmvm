@@ -10,7 +10,7 @@ func isFloat(op uint32) bool {
 // scratch registers never survive an instruction or an exit. The C boundary
 // establishes round-to-nearest, gradual underflow and masked FP exceptions.
 func (e *functionEmitter) floating(in slots.Instruction) {
-	if e.registerFloat(in) {
+	if e.reinterpretRegister(in) || e.registerFloat(in) {
 		return
 	}
 	op := in.Op
@@ -254,4 +254,24 @@ func (e *functionEmitter) floatRoundAMD64(op uint32, wide bool) {
 	a.mark(finish)
 	a.xfloatMove(wide, false, 0, 0)
 	a.xop(wide, 0x09, 0xc8) // Preserve negative zero after rounding.
+}
+
+func (e *functionEmitter) reinterpretRegister(in slots.Instruction) bool {
+	switch in.Op {
+	case 0xbc, 0xbd:
+		s, sok := e.floatRegisters[in.A]
+		d, dok := e.registers[in.Dst]
+		if sok && dok {
+			e.floatToInteger(d, s, in.Op == 0xbd)
+			return true
+		}
+	case 0xbe, 0xbf:
+		s, sok := e.registers[in.A]
+		d, dok := e.floatRegisters[in.Dst]
+		if sok && dok {
+			e.floatFromInteger(d, s, in.Op == 0xbf)
+			return true
+		}
+	}
+	return false
 }
