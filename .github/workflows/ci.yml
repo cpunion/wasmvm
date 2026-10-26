@@ -72,6 +72,9 @@ jobs:
           test -z "$(gofmt -l .)"
           go vet ./...
 
+      - name: Verify complete pinned Core 2.0 inputs
+        run: python3 scripts/core2_corpus.py
+
       - name: Run the same package tests
         shell: bash
         env:
@@ -136,4 +139,12 @@ jobs:
         with:
           name: core-coverage-${{ matrix.platform.name }}
           path: artifacts/core/
+          if-no-files-found: error
+
+      - name: Preserve corpus provenance
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: core2-inputs-${{ matrix.compiler }}-${{ matrix.platform.name }}
+          path: artifacts/core2/evidence.json
           if-no-files-found: error

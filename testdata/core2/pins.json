@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "profile": "Core 2.0 binary",
+  "source": {
+    "revision": "fffc6e12fa454e475455a7b58d3b5dc343980c10",
+    "url": "https://codeload.github.com/WebAssembly/spec/tar.gz/fffc6e12fa454e475455a7b58d3b5dc343980c10",
+    "size": 9047680,
+    "sha256": "597e3ea796ac08bb5f041513afa9f538b1e7f7619d865225ac482983a7af35cf",
+    "prefix": "spec-fffc6e12fa454e475455a7b58d3b5dc343980c10",
+    "directory": "test/core",
+    "scripts": 148
+  },
+  "producer": {
+    "name": "wast2json",
+    "version": "1.0.41",
+    "revision": "03a00a1334e6121fb0cce4fccbd6bb109b68acaa",
+    "arguments": ["--no-check"],
+    "assets": {
+      "linux-x86_64": {
+        "url": "https://github.com/WebAssembly/wabt/releases/download/1.0.41/wabt-1.0.41-linux-x64.tar.gz",
+        "size": 5076269,
+        "sha256": "83f8122e924745fcd70636e3594bc01c4c47f2d4c8f3c63b5d70d3f83a482677",
+        "binary": "wabt-1.0.41/bin/wast2json"
+      },
+      "darwin-arm64": {
+        "url": "https://github.com/WebAssembly/wabt/releases/download/1.0.41/wabt-1.0.41-macos-arm64.tar.gz",
+        "size": 3871425,
+        "sha256": "e5269d6bbe05dfeb179e4f21111b3a641d6ccaa38b0b21d472ae5c65f8c4ff5d",
+        "binary": "wabt-1.0.41/bin/wast2json"
+      }
+    }
+  }
+}

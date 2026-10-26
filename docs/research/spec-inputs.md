@@ -27,7 +27,7 @@ The milestone column identifies intended adoption, not completed support.
 | Legacy wasi-threads | [WebAssembly/wasi-threads](https://github.com/WebAssembly/wasi-threads/tree/f8ea03cc0ffbde143415e945497de112f6f9fd53), `f8ea03cc0ffbde143415e945497de112f6f9fd53` | M4 ABI and upstream test-reference snapshot | No root license file or repository-wide license metadata was found at this revision. Reference-only in M0; establish the applicable file notices before copying tests or source |
 | Proposal status registry | [WebAssembly/proposals](https://github.com/WebAssembly/proposals/tree/df6a2aca1cd9d779eb4f2f3e19dae8277f336015), `df6a2aca1cd9d779eb4f2f3e19dae8277f336015` | Phase/status provenance for the [standards survey](standards.md); not an executable conformance input | No root license file or repository-wide license metadata was found; linked as reference metadata only |
 
-The Core 2.0 pin was added with the own-core design; the `wg-2.0` tag was resolved to the immutable commit above. Corpus conversion and execution remain M1 work.
+The Core 2.0 pin was added with the own-core design; the `wg-2.0` tag was resolved to the immutable commit above. M1 now includes [complete reproducible input conversion](../../testdata/core2/README.md), with producer/source/output hashes and preserved notices. No owned-engine corpus assertion has been executed yet; conversion is not conformance.
 
 The Core specification and generated suite have separate pins; this record
 does not assert that one was generated from the other. Before executing an

@@ -100,3 +100,36 @@ revision above, with separate coverage artifacts and Go fuzz runs. The actual
 final-head jobs must pass before this increment merges; configuring the matrix
 alone is not acceptance. Existing benchmark jobs still measure reference
 engines, and no own-engine performance gate is closed by this reader increment.
+
+The reader increment merged in [PR #5](https://github.com/cpunion/wasmvm/pull/5)
+after all six checks passed for exact head
+`44eacb2de51033ffc929a0ab0ca454319c2b1698`. The
+[Go/LLGo run](https://github.com/cpunion/wasmvm/actions/runs/40266256500) passed
+all four Linux amd64/macOS arm64 jobs; logs confirm Go 1.27.3 darwin/arm64 and
+100% reader coverage on the macOS runner. The
+[benchmark run and PR report](https://github.com/cpunion/wasmvm/actions/runs/40266256532)
+also passed, with their existing reference-engine scope. The merge commit is
+`7c68127a024743552480d7a6efcf033d2aa81f43`.
+
+## M1 complete corpus input preparation
+
+The [Core 2.0 inventory](../testdata/core2/README.md) includes all 148 WAST
+scripts under the pinned `test/core`, recursively including SIMD. WABT 1.0.41
+converts them with validation disabled so invalid binaries remain available
+for negative VM tests. The manifest records every source hash, script identity
+and command classification; a second record checksums all 5,822 generated
+files, including both upstream notices. Production VM code is not copied.
+
+The local pinned darwin/arm64 producer generated and verified 54,006 commands:
+51,139 binary assertions, 1,091 malformed-text assertions, and 1,776 module,
+registration and action commands. These counts describe inputs only. The
+binary VM does not implement a WAT parser, and no text-parser or binary guest
+assertion is counted as executed by this preparation step.
+
+Ten corpus-tool tests cover source selection including SIMD, archive path and
+link handling, download size/digest/redirect failures, cached corruption,
+script classifications, missing/extra/modified files, and changed pins/counts/notices.
+They run alongside the five per-package coverage-gate tests. CI regenerates
+and checks the same fixture bytes on both supported platforms and retains the
+producer executable hash and input/output identities. Final-head CI remains
+required before merging this increment; M1's complete execution gates stay open.

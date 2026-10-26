@@ -13,7 +13,8 @@ wasmvm/
 │   ├── check.sh                   # Existing: local compiler selection
 │   ├── check_coverage.py          # Existing: per-package Go coverage gate
 │   ├── test_check_coverage.py     # Existing: coverage-gate regression tests
-│   └── update-corpus.sh           # Planned: manual updates, pinned sources
+│   ├── core2_corpus.py            # Existing: pinned complete Core 2.0 input generation
+│   └── test_core2_corpus.py       # Existing: corpus integrity/classification tests
 ├── docs/                          # Existing
 │   ├── research/{standards,implementations}.md
 │   ├── design/{architecture,packages,llgo-ci,own-core}.md
@@ -78,7 +79,8 @@ wasmvm/
 │   ├── gc/                       # Roots, cycles, calls/exceptions, quotas
 │   ├── llgo/                     # Pinned llgo guest producers
 │   └── differential/             # Features shared with reference engines
-├── testdata/                      # Planned: small, reproducible fixtures
+├── testdata/                      # Existing: reproducible fixture inventories
+│   ├── core2/                    # Existing: complete Core 2.0 input pins, hashes, counts, notices
 │   ├── manifest.json             # Source, SHA, license, generation command, profile
 │   ├── core/
 │   ├── components/
