@@ -65,6 +65,7 @@ The executable configuration is [ci.yml](../../.github/workflows/ci.yml). All fo
 | Host data-race checks | `go test -race` | Acceptance of `-race` is not treated as verified race-detection capability |
 | Owned executable core package coverage | At least 90% per package under `internal` and `pkg`; empty/missing profiles fail | Same semantic tests; no LLGo coverage instrumentation claim |
 | Bounded binary fuzzing | Ten-second fuzz run per platform | Runs the same fuzz seed cases through ordinary package tests |
+| Complete Core 2.0 input preparation | Checksum-pinned producer, all scripts and output hashes | Same complete input inventory; preparation is not guest execution |
 | Wasm spec / WASI / LLGo guest corpus | Added by capability milestone | Same fixtures and assertions; no whole-package skips to hide differences |
 
 `CGO_ENABLED=0` applies only to the basic Go test step, not the entire workflow environment. LLGo's LLVM and BDWGC dependencies are consistent with the goal that the VM source should not depend on a cgo-based engine. The root scaffold has no external dependency, while the evaluation modules have their own `go.sum` files. Action caching remains disabled; future caches must include all relevant module sums, compiler revision, LLVM, OS, and architecture.

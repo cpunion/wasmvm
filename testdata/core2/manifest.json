@@ -1,0 +1,1709 @@
+{
+  "binaryAssertions": 51139,
+  "commandCount": 54006,
+  "commands": {
+    "action": 155,
+    "assert_exhaustion": 15,
+    "assert_invalid": 2146,
+    "assert_malformed": 1810,
+    "assert_return": 45734,
+    "assert_trap": 2408,
+    "assert_uninstantiable": 34,
+    "assert_unlinkable": 83,
+    "module": 1599,
+    "register": 22
+  },
+  "fileCount": 5822,
+  "pinsSHA256": "236c56ed199efcb85ffd26505ce0674614c969c7c30ff0547eabda440ea99435",
+  "schemaVersion": 1,
+  "scriptCount": 148,
+  "scripts": [
+    {
+      "commands": {
+        "assert_malformed": 1,
+        "assert_return": 206,
+        "assert_trap": 49,
+        "module": 4
+      },
+      "json": "address/script.json",
+      "source": "address.wast",
+      "sourceSHA256": "90c087776ca73982f514b61d3450f77b4dfa782914111442a90c51b1f9798db7",
+      "textParsingAssertions": 1
+    },
+    {
+      "commands": {
+        "assert_invalid": 38,
+        "assert_malformed": 51,
+        "assert_return": 47,
+        "assert_trap": 1,
+        "module": 25
+      },
+      "json": "align/script.json",
+      "source": "align.wast",
+      "sourceSHA256": "ec508960f3bb7532a4bc81650db92ec5cf6dba2765a267399b2b4478f8c5edd1",
+      "textParsingAssertions": 46
+    },
+    {
+      "commands": {
+        "assert_malformed": 58,
+        "module": 33
+      },
+      "json": "binary-leb128/script.json",
+      "source": "binary-leb128.wast",
+      "sourceSHA256": "e28b17c8ff37b1ef8d768a06872cde505f564189f55fe439e6049851bf8c765b",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_malformed": 116,
+        "module": 20
+      },
+      "json": "binary/script.json",
+      "source": "binary.wast",
+      "sourceSHA256": "1308ab368b25251ca8cd647dd637fd189b82fdf7a869f23bdf24d9c7d8492e05",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 155,
+        "assert_malformed": 15,
+        "assert_return": 52,
+        "module": 1
+      },
+      "json": "block/script.json",
+      "source": "block.wast",
+      "sourceSHA256": "436230d4bb629da323ee97c56a5580545f3dea7818eeb9a362a6c234f5af18d7",
+      "textParsingAssertions": 15
+    },
+    {
+      "commands": {
+        "assert_invalid": 20,
+        "assert_return": 76,
+        "module": 1
+      },
+      "json": "br/script.json",
+      "source": "br.wast",
+      "sourceSHA256": "ac34486d8787d469dc7940f8e77c6b4b5999cf9d6c8918138d13b3e58460cae9",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 29,
+        "assert_return": 88,
+        "module": 1
+      },
+      "json": "br_if/script.json",
+      "source": "br_if.wast",
+      "sourceSHA256": "2522acbb63a62767e98d1dbbe324c205e78865f7fca80be5cbbf6d6b6a2a0ef2",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 24,
+        "assert_return": 149,
+        "module": 1
+      },
+      "json": "br_table/script.json",
+      "source": "br_table.wast",
+      "sourceSHA256": "c775b24d267bd3886f82e6fbe2206181b36f19fc33bcca545400ec571e267f93",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "action": 38,
+        "assert_return": 48,
+        "assert_trap": 18,
+        "module": 13
+      },
+      "json": "bulk/script.json",
+      "source": "bulk.wast",
+      "sourceSHA256": "ab18cda421479c911bcd504deff2911ce9d44f5be9d95e3e0308fff0a6bc492a",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_exhaustion": 2,
+        "assert_invalid": 18,
+        "assert_return": 69,
+        "assert_trap": 1,
+        "module": 1
+      },
+      "json": "call/script.json",
+      "source": "call.wast",
+      "sourceSHA256": "faa694f3141b25cb1cf25104298a535ddea8058396825f532b69d0912074d905",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_exhaustion": 2,
+        "assert_invalid": 24,
+        "assert_malformed": 11,
+        "assert_return": 114,
+        "assert_trap": 18,
+        "module": 3
+      },
+      "json": "call_indirect/script.json",
+      "source": "call_indirect.wast",
+      "sourceSHA256": "5175284ea9f077fa44986aca0f0aa6348c26b80644e4601800f1f495cb64a19e",
+      "textParsingAssertions": 11
+    },
+    {
+      "commands": {
+        "assert_return": 3,
+        "module": 5
+      },
+      "json": "comments/script.json",
+      "source": "comments.wast",
+      "sourceSHA256": "0d3251bbe35291f80c6861cdc8b869d0c3da23836345d79210765fd80351b64f",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_malformed": 76,
+        "assert_return": 300,
+        "module": 402
+      },
+      "json": "const/script.json",
+      "source": "const.wast",
+      "sourceSHA256": "b1a378d5b7ddb4d4acb5ae2959ac938dfe0d9e3c2864df457bc098d3f2e00f37",
+      "textParsingAssertions": 76
+    },
+    {
+      "commands": {
+        "assert_invalid": 25,
+        "assert_return": 526,
+        "assert_trap": 67,
+        "module": 1
+      },
+      "json": "conversions/script.json",
+      "source": "conversions.wast",
+      "sourceSHA256": "70eeec77b5c5c4fa6c9547f97ac56c1e21ebd5e2a10e7318f2e22100d5f6f056",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_malformed": 8,
+        "module": 3
+      },
+      "json": "custom/script.json",
+      "source": "custom.wast",
+      "sourceSHA256": "59067c2c216fe1d6ac1249dbf9fc33573fb23b45b1bf5cc8f8a6eca14cf96f10",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 22,
+        "assert_uninstantiable": 14,
+        "module": 25
+      },
+      "json": "data/script.json",
+      "source": "data.wast",
+      "sourceSHA256": "30b281c69ac6a3045af6c73da91c297ac47989b9bc818877b9b2ea9e78120705",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 26,
+        "assert_return": 23,
+        "assert_trap": 3,
+        "assert_uninstantiable": 12,
+        "module": 31,
+        "register": 3
+      },
+      "json": "elem/script.json",
+      "source": "elem.wast",
+      "sourceSHA256": "3a2e1bd6c468c628c8061af04e59f5d1d086d50a41ad1f39d2c8e7c5a853ba26",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_return": 68,
+        "module": 1
+      },
+      "json": "endianness/script.json",
+      "source": "endianness.wast",
+      "sourceSHA256": "5d13436c8b6fe6099b89c5a16452e7d38fa170b2553b2983cf91b1fe4e5190ad",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 31,
+        "assert_return": 9,
+        "module": 56
+      },
+      "json": "exports/script.json",
+      "source": "exports.wast",
+      "sourceSHA256": "c5ebd0564dac6c531eb9f72ce2ad6659f1194788c38352824cee09c05399f4cb",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 11,
+        "assert_malformed": 2,
+        "assert_return": 2500,
+        "module": 1
+      },
+      "json": "f32/script.json",
+      "source": "f32.wast",
+      "sourceSHA256": "91c9e9edf5500659040c6b7657fbaa942ad6c0526d80d2ea558e406257a8674f",
+      "textParsingAssertions": 2
+    },
+    {
+      "commands": {
+        "assert_invalid": 3,
+        "assert_return": 360,
+        "module": 1
+      },
+      "json": "f32_bitwise/script.json",
+      "source": "f32_bitwise.wast",
+      "sourceSHA256": "8a514cd0c6c34cccbcd4deda8b3f1898cab2985a360d0ec10a4b1725027f0b64",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 6,
+        "assert_return": 2400,
+        "module": 1
+      },
+      "json": "f32_cmp/script.json",
+      "source": "f32_cmp.wast",
+      "sourceSHA256": "dc16e4361250dbf9ef2b91481e25964d6c31f9f593f2e31f08d5b4f5028a376f",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 11,
+        "assert_malformed": 2,
+        "assert_return": 2500,
+        "module": 1
+      },
+      "json": "f64/script.json",
+      "source": "f64.wast",
+      "sourceSHA256": "b8b85a753f13ae27d20ca8cb97ab58b30606854deb4fb829caac93785a90b0f7",
+      "textParsingAssertions": 2
+    },
+    {
+      "commands": {
+        "assert_invalid": 3,
+        "assert_return": 360,
+        "module": 1
+      },
+      "json": "f64_bitwise/script.json",
+      "source": "f64_bitwise.wast",
+      "sourceSHA256": "efd4e70d58ee853b4509352292058841b775ccea4cfd3060ddd350b8ccd4db32",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 6,
+        "assert_return": 2400,
+        "module": 1
+      },
+      "json": "f64_cmp/script.json",
+      "source": "f64_cmp.wast",
+      "sourceSHA256": "aabcd2c5af0670a9f7ce2cfd19befd3142c300fa5091575fad21a3726dcfb8c0",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_exhaustion": 1,
+        "assert_return": 6,
+        "module": 1
+      },
+      "json": "fac/script.json",
+      "source": "fac.wast",
+      "sourceSHA256": "160f50dd99afe4c87f9a49424887e6fd94baa79b20f0e07567b867e866b583d2",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "action": 10,
+        "assert_return": 819,
+        "module": 98
+      },
+      "json": "float_exprs/script.json",
+      "source": "float_exprs.wast",
+      "sourceSHA256": "f1659759fc66b9d7d46738adaefd9d9ff6d6a433d3192c762aa32f052fe6d071",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_malformed": 78,
+        "assert_return": 99,
+        "module": 2
+      },
+      "json": "float_literals/script.json",
+      "source": "float_literals.wast",
+      "sourceSHA256": "3702a2fa976e18929371b165b8bcdd63866fdc3dfdb1a4f4fdaa5b5ff7e53bb2",
+      "textParsingAssertions": 78
+    },
+    {
+      "commands": {
+        "action": 24,
+        "assert_return": 60,
+        "module": 6
+      },
+      "json": "float_memory/script.json",
+      "source": "float_memory.wast",
+      "sourceSHA256": "90c221916244bbf3bb9b8008b8a68174d9db7ecb7b65fa75d116650cfb237750",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_return": 470,
+        "module": 1
+      },
+      "json": "float_misc/script.json",
+      "source": "float_misc.wast",
+      "sourceSHA256": "03247e5060c34d2db3e3602cd25f1fa5179239ba175f95c6a509bd5c1859de81",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_return": 4,
+        "module": 1
+      },
+      "json": "forward/script.json",
+      "source": "forward.wast",
+      "sourceSHA256": "a387e07010b2846f37491ea2cfb9efaa6a334dc84377c4788754a5c6d8abdb6b",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 49,
+        "assert_malformed": 23,
+        "assert_return": 96,
+        "module": 4
+      },
+      "json": "func/script.json",
+      "source": "func.wast",
+      "sourceSHA256": "b1c857ba1aae3767742c7214b8ac596ce8e5328ca35cb34d37d0bef251db4ef4",
+      "textParsingAssertions": 23
+    },
+    {
+      "commands": {
+        "action": 1,
+        "assert_invalid": 7,
+        "assert_return": 19,
+        "assert_trap": 6,
+        "module": 3
+      },
+      "json": "func_ptrs/script.json",
+      "source": "func_ptrs.wast",
+      "sourceSHA256": "a322e40d162db20e117f677b1a4501691e797e484d01ccd2b7fd655ba07275d2",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 40,
+        "assert_malformed": 7,
+        "assert_return": 57,
+        "assert_trap": 1,
+        "module": 5
+      },
+      "json": "global/script.json",
+      "source": "global.wast",
+      "sourceSHA256": "de872fef5f6a71a7a3cd24441ebc062993c04936e73dade4ebfc24a1163eed2a",
+      "textParsingAssertions": 3
+    },
+    {
+      "commands": {
+        "assert_invalid": 83,
+        "assert_malformed": 2,
+        "assert_return": 364,
+        "assert_trap": 10,
+        "module": 1
+      },
+      "json": "i32/script.json",
+      "source": "i32.wast",
+      "sourceSHA256": "f3b7e8fd641893ea0989a8ab801fce0654d276d27b5cad9cf482291a422cffe8",
+      "textParsingAssertions": 2
+    },
+    {
+      "commands": {
+        "assert_invalid": 29,
+        "assert_malformed": 2,
+        "assert_return": 374,
+        "assert_trap": 10,
+        "module": 1
+      },
+      "json": "i64/script.json",
+      "source": "i64.wast",
+      "sourceSHA256": "7d0e27a617565e0685aef56cee01b2b4890084068e3989168c41d14c56b1945e",
+      "textParsingAssertions": 2
+    },
+    {
+      "commands": {
+        "assert_invalid": 92,
+        "assert_malformed": 24,
+        "assert_return": 123,
+        "assert_trap": 1,
+        "module": 1
+      },
+      "json": "if/script.json",
+      "source": "if.wast",
+      "sourceSHA256": "e5fa21f154a30c86b716beec7a5c4b46d8e1dde9ceb3ed0ef7dd2d2eae76b6f0",
+      "textParsingAssertions": 24
+    },
+    {
+      "commands": {
+        "assert_invalid": 4,
+        "assert_malformed": 16,
+        "assert_return": 26,
+        "assert_trap": 8,
+        "assert_unlinkable": 71,
+        "module": 51,
+        "register": 2
+      },
+      "json": "imports/script.json",
+      "source": "imports.wast",
+      "sourceSHA256": "5e08aad601fe76e767a621d18932a07e6df094b768e891422f3a576efcedfa21",
+      "textParsingAssertions": 16
+    },
+    {
+      "commands": {
+        "module": 1
+      },
+      "json": "inline-module/script.json",
+      "source": "inline-module.wast",
+      "sourceSHA256": "fcaab83e53f188536b952c7d66e663f8c1e7e7bd52e3272a32c5c921654ec44a",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_return": 75,
+        "assert_trap": 14,
+        "module": 19
+      },
+      "json": "int_exprs/script.json",
+      "source": "int_exprs.wast",
+      "sourceSHA256": "e8b884e16bdbed0270e9b912eaa60a0e8688831e7574be98c00a60dcc667ed2b",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_malformed": 20,
+        "assert_return": 30,
+        "module": 1
+      },
+      "json": "int_literals/script.json",
+      "source": "int_literals.wast",
+      "sourceSHA256": "1087900dd58f95f6c5db0c1ec7bbad1fb67b45accda5b079df2f3647cbb13038",
+      "textParsingAssertions": 20
+    },
+    {
+      "commands": {
+        "assert_invalid": 3,
+        "assert_return": 25,
+        "module": 1
+      },
+      "json": "labels/script.json",
+      "source": "labels.wast",
+      "sourceSHA256": "c4f00b0b980f9b33487a002b495dc186d35232bf726fa60982a4c1b226275a26",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_return": 95,
+        "module": 1
+      },
+      "json": "left-to-right/script.json",
+      "source": "left-to-right.wast",
+      "sourceSHA256": "1a7376ac279bcf95b2493d6c2413721e14c35dfcd47fbfdffcb203aad8cb5a16",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_return": 65,
+        "assert_trap": 18,
+        "assert_uninstantiable": 7,
+        "assert_unlinkable": 12,
+        "module": 21,
+        "register": 9
+      },
+      "json": "linking/script.json",
+      "source": "linking.wast",
+      "sourceSHA256": "ead8697c2bab1f0d575b1b32608bbdc4010224496fdbddebf5c933c4c18feea2",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 46,
+        "assert_malformed": 13,
+        "assert_return": 37,
+        "module": 1
+      },
+      "json": "load/script.json",
+      "source": "load.wast",
+      "sourceSHA256": "2f69ef5634207e065d022d7c26c92016ff1d14a94c5c755927d37fe14e63e256",
+      "textParsingAssertions": 13
+    },
+    {
+      "commands": {
+        "assert_invalid": 16,
+        "assert_return": 19,
+        "module": 1
+      },
+      "json": "local_get/script.json",
+      "source": "local_get.wast",
+      "sourceSHA256": "cae359467c1e042ec620b81ad4c29593bad940f69bb905440140e3794cef73e2",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 33,
+        "assert_return": 19,
+        "module": 1
+      },
+      "json": "local_set/script.json",
+      "source": "local_set.wast",
+      "sourceSHA256": "93df4f2089fce0a8f453635d4fcc750d676edb24af3826ba221a347a8da2df45",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 41,
+        "assert_return": 55,
+        "module": 1
+      },
+      "json": "local_tee/script.json",
+      "source": "local_tee.wast",
+      "sourceSHA256": "54967711038642e206fe21718eaff618387d05e421f280684862c549821ebdc8",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 27,
+        "assert_malformed": 15,
+        "assert_return": 77,
+        "module": 1
+      },
+      "json": "loop/script.json",
+      "source": "loop.wast",
+      "sourceSHA256": "8c9f440c7c113e6641652f1eec790e826db63938540b6edb94c702d98a9d4b8d",
+      "textParsingAssertions": 15
+    },
+    {
+      "commands": {
+        "assert_invalid": 18,
+        "assert_malformed": 6,
+        "assert_return": 53,
+        "module": 11
+      },
+      "json": "memory/script.json",
+      "source": "memory.wast",
+      "sourceSHA256": "3037e7bd8b7a02d2dc77890858974285b9255a1b48c502270164f572dbacb5dc",
+      "textParsingAssertions": 6
+    },
+    {
+      "commands": {
+        "action": 15,
+        "assert_invalid": 64,
+        "assert_return": 4320,
+        "assert_trap": 18,
+        "module": 33
+      },
+      "json": "memory_copy/script.json",
+      "source": "memory_copy.wast",
+      "sourceSHA256": "059813c4cd9e79cf3a287409842b9212f6f48b4a6a5f597f22c81631e7b55d08",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "action": 5,
+        "assert_invalid": 64,
+        "assert_return": 14,
+        "assert_trap": 6,
+        "module": 11
+      },
+      "json": "memory_fill/script.json",
+      "source": "memory_fill.wast",
+      "sourceSHA256": "b8a7dccdf72878d11497a5d13ca3c628552b690f5386ef56b0a46c5dd711ad1f",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 7,
+        "assert_return": 80,
+        "assert_trap": 7,
+        "module": 8,
+        "register": 2
+      },
+      "json": "memory_grow/script.json",
+      "source": "memory_grow.wast",
+      "sourceSHA256": "6663ac88646054cd362b71919d11904809feb34170ae216e9440dc81e7dc2364",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "action": 9,
+        "assert_invalid": 67,
+        "assert_return": 126,
+        "assert_trap": 14,
+        "module": 24
+      },
+      "json": "memory_init/script.json",
+      "source": "memory_init.wast",
+      "sourceSHA256": "e01fbd647657b597e54d90b02d61b808127447ca76d264d93fc5c4e69b3fde84",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "action": 3,
+        "assert_return": 4,
+        "module": 1
+      },
+      "json": "memory_redundancy/script.json",
+      "source": "memory_redundancy.wast",
+      "sourceSHA256": "5c7e66c660367c5b163148b5d4d7173611ab825d2614d77392c2883c308888d1",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 2,
+        "assert_return": 36,
+        "module": 4
+      },
+      "json": "memory_size/script.json",
+      "source": "memory_size.wast",
+      "sourceSHA256": "71570412caf937a389127b7ffd104efe24b89d0ccd1202d48bcf04f50bd62f76",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_return": 10,
+        "assert_trap": 170,
+        "module": 2
+      },
+      "json": "memory_trap/script.json",
+      "source": "memory_trap.wast",
+      "sourceSHA256": "b3209d2a07576a4961c6043b097f26457900a4eaee2b4df96a5359bea2d2ebb5",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_return": 482,
+        "module": 4
+      },
+      "json": "names/script.json",
+      "source": "names.wast",
+      "sourceSHA256": "b094bbd01c91fe23fe671ea7b28b7b8f5113ffcb9594f5972e1e8f5581e3976c",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 4,
+        "assert_return": 83,
+        "module": 1
+      },
+      "json": "nop/script.json",
+      "source": "nop.wast",
+      "sourceSHA256": "af9221ba075f91795c4e19ce6dc66aae5b0bdf0fce657a066755533d3fe0c113",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_malformed": 11
+      },
+      "json": "obsolete-keywords/script.json",
+      "source": "obsolete-keywords.wast",
+      "sourceSHA256": "acdec79f6d3bd5624a8bf9c8dc299309e52813cb25ff2505bab887ac7d0aaacf",
+      "textParsingAssertions": 11
+    },
+    {
+      "commands": {
+        "action": 2,
+        "assert_invalid": 3,
+        "assert_return": 8,
+        "module": 3,
+        "register": 1
+      },
+      "json": "ref_func/script.json",
+      "source": "ref_func.wast",
+      "sourceSHA256": "ff3d74f5e997d7a71a41d931235c345567136802a9f643f26872013242386d5f",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "action": 2,
+        "assert_invalid": 2,
+        "assert_return": 11,
+        "module": 1
+      },
+      "json": "ref_is_null/script.json",
+      "source": "ref_is_null.wast",
+      "sourceSHA256": "124f867c87d8b09ece9bdcb2b409de6e455519f7a3db0930ff87ad9835df77e7",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_return": 2,
+        "module": 1
+      },
+      "json": "ref_null/script.json",
+      "source": "ref_null.wast",
+      "sourceSHA256": "81caa9d7a3cf37359245cabb14021611985f336d00628363ccfb064c9d98b82b",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 20,
+        "assert_return": 63,
+        "module": 1
+      },
+      "json": "return/script.json",
+      "source": "return.wast",
+      "sourceSHA256": "987f665cbf9be3d240325fcc14bfa449e8fb8ad9e8193afa3aff03ddb33bd7ce",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 28,
+        "assert_return": 116,
+        "assert_trap": 2,
+        "module": 2
+      },
+      "json": "select/script.json",
+      "source": "select.wast",
+      "sourceSHA256": "590630003f628d8d766384b9e7f3376e987533a81110d64c2b22e9ba727fae67",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_malformed": 4,
+        "assert_return": 36,
+        "assert_trap": 6,
+        "module": 3
+      },
+      "json": "simd/simd_address/script.json",
+      "source": "simd/simd_address.wast",
+      "sourceSHA256": "2a5f9f1e2578cbb58205cf7f8e35be99084675d19db64bf0c0394ad31720ba8c",
+      "textParsingAssertions": 4
+    },
+    {
+      "commands": {
+        "assert_invalid": 12,
+        "assert_malformed": 34,
+        "assert_return": 8,
+        "module": 46
+      },
+      "json": "simd/simd_align/script.json",
+      "source": "simd/simd_align.wast",
+      "sourceSHA256": "8ce2f85a318248d843a53a7905c2fa34e71c9b931c4b0edcb163b23bb035d997",
+      "textParsingAssertions": 34
+    },
+    {
+      "commands": {
+        "assert_invalid": 24,
+        "assert_malformed": 15,
+        "assert_return": 211,
+        "module": 2
+      },
+      "json": "simd/simd_bit_shift/script.json",
+      "source": "simd/simd_bit_shift.wast",
+      "sourceSHA256": "75743d82db9ef761a1bc0637bf684083d81c3eaf67403b6c5ca3eedf28e6c3c4",
+      "textParsingAssertions": 15
+    },
+    {
+      "commands": {
+        "assert_invalid": 28,
+        "assert_return": 139,
+        "module": 2
+      },
+      "json": "simd/simd_bitwise/script.json",
+      "source": "simd/simd_bitwise.wast",
+      "sourceSHA256": "df1e9e6284f7bf22dd090b4bf5390a331b15cfd4e11ad1fd52ad74a69ce67130",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 12,
+        "assert_malformed": 4,
+        "assert_return": 259,
+        "module": 2
+      },
+      "json": "simd/simd_boolean/script.json",
+      "source": "simd/simd_boolean.wast",
+      "sourceSHA256": "ed21bfb6d0f04f921a7df2c18de9dbce35d85eb71fd9ef1c6397bfc9e5c8ac2a",
+      "textParsingAssertions": 4
+    },
+    {
+      "commands": {
+        "assert_malformed": 180,
+        "assert_return": 265,
+        "module": 312
+      },
+      "json": "simd/simd_const/script.json",
+      "source": "simd/simd_const.wast",
+      "sourceSHA256": "8eedb40531e0505681f5b0b373fa279bdbe098e58035b94621d47fb1b8de9167",
+      "textParsingAssertions": 180
+    },
+    {
+      "commands": {
+        "assert_invalid": 18,
+        "assert_malformed": 30,
+        "assert_return": 232,
+        "module": 2
+      },
+      "json": "simd/simd_conversions/script.json",
+      "source": "simd/simd_conversions.wast",
+      "sourceSHA256": "35d0888db2be09991d646ec5ab8a2cb836154aaf892fbcf3be220d841fef4f71",
+      "textParsingAssertions": 30
+    },
+    {
+      "commands": {
+        "assert_invalid": 8,
+        "assert_malformed": 8,
+        "assert_return": 772,
+        "module": 2
+      },
+      "json": "simd/simd_f32x4/script.json",
+      "source": "simd/simd_f32x4.wast",
+      "sourceSHA256": "9241562e96a55cde607e7879b5bf212d1dd2a667cbd7b93274ca41bf7e976dcf",
+      "textParsingAssertions": 8
+    },
+    {
+      "commands": {
+        "assert_invalid": 16,
+        "assert_return": 1803,
+        "module": 3
+      },
+      "json": "simd/simd_f32x4_arith/script.json",
+      "source": "simd/simd_f32x4_arith.wast",
+      "sourceSHA256": "177b579abb1ea05c8b4a6c8b8b9e6770473334013b4f3e6c72cc9a414c03d1ef",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 18,
+        "assert_malformed": 6,
+        "assert_return": 2581,
+        "module": 2
+      },
+      "json": "simd/simd_f32x4_cmp/script.json",
+      "source": "simd/simd_f32x4_cmp.wast",
+      "sourceSHA256": "b6f6e954fd3bb24443dedf94f1ecac30ad9132e0dd2aa00b9ffa625aec74370e",
+      "textParsingAssertions": 6
+    },
+    {
+      "commands": {
+        "assert_invalid": 6,
+        "assert_malformed": 8,
+        "assert_return": 3872,
+        "module": 1
+      },
+      "json": "simd/simd_f32x4_pmin_pmax/script.json",
+      "source": "simd/simd_f32x4_pmin_pmax.wast",
+      "sourceSHA256": "cc02c29c672c70ab8e11765e89aaf848d0133f142c690f6dd0829652242c971e",
+      "textParsingAssertions": 8
+    },
+    {
+      "commands": {
+        "assert_invalid": 8,
+        "assert_malformed": 16,
+        "assert_return": 176,
+        "module": 1
+      },
+      "json": "simd/simd_f32x4_rounding/script.json",
+      "source": "simd/simd_f32x4_rounding.wast",
+      "sourceSHA256": "e52cdc74455b65eb7779a24fbbeb0a0bb12770f31a90aefcb65f85899e6b9780",
+      "textParsingAssertions": 16
+    },
+    {
+      "commands": {
+        "assert_invalid": 8,
+        "assert_return": 793,
+        "module": 2
+      },
+      "json": "simd/simd_f64x2/script.json",
+      "source": "simd/simd_f64x2.wast",
+      "sourceSHA256": "21c46c7e147f164acce4f2752d24183b2b0aee55446af1f17a00b2b8d2fc7d0b",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 16,
+        "assert_return": 1806,
+        "module": 3
+      },
+      "json": "simd/simd_f64x2_arith/script.json",
+      "source": "simd/simd_f64x2_arith.wast",
+      "sourceSHA256": "d1f24be8c50c86b24950e8c024f892d24f65fc3dfea1b0df3dde6121adbac8c7",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 18,
+        "assert_malformed": 6,
+        "assert_return": 2659,
+        "module": 2
+      },
+      "json": "simd/simd_f64x2_cmp/script.json",
+      "source": "simd/simd_f64x2_cmp.wast",
+      "sourceSHA256": "5f96c51af01079d7d65c135f4aa996fa0aa53d6109f7cce7e52d7adaf59e931d",
+      "textParsingAssertions": 6
+    },
+    {
+      "commands": {
+        "assert_invalid": 6,
+        "assert_malformed": 8,
+        "assert_return": 3872,
+        "module": 1
+      },
+      "json": "simd/simd_f64x2_pmin_pmax/script.json",
+      "source": "simd/simd_f64x2_pmin_pmax.wast",
+      "sourceSHA256": "aad07876628180daa0735891447e3e00bbfac3119235d57d74e7ab9cfa67bafa",
+      "textParsingAssertions": 8
+    },
+    {
+      "commands": {
+        "assert_invalid": 8,
+        "assert_malformed": 16,
+        "assert_return": 176,
+        "module": 1
+      },
+      "json": "simd/simd_f64x2_rounding/script.json",
+      "source": "simd/simd_f64x2_rounding.wast",
+      "sourceSHA256": "e986cff25060f411ee69015bed0a31b26520c082232c21ba55901de9036df5f4",
+      "textParsingAssertions": 16
+    },
+    {
+      "commands": {
+        "assert_invalid": 11,
+        "assert_return": 181,
+        "module": 2
+      },
+      "json": "simd/simd_i16x8_arith/script.json",
+      "source": "simd/simd_i16x8_arith.wast",
+      "sourceSHA256": "bf5fe83b4763f578e82bf4c2f2abbc98e28d3d4a4f2300850366df57c5f3cf8c",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 17,
+        "assert_malformed": 2,
+        "assert_return": 151,
+        "module": 2
+      },
+      "json": "simd/simd_i16x8_arith2/script.json",
+      "source": "simd/simd_i16x8_arith2.wast",
+      "sourceSHA256": "8cb98b24c8a122c1d6ebf9017aa3b71bf27d7bea06ae991c4561d5caac965359",
+      "textParsingAssertions": 2
+    },
+    {
+      "commands": {
+        "assert_invalid": 30,
+        "assert_return": 433,
+        "module": 2
+      },
+      "json": "simd/simd_i16x8_cmp/script.json",
+      "source": "simd/simd_i16x8_cmp.wast",
+      "sourceSHA256": "d579026e21d7b0a923582a4bad223e24bae9218138b6ea98b02bfa114c91e5ba",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 4,
+        "assert_return": 16,
+        "module": 1
+      },
+      "json": "simd/simd_i16x8_extadd_pairwise_i8x16/script.json",
+      "source": "simd/simd_i16x8_extadd_pairwise_i8x16.wast",
+      "sourceSHA256": "f2fd15db7d7960b3cbb846bc6cdb7af91b4ddf7fda433438732d728c0bcc6900",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 12,
+        "assert_return": 104,
+        "module": 1
+      },
+      "json": "simd/simd_i16x8_extmul_i8x16/script.json",
+      "source": "simd/simd_i16x8_extmul_i8x16.wast",
+      "sourceSHA256": "c19eb5f9fba0664d3f29573cf7dbcc49a0ec95353dfb9cdf0725f7e5d878f3c1",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 3,
+        "assert_return": 26,
+        "module": 1
+      },
+      "json": "simd/simd_i16x8_q15mulr_sat_s/script.json",
+      "source": "simd/simd_i16x8_q15mulr_sat_s.wast",
+      "sourceSHA256": "58a9a5ea3cab2dbc5e299045751d05be5bc72f587e348e7d14583e28f690a2b6",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 12,
+        "assert_malformed": 4,
+        "assert_return": 204,
+        "module": 2
+      },
+      "json": "simd/simd_i16x8_sat_arith/script.json",
+      "source": "simd/simd_i16x8_sat_arith.wast",
+      "sourceSHA256": "ddee04e7f5f056b7b5f684c78405c00e056323bc4d7d4ffcfe91c1b0da89f681",
+      "textParsingAssertions": 4
+    },
+    {
+      "commands": {
+        "assert_invalid": 11,
+        "assert_return": 181,
+        "module": 2
+      },
+      "json": "simd/simd_i32x4_arith/script.json",
+      "source": "simd/simd_i32x4_arith.wast",
+      "sourceSHA256": "cbba894d51df7a80a68467d69c3393903303e34262c0d0f2c3d57279ae80041d",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 14,
+        "assert_malformed": 12,
+        "assert_return": 121,
+        "module": 2
+      },
+      "json": "simd/simd_i32x4_arith2/script.json",
+      "source": "simd/simd_i32x4_arith2.wast",
+      "sourceSHA256": "f812fe268684aff5578eeeb0cb758ec95e5057ac2152eeb343a7ad8deb8cfb11",
+      "textParsingAssertions": 12
+    },
+    {
+      "commands": {
+        "assert_invalid": 30,
+        "assert_malformed": 10,
+        "assert_return": 433,
+        "module": 2
+      },
+      "json": "simd/simd_i32x4_cmp/script.json",
+      "source": "simd/simd_i32x4_cmp.wast",
+      "sourceSHA256": "dae265cf89893130060d79df6065c9072e2f4874f151aa761b2a51ff33c249b6",
+      "textParsingAssertions": 10
+    },
+    {
+      "commands": {
+        "assert_invalid": 3,
+        "assert_return": 28,
+        "module": 1
+      },
+      "json": "simd/simd_i32x4_dot_i16x8/script.json",
+      "source": "simd/simd_i32x4_dot_i16x8.wast",
+      "sourceSHA256": "ac814511164c6c603c95c0d70ab13b8af4c448683807d4d7d36df746afd1c414",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 4,
+        "assert_return": 16,
+        "module": 1
+      },
+      "json": "simd/simd_i32x4_extadd_pairwise_i16x8/script.json",
+      "source": "simd/simd_i32x4_extadd_pairwise_i16x8.wast",
+      "sourceSHA256": "8b91b3ccc0be510e08c480dfc18d0b32fb823e955f9b07d80c7f886a13b3672b",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 12,
+        "assert_return": 104,
+        "module": 1
+      },
+      "json": "simd/simd_i32x4_extmul_i16x8/script.json",
+      "source": "simd/simd_i32x4_extmul_i16x8.wast",
+      "sourceSHA256": "ddcad7c3853d61bec50895c3321fe2f08b04ec126dfeaf6ba5135693814eabe6",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 4,
+        "assert_return": 102,
+        "module": 1
+      },
+      "json": "simd/simd_i32x4_trunc_sat_f32x4/script.json",
+      "source": "simd/simd_i32x4_trunc_sat_f32x4.wast",
+      "sourceSHA256": "f81cace2c315c3bed5f49083c3319f3657835dd0e0d35b27e6f14019da71ad13",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 4,
+        "assert_return": 102,
+        "module": 1
+      },
+      "json": "simd/simd_i32x4_trunc_sat_f64x2/script.json",
+      "source": "simd/simd_i32x4_trunc_sat_f64x2.wast",
+      "sourceSHA256": "0102d49059499276dae193c3a1e0a09c2f24f98336502a1c36147cfc9bcbdb76",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 11,
+        "assert_return": 187,
+        "module": 2
+      },
+      "json": "simd/simd_i64x2_arith/script.json",
+      "source": "simd/simd_i64x2_arith.wast",
+      "sourceSHA256": "ea38542e3e041a30bdde53222c073eda824ef11c5254cb31bfa9fbc6dc3bb77a",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 2,
+        "assert_return": 21,
+        "module": 2
+      },
+      "json": "simd/simd_i64x2_arith2/script.json",
+      "source": "simd/simd_i64x2_arith2.wast",
+      "sourceSHA256": "3dee5436933d5296b3cc44219b3287586ba0506ec95ab7c34523c7b2d475d870",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 10,
+        "assert_return": 102,
+        "module": 1
+      },
+      "json": "simd/simd_i64x2_cmp/script.json",
+      "source": "simd/simd_i64x2_cmp.wast",
+      "sourceSHA256": "d6cf1cd59ae54427a0d6defabd286099ba12e2d797a31629203a7ad3e1ad5161",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 12,
+        "assert_return": 104,
+        "module": 1
+      },
+      "json": "simd/simd_i64x2_extmul_i32x4/script.json",
+      "source": "simd/simd_i64x2_extmul_i32x4.wast",
+      "sourceSHA256": "cd293131cbe56c29a766f0d4b75ff80527dabb1cf4fc8f491c47f289a6afcd1f",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 8,
+        "assert_return": 121,
+        "module": 2
+      },
+      "json": "simd/simd_i8x16_arith/script.json",
+      "source": "simd/simd_i8x16_arith.wast",
+      "sourceSHA256": "32d53d175ae2cf56aef5e495d6e9e0a8bc6d08e96aabdc998bcb140f045da7bd",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 19,
+        "assert_malformed": 6,
+        "assert_return": 184,
+        "module": 2
+      },
+      "json": "simd/simd_i8x16_arith2/script.json",
+      "source": "simd/simd_i8x16_arith2.wast",
+      "sourceSHA256": "3ed841ff2a376e2f9599b96d0026b55c1fb9544c71e5cdb18f4fde3b197a5890",
+      "textParsingAssertions": 6
+    },
+    {
+      "commands": {
+        "assert_invalid": 30,
+        "assert_return": 413,
+        "module": 2
+      },
+      "json": "simd/simd_i8x16_cmp/script.json",
+      "source": "simd/simd_i8x16_cmp.wast",
+      "sourceSHA256": "1d2ef2b1b72ce3ccc691eee9f107f25c765a0aa89bb532ab5ae12431e2d940b2",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 12,
+        "assert_malformed": 12,
+        "assert_return": 188,
+        "module": 2
+      },
+      "json": "simd/simd_i8x16_sat_arith/script.json",
+      "source": "simd/simd_i8x16_sat_arith.wast",
+      "sourceSHA256": "5ac0f7c3c7327a5e2a79f397fd7189e162ec19ea0d2822e5d2a3fe0ad2a92b2c",
+      "textParsingAssertions": 12
+    },
+    {
+      "commands": {
+        "assert_invalid": 24,
+        "assert_return": 228,
+        "module": 1
+      },
+      "json": "simd/simd_int_to_int_extend/script.json",
+      "source": "simd/simd_int_to_int_extend.wast",
+      "sourceSHA256": "27f571596bc0648b2aaff8d6370669f1dd90c8392379bb637390a6670dac4bc6",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 83,
+        "assert_malformed": 106,
+        "assert_return": 274,
+        "module": 12
+      },
+      "json": "simd/simd_lane/script.json",
+      "source": "simd/simd_lane.wast",
+      "sourceSHA256": "bcbf35c2252874e8748b5e507053b7f1bdc82594ad846b8db75c0c92c90433f5",
+      "textParsingAssertions": 106
+    },
+    {
+      "commands": {
+        "module": 2,
+        "register": 1
+      },
+      "json": "simd/simd_linking/script.json",
+      "source": "simd/simd_linking.wast",
+      "sourceSHA256": "de180555d0846bd91086b70fcc6da258e380008355bf72977a9a8522c3fa56af",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 5,
+        "assert_malformed": 3,
+        "assert_return": 17,
+        "module": 14
+      },
+      "json": "simd/simd_load/script.json",
+      "source": "simd/simd_load.wast",
+      "sourceSHA256": "310d1d2a48087a52d845ad353a972b87fa7b37dae2d9b2341c812466a61283bb",
+      "textParsingAssertions": 3
+    },
+    {
+      "commands": {
+        "assert_invalid": 3,
+        "assert_return": 32,
+        "module": 1
+      },
+      "json": "simd/simd_load16_lane/script.json",
+      "source": "simd/simd_load16_lane.wast",
+      "sourceSHA256": "4b0f6e1e286b3d1305fe459679eb044b6967f355332ae22afc31139d95084bb0",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 3,
+        "assert_return": 20,
+        "module": 1
+      },
+      "json": "simd/simd_load32_lane/script.json",
+      "source": "simd/simd_load32_lane.wast",
+      "sourceSHA256": "4653d8ee15db4c1c4eb2b24f6d10bad3fc90c684318d6ef4a2c2fae303f70237",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 3,
+        "assert_return": 12,
+        "module": 1
+      },
+      "json": "simd/simd_load64_lane/script.json",
+      "source": "simd/simd_load64_lane.wast",
+      "sourceSHA256": "6f03666aeb820225f6d0f0a16ec4c53afc64112f2cf75fb095c65290a9fbf429",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 3,
+        "assert_return": 48,
+        "module": 1
+      },
+      "json": "simd/simd_load8_lane/script.json",
+      "source": "simd/simd_load8_lane.wast",
+      "sourceSHA256": "fa5d45d0799476a3bf1c91733b3108ed5df9d42c9be8ef929db9918bfa5e46f9",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 12,
+        "assert_malformed": 6,
+        "assert_return": 72,
+        "assert_trap": 12,
+        "module": 2
+      },
+      "json": "simd/simd_load_extend/script.json",
+      "source": "simd/simd_load_extend.wast",
+      "sourceSHA256": "a09798f35d733564adcb62a469663158fd445eb1ecea94c4b78158da4a381b7c",
+      "textParsingAssertions": 6
+    },
+    {
+      "commands": {
+        "assert_invalid": 8,
+        "assert_malformed": 4,
+        "assert_return": 80,
+        "assert_trap": 32,
+        "module": 2
+      },
+      "json": "simd/simd_load_splat/script.json",
+      "source": "simd/simd_load_splat.wast",
+      "sourceSHA256": "456dfe1f1e981d7dc0183d4febd2a7cb5b8214e9962e3451935443a89c6c936d",
+      "textParsingAssertions": 4
+    },
+    {
+      "commands": {
+        "assert_invalid": 4,
+        "assert_malformed": 6,
+        "assert_return": 23,
+        "assert_trap": 4,
+        "module": 2
+      },
+      "json": "simd/simd_load_zero/script.json",
+      "source": "simd/simd_load_zero.wast",
+      "sourceSHA256": "a9c6aead086388cbad3adbbd028f731be51300bc774dda247cb301d0b03f4a43",
+      "textParsingAssertions": 6
+    },
+    {
+      "commands": {
+        "assert_return": 6,
+        "module": 1
+      },
+      "json": "simd/simd_select/script.json",
+      "source": "simd/simd_select.wast",
+      "sourceSHA256": "9df4716bca0b093e876481b568e5f07e39684c5059463e595d8eb1cbcafa605b",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 22,
+        "assert_malformed": 1,
+        "assert_return": 158,
+        "module": 4
+      },
+      "json": "simd/simd_splat/script.json",
+      "source": "simd/simd_splat.wast",
+      "sourceSHA256": "192d900a7b69a5edf765da03e24deab149c1c8baa6d020ee81097b4d2f5ecec8",
+      "textParsingAssertions": 1
+    },
+    {
+      "commands": {
+        "assert_invalid": 6,
+        "assert_malformed": 3,
+        "assert_return": 17,
+        "module": 2
+      },
+      "json": "simd/simd_store/script.json",
+      "source": "simd/simd_store.wast",
+      "sourceSHA256": "9385ff9e13c9db0481a03660653fb1c488670785a20b699aded8bf60ec982405",
+      "textParsingAssertions": 3
+    },
+    {
+      "commands": {
+        "assert_invalid": 3,
+        "assert_return": 32,
+        "module": 1
+      },
+      "json": "simd/simd_store16_lane/script.json",
+      "source": "simd/simd_store16_lane.wast",
+      "sourceSHA256": "a1f489b2cffbdfa26ef32086874802fcf1d7ebe89ef5ecb97d8921e1cbf38b1d",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 3,
+        "assert_return": 20,
+        "module": 1
+      },
+      "json": "simd/simd_store32_lane/script.json",
+      "source": "simd/simd_store32_lane.wast",
+      "sourceSHA256": "dbc1cfb67364ce4c007b6df8b1a06349da7b0cba03a49259d38cb3b6ab3c8608",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 3,
+        "assert_return": 12,
+        "module": 1
+      },
+      "json": "simd/simd_store64_lane/script.json",
+      "source": "simd/simd_store64_lane.wast",
+      "sourceSHA256": "3112a00a0c56ba9b8c006478b87c8f63d572db446818a8f70052da9ee6eb359e",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 3,
+        "assert_return": 48,
+        "module": 1
+      },
+      "json": "simd/simd_store8_lane/script.json",
+      "source": "simd/simd_store8_lane.wast",
+      "sourceSHA256": "0a3b8bdba08291e4e0e16468ab4c03fa868e71fa270b57f17c0a27046d1c94bf",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_exhaustion": 10,
+        "module": 1
+      },
+      "json": "skip-stack-guard-page/script.json",
+      "source": "skip-stack-guard-page.wast",
+      "sourceSHA256": "6392fe50486ae71c758f6f15f756cf6336fcab3b53155488f3be21fbe7bc98c4",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_return": 5,
+        "module": 2
+      },
+      "json": "stack/script.json",
+      "source": "stack.wast",
+      "sourceSHA256": "c4931ad2e3eb0b32f479ed057f4c20a4ee33348a02066209ac34d3a5f27107d7",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "action": 4,
+        "assert_invalid": 3,
+        "assert_malformed": 1,
+        "assert_return": 6,
+        "assert_uninstantiable": 1,
+        "module": 5
+      },
+      "json": "start/script.json",
+      "source": "start.wast",
+      "sourceSHA256": "74749f68d2c69219f42148a7d1c35286f33020674df35515ad04587a369038ff",
+      "textParsingAssertions": 1
+    },
+    {
+      "commands": {
+        "assert_invalid": 51,
+        "assert_malformed": 7,
+        "assert_return": 9,
+        "module": 1
+      },
+      "json": "store/script.json",
+      "source": "store.wast",
+      "sourceSHA256": "d35ff73bab2729d3747605072cf437d863104bca375d743cbe9a7ab4b2269ab9",
+      "textParsingAssertions": 7
+    },
+    {
+      "commands": {
+        "assert_invalid": 1,
+        "assert_return": 26,
+        "module": 1
+      },
+      "json": "switch/script.json",
+      "source": "switch.wast",
+      "sourceSHA256": "56addb6d426e9f8128ec7666dc8b0656f5625eb41b0657d219495afeeddfa8b1",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 2
+      },
+      "json": "table-sub/script.json",
+      "source": "table-sub.wast",
+      "sourceSHA256": "24bd3ad95a87f23330865f1ccc4520f7d4cf6c053705939f334ba94c37bf3980",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 4,
+        "assert_malformed": 6,
+        "module": 9
+      },
+      "json": "table/script.json",
+      "source": "table.wast",
+      "sourceSHA256": "26359f763e33404ccc55447a2d50e1ee22c081eb4d676c3d71edb85f3a95a7aa",
+      "textParsingAssertions": 6
+    },
+    {
+      "commands": {
+        "action": 26,
+        "assert_return": 443,
+        "assert_trap": 1206,
+        "module": 52,
+        "register": 1
+      },
+      "json": "table_copy/script.json",
+      "source": "table_copy.wast",
+      "sourceSHA256": "254022f7c24c01029982055b4e33a3eb0ac3b2a981aed7573146cb575d22c0ad",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 9,
+        "assert_return": 32,
+        "assert_trap": 3,
+        "module": 1
+      },
+      "json": "table_fill/script.json",
+      "source": "table_fill.wast",
+      "sourceSHA256": "aeb6e58f8d3d811b9fa5942918f02a8e97d14eca880ab442409b65d35b9c7ba6",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "action": 1,
+        "assert_invalid": 5,
+        "assert_return": 5,
+        "assert_trap": 4,
+        "module": 1
+      },
+      "json": "table_get/script.json",
+      "source": "table_get.wast",
+      "sourceSHA256": "4e655e6f4dc1d903fb8c4cd19d4a088a74849ceab3006e212a53e2f7beb57f05",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 7,
+        "assert_return": 35,
+        "assert_trap": 6,
+        "module": 8,
+        "register": 2
+      },
+      "json": "table_grow/script.json",
+      "source": "table_grow.wast",
+      "sourceSHA256": "4966e3ef9252d1e7fc5fbb274ef25904c2363a0964175c89dfc82cfba22092ae",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "action": 15,
+        "assert_invalid": 67,
+        "assert_return": 80,
+        "assert_trap": 582,
+        "module": 35,
+        "register": 1
+      },
+      "json": "table_init/script.json",
+      "source": "table_init.wast",
+      "sourceSHA256": "82aab6d7148fe700b23047401814b5fe8dcb1c8ead462b7c26589d26ebc244fc",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 7,
+        "assert_return": 10,
+        "assert_trap": 8,
+        "module": 1
+      },
+      "json": "table_set/script.json",
+      "source": "table_set.wast",
+      "sourceSHA256": "8d41c2420113cc1e9fb04f30b4fd7b67acccbbd7f95d8c5bcc058091b6ed52ce",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 2,
+        "assert_return": 36,
+        "module": 1
+      },
+      "json": "table_size/script.json",
+      "source": "table_size.wast",
+      "sourceSHA256": "fd286e59440de7f807f726e50d2a651ebeace85d3657142d1207b7afd96d261d",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_malformed": 23,
+        "module": 35
+      },
+      "json": "token/script.json",
+      "source": "token.wast",
+      "sourceSHA256": "e3f50ed0507f67f2cd8548be5fb698014c5ccec0f0fe083936eacad6cab15a71",
+      "textParsingAssertions": 23
+    },
+    {
+      "commands": {
+        "assert_trap": 32,
+        "module": 4
+      },
+      "json": "traps/script.json",
+      "source": "traps.wast",
+      "sourceSHA256": "3c0615dd26ee186c9a8138e933ff068fd6679e4fc34756b4ab1605d1fc7f1ede",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_malformed": 2,
+        "module": 1
+      },
+      "json": "type/script.json",
+      "source": "type.wast",
+      "sourceSHA256": "72df248a2a7afe432a46aea636f96c8930a894bdc285f8fe365aa28736bc9f73",
+      "textParsingAssertions": 2
+    },
+    {
+      "commands": {
+        "assert_return": 5,
+        "assert_trap": 58,
+        "module": 1
+      },
+      "json": "unreachable/script.json",
+      "source": "unreachable.wast",
+      "sourceSHA256": "5ec91fd3df1ab694c77eb8d3e693d4e137fb96026d1c7f1b5bfd391cdaf6c89f",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_invalid": 118
+      },
+      "json": "unreached-invalid/script.json",
+      "source": "unreached-invalid.wast",
+      "sourceSHA256": "2b29d178bfe2dc57174292bfd5fe54d196a74f79eb9a049a285f05dca7c480c0",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_trap": 5,
+        "module": 2
+      },
+      "json": "unreached-valid/script.json",
+      "source": "unreached-valid.wast",
+      "sourceSHA256": "15f2f0a2b2619fbc80324bf832cdb09b19123bb7003df89bc6ae76ddaa597405",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_return": 41,
+        "assert_trap": 8,
+        "module": 1
+      },
+      "json": "unwind/script.json",
+      "source": "unwind.wast",
+      "sourceSHA256": "55da9a7d4d2dc19feb04fca3ab47eb842aa10202f2f9136fb3ca756c0b2bb931",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_malformed": 176
+      },
+      "json": "utf8-custom-section-id/script.json",
+      "source": "utf8-custom-section-id.wast",
+      "sourceSHA256": "20f6802e8ae0c9515d10687934f8f43a9312dfc64a52761f629f5547a689cb3a",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_malformed": 176
+      },
+      "json": "utf8-import-field/script.json",
+      "source": "utf8-import-field.wast",
+      "sourceSHA256": "1b9f2344c4b041c516079c5587c88d6fac1ec06c68d3328eaa5427f5b0242929",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_malformed": 176
+      },
+      "json": "utf8-import-module/script.json",
+      "source": "utf8-import-module.wast",
+      "sourceSHA256": "20449f8bb0249777e33aee76472009b48ec2ea3d3ecc78a8b8004173b47223c0",
+      "textParsingAssertions": 0
+    },
+    {
+      "commands": {
+        "assert_malformed": 176
+      },
+      "json": "utf8-invalid-encoding/script.json",
+      "source": "utf8-invalid-encoding.wast",
+      "sourceSHA256": "ef0280c3f5ab3befef6755878a107b1f18dc9f302fb8edd339afd413e8c31e47",
+      "textParsingAssertions": 176
+    }
+  ],
+  "textParsingAssertions": 1091
+}
