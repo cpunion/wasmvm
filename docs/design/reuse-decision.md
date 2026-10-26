@@ -65,6 +65,7 @@ Coverage reports describe the code they measure. Measure owned evaluator/integra
 | M0 work package | Delivered evidence |
 | --- | --- |
 | Candidate pins and licenses | Wazero stable/main/GC-PR snapshots, separate pinned module files and checksums, Wago beta.13 comparison, Apache-2.0 provenance |
+| Specification, suite, and interface inputs | [Immutable Core/proposal/P1/WASI-test revisions and license notices](../research/spec-inputs.md), plus downloaded and SHA-256-verified WASI 0.2.12/0.3.2 WIT release assets; full upstream suite execution remains assigned to later milestones |
 | Dual-compiler experiment | Shared evaluator, original v1.0.8 failure, scoped symbol inventory, LLGo issue #2918 and contribution PR #2919, unchanged-engine execution with the fix |
 | Feature corpus | 13 owned WAT/Wasm pairs, source/binary hashes, exact rejection assertions, negative cases, concurrent shared memory, cancellation observation, owned-code coverage |
 | LLGo guest inventory | Committed source/module and hashes, producer workaround, actual imports/features, successful Wasmer reference run |

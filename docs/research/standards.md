@@ -2,6 +2,12 @@
 
 Research date: **2026-10-26 (Asia/Shanghai)**. This document records primary sources inspected on that date. It does not treat an old roadmap as evidence that a release has shipped, or proposal maturity as evidence of an engine's default support. Priorities and implementation approaches below are this project's design judgments.
 
+The [initial specification and conformance input pins](spec-inputs.md) record
+immutable Core/proposal/test-suite revisions, directory-specific license
+notices, and independently verified WASI 0.2.12/0.3.2 WIT archive digests.
+These are selected inputs for later validation, not claims that the upstream
+suites have already passed.
+
 ## Findings
 
 Use **Core Wasm 3.0 as the long-term semantic target and WASI 0.1 with legacy wasi-threads as the first practical compatibility target**. Add WasmGC, Component Model / WASI 0.2, and then the already released WASI 0.3 through separate acceptance milestones. Account for GC and multithreading in the initial data model, but validate them independently. Initial support for GC modules and shared-linear-memory threads does not promise shared WasmGC objects across threads.
