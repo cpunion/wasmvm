@@ -110,7 +110,8 @@ jobs:
             --require github.com/cpunion/wasmvm/internal/engine/memory \
             --require github.com/cpunion/wasmvm/internal/engine/state \
             --require github.com/cpunion/wasmvm/internal/engine/interp \
-            --require github.com/cpunion/wasmvm/pkg/wasm
+            --require github.com/cpunion/wasmvm/pkg/wasm \
+            --require github.com/cpunion/wasmvm/pkg/vm
 
       - name: Fuzz bounded binary inputs
         if: matrix.compiler == 'go'

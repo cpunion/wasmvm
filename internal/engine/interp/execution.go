@@ -64,7 +64,12 @@ func New(store *state.Store, ctx context.Context, config Config) *Execution {
 	return &Execution{store: store, context: ctx, config: config, fuel: config.Fuel, status: Done}
 }
 func (e *Execution) Fuel() uint64 { return e.fuel }
-func (e *Execution) Err() error   { return e.err }
+
+// SetFuel synchronizes a suspended continuation with its driver's shared
+// reentry budget. The driver never changes it while Run is executing.
+func (e *Execution) SetFuel(fuel uint64) { e.fuel = fuel }
+func (e *Execution) Footprint() Limits   { return Limits{uint32(len(e.frames)), uint32(len(e.values))} }
+func (e *Execution) Err() error          { return e.err }
 
 // Results are borrowed until the next Start. Host calls expose copied input
 // values that remain stable while the driver services the request.
