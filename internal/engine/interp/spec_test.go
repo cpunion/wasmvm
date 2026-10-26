@@ -123,15 +123,17 @@ func (r *specRunner) instantiate(data []byte) (*state.Instance, error) {
 		return nil, err
 	}
 	if err := in.Initialize(); err != nil {
+		r.store.CollectFailed(nil, nil)
 		return nil, err
 	}
 	def := compiled.IR.Validated.Definition()
 	if def.HasStart {
 		if _, err := r.call(in.Functions[def.Start], nil); err != nil {
+			r.store.CollectFailed(nil, nil)
 			return nil, err
 		}
 	}
-	return in, nil
+	return in, r.store.Publish(in)
 }
 func (r *specRunner) call(ref uint64, args []value.Value) ([]value.Value, error) {
 	e := New(r.store, r.context, Config{Limits: DefaultLimits()})

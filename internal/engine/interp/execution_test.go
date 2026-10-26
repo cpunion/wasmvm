@@ -197,6 +197,37 @@ func TestHostSuspendResumeRootsAndReentry(t *testing.T) {
 
 type cancelAfter struct{ calls, at int }
 
+func TestSuspendedUnpublishedInstanceSurvivesCollection(t *testing.T) {
+	s := state.New(state.DefaultLimits())
+	host, _ := s.NewHost(module.FuncType{}, "pause")
+	m := simple(module.Expr{{Op: 0x10}, {Op: 0x41, Bits: 42}, {Op: 0xb}}, wasm.I32)
+	m.Types = append(m.Types, module.FuncType{})
+	m.Imports = []module.Import{{Kind: 0, Type: 1}}
+	in := instance(t, s, m, func(string, string) (state.Extern, bool) { return host, true })
+	e := New(s, nil, Config{Limits: DefaultLimits()})
+	if err := e.Start(in.Functions[1], nil); err != nil {
+		t.Fatal(err)
+	}
+	if e.Run() != HostRequest {
+		t.Fatal(e.Err())
+	}
+	var active []*state.Instance
+	e.RetainedInstances(func(in *state.Instance) { active = append(active, in) })
+	s.CollectFailed(nil, active)
+	if s.Usage().Instances != 1 || len(active) != 1 {
+		t.Fatal("lost suspended owner")
+	}
+	if err := e.ResumeHost(nil, nil); err != nil || e.Run() != Done || e.Results()[0].Lo != 42 {
+		t.Fatal(err, e.Err())
+	}
+	active = nil
+	e.RetainedInstances(func(in *state.Instance) { active = append(active, in) })
+	s.CollectFailed(nil, active)
+	if len(active) != 0 || s.Usage().Instances != 0 {
+		t.Fatal("completed frame retained owner")
+	}
+}
+
 func (c *cancelAfter) Deadline() (time.Time, bool) { return time.Time{}, false }
 func (c *cancelAfter) Done() <-chan struct{}       { return nil }
 func (c *cancelAfter) Value(any) any               { return nil }
@@ -297,7 +328,7 @@ func FuzzExecution(f *testing.F) {
 		if err != nil {
 			return
 		}
-		s := state.New(state.Limits{MaxTypes: 256, MaxFunctions: 128, MaxGlobals: 128, MaxInstances: 4, MaxMemoryPages: 4, MaxTableElements: 1024, MaxSegmentBytes: 1 << 16, MaxSegmentElements: 1024})
+		s := state.New(state.Limits{MaxTypes: 256, MaxFunctions: 128, MaxGlobals: 128, MaxInstances: 4, MaxMemories: 4, MaxTables: 8, MaxMemoryPages: 4, MaxTableElements: 1024, MaxSegmentBytes: 1 << 16, MaxSegmentElements: 1024})
 		in, err := s.Allocate(code, nil)
 		if err != nil {
 			if !errors.Is(err, state.ErrLink) && !errors.Is(err, wasm.ErrLimit) {

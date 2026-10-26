@@ -45,6 +45,10 @@ func New(declared module.Limits, quota uint32) (*Memory, error) {
 }
 func (m *Memory) Pages() uint32         { return uint32(uint64(len(m.bytes)) / PageSize) }
 func (m *Memory) Limits() module.Limits { return m.declared }
+
+// Release discards backing storage after its Store has excluded all users.
+// It is idempotent and prevents subsequent growth of a retired memory object.
+func (m *Memory) Release() { m.bytes = nil; m.maximum = 0 }
 func (m *Memory) Grow(delta uint32) (uint32, bool) {
 	old := m.Pages()
 	next := uint64(old) + uint64(delta)

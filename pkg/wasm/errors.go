@@ -11,6 +11,7 @@ var (
 	ErrLimit       = errors.New("WebAssembly resource limit exceeded")
 	ErrUnsupported = errors.New("unsupported WebAssembly feature")
 	ErrTrap        = errors.New("WebAssembly execution trap")
+	ErrClosed      = errors.New("WebAssembly object is closed")
 )
 
 // Error identifies a frontend failure at an absolute byte offset. Kind is one

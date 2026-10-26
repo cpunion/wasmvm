@@ -33,7 +33,7 @@ func expression(op uint32, bits uint64) module.Expr {
 	return module.Expr{{Op: op, Bits: bits}, {Op: 0xb}}
 }
 func TestOwnershipLimitsAndGrowth(t *testing.T) {
-	s := New(Limits{MaxTypes: 2, MaxFunctions: 1, MaxGlobals: 1, MaxMemoryPages: 3, MaxTableElements: 4})
+	s := New(Limits{MaxTypes: 2, MaxFunctions: 1, MaxGlobals: 1, MaxMemories: 2, MaxTables: 2, MaxMemoryPages: 3, MaxTableElements: 4})
 	sig := module.FuncType{Params: []wasm.ValueType{wasm.I32}}
 	host, err := s.NewHost(sig, "host")
 	if err != nil {
@@ -206,7 +206,7 @@ func hostSignature(s *Store, ex Extern) module.FuncType {
 func TestAllocationRollback(t *testing.T) {
 	def := &module.Module{Types: []module.FuncType{{}}, Functions: []module.Function{{Body: expression(1, 0)}}, Memories: []module.Limits{{Min: 1}}, Tables: []module.TableType{{Element: wasm.FuncRef, Limits: module.Limits{Min: 1}}}, Globals: []module.Global{{Type: module.GlobalType{Value: wasm.I32}, Init: expression(0x41, 0)}}, Elements: []module.Element{{Type: wasm.FuncRef, Mode: module.Passive, Functions: []uint32{0}}}, Data: []module.Data{{Mode: module.Passive, Bytes: []byte{1}}}}
 	compiled := build(t, def)
-	for _, field := range []string{"MaxTypes", "MaxFunctions", "MaxInstances", "MaxMemoryPages", "MaxTableElements", "MaxGlobals", "MaxSegmentBytes", "MaxSegmentElements"} {
+	for _, field := range []string{"MaxTypes", "MaxFunctions", "MaxInstances", "MaxMemories", "MaxTables", "MaxMemoryPages", "MaxTableElements", "MaxGlobals", "MaxSegmentBytes", "MaxSegmentElements"} {
 		t.Run(field, func(t *testing.T) {
 			limits := DefaultLimits()
 			reflect.ValueOf(&limits).Elem().FieldByName(field).SetUint(0)
@@ -214,7 +214,7 @@ func TestAllocationRollback(t *testing.T) {
 			if in, err := s.Allocate(compiled, nil); in != nil || !errors.Is(err, wasm.ErrLimit) {
 				t.Fatal(in, err)
 			}
-			if s.Usage() != (Usage{}) || len(s.functions) != 1 || len(s.instances) != 0 || len(s.types) != 0 {
+			if s.Usage() != (Usage{}) || len(s.functions) != 1 || len(s.instances) != 0 || len(s.types) != 0 || len(s.tables) != 0 || len(s.memories) != 0 || len(s.globals) != 0 {
 				t.Fatal("failed allocation retained state", s.Usage())
 			}
 		})

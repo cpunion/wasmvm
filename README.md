@@ -2,9 +2,9 @@
 
 A WebAssembly virtual machine written in Go, designed to build and run with both Go and LLGo.
 
-**M1 is in progress; the public VM API is not available yet.** The project-owned Core 2.0 frontend, typed IR, slot interpreter and private runtime state pass all **51,139 binary assertions in 148 pinned scripts** locally under Go and LLGo. This includes scalar/fixed-SIMD execution, calls, references, tables, memory, linking, initialization and expected traps. The 1,091 malformed-text parser assertions are classified separately.
+**M1 is in progress; the public VM API is not available yet.** The project-owned Core 2.0 frontend, typed IR, slot interpreter and private runtime state pass all **51,139 binary assertions in 148 pinned scripts** under Go and LLGo on Linux amd64 and macOS arm64. This includes scalar/fixed-SIMD execution, calls, references, tables, memory, linking, initialization and expected traps. The 1,091 malformed-text parser assertions are classified separately.
 
-The embedding lifecycle, public API, CLI and own-engine benchmark integration remain required M1 work. Native compilation and later Wasm/WASI profiles remain planned. Separate evaluation modules keep existing engines as semantic/performance references.
+The internal Store now reclaims unreachable failed instances and releases all state on close, preserving imported effects and escaped references. The public execution/close synchronization layer, host-root API, CLI and own-engine benchmark integration remain required M1 work. Native compilation and later Wasm/WASI profiles remain planned. Separate evaluation modules keep existing engines as semantic/performance references.
 
 ## Goals
 

@@ -149,7 +149,7 @@ These internal mechanisms pass the complete binary corpus locally. They do not
 yet provide the public single-executor/lifecycle driver, host root ownership,
 close/reclamation policy or own-engine performance acceptance. In particular,
 instances that fail after initialization begins remain Store-owned so escaped
-references remain valid; reclaiming unescaped failed state is still required.
+references remain valid. The internal Store now traces published instances, host-owned tables/globals, explicit function roots and active frames before reclaiming unreachable failed instances. Imported object dependencies and escaped function bodies preserve their owning instances; unreachable cycles are reclaimed. The embedding driver must supply its complete root set at serialized safepoints. Final internal close requires drained execution leases. Canonical type signatures remain interned under a Store-lifetime quota; function identity holes and zero-length memory/table objects also have explicit bounds.
 
 ## Runtime, lifecycle and observability
 
