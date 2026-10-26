@@ -1,6 +1,6 @@
 # Development Plan and Acceptance Gates
 
-Plan date: **2026-10-26**. M0 candidate evaluation and benchmark infrastructure are complete through PRs [#1](https://github.com/cpunion/wasmvm/pull/1), [#2](https://github.com/cpunion/wasmvm/pull/2), and [#3](https://github.com/cpunion/wasmvm/pull/3). The owner has selected a [project-owned core](design/own-core.md). **M1–M7 are not implemented.** This plan prioritizes complete core execution and compilation before WASI integration. Design approval does not close an implementation or performance gate.
+Plan date: **2026-10-26**. M0 candidate evaluation and benchmark infrastructure are complete through PRs [#1](https://github.com/cpunion/wasmvm/pull/1), [#2](https://github.com/cpunion/wasmvm/pull/2), and [#3](https://github.com/cpunion/wasmvm/pull/3). The owner has selected a [project-owned core](design/own-core.md). **M1 is in progress; M2–M7 are not implemented.** This plan prioritizes complete core execution and compilation before WASI integration. Design approval does not close an implementation or performance gate.
 
 Implement stages in order. Independent work within a stage can proceed in parallel after agreeing on shared contracts. Small implementation PRs may merge while the stage remains in progress; every required deliverable, supported-platform result, and exit gate must pass before that stage is complete. Do not replace full profiles with convenient instruction subsets or quietly move failing requirements to a later stage.
 
@@ -37,6 +37,8 @@ Keep the [candidate evaluation](research/wazero-evaluation.md), [immutable input
 ## M1 — Complete portable Core 2.0
 
 **Objective:** accept untrusted module bytes and execute the complete Core 2.0 binary profile with bounded resource use through our own interpreter.
+
+Current increment: `internal/binary` implements bounded subreaders, integer/float/name primitives, absolute error offsets and hostile-input tests. It has no module decoder, validator or executor. Corpus adoption and all complete-engine acceptance gates below remain open; see the [validation record](validation.md).
 
 1. **Contracts and corpus.** Define feature/backend/error/limit/value contracts, immutable module metadata, ownership, and the common fixture/result format. Import or deterministically generate the complete `test/core` and `test/core/simd` corpus at the pinned `wg-2.0` commit with licenses, file hashes and producer pins. Preserve assertion counts and classifications; missing tooling or fixtures are failures. Text syntax is handled by pinned development tools, not a required runtime WAT parser.
 2. **Decode and validate.** Implement bounded readers and allocations, LEB128, sections, indexes, control and operand typing, unreachable semantics, imports/exports, block signatures, constant expressions, data/element rules and all profile instructions. Fuzz malformed/truncated inputs and resource claims; distinguish malformed, invalid, unsupported and resource errors.

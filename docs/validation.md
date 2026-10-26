@@ -66,3 +66,37 @@ The implementation route now follows [Project-Owned Core](design/own-core.md). T
 Local checks on darwin/arm64 passed: `./scripts/check.sh go` (Go 1.27.3), `./scripts/check.sh llgo` (Homebrew LLGo v1.0.8), `go vet ./...`, and `go test -race -count=1 ./...`. These execute the existing host compatibility probes. Changed Markdown files passed relative-link, fenced-block, English-text and whitespace checks. The Core 2.0 `wg-2.0` tag and directory-specific license were checked at `fffc6e12fa454e475455a7b58d3b5dc343980c10`; no corpus execution is implied.
 
 Final contribution-PR checks are required before merge. Existing benchmark CI remains a candidate-engine comparison and cannot establish the new own-core budgets. The source, tests and workflows are unchanged, so this revision adds no coverage percentage or new runtime acceptance claim.
+
+## M1 binary-reader increment
+
+The first owned executable core package, `internal/binary`, provides bounded
+borrowed reads and nested subreaders, absolute error offsets, u32/u64/s32/s33/s64
+LEB128, exact little-endian floating-point bits, and byte-limited UTF-8 names.
+Lengths are checked before conversion to a host index or string allocation.
+Module decoding, validation, aggregate allocation accounting, execution and
+the complete pinned Core 2.0 corpus remain unfinished; M1 stays open.
+
+Local darwin/arm64 validation uses Go 1.27.3 and the LLGo compiler implementation
+from `d32073c65e65b14b51a51e017e6d2023f1da60ce` with the runtime at
+`8b1389c627c77a02e56af03f08d9cdc19edffe77` from
+[LLGo PR #2919](https://github.com/xgo-dev/llgo/pull/2919). The intervening LLGo
+commits change runtime hooks and tests, not the compiler implementation. Both
+compilers execute the same reader tests, including fuzz seeds. Boundary tests
+cover nested limits, maximum u64 length claims, every possible terminal LEB
+byte, signed extrema, legal padding, malformed encodings, invalid Unicode,
+embedded NUL names, NaN payloads and signed zero.
+
+The owned binary reader has **100% Go statement coverage (74/74 statements)**.
+Coverage is measured for executable packages under `internal` and `pkg`, not
+ignored local diagnostic artifacts or foreign engines. The new coverage
+checker enforces 90% independently per package and rejects empty, corrupt or
+missing required package data. Five checker tests include an aggregate-99%
+case whose uncovered package must still fail. A ten-second Go fuzz run with
+two workers completed 1,916,181 executions without a failure. This is a bounded
+local observation, not exhaustive validation.
+
+CI now declares Go and LLGo on Linux amd64 and macOS arm64, pinned to the LLGo
+revision above, with separate coverage artifacts and Go fuzz runs. The actual
+final-head jobs must pass before this increment merges; configuring the matrix
+alone is not acceptance. Existing benchmark jobs still measure reference
+engines, and no own-engine performance gate is closed by this reader increment.

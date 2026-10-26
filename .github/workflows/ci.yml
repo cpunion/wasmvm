@@ -16,17 +16,20 @@ concurrency:
 env:
   GO_VERSION: '1.27.3'
   # LLGo memory-hook contribution for xgo-dev/llgo#2918; not a released version.
-  LLGO_REVISION: bc7c991d8fe91459c8afc1eb7d0e374124d95374
+  LLGO_REVISION: 8b1389c627c77a02e56af03f08d9cdc19edffe77
 
 jobs:
   test:
-    name: ${{ matrix.compiler }} / linux-amd64
-    runs-on: ubuntu-24.04
+    name: ${{ matrix.compiler }} / ${{ matrix.platform.name }}
+    runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         compiler: [go, llgo]
+        platform:
+          - {name: linux-amd64, runner: ubuntu-24.04}
+          - {name: macos-arm64, runner: macos-15}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -84,6 +87,20 @@ jobs:
         if: matrix.compiler == 'go'
         run: go test -race -count=1 -timeout=10m ./...
 
+      - name: Enforce per-package core coverage
+        if: matrix.compiler == 'go'
+        shell: bash
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_*.py'
+          mkdir -p artifacts/core
+          CGO_ENABLED=0 go test -count=1 -timeout=10m -coverprofile=artifacts/core/coverage.out ./internal/... ./pkg/...
+          python3 scripts/check_coverage.py artifacts/core/coverage.out --minimum 90 \
+            --require github.com/cpunion/wasmvm/internal/binary
+
+      - name: Fuzz bounded binary inputs
+        if: matrix.compiler == 'go'
+        run: go test -run '^$' -fuzz '^FuzzReader$' -fuzztime=10s -parallel=2 ./internal/binary
+
       - name: Evaluate unchanged wazero and measure harness coverage
         if: matrix.compiler == 'go'
         shell: bash
@@ -109,6 +126,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: wazero-evaluation-${{ matrix.compiler }}
+          name: wazero-evaluation-${{ matrix.compiler }}-${{ matrix.platform.name }}
           path: artifacts/wazero/
+          if-no-files-found: error
+
+      - name: Preserve core coverage
+        if: always() && matrix.compiler == 'go'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: core-coverage-${{ matrix.platform.name }}
+          path: artifacts/core/
           if-no-files-found: error
