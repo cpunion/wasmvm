@@ -45,6 +45,27 @@ Do not fold a trapping expression into a compile-time module rejection when the 
 
 Resource policy is part of compilation configuration and the cache key. With deterministic fuel enabled, charge original Wasm instructions at their semantic boundaries, before their effects. Fused instructions retain sub-operation costs and exits. Coarse prepaid blocks are allowed only where identical exhaustion/side-effect behavior is proved; otherwise retain finer checks or use a separately named budget mode. Optimizing away a loop must not erase its configured fuel exhaustion behavior. Cancellation polling is a separate bounded-latency contract.
 
+### Implemented IR contract
+
+`internal/compiler/lower` lowers every statically valid Core 2.0 function to
+`internal/compiler/ir`. Instruction schemas come from the validator's typed
+walk; there is no duplicated opcode typing table. Sources retain byte offsets,
+immediates, effects and input/output types. Mutable locals remain explicit.
+Control edges carry ordered tuples, and unreachable blocks/values are removed
+without executing or folding trapping operations.
+
+The verifier checks single definitions, dominance, use order, function/local
+types, operand and edge types, terminators, reachability and effect metadata.
+It uses iterative traversal and bounded dominance work. Node and verification
+budgets apply across the whole module; zero is a literal zero budget. Source
+schemas are internal trusted compiler data, not a serialized input format.
+
+Fuel model version 1 charges one unit before each executed Wasm instruction,
+except `else` and `end` delimiters. Compiler-generated transfers have no extra
+charge. A loop header is charged on entry from outside; a backedge charges its
+branch and the subsequent body instructions. These costs are retained in IR;
+runtime metering and cancellation are subsequent implementation work.
+
 ## Interpreter lowering and hot loop
 
 Lower SSA values and locals into reusable typed slots with precomputed frame sizes. Resolve branches, function indexes, local offsets, immediates, memory offsets and stack effects at compile time. Keep immutable instruction arrays compact and contiguous. A separate read-only pool holds uncommon wide immediates/branch tables. Dispatch uses a Go `switch`; ordinary Go has no portable computed-goto contract. Do not implement dispatch through per-op closures, reflection, or `interface{}` values.

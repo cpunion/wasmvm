@@ -42,8 +42,8 @@ wasmvm/
 │   │   ├── validate/              # Implemented: complete Core 2.0 control/operand typing, index and initializer checks
 │   │   └── types/                 # Planned: recursive type canonicalization/subtyping
 │   ├── compiler/
-│   │   ├── ir/                    # Planned: typed CFG/SSA, effects and verifier
-│   │   ├── lower/                 # Planned: validated Wasm to typed IR
+│   │   ├── ir/                    # Implemented: typed CFG/SSA, effects/fuel and bounded verifier
+│   │   ├── lower/                 # Implemented: complete validated Core 2.0 to typed IR
 │   │   ├── passes/                # Planned: verified optimizations
 │   │   ├── machine/               # Planned: target IR and instruction selection
 │   │   └── regalloc/              # Planned: liveness, registers, spills and moves
