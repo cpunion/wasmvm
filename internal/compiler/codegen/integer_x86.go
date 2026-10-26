@@ -17,6 +17,24 @@ func integerAMD64(a *assembler, op uint32, wide bool) {
 	a.xop(wide, 0x8b, 0x47, byte(nativeabi.ResultLoOffset)) // rax/eax = a
 	a.xop(wide, 0x8b, 0x4f, byte(nativeabi.ResultHiOffset)) // rcx/ecx = b
 	zero, overflow, exit := a.label(), a.label(), a.label()
+	divisorCheck, overflowCheck := integerAMD64Core(a, op, wide, zero, overflow)
+
+	a.bytes(0x48, 0x89, 0x47, byte(nativeabi.ResultLoOffset), 0xb8)
+	a.word(uint32(nativeabi.Return))
+	if divisorCheck {
+		a.branch(exit, false, 0)
+		a.mark(zero)
+		xtrap(a, wasm.TrapIntegerDivideByZero)
+		if overflowCheck {
+			a.branch(exit, false, 0)
+			a.mark(overflow)
+			xtrap(a, wasm.TrapIntegerOverflow)
+		}
+	}
+	a.mark(exit)
+}
+
+func integerAMD64Core(a *assembler, op uint32, wide bool, zero, overflow int) (bool, bool) {
 	divisorCheck, overflowCheck := false, false
 	if op <= 0x5a {
 		index := op - 0x45
@@ -129,19 +147,7 @@ func integerAMD64(a *assembler, op uint32, wide bool) {
 			a.xop(wide, 0x0f, 0xbf, 0xc0)
 		}
 	}
-	a.bytes(0x48, 0x89, 0x47, byte(nativeabi.ResultLoOffset), 0xb8)
-	a.word(uint32(nativeabi.Return))
-	if divisorCheck {
-		a.branch(exit, false, 0)
-		a.mark(zero)
-		xtrap(a, wasm.TrapIntegerDivideByZero)
-		if overflowCheck {
-			a.branch(exit, false, 0)
-			a.mark(overflow)
-			xtrap(a, wasm.TrapIntegerOverflow)
-		}
-	}
-	a.mark(exit)
+	return divisorCheck, overflowCheck
 }
 
 func xtrap(a *assembler, trap wasm.TrapCode) {

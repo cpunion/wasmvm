@@ -13,6 +13,10 @@ const (
 	Poll
 	FuelExhausted
 	GuestGC
+	RuntimeHelper
+	Call
+	BadState
+	Move
 )
 
 const ABIVersion = 1
@@ -21,6 +25,7 @@ const ABIVersion = 1
 // are compiler-owned IDs, never addresses supplied by guest memory. The driver
 // reads or replaces State only while execution is idle.
 type State struct {
+	// Used is the byte offset of the current frame in Arena.
 	Used, Depth, Function, Continuation uint64
 	Source, RootMap, Fuel, Budget       uint64
 	ResultLo, ResultHi                  uint64

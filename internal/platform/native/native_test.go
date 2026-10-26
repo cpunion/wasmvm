@@ -106,7 +106,7 @@ func TestEntryResumeAndRetirement(t *testing.T) {
 		t.Fatal(err)
 	}
 	state := State{ResultLo: 19, ResultHi: 23, RootMap: 7, Source: 91, Function: 3, Fuel: 100}
-	for status := Return; status <= GuestGC; status++ {
+	for status := Return; status <= Move; status++ {
 		state.Payload[0] = uint64(status)
 		if err := ctx.SetState(state); err != nil {
 			t.Fatal(err)

@@ -133,7 +133,9 @@ embedders must supply the applicable JIT entitlements.
 Native ABI probes execute arithmetic, frame stores, status/resumption, register
 clobbers and cancellation under both host compilers. They also exercise GC
 during native work, concurrent publication, retirement during an active entry,
-and strict cgo pointer checks. This boundary does not yet lower Wasm functions,
-marshal host requests, or provide compiler root/continuation maps. Public native
+and strict cgo pointer checks. The function compiler now emits control flow, integer operations, typed frame
+maps and checked continuation dispatch. Calls, runtime helpers and large tuple
+copies publish explicit exits; connecting them to the runtime driver remains
+subsequent work. Public native
 backend selection remains unsupported until the complete Core 2.0 backend is
 implemented and validated.

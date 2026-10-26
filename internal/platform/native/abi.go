@@ -29,6 +29,10 @@ const (
 	Poll               = nativeabi.Poll
 	FuelExhausted      = nativeabi.FuelExhausted
 	GuestGC            = nativeabi.GuestGC
+	RuntimeHelper      = nativeabi.RuntimeHelper
+	Call               = nativeabi.Call
+	BadState           = nativeabi.BadState
+	Move               = nativeabi.Move
 	ABIVersion         = nativeabi.ABIVersion
 	RecordSize         = nativeabi.RecordSize
 	ArenaOffset        = nativeabi.ArenaOffset

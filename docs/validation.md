@@ -597,3 +597,19 @@ coverage is 99.6%. ABI fields now have one pure-Go definition shared by the
 emitter and adapter and are still checked against the C layout. These entries
 validate instruction selection; whole-function control flow, memory, calls,
 metering and native profile conformance remain subsequent compiler work.
+
+## Native function control flow
+
+The native function compiler now emits locals, constants, select, integer
+operations, branches/loops, relative jump tables, multi-value copies, fuel and
+bounded polling. Runtime-helper, call and large tuple-copy exits retain typed
+frame slots and checked continuation IDs; their runtime driver is subsequent
+work. Native selection in the public API remains unsupported at this increment.
+
+Both local host compilers compile all 6,236 functions in 1,716 valid pinned
+Core 2.0 modules. On arm64 this produces 8,779,052 code bytes and 7,126 explicit
+helper sites. This is compilation coverage, not native conformance execution.
+Actual function tests cover loops, br_table, tuple cycles, vectors/references,
+fuel/trap agreement with the interpreter, helper resumption, frame bounds,
+large offsets, long branches and cancellation during generated loops. Codegen
+coverage is 96.2%; Go race/cgocheck2 and shared Go/LLGo tests pass locally.
