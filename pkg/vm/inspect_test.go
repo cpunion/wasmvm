@@ -1,12 +1,65 @@
 package vm
 
 import (
+	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
+
+func TestRepeatedLargeSignatureMetadataHasBoundedCopies(t *testing.T) {
+	// Only two type vectors are present in the module. Thousands of functions
+	// and exports must not multiply these vectors' storage in an Info snapshot.
+	const count = 4096
+	params := make([]wasm.ValueType, count)
+	for i := range params {
+		params[i] = wasm.I32
+	}
+	d := &module.Module{Types: []module.FuncType{{Params: params}, {Params: params}}}
+	for i := 0; i < count; i++ {
+		d.Functions = append(d.Functions, module.Function{Type: uint32(i % 2)})
+		d.Exports = append(d.Exports, module.Export{Kind: 0, Index: uint32(i)})
+	}
+	info := describeModule(d)
+	distinct := make(map[*FunctionType]bool)
+	for _, ex := range info.Exports {
+		distinct[ex.Function] = true
+		if len(ex.Function.Params) != count {
+			t.Fatal("lost signature")
+		}
+	}
+	if len(distinct) != 2 {
+		t.Fatalf("metadata duplicated type vectors %d times", len(distinct))
+	}
+	info.Exports[0].Function.Params[0] = wasm.F64
+	if params[0] != wasm.I32 || info.Exports[1].Function.Params[0] != wasm.I32 {
+		t.Fatal("borrowed source or merged distinct types")
+	}
+	if describeModule(d).Exports[0].Function.Params[0] != wasm.I32 {
+		t.Fatal("snapshots alias")
+	}
+}
+
+type cancelMetadata struct{ calls int }
+
+func (c *cancelMetadata) Deadline() (time.Time, bool) { return time.Time{}, false }
+func (c *cancelMetadata) Done() <-chan struct{}       { return nil }
+func (c *cancelMetadata) Value(any) any               { return nil }
+func (c *cancelMetadata) Err() error {
+	c.calls++
+	if c.calls >= 4 {
+		return context.Canceled
+	}
+	return nil
+}
+func TestInspectChecksCancellationBeforePublishingMetadata(t *testing.T) {
+	if info, err := NewEngine().Inspect(&cancelMetadata{}, addBinary); !errors.Is(err, context.Canceled) || info.Exports != nil {
+		t.Fatal(info, err)
+	}
+}
 
 func TestStaticInspectionDoesNotCompileOrExecute(t *testing.T) {
 	c := DefaultEngineConfig()

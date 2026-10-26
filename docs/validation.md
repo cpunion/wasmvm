@@ -525,3 +525,23 @@ job. Workload sizes, rounds, warmups, measured calls and checksum checks are
 unchanged. Raw reports record the deadline and the active failed phase case.
 This extends the initial-baseline execution budget; it does not pass an M2
 performance gate or erase the failed run. Final-head checks remain required.
+
+
+## M1 metadata and final-close resource audit
+
+Metadata snapshots now copy each referenced function signature once. Repeated
+imports/functions/exports cannot multiply a large type vector's storage, and
+snapshots remain detached from engine code and other snapshots. CLI inspection
+preflights its repeated JSON signature values against a 1,048,576-value budget
+before allocating expanded strings; validation still accepts these valid
+modules. Inspection checks cancellation again before publishing metadata.
+Final Store close also drops reference-map backing storage after invalidating
+roots and draining the active operation.
+
+Regression tests exercise thousands of shared signatures, snapshot isolation,
+import/export JSON amplification, the exact expansion boundary and result-type
+accounting, cancellation and closed-root cleanup. Full local Go/LLGo suites,
+the complete Core 2.0 binary corpus, Go vet/race and package coverage checks
+pass. CLI coverage is 99.5% and public VM coverage is 96.8%; all executable core
+packages exceed 90%. Final-head CI remains required before merge. M1 remains
+open for representative owned-engine performance evidence and final acceptance.
