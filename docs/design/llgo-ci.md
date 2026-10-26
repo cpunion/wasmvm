@@ -15,10 +15,10 @@ The first target is a CI requirement from project initialization. The second is 
 
 - The source design uses Go 1.24 language and standard-library features as a conservative baseline, avoiding new Go 1.27 syntax. The language version declared in `go.mod` is distinct from the CI bootstrap toolchain version and does not establish acceptance on every older toolchain.
 - Both initial CI paths use the Go **1.27.3** GOROOT so their standard-library inputs match. LLGo **v1.0.8** itself declares `go 1.27.0` in its `go.mod`, so the selected source installation cannot be bootstrapped with Go 1.24.
-- The initial scaffold used LLGo v1.0.8 at `c171abfa130108bc6451e01fcf15a8a3474eb0a7`. The expanded M0 CI pins **`bc7c991d8fe91459c8afc1eb7d0e374124d95374`**, the unreleased memory-hook contribution in [LLGo PR #2919](https://github.com/xgo-dev/llgo/pull/2919). This is needed to run unchanged wazero, not just the original host probes. Its upstream review/release status remains explicit.
+- The initial scaffold used LLGo v1.0.8 at `c171abfa130108bc6451e01fcf15a8a3474eb0a7`; M0 used the first memory-hook fix at `bc7c991d8fe91459c8afc1eb7d0e374124d95374`. M1 pins **`8b1389c627c77a02e56af03f08d9cdc19edffe77`**, including non-tearing unordered block operations in [LLGo PR #2919](https://github.com/xgo-dev/llgo/pull/2919). This remains an unreleased contribution, needed for unchanged wazero compatibility. Historical measurements retain their original pins.
 - Pinned setup action: `4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91`. LLVM major version: **22**. LLVM and system dependency patch versions still come from the installation sources; the setup does not claim a fully reproducible toolchain.
 - Candidate evaluations use separate modules. Wazero v1.12.0 requires Go 1.25; the root scaffold's `go 1.24.0` declaration is not a minimum-version claim for that dependency.
-- The current workflow covers Ubuntu 24.04 amd64 first, with macOS arm64 and Linux arm64 planned next, followed by Windows acceptance. Installation-action support for a platform is not evidence that the VM supports it.
+- The workflow runs both compilers on Ubuntu 24.04 amd64 and macOS 15 arm64. Linux arm64 and Windows acceptance remain planned. A configured job or installation-action support is not evidence of complete VM support; final-head job results and actual implemented scope remain authoritative.
 - Before formally declaring a minimum host version, add an actual Go 1.24 compatibility job and pin the LLVM patch version and toolchain image. The pinned CI Go version has been exercised; the source baseline still requires verification with the older toolchain.
 
 Evidence: [LLGo v1.0.8 go.mod](https://github.com/xgo-dev/llgo/blob/c171abfa130108bc6451e01fcf15a8a3474eb0a7/go.mod), [v1.0.8 release](https://github.com/xgo-dev/llgo/releases/tag/v1.0.8), [setup-llgo action definition](https://github.com/xgo-dev/setup-llgo/blob/4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91/action.yml), and [setup-llgo inputs and platforms](https://github.com/xgo-dev/setup-llgo/blob/4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91/README.md). The checkout/setup-go v7 commits were also checked through the GitHub API and pinned by SHA in the workflow.
@@ -53,7 +53,7 @@ Evidence: [WASI threads execution contract](https://github.com/xgo-dev/llgo/blob
 
 ## CI requirements
 
-The executable configuration is [ci.yml](../../.github/workflows/ci.yml). Both compiler jobs actually execute `test -count=1 -timeout=10m ./...`. Failure of either job fails the workflow; neither uses `continue-on-error`.
+The executable configuration is [ci.yml](../../.github/workflows/ci.yml). All four compiler/platform jobs execute `test -count=1 -timeout=10m ./...`. Failure of any job fails the workflow; none uses `continue-on-error`.
 
 | Check | Standard Go | LLGo |
 | --- | --- | --- |
@@ -63,6 +63,8 @@ The executable configuration is [ci.yml](../../.github/workflows/ci.yml). Both c
 | Pure-Go core constraint | `CGO_ENABLED=0 go test` | Run in the default native LLGo environment with its C runtime dependencies installed |
 | Formatting and static checks | `gofmt`, `go vet` | Share the checks on the same source |
 | Host data-race checks | `go test -race` | Acceptance of `-race` is not treated as verified race-detection capability |
+| Owned executable core package coverage | At least 90% per package under `internal` and `pkg`; empty/missing profiles fail | Same semantic tests; no LLGo coverage instrumentation claim |
+| Bounded binary fuzzing | Ten-second fuzz run per platform | Runs the same fuzz seed cases through ordinary package tests |
 | Wasm spec / WASI / LLGo guest corpus | Added by capability milestone | Same fixtures and assertions; no whole-package skips to hide differences |
 
 `CGO_ENABLED=0` applies only to the basic Go test step, not the entire workflow environment. LLGo's LLVM and BDWGC dependencies are consistent with the goal that the VM source should not depend on a cgo-based engine. The root scaffold has no external dependency, while the evaluation modules have their own `go.sum` files. Action caching remains disabled; future caches must include all relevant module sums, compiler revision, LLVM, OS, and architecture.
@@ -71,7 +73,7 @@ The current repository probes cover typed atomics and goroutine/lock synchroniza
 
 ## Required own-core matrix (planned)
 
-The current workflow tests candidate engines and host probes on Linux amd64. It does **not** yet implement this future matrix:
+The current workflow tests binary primitives, candidate engines and host probes on Linux amd64 and macOS arm64. It does **not** yet implement the complete-engine acceptance matrix:
 
 - M1: the complete Core 2.0 interpreter corpus and lifecycle suite under Go/LLGo on Linux amd64 and macOS arm64; Go tests with `CGO_ENABLED=0`.
 - M2: the same full corpus with forced interpreter and native backends on each host/compiler pair, plus the [native ABI gates](native-abi.md). Add standard-Go `CGO_ENABLED=1` native execution and pointer-rule checks while retaining the cgo-free interpreter/compiler job. A cgo-free native-unavailable assertion is not counted as native execution.

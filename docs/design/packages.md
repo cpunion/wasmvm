@@ -1,6 +1,6 @@
 # Package and Directory Design
 
-Status: design draft, 2026-10-26. **Only entries marked as existing have been created; all other paths in the tree are planned.** The public packages currently contain only `doc.go`, with no VM API or execution capability.
+Status: M1 implementation in progress, 2026-10-26. **Entries marked as existing or implemented have been created; other paths are planned.** The public packages currently contain only `doc.go`, with no VM API or execution capability.
 
 ## Directory tree
 
@@ -11,6 +11,8 @@ wasmvm/
 ├── .github/workflows/ci.yml        # Existing: the same tests under Go and llgo
 ├── scripts/
 │   ├── check.sh                   # Existing: local compiler selection
+│   ├── check_coverage.py          # Existing: per-package Go coverage gate
+│   ├── test_check_coverage.py     # Existing: coverage-gate regression tests
 │   └── update-corpus.sh           # Planned: manual updates, pinned sources
 ├── docs/                          # Existing
 │   ├── research/{standards,implementations}.md
@@ -32,7 +34,7 @@ wasmvm/
 │       └── preview3/              # Existing doc.go: WASI 0.3 worlds
 ├── internal/
 │   ├── compat/                    # Existing: shared host compiler probes
-│   ├── binary/                    # Planned: bounded reader, LEB128
+│   ├── binary/                    # Implemented: bounded reader, LEB128, float bits, UTF-8 names
 │   ├── core/
 │   │   ├── module/                # Planned: internal module/type/instruction IR
 │   │   ├── decode/                # Planned: Complete Core profile binary decoding

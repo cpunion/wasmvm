@@ -2,7 +2,7 @@
 
 A WebAssembly virtual machine written in Go, designed to build and run with both Go and LLGo.
 
-**Own-core design stage: no production VM API is implemented yet.** This repository contains research, architecture, a development plan, host compatibility probes, and executable candidate evaluations. The `doc.go` files reserve package responsibilities; they do not indicate implemented features. The separate evaluation modules execute real Wasm through existing engines and report their limitations explicitly.
+**M1 implementation has started; no production VM API is available yet.** The owned core currently provides a bounded binary reader with shared Go/LLGo tests. Complete module decoding, validation and execution remain in progress. Public `doc.go` files reserve package responsibilities. Separate evaluation modules execute real Wasm through existing engines and report their limitations explicitly.
 
 ## Goals
 
@@ -39,7 +39,7 @@ The owner selected a **project-owned core** after M0. Wazero and other engines r
 | --- | --- | --- |
 | Design baseline | Research, architecture, package contracts and compiler probes | Complete; own-core design now replaces reuse-first direction |
 | M0 | Candidate evaluation and reproducible comparison infrastructure | Complete through PRs #1–#3 |
-| M1 | Complete Core 2.0 interpreter, validation, resource limits, API and core CLI | Planned |
+| M1 | Complete Core 2.0 interpreter, validation, resource limits, API and core CLI | In progress: bounded binary primitives; complete engine acceptance remains open |
 | M2 | Fast interpreter and complete Core 2.0 native compiler for amd64/arm64 | Planned; required performance gate |
 | M3 | Full Core 3.0 and separate Core Threads on both backends | Planned |
 | M4 | P1, legacy wasi-threads and pinned Go/LLGo guest integration | Planned |
@@ -59,6 +59,6 @@ llgo test -count=1 ./...
 ./scripts/check.sh llgo
 ```
 
-The root tests cover host numeric bit patterns, reference reachability, goroutines, locks, atomics, condition variables, and cancellation. The [wazero evaluator](experiments/wazero/README.md) is a separate module with 13 pinned capability fixtures, negative-path tests, shared-memory concurrency checks, and a bounded cancellation observation. Its owned-code coverage is measured separately from engine conformance. Expected rejection of an unsupported fixture is an assessment result, not feature support.
+The root tests cover bounded binary reads, LEB128 width/sign/padding rules, UTF-8 names, host numeric bit patterns, reference reachability, goroutines, locks, atomics, condition variables, and cancellation. CI runs both compilers on Linux amd64 and macOS arm64, checks each executable core package's statement coverage against 90%, and fuzzes binary primitives with Go. The [wazero evaluator](experiments/wazero/README.md) is a separate module with 13 pinned capability fixtures, negative-path tests, shared-memory concurrency checks, and a bounded cancellation observation. Its owned-code coverage is measured separately from engine conformance. Expected rejection of an unsupported fixture is an assessment result, not feature support.
 
 Module path: `github.com/cpunion/wasmvm`. A project license has not yet been selected. No third-party implementation code is imported at this stage; future reuse must preserve the applicable licenses and notices.
