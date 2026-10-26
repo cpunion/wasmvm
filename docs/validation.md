@@ -558,3 +558,25 @@ the complete Core 2.0 binary corpus, Go vet/race and package coverage checks
 pass. CLI coverage is 99.5% and public VM coverage is 96.8%; all executable core
 packages exceed 90%. Final-head CI remains required before merge. M1 remains
 open for representative owned-engine performance evidence and final acceptance.
+
+## Native execution boundary
+
+The owned C adapter and pure-Go amd64/arm64 entry-frame emitter implement code
+publication, off-heap frame storage, fixed ABI records, typed exits, atomic
+cancellation, FP environment preservation, and code leases. Local darwin/arm64
+Go 1.27.3 and pinned LLGo executions pass arithmetic/resumption, register
+clobber, concurrent close/publication and forced host-GC tests. Go race and
+`GOEXPERIMENT=cgocheck2` checks pass. The existing complete Core 2.0 binary
+corpus remains green under both compilers. Native entry probes are separate
+from Wasm conformance: a full native Wasm backend is not implemented yet.
+
+Go coverage is 100% for `internal/compiler/nativeabi` and above 95% for
+`internal/platform/native`; native allocation/protection failures are not
+forced by exhausting the host. C and emitted machine instructions are checked
+by execution probes, not included in Go statement coverage.
+
+CI executes the boundary on both target architectures and host compilers.
+Linux Go semantic execution also collects coverage in the same run. Historical
+M0 candidate evaluations run on manual dispatch; PR benchmarks retain owned
+base/head and competitors. Extra benchmark expansion branches remain deferred
+so functional implementation proceeds without additional peripheral gates.

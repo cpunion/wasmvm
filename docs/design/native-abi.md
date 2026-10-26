@@ -1,6 +1,6 @@
 # Native execution ABI and compiler gates
 
-Status: **implementation design**, not a native execution or performance acceptance claim. This document defines the initial boundary for the project's own compiler. Required M2 targets are **linux/amd64 and darwin/arm64, each with both Go and LLGo hosts**. Other OS/architecture combinations remain unsupported until their execution, lifecycle, and ABI suites pass.
+Status: **boundary implementation in progress**, not a complete native backend or performance acceptance claim. This document defines the initial boundary for the project's own compiler. Required M2 targets are **linux/amd64 and darwin/arm64, each with both Go and LLGo hosts**. Other OS/architecture combinations remain unsupported until their execution, lifecycle, and ABI suites pass.
 
 ## Compiler and host boundary
 
@@ -23,7 +23,7 @@ The proposed entry has one code address and one pointer to a fixed-layout execut
 uint32_t wasmvm_enter(const void *entry, struct wasmvm_exec_ctx *ctx);
 ```
 
-Only the platform adapter converts an approved executable address into a callable native function pointer. Generated entry code accepts `ctx` according to that platform's C ABI and returns an exit status. It never receives a Go closure, interface, slice header, or Go-private ABI frame. Define every record field with fixed-width integer or native-pointer storage; generate Go offsets from one schema and verify size/alignment/offsets against C `static_assert` probes on both target/compiler pairs.
+Only the platform adapter converts an approved executable address into a callable native function pointer. Generated entry code accepts `ctx` according to that platform's C ABI and returns an exit status. It never receives a Go closure, interface, slice header, or Go-private ABI frame. Define every record field with fixed-width integer or native-pointer storage; derive Go offsets from the fixed record and verify size/alignment/offsets against C `static_assert` and execution probes on both target/compiler pairs.
 
 Go does not directly call C function-pointer values; its documented bridge mechanism is a C wrapper. Its internal function ABI is explicitly unstable and differs from the platform C ABI. These are reasons to isolate the entry adapter, rather than reinterpret a Go `func` value as executable memory. Sources: [cgo function-pointer bridge](https://pkg.go.dev/cmd/cgo#hdr-Go_references_to_C), [Go internal ABI](https://go.dev/src/cmd/compile/abi-internal).
 
@@ -114,3 +114,26 @@ A no-cgo native adapter is a later optimization, enabled only after the same mat
 The existing local probe used wazero v1.12.0, Go 1.27.3, LLGo compiler `75e966c4fbcf8077497a41093262ad8677711fec`, and LLGo runtime contribution `bc7c991d8fe91459c8afc1eb7d0e374124d95374` on darwin/arm64. Go interpreter and native runs returned 42; LLGo interpreter returned 42; LLGo native compiled/instantiated but its first `CallWithStack` returned a recovered nil-pointer fault. The guest had no imports, memory, start function, GC, or threads. This is recorded in [LLGo issue #2921](https://github.com/xgo-dev/llgo/issues/2921); local raw metadata/logs are under `artifacts/llgo-wazevo-native/`.
 
 Wazevo's [pinned arm64 entry code](https://github.com/wazero/wazero/blob/2ab480b55fa408d6b35df97fe32a60d08bd6e201/internal/engine/wazevo/backend/isa/arm64/abi_entry_arm64.s) uses Go assembly argument slots and guest-stack transitions. The observed fault does **not** isolate its root cause and does not prove that a C ABI adapter fails. It establishes that linking the runtime hooks and accepting interpreter tests did not establish native compatibility. The new boundary must earn its own N0 evidence before any native support or speed claim.
+
+## Implemented boundary
+
+`internal/compiler/nativeabi` emits fixed C entry/exit frames for both target
+ISAs in pure Go. `internal/platform/native` publishes immutable code, retains
+active and suspended leases, owns pointer-free native records/frame storage,
+and enters through the same C ABI under Go and LLGo. Cancellation uses a
+lock-free release/acquire control word; the adapter normalizes and restores
+the host floating-point environment. Every field offset is checked against C.
+
+Linux mappings transition RW to RX. Darwin uses a shared, bounded 64-MiB
+MAP_JIT arena with thread write protection and instruction-cache invalidation;
+released ranges coalesce for reuse. The process reserves the arena until exit.
+Callback-allowlist JIT mode is outside this initial platform adapter; hardened
+embedders must supply the applicable JIT entitlements.
+
+Native ABI probes execute arithmetic, frame stores, status/resumption, register
+clobbers and cancellation under both host compilers. They also exercise GC
+during native work, concurrent publication, retirement during an active entry,
+and strict cgo pointer checks. This boundary does not yet lower Wasm functions,
+marshal host requests, or provide compiler root/continuation maps. Public native
+backend selection remains unsupported until the complete Core 2.0 backend is
+implemented and validated.
