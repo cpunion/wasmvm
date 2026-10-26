@@ -181,3 +181,20 @@ copies publish explicit exits; connecting them to the runtime driver remains
 subsequent work. Public native
 backend selection remains unsupported until the complete Core 2.0 backend is
 implemented and validated.
+
+## Local scalar floating-point development
+
+The unsubmitted scalar FP branch emits f32/f64 comparisons, arithmetic, rounding,
+min/max, sign changes and bit reinterpretation through the same function emitter.
+It uses baseline SSE2 on amd64 and scalar FP instructions on arm64. Saturating
+and trapping numeric conversions still exit explicitly to runtime helpers.
+
+Fixed typed FP registers complement the existing integer cache. Entries reload
+retained slots and every exit spills them; FP scratch registers remain separate.
+A bounded copy/constant combiner forwards FP dependencies and following local
+assignments while preserving intermediate slots. Each interior original PC has
+an independent cold entry, and neither fuel nor cancellation boundaries are
+combined. All 256 ARM scalar FP immediate encodings are checked. Tests cover
+both widths, aliases, register pressure, helper frame updates, every continuation,
+source clobbers, poll boundaries and the scan limit. These implementation results
+are separate from the still-open native runtime and competitor acceptance gates.
