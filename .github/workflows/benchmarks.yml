@@ -137,9 +137,63 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+  native_arm64:
+    name: Native feature and competitors / macos-arm64
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      WASMVM_LLGO_REVISION: 8b1389c627c77a02e56af03f08d9cdc19edffe77
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: head
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.base.sha || inputs.baseline || 'main' }}
+          path: base
+          persist-credentials: false
+      - uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
+        id: llgo
+        with:
+          llgo-version: 8b1389c627c77a02e56af03f08d9cdc19edffe77
+          install-method: source
+          go-version: '1.27.3'
+          llvm-version: '22'
+          cache: true
+      - name: Verify the compiler and install only the native reference SDKs
+        env:
+          ACTUAL_LLGO_REVISION: ${{ steps.llgo.outputs.llgo-revision }}
+        run: |
+          test "$ACTUAL_LLGO_REVISION" = "$WASMVM_LLGO_REVISION"
+          python3 head/benchmarks/install_tools.py --sdk \
+            --manifest head/benchmarks/tools-darwin-arm64.json \
+            --destination "$RUNNER_TEMP/native-tools"
+      - name: Compare the native feature without repeating semantic or CLI suites
+        run: |
+          python3 head/benchmarks/native_ci.py \
+            --base-dir "$GITHUB_WORKSPACE/base" --head-dir "$GITHUB_WORKSPACE/head" \
+            --tools-dir "$RUNNER_TEMP/native-tools" --output-dir "$GITHUB_WORKSPACE/native-results"
+      - name: Publish native report
+        if: always()
+        run: |
+          mkdir -p native-results
+          if [[ ! -f native-results/report.md ]]; then
+            echo 'macOS native comparison unavailable; setup failed. Merging remains blocked.' > native-results/report.md
+          fi
+          cat native-results/report.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: native-arm64-comparison
+          path: native-results/
+          if-no-files-found: error
+          retention-days: 30
+
   comment:
     name: Report benchmark comparison on PR
-    needs: benchmark
+    needs: [benchmark, native_arm64]
     if: ${{ always() && !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -154,6 +208,13 @@ jobs:
         with:
           name: runtime-benchmark-comparison
           path: benchmark-results
+
+      - name: Download the macOS feature report
+        if: needs.native_arm64.result == 'success' || needs.native_arm64.result == 'failure'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: native-arm64-comparison
+          path: native-results
 
       # This job never checks out or executes candidate code. Reports are data.
       # Fork PRs keep read-only credentials and publish summaries/artifacts only.
@@ -181,6 +242,11 @@ jobs:
               report = fs.readFileSync(path, 'utf8');
             } else {
               report = `Benchmark job **${process.env.BENCHMARK_RESULT}** for \`${process.env.EXPECTED_HEAD}\`. No valid performance comparison is available.`;
+            }
+            if (fs.existsSync('native-results/report.md')) {
+              const nativeReport = fs.readFileSync('native-results/report.md', 'utf8');
+              if (nativeReport.length > 10000) throw new Error('Native report exceeds comment limit');
+              report += `\n\n${nativeReport}`;
             }
             const body = `${marker}\n${report}\n\n[CI run and raw measurement artifact](${runURL})`;
             const comments = await github.paginate(github.rest.issues.listComments, {...context.repo, issue_number: number, per_page: 100});

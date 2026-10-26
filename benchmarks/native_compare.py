@@ -122,6 +122,7 @@ def run(head, builds, runtimes, fixture, invoke, timeout):
 
 
 def markdown(report):
+    labels = {"head-compiler": "wazero native", "wasmtime-cranelift": "Wasmtime Cranelift", "wasmer-cranelift": "Wasmer Cranelift"}
     lines = ["### Native integer feature gate", "",
              "Compiler-only integer/register/polling comparison; **not public native API or full-profile acceptance**. "
              "Fuel is disabled. Own code retains bounded cancellation polls; references use their pinned default interruption settings. "
@@ -135,12 +136,12 @@ def markdown(report):
         warm = statistics.median(statistics.median(r["warmCallNs"]) for r in records) / report["fixture"]["iterations"]
         prep = statistics.median(r["phasesNs"]["compileValidate"] if "phasesNs" in r else r["frontendNs"] + r["backendNs"] for r in records) / 1e6
         first = statistics.median(r["phasesNs"]["firstCall"] if "phasesNs" in r else r["firstCallNs"] for r in records) / 1e6
-        lines.append(f"| {name} | {warm:.3f} | {prep:.3f} | {first:.3f} |")
+        lines.append(f"| {labels.get(name,name)} | {warm:.3f} | {prep:.3f} | {first:.3f} |")
     for compiler in ("go", "llgo"):
         medians = {ref: statistics.median(statistics.median(r["record"]["warmCallNs"]) for r in report["observations"] if r["id"] == f"{ref}-{compiler}") for ref in ("base", "head")}
         lines += [f"Own {compiler} head/base median ratio: {medians['head']/medians['base']:.4f} (three baseline processes; descriptive)."]
     lines += ["", "| Host | Reference | Warm ratio | Simultaneous 95% interval | Gate |", "| --- | --- | ---: | --- | --- |"]
     for r in report["comparisons"]:
-        lines.append(f"| {r['compiler']} | {r['reference']} | {r['ratio']:.3f} | {r['lower']:.3f}–{r['upper']:.3f} | {r['status']} |")
+        lines.append(f"| {r['compiler']} | {labels.get(r['reference'],r['reference'])} | {r['ratio']:.3f} | {r['lower']:.3f}–{r['upper']:.3f} | {r['status']} |")
     lines += ["", f"Feature merge gate: **{report['status']}**. Ratios above 1 take longer; practical parity is limited to the declared 0.5% equivalence band. Missing/inconclusive evidence cannot authorize merging.", ""]
     return "\n".join(lines)

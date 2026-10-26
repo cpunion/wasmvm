@@ -37,6 +37,7 @@ def execute(arguments, acknowledgement="run\n", failure=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runners-dir", type=Path, required=True)
+    parser.add_argument("--runtimes", nargs="+", choices=tuple(BACKENDS), default=tuple(BACKENDS))
     args = parser.parse_args()
     runners = args.runners_dir.resolve()
     workloads = json.loads((EMBEDDED / "fixtures/manifest.json").read_text())["workloads"]
@@ -48,7 +49,7 @@ def main():
             case = dict(workload, **validation)
             cases[(case["wasm"], case["seed"], case["iterations"])] = case
     positive, negative = 0, 0
-    for runtime in BACKENDS:
+    for runtime in args.runtimes:
         for case in cases.values():
             result = execute(command(runners, runtime, case))
             expected = case["expectedChecksum"]

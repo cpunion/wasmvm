@@ -25,9 +25,10 @@ competitor comparison and their identical-binary A/A control. Linux processes
 share one allowed CPU through `taskset`; macOS affinity remains uncontrolled. A paired process bootstrap uses simultaneous 95% bounds;
 intervals account for both planned looks. A practical parity verdict requires the whole interval within ±0.5%, and A/A
 controls must resolve ±0.25%. Slower or inconclusive results fail the feature gate. Shared-host results remain
-provisional and do not replace controlled full-portfolio acceptance. macOS arm64
-requires separate evidence before merging; the existing benchmark job is Linux
-amd64 only. Future feature PRs must declare and compare their affected workload
+provisional and do not replace controlled full-portfolio acceptance. The same narrow gate runs on a separate macOS arm64 CI host, reusing the
+common measurement code and two pinned native SDKs. It does not repeat the
+semantic matrix, interpreter portfolio or production CLI series. Both target
+reports and raw artifacts are linked from the same PR comment. Future feature PRs must declare and compare their affected workload
 families, not reuse this kernel to excuse an unrelated deficit.
 
 For the bootstrap baseline predating `CompileUnmeteredFunction`, only this
