@@ -79,6 +79,7 @@ jobs:
         shell: bash
         env:
           COMPILER: ${{ matrix.compiler }}
+          WASMVM_CONFORMANCE_REPORT: ${{ github.workspace }}/artifacts/conformance/core2.json
         run: |
           if [[ "$COMPILER" == go ]]; then
             CGO_ENABLED=0 go test -count=1 -timeout=10m ./...
@@ -107,6 +108,8 @@ jobs:
             --require github.com/cpunion/wasmvm/internal/engine/numeric \
             --require github.com/cpunion/wasmvm/internal/engine/simd \
             --require github.com/cpunion/wasmvm/internal/engine/memory \
+            --require github.com/cpunion/wasmvm/internal/engine/state \
+            --require github.com/cpunion/wasmvm/internal/engine/interp \
             --require github.com/cpunion/wasmvm/pkg/wasm
 
       - name: Fuzz bounded binary inputs
@@ -120,6 +123,7 @@ jobs:
           go test -run '^$' -fuzz '^FuzzNumeric$' -fuzztime=10s -parallel=2 ./internal/engine/numeric
           go test -run '^$' -fuzz '^FuzzPureSIMD$' -fuzztime=10s -parallel=2 ./internal/engine/simd
           go test -run '^$' -fuzz '^FuzzMemoryRanges$' -fuzztime=10s -parallel=2 ./internal/engine/memory
+          go test -run '^$' -fuzz '^FuzzExecution$' -fuzztime=10s -parallel=2 ./internal/engine/interp
 
       - name: Evaluate unchanged wazero and measure harness coverage
         if: matrix.compiler == 'go'
@@ -156,6 +160,14 @@ jobs:
         with:
           name: core-coverage-${{ matrix.platform.name }}
           path: artifacts/core/
+          if-no-files-found: error
+
+      - name: Preserve actual own-core conformance
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: core2-execution-${{ matrix.compiler }}-${{ matrix.platform.name }}
+          path: artifacts/conformance/core2.json
           if-no-files-found: error
 
       - name: Preserve corpus provenance

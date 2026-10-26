@@ -1,6 +1,6 @@
 # Core Compiler and Execution Design
 
-Date: **2026-10-26**. Status: **implementation contract, not implemented capability**. This is the core mechanism supplement to the [architecture](architecture.md), [native ABI](native-abi.md), and [performance contract](performance-contract.md).
+Date: **2026-10-26**. Status: **implementation contract; see the validation record for implemented increments**. This is the core mechanism supplement to the [architecture](architecture.md), [native ABI](native-abi.md), and [performance contract](performance-contract.md).
 
 ## Complete profiles and common pipeline
 
@@ -123,6 +123,33 @@ zeroes the new pages; quota failure leaves memory unchanged. The old and new
 buffers may coexist transiently during copying and until host collection, so
 the page quota bounds logical memory rather than process RSS. Store-wide memory
 accounting and scheduling of chunked bulk operations remain runtime work.
+
+## Implemented Core 2.0 execution
+
+`internal/engine/state` owns typed imports, canonical signature identities,
+Store-local function references, globals, tables, memories and segment state.
+Allocation resolves every import before side effects and rolls back its new
+state on failure. Initialization follows active elements, declarative drops,
+active data and a separately driven start call. Earlier imported-state effects
+survive later traps; escaped functions retain their originating instance.
+
+`internal/engine/interp` executes flat slot code with explicit bounded guest
+frames. Host calls return requests to a driver, which may run a nested
+continuation and then resume the suspended caller. Frame and pending-host
+reference slots have root visitors. All opcodes use the owned numeric, SIMD,
+memory and table semantics. No competitor runtime is invoked.
+
+Fuel model v1 charges before effects. Cancellation is checked at entry, calls,
+backedges, at most every 64 straight-line instructions, and between 4-KiB memory
+or 512-element table chunks. Bounds traps precheck entire bulk ranges;
+cancellation may leave partial progress. The execution object can be reused;
+a warmed scalar call has zero allocations in the Go allocation-counter test.
+
+These internal mechanisms pass the complete binary corpus locally. They do not
+yet provide the public single-executor/lifecycle driver, host root ownership,
+close/reclamation policy or own-engine performance acceptance. In particular,
+instances that fail after initialization begins remain Store-owned so escaped
+references remain valid; reclaiming unescaped failed state is still required.
 
 ## Runtime, lifecycle and observability
 
