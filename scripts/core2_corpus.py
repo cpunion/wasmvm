@@ -33,7 +33,7 @@ def digest(path):
 def relative_path(name):
     path = PurePosixPath(name)
     if (not name or name == "." or path.is_absolute() or ".." in path.parts
-            or "\\" in name or str(path) != name):
+            or "\\" in name or str(path) != name or any(ord(c) < 32 or ord(c) == 127 for c in name)):
         raise ValueError(f"invalid corpus path: {name!r}")
     return path
 
@@ -177,6 +177,11 @@ def verify(fixtures, records=RECORDS):
         raise ValueError("unsupported corpus manifest schema")
     if manifest["pinsSHA256"] != digest(records / "pins.json"):
         raise ValueError("pins changed without regenerating the corpus manifest")
+    pins = json.loads((records / "pins.json").read_text())
+    if (pins.get("schemaVersion") != 1 or pins.get("profile") != "Core 2.0 binary"
+            or manifest["scriptCount"] != pins["source"]["scripts"]
+            or len(manifest["scripts"]) != manifest["scriptCount"]):
+        raise ValueError("manifest does not preserve the pinned source script inventory")
     files = inventory(fixtures)
     if hash_text(files) != (records / "files.sha256").read_text():
         raise ValueError("generated corpus does not match the committed file hashes")

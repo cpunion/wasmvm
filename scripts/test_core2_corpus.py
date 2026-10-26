@@ -23,7 +23,7 @@ class CorpusTests(unittest.TestCase):
 
     def test_paths(self):
         self.assertEqual(str(corpus.relative_path("simd/i8x16.wast")), "simd/i8x16.wast")
-        for name in ["", ".", "../escape", "/absolute", "a/../b", "a\\b", "a//b", "./a"]:
+        for name in ["", ".", "../escape", "/absolute", "a/../b", "a\\b", "a//b", "./a", "a\nb", "a\x00b"]:
             with self.subTest(name=name), self.assertRaises(ValueError):
                 corpus.relative_path(name)
 
@@ -118,7 +118,8 @@ class CorpusTests(unittest.TestCase):
         (root / "simple/script.json").write_text(json.dumps(script))
         records = self.root / "records"
         records.mkdir()
-        (records / "pins.json").write_text('{"schemaVersion":1}')
+        (records / "pins.json").write_text(json.dumps(
+            {"schemaVersion": 1, "profile": "Core 2.0 binary", "source": {"scripts": 1}}))
         for name in corpus.LICENSES.values():
             (records / name).write_bytes((root / name).read_bytes())
         sources = {"simple.wast": "0" * 64}
@@ -190,6 +191,16 @@ class CorpusTests(unittest.TestCase):
         root, records, _, _ = self.fixture()
         (records / "LICENSE.tests").write_text("changed notice")
         with self.assertRaisesRegex(ValueError, "committed license notice"):
+            corpus.verify(root, records)
+
+    def test_reduced_script_inventory_fails_even_with_matching_pin_hash(self):
+        root, records, _, manifest = self.fixture()
+        pins = json.loads((records / "pins.json").read_text())
+        pins["source"]["scripts"] = 2
+        (records / "pins.json").write_text(json.dumps(pins))
+        manifest["pinsSHA256"] = corpus.digest(records / "pins.json")
+        (records / "manifest.json").write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(ValueError, "source script inventory"):
             corpus.verify(root, records)
 
 

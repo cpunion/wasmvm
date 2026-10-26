@@ -126,7 +126,7 @@ registration and action commands. These counts describe inputs only. The
 binary VM does not implement a WAT parser, and no text-parser or binary guest
 assertion is counted as executed by this preparation step.
 
-Ten corpus-tool tests cover source selection including SIMD, archive path and
+Eleven corpus-tool tests cover source selection including SIMD, archive path and
 link handling, download size/digest/redirect failures, cached corruption,
 script classifications, missing/extra/modified files, and changed pins/counts/notices.
 They run alongside the five per-package coverage-gate tests. CI regenerates
