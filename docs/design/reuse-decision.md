@@ -33,7 +33,7 @@ Adopting wazero changes implementation provenance, not the acceptance requiremen
 
 | Route | Assessment |
 | --- | --- |
-| Use upstream wazero unchanged | Insufficient for the complete target and fails the current unchanged LLGo build |
+| Use upstream wazero unchanged | Insufficient for the complete target; the unmodified released LLGo v1.0.8 also fails to link it |
 | Reuse wazero, fix compiler contracts in LLGo, and contribute required engine/host features | Selected initial route; retains existing strengths and exposes real remaining costs |
 | Import the open GC PR as a completed capability | Rejected as an acceptance shortcut; it is unmerged, interpreter-only, and needs GC/lifetime review |
 | Reuse Wago or a wazero-derived implementation | Alternative for later feature decisions; Wago's compiler boundary is measured, Wazy's claims remain unvalidated |
