@@ -6,11 +6,11 @@ Correctness and bounded execution are prerequisites. A faster result obtained by
 
 ## 1. Measure wasmvm implementation revisions
 
-The existing CLI harness builds official wazero executables selected by the base and head dependency pins. The existing phase harness builds the same head adapter against those two wazero versions. These are useful reference measurements, but **neither measures changes to a wasmvm implementation**. Their existing results remain labeled as dependency evaluations.
+The historical CLI harness builds official wazero executables selected by base/head dependency pins. The phase harness now adds exact wasmvm implementation builds under Go and LLGo, retaining wazero/other engines as explicitly separate references. Historical dependency-only results remain labeled as such.
 
-Add an owned embedding adapter that executes wasmvm's core directly. Build the core from the exact base and head commits, with the same pinned host compiler and build options. Build production CLI latency measurements from those commits as well. The artifact must identify the core commit, adapter source hashes, binary hash, host compiler, compilation options, feature profile, and runtime policy. A benchmark must fail identity verification if it accidentally links wazero as the wasmvm implementation.
+The owned embedding adapter executes wasmvm's core directly. Build the core from the exact base and head commits, with the same pinned host compiler and build options. Build production CLI latency measurements from those commits as well. The artifact must identify the core commit, adapter source hashes, binary hash, host compiler, compilation options, feature profile, and runtime policy. A benchmark must fail identity verification if it accidentally links wazero as the wasmvm implementation.
 
-Prefer a common versioned adapter and protocol when the API permits it, with a local module replacement selecting the complete base or head checkout. Record the resolved local module, checkout identity, and source hashes. If an API change requires revision-specific adapters, record both adapter versions and review the changed timing boundaries before comparing results. Copying head core implementation files into the base build is forbidden.
+Use a common versioned adapter and protocol when the API permits it. The M1 adapter requires internal-package access, so committed source is archived into isolated build trees and only the two instrumentation directories are overlaid from head. This serves the same isolation purpose as selecting a complete checkout through a local module replacement. Record the resolved local module, checkout identity, and source hashes. If an API change requires revision-specific adapters, record both adapter versions and review the changed timing boundaries before comparing results. Copying head core implementation files into the base build is forbidden.
 
 When the baseline predates the engine, record `baseline-unavailable` and the exact reason. Run head correctness and competitor measurements, establish the first baseline through its PR, and leave the revision-regression comparison unaccepted. Never substitute a reference engine or a successful build for a missing wasmvm execution result.
 
@@ -127,6 +127,8 @@ Fuel, cancellation and deterministic polling correctness apply from M1; numerica
 Fuel exhaustion and cancellation tests verify observable correctness even when their overhead targets are not yet met. A benchmark configuration that bypasses these paths cannot establish production-policy acceptance.
 
 ## 6. Controlled acceptance and hosted PR reports
+
+The PR suite retains every workload family but excludes the duplicate sustained integer/memory variants; explicit full runs retain them. Selected cases keep three processes and seven measured calls. Full and PR scope is labeled in each report, and M2 controlled acceptance still requires the complete declared portfolio.
 
 The existing three-process, seven-call hosted CI series is advisory. Keep it as a reproducible PR signal and correctness gate. It cannot establish a narrow performance budget on shared, uncontrolled hardware.
 

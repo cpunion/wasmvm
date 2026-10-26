@@ -2,10 +2,13 @@ name: Runtime benchmarks
 
 on:
   pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
+      suite:
+        description: Benchmark scope (PR families or full sustained runs)
+        type: choice
+        options: [pr, full]
+        default: full
       baseline:
         description: Baseline commit or ref in this repository
         default: main
@@ -13,6 +16,9 @@ on:
 
 permissions:
   contents: read
+
+env:
+  BENCHMARK_SUITE: ${{ github.event_name == 'workflow_dispatch' && inputs.suite || 'pr' }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -22,7 +28,7 @@ jobs:
   benchmark:
     name: Base, head, and competitors / linux-amd64
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 90
     steps:
       - name: Check out the exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -44,6 +50,21 @@ jobs:
           go-version: '1.27.3'
           cache: false
 
+      - name: Set up pinned LLGo for own-engine measurements
+        id: llgo
+        uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
+        with:
+          llgo-version: 8b1389c627c77a02e56af03f08d9cdc19edffe77
+          install-method: source
+          go-version: '1.27.3'
+          llvm-version: '22'
+          cache: true
+
+      - name: Verify the benchmark LLGo identity
+        env:
+          ACTUAL_LLGO_REVISION: ${{ steps.llgo.outputs.llgo-revision }}
+        run: test "$ACTUAL_LLGO_REVISION" = 8b1389c627c77a02e56af03f08d9cdc19edffe77
+
       - name: Check benchmark tooling
         run: python3 -m unittest discover -s head/benchmarks -p 'test_*.py'
 
@@ -64,6 +85,7 @@ jobs:
           cp "$RUNNER_TEMP/wasm-runtime-tools/installation.json" benchmark-results/tool-installation.json
 
       - name: Measure interleaved baseline, candidate, and competitor cases
+        if: env.BENCHMARK_SUITE == 'full'
         shell: bash
         run: |
           python3 head/benchmarks/ci.py \
@@ -75,8 +97,10 @@ jobs:
 
       - name: Measure direct API phases and warmed execution
         shell: bash
+        env:
+          WASMVM_LLGO_REVISION: 8b1389c627c77a02e56af03f08d9cdc19edffe77
         run: |
-          python3 head/benchmarks/phase_ci.py \
+          python3 head/benchmarks/phase_ci.py --timeout 180 --suite "$BENCHMARK_SUITE" \
             --base-dir "$GITHUB_WORKSPACE/base" \
             --head-dir "$GITHUB_WORKSPACE/head" \
             --base-sha "$(git -C base rev-parse HEAD)" \
@@ -99,7 +123,7 @@ jobs:
             if [[ -f benchmark-results/cli/report.md ]]; then
               cat benchmark-results/cli/report.md
             else
-              printf 'CLI measurements are unavailable. See the job logs.\n'
+              printf 'The legacy reference CLI series runs only in full mode. Owned CLI timings are in the phase report.\n'
             fi
           } > benchmark-results/report.md
           cat benchmark-results/report.md >> "$GITHUB_STEP_SUMMARY"

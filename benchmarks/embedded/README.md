@@ -35,7 +35,7 @@ serialization, and scheduling gaps sit outside API timers. Phase medians are
 not an additive partition of whole-process time; neither sums nor residuals
 are presented as a measurement of an otherwise unobserved operation.
 
-The Go runner uses `CallWithStack` with reused argument/result storage. C runners
+The wazero Go runner uses `CallWithStack` with reused argument/result storage. The owned public API runner reuses its argument Values; its current API allocates result/continuation storage inside the timed call. C runners
 also reuse argument/result slots. Stack setup and checksum checks sit outside
 call timers. These are still **API-call wall times**, not isolated CPU cycles or
 an exact count of guest instructions. The call-control module exposes the
@@ -72,11 +72,36 @@ All process/configuration/workload cases are interleaved in seeded random order.
 
 ## Backends and provenance
 
+- **Owned wasmvm:** exact base/head commits, each built with pinned Go 1.27.3
+  and LLGo runtime revision `8b1389c627c77a02e56af03f08d9cdc19edffe77`.
+  `own_build.py` archives committed source into isolated trees and overlays only
+  the two head instrumentation directories (`internal/bench/phase` and
+  `benchmarks/embedded/wasmvm`). No engine/public-API file is copied from head
+  into base. Source hashes/digests (including the production CLI), shared adapter hashes, generated provenance,
+  compiler identities, dependency inventories and binary hashes are retained.
+  Untracked files cannot enter an archive; tracked modifications fail identity
+  verification. A baseline predating Engine/Store is explicitly unavailable;
+  neither a reference engine nor a compiler failure can replace it.
+- Each own build runs two separately named boundaries. **api** is the primary
+  public embedding comparison. **dispatch** is a diagnostic using the same
+  validated slot interpreter, reused frames and a cancellable context, without
+  public root/marshalling/admission work. Bounds/trap checks and normal polling
+  remain enabled in both; optional deterministic fuel is disabled. Never use
+  dispatch results as a replacement for public API performance.
+- Dispatch diagnostics also time decode, validation, IR lowering and slot
+  allocation separately inside one outer preparation interval. The outer
+  interval includes phase transitions and may exceed the parts' sum. No native
+  code is generated in M1, and these parts are not added to preparation again.
+- The actual `cmd/wasmvm` binary is also built from each revision/compiler. A
+  separate series runs each pure fixture in three fresh CLI processes and checks
+  the typed JSON result. Its complete wall time includes startup, file I/O,
+  compilation, execution, JSON and exit. It is never subtracted from API phases.
+  A usable base/head matrix adds 72 independently measured CLI invocations.
+
 - Wazero v1.12.0 interpreter/native compiler: the same head runner source is
   compiled separately against the dependency selected by the base and head
   checkouts. Source hashes, module checksums, binary hashes, and Go build info
-  are recorded. This currently compares engine dependency selections, not
-  performance changes in a production wasmvm engine.
+  are recorded. These extra reference base/head rows compare dependency selections; the separately named owned rows measure wasmvm implementation revisions.
 - Wasmtime 48.0.1: pinned C API SDK, Cranelift with optimization level 2.
 - Wasmer 7.3.0: pinned C API SDK with Cranelift selected explicitly.
 - WasmEdge 0.17.1: pinned C API SDK with interpreter mode selected explicitly;
@@ -95,23 +120,22 @@ checks. Its owned-code statement coverage is enforced at 90% or higher. The C
 runners have actual positive and negative integration probes, including traps,
 wrong checksums/signatures, forbidden imports/start functions, and bad protocol
 inputs. Existing VM/evaluator semantic tests remain required under Go and LLGo.
-The performance measurements use Go and C hosts; they do not claim LLGo native
-backend acceptance. A separate local probe found that the fixed LLGo runtime
+The measurements use Go/LLGo hosts for the owned interpreter, Go for wazero, and C for the other references. They do not claim LLGo native backend acceptance. A separate local probe found that the fixed LLGo runtime
 executes the interpreter but the wazero native backend fails on its first call,
 tracked by [LLGo #2921](https://github.com/xgo-dev/llgo/issues/2921). The memory
 hooks in [LLGo PR #2919](https://github.com/xgo-dev/llgo/pull/2919) fix linking;
 they do not establish native-backend execution compatibility.
-The complete Go-runner tests retain both backends; that failure is not skipped
-or presented as a passing LLGo measurement result.
+The complete wazero Go-runner tests retain both backends; that failure is not skipped or presented as a passing LLGo native measurement result. The owned interpreter is required to execute with both host compilers.
 
 ## Reproduction
 
-Linux amd64, Python 3.12+, Go 1.27.3, and a C compiler are required. Installation
+Linux amd64, Python 3.12+, Go 1.27.3, the pinned LLGo toolchain, and a C compiler are required. Installation
 and build time are excluded from measurements. Start from clean base and head
 checkouts; both must contain the candidate dependency selection.
 
 ```sh
 python3 benchmarks/install_tools.py --sdk --destination /tmp/wasmvm-phase-tools
+WASMVM_LLGO_REVISION=8b1389c627c77a02e56af03f08d9cdc19edffe77 \
 python3 benchmarks/phase_ci.py \
   --base-dir /path/to/base --base-sha FULL_BASE_COMMIT \
   --head-dir /path/to/head --head-sha FULL_HEAD_COMMIT \
@@ -120,7 +144,32 @@ python3 benchmarks/phase_ci.py \
 
 The [PR workflow](../../.github/workflows/benchmarks.yml) builds the C runners,
 executes their correctness probes, runs both series, and publishes a combined
-comment with warm execution first and full phase tables in a details section.
+comment with owned public API base/head and competitor comparisons first, internal diagnostics and full phase tables in details sections. With a usable baseline there are 15 configurations (four owned API, four owned dispatch, four wazero dependency-reference rows and three other references), six cases and three process repetitions: 270 fresh processes.
 Raw JSON contains every call, every phase, setup metadata, and failure records.
 Three process repetitions and shared hosted hardware provide an engineering
 baseline, not a stable performance budget or a general engine ranking.
+
+
+## PR feedback and full runs
+
+PR workflows select `--suite pr`: retain the call control, integer loop, source
+calls and memory loop under every runtime/compiler/boundary, and reserve only
+the duplicate `integer-sustained` and `memory-sustained` cases for `--suite full`.
+Selected case loop counts, three process repetitions, two warmups, seven warm
+calls and every checksum remain unchanged. The initial PR matrix has 180 phase
+processes plus 48 owned CLI processes; full mode retains 270 plus 72. Reports
+name their suite and cannot silently accept missing selected observations.
+New workload families are included in PR mode by default.
+
+The full suite is available through `workflow_dispatch` with `suite: full` and
+an explicit baseline. It also runs the legacy official-CLI reference series;
+the PR suite already includes all direct API competitors and actual owned CLI
+measurements. Full and PR reports are distinct evidence, not pooled samples.
+This change reduces repetitive sustained work in advisory PR feedback; M2's
+controlled acceptance portfolio and repetition requirements remain unchanged.
+
+Workflows run for PRs or explicit dispatch, without rerunning the same tree on
+every merge to main. Both compilers still execute the complete semantic corpus
+and actual CLI on both supported platforms. Pure-Go vet, race, coverage, fuzz
+and tooling checks run once on Linux; no macOS coverage measurement is claimed.
+Pinned LLGo setup can reuse its cache, with revision verification retained.

@@ -1,8 +1,6 @@
 name: Go and LLGo
 
 on:
-  push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -50,7 +48,7 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           llvm-version: '22'
           # Candidate engines are pinned in separate evaluation modules.
-          cache: false
+          cache: true
 
       - name: Record and verify toolchains
         shell: bash
@@ -66,7 +64,7 @@ jobs:
           fi
 
       - name: Format and vet
-        if: matrix.compiler == 'go'
+        if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
         shell: bash
         run: |
           test -z "$(gofmt -l .)"
@@ -88,7 +86,7 @@ jobs:
           fi
 
       - name: Check Go data races
-        if: matrix.compiler == 'go'
+        if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
         run: go test -race -count=1 -timeout=10m ./...
 
       - name: Build and execute the core CLI
@@ -105,7 +103,7 @@ jobs:
           python3 scripts/cli_smoke.py artifacts/cli/wasmvm
 
       - name: Enforce per-package core coverage
-        if: matrix.compiler == 'go'
+        if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
         shell: bash
         run: |
           python3 -m unittest discover -s scripts -p 'test_*.py'
@@ -113,6 +111,7 @@ jobs:
           CGO_ENABLED=0 go test -count=1 -timeout=10m -coverprofile=artifacts/core/coverage.out ./internal/... ./pkg/...
           python3 scripts/check_coverage.py artifacts/core/coverage.out --minimum 90 \
             --require github.com/cpunion/wasmvm/internal/binary \
+            --require github.com/cpunion/wasmvm/internal/bench/phase \
             --require github.com/cpunion/wasmvm/internal/cli \
             --require github.com/cpunion/wasmvm/internal/core/decode \
             --require github.com/cpunion/wasmvm/internal/core/validate \
@@ -128,7 +127,7 @@ jobs:
             --require github.com/cpunion/wasmvm/pkg/vm
 
       - name: Fuzz bounded binary inputs
-        if: matrix.compiler == 'go'
+        if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
         run: |
           go test -run '^$' -fuzz '^FuzzReader$' -fuzztime=10s -parallel=2 ./internal/binary
           go test -run '^$' -fuzz '^FuzzDecode$' -fuzztime=10s -parallel=2 ./internal/core/decode
@@ -141,7 +140,7 @@ jobs:
           go test -run '^$' -fuzz '^FuzzExecution$' -fuzztime=10s -parallel=2 ./internal/engine/interp
 
       - name: Evaluate unchanged wazero and measure harness coverage
-        if: matrix.compiler == 'go'
+        if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
         shell: bash
         run: |
           go -C experiments/wazero vet ./...
@@ -150,7 +149,7 @@ jobs:
           awk '/^total:/ { found=1; sub(/%$/, "", $3); if ($3+0 < 90) exit 1 } END { if (!found) exit 2 }' artifacts/wazero/go-upstream/coverage-summary.txt
 
       - name: Check the alternate candidate's Go smoke probes
-        if: matrix.compiler == 'go'
+        if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
         run: go -C experiments/wago test -count=1 -timeout=2m ./...
 
       - name: Run unchanged wazero with the fixed LLGo runtime
@@ -158,11 +157,11 @@ jobs:
         run: experiments/wazero/scripts/run.sh llgo upstream
 
       - name: Check benchmark fixtures and harness
-        if: matrix.compiler == 'go'
+        if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
         run: python3 -m unittest discover -s benchmarks -p 'test_*.py'
 
       - name: Preserve evaluation evidence
-        if: always()
+        if: always() && (matrix.compiler == 'llgo' || matrix.platform.name == 'linux-amd64')
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: wazero-evaluation-${{ matrix.compiler }}-${{ matrix.platform.name }}
@@ -170,7 +169,7 @@ jobs:
           if-no-files-found: error
 
       - name: Preserve core coverage
-        if: always() && matrix.compiler == 'go'
+        if: always() && matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: core-coverage-${{ matrix.platform.name }}

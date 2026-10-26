@@ -18,6 +18,8 @@ import tempfile
 import time
 
 import ci
+import own_build
+import own_cli
 
 
 ROUNDS = 3
@@ -27,6 +29,27 @@ WORKLOADS = ("call-control", "integer-loop", "integer-sustained", "function-call
              "memory-load-store", "memory-sustained")
 PHASES = ("load", "engineSetup", "compileValidate", "instantiate", "exportLookup", "firstCall", "cleanup")
 MAX_OUTPUT = 2 * 1024 * 1024
+OWN_CONFIGURATIONS = tuple(f"wasmvm-{ref}-{compiler}-{mode}"
+                           for ref in ("base", "head") for compiler in ("go", "llgo")
+                           for mode in ("api", "dispatch"))
+CONFIGURATIONS = OWN_CONFIGURATIONS + ci.CONFIGURATIONS
+
+
+# These two cases repeat the same integer/memory modules at larger loop counts.
+# Keep all workload families in PRs; reserve sustained load for explicit full runs.
+PR_OMITTED = frozenset({"integer-sustained", "memory-sustained"})
+
+
+def selection(report):
+    suite = report.get("suite", "full")  # Historical reports used the full matrix.
+    if suite not in ("pr", "full"):
+        raise ValueError("unknown benchmark suite")
+    return tuple(w for w in WORKLOADS if suite == "full" or w not in PR_OMITTED)
+
+
+def selected_fixtures(report):
+    names = set(selection(report))
+    return {**report["fixtures"], "workloads": [w for w in report["fixtures"]["workloads"] if w["id"] in names]}
 
 
 def digest(path):
@@ -87,8 +110,28 @@ def build_candidates(head, base, temporary):
     return builds
 
 
-def runtime_commands(builds, c_directory):
+def own_commands(builds):
     result = []
+    for ref in ("base", "head"):
+        for compiler in ("go", "llgo"):
+            build = builds[f"{ref}-{compiler}"]
+            if build["status"] == "baseline-unavailable" and ref == "base":
+                continue
+            if build["status"] != "available":
+                raise ValueError("required own-engine build is unavailable")
+            for mode in ("api", "dispatch"):
+                result.append({"id": f"wasmvm-{ref}-{compiler}-{mode}", "engine": "wasmvm",
+                    "backend": "interpreter", "mode": mode, "hostCompiler": compiler,
+                    "compiler": "gc" if compiler == "go" else "llgo",
+                    "compilerRevision": build["toolchain"]["revision"],
+                    "sourceRevision": build["sourceRevision"], "sourceDigest": build["sourceDigest"],
+                    "goos": build["toolchain"]["goos"], "goarch": build["toolchain"]["goarch"],
+                    "binarySha256": build["binarySha256"], "command": [build["binary"], "--mode", mode]})
+    return result
+
+
+def runtime_commands(builds, c_directory, own_builds):
+    result = own_commands(own_builds)
     for name in ("base", "head"):
         for backend in ("interpreter", "compiler"):
             result.append({"id": f"{name}-{backend}", "backend": backend,
@@ -172,6 +215,13 @@ def validate_observation(observation, runtime, workload):
                        ("samples", SAMPLES), ("warmups", WARMUPS), ("result", workload["expectedChecksum"])):
         if type(record[key]) is not type(value) or record[key] != value:
             raise ValueError(f"phase runner {key} mismatch")
+    own = runtime.get("engine") == "wasmvm"
+    if own:
+        for key in ("engine", "sourceRevision", "compiler", "compilerRevision", "mode", "goos", "goarch"):
+            if record.get(key) != runtime[key]:
+                raise ValueError(f"own-engine {key} mismatch")
+        if record.get("runtimeVersion") != own_build.GO_VERSION or record.get("policy") != "unmetered; bounded cancellation; checked Core 2.0":
+            raise ValueError("own-engine runtime or execution policy mismatch")
     if set(record["phasesNs"]) != set(PHASES):
         raise ValueError("phase runner omitted or added a canonical timing boundary")
     for value in record["phasesNs"].values():
@@ -186,12 +236,16 @@ def validate_observation(observation, runtime, workload):
             raise ValueError("phase runner returned an incorrect checksum")
     if "preparationPartsNs" in record:
         parts = record["preparationPartsNs"]
-        if set(parts) != {"parse", "validate"}:
+        expected_parts = {"decode", "validate", "lower", "slots"} if own else {"parse", "validate"}
+        if set(parts) != expected_parts:
             raise ValueError("unexpected preparation detail")
         for value in parts.values():
             duration(value)
-        if sum(parts.values()) != record["phasesNs"]["compileValidate"]:
+        aggregate = record["phasesNs"]["compileValidate"]
+        if sum(parts.values()) > aggregate or not own and sum(parts.values()) != aggregate:
             raise ValueError("preparation parts disagree with their aggregate")
+    if own and ("preparationPartsNs" in record) != (runtime["mode"] == "dispatch"):
+        raise ValueError("own-engine preparation detail belongs only to dispatch diagnostics")
     # These API intervals are disjoint. Startup notification and JSON/bookkeeping
     # are deliberately not subtracted to invent a 'pure guest' measurement.
     measured = sum(record["phasesNs"].values()) + sum(record["warmCallNs"]) + sum(record["warmupCallNs"])
@@ -201,9 +255,28 @@ def validate_observation(observation, runtime, workload):
 
 def summarize(report):
     runtimes = {r["id"]: r for r in report["runtimes"]}
-    workloads = {w["id"]: w for w in report["fixtures"]["workloads"]}
-    if len(report["runtimes"]) != 7 or set(runtimes) != set(ci.CONFIGURATIONS) or len(workloads) != 6 or set(workloads) != set(WORKLOADS):
+    workloads = {w["id"]: w for w in selected_fixtures(report)["workloads"]}
+    required_builds = {f"{ref}-{compiler}" for ref in ("base", "head") for compiler in ("go", "llgo")}
+    if set(report.get("ownBuilds", {})) != required_builds:
+        raise ValueError("own-engine build provenance is incomplete")
+    if report["ownBuilds"]["base-go"]["status"] != report["ownBuilds"]["base-llgo"]["status"]:
+        raise ValueError("a compiler failure cannot be labeled as an absent baseline engine")
+    for name, build in report["ownBuilds"].items():
+        expected_sha = report["baseSha"] if name.startswith("base-") else report["headSha"]
+        if build["sourceRevision"] != expected_sha:
+            raise ValueError("own-engine build source does not match the selected commit")
+        if build["sourceDigest"] != own_build.source_digest(build["sourceHashes"]):
+            raise ValueError("own-engine source digest mismatch")
+        if build["status"] == "baseline-unavailable" and (not name.startswith("base-") or not build.get("reason")):
+            raise ValueError("invalid baseline-unavailable provenance")
+    expected_own = {r["id"]: r for r in own_commands(report["ownBuilds"])}
+    expected_ids = set(ci.CONFIGURATIONS) | set(expected_own)
+    if len(report["runtimes"]) != len(expected_ids) or set(runtimes) != expected_ids or len(workloads) != len(selection(report)) or set(workloads) != set(selection(report)):
         raise ValueError("incomplete embedded runtime/workload configuration")
+    for name, expected in expected_own.items():
+        if runtimes[name] != expected:
+            raise ValueError("own-engine runtime does not match build provenance")
+    own_cli.summarize(report["productionCLI"], report["ownBuilds"], selected_fixtures(report))
     expected = {(r, w, n) for r in runtimes for w in workloads for n in range(ROUNDS)}
     seen = set()
     for item in report["observations"]:
@@ -215,8 +288,10 @@ def summarize(report):
     if seen != expected:
         raise ValueError("incomplete embedded process matrix")
     result = []
-    for runtime in ci.CONFIGURATIONS:
-        for workload in WORKLOADS:
+    for runtime in CONFIGURATIONS:
+        if runtime not in runtimes:
+            continue
+        for workload in selection(report):
             selected = [item for item in report["observations"] if item["runtime"] == runtime and item["workload"] == workload]
             row = {"runtime": runtime, "workload": workload, "processRounds": ROUNDS}
             for phase in PHASES:
@@ -227,17 +302,75 @@ def summarize(report):
             row["timerPairNs"] = statistics.median(statistics.median(item["record"]["timerPairNs"]) for item in selected)
             row["normalizedNs"] = row["warmCallNs"] / workloads[workload]["iterations"]
             row["unit"] = workloads[workload]["unit"]
+            if "preparationPartsNs" in selected[0]["record"]:
+                if any(set(item["record"].get("preparationPartsNs", {})) != set(selected[0]["record"]["preparationPartsNs"]) for item in selected):
+                    raise ValueError("incomplete preparation detail across process rounds")
+                row["preparationPartsNs"] = {part: statistics.median(
+                    item["record"]["preparationPartsNs"][part] for item in selected)
+                    for part in selected[0]["record"]["preparationPartsNs"]}
             result.append(row)
     return result
 
 
 def markdown(report):
-    lines = ["## Direct embedding phase measurements", "",
+    lines = ["## wasmvm implementation and direct embedding phases", "",
              f"Base `{report['baseSha']}` → head `{report['headSha']}`.", ""]
     if report.get("status") != "complete":
         return "\n".join(lines + ["**Phase measurement failed; no phase comparison is accepted.** See raw artifacts and job logs.", ""])
     rows = summarize(report)
+    if report.get("suite", "full") == "pr":
+        lines += ["**PR suite:** all workload families, with the duplicate long integer/memory cases reserved for explicit full runs. Loop counts, three processes and seven warm samples for each selected case are unchanged.", ""]
+    else:
+        lines += ["**Full suite:** includes the sustained integer/memory cases.", ""]
     indexed = {(row["runtime"], row["workload"]): row for row in rows}
+    lines += ["Owned engines are built from the exact commits above with identical head instrumentation; "
+              "Go and LLGo are separate measurements. The primary rows use the public VM API. "
+              "The interpreter retains cancellation polling, bounds/trap checks and quotas; optional fuel is off.", "",
+              "| Workload | Unit | Own Go base | Own Go head | Delta | Own LLGo base | Own LLGo head | Delta |",
+              "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
+    def own_cells(workload, compiler, mode):
+        base = indexed.get((f"wasmvm-base-{compiler}-{mode}", workload))
+        head = indexed[(f"wasmvm-head-{compiler}-{mode}", workload)]["normalizedNs"]
+        if base is None:
+            return f"unavailable | {head:.2f} | unavailable"
+        baseline = base["normalizedNs"]
+        delta = f"{ci.median_delta(baseline, head):+.1f}%" if baseline > 0 and head > 0 else "unresolved"
+        return f"{baseline:.2f} | {head:.2f} | {delta}"
+    for workload in selection(report):
+        unit = indexed[("wasmvm-head-go-api", workload)]["unit"]
+        lines.append(f"| {workload} | {unit} | {own_cells(workload, 'go', 'api')} | {own_cells(workload, 'llgo', 'api')} |")
+    for compiler in ("go", "llgo"):
+        base = report["ownBuilds"][f"base-{compiler}"]
+        head = report["ownBuilds"][f"head-{compiler}"]
+        if base["status"] == "baseline-unavailable":
+            lines.append(f"\nOwn {compiler} baseline unavailable: the selected commit predates the Engine/Store API; no revision-regression claim is accepted.")
+        elif base["sourceDigest"] == head["sourceDigest"]:
+            lines.append(f"\nOwn {compiler} engine inputs are identical: this is an A/A baseline, so timing differences are variation rather than an implementation optimization.")
+    lines += ["", "| Workload | Unit | Own Go API | Own LLGo API | wazero interpreter | wazero native | Wasmtime Cranelift | Wasmer Cranelift | WasmEdge interpreter |",
+              "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+    compared = ("wasmvm-head-go-api", "wasmvm-head-llgo-api", "head-interpreter", "head-compiler", "wasmtime-cranelift", "wasmer-cranelift", "wasmedge-interpreter")
+    for workload in selection(report):
+        values = " | ".join(f"{indexed[(runtime, workload)]['normalizedNs']:.2f}" for runtime in compared)
+        lines.append(f"| {workload} | {indexed[(compared[0], workload)]['unit']} | {values} |")
+    lines += ["", "<details><summary>Internal dispatch diagnostics and compiler phases</summary>", "",
+              "These diagnostic rows invoke the same checked interpreter with reused frames and cancellable contexts, "
+              "without the public root/marshalling/admission driver. They do not replace the public API comparison. "
+              "No medians are subtracted to manufacture a pure instruction or boundary cost.", "",
+              "| Workload | Unit | Go base dispatch | Go head dispatch | Delta | LLGo base dispatch | LLGo head dispatch | Delta |",
+              "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
+    for workload in selection(report):
+        lines.append(f"| {workload} | {indexed[('wasmvm-head-go-api', workload)]['unit']} | {own_cells(workload, 'go', 'dispatch')} | {own_cells(workload, 'llgo', 'dispatch')} |")
+    lines += ["", "Owned preparation details (milliseconds); the outer preparation interval also includes phase transitions. "
+              "These produce interpreter slot code, not native code. Parts are not added a second time to preparation.", "",
+              "| Runtime | Workload | Decode | Validate | IR lowering | Slot allocation |",
+              "| --- | --- | ---: | ---: | ---: | ---: |"]
+    for row in rows:
+        parts = row.get("preparationPartsNs", {})
+        if "decode" in parts:
+            values = " | ".join(f"{parts[key] / 1e6:.6f}" for key in ("decode", "validate", "lower", "slots"))
+            lines.append(f"| {row['runtime']} | {row['workload']} | {values} |")
+    lines += ["", "</details>", "", own_cli.markdown(report["productionCLI"], report["ownBuilds"], selected_fixtures(report)),
+              "### Wazero dependency selection (reference only)", ""]
     versions = report["builds"]
     lines += [f"wazero base `{versions['base']['version']}`, head `{versions['head']['version']}`; "
               "identical head instrumentation and fixture bytes measure each selected dependency."]
@@ -250,15 +383,15 @@ def markdown(report):
               "Three fresh processes per case; seven measured calls in each. Values are medians of the three process medians. "
               "`ns/iteration` means one **workload loop iteration**, not one Wasm instruction. Memory reset is included. "
               "Native compilers may inline source-level calls.", "",
-              "| Workload | Unit | Base interpreter | Head interpreter | Delta | Base compiler | Head compiler | Delta |",
+              "| Workload | Unit | Wazero base interpreter | Wazero head interpreter | Delta | Wazero base compiler | Wazero head compiler | Delta |",
               "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
-    for workload in WORKLOADS:
+    for workload in selection(report):
         values = [indexed[(f"{ref}-{mode}", workload)]["normalizedNs"] for mode in ("interpreter", "compiler") for ref in ("base", "head")]
         deltas = [f"{ci.median_delta(values[n], values[n+1]):+.1f}%" if values[n] > 0 and values[n+1] > 0 else "unresolved" for n in (0, 2)]
         lines.append(f"| {workload} | {indexed[('head-compiler', workload)]['unit']} | {values[0]:.2f} | {values[1]:.2f} | {deltas[0]} | {values[2]:.2f} | {values[3]:.2f} | {deltas[1]} |")
     lines += ["", "| Workload | Unit | Head interpreter | Head compiler | Wasmtime Cranelift | Wasmer Cranelift | WasmEdge interpreter |",
               "| --- | --- | ---: | ---: | ---: | ---: | ---: |"]
-    for workload in WORKLOADS:
+    for workload in selection(report):
         values = " | ".join(f"{indexed[(runtime, workload)]['normalizedNs']:.2f}" for runtime in ("head-interpreter", "head-compiler", "wasmtime-cranelift", "wasmer-cranelift", "wasmedge-interpreter"))
         lines.append(f"| {workload} | {indexed[('head-compiler', workload)]['unit']} | {values} |")
     lines += ["", "<details><summary>Every API phase, by runtime and workload (milliseconds)</summary>", "",
@@ -277,8 +410,9 @@ def markdown(report):
               "Calls and assertions are outside preparation timers. Separate standalone validation would repeat work and is not added.", "",
               "Zero-duration or near-clock-cost controls are resolution-limited. Clock-pair samples are controls, not corrections. "
               "No disk compilation cache is enabled. Timings are advisory, with only three process repetitions and shared-runner noise; "
-              "incorrect results, incomplete matrices, or broken protocols fail the job. These Go/C embedding paths have different "
-              "host-call overhead, and the report does not claim to remove it or measure LLGo host performance.", ""]
+              "incorrect results, incomplete matrices, or broken protocols fail the job. These Go/LLGo/C embedding paths have different "
+              "host-call overhead, and the report does not claim to remove it. Native wasmvm is not implemented; "
+              "hosted measurements do not pass the M2 controlled performance gates.", ""]
     return "\n".join(lines)
 
 
@@ -289,13 +423,15 @@ def main():
     for name in ("base-sha", "head-sha"):
         parser.add_argument(f"--{name}", required=True)
     parser.add_argument("--timeout", type=float, default=60)
+    parser.add_argument("--suite", choices=("pr", "full"), default="full")
     args = parser.parse_args()
     if not math.isfinite(args.timeout) or args.timeout <= 0:
         parser.error("timeout must be positive and finite")
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    report = {"schemaVersion": 1, "status": "running", "baseSha": args.base_sha, "headSha": args.head_sha,
+    report = {"schemaVersion": 1, "suite": args.suite, "status": "running", "baseSha": args.base_sha, "headSha": args.head_sha,
               "processRounds": ROUNDS, "samplesPerProcess": SAMPLES, "warmupsPerProcess": WARMUPS,
+              "processDeadlineSeconds": args.timeout,
               "startedAt": datetime.now(timezone.utc).isoformat(), "observations": [],
               "host": {"platform": platform.platform(), "machine": platform.machine(), "logicalCPUs": os.cpu_count()},
               "seed": 20261026, "metric": "direct embedding API phase nanoseconds"}
@@ -305,18 +441,22 @@ def main():
         ci.verify_checkout(head, args.head_sha)
         report["fixtures"] = load_workloads(head)
         report["host"]["go"] = ci.capture(["go", "version"])
+        report["host"]["cpu"] = ci.capture(["lscpu"]) if platform.system() == "Linux" else ci.capture(["sysctl", "-n", "machdep.cpu.brand_string"])
+        report["host"]["loadAverageBefore"] = os.getloadavg()
+        report["host"]["cachePolicy"] = "fresh child processes; no disk compilation cache; filesystem cache not flushed"
         report["installation"] = json.loads((args.tools_dir / "installation.json").read_text())
         with tempfile.TemporaryDirectory(prefix="wasmvm-phase-") as temporary:
             temporary = Path(temporary)
             report["builds"] = build_candidates(head, base, temporary)
+            report["ownBuilds"] = own_build.build(head, base, temporary, args.base_sha, args.head_sha)
             c_directory = temporary / "c"
             subprocess.run(["python3", str(head / "benchmarks/embedded/c/build.py"), "--tools-dir", str(args.tools_dir.resolve()),
                             "--output-dir", str(c_directory)], check=True, timeout=180)
-            report["runtimes"] = runtime_commands(report["builds"], c_directory)
+            report["runtimes"] = runtime_commands(report["builds"], c_directory, report["ownBuilds"])
             report["cBuild"] = json.loads((c_directory / "build.json").read_text())
             subprocess.run(["python3", str(head / "benchmarks/embedded/c/check.py"),
                             "--runners-dir", str(c_directory)], check=True, timeout=180)
-            cases = [(runtime, workload) for runtime in report["runtimes"] for workload in report["fixtures"]["workloads"]]
+            cases = [(runtime, workload) for runtime in report["runtimes"] for workload in selected_fixtures(report)["workloads"]]
             randomizer = random.Random(report["seed"])
             for number in range(ROUNDS):
                 randomizer.shuffle(cases)
@@ -325,11 +465,15 @@ def main():
                         "--backend", runtime["backend"], "--iterations", str(workload["iterations"]),
                         "--seed", str(workload["seed"]), "--expected", str(workload["expectedChecksum"]),
                         "--samples", str(SAMPLES), "--warmups", str(WARMUPS)]
+                    report["activeCase"] = {"runtime": runtime["id"], "workload": workload["id"], "round": number, "command": command}
                     item = {**invoke(command, args.timeout), "runtime": runtime["id"], "workload": workload["id"],
                             "round": number, "wasmSha256": workload["wasmSha256"]}
                     validate_observation(item, runtime, workload)
                     report["observations"].append(item)
+                    del report["activeCase"]
                 print(f"Embedded phase round {number+1}/{ROUNDS} complete", flush=True)
+            report["productionCLI"] = {"rounds": own_cli.ROUNDS, "runtimes": own_cli.configurations(report["ownBuilds"]), "observations": []}
+            own_cli.run(head, report["ownBuilds"], selected_fixtures(report), args.timeout, report["seed"], report["productionCLI"])
             report["summary"] = summarize(report)
             report["status"] = "complete"
     except Exception as error:
@@ -337,6 +481,7 @@ def main():
         report["failure"] = f"{type(error).__name__}: {error}"
         raise
     finally:
+        report["host"]["loadAverageAfter"] = os.getloadavg()
         report["finishedAt"] = datetime.now(timezone.utc).isoformat()
         (output / "results.json").write_text(json.dumps(report, indent=2) + "\n")
         (output / "report.md").write_text(markdown(report))

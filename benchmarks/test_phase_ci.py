@@ -10,6 +10,8 @@ from unittest.mock import patch
 
 import ci
 import phase_ci as phase
+import own_build
+import own_cli
 
 
 PROJECT = Path(__file__).resolve().parent.parent
@@ -22,6 +24,16 @@ def complete_report():
     report = {"status": "complete", "baseSha": "a" * 40, "headSha": "b" * 40,
               "builds": {name: {"version": "v1.12.0"} for name in ("base", "head")},
               "fixtures": fixtures, "runtimes": runtimes, "observations": []}
+    sources = {"go.mod": "c" * 64}
+    report["ownBuilds"] = {f"{ref}-{compiler}": {
+        "status": "available", "sourceRevision": report[ref + "Sha"],
+        "sourceHashes": sources.copy(), "sourceDigest": own_build.source_digest(sources),
+        "toolchain": {"revision": own_build.GO_VERSION if compiler == "go" else own_build.LLGO_REVISION,
+                      "goos": "linux", "goarch": "amd64"},
+        "binary": f"/{ref}-{compiler}", "binarySha256": "d" * 64,
+        "cli": {"status": "available", "binary": f"/{ref}-{compiler}-cli", "binarySha256": "e" * 64},
+    } for ref in ("base", "head") for compiler in ("go", "llgo")}
+    runtimes.extend(phase.own_commands(report["ownBuilds"]))
     for runtime in runtimes:
         for workload in fixtures["workloads"]:
             for number in range(phase.ROUNDS):
@@ -33,9 +45,27 @@ def complete_report():
                           "warmupCallNs": [1000, 2000], "timerPairNs": [1] * phase.SAMPLES,
                           "warmResults": [workload["expectedChecksum"]] * phase.SAMPLES,
                           "warmupResults": [workload["expectedChecksum"]] * phase.WARMUPS}
+                if runtime.get("engine") == "wasmvm":
+                    record.update({key: runtime[key] for key in
+                                   ("engine", "sourceRevision", "compiler", "compilerRevision", "mode", "goos", "goarch")})
+                    record.update(runtimeVersion=own_build.GO_VERSION,
+                                  policy="unmetered; bounded cancellation; checked Core 2.0")
+                    if runtime["mode"] == "dispatch":
+                        record["preparationPartsNs"] = {key: 20 for key in ("decode", "validate", "lower", "slots")}
                 report["observations"].append({"runtime": runtime["id"], "workload": workload["id"], "round": number,
                     "record": record, "processReadyNs": 1000, "processWallNs": 10000,
                     "exitCode": 0, "wasmSha256": workload["wasmSha256"]})
+    production = {"rounds": own_cli.ROUNDS, "runtimes": own_cli.configurations(report["ownBuilds"]), "observations": []}
+    for runtime in production["runtimes"]:
+        for workload in fixtures["workloads"]:
+            checksum = workload["expectedChecksum"]
+            signed = checksum if checksum < 2**31 else checksum - 2**32
+            for number in range(own_cli.ROUNDS):
+                production["observations"].append({"runtime": runtime["id"], "workload": workload["id"],
+                    "round": number, "processWallNs": 10000, "exitCode": 0, "wasmSha256": workload["wasmSha256"],
+                    "result": {"backend": "interpreter", "profile": "core2", "export": "run", "results": [
+                        {"type": "i32", "bits": f"0x{checksum:08x}", "value": str(signed)}]}})
+    report["productionCLI"] = production
     return report
 
 
@@ -43,8 +73,8 @@ class PhaseIntegrityTests(unittest.TestCase):
     def test_complete_matrix_uses_only_warm_api_call_samples(self):
         report = complete_report()
         result = phase.summarize(report)
-        self.assertEqual(len(report["observations"]), 126)
-        self.assertEqual(len(result), 42)
+        self.assertEqual(len(report["observations"]), 270)
+        self.assertEqual(len(result), 90)
         for item in result:
             self.assertEqual(item["warmCallNs"], 40)
             self.assertEqual(item["firstCallNs"], 100)
@@ -55,6 +85,24 @@ class PhaseIntegrityTests(unittest.TestCase):
         self.assertEqual(control["unit"], "ns/call")
         sustained = next(item for item in result if item["workload"] == "integer-sustained")
         self.assertEqual(sustained["normalizedNs"], 40 / 5_000_000)
+
+    def test_pr_suite_preserves_families_samples_and_strict_completeness(self):
+        report = complete_report()
+        report["suite"] = "pr"
+        omitted = {"integer-sustained", "memory-sustained"}
+        report["observations"] = [x for x in report["observations"] if x["workload"] not in omitted]
+        report["productionCLI"]["observations"] = [x for x in report["productionCLI"]["observations"] if x["workload"] not in omitted]
+        self.assertEqual(len(report["observations"]), 180)
+        self.assertEqual(len(phase.summarize(report)), 60)
+        self.assertEqual(len(report["productionCLI"]["observations"]), 48)
+        self.assertIn("PR suite", phase.markdown(report))
+        self.assertNotIn("| integer-sustained |", phase.markdown(report))
+        report["observations"].pop()
+        with self.assertRaisesRegex(ValueError, "incomplete"):
+            phase.summarize(report)
+        report["suite"] = "unknown"
+        with self.assertRaisesRegex(ValueError, "unknown"):
+            phase.summarize(report)
 
     def test_reject_incomplete_duplicate_and_bad_measurements(self):
         original = complete_report()
@@ -87,7 +135,9 @@ class PhaseIntegrityTests(unittest.TestCase):
     def test_optional_parse_and_validate_are_not_double_counted(self):
         report = complete_report()
         item = report["observations"][0]
-        item["record"]["preparationPartsNs"] = {"parse": 30, "validate": 70}
+        for observation in report["observations"]:
+            if observation["runtime"] == item["runtime"] and observation["workload"] == item["workload"]:
+                observation["record"]["preparationPartsNs"] = {"parse": 30, "validate": 70}
         phase.summarize(report)
         item["record"]["preparationPartsNs"]["parse"] = 31
         with self.assertRaisesRegex(ValueError, "disagree"):
@@ -104,11 +154,49 @@ class PhaseIntegrityTests(unittest.TestCase):
         self.assertIn("Wasmtime Cranelift", output)
         self.assertIn("WasmEdge interpreter", output)
         self.assertLess(len(output.encode()), 40000)
+        self.assertIn("Own Go base", output)
+        self.assertIn("Own LLGo API", output)
+        self.assertIn("A/A baseline", output)
+        self.assertIn("not native code", output)
         report["status"] = "failed"
         report["failure"] = "untrusted | row"
         failed = phase.markdown(report)
         self.assertNotIn("| Workload", failed)
         self.assertNotIn("untrusted", failed)
+
+    def test_owned_build_identity_and_preparation_parts(self):
+        original = complete_report()
+        changes = {
+            "source": lambda r: r["ownBuilds"]["head-go"].update(sourceRevision="a" * 40),
+            "hash": lambda r: r["ownBuilds"]["head-go"].update(sourceDigest="e" * 64),
+            "missing-build": lambda r: r["ownBuilds"].pop("base-llgo"),
+            "runtime": lambda r: next(x for x in r["runtimes"] if x["id"] == "wasmvm-head-go-api").update(sourceRevision="a" * 40),
+            "child-identity": lambda r: next(x for x in r["observations"] if x["runtime"] == "wasmvm-head-go-api")["record"].update(engine="wazero"),
+            "child-compiler": lambda r: next(x for x in r["observations"] if x["runtime"] == "wasmvm-head-llgo-api")["record"].update(compiler="gc"),
+            "missing-parts": lambda r: next(x for x in r["observations"] if x["runtime"] == "wasmvm-head-go-dispatch")["record"].pop("preparationPartsNs"),
+            "parts-overlap": lambda r: next(x for x in r["observations"] if x["runtime"] == "wasmvm-head-go-dispatch")["record"]["preparationPartsNs"].update(decode=200),
+            "policy": lambda r: next(x for x in r["observations"] if x["runtime"] == "wasmvm-head-go-api")["record"].update(policy="unchecked"),
+        }
+        for name, change in changes.items():
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                report = copy.deepcopy(original)
+                change(report)
+                phase.summarize(report)
+
+    def test_missing_old_engine_is_reported_without_a_substitute(self):
+        report = complete_report()
+        for compiler in ("go", "llgo"):
+            report["ownBuilds"][f"base-{compiler}"].update(
+                status="baseline-unavailable", reason="predates Engine/Store")
+        report["runtimes"] = [r for r in report["runtimes"] if not r["id"].startswith("wasmvm-base-")]
+        report["observations"] = [r for r in report["observations"] if not r["runtime"].startswith("wasmvm-base-")]
+        report["productionCLI"]["runtimes"] = [r for r in report["productionCLI"]["runtimes"] if not r["id"].startswith("base-")]
+        report["productionCLI"]["observations"] = [r for r in report["productionCLI"]["observations"] if not r["runtime"].startswith("base-")]
+        self.assertEqual(len(phase.summarize(report)), 66)
+        self.assertIn("baseline unavailable", phase.markdown(report))
+        report["ownBuilds"]["head-go"]["status"] = "baseline-unavailable"
+        with self.assertRaises(ValueError):
+            phase.summarize(report)
 
     def test_fixture_corruption_is_rejected(self):
         import shutil
