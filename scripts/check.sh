@@ -6,10 +6,12 @@ compiler="${1:-go}"
 case "$compiler" in
   go)
     go version
+    python3 scripts/core2_corpus.py
     CGO_ENABLED=0 go test -count=1 -timeout=10m ./...
     ;;
   llgo)
     llgo version
+    python3 scripts/core2_corpus.py
     llgo test -count=1 -timeout=10m ./...
     ;;
   *)

@@ -1,6 +1,6 @@
 # Package and Directory Design
 
-Status: M1 implementation in progress, 2026-10-26. **Entries marked as existing or implemented have been created; other paths are planned.** The public packages currently contain only `doc.go`, with no VM API or execution capability.
+Status: M1 implementation in progress, 2026-10-26. **Entries marked as existing or implemented have been created; other paths are planned.** `pkg/wasm` implements value-type identifiers and frontend error categories; the other public packages reserve APIs. No VM execution API exists yet.
 
 ## Directory tree
 
@@ -25,7 +25,7 @@ wasmvm/
 │   └── wasmvm/                    # Planned: run/inspect/validate CLI
 ├── pkg/
 │   ├── README.md                  # Existing: public package overview
-│   ├── wasm/                      # Existing doc.go: public types/values/FeatureSet
+│   ├── wasm/                      # Implemented: value-type identifiers and frontend errors; values/features planned
 │   ├── vm/                        # Existing doc.go: Engine/Store/Linker/Instance
 │   ├── component/                 # Existing doc.go: component compile/link/run API
 │   └── wasi/
@@ -37,8 +37,8 @@ wasmvm/
 │   ├── compat/                    # Existing: shared host compiler probes
 │   ├── binary/                    # Implemented: bounded reader, LEB128, float bits, UTF-8 names
 │   ├── core/
-│   │   ├── module/                # Planned: internal module/type/instruction IR
-│   │   ├── decode/                # Planned: Complete Core profile binary decoding
+│   │   ├── module/                # Implemented: owned unvalidated Core 2.0 module/instruction records
+│   │   ├── decode/                # Implemented: complete Core 2.0 binary grammar and resource bounds
 │   │   ├── validate/              # Planned: control/type stacks, feature validation
 │   │   └── types/                 # Planned: recursive type canonicalization/subtyping
 │   ├── compiler/

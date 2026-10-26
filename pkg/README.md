@@ -1,6 +1,6 @@
 # Public Packages
 
-These packages currently declare their intended responsibilities only. They contain no VM implementation.
+`wasm` implements Core 2.0 value-type identifiers and frontend error categories. The remaining packages reserve their intended responsibilities. No public VM execution API is implemented yet.
 
 | Path | Planned responsibility |
 | --- | --- |

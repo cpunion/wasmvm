@@ -98,11 +98,15 @@ jobs:
           mkdir -p artifacts/core
           CGO_ENABLED=0 go test -count=1 -timeout=10m -coverprofile=artifacts/core/coverage.out ./internal/... ./pkg/...
           python3 scripts/check_coverage.py artifacts/core/coverage.out --minimum 90 \
-            --require github.com/cpunion/wasmvm/internal/binary
+            --require github.com/cpunion/wasmvm/internal/binary \
+            --require github.com/cpunion/wasmvm/internal/core/decode \
+            --require github.com/cpunion/wasmvm/pkg/wasm
 
       - name: Fuzz bounded binary inputs
         if: matrix.compiler == 'go'
-        run: go test -run '^$' -fuzz '^FuzzReader$' -fuzztime=10s -parallel=2 ./internal/binary
+        run: |
+          go test -run '^$' -fuzz '^FuzzReader$' -fuzztime=10s -parallel=2 ./internal/binary
+          go test -run '^$' -fuzz '^FuzzDecode$' -fuzztime=10s -parallel=2 ./internal/core/decode
 
       - name: Evaluate unchanged wazero and measure harness coverage
         if: matrix.compiler == 'go'

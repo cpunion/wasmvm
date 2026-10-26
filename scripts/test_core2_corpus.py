@@ -193,6 +193,24 @@ class CorpusTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "committed license notice"):
             corpus.verify(root, records)
 
+    def test_pinned_producer_corrections(self):
+        original = b"\x00asm\x01\x00\x00\x00\x0a\x01\x00"
+        corrected = original[:8] + b"\x0c\x01\x00" + original[8:]
+        fix = {"beforeSHA256": hashlib.sha256(original).hexdigest(),
+               "afterSHA256": hashlib.sha256(corrected).hexdigest(),
+               "offset": 8, "insertHex": "0c0100"}
+        path = self.root / "input.wasm"
+        path.write_bytes(original)
+        corpus.correct_producer_binaries(self.root, {path.name: fix})
+        self.assertEqual(path.read_bytes(), corrected)
+        with self.assertRaisesRegex(ValueError, "correction input changed"):
+            corpus.correct_producer_binaries(self.root, {path.name: fix})
+        for change in [{"offset": 7}, {"offset": 100}, {"insertHex": "00"}]:
+            path.write_bytes(original)
+            with self.assertRaises(ValueError):
+                corpus.correct_producer_binaries(self.root, {path.name: {**fix, **change}})
+            self.assertEqual(path.read_bytes(), original)
+
     def test_reduced_script_inventory_fails_even_with_matching_pin_hash(self):
         root, records, _, manifest = self.fixture()
         pins = json.loads((records / "pins.json").read_text())
