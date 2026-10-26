@@ -580,3 +580,20 @@ Linux Go semantic execution also collects coverage in the same run. Historical
 M0 candidate evaluations run on manual dispatch; PR benchmarks retain owned
 base/head and competitors. Extra benchmark expansion branches remain deferred
 so functional implementation proceeds without additional peripheral gates.
+
+## Native integer instruction selection
+
+`internal/compiler/codegen` emits all 66 Core 2.0 integer operations for amd64
+and arm64: comparisons, arithmetic, bit counts, shifts/rotates, wrapping and
+sign extension. Divide-by-zero and signed division overflow exit with Wasm trap
+codes before a hardware fault; signed remainder of the minimum value by -1
+returns zero. amd64 uses baseline BSR/BSF and SWAR population count without
+requiring BMI or POPCNT. Branch relocations check alignment and signed reach.
+
+The same 505 edge/random input pairs execute for every instruction under both
+host compilers (33,330 calls per target/compiler), compared with the validated
+owned scalar semantics. Local darwin/arm64 Go and LLGo pass; Go code-generator
+coverage is 99.6%. ABI fields now have one pure-Go definition shared by the
+emitter and adapter and are still checked against the C layout. These entries
+validate instruction selection; whole-function control flow, memory, calls,
+metering and native profile conformance remain subsequent compiler work.

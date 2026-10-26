@@ -99,7 +99,7 @@ jobs:
 
       - name: Check native pointer ownership
         if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
-        run: GOEXPERIMENT=cgocheck2 go test -count=1 ./internal/platform/native
+        run: GOEXPERIMENT=cgocheck2 go test -count=1 ./internal/platform/native ./internal/compiler/codegen
 
       - name: Build and execute the core CLI
         shell: bash
@@ -129,6 +129,7 @@ jobs:
             --require github.com/cpunion/wasmvm/internal/compiler/lower \
             --require github.com/cpunion/wasmvm/internal/compiler/slots \
             --require github.com/cpunion/wasmvm/internal/compiler/nativeabi \
+            --require github.com/cpunion/wasmvm/internal/compiler/codegen \
             --require github.com/cpunion/wasmvm/internal/engine/numeric \
             --require github.com/cpunion/wasmvm/internal/engine/simd \
             --require github.com/cpunion/wasmvm/internal/engine/memory \
