@@ -333,7 +333,7 @@ func (e *functionEmitter) boundary(pc uint32, src ir.Source, control bool) {
 	a.mark(done)
 }
 
-func (e *functionEmitter) edge(index uint32, pcs []int) {
+func (e *functionEmitter) edge(index uint32, pcs []int, next int) {
 	edge := e.f.Edges[index]
 	if edge.Count > 256 {
 		e.edgeCopies++
@@ -343,7 +343,9 @@ func (e *functionEmitter) edge(index uint32, pcs []int) {
 	for _, m := range e.f.Moves[edge.Start : edge.Start+edge.Count] {
 		e.move(m.Dst, m.Src)
 	}
-	e.a.branch(pcs[edge.PC], false, 0)
+	if int(edge.PC) != next {
+		e.a.branch(pcs[edge.PC], false, 0)
+	}
 }
 
 // Interrupt polling is distinct from a scheduling round trip. A straight-line
@@ -355,8 +357,12 @@ func (e *functionEmitter) interrupt(pc uint32) {
 	// Keep register spills and continuation publication outside the hot region.
 	exit := e.a.label()
 	e.contextLoad(0, nativeabi.ControlOffset)
-	e.test(true)
-	e.branch(exit, "ne")
+	if e.a.arch == "arm64" {
+		e.a.compareBranch(exit, e.operandRegister(0), true, true)
+	} else {
+		e.test(true)
+		e.branch(exit, "ne")
+	}
 	e.pollExits = append(e.pollExits, pollExit{exit, pc})
 }
 

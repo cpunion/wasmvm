@@ -47,8 +47,19 @@ func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
 	if !lok || !rok || !pok || !cok || !dok {
 		return 0, false
 	}
+	result := add.Dst
+	originalEnd := end
+	if end+1 < len(e.f.Code) && (end+1)/256 == pc/256 {
+		next := e.f.Code[end+1]
+		local := slots.Slot(e.f.Sources[next.Source].Wasm.A)
+		if reg, ok := e.registers[local]; ok && (next.Op == 0x21 || next.Op == 0x22) && next.A == add.Dst {
+			result, d = local, reg
+			end++
+		}
+	}
+
 	wide := integerWide(mul.Op)
-	keepProduct := mul.Dst != add.Dst && !e.overwrittenBeforeExit(end+1, mul.Dst)
+	keepProduct := mul.Dst != result && mul.Dst != add.Dst && !e.overwrittenBeforeExit(originalEnd+1, mul.Dst)
 	if constant {
 		in := e.f.Code[pc+1]
 		// The constant may replace a multiplicand's reusable slot. Save only
@@ -72,6 +83,10 @@ func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
 	e.a.arm(wide, 0x1b000000|uint32(r)<<16|uint32(c)<<10|uint32(l)<<5|uint32(d))
 	if keepProduct {
 		e.a.arm(wide, 0x4b000000|uint32(c)<<16|uint32(d)<<5|uint32(p)) // product = sum - addend
+	}
+	if end != originalEnd {
+		e.move(add.Dst, result)
+		e.move(e.f.Code[end].Dst, result)
 	}
 	return end, true
 }
