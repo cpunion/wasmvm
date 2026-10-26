@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "target": "linux-amd64",
+  "checksumProvenance": "GitHub release asset digest; independently verified against downloaded bytes on 2026-10-26",
+  "tools": [
+    {
+      "id": "wasmtime",
+      "version": "48.0.1",
+      "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v48.0.1/wasmtime-v48.0.1-x86_64-linux.tar.xz",
+      "sha256": "4c2e31b68ad99e0a519f225a261fda099eb15f056d4a24fdb3c2a46517bde1df",
+      "size": 11512724,
+      "sourceUrl": "https://github.com/bytecodealliance/wasmtime/tree/v48.0.1",
+      "releaseUrl": "https://github.com/bytecodealliance/wasmtime/releases/tag/v48.0.1",
+      "license": "Apache-2.0 WITH LLVM-exception",
+      "licenseUrl": "https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/LICENSE",
+      "files": [
+        "wasmtime-v48.0.1-x86_64-linux/wasmtime",
+        "wasmtime-v48.0.1-x86_64-linux/LICENSE",
+        "wasmtime-v48.0.1-x86_64-linux/README.md"
+      ],
+      "executable": "wasmtime-v48.0.1-x86_64-linux/wasmtime",
+      "libraryDirectories": [],
+      "versionPattern": "^wasmtime 48\\.0\\.1(?: |$)"
+    },
+    {
+      "id": "wasmer",
+      "version": "7.3.0",
+      "url": "https://github.com/wasmerio/wasmer/releases/download/v7.3.0/wasmer-linux-amd64.tar.gz",
+      "sha256": "9b9a42c48d8c807ae1602cdd75fcb91d294824ae131ca9281eeca3710f75e4c3",
+      "size": 305932707,
+      "sourceUrl": "https://github.com/wasmerio/wasmer/tree/v7.3.0",
+      "releaseUrl": "https://github.com/wasmerio/wasmer/releases/tag/v7.3.0",
+      "license": "MIT",
+      "licenseUrl": "https://github.com/wasmerio/wasmer/blob/v7.3.0/LICENSE",
+      "files": [
+        "bin/wasmer",
+        "LICENSE",
+        "ATTRIBUTIONS"
+      ],
+      "executable": "bin/wasmer",
+      "libraryDirectories": [],
+      "versionPattern": "^wasmer 7\\.3\\.0(?: |$)"
+    },
+    {
+      "id": "wasmedge",
+      "version": "0.17.1",
+      "url": "https://github.com/WasmEdge/WasmEdge/releases/download/0.17.1/WasmEdge-0.17.1-manylinux_2_28_x86_64.tar.gz",
+      "sha256": "27a1abec072ddf45b40e2e81e33c1e5fe9b241f31fd1bbf0182f05097489a07a",
+      "size": 27206596,
+      "sourceUrl": "https://github.com/WasmEdge/WasmEdge/tree/0.17.1",
+      "releaseUrl": "https://github.com/WasmEdge/WasmEdge/releases/tag/0.17.1",
+      "license": "Apache-2.0",
+      "licenseUrl": "https://github.com/WasmEdge/WasmEdge/blob/0.17.1/LICENSE",
+      "files": [
+        "bin/wasmedge",
+        "lib64/libwasmedge.so",
+        "lib64/libwasmedge.so.0",
+        "lib64/libwasmedge.so.0.1.1"
+      ],
+      "executable": "bin/wasmedge",
+      "libraryDirectories": [
+        "lib64"
+      ],
+      "versionPattern": "(?:^|/)wasmedge version 0\\.17\\.1$"
+    }
+  ]
+}

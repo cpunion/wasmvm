@@ -83,6 +83,10 @@ Compilation caches are disabled. Operating-system executable/filesystem pages ar
 
 A later performance phase should add large real applications, startup versus compile/instantiate/invoke measurements within each embedding API, GC and threading scenarios, and controlled host environments. Those measurements need matched boundaries before comparing engines.
 
+## Continuous comparison
+
+The [benchmark workflow](../../.github/workflows/benchmarks.yml) adds same-runner base/head and competitor measurements for PRs. It uses the same fixtures and publishes an updated PR comment, a job summary, and raw artifacts. The [benchmark guide](../../benchmarks/README.md#pull-request-benchmark-job) defines its baseline, pinned competitor installs, reporting permissions, and failure behavior. These Linux CI measurements are separate observations; they do not replace or form percentage comparisons against the macOS table above.
+
 ## Reproduction and harness checks
 
 ```sh
