@@ -190,6 +190,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 			e.literal(in)
 		case isInteger(op) || op == 0xd1:
 			e.integer(in)
+		case isFloat(op):
+			e.floating(in)
 		case op == 0x10 || op == 0x11:
 			out.Calls++
 			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
