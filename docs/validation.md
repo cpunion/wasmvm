@@ -250,3 +250,44 @@ completed 730,957 inputs without failure. CI requires this package's 90% floor
 and adds slot-lowering fuzzing. Final-head cross-platform CI is required before
 merge. Guest execution assertions, runtime lifecycle, public API/CLI and
 own-engine measurements remain open, so M1 is not complete.
+
+
+## M1 complete scalar numeric primitives
+
+The IR and slot increments merged in [PR #9](https://github.com/cpunion/wasmvm/pull/9)
+and [PR #10](https://github.com/cpunion/wasmvm/pull/10) after all six checks passed
+for exact heads `be277a95afe4d5df9fd1deb38822791e12813cff` and
+`7e8c30600329f6fac1354ff97210e1b2b5d4ead9`, respectively.
+
+`internal/engine/numeric` implements every Core 2.0 scalar numeric instruction:
+128 scalar opcodes plus eight saturating conversions. Inputs/results retain
+exact bit representations; divide-by-zero, integer overflow and invalid
+conversion return explicit trap codes. Conversion ranges are checked after
+truncation and before host conversion. Arithmetic float results normalize NaNs;
+bit-preserving `abs`, `neg`, `copysign` and reinterpret operations do not.
+
+Eight pinned scripts (`i32`, `i64`, `f32`, `f64`, `f32_cmp`, `f64_cmp`,
+`float_misc`, `conversions`) provide 11,534 expected-return and 87 trap
+assertions. The primitive test adapter requires each invoked export to consist
+of ordered parameter reads, exactly one numeric operation and `end`; changed
+shapes, commands, opcode inventories or counts fail. All 136 operations are
+exercised. Another 171 invalid modules are rejected by the frontend; eight
+malformed-text assertions remain explicitly outside binary execution scope.
+This is direct numeric primitive testing, not execution of complete modules or
+acceptance of the full Core 2.0 profile.
+
+The tests found two host-math differences that the Wasm layer now handles:
+Go `math.Min/Max` prioritize extremal infinity over NaN, while Wasm requires
+NaN propagation; pure-Go and intrinsic math implementations can differ in NaN
+payload and signaling behavior. The Wasm implementation returns permitted
+canonical quiet NaNs for arithmetic on both compilers, retaining exact NaN
+payloads where bit operations require them. See the
+[official numeric rules](https://webassembly.github.io/spec/core/exec/numerics.html).
+These differences do not establish a violation of Go's NaN API contract.
+
+Local shared Go/LLGo tests and Go race/vet pass. Numeric primitives and public
+trap codes have 100% statement coverage. A 15-second two-worker numeric fuzz run
+completed 1,199,022 operand pairs across every scalar opcode without host panics.
+CI requires numeric package coverage and fuzz checks. Final-head CI remains
+required; complete SIMD, memory/table state, control/call execution, lifecycle,
+API/CLI and own-engine measurements remain open within M1.

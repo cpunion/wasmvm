@@ -25,7 +25,7 @@ wasmvm/
 │   └── wasmvm/                    # Planned: run/inspect/validate CLI
 ├── pkg/
 │   ├── README.md                  # Existing: public package overview
-│   ├── wasm/                      # Implemented: value-type identifiers and frontend errors; values/features planned
+│   ├── wasm/                      # Implemented: value-type identifiers, frontend errors and trap codes; values/features planned
 │   ├── vm/                        # Existing doc.go: Engine/Store/Linker/Instance
 │   ├── component/                 # Existing doc.go: component compile/link/run API
 │   └── wasi/
@@ -49,6 +49,7 @@ wasmvm/
 │   │   ├── machine/               # Planned: target IR and instruction selection
 │   │   └── regalloc/              # Planned: liveness, registers, spills and moves
 │   ├── engine/
+│   │   ├── numeric/               # Implemented: complete scalar Core 2.0 numeric primitives and traps
 │   │   ├── state/                 # Planned: internal Store/Instance/frame state
 │   │   ├── interp/                # Planned: dispatch and resumable frames
 │   │   ├── native/                # Planned: native artifacts, maps and driver
