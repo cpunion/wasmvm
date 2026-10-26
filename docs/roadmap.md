@@ -54,6 +54,14 @@ The Store reclaims unescaped failed instances and releases storage after executi
 
 **Objective:** make both interpretation and Wasm-to-native execution satisfy the [performance contract](design/performance-contract.md), without changing the accepted Core 2.0 semantics.
 
+The development branch now emits all 136 scalar numeric operations on both ISAs
+and actually executes 11,970 official numeric assertions per native tier. The
+shared register/copy/control-flow optimizations approach competitor throughput;
+calibrated acceptance remains open. Complete native memory, calls, SIMD and the
+public runtime next, then run the full Core 2.0 backend matrix. See the
+[scalar scope and measurements](../benchmarks/native/float-plan.md); no milestone
+is closed by this instruction subset.
+
 1. **Interpreter performance.** Profile dispatch, copies, bounds checks, calls, slot/frame allocation and code footprint. Compare predecoded stack versus slot prototypes; retain the measured production choice. Add specialization/fusion only with preserved trap/fuel/safepoint behavior and full regression results.
 2. **Native boundary first.** Implement the [native ABI](design/native-abi.md): bounded entry frame, explicit guest frame arena, typed exits, continuation/root maps, host-call marshalling, cancellation polling, executable-memory publication and active-code ownership. Exercise the same ABI probes with Go and LLGo before accepting emitted guest programs.
 3. **Complete code generation.** Implement target legalization, instruction selection, register allocation/spills, branches/relocations and amd64/arm64 code emission for every Core 2.0 operation. Cover floating-point/SIMD corner cases, indirect calls, large frames, long branches and CPU feature checks. Runtime helpers are explicit, measured and semantically tested; they cannot silently interpret unsupported functions.

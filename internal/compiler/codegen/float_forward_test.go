@@ -41,7 +41,7 @@ func TestFloatForwardingPreservesEveryContinuation(t *testing.T) {
 			f.Code[len(f.Code)-1].Count = 5
 			for _, arch := range []string{"amd64", "arm64"} {
 				compiled, err := CompileUnmeteredFunction(arch, f, DefaultLimits())
-				if err != nil || compiled.ForwardedFloats == 0 {
+				if err != nil || compiled.ForwardedScalars == 0 {
 					t.Fatal(arch, err, compiled)
 				}
 			}
@@ -127,11 +127,11 @@ func TestFloatCopyProofBoundaries(t *testing.T) {
 		f.Code[len(f.Code)-1].Count = 1
 		for _, arch := range []string{"amd64", "arm64"} {
 			compiled, err := CompileUnmeteredFunction(arch, f, DefaultLimits())
-			if err != nil || (compiled.ForwardedFloats != 0) != (kind == "ordinary") {
+			if err != nil || (compiled.ForwardedScalars != 0) != (kind == "ordinary") {
 				t.Fatal(arch, kind, compiled, err)
 			}
 			precise, err := CompileFunction(arch, f, DefaultLimits())
-			if err != nil || precise.ForwardedFloats != 0 {
+			if err != nil || precise.ForwardedScalars != 0 {
 				t.Fatal("precise fuel must not combine", kind, err)
 			}
 		}

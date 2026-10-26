@@ -26,8 +26,7 @@ type CompiledFunction struct {
 	ReferenceSlots             []uint32
 	Helpers, Calls, EdgeCopies uint32
 	FusedIntegers              uint32
-	ForwardedFloats            uint32
-	ForwardedIntegers          uint32
+	ForwardedScalars           uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -128,8 +127,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 		} else {
 			e.boundary(uint32(pc), src, in.Op == 0x10 || in.Op == 0x11 || isControl)
 		}
-		if end, ok := e.combineIntegerCopies(pc); ok {
-			out.ForwardedIntegers++
+		if end, ok := e.combineScalarCopies(pc); ok {
+			out.ForwardedScalars++
 			for entry := pc + 1; entry <= end; entry++ {
 				independentEntries = append(independentEntries, entry)
 			}
@@ -145,16 +144,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 			combinedThrough = end
 			continue
 		}
-		if end, ok := e.combineFloatCopies(pc); ok {
-			out.ForwardedFloats++
-			for entry := pc + 1; entry <= end; entry++ {
-				independentEntries = append(independentEntries, entry)
-			}
-			combinedThrough = end
-			continue
-		}
-		if e.forwardFloatResult(pc) {
-			out.ForwardedFloats++
+		if e.forwardScalarResult(pc) {
+			out.ForwardedScalars++
 			independentEntries = append(independentEntries, pc+1)
 			combinedThrough = pc + 1
 			continue
@@ -239,6 +230,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 			e.move(in.Dst, in.A)
 		case isFloat(in.Op):
 			e.floating(in)
+		case isConversion(in.Op):
+			e.conversion(in)
 		default:
 			e.integer(in)
 		}

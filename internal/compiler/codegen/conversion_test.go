@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/numeric"
@@ -212,5 +213,71 @@ func TestConversionNativeSemanticsAndTraps(t *testing.T) {
 			c.Close()
 			lease.Close()
 		}
+	}
+}
+
+func TestConversionResultForwardingContinuations(t *testing.T) {
+	if !native.Available {
+		return
+	}
+	for _, op := range conversionOps() {
+		input, output := conversionTypes(op)
+		f := &slots.Function{LocalCount: 2, Slots: []wasm.ValueType{input, output, input, output, output},
+			Sources: []ir.Source{{}, {Wasm: module.Instr{A: 1}}},
+			Code: []slots.Instruction{
+				{Op: 0x20, Dst: 2, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
+				{Op: op, Dst: 3, A: 2, B: slots.NoSlot, C: slots.NoSlot},
+				{Op: 0x22, Source: 1, Dst: 4, A: 3, B: slots.NoSlot, C: slots.NoSlot},
+				{Op: slots.ControlBase + uint32(ir.Return), Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
+			}}
+		compiled, lease, c := functionContext(t, f, true)
+		for _, arg := range conversionInputs(input) {
+			for start := 0; start < len(f.Code); start++ {
+				want := []uint64{arg, 7, 0, 11, 13}
+				for i, bits := range want {
+					writeSlot(t, c, 16, slots.Slot(i), value.Value{Lo: bits})
+				}
+				if start == 0 {
+					want[2] = arg
+				}
+				converted := uint64(0)
+				trap := wasm.NoTrap
+				if start <= 1 {
+					converted = want[2]
+					result, code := numeric.Eval(op, converted, 0)
+					trap = code
+					if trap == wasm.NoTrap {
+						want[3] = result
+					}
+				}
+				if start <= 2 && trap == wasm.NoTrap {
+					want[1], want[4] = want[3], want[3]
+				}
+				if err := c.SetState(native.State{Used: 16, Depth: 1, Continuation: uint64(start)}); err != nil {
+					t.Fatal(err)
+				}
+				exit, err := c.Enter(lease, 0)
+				expected := native.Return
+				if trap != wasm.NoTrap {
+					expected = native.Trap
+				}
+				state, stateErr := c.State()
+				if err != nil || stateErr != nil || exit != expected || trap != wasm.NoTrap && state.Payload[0] != uint64(trap) {
+					t.Fatal(op, exit, err, state)
+				}
+				for i, bits := range want {
+					got := readSlot(t, c, 16, slots.Slot(i))
+					equal := got.Lo == bits
+					if start <= 1 && trap == wasm.NoTrap && (i == 1 || i == 3 || i == 4) {
+						equal = conversionMatches(input, output, converted, got.Lo, bits)
+					}
+					if got.Hi != 0 || !equal {
+						t.Fatalf("op=%x start=%d arg=%x slot=%d got=%x want=%x entries=%v", op, start, arg, i, got, bits, compiled.Offsets)
+					}
+				}
+			}
+		}
+		c.Close()
+		lease.Close()
 	}
 }

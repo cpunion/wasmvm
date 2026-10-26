@@ -1,42 +1,69 @@
 # Scalar floating-point development scope
 
-Status: local implementation work; not accepted and not a second contribution PR.
+Status: implemented on a development branch; not accepted and no second PR.
 
-Implement native f32/f64 comparisons, arithmetic, rounding, min/max, sign operations and bit reinterpretation on both required ISAs. Use the existing function compiler, continuation protocol, frame slots and FP environment; do not add another execution framework.
+## Implemented scope
 
-Before submission, compare the exact own baseline, Go/LLGo candidates and pinned wazero, Wasmtime and Wasmer native engines using the same parameterized Wasm binaries. Declare three equally visible families: dependent f32/f64 multiply/add/divide chains, min/max/comparison with signed zeros, and rounding/square-root chains. Preserve the integer regression series. Separate preparation, first call and warm execution. Require parity or better for every affected family on Linux amd64 and macOS arm64 with calibrated A/A controls; no float feature is accepted on integer-only evidence. Numerical inputs must remain finite, include alternate seeds/counts and use independent expected results; NaN/edge behavior belongs to the semantic suite.
+The shared amd64/arm64 function compiler lowers all 44 f32/f64 comparisons,
+arithmetic, rounding, min/max, sign and reinterpretation operations plus all
+26 promotion/demotion, checked and saturating conversions. Together with the
+66 integer operations this covers all 136 Core 2.0 scalar numeric operations.
+amd64 uses baseline SSE2; arm64 uses scalar FP and hardware saturation.
 
-The initial six owned fixtures use one million iterations, the shared `run(i32 seed, i32 iterations) -> i32` protocol and seed `305419896`. f32 rounds after every operation; f64 checksums fold both output words. `float_fixtures.py` computes expectations independently in Python, and wasm-tools 1.258.0 produces the binaries. Alternate seed/count checks precede timing. Use the existing native and reference phase runners; no separate execution harness or public-backend claim is introduced.
+Integer, float and conversion instructions share one bounded copy/result
+forwarding pass, register caches, continuation protocol and trap/fuel/cancellation
+contracts. The longer multiply-add selector takes precedence over shorter copy
+groups. Checked casts read their allocated FP source directly and publish exact
+trap categories/locations; source and destination slots survive failed casts.
+Every original PC retains independent semantics. Native memory, calls, SIMD and
+public runtime integration remain open; this is not full native Core 2.0 support.
 
-The implementation emits all 44 operations in this scope on both ISAs. amd64 uses only baseline SSE2, including explicit rounding sequences; arm64 uses scalar FP instructions. FP bit reinterpretation and sign operations preserve NaN payloads. SSE min/max handle unordered inputs and signed zeros explicitly. The common compiler continues to enforce fuel boundaries, canonical scalar slots and cancellation. Native memory/calls and public runtime integration remain open.
+## Validation
 
-Local implementation evidence at `c8b9a66`: all 44 instructions execute in Go/LLGo arm64 tests and isolated amd64 Go tests. Register caching and copy forwarding reduce the initial 3–6× deficits substantially. The six-case M4 Max diagnostics are close on f32 arithmetic and both rounding cases, but min/max remains about 16–20% slower and f64 arithmetic has a smaller deficit. They do not authorize a PR merge. Raw stage comparisons, 90 alternate-parameter checks and reproduction metadata are retained locally in `artifacts/native-float/`. Exact codegen statement coverage is 94.5%; the public native API and full-profile execution remain incomplete.
+Both native tiers execute all **11,970 assertions** in ten pinned numeric scripts
+(11 modules). The **263** invalid/malformed frontend commands are explicitly
+excluded from this native execution count. Go race and LLGo arm64 tests pass;
+isolated Go amd64 instruction execution also passes. The latter uses
+Docker/Rosetta with Go 1.27.0, not native amd64 timing or the final pinned host
+matrix. Codegen statement coverage is **96.2%**. Tests include IEEE edges,
+random inputs, exact traps/fuel, all-slot results at independent continuations,
+register pressure, cancellation, branch ranges and optimization interactions.
 
-## Next scalar conversion scope
+## Declared performance portfolio and remaining gate
 
-Implement all 26 remaining scalar integer/float numeric conversions, including
-promotion/demotion, checked truncation and the eight saturating truncations.
-Extend the affected portfolio with signed/unsigned i32/f32 and i64/f64 conversion
-chains, declared before implementation; retain the six arithmetic cases and the
-integer regression series. Preserve exact trap categories/locations, negative
-fractions truncating to unsigned zero, saturation, NaN policy, fuel and every
-existing continuation guarantee. No conversion feature is accepted on arithmetic
-benchmarks alone.
+The ten owned fixtures were declared before implementation: dependent f32/f64
+arithmetic, min/max/comparison, rounding/square-root, and signed/unsigned
+conversion chains. Preserve the integer regression series. Each fixture uses
+`run(i32 seed, i32 iterations) -> i32`, seed `305419896`, one million iterations,
+independent Python results, and wasm-tools 1.258.0 binaries with hashes.
+Startup/preparation/first call/warm execution remain separate. No unsupported
+native baseline is replaced with interpreter timing.
 
-The local implementation now lowers all 26 conversions on both ISAs, bringing
-native scalar numeric coverage to 136 operations. Checked conversions keep
-explicit bounds and cold trap exits; arm64 saturating conversions use FCVTZS/ZU,
-with direct allocated registers for nontrapping casts and reinterpretation.
-All 11,970 execution assertions in the ten pinned scalar numeric scripts pass
-in both native tiers under Go/LLGo arm64 and isolated Go amd64 execution.
-The 263 invalid/malformed frontend commands are explicitly excluded from that
-native count. Exact codegen statement coverage is 95.4%; full native Core 2.0
-execution and the final pinned two-target matrix remain incomplete.
+Latest local M4 Max diagnostic, three interleaved process blocks, 150 alternate
+seed/count checks, ns/source iteration (several operations per iteration):
 
-The four declared conversion chains are still approximately 8–9% slower than
-Cranelift in local three-block diagnostics, despite improving from 14.6 to about
-10.5 ns/source iteration for the signed f32 case. Each iteration contains several
-casts and integer operations; this is not latency per individual conversion.
-Raw initial/final records and restored machine-code identity checks are retained
-in `artifacts/native-conversions/`. An IEEE-bit range-check experiment had no
-stable benefit and was removed. No failed performance gate is waived.
+| Case | Go | LLGo | wazero | Wasmtime | Wasmer |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| arithmetic-f32 | 3.586 | 3.512 | 3.656 | 3.693 | 3.441 |
+| arithmetic-f64 | 3.982 | 3.964 | 3.981 | 3.898 | 3.935 |
+| minmax-f32 | 1.791 | 1.810 | 1.795 | 1.774 | 1.796 |
+| minmax-f64 | 1.803 | 1.788 | 1.815 | 1.774 | 1.766 |
+| rounding-f32 | 6.662 | 6.672 | 6.490 | 6.538 | 6.355 |
+| rounding-f64 | 7.736 | 7.676 | 7.779 | 7.434 | 7.379 |
+| convert-signed-f32 | 9.582 | 9.594 | 19.582 | 9.548 | 9.559 |
+| convert-signed-f64 | 9.504 | 9.666 | 20.039 | 9.413 | 9.362 |
+| convert-unsigned-f32 | 9.652 | 9.736 | 19.989 | 9.469 | 9.412 |
+| convert-unsigned-f64 | 9.749 | 9.631 | 20.035 | 9.634 | 9.387 |
+
+These are advisory point estimates, not calibrated merge evidence. Min/max has
+improved from roughly 2.1 to 1.8 ns/iteration; conversion chains from roughly
+10.5 to 9.5–9.7, with remaining reference deficits in several rows. Require
+parity or better for **every** affected family and each Go/LLGo host on Linux
+amd64 and macOS arm64, with the declared A/A calibration and simultaneous
+confidence bounds. The scalar feature remains unaccepted.
+
+Raw staged observations, compiler/binary/fixture identities and restoration
+checks remain in local `artifacts/native-float/` and
+`artifacts/native-conversions/`. IEEE-bit bounds checks and combined cold NaN
+dispatch had no stable measured benefit and were removed. No threshold changes,
+workload-specific kernels, or competitor fallbacks were introduced.

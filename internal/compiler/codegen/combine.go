@@ -10,35 +10,11 @@ func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
 	if !e.unmetered || e.a.arch != "arm64" || pc+1 >= len(e.f.Code) {
 		return 0, false
 	}
-	mul := e.f.Code[pc]
-	if mul.Op != 0x6c && mul.Op != 0x7e {
+	end, addend, constant, ok := e.multiplyAddTail(pc)
+	if !ok {
 		return 0, false
 	}
-	end := pc + 1
-	constant := e.f.Code[end].Op == 0x41 || e.f.Code[end].Op == 0x42
-	if constant {
-		if e.f.Code[end].Dst == mul.Dst {
-			return 0, false
-		}
-		end++
-	}
-	if end >= len(e.f.Code) || pc/256 != end/256 {
-		return 0, false
-	}
-	add := e.f.Code[end]
-	if add.Op != mul.Op-2 {
-		return 0, false
-	}
-	addend := add.B
-	if add.A != mul.Dst {
-		if add.B != mul.Dst {
-			return 0, false
-		}
-		addend = add.A
-	}
-	if addend == mul.Dst {
-		return 0, false
-	}
+	mul, add := e.f.Code[pc], e.f.Code[end]
 	l, lok := e.registers[mul.A]
 	r, rok := e.registers[mul.B]
 	p, pok := e.registers[mul.Dst]
@@ -111,4 +87,42 @@ func (e *functionEmitter) overwrittenBeforeExit(pc int, slot slots.Slot) bool {
 		}
 	}
 	return false
+}
+
+// Recognize the complete pattern without emitting code. Copy forwarding uses
+// the same selection so a shorter group cannot hide a multiply-add candidate.
+func (e *functionEmitter) multiplyAddTail(pc int) (int, slots.Slot, bool, bool) {
+	if pc+1 >= len(e.f.Code) {
+		return 0, slots.NoSlot, false, false
+	}
+	mul := e.f.Code[pc]
+	if mul.Op != 0x6c && mul.Op != 0x7e {
+		return 0, slots.NoSlot, false, false
+	}
+	end := pc + 1
+	constant := e.f.Code[end].Op == 0x41 || e.f.Code[end].Op == 0x42
+	if constant {
+		if e.f.Code[end].Dst == mul.Dst {
+			return 0, slots.NoSlot, false, false
+		}
+		end++
+	}
+	if end >= len(e.f.Code) || pc/256 != end/256 {
+		return 0, slots.NoSlot, false, false
+	}
+	add := e.f.Code[end]
+	if add.Op != mul.Op-2 {
+		return 0, slots.NoSlot, false, false
+	}
+	addend := add.B
+	if add.A != mul.Dst {
+		if add.B != mul.Dst {
+			return 0, slots.NoSlot, false, false
+		}
+		addend = add.A
+	}
+	if addend == mul.Dst {
+		return 0, slots.NoSlot, false, false
+	}
+	return end, addend, constant, true
 }

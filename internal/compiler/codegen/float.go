@@ -256,6 +256,20 @@ func (e *functionEmitter) floatRoundAMD64(op uint32, wide bool) {
 	a.xop(wide, 0x09, 0xc8) // Preserve negative zero after rounding.
 }
 
+func (e *functionEmitter) canReinterpretRegister(in slots.Instruction) bool {
+	switch in.Op {
+	case 0xbc, 0xbd:
+		_, s := e.floatRegisters[in.A]
+		_, d := e.registers[in.Dst]
+		return s && d
+	case 0xbe, 0xbf:
+		_, s := e.registers[in.A]
+		_, d := e.floatRegisters[in.Dst]
+		return s && d
+	}
+	return false
+}
+
 func (e *functionEmitter) reinterpretRegister(in slots.Instruction) bool {
 	switch in.Op {
 	case 0xbc, 0xbd:
