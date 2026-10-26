@@ -1,0 +1,138 @@
+name: Runtime benchmarks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      baseline:
+        description: Baseline commit or ref in this repository
+        default: main
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Base, head, and competitors / linux-amd64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out the exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: head
+          persist-credentials: false
+
+      - name: Check out the baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.event.before || inputs.baseline || 'main' }}
+          path: base
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: '1.27.3'
+          cache: false
+
+      - name: Check benchmark tooling
+        run: python3 -m unittest discover -s head/benchmarks -p 'test_*.py'
+
+      - name: Install pinned competitors
+        shell: bash
+        run: |
+          python3 head/benchmarks/install_tools.py --destination "$RUNNER_TEMP/wasm-runtime-tools" --github-env
+          mkdir -p benchmark-results
+          cp "$RUNNER_TEMP/wasm-runtime-tools/installation.json" benchmark-results/tool-installation.json
+
+      - name: Measure interleaved baseline, candidate, and competitor cases
+        shell: bash
+        run: |
+          python3 head/benchmarks/ci.py \
+            --base-dir "$GITHUB_WORKSPACE/base" \
+            --head-dir "$GITHUB_WORKSPACE/head" \
+            --base-sha "$(git -C base rev-parse HEAD)" \
+            --head-sha "$(git -C head rev-parse HEAD)" \
+            --output-dir "$GITHUB_WORKSPACE/benchmark-results"
+
+      - name: Publish job summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f benchmark-results/report.md ]]; then
+            cat benchmark-results/report.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf 'Benchmark setup or execution failed before a report was produced. See the job logs.\n' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Preserve measurements and report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: runtime-benchmark-comparison
+          path: benchmark-results/
+          if-no-files-found: warn
+          retention-days: 30
+
+  comment:
+    name: Report benchmark comparison on PR
+    needs: benchmark
+    if: ${{ always() && !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Download the report when measurements completed
+        if: needs.benchmark.result == 'success'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: runtime-benchmark-comparison
+          path: benchmark-results
+
+      # This job never checks out or executes candidate code. Reports are data.
+      # Fork PRs keep read-only credentials and publish summaries/artifacts only.
+      - name: Create or update the benchmark comment
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          BENCHMARK_RESULT: ${{ needs.benchmark.result }}
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+          EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- wasmvm-runtime-benchmark -->';
+            const number = context.issue.number;
+            const {data: pr} = await github.rest.pulls.get({...context.repo, pull_number: number});
+            if (pr.head.sha !== process.env.EXPECTED_HEAD || pr.base.sha !== process.env.EXPECTED_BASE) {
+              core.notice('The PR head or base changed; keep the newer benchmark comment.');
+              return;
+            }
+            const runURL = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            let report;
+            if (process.env.BENCHMARK_RESULT === 'success') {
+              const path = 'benchmark-results/report.md';
+              if (fs.statSync(path).size > 50000) throw new Error('Benchmark report exceeds comment size limit');
+              report = fs.readFileSync(path, 'utf8');
+            } else {
+              report = `Benchmark job **${process.env.BENCHMARK_RESULT}** for \`${process.env.EXPECTED_HEAD}\`. No valid performance comparison is available.`;
+            }
+            const body = `${marker}\n${report}\n\n[CI run and raw measurement artifact](${runURL})`;
+            const comments = await github.paginate(github.rest.issues.listComments, {...context.repo, issue_number: number, per_page: 100});
+            const previous = comments.find(comment => comment.user?.login === 'github-actions[bot]' && comment.body?.startsWith(marker));
+            if (previous) {
+              await github.rest.issues.updateComment({...context.repo, comment_id: previous.id, body});
+            } else {
+              await github.rest.issues.createComment({...context.repo, issue_number: number, body});
+            }
