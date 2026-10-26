@@ -113,6 +113,7 @@ jobs:
           CGO_ENABLED=0 go test -count=1 -timeout=10m -coverprofile=artifacts/core/coverage.out ./internal/... ./pkg/...
           python3 scripts/check_coverage.py artifacts/core/coverage.out --minimum 90 \
             --require github.com/cpunion/wasmvm/internal/binary \
+            --require github.com/cpunion/wasmvm/internal/bench/phase \
             --require github.com/cpunion/wasmvm/internal/cli \
             --require github.com/cpunion/wasmvm/internal/core/decode \
             --require github.com/cpunion/wasmvm/internal/core/validate \

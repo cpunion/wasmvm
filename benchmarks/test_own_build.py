@@ -1,0 +1,84 @@
+"""Ensure common instrumentation cannot replace a baseline's engine code."""
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+import unittest
+from unittest.mock import patch
+
+import ci
+import own_build
+
+
+class IsolatedSourceTests(unittest.TestCase):
+    def commit(self, root):
+        subprocess.run(["git", "-C", str(root), "add", "."], check=True, capture_output=True)
+        subprocess.run(["git", "-C", str(root), "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                        "commit", "-qm", "fixture"], check=True, capture_output=True)
+        return ci.capture(["git", "-C", str(root), "rev-parse", "HEAD"])
+
+    def test_archive_and_overlay_keep_engine_revision_exact(self):
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            root = temporary / "source"
+            root.mkdir()
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            (root / "go.mod").write_text("module github.com/cpunion/wasmvm\ngo 1.24.0\n")
+            (root / "pkg/vm").mkdir(parents=True)
+            engine = root / "pkg/vm/engine.go"
+            engine.write_text("package vm\nconst Revision = 1\n")
+            for path in own_build.HARNESS:
+                (root / path).mkdir(parents=True)
+                (root / path / "main.go").write_text("package main\n// old harness\n")
+            base_sha = self.commit(root)
+            base = temporary / "base"
+            subprocess.run(["git", "clone", "-q", str(root), str(base)], check=True)
+            engine.write_text("package vm\nconst Revision = 2\n")
+            for path in own_build.HARNESS:
+                (root / path / "main.go").write_text("package main\n// new harness\n")
+            head_sha = self.commit(root)
+            # An untracked file must not accidentally become baseline/head code.
+            (root / "pkg/vm/untracked.go").write_text("package vm\nconst Untracked = true\n")
+            baseline = temporary / "baseline-build"
+            candidate = temporary / "candidate-build"
+            before = own_build.prepare(root, base, base_sha, baseline)
+            after = own_build.prepare(root, root, head_sha, candidate)
+            self.assertEqual((baseline / "pkg/vm/engine.go").read_text(), "package vm\nconst Revision = 1\n")
+            self.assertEqual((candidate / "pkg/vm/engine.go").read_text(), "package vm\nconst Revision = 2\n")
+            self.assertFalse((candidate / "pkg/vm/untracked.go").exists())
+            self.assertNotEqual(before["sourceDigest"], after["sourceDigest"])
+            self.assertEqual(before["harnessHashes"], after["harnessHashes"])
+            engine.write_text("dirty tracked engine")
+            with self.assertRaises(subprocess.CalledProcessError):
+                own_build.prepare(root, root, head_sha, temporary / "dirty-build")
+            with self.assertRaises(ValueError):
+                own_build.prepare(root, base, head_sha, temporary / "wrong-revision")
+
+    def test_old_engine_is_explicitly_unavailable_and_symlinks_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "source"
+            root.mkdir()
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            (root / "go.mod").write_text("module github.com/cpunion/wasmvm\n")
+            sha = self.commit(root)
+            result = own_build.prepare(root, root, sha, Path(directory) / "archive")
+            self.assertEqual(result["status"], "baseline-unavailable")
+            self.assertEqual(result["sourceRevision"], sha)
+            (root / "link").symlink_to(root / "go.mod")
+            with self.assertRaisesRegex(ValueError, "symlink"):
+                own_build.hashes(root, ("link",))
+
+    def test_missing_or_wrong_toolchain_is_not_silently_replaced(self):
+        with patch("own_build.shutil.which", return_value=None), patch.dict(os.environ, {}, clear=True):
+            with self.assertRaisesRegex(ValueError, "both Go"):
+                own_build.toolchains()
+        with patch("own_build.shutil.which", return_value="tool"), patch("own_build.ci.capture", return_value="go1.0"):
+            with self.assertRaisesRegex(ValueError, "differs from pin"):
+                own_build.toolchains()
+        with patch("own_build.shutil.which", return_value="tool"), patch("own_build.ci.capture", return_value=own_build.GO_VERSION), patch.dict(os.environ, {}, clear=True):
+            with self.assertRaisesRegex(ValueError, "WASMVM_LLGO_REVISION"):
+                own_build.toolchains()
+
+
+if __name__ == "__main__":
+    unittest.main()

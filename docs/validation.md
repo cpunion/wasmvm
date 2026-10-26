@@ -479,3 +479,36 @@ Every executable core package remains above 90%. CI builds and executes the
 CLI with both compilers on both platforms and adds its coverage requirement.
 Final-head CI is required before merge. Own-engine phase benchmarks and final
 M1 acceptance remain open; command wall time is not an engine throughput result.
+
+
+## M1 owned-engine measurement integration
+
+The CLI's four Go/LLGo platform jobs and measurement job passed for
+`b23f512e2629d01b81d323fcc60e9221cff23282`. GitHub initially refused to allocate
+a runner for its PR-comment job because of an account billing limit. At the
+owner's request the repository was made public; rerunning the failed job then
+passed. [PR #17](https://github.com/cpunion/wasmvm/pull/17) merged only after all
+six checks were successful.
+
+The phase harness now builds the actual base/head engine sources with both
+host compilers. Public API results are primary; separate internal dispatch
+rows retain cancellation/bounds/trap checks while exposing reusable interpreter
+execution. Internal preparation records decode, validate, lower and slot
+allocation beneath an outer interval. Every first/warmup/measured call checks
+its checksum. Separately built production CLI binaries retain complete process
+latency measurements with checked typed JSON, rather than inferring that latency
+from the embedding executable. Owned fixtures retain their independent oracle and alternate-seed
+vectors. Engine commits, source digests, common adapter hashes, compiler and
+binary identities are validated before a complete report is accepted.
+
+The local measurement package covers both boundaries, all oracle vectors,
+mutable-state/checksum failures, traps, forbidden imports/start, bad signatures,
+invalid binaries and ready/ack protocol errors. Its statement coverage is 95.3%;
+remaining branches defend against impossible current internal states or
+allocation errors under fixed valid benchmark configuration. Python tests reject
+missing process/build matrices, wrong engine/compiler identities, contaminated
+source archives, bad phase accounting and unavailable-baseline substitution.
+
+Final actual base/head measurements, cross-platform CI and PR publication are
+still required before this increment and M1 can be accepted. Hosted timings
+are advisory; they cannot pass M2's controlled optimization/native gates.

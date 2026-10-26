@@ -22,7 +22,7 @@ jobs:
   benchmark:
     name: Base, head, and competitors / linux-amd64
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - name: Check out the exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -43,6 +43,21 @@ jobs:
         with:
           go-version: '1.27.3'
           cache: false
+
+      - name: Set up pinned LLGo for own-engine measurements
+        id: llgo
+        uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
+        with:
+          llgo-version: 8b1389c627c77a02e56af03f08d9cdc19edffe77
+          install-method: source
+          go-version: '1.27.3'
+          llvm-version: '22'
+          cache: false
+
+      - name: Verify the benchmark LLGo identity
+        env:
+          ACTUAL_LLGO_REVISION: ${{ steps.llgo.outputs.llgo-revision }}
+        run: test "$ACTUAL_LLGO_REVISION" = 8b1389c627c77a02e56af03f08d9cdc19edffe77
 
       - name: Check benchmark tooling
         run: python3 -m unittest discover -s head/benchmarks -p 'test_*.py'
@@ -75,6 +90,8 @@ jobs:
 
       - name: Measure direct API phases and warmed execution
         shell: bash
+        env:
+          WASMVM_LLGO_REVISION: 8b1389c627c77a02e56af03f08d9cdc19edffe77
         run: |
           python3 head/benchmarks/phase_ci.py \
             --base-dir "$GITHUB_WORKSPACE/base" \
