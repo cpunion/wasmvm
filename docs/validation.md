@@ -323,3 +323,32 @@ operand tuples across all 214 operations without failure. Go vet/race and
 per-package coverage checks pass. CI adds the SIMD coverage floor and fuzz
 campaign; final-head CI is required before merge. M1 remains open for checked
 memory, full interpreter/runtime lifecycle, API/CLI and own-engine benchmarks.
+
+## M1 private memory primitives
+
+Nonmemory SIMD merged in [PR #12](https://github.com/cpunion/wasmvm/pull/12)
+after all six checks passed for exact head
+`189e7c21c646def087aceceb9e2b15717f3b56f0`.
+
+`internal/engine/memory` implements all 14 scalar loads, nine scalar stores,
+17 SIMD loads and five SIMD stores, plus page growth, copied host access and
+bulk fill/copy/init. Tests independently construct byte-level expected results
+for every access width, signed extension, vector widening/splat/zero, every
+lane and unaligned/end-of-memory address. Range checks widen address+offset,
+reject overflow-sized inputs, and precede mutation. Bulk tests check both
+copy overlap directions, exact endpoints and zero-length operations.
+
+Go and LLGo tests pass locally, as do Go race/vet and tooling checks. Memory
+coverage is 99.3%; the sole uncovered statement clamps maximum pages on a
+32-bit host, outside the current Linux amd64/macOS arm64 target matrix. A
+15-second two-worker fuzz campaign executed 1,606,911 range/operand tuples
+without failure. Growth tests preserve old bytes, check new zero pages and
+exercise declaration/host quotas without allocating an entire 4-GiB memory.
+Logical-page quotas do not promise a hard process-RSS ceiling during copying
+or deferred host collection.
+
+These are memory primitive tests. Full-module instantiation/segment semantics,
+Store-wide accounting, chunked cancellation, tables/references, explicit call
+frames, API/CLI and own-engine benchmarks remain required before M1 acceptance.
+CI adds memory coverage and fuzz checks; final-head results are required before
+this increment merges.

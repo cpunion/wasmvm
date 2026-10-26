@@ -106,6 +106,7 @@ jobs:
             --require github.com/cpunion/wasmvm/internal/compiler/slots \
             --require github.com/cpunion/wasmvm/internal/engine/numeric \
             --require github.com/cpunion/wasmvm/internal/engine/simd \
+            --require github.com/cpunion/wasmvm/internal/engine/memory \
             --require github.com/cpunion/wasmvm/pkg/wasm
 
       - name: Fuzz bounded binary inputs
@@ -118,6 +119,7 @@ jobs:
           go test -run '^$' -fuzz '^FuzzSlots$' -fuzztime=10s -parallel=2 ./internal/compiler/slots
           go test -run '^$' -fuzz '^FuzzNumeric$' -fuzztime=10s -parallel=2 ./internal/engine/numeric
           go test -run '^$' -fuzz '^FuzzPureSIMD$' -fuzztime=10s -parallel=2 ./internal/engine/simd
+          go test -run '^$' -fuzz '^FuzzMemoryRanges$' -fuzztime=10s -parallel=2 ./internal/engine/memory
 
       - name: Evaluate unchanged wazero and measure harness coverage
         if: matrix.compiler == 'go'

@@ -109,6 +109,21 @@ Initially emit explicit memory/table/stack bounds checks and explicit trap exits
 
 Use a private guest ABI with explicit VM frames: guest calls push checked logical frames and branch to native callee labels; returns branch to saved continuations. The initial backend keeps one bounded C entry frame, without hardware-stack switching or a native C/Go frame per guest call. Host interaction, collection, cancellation and traps leave through the explicit status protocol in the [native ABI](native-abi.md). Whole-function inlining and more advanced optimization follow correctness and profiling; both disabled and enabled optimizations must pass differential tests. A persistent AOT/cache file format is later work; generating native code in-process is required in M2.
 
+## Implemented private memory primitives
+
+`internal/engine/memory` enforces Core 2.0 page limits, independent host quotas,
+widened effective-address arithmetic and host-index bounds. It implements all
+scalar and fixed-SIMD loads/stores, growth, host copies and bulk copy/fill/init.
+Every rejected range is detected before mutation. Overlapping copies preserve
+snapshot semantics. Lane loads preserve other lanes; zero loads clear the
+remaining lanes. Shared-memory synchronization is outside this Core 2.0 package.
+
+Buffers have exact requested capacity. Growth preserves existing bytes and
+zeroes the new pages; quota failure leaves memory unchanged. The old and new
+buffers may coexist transiently during copying and until host collection, so
+the page quota bounds logical memory rather than process RSS. Store-wide memory
+accounting and scheduling of chunked bulk operations remain runtime work.
+
 ## Runtime, lifecycle and observability
 
 Both backends use the same Engine/Store/Instance ownership model, memory/table/heap domains, host signature checks and typed outcomes. Compiled artifacts are immutable and reference counted or otherwise retained until all instances and active/suspended executions release them. Closing an Engine prevents new work and cannot unmap code used by a continuation. Store `Close` is an idempotent, nonblocking close request: prevent new work, signal cancellation and resolve waits once, then reclaim after active callbacks/executions leave. It is safe from a host callback and never joins itself. A separate `WaitClosed(ctx)` is for an external caller to await reclamation with a deadline; calling it from an active callback of that Store is outside its contract. Host-boundary deferred cleanup releases reentry tokens, temporary roots and execution/code leases before propagating a host panic, allowing the caller to recover without leaving a busy Store. An arbitrary blocking user callback remains outside any promised preemption bound.
