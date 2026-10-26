@@ -199,3 +199,31 @@ fuzz run with two workers completed 1,604,465 inputs without failure; this is a
 bounded observation, not a proof. Final-head cross-platform CI remains required.
 M1 is still open for IR, interpreter, runtime/lifecycle, API, CLI and own-engine
 performance measurements.
+
+
+## M1 typed control-flow IR
+
+The validator merged in [PR #8](https://github.com/cpunion/wasmvm/pull/8) after
+all six checks passed for `742a93f6aff980c5e15016d426713a0e4fe34a20`.
+The [Go/LLGo matrix](https://github.com/cpunion/wasmvm/actions/runs/40273077218)
+passed on Linux amd64 and macOS arm64; the
+[reference benchmark/report run](https://github.com/cpunion/wasmvm/actions/runs/40273077222)
+also passed.
+
+Typed lowering produces and verifies 6,236 functions in all 1,716 statically
+valid corpus modules. Tests exercise multi-value loop edges, dead trapping
+instructions, shared compilation budgets and invalid IR: wrong types/arity,
+missing definitions/terminators, use before definition, non-dominating uses,
+unreachable blocks and corrupted effect metadata. Visitor tests check operand
+ordering, multi-result calls, early errors and unreachable polymorphic types.
+The shared validator walk supplies opcode signatures to the compiler.
+
+Local Go and LLGo tests, Go race/vet checks, and Python tooling tests pass.
+Go statement coverage is 99.5% for `internal/compiler/ir` and 98.9% for
+`internal/compiler/lower`; the intentional unexpected-panic rethrows remain
+uncovered. A 15-second Go lowering fuzz run with two workers completed 548,666
+inputs without failure. These checks validate lowering structure, not executed
+Wasm results. CI requires both packages at 90% coverage and adds lowering fuzz
+checks. Final-head cross-platform CI is still required before merge. M1 remains
+open for slot lowering, complete execution, lifecycle, public API/CLI and
+own-engine performance measurements.

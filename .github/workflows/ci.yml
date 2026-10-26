@@ -101,6 +101,8 @@ jobs:
             --require github.com/cpunion/wasmvm/internal/binary \
             --require github.com/cpunion/wasmvm/internal/core/decode \
             --require github.com/cpunion/wasmvm/internal/core/validate \
+            --require github.com/cpunion/wasmvm/internal/compiler/ir \
+            --require github.com/cpunion/wasmvm/internal/compiler/lower \
             --require github.com/cpunion/wasmvm/pkg/wasm
 
       - name: Fuzz bounded binary inputs
@@ -109,6 +111,7 @@ jobs:
           go test -run '^$' -fuzz '^FuzzReader$' -fuzztime=10s -parallel=2 ./internal/binary
           go test -run '^$' -fuzz '^FuzzDecode$' -fuzztime=10s -parallel=2 ./internal/core/decode
           go test -run '^$' -fuzz '^FuzzValidate$' -fuzztime=10s -parallel=2 ./internal/core/validate
+          go test -run '^$' -fuzz '^FuzzLower$' -fuzztime=10s -parallel=2 ./internal/compiler/lower
 
       - name: Evaluate unchanged wazero and measure harness coverage
         if: matrix.compiler == 'go'

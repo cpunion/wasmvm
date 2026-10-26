@@ -15,10 +15,12 @@ type frame struct {
 }
 type checker struct {
 	*context
-	locals  []wasm.ValueType
-	stack   []wasm.ValueType
-	control []frame
-	info    FunctionInfo
+	locals          []wasm.ValueType
+	stack           []wasm.ValueType
+	control         []frame
+	info            FunctionInfo
+	record          bool
+	inputs, outputs []wasm.ValueType
 }
 
 func (c *context) body(f *module.Function) FunctionInfo {
@@ -46,12 +48,22 @@ func (c *context) body(f *module.Function) FunctionInfo {
 		}
 	}
 	v.enter(0, nil, sig.Results)
-	for _, in := range f.Body {
+	for pc, in := range f.Body {
 		c.at = in.Offset
 		if len(v.control) == 0 {
 			c.fail("instruction after function end")
 		}
+		v.inputs, v.outputs = v.inputs[:0], v.outputs[:0]
+		v.record = c.visitor != nil && (in.Op == 1 || in.Op == 0x10 || in.Op == 0x11 || in.Op >= 0x1a)
 		v.instruction(in)
+		if c.visitor != nil {
+			for i, j := 0, len(v.inputs)-1; i < j; i, j = i+1, j-1 {
+				v.inputs[i], v.inputs[j] = v.inputs[j], v.inputs[i]
+			}
+			if err := c.visitor(pc, in, v.inputs, v.outputs); err != nil {
+				panic(visitorFailure{err})
+			}
+		}
 	}
 	if len(v.control) != 0 {
 		c.fail("missing function end")
@@ -63,6 +75,9 @@ func (v *checker) pop(want wasm.ValueType) wasm.ValueType {
 	f := v.top()
 	if len(v.stack) == f.height {
 		if f.unreachable {
+			if v.record {
+				v.inputs = append(v.inputs, want)
+			}
 			return 0
 		}
 		v.fail("operand stack underflow")
@@ -72,6 +87,9 @@ func (v *checker) pop(want wasm.ValueType) wasm.ValueType {
 	if want != 0 && got != 0 && got != want {
 		v.fail("operand type mismatch")
 	}
+	if v.record {
+		v.inputs = append(v.inputs, got)
+	}
 	return got
 }
 func (v *checker) push(ts ...wasm.ValueType) {
@@ -79,6 +97,9 @@ func (v *checker) push(ts ...wasm.ValueType) {
 		v.limit("operand stack")
 	}
 	v.stack = append(v.stack, ts...)
+	if v.record {
+		v.outputs = append(v.outputs, ts...)
+	}
 	if uint32(len(v.stack)) > v.info.MaxStack {
 		v.info.MaxStack = uint32(len(v.stack))
 	}

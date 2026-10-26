@@ -18,6 +18,7 @@ func DefaultLimits() Limits { return Limits{1 << 20, 1 << 20, 10000} }
 type Module struct {
 	definition *module.Module
 	functions  []FunctionInfo
+	types      context
 }
 type FunctionInfo struct{ MaxStack, MaxControl uint32 }
 
@@ -39,6 +40,7 @@ type context struct {
 	importGlobals int
 	refs          map[uint32]bool
 	at            uint64
+	visitor       func(int, module.Instr, []wasm.ValueType, []wasm.ValueType) error
 }
 
 // Check validates a decoded module without modifying it. The caller transfers
@@ -191,7 +193,36 @@ func Check(m *module.Module, limits Limits) (result *Module, err error) {
 	for i := range m.Functions {
 		result.functions[i] = c.body(&m.Functions[i])
 	}
+	result.types = c
 	return result, nil
+}
+
+type visitorFailure struct{ err error }
+
+// WalkFunction replays the validator's operand signatures without introducing
+// a second opcode typing table in the compiler. Input types are in stack order;
+// output types are in result order. Control instructions have no signature
+// here: lowering uses their validated block/label types. Slices are borrowed
+// until the next callback. Unreachable polymorphic values may have type zero;
+// they must not become executable values. A visitor error stops immediately.
+func (m *Module) WalkFunction(index uint32, visitor func(int, module.Instr, []wasm.ValueType, []wasm.ValueType) error) (err error) {
+	defer func() {
+		if failure := recover(); failure != nil {
+			switch e := failure.(type) {
+			case visitorFailure:
+				err = e.err
+			case *wasm.Error:
+				err = e
+			default:
+				panic(failure)
+			}
+		}
+	}()
+	c := m.types
+	c.index(index, len(m.functions), "defined function")
+	c.visitor = visitor
+	c.body(&m.definition.Functions[index])
+	return nil
 }
 
 func (c *context) fail(detail string) {
