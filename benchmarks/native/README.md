@@ -17,10 +17,14 @@ exits. Checksums, initial frame setup and printing are outside the call timer.
 
 The existing PR phase job reuses its isolated exact-revision source trees and
 pinned wazero 1.12.0, Wasmtime 48.0.1 and Wasmer 7.3.0 compiler runners. It adds
-20 interleaved process blocks for this kernel and publishes raw records and the
+20 interleaved process blocks (one predeclared extension to 60 when inconclusive)
+for the existing five-million-iteration sustained
+case, plus three own-baseline blocks and publishes raw records and the
 feature comparison in the same PR comment. Both host compilers must pass every
-competitor comparison. A paired process bootstrap uses simultaneous 95% bounds;
-slower or inconclusive results fail the feature gate. Shared-host results remain
+competitor comparison and their identical-binary A/A control. Linux processes
+share one allowed CPU through `taskset`; macOS affinity remains uncontrolled. A paired process bootstrap uses simultaneous 95% bounds;
+intervals account for both planned looks. A practical parity verdict requires the whole interval within ±0.5%, and A/A
+controls must resolve ±0.25%. Slower or inconclusive results fail the feature gate. Shared-host results remain
 provisional and do not replace controlled full-portfolio acceptance. macOS arm64
 requires separate evidence before merging; the existing benchmark job is Linux
 amd64 only. Future feature PRs must declare and compare their affected workload
@@ -33,3 +37,17 @@ and executable hashes are retained. Later baselines use their own unmetered
 compiler. Own baseline ratios remain visible; only competitor ratios decide
 this feature gate, so an unchanged baseline does not fail merely due to A/A
 noise. Preparation and first-call costs remain separately visible.
+
+## Measurement revision
+
+The initial 250,000-iteration data remain on PR #26 (heads `777cd7c` and
+`9501dcd`). The first head was measurably slower; after direct register selection
+the small-kernel comparisons remained blocked. Each call lasted only about
+0.4–0.6 ms, with roughly 1–2 ms of first-call/warmup activity, and no affinity or
+A/A calibration. That did not establish steady-state parity. The revised gate
+uses the already pinned sustained fixture, the same seven samples/two warmups,
+fixed CPU placement on Linux and independent A/A process controls. Margins are
+fixed before this new measurement, not derived from observed competitor gaps.
+An interval merely crossing 1 is never a parity pass. This is a disclosed
+measurement-method change, not an instruction-throughput win. Full controlled
+portfolio acceptance remains unchanged.

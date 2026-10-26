@@ -36,7 +36,13 @@ func main() {
 	tier := flag.String("tier", "unmetered", "unmetered or sliced")
 	path := flag.String("wasm", "", "module")
 	budget := flag.Uint64("budget", 64, "native slice budget")
+	seed := flag.Uint64("seed", 305419896, "i32 seed")
+	iterations := flag.Uint64("iterations", 250000, "positive i32 loop count")
+	expected := flag.Uint64("expected", 956690092, "i32 checksum")
 	flag.Parse()
+	if *seed > 1<<32-1 || *iterations == 0 || *iterations > 1<<31-1 || *expected > 1<<32-1 {
+		panic("invalid i32 arguments")
+	}
 	input, err := os.ReadFile(*path)
 	check(err)
 	start := time.Now()
@@ -80,8 +86,8 @@ func main() {
 	check(err)
 	defer c.Close()
 	setup := time.Since(start).Nanoseconds()
-	binary.LittleEndian.PutUint64(frame, 305419896)
-	binary.LittleEndian.PutUint64(frame[16:], 250000)
+	binary.LittleEndian.PutUint64(frame, *seed)
+	binary.LittleEndian.PutUint64(frame[16:], *iterations)
 	var calls []int64
 	var pollCounts []int
 	var first int64
@@ -109,7 +115,7 @@ func main() {
 			var result [16]byte
 			check(c.Read(uint64(slot)*16, result[:]))
 			elapsed := time.Since(start).Nanoseconds()
-			if binary.LittleEndian.Uint64(result[:8]) != 956690092 {
+			if binary.LittleEndian.Uint64(result[:8]) != *expected {
 				panic("checksum")
 			}
 			if n == 0 {
@@ -122,5 +128,5 @@ func main() {
 			break
 		}
 	}
-	check(json.NewEncoder(os.Stdout).Encode(map[string]any{"tier": *tier, "compiler": runtime.Compiler, "runtime": runtime.Version(), "arch": runtime.GOARCH, "wasmSHA256": fmt.Sprintf("%x", sha256.Sum256(input)), "budget": *budget, "iterations": 250000, "codeBytes": len(compiled.Entry.Code), "frameBytes": len(frame), "frontendNs": front, "backendNs": back, "instanceNs": setup, "firstCallNs": first, "warmCallNs": calls, "pollsPerCall": pollCounts, "expected": 956690092}))
+	check(json.NewEncoder(os.Stdout).Encode(map[string]any{"tier": *tier, "compiler": runtime.Compiler, "runtime": runtime.Version(), "arch": runtime.GOARCH, "wasmSHA256": fmt.Sprintf("%x", sha256.Sum256(input)), "budget": *budget, "iterations": *iterations, "seed": *seed, "codeBytes": len(compiled.Entry.Code), "frameBytes": len(frame), "frontendNs": front, "backendNs": back, "instanceNs": setup, "firstCallNs": first, "warmCallNs": calls, "pollsPerCall": pollCounts, "expected": *expected, "nativeCodeSHA256": fmt.Sprintf("%x", sha256.Sum256(compiled.Entry.Code))}))
 }

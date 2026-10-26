@@ -476,7 +476,7 @@ def main():
                     del report["activeCase"]
                 print(f"Embedded phase round {number+1}/{ROUNDS} complete", flush=True)
             report["nativeFeature"] = native_compare.run(head, report["ownBuilds"], report["runtimes"],
-                next(w for w in report["fixtures"]["workloads"] if w["id"] == "integer-loop"), invoke, args.timeout)
+                next(w for w in report["fixtures"]["workloads"] if w["id"] == "integer-sustained"), invoke, args.timeout)
             report["productionCLI"] = {"rounds": own_cli.ROUNDS, "runtimes": own_cli.configurations(report["ownBuilds"]), "observations": []}
             own_cli.run(head, report["ownBuilds"], selected_fixtures(report), args.timeout, report["seed"], report["productionCLI"])
             report["summary"] = summarize(report)

@@ -164,3 +164,37 @@ func TestUnmeteredHostProgressAndCancellation(t *testing.T) {
 		t.Fatal("native loop did not acknowledge cancellation")
 	}
 }
+
+func TestNativeConstantMaterialization(t *testing.T) {
+	if !native.Available {
+		return
+	}
+	bits := []uint64{0, ^uint64(0), 0xffffffff, 0xffff0000, 0xffffffffffff0000, 0xffff0000ffffffff, 1 << 63}
+	seed := uint64(0x123456789abcdef0)
+	for i := 0; i < 128; i++ {
+		seed ^= seed << 13
+		seed ^= seed >> 7
+		seed ^= seed << 17
+		bits = append(bits, seed)
+	}
+	var body module.Expr
+	var results []wasm.ValueType
+	for _, v := range bits {
+		body = append(body, module.Instr{Op: 0x42, Bits: v})
+		results = append(results, wasm.I64)
+	}
+	body = append(body, module.Instr{Op: 0xb})
+	f := functionModule(t, functionFixture(module.FuncType{Results: results}, 0, body)).Functions[0]
+	for _, fast := range []bool{false, true} {
+		compiled, lease, c := functionContext(t, f, fast)
+		got, exit, _ := runFunction(t, compiled, lease, c, nil, 0, false, 64)
+		if exit != native.Return || len(got) != len(bits) {
+			t.Fatal(exit, got)
+		}
+		for i, v := range got {
+			if v != (value.Value{Lo: bits[i]}) {
+				t.Fatalf("constant %x: %v", bits[i], v)
+			}
+		}
+	}
+}

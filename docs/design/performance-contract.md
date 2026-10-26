@@ -15,6 +15,14 @@ noise-bound control cannot establish either a win or a loss; resolve it with
 an appropriate measured workload before deciding. Do not waive a deficit by
 averaging unrelated cases or weakening safety settings.
 
+The initial native integer feature gate uses the existing sustained workload,
+20 interleaved process blocks (one predeclared extension to 60 if inconclusive),
+simultaneous 95% paired-bootstrap intervals adjusted for both planned looks, and
+identical-binary A/A controls. Practical parity means the entire interval lies
+within ±0.5%; A/A intervals must resolve ±0.25% or the gate remains inconclusive.
+These feature-level equivalence limits do not replace the stricter full-portfolio
+throughput targets below. Record every methodology change with old/new evidence.
+
 Keep these checks proportional: reuse existing runners/fixtures and the current
 PR benchmark job, scope comparisons to the changed capability, and retain the
 full-profile controlled acceptance gate below. Begin native register allocation,
