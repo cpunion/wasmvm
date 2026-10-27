@@ -28,7 +28,8 @@ func check(err error) {
 }
 func main() {
 	fmt.Println(`{"ready":true}`)
-	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
+	inputReader := bufio.NewReader(os.Stdin)
+	line, err := inputReader.ReadString('\n')
 	check(err)
 	if line != "run\n" {
 		panic("expected run acknowledgement")
@@ -92,6 +93,14 @@ func main() {
 	var pollCounts []int
 	var first int64
 	for n := 0; n < 10; n++ {
+		if n >= 3 && os.Getenv("WASMVM_INTERLEAVE") == "1" {
+			fmt.Printf("{\"sampleReady\":%d}\n", n-3)
+			line, err := inputReader.ReadString('\n')
+			check(err)
+			if line != "sample\n" {
+				panic("expected sample acknowledgement")
+			}
+		}
 		check(c.Write(0, frame))
 		check(c.SetState(native.State{Depth: 1, Budget: *budget}))
 		polls := 0
@@ -99,14 +108,17 @@ func main() {
 		for {
 			status, err := c.Enter(lease, 0)
 			check(err)
-			state, err := c.State()
-			check(err)
 			if status == native.Poll {
+				state, err := c.State()
+				check(err)
 				polls++
 				state.Budget = *budget
 				check(c.SetState(state))
 				continue
 			}
+			elapsed := time.Since(start).Nanoseconds()
+			state, err := c.State()
+			check(err)
 			if status != native.Return {
 				panic(fmt.Sprint(status, state))
 			}
@@ -114,7 +126,6 @@ func main() {
 			slot := compiled.Function.Args[in.Extra]
 			var result [16]byte
 			check(c.Read(uint64(slot)*16, result[:]))
-			elapsed := time.Since(start).Nanoseconds()
 			if binary.LittleEndian.Uint64(result[:8]) != *expected {
 				panic("checksum")
 			}

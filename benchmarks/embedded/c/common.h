@@ -154,6 +154,16 @@ static void calls(const options *opt, measurements *result, void *context,
       fail("warmup call checksum mismatch");
   }
   for (uint32_t i = 0; i < opt->samples; ++i) {
+    const char *interleave = getenv("WASMVM_INTERLEAVE");
+    if (interleave && strcmp(interleave, "1") == 0) {
+      printf("{\"sampleReady\":%" PRIu32 "}\n", i);
+      if (fflush(stdout) != 0)
+        fail("cannot flush sample readiness");
+      char acknowledgement[8];
+      if (!fgets(acknowledgement, sizeof(acknowledgement), stdin) ||
+          strcmp(acknowledgement, "sample\n") != 0)
+        fail("expected sample acknowledgement");
+    }
     result->warm_results[i] = invoke(context, opt, &result->warm[i]);
     if (result->warm_results[i] != opt->expected)
       fail("warm call checksum mismatch");

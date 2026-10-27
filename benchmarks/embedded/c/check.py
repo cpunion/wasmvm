@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -68,6 +69,23 @@ def main():
             positive += 1
         control = workloads[0]
         base_command = command(runners, runtime, control)
+        for acknowledgements, success in (("sample\n" * 7, True), ("", False), ("wrong\n", False)):
+            process = subprocess.run(base_command, input="run\n" + acknowledgements, text=True,
+                                     capture_output=True, timeout=30,
+                                     env=dict(os.environ, WASMVM_INTERLEAVE="1"))
+            events = [json.loads(line) for line in process.stdout.splitlines()]
+            if events[:2] != [{"ready": True}, {"sampleReady": 0}]:
+                raise AssertionError("missing interleaved readiness")
+            if success:
+                if (process.returncode or len(events) != 9 or
+                        events[1:8] != [{"sampleReady": i} for i in range(7)] or
+                        events[-1]["warmResults"] != [control["expectedChecksum"]] * 7):
+                    raise AssertionError("invalid interleaved results")
+                positive += 1
+            else:
+                if process.returncode == 0 or len(events) != 2 or "sample acknowledgement" not in process.stderr:
+                    raise AssertionError("accepted invalid sample acknowledgement")
+                negative += 1
         for acknowledgement in ("", "wrong\n"):
             execute(base_command, acknowledgement, "acknowledgement")
             negative += 1

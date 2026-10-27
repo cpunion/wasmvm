@@ -16,7 +16,7 @@ an appropriate measured workload before deciding. Do not waive a deficit by
 averaging unrelated cases or weakening safety settings.
 
 The initial native integer feature gate uses the existing sustained workload,
-20 interleaved process blocks (one predeclared extension to 60 if inconclusive),
+20 independent process blocks (one predeclared extension to 60 if inconclusive),
 simultaneous 95% paired-bootstrap intervals adjusted for both planned looks, and
 identical-binary A/A controls. Practical parity means the entire interval lies
 within ±0.5%. An interval spanning faster and parity also passes if its upper
@@ -24,6 +24,16 @@ bound is at most 1.005; crossing the boundary between two accepted outcomes is
 not a rejection. A/A intervals must resolve ±0.25% or the gate remains inconclusive. Candidate and control calls use 25 million iterations of the same sustained integer binary and seed; the three descriptive baseline calls retain five million. All warm rates and baseline ratios normalize each record by its own count. The longer candidate duration changes neither acceptance margins nor planned looks; earlier failed measurements remain visible.
 These feature-level equivalence limits do not replace the stricter full-portfolio
 throughput targets below. Record every methodology change with old/new evidence.
+
+The `warm-call-interleave-v1` protocol prepares each candidate serially, then
+randomizes individual warm calls across waiting processes within each block.
+Only one runtime executes a timed call at a time. Handshakes and final state or
+checksum inspection are outside call timers; necessary polling work stays
+inside. Each block still uses fresh processes and seven warm calls after two
+warmups; the process median remains the statistical unit. Raw records include
+the dispatch order and protocol events. This changes temporal pairing, not the
+workload, margins, planned looks or generated code. Earlier serial-call reports
+remain evidence; compare protocols explicitly rather than pooling their samples.
 
 Keep these checks proportional: reuse existing runners/fixtures and the current
 PR benchmark job, scope comparisons to the changed capability, and retain the
