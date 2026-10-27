@@ -671,7 +671,8 @@ frames and cold entries. Fuel counts guest instructions rather than emitted
 machine instructions; cancellation preserves all 128 bits. Fused and unfused
 execution agree on every frame slot at every entry PC. The complete Core 2.0
 corpus passes both native tiers with Go/LLGo on arm64 and Go under amd64
-Docker/Rosetta. Measured Go statement coverage is 92.52% for `compiler/codegen`,
+Docker/Rosetta. Measured Go statement coverage for `compiler/codegen` is 92.52%
+on arm64 locally and 91.53% on amd64 in CI. Other exact package measurements are
 94.71% for `engine/nativeexec`, 97.78% for `engine/state` and 96.92% for `pkg/vm`;
 every measured executable package remains above 90%.
 
