@@ -139,6 +139,11 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	a.dispatch(pcs)
 	out = &CompiledFunction{Function: f, Offsets: make([]uint32, len(pcs)), UsesMemory: e.usesMemory}
+	for _, in := range f.Code {
+		if nativeVectorOpcode(in.Op) {
+			out.NativeVectors++
+		}
+	}
 	for i, t := range f.Slots {
 		if t.IsReference() {
 			out.ReferenceSlots = append(out.ReferenceSlots, uint32(i))
@@ -260,7 +265,6 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				}
 			}
 		case nativeVectorOpcode(op):
-			out.NativeVectors++
 			e.vectorInstruction(in)
 		case plainOpcode(op):
 			e.plain(in, false)

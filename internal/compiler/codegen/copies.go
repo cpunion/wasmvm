@@ -2,7 +2,7 @@ package codegen
 
 import "github.com/cpunion/wasmvm/internal/compiler/slots"
 
-// Forward nontrapping copies into one consuming scalar operation. Retain values in
+// Forward nontrapping copies into one consuming scalar/vector operation. Retain values in
 // their original slots, but remove copies from the arithmetic dependency chain.
 // Every interior instruction keeps an independent cold continuation.
 func (e *functionEmitter) combineScalarCopies(start int) (int, bool) {
@@ -21,7 +21,7 @@ func (e *functionEmitter) combineScalarCopies(start int) (int, bool) {
 				}
 			}
 			aliases[in.Dst] = local
-		} else if in.Op >= 0x41 && in.Op <= 0x44 {
+		} else if in.Op >= 0x41 && in.Op <= 0x44 || in.Op == 0xfd000c {
 			delete(aliases, in.Dst)
 			for dst, source := range aliases {
 				if source == in.Dst {
@@ -65,7 +65,7 @@ func (e *functionEmitter) combineScalarCopies(start int) (int, bool) {
 		return 0, false
 	}
 	previous := e.f.Code[pc-1]
-	deferConstant := (previous.Op == 0x41 || previous.Op == 0x42) && previous.Dst == in.B && in.A != previous.Dst
+	deferConstant := (previous.Op == 0x41 || previous.Op == 0x42 || previous.Op == 0xfd000c) && previous.Dst == in.B && in.A != previous.Dst
 	for offset, copy := range e.f.Code[start:pc] {
 		if deferConstant && start+offset == pc-1 {
 			continue
@@ -83,7 +83,7 @@ func (e *functionEmitter) combineScalarCopies(start int) (int, bool) {
 	if !deferConstant && e.logicalShift(pc, in) {
 		return pc + 2, true
 	}
-	if deferConstant && e.registerImmediate(in.Op, in.Dst, in.A, e.f.Sources[previous.Source].Wasm.Bits) {
+	if deferConstant && (e.registerImmediate(in.Op, in.Dst, in.A, e.f.Sources[previous.Source].Wasm.Bits) || e.pooledVector(in, previous)) {
 		if previous.Dst != in.Dst && previous.Dst != original.Dst && (end == pc || e.f.Code[end].Dst != previous.Dst) && !e.overwrittenBeforeExit(end+1, previous.Dst) {
 			e.literal(previous)
 		}
@@ -105,6 +105,9 @@ func (e *functionEmitter) combineScalarCopies(start int) (int, bool) {
 }
 
 func (e *functionEmitter) canRegisterScalar(in slots.Instruction, pc int) bool {
+	if nativeVectorOpcode(in.Op) {
+		return true
+	}
 	if in.Op >= 0x28 && in.Op <= 0x3e {
 		return e.provenPCs[pc]
 	}
@@ -118,7 +121,9 @@ func (e *functionEmitter) canRegisterScalar(in slots.Instruction, pc int) bool {
 }
 
 func (e *functionEmitter) registerScalar(in slots.Instruction) {
-	if in.Op >= 0x28 && in.Op <= 0x3e {
+	if nativeVectorOpcode(in.Op) {
+		e.vectorInstruction(in)
+	} else if in.Op >= 0x28 && in.Op <= 0x3e {
 		e.memoryInstruction(in, true)
 	} else if isInteger(in.Op) {
 		e.registerInteger(in.Op, in.Dst, in.A, in.B)

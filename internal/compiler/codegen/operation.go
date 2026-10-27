@@ -34,6 +34,8 @@ func (e *functionEmitter) plain(in slots.Instruction, proven bool) {
 		e.floating(in)
 	case isConversion(op):
 		e.conversion(in)
+	case nativeVectorOpcode(op):
+		e.vectorInstruction(in)
 	case op >= 0x28 && op <= 0x3f:
 		e.memoryInstruction(in, proven)
 	}

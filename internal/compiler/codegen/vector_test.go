@@ -1,6 +1,7 @@
 package codegen
 
 import (
+	"encoding/binary"
 	"runtime"
 	"testing"
 
@@ -55,6 +56,53 @@ func vectorTypes(op uint32) ([]wasm.ValueType, wasm.ValueType) {
 		}
 	}
 	return p, r
+}
+
+func TestVectorForwardingKeepsEveryColdContinuation(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	for _, op := range []uint32{0xfd00ae, 0xfd00b5, 0xfd0051, 0xfd0052, 0xfd006e, 0xfd008e} {
+		literal := module.Instr{Op: 0xfd000c}
+		binary.LittleEndian.PutUint64(literal.Vector[:8], 0x0123456789abcdef)
+		binary.LittleEndian.PutUint64(literal.Vector[8:], 0xfedcba9876543210)
+		body := module.Expr{{Op: 0x20}, literal, {Op: op}, {Op: 0x21, A: 1}, {Op: 0x20, A: 1}, {Op: 0xb}}
+		if op == 0xfd0052 {
+			body = append(module.Expr{{Op: 0x20, A: 1}}, body...)
+		}
+		m := functionModule(t, functionFixture(module.FuncType{Params: []wasm.ValueType{wasm.V128, wasm.V128}, Results: []wasm.ValueType{wasm.V128}}, 0, body))
+		f := m.Functions[0]
+		fast, fl, fc := functionContext(t, f, true)
+		_, sl, sc := functionContext(t, f, false)
+		if fast.ForwardedScalars == 0 {
+			t.Fatal("vector copies not forwarded", op)
+		}
+		for pc := range f.Code {
+			for i := range f.Slots {
+				v := value.Value{Lo: 0xdeadbeef12345678 + uint64(i), Hi: 0xfedcba9876543210 - uint64(i)}
+				writeSlot(t, fc, 16, slots.Slot(i), v)
+				writeSlot(t, sc, 16, slots.Slot(i), v)
+			}
+			s := native.State{Used: 16, Depth: 1, Continuation: uint64(pc), Budget: 1000}
+			if err := fc.SetState(s); err != nil {
+				t.Fatal(err)
+			}
+			if err := sc.SetState(s); err != nil {
+				t.Fatal(err)
+			}
+			if exit, err := fc.Enter(fl, 0); err != nil || exit != native.Return {
+				t.Fatal(op, pc, exit, err)
+			}
+			if exit, err := sc.Enter(sl, 0); err != nil || exit != native.Return {
+				t.Fatal(op, pc, exit, err)
+			}
+			for i := range f.Slots {
+				if got, want := readSlot(t, fc, 16, slots.Slot(i)), readSlot(t, sc, 16, slots.Slot(i)); got != want {
+					t.Fatal(op, pc, i, got, want)
+				}
+			}
+		}
+	}
 }
 
 func vectorFixture(op uint32, lane byte, alias, pressure int) (*slots.Function, int) {

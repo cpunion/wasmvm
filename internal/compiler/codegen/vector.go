@@ -125,3 +125,26 @@ func (e *functionEmitter) prepareVectorConstants() {
 		e.vectorConstants[v] = pool[i]
 	}
 }
+
+// Substitute an immutable literal only for an input; it must never become the
+// writable result register. Restore the slot assignment before publishing any
+// still-observable copy of the literal.
+func (e *functionEmitter) pooledVector(in, constant slots.Instruction) bool {
+	if !nativeVectorOpcode(in.Op) || constant.Op != 0xfd000c || constant.Dst != in.B || in.A == in.B || in.C == in.B || in.Dst == in.B {
+		return false
+	}
+	b := e.f.Sources[constant.Source].Wasm.Vector
+	r, ok := e.vectorConstants[[2]uint64{binary.LittleEndian.Uint64(b[:8]), binary.LittleEndian.Uint64(b[8:])}]
+	if !ok {
+		return false
+	}
+	previous, had := e.vectorRegisters[in.B]
+	e.vectorRegisters[in.B] = r
+	e.vectorInstruction(in)
+	if had {
+		e.vectorRegisters[in.B] = previous
+	} else {
+		delete(e.vectorRegisters, in.B)
+	}
+	return true
+}
