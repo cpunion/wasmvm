@@ -68,13 +68,19 @@ func TestVectorForwardingKeepsEveryColdContinuation(t *testing.T) {
 	if !native.Available {
 		t.Skip("native platform unavailable")
 	}
-	for _, op := range []uint32{0xfd00ae, 0xfd00b5, 0xfd0051, 0xfd0052, 0xfd006e, 0xfd008e} {
+	for _, op := range []uint32{0xfd00ae, 0xfd00b5, 0xfd0051, 0xfd0052, 0xfd006e, 0xfd008e,
+		0xfd00e4, 0xfd00e6, 0xfd00e7, 0xfd00e8, 0xfd00ea, 0xfd00eb,
+		0xfd00f0, 0xfd00f2, 0xfd00f3, 0xfd00f4, 0xfd00f6, 0xfd00f7} {
 		literal := module.Instr{Op: 0xfd000c}
 		binary.LittleEndian.PutUint64(literal.Vector[:8], 0x0123456789abcdef)
 		binary.LittleEndian.PutUint64(literal.Vector[8:], 0xfedcba9876543210)
 		body := module.Expr{{Op: 0x20}, literal, {Op: op}, {Op: 0x21, A: 1}, {Op: 0x20, A: 1}, {Op: 0xb}}
 		if op == 0xfd0052 {
 			body = append(module.Expr{{Op: 0x20, A: 1}}, body...)
+		} else {
+			// The second literal starts a separate combination without local.get.
+			// Compare every slot after every possible independent continuation.
+			body = append(module.Expr{{Op: 0x20}, literal, {Op: op}}, body[1:]...)
 		}
 		m := functionModule(t, functionFixture(module.FuncType{Params: []wasm.ValueType{wasm.V128, wasm.V128}, Results: []wasm.ValueType{wasm.V128}}, 0, body))
 		f := m.Functions[0]

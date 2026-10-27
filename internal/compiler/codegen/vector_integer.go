@@ -219,11 +219,18 @@ func (e *functionEmitter) vectorUnary(d, l byte, size uint32, absolute bool) {
 // Select into scratch 2 without overwriting an aliased operand or mask.
 func (e *functionEmitter) vectorSelect(l, r, mask byte) {
 	if e.a.arch == "arm64" {
-		e.vectorMove(3, l)
-		e.vectorMove(4, r)
-		e.vectorMove(2, mask)
-		e.a.word(0x6e641c62)
-		return // bsl v2.16b, v3.16b, v4.16b
+		// BSL, BIT and BIF let any of the three operands occupy the result.
+		// Read all inputs in place, without inserting copies into the chain.
+		ins := uint32(0x6e601c00)
+		if mask != 2 && l == 2 {
+			ins, l, r = 0x6ee01c00, r, mask // BIF: keep l where mask is set.
+		} else if mask != 2 && r == 2 {
+			ins, r = 0x6ea01c00, mask // BIT: replace r where mask is set.
+		} else {
+			e.vectorMove(2, mask)
+		}
+		e.a.word(ins | uint32(r)<<16 | uint32(l)<<5 | 2)
+		return
 	}
 	e.vectorMove(11, l)
 	e.a.xvector(0xef, 11, r)

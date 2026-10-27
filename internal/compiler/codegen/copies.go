@@ -2,11 +2,12 @@ package codegen
 
 import "github.com/cpunion/wasmvm/internal/compiler/slots"
 
-// Forward nontrapping copies into one consuming scalar/vector operation. Retain values in
+// Forward nontrapping copies/literals into one consuming scalar/vector operation. Retain values in
 // their original slots, but remove copies from the arithmetic dependency chain.
 // Every interior instruction keeps an independent cold continuation.
 func (e *functionEmitter) combineScalarCopies(start int) (int, bool) {
-	if !e.unmetered || e.f.Code[start].Op != 0x20 {
+	constantStart := e.f.Code[start].Op == 0xfd000c
+	if !e.unmetered || e.f.Code[start].Op != 0x20 && !constantStart {
 		return 0, false
 	}
 	aliases := map[slots.Slot]slots.Slot{}
@@ -52,7 +53,7 @@ func (e *functionEmitter) combineScalarCopies(start int) (int, bool) {
 	if source, ok := aliases[in.B]; ok {
 		in.B = source
 	}
-	if in.A == original.A && in.B == original.B {
+	if in.A == original.A && in.B == original.B && !constantStart {
 		return 0, false
 	}
 	end := pc
