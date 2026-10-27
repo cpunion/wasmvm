@@ -656,3 +656,34 @@ and 97.88% for `compiler/codegen`; every measured executable package exceeds
 90%. Native allocator/protection failure and asynchronous cancellation timing
 leave defensive paths uncovered. Generated instructions and C code are verified
 by execution, not included in those Go coverage percentages.
+
+## Native vector register ownership and integer SIMD
+
+Engine `f08d7df` lowers 122 additional basic SIMD opcodes on baseline SSE2 and
+AArch64 NEON, sharing vector/scalar FP register allocation. Integer affine
+fusion on arm64 preserves modulo-lane arithmetic, observable intermediate values
+and every original cold continuation. Remaining SIMD operations retain explicit
+owned helpers; this does not claim complete direct SIMD emission.
+
+Tests compare every selected opcode with the owned SIMD evaluator across lane
+immediates, destination aliases, register pressure, full-width spills, large
+frames and cold entries. Fuel counts guest instructions rather than emitted
+machine instructions; cancellation preserves all 128 bits. Fused and unfused
+execution agree on every frame slot at every entry PC. The complete Core 2.0
+corpus passes both native tiers with Go/LLGo on arm64 and Go under amd64
+Docker/Rosetta. Measured Go statement coverage is 92.52% for `compiler/codegen`,
+94.71% for `engine/nativeexec`, 97.78% for `engine/state` and 96.92% for `pkg/vm`;
+every measured executable package remains above 90%.
+
+The [SIMD measurement record](../benchmarks/native/runtime-plan.md) retains the
+two slower implementations and the final 60-block run. LLGo's final warm median
+is 1.283 ns/iteration versus 1.793–1.807 for the three pinned competitors. Both
+host compilers' A/A intervals remain inconclusive, so performance acceptance is
+blocked despite the competitor advantage. This does not complete M2.
+
+CI run [40462722506](https://github.com/cpunion/wasmvm/actions/runs/40462722506)
+exposed an outdated CLI smoke assertion after the LLGo/Linux package suite
+passed: it still expected native selection to fail. The smoke script now takes
+an explicit build capability and verifies validate/inspect/run on both available
+backends, or unsupported errors for all three commands in a cgo-disabled Go
+build. It cannot accept either result by probing and adjusting its expectation.

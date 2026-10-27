@@ -109,10 +109,12 @@ jobs:
           mkdir -p artifacts/cli
           if [[ "$COMPILER" == go ]]; then
             CGO_ENABLED=0 go build -o artifacts/cli/wasmvm ./cmd/wasmvm
+            native_support=unavailable
           else
             llgo build -o artifacts/cli/wasmvm ./cmd/wasmvm
+            native_support=available
           fi
-          python3 scripts/cli_smoke.py artifacts/cli/wasmvm
+          python3 scripts/cli_smoke.py artifacts/cli/wasmvm --native "$native_support"
 
       - name: Enforce per-package core coverage
         if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'

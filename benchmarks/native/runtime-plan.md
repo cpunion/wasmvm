@@ -227,3 +227,28 @@ Keep per-call randomized interleaving, simultaneous intervals, ±0.5% parity
 and ±0.25% A/A calibration. Three descriptive baseline processes retain the
 original 10,000 iterations. Preparation and first-call phases remain separate;
 this one case cannot accept the full SIMD portfolio or another target.
+
+The sustained run completed both planned looks (60 process blocks) for engine
+`f08d7df`, with test/documentation head `0028450`. Final warm rates and preparation
+medians are below; candidates use 25 million iterations per call. Baselines use
+10,000 iterations and are descriptive only.
+
+| Runtime | Warm ns/iteration | Compile/validate ms | First call ms |
+| --- | ---: | ---: | ---: |
+| Own Go | 1.286 | 0.158 | 32.109 |
+| Own LLGo | 1.283 | 0.235 | 32.050 |
+| wazero | 1.807 | 0.108 | 45.049 |
+| Wasmtime | 1.793 | 0.702 | 44.878 |
+| Wasmer | 1.793 | 1.108 | 44.745 |
+| Own baseline Go | 528.979 | 0.150 | 5.285 |
+| Own baseline LLGo | 2306.154 | 0.244 | 23.904 |
+
+LLGo competitor ratios (simultaneous intervals) are 0.7059 [0.6809, 0.7166]
+against wazero, 0.7149 [0.7097, 0.7191] against Wasmtime and 0.7187
+[0.7135, 0.7269] against Wasmer. All competitor comparisons are faster.
+However, Go A/A [0.98370, 1.00541] and LLGo A/A [0.99052, 1.00882] both fail
+the unchanged ±0.25% calibration band: **the combined gate is blocked**.
+Host load averages before/after were 12.78/11.98 (one minute). No rerun replaces
+these observations. Raw commands, source/binary hashes, phases, sample orders,
+both looks and checksums remain in local `artifacts/native-simd/gate-results.json`.
+Native amd64 performance and the complete SIMD portfolio are not accepted.
