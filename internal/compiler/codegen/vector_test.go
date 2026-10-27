@@ -17,6 +17,12 @@ import (
 func vectorTypes(op uint32) ([]wasm.ValueType, wasm.ValueType) {
 	p, r := []wasm.ValueType{wasm.V128, wasm.V128}, wasm.V128
 	switch {
+	case nativeVectorFloatOpcode(0xfd0000 + op):
+		if op == 94 || op == 95 || op >= 248 {
+			p = p[:1]
+		} else if _, _, unary := vectorFloatOperation(op); unary {
+			p = p[:1]
+		}
 	case op <= 20:
 		p = []wasm.ValueType{[]wasm.ValueType{wasm.I32, wasm.I32, wasm.I32, wasm.I64, wasm.F32, wasm.F64}[op-15]}
 	case op <= 34:
@@ -207,6 +213,10 @@ func TestNativeVectorOperationsAliasesAndSpills(t *testing.T) {
 						if err != nil || state.Fuel != 1000-cost {
 							t.Fatal("vector fuel charged per machine instruction", op, entry, state.Fuel, cost, err)
 						}
+						inputA, inputB := initial[0], value.Value{}
+						if f.Code[pc].B != slots.NoSlot {
+							inputB = initial[f.Code[pc].B]
+						}
 						if entry <= pc {
 							in := f.Code[pc]
 							b, c := value.Value{}, value.Value{}
@@ -220,6 +230,9 @@ func TestNativeVectorOperationsAliasesAndSpills(t *testing.T) {
 						}
 						for i, want := range initial {
 							if got := readSlot(t, ctx, 16, slots.Slot(i)); got != want {
+								if entry <= pc && slots.Slot(i) == f.Code[pc].Dst && vectorFloatMatches(op, inputA, inputB, got, want) {
+									continue
+								}
 								t.Fatalf("op=%x lane=%d mode=%+v entry=%d slot=%d got=%x want=%x", op, lane, mode, entry, i, got, want)
 							}
 						}
