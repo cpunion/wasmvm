@@ -10,15 +10,6 @@ func (e *functionEmitter) combineScalarCopies(start int) (int, bool) {
 		return 0, false
 	}
 	aliases := map[slots.Slot]slots.Slot{}
-	if e.regionLimit != 0 && start > e.regionStart {
-		// A preceding tee establishes equal local/result values on this hot
-		// fallthrough path. Independent cold entries never inherit the fact.
-		prev := e.f.Code[start-1]
-		if prev.Op == 0x22 {
-			local := slots.Slot(e.f.Sources[prev.Source].Wasm.A)
-			aliases[prev.A], aliases[prev.Dst] = local, local
-		}
-	}
 	pc := start
 	for ; pc < e.codeLimit() && pc-start <= 8 && pc/256 == start/256; pc++ {
 		in := e.f.Code[pc]
