@@ -65,7 +65,7 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 			src := e.f.Sources[in.Source].Wasm
 			a, b := get(in.A), get(in.B)
 			v := boundedValue{max: math.MaxUint32}
-			if in.Op >= 0x28 && in.Op <= 0x3e {
+			if isMemoryAccess(in.Op) {
 				_, size := memoryAccess(in.Op)
 				if a.max+uint64(src.B)+uint64(size) <= e.memoryMinimum {
 					proven[pc] = true
@@ -132,6 +132,11 @@ func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, out *Compi
 	defer func() { e.regionLimit = 0; e.provenPCs = nil }()
 	for pc := start; pc <= r.end; pc++ {
 		in := e.f.Code[pc]
+		if end, ok := e.combineVectorAffine(pc); ok {
+			out.FusedVectors++
+			pc = end
+			continue
+		}
 		if end, ok := e.combineMaskShift(pc); ok {
 			out.FusedIntegers++
 			pc = end

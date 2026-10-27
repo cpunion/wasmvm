@@ -113,7 +113,7 @@ func (e *functionEmitter) canRegisterScalar(in slots.Instruction, pc int) bool {
 	if nativeVectorOpcode(in.Op) {
 		return true
 	}
-	if in.Op >= 0x28 && in.Op <= 0x3e {
+	if isMemoryAccess(in.Op) {
 		return e.provenPCs[pc]
 	}
 	if isInteger(in.Op) {
@@ -128,7 +128,7 @@ func (e *functionEmitter) canRegisterScalar(in slots.Instruction, pc int) bool {
 func (e *functionEmitter) registerScalar(in slots.Instruction) {
 	if nativeVectorOpcode(in.Op) {
 		e.vectorInstruction(in)
-	} else if in.Op >= 0x28 && in.Op <= 0x3e {
+	} else if isMemoryAccess(in.Op) {
 		e.memoryInstruction(in, true)
 	} else if isInteger(in.Op) {
 		e.registerInteger(in.Op, in.Dst, in.A, in.B)

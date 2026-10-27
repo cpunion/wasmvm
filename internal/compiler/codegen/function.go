@@ -119,7 +119,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		pcs[i] = a.label()
 	}
 	for _, in := range f.Code {
-		if in.Op >= 0x28 && in.Op <= 0x40 {
+		if isMemoryAccess(in.Op) || in.Op == 0x3f || in.Op == 0x40 {
 			e.usesMemory = true
 			break
 		}
@@ -141,7 +141,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	a.dispatch(pcs)
 	out = &CompiledFunction{Function: f, Offsets: make([]uint32, len(pcs)), UsesMemory: e.usesMemory}
 	for _, in := range f.Code {
-		if nativeVectorOpcode(in.Op) {
+		if nativeVectorOpcode(in.Op) || nativeVectorMemoryOpcode(in.Op) {
 			out.NativeVectors++
 		}
 	}

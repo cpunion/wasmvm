@@ -58,7 +58,8 @@ func (e *functionEmitter) memoryInstruction(in slots.Instruction, proven bool) {
 	// Widen the dynamic i32 address before adding the u32 immediate. The end
 	// address is at most 2^33+6, so host arithmetic cannot wrap before this check.
 	offset := uint64(source.B)
-	if e.a.arch == "arm64" && proven && offset%uint64(size) == 0 && offset/uint64(size) < 4096 {
+	vector := nativeVectorMemoryOpcode(in.Op)
+	if e.a.arch == "arm64" && proven && offset%uint64(size) == 0 && offset/uint64(size) < 4096 && !vector {
 		if r, ok := e.registers[in.A]; ok {
 			if offset == 0 {
 				e.memoryARM64(in, load, size, r, 0)
@@ -86,7 +87,11 @@ func (e *functionEmitter) memoryInstruction(in slots.Instruction, proven bool) {
 			e.a.branch(trap, true, 8)       // unsigned end > length
 		}
 		e.a.word(0x8b090209) // add x9, x16, x9
-		e.memoryARM64(in, load, size, 31, 0)
+		if vector {
+			e.vectorMemoryARM64(in, load, size)
+		} else {
+			e.memoryARM64(in, load, size, 31, 0)
+		}
 	} else {
 		if offset != 0 {
 			if offset <= math.MaxInt32 {
@@ -102,7 +107,11 @@ func (e *functionEmitter) memoryInstruction(in slots.Instruction, proven bool) {
 			e.a.bytes(0x4c, 0x39, 0xd9)             // cmp rcx,r11
 			e.a.branch(trap, true, 7)
 		}
-		e.memoryAMD64(in, load, size)
+		if vector {
+			e.vectorMemoryAMD64(in, load, size)
+		} else {
+			e.memoryAMD64(in, load, size)
+		}
 	}
 }
 
@@ -243,8 +252,22 @@ func (e *functionEmitter) memoryAMD64(in slots.Instruction, load bool, size uint
 
 // One width inventory drives both bounds proofs and target emission.
 func memoryAccess(op uint32) (load bool, size uint32) {
+	if nativeVectorMemoryOpcode(op) {
+		sub := op & 0xffff
+		if sub <= 11 {
+			return sub != 11, [...]uint32{16, 8, 8, 8, 8, 8, 8, 1, 2, 4, 8, 16}[sub]
+		}
+		if sub <= 91 {
+			return sub < 88, 1 << ((sub - 84) % 4)
+		}
+		return true, 4 << (sub - 92)
+	}
 	if op <= 0x35 {
 		return true, [14]uint32{4, 8, 4, 8, 1, 1, 2, 2, 1, 1, 2, 2, 4, 4}[op-0x28]
 	}
 	return false, [9]uint32{4, 8, 4, 8, 1, 2, 1, 2, 4}[op-0x36]
+}
+
+func isMemoryAccess(op uint32) bool {
+	return op >= 0x28 && op <= 0x3e || nativeVectorMemoryOpcode(op)
 }

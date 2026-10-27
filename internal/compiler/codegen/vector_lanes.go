@@ -55,6 +55,12 @@ func (e *functionEmitter) vectorSplat(in slots.Instruction) {
 	size := []uint32{0, 1, 2, 3, 2, 3}[in.Op-0xfd000f]
 	e.slotLoad(in.A, 0, false, size == 3)
 	d := e.vectorDestination(in.Dst)
+	e.vectorSplatBits(d, size)
+	e.vectorStore(in.Dst, d)
+}
+
+// Broadcast the low integer operand register, preserving the raw FP bits too.
+func (e *functionEmitter) vectorSplatBits(d byte, size uint32) {
 	if e.a.arch == "arm64" {
 		e.a.word(0x4e000d20 | (1<<size)<<16 | uint32(d))
 	} else {
@@ -72,7 +78,6 @@ func (e *functionEmitter) vectorSplat(in slots.Instruction) {
 			e.a.bytes(0)
 		}
 	}
-	e.vectorStore(in.Dst, d)
 }
 
 func (e *functionEmitter) vectorLaneInstruction(in slots.Instruction) {
@@ -92,10 +97,14 @@ func (e *functionEmitter) vectorLaneInstruction(in slots.Instruction) {
 		e.vectorStore(in.Dst, d)
 		return
 	}
-	// SSE2 lacks a general lane insert. Mask and merge without touching any
-	// allocated input register; MOVD/Q zeroes all unused replacement bits.
-	e.vectorMove(0, l)
 	e.slotLoad(in.B, 0, false, size == 3)
+	e.vectorInsertAMD64(in.Dst, l, size, lane)
+}
+
+// SSE2 lacks a general lane insert. Mask and merge the scalar in RAX without
+// touching an allocated input; MOVD/Q zeroes unused replacement bits.
+func (e *functionEmitter) vectorInsertAMD64(dst slots.Slot, left byte, size, lane uint32) {
+	e.vectorMove(0, left)
 	if size < 2 {
 		e.a.bytes(0x25)
 		e.a.word((1 << (8 << size)) - 1)
@@ -116,5 +125,5 @@ func (e *functionEmitter) vectorLaneInstruction(in slots.Instruction) {
 	e.vectorConstant(12, lo, hi)
 	e.a.xvector(0xdb, 0, 12)
 	e.a.xvector(0xeb, 0, 2)
-	e.vectorStore(in.Dst, 0)
+	e.vectorStore(dst, 0)
 }

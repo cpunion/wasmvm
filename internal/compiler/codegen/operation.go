@@ -4,7 +4,7 @@ import "github.com/cpunion/wasmvm/internal/compiler/slots"
 
 // All straight-line instructions share one emitter on hot and cold paths.
 func plainOpcode(op uint32) bool {
-	return op == 1 || op >= 0x1a && op <= 0x1c || op >= 0x20 && op <= 0x22 || op >= 0x28 && op <= 0x3f || op >= 0x41 && op <= 0x44 || isInteger(op) || isFloat(op) || isConversion(op) || op == 0xd0 || op == 0xd1 || op == 0xfd000c
+	return op == 1 || op >= 0x1a && op <= 0x1c || op >= 0x20 && op <= 0x22 || isMemoryAccess(op) || op == 0x3f || op >= 0x41 && op <= 0x44 || isInteger(op) || isFloat(op) || isConversion(op) || op == 0xd0 || op == 0xd1 || op == 0xfd000c || nativeVectorOpcode(op)
 }
 func (e *functionEmitter) plain(in slots.Instruction, proven bool) {
 	a := e.a
@@ -36,7 +36,7 @@ func (e *functionEmitter) plain(in slots.Instruction, proven bool) {
 		e.conversion(in)
 	case nativeVectorOpcode(op):
 		e.vectorInstruction(in)
-	case op >= 0x28 && op <= 0x3f:
+	case isMemoryAccess(op) || op == 0x3f:
 		e.memoryInstruction(in, proven)
 	}
 }

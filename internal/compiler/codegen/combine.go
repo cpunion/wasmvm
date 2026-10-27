@@ -137,7 +137,7 @@ func (e *functionEmitter) overwrittenBeforeExit(pc int, slot slots.Slot) bool {
 	for ; pc < e.codeLimit() && pc%256 != 0; pc++ {
 		in := e.f.Code[pc]
 		op := in.Op
-		if !(plainOpcode(op) || nativeVectorOpcode(op)) || scalarCanTrap(op) || op >= 0x28 && op <= 0x3e && !e.provenPCs[pc] {
+		if !plainOpcode(op) || scalarCanTrap(op) || isMemoryAccess(op) && !e.provenPCs[pc] {
 			return false
 		}
 		local := slots.Slot(e.f.Sources[in.Source].Wasm.A)
