@@ -55,32 +55,18 @@ func (e *functionEmitter) conditionalEdgesUsing(in slots.Instruction, pcs []int,
 }
 
 // Only normal fallthrough consumes the predecessor's integer comparison flags.
-// ARM64's interrupt load/CBNZ preserves NZCV. AMD64 repeats the pure comparison
-// of unchanged input registers after polling, removing the boolean dependency.
-// The separate cold branch entry tests the retained canonical boolean.
-func (e *functionEmitter) comparisonBranch(pc int) bool {
-	if !e.unmetered || pc == 0 || pc >= len(e.f.Code) {
+// AArch64's interrupt load/CBNZ sequence preserves NZCV. The canonical boolean
+// remains materialized for polls, edge copies and arbitrary cold continuations.
+func (e *functionEmitter) compareBranchFallthrough(pc int, pcs []int) bool {
+	if !e.unmetered || e.a.arch != "arm64" || pc == 0 {
 		return false
 	}
 	in, previous := e.f.Code[pc], e.f.Code[pc-1]
 	if in.Op != slots.ControlBase+uint32(ir.If) || in.A != previous.Dst || previous.Op < 0x45 || previous.Op > 0x5a {
 		return false
 	}
-	return e.a.arch == "arm64" || previous.Dst != previous.A && previous.Dst != previous.B &&
-		e.canRegisterInteger(previous.Op, previous.Dst, previous.A, previous.B)
-}
-
-func (e *functionEmitter) compareBranchFallthrough(pc int, pcs []int) bool {
-	if !e.comparisonBranch(pc) {
-		return false
-	}
-	in, previous := e.f.Code[pc], e.f.Code[pc-1]
 	cc := armIntegerCondition(previous.Op)
 	e.interrupt(uint32(pc))
-	if e.a.arch == "amd64" {
-		e.x86CompareFlags(e.registers[previous.A], e.registers[previous.B], previous.Op)
-		cc = x86IntegerCondition(previous.Op)
-	}
 	e.conditionalEdgesUsing(in, pcs, pc+1, func(_ slots.Slot, label int, nonzero bool) {
 		condition := cc
 		if !nonzero {

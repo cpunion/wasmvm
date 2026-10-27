@@ -36,7 +36,7 @@ func TestComparisonBranchFlagsAndColdEntries(t *testing.T) {
 					}}
 				for _, arch := range []string{"arm64", "amd64"} {
 					c, err := CompileUnmeteredFunction(arch, f, DefaultLimits())
-					if err != nil || c.ForwardedPredicates != 1 {
+					if err != nil || (c.ForwardedPredicates == 1) != (arch == "arm64") {
 						t.Fatal(arch, op, err)
 					}
 				}

@@ -21,3 +21,16 @@ result aliases, spills, independent entries, canceled continuations and periodic
 PC boundaries on both compilers/targets. Reuse the same 42-family paired
 public-call/competitor diagnostic with the exact baseline. Preserve failed and
 inconclusive measurements; this scope cannot close PR #26 or M2 acceptance.
+
+
+## Rejected candidate
+
+Candidate `1d5a3d5` passes all four semantic CI jobs and all 12 complete Core 2.0
+reports, but its 42-family paired comparison does not show a stable portfolio
+win. On amd64 LLGo, average regresses 1.637 -> 1.796 ns/source iteration and
+integer-sustained 2.134 -> 2.234, while indirect calls improve 2.272 -> 2.179.
+The ARM64 emitted program is unchanged; its timing variation cannot be claimed
+as a benefit or regression caused by x86 replay. Diagnostics cannot establish
+calibrated parity. Reject the extra comparison work and restore the exact
+`20d0a41` production compiler sources. Retain the new alias, cancellation,
+periodic-PC and independent-entry tests, along with every raw measurement.

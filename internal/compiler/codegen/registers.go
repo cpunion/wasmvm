@@ -376,40 +376,25 @@ func (e *functionEmitter) registerCompare(dst, left, right byte, op uint32) {
 		a.word(0x1a9f07e0 | ((cc ^ 1) << 12) | uint32(dst))
 		return
 	}
-	e.x86CompareFlags(left, right, op)
-	cc := x86IntegerCondition(op)
-	// REX selects low byte registers, including r12b-r15b, rather than AH-DH.
-	a.bytes(0x40|dst>>3, 0x0f, 0x90+cc, 0xc0|dst&7)
-	a.bytes(0x40|(dst>>3)<<2|dst>>3, 0x0f, 0xb6, 0xc0|(dst&7)<<3|dst&7)
-}
-
-func (e *functionEmitter) x86CompareFlags(left, right byte, op uint32) {
-	a := e.a
-	wide := integerWide(op)
-	eqz := op == 0x45 || op == 0x50
 	rex := byte(0x40) | left>>3
 	if wide {
 		rex |= 8
 	}
-	if !eqz {
+	if index != 0 {
 		rex |= (right >> 3) << 2
 	}
 	if rex != 0x40 {
 		a.bytes(rex)
 	}
-	if eqz {
+	if index == 0 {
 		a.bytes(0x83, 0xf8|left&7, 0)
 	} else {
 		a.bytes(0x39, 0xc0|(right&7)<<3|left&7)
 	}
-}
-
-func x86IntegerCondition(op uint32) byte {
-	index := op - 0x45
-	if integerWide(op) {
-		index = op - 0x50
-	}
-	return [...]byte{4, 4, 5, 12, 2, 15, 7, 14, 6, 13, 3}[index]
+	cc := [...]byte{4, 4, 5, 12, 2, 15, 7, 14, 6, 13, 3}[index]
+	// REX selects low byte registers, including r12b-r15b, rather than AH-DH.
+	a.bytes(0x40|dst>>3, 0x0f, 0x90+cc, 0xc0|dst&7)
+	a.bytes(0x40|(dst>>3)<<2|dst>>3, 0x0f, 0xb6, 0xc0|(dst&7)<<3|dst&7)
 }
 
 func armIntegerCondition(op uint32) byte {

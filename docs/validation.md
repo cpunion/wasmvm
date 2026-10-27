@@ -963,3 +963,36 @@ escape-analysis proposal. Local raw JSON, binaries, source and disassembly
 hashes are retained in `artifacts/native-avx2/call-profile-provenance.json`.
 This identifies a compiler cost without weakening wasmvm cleanup or replacing
 its shared runtime with compiler-specific execution paths.
+
+
+## Rejected amd64 comparison replay
+
+Candidate `1d5a3d5` preserves the original poll locations and replays a pure
+comparison on unchanged registers, avoiding a boolean-to-branch dependency.
+Aliased/spilled inputs retain the old path. Expanded tests cover all predicates,
+widths, copied edges, source/result aliases, cold branch entries and real
+cancellation at the original branch PC, including PC 256. Full local Go/LLGo,
+amd64 execution, vet and cgo-disabled compilation pass; local codegen coverage
+is **97.21% (4314/4438)** and every measured executable package exceeds 90%.
+All four [candidate semantic jobs](https://github.com/cpunion/wasmvm/actions/runs/40530016726)
+pass, with all 12 downloaded 51,139-assertion / 148-script reports verified.
+
+The [paired diagnostic](https://github.com/cpunion/wasmvm/actions/runs/40530024451)
+completes 42 families and 1,176 alternate-input checks per target. LLGo amd64
+average regresses 1.637 -> 1.796 ns/source iteration and integer-sustained
+2.134 -> 2.234; indirect calls improve 2.272 -> 2.179. Results do not establish
+a stable portfolio win. **The replay implementation is withdrawn**; production
+compiler sources return byte-for-byte to `20d0a41`, retaining the expanded tests.
+No additional full performance rerun is needed to remeasure identical production
+sources. Updated tests still receive the complete host/compiler semantic matrix.
+
+Raw candidate SHA-256: amd64
+`589fa5231cfa5a7f3c26541498bad889cf1a385585e464dda1a769a3dfec21a9`;
+arm64 `ceb85fffe66597891e8b143bdd39f6e1da8510d48b452aa70c1b8ab4cdc26413`.
+The pinned [Cranelift 48.0.1 lowering](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/cranelift/codegen/src/isa/x64/lower.isle#L2456)
+selects VPOPCNTB when AVX512VL/BITALG are available, with a nibble-table fallback.
+This is a concrete additional ISA path to investigate when explaining competitor
+popcount differences. Actual instruction use on each measured host still needs
+disassembly; a timing ratio alone does not identify its selected ISA.
+PR #26 remains the only open contribution PR and stays blocked; no M1/M2,
+Core 3.0/Threads, component or WASI acceptance is inferred from these diagnostics.
