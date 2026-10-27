@@ -56,6 +56,10 @@ share scalar memory's widened address and exact-width bounds checks. ARM64 uses
 NEON; amd64 requires only baseline SSE2. A lane access never reads or writes a
 whole vector outside its declared width. Entry reloads the memory binding after
 growth; an out-of-bounds store has no partial effect.
+For proven ARM64 accesses, small static offsets adjust the stable memory base
+before a UXTW-indexed load/store. This removes an addition from the dynamic
+address dependency; larger offsets retain scaled or full-address forms. No
+alignment, wrapped i32 index or cold-entry bounds assumption changes.
 
 Bounded range analysis includes native SIMD operations and proves an access
 against the module's minimum memory size. Each original interior PC retains a

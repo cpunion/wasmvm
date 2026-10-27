@@ -310,3 +310,39 @@ form for proven accesses, sharing it between scalar and vector instructions.
 Checked cold entries and memory ownership remain unchanged. Its diagnostics
 retain all eight families, the preceding engine and the original baseline;
 acceptance margins and sustained sampling remain unchanged.
+
+
+The base-offset implementation (`aa89f0d`) has passing Go/LLGo semantics on both
+required targets ([CI](https://github.com/cpunion/wasmvm/actions/runs/40473998419)).
+Its three-block diagnostic reduces full-vector LLGo from 3.938 to 3.401
+ns/iteration, versus 3.879/4.207/3.791 for the references in that same run.
+All eight families and 175 alternate-input checks are retained in
+`artifacts/native-simd-memory/baseoffset-results.json`. The subsequent sustained
+run is recorded separately in `baseoffset-gate-results.json`; improvements do
+not overwrite the earlier slower gate.
+
+The sustained base-offset run completed 60 blocks for each family:
+
+| Family | Own Go | Own LLGo | wazero | Wasmtime | Wasmer |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Full vector overlap | 3.440 | 3.434 | 3.867 | 4.100 | 3.596 |
+| Widen and splat | 1.059 | 1.057 | 1.074 | 1.057 | 1.057 |
+| Lanes and zero loads | 5.204 | 5.177 | 6.051 | 6.045 | 5.998 |
+
+Warm ns/iteration, with preparation and first calls retained separately. LLGo
+full-vector ratios are 0.8889 [0.8817, 0.8954], 0.8413 [0.8341, 0.8492] and
+0.9559 [0.9500, 0.9617] versus wazero/Wasmtime/Wasmer: the previously slower
+path is now faster against every reference. Lane ratios are 0.8573/0.8584/0.8631,
+also faster. Widening remains inconclusive versus Wasmtime and Wasmer; their
+upper bounds are 1.0067 and 1.0062. LLGo A/A intervals are [0.9940, 1.0021],
+[0.9917, 1.0047] and [0.9952, 1.0058], outside ±0.25%. The combined gate remains
+**blocked**; no result is discarded and native amd64 performance remains open.
+
+Next, forward the equality established by a preceding `local.tee` into a
+consumer inside the same bounded hot region. This removes an avoidable
+loop-condition dependency without omitting observable slot values. Cold entries
+and region boundaries must reject that equality. Check all slots for each
+original PC across integer, floating and vector consumers, including a clobbered
+local. Compare the same eight diagnostic families against `aa89f0d`, the original
+baseline and all three pinned competitors; use the unchanged sustained protocol
+only for a materially improved candidate.

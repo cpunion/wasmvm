@@ -71,7 +71,7 @@ refreshed metadata preserve mutation, growth and host reentry. They are not inte
 functions, but their boundary overhead still needs optimization.
 
 The complete Go/LLGo semantic matrix now passes on Linux amd64 and macOS arm64
-at code head `9cc2f0f` ([CI](https://github.com/cpunion/wasmvm/actions/runs/40471490866)).
+at code head `aa89f0d` ([CI](https://github.com/cpunion/wasmvm/actions/runs/40473998419)).
 Calibrated performance acceptance remains open. Full Core 3.0/Threads, Component Model and
 WASI 1/2/3 remain required subsequent work. See the
 [runtime scope](../benchmarks/native/runtime-plan.md),

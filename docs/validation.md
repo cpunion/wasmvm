@@ -724,3 +724,16 @@ failed diagnostics are recorded in [runtime-plan.md](../benchmarks/native/runtim
 All timings exclude startup/compilation/instantiation, which remain separate raw
 phase fields. Initial formal measurements confirm a full-vector access regression
 against Wasmer; this feature is not accepted for merge based on semantic CI.
+
+Engine `aa89f0d` separates small ARM64 memory immediates from the dynamic index,
+matching the addressing dependency observed in the unchanged Wasmer library's
+serialized machine code. Scalar and vector tests include offsets 4095/4096
+across the encoding boundary. Go full-suite and LLGo targeted tests pass;
+codegen coverage is **93.13% (3239/3478 statements)**. All four jobs pass in
+[CI 40473998419](https://github.com/cpunion/wasmvm/actions/runs/40473998419).
+Downloaded execution artifacts confirm 51,139 binary assertions across 148
+scripts for each of the 12 compiler/target/backend-tier combinations, including
+both native tiers; this is actual execution evidence, not just corpus inventory.
+The sustained full-vector comparison now favors both host compilers against all
+three references, but A/A calibration remains inconclusive. See the retained
+before/after measurements and outstanding gates in the runtime benchmark plan.
