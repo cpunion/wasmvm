@@ -7,7 +7,7 @@ on:
       suite:
         description: Benchmark scope (PR families or full sustained runs)
         type: choice
-        options: [pr, full]
+        options: [pr, full, native-simd]
         default: full
       baseline:
         description: Baseline commit or ref in this repository
@@ -26,6 +26,7 @@ concurrency:
 
 jobs:
   benchmark:
+    if: ${{ inputs.suite != 'native-simd' }}
     name: Base, head, and competitors / linux-amd64
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -138,8 +139,12 @@ jobs:
           retention-days: 30
 
   native_arm64:
-    name: Native feature and competitors / macos-arm64
-    runs-on: macos-15
+    name: Native feature and competitors / ${{ matrix.platform.name }}
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ fromJSON(inputs.suite == 'native-simd' && '[{"name":"linux-amd64","runner":"ubuntu-24.04","artifact":"native-amd64-comparison"},{"name":"macos-arm64","runner":"macos-15","artifact":"native-arm64-comparison"}]' || '[{"name":"macos-arm64","runner":"macos-15","artifact":"native-arm64-comparison"}]') }}
     timeout-minutes: 30
     env:
       WASMVM_LLGO_REVISION: 8b1389c627c77a02e56af03f08d9cdc19edffe77
@@ -167,13 +172,24 @@ jobs:
           ACTUAL_LLGO_REVISION: ${{ steps.llgo.outputs.llgo-revision }}
         run: |
           test "$ACTUAL_LLGO_REVISION" = "$WASMVM_LLGO_REVISION"
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          source = Path('head/benchmarks/tools-${{ matrix.platform.name }}.json')
+          manifest = json.loads(source.read_text())
+          manifest['tools'] = [t for t in manifest['tools'] if t['id'] == 'wasmer']
+          manifest['sdks'] = [t for t in manifest['sdks'] if t['id'] in ('wasmer', 'wasmtime-c-api')]
+          manifest['sourceManifestSha256'] = hashlib.sha256(source.read_bytes()).hexdigest()
+          (Path(os.environ['RUNNER_TEMP']) / 'native-tools.json').write_text(json.dumps(manifest))
+          PY
           python3 head/benchmarks/install_tools.py --sdk \
-            --manifest head/benchmarks/tools-darwin-arm64.json \
+            --manifest "$RUNNER_TEMP/native-tools.json" \
             --destination "$RUNNER_TEMP/native-tools"
       - name: Compare the native feature without repeating semantic or CLI suites
         run: |
           python3 head/benchmarks/native_ci.py \
             --base-dir "$GITHUB_WORKSPACE/base" --head-dir "$GITHUB_WORKSPACE/head" \
+            --scope "${{ inputs.suite == 'native-simd' && 'fixed-simd' || 'integer' }}" \
             --tools-dir "$RUNNER_TEMP/native-tools" --output-dir "$GITHUB_WORKSPACE/native-results"
       - name: Publish native report
         if: always()
@@ -186,7 +202,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: native-arm64-comparison
+          name: ${{ matrix.platform.artifact }}
           path: native-results/
           if-no-files-found: error
           retention-days: 30

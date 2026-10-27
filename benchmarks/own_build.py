@@ -111,7 +111,7 @@ def prepare(head, checkout, revision, target):
             "harnessHashes": hashes(target, HARNESS)}
 
 
-def build(head, base, temporary, base_sha, head_sha):
+def build(head, base, temporary, base_sha, head_sha, native=False):
     selected = toolchains()
     result = {}
     for name, checkout, revision in (("base", base, base_sha), ("head", head, head_sha)):
@@ -129,7 +129,7 @@ def build(head, base, temporary, base_sha, head_sha):
                                  + "; compilerRevision = " + json.dumps(toolchain["revision"]) + " }\n")
             environment = dict(os.environ, GOWORK="off", GOFLAGS="", GOTOOLCHAIN="local")
             if compiler == "go":
-                environment["CGO_ENABLED"] = "0"
+                environment["CGO_ENABLED"] = "1" if native else "0"
             executable = target / "wasmvm-phase"
             command = [toolchain["command"], "build", "-o", str(executable), "./benchmarks/embedded/wasmvm"]
             subprocess.run(command, cwd=target, env=environment, check=True, timeout=600)
