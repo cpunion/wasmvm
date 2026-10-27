@@ -127,10 +127,11 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 // emitted again on a cold path, with all bounds checks, until the next region.
 // Thus direct resumption never inherits facts from instructions it did not run.
 func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, out *CompiledFunction) {
+	e.regionStart = start
 	e.regionLimit = r.end + 1
 	e.provenPCs = r.proven
 	e.vectorAliases = map[slots.Slot]slots.Slot{}
-	defer func() { e.regionLimit = 0; e.provenPCs = nil; e.vectorAliases = nil }()
+	defer func() { e.regionStart = 0; e.regionLimit = 0; e.provenPCs = nil; e.vectorAliases = nil }()
 	for pc := start; pc <= r.end; pc++ {
 		in := e.f.Code[pc]
 		if end, ok := e.combineVectorAffine(pc); ok {

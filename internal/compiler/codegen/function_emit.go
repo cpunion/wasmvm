@@ -21,6 +21,7 @@ type functionEmitter struct {
 	unmetered                 bool
 	usesMemory                bool
 	memoryMinimum             uint64
+	regionStart               int
 	regionLimit               int
 	provenPCs                 map[int]bool
 	boundsElided              uint32
