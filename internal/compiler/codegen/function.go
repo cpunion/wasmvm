@@ -50,7 +50,7 @@ func CompileFunction(arch string, f *slots.Function, limits Limits) (*CompiledFu
 // round trips or dynamic fuel checks. The driver must supply canonical scalar
 // values (Hi == 0), as required by value.Value, and Payload[3] == 0. Budget is
 // unused. All scalar slots are canonical on exit; vectors retain all 128 bits.
-// This is an internal compiler tier, not a complete public native backend.
+// The shared runtime selects this tier for calls without semantic fuel.
 func CompileUnmeteredFunction(arch string, f *slots.Function, limits Limits) (*CompiledFunction, error) {
 	return compileFunction(arch, f, limits, Config{Unmetered: true})
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/core/validate"
-	"github.com/cpunion/wasmvm/internal/engine/interp"
+	"github.com/cpunion/wasmvm/internal/engine/execute"
 	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/internal/platform/native"
@@ -209,7 +209,7 @@ func testNativeFunctionControlAndFuel(t *testing.T, fast bool) {
 						if fast && metered {
 							continue
 						}
-						ref := interp.New(store, nil, interp.Config{Limits: interp.DefaultLimits(), Metered: metered, Fuel: fuel})
+						ref := execute.New(store, nil, execute.Config{Limits: execute.DefaultLimits(), Metered: metered, Fuel: fuel})
 						if err := ref.Start(instance.Functions[0], args); err != nil {
 							t.Fatal(err)
 						}
@@ -218,7 +218,7 @@ func testNativeFunctionControlAndFuel(t *testing.T, fast bool) {
 						if s.Fuel != ref.Fuel() {
 							t.Fatalf("fixture %d fuel %d/%d (%d,%v,%d)", index, s.Fuel, ref.Fuel(), fuel, metered, budget)
 						}
-						if status == interp.Done {
+						if status == execute.Done {
 							if exit != native.Return || len(got) != len(ref.Results()) {
 								t.Fatal(index, exit, got, ref.Results(), s)
 							}

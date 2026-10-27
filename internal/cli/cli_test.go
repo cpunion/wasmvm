@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -222,7 +223,7 @@ func TestTypedValuesRoundTrip(t *testing.T) {
 func TestErrorsAndNoImplicitHostImports(t *testing.T) {
 	valid := functionModule(nil, nil, nil)
 	path := writeModule(t, valid)
-	cases := [][]string{{"validate", "--backend", "native", path}, {"validate", "--profile", "core3", path}, {"inspect", filepath.Join(t.TempDir(), "absent")}, {"run", "--export", "missing", path}, {"run", "--export", "run", path, "i32:1"}}
+	cases := [][]string{{"validate", "--backend", "unknown", path}, {"validate", "--profile", "core3", path}, {"inspect", filepath.Join(t.TempDir(), "absent")}, {"run", "--export", "missing", path}, {"run", "--export", "run", path, "i32:1"}}
 	for _, args := range cases {
 		if code, out, err := invoke(t, nil, args...); code != 1 || out != "" || err == "" {
 			t.Fatal(args, code, out, err)
@@ -311,5 +312,20 @@ func TestBoundedInputAndOutputFailure(t *testing.T) {
 	}
 	if _, err := readModule(t.TempDir(), 100); err == nil {
 		t.Fatal("read directory")
+	}
+}
+
+func TestNativeCommand(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	path := writeModule(t, functionModule([]byte{0x7f, 0x7f}, []byte{0x7f}, []byte{0x20, 0, 0x20, 1, 0x6a}))
+	code, out, err := invoke(t, nil, "run", "--backend", "native", "--export", "run", "--fuel", "3", path, "i32:17", "i32:25")
+	if code != 0 || err != "" {
+		t.Fatal(code, out, err)
+	}
+	result := jsonObject(t, out)
+	if result["backend"] != "native" || result["fuelRemaining"] != float64(0) || !strings.Contains(out, "0x0000002a") {
+		t.Fatal(result)
 	}
 }

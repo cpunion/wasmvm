@@ -23,9 +23,11 @@ budget reports a resource-limit error before expansion or output; the binary
 can still pass `validate`. This bounds amplification when many functions share
 one large binary signature. All commands retain the frontend's input/node limits.
 
-All commands accept `--backend interpreter`, `--profile core2`, and
-`--timeout 30s`. `--timeout 0` disables the default deadline. Other backends or
-profiles fail explicitly. Core run installs no host imports or WASI capabilities;
+All commands accept `--backend interpreter` (default) or `--backend native`,
+`--profile core2`, and `--timeout 30s`. Native requires the supported platform
+adapter; build standard Go with `CGO_ENABLED=1` to include it.
+`--timeout 0` disables the default deadline. Unknown backends/profiles and
+unavailable native platforms fail explicitly. Core run installs no host imports or WASI capabilities;
 modules requiring imports fail linking. WASI command execution is an M4 item.
 Ctrl-C requests cancellation. The VM checks deadlines at documented bounded
 phase/execution boundaries; this is not a hard preemption guarantee for OS file

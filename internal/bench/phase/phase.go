@@ -15,11 +15,13 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/cpunion/wasmvm/internal/compiler/codegen"
 	"github.com/cpunion/wasmvm/internal/compiler/lower"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/decode"
 	"github.com/cpunion/wasmvm/internal/core/validate"
-	"github.com/cpunion/wasmvm/internal/engine/interp"
+	"github.com/cpunion/wasmvm/internal/engine/execute"
+	"github.com/cpunion/wasmvm/internal/engine/nativeexec"
 	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/pkg/vm"
@@ -95,7 +97,7 @@ func parseOptions(args []string, stderr io.Writer) (options, error) {
 	if out.path == "" || !hasExpected || flags.NArg() != 0 {
 		return out, errors.New("--wasm and --expected are required; no positional arguments")
 	}
-	if out.backend != "interpreter" {
+	if out.backend != "interpreter" && out.backend != "native" {
 		return out, wasm.ErrUnsupported
 	}
 	if out.mode != "api" && out.mode != "dispatch" {
@@ -136,7 +138,12 @@ func pure(imports int, start bool) error {
 
 func publicKernel(ctx context.Context, input []byte, args options, out *report) (call kernel, close func(), err error) {
 	start := time.Now()
-	engine := vm.NewEngine()
+	config := vm.DefaultEngineConfig()
+	config.Backend = args.backend
+	engine, err := vm.NewEngineWithConfig(config)
+	if err != nil {
+		return nil, func() {}, err
+	}
 	store, err := engine.NewStore(vm.DefaultStoreConfig())
 	out.Phases.EngineSetup = time.Since(start).Nanoseconds()
 	var compiled *vm.CompiledModule
@@ -207,12 +214,27 @@ func publicKernel(ctx context.Context, input []byte, args options, out *report) 
 func dispatchKernel(ctx context.Context, input []byte, args options, out *report) (call kernel, close func(), err error) {
 	start := time.Now()
 	store := state.New(state.DefaultLimits())
+	if args.backend == "native" {
+		store = state.NewNative(state.DefaultLimits())
+	}
+	var nativeCode *nativeexec.Module
+	var nativeLease *nativeexec.Lease
+	var execution *execute.Execution
 	ctx, cancel := context.WithCancel(ctx)
 	out.Phases.EngineSetup = time.Since(start).Nanoseconds()
 	close = func() {
 		start := time.Now()
 		cancel()
+		if execution != nil {
+			execution.Close()
+		}
 		store.Close()
+		if nativeLease != nil {
+			nativeLease.Close()
+		}
+		if nativeCode != nil {
+			nativeCode.Close()
+		}
 		out.Phases.Cleanup = time.Since(start).Nanoseconds()
 	}
 	out.PreparationParts = make(map[string]int64)
@@ -238,6 +260,14 @@ func dispatchKernel(ctx context.Context, input []byte, args options, out *report
 	start = time.Now()
 	compiled, err := slots.Compile(ir, slots.DefaultLimits())
 	out.PreparationParts["slots"] = time.Since(start).Nanoseconds()
+	if err == nil && args.backend == "native" {
+		start = time.Now()
+		nativeCode, err = nativeexec.Compile(ctx, compiled, codegen.DefaultLimits())
+		if err == nil {
+			nativeLease, err = nativeCode.Acquire()
+		}
+		out.PreparationParts["native"] = time.Since(start).Nanoseconds()
+	}
 	out.Phases.CompileValidate = time.Since(preparationStart).Nanoseconds()
 	if err != nil {
 		return nil, close, err
@@ -267,7 +297,14 @@ func dispatchKernel(ctx context.Context, input []byte, args options, out *report
 	if err = signature(fn.Signature); err != nil {
 		return nil, close, err
 	}
-	execution := interp.New(store, ctx, interp.Config{Limits: interp.DefaultLimits()})
+	config := execute.Config{Limits: execute.DefaultLimits()}
+	if nativeLease != nil {
+		config.Backend, err = nativeexec.New(ctx, map[*slots.Module]*nativeexec.Lease{compiled: nativeLease}, config.Limits.MaxSlots, config.Limits.MaxFrames, false)
+		if err != nil {
+			return nil, close, err
+		}
+	}
+	execution = execute.New(store, ctx, config)
 	arguments := []value.Value{{Lo: uint64(args.seed)}, {Lo: uint64(args.iterations)}}
 	return func() (int64, uint32, error) {
 		start := time.Now()
@@ -277,10 +314,10 @@ func dispatchKernel(ctx context.Context, input []byte, args options, out *report
 		if err != nil {
 			return elapsed, 0, err
 		}
-		if status != interp.Done {
+		if status != execute.Done {
 			err := execution.Err()
 			if err == nil {
-				err = errors.New("unexpected interpreter suspension")
+				err = errors.New("unexpected execution suspension")
 			}
 			return elapsed, 0, err
 		}

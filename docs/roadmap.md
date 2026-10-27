@@ -54,20 +54,24 @@ The Store reclaims unescaped failed instances and releases storage after executi
 
 **Objective:** make both interpretation and Wasm-to-native execution satisfy the [performance contract](design/performance-contract.md), without changing the accepted Core 2.0 semantics.
 
-The development branch now emits all 136 scalar numeric operations on both ISAs
-plus all 23 scalar memory accesses, memory.size and explicit growth exits.
-It executes 12,068 official scalar assertions per native tier across 13 complete
-scripts; native memory ownership, growth relocation and local bounds proofs are
-covered by targeted tests. The
-shared register/copy/control-flow optimizations approach competitor throughput;
-calibrated acceptance remains open. ARM64 mask/shift selection, predicate
-forwarding and branch layout compaction preserve independent continuation and
-cancellation semantics; their local diagnostic results do not close that gate.
-Complete the memory performance gate, calls, SIMD and the
-public runtime next, then run the full Core 2.0 backend matrix. See the
+The development native backend now executes the same complete Core 2.0 corpus:
+51,139 binary assertions in 148 scripts, separately under the unmetered and
+precise-fuel tiers. The interpreter and native backend share `engine/execute`'s
+explicit frames, calls, host requests, roots and cleanup; `engine/nativeexec`
+owns compiled publication and native entry. Public API/CLI selection, imports,
+start functions, indirect calls, globals, tables, growth, SIMD and bulk operations
+are connected. Numeric/scalar-memory/control code is emitted directly; fixed
+SIMD and state/bulk operations use explicit owned runtime helpers. Guest calls
+currently exit through the common frame driver. They are not interpreted whole
+functions, but their boundary overhead still needs optimization.
+
+Go/LLGo semantic execution passes locally on arm64; Go amd64 execution also
+passes under Docker/Rosetta. Final native target/compiler CI and calibrated
+performance acceptance remain open. Full Core 3.0/Threads, Component Model and
+WASI 1/2/3 remain required subsequent work. See the
+[runtime scope](../benchmarks/native/runtime-plan.md),
 [numeric scope](../benchmarks/native/float-plan.md) and
-[memory scope](../benchmarks/native/memory-plan.md); no milestone
-is closed by this instruction subset.
+[memory scope](../benchmarks/native/memory-plan.md).
 
 1. **Interpreter performance.** Profile dispatch, copies, bounds checks, calls, slot/frame allocation and code footprint. Compare predecoded stack versus slot prototypes; retain the measured production choice. Add specialization/fusion only with preserved trap/fuel/safepoint behavior and full regression results.
 2. **Native boundary first.** Implement the [native ABI](design/native-abi.md): bounded entry frame, explicit guest frame arena, typed exits, continuation/root maps, host-call marshalling, cancellation polling, executable-memory publication and active-code ownership. Exercise the same ABI probes with Go and LLGo before accepting emitted guest programs.

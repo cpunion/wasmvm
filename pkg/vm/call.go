@@ -4,7 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/cpunion/wasmvm/internal/engine/interp"
+	"github.com/cpunion/wasmvm/internal/engine/execute"
+	"github.com/cpunion/wasmvm/internal/engine/nativeexec"
 	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -205,10 +206,18 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 		limits.MaxFrames -= used.MaxFrames
 		limits.MaxSlots -= used.MaxSlots
 	}
-	e := interp.New(op.store.state, op.ctx, interp.Config{Limits: limits, Metered: op.options.Metered, Fuel: op.fuel})
+	config := execute.Config{Limits: limits, Metered: op.options.Metered, Fuel: op.fuel}
+	if s := op.store; s.engine.config.Backend == "native" {
+		backend, err := nativeexec.New(op.ctx, s.nativeModules, limits.MaxSlots, limits.MaxFrames, op.options.Metered)
+		if err != nil {
+			return nil, err
+		}
+		config.Backend = backend
+	}
+	e := execute.New(op.store.state, op.ctx, config)
 	op.frames = append(op.frames, e)
 	defer func() {
-		e.Abort(context.Canceled)
+		e.Close()
 		op.frames[len(op.frames)-1] = nil
 		op.frames = op.frames[:len(op.frames)-1]
 	}()
@@ -219,11 +228,11 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 		status := e.Run()
 		op.fuel = e.Fuel()
 		switch status {
-		case interp.Done:
+		case execute.Done:
 			return e.Results(), nil
-		case interp.Failed:
+		case execute.Failed:
 			return nil, e.Err()
-		case interp.HostRequest:
+		case execute.HostRequest:
 			if err := op.ctx.Err(); err != nil {
 				return nil, err
 			}
@@ -241,7 +250,7 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 		}
 	}
 }
-func (op *operation) host(request *interp.HostCall, in *state.Instance) ([]value.Value, error) {
+func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]value.Value, error) {
 	s := op.store
 	s.mu.Lock()
 	args, err := s.encodeValuesLocked(request.Args, request.Function.Signature.Params)

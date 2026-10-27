@@ -19,7 +19,7 @@ import (
 const usage = `usage: wasmvm <validate|inspect|run> [options] module.wasm [type:value ...]
 
 Options precede the module path. All commands accept:
-  --backend interpreter  Execution backend (only interpreter is implemented)
+  --backend name         interpreter (default) or native (supported hosts)
   --profile core2        Binary profile (only core2 is implemented)
   --timeout duration     Overall deadline (default 30s; 0 disables)
 Run also accepts:

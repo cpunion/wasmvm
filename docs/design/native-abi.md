@@ -254,3 +254,31 @@ sign extension, raw floating bits, aligned/unaligned bounds, growth relocation,
 fuel-before-store, continuation checks and concurrent memory lifetime. The
 [development scope](../../benchmarks/native/memory-plan.md) records performance
 limitations. Public native selection and M2 acceptance remain open.
+
+
+## Shared Core 2.0 runtime integration (development)
+
+`engine/execute` owns frames, limits, host requests and roots for both backends.
+`engine/nativeexec` prepares both native tiers and dispatches only published C
+entries. Scalar/control code runs natively; calls, SIMD and state/bulk effects
+use validated typed exits. Each helper instruction has already consumed its
+fuel and cannot be charged a second time by the common machine. Large edge-copy
+plans are serviced in bounded chunks. No function falls back to slot dispatch.
+
+Native frame slots and linear memory use one pointer-free off-heap allocation
+each. Trusted Store code borrows private slices while native execution is idle;
+no slice is exposed through `pkg/vm`. Arena growth preserves live slots, clears
+new/reused locals, updates the record and invalidates the old view. Memory growth
+refreshes the shared Memory object's view and every resumed entry's base/length.
+One Store operation excludes concurrent access. Suspended parents retain memory
+bindings while host reentry uses another context against the same idle owner.
+Logical page quotas bound growth; peak old-plus-new storage is at most twice the
+aggregate logical memory limit. Physical arena capacity is bounded by MaxSlots.
+
+CompiledModule retirement preserves Store-held executable leases. Failed module
+leases are swept with unreachable failed instances, including escaped-function
+roots; Store close releases publication only after execution and callbacks drain.
+The common root visitor scans typed slots in the same arena, so host collection
+does not require copying a guest frame. Full native corpus, public host/reentry,
+fuel, cancellation, close and panic tests exercise these contracts with Go/LLGo.
+Call/helper speed and the final target matrix remain open acceptance gates.

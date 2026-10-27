@@ -1,4 +1,4 @@
-package interp
+package execute
 
 import (
 	"github.com/cpunion/wasmvm/internal/core/module"

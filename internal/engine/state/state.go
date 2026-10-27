@@ -36,19 +36,28 @@ type Usage struct {
 	SegmentBytes, SegmentElements                             uint64
 }
 type Store struct {
-	closed    bool
-	limits    Limits
-	usage     Usage
-	functions []*Function // index zero is the null function reference
-	instances []*Instance
-	tables    []*Table
-	memories  []*Memory
-	globals   []*Global
-	types     map[string]uint32
+	closed       bool
+	nativeMemory bool
+	limits       Limits
+	usage        Usage
+	functions    []*Function // index zero is the null function reference
+	instances    []*Instance
+	tables       []*Table
+	memories     []*Memory
+	globals      []*Global
+	types        map[string]uint32
 }
 
 func New(limits Limits) *Store {
 	return &Store{limits: limits, functions: []*Function{nil}, types: make(map[string]uint32)}
+}
+
+// NewNative selects off-heap memory for the complete native execution backend.
+func NewNative(limits Limits) *Store { s := New(limits); s.nativeMemory = true; return s }
+func (s *Store) RetainedModules(visit func(*slots.Module)) {
+	for _, in := range s.instances {
+		visit(in.Compiled)
+	}
 }
 func (s *Store) Usage() Usage { return s.usage }
 func (s *Store) TypeID(t module.FuncType) uint32 {
@@ -166,7 +175,11 @@ func (s *Store) NewMemory(t module.Limits) (Extern, error) {
 	if uint64(t.Min) > uint64(s.limits.MaxMemoryPages)-s.usage.MemoryPages {
 		return Extern{}, limit("Store memory pages")
 	}
-	m, err := memory.New(t, s.limits.MaxMemoryPages)
+	allocate := memory.New
+	if s.nativeMemory {
+		allocate = memory.NewNative
+	}
+	m, err := allocate(t, s.limits.MaxMemoryPages)
 	if err != nil {
 		return Extern{}, err
 	}

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -36,39 +37,49 @@ func TestBothBoundariesAndEveryOracleVector(t *testing.T) {
 	if err = json.Unmarshal(data, &manifest); err != nil {
 		t.Fatal(err)
 	}
-	for _, mode := range []string{"api", "dispatch"} {
-		for _, workload := range manifest.Workloads {
-			for _, vector := range workload.ValidationCases {
-				args := optionsFor(filepath.Join(fixtures, filepath.Base(workload.Wasm)), mode)
-				args.seed, args.iterations, args.expected = vector.Seed, vector.Iterations, vector.ExpectedChecksum
-				out, err := benchmark(context.Background(), args)
-				if err != nil {
-					t.Fatal(mode, workload.Wasm, vector, err)
-				}
-				if out.Engine != "wasmvm" || out.Backend != "interpreter" || out.Mode != mode || out.Result != vector.ExpectedChecksum || len(out.WarmResults) != 2 || len(out.WarmupResults) != 1 || len(out.TimerPairNs) != 2 {
-					t.Fatal(out)
-				}
-				for _, v := range append(out.WarmResults, out.WarmupResults...) {
-					if v != vector.ExpectedChecksum {
-						t.Fatal(v)
+	for _, backend := range []string{"interpreter", "native"} {
+		if backend == "native" && !native.Available {
+			continue
+		}
+		for _, mode := range []string{"api", "dispatch"} {
+			for _, workload := range manifest.Workloads {
+				for _, vector := range workload.ValidationCases {
+					args := optionsFor(filepath.Join(fixtures, filepath.Base(workload.Wasm)), mode)
+					args.backend = backend
+					args.seed, args.iterations, args.expected = vector.Seed, vector.Iterations, vector.ExpectedChecksum
+					out, err := benchmark(context.Background(), args)
+					if err != nil {
+						t.Fatal(mode, workload.Wasm, vector, err)
 					}
-				}
-				if mode == "dispatch" {
-					if len(out.PreparationParts) != 4 {
-						t.Fatal(out.PreparationParts)
+					if out.Engine != "wasmvm" || out.Backend != backend || out.Mode != mode || out.Result != vector.ExpectedChecksum || len(out.WarmResults) != 2 || len(out.WarmupResults) != 1 || len(out.TimerPairNs) != 2 {
+						t.Fatal(out)
 					}
-					var sum int64
-					for _, ns := range out.PreparationParts {
-						if ns < 0 {
-							t.Fatal(ns)
+					for _, v := range append(out.WarmResults, out.WarmupResults...) {
+						if v != vector.ExpectedChecksum {
+							t.Fatal(v)
 						}
-						sum += ns
 					}
-					if sum > out.Phases.CompileValidate {
-						t.Fatal(sum, out.Phases)
+					if mode == "dispatch" {
+						parts := 4
+						if backend == "native" {
+							parts++
+						}
+						if len(out.PreparationParts) != parts {
+							t.Fatal(out.PreparationParts)
+						}
+						var sum int64
+						for _, ns := range out.PreparationParts {
+							if ns < 0 {
+								t.Fatal(ns)
+							}
+							sum += ns
+						}
+						if sum > out.Phases.CompileValidate {
+							t.Fatal(sum, out.Phases)
+						}
+					} else if out.PreparationParts != nil {
+						t.Fatal("invented public subphases")
 					}
-				} else if out.PreparationParts != nil {
-					t.Fatal("invented public subphases")
 				}
 			}
 		}

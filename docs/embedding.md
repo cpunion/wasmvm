@@ -1,9 +1,23 @@
-# Embedding the Core 2.0 interpreter
+# Embedding the Core 2.0 runtime
 
-`pkg/vm` implements the complete Core 2.0 binary profile using the project-owned
-interpreter. The API is experimental. Native execution, Core 3.0, Threads, WASI
-and components remain later milestones; requesting another backend/profile
-returns `wasm.ErrUnsupported` and never selects a competitor runtime.
+`pkg/vm` implements the Core 2.0 binary profile with the project-owned interpreter
+and an experimental native backend. Both use the same frame, host-call, memory,
+root and lifecycle contracts. Select native explicitly:
+
+```go
+config := vm.DefaultEngineConfig()
+config.Backend = "native"
+engine, err := vm.NewEngineWithConfig(config)
+```
+
+Native execution requires the platform adapter on linux/amd64 or darwin/arm64;
+standard Go requires `CGO_ENABLED=1`, while LLGo uses its C interop adapter.
+Unsupported platforms and unknown profiles fail without backend fallback.
+Compilation prepares both unmetered and precise-fuel code within the aggregate
+`Native.MaxCodeBytes` limit. Calls and SIMD/state helpers still cross explicit
+runtime boundaries; the complete semantic corpus does not establish competitive
+performance for those paths. See the [runtime scope](../benchmarks/native/runtime-plan.md).
+Core 3.0, Threads, components and WASI are still unimplemented.
 
 The [package examples](../pkg/vm/example_test.go) are executable tests under Go
 and LLGo. They demonstrate compiling and calling an exported add function, and

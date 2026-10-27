@@ -1,0 +1,50 @@
+{
+  "producer": "wasm-tools 1.258.0",
+  "origin": "authored in wasmvm; no third-party benchmark code",
+  "workloads": [
+    {
+      "id": "indirect-calls",
+      "seed": 305419896,
+      "iterations": 15000,
+      "expectedChecksum": 571473663,
+      "unit": "ns/source iteration",
+      "wat": "indirect-calls.wat",
+      "wasm": "indirect-calls.wasm",
+      "watSha256": "ca6dc7426a03cc9681c893db68f7dbc6577a6bc8683bf747a050af93a32c55e8",
+      "wasmSha256": "650da102903f90d120b1f16a88e3a6dfb48c9c82378a5b8a63bdda60e0297154"
+    },
+    {
+      "id": "simd-i32x4",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 2842159632,
+      "unit": "ns/source iteration",
+      "wat": "simd-i32x4.wat",
+      "wasm": "simd-i32x4.wasm",
+      "watSha256": "ede1cd961d50ba03754531c86c3d94c4811a77837ab8e9d8f01f36e45f7195f6",
+      "wasmSha256": "1716d58bb54854f6c6a4eb2ef0fa9177d4fad6ef0ae317580850d97b313c87a0"
+    },
+    {
+      "id": "bulk-overlap",
+      "seed": 305419896,
+      "iterations": 1000,
+      "expectedChecksum": 305674007,
+      "unit": "ns/source iteration",
+      "wat": "bulk-overlap.wat",
+      "wasm": "bulk-overlap.wasm",
+      "watSha256": "cdc30eaab93787ee3dc0d0b4a5c038c816e2c612f14e1c5a516e7a894b1bc542",
+      "wasmSha256": "bcfb6e7dffb0184ba8e2c8303a5412a7a825928124a4b5b9fc56639f838c04da"
+    },
+    {
+      "id": "globals-tables",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 355424896,
+      "unit": "ns/source iteration",
+      "wat": "globals-tables.wat",
+      "wasm": "globals-tables.wasm",
+      "watSha256": "5d5265996e9d5471e1e4fad00efbb65a5329ef58b96b828ae3cde049df655ab0",
+      "wasmSha256": "8115fd9ca52862b86c8a2c58ab9303182e0ae92b12c07d60f718622d2966f1b1"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
-// Package interp executes immutable slot code with explicit guest frames and
+// Package execute runs immutable slot code with explicit guest frames and
 // host-request exits. Guest calls never recurse on the host Go stack.
-package interp
+package execute
 
 import (
 	"context"
@@ -32,6 +32,7 @@ type Config struct {
 	Limits  Limits
 	Metered bool
 	Fuel    uint64
+	Backend Backend
 }
 type frame struct {
 	function *state.Function
@@ -120,13 +121,22 @@ func (e *Execution) push(fn *state.Function, dest []slots.Slot) error {
 		if uint64(capacity) > uint64(e.config.Limits.MaxSlots) {
 			capacity = int(e.config.Limits.MaxSlots)
 		}
-		grown := make([]value.Value, needed, capacity)
-		copy(grown, e.values)
-		e.values = grown
+		if e.config.Backend != nil {
+			grown, err := e.config.Backend.Resize(needed, capacity)
+			if err != nil {
+				return err
+			}
+			e.values = grown
+		} else {
+			grown := make([]value.Value, needed, capacity)
+			copy(grown, e.values)
+			e.values = grown
+		}
 	} else {
 		e.values = e.values[:needed]
 		clear(e.values[base:])
 	}
+	clear(e.values[base:])
 	e.frames = append(e.frames, frame{function: fn, base: base, dest: dest})
 	return nil
 }
@@ -184,12 +194,20 @@ func (e *Execution) Run() Status {
 		fn := f.function
 		code := fn.Code
 		pc := f.pc
+		if e.config.Backend != nil {
+			var err error
+			pc, e.fuel, err = e.config.Backend.Run(fn, f.base, len(e.frames), pc, e.fuel)
+			if err != nil {
+				return e.fail(err)
+			}
+			f.pc = pc
+		}
 		base := f.base
 		in := code.Code[pc]
 		source := code.Sources[in.Source]
 		im := source.Wasm
 		instance := fn.Instance
-		if e.config.Metered {
+		if e.config.Metered && e.config.Backend == nil {
 			cost := source.Fuel()
 			if cost > e.fuel {
 				return e.fail(&wasm.Error{Kind: wasm.ErrLimit, Offset: im.Offset, Detail: "execution fuel"})

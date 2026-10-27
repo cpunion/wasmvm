@@ -8,6 +8,7 @@ import (
 
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/value"
+	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
@@ -16,6 +17,7 @@ const MaxPages uint32 = 65536
 
 type Memory struct {
 	bytes    []byte
+	owner    *native.Memory
 	declared module.Limits
 	maximum  uint32
 }
@@ -24,6 +26,17 @@ type Memory struct {
 // A zero quota is literal. Allocations are exact-size; growth can transiently
 // retain old and new buffers until the old allocation is collected.
 func New(declared module.Limits, quota uint32) (*Memory, error) {
+	return newMemory(declared, quota, false)
+}
+
+// NewNative uses the same semantics over pointer-free native-owned storage.
+// Only the serialized Store accesses its view; growth refreshes every alias
+// through this single Memory object before generated code can reenter.
+func NewNative(declared module.Limits, quota uint32) (*Memory, error) {
+	return newMemory(declared, quota, true)
+}
+func (m *Memory) Native() *native.Memory { return m.owner }
+func newMemory(declared module.Limits, quota uint32, offheap bool) (*Memory, error) {
 	if declared.Min > MaxPages || declared.HasMax && (declared.Max > MaxPages || declared.Min > declared.Max) {
 		return nil, &wasm.Error{Kind: wasm.ErrInvalid, Detail: "memory limits"}
 	}
@@ -41,14 +54,35 @@ func New(declared module.Limits, quota uint32) (*Memory, error) {
 	if declared.Min > maximum {
 		return nil, &wasm.Error{Kind: wasm.ErrLimit, Detail: "initial memory pages"}
 	}
-	return &Memory{bytes: make([]byte, int(uint64(declared.Min)*PageSize)), declared: declared, maximum: maximum}, nil
+	m := &Memory{declared: declared, maximum: maximum}
+	if offheap {
+		var err error
+		m.owner, err = native.NewMemory(uint64(declared.Min)*PageSize, uint64(maximum)*PageSize)
+		if err != nil {
+			return nil, err
+		}
+		m.bytes, err = m.owner.Buffer()
+		if err != nil {
+			m.owner.Close()
+			return nil, err
+		}
+	} else {
+		m.bytes = make([]byte, int(uint64(declared.Min)*PageSize))
+	}
+	return m, nil
 }
 func (m *Memory) Pages() uint32         { return uint32(uint64(len(m.bytes)) / PageSize) }
 func (m *Memory) Limits() module.Limits { return m.declared }
 
 // Release discards backing storage after its Store has excluded all users.
 // It is idempotent and prevents subsequent growth of a retired memory object.
-func (m *Memory) Release() { m.bytes = nil; m.maximum = 0 }
+func (m *Memory) Release() {
+	m.bytes = nil
+	m.maximum = 0
+	if m.owner != nil {
+		m.owner.Close()
+	}
+}
 func (m *Memory) Grow(delta uint32) (uint32, bool) {
 	old := m.Pages()
 	next := uint64(old) + uint64(delta)
@@ -56,6 +90,13 @@ func (m *Memory) Grow(delta uint32) (uint32, bool) {
 		return old, false
 	}
 	if delta == 0 {
+		return old, true
+	}
+	if m.owner != nil {
+		if err := m.owner.Grow(next * PageSize); err != nil {
+			return old, false
+		}
+		m.bytes, _ = m.owner.Buffer()
 		return old, true
 	}
 	grown := make([]byte, int(next*PageSize))

@@ -8,7 +8,8 @@ import (
 // Memory owns zeroed native storage. Context bindings retain it across exits;
 // Close retires the owner but does not invalidate already bound executions.
 // The Store driver supplies guest page limits and aggregate allocation quotas.
-// No caller receives a raw pointer or a growth-sensitive backing slice.
+// Only the trusted Store runtime may borrow its buffer while native entry is
+// idle. Embedding callers use copied reads and writes.
 type Memory struct {
 	mu                      sync.Mutex
 	data                    unsafe.Pointer

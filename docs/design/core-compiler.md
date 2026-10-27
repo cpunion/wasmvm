@@ -133,7 +133,7 @@ state on failure. Initialization follows active elements, declarative drops,
 active data and a separately driven start call. Earlier imported-state effects
 survive later traps; escaped functions retain their originating instance.
 
-`internal/engine/interp` executes flat slot code with explicit bounded guest
+`internal/engine/execute` executes flat slot code with explicit bounded guest
 frames. Host calls return requests to a driver, which may run a nested
 continuation and then resume the suspended caller. Frame and pending-host
 reference slots have root visitors. All opcodes use the owned numeric, SIMD,

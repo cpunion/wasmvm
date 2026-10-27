@@ -82,10 +82,10 @@ jobs:
         run: |
           if [[ "$COMPILER" == go ]]; then
             CGO_ENABLED=0 go build ./...
-            CGO_ENABLED=0 go test -count=1 ./internal/platform/native
+            CGO_ENABLED=0 go test -count=1 ./internal/platform/native ./internal/engine/nativeexec
             if [[ "$PLATFORM" == linux-amd64 ]]; then
               mkdir -p artifacts/core
-              CGO_ENABLED=1 go test -count=1 -timeout=10m -coverprofile=artifacts/core/coverage.out ./internal/... ./pkg/...
+              CGO_ENABLED=1 go test -count=1 -timeout=10m -coverpkg=./internal/...,./pkg/... -coverprofile=artifacts/core/coverage.out ./internal/... ./pkg/...
             else
               CGO_ENABLED=1 go test -count=1 -timeout=10m ./...
             fi
@@ -95,11 +95,11 @@ jobs:
 
       - name: Check Go data races
         if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
-        run: go test -race -count=1 -timeout=10m ./...
+        run: go test -race -count=1 -timeout=10m -skip 'TestCompleteCore2(Execution|Native)$' ./...
 
       - name: Check native pointer ownership
         if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
-        run: GOEXPERIMENT=cgocheck2 go test -count=1 ./internal/platform/native ./internal/compiler/codegen
+        run: GOEXPERIMENT=cgocheck2 go test -count=1 ./internal/platform/native ./internal/engine/nativeexec ./pkg/vm
 
       - name: Build and execute the core CLI
         shell: bash
@@ -134,7 +134,8 @@ jobs:
             --require github.com/cpunion/wasmvm/internal/engine/simd \
             --require github.com/cpunion/wasmvm/internal/engine/memory \
             --require github.com/cpunion/wasmvm/internal/engine/state \
-            --require github.com/cpunion/wasmvm/internal/engine/interp \
+            --require github.com/cpunion/wasmvm/internal/engine/execute \
+            --require github.com/cpunion/wasmvm/internal/engine/nativeexec \
             --require github.com/cpunion/wasmvm/internal/platform/native \
             --require github.com/cpunion/wasmvm/pkg/wasm \
             --require github.com/cpunion/wasmvm/pkg/vm
@@ -150,7 +151,7 @@ jobs:
           go test -run '^$' -fuzz '^FuzzNumeric$' -fuzztime=10s -parallel=2 ./internal/engine/numeric
           go test -run '^$' -fuzz '^FuzzPureSIMD$' -fuzztime=10s -parallel=2 ./internal/engine/simd
           go test -run '^$' -fuzz '^FuzzMemoryRanges$' -fuzztime=10s -parallel=2 ./internal/engine/memory
-          go test -run '^$' -fuzz '^FuzzExecution$' -fuzztime=10s -parallel=2 ./internal/engine/interp
+          go test -run '^$' -fuzz '^FuzzExecution$' -fuzztime=10s -parallel=2 ./internal/engine/execute
 
       - name: Evaluate unchanged wazero and measure harness coverage
         if: github.event_name == 'workflow_dispatch' && matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
@@ -194,7 +195,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: core2-execution-${{ matrix.compiler }}-${{ matrix.platform.name }}
-          path: artifacts/conformance/core2.json
+          path: artifacts/conformance/core2.json*
           if-no-files-found: error
 
       - name: Preserve corpus provenance

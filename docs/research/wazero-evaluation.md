@@ -85,7 +85,7 @@ The symbol inventory and minimal reproducer were reported in [LLGo issue #2918](
 
 The project's CI pins that compiler candidate and requires execution of the **unchanged** wazero evaluator under both Go and LLGo. It does not count an expected linker failure as a successful compatibility run. The original failure assertion and backend-isolation scripts remain available only to reproduce the v1.0.8 investigation.
 
-The interpreter itself still uses `unsafe` reference conversions. Final EH stores exception references through integer slots, and function references also cross `unsafe.Pointer`/`uintptr` representations. See the [interpreter](https://github.com/wazero/wazero/blob/2ab480b55fa408d6b35df97fe32a60d08bd6e201/internal/engine/interpreter/interpreter.go). This is not proof of a bug, but it requires explicit host-GC lifetime testing; the phrase “pure Go” does not establish compiler-neutral runtime semantics.
+The interpreter itself still uses `unsafe` reference conversions. Final EH stores exception references through integer slots, and function references also cross `unsafe.Pointer`/`uintptr` representations. See the [interpreter](https://github.com/wazero/wazero/blob/2ab480b55fa408d6b35df97fe32a60d08bd6e201/internal/engine/executereter/interpreter.go). This is not proof of a bug, but it requires explicit host-GC lifetime testing; the phrase “pure Go” does not establish compiler-neutral runtime semantics.
 
 The [open GC PR](https://github.com/wazero/wazero/pull/2494) proposes host-GC-backed struct/array objects and tagged references. Its representation, collector visibility, host interoperation, and optimized-backend exclusion must be evaluated separately. Do not copy the proposal or mark GC complete solely because its instruction tests pass.
 

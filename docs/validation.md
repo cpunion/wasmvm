@@ -385,7 +385,7 @@ A warmed scalar call performs zero allocations in the Go counter test; this
 is not a throughput benchmark or a performance-gate pass.
 
 Local Go/LLGo tests and Go vet/race pass. Statement coverage is **98.6%** for
-`internal/engine/interp`, **96.0%** for `internal/engine/state`, and **100%** for
+`internal/engine/execute`, **96.0%** for `internal/engine/state`, and **100%** for
 public value/error/trap contracts. Remaining paths defend against corrupted
 internal instructions/references and 32-bit host capacity constraints. A
 15-second two-worker execution fuzz run completed 1,049,762 inputs without
@@ -613,3 +613,46 @@ Actual function tests cover loops, br_table, tuple cycles, vectors/references,
 fuel/trap agreement with the interpreter, helper resumption, frame bounds,
 large offsets, long branches and cancellation during generated loops. Codegen
 coverage is 96.2%; Go race/cgocheck2 and shared Go/LLGo tests pass locally.
+
+## Complete Core 2.0 native runtime integration
+
+This increment supersedes the earlier public-backend limitation. Both the
+interpreter and native backend execute the pinned Core 2.0 corpus through the
+same explicit frame machine. Each native tier (unmetered and precise fuel)
+passes 51,139 binary assertions across 148 scripts; 1,091 text-parser assertions
+remain separately classified. Native execution compiles and publishes every
+function, including functions reached through imports, start and indirect calls.
+Fixed SIMD, globals/tables, bulk operations and growth use explicit runtime
+boundaries. Numeric, scalar-memory and control operations execute generated
+machine code. These helper paths do not establish competitive performance.
+
+Shared embedding tests force both backends for host reentry, common fuel/frame
+quotas, reference roots, cancellation, panic cleanup, failed instantiation,
+escaped references, imported memory and code lifetime after owner close. Native
+frame growth, large edge copies, artifact mismatch and retired-buffer access
+have dedicated tests. One off-heap memory owner is shared by generated code and
+the runtime; entry/exit does not copy the complete guest memory.
+
+Local Go and pinned LLGo execute the complete native corpus on darwin/arm64.
+Go also passes it on linux/amd64 under Docker/Rosetta; this is semantic evidence,
+not native amd64 timing or an LLGo amd64 CI result. Go race, strict cgo pointer
+checks, vet and a cgo-disabled build pass. CI retains the full semantic corpus
+for all four compiler/target jobs, while race and strict-pointer jobs focus on
+ownership and concurrency without repeating the entire pure semantic corpus.
+
+Performance diagnostics cover the existing six embedded workloads plus indirect
+calls, SIMD, overlapping bulk memory and globals/tables. Public API and reusable
+dispatch remain separate; startup, compilation, instantiation and first-call
+times are excluded from warmed execution and reported independently. Baseline
+`4286585` has no public native backend, so its interpreter rows are identified
+as such. The comparison uses pinned wazero 1.12.0, Wasmtime 48.0.1 and Wasmer
+7.3.0, shared fixture bytes and independent checksums. Local uncalibrated timing
+cannot accept M2 or authorize merging. Core 3.0, Threads, components and WASI
+1/2/3 are still required and are not implemented by this increment.
+
+Go statement coverage for this integration is 98.41% for `engine/execute`,
+94.69% for `engine/nativeexec`, 96.09% for `platform/native`, 96.92% for `pkg/vm`,
+and 97.88% for `compiler/codegen`; every measured executable package exceeds
+90%. Native allocator/protection failure and asynchronous cancellation timing
+leave defensive paths uncovered. Generated instructions and C code are verified
+by execution, not included in those Go coverage percentages.

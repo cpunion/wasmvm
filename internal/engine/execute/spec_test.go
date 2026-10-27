@@ -1,4 +1,4 @@
-package interp
+package execute
 
 import (
 	"context"
@@ -16,13 +16,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cpunion/wasmvm/internal/compiler/codegen"
 	"github.com/cpunion/wasmvm/internal/compiler/lower"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/decode"
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/core/validate"
+	"github.com/cpunion/wasmvm/internal/engine/nativeexec"
 	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/internal/engine/value"
+	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
@@ -48,12 +51,19 @@ type specRunner struct {
 	last              *state.Instance
 	named, registered map[string]*state.Instance
 	spectest          map[string]state.Extern
+	tier              int
+	modules           map[*slots.Module]*nativeexec.Lease
+	t                 *testing.T
 }
 
-func newSpec(t *testing.T, ctx context.Context) *specRunner {
+func newSpec(t *testing.T, ctx context.Context, tier int) *specRunner {
 	t.Helper()
 	s := state.New(state.DefaultLimits())
-	r := &specRunner{store: s, context: ctx, named: make(map[string]*state.Instance), registered: make(map[string]*state.Instance), spectest: make(map[string]state.Extern)}
+	if tier != 0 {
+		s = state.NewNative(state.DefaultLimits())
+	}
+	t.Cleanup(s.Close)
+	r := &specRunner{tier: tier, t: t, modules: make(map[*slots.Module]*nativeexec.Lease), store: s, context: ctx, named: make(map[string]*state.Instance), registered: make(map[string]*state.Instance), spectest: make(map[string]state.Extern)}
 	for _, fn := range []struct {
 		name   string
 		params []wasm.ValueType
@@ -122,6 +132,19 @@ func (r *specRunner) instantiate(data []byte) (*state.Instance, error) {
 	if err != nil {
 		return nil, err
 	}
+	if r.tier != 0 {
+		code, err := nativeexec.Compile(r.context, compiled, codegen.DefaultLimits())
+		if err != nil {
+			return nil, err
+		}
+		lease, err := code.Acquire()
+		code.Close()
+		if err != nil {
+			return nil, err
+		}
+		r.modules[compiled] = lease
+		r.t.Cleanup(lease.Close)
+	}
 	if err := in.Initialize(); err != nil {
 		r.store.CollectFailed(nil, nil)
 		return nil, err
@@ -136,7 +159,16 @@ func (r *specRunner) instantiate(data []byte) (*state.Instance, error) {
 	return in, r.store.Publish(in)
 }
 func (r *specRunner) call(ref uint64, args []value.Value) ([]value.Value, error) {
-	e := New(r.store, r.context, Config{Limits: DefaultLimits()})
+	config := Config{Limits: DefaultLimits(), Metered: r.tier == 2, Fuel: ^uint64(0)}
+	if r.tier != 0 {
+		backend, err := nativeexec.New(r.context, r.modules, config.Limits.MaxSlots, config.Limits.MaxFrames, config.Metered)
+		if err != nil {
+			return nil, err
+		}
+		config.Backend = backend
+	}
+	e := New(r.store, r.context, config)
+	defer e.Close()
 	if err := e.Start(ref, args); err != nil {
 		return nil, err
 	}
@@ -191,8 +223,20 @@ func (r *specRunner) action(t *testing.T, a specAction) ([]value.Value, error) {
 		return nil, nil
 	}
 }
-func TestCompleteCore2Execution(t *testing.T) {
+func TestCompleteCore2Execution(t *testing.T) { completeCore2(t, 0) }
+func TestCompleteCore2Native(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	for tier := 1; tier <= 2; tier++ {
+		t.Run(strconv.Itoa(tier), func(t *testing.T) { completeCore2(t, tier) })
+	}
+}
+func completeCore2(t *testing.T, tier int) {
 	reportPath := os.Getenv("WASMVM_CONFORMANCE_REPORT")
+	if tier != 0 && reportPath != "" {
+		reportPath += fmt.Sprintf(".native-%d", tier)
+	}
 	if reportPath != "" {
 		if err := os.Remove(reportPath); err != nil && !os.IsNotExist(err) {
 			t.Fatal(err)
@@ -220,7 +264,7 @@ func TestCompleteCore2Execution(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			r := newSpec(t, ctx)
+			r := newSpec(t, ctx, tier)
 			for _, cmd := range script.Commands {
 				commands++
 				totals[cmd.Type]++
@@ -311,13 +355,17 @@ func TestCompleteCore2Execution(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		backend := "wasmvm-interpreter"
+		if tier != 0 {
+			backend = fmt.Sprintf("wasmvm-native-tier-%d", tier)
+		}
 		report := struct {
 			SchemaVersion                                                        int  `json:"schemaVersion"`
 			Passed                                                               bool `json:"passed"`
 			Profile, Backend, Compiler, RuntimeVersion, GOOS, GOARCH, PinsSHA256 string
 			Scripts, BinaryAssertions, TextParserAssertions, Commands            int
 			CommandCounts                                                        map[string]int
-		}{1, true, "Core 2.0 binary", "wasmvm-interpreter", runtime.Compiler, runtime.Version(), runtime.GOOS, runtime.GOARCH, fmt.Sprintf("%x", sha256.Sum256(pins)), scripts, assertions, textOnly, commands, totals}
+		}{1, true, "Core 2.0 binary", backend, runtime.Compiler, runtime.Version(), runtime.GOOS, runtime.GOARCH, fmt.Sprintf("%x", sha256.Sum256(pins)), scripts, assertions, textOnly, commands, totals}
 		data, err := json.MarshalIndent(report, "", "  ")
 		if err != nil {
 			t.Fatal(err)
