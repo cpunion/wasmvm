@@ -27,61 +27,71 @@ func (e *functionEmitter) vectorComplexInstruction(in slots.Instruction) {
 	if in.B != slots.NoSlot {
 		r = e.vectorOperand(in.B, 1)
 	}
-	// Fixed scratch copies preserve every source/result alias and cached slot.
+	if e.a.arch == "arm64" {
+		d := e.vectorDestination(in.Dst)
+		e.vectorComplexARM64(in, d, l, r)
+		e.vectorStore(in.Dst, d)
+		return
+	}
+	// SSE2 legalizations use fixed scratch copies to preserve all cached slots.
 	e.vectorMove(0, l)
 	if in.B != slots.NoSlot {
 		e.vectorMove(1, r)
 	}
-	if e.a.arch == "arm64" {
-		e.vectorComplexARM64(in)
-	} else {
-		e.vectorComplexAMD64(in)
-	}
+	e.vectorComplexAMD64(in)
 	e.vectorStore(in.Dst, 2)
 }
 
-func (e *functionEmitter) vectorComplexARM64(in slots.Instruction) {
+func (e *functionEmitter) vectorComplexARM64(in slots.Instruction, d, l, r byte) {
 	op := in.Op & 0xffff
-	ins := uint32(0)
+	ins, binaryOp := uint32(0), false
 	switch op {
 	case 13:
-		e.vectorMove(3, 0)
-		e.vectorMove(4, 1)
+		e.vectorMove(3, l)
+		e.vectorMove(4, r)
 		b := e.f.Sources[in.Source].Wasm.Vector
-		e.vectorConstant(0, binary.LittleEndian.Uint64(b[:8]), binary.LittleEndian.Uint64(b[8:]))
-		ins = 0x4e002062 // TBL {v3,v4}, v0.
+		e.vectorConstant(2, binary.LittleEndian.Uint64(b[:8]), binary.LittleEndian.Uint64(b[8:]))
+		e.a.word(0x4e022060 | uint32(d)) // TBL {v3,v4}, v2.
+		return
 	case 14:
-		ins = 0x4e010002 // TBL v0, v1; all indices >=16 produce zero.
+		ins, binaryOp = 0x4e000000, true // TBL; indices >=16 produce zero.
 	case 98:
-		ins = 0x4e205802 // CNT
+		ins = 0x4e205800 // CNT
 	case 101, 102, 133, 134:
 		size := (op - 101) / 32
-		ins = 0x0e214802 | size<<22 // SQXTN/SQXTN2
+		ins = 0x0e214800 | size<<22 // SQXTN/SQXTN2
 		if op%2 == 0 {
-			ins = 0x2e212802 | size<<22 // SQXTUN/SQXTUN2
-		}
-		e.a.word(ins)
-		ins |= 1<<30 | 1<<5
+			ins = 0x2e212800 | size<<22
+		} // SQXTUN/SQXTUN2
+		// Narrow through scratch when the final result aliases the second input.
+		e.a.word(ins | uint32(l)<<5 | 2)
+		e.a.word(ins | 1<<30 | uint32(r)<<5 | 2)
+		e.vectorMove(d, 2)
+		return
 	case 123, 155:
-		ins = 0x6e211402 | ((op-123)/32)<<22 // URHADD
+		ins, binaryOp = 0x6e201400|((op-123)/32)<<22, true // URHADD
 	case 124, 125, 126, 127:
-		ins = 0x4e202802 | ((op-124)/2)<<22 | (op&1)<<29 // S/UADDLP
+		ins = 0x4e202800 | ((op-124)/2)<<22 | (op&1)<<29 // S/UADDLP
 	case 130:
-		ins = 0x6e61b402 // SQRDMULH saturates MIN*MIN to MAX.
+		ins, binaryOp = 0x6e60b400, true // SQRDMULH saturates MIN*MIN to MAX.
 	case 186:
-		e.a.word(0x0e61c002) // SMULL low
-		e.a.word(0x4e61c003) // SMULL high
-		ins = 0x4ea3bc42     // ADDP: modulo-i32 dot products.
+		e.a.word(0x0e60c000 | uint32(r)<<16 | uint32(l)<<5 | 3) // SMULL low
+		e.a.word(0x4e60c000 | uint32(r)<<16 | uint32(l)<<5 | 4) // SMULL high
+		e.a.word(0x4ea0bc00 | 4<<16 | 3<<5 | uint32(d))         // ADDP: modulo-i32 sums.
+		return
 	default:
 		size, kind := (op-128)/32, (op-96)%32
 		base := uint32(7)
-		ins = 0x0f00a402 | (8<<size)<<16 // SSHLL/USHLL
+		ins = 0x0f00a400 | (8<<size)<<16 // SSHLL/USHLL
 		if kind >= 28 {
-			base, ins = 28, 0x0e21c002|size<<22 // SMULL/UMULL
+			base, ins, binaryOp = 28, 0x0e20c000|size<<22, true // SMULL/UMULL
 		}
 		ins |= ((kind-base)%2)<<30 | ((kind-base)/2)<<29
 	}
-	e.a.word(ins)
+	if binaryOp {
+		ins |= uint32(r) << 16
+	}
+	e.a.word(ins | uint32(l)<<5 | uint32(d))
 }
 
 func (e *functionEmitter) vectorComplexAMD64(in slots.Instruction) {
