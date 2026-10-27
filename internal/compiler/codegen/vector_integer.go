@@ -82,8 +82,7 @@ func (e *functionEmitter) vectorInstruction(in slots.Instruction) {
 		e.vectorCompare(d, l, r, size, kind)
 	} else if op == 82 {
 		c := e.vectorOperand(in.C, 2)
-		e.vectorSelect(l, r, c)
-		d = 2
+		e.vectorSelectTo(d, l, r, c)
 	} else if op >= 78 && op <= 81 {
 		e.vectorBinary(d, l, r, 0, op)
 	} else {
@@ -95,8 +94,7 @@ func (e *functionEmitter) vectorInstruction(in slots.Instruction) {
 				left, right = r, l
 			}
 			e.vectorCompare(2, left, right, size, 4+kind%2)
-			e.vectorSelect(r, l, 2)
-			d = 2
+			e.vectorSelectTo(d, r, l, 2)
 		} else if size == 3 && kind == 21 {
 			e.vectorMultiply64(l, r)
 			d = 2
@@ -218,18 +216,22 @@ func (e *functionEmitter) vectorUnary(d, l byte, size uint32, absolute bool) {
 
 // Select into scratch 2 without overwriting an aliased operand or mask.
 func (e *functionEmitter) vectorSelect(l, r, mask byte) {
+	e.vectorSelectTo(2, l, r, mask)
+}
+
+func (e *functionEmitter) vectorSelectTo(d, l, r, mask byte) {
 	if e.a.arch == "arm64" {
 		// BSL, BIT and BIF let any of the three operands occupy the result.
 		// Read all inputs in place, without inserting copies into the chain.
 		ins := uint32(0x6e601c00)
-		if mask != 2 && l == 2 {
+		if mask != d && l == d {
 			ins, l, r = 0x6ee01c00, r, mask // BIF: keep l where mask is set.
-		} else if mask != 2 && r == 2 {
+		} else if mask != d && r == d {
 			ins, r = 0x6ea01c00, mask // BIT: replace r where mask is set.
 		} else {
-			e.vectorMove(2, mask)
+			e.vectorMove(d, mask)
 		}
-		e.a.word(ins | uint32(r)<<16 | uint32(l)<<5 | 2)
+		e.a.word(ins | uint32(r)<<16 | uint32(l)<<5 | uint32(d))
 		return
 	}
 	e.vectorMove(11, l)
@@ -237,6 +239,7 @@ func (e *functionEmitter) vectorSelect(l, r, mask byte) {
 	e.a.xvector(0xdb, 11, mask)
 	e.vectorMove(2, r)
 	e.a.xvector(0xef, 2, 11)
+	e.vectorMove(d, 2)
 }
 
 func (e *functionEmitter) vectorCompare(d, l, r byte, size, kind uint32) {

@@ -112,9 +112,12 @@ func (e *functionEmitter) vectorFloatARM64(op uint32, wide bool, d, l, r byte) {
 		if op == 0x99 {
 			a, b = b, a
 		}
-		e.a.word(0x6ea0e400 | width | uint32(b)<<16 | uint32(a)<<5 | 2)
-		e.vectorSelect(r, l, 2)
-		e.vectorMove(d, 2)
+		mask := d
+		if d == l || d == r {
+			mask = 2
+		}
+		e.a.word(0x6ea0e400 | width | uint32(b)<<16 | uint32(a)<<5 | uint32(mask))
+		e.vectorSelectTo(d, r, l, mask)
 		return
 	}
 	if op <= 0x60 {
