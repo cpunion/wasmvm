@@ -786,3 +786,45 @@ parity band, while arithmetic/rounding still trail the fastest reference by
 about 0.8–1.5%. No calibrated acceptance is inferred. The scope record separates
 public-call overhead and an explicitly invalid-for-production no-poll experiment;
 production cancellation remains intact.
+
+## Complete fixed-SIMD lowering and detected x86 profiles
+
+Engine `2d859c9` adds the final 39 integer/permutation opcodes; `49a5719`
+adds explicit SSSE3/SSE4.1 inputs and platform CPUID detection. Both baseline
+SSE2 and NEON cover all **236** Core 2.0 fixed-SIMD operations with no SIMD
+runtime-helper exit. The [four semantic jobs](https://github.com/cpunion/wasmvm/actions/runs/40507703659)
+pass; downloaded artifacts verify the complete 51,139 binary assertions / 148
+scripts for all 12 compiler/target/backend-tier combinations. The first packed
+shift/reduction engine `64e5e69` also passes the
+[complete matrix](https://github.com/cpunion/wasmvm/actions/runs/40509424784).
+
+The inventory test checks every reserved hole and forces baseline, SSSE3,
+SSE4.1 and combined emission, with exact/exceeded code limits. Execution tests
+use only host-advertised extensions and cover mixed saturation/Q15/dot boundaries,
+all index classes, input/result aliases, spills, cold entries, fuel and masked
+shift counts. The amd64 local execution probe reports `x86Features=0x3`;
+optional instructions are actually exercised. Go/LLGo full package suites and
+amd64 codegen/runtime/VM tests pass through `0ccf8f4`. Latest local codegen
+coverage is **97.25% (4101/4217 statements)**; every measured executable package
+is at least 90%. Go vet, cgo-disabled compilation and the measurement tooling
+checks pass. A local container build once read source during an edit and failed
+with truncated-file syntax errors; the committed, frozen snapshot passes.
+
+NEON selection now names allocated operands directly. Compiler-created masks
+share the immutable literal pool and its loop/cost priority. ARM64 uses otherwise
+unused caller-saved v24-v31; a 20-literal test consumes the full pool and resumes
+every PC, comparing every slot. Packed shifts replace lane-by-lane work on both
+ISAs. Initial ARM64 i32/i64 reduction regressions are retained; subsequent
+weighted masks, scalar i64 sign extraction and packed unsigned minima address
+them. SSE4.1 min/max selection retains canonical NaN and signed-zero behavior;
+pseudo-min/max keep selected raw bits exactly.
+
+The existing native comparison workflow now has an explicit `native-simd`
+scope, with both targets and both own compilers. It measures 33 integer,
+floating-point, shift and reduction families without repeating semantic or CLI
+suites. The [first complete two-target diagnostic](https://github.com/cpunion/wasmvm/actions/runs/40509770203)
+retains **924 alternate-input oracle checks per target**, three interleaved
+process blocks, seven calls and every phase/CPU mask. It exposes real slower
+comparisons and does not pass a merge gate. Earlier setup failures (a short
+baseline SHA and the macOS/darwin manifest naming mismatch) are retained and
+fixed. No M1/M2 or PR #26 acceptance gate is closed by diagnostic success.

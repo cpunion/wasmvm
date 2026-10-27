@@ -43,7 +43,7 @@ Scalar FP and vector slots share one physical register allocator: xmm3-xmm10
 on amd64, v8-v17 on arm64. Vector spills, reloads, locals, select and edge copies
 always preserve all 128 bits. Scratch vectors are separate from those slots:
 0-2 plus xmm11-xmm12 on amd64; arm64 reserves v0-v4. Immutable vector
-literals use xmm13-xmm15 or v18-v23, reload at every entry, and never become a
+literals and legalization masks use xmm13-xmm15 or v18-v31, reload at every entry, and never become a
 writable result register. Baseline SSE2 implements packed i32 multiplication
 without requiring SSE4.1; NEON uses native packed operations. Integer i16/i32
 affine fusion uses modular distributivity and MLA on arm64, retains observable
@@ -66,6 +66,27 @@ An omitted temporary must be overwritten
 before a reader, trap, helper, poll or control edge; every interior PC keeps a
 standalone continuation. ARM64 selections use BSL/BIT/BIF to target allocated
 result registers directly, preserving aliased inputs without scratch copies.
+
+All 236 fixed-SIMD operations now have direct native lowering. The remaining
+39 integer/permutation operations use NEON or SSE2 packed legalizations, including
+widening/narrowing, pairwise sums, widening multiplication, Q15, dot products and
+byte permutations. SSE2's general byte permutation expansion is explicit.
+Optional SSSE3 supplies byte lookup and Q15 instructions; SSE4.1 supplies packed
+rounding, widening, unsigned narrowing and i32 multiplication. SSE4.1 min/max
+uses ordered blending and canonical NaN selection while pseudo-min/max retain
+selected raw bits. The platform adapter queries CPUID; a pure-Go compiler
+configuration records the selected bit mask and rejects unknown/wrong-target
+features. A zero mask always retains SSE2. Native phase reports record the mask;
+legacy baseline report adapters use zero without altering their engine sources.
+
+Variable shifts mask the scalar count once and broadcast it to packed lanes.
+SSE2 byte masks prevent cross-byte contamination; signed i64 right shift uses
+an explicit sign correction. ARM64 uses packed minimum/maximum reductions,
+weighted sign masks and scalar extraction for the two i64 signs. Compiler-made
+masks share the immutable literal pool, with loop frequency and materialization
+cost determining priority. Every entry reloads this pool; no guest slot aliases
+its registers. Tests exhaust the register budget through v31 and resume every
+original PC independently.
 
 All 22 Core 2.0 SIMD memory instructions lower directly on both targets. Full
 vectors, widening and zero-extending loads, scalar splats and lane accesses
@@ -338,8 +359,8 @@ limitations. Public native selection and M2 acceptance remain open.
 
 `engine/execute` owns frames, limits, host requests and roots for both backends.
 `engine/nativeexec` prepares both native tiers and dispatches only published C
-entries. Scalar/control code, 122 basic integer/lane SIMD opcodes and all SIMD
-memory operations run natively. Remaining SIMD, ordinary calls and state/bulk
+entries. Scalar/control code and all 236 fixed-SIMD operations run natively.
+Ordinary calls and state/bulk
 effects use validated typed exits. Each helper instruction has already consumed its
 fuel and cannot be charged a second time by the common machine. Large edge-copy
 plans are serviced in bounded chunks. No function falls back to slot dispatch.
