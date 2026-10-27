@@ -737,3 +737,42 @@ both native tiers; this is actual execution evidence, not just corpus inventory.
 The sustained full-vector comparison now favors both host compilers against all
 three references, but A/A calibration remains inconclusive. See the retained
 before/after measurements and outstanding gates in the runtime benchmark plan.
+
+## Native SIMD floating-point operations
+
+Engine `c1c63d5` lowers all 52 Core 2.0 SIMD floating-point instructions directly
+on both targets, including SSE2 rounding and signed/unsigned saturation without
+optional ISA assumptions. Directed and randomized mixed-lane tests cover NaN
+classes, signed zeros, subnormals, rounding halves, saturation boundaries,
+aliases, spills, code budgets, exact fuel and every independent continuation.
+Only specification-permitted NaN results use class comparisons; all other bits
+and unaffected slots must match exactly.
+
+All four [CI jobs](https://github.com/cpunion/wasmvm/actions/runs/40481474907)
+pass. Downloaded execution artifacts independently confirm 51,139 binary
+assertions across 148 scripts for all 12 compiler/target/backend-tier
+combinations. Local full-suite coverage measures `compiler/codegen` at **93.88%
+(3511/3740 statements)**; each measured owned executable package remains at least
+90%. These are statement measurements, not instruction coverage claims.
+
+Eleven packed floating-point workloads use independent Python lane oracles.
+All 275 baseline/reference checks and 110 initial candidate checks pass across
+five seed/iteration cases. The initial short diagnostic used sequential baseline
+calls and interleaved candidate/reference calls; it is unsuitable for quantifying
+small baseline regressions. Hashing 44 function/target/fuel-tier outputs confirms
+that all eight earlier regression families retain identical generated code at
+`c1c63d5`. A second diagnostic uses the same interleaving protocol for both
+baseline and candidate and 100,000 iterations for the floating-point workloads.
+Conversion results are promising; arithmetic, min/max, rounding and casts still
+have slower comparisons. Raw phases and failed measurements are retained. See
+[the scoped record](../benchmarks/native/vector-float-plan.md); no M2 performance
+or merge gate is closed by these diagnostics.
+
+The subsequent constant/selection optimizations through `0084b38` pass the
+complete local Go and LLGo package suites and amd64 codegen/runtime/VM checks.
+Updated full-suite coverage is **93.96% (3530/3757 statements)** for codegen;
+all other measured executable packages remain at least 90%. Go vet and the
+cgo-disabled build pass. The paired final diagnostic improves min/max by about
+10–14%, but still has 1–3% slower arithmetic/min/max/rounding/cast comparisons
+against the fastest reference. This is retained as failed performance evidence,
+not a parity claim.

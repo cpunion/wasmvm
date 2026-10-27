@@ -61,9 +61,11 @@ explicit frames, calls, host requests, roots and cleanup; `engine/nativeexec`
 owns compiled publication and native entry. Public API/CLI selection, imports,
 start functions, indirect calls, globals, tables, growth, SIMD and bulk operations
 are connected. Numeric/scalar-memory/control code, 122 basic integer/lane SIMD
-opcodes and all 22 SIMD memory opcodes are emitted directly, with full-width
+opcodes, all 52 SIMD floating-point opcodes and all 22 SIMD memory opcodes
+are emitted directly, with full-width
 vector register ownership and exact-width memory bounds checks.
-Remaining SIMD and state/bulk operations use explicit owned runtime helpers. Guest calls
+The remaining 39 complex integer/shuffle SIMD opcodes and state/bulk operations
+use explicit owned runtime helpers. Guest calls
 normally exit through the common frame driver; bounded nontrapping integer
 leaves can expand into caller registers in the unmetered tier. Indirect leaves
 check the live table target against instance identities; native tables and
@@ -71,12 +73,13 @@ refreshed metadata preserve mutation, growth and host reentry. They are not inte
 functions, but their boundary overhead still needs optimization.
 
 The complete Go/LLGo semantic matrix now passes on Linux amd64 and macOS arm64
-at code head `aa89f0d` ([CI](https://github.com/cpunion/wasmvm/actions/runs/40473998419)).
+at floating-point code head `c1c63d5` ([CI](https://github.com/cpunion/wasmvm/actions/runs/40481474907)).
 Calibrated performance acceptance remains open. Full Core 3.0/Threads, Component Model and
 WASI 1/2/3 remain required subsequent work. See the
 [runtime scope](../benchmarks/native/runtime-plan.md),
 [numeric scope](../benchmarks/native/float-plan.md) and
-[memory scope](../benchmarks/native/memory-plan.md).
+[memory scope](../benchmarks/native/memory-plan.md) and
+[SIMD floating-point scope](../benchmarks/native/vector-float-plan.md).
 
 1. **Interpreter performance.** Profile dispatch, copies, bounds checks, calls, slot/frame allocation and code footprint. Compare predecoded stack versus slot prototypes; retain the measured production choice. Add specialization/fusion only with preserved trap/fuel/safepoint behavior and full regression results.
 2. **Native boundary first.** Implement the [native ABI](design/native-abi.md): bounded entry frame, explicit guest frame arena, typed exits, continuation/root maps, host-call marshalling, cancellation polling, executable-memory publication and active-code ownership. Exercise the same ABI probes with Go and LLGo before accepting emitted guest programs.

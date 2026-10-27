@@ -42,13 +42,30 @@ Each ISA defines a register-role table for context, current guest frame, memory 
 Scalar FP and vector slots share one physical register allocator: xmm3-xmm10
 on amd64, v8-v17 on arm64. Vector spills, reloads, locals, select and edge copies
 always preserve all 128 bits. Scratch vectors are separate from those slots:
-0-2 plus xmm11-xmm12 on amd64, or v3-v4 for arm64 selections. Immutable vector
+0-2 plus xmm11-xmm12 on amd64; arm64 reserves v0-v4. Immutable vector
 literals use xmm13-xmm15 or v18-v23, reload at every entry, and never become a
 writable result register. Baseline SSE2 implements packed i32 multiplication
 without requiring SSE4.1; NEON uses native packed operations. Integer i16/i32
 affine fusion uses modular distributivity and MLA on arm64, retains observable
 intermediate values, and preserves every original PC as a cold continuation.
 Precise-fuel code does not fuse instructions and charges each SIMD opcode once.
+
+All 52 Core 2.0 SIMD floating-point instructions lower directly on SSE2 and
+NEON. SSE2 rounding uses signed mantissa thresholds, ordered corrections and
+negative-zero restoration; it never assumes SSE4.1. Saturating conversions
+handle NaNs, signed/unsigned boundaries and zeroed upper lanes explicitly.
+Unsigned i32-to-f32 conversion splits exact 16-bit halves before the final
+rounding; i32-to-f64 conversion remains exact. Min/max preserve WebAssembly
+zero/NaN behavior, while pseudo-min/max and sign-only operations preserve the
+selected operand's exact bits. No floating-point multiply/add is contracted.
+
+Immutable vector literals can feed any adjacent native vector operation,
+including a following local assignment. Bounded backward-edge spans prioritize
+loop literals over one-time initialization without changing cold-entry values.
+An omitted temporary must be overwritten
+before a reader, trap, helper, poll or control edge; every interior PC keeps a
+standalone continuation. ARM64 selections use BSL/BIT/BIF to target allocated
+result registers directly, preserving aliased inputs without scratch copies.
 
 All 22 Core 2.0 SIMD memory instructions lower directly on both targets. Full
 vectors, widening and zero-extending loads, scalar splats and lane accesses
