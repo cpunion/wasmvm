@@ -182,7 +182,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		src := f.Sources[in.Source]
 		isControl := in.Op >= slots.ControlBase
 		if unmetered {
-			if pc%256 == 0 || in.Op == 0x10 || in.Op == 0x11 || isControl {
+			if pc%256 == 0 || in.Op == 0x10 || in.Op == 0x11 || isControl && !e.fallthroughEdge(pc) {
 				e.interrupt(uint32(pc))
 			}
 		} else {

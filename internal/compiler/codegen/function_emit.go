@@ -381,18 +381,30 @@ func (e *functionEmitter) edge(index uint32, pcs []int, next int) {
 }
 
 // Interrupt polling is distinct from a scheduling round trip. A straight-line
-// sequence has at most 256 slot instructions between polls; every control
+// sequence has at most 256 slot instructions between polls; every real control
 // transfer also polls, so arbitrary forward/backward edges cannot evade it.
+// A no-copy jump to the next PC is ordinary fallthrough and cannot skip a poll.
+func (e *functionEmitter) fallthroughEdge(pc int) bool {
+	in := e.f.Code[pc]
+	if in.Op != slots.ControlBase+uint32(ir.Jump) {
+		return false
+	}
+	edge := e.f.Edges[in.Extra]
+	return edge.PC == uint32(pc+1) && edge.Count == 0
+}
+
 func (e *functionEmitter) interrupt(pc uint32) {
 	// An aligned machine load is atomic on both targets. Only a nonzero
 	// observation needs acquire ordering; the cold exit supplies that fence.
 	// Keep register spills and continuation publication outside the hot region.
 	exit := e.a.label()
-	e.contextLoad(0, nativeabi.ControlOffset)
 	if e.a.arch == "arm64" {
+		e.contextLoad(0, nativeabi.ControlOffset)
 		e.a.compareBranch(exit, e.operandRegister(0), true, true)
 	} else {
-		e.test(true)
+		e.a.bytes(0x48, 0x83, 0xbf) // cmpq $0, control(%rdi), one aligned 64-bit load.
+		e.a.word(uint32(nativeabi.ControlOffset))
+		e.a.bytes(0)
 		e.branch(exit, "ne")
 	}
 	e.pollExits = append(e.pollExits, pollExit{exit, pc})

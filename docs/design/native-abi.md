@@ -414,3 +414,15 @@ late cancellation through Context ownership. Normal release stops the callback
 before operation completion cancels its context. Store close retires an idle
 workspace before state and executable leases; an active call retains ownership
 until its deferred cleanup, including panic and close-from-callback paths.
+
+
+### Fallthrough interrupt polling
+
+Unmetered no-copy jumps to the immediately following slot PC are ordinary
+fallthrough. They no longer add a duplicate interrupt poll. Periodic PCs still
+poll every 256 instructions, including when that PC is a fallthrough jump.
+Every nonadjacent/backward/conditional/table transfer, copied edge and guest
+call retains its check, so no cycle or forward skip can evade the bound.
+Precise-fuel scheduling remains unchanged. On amd64, a full-width aligned
+memory comparison replaces the separate control load/test; ARM64 retains
+load/CBNZ. The cold exits preserve acquire ordering, live slots and exact PCs.

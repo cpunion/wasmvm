@@ -885,9 +885,30 @@ reject rebinding active guest/host continuations and preserve borrowed results
 through quiescence.
 
 Local complete Go/LLGo suites, focused race checks, vet, cgo-disabled build and
-68 measurement-tool tests pass. Before the final additional suspended-entry
-guard, coverage measured execute **98.47% (321/326)**, nativeexec **94.04%
-(205/218)** and public VM **96.42% (754/782)**, with every executable package
-above 90%. Final-head CI and the 42-family comparison remain pending; they
-compare the exact AVX2 baseline rather than attributing instruction-selection
-changes to workspace reuse. M1/M2 and PR #26 remain open.
+68 measurement-tool tests pass. The final [four-job semantic CI](https://github.com/cpunion/wasmvm/actions/runs/40525608274)
+passes. All 12 downloaded execution artifacts retain the complete 51,139
+assertions / 148 scripts. Linux CI coverage measures execute **98.47%
+(321/326)**, nativeexec **94.09% (207/220)** and public VM **96.42% (754/782)**;
+every measured executable package exceeds 90%. Strict native-pointer checks
+and the unavailable-native profile pass locally too.
+
+The [paired comparison](https://github.com/cpunion/wasmvm/actions/runs/40525614537)
+completes 42 families and **1,176 alternate-input checks per target**, using the
+exact AVX2 baseline `f09d952`. One-invocation control results are ns/call:
+
+| Target/compiler | Baseline | Workspace reuse | wazero | Wasmtime | Wasmer |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| amd64 Go | 5,217 | 2,775 | 260 | 571 | 862 |
+| amd64 LLGo | 12,719 | 9,354 | 260 | 571 | 862 |
+| arm64 Go | 5,292 | 3,000 | 583 | 1,000 | 2,000 |
+| arm64 LLGo | 6,958 | 7,333 | 583 | 1,000 | 2,000 |
+
+LLGo single-call overhead is still far above the references, and the ARM64
+candidate is slower in this short diagnostic. Reuse alone does not solve the
+boundary. Sustained function/indirect-call loops beat several references, but
+SIMD/memory families retain slower results. These are full public-call phases,
+not pure native kernel measurements; no calibrated parity claim follows.
+Raw result SHA-256: amd64
+`85b747efa30caf756f6f11fdb4073f6a9542cb0c2ca5d6868c2cd620b89c88fc`;
+arm64 `79fc97e391860c82ea9e74b322625ff2b8e85c04d7a35e8c811c5acb0455647a`.
+M1/M2 and PR #26 remain open.
