@@ -45,6 +45,39 @@
       "wasm": "globals-tables.wasm",
       "watSha256": "5d5265996e9d5471e1e4fad00efbb65a5329ef58b96b828ae3cde049df655ab0",
       "wasmSha256": "8115fd9ca52862b86c8a2c58ab9303182e0ae92b12c07d60f718622d2966f1b1"
+    },
+    {
+      "id": "simd-memory-full",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 202116100,
+      "unit": "ns/source iteration",
+      "wat": "simd-memory-full.wat",
+      "wasm": "simd-memory-full.wasm",
+      "watSha256": "46fa2006dd519e196c067d4584eaaaeda9ebd410fe347f322912bb7e8947957a",
+      "wasmSha256": "e3f53a5eb9d4da0cb3b56c0977e689e84814d3a8899fdf790e4dac13283183b2"
+    },
+    {
+      "id": "simd-memory-widen",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 3328202240,
+      "unit": "ns/source iteration",
+      "wat": "simd-memory-widen.wat",
+      "wasm": "simd-memory-widen.wasm",
+      "watSha256": "1920993c37448a7f53b7d23f25c1e7b383747cc2ff3d5ac5baa990d32d73f8b5",
+      "wasmSha256": "af9eaa8ed73558c4c1d732630f181db582f3501e4a6654f6e2059b92dc91982d"
+    },
+    {
+      "id": "simd-memory-lanes",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 2502353762,
+      "unit": "ns/source iteration",
+      "wat": "simd-memory-lanes.wat",
+      "wasm": "simd-memory-lanes.wasm",
+      "watSha256": "84b28659d50fe38ed365ce663ea10c65bc6f1758b7150f03742b8e56c4af6833",
+      "wasmSha256": "c0144a0346d1a8abdcfcb4e2cf3d5f665419252671cecea795c4d3dea3a398b5"
     }
   ]
 }

@@ -252,3 +252,20 @@ Host load averages before/after were 12.78/11.98 (one minute). No rerun replaces
 these observations. Raw commands, source/binary hashes, phases, sample orders,
 both looks and checksums remain in local `artifacts/native-simd/gate-results.json`.
 Native amd64 performance and the complete SIMD portfolio are not accepted.
+
+## SIMD memory increment
+
+Baseline: `4407b0c`. Lower all 22 fixed-SIMD memory operations through the shared
+widened address check and existing memory owner, with explicit full-width spills
+and independent checked cold entries. Extend the bounded local range analysis;
+do not infer loop invariants or assume aligned guest addresses.
+
+Before implementation, declare three additional public native API workloads:
+unaligned overlapping 128-bit load/store, signed widening plus splat loads, and
+lane load/store plus zero-extending loads. Each uses deterministic initialization,
+an independent byte/lane Python oracle and the pinned Wasm producer. Keep own
+Go/LLGo base/head and wazero/Wasmtime/Wasmer rows, alternate inputs and scalar,
+call and existing SIMD regression rows. Retain startup, preparation, first call
+and warm execution separately. Short diagnostics do not accept the profile;
+sustained checks retain the existing 20/60-block protocol, seven samples, two
+warmups, ±0.5% parity and ±0.25% A/A calibration, with no discarded failures.
