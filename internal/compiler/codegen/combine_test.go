@@ -1,6 +1,7 @@
 package codegen
 
 import (
+	"fmt"
 	"runtime"
 	"testing"
 
@@ -12,6 +13,35 @@ import (
 	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
+
+func TestMultiplyAddConstantOperands(t *testing.T) {
+	if !native.Available {
+		return
+	}
+	for _, wide := range []bool{false, true} {
+		for _, swap := range []bool{false, true} {
+			for product := slots.Slot(0); product < 3; product++ {
+				for result := slots.Slot(0); result < 5; result++ {
+					for constant := 0; constant < 5; constant++ {
+						t.Run(fmt.Sprintf("wide=%v/swap=%v/product=%d/result=%d/constant=%d", wide, swap, product, result, constant), func(t *testing.T) {
+							f := multiplyAddFixture(wide, swap, product, result, slots.Slot(constant), constant)
+							f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Bits: 0x12345678}})
+							operand := slots.Slot(0)
+							if swap {
+								operand = 1
+							}
+							if result == 4 {
+								f.Code[0].A, f.Code[0].B = operand, operand
+							}
+							f.Code = append([]slots.Instruction{{Op: f.Sources[1].Wasm.Op, Source: 2, Dst: operand, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot}}, f.Code...)
+							checkLinearIntegerEntries(t, f)
+						})
+					}
+				}
+			}
+		}
+	}
+}
 
 func multiplyAddFixture(wide, swap bool, product, result, addend slots.Slot, constant int) *slots.Function {
 	mul, literal, bits := uint32(0x6c), uint32(0x41), uint64(0xfedcba98)

@@ -94,7 +94,9 @@ func TestMaskShiftProofBoundaries(t *testing.T) {
 		}
 		for _, arch := range []string{"arm64", "amd64"} {
 			c, err := CompileUnmeteredFunction(arch, f, DefaultLimits())
-			if err != nil || c.FusedIntegers != 0 {
+			// amd64 can independently fuse immediate arithmetic in this
+			// fixture. Only arm64's bitfield selection is excluded here.
+			if err != nil || arch == "arm64" && c.FusedIntegers != 0 {
 				t.Fatal(kind, arch, err)
 			}
 		}

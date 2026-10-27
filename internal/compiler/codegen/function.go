@@ -178,6 +178,12 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			combinedThrough = end
 			continue
 		}
+		if e.logicalShift(pc, in) {
+			out.FusedIntegers++
+			independentEntries = append(independentEntries, pc+1, pc+2)
+			combinedThrough = pc + 2
+			continue
+		}
 		if end, ok := e.combineScalarCopies(pc); ok {
 			out.ForwardedScalars++
 			for entry := pc + 1; entry <= end; entry++ {
@@ -188,6 +194,14 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		}
 
 		if end, ok := e.combineMultiplyAdd(pc); ok {
+			out.FusedIntegers++
+			for entry := pc + 1; entry <= end; entry++ {
+				independentEntries = append(independentEntries, entry)
+			}
+			combinedThrough = end
+			continue
+		}
+		if end, ok := e.combineIntegerConstant(pc); ok {
 			out.FusedIntegers++
 			for entry := pc + 1; entry <= end; entry++ {
 				independentEntries = append(independentEntries, entry)

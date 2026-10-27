@@ -10,6 +10,7 @@ import random
 import statistics
 import subprocess
 
+import interleaved
 import own_build
 
 ROUNDS = 20
@@ -74,6 +75,7 @@ def run(head, builds, runtimes, fixture, invoke, timeout):
     """Build only the small native probe in already isolated source trees."""
     baseline_fixture, fixture = fixture, candidate_fixture(fixture)
     report = {"scope": "integer compiler architecture; public native VM remains unavailable",
+              "protocol": "warm-call-interleave-v1", "sampleOrders": [],
               "rounds": 0, "plannedLooks": [ROUNDS, MAX_ROUNDS], "looks": [], "baselineRounds": BASELINE_ROUNDS, "parityMargin": PARITY, "calibrationMargin": CALIBRATION, "fixture": fixture, "baselineFixture": baseline_fixture, "builds": {}, "observations": [], "status": "running"}
     commands = {}
     source = (head / "benchmarks/native/main.go").read_text()
@@ -115,9 +117,16 @@ def run(head, builds, runtimes, fixture, invoke, timeout):
         commands = {name: ["taskset", "-c", str(cpu), *command] for name, command in commands.items()}
     rng = random.Random(20261026)
     for n in range(MAX_ROUNDS):
-        order = [name for name in commands if not name.startswith("base-") or n < BASELINE_ROUNDS]; rng.shuffle(order)
-        for name in order:
-            observation = invoke(commands[name], timeout)
+        observations = {}
+        if n < BASELINE_ROUNDS:
+            order = [name for name in commands if name.startswith("base-")]; rng.shuffle(order)
+            for name in order:
+                observations[name] = invoke(commands[name], timeout)
+        block, orders = interleaved.invoke({name: cmd for name, cmd in commands.items()
+                                           if not name.startswith("base-")}, timeout, rng)
+        observations.update(block)
+        report["sampleOrders"].append(orders)
+        for name, observation in observations.items():
             record = observation["record"]
             case = baseline_fixture if name.startswith("base-") else fixture
             if len(record["warmCallNs"]) != 7 or any(type(x) is not int or x <= 0 for x in record["warmCallNs"]):
@@ -148,6 +157,7 @@ def markdown(report):
              "Compiler-only integer/register/polling comparison; **not public native API or full-profile acceptance**. "
              "Fuel is disabled. Own code retains bounded cancellation polls; references use their pinned default interruption settings. "
              f"{report['rounds']} interleaved sustained-work blocks plus three baseline blocks; seven warm calls per process. "
+             "Warm calls are individually randomized across paused processes; barriers and final result inspection are outside call timers. "
              f"Candidates and A/A controls use {report['fixture']['iterations']:,} iterations per call; descriptive baselines retain "
              f"{report.get('baselineFixture', report['fixture'])['iterations']:,}. Warm rates and own ratios normalize each record by its own iteration count. "
              "The planned looks are 20 and, only if inconclusive, 60 blocks; intervals adjust for both looks. "

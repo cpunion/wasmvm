@@ -68,3 +68,12 @@ func (e *functionEmitter) pooledInteger(in slots.Instruction, v uint64) bool {
 	}()
 	return e.registerInteger(in.Op, in.Dst, in.A, in.B)
 }
+
+func (e *functionEmitter) literalRegister(in slots.Instruction) (byte, bool) {
+	v := e.f.Sources[in.Source].Wasm.Bits
+	if in.Op == 0x41 {
+		v = uint64(uint32(v))
+	}
+	r, ok := e.constantRegisters[v]
+	return r, ok
+}

@@ -15,15 +15,21 @@ bounded interrupt checks without periodic host round trips. `--tier sliced
 --budget 64` selects the original precise sliced compiler with semantic fuel
 disabled. The probe records frontend, native emission/publication, context setup,
 first call, seven warm calls after two extra warmups, code size and host poll
-exits. Checksums, initial frame setup and printing are outside the call timer.
+exits. Final state/result inspection, checksums, initial frame setup and printing
+are outside the call timer. Poll servicing stays inside.
 
 The existing PR phase job reuses its isolated exact-revision source trees and
 pinned wazero 1.12.0, Wasmtime 48.0.1 and Wasmer 7.3.0 compiler runners. It adds
-20 interleaved process blocks (one predeclared extension to 60 when inconclusive)
+20 independent process blocks (one predeclared extension to 60 when inconclusive)
 for 25 million iterations of the existing sustained kernel
 (the identical binary and seed for all candidates and A/A controls), plus three
 own-baseline blocks retaining five million iterations and publishes raw records and the
-feature comparison in the same PR comment. Both host compilers must pass every
+feature comparison in the same PR comment. `WASMVM_INTERLEAVE=1` enables a
+`sampleReady`/`sample\n` barrier before each warm call, outside its timer. The
+parent serially prepares fresh processes and randomizes each round of warm
+calls across them. It preserves all seven calls, process medians, dispatch
+orders and protocol events; it never executes timed calls concurrently.
+Both host compilers must pass every
 competitor comparison and their identical-binary A/A control. Linux processes
 share one allowed CPU through `taskset`; macOS affinity remains uncontrolled. A paired process bootstrap uses simultaneous 95% bounds;
 intervals account for both planned looks. A practical parity verdict requires the whole interval within ±0.5%, and A/A
@@ -113,3 +119,63 @@ three-block diagnostics are near 1.54 ns/iteration for both host compilers and
 the references, but these observations do not replace the unchanged final-head
 gate. Tests cover all-slot results at every original continuation, aliasing,
 edge copies, branch-range boundaries, fuel and cancellation on both ISAs.
+
+At `19c3a6c`, Linux passed, while arm64 remained inconclusive: Go/LLGo
+1.904/1.918 ns/iteration versus Wasmtime/Wasmer 1.899/1.905. The arm64 host
+reported load averages of 13.1 before and 19.9 after the run, and independent
+identical-binary controls did not resolve the declared calibration band.
+These observations remain in run 40374716113 and do not authorize merging.
+
+The next compiler change retains expensive arm64 constants in otherwise unused
+registers, compacts near conditional branches while relocating all entries and
+tables, forwards comparison flags to branches, and omits temporary copies only
+when their replacements are proved to precede every observation or exit.
+Independent continuations, observable slot values and cancellation checks remain
+intact. Constant-pool overflow/spills, branch relocation limits, cold entries,
+poll-state publication and aliasing have semantic regression tests. The existing
+two-target benchmark protocol and its acceptance margins remain unchanged.
+The local three-block diagnostic encountered system load above 190; its raw
+records are retained as inconclusive, not used as a speedup claim.
+
+At `358a705`, all four semantic jobs passed. Linux resolved competitor parity
+(Go/LLGo 1.328/1.327 ns/iteration), but A/A calibration failed. Arm64 measured
+2.016/2.006 versus wazero 2.423, Wasmtime 2.051 and Wasmer 2.031: faster than
+wazero, inconclusive against Cranelift, with unresolved A/A controls. Both
+targets remain blocked in run 40434344155.
+
+The next compiler change distributes constant shifts over logical operations
+using arm64 shifted operands and feeds multiply-add directly from pooled
+constants. The sustained loop loses three redundant constant-register moves.
+Tests compare every slot at every original continuation across both integer
+widths, shift counts, operand/result aliases and live/dead intermediates.
+Local three-block diagnostics do not resolve a speedup; final-head acceptance
+still requires the unchanged two-target comparison and A/A calibration.
+
+At `5573152`, all four semantic jobs passed. Arm64 remained inconclusive
+(Go/LLGo 1.948/1.962 versus Wasmtime/Wasmer 1.979/1.972); A/A did not resolve.
+The Linux runner changed from AMD EPYC 9V45 to Intel Xeon Platinum 8573C:
+unchanged amd64 machine-code hashes measured 1.723 ns/iteration against
+1.678--1.679 for the three references. LLGo A/A calibrated, and its 2--3%
+deficit was resolved. This is a real Intel gap, not a compiler-change regression
+or a reason to reuse the earlier AMD pass. Run 40437631694 retains both reports.
+The next amd64 change selects immediate integer arithmetic, omits dead literal
+temporaries and redundant self-copies, and uses shorter zero-extending constant
+loads. Arm64 code and the measurement protocol remain unchanged.
+
+At `25191b0`, all four semantic jobs passed. On Intel 8573C the remaining
+LLGo deficit against Wasmtime/Wasmer was about 1.1% (95% intervals above
+1.005), down from about 2.6%. Arm64 passed the wazero/Wasmtime comparisons
+but not Wasmer or A/A calibration. Run 40439394454 remains blocked. The next
+amd64 change forwards immediate results directly to locals, folds immediate
+operands through local copies, and shares logical/shift result registers when
+the intermediate is proved dead. Cold entries and live intermediate values
+remain exact; arm64 generated bytes and benchmark thresholds remain unchanged.
+
+At `84acc5c`, all four semantic jobs and the AMD EPYC 7763 gate passed. Arm64
+remained inconclusive against Wasmer and in A/A calibration; the final Intel
+code has not been measured. Run 40441277740 retains both reports. The next
+protocol, `warm-call-interleave-v1`, shortens temporal separation between
+runtime samples and removes final state/result inspection from the native
+call timer to match reference boundaries. This is a measurement correction,
+not a generated-code speedup. Workloads, sample counts, independent process
+blocks, planned looks and acceptance margins remain unchanged.

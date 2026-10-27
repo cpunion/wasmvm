@@ -285,3 +285,39 @@ func TestCLIWriteFailures(t *testing.T) {
 		t.Fatalf("report write failure was ignored: %d %s", code, &stderr)
 	}
 }
+
+func TestInterleavedCalls(t *testing.T) {
+	t.Setenv("WASMVM_INTERLEAVE", "1")
+	args := []string{"--wasm", fixture("control"), "--seed", "42", "--expected", "42", "--samples", "2"}
+	for _, test := range []struct {
+		input string
+		code  int
+	}{
+		{"run\nsample\nsample\n", 0},
+		{"run\n", 1},
+		{"run\nsample\n", 1},
+		{"run\ninvalid\n", 1},
+	} {
+		var out, diagnostic bytes.Buffer
+		code := runCLI(args, strings.NewReader(test.input), &out, &diagnostic)
+		if code != test.code {
+			t.Fatalf("input %q: exit %d: %s", test.input, code, &diagnostic)
+		}
+		if code == 0 {
+			lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+			if len(lines) != 4 || lines[1] != `{"sampleReady":0}` || lines[2] != `{"sampleReady":1}` {
+				t.Fatalf("invalid sample protocol: %s", &out)
+			}
+			var result report
+			if err := json.Unmarshal([]byte(lines[3]), &result); err != nil || len(result.WarmResults) != 2 || result.WarmResults[0] != 42 || result.WarmResults[1] != 42 {
+				t.Fatalf("invalid interleaved result: %+v, %v", result, err)
+			}
+		} else if !strings.Contains(diagnostic.String(), "sample acknowledgement") {
+			t.Fatal(diagnostic.String())
+		}
+	}
+	var diagnostic bytes.Buffer
+	if code := runCLI(args, strings.NewReader("run\nsample\nsample\n"), &readyOnlyWriter{}, &diagnostic); code != 1 || !strings.Contains(diagnostic.String(), "write failure") {
+		t.Fatalf("ignored sample event write failure: %d %s", code, &diagnostic)
+	}
+}

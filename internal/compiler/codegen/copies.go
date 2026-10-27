@@ -80,6 +80,9 @@ func (e *functionEmitter) combineScalarCopies(start int) (int, bool) {
 			e.literal(copy)
 		}
 	}
+	if !deferConstant && e.logicalShift(pc, in) {
+		return pc + 2, true
+	}
 	if deferConstant && e.registerImmediate(in.Op, in.Dst, in.A, e.f.Sources[previous.Source].Wasm.Bits) {
 		if previous.Dst != in.Dst && previous.Dst != original.Dst && (end == pc || e.f.Code[end].Dst != previous.Dst) && !e.overwrittenBeforeExit(end+1, previous.Dst) {
 			e.literal(previous)
