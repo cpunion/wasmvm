@@ -36,6 +36,11 @@ func (e *functionEmitter) combineScalarCopies(start int) (int, bool) {
 		return 0, false
 	}
 	if e.a.arch == "arm64" {
+		if pc > start {
+			if _, ok := e.vectorAffinePlan(pc - 1); ok {
+				return 0, false
+			}
+		}
 		if _, _, _, ok := e.multiplyAddTail(pc); ok {
 			return 0, false
 		}

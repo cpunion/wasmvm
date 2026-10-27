@@ -34,6 +34,7 @@ type CompiledFunction struct {
 	InlinedCalls, InlineSlots  uint32
 	UsesRuntimeData            bool
 	NativeVectors              uint32
+	FusedVectors               uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -187,6 +188,14 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				independentEntries = append(independentEntries, entry)
 			}
 			combinedThrough = region.end
+			continue
+		}
+		if end, ok := e.combineVectorAffine(pc); ok {
+			out.FusedVectors++
+			for entry := pc + 1; entry <= end; entry++ {
+				independentEntries = append(independentEntries, entry)
+			}
+			combinedThrough = end
 			continue
 		}
 		if end, ok := e.combineMaskShift(pc); ok {

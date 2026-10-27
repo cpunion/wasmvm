@@ -102,6 +102,13 @@ func (e *functionEmitter) prepareVectorConstants() {
 			weights[[2]uint64{binary.LittleEndian.Uint64(b[:8]), binary.LittleEndian.Uint64(b[8:])}]++
 		}
 	}
+	for pc, in := range e.f.Code {
+		if in.Op == 0xfd000c {
+			if plan, ok := e.vectorAffinePlan(pc); ok {
+				weights[plan.addend]++
+			}
+		}
+	}
 	var values [][2]uint64
 	for v := range weights {
 		values = append(values, v)

@@ -247,3 +247,94 @@ func TestVectorLargeFrameAndLiteralBits(t *testing.T) {
 		}
 	}
 }
+
+func TestVectorAffineKeepsIntermediateValuesAndColdEntries(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	for _, size := range []uint32{1, 2} {
+		for _, addFirst := range []bool{false, true} {
+			for _, prefix := range []bool{false, true} {
+				for _, dst := range []uint32{0, 1} {
+					f := &slots.Function{LocalCount: 8, Slots: make([]wasm.ValueType, 8)}
+					for i := range f.Slots {
+						f.Slots[i] = wasm.V128
+						f.Args = append(f.Args, slots.Slot(i))
+					}
+					appendCode := func(source module.Instr, in slots.Instruction) {
+						in.Source = uint32(len(f.Sources))
+						f.Sources = append(f.Sources, ir.Source{Wasm: source})
+						f.Code = append(f.Code, in)
+					}
+					empty := slots.Instruction{Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot}
+					input := slots.Slot(0)
+					if prefix {
+						in := empty
+						in.Op, in.Dst = 0x20, 3
+						appendCode(module.Instr{Op: 0x20}, in)
+						input = 3
+					}
+					literal := func(slot slots.Slot, lo, hi uint64) {
+						source := module.Instr{Op: 0xfd000c}
+						binary.LittleEndian.PutUint64(source.Vector[:8], lo)
+						binary.LittleEndian.PutUint64(source.Vector[8:], hi)
+						in := empty
+						in.Op, in.Dst = source.Op, slot
+						appendCode(source, in)
+					}
+					first, second := uint32(0xfd0095), uint32(0xfd008e)
+					if size == 2 {
+						first, second = 0xfd00b5, 0xfd00ae
+					}
+					if addFirst {
+						first, second = second, first
+					}
+					literal(4, 0x123456789abcdef0, 0xfedcba9876543210)
+					in := empty
+					in.Op, in.Dst, in.A, in.B = first, 5, input, 4
+					appendCode(module.Instr{Op: first}, in)
+					literal(6, 0x80000001ffffffff, 0x0102030405060708)
+					in = empty
+					in.Op, in.Dst, in.A, in.B = second, 7, 5, 6
+					appendCode(module.Instr{Op: second}, in)
+					in = empty
+					in.Op, in.A = 0x21, 7
+					appendCode(module.Instr{Op: 0x21, A: dst}, in)
+					in = empty
+					in.Op, in.Count = slots.ControlBase+uint32(ir.Return), 8
+					appendCode(module.Instr{Op: 0xb}, in)
+					compiled, fl, fc := functionContext(t, f, true)
+					_, sl, sc := functionContext(t, f, false)
+					if runtime.GOARCH == "arm64" && compiled.FusedVectors != 1 {
+						t.Fatal("affine vector not fused", size, addFirst, prefix, dst)
+					}
+					for pc := range f.Code {
+						for i := range f.Slots {
+							v := value.Value{Lo: ^uint64(0) - uint64(i), Hi: 0x8000000012345678 + uint64(i)}
+							writeSlot(t, fc, 16, slots.Slot(i), v)
+							writeSlot(t, sc, 16, slots.Slot(i), v)
+						}
+						s := native.State{Used: 16, Depth: 1, Continuation: uint64(pc), Budget: 1000}
+						if err := fc.SetState(s); err != nil {
+							t.Fatal(err)
+						}
+						if err := sc.SetState(s); err != nil {
+							t.Fatal(err)
+						}
+						if exit, err := fc.Enter(fl, 0); err != nil || exit != native.Return {
+							t.Fatal(exit, err)
+						}
+						if exit, err := sc.Enter(sl, 0); err != nil || exit != native.Return {
+							t.Fatal(exit, err)
+						}
+						for i := range f.Slots {
+							if got, want := readSlot(t, fc, 16, slots.Slot(i)), readSlot(t, sc, 16, slots.Slot(i)); got != want {
+								t.Fatal(size, addFirst, prefix, dst, pc, i, got, want)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
