@@ -338,11 +338,14 @@ upper bounds are 1.0067 and 1.0062. LLGo A/A intervals are [0.9940, 1.0021],
 [0.9917, 1.0047] and [0.9952, 1.0058], outside ±0.25%. The combined gate remains
 **blocked**; no result is discarded and native amd64 performance remains open.
 
-Next, forward the equality established by a preceding `local.tee` into a
-consumer inside the same bounded hot region. This removes an avoidable
-loop-condition dependency without omitting observable slot values. Cold entries
-and region boundaries must reject that equality. Check all slots for each
-original PC across integer, floating and vector consumers, including a clobbered
-local. Compare the same eight diagnostic families against `aa89f0d`, the original
-baseline and all three pinned competitors; use the unchanged sustained protocol
-only for a materially improved candidate.
+An additional experiment (`38340db`) forwarded the equality established by a
+preceding `local.tee` within the same bounded region. It passed local Go/LLGo
+semantic checks, including all-slot comparisons at original PCs and a negative
+poll-boundary fault injection. However, its three-block diagnostic did not
+materially improve the targeted LLGo widening path (previous 1.099, candidate
+1.101 ns/iteration), and lane timing was 5.130 versus 5.142. The experiment was
+reverted, preserving the compact proven addressing implementation. All eight
+families and 175 alternate-input checks remain in local `tee-results.json`;
+no additional sustained run or redundant target CI was launched for this
+unretained change. The final production source equals `aa89f0d`, whose semantic
+matrix and sustained results above remain the applicable evidence.
