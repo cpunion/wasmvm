@@ -112,26 +112,52 @@ func leafExpressions(f *slots.Function, inputs []slots.Slot) ([]*leafExpression,
 // inlineLeaf emits into a temporary buffer first: register pressure or an
 // unsupported instruction leaves the original native call completely intact.
 // All original continuations, call polls and caller slots remain authoritative.
-func (e *functionEmitter) inlineLeaf(pc int, callee *slots.Function) bool {
+func (e *functionEmitter) inlineLeaf(pc int, callee *slots.Function) (int, bool) {
 	if !e.unmetered || callee == nil {
-		return false
+		return pc, false
 	}
 	in := e.f.Code[pc]
+	if in.Op != 0x10 {
+		return pc, false
+	}
 	inputs := e.f.Args[in.Extra : in.Extra+in.Count]
 	results, ok := leafExpressions(callee, inputs)
 	if !ok || uint64(in.Extra)+uint64(in.Count)+uint64(len(results)) > uint64(len(e.f.Args)) {
-		return false
+		return pc, false
 	}
 	for i, slot := range inputs {
 		if e.f.Slots[slot] != callee.Signature.Params[i] {
-			return false
+			return pc, false
 		}
 	}
-	outputs := e.f.Args[in.Extra+in.Count : in.Extra+in.Count+uint32(len(results))]
+	outputs := append([]slots.Slot(nil), e.f.Args[in.Extra+in.Count:in.Extra+in.Count+uint32(len(results))]...)
+	outputTypes := append([]wasm.ValueType(nil), callee.Signature.Results...)
+	end := pc
+	if len(outputs) == 1 && pc+1 < e.codeLimit() && pc/256 == (pc+1)/256 {
+		next := e.f.Code[pc+1]
+		if (next.Op == 0x21 || next.Op == 0x22) && next.A == outputs[0] {
+			local := slots.Slot(e.f.Sources[next.Source].Wasm.A)
+			original := outputs[0]
+			outputs[0], end = local, pc+1
+			for _, slot := range []slots.Slot{original, next.Dst} {
+				if slot != slots.NoSlot && slot != local && !e.overwrittenBeforeExit(end+1, slot) {
+					duplicate := false
+					for _, existing := range outputs {
+						duplicate = duplicate || existing == slot
+					}
+					if !duplicate {
+						outputs = append(outputs, slot)
+						results = append(results, results[0])
+						outputTypes = append(outputTypes, outputTypes[0])
+					}
+				}
+			}
+		}
+	}
 	outputSlots := map[slots.Slot]bool{}
 	for i, slot := range outputs {
-		if outputSlots[slot] || e.f.Slots[slot] != callee.Signature.Results[i] {
-			return false
+		if outputSlots[slot] || e.f.Slots[slot] != outputTypes[i] {
+			return pc, false
 		}
 		outputSlots[slot] = true
 	}
@@ -148,7 +174,7 @@ func (e *functionEmitter) inlineLeaf(pc int, callee *slots.Function) bool {
 	}
 	protected := map[byte]bool{}
 	for slot, r := range e.registers {
-		if !outputSlots[slot] && !e.overwrittenBeforeExit(pc+1, slot) {
+		if !outputSlots[slot] && !e.overwrittenBeforeExit(end+1, slot) {
 			protected[r] = true
 		}
 	}
@@ -185,7 +211,7 @@ func (e *functionEmitter) inlineLeaf(pc int, callee *slots.Function) bool {
 		if n.op == 0 {
 			r, ok := e.registers[n.argument]
 			if !ok {
-				return false
+				return pc, false
 			}
 			regs[n] = r
 		}
@@ -208,7 +234,15 @@ func (e *functionEmitter) inlineLeaf(pc int, callee *slots.Function) bool {
 			consumed[n.right]++
 		}
 		selected := false
-		for _, r := range pool {
+		candidates := append([]byte(nil), pool...)
+		for i, result := range results {
+			if result == n {
+				if r, ok := e.registers[outputs[i]]; ok {
+					candidates = append([]byte{r}, candidates...)
+				}
+			}
+		}
+		for _, r := range candidates {
 			if protected[r] {
 				continue
 			}
@@ -245,7 +279,7 @@ func (e *functionEmitter) inlineLeaf(pc int, callee *slots.Function) bool {
 			break
 		}
 		if !selected {
-			return false
+			return pc, false
 		}
 		for v, count := range consumed {
 			uses[v] -= count
@@ -282,9 +316,9 @@ func (e *functionEmitter) inlineLeaf(pc int, callee *slots.Function) bool {
 			remaining--
 		}
 		if !progress {
-			return false
+			return pc, false
 		}
 	}
 	e.a.bytes(a.code...)
-	return true
+	return end, true
 }

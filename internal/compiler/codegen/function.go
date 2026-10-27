@@ -258,8 +258,12 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			e.leave(nativeabi.GrowMemory, uint64(pc), uint64(pc+1))
 		case op == 0x10 || op == 0x11:
 			out.Calls++
-			if op == 0x10 && e.inlineLeaf(pc, config.DirectCallees[src.Wasm.A]) {
+			if end, ok := e.inlineLeaf(pc, config.DirectCallees[src.Wasm.A]); op == 0x10 && ok {
 				out.InlinedCalls++
+				if end != pc {
+					independentEntries = append(independentEntries, end)
+					combinedThrough = end
+				}
 				out.InlineSlots = max(out.InlineSlots, uint32(len(config.DirectCallees[src.Wasm.A].Slots)))
 				continue
 			}

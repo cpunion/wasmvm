@@ -118,7 +118,7 @@ func TestLeafExpansionPreservesAllCallerSlotsAndEntries(t *testing.T) {
 }
 
 func TestLeafExpansionKeepsOrdinaryCallsWhenIneligible(t *testing.T) {
-	for _, kind := range []string{"metered", "import", "trap", "control", "large", "references", "pressure", "signature"} {
+	for _, kind := range []string{"metered", "import", "indirect", "trap", "control", "large", "references", "pressure", "signature"} {
 		t.Run(kind, func(t *testing.T) {
 			callee := leafFixture(0x6a, nil)
 			f := leafCaller(callee, 2, 5)
@@ -128,6 +128,8 @@ func TestLeafExpansionKeepsOrdinaryCallsWhenIneligible(t *testing.T) {
 				config.Unmetered = false
 			case "import":
 				config.DirectCallees = nil
+			case "indirect":
+				f.Code[5].Op = 0x11
 			case "trap":
 				callee.Code[2].Op = 0x6d
 			case "control":
@@ -148,6 +150,56 @@ func TestLeafExpansionKeepsOrdinaryCallsWhenIneligible(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestExpandedResultForwardingAliasesAndColdEntries(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	for local := uint32(0); local < 5; local++ {
+		for _, dead := range []bool{false, true} {
+			callee := leafFixture(0x6a, nil)
+			f := leafCaller(callee, 2, 5)
+			last := f.Code[len(f.Code)-1]
+			f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: 0x22, A: local}})
+			f.Code[len(f.Code)-1] = slots.Instruction{Op: 0x22, Source: uint32(len(f.Sources) - 1), Dst: 4, A: 2, B: slots.NoSlot, C: slots.NoSlot}
+			if dead {
+				f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: 0x41, Bits: 99}})
+				f.Code = append(f.Code, slots.Instruction{Op: 0x41, Source: uint32(len(f.Sources) - 1), Dst: 2, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot})
+			}
+			f.Code = append(f.Code, last)
+			compiled, lease, ctx := configuredContext(t, f, Config{Unmetered: true, DirectCallees: map[uint32]*slots.Function{7: callee}})
+			if compiled.InlinedCalls != 1 {
+				t.Fatal("missing expansion", local, dead)
+			}
+			for pc := range f.Code {
+				expected := []uint64{17, 25, 31, 37, 43}
+				for i, v := range expected {
+					writeSlot(t, ctx, 16, slots.Slot(i), value.Value{Lo: v})
+				}
+				if pc <= 5 {
+					expected[2] = 42
+				}
+				if pc <= 6 {
+					expected[local], expected[4] = expected[2], expected[2]
+				}
+				if dead && pc <= 7 {
+					expected[2] = 99
+				}
+				if err := ctx.SetState(native.State{Used: 16, Depth: 1, Continuation: uint64(pc)}); err != nil {
+					t.Fatal(err)
+				}
+				if exit, err := ctx.Enter(lease, 0); err != nil || exit != native.Return {
+					t.Fatal(exit, err)
+				}
+				for i, v := range expected {
+					if got := readSlot(t, ctx, 16, slots.Slot(i)); got != (value.Value{Lo: v}) {
+						t.Fatal(local, dead, pc, i, got, v)
+					}
+				}
+			}
+		}
 	}
 }
 
