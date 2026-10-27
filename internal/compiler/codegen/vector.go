@@ -84,6 +84,10 @@ func (e *functionEmitter) vectorDestination(slot slots.Slot) byte {
 	return 2
 }
 func (e *functionEmitter) vectorConstant(dst byte, lo, hi uint64) {
+	if r, ok := e.vectorConstants[[2]uint64{lo, hi}]; ok {
+		e.vectorMove(dst, r)
+		return
+	}
 	e.constant(0, lo)
 	e.floatFromInteger(dst, e.operandRegister(0), true)
 	e.constant(0, hi)
@@ -142,6 +146,17 @@ func (e *functionEmitter) prepareVectorConstants() {
 			weights[[2]uint64{binary.LittleEndian.Uint64(b[:8]), binary.LittleEndian.Uint64(b[8:])}] += weight
 			if plan, ok := e.vectorAffinePlan(pc); ok {
 				weights[plan.addend] += weight
+			}
+		}
+		if e.a.arch == "arm64" {
+			if in.Op == 0xfd000d {
+				b := e.f.Sources[in.Source].Wasm.Vector
+				weights[[2]uint64{binary.LittleEndian.Uint64(b[:8]), binary.LittleEndian.Uint64(b[8:])}] += weight
+			} else if in.Op >= 0xfd0064 && in.Op <= 0xfd00c4 && (in.Op-0xfd0064)%32 == 0 {
+				size := (in.Op - 0xfd0064) / 32
+				if size < 3 {
+					weights[vectorBitWeights(size)] += weight
+				}
 			}
 		}
 	}

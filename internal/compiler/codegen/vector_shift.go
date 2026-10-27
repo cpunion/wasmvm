@@ -134,26 +134,43 @@ func (e *functionEmitter) vectorReduce(in slots.Instruction, l byte, size, kind 
 }
 
 func (e *functionEmitter) vectorBitmaskARM64(l byte, size uint32) {
-	if size == 0 {
-		e.a.word(0x6f090400 | uint32(l)<<5 | 2) // USHR bytes,#7.
-	} else {
-		e.a.word(0x4f000400 | ((8<<size)+1)<<16 | uint32(l)<<5 | 2) // SSHR,#laneBits-1.
-		for width := size; width > 0; width-- {
-			e.a.word(0x0e214842 | (width-1)<<22) // SQXTN keeps sign and lane order.
-		}
-		e.a.word(0x2f090442) // USHR low bytes,#7.
+	if size == 3 {
+		e.vectorExtract(l, 3, 0, false)
+		e.a.word(0xd37ffd2a) // LSR x10,x9,#63.
+		e.vectorExtract(l, 3, 1, false)
+		e.a.word(0xd37ffd29) // LSR x9,x9,#63.
+		e.a.word(0x2a090549) // ORR w9,w10,w9,LSL #1.
+		return
 	}
-	e.vectorFloatConstant(1, true, 0, 0x8040201008040201)
-	e.a.word(0x4e219c42) // MUL bytes by bit positions.
+	bits := vectorBitWeights(size)
+	weight, ok := e.vectorConstants[bits]
+	if !ok {
+		e.vectorConstant(1, bits[0], bits[1])
+		weight = 1
+	}
+	e.a.word(0x6f000400 | ((8<<size)+1)<<16 | uint32(l)<<5 | 2) // USHR,#laneBits-1.
+	e.a.word(0x4e209c42 | size<<22 | uint32(weight)<<16)        // MUL by bit positions.
 	if size == 0 {
 		e.a.word(0x0e31b843) // ADDV b3,low eight bytes.
 		e.a.word(0x6e024042) // EXT high eight bytes into low half.
 	}
-	e.a.word(0x0e31b842) // ADDV b2,low eight bytes.
-	e.a.word(0x0e013c49) // UMOV w9,v2.b[0].
+	ins := uint32(0x0e31b842) // ADDV low eight bytes.
+	if size > 0 {
+		ins |= 1<<30 | size<<22 // ADDV all eight halfwords/four words.
+	}
+	e.a.word(ins)
+	e.a.word(0x0e003c49 | (1<<size)<<16) // UMOV w9,scalar lane.
 	if size == 0 {
 		e.a.word(0x2a0903ea) // MOV w10,w9 (high byte).
 		e.a.word(0x0e013c69) // UMOV w9,v3.b[0] (low byte).
 		e.a.word(0x2a0a2129) // ORR w9,w9,w10,LSL #8.
 	}
+}
+
+func vectorBitWeights(size uint32) [2]uint64 {
+	return [...][2]uint64{
+		{0x8040201008040201, 0x8040201008040201},
+		{0x0008000400020001, 0x0080004000200010},
+		{0x0000000200000001, 0x0000000800000004},
+	}[size]
 }
