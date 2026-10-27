@@ -996,3 +996,13 @@ popcount differences. Actual instruction use on each measured host still needs
 disassembly; a timing ratio alone does not identify its selected ISA.
 PR #26 remains the only open contribution PR and stays blocked; no M1/M2,
 Core 3.0/Threads, component or WASI acceptance is inferred from these diagnostics.
+
+
+Retained head `4b09555` passes the final
+[four compiler/target jobs](https://github.com/cpunion/wasmvm/actions/runs/40531604986).
+All 12 downloaded reports verify the complete 51,139 assertions / 148 scripts.
+Linux CI coverage is codegen **94.23% (4168/4423)**, execute **98.47%
+(321/326)**, nativeexec **94.09% (207/220)** and public VM **96.42% (754/782)**;
+every measured executable package exceeds 90%. Production sources are identical
+to `20d0a41`; the retained tests additionally execute aliased comparisons,
+original cancellation continuations and periodic PC 256 on both targets.
