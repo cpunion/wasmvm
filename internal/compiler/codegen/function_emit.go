@@ -31,6 +31,12 @@ type functionEmitter struct {
 	registerSlots             []slots.Slot
 	pollExits                 []pollExit
 	trapExits                 []nativeTrapExit
+	callExits                 []nativeCallExit
+}
+
+type nativeCallExit struct {
+	label, pc int
+	source    uint64
 }
 
 type pollExit struct {

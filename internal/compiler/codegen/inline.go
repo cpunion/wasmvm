@@ -224,6 +224,24 @@ func (e *functionEmitter) inlineLeaf(pc int, callee *slots.Function) (int, bool)
 	for _, result := range results {
 		visit(result)
 	}
+	// A single-use product can feed arm64 MADD without materializing a
+	// temporary. Shared products remain separate, including returned aliases.
+	type multiplyAdd struct{ product, addend *leafExpression }
+	fused, skipped := map[*leafExpression]multiplyAdd{}, map[*leafExpression]bool{}
+	if a.arch == "arm64" {
+		for _, n := range order {
+			if n.op != 0x6a && n.op != 0x7c || n.immediate {
+				continue
+			}
+			for _, pair := range [][2]*leafExpression{{n.left, n.right}, {n.right, n.left}} {
+				product := pair[0]
+				if product != nil && product.op == n.op+2 && !product.immediate && uses[product] == 1 {
+					fused[n], skipped[product] = multiplyAdd{product, pair[1]}, true
+					break
+				}
+			}
+		}
+	}
 	// Install all argument locations before allocation, even if their first use
 	// follows another expression. Aliased arguments share an expression node.
 	for _, n := range order {
@@ -236,7 +254,7 @@ func (e *functionEmitter) inlineLeaf(pc int, callee *slots.Function) (int, bool)
 		}
 	}
 	for _, n := range order {
-		if n.op == 0 {
+		if n.op == 0 || skipped[n] {
 			continue
 		}
 		if n.op == 0x41 || n.op == 0x42 {
@@ -246,10 +264,15 @@ func (e *functionEmitter) inlineLeaf(pc int, callee *slots.Function) (int, bool)
 			}
 		}
 		consumed := map[*leafExpression]int{}
-		if n.left != nil {
+		combination, combined := fused[n]
+		if combined {
+			consumed[combination.product.left]++
+			consumed[combination.product.right]++
+			consumed[combination.addend]++
+		} else if n.left != nil {
 			consumed[n.left]++
 		}
-		if n.right != nil && !n.immediate {
+		if !combined && n.right != nil && !n.immediate {
 			consumed[n.right]++
 		}
 		selected := false
@@ -281,7 +304,10 @@ func (e *functionEmitter) inlineLeaf(pc int, callee *slots.Function) (int, bool)
 			if n.right != nil && !n.immediate {
 				t.registers[2] = regs[n.right]
 			}
-			if n.op == 0x41 || n.op == 0x42 {
+			if combined {
+				p := combination.product
+				a.arm(integerWide(n.op), 0x1b000000|uint32(regs[p.right])<<16|uint32(regs[combination.addend])<<10|uint32(regs[p.left])<<5|uint32(r))
+			} else if n.op == 0x41 || n.op == 0x42 {
 				if a.arch == "arm64" {
 					a.aconst(uint32(r), n.bits, n.bits > 0xffffffff)
 				} else {

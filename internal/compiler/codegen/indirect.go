@@ -67,29 +67,32 @@ func (e *functionEmitter) inlineIndirect(pc int, config Config) (int, uint32, bo
 		e.registerMove(e.operandRegister(2), e.operandRegister(0), true)
 	}
 	e.slotLoad(e.f.Args[in.Extra+in.Count-1], 0, false, false)
-	e.runtimeLoad(1, uint32(offset))
-	e.compare(true)
+	e.runtimeCompare(uint32(offset))
 	e.branch(fallback, "hs")
-	e.runtimeLoad(1, uint32(offset+8))
 	if e.a.arch == "arm64" {
-		e.a.word(0xf8697949) // ldr x9, [x10, x9, lsl #3]
+		base, cached := e.runtimeRegisters[uint32(offset+8)]
+		if !cached {
+			e.runtimeLoad(1, uint32(offset+8))
+			base = e.operandRegister(1)
+		}
+		e.a.word(0xf8697809 | uint32(base)<<5) // ldr x9, [base, x9, lsl #3]
 	} else {
+		e.runtimeLoad(1, uint32(offset+8))
 		e.a.bytes(0x48, 0x8b, 0x04, 0xc1) // mov rax, [rcx + rax*8]
 	}
 	for _, c := range candidates {
-		e.runtimeLoad(1, c.index*8)
-		e.compare(true)
+		e.runtimeCompare(c.index * 8)
 		e.branch(c.label, "eq")
 	}
 	e.a.branch(fallback, false, 0)
-	for _, c := range candidates {
+	for i, c := range candidates {
 		e.a.mark(c.label)
 		e.a.bytes(c.code...)
-		e.a.branch(done, false, 0)
+		if i != len(candidates)-1 {
+			e.a.branch(done, false, 0)
+		}
 	}
-	e.a.mark(fallback)
-	e.contextConst(nativeabi.SourceOffset, uint64(source.Wasm.Offset))
-	e.leave(nativeabi.Call, uint64(pc), uint64(pc+1))
+	e.callExits = append(e.callExits, nativeCallExit{fallback, pc, uint64(source.Wasm.Offset)})
 	e.a.mark(done)
 	return end, needed, true
 }

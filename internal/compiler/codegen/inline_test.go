@@ -222,3 +222,80 @@ func TestLeafExpansionLeavesCancellationAtTheCall(t *testing.T) {
 		t.Fatal(exit, err)
 	}
 }
+
+func TestLeafMultiplyAddPreservesAliasesAndSharedProducts(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	for _, typ := range []wasm.ValueType{wasm.I32, wasm.I64} {
+		for _, commute := range []bool{false, true} {
+			for _, shared := range []bool{false, true} {
+				add, mul := uint32(0x6a), uint32(0x6c)
+				if typ == wasm.I64 {
+					add, mul = 0x7c, 0x7e
+				}
+				callee := &slots.Function{Signature: module.FuncType{Params: []wasm.ValueType{typ, typ, typ}, Results: []wasm.ValueType{typ}}, LocalCount: 3,
+					Slots: []wasm.ValueType{typ, typ, typ, typ, typ}, Args: []slots.Slot{4},
+					Sources: []ir.Source{{Wasm: module.Instr{Op: mul}}, {Wasm: module.Instr{Op: add}}},
+					Code: []slots.Instruction{
+						{Op: mul, Dst: 3, A: 0, B: 1, C: slots.NoSlot},
+						{Op: add, Source: 1, Dst: 4, A: 3, B: 2, C: slots.NoSlot},
+						{Op: slots.ControlBase + uint32(ir.Return), Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot, Count: 1},
+					}}
+				if commute {
+					callee.Code[1].A, callee.Code[1].B = 2, 3
+				}
+				if shared {
+					callee.Signature.Results = append(callee.Signature.Results, typ)
+					callee.Args = []slots.Slot{3, 4}
+					callee.Code[2].Count = 2
+				}
+				f := leafCaller(callee, 2, 5)
+				f.Code[5].Count = 3
+				f.Args = []slots.Slot{0, 1, 3, 2}
+				if shared {
+					f.Args = append(f.Args, 4)
+				}
+				f.Code[6].Extra = uint32(len(f.Args))
+				f.Args = append(f.Args, 0, 1, 2, 3, 4)
+				compiled, lease, ctx := configuredContext(t, f, Config{Unmetered: true, DirectCallees: map[uint32]*slots.Function{7: callee}})
+				if compiled.InlinedCalls != 1 {
+					t.Fatal("multiply-add leaf not expanded", typ, commute, shared)
+				}
+				for _, arg := range []uint64{0, 1, 0x80000001, ^uint64(0)} {
+					for pc := range f.Code {
+						initial := []value.Value{{Lo: arg}, {Lo: arg ^ 0x12345678}, {Lo: 3}, {Lo: arg >> 1}, {Lo: 7}}
+						for i := range initial {
+							if typ == wasm.I32 {
+								initial[i].Lo = uint64(uint32(initial[i].Lo))
+							}
+							writeSlot(t, ctx, 16, slots.Slot(i), initial[i])
+						}
+						if err := ctx.SetState(native.State{Used: 16, Depth: 1, Continuation: uint64(pc)}); err != nil {
+							t.Fatal(err)
+						}
+						if exit, err := ctx.Enter(lease, 0); err != nil || exit != native.Return {
+							t.Fatal(exit, err)
+						}
+						if pc <= 5 {
+							product := initial[0].Lo * initial[1].Lo
+							sum := product + initial[3].Lo
+							if typ == wasm.I32 {
+								product, sum = uint64(uint32(product)), uint64(uint32(sum))
+							}
+							initial[2].Lo = sum
+							if shared {
+								initial[2].Lo, initial[4].Lo = product, sum
+							}
+						}
+						for i, want := range initial {
+							if got := readSlot(t, ctx, 16, slots.Slot(i)); got != want {
+								t.Fatal(typ, commute, shared, arg, pc, i, got, want)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

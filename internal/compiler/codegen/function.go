@@ -310,6 +310,11 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		}
 	}
 	e.emitPollExits()
+	for _, call := range e.callExits {
+		a.mark(call.label)
+		e.contextConst(nativeabi.SourceOffset, call.source)
+		e.leave(nativeabi.Call, uint64(call.pc), uint64(call.pc+1))
+	}
 	for _, trap := range e.trapExits {
 		a.mark(trap.label)
 		e.trap(trap.code, trap.source)

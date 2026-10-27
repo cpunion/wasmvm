@@ -85,3 +85,12 @@ func (e *functionEmitter) runtimeLoad(dst byte, offset uint32) {
 		e.pointerLoad(dst, 2, offset)
 	}
 }
+
+func (e *functionEmitter) runtimeCompare(offset uint32) {
+	if r, ok := e.runtimeRegisters[offset]; ok {
+		e.a.word(0xeb00013f | uint32(r)<<16) // cmp x9, cached word
+	} else {
+		e.runtimeLoad(1, offset)
+		e.compare(true)
+	}
+}
