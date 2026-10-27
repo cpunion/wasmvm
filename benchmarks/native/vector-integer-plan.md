@@ -141,3 +141,21 @@ Final raw artifacts (SHA-256):
 
 - `native-amd64-comparison/results.json`: `81a194bb9c55260be86d37540d79e6a343530565ab644592f98a26c923afafdd`.
 - `native-arm64-comparison/results.json`: `c8a2e213cf8ca6527443a896538b783ed17643f72c9c5388b21a87edc6bd7544`.
+
+## AVX2 profile scope
+
+Baseline `c980109` completes fixed SIMD but retains extra x86 copies and legacy
+variable-shift dependencies. Add an explicit 128-bit AVX2 profile: CPUID must
+advertise AVX/OSXSAVE and AVX2, and XGETBV must confirm XMM/YMM state before any
+VEX instruction is selected. Do not infer OS support from the CPUID AVX2 bit.
+Keep SSE2/SSSE3/SSE4.1 masked profiles executable; no AVX-512 or wider guest
+vector contract is introduced. Three-operand encodings should preserve aliases
+without scratch copies and use per-lane variable shifts where appropriate.
+
+Affected scope is the existing 33-family native SIMD suite, with unchanged
+100,000-iteration diagnostics, alternate-input oracles, phase boundaries and
+three references. Include the existing integer/call/memory regressions. Test
+all eight explicit profile masks for emission; execute only host-supported
+masks. Preserve every cold PC, all slots at exits, exact fuel, cancellation,
+NaN/zero classes and the full Go/LLGo semantic matrix. Keep slower measurements;
+missing or inconclusive sustained/calibrated evidence continues to block merge.
