@@ -776,3 +776,13 @@ cgo-disabled build pass. The paired final diagnostic improves min/max by about
 10–14%, but still has 1–3% slower arithmetic/min/max/rounding/cast comparisons
 against the fastest reference. This is retained as failed performance evidence,
 not a parity claim.
+
+Final optimized code passes all four jobs at `a11d35a` in
+[CI 40484968078](https://github.com/cpunion/wasmvm/actions/runs/40484968078).
+Downloaded execution reports again verify all 12 compiler/target/backend-tier
+combinations with 51,139 assertions each. A separate one-million-iteration
+diagnostic reduces the apparent gaps: min/max and casts are within the nominal
+parity band, while arithmetic/rounding still trail the fastest reference by
+about 0.8–1.5%. No calibrated acceptance is inferred. The scope record separates
+public-call overhead and an explicitly invalid-for-production no-poll experiment;
+production cancellation remains intact.

@@ -48,7 +48,7 @@ identical before and after the 52-opcode change. A second diagnostic applies
 identical call interleaving to baseline and candidate, and increases floating
 workloads to 100,000 iterations. Short old-family results remain noisy.
 
-The final diagnostic interleaves both Go/LLGo candidates, both initial native
+The 100,000-iteration diagnostic interleaves both Go/LLGo candidates, both initial native
 floating-point binaries (`c1c63d5`), wazero 1.12.0, Wasmtime 48.0.1 and Wasmer
 7.3.0. Each family has three process blocks, seven timed calls and two warmups;
 startup, compilation, instantiation and first call are separate record fields.
@@ -87,3 +87,51 @@ Retained raw records, including all failures (SHA-256):
 - `pooled-results.json`: `1f00465c254528b4b361eafb14c48869cdfec4229f0f55f4527344ceadb2f9ff`.
 - `select-results.json`: `7ba74950b3eba943e9d9ab9b0a2f4242f7d7111e06c6a6829e209f0c35c58ba6`.
 - `loop-results.json`: `ef205dda8b01396775ecddd61016b6c828787b728820fbd8b98ac616637d5527`.
+
+## Boundary and policy isolation
+
+A follow-up diagnostic uses one million source iterations per call for the seven
+non-conversion families, with the same three-block/seven-call protocol. The
+production build is unchanged. A separate, temporary checkout disables generated
+interrupt polls solely to estimate policy effects; its patch and source hashes
+are retained, and it is **not a production candidate or an acceptable merge
+configuration**. Removing polls also changes code layout, so the difference is
+not a precise isolated instruction-cost estimate.
+
+| Workload | LLGo API, normal policy | LLGo API, diagnostic no polls | wazero | Wasmtime | Wasmer |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| arithmetic-f32x4 | 4.966 | 4.927 | 5.288 | 4.908 | 4.916 |
+| arithmetic-f64x2 | 5.662 | 5.640 | 5.971 | 5.619 | 5.627 |
+| minmax-f32x4 | 6.678 | 6.674 | 6.881 | 6.660 | 6.678 |
+| minmax-f64x2 | 6.673 | 6.679 | 6.865 | 6.655 | 6.657 |
+| rounding-f32x4 | 10.329 | 10.273 | 10.664 | 10.182 | 10.180 |
+| rounding-f64x2 | 12.074 | 12.008 | 12.388 | 11.937 | 11.931 |
+| casts-f32x4 | 5.264 | 5.273 | 5.473 | 5.272 | 5.275 |
+
+Units remain ns/source iteration. Normal-policy min/max and casts now fall within
+the nominal parity band in these medians; arithmetic/rounding still trail the
+fastest reference by approximately 0.8–1.5%. This short diagnostic has neither
+simultaneous acceptance intervals nor A/A calibration and cannot close a gate.
+
+One-source-iteration arithmetic/rounding probes separately measure LLGo public
+calls at 6.25/8.67 microseconds, versus 1.79/2.50 microseconds with the existing
+internal dispatch mode, which reuses its execution outside the public API. Both
+retain cancellation. These probes include guest setup and one iteration; they
+are not empty-entry latency. Public calls currently allocate an execution and
+native arena, register cancellation and release them on every call. Startup,
+compilation and instantiation remain outside the warmed timer. For example,
+the 100,000-iteration arithmetic-f32x4 diagnostic reports LLGo compile/validate
+at 0.389 ms, separately from 0.0075 ms instantiation and 0.507 ms first call.
+The corresponding compile/validate medians are 0.164/0.915/1.441 ms for
+wazero/Wasmtime/Wasmer; these are illustrative diagnostic phases, not accepted
+compile-latency gates.
+
+Disassembly of the pinned Wasmer library shows the same FMUL/FADD/FDIV arithmetic
+chain. Its loop has six instructions; the owned loop additionally preserves
+continuation state and checks cancellation. Independent source hashes confirm
+that the no-poll experiment is the sole diagnostic patch. It was never pushed;
+the temporary checkout was removed after recording its patch and outputs.
+
+- `policy-results.json`: `0d355cab165047ffb617714a39ae2fc75432fb59e849e296b40074b76b3575ee`.
+- `boundary-results.json`: `f4206210a9b220a090976bf0286e52230f05a656b6e1a2fcc78a78dc667ac4eb`.
+- `nopoll-diagnostic.patch`: `2c1e82fa3a8b3b46a9a730322755d62e784f6dbb7365ef8180970b1d1742af05`.
