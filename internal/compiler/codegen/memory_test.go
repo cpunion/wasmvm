@@ -91,7 +91,7 @@ func TestNativeScalarMemorySemantics(t *testing.T) {
 		initial[i] = byte((i*193 + 127) ^ (i >> 8))
 	}
 	for op := uint32(0x28); op <= 0x3e; op++ {
-		for _, offset := range []uint32{0, 1, 2, 8, 65535, 0xffffffff} {
+		for _, offset := range []uint32{0, 1, 2, 8, 4095, 4096, 65535, 0xffffffff} {
 			for mode := 0; mode < 3; mode++ {
 				fast, bounded := mode != 0, mode == 2
 				f, pc := memoryFunction(t, op, offset, bounded)

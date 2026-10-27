@@ -67,7 +67,7 @@ func TestNativeVectorMemoryBoundsLanesAndSpills(t *testing.T) {
 			lanes = 16 / size
 		}
 		for lane := uint32(0); lane < lanes; lane++ {
-			for _, offset := range []uint32{0, 1, 16, 8193, 65535, 0xffffffff} {
+			for _, offset := range []uint32{0, 1, 16, 4095, 4096, 8193, 65535, 0xffffffff} {
 				for mode := 0; mode < 4; mode++ {
 					fast, bounded, pressure := mode != 0, mode >= 2, mode == 3
 					f, pc := vectorMemoryFunction(t, op, offset, byte(lane), bounded, pressure)

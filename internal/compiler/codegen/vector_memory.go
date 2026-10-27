@@ -16,7 +16,7 @@ func vectorDirectMemory(op uint32) bool {
 
 // The common memory emitter has already checked the entire access range. Lane
 // instructions check only their lane width; no vector load may read past it.
-func (e *functionEmitter) vectorMemoryARM64(in slots.Instruction, load bool, size uint32, index byte, scaledOffset uint32) {
+func (e *functionEmitter) vectorMemoryARM64(in slots.Instruction, load bool, size uint32, base, index byte, scaledOffset uint32) {
 	op, lane := in.Op&0xffff, uint32(e.f.Sources[in.Source].Wasm.Lane)
 	d := e.vectorDestination(in.Dst)
 	if !load {
@@ -47,7 +47,7 @@ func (e *functionEmitter) vectorMemoryARM64(in slots.Instruction, load bool, siz
 		}
 	}
 	if vectorDirectMemory(in.Op) {
-		e.memoryAddressARM64(ins, d, index, scaledOffset)
+		e.memoryAddressARM64(ins, d, base, index, scaledOffset)
 	} else {
 		e.a.word(ins | 9<<5 | uint32(d)) // LD1/ST1 require a complete address.
 	}
