@@ -17,6 +17,11 @@ import (
 func vectorTypes(op uint32) ([]wasm.ValueType, wasm.ValueType) {
 	p, r := []wasm.ValueType{wasm.V128, wasm.V128}, wasm.V128
 	switch {
+	case nativeVectorComplexOpcode(0xfd0000 + op):
+		kind := (op - 96) % 32
+		if op == 98 || op >= 124 && op <= 127 || op >= 128 && kind >= 7 && kind <= 10 {
+			p = p[:1]
+		}
 	case nativeVectorFloatOpcode(0xfd0000 + op):
 		if op == 94 || op == 95 || op >= 248 {
 			p = p[:1]
@@ -162,7 +167,7 @@ func TestNativeVectorOperationsAliasesAndSpills(t *testing.T) {
 	}
 	seed := uint64(0x9e3779b97f4a7c15)
 	next := func() uint64 { seed ^= seed << 13; seed ^= seed >> 7; seed ^= seed << 17; return seed }
-	for op := uint32(15); op < 256; op++ {
+	for op := uint32(13); op < 256; op++ {
 		if !nativeVectorOpcode(0xfd0000 + op) {
 			continue
 		}

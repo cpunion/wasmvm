@@ -5,7 +5,7 @@ import "github.com/cpunion/wasmvm/internal/compiler/slots"
 // Baseline SSE2 and AArch64 NEON share this selection contract. Every other
 // SIMD opcode retains its explicit typed helper; no CPU extension is assumed.
 func nativeVectorOpcode(op uint32) bool {
-	if nativeVectorFloatOpcode(op) {
+	if nativeVectorFloatOpcode(op) || nativeVectorComplexOpcode(op) {
 		return true
 	}
 	if op>>16 != 0xfd {
@@ -33,6 +33,10 @@ func nativeVectorOpcode(op uint32) bool {
 }
 
 func (e *functionEmitter) vectorInstruction(in slots.Instruction) {
+	if nativeVectorComplexOpcode(in.Op) {
+		e.vectorComplexInstruction(in)
+		return
+	}
 	if nativeVectorFloatOpcode(in.Op) {
 		e.vectorFloatInstruction(in)
 		return
