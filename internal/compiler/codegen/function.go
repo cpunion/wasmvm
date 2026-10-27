@@ -134,6 +134,12 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 		} else {
 			e.boundary(uint32(pc), src, in.Op == 0x10 || in.Op == 0x11 || isControl)
 		}
+		if e.logicalShift(pc, in) {
+			out.FusedIntegers++
+			independentEntries = append(independentEntries, pc+1, pc+2)
+			combinedThrough = pc + 2
+			continue
+		}
 		if end, ok := e.combineIntegerCopies(pc); ok {
 			out.ForwardedIntegers++
 			for entry := pc + 1; entry <= end; entry++ {

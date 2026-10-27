@@ -3,7 +3,18 @@ package codegen
 import (
 	"math"
 	"sort"
+
+	"github.com/cpunion/wasmvm/internal/compiler/slots"
 )
+
+func (e *functionEmitter) literalRegister(in slots.Instruction) (byte, bool) {
+	v := e.f.Sources[in.Source].Wasm.Bits
+	if in.Op == 0x41 {
+		v = uint64(uint32(v))
+	}
+	r, ok := e.constantRegisters[v]
+	return r, ok
+}
 
 // AArch64's otherwise unused caller-saved x1-x8 retain expensive integer
 // constants for one native entry. They are immutable and need no spill/root

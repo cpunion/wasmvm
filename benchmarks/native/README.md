@@ -128,3 +128,17 @@ poll-state publication and aliasing have semantic regression tests. The existing
 two-target benchmark protocol and its acceptance margins remain unchanged.
 The local three-block diagnostic encountered system load above 190; its raw
 records are retained as inconclusive, not used as a speedup claim.
+
+At `358a705`, all four semantic jobs passed. Linux resolved competitor parity
+(Go/LLGo 1.328/1.327 ns/iteration), but A/A calibration failed. Arm64 measured
+2.016/2.006 versus wazero 2.423, Wasmtime 2.051 and Wasmer 2.031: faster than
+wazero, inconclusive against Cranelift, with unresolved A/A controls. Both
+targets remain blocked in run 40434344155.
+
+The next compiler change distributes constant shifts over logical operations
+using arm64 shifted operands and feeds multiply-add directly from pooled
+constants. The sustained loop loses three redundant constant-register moves.
+Tests compare every slot at every original continuation across both integer
+widths, shift counts, operand/result aliases and live/dead intermediates.
+Local three-block diagnostics do not resolve a speedup; final-head acceptance
+still requires the unchanged two-target comparison and A/A calibration.

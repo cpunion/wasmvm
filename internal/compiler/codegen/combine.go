@@ -6,9 +6,23 @@ import "github.com/cpunion/wasmvm/internal/compiler/slots"
 // preserves the intermediate product as sum-addend, outside the result's
 // dependency chain. This keeps every slot observable at later exits without a
 // second multiply. Independent entries use the original instruction lowering.
+// Constant operands can use the immutable pool directly; temporary constant
+// slots are omitted only when overwritten before any subsequent observation.
 func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
 	if !e.unmetered || e.a.arch != "arm64" || pc+1 >= len(e.f.Code) {
 		return 0, false
+	}
+	start := pc
+	var prefix *slots.Instruction
+	var pooled byte
+	if in := &e.f.Code[pc]; in.Op == 0x41 || in.Op == 0x42 {
+		var ok bool
+		pooled, ok = e.literalRegister(*in)
+		if !ok || pc+2 >= len(e.f.Code) {
+			return 0, false
+		}
+		prefix = in
+		pc++
 	}
 	mul := e.f.Code[pc]
 	if mul.Op != 0x6c && mul.Op != 0x7e {
@@ -22,7 +36,7 @@ func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
 		}
 		end++
 	}
-	if end >= len(e.f.Code) || pc/256 != end/256 {
+	if end >= len(e.f.Code) || start/256 != end/256 {
 		return 0, false
 	}
 	add := e.f.Code[end]
@@ -47,6 +61,17 @@ func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
 	if !lok || !rok || !pok || !cok || !dok {
 		return 0, false
 	}
+	if prefix != nil {
+		if prefix.Dst != mul.A && prefix.Dst != mul.B {
+			return 0, false
+		}
+		if prefix.Dst == mul.A {
+			l = pooled
+		}
+		if prefix.Dst == mul.B {
+			r = pooled
+		}
+	}
 	result := add.Dst
 	originalEnd := end
 	if end+1 < len(e.f.Code) && (end+1)/256 == pc/256 {
@@ -60,19 +85,31 @@ func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
 
 	wide := integerWide(mul.Op)
 	keepProduct := mul.Dst != result && mul.Dst != add.Dst && !e.overwrittenBeforeExit(originalEnd+1, mul.Dst)
+	if prefix != nil && prefix.Dst != mul.Dst && !e.overwrittenBeforeExit(pc+1, prefix.Dst) {
+		e.literal(*prefix)
+	}
 	if constant {
 		in := e.f.Code[pc+1]
+		cached, ok := e.literalRegister(in)
+		if ok && in.Dst == addend {
+			c = cached
+		}
+		// A pool operand remains available without writing its temporary slot.
+		// Keep the slot only if its value can be observed after the combination.
+		materialize := !ok || in.Dst != addend || in.Dst != add.Dst && !e.overwrittenBeforeExit(originalEnd+1, in.Dst)
 		// The constant may replace a multiplicand's reusable slot. Save only
 		// the clobbered inputs; x13/x14 are excluded from the register cache.
-		if in.Dst == mul.A {
+		if materialize && in.Dst == mul.A && l == e.registers[mul.A] {
 			e.registerMove(13, l, wide)
 			l = 13
 		}
-		if in.Dst == mul.B {
+		if materialize && in.Dst == mul.B && r == e.registers[mul.B] {
 			e.registerMove(14, r, wide)
 			r = 14
 		}
-		e.literal(in)
+		if materialize {
+			e.literal(in)
+		}
 	}
 	// Name the result register directly to avoid extending its dependency chain.
 	// Preserve an aliased addend only when the product must also remain live.

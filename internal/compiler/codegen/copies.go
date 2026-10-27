@@ -78,6 +78,9 @@ func (e *functionEmitter) combineIntegerCopies(start int) (int, bool) {
 			e.literal(copy)
 		}
 	}
+	if e.logicalShift(pc, in) {
+		return pc + 2, true
+	}
 	e.registerInteger(in.Op, in.Dst, in.A, in.B)
 	if end != pc {
 		if !e.overwrittenBeforeExit(end+1, original.Dst) {
