@@ -695,3 +695,32 @@ the CLI correction, complete interpreter/native corpus and shared lifecycle
 tests. The amd64 Go job also passes coverage, race, strict-pointer, fuzz and
 no-cgo checks. This supersedes the earlier missing LLGo amd64 semantic evidence;
 it does not supply native amd64 performance evidence or close the blocked gate.
+
+## Native fixed-SIMD memory operations
+
+Engine `4b59731` adds all 22 SIMD memory opcodes on baseline SSE2 and NEON;
+`246b906` selects widened ARM64 register-offset addresses. Engine `9cc2f0f`
+forwards equal vector operands within bounded regions while retaining physical
+copies for observable frames. Every opcode, lane and access width is compared
+against the owned memory evaluator, including unaligned addresses, immediate
+offsets 0/1/16/8193/65535/0xffffffff, large dynamic addresses, register pressure,
+precise fuel and independently resumed interior PCs. Additional tests cover
+missing bindings, cancellation, code limits, growth/reentry and all intermediate
+slots at traps. Removing the new vector-memory trap barrier makes its regression
+test fail; the diagnostic failure is retained.
+
+The complete Go/LLGo × Linux amd64/macOS arm64 matrix passes at `9cc2f0f` in
+[CI 40471490866](https://github.com/cpunion/wasmvm/actions/runs/40471490866).
+Local full-suite Go coverage measures `compiler/codegen` at **93.12% (3233/3472
+statements)**; every owned executable package remains above 90%. Native runtime,
+state and public VM coverage remain 94.71%, 97.78% and 96.92%, respectively.
+These percentages describe owned Go statements, not native instruction or
+specification coverage. Full Core 2.0 interpreter and both native-tier assertion
+counts remain unchanged.
+
+Three independently checked workloads cover overlapping full-vector accesses,
+widening/splat loads and lane/zero-extending accesses. Their benchmark scope and
+failed diagnostics are recorded in [runtime-plan.md](../benchmarks/native/runtime-plan.md).
+All timings exclude startup/compilation/instantiation, which remain separate raw
+phase fields. Initial formal measurements confirm a full-vector access regression
+against Wasmer; this feature is not accepted for merge based on semantic CI.

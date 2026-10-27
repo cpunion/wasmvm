@@ -281,3 +281,32 @@ The register-address version (`246b906`) measured 3.733, 1.229 and 5.112 versus
 3.600–4.200, 1.017–1.100 and 5.600–5.987. Both runs and the five regression
 families remain in local `artifacts/native-simd-memory/`. These short calls
 include public-call overhead and do not resolve sustained equivalence.
+
+
+The vector-alias version (`9cc2f0f`) completed the declared sustained run. The
+full-vector family stopped at 20 blocks on a confirmed slower comparison; both
+remaining families completed 60 blocks. Median warm ns/iteration:
+
+| Family | Own Go | Own LLGo | wazero | Wasmtime | Wasmer |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Full vector overlap | 5.095 | 5.117 | 5.205 | 5.392 | 4.680 |
+| Widen and splat | 1.219 | 1.220 | 1.231 | 1.217 | 1.213 |
+| Lanes and zero loads | 5.484 | 5.465 | 6.238 | 6.198 | 6.121 |
+
+LLGo/full versus Wasmer is **1.0836 [1.0458, 1.1373], slower**. Lane comparisons
+are faster against all three references (paired ratios 0.8714/0.8769/0.8870).
+Widening is inconclusive against Wasmtime and Wasmer. All A/A comparisons remain
+inconclusive, so the combined gate is **blocked**. Raw phases, source/binary
+hashes, alternate-input checks and both looks are retained in local
+`artifacts/native-simd-memory/aliases-gate-results.json` and `aliases-results.json`.
+The descriptive baseline remains in the same record; no baseline helper timing
+is used as a competitor acceptance criterion.
+
+Disassembly of the unchanged pinned Wasmer library's serialized full-vector
+function shows base-plus-immediate addressing before the UXTW-indexed access.
+The own emitter instead forms a dependent base-plus-index-plus-immediate chain
+for unaligned offsets. The next change selects the former generic addressing
+form for proven accesses, sharing it between scalar and vector instructions.
+Checked cold entries and memory ownership remain unchanged. Its diagnostics
+retain all eight families, the preceding engine and the original baseline;
+acceptance margins and sustained sampling remain unchanged.

@@ -60,8 +60,9 @@ precise-fuel tiers. The interpreter and native backend share `engine/execute`'s
 explicit frames, calls, host requests, roots and cleanup; `engine/nativeexec`
 owns compiled publication and native entry. Public API/CLI selection, imports,
 start functions, indirect calls, globals, tables, growth, SIMD and bulk operations
-are connected. Numeric/scalar-memory/control code and 122 basic integer/lane
-SIMD opcodes are emitted directly, with full-width vector register ownership.
+are connected. Numeric/scalar-memory/control code, 122 basic integer/lane SIMD
+opcodes and all 22 SIMD memory opcodes are emitted directly, with full-width
+vector register ownership and exact-width memory bounds checks.
 Remaining SIMD and state/bulk operations use explicit owned runtime helpers. Guest calls
 normally exit through the common frame driver; bounded nontrapping integer
 leaves can expand into caller registers in the unmetered tier. Indirect leaves
@@ -70,7 +71,7 @@ refreshed metadata preserve mutation, growth and host reentry. They are not inte
 functions, but their boundary overhead still needs optimization.
 
 The complete Go/LLGo semantic matrix now passes on Linux amd64 and macOS arm64
-at code head `ab19548` ([CI](https://github.com/cpunion/wasmvm/actions/runs/40463558710)).
+at code head `9cc2f0f` ([CI](https://github.com/cpunion/wasmvm/actions/runs/40471490866)).
 Calibrated performance acceptance remains open. Full Core 3.0/Threads, Component Model and
 WASI 1/2/3 remain required subsequent work. See the
 [runtime scope](../benchmarks/native/runtime-plan.md),

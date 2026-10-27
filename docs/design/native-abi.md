@@ -50,6 +50,22 @@ affine fusion uses modular distributivity and MLA on arm64, retains observable
 intermediate values, and preserves every original PC as a cold continuation.
 Precise-fuel code does not fuse instructions and charges each SIMD opcode once.
 
+All 22 Core 2.0 SIMD memory instructions lower directly on both targets. Full
+vectors, widening and zero-extending loads, scalar splats and lane accesses
+share scalar memory's widened address and exact-width bounds checks. ARM64 uses
+NEON; amd64 requires only baseline SSE2. A lane access never reads or writes a
+whole vector outside its declared width. Entry reloads the memory binding after
+growth; an out-of-bounds store has no partial effect.
+
+Bounded range analysis includes native SIMD operations and proves an access
+against the module's minimum memory size. Each original interior PC retains a
+checked cold entry. Unproved memory accesses stop copy/dead-value elimination,
+preserving every intermediate slot observable in a trap frame. Within a proven
+straight-line region, vector copies remain materialized, while consumers may
+read an equal source register to shorten dependencies. Writes invalidate both
+the destination's alias and aliases naming it; no equality survives a region,
+poll, helper or control-flow boundary.
+
 Hardware-call fast paths, hardware guest-stack switching, or direct generated-code-to-Go callbacks are later design changes. They require new root, unwind, stack-limit, cancellation, and dual-compiler evidence; they are not implied by an instruction encoder passing arithmetic tests.
 
 The unmetered compiler can expand a same-module integer leaf of at most 32 slot
@@ -301,8 +317,9 @@ limitations. Public native selection and M2 acceptance remain open.
 
 `engine/execute` owns frames, limits, host requests and roots for both backends.
 `engine/nativeexec` prepares both native tiers and dispatches only published C
-entries. Scalar/control code runs natively; calls, SIMD and state/bulk effects
-use validated typed exits. Each helper instruction has already consumed its
+entries. Scalar/control code, 122 basic integer/lane SIMD opcodes and all SIMD
+memory operations run natively. Remaining SIMD, ordinary calls and state/bulk
+effects use validated typed exits. Each helper instruction has already consumed its
 fuel and cannot be charged a second time by the common machine. Large edge-copy
 plans are serviced in bounded chunks. No function falls back to slot dispatch.
 
