@@ -18,6 +18,12 @@ func (e *functionEmitter) vectorShift(in slots.Instruction, l byte, size, kind u
 		e.a.word(ins | size<<22 | uint32(l)<<5 | 2)
 	} else {
 		e.a.bytes(0x83, 0xe0, byte((8<<size)-1))
+		if e.x86Features&X86AVX2 != 0 && size >= 2 {
+			e.vectorSplatBits(1, size)
+			e.vectorShiftAVX2(l, size, kind)
+			e.vectorStore(in.Dst, 2)
+			return
+		}
 		e.floatFromInteger(1, 0, true)
 		if size == 0 {
 			e.vectorByteShiftAMD64(l, kind)
@@ -43,6 +49,27 @@ func (e *functionEmitter) vectorShift(in slots.Instruction, l byte, size, kind u
 		}
 	}
 	e.vectorStore(in.Dst, 2)
+}
+
+func (e *functionEmitter) vectorShiftAVX2(l byte, size, kind uint32) {
+	code := byte(0x45) // VPSRLVD/Q
+	if kind == 11 {
+		code = 0x47
+	} else if kind == 12 && size == 2 {
+		code = 0x46
+	}
+	if kind == 12 && size == 3 {
+		// AVX2 lacks VPSRAVQ. Preserve the SSE2 sign identity with a native
+		// per-lane logical shift, without a serialized scalar-count operand.
+		e.a.xvex(1, 1, 0x70, 11, 0, l, false)
+		e.a.bytes(0xf5)
+		e.a.xvexShift(0x72, 11, 11, 4, 31)
+		e.a.xvex(1, 1, 0xef, 2, l, 11, false)
+		e.a.xvex(2, 1, 0x45, 2, 2, 1, true)
+		e.a.xvex(1, 1, 0xef, 2, 2, 11, false)
+		return
+	}
+	e.a.xvex(2, 1, code, 2, l, 1, size == 3)
 }
 
 func (e *functionEmitter) vectorByteShiftAMD64(l byte, kind uint32) {

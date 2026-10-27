@@ -58,6 +58,8 @@ func (e *functionEmitter) vectorFloatInstruction(in slots.Instruction) {
 	d := e.vectorDestination(in.Dst)
 	if e.a.arch == "arm64" {
 		e.vectorFloatARM64(scalar, wide, d, l, r)
+	} else if e.x86Features&X86AVX2 != 0 {
+		e.vectorFloatAVX2(scalar, wide, d, l, r)
 	} else {
 		switch {
 		case scalar <= 0x60:

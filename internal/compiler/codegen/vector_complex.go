@@ -33,6 +33,9 @@ func (e *functionEmitter) vectorComplexInstruction(in slots.Instruction) {
 		e.vectorStore(in.Dst, d)
 		return
 	}
+	if e.x86Features&X86AVX2 != 0 && e.vectorComplexAVX2(in, l, r) {
+		return
+	}
 	// SSE2 legalizations use fixed scratch copies to preserve all cached slots.
 	e.vectorMove(0, l)
 	if in.B != slots.NoSlot {
@@ -320,15 +323,7 @@ func (e *functionEmitter) vectorQ15AMD64() {
 
 func (e *functionEmitter) vectorShuffleAMD64(lanes [16]byte) {
 	// A single PSHUFD covers any aligned four-lane permutation of one input.
-	source, control, aligned := lanes[0]/16, byte(0), true
-	for i := 0; i < 4; i++ {
-		n := lanes[i*4]
-		aligned = aligned && n/16 == source && n%4 == 0
-		for j := 1; j < 4; j++ {
-			aligned = aligned && lanes[i*4+j] == n+byte(j)
-		}
-		control |= (n % 16 / 4) << (2 * i)
-	}
+	source, control, aligned := vectorDwordShuffle(lanes)
 	if aligned {
 		e.a.xvector(0x70, 2, source)
 		e.a.bytes(control)

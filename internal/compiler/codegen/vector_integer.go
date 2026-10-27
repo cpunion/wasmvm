@@ -126,6 +126,17 @@ func (e *functionEmitter) vectorBinary(d, l, r byte, size, kind uint32) {
 		e.a.word(ins | size<<22 | uint32(r)<<16 | uint32(l)<<5 | uint32(d))
 		return
 	}
+	if e.x86Features&X86AVX2 != 0 {
+		if kind == 79 {
+			l, r = r, l // VPANDN negates its first source.
+		}
+		mapByte, code := byte(1), vectorBinaryCode(size, kind)
+		if kind == 21 && size == 2 {
+			mapByte, code = 2, 0x40
+		}
+		e.a.xvex(mapByte, 1, code, d, l, r, false)
+		return
+	}
 	if d == r && d != l {
 		e.vectorMove(1, r)
 		r = 1
@@ -161,6 +172,10 @@ func (e *functionEmitter) vectorBinary(d, l, r byte, size, kind uint32) {
 		return
 	}
 	e.vectorMove(d, l)
+	e.a.xvector(vectorBinaryCode(size, kind), d, r)
+}
+
+func vectorBinaryCode(size, kind uint32) byte {
 	var opcode byte
 	switch kind {
 	case 14:
@@ -179,12 +194,14 @@ func (e *functionEmitter) vectorBinary(d, l, r byte, size, kind uint32) {
 		opcode = 0xd8 + byte(size)
 	case 78:
 		opcode = 0xdb
+	case 79:
+		opcode = 0xdf
 	case 80:
 		opcode = 0xeb
 	case 81:
 		opcode = 0xef
 	}
-	e.a.xvector(opcode, d, r)
+	return opcode
 }
 
 func (e *functionEmitter) vectorUnary(d, l byte, size uint32, absolute bool) {
@@ -241,6 +258,12 @@ func (e *functionEmitter) vectorSelectTo(d, l, r, mask byte) {
 			e.vectorMove(d, mask)
 		}
 		e.a.word(ins | uint32(r)<<16 | uint32(l)<<5 | uint32(d))
+		return
+	}
+	if e.x86Features&X86AVX2 != 0 {
+		e.a.xvex(1, 1, 0xef, 11, l, r, false)
+		e.a.xvex(1, 1, 0xdb, 11, 11, mask, false)
+		e.a.xvex(1, 1, 0xef, d, r, 11, false)
 		return
 	}
 	e.vectorMove(11, l)

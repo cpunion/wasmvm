@@ -10,13 +10,23 @@
 #include <cpuid.h>
 #endif
 
-uint32_t wasmvm_cpu_features(void) {
+void wasmvm_cpu_probe(uint32_t *ecx1, uint32_t *ebx7, uint64_t *xcr0) {
+    *ecx1 = *ebx7 = 0;
+    *xcr0 = 0;
 #ifdef __x86_64__
     unsigned int eax, ebx, ecx, edx;
-    if (!__get_cpuid(1, &eax, &ebx, &ecx, &edx)) return 0;
-    return ((ecx >> 9) & 1u) | (((ecx >> 19) & 1u) << 1);
-#else
-    return 0;
+    if (!__get_cpuid(1, &eax, &ebx, &ecx, &edx)) return;
+    *ecx1 = ecx;
+    const unsigned int avx_state = (1u << 26) | (1u << 27) | (1u << 28);
+    if ((ecx & avx_state) == avx_state) {
+        unsigned int low, high;
+        __asm__ volatile ("xgetbv" : "=a"(low), "=d"(high) : "c"(0));
+        *xcr0 = ((uint64_t)high << 32) | low;
+    }
+    if (__get_cpuid_max(0, NULL) >= 7) {
+        __cpuid_count(7, 0, eax, ebx, ecx, edx);
+        *ebx7 = ebx;
+    }
 #endif
 }
 #ifdef __APPLE__

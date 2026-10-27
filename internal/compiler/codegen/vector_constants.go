@@ -9,7 +9,7 @@ import (
 // Legalization masks share the immutable guest-literal register budget and
 // reload on every independent entry. No mask occupies a live guest register.
 func (e *functionEmitter) vectorLegalizationConstants(in slots.Instruction) [][2]uint64 {
-	if e.x86Features&X86SSE41 != 0 {
+	if e.x86Features&(X86SSE41|X86AVX2) != 0 {
 		if in.Op == 0xfd00e8 || in.Op == 0xfd00e9 {
 			return [][2]uint64{{0x7fc000007fc00000, 0x7fc000007fc00000}}
 		}
@@ -17,7 +17,7 @@ func (e *functionEmitter) vectorLegalizationConstants(in slots.Instruction) [][2
 			return [][2]uint64{{0x7ff8000000000000, 0x7ff8000000000000}}
 		}
 	}
-	if e.x86Features&X86SSSE3 == 0 {
+	if e.x86Features&(X86SSSE3|X86AVX2) == 0 {
 		return nil
 	}
 	switch in.Op {

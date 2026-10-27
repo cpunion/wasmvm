@@ -84,7 +84,7 @@ func TestVectorFloatInventoryAndCodeLimits(t *testing.T) {
 		for _, arch := range []string{"arm64", "amd64"} {
 			profiles := []X86Features{0}
 			if arch == "amd64" {
-				profiles = append(profiles, X86SSE41)
+				profiles = []X86Features{0, 1, 2, 3, 4, 5, 6, 7}
 			}
 			for _, profile := range profiles {
 				for _, fast := range []bool{false, true} {
