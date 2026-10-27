@@ -83,3 +83,22 @@ to the owned public API runner; only warm execution is gated by this check.
 Preparation/first call, all earlier observations and both target/compiler
 requirements remain separate. Passing this case cannot accept indirect calls,
 helpers or the complete M2 portfolio.
+
+The completed 60-block local run at `982b379` remains **blocked**. Warm medians
+were Go/LLGo 1.194/1.181 ns per iteration, wazero 1.973, Wasmtime 1.390 and
+Wasmer 1.183. LLGo ratios were 0.603 [0.586, 0.620] against wazero, 0.851
+[0.821, 0.882] against Wasmtime, and 1.002 [0.974, 1.035] against Wasmer.
+The LLGo A/A interval was [0.968, 1.019]; neither host compiler calibrated.
+Thus the short diagnostic's apparent Wasmer win is not an accepted result.
+The oracle checksum was `249740414`; all observations, planned looks, binary
+hashes, source hashes and dispatch orders are in
+`artifacts/native-inline/gate-results.json`. No margins or failed records changed.
+
+Go/LLGo full semantic suites pass on arm64, with the complete native Core 2.0
+corpus and additional all-slot/cold-entry, alias, logical-quota, exact-fuel,
+cancellation and aggregate-code-budget tests. Go amd64 execution under
+Docker/Rosetta passes the compiler, native driver, complete execution corpus and
+public API tests; this is semantic evidence, not an amd64 timing result.
+Codegen coverage is 97.32%, native execution 95.59%, public API 96.92%, and the
+updated phase adapter 95.2%; every executable owned package remains above 90%.
+The branch preserves one open PR (#26) and does not claim M2 completion.
