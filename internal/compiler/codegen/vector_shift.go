@@ -79,17 +79,20 @@ func (e *functionEmitter) vectorReduce(in slots.Instruction, l byte, size, kind 
 		if kind == 4 {
 			e.vectorBitmaskARM64(l, size)
 		} else {
-			if kind == 3 {
-				e.a.word(0x4e209800 | size<<22 | uint32(l)<<5 | 2) // CMEQ lanes,#0.
-				l = 2
+			condition := uint32(0x1a9f07e9) // CSET w9,NE.
+			extractSize := uint32(0)
+			if kind == 3 && size < 3 {
+				e.a.word(0x6e31a800 | size<<22 | uint32(l)<<5 | 2) // UMINV: zero iff a lane is zero.
+				extractSize = size
+			} else {
+				if kind == 3 {
+					e.a.word(0x4e209800 | size<<22 | uint32(l)<<5 | 2) // CMEQ lanes,#0.
+					l, condition = 2, 0x1a9f17e9                       // No zero lane means EQ.
+				}
+				e.a.word(0x6e30a800 | uint32(l)<<5 | 2) // UMAXV bytes detects any set bit.
 			}
-			e.a.word(0x6e30a800 | uint32(l)<<5 | 2) // UMAXV bytes detects any set bit.
-			e.a.word(0x0e013c49)                    // UMOV w9,v2.b[0].
+			e.a.word(0x0e003c49 | (1<<extractSize)<<16)
 			e.test(false)
-			condition := uint32(0x1a9f07e9) // CSET w9,NE (any_true).
-			if kind == 3 {
-				condition = 0x1a9f17e9 // CSET w9,EQ (no zero lane).
-			}
 			e.a.word(condition)
 		}
 	} else if kind == 4 {

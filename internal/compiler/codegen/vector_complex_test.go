@@ -77,7 +77,8 @@ func vectorTestProfiles(op uint32) []X86Features {
 	}
 	if op == 134 || op >= 135 && op <= 138 || op >= 156 && op <= 159 ||
 		op >= 167 && op <= 170 || op == 181 || op >= 199 && op <= 202 ||
-		op == 220 || op == 221 || op >= 103 && op <= 106 || op == 116 || op == 117 || op == 122 || op == 148 {
+		op == 220 || op == 221 || op >= 103 && op <= 106 || op == 116 || op == 117 || op == 122 || op == 148 ||
+		op >= 232 && op <= 235 || op >= 244 && op <= 247 {
 		affected |= X86SSE41
 	}
 	host := X86Features(native.CPUFeatures())

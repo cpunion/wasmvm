@@ -192,11 +192,23 @@ func (e *functionEmitter) vectorFloatConstant(d byte, wide bool, narrow, broad u
 	if wide {
 		bits, size = broad, 3
 	}
+	packed := bits
+	if !wide {
+		packed |= bits << 32
+	}
+	if r, ok := e.vectorConstants[[2]uint64{packed, packed}]; ok {
+		e.vectorMove(d, r)
+		return
+	}
 	e.constant(0, bits)
 	e.vectorSplatBits(d, size)
 }
 
 func (e *functionEmitter) vectorMinMaxAMD64(op uint32, wide bool, l, r byte) {
+	if e.x86Features&X86SSE41 != 0 {
+		e.vectorMinMaxSSE41(op, wide, l, r)
+		return
+	}
 	e.vectorMove(0, l)
 	e.vectorMove(1, r)
 	if op >= 0x98 {
@@ -224,6 +236,47 @@ func (e *functionEmitter) vectorMinMaxAMD64(op uint32, wide bool, l, r byte) {
 	e.a.bytes(3) // Unordered mask; either NaN must produce an arithmetic NaN.
 	e.a.xpacked(wide, 0x58, 0, 1)
 	e.vectorSelect(0, 2, 12)
+}
+
+func (e *functionEmitter) vectorMinMaxSSE41(op uint32, wide bool, l, r byte) {
+	// XMM0 is the implicit blend mask; preserve a spilled operand before
+	// reusing it. Cached guest registers and immutable literals stay intact.
+	if l == 0 {
+		e.vectorMove(11, l)
+		l = 11
+	}
+	blend := byte(0x14) // BLENDVPS/PD, with a full-lane comparison mask.
+	if wide {
+		blend++
+	}
+	if op >= 0x98 {
+		left, right := r, l
+		if op == 0x99 {
+			left, right = l, r
+		}
+		e.vectorMove(0, left)
+		e.a.xpacked(wide, 0xc2, 0, right)
+		e.a.bytes(1)
+		e.vectorMove(2, l)
+		e.a.xvectorExtended(0x38, blend, 2, r)
+		return
+	}
+	code, combine := byte(0x5d), byte(0xeb)
+	if op == 0x97 {
+		code, combine = 0x5f, 0xdb
+	}
+	e.vectorMove(2, l)
+	e.vectorMove(12, r)
+	e.a.xpacked(wide, code, 2, r)
+	e.a.xpacked(wide, code, 12, l)
+	e.a.xvector(combine, 2, 12)
+	e.vectorMove(0, l)
+	e.a.xpacked(wide, 0xc2, 0, r)
+	e.a.bytes(3)
+	// A canonical NaN is permitted for every NaN input class. Selecting it
+	// avoids an extra FP add and retains the required canonical-input rule.
+	e.vectorFloatConstant(12, wide, 0x7fc00000, 0x7ff8000000000000)
+	e.a.xvectorExtended(0x38, blend, 2, 12)
 }
 
 // For |x| < 2^mantissa, adding/subtracting a signed 2^mantissa rounds to

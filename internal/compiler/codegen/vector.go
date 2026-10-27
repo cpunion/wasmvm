@@ -158,10 +158,18 @@ func (e *functionEmitter) prepareVectorConstants() {
 					weights[vectorBitWeights(size)] += weight
 				}
 			}
+		} else {
+			for _, v := range e.vectorLegalizationConstants(in) {
+				weights[v] += weight
+			}
 		}
 	}
 	var values [][2]uint64
 	for v := range weights {
+		// Prefer expected instruction savings when the register budget is full.
+		probe := functionEmitter{a: &assembler{arch: e.a.arch}}
+		probe.vectorConstant(0, v[0], v[1])
+		weights[v] *= len(probe.a.code)
 		values = append(values, v)
 	}
 	sort.Slice(values, func(i, j int) bool {
@@ -175,7 +183,7 @@ func (e *functionEmitter) prepareVectorConstants() {
 	})
 	pool := []byte{13, 14, 15}
 	if e.a.arch == "arm64" {
-		pool = []byte{18, 19, 20, 21, 22, 23}
+		pool = []byte{18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31}
 	}
 	e.vectorConstants = map[[2]uint64]byte{}
 	for i, v := range values[:min(len(values), len(pool))] {
