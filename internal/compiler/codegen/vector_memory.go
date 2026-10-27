@@ -10,9 +10,13 @@ func nativeVectorMemoryOpcode(op uint32) bool {
 	return op >= 0xfd0000 && op <= 0xfd000b || op >= 0xfd0054 && op <= 0xfd005d
 }
 
+func vectorDirectMemory(op uint32) bool {
+	return op <= 0xfd0006 || op == 0xfd000b || op >= 0xfd005c
+}
+
 // The common memory emitter has already checked the entire access range. Lane
 // instructions check only their lane width; no vector load may read past it.
-func (e *functionEmitter) vectorMemoryARM64(in slots.Instruction, load bool, size uint32) {
+func (e *functionEmitter) vectorMemoryARM64(in slots.Instruction, load bool, size uint32, index byte, scaledOffset uint32) {
 	op, lane := in.Op&0xffff, uint32(e.f.Sources[in.Source].Wasm.Lane)
 	d := e.vectorDestination(in.Dst)
 	if !load {
@@ -42,7 +46,11 @@ func (e *functionEmitter) vectorMemoryARM64(in slots.Instruction, load bool, siz
 			ins |= 1 << 22
 		}
 	}
-	e.a.word(ins | 9<<5 | uint32(d)) // Checked address in x9.
+	if vectorDirectMemory(in.Op) {
+		e.memoryAddressARM64(ins, d, index, scaledOffset)
+	} else {
+		e.a.word(ins | 9<<5 | uint32(d)) // LD1/ST1 require a complete address.
+	}
 	if op >= 1 && op <= 6 {
 		ins = 0x0f00a400 | uint32(8<<((op-1)/2))<<16 // SSHLL from the low half.
 		if op%2 == 0 {

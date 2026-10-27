@@ -59,28 +59,33 @@ func (e *functionEmitter) memoryInstruction(in slots.Instruction, proven bool) {
 	// address is at most 2^33+6, so host arithmetic cannot wrap before this check.
 	offset := uint64(source.B)
 	vector := nativeVectorMemoryOpcode(in.Op)
-	if e.a.arch == "arm64" && proven && offset%uint64(size) == 0 && offset/uint64(size) < 4096 && !vector {
+	if e.a.arch == "arm64" && proven {
 		if r, ok := e.registers[in.A]; ok {
-			if offset == 0 {
-				e.memoryARM64(in, load, size, r, 0)
-			} else {
-				// ADD (extended register) widens the address without a move.
-				e.a.word(0x8b204209 | uint32(r)<<16) // add x9, x16, wR, uxtw
-				e.memoryARM64(in, load, size, 31, uint32(offset)/size)
+			if offset%uint64(size) == 0 && offset/uint64(size) < 4096 && (!vector || vectorDirectMemory(in.Op)) {
+				index := r
+				if offset != 0 {
+					// ADD (extended register) widens without an extra move.
+					e.a.word(0x8b204209 | uint32(r)<<16)
+					index = 31
+				}
+				if vector {
+					e.vectorMemoryARM64(in, load, size, index, uint32(offset)/size)
+				} else {
+					e.memoryARM64(in, load, size, index, uint32(offset)/size)
+				}
+				return
 			}
-			return
+			if vector {
+				e.a.word(0x8b204209 | uint32(r)<<16)
+				e.memoryOffsetARM64(offset)
+				e.vectorMemoryARM64(in, load, size, 31, 0)
+				return
+			}
 		}
 	}
 	e.slotLoad(in.A, 0, false, false)
 	if e.a.arch == "arm64" {
-		if offset != 0 {
-			if offset < 4096 {
-				e.a.word(0x91000129 | uint32(offset)<<10)
-			} else {
-				e.constant(1, offset)
-				e.a.word(0x8b0a0129)
-			}
-		}
+		e.memoryOffsetARM64(offset)
 		if !proven {
 			e.a.word(0x9100012a | size<<10) // add x10, x9, #size
 			e.a.word(0xeb11015f)            // cmp x10, x17
@@ -88,7 +93,7 @@ func (e *functionEmitter) memoryInstruction(in slots.Instruction, proven bool) {
 		}
 		e.a.word(0x8b090209) // add x9, x16, x9
 		if vector {
-			e.vectorMemoryARM64(in, load, size)
+			e.vectorMemoryARM64(in, load, size, 31, 0)
 		} else {
 			e.memoryARM64(in, load, size, 31, 0)
 		}
@@ -115,15 +120,28 @@ func (e *functionEmitter) memoryInstruction(in slots.Instruction, proven bool) {
 	}
 }
 
-func (e *functionEmitter) memoryARM64(in slots.Instruction, load bool, size uint32, index byte, scaledOffset uint32) {
-	address := func(ins uint32, r byte) {
-		if index != 31 {
-			// Register offset with UXTW preserves Wasm i32 address wrapping.
-			e.a.word(ins&^(1<<24) | 1<<21 | uint32(index)<<16 | 0x4800 | 16<<5 | uint32(r))
-		} else {
-			e.a.word(ins | scaledOffset<<10 | 9<<5 | uint32(r))
-		}
+func (e *functionEmitter) memoryOffsetARM64(offset uint64) {
+	if offset == 0 {
+		return
 	}
+	if offset < 4096 {
+		e.a.word(0x91000129 | uint32(offset)<<10)
+	} else {
+		e.constant(1, offset)
+		e.a.word(0x8b0a0129)
+	}
+}
+
+func (e *functionEmitter) memoryAddressARM64(ins uint32, r, index byte, scaledOffset uint32) {
+	if index != 31 {
+		// Register offset with UXTW preserves Wasm i32 address wrapping.
+		e.a.word(ins&^(1<<24) | 1<<21 | uint32(index)<<16 | 0x4800 | 16<<5 | uint32(r))
+	} else {
+		e.a.word(ins | scaledOffset<<10 | 9<<5 | uint32(r))
+	}
+}
+
+func (e *functionEmitter) memoryARM64(in slots.Instruction, load bool, size uint32, index byte, scaledOffset uint32) {
 	slot := in.B
 	if load {
 		slot = in.Dst
@@ -136,7 +154,7 @@ func (e *functionEmitter) memoryARM64(in slots.Instruction, load bool, size uint
 		if load {
 			ins |= 1 << 22
 		}
-		address(ins, r)
+		e.memoryAddressARM64(ins, r, index, scaledOffset)
 		return
 	}
 	r, cached := e.registers[slot]
@@ -160,7 +178,7 @@ func (e *functionEmitter) memoryARM64(in slots.Instruction, load bool, size uint
 		case 0x34:
 			ins = 0xb9800000
 		}
-		address(ins, r)
+		e.memoryAddressARM64(ins, r, index, scaledOffset)
 		if !cached {
 			e.slotStore(slot, 1, false)
 		}
@@ -170,7 +188,7 @@ func (e *functionEmitter) memoryARM64(in slots.Instruction, load bool, size uint
 		}
 	} else {
 		ins := uint32(0x39000000) | uint32(bits.TrailingZeros32(size))<<30
-		address(ins, r)
+		e.memoryAddressARM64(ins, r, index, scaledOffset)
 	}
 }
 
