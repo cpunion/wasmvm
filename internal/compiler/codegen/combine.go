@@ -85,7 +85,9 @@ func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
 		e.a.arm(wide, 0x4b000000|uint32(c)<<16|uint32(d)<<5|uint32(p)) // product = sum - addend
 	}
 	if end != originalEnd {
-		e.move(add.Dst, result)
+		if !e.overwrittenBeforeExit(end+1, add.Dst) {
+			e.move(add.Dst, result)
+		}
 		e.move(e.f.Code[end].Dst, result)
 	}
 	return end, true

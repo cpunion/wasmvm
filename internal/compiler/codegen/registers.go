@@ -294,7 +294,7 @@ func (e *functionEmitter) registerCompare(dst, left, right byte, op uint32) {
 		} else {
 			a.arm(wide, 0x6b00001f|uint32(right)<<16|uint32(left)<<5)
 		}
-		cc := [...]uint32{0, 0, 1, 11, 3, 12, 8, 13, 9, 10, 2}[index]
+		cc := uint32(armIntegerCondition(op))
 		a.word(0x1a9f07e0 | ((cc ^ 1) << 12) | uint32(dst))
 		return
 	}
@@ -317,4 +317,12 @@ func (e *functionEmitter) registerCompare(dst, left, right byte, op uint32) {
 	// REX selects low byte registers, including r12b-r15b, rather than AH-DH.
 	a.bytes(0x40|dst>>3, 0x0f, 0x90+cc, 0xc0|dst&7)
 	a.bytes(0x40|(dst>>3)<<2|dst>>3, 0x0f, 0xb6, 0xc0|(dst&7)<<3|dst&7)
+}
+
+func armIntegerCondition(op uint32) byte {
+	index := op - 0x45
+	if integerWide(op) {
+		index = op - 0x50
+	}
+	return [...]byte{0, 0, 1, 11, 3, 12, 8, 13, 9, 10, 2}[index]
 }

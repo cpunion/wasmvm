@@ -59,7 +59,19 @@ func (e *functionEmitter) combineIntegerCopies(start int) (int, bool) {
 	if !e.canRegisterInteger(in.Op, in.Dst, in.A, in.B) {
 		return 0, false
 	}
-	for _, copy := range e.f.Code[start:pc] {
+	for i, copy := range e.f.Code[start:pc] {
+		// Forwarded arithmetic no longer reads this temporary. Elide the
+		// copy only if no later prefix instruction needs it and normal
+		// execution replaces it before any poll, trap or other exit.
+		needed := copy.Dst == in.A || copy.Dst == in.B || copy.Dst == in.C
+		for _, later := range e.f.Code[start+i+1 : pc] {
+			if later.Op == 0x20 && slots.Slot(e.f.Sources[later.Source].Wasm.A) == copy.Dst {
+				needed = true
+			}
+		}
+		if !needed && (copy.Dst == original.Dst || e.overwrittenBeforeExit(pc+1, copy.Dst)) {
+			continue
+		}
 		if copy.Op == 0x20 {
 			e.move(copy.Dst, slots.Slot(e.f.Sources[copy.Source].Wasm.A))
 		} else {
@@ -68,7 +80,9 @@ func (e *functionEmitter) combineIntegerCopies(start int) (int, bool) {
 	}
 	e.registerInteger(in.Op, in.Dst, in.A, in.B)
 	if end != pc {
-		e.move(original.Dst, in.Dst)
+		if !e.overwrittenBeforeExit(end+1, original.Dst) {
+			e.move(original.Dst, in.Dst)
+		}
 		e.move(e.f.Code[end].Dst, in.Dst)
 	}
 	return end, true

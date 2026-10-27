@@ -27,6 +27,7 @@ type CompiledFunction struct {
 	Helpers, Calls, EdgeCopies uint32
 	FusedIntegers              uint32
 	ForwardedIntegers          uint32
+	ForwardedPredicates        uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -80,7 +81,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 	if err != nil {
 		return nil, err
 	}
-	a := assembler{arch: arch, labels: map[int]int{}, bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true}
+	a := assembler{arch: arch, labels: map[int]int{}, bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true, compactBranches: arch == "arm64"}
 	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered}
 	pcs := make([]int, len(f.Code))
 	for i := range pcs {
@@ -89,6 +90,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 	e.header(uint64(len(f.Slots))*16, len(pcs))
 	if unmetered {
 		e.prepareRegisters()
+		e.prepareConstants()
 		e.contextLoad(0, nativeabi.PayloadOffset+24)
 		e.test(true)
 		e.branch(e.bad, "ne")
@@ -116,6 +118,11 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 				independentEntries = append(independentEntries, pc)
 				continue
 			}
+		}
+		if e.compareBranchFallthrough(pc, pcs) {
+			out.ForwardedPredicates++
+			independentEntries = append(independentEntries, pc)
+			continue
 		}
 		a.mark(pcs[pc])
 		src := f.Sources[in.Source]
@@ -212,6 +219,10 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 
 		in := f.Code[pc]
 		switch {
+		case in.Op == slots.ControlBase+uint32(ir.If):
+			e.interrupt(uint32(pc))
+			e.conditionalEdges(in, pcs, -1)
+			continue
 		case in.Op == 0x41 || in.Op == 0x42:
 			e.literal(in)
 		case in.Op == 0x20:

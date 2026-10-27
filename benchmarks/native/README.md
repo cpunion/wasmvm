@@ -111,3 +111,20 @@ three-block diagnostics are near 1.54 ns/iteration for both host compilers and
 the references, but these observations do not replace the unchanged final-head
 gate. Tests cover all-slot results at every original continuation, aliasing,
 edge copies, branch-range boundaries, fuel and cancellation on both ISAs.
+
+At `19c3a6c`, Linux passed, while arm64 remained inconclusive: Go/LLGo
+1.904/1.918 ns/iteration versus Wasmtime/Wasmer 1.899/1.905. The arm64 host
+reported load averages of 13.1 before and 19.9 after the run, and independent
+identical-binary controls did not resolve the declared calibration band.
+These observations remain in run 40374716113 and do not authorize merging.
+
+The next compiler change retains expensive arm64 constants in otherwise unused
+registers, compacts near conditional branches while relocating all entries and
+tables, forwards comparison flags to branches, and omits temporary copies only
+when their replacements are proved to precede every observation or exit.
+Independent continuations, observable slot values and cancellation checks remain
+intact. Constant-pool overflow/spills, branch relocation limits, cold entries,
+poll-state publication and aliasing have semantic regression tests. The existing
+two-target benchmark protocol and its acceptance margins remain unchanged.
+The local three-block diagnostic encountered system load above 190; its raw
+records are retained as inconclusive, not used as a speedup claim.

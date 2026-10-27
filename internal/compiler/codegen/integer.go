@@ -49,13 +49,20 @@ type assembler struct {
 	bounded             bool
 	limit               uint64
 	longBranches        bool
+	compactBranches     bool
 	tables              []tableRelocation
 	addresses           []addressRelocation
 	conditionalBranches []conditionalRelocation
 }
 
 func (a *assembler) reserve(n uint64) {
-	if a.bounded && (uint64(len(a.code)) > a.limit || n > a.limit-uint64(len(a.code))) {
+	limit := a.limit
+	// Until layout is final, each arm64 conditional may reserve two words.
+	// Published code still obeys the exact byte limit after compaction.
+	if a.compactBranches && limit <= math.MaxUint64/2 {
+		limit *= 2
+	}
+	if a.bounded && (uint64(len(a.code)) > limit || n > limit-uint64(len(a.code))) {
 		panic(&wasm.Error{Kind: wasm.ErrLimit, Detail: "native code bytes"})
 	}
 }
@@ -81,6 +88,14 @@ func (a *assembler) branch(label int, conditional bool, cc byte) {
 		a.word(0)
 	} else {
 		if conditional && a.longBranches {
+			if target, ok := a.labels[label]; ok {
+				delta := int64(target) - int64(len(a.code))
+				if delta%4 == 0 && delta >= -(1<<20) && delta < 1<<20 {
+					a.fixups = append(a.fixups, relocation{len(a.code), label, true})
+					a.word(0x54000000 | uint32(cc))
+					return
+				}
+			}
 			a.conditionalBranches = append(a.conditionalBranches, conditionalRelocation{len(a.code), label, 0x54000000 | uint32(cc)})
 			a.word(0x54000040 | uint32(cc^1)) // Inverted condition skips the long branch.
 			conditional = false
@@ -123,6 +138,11 @@ type conditionalRelocation struct {
 }
 
 func (a *assembler) finish() ([]byte, error) {
+	if a.compactBranches {
+		if err := a.compact(); err != nil {
+			return nil, err
+		}
+	}
 	for _, r := range a.fixups {
 		target, ok := a.labels[r.label]
 		if !ok {

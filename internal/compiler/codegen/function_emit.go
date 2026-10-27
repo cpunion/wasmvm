@@ -22,6 +22,7 @@ type functionEmitter struct {
 	registers                 map[slots.Slot]byte
 	registerSlots             []slots.Slot
 	pollExits                 []pollExit
+	constantRegisters         map[uint64]byte
 }
 
 type pollExit struct {
@@ -367,6 +368,20 @@ func (e *functionEmitter) literal(in slots.Instruction) {
 	if op == 0xfd000c {
 		lo = binary.LittleEndian.Uint64(src.Wasm.Vector[:8])
 		hi = binary.LittleEndian.Uint64(src.Wasm.Vector[8:])
+	}
+	if op == 0x41 || op == 0x42 {
+		if op == 0x41 {
+			lo = uint64(uint32(lo))
+		}
+		if r, ok := e.constantRegisters[lo]; ok {
+			if dst, ok := e.registers[in.Dst]; ok {
+				e.registerMove(dst, r, true)
+			} else {
+				e.registerMove(e.operandRegister(0), r, true)
+				e.slotStore(in.Dst, 0, false)
+			}
+			return
+		}
 	}
 	if r, ok := e.registers[in.Dst]; ok {
 		if e.a.arch == "arm64" {
