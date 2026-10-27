@@ -31,3 +31,23 @@ func TestVEX128Encoding(t *testing.T) {
 		t.Fatalf("immediate shift: %x", a.code)
 	}
 }
+
+func TestEVEX128Encoding(t *testing.T) {
+	// Independent LLVM 22 assembler output; all forms use k0 and 128 bits.
+	for _, test := range []struct {
+		opcode, d, l, r byte
+		wide            bool
+		want            []byte
+	}{
+		{0x54, 5, 0, 3, false, []byte{0x62, 0xf2, 0x7d, 8, 0x54, 0xeb}},
+		{0x54, 13, 0, 10, false, []byte{0x62, 0x52, 0x7d, 8, 0x54, 0xea}},
+		{0x46, 9, 3, 1, true, []byte{0x62, 0x72, 0xe5, 8, 0x46, 0xc9}},
+		{0x46, 8, 9, 10, true, []byte{0x62, 0x52, 0xb5, 8, 0x46, 0xc2}},
+	} {
+		a := assembler{arch: "amd64"}
+		a.xevex(2, 1, test.opcode, test.d, test.l, test.r, test.wide)
+		if !bytes.Equal(a.code, test.want) {
+			t.Fatalf("%+v: %x", test, a.code)
+		}
+	}
+}

@@ -18,6 +18,13 @@ func (e *functionEmitter) vectorShift(in slots.Instruction, l byte, size, kind u
 		e.a.word(ins | size<<22 | uint32(l)<<5 | 2)
 	} else {
 		e.a.bytes(0x83, 0xe0, byte((8<<size)-1))
+		if e.x86Features&X86AVX512VL != 0 && size == 3 && kind == 12 {
+			e.vectorSplatBits(1, size)
+			d := e.vectorDestination(in.Dst)
+			e.a.xevex(2, 1, 0x46, d, l, 1, true) // VPSRAVQ.
+			e.vectorStore(in.Dst, d)
+			return
+		}
 		if e.x86Features&X86AVX2 != 0 && size >= 2 {
 			e.vectorSplatBits(1, size)
 			e.vectorShiftAVX2(l, size, kind)

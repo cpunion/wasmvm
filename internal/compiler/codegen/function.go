@@ -86,7 +86,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	if config.MemoryMinimumPages > 65536 {
 		return nil, wasm.ErrInvalid
 	}
-	if config.X86Features&^(X86SSSE3|X86SSE41|X86AVX2) != 0 || arch != "amd64" && config.X86Features != 0 {
+	if config.X86Features&^x86KnownFeatures != 0 || arch != "amd64" && config.X86Features != 0 {
 		return nil, wasm.ErrUnsupported
 	}
 	defer func() {

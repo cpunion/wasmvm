@@ -37,7 +37,9 @@ func TestCompleteNativeSIMDInventory(t *testing.T) {
 		for _, arch := range []string{"arm64", "amd64"} {
 			profiles := []X86Features{0}
 			if arch == "amd64" {
-				profiles = []X86Features{0, 1, 2, 3, 4, 5, 6, 7}
+				for profile := X86Features(1); profile <= 31; profile++ {
+					profiles = append(profiles, profile)
+				}
 			}
 			for _, profile := range profiles {
 				for _, fast := range []bool{false, true} {
@@ -89,6 +91,19 @@ func vectorTestProfiles(op uint32) []X86Features {
 	for _, profile := range []X86Features{1, 2, 3, 4, 5, 6, 7} {
 		if profile&^host == 0 && profile&affected != 0 {
 			profiles = append(profiles, profile)
+		}
+	}
+	capability := X86Features(0)
+	if op == 98 {
+		capability = X86AVX512BITALG
+	}
+	if op == 204 {
+		capability = X86AVX512VL
+	}
+	if capability != 0 && host&capability != 0 {
+		profiles = append(profiles, capability)
+		if host != capability {
+			profiles = append(profiles, host)
 		}
 	}
 	return profiles

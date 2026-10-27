@@ -33,6 +33,12 @@ func (e *functionEmitter) vectorComplexInstruction(in slots.Instruction) {
 		e.vectorStore(in.Dst, d)
 		return
 	}
+	if in.Op == 0xfd0062 && e.x86Features&X86AVX512BITALG != 0 {
+		d := e.vectorDestination(in.Dst)
+		e.a.xevex(2, 1, 0x54, d, 0, l, false) // VPOPCNTB.
+		e.vectorStore(in.Dst, d)
+		return
+	}
 	if e.x86Features&X86AVX2 != 0 && e.vectorComplexAVX2(in, l, r) {
 		return
 	}

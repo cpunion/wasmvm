@@ -14,7 +14,7 @@ import (
 func TestCPUFeatureMask(t *testing.T) {
 	features := CPUFeatures()
 	t.Logf("available=%v arch=%s x86Features=%#x", Available, runtime.GOARCH, features)
-	if features&^7 != 0 || (!Available || runtime.GOARCH != "amd64") && features != 0 {
+	if features&^31 != 0 || (!Available || runtime.GOARCH != "amd64") && features != 0 {
 		t.Fatal("invalid detected instruction profile", Available, runtime.GOARCH, features)
 	}
 	if CPUFeatures() != features {

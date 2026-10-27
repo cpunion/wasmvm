@@ -26,7 +26,7 @@ void wasmvm_cancel(struct wasmvm_record *ctx);
 uint32_t wasmvm_enter(const void *entry, struct wasmvm_record *ctx);
 uint64_t wasmvm_layout(uint32_t field);
 /* Raw CPU/OS capabilities; all zero on other targets. */
-void wasmvm_cpu_probe(uint32_t *ecx1, uint32_t *ebx7, uint64_t *xcr0);
+void wasmvm_cpu_probe(uint32_t *ecx1, uint32_t *ebx7, uint32_t *ecx7, uint64_t *xcr0);
 /* ABI diagnostic: invoke an entry under a non-default host FP environment. */
 uint32_t wasmvm_probe_fp(const void *entry, struct wasmvm_record *ctx);
 uint32_t wasmvm_probe_registers(const void *entry, struct wasmvm_record *ctx);

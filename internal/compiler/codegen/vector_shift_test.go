@@ -22,25 +22,29 @@ func TestPackedVectorMaskedShiftCounts(t *testing.T) {
 		for kind := uint32(11); kind <= 13; kind++ {
 			op := 96 + size*32 + kind
 			for _, fast := range []bool{false, true} {
-				f, pc := vectorFixture(op, 0, 0, 12)
-				_, lease, c := functionContext(t, f, fast)
-				in := f.Code[pc]
-				for _, a := range inputs {
-					for _, count := range []uint64{0, 1, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128, 255, 256, 0x7fffffff, 0x80000000, 0xffffffff} {
-						b := value.Value{Lo: count}
-						writeSlot(t, c, 16, in.A, a)
-						writeSlot(t, c, 16, in.B, b)
-						if err := c.SetState(native.State{Used: 16, Depth: 1, Continuation: uint64(pc), Fuel: 1000, Budget: 1000}); err != nil {
-							t.Fatal(err)
-						}
-						if exit, err := c.Enter(lease, 0); err != nil || exit != native.Return {
-							t.Fatal(op, fast, count, exit, err)
-						}
-						want := simd.Eval(f.Sources[in.Source].Wasm, a, b, value.Value{})
-						if got := readSlot(t, c, 16, in.Dst); got != want || readSlot(t, c, 16, in.B) != b {
-							t.Fatal(op, fast, count, a, got, want)
+				for _, profile := range vectorTestProfiles(op) {
+					f, pc := vectorFixture(op, 0, 0, 12)
+					_, lease, c := configuredContext(t, f, Config{Unmetered: fast, X86Features: profile})
+					in := f.Code[pc]
+					for _, a := range inputs {
+						for _, count := range []uint64{0, 1, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128, 255, 256, 0x7fffffff, 0x80000000, 0xffffffff} {
+							b := value.Value{Lo: count}
+							writeSlot(t, c, 16, in.A, a)
+							writeSlot(t, c, 16, in.B, b)
+							if err := c.SetState(native.State{Used: 16, Depth: 1, Continuation: uint64(pc), Fuel: 1000, Budget: 1000}); err != nil {
+								t.Fatal(err)
+							}
+							if exit, err := c.Enter(lease, 0); err != nil || exit != native.Return {
+								t.Fatal(op, fast, count, exit, err)
+							}
+							want := simd.Eval(f.Sources[in.Source].Wasm, a, b, value.Value{})
+							if got := readSlot(t, c, 16, in.Dst); got != want || readSlot(t, c, 16, in.B) != b {
+								t.Fatal(op, fast, count, a, got, want)
+							}
 						}
 					}
+					c.Close()
+					lease.Close()
 				}
 			}
 		}

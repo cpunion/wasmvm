@@ -9,6 +9,9 @@ import (
 // Legalization masks share the immutable guest-literal register budget and
 // reload on every independent entry. No mask occupies a live guest register.
 func (e *functionEmitter) vectorLegalizationConstants(in slots.Instruction) [][2]uint64 {
+	if in.Op == 0xfd0062 && e.x86Features&X86AVX512BITALG != 0 {
+		return nil // VPOPCNTB needs neither nibble mask nor lookup table.
+	}
 	if e.x86Features&(X86SSE41|X86AVX2) != 0 {
 		if in.Op == 0xfd00e8 || in.Op == 0xfd00e9 {
 			return [][2]uint64{{0x7fc000007fc00000, 0x7fc000007fc00000}}

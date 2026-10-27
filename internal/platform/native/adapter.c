@@ -10,8 +10,8 @@
 #include <cpuid.h>
 #endif
 
-void wasmvm_cpu_probe(uint32_t *ecx1, uint32_t *ebx7, uint64_t *xcr0) {
-    *ecx1 = *ebx7 = 0;
+void wasmvm_cpu_probe(uint32_t *ecx1, uint32_t *ebx7, uint32_t *ecx7, uint64_t *xcr0) {
+    *ecx1 = *ebx7 = *ecx7 = 0;
     *xcr0 = 0;
 #ifdef __x86_64__
     unsigned int eax, ebx, ecx, edx;
@@ -26,6 +26,7 @@ void wasmvm_cpu_probe(uint32_t *ecx1, uint32_t *ebx7, uint64_t *xcr0) {
     if (__get_cpuid_max(0, NULL) >= 7) {
         __cpuid_count(7, 0, eax, ebx, ecx, edx);
         *ebx7 = ebx;
+        *ecx7 = ecx;
     }
 #endif
 }
