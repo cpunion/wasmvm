@@ -155,6 +155,94 @@
       "wasm": "extmul-i64.wasm",
       "watSha256": "427c5a4e39ab432e8b5a74cd6d79cc02922a4d1ab2ba39d2f4393efb25c65806",
       "wasmSha256": "e01d9cc57e32046d99384c84b9c7609f78937942f4ce99b15c0a1a25408406bf"
+    },
+    {
+      "id": "shift-i8",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 0,
+      "unit": "ns/source iteration",
+      "wat": "shift-i8.wat",
+      "wasm": "shift-i8.wasm",
+      "watSha256": "85a62c4b83773164de9fa374fdfaef45994da8701dc58ba8a999617ce5c633ba",
+      "wasmSha256": "5b2faf13a5ec9e2b4a86bf3b9ddc0cc118c0bc6ae9e148c0756433a5635d05c0"
+    },
+    {
+      "id": "reduce-i8",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 5136080,
+      "unit": "ns/source iteration",
+      "wat": "reduce-i8.wat",
+      "wasm": "reduce-i8.wasm",
+      "watSha256": "781df07583d1307dd31c7e377307d542fca76874b9c4687a72a85ffbdcd11015",
+      "wasmSha256": "a55097c8433099178af61d334e61335f9729d4d019dd51dd789719d2c7057b2c"
+    },
+    {
+      "id": "shift-i16",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 0,
+      "unit": "ns/source iteration",
+      "wat": "shift-i16.wat",
+      "wasm": "shift-i16.wasm",
+      "watSha256": "dfe7388d54b529fa408654653775c903ad23431bb3a94e9578981185c494a498",
+      "wasmSha256": "d4f1eec8b6f8189c9cff7b4b9bd9cafdb0333b298d9722754aced18c8f16a23e"
+    },
+    {
+      "id": "reduce-i16",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 2045152,
+      "unit": "ns/source iteration",
+      "wat": "reduce-i16.wat",
+      "wasm": "reduce-i16.wasm",
+      "watSha256": "53f574cbb3331c25d10625cd314442fa406c605964eedf72842290778b611e28",
+      "wasmSha256": "413161e5b2d434a2283a1f80c9cdcabae72187620b82a53d57293891e0bbd278"
+    },
+    {
+      "id": "shift-i32",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 0,
+      "unit": "ns/source iteration",
+      "wat": "shift-i32.wat",
+      "wasm": "shift-i32.wasm",
+      "watSha256": "849f0b60f050342748dba353bc9f90836ad4dabf10d723cc548ae1627a359562",
+      "wasmSha256": "1867325b1ca80162453b81c51b96e9ccd39f3417870df1a678aadc726ea7e77f"
+    },
+    {
+      "id": "reduce-i32",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 2048000,
+      "unit": "ns/source iteration",
+      "wat": "reduce-i32.wat",
+      "wasm": "reduce-i32.wasm",
+      "watSha256": "bde9814b1ff3a5af83a366cab27989f1d8663fd3f746ffa1c1c01f67562a1b3d",
+      "wasmSha256": "d7d6c8abc9cf3c682879c3f78ea2d6aa0f43f278349d92ce228de1fb0b623011"
+    },
+    {
+      "id": "shift-i64",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 0,
+      "unit": "ns/source iteration",
+      "wat": "shift-i64.wat",
+      "wasm": "shift-i64.wasm",
+      "watSha256": "b6d2abfa017e455c731b8c350d3a6c07af83cc4231d97fdcaa1a97f2cc458281",
+      "wasmSha256": "bebafbd2fe587ed5e53ab306508e943603722a3a5ab53e37cc80b6dbd85c2d82"
+    },
+    {
+      "id": "reduce-i64",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 2048000,
+      "unit": "ns/source iteration",
+      "wat": "reduce-i64.wat",
+      "wasm": "reduce-i64.wasm",
+      "watSha256": "6ee2c98174555d252568db18789acc3a8628588166bcbb5a1a400860983f9adf",
+      "wasmSha256": "ebce498b411d4127d20fdc077d6a868ba553a09d88dc9fdea0a894a096b4bc7c"
     }
   ]
 }

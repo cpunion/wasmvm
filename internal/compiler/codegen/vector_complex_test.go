@@ -27,10 +27,12 @@ func TestCompleteNativeSIMDInventory(t *testing.T) {
 		if got {
 			count++
 		}
-		if !nativeVectorComplexOpcode(full) {
+		if nativeVectorComplexOpcode(full) {
+			complex++
+		}
+		if !nativeVectorOpcode(full) {
 			continue
 		}
-		complex++
 		f, _ := vectorFixture(op, 0, 3, 0)
 		for _, arch := range []string{"arm64", "amd64"} {
 			profiles := []X86Features{0}

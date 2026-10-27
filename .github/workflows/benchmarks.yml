@@ -175,7 +175,8 @@ jobs:
           python3 - <<'PY'
           import hashlib, json, os
           from pathlib import Path
-          source = Path('head/benchmarks/tools-${{ matrix.platform.name }}.json')
+          target = '${{ matrix.platform.name }}'.replace('macos-', 'darwin-')
+          source = Path('head/benchmarks/tools-' + target + '.json')
           manifest = json.loads(source.read_text())
           manifest['tools'] = [t for t in manifest['tools'] if t['id'] == 'wasmer']
           manifest['sdks'] = [t for t in manifest['sdks'] if t['id'] in ('wasmer', 'wasmtime-c-api')]

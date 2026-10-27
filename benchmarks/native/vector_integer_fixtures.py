@@ -32,8 +32,18 @@ def binary(op, raw, rhs):
         return bytes(raw[i] if i < 16 else 0 for i in indices)
     if op == 'i8x16.popcnt':
         return bytes(v.bit_count() for v in raw)
+    if op.startswith('reduce-'):
+        bits = int(op.split('-')[1])
+        a = lanes(raw, bits)
+        mask = sum((v >> (bits-1)) << i for i, v in enumerate(a))
+        scalar = mask ^ int(all(a)) ^ int(any(raw))
+        return pack([v ^ scalar for v in lanes(raw, 32)], 32)
     dest, kind = op.split('.', 1)
     bits = int(dest.split('x')[0][1:])
+    if kind in ('shl', 'shr_s', 'shr_u'):
+        count = rhs & (bits-1)
+        a = lanes(raw, bits, kind == 'shr_s')
+        return pack([v << count if kind == 'shl' else v >> count for v in a], bits)
     if kind.startswith('extend_'):
         unsigned = kind.endswith('_u')
         source = lanes(raw, bits//2, not unsigned)
@@ -82,6 +92,10 @@ for category in ('extend', 'extmul'):
         FAMILIES[f'{category}-i{bits}'] = [(f'i{bits}x{128//bits}.{category}_{half}_i{bits//2}x{256//bits}_{sign}', RHS if category == 'extmul' else None)
                                           for half in ('low', 'high') for sign in ('s', 'u')]
 
+for bits in (8, 16, 32, 64):
+    FAMILIES[f'shift-i{bits}'] = [(f'i{bits}x{128//bits}.{op}', 'count') for op in ('shl', 'shr_u', 'shr_s')]
+    FAMILIES[f'reduce-i{bits}'] = [(f'reduce-{bits}', None)]
+
 
 def checksum(family, seed, count):
     x = pack([seed]*4, 32)
@@ -90,7 +104,7 @@ def checksum(family, seed, count):
         # point hiding input data dependencies or unused output lanes.
         x = pack([((v + a + i) & MASK) for v, a in zip(lanes(x, 32), (1, 3, 5, 7))], 32)
         for op, rhs in FAMILIES[family]:
-            x = binary(op, x, rhs)
+            x = binary(op, x, (i ^ seed) if rhs == 'count' else rhs)
     a, b, c, d = lanes(x, 32)
     return a ^ b ^ c ^ d
 
@@ -102,6 +116,14 @@ def vector(raw):
 def wat(family):
     ops = []
     for op, rhs in FAMILIES[family]:
+        if op.startswith('reduce-'):
+            bits = int(op.split('-')[1])
+            t = f'i{bits}x{128//bits}'
+            ops.append(f'local.set $x local.get $x {t}.bitmask local.get $x {t}.all_true i32.xor local.get $x v128.any_true i32.xor i32x4.splat local.get $x v128.xor')
+            continue
+        if rhs == 'count':
+            ops.append('local.get $i local.get $seed i32.xor ' + op)
+            continue
         if op == 'swizzle':
             ops.append('local.tee $x local.get $x')
         if rhs is not None:
