@@ -101,3 +101,43 @@ Local raw records (SHA-256):
 - `allocated-results.json`: `3f273e4ee214443f052223586e7c3dcf1351c1ffad421cac7bce0251710aefc1`.
 - `packed-results.json`: `bfe101f1f5117567b895158dea404e87a2d32032c3af7fa4d5fd1969b98d14cc`.
 - `hoisted-results.json`: `841796082da22012797a8462bc37a1556d9fc58e4a31ae06352fddf4239eee25`.
+
+## Final optimized comparison
+
+Code `0ccf8f4`, checked at documentation head `eaee3f7`, passes all four
+[semantic jobs](https://github.com/cpunion/wasmvm/actions/runs/40512028373).
+Downloaded reports again verify all 12 compiler/target/backend-tier combinations
+with 51,139 assertions and 148 scripts each. Local statement coverage is
+97.25% (4101/4217 statements) for codegen; every measured executable package
+remains above 90%.
+
+[Final two-target diagnostics](https://github.com/cpunion/wasmvm/actions/runs/40512069149)
+compare the same 33 families against baseline `64e5e69` and all three references.
+Both targets complete 924 alternate-input checks and retain all phase fields,
+CPU masks, binary/source hashes and randomized sample orders. Selected paired
+LLGo medians, ns/source iteration:
+
+| Target | Family | Baseline | Final | Fastest reference | Final/reference |
+| --- | --- | ---: | ---: | ---: | ---: |
+| amd64 | shuffle | 3.307 | 2.535 | 1.535 | 1.652 |
+| amd64 | popcount | 3.087 | 2.446 | 2.262 | 1.081 |
+| amd64 | minmax-f32x4 | 12.067 | 8.929 | 7.964 | 1.121 |
+| amd64 | minmax-f64x2 | 12.141 | 8.311 | 7.671 | 1.083 |
+| arm64 | reduce-i16 | 11.565 | 9.825 | 9.020 | 1.089 |
+| arm64 | reduce-i32 | 12.648 | 9.919 | 9.010 | 1.101 |
+| arm64 | reduce-i64 | 13.674 | 9.413 | 8.898 | 1.058 |
+
+The paired runs show the intended improvements without establishing parity.
+ARM64's four conversion families lead the fastest reference by approximately
+6–9%; several other families remain slower. The 100,000-iteration public API
+rows still include each call's execution setup/teardown, so they are not pure
+instruction latency. Earlier one-iteration/dispatch diagnostics separate that
+boundary cost; further compiler and VM work must address the remaining gaps.
+There is no sustained acceptance or A/A-calibration claim. PR #26 remains
+blocked independently on its existing calibration gate; subsequent work stays
+on the implementation branch.
+
+Final raw artifacts (SHA-256):
+
+- `native-amd64-comparison/results.json`: `81a194bb9c55260be86d37540d79e6a343530565ab644592f98a26c923afafdd`.
+- `native-arm64-comparison/results.json`: `c8a2e213cf8ca6527443a896538b783ed17643f72c9c5388b21a87edc6bd7544`.

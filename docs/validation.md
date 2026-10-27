@@ -828,3 +828,13 @@ process blocks, seven calls and every phase/CPU mask. It exposes real slower
 comparisons and does not pass a merge gate. Earlier setup failures (a short
 baseline SHA and the macOS/darwin manifest naming mismatch) are retained and
 fixed. No M1/M2 or PR #26 acceptance gate is closed by diagnostic success.
+
+Final optimized engine `0ccf8f4` passes all four jobs at `eaee3f7` in
+[CI 40512028373](https://github.com/cpunion/wasmvm/actions/runs/40512028373).
+All 12 downloaded execution reports retain the full assertion/script counts.
+The [final amd64/arm64 diagnostic](https://github.com/cpunion/wasmvm/actions/runs/40512069149)
+completes all 33 families and 924 alternate-input checks per target. Paired
+LLGo improvements include roughly 21–23% for amd64 popcount/shuffle, 26–32%
+for amd64 min/max and 15–31% for ARM64 i16/i32/i64 reductions. The selected
+cases still include slower competitor comparisons; all results and hashes are
+recorded in the integer SIMD scope. M1/M2 and PR #26 gates remain open.
