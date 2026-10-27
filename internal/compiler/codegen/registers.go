@@ -235,6 +235,13 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 
 // Immediate selection is valid only along a proven constant fallthrough.
 // The original slot PC keeps the generic instruction for independent entry.
+func (e *functionEmitter) canRegisterImmediate(op uint32, dst, left slots.Slot, bits uint64) bool {
+	_, dok := e.registers[dst]
+	_, lok := e.registers[left]
+	_, arithmetic := x86ImmediateGroup(op, bits)
+	return dok && lok && (op >= 0x74 && op <= 0x78 || op >= 0x86 && op <= 0x8a || e.a.arch == "amd64" && arithmetic)
+}
+
 func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, value uint64) bool {
 	d, dok := e.registers[dst]
 	l, lok := e.registers[left]
@@ -255,7 +262,11 @@ func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, val
 	kind, count := op-first, uint32(value)&(width-1)
 	a := e.a
 	if a.arch == "amd64" {
-		e.registerMove(d, l, wide)
+		// A nonzero i32 shift writes and zero-extends its destination. Retain
+		// canonicalization when the masked count is zero and no write occurs.
+		if d != l || !wide && count == 0 {
+			e.registerMove(d, l, wide)
+		}
 		rex := byte(0x40) | d>>3
 		if wide {
 			rex |= 8

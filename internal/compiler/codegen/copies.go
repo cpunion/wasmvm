@@ -59,11 +59,15 @@ func (e *functionEmitter) combineIntegerCopies(start int) (int, bool) {
 	if !e.canRegisterInteger(in.Op, in.Dst, in.A, in.B) {
 		return 0, false
 	}
+	last := e.f.Code[pc-1]
+	bits := e.f.Sources[last.Source].Wasm.Bits
+	immediate := e.a.arch == "amd64" && (last.Op == 0x41 || last.Op == 0x42) && last.Dst == in.B &&
+		e.canRegisterImmediate(in.Op, in.Dst, in.A, bits)
 	for i, copy := range e.f.Code[start:pc] {
 		// Forwarded arithmetic no longer reads this temporary. Elide the
 		// copy only if no later prefix instruction needs it and normal
 		// execution replaces it before any poll, trap or other exit.
-		needed := copy.Dst == in.A || copy.Dst == in.B || copy.Dst == in.C
+		needed := copy.Dst == in.A || copy.Dst == in.B && !immediate || copy.Dst == in.C
 		for _, later := range e.f.Code[start+i+1 : pc] {
 			if later.Op == 0x20 && slots.Slot(e.f.Sources[later.Source].Wasm.A) == copy.Dst {
 				needed = true
@@ -81,7 +85,11 @@ func (e *functionEmitter) combineIntegerCopies(start int) (int, bool) {
 	if e.logicalShift(pc, in) {
 		return pc + 2, true
 	}
-	e.registerInteger(in.Op, in.Dst, in.A, in.B)
+	if immediate {
+		e.registerImmediate(in.Op, in.Dst, in.A, bits)
+	} else {
+		e.registerInteger(in.Op, in.Dst, in.A, in.B)
+	}
 	if end != pc {
 		if !e.overwrittenBeforeExit(end+1, original.Dst) {
 			e.move(original.Dst, in.Dst)

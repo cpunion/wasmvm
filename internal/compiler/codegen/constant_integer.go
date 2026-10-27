@@ -1,5 +1,7 @@
 package codegen
 
+import "github.com/cpunion/wasmvm/internal/compiler/slots"
+
 // Select a literal operand without materializing a dead temporary. Every
 // interior instruction retains an independent generic continuation.
 func (e *functionEmitter) combineIntegerConstant(pc int) (int, bool) {
@@ -11,34 +13,65 @@ func (e *functionEmitter) combineIntegerConstant(pc int) (int, bool) {
 		return 0, false
 	}
 	bits := e.f.Sources[constant.Source].Wasm.Bits
-	// Emit before selecting the arithmetic only when the constant remains live.
-	// Selection may fail, so roll back this bounded speculative emission.
-	before := len(e.a.code)
+	end, original := pc+1, in.Dst
+	if pc+2 < len(e.f.Code) && pc/256 == (pc+2)/256 {
+		next := e.f.Code[pc+2]
+		if (next.Op == 0x21 || next.Op == 0x22) && next.A == original {
+			dst := slots.Slot(e.f.Sources[next.Source].Wasm.A)
+			if e.canRegisterImmediate(in.Op, dst, in.A, bits) {
+				in.Dst, end = dst, pc+2
+			}
+		}
+	}
+	if !e.canRegisterImmediate(in.Op, in.Dst, in.A, bits) {
+		return 0, false
+	}
 	if constant.Dst != in.Dst && !e.overwrittenBeforeExit(pc+2, constant.Dst) {
 		e.literal(constant)
 	}
-	if !e.registerImmediate(in.Op, in.Dst, in.A, bits) {
-		e.a.code = e.a.code[:before]
-		return 0, false
+	e.registerImmediate(in.Op, in.Dst, in.A, bits)
+	if end != pc+1 {
+		if !e.overwrittenBeforeExit(end+1, original) {
+			e.move(original, in.Dst)
+		}
+		e.move(e.f.Code[end].Dst, in.Dst)
 	}
-	return pc + 1, true
+	return end, true
 }
 
-func (e *functionEmitter) x86ArithmeticImmediate(op uint32, dst, left byte, bits uint64) bool {
+func x86ImmediateGroup(op uint32, bits uint64) (byte, bool) {
 	wide, first := integerWide(op), uint32(0x6a)
 	if wide {
 		first = 0x7c
 		if uint64(int64(int32(bits))) != bits {
-			return false
+			return 0, false
 		}
 	}
-	var ext byte
 	switch op - first {
 	case 0: // add
-		ext = 0
+		return 0, true
 	case 1: // sub
-		ext = 5
-	case 2: // mul: the immediate form has a separate source and destination.
+		return 5, true
+	case 2: // mul
+		return 8, true
+	case 7: // and
+		return 4, true
+	case 8: // or
+		return 1, true
+	case 9: // xor
+		return 6, true
+	}
+	return 0, false
+}
+
+func (e *functionEmitter) x86ArithmeticImmediate(op uint32, dst, left byte, bits uint64) bool {
+	ext, ok := x86ImmediateGroup(op, bits)
+	if !ok {
+		return false
+	}
+	wide := integerWide(op)
+	switch ext {
+	case 8: // mul: the immediate form has a separate source and destination.
 		rex := byte(0x40) | (dst>>3)<<2 | left>>3
 		if wide {
 			rex |= 8
@@ -49,14 +82,6 @@ func (e *functionEmitter) x86ArithmeticImmediate(op uint32, dst, left byte, bits
 		e.a.bytes(0x69, 0xc0|(dst&7)<<3|left&7)
 		e.a.word(uint32(bits))
 		return true
-	case 7: // and
-		ext = 4
-	case 8: // or
-		ext = 1
-	case 9: // xor
-		ext = 6
-	default:
-		return false
 	}
 	if dst != left {
 		e.registerMove(dst, left, wide)

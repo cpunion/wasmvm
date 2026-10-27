@@ -64,3 +64,41 @@ func TestIntegerConstantPollBoundary(t *testing.T) {
 		}
 	}
 }
+
+func TestConstantIntegerLocalForwarding(t *testing.T) {
+	if !native.Available {
+		return
+	}
+	for _, wide := range []bool{false, true} {
+		for _, operation := range []uint32{0, 1, 2, 7, 9, 13} {
+			for local := uint32(0); local < 4; local++ {
+				for _, prefix := range []bool{false, true} {
+					for _, dead := range []bool{false, true} {
+						t.Run(fmt.Sprintf("wide=%v/op=%d/local=%d/prefix=%v/dead=%v", wide, operation, local, prefix, dead), func(t *testing.T) {
+							typ, literal, first := wasm.I32, uint32(0x41), uint32(0x6a)
+							if wide {
+								typ, literal, first = wasm.I64, 0x42, 0x7c
+							}
+							f := &slots.Function{LocalCount: 4, Slots: []wasm.ValueType{typ, typ, typ, typ, typ}, Sources: []ir.Source{
+								{Wasm: module.Instr{Bits: 0x12345678}}, {Wasm: module.Instr{A: local}}, {}, {},
+							}, Code: []slots.Instruction{
+								{Op: literal, Dst: 1, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
+								{Op: first + operation, Dst: 2, A: 0, B: 1, C: slots.NoSlot},
+								{Op: 0x22, Source: 1, Dst: 4, A: 2, B: slots.NoSlot, C: slots.NoSlot},
+							}}
+							if prefix {
+								f.Code[1].A = 2
+								f.Code = append([]slots.Instruction{{Op: 0x20, Source: 3, Dst: 2, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot}}, f.Code...)
+							}
+							if dead {
+								f.Code = append(f.Code, slots.Instruction{Op: literal, Source: 2, Dst: 2, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot})
+							}
+							f.Code = append(f.Code, slots.Instruction{Op: slots.ControlBase + uint32(ir.Return), Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot})
+							checkLinearIntegerEntries(t, f)
+						})
+					}
+				}
+			}
+		}
+	}
+}

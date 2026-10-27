@@ -159,7 +159,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 		}
 		if end, ok := e.combineIntegerConstant(pc); ok {
 			out.FusedIntegers++
-			independentEntries = append(independentEntries, pc+1)
+			for entry := pc + 1; entry <= end; entry++ {
+				independentEntries = append(independentEntries, entry)
+			}
 			combinedThrough = end
 			continue
 		}

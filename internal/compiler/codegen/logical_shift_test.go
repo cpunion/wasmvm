@@ -94,7 +94,7 @@ func TestLogicalShiftDeadConstant(t *testing.T) {
 }
 
 func TestLogicalShiftRejectsUnsafeCombinations(t *testing.T) {
-	for _, kind := range []string{"metered", "amd64", "short", "poll", "opcode", "constant", "shift", "input", "count", "clobber", "live", "spill"} {
+	for _, kind := range []string{"metered", "amd64-alias", "short", "poll", "opcode", "constant", "shift", "input", "count", "clobber", "live", "spill"} {
 		t.Run(kind, func(t *testing.T) {
 			f := logicalShiftFixture(false, 2, 3, 5, 2, 4, false)
 			e := functionEmitter{f: f, unmetered: true, a: &assembler{arch: "arm64"}, registers: map[slots.Slot]byte{0: 19, 1: 20, 2: 21, 3: 22, 4: 23}}
@@ -102,8 +102,9 @@ func TestLogicalShiftRejectsUnsafeCombinations(t *testing.T) {
 			switch kind {
 			case "metered":
 				e.unmetered = false
-			case "amd64":
+			case "amd64-alias":
 				e.a.arch = "amd64"
+				f.Code[2].Dst = 1
 			case "short":
 				f.Code = f.Code[:2]
 			case "poll":
