@@ -74,7 +74,11 @@ byte permutations. SSE2's general byte permutation expansion is explicit.
 Optional SSSE3 supplies byte lookup and Q15 instructions; SSE4.1 supplies packed
 rounding, widening, unsigned narrowing and i32 multiplication. SSE4.1 min/max
 uses ordered blending and canonical NaN selection while pseudo-min/max retain
-selected raw bits. The platform adapter queries CPUID; a pure-Go compiler
+selected raw bits. AVX2 enables VEX.128 three-operand arithmetic, selection,
+permutation, narrowing/widening and packed variable shifts. The platform adapter
+queries CPUID and reads XCR0 only after CPUID advertises XSAVE/OSXSAVE/AVX.
+The AVX2 bit requires both XMM/YMM OS state and CPUID leaf 7 AVX2; synthetic
+CPU-only support cannot enable the path. A pure-Go compiler
 configuration records the selected bit mask and rejects unknown/wrong-target
 features. A zero mask always retains SSE2. Native phase reports record the mask;
 legacy baseline report adapters use zero without altering their engine sources.
@@ -384,3 +388,29 @@ The common root visitor scans typed slots in the same arena, so host collection
 does not require copying a guest frame. Full native corpus, public host/reentry,
 fuel, cancellation, close and panic tests exercise these contracts with Go/LLGo.
 Call/helper speed and the final target matrix remain open acceptance gates.
+
+
+### Bounded reusable invocation workspace
+
+Each Store owns at most one idle outer-call workspace containing the existing
+shared execution driver and, for native mode, its off-heap arena/context.
+A call removes the workspace from the cache until it leaves. Host reentry uses
+fresh independent workspaces and the same remaining frame/slot/fuel limits; it
+cannot overwrite or cache its suspended parent's workspace. Arguments and
+public results keep their existing copied/rooted ownership. Raw borrowed
+results remain valid through public encoding; their pointer-free values are
+not guest GC roots once the invocation's frames leave. Reused locals are zeroed.
+
+Before caching, quiescence releases guest frame references, pending host
+requests, the invocation context and the linear-memory binding. Native metadata
+keeps bounded storage but drops its former instance identity so that the next
+entry rebuilds it from live Store state. Policy rebinding resets fuel, steps,
+metering and execution limits without replacing the backend.
+
+The former native cancellation callback must stop before it starts. A callback
+that already started makes the workspace non-reusable, even if native entry has
+returned: its sticky control word is never reset. Discard/close serializes with
+late cancellation through Context ownership. Normal release stops the callback
+before operation completion cancels its context. Store close retires an idle
+workspace before state and executable leases; an active call retains ownership
+until its deferred cleanup, including panic and close-from-callback paths.

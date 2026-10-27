@@ -63,7 +63,7 @@ start functions, indirect calls, globals, tables, growth, SIMD and bulk operatio
 are connected. Numeric/scalar-memory/control code and all 236 Core 2.0 fixed-SIMD
 operations are emitted directly, including every memory operation, permutation,
 integer and floating-point operation. Baseline SSE2 legalizations and NEON cover
-the complete inventory. Detected SSSE3/SSE4.1 profiles accelerate x86 operations;
+the complete inventory. Detected SSSE3/SSE4.1 and OS-validated AVX2 profiles accelerate x86 operations;
 masked profiles retain portable behavior. Packed shifts/reductions and shared
 immutable masks replace per-lane or repeated-constant work. State/bulk
 operations use explicit owned runtime helpers. Guest calls
@@ -71,7 +71,11 @@ normally exit through the common frame driver; bounded nontrapping integer
 leaves can expand into caller registers in the unmetered tier. Indirect leaves
 check the live table target against instance identities; native tables and
 refreshed metadata preserve mutation, growth and host reentry. They are not interpreted whole
-functions, but their boundary overhead still needs optimization.
+functions. Each Store retains one bounded outer-call workspace; nested reentry
+keeps independent arenas and shared logical limits. Idle workspaces release
+instance frames and memory bindings, and stop their cancellation writer before
+reuse. Canceled native contexts are discarded with their sticky control state.
+Boundary and helper overhead still need measurement and optimization.
 
 The complete Go/LLGo semantic matrix now passes on Linux amd64 and macOS arm64
 through full SIMD/profile engine `49a5719`

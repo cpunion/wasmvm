@@ -838,3 +838,56 @@ LLGo improvements include roughly 21–23% for amd64 popcount/shuffle, 26–32%
 for amd64 min/max and 15–31% for ARM64 i16/i32/i64 reductions. The selected
 cases still include slower competitor comparisons; all results and hashes are
 recorded in the integer SIMD scope. M1/M2 and PR #26 gates remain open.
+
+
+## OS-validated AVX2 lowering
+
+Engine `f09d952` adds an explicit AVX2 compiler bit and VEX.128 three-operand
+SIMD lowering. Synthetic CPU/OS probes cover missing XSAVE/OSXSAVE/AVX, leaf 7
+AVX2 and both XCR0 state bits. Unknown/wrong-target profiles remain invalid;
+all eight known masks have complete SIMD emission checks. Execution selects
+only host-advertised profiles, with alias/spill/cold-entry, NaN/signed-zero,
+Q15 overflow and invalid swizzle-index cases. Local amd64 reports mask 3;
+the actual Linux CI benchmark reports mask 7 and therefore executes AVX2.
+
+All four [semantic jobs](https://github.com/cpunion/wasmvm/actions/runs/40522056164)
+pass. All 12 downloaded reports independently retain 51,139 assertions and
+148 scripts. Local full Go/LLGo suites, amd64 fallback execution, vet and
+cgo-disabled compilation pass. Codegen statement coverage is **97.19%
+(4292/4416)**; every measured executable package exceeds 90%.
+
+The [two-target diagnostic](https://github.com/cpunion/wasmvm/actions/runs/40522063062)
+compares `c980109` with `f09d952` over 33 families and 924 alternate-input
+oracle checks per target. LLGo amd64 shuffle improves from 2.503 to 2.150
+ns/source iteration and average from 1.911 to 1.590. Narrowing (2.174) and
+Q15 (2.247) beat their fastest measured references (2.186 and 2.381), but
+swizzle regresses from 2.437 to 2.803 against a 1.941 reference. Widening
+and other families also retain slower comparisons. ARM64 engine code is
+unchanged, and its process variation must not be presented as an AVX2 gain.
+These short diagnostics do not pass performance acceptance or PR #26.
+
+Raw result SHA-256: amd64
+`d6bf96b9bf6b1a144bc1c90078e6484b4c724c2d0a1d5551c4ffa1c39a8cb8ac`;
+arm64 `848a29b1afc7c34b8e530f1c29687ef2e8645b5bbae598d14858749f0673f296`.
+The next scoped comparison retains the eight existing scalar/call/memory
+regression families and adds one-invocation call-control, for 42 cases.
+
+## Reusable call workspace validation (development)
+
+Engine `a918237` retains one bounded idle outer-call workspace per Store.
+Targeted tests cover policy/fuel reset, function/slot changes, zeroed locals,
+traps and fuel exhaustion, canceled loops followed by fresh calls, host panic
+cleanup, nested reentry isolation, result encoding, released host roots and
+Store close. Native lifecycle tests observe the real asynchronous cancellation
+writer and prove that its sticky context cannot be reused; retired linear
+memory cannot remain bound to a suspended workspace. Shared driver tests
+reject rebinding active guest/host continuations and preserve borrowed results
+through quiescence.
+
+Local complete Go/LLGo suites, focused race checks, vet, cgo-disabled build and
+68 measurement-tool tests pass. Before the final additional suspended-entry
+guard, coverage measured execute **98.47% (321/326)**, nativeexec **94.04%
+(205/218)** and public VM **96.42% (754/782)**, with every executable package
+above 90%. Final-head CI and the 42-family comparison remain pending; they
+compare the exact AVX2 baseline rather than attributing instruction-selection
+changes to workspace reuse. M1/M2 and PR #26 remain open.
