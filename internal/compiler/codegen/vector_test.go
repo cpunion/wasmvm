@@ -199,6 +199,14 @@ func TestNativeVectorOperationsAliasesAndSpills(t *testing.T) {
 						if exit, err := ctx.Enter(lease, 0); err != nil || exit != native.Return {
 							t.Fatal(op, lane, mode, entry, exit, err)
 						}
+						state, err := ctx.State()
+						cost := uint64(0)
+						if !mode.fast && entry <= pc {
+							cost = uint64(pc - entry + 1)
+						}
+						if err != nil || state.Fuel != 1000-cost {
+							t.Fatal("vector fuel charged per machine instruction", op, entry, state.Fuel, cost, err)
+						}
 						if entry <= pc {
 							in := f.Code[pc]
 							b, c := value.Value{}, value.Value{}
@@ -218,6 +226,35 @@ func TestNativeVectorOperationsAliasesAndSpills(t *testing.T) {
 					}
 				}
 			}
+		}
+	}
+}
+
+func TestVectorCancellationSpillsAll128Bits(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	f, _ := vectorFixture(174, 0, 3, 12)
+	_, lease, ctx := functionContext(t, f, true)
+	initial := make([]value.Value, len(f.Slots))
+	for i, typ := range f.Slots {
+		v := value.Value{Lo: ^uint64(0) - uint64(i), Hi: 0xfedcba9876543210 + uint64(i)}
+		if typ != wasm.V128 {
+			v.Hi = 0
+		}
+		initial[i] = v
+		writeSlot(t, ctx, 16, slots.Slot(i), v)
+	}
+	if err := ctx.SetState(native.State{Used: 16, Depth: 1}); err != nil {
+		t.Fatal(err)
+	}
+	ctx.Cancel()
+	if exit, err := ctx.Enter(lease, 0); err != nil || exit != native.Poll {
+		t.Fatal(exit, err)
+	}
+	for i, want := range initial {
+		if got := readSlot(t, ctx, 16, slots.Slot(i)); got != want {
+			t.Fatal(i, got, want)
 		}
 	}
 }

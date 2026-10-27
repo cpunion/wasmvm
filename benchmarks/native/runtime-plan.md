@@ -203,3 +203,27 @@ ownership and native integer lane/bitwise operations on baseline SSE2 and NEON;
 unsupported packed operations keep explicit typed helpers. Preserve every cold
 continuation, fuel boundary and full 128-bit value across spills and host exits.
 This increment does not accept the complete SIMD performance profile or M2.
+
+The first vector implementation (`686b6ac`) lowers 122 additional basic SIMD
+opcodes, plus the existing vector literal, on both targets. It covers splats,
+lane extraction/replacement, bitwise/select/reductions, integer comparisons,
+abs/neg, shifts, wrapping add/sub/mul, i8/i16 saturating arithmetic and integer
+min/max. Baseline SSE2 uses owned instruction sequences where a packed operation
+is absent; NEON uses native operations. Remaining packed operations retain
+typed runtime helpers. No optional CPU feature is assumed.
+
+Three-block diagnostics measured LLGo SIMD at 2.029 ns/iteration versus the
+baseline 2355.079, wazero 1.775, Wasmtime 1.800 and Wasmer 1.800: the initial
+implementation remained slower. Forwarding (`e02330f`) reduced this to 2.000
+but did not reach parity. The affine version (`f08d7df`) measured Go/LLGo
+1.363/1.483 versus wazero 1.796, Wasmtime/Wasmer 1.800. Every run retains all
+five families and 115 alternate-input checks in `artifacts/native-simd/`.
+These 10,000-iteration SIMD measurements include public-call overhead and are
+diagnostic only; earlier failures remain in the same directory.
+
+The planned sustained SIMD check uses 25 million iterations, the independent
+Python lane oracle, 20/60 process blocks, seven warm calls and two warmups.
+Keep per-call randomized interleaving, simultaneous intervals, ±0.5% parity
+and ±0.25% A/A calibration. Three descriptive baseline processes retain the
+original 10,000 iterations. Preparation and first-call phases remain separate;
+this one case cannot accept the full SIMD portfolio or another target.

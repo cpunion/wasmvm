@@ -39,6 +39,17 @@ The context contains frame-arena base/limit/current offsets, module and function
 
 Each ISA defines a register-role table for context, current guest frame, memory base, scratch registers, allocatable integers, and allocatable vectors. Callee-saved registers modified by generated code are saved once at native entry and restored on every exit. The initial arm64 allocator excludes x18 and preserves the platform frame/link conventions. SIMD values spanning a yield are spilled in full, independent of the platform's narrower preservation rules. The amd64 adapter follows the System V contract; Windows is a separate future ABI. Sources: [AAPCS64](https://github.com/ARM-software/abi-aa/blob/main/aapcs64/aapcs64.rst), [x86-64 psABI](https://gitlab.com/x86-psABIs/x86-64-ABI).
 
+Scalar FP and vector slots share one physical register allocator: xmm3-xmm10
+on amd64, v8-v17 on arm64. Vector spills, reloads, locals, select and edge copies
+always preserve all 128 bits. Scratch vectors are separate from those slots:
+0-2 plus xmm11-xmm12 on amd64, or v3-v4 for arm64 selections. Immutable vector
+literals use xmm13-xmm15 or v18-v23, reload at every entry, and never become a
+writable result register. Baseline SSE2 implements packed i32 multiplication
+without requiring SSE4.1; NEON uses native packed operations. Integer i16/i32
+affine fusion uses modular distributivity and MLA on arm64, retains observable
+intermediate values, and preserves every original PC as a cold continuation.
+Precise-fuel code does not fuse instructions and charges each SIMD opcode once.
+
 Hardware-call fast paths, hardware guest-stack switching, or direct generated-code-to-Go callbacks are later design changes. They require new root, unwind, stack-limit, cancellation, and dual-compiler evidence; they are not implied by an instruction encoder passing arithmetic tests.
 
 The unmetered compiler can expand a same-module integer leaf of at most 32 slot

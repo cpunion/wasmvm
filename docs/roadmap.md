@@ -60,8 +60,9 @@ precise-fuel tiers. The interpreter and native backend share `engine/execute`'s
 explicit frames, calls, host requests, roots and cleanup; `engine/nativeexec`
 owns compiled publication and native entry. Public API/CLI selection, imports,
 start functions, indirect calls, globals, tables, growth, SIMD and bulk operations
-are connected. Numeric/scalar-memory/control code is emitted directly; fixed
-SIMD and state/bulk operations use explicit owned runtime helpers. Guest calls
+are connected. Numeric/scalar-memory/control code and 122 basic integer/lane
+SIMD opcodes are emitted directly, with full-width vector register ownership.
+Remaining SIMD and state/bulk operations use explicit owned runtime helpers. Guest calls
 normally exit through the common frame driver; bounded nontrapping integer
 leaves can expand into caller registers in the unmetered tier. Indirect leaves
 check the live table target against instance identities; native tables and
