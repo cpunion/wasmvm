@@ -3,6 +3,7 @@ package codegen
 import (
 	"encoding/binary"
 	"errors"
+	"runtime"
 	"testing"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -32,19 +33,26 @@ func TestCompleteNativeSIMDInventory(t *testing.T) {
 		complex++
 		f, _ := vectorFixture(op, 0, 3, 0)
 		for _, arch := range []string{"arm64", "amd64"} {
-			for _, fast := range []bool{false, true} {
-				c, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), Config{Unmetered: fast})
-				if err != nil || c.Helpers != 0 || c.NativeVectors != 1 {
-					t.Fatal(op, arch, fast, c, err)
-				}
-				limit := DefaultLimits()
-				limit.MaxCodeBytes = uint64(len(c.Entry.Code))
-				if _, err := CompileFunctionWithConfig(arch, f, limit, Config{Unmetered: fast}); err != nil {
-					t.Fatal(err)
-				}
-				limit.MaxCodeBytes--
-				if _, err := CompileFunctionWithConfig(arch, f, limit, Config{Unmetered: fast}); !errors.Is(err, wasm.ErrLimit) {
-					t.Fatal(op, arch, fast, err)
+			profiles := []X86Features{0}
+			if arch == "amd64" {
+				profiles = append(profiles, X86SSSE3, X86SSE41, X86SSSE3|X86SSE41)
+			}
+			for _, profile := range profiles {
+				for _, fast := range []bool{false, true} {
+					config := Config{Unmetered: fast, X86Features: profile}
+					c, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), config)
+					if err != nil || c.Helpers != 0 || c.NativeVectors != 1 {
+						t.Fatal(op, arch, fast, c, err)
+					}
+					limit := DefaultLimits()
+					limit.MaxCodeBytes = uint64(len(c.Entry.Code))
+					if _, err := CompileFunctionWithConfig(arch, f, limit, config); err != nil {
+						t.Fatal(err)
+					}
+					limit.MaxCodeBytes--
+					if _, err := CompileFunctionWithConfig(arch, f, limit, config); !errors.Is(err, wasm.ErrLimit) {
+						t.Fatal(op, arch, fast, err)
+					}
 				}
 			}
 		}
@@ -52,6 +60,31 @@ func TestCompleteNativeSIMDInventory(t *testing.T) {
 	if count != 236 || complex != 39 || nativeVectorComplexOpcode(13) {
 		t.Fatal(count, complex)
 	}
+}
+
+// Execute only profiles advertised by the actual host; emission tests above
+// independently exercise all masks even when running on a different ISA.
+func vectorTestProfiles(op uint32) []X86Features {
+	profiles := []X86Features{0}
+	if !native.Available || runtime.GOARCH != "amd64" {
+		return profiles
+	}
+	affected := X86Features(0)
+	if op == 13 || op == 14 || op == 98 || op == 130 {
+		affected |= X86SSSE3
+	}
+	if op == 134 || op >= 135 && op <= 138 || op >= 156 && op <= 159 ||
+		op >= 167 && op <= 170 || op == 181 || op >= 199 && op <= 202 ||
+		op == 220 || op == 221 || op >= 103 && op <= 106 || op == 116 || op == 117 || op == 122 || op == 148 {
+		affected |= X86SSE41
+	}
+	host := X86Features(native.CPUFeatures())
+	for _, profile := range []X86Features{X86SSSE3, X86SSE41, X86SSSE3 | X86SSE41} {
+		if profile&^host == 0 && profile&affected != 0 {
+			profiles = append(profiles, profile)
+		}
+	}
+	return profiles
 }
 
 func TestNativeComplexSIMDMixedEdges(t *testing.T) {
@@ -85,54 +118,56 @@ func TestNativeComplexSIMDMixedEdges(t *testing.T) {
 			patterns = 12
 		}
 		for pattern := 0; pattern < patterns; pattern++ {
-			for _, fast := range []bool{false, true} {
-				f, pc := vectorFixture(op, 0, pattern%3, 0)
-				if op == 13 {
-					for i := range f.Sources[f.Code[pc].Source].Wasm.Vector {
-						n := byte(next() & 31)
-						switch pattern {
-						case 0, 1:
-							n = byte(i + pattern*16)
-						case 2, 3:
-							n = byte(15 - i + (pattern-2)*16)
-						case 4, 5:
-							n = byte(12 - i/4*4 + i%4 + (pattern-4)*16)
-						case 6:
-							n = 31
-						}
-						f.Sources[f.Code[pc].Source].Wasm.Vector[i] = n
-					}
-				}
-				_, lease, ctx := functionContext(t, f, fast)
-				for sample, a := range inputs {
-					b := inputs[(sample+13)%len(inputs)]
-					if sample%3 == 0 {
-						b = a // Includes MIN*MIN Q15/dot overflow and duplicate inputs.
-					}
-					in := f.Code[pc]
-					initial := make([]value.Value, len(f.Slots))
-					initial[0] = a
-					if in.B != slots.NoSlot {
-						initial[in.B] = b
-					}
-					for i, v := range initial {
-						writeSlot(t, ctx, 16, slots.Slot(i), v)
-					}
-					if err := ctx.SetState(native.State{Used: 16, Depth: 1, Continuation: uint64(pc), Budget: 1000, Fuel: 1000}); err != nil {
-						t.Fatal(err)
-					}
-					if exit, err := ctx.Enter(lease, 0); err != nil || exit != native.Return {
-						t.Fatal(op, pattern, sample, fast, exit, err)
-					}
-					initial[in.Dst] = simd.Eval(f.Sources[in.Source].Wasm, a, b, value.Value{})
-					for i, want := range initial {
-						if got := readSlot(t, ctx, 16, slots.Slot(i)); got != want {
-							t.Fatalf("op=%d pattern=%d sample=%d fast=%v slot=%d got=%x want=%x", op, pattern, sample, fast, i, got, want)
+			for _, profile := range vectorTestProfiles(op) {
+				for _, fast := range []bool{false, true} {
+					f, pc := vectorFixture(op, 0, pattern%3, 0)
+					if op == 13 {
+						for i := range f.Sources[f.Code[pc].Source].Wasm.Vector {
+							n := byte(next() & 31)
+							switch pattern {
+							case 0, 1:
+								n = byte(i + pattern*16)
+							case 2, 3:
+								n = byte(15 - i + (pattern-2)*16)
+							case 4, 5:
+								n = byte(12 - i/4*4 + i%4 + (pattern-4)*16)
+							case 6:
+								n = 31
+							}
+							f.Sources[f.Code[pc].Source].Wasm.Vector[i] = n
 						}
 					}
+					_, lease, ctx := configuredContext(t, f, Config{Unmetered: fast, X86Features: profile})
+					for sample, a := range inputs {
+						b := inputs[(sample+13)%len(inputs)]
+						if sample%3 == 0 {
+							b = a // Includes MIN*MIN Q15/dot overflow and duplicate inputs.
+						}
+						in := f.Code[pc]
+						initial := make([]value.Value, len(f.Slots))
+						initial[0] = a
+						if in.B != slots.NoSlot {
+							initial[in.B] = b
+						}
+						for i, v := range initial {
+							writeSlot(t, ctx, 16, slots.Slot(i), v)
+						}
+						if err := ctx.SetState(native.State{Used: 16, Depth: 1, Continuation: uint64(pc), Budget: 1000, Fuel: 1000}); err != nil {
+							t.Fatal(err)
+						}
+						if exit, err := ctx.Enter(lease, 0); err != nil || exit != native.Return {
+							t.Fatal(op, pattern, sample, fast, exit, err)
+						}
+						initial[in.Dst] = simd.Eval(f.Sources[in.Source].Wasm, a, b, value.Value{})
+						for i, want := range initial {
+							if got := readSlot(t, ctx, 16, slots.Slot(i)); got != want {
+								t.Fatalf("op=%d pattern=%d sample=%d fast=%v slot=%d got=%x want=%x", op, pattern, sample, fast, i, got, want)
+							}
+						}
+					}
+					ctx.Close()
+					lease.Close()
 				}
-				ctx.Close()
-				lease.Close()
 			}
 		}
 	}

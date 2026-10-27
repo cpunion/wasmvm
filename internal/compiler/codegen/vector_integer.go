@@ -137,6 +137,11 @@ func (e *functionEmitter) vectorBinary(d, l, r byte, size, kind uint32) {
 		return
 	}
 	if kind == 21 && size == 2 {
+		if e.x86Features&X86SSE41 != 0 {
+			e.vectorMove(d, l)
+			e.a.xvectorExtended(0x38, 0x40, d, r) // PMULLD
+			return
+		}
 		// SSE2 multiplies only even u32 lanes into u64 products. Select each
 		// low half and interleave, preserving modulo-2^32 signed/unsigned bits.
 		e.vectorMove(11, l)

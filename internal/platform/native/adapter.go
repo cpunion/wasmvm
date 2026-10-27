@@ -13,6 +13,10 @@ import "unsafe"
 
 const Available = true
 
+// CPUFeatures reports legacy XMM extensions usable without AVX/OSXSAVE state.
+// Bits 0/1 mean SSSE3/SSE4.1, respectively; other targets return zero.
+func CPUFeatures() uint32 { return uint32(C.wasmvm_cpu_features()) }
+
 func publish(code []byte) unsafe.Pointer {
 	return C.wasmvm_publish(unsafe.Pointer(&code[0]), C.size_t(len(code)))
 }

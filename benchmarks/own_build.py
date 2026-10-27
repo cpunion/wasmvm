@@ -93,6 +93,16 @@ def prepare(head, checkout, revision, target):
     # Only these two instrumentation directories come from head. No core or
     # public VM implementation file is ever copied over the baseline.
     archive(head, ci.capture(["git", "-C", str(head), "rev-parse", "HEAD"]), target, HARNESS)
+    # The optional profile is diagnostic metadata. Old engines predate the
+    # adapter query and always select baseline SSE2; do not alter their sources
+    # merely to compile today's common phase-report schema.
+    adapter = target / "internal/platform/native/adapter.go"
+    phase = target / "internal/bench/phase/phase.go"
+    if adapter.is_file() and phase.is_file() and "func CPUFeatures()" not in adapter.read_text():
+        content = phase.read_text()
+        content = content.replace('"github.com/cpunion/wasmvm/internal/platform/native"\n', '')
+        content = content.replace("out.NativeCPUFeatures = native.CPUFeatures()", "out.NativeCPUFeatures = 0")
+        phase.write_text(content)
     after = hashes(target, ENGINE_PATHS, HARNESS)
     if after != sources:
         raise ValueError("harness overlay changed engine sources")

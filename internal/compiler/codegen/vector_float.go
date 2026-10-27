@@ -71,8 +71,17 @@ func (e *functionEmitter) vectorFloatInstruction(in slots.Instruction) {
 			}
 			e.a.xvector(ins, d, 11)
 		case scalar >= 0x8d && scalar <= 0x90:
-			e.vectorRoundAMD64(scalar, wide, l)
-			d = 2
+			if e.x86Features&X86SSE41 != 0 {
+				op := byte(0x08)
+				if wide {
+					op++
+				}
+				e.a.xvectorExtended(0x3a, op, d, l)
+				e.a.bytes(8 | [...]byte{2, 1, 3, 0}[scalar-0x8d])
+			} else {
+				e.vectorRoundAMD64(scalar, wide, l)
+				d = 2
+			}
 		case scalar == 0x91:
 			e.a.xpacked(wide, 0x51, d, l)
 		case scalar >= 0x96:

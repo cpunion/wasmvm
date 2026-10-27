@@ -25,6 +25,8 @@ void wasmvm_deallocate(void *p);
 void wasmvm_cancel(struct wasmvm_record *ctx);
 uint32_t wasmvm_enter(const void *entry, struct wasmvm_record *ctx);
 uint64_t wasmvm_layout(uint32_t field);
+/* x86 instruction profile: bit 0 SSSE3, bit 1 SSE4.1; zero on other targets. */
+uint32_t wasmvm_cpu_features(void);
 /* ABI diagnostic: invoke an entry under a non-default host FP environment. */
 uint32_t wasmvm_probe_fp(const void *entry, struct wasmvm_record *ctx);
 uint32_t wasmvm_probe_registers(const void *entry, struct wasmvm_record *ctx);

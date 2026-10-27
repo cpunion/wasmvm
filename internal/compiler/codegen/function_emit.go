@@ -19,6 +19,7 @@ type functionEmitter struct {
 	exit, bad, zero, overflow int
 	edgeCopies                uint32
 	unmetered                 bool
+	x86Features               X86Features
 	usesMemory                bool
 	memoryMinimum             uint64
 	regionLimit               int

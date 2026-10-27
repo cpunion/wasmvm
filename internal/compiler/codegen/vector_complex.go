@@ -132,6 +132,19 @@ func (e *functionEmitter) vectorShiftImmediateAMD64(reg byte, size, kind, count 
 
 // Unpack against a sign mask or zero. SSE2 has no packed widening instruction.
 func (e *functionEmitter) vectorExtendAMD64(d, s byte, size uint32, high, unsigned bool) {
+	if e.x86Features&X86SSE41 != 0 {
+		if high {
+			e.vectorMove(d, s)
+			e.vectorShiftImmediateAMD64(d, 2, 3, 8)
+			s = d
+		}
+		op := [...]byte{0x20, 0x23, 0x25}[size-1]
+		if unsigned {
+			op += 0x10
+		}
+		e.a.xvectorExtended(0x38, op, d, s)
+		return
+	}
 	e.vectorZero(11)
 	if !unsigned {
 		e.a.xvector([]byte{0x64, 0x65, 0x66}[size-1], 11, s)
@@ -177,6 +190,11 @@ func (e *functionEmitter) vectorExtMultiplyAMD64(size uint32, high, unsigned boo
 		e.a.bytes(selectPair)
 	}
 	if !unsigned {
+		if e.x86Features&X86SSE41 != 0 {
+			e.vectorMove(2, 0)
+			e.a.xvectorExtended(0x38, 0x28, 2, 1) // PMULDQ
+			return
+		}
 		// signed(a)*signed(b) = unsigned product minus each signed high half.
 		e.vectorMove(11, 0)
 		e.vectorMove(12, 1)
@@ -196,6 +214,11 @@ func (e *functionEmitter) vectorExtMultiplyAMD64(size uint32, high, unsigned boo
 }
 
 func (e *functionEmitter) vectorNarrowAMD64(op uint32) {
+	if op == 134 && e.x86Features&X86SSE41 != 0 {
+		e.vectorMove(2, 0)
+		e.a.xvectorExtended(0x38, 0x2b, 2, 1) // PACKUSDW
+		return
+	}
 	if op != 134 {
 		e.vectorMove(2, 0)
 		e.a.xvector(map[uint32]byte{101: 0x63, 102: 0x67, 133: 0x6b}[op], 2, 1)
@@ -235,6 +258,20 @@ func (e *functionEmitter) vectorPairwiseAMD64(op uint32) {
 }
 
 func (e *functionEmitter) vectorPopcountAMD64() {
+	if e.x86Features&X86SSSE3 != 0 {
+		e.vectorFloatConstant(12, true, 0, 0x0f0f0f0f0f0f0f0f)
+		e.vectorMove(2, 0)
+		e.a.xvector(0xdb, 2, 12)
+		e.vectorShiftImmediateAMD64(0, 0, 2, 4)
+		e.a.xvector(0xdb, 0, 12)
+		e.vectorConstant(12, 0x0302020102010100, 0x0403030203020201)
+		e.vectorMove(11, 12)
+		e.a.xvectorExtended(0x38, 0x00, 11, 2)
+		e.vectorMove(2, 12)
+		e.a.xvectorExtended(0x38, 0x00, 2, 0)
+		e.a.xvector(0xfc, 2, 11)
+		return
+	}
 	e.vectorMove(2, 0)
 	for _, step := range []struct {
 		shift byte
@@ -254,6 +291,16 @@ func (e *functionEmitter) vectorPopcountAMD64() {
 }
 
 func (e *functionEmitter) vectorQ15AMD64() {
+	if e.x86Features&X86SSSE3 != 0 {
+		e.vectorMove(2, 0)
+		e.a.xvectorExtended(0x38, 0x0b, 2, 1) // PMULHRSW, then fix MIN*MIN.
+		e.vectorFloatConstant(12, true, 0, 0x8000800080008000)
+		e.a.xvector(0x75, 0, 12)
+		e.a.xvector(0x75, 1, 12)
+		e.a.xvector(0xdb, 0, 1)
+		e.a.xvector(0xef, 2, 0)
+		return
+	}
 	e.vectorMove(11, 0)
 	e.vectorMove(2, 0)
 	e.a.xvector(0xe5, 11, 1)
@@ -287,6 +334,27 @@ func (e *functionEmitter) vectorShuffleAMD64(lanes [16]byte) {
 		e.a.bytes(control)
 		return
 	}
+	if e.x86Features&X86SSSE3 != 0 {
+		e.vectorZero(2)
+		for source := byte(0); source < 2; source++ {
+			var mask [16]byte
+			used := false
+			for i, n := range lanes {
+				mask[i] = 0x80
+				if n/16 == source {
+					mask[i], used = n%16, true
+				}
+			}
+			if !used {
+				continue
+			}
+			e.vectorConstant(12, binary.LittleEndian.Uint64(mask[:8]), binary.LittleEndian.Uint64(mask[8:]))
+			e.vectorMove(11, source)
+			e.a.xvectorExtended(0x38, 0x00, 11, 12)
+			e.a.xvector(0xeb, 2, 11)
+		}
+		return
+	}
 	// Group equal byte shifts. Each mask selects only bytes from that source;
 	// the ordered finite scan keeps code bytes deterministic without a map.
 	e.vectorZero(2)
@@ -318,6 +386,16 @@ func (e *functionEmitter) vectorShuffleAMD64(lanes [16]byte) {
 }
 
 func (e *functionEmitter) vectorSwizzleAMD64() {
+	if e.x86Features&X86SSSE3 != 0 {
+		// Saturating +0x70 sets bit 7 for every invalid Wasm index, including
+		// 16..127 which raw PSHUFB would incorrectly wrap into its table.
+		e.vectorFloatConstant(12, true, 0, 0x7070707070707070)
+		e.vectorMove(11, 1)
+		e.a.xvector(0xdc, 11, 12)
+		e.vectorMove(2, 0)
+		e.a.xvectorExtended(0x38, 0x00, 2, 11)
+		return
+	}
 	// SSE2 has no byte table lookup. Compare every table index in parallel;
 	// all 16 output lanes participate and out-of-range indices never match.
 	e.vectorZero(2)

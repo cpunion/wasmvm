@@ -11,6 +11,17 @@ import (
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 )
 
+func TestCPUFeatureMask(t *testing.T) {
+	features := CPUFeatures()
+	t.Logf("available=%v arch=%s x86Features=%#x", Available, runtime.GOARCH, features)
+	if features&^3 != 0 || (!Available || runtime.GOARCH != "amd64") && features != 0 {
+		t.Fatal("invalid detected instruction profile", Available, runtime.GOARCH, features)
+	}
+	if CPUFeatures() != features {
+		t.Fatal("instruction profile changed between detections")
+	}
+}
+
 // These independent C-ABI probes deliberately bypass the future Wasm compiler.
 // They test real entry, record access, off-heap stores and resumption on each ISA.
 func addProbe() []byte {

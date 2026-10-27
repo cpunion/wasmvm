@@ -83,6 +83,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 		indirect[uint32(i)] = bySignature[key]
 	}
 	wantExpansion := map[*slots.Function]bool{}
+	features := codegen.X86Features(native.CPUFeatures())
 	// Publish all required ordinary tiers before spending spare code budget
 	// on optional expansion, including when later functions are large.
 	for tier := 0; tier < 3; tier++ {
@@ -96,7 +97,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 			}
 			bounded := limits
 			bounded.MaxCodeBytes = min(limits.MaxCodeBytes, uint64(math.MaxUint32)) - uint64(len(code))
-			config := codegen.Config{Unmetered: tier != 1, MemoryMinimumPages: minimum}
+			config := codegen.Config{Unmetered: tier != 1, MemoryMinimumPages: minimum, X86Features: features}
 			if tier == 2 {
 				config.DirectCallees = callees
 				config.IndirectCallees = indirect

@@ -24,6 +24,7 @@ import (
 	"github.com/cpunion/wasmvm/internal/engine/nativeexec"
 	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/internal/engine/value"
+	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -48,29 +49,30 @@ type phases struct {
 	Cleanup         int64 `json:"cleanup"`
 }
 type report struct {
-	SchemaVersion    int              `json:"schemaVersion"`
-	Engine           string           `json:"engine"`
-	SourceRevision   string           `json:"sourceRevision"`
-	Compiler         string           `json:"compiler"`
-	CompilerRevision string           `json:"compilerRevision"`
-	RuntimeVersion   string           `json:"runtimeVersion"`
-	GOOS             string           `json:"goos"`
-	GOARCH           string           `json:"goarch"`
-	Backend          string           `json:"backend"`
-	Mode             string           `json:"mode"`
-	Policy           string           `json:"policy"`
-	Iterations       uint32           `json:"iterations"`
-	Seed             uint32           `json:"seed"`
-	Samples          int              `json:"samples"`
-	Warmups          int              `json:"warmups"`
-	Phases           phases           `json:"phasesNs"`
-	PreparationParts map[string]int64 `json:"preparationPartsNs,omitempty"`
-	Result           uint32           `json:"result"`
-	WarmupCallNs     []int64          `json:"warmupCallNs"`
-	WarmCallNs       []int64          `json:"warmCallNs"`
-	WarmupResults    []uint32         `json:"warmupResults"`
-	WarmResults      []uint32         `json:"warmResults"`
-	TimerPairNs      []int64          `json:"timerPairNs"`
+	SchemaVersion     int              `json:"schemaVersion"`
+	Engine            string           `json:"engine"`
+	SourceRevision    string           `json:"sourceRevision"`
+	Compiler          string           `json:"compiler"`
+	CompilerRevision  string           `json:"compilerRevision"`
+	RuntimeVersion    string           `json:"runtimeVersion"`
+	GOOS              string           `json:"goos"`
+	GOARCH            string           `json:"goarch"`
+	Backend           string           `json:"backend"`
+	Mode              string           `json:"mode"`
+	Policy            string           `json:"policy"`
+	NativeCPUFeatures uint32           `json:"nativeCPUFeatures,omitempty"`
+	Iterations        uint32           `json:"iterations"`
+	Seed              uint32           `json:"seed"`
+	Samples           int              `json:"samples"`
+	Warmups           int              `json:"warmups"`
+	Phases            phases           `json:"phasesNs"`
+	PreparationParts  map[string]int64 `json:"preparationPartsNs,omitempty"`
+	Result            uint32           `json:"result"`
+	WarmupCallNs      []int64          `json:"warmupCallNs"`
+	WarmCallNs        []int64          `json:"warmCallNs"`
+	WarmupResults     []uint32         `json:"warmupResults"`
+	WarmResults       []uint32         `json:"warmResults"`
+	TimerPairNs       []int64          `json:"timerPairNs"`
 }
 
 func parseOptions(args []string, stderr io.Writer) (options, error) {
@@ -328,6 +330,9 @@ func dispatchKernel(ctx context.Context, input []byte, args options, out *report
 
 func benchmark(ctx context.Context, args options, beforeSample ...func(int) error) (out report, err error) {
 	out = report{SchemaVersion: 1, Engine: "wasmvm", SourceRevision: sourceRevision, Compiler: runtime.Compiler, CompilerRevision: compilerRevision, RuntimeVersion: runtime.Version(), GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, Backend: args.backend, Mode: args.mode, Policy: "unmetered; bounded cancellation; checked Core 2.0", Iterations: args.iterations, Seed: args.seed, Samples: args.samples, Warmups: args.warmups, WarmupCallNs: []int64{}, WarmCallNs: []int64{}, WarmupResults: []uint32{}, WarmResults: []uint32{}, TimerPairNs: []int64{}}
+	if args.backend == "native" {
+		out.NativeCPUFeatures = native.CPUFeatures()
+	}
 	start := time.Now()
 	input, err := os.ReadFile(args.path)
 	out.Phases.Load = time.Since(start).Nanoseconds()

@@ -30,12 +30,19 @@ class IsolatedSourceTests(unittest.TestCase):
             for path in own_build.HARNESS:
                 (root / path).mkdir(parents=True)
                 (root / path / "main.go").write_text("package main\n// old harness\n")
+            adapter = root / "internal/platform/native/adapter.go"
+            adapter.parent.mkdir(parents=True)
+            adapter.write_text("package native\n")
             base_sha = self.commit(root)
             base = temporary / "base"
             subprocess.run(["git", "clone", "-q", str(root), str(base)], check=True)
             engine.write_text("package vm\nconst Revision = 2\n")
             for path in own_build.HARNESS:
                 (root / path / "main.go").write_text("package main\n// new harness\n")
+            adapter.write_text("package native\nfunc CPUFeatures() uint32 { return 3 }\n")
+            phase = root / "internal/bench/phase/phase.go"
+            phase.write_text('package phase\nimport (\n"github.com/cpunion/wasmvm/internal/platform/native"\n)\n'
+                             'func metadata() { out.NativeCPUFeatures = native.CPUFeatures() }\n')
             head_sha = self.commit(root)
             # An untracked file must not accidentally become baseline/head code.
             (root / "pkg/vm/untracked.go").write_text("package vm\nconst Untracked = true\n")
@@ -47,7 +54,13 @@ class IsolatedSourceTests(unittest.TestCase):
             self.assertEqual((candidate / "pkg/vm/engine.go").read_text(), "package vm\nconst Revision = 2\n")
             self.assertFalse((candidate / "pkg/vm/untracked.go").exists())
             self.assertNotEqual(before["sourceDigest"], after["sourceDigest"])
-            self.assertEqual(before["harnessHashes"], after["harnessHashes"])
+            phase_path = "internal/bench/phase/phase.go"
+            self.assertEqual({k: v for k, v in before["harnessHashes"].items() if k != phase_path},
+                             {k: v for k, v in after["harnessHashes"].items() if k != phase_path})
+            self.assertEqual((baseline / "internal/platform/native/adapter.go").read_text(), "package native\n")
+            self.assertIn("out.NativeCPUFeatures = 0", (baseline / phase_path).read_text())
+            self.assertNotIn('"github.com/cpunion/wasmvm/internal/platform/native"', (baseline / phase_path).read_text())
+            self.assertIn("native.CPUFeatures()", (candidate / phase_path).read_text())
             engine.write_text("dirty tracked engine")
             with self.assertRaises(subprocess.CalledProcessError):
                 own_build.prepare(root, root, head_sha, temporary / "dirty-build")

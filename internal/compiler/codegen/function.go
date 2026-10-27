@@ -65,6 +65,7 @@ func CompileUnmeteredFunction(arch string, f *slots.Function, limits Limits) (*C
 type Config struct {
 	Unmetered          bool
 	MemoryMinimumPages uint32
+	X86Features        X86Features
 	// DirectCallees contains only immutable definitions in the same module.
 	// An expanded entry requires one additional logical frame and InlineSlots
 	// remaining slots. The runtime must select an ordinary entry otherwise.
@@ -84,6 +85,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	unmetered := config.Unmetered
 	if config.MemoryMinimumPages > 65536 {
 		return nil, wasm.ErrInvalid
+	}
+	if config.X86Features&^(X86SSSE3|X86SSE41) != 0 || arch != "amd64" && config.X86Features != 0 {
+		return nil, wasm.ErrUnsupported
 	}
 	defer func() {
 		if p := recover(); p != nil {
@@ -115,6 +119,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	a := assembler{arch: arch, labels: map[int]int{}, bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true, compactBranches: arch == "arm64"}
 	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered, memoryMinimum: uint64(config.MemoryMinimumPages) * 65536}
+	e.x86Features = config.X86Features
 	pcs := make([]int, len(f.Code))
 	for i := range pcs {
 		pcs[i] = a.label()

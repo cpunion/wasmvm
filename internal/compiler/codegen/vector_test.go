@@ -177,74 +177,76 @@ func TestNativeVectorOperationsAliasesAndSpills(t *testing.T) {
 			lanes = 16 >> size
 		}
 		for lane := uint32(0); lane < lanes; lane++ {
-			for _, mode := range []struct {
-				fast            bool
-				alias, pressure int
-			}{{false, 3, 0}, {true, 0, 0}, {true, 1, 0}, {true, 2, 0}, {true, 3, 12}} {
-				f, pc := vectorFixture(op, byte(lane), mode.alias, mode.pressure)
-				compiled, lease, ctx := functionContext(t, f, mode.fast)
-				if compiled.NativeVectors != 1 || compiled.Helpers != 0 {
-					t.Fatal("vector instruction escaped", op, compiled)
-				}
-				for sample := 0; sample < 7; sample++ {
-					for _, entry := range []int{0, pc, pc + 1} {
-						initial := make([]value.Value, len(f.Slots))
-						for i, typ := range f.Slots {
-							v := value.Value{Lo: next(), Hi: next()}
-							if sample == 0 {
-								v = value.Value{}
-							}
-							if sample == 1 {
-								v = value.Value{Lo: ^uint64(0), Hi: ^uint64(0)}
-							}
-							if typ != wasm.V128 {
-								v.Hi = 0
-							}
-							if typ == wasm.I32 || typ == wasm.F32 {
-								v.Lo = uint64(uint32(v.Lo))
-							}
-							initial[i] = v
-							writeSlot(t, ctx, 16, slots.Slot(i), v)
-						}
-						s := native.State{Used: 16, Depth: 1, Continuation: uint64(entry), Budget: 1000, Fuel: 1000}
-						if !mode.fast {
-							s.Payload[3] = 1
-						}
-						if err := ctx.SetState(s); err != nil {
-							t.Fatal(err)
-						}
-						if exit, err := ctx.Enter(lease, 0); err != nil || exit != native.Return {
-							t.Fatal(op, lane, mode, entry, exit, err)
-						}
-						state, err := ctx.State()
-						cost := uint64(0)
-						if !mode.fast && entry <= pc {
-							cost = uint64(pc - entry + 1)
-						}
-						if err != nil || state.Fuel != 1000-cost {
-							t.Fatal("vector fuel charged per machine instruction", op, entry, state.Fuel, cost, err)
-						}
-						inputA, inputB := initial[0], value.Value{}
-						if f.Code[pc].B != slots.NoSlot {
-							inputB = initial[f.Code[pc].B]
-						}
-						if entry <= pc {
-							in := f.Code[pc]
-							b, c := value.Value{}, value.Value{}
-							if in.B != slots.NoSlot {
-								b = initial[in.B]
-							}
-							if in.C != slots.NoSlot {
-								c = initial[in.C]
-							}
-							initial[in.Dst] = simd.Eval(f.Sources[in.Source].Wasm, initial[in.A], b, c)
-						}
-						for i, want := range initial {
-							if got := readSlot(t, ctx, 16, slots.Slot(i)); got != want {
-								if entry <= pc && slots.Slot(i) == f.Code[pc].Dst && vectorFloatMatches(op, inputA, inputB, got, want) {
-									continue
+			for _, profile := range vectorTestProfiles(op) {
+				for _, mode := range []struct {
+					fast            bool
+					alias, pressure int
+				}{{false, 3, 0}, {true, 0, 0}, {true, 1, 0}, {true, 2, 0}, {true, 3, 12}} {
+					f, pc := vectorFixture(op, byte(lane), mode.alias, mode.pressure)
+					compiled, lease, ctx := configuredContext(t, f, Config{Unmetered: mode.fast, X86Features: profile})
+					if compiled.NativeVectors != 1 || compiled.Helpers != 0 {
+						t.Fatal("vector instruction escaped", op, compiled)
+					}
+					for sample := 0; sample < 7; sample++ {
+						for _, entry := range []int{0, pc, pc + 1} {
+							initial := make([]value.Value, len(f.Slots))
+							for i, typ := range f.Slots {
+								v := value.Value{Lo: next(), Hi: next()}
+								if sample == 0 {
+									v = value.Value{}
 								}
-								t.Fatalf("op=%x lane=%d mode=%+v entry=%d slot=%d got=%x want=%x", op, lane, mode, entry, i, got, want)
+								if sample == 1 {
+									v = value.Value{Lo: ^uint64(0), Hi: ^uint64(0)}
+								}
+								if typ != wasm.V128 {
+									v.Hi = 0
+								}
+								if typ == wasm.I32 || typ == wasm.F32 {
+									v.Lo = uint64(uint32(v.Lo))
+								}
+								initial[i] = v
+								writeSlot(t, ctx, 16, slots.Slot(i), v)
+							}
+							s := native.State{Used: 16, Depth: 1, Continuation: uint64(entry), Budget: 1000, Fuel: 1000}
+							if !mode.fast {
+								s.Payload[3] = 1
+							}
+							if err := ctx.SetState(s); err != nil {
+								t.Fatal(err)
+							}
+							if exit, err := ctx.Enter(lease, 0); err != nil || exit != native.Return {
+								t.Fatal(op, lane, mode, entry, exit, err)
+							}
+							state, err := ctx.State()
+							cost := uint64(0)
+							if !mode.fast && entry <= pc {
+								cost = uint64(pc - entry + 1)
+							}
+							if err != nil || state.Fuel != 1000-cost {
+								t.Fatal("vector fuel charged per machine instruction", op, entry, state.Fuel, cost, err)
+							}
+							inputA, inputB := initial[0], value.Value{}
+							if f.Code[pc].B != slots.NoSlot {
+								inputB = initial[f.Code[pc].B]
+							}
+							if entry <= pc {
+								in := f.Code[pc]
+								b, c := value.Value{}, value.Value{}
+								if in.B != slots.NoSlot {
+									b = initial[in.B]
+								}
+								if in.C != slots.NoSlot {
+									c = initial[in.C]
+								}
+								initial[in.Dst] = simd.Eval(f.Sources[in.Source].Wasm, initial[in.A], b, c)
+							}
+							for i, want := range initial {
+								if got := readSlot(t, ctx, 16, slots.Slot(i)); got != want {
+									if entry <= pc && slots.Slot(i) == f.Code[pc].Dst && vectorFloatMatches(op, inputA, inputB, got, want) {
+										continue
+									}
+									t.Fatalf("op=%x lane=%d mode=%+v entry=%d slot=%d got=%x want=%x", op, lane, mode, entry, i, got, want)
+								}
 							}
 						}
 					}

@@ -6,6 +6,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#ifdef __x86_64__
+#include <cpuid.h>
+#endif
+
+uint32_t wasmvm_cpu_features(void) {
+#ifdef __x86_64__
+    unsigned int eax, ebx, ecx, edx;
+    if (!__get_cpuid(1, &eax, &ebx, &ecx, &edx)) return 0;
+    return ((ecx >> 9) & 1u) | (((ecx >> 19) & 1u) << 1);
+#else
+    return 0;
+#endif
+}
 #ifdef __APPLE__
 #include <pthread.h>
 #include <libkern/OSCacheControl.h>

@@ -82,19 +82,26 @@ func TestVectorFloatInventoryAndCodeLimits(t *testing.T) {
 		count++
 		f, _ := vectorFixture(op, 0, 3, 0)
 		for _, arch := range []string{"arm64", "amd64"} {
-			for _, fast := range []bool{false, true} {
-				c, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), Config{Unmetered: fast})
-				if err != nil || c.Helpers != 0 || c.NativeVectors != 1 {
-					t.Fatal(op, arch, fast, err)
-				}
-				limit := DefaultLimits()
-				limit.MaxCodeBytes = uint64(len(c.Entry.Code))
-				if _, err := CompileFunctionWithConfig(arch, f, limit, Config{Unmetered: fast}); err != nil {
-					t.Fatal(err)
-				}
-				limit.MaxCodeBytes--
-				if _, err := CompileFunctionWithConfig(arch, f, limit, Config{Unmetered: fast}); !errors.Is(err, wasm.ErrLimit) {
-					t.Fatal(op, arch, err)
+			profiles := []X86Features{0}
+			if arch == "amd64" {
+				profiles = append(profiles, X86SSE41)
+			}
+			for _, profile := range profiles {
+				for _, fast := range []bool{false, true} {
+					config := Config{Unmetered: fast, X86Features: profile}
+					c, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), config)
+					if err != nil || c.Helpers != 0 || c.NativeVectors != 1 {
+						t.Fatal(op, arch, fast, err)
+					}
+					limit := DefaultLimits()
+					limit.MaxCodeBytes = uint64(len(c.Entry.Code))
+					if _, err := CompileFunctionWithConfig(arch, f, limit, config); err != nil {
+						t.Fatal(err)
+					}
+					limit.MaxCodeBytes--
+					if _, err := CompileFunctionWithConfig(arch, f, limit, config); !errors.Is(err, wasm.ErrLimit) {
+						t.Fatal(op, arch, err)
+					}
 				}
 			}
 		}
@@ -133,34 +140,36 @@ func TestNativeVectorFloatMixedEdges(t *testing.T) {
 			}
 			edges = append(edges, bits)
 		}
-		for _, fast := range []bool{false, true} {
-			f, pc := vectorFixture(op, 0, 3, 0)
-			_, lease, c := functionContext(t, f, fast)
-			in := f.Code[pc]
-			pack := func(index int) value.Value {
-				if wide {
-					return value.Value{Lo: edges[index%len(edges)], Hi: edges[(index+1)%len(edges)]}
+		for _, profile := range vectorTestProfiles(op) {
+			for _, fast := range []bool{false, true} {
+				f, pc := vectorFixture(op, 0, 3, 0)
+				_, lease, c := configuredContext(t, f, Config{Unmetered: fast, X86Features: profile})
+				in := f.Code[pc]
+				pack := func(index int) value.Value {
+					if wide {
+						return value.Value{Lo: edges[index%len(edges)], Hi: edges[(index+1)%len(edges)]}
+					}
+					return value.Value{Lo: edges[index%len(edges)] | edges[(index+1)%len(edges)]<<32,
+						Hi: edges[(index+2)%len(edges)] | edges[(index+3)%len(edges)]<<32}
 				}
-				return value.Value{Lo: edges[index%len(edges)] | edges[(index+1)%len(edges)]<<32,
-					Hi: edges[(index+2)%len(edges)] | edges[(index+3)%len(edges)]<<32}
-			}
-			for i := range edges {
-				for _, offset := range []int{0, 1, 7, 31} {
-					a, b := pack(i), pack(i+offset)
-					writeSlot(t, c, 16, 0, a)
-					if in.B != slots.NoSlot {
-						writeSlot(t, c, 16, in.B, b)
-					}
-					if err := c.SetState(native.State{Used: 16, Depth: 1, Budget: 1000, Continuation: uint64(pc)}); err != nil {
-						t.Fatal(err)
-					}
-					if exit, err := c.Enter(lease, 0); err != nil || exit != native.Return {
-						t.Fatal(op, exit, err)
-					}
-					got := readSlot(t, c, 16, in.Dst)
-					want := simd.Eval(f.Sources[in.Source].Wasm, a, b, value.Value{})
-					if !vectorFloatMatches(op, a, b, got, want) {
-						t.Fatalf("op=%x fast=%v a=%x b=%x got=%x want=%x", op, fast, a, b, got, want)
+				for i := range edges {
+					for _, offset := range []int{0, 1, 7, 31} {
+						a, b := pack(i), pack(i+offset)
+						writeSlot(t, c, 16, 0, a)
+						if in.B != slots.NoSlot {
+							writeSlot(t, c, 16, in.B, b)
+						}
+						if err := c.SetState(native.State{Used: 16, Depth: 1, Budget: 1000, Continuation: uint64(pc)}); err != nil {
+							t.Fatal(err)
+						}
+						if exit, err := c.Enter(lease, 0); err != nil || exit != native.Return {
+							t.Fatal(op, exit, err)
+						}
+						got := readSlot(t, c, 16, in.Dst)
+						want := simd.Eval(f.Sources[in.Source].Wasm, a, b, value.Value{})
+						if !vectorFloatMatches(op, a, b, got, want) {
+							t.Fatalf("op=%x fast=%v a=%x b=%x got=%x want=%x", op, fast, a, b, got, want)
+						}
 					}
 				}
 			}
