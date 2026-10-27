@@ -3,17 +3,18 @@
 Baseline: `20d0a41368e25c71003e5d74f3965fb08791b8e2`. ARM64 already lets a
 conditional branch consume its predecessor's integer comparison flags. On
 amd64, the intervening cancellation check destroys flags, forcing a test of
-the materialized boolean. Move that normal-path check immediately before the
-comparison and forward its flags to the adjacent conditional branch when all
-comparison slots use allocated registers. Preserve the canonical boolean for
-all slots, edge copies and cold entries; do not remove its observable value.
+the materialized boolean. Replay the pure comparison of unchanged allocated
+input registers after that existing poll, then branch directly on its flags.
+Keep the canonical boolean for slots, copied edges and cold entries. Predicates
+that overwrite either input, or require spilled operands, retain the old path.
+Metered code and the ARM64 implementation remain unchanged.
 
-The pre-comparison poll publishes the comparison PC and unchanged input slots.
-The separate cold branch entry still polls at its original PC and reads the
-retained low-i32 condition, independently of arbitrary entry flags/operands.
-Moving a poll one instruction earlier preserves the maximum interval, including
-an If at PC 256. Keep metered behavior and the ARM64 implementation unchanged;
-spilled/ineligible amd64 comparisons retain the existing path.
+Keep the original poll positions and continuation PCs. Moving a poll before
+the comparison could expose slots that earlier copy fusion legitimately omitted
+until the original poll. Replaying flags preserves those proofs and snapshots
+without a second poll scheduler or a weaker slot-observability contract. A cold
+branch entry still checks its retained low-i32 condition, independently of entry
+flags and the original operands. Periodic polls at PC 256 remain intact.
 
 Execute all integer predicates, widths, branch layouts, copied edges, source/
 result aliases, spills, independent entries, canceled continuations and periodic

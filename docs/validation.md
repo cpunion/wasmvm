@@ -912,3 +912,54 @@ Raw result SHA-256: amd64
 `85b747efa30caf756f6f11fdb4073f6a9542cb0c2ca5d6868c2cd620b89c88fc`;
 arm64 `79fc97e391860c82ea9e74b322625ff2b8e85c04d7a35e8c811c5acb0455647a`.
 M1/M2 and PR #26 remain open.
+
+
+## Fallthrough polling and boundary attribution
+
+Engine `20d0a41` removes only no-copy next-PC jump polls and replaces amd64's
+load/test with one aligned full-width memory comparison. Cancellation tests
+inject the flag after the C adapter check and verify forward/backward/copied/
+conditional/table edges, periodic PC 256, long fallthrough chains, exact PCs and
+live values under both policy tiers. Full local Go/LLGo and amd64 suites pass;
+every measured executable package exceeds 90% coverage.
+
+All four [semantic CI jobs](https://github.com/cpunion/wasmvm/actions/runs/40527305218)
+pass; all 12 downloaded reports retain 51,139 assertions / 148 scripts. The
+[paired two-target comparison](https://github.com/cpunion/wasmvm/actions/runs/40527313197)
+completes 42 families and 1,176 alternate-input checks per target. LLGo amd64
+function calls improve from 1.050 to 0.822 ns/source iteration and indirect
+calls from 1.115 to 0.988; fastest references measure 1.647 and 1.750. Other
+cases regress: i32 shifts measure 2.589 to 2.736 on amd64 and 3.698 to 3.870
+on arm64. These short diagnostics retain every result and do not pass the
+portfolio or calibrated performance gates.
+
+Raw SHA-256: amd64
+`1cb074e3d7d1464a213caa6c6d1e62cf34fcff794b3977eb5a97a5c193ef362e`;
+arm64 `a5cc759a4e75b6bde7aaa1e6f90ca5879a7549e5d118e150515c596f4ccdf295`.
+
+A separate repeated-call diagnostic on an Apple M4 Max, Go 1.27.3, pinned LLGo
+`8b1389c`, engine `20d0a41` and GOMAXPROCS=1 isolates boundary components:
+
+| Operation | Go ns/op | LLGo ns/op |
+| --- | ---: | ---: |
+| Mutex lock/unlock | 2.4 | 7.7 |
+| Create/cancel context | 61.7 | 319.3 |
+| Create/cancel context plus native cancellation registration | 321.4 | 1,273.3 |
+| Native state write / read | 7.1 / 6.8 | 58.9 / 57.9 |
+| Native entry alone | 83.1 | 239.7 |
+| Shared native driver Start/Run | 126.1 | 568.8 |
+| Public native call, including result inspection | 587.4 | 2,544.5 |
+| Public host call, including result inspection | 544.0 | 2,346.3 |
+
+The standard-library/cancellation/host path is a substantial residual cost;
+these measurements must not be called pure Wasm instruction throughput. A
+standalone non-loop deferred-unlock reproduction measures Go 4.29 ns versus
+LLGo 51.71 ns (~96 reported bytes), while explicit unlock measures 2.73/7.97
+ns and zero reported bytes. LLGo disassembly contains two AllocU calls (48 and
+24 bytes); hosted ReadMemStats does not populate Mallocs, so its zero allocs/op
+is not allocation evidence. [LLGo issue #2932](https://github.com/xgo-dev/llgo/issues/2932)
+retains the complete standalone reproduction and relates it to the existing
+escape-analysis proposal. Local raw JSON, binaries, source and disassembly
+hashes are retained in `artifacts/native-avx2/call-profile-provenance.json`.
+This identifies a compiler cost without weakening wasmvm cleanup or replacing
+its shared runtime with compiler-specific execution paths.
