@@ -158,3 +158,38 @@ from the measured C API runners; files and commands are retained under
 `artifacts/native-indirect/{wasmer-code,wasmtime-code}`. They explain why host
 round trips were the initial architectural bottleneck without asserting that
 the two independently built tools have byte-identical generated code.
+
+The final local indirect-call check at `8937a5e` (engine `3519b7a`) retained
+60 process blocks, both planned looks and 426 observations. Independent oracle
+checksum: `643576559`. Warm medians are ns/source iteration; compile/validate
+and first-call medians are milliseconds, measured separately:
+
+| Runtime | Warm ns/iteration | Compile/validate ms | First call ms |
+| --- | ---: | ---: | ---: |
+| wasmvm Go | 0.773 | 0.196 | 19.292 |
+| wasmvm LLGo | 0.772 | 0.579 | 19.239 |
+| wazero | 1.983 | 0.139 | 49.844 |
+| Wasmtime | 1.069 | 1.177 | 26.707 |
+| Wasmer | 0.775 | 1.256 | 19.281 |
+
+LLGo passed this host's competitor comparisons and A/A calibration: ratios
+were 0.3891 [0.3852, 0.3935] versus wazero, 0.7218 [0.7200, 0.7233] versus
+Wasmtime, and 0.9950 [0.9900, 0.9981] versus Wasmer. Its A/A interval was
+[0.99851, 1.00244], inside the unchanged ±0.25% band. Go passed the competitor
+comparisons but its A/A interval [0.99660, 1.00121] remained inconclusive.
+**The combined check remains blocked**, and does not authorize a merge or
+accept other indirect targets, the complete native profile or another target.
+Baseline Go/LLGo warm medians were 254.386/1059.186 at 15,000 iterations;
+those three baseline processes are descriptive, not simultaneous inference.
+The raw record, hashes, commands, phases and sample orders are retained in
+`artifacts/native-indirect/gate-results.json`; earlier failed diagnostics remain.
+
+Final semantic regression passed under Go and LLGo on arm64 and Go on amd64
+under Docker/Rosetta, including the complete native Core 2.0 corpus and the new
+full/partial/exhausted metadata-cache and shared-product/alias tests. Final
+coverage: codegen 97.38% (2715/2788), native execution 94.71% (179/189), state
+97.78% (440/450), public API 96.92% (723/746). All executable owned packages
+remain above 90%. PR #26 remains the sole open PR, with its independent ARM64
+calibration gate still blocked; these later changes remain on the development
+branch. General native guest calls, SIMD/state/bulk performance and the remaining
+Core 3.0/Threads/component/WASI deliverables are still open.

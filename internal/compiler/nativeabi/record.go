@@ -21,9 +21,9 @@ const (
 
 const ABIVersion = 2
 
-// State contains only scalar bits and guest handles. Continuation and RootMap
-// are compiler-owned IDs, never addresses supplied by guest memory. The driver
-// reads or replaces State only while execution is idle.
+// State contains scalar bits, guest handles and explicitly designated native
+// runtime addresses. Continuation and RootMap are compiler-owned IDs, never
+// addresses supplied by guest memory. The driver accesses State only while idle.
 type State struct {
 	// Used is the byte offset of the current frame in Arena.
 	Used, Depth, Function, Continuation uint64
