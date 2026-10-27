@@ -253,3 +253,67 @@ func TestVectorMemoryReloadsBindingAfterGrowth(t *testing.T) {
 		}
 	}
 }
+
+func TestVectorAliasesPreserveEverySlotAndColdEntry(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	a := module.Instr{Op: 0xfd000c, Vector: [16]byte{1, 3, 5, 7, 9, 11, 13, 15}}
+	b := module.Instr{Op: 0xfd000c, Vector: [16]byte{3, 5, 7, 11, 13, 17, 19, 23}}
+	bodies := []module.Expr{
+		{{Op: 0x20}, {Op: 0x41}, {Op: 0xfd0000}, {Op: 0xfd0051}, {Op: 0x21},
+			{Op: 0x20}, {Op: 0x20, A: 1}, {Op: 0xfd00ae}, {Op: 0x21, A: 1},
+			{Op: 0x20, A: 1}, {Op: 0x41, Bits: 16}, {Op: 0xfd0000}, {Op: 0xfd0051}, {Op: 0xb}},
+		{{Op: 0x20}, {Op: 0x21, A: 1}, {Op: 0x20, A: 1}, {Op: 0x41}, {Op: 0xfd0000}, {Op: 0xfd0051}, {Op: 0x21},
+			{Op: 0x20, A: 1}, a, {Op: 0xfd00b5}, {Op: 0x21, A: 1},
+			{Op: 0x20}, {Op: 0x20, A: 1}, {Op: 0xfd00ae}, {Op: 0xb}},
+		{{Op: 0x20}, {Op: 0x21, A: 1}, {Op: 0x41}, {Op: 0xfd0000}, {Op: 0x1a},
+			{Op: 0x20, A: 1}, a, {Op: 0xfd00ae}, b, {Op: 0xfd00b5}, {Op: 0x21},
+			{Op: 0x20, A: 1}, {Op: 0x20}, {Op: 0xfd0051}, {Op: 0xb}},
+	}
+	for bi, body := range bodies {
+		m := functionFixture(module.FuncType{Params: []wasm.ValueType{wasm.V128, wasm.V128}, Results: []wasm.ValueType{wasm.V128}}, 0, body)
+		m.Memories = []module.Limits{{Min: 1}}
+		f := functionModule(t, m).Functions[0]
+		fast, fl, fc := configuredContext(t, f, Config{Unmetered: true, MemoryMinimumPages: 1})
+		_, sl, sc := functionContext(t, f)
+		fm, sm := bindMemory(t, fc, 65536, 65536), bindMemory(t, sc, 65536, 65536)
+		data := make([]byte, 65536)
+		for i := range data {
+			data[i] = byte(i*193 + 127)
+		}
+		fm.Write(0, data)
+		sm.Write(0, data)
+		if fast.AliasedVectorReads == 0 {
+			t.Fatal("copy chain not bypassed", bi)
+		}
+		for pc := range f.Code {
+			for i, typ := range f.Slots {
+				v := value.Value{Lo: uint64(i)}
+				if typ == wasm.V128 {
+					v = value.Value{Lo: 0x0123456789abcdef + uint64(i), Hi: 0xfedcba9876543210 - uint64(i)}
+				}
+				writeSlot(t, fc, 16, slots.Slot(i), v)
+				writeSlot(t, sc, 16, slots.Slot(i), v)
+			}
+			s := native.State{Used: 16, Depth: 1, Continuation: uint64(pc), Budget: 1000}
+			if err := fc.SetState(s); err != nil {
+				t.Fatal(err)
+			}
+			if err := sc.SetState(s); err != nil {
+				t.Fatal(err)
+			}
+			if exit, err := fc.Enter(fl, 0); err != nil || exit != native.Return {
+				t.Fatal(bi, pc, exit, err)
+			}
+			if exit, err := sc.Enter(sl, 0); err != nil || exit != native.Return {
+				t.Fatal(bi, pc, exit, err)
+			}
+			for i := range f.Slots {
+				if got, want := readSlot(t, fc, 16, slots.Slot(i)), readSlot(t, sc, 16, slots.Slot(i)); got != want {
+					t.Fatal(bi, pc, i, got, want)
+				}
+			}
+		}
+	}
+}

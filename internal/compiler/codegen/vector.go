@@ -57,6 +57,10 @@ func (e *functionEmitter) vectorMemory(slot slots.Slot, reg byte, store bool) {
 }
 
 func (e *functionEmitter) vectorOperand(slot slots.Slot, scratch byte) byte {
+	if source, ok := e.vectorAliases[slot]; ok {
+		e.aliasedVectorReads++
+		return e.vectorRegisters[source]
+	}
 	if r, ok := e.vectorRegisters[slot]; ok {
 		return r
 	}
@@ -64,6 +68,7 @@ func (e *functionEmitter) vectorOperand(slot slots.Slot, scratch byte) byte {
 	return scratch
 }
 func (e *functionEmitter) vectorStore(slot slots.Slot, reg byte) {
+	e.forgetVectorAliases(slot)
 	if r, ok := e.vectorRegisters[slot]; ok {
 		e.vectorMove(r, reg)
 	} else {
@@ -71,6 +76,7 @@ func (e *functionEmitter) vectorStore(slot slots.Slot, reg byte) {
 	}
 }
 func (e *functionEmitter) vectorDestination(slot slots.Slot) byte {
+	e.forgetVectorAliases(slot)
 	if r, ok := e.vectorRegisters[slot]; ok {
 		return r
 	}
@@ -89,6 +95,18 @@ func (e *functionEmitter) vectorConstant(dst byte, lo, hi uint64) {
 		}
 		e.floatFromInteger(tmp, 0, true)
 		e.a.xvector(0x6c, dst, tmp)
+	}
+}
+
+// A materialized copy may consume the original register to shorten dependency
+// chains. Both slots remain intact for every trap/poll/continuation. Equality
+// expires when either slot changes; aliases never cross a region or CFG edge.
+func (e *functionEmitter) forgetVectorAliases(slot slots.Slot) {
+	delete(e.vectorAliases, slot)
+	for dst, source := range e.vectorAliases {
+		if source == slot {
+			delete(e.vectorAliases, dst)
+		}
 	}
 }
 
@@ -146,6 +164,7 @@ func (e *functionEmitter) pooledVector(in, constant slots.Instruction) bool {
 		return false
 	}
 	previous, had := e.vectorRegisters[in.B]
+	e.forgetVectorAliases(in.B)
 	e.vectorRegisters[in.B] = r
 	e.vectorInstruction(in)
 	if had {

@@ -129,7 +129,8 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, out *CompiledFunction) {
 	e.regionLimit = r.end + 1
 	e.provenPCs = r.proven
-	defer func() { e.regionLimit = 0; e.provenPCs = nil }()
+	e.vectorAliases = map[slots.Slot]slots.Slot{}
+	defer func() { e.regionLimit = 0; e.provenPCs = nil; e.vectorAliases = nil }()
 	for pc := start; pc <= r.end; pc++ {
 		in := e.f.Code[pc]
 		if end, ok := e.combineVectorAffine(pc); ok {

@@ -30,6 +30,8 @@ type functionEmitter struct {
 	floatRegisters            map[slots.Slot]byte
 	vectorRegisters           map[slots.Slot]byte
 	vectorConstants           map[[2]uint64]byte
+	vectorAliases             map[slots.Slot]slots.Slot
+	aliasedVectorReads        uint32
 	registerSlots             []slots.Slot
 	pollExits                 []pollExit
 	trapExits                 []nativeTrapExit
@@ -239,8 +241,17 @@ func (e *functionEmitter) move(dst, src slots.Slot) {
 		return
 	}
 	if e.f.Slots[dst] == wasm.V128 {
+		source := src
+		if alias, ok := e.vectorAliases[src]; ok {
+			source = alias
+		}
 		r := e.vectorOperand(src, 0)
 		e.vectorStore(dst, r)
+		if e.vectorAliases != nil && source != dst {
+			if _, cached := e.vectorRegisters[source]; cached {
+				e.vectorAliases[dst] = source
+			}
+		}
 		return
 	}
 	if d, ok := e.floatRegisters[dst]; ok {

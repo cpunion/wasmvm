@@ -35,6 +35,7 @@ type CompiledFunction struct {
 	UsesRuntimeData            bool
 	NativeVectors              uint32
 	FusedVectors               uint32
+	AliasedVectorReads         uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -346,6 +347,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	a.mark(e.exit)
 	out.EdgeCopies = e.edgeCopies
 	out.BoundsElided = e.boundsElided
+	out.AliasedVectorReads = e.aliasedVectorReads
 	body, err := a.finish()
 	if err != nil {
 		return nil, err

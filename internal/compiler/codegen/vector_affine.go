@@ -100,6 +100,7 @@ func (e *functionEmitter) combineVectorAffine(pc int) (int, bool) {
 	if !ok {
 		return pc, false
 	}
+	e.forgetVectorAliases(dst)
 	final := map[slots.Slot]int{}
 	if p.prefix != nil {
 		final[p.prefix.Dst] = 0
