@@ -48,8 +48,9 @@ class FixedSIMDTests(unittest.TestCase):
 
     def test_pinned_complete_fixture_groups_and_hashes(self):
         cases = native_simd.fixtures(Path(__file__).resolve().parent.parent)
-        self.assertEqual(len(cases), 33)
-        self.assertEqual(len({f['id'] for f, _ in cases}), 33)
+        self.assertEqual(len(cases), 41)
+        self.assertEqual(len({f['id'] for f, _ in cases}), 41)
+        self.assertEqual(sum(f['id'].startswith('regression-') for f, _ in cases), 8)
         with patch('native_simd.hashlib.sha256') as digest:
             digest.return_value.hexdigest.return_value = 'corrupt'
             with self.assertRaisesRegex(ValueError, 'hash mismatch'):

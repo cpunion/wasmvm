@@ -1,5 +1,6 @@
 """Scoped fixed-SIMD diagnostics using existing builds, phases and barriers."""
 import hashlib
+import importlib.util
 import json
 import os
 import random
@@ -14,21 +15,33 @@ def fixtures(head):
     sys.path.insert(0, str(head / "benchmarks/native"))
     import vector_float_fixtures
     import vector_integer_fixtures
+    import runtime_fixtures
+    scalar_spec = importlib.util.spec_from_file_location("wasmvm_core_fixture_oracle", head / "benchmarks/embedded/generate.py")
+    scalar = importlib.util.module_from_spec(scalar_spec)
+    scalar_spec.loader.exec_module(scalar)
     result = []
-    for group, oracle in (("vector-integer", vector_integer_fixtures), ("vector-float", vector_float_fixtures)):
-        directory = head / "benchmarks/native" / (group + "-fixtures")
-        manifest = json.loads((directory / "manifest.json").read_text())
+    groups = [("vector-integer", vector_integer_fixtures, head / "benchmarks/native/vector-integer-fixtures", None),
+              ("vector-float", vector_float_fixtures, head / "benchmarks/native/vector-float-fixtures", None),
+              ("regression-runtime", runtime_fixtures, head / "benchmarks/native/runtime-fixtures",
+               {"indirect-calls", "simd-i32x4", "simd-memory-full", "simd-memory-widen", "simd-memory-lanes"}),
+              ("regression-core", scalar, head / "benchmarks/embedded", {"integer-sustained", "function-calls", "memory-sustained"})]
+    for group, oracle, directory, selected in groups:
+        manifest = phase_ci.load_workloads(head) if group == "regression-core" else json.loads((directory / "manifest.json").read_text())
         if manifest["producer"] != "wasm-tools 1.258.0":
             raise ValueError("SIMD fixture producer differs from pin")
         for original in manifest["workloads"]:
+            if selected is not None and original["id"] not in selected:
+                continue
             f = dict(original, id=group+"/"+original["id"], path=str(directory / original["wasm"]))
             for kind in ("wat", "wasm"):
                 if hashlib.sha256((directory / f[kind]).read_bytes()).hexdigest() != f[kind+"Sha256"]:
                     raise ValueError("SIMD fixture hash mismatch: " + f["id"])
-            if group == "vector-integer":
+            if group in ("vector-integer", "regression-runtime"):
                 checksum = lambda seed, count, name=original["id"], o=oracle: o.checksum(name, seed, count)
-            else:
+            elif group == "vector-float":
                 checksum = lambda seed, count, f=f, o=oracle: o.checksum(f["family"], f["wide"], seed, count)
+            else:
+                checksum = lambda seed, count, kind=original["kind"], o=oracle: o.checksum(kind, seed, count)
             result.append((f, checksum))
     return result
 
