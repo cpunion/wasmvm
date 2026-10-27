@@ -157,6 +157,12 @@ func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bo
 			combinedThrough = end
 			continue
 		}
+		if end, ok := e.combineIntegerConstant(pc); ok {
+			out.FusedIntegers++
+			independentEntries = append(independentEntries, pc+1)
+			combinedThrough = end
+			continue
+		}
 		switch op := in.Op; {
 		case isControl:
 			kind := ir.TermKind(op - slots.ControlBase)

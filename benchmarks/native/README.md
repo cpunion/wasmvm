@@ -142,3 +142,14 @@ Tests compare every slot at every original continuation across both integer
 widths, shift counts, operand/result aliases and live/dead intermediates.
 Local three-block diagnostics do not resolve a speedup; final-head acceptance
 still requires the unchanged two-target comparison and A/A calibration.
+
+At `5573152`, all four semantic jobs passed. Arm64 remained inconclusive
+(Go/LLGo 1.948/1.962 versus Wasmtime/Wasmer 1.979/1.972); A/A did not resolve.
+The Linux runner changed from AMD EPYC 9V45 to Intel Xeon Platinum 8573C:
+unchanged amd64 machine-code hashes measured 1.723 ns/iteration against
+1.678--1.679 for the three references. LLGo A/A calibrated, and its 2--3%
+deficit was resolved. This is a real Intel gap, not a compiler-change regression
+or a reason to reuse the earlier AMD pass. Run 40437631694 retains both reports.
+The next amd64 change selects immediate integer arithmetic, omits dead literal
+temporaries and redundant self-copies, and uses shorter zero-extending constant
+loads. Arm64 code and the measurement protocol remain unchanged.

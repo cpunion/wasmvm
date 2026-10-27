@@ -211,7 +211,10 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 	default:
 		return false
 	}
-	e.registerMove(d, l, wide)
+	// Arithmetic writes the complete result, including i32 zero extension.
+	if d != l {
+		e.registerMove(d, l, wide)
+	}
 	src, dest := r, d
 	if kind == 5 {
 		src, dest = d, r
@@ -230,12 +233,18 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 	return true
 }
 
-// Immediate shift selection is valid only along a proven constant fallthrough.
+// Immediate selection is valid only along a proven constant fallthrough.
 // The original slot PC keeps the generic instruction for independent entry.
 func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, value uint64) bool {
 	d, dok := e.registers[dst]
 	l, lok := e.registers[left]
-	if !dok || !lok || !(op >= 0x74 && op <= 0x78 || op >= 0x86 && op <= 0x8a) {
+	if !dok || !lok {
+		return false
+	}
+	if e.a.arch == "amd64" && e.x86ArithmeticImmediate(op, d, l, value) {
+		return true
+	}
+	if !(op >= 0x74 && op <= 0x78 || op >= 0x86 && op <= 0x8a) {
 		return false
 	}
 	wide := integerWide(op)
