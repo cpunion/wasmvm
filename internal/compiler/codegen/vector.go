@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"sort"
 
+	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 )
 
@@ -114,16 +115,33 @@ func (e *functionEmitter) forgetVectorAliases(slot slots.Slot) {
 // code bytes independent of map iteration and preserves all cold continuations.
 func (e *functionEmitter) prepareVectorConstants() {
 	weights := map[[2]uint64]int{}
-	for _, in := range e.f.Code {
-		if in.Op == 0xfd000c {
-			b := e.f.Sources[in.Source].Wasm.Vector
-			weights[[2]uint64{binary.LittleEndian.Uint64(b[:8]), binary.LittleEndian.Uint64(b[8:])}]++
+	// Prefer literals on backward-edge spans over one-time initialization.
+	// Difference intervals bound the analysis by instructions plus CFG edges;
+	// this changes allocation priority only, never a continuation's semantics.
+	deltas := make([]int, len(e.f.Code)+1)
+	for pc, in := range e.f.Code {
+		if in.Op != slots.ControlBase+uint32(ir.Jump) && in.Op != slots.ControlBase+uint32(ir.If) && in.Op != slots.ControlBase+uint32(ir.Table) {
+			continue
+		}
+		for _, edge := range e.f.Edges[in.Extra : in.Extra+in.Count] {
+			if int(edge.PC) <= pc {
+				deltas[edge.PC]++
+				deltas[pc+1]--
+			}
 		}
 	}
+	active := 0
 	for pc, in := range e.f.Code {
+		active += deltas[pc]
+		weight := 1
+		if active > 0 {
+			weight = 8
+		}
 		if in.Op == 0xfd000c {
+			b := e.f.Sources[in.Source].Wasm.Vector
+			weights[[2]uint64{binary.LittleEndian.Uint64(b[:8]), binary.LittleEndian.Uint64(b[8:])}] += weight
 			if plan, ok := e.vectorAffinePlan(pc); ok {
-				weights[plan.addend]++
+				weights[plan.addend] += weight
 			}
 		}
 	}
