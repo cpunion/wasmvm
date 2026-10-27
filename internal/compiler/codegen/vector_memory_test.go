@@ -67,7 +67,7 @@ func TestNativeVectorMemoryBoundsLanesAndSpills(t *testing.T) {
 			lanes = 16 / size
 		}
 		for lane := uint32(0); lane < lanes; lane++ {
-			for _, offset := range []uint32{0, 1, 16, 65535, 0xffffffff} {
+			for _, offset := range []uint32{0, 1, 16, 8193, 65535, 0xffffffff} {
 				for mode := 0; mode < 4; mode++ {
 					fast, bounded, pressure := mode != 0, mode >= 2, mode == 3
 					f, pc := vectorMemoryFunction(t, op, offset, byte(lane), bounded, pressure)
@@ -229,6 +229,27 @@ func TestVectorMemoryFuelCancelAndCodeLimits(t *testing.T) {
 		c.Cancel()
 		if exit, err := c.Enter(lease, 0); err != nil || exit != native.Poll {
 			t.Fatal(exit, err)
+		}
+	}
+}
+
+func TestVectorMemoryReloadsBindingAfterGrowth(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	m := functionFixture(module.FuncType{Params: []wasm.ValueType{wasm.V128}, Results: []wasm.ValueType{wasm.V128}}, 0,
+		module.Expr{{Op: 0x41, Bits: 1}, {Op: 0x40}, {Op: 0x1a},
+			{Op: 0x41, Bits: 65536}, {Op: 0x20}, {Op: 0xfd000b},
+			{Op: 0x41, Bits: 65536}, {Op: 0xfd0000}, {Op: 0xb}})
+	m.Memories = []module.Limits{{Min: 1, Max: 2, HasMax: true}}
+	f := functionModule(t, m).Functions[0]
+	input := value.Value{Lo: 0x0123456789abcdef, Hi: 0xfedcba9876543210}
+	for _, fast := range []bool{false, true} {
+		compiled, lease, c := configuredContext(t, f, Config{Unmetered: fast, MemoryMinimumPages: 1})
+		mem := bindMemory(t, c, 65536, 131072)
+		out, exit, state := runFunction(t, compiled, lease, c, []value.Value{input}, 100, !fast, 64, mem)
+		if exit != native.Return || len(out) != 1 || out[0] != input || !fast && state.Fuel != 92 {
+			t.Fatal(fast, exit, out, state)
 		}
 	}
 }

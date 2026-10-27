@@ -269,3 +269,15 @@ call and existing SIMD regression rows. Retain startup, preparation, first call
 and warm execution separately. Short diagnostics do not accept the profile;
 sustained checks retain the existing 20/60-block protocol, seven samples, two
 warmups, ±0.5% parity and ±0.25% A/A calibration, with no discarded failures.
+Each sustained candidate call executes 25 million iterations. Adjust simultaneous
+intervals across all three families (24 comparisons and two planned looks).
+The baseline retains 10,000 iterations in three descriptive processes per family.
+
+The first implementation (`4b59731`) removed all 22 memory helper exits. Its
+three-block LLGo diagnostics were 4.083 ns/iteration for full vectors, 1.408 for
+widen/splat and 5.733 for lane operations; pinned competitors measured
+4.000–4.200, 1.163–1.200 and 6.400–6.617 respectively. Widening remained slower.
+The register-address version (`246b906`) measured 3.733, 1.229 and 5.112 versus
+3.600–4.200, 1.017–1.100 and 5.600–5.987. Both runs and the five regression
+families remain in local `artifacts/native-simd-memory/`. These short calls
+include public-call overhead and do not resolve sustained equivalence.
