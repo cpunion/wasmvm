@@ -48,9 +48,9 @@ class FixedSIMDTests(unittest.TestCase):
 
     def test_pinned_complete_fixture_groups_and_hashes(self):
         cases = native_simd.fixtures(Path(__file__).resolve().parent.parent)
-        self.assertEqual(len(cases), 41)
-        self.assertEqual(len({f['id'] for f, _ in cases}), 41)
-        self.assertEqual(sum(f['id'].startswith('regression-') for f, _ in cases), 8)
+        self.assertEqual(len(cases), 42)
+        self.assertEqual(len({f['id'] for f, _ in cases}), 42)
+        self.assertEqual(sum(f['id'].startswith('regression-') for f, _ in cases), 9)
         with patch('native_simd.hashlib.sha256') as digest:
             digest.return_value.hexdigest.return_value = 'corrupt'
             with self.assertRaisesRegex(ValueError, 'hash mismatch'):
@@ -86,6 +86,21 @@ class FixedSIMDTests(unittest.TestCase):
         self.assertEqual(len(report['checks']), 1)
         self.assertIn('oracle mismatch', report['failure'])
         self.assertIn('Measurement failed', native_simd.markdown(report))
+
+    def test_call_control_never_normalizes_by_a_fictitious_loop(self):
+        control = next(case for case in native_simd.fixtures(Path(__file__).resolve().parent.parent)
+                       if case[0].get('kind') == 'call-control')
+        def interleave(commands, timeout, rng):
+            return {name: self.row(cmd) for name, cmd in commands.items()}, [list(commands)]
+        with patch('native_simd.fixtures', return_value=[control]), \
+             patch('native_simd.phase_ci.invoke', side_effect=lambda cmd, timeout: self.row(cmd)), \
+             patch('native_simd.interleaved.invoke', side_effect=interleave):
+            report = native_simd.run(Path('.'), self.builds(), self.references())
+        self.assertEqual(report['status'], 'diagnostic')
+        self.assertEqual({row['fixture']['iterations'] for row in report['checks']}, {1})
+        self.assertEqual(len({row['fixture']['seed'] for row in report['checks']}), 4)
+        self.assertEqual(report['cases'][0]['fixture']['iterations'], 1)
+        self.assertIn('| ns/call | 100.000 |', native_simd.markdown(report))
 
 
 if __name__ == '__main__':

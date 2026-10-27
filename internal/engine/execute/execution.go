@@ -134,7 +134,6 @@ func (e *Execution) push(fn *state.Function, dest []slots.Slot) error {
 		}
 	} else {
 		e.values = e.values[:needed]
-		clear(e.values[base:])
 	}
 	clear(e.values[base:])
 	e.frames = append(e.frames, frame{function: fn, base: base, dest: dest})

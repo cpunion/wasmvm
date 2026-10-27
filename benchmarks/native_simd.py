@@ -24,7 +24,7 @@ def fixtures(head):
               ("vector-float", vector_float_fixtures, head / "benchmarks/native/vector-float-fixtures", None),
               ("regression-runtime", runtime_fixtures, head / "benchmarks/native/runtime-fixtures",
                {"indirect-calls", "simd-i32x4", "simd-memory-full", "simd-memory-widen", "simd-memory-lanes"}),
-              ("regression-core", scalar, head / "benchmarks/embedded", {"integer-sustained", "function-calls", "memory-sustained"})]
+              ("regression-core", scalar, head / "benchmarks/embedded", {"call-control", "integer-sustained", "function-calls", "memory-sustained"})]
     for group, oracle, directory, selected in groups:
         manifest = phase_ci.load_workloads(head) if group == "regression-core" else json.loads((directory / "manifest.json").read_text())
         if manifest["producer"] != "wasm-tools 1.258.0":
@@ -69,14 +69,18 @@ def run(head, builds, references, timeout=180):
     # Preserve partial measurements if a later case fails.
     try:
         for original, checksum in cases:
+            control = original.get("kind") == "call-control"
             for seed, count in ((0, 1), (0xffffffff, 2), (7, 19), (0x80000000, 1001)):
+                if control:
+                    count = 1
                 f = dict(original, seed=seed, iterations=count, expectedChecksum=checksum(seed, count))
                 for name in runtimes:
                     row = phase_ci.invoke(command(name, f, 1, 0), timeout)
                     if row["record"]["warmResults"] != [f["expectedChecksum"]]:
                         raise ValueError("SIMD oracle mismatch: " + name + "/" + f["id"])
                     report["checks"].append(dict(id=name, fixture=f, **row))
-            f = dict(original, iterations=report["iterations"], expectedChecksum=checksum(original["seed"], report["iterations"]))
+            count = 1 if control else report["iterations"]
+            f = dict(original, iterations=count, expectedChecksum=checksum(original["seed"], count))
             report["cases"].append({"fixture": f, "observations": [], "sampleOrders": []})
             print(f["id"], "oracle checks passed", flush=True)
         for block in range(report["rounds"]):
@@ -98,10 +102,11 @@ def run(head, builds, references, timeout=180):
 
 def markdown(report):
     lines = ["## Fixed SIMD native diagnostics", "", "**Diagnostic only; merge acceptance remains open.** "
-             "Three interleaved process blocks, seven calls, two warmups and 100,000 source iterations per call. "
+             "Three interleaved process blocks, seven calls and two warmups. Loop workloads use 100,000 source iterations per call; "
+             "call-control uses one invocation without a guest loop. "
              "All startup/compile/instantiate/first-call phases and CPU masks remain in the raw report.", "",
-             "| Workload | Go base | LLGo base | Go head | LLGo head | wazero | Wasmtime | Wasmer |",
-             "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+             "| Workload | Unit | Go base | LLGo base | Go head | LLGo head | wazero | Wasmtime | Wasmer |",
+             "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
     if report["status"] != "diagnostic":
         return "\n".join(lines[:2] + ["**Measurement failed:** " + report.get("failure", "incomplete"), ""])
     for case in report["cases"]:
@@ -109,5 +114,6 @@ def markdown(report):
         for name in ("base-go", "base-llgo", "head-go", "head-llgo", "head-compiler", "wasmtime-cranelift", "wasmer-cranelift"):
             rows = [r for r in case["observations"] if r["id"] == name]
             values.append(statistics.median(statistics.median(r["record"]["warmCallNs"])/r["record"]["iterations"] for r in rows))
-        lines.append("| " + case["fixture"]["id"] + " | " + " | ".join(f"{v:.3f}" for v in values) + " |")
-    return "\n".join(lines + ["", "Units: ns/source iteration. Missing A/A calibration, simultaneous intervals or target evidence blocks merging.", ""])
+        unit = "ns/call" if case["fixture"].get("kind") == "call-control" else "ns/source iteration"
+        lines.append("| " + case["fixture"]["id"] + " | " + unit + " | " + " | ".join(f"{v:.3f}" for v in values) + " |")
+    return "\n".join(lines + ["", "Missing A/A calibration, simultaneous intervals or target evidence blocks merging.", ""])

@@ -20,6 +20,7 @@ type Execution struct {
 	maxFrames       uint64
 	metered         bool
 	stop            func() bool
+	reusable        bool
 	values          []value.Value
 	runtimeData     *native.Memory
 	runtimeWords    []uint64
@@ -31,12 +32,49 @@ func New(ctx context.Context, modules map[*slots.Module]*Lease, maxSlots, maxFra
 	if err != nil {
 		return nil, err
 	}
-	e := &Execution{ctx: ctx, native: c, modules: modules, maximum: uint64(maxSlots) * 16, maxFrames: uint64(maxFrames), metered: metered}
-	e.stop = context.AfterFunc(ctx, c.Cancel)
+	e := &Execution{native: c, modules: modules, maximum: uint64(maxSlots) * 16, maxFrames: uint64(maxFrames), reusable: true}
+	if err := e.Begin(ctx, metered); err != nil {
+		e.Close()
+		return nil, err
+	}
 	return e, nil
 }
 
+// Begin binds an idle context to a new invocation. A context whose cancellation
+// callback started is never reused: Suspend returns false and the owner closes it.
+func (e *Execution) Begin(ctx context.Context, metered bool) error {
+	if e.native == nil || e.stop != nil || !e.reusable {
+		return wasm.ErrInvalid
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	e.ctx, e.metered = ctx, metered
+	e.reusable = false
+	e.stop = context.AfterFunc(ctx, e.native.Cancel)
+	return nil
+}
+
+// Suspend removes the former cancellation writer and releases native-visible
+// instance memory. Only a callback stopped before it started permits reuse;
+// the native context's sticky control word is never cleared.
+func (e *Execution) Suspend() bool {
+	if e.native == nil {
+		return false
+	}
+	if e.stop == nil {
+		return e.reusable
+	}
+	stopped := e.stop()
+	e.stop, e.ctx, e.runtimeInstance = nil, nil, nil
+	e.reusable = e.native.BindMemory(nil) == nil && stopped
+	return e.reusable
+}
+
 func (e *Execution) Resize(length, capacity int) ([]value.Value, error) {
+	if e.native == nil {
+		return nil, native.ErrClosed
+	}
 	if length < 0 || capacity < length || uint64(capacity) > e.maximum/16 {
 		return nil, wasm.ErrLimit
 	}
@@ -51,16 +89,30 @@ func (e *Execution) Resize(length, capacity int) ([]value.Value, error) {
 }
 
 func (e *Execution) Close() {
-	e.stop()
+	e.reusable = false
+	if e.stop != nil {
+		e.stop()
+		e.stop = nil
+	}
 	e.values = nil
-	e.native.Close()
+	if e.native != nil {
+		e.native.Close()
+		e.native = nil
+	}
 	if e.runtimeData != nil {
 		e.runtimeData.Close()
+		e.runtimeData = nil
 	}
 	e.runtimeWords, e.runtimeInstance = nil, nil
 }
 
 func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uint64) (uint32, uint64, error) {
+	if e.native == nil {
+		return 0, fuel, native.ErrClosed
+	}
+	if e.stop == nil {
+		return 0, fuel, wasm.ErrInvalid
+	}
 	module := e.modules[fn.Instance.Compiled]
 	if module == nil {
 		return 0, fuel, wasm.ErrUnsupported

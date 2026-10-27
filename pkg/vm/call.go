@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/cpunion/wasmvm/internal/engine/execute"
-	"github.com/cpunion/wasmvm/internal/engine/nativeexec"
 	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -206,20 +205,16 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 		limits.MaxFrames -= used.MaxFrames
 		limits.MaxSlots -= used.MaxSlots
 	}
-	config := execute.Config{Limits: limits, Metered: op.options.Metered, Fuel: op.fuel}
-	if s := op.store; s.engine.config.Backend == "native" {
-		backend, err := nativeexec.New(op.ctx, s.nativeModules, limits.MaxSlots, limits.MaxFrames, op.options.Metered)
-		if err != nil {
-			return nil, err
-		}
-		config.Backend = backend
+	w, err := op.acquireWorkspace(limits)
+	if err != nil {
+		return nil, err
 	}
-	e := execute.New(op.store.state, op.ctx, config)
+	e := w.execution
 	op.frames = append(op.frames, e)
 	defer func() {
-		e.Close()
 		op.frames[len(op.frames)-1] = nil
 		op.frames = op.frames[:len(op.frames)-1]
+		op.releaseWorkspace(w)
 	}()
 	if err := e.Start(ref, args); err != nil {
 		return nil, err

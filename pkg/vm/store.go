@@ -52,6 +52,7 @@ type Store struct {
 	externs       map[uint64]any
 	nextExtern    uint64
 	nativeModules map[*slots.Module]*nativeexec.Lease
+	workspace     *callWorkspace
 }
 type operation struct {
 	store   *Store
@@ -125,6 +126,10 @@ func (s *Store) Close() {
 	}
 }
 func (s *Store) closeLocked() {
+	if s.workspace != nil {
+		s.workspace.execution.Close()
+		s.workspace = nil
+	}
 	s.state.Close()
 	for _, lease := range s.nativeModules {
 		lease.Close()
