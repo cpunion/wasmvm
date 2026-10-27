@@ -33,6 +33,7 @@ type CompiledFunction struct {
 	ForwardedScalars           uint32
 	InlinedCalls, InlineSlots  uint32
 	UsesRuntimeData            bool
+	NativeVectors              uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -128,6 +129,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	if unmetered {
 		e.prepareRegisters()
+		e.prepareVectorConstants()
 		e.prepareConstants(config)
 		e.prepareRuntimeRegisters(config)
 		e.contextLoad(0, nativeabi.PayloadOffset+24)
@@ -257,6 +259,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 					e.edge(in.Extra+uint32(i), pcs, -1)
 				}
 			}
+		case nativeVectorOpcode(op):
+			out.NativeVectors++
+			e.vectorInstruction(in)
 		case plainOpcode(op):
 			e.plain(in, false)
 		case op == 0x40:

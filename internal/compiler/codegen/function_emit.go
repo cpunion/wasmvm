@@ -28,6 +28,8 @@ type functionEmitter struct {
 	runtimeRegisters          map[uint32]byte
 	registers                 map[slots.Slot]byte
 	floatRegisters            map[slots.Slot]byte
+	vectorRegisters           map[slots.Slot]byte
+	vectorConstants           map[[2]uint64]byte
 	registerSlots             []slots.Slot
 	pollExits                 []pollExit
 	trapExits                 []nativeTrapExit
@@ -236,6 +238,11 @@ func (e *functionEmitter) move(dst, src slots.Slot) {
 	if dst == slots.NoSlot {
 		return
 	}
+	if e.f.Slots[dst] == wasm.V128 {
+		r := e.vectorOperand(src, 0)
+		e.vectorStore(dst, r)
+		return
+	}
 	if d, ok := e.floatRegisters[dst]; ok {
 		if s, ok := e.floatRegisters[src]; ok {
 			e.floatMove(d, s, e.f.Slots[dst] == wasm.F64)
@@ -399,6 +406,13 @@ func (e *functionEmitter) literal(in slots.Instruction) {
 	if op == 0xfd000c {
 		lo = binary.LittleEndian.Uint64(src.Wasm.Vector[:8])
 		hi = binary.LittleEndian.Uint64(src.Wasm.Vector[8:])
+		if r, ok := e.vectorConstants[[2]uint64{lo, hi}]; ok {
+			e.vectorStore(in.Dst, r)
+		} else {
+			e.vectorConstant(0, lo, hi)
+			e.vectorStore(in.Dst, 0)
+		}
+		return
 	}
 	if r, ok := e.floatRegisters[in.Dst]; ok && e.a.arch == "arm64" {
 		wide := e.f.Slots[in.Dst] == wasm.F64

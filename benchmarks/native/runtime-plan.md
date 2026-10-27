@@ -193,3 +193,13 @@ remain above 90%. PR #26 remains the sole open PR, with its independent ARM64
 calibration gate still blocked; these later changes remain on the development
 branch. General native guest calls, SIMD/state/bulk performance and the remaining
 Core 3.0/Threads/component/WASI deliverables are still open.
+
+The next vector-code increment uses exact baseline `c7fbc5c`. The affected
+portfolio includes the existing `simd-i32x4` workload, with direct/indirect calls
+and sustained integer/memory loops as regressions. Compare the public native
+API under Go and LLGo with the same pinned competitors, independent checksums
+and separate preparation/first/warm phases. Introduce full-width register
+ownership and native integer lane/bitwise operations on baseline SSE2 and NEON;
+unsupported packed operations keep explicit typed helpers. Preserve every cold
+continuation, fuel boundary and full 128-bit value across spills and host exits.
+This increment does not accept the complete SIMD performance profile or M2.

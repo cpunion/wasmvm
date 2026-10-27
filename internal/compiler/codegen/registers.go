@@ -15,7 +15,7 @@ import (
 func (e *functionEmitter) prepareRegisters() {
 	weights := make([]uint64, len(e.f.Slots))
 	use := func(s slots.Slot) {
-		if s != slots.NoSlot && e.f.Slots[s] != wasm.V128 {
+		if s != slots.NoSlot {
 			weights[s]++
 		}
 	}
@@ -56,15 +56,21 @@ func (e *functionEmitter) prepareRegisters() {
 		floatAvailable = []byte{8, 9, 10, 11, 12, 13, 14, 15, 16, 17}
 	}
 	integers, floats := map[slots.Slot]byte{}, map[slots.Slot]byte{}
+	vectors := map[slots.Slot]byte{}
 	// Load before installing either map so every load reads the backing frame.
 	for _, s := range order {
 		t := e.f.Slots[s]
-		floating := t == wasm.F32 || t == wasm.F64
-		if floating && len(floats) < len(floatAvailable) {
-			r := floatAvailable[len(floats)]
-			e.slotLoad(s, 0, false, t == wasm.F64)
-			e.floatFromInteger(r, e.operandRegister(0), t == wasm.F64)
-			floats[s] = r
+		floating := t == wasm.F32 || t == wasm.F64 || t == wasm.V128
+		if floating && len(floats)+len(vectors) < len(floatAvailable) {
+			r := floatAvailable[len(floats)+len(vectors)]
+			if t == wasm.V128 {
+				e.vectorMemory(s, r, false)
+				vectors[s] = r
+			} else {
+				e.slotLoad(s, 0, false, t == wasm.F64)
+				e.floatFromInteger(r, e.operandRegister(0), t == wasm.F64)
+				floats[s] = r
+			}
 		} else if !floating && len(integers) < len(available) {
 			r := available[len(integers)]
 			e.slotLoad(s, 0, false, true)
@@ -76,6 +82,7 @@ func (e *functionEmitter) prepareRegisters() {
 		e.registerSlots = append(e.registerSlots, s)
 	}
 	e.registers, e.floatRegisters = integers, floats
+	e.vectorRegisters = vectors
 }
 
 func (e *functionEmitter) operandRegister(reg byte) byte {
@@ -108,6 +115,10 @@ func (e *functionEmitter) spillRegisters() {
 	e.registers, e.floatRegisters = nil, nil
 	// Stable order makes emitted code independent of Go map iteration order.
 	for _, s := range e.registerSlots {
+		if r, ok := e.vectorRegisters[s]; ok {
+			e.vectorMemory(s, r, true)
+			continue
+		}
 		if r, ok := registers[s]; ok {
 			e.registerMove(e.operandRegister(0), r, true)
 		} else {
