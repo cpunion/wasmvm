@@ -41,3 +41,12 @@ optional instruction only on a host advertising it. No AVX/OSXSAVE contract is
 introduced. Use detected profiles for byte permutations, packed population
 count, Q15 multiplication, widening, unsigned narrowing, i32 multiplication and
 floating-point rounding; preserve portable legalizations for masked features.
+
+## Packed shifts and reductions
+
+The complete SIMD inventory still includes scalar-per-lane legalization for
+variable shifts and reductions. Replace those with packed NEON/SSE2 sequences,
+covering every lane width, masked counts, signed i64 right shift, byte-lane
+isolation, all-true, any-true and sign masks. Add four dynamic-count shift and
+four reduction families before implementation; retain the earlier families and
+CPU-mask combinations. Pure throughput and public-call costs remain separate.
