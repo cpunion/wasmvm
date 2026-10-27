@@ -13,14 +13,17 @@ import (
 )
 
 type Execution struct {
-	ctx       context.Context
-	native    *native.Context
-	modules   map[*slots.Module]*Lease
-	maximum   uint64
-	maxFrames uint64
-	metered   bool
-	stop      func() bool
-	values    []value.Value
+	ctx             context.Context
+	native          *native.Context
+	modules         map[*slots.Module]*Lease
+	maximum         uint64
+	maxFrames       uint64
+	metered         bool
+	stop            func() bool
+	values          []value.Value
+	runtimeData     *native.Memory
+	runtimeWords    []uint64
+	runtimeInstance *state.Instance
 }
 
 func New(ctx context.Context, modules map[*slots.Module]*Lease, maxSlots, maxFrames uint32, metered bool) (*Execution, error) {
@@ -47,7 +50,15 @@ func (e *Execution) Resize(length, capacity int) ([]value.Value, error) {
 	return e.values[:length], nil
 }
 
-func (e *Execution) Close() { e.stop(); e.values = nil; e.native.Close() }
+func (e *Execution) Close() {
+	e.stop()
+	e.values = nil
+	e.native.Close()
+	if e.runtimeData != nil {
+		e.runtimeData.Close()
+	}
+	e.runtimeWords, e.runtimeInstance = nil, nil
+}
 
 func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uint64) (uint32, uint64, error) {
 	module := e.modules[fn.Instance.Compiled]
@@ -76,6 +87,13 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 	} else if entries.hasExpansion && uint64(depth) < e.maxFrames &&
 		uint64(base)+uint64(len(fn.Code.Slots))+uint64(entries.inlineSlots) <= e.maximum/16 {
 		entry = entries.expanded
+		if entries.usesRuntimeData {
+			var err error
+			s.Payload[2], err = e.bindRuntimeData(fn.Instance)
+			if err != nil {
+				return 0, fuel, err
+			}
+		}
 	}
 	for {
 		if err := e.ctx.Err(); err != nil {

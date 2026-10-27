@@ -29,7 +29,8 @@ type State struct {
 	Used, Depth, Function, Continuation uint64
 	Source, RootMap, Fuel, Budget       uint64
 	ResultLo, ResultHi                  uint64
-	Payload                             [4]uint64
+	// Payload[2] is a trusted native runtime view, never a guest address.
+	Payload [4]uint64
 }
 
 // Record is the fixed C ABI, verified against the C layout on each target. The
@@ -58,6 +59,7 @@ const (
 	ResultLoOffset     = unsafe.Offsetof(Record{}.State) + unsafe.Offsetof(State{}.ResultLo)
 	ResultHiOffset     = unsafe.Offsetof(Record{}.State) + unsafe.Offsetof(State{}.ResultHi)
 	PayloadOffset      = unsafe.Offsetof(Record{}.State) + unsafe.Offsetof(State{}.Payload)
+	RuntimeDataOffset  = PayloadOffset + 16
 	ControlOffset      = unsafe.Offsetof(Record{}.Control)
 	MemoryBaseOffset   = unsafe.Offsetof(Record{}.MemoryBase)
 	MemorySizeOffset   = unsafe.Offsetof(Record{}.MemorySize)

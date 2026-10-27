@@ -32,6 +32,7 @@ type CompiledFunction struct {
 	MemoryGrows                uint32
 	ForwardedScalars           uint32
 	InlinedCalls, InlineSlots  uint32
+	UsesRuntimeData            bool
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -65,6 +66,11 @@ type Config struct {
 	// An expanded entry requires one additional logical frame and InlineSlots
 	// remaining slots. The runtime must select an ordinary entry otherwise.
 	DirectCallees map[uint32]*slots.Function
+	// IndirectCallees indexes bounded leaf candidates by the call's type index.
+	// Every candidate must have that validated structural signature. Identity
+	// is checked against the current instance's function reference at runtime.
+	IndirectCallees map[uint32][]uint32
+	FunctionCount   uint32
 }
 
 func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
@@ -122,7 +128,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	if unmetered {
 		e.prepareRegisters()
-		e.prepareConstants(config.DirectCallees)
+		e.prepareConstants(config)
 		e.contextLoad(0, nativeabi.PayloadOffset+24)
 		e.test(true)
 		e.branch(e.bad, "ne")
@@ -258,13 +264,27 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			e.leave(nativeabi.GrowMemory, uint64(pc), uint64(pc+1))
 		case op == 0x10 || op == 0x11:
 			out.Calls++
-			if end, ok := e.inlineLeaf(pc, config.DirectCallees[src.Wasm.A]); op == 0x10 && ok {
+			var end int
+			var expanded bool
+			if op == 0x10 {
+				end, expanded = e.inlineLeaf(pc, config.DirectCallees[src.Wasm.A])
+				if expanded {
+					out.InlineSlots = max(out.InlineSlots, uint32(len(config.DirectCallees[src.Wasm.A].Slots)))
+				}
+			} else {
+				var needed uint32
+				end, needed, expanded = e.inlineIndirect(pc, config)
+				if expanded {
+					out.InlineSlots = max(out.InlineSlots, needed)
+					out.UsesRuntimeData = true
+				}
+			}
+			if expanded {
 				out.InlinedCalls++
 				if end != pc {
 					independentEntries = append(independentEntries, end)
 					combinedThrough = end
 				}
-				out.InlineSlots = max(out.InlineSlots, uint32(len(config.DirectCallees[src.Wasm.A].Slots)))
 				continue
 			}
 			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))

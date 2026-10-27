@@ -17,6 +17,19 @@ type leafExpression struct {
 	immediate   bool
 }
 
+// CanExpandLeaf bounds optional call expansion before building a target index.
+func CanExpandLeaf(f *slots.Function) bool {
+	if f == nil || len(f.Signature.Params) > 32 {
+		return false
+	}
+	inputs := make([]slots.Slot, len(f.Signature.Params))
+	for i := range inputs {
+		inputs[i] = slots.Slot(i)
+	}
+	_, ok := leafExpressions(f, inputs)
+	return ok
+}
+
 func leafExpressions(f *slots.Function, inputs []slots.Slot) ([]*leafExpression, bool) {
 	if f == nil || len(f.Code) == 0 || len(f.Code) > 32 || len(f.Slots) > 32 ||
 		len(f.Slots) < int(f.LocalCount) || len(inputs) > int(f.LocalCount) ||
@@ -117,10 +130,16 @@ func (e *functionEmitter) inlineLeaf(pc int, callee *slots.Function) (int, bool)
 		return pc, false
 	}
 	in := e.f.Code[pc]
-	if in.Op != 0x10 {
+	if in.Op != 0x10 && in.Op != 0x11 {
 		return pc, false
 	}
 	inputs := e.f.Args[in.Extra : in.Extra+in.Count]
+	if in.Op == 0x11 {
+		if len(inputs) == 0 {
+			return pc, false
+		}
+		inputs = inputs[:len(inputs)-1]
+	}
 	results, ok := leafExpressions(callee, inputs)
 	if !ok || uint64(in.Extra)+uint64(in.Count)+uint64(len(results)) > uint64(len(e.f.Args)) {
 		return pc, false

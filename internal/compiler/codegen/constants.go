@@ -10,7 +10,7 @@ import (
 // AArch64's otherwise unused caller-saved x1-x8 retain expensive integer
 // constants for one native entry. They are immutable and need no spill/root
 // state. Every continuation reloads the same pool before dispatch.
-func (e *functionEmitter) prepareConstants(callees map[uint32]*slots.Function) {
+func (e *functionEmitter) prepareConstants(config Config) {
 	if e.a.arch != "arm64" {
 		return
 	}
@@ -18,9 +18,15 @@ func (e *functionEmitter) prepareConstants(callees map[uint32]*slots.Function) {
 	functions := []*slots.Function{e.f}
 	for _, in := range e.f.Code {
 		if in.Op == 0x10 {
-			callee := callees[e.f.Sources[in.Source].Wasm.A]
+			callee := config.DirectCallees[e.f.Sources[in.Source].Wasm.A]
 			if _, ok := leafExpressions(callee, e.f.Args[in.Extra:in.Extra+in.Count]); ok {
 				functions = append(functions, callee)
+			}
+		} else if in.Op == 0x11 {
+			for _, index := range config.IndirectCallees[e.f.Sources[in.Source].Wasm.A] {
+				if callee := config.DirectCallees[index]; CanExpandLeaf(callee) {
+					functions = append(functions, callee)
+				}
 			}
 		}
 	}

@@ -55,6 +55,17 @@ including untaken conditional calls. Required entries consume the code budget
 before optional copies. This is an optimization of leaf calls, not acceptance
 of the general native guest-call ABI.
 
+Indirect calls may expand up to four eligible same-module leaves per structural
+signature. Native code checks the current table's unsigned index and compares
+the live reference with the instance's immutable function identity. A miss uses
+the original checked call, preserving bounds/null/type traps, imported and
+cross-instance calls. This is guarded expansion, not a static-table assumption.
+The expanded entry uses `Payload[2]` for an execution-owned native word array:
+function handles in module order, followed by `(length, native base)` per table.
+The common frame machine retains the referenced instance and tables. Every
+host/helper handoff refreshes table pointers, and instance changes replace
+function identities. No Go address or guest-supplied pointer enters this view.
+
 ## Exit protocol and safepoints
 
 Every slow operation uses an explicit exit record. Initial statuses are `Return`, `Trap`, `HostCall`, `GrowMemory`, `GrowStack`, `Poll`, `FuelExhausted`, and `GuestGC`. `FuelExhausted` maps to the typed budget outcome rather than a generic guest trap; a poll that observes cancellation returns the separate canceled outcome through the driver. Additional feature-specific statuses need a defined owner and resume contract.
@@ -279,8 +290,10 @@ use validated typed exits. Each helper instruction has already consumed its
 fuel and cannot be charged a second time by the common machine. Large edge-copy
 plans are serviced in bounded chunks. No function falls back to slot dispatch.
 
-Native frame slots and linear memory use one pointer-free off-heap allocation
-each. Trusted Store code borrows private slices while native execution is idle;
+Native frame slots, linear memories and tables use pointer-free off-heap
+allocations. Table elements remain Store-local uint64 reference handles scanned
+by the same root visitor. Failed allocation and unreachable-instance cleanup
+release their storage. Trusted Store code borrows private slices while native execution is idle;
 no slice is exposed through `pkg/vm`. Arena growth preserves live slots, clears
 new/reused locals, updates the record and invalidates the old view. Memory growth
 refreshes the shared Memory object's view and every resumed entry's base/length.

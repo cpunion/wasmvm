@@ -135,7 +135,7 @@ func (s *Store) sweepObjects() {
 		if s.closed || t.OwnerInstance != nil && t.OwnerInstance.disposed {
 			s.usage.Tables--
 			s.usage.TableElements -= uint64(len(t.Values))
-			t.Values = nil
+			t.release()
 			t.maximum = 0
 			t.Owner = nil
 			t.OwnerInstance = nil

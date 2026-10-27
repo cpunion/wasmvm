@@ -102,3 +102,13 @@ public API tests; this is semantic evidence, not an amd64 timing result.
 Codegen coverage is 97.32%, native execution 95.59%, public API 96.92%, and the
 updated phase adapter 95.2%; every executable owned package remains above 90%.
 The branch preserves one open PR (#26) and does not claim M2 completion.
+
+The next optimization uses exact baseline `4d04b6b`: guarded expansion of
+bounded integer leaves at indirect call sites. The primary affected workload is
+`indirect-calls`; direct calls and sustained integer/memory loops are regression
+rows. Keep all existing alternate-input oracles, pinned competitors, separate
+phase timings and acceptance margins. Store-owned native tables contain only
+reference handles. Generated code checks the live table index and target identity
+before expansion; the ordinary call path retains all other targets and traps.
+Native views are refreshed after host calls and helpers, including table growth.
+Precise fuel and logical frame/slot limits keep their existing contracts.

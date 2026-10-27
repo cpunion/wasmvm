@@ -27,6 +27,7 @@ type functionEntries struct {
 	ordinary, metered, expanded uint32
 	inlineSlots                 uint32
 	hasExpansion                bool
+	usesRuntimeData             bool
 }
 
 // Compile prepares both policy tiers within one aggregate code-byte budget.
@@ -56,6 +57,31 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 	for i, f := range m.Functions {
 		callees[importedFunctions+uint32(i)] = f
 	}
+	// Index structurally identical types once. Bound code expansion per type,
+	// independently of map iteration order and table contents at instantiation.
+	keys := make([]string, len(definition.Types))
+	for i, typ := range definition.Types {
+		key := make([]byte, 0, len(typ.Params)+len(typ.Results)+1)
+		for _, p := range typ.Params {
+			key = append(key, byte(p))
+		}
+		key = append(key, 0)
+		for _, r := range typ.Results {
+			key = append(key, byte(r))
+		}
+		keys[i] = string(key)
+	}
+	bySignature := map[string][]uint32{}
+	for i, f := range m.Functions {
+		key := keys[definition.Functions[i].Type]
+		if len(bySignature[key]) < 4 && codegen.CanExpandLeaf(f) {
+			bySignature[key] = append(bySignature[key], importedFunctions+uint32(i))
+		}
+	}
+	indirect := map[uint32][]uint32{}
+	for i, key := range keys {
+		indirect[uint32(i)] = bySignature[key]
+	}
 	wantExpansion := map[*slots.Function]bool{}
 	// Publish all required ordinary tiers before spending spare code budget
 	// on optional expansion, including when later functions are large.
@@ -73,6 +99,8 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 			config := codegen.Config{Unmetered: tier != 1, MemoryMinimumPages: minimum}
 			if tier == 2 {
 				config.DirectCallees = callees
+				config.IndirectCallees = indirect
+				config.FunctionCount = importedFunctions + uint32(len(m.Functions))
 			}
 			body, err := codegen.CompileFunctionWithConfig(runtime.GOARCH, f, bounded, config)
 			if tier == 2 && errors.Is(err, wasm.ErrLimit) {
@@ -95,6 +123,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 				indexes.metered = index
 			case 2:
 				indexes.expanded, indexes.inlineSlots, indexes.hasExpansion = index, body.InlineSlots, true
+				indexes.usesRuntimeData = body.UsesRuntimeData
 			}
 			entries = append(entries, uint32(len(code)))
 			code = append(code, body.Entry.Code...)

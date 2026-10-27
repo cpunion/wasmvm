@@ -248,3 +248,85 @@ func TestNativeCompileLimitsAndRetirement(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestIndirectExpansionQuotasAndRuntimeView(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	typ := module.FuncType{Params: []wasm.ValueType{wasm.I32}, Results: []wasm.ValueType{wasm.I32}}
+	d := &module.Module{Types: []module.FuncType{typ, typ},
+		Tables: []module.TableType{{Element: wasm.FuncRef, Limits: module.Limits{Min: 1}}},
+		Functions: []module.Function{
+			{Body: module.Expr{{Op: 0x41, Bits: 42}, {Op: 0x20}, {Op: 0x11, A: 1}, {Op: 0xb}}},
+			{Body: module.Expr{{Op: 0x20}, {Op: 0x41, Bits: 1}, {Op: 0x6a}, {Op: 0xb}}},
+		}}
+	v, err := validate.Check(d, validate.DefaultLimits())
+	if err != nil {
+		t.Fatal(err)
+	}
+	i, err := lower.Compile(v, lower.DefaultLimits())
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := slots.Compile(i, slots.DefaultLimits())
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, fn, lease := prepare(t, m)
+	if !lease.entries[fn.Code].usesRuntimeData {
+		t.Fatal("canonical type alias not indexed")
+	}
+	fn.Instance.Tables[0].Values[0] = fn.Instance.Functions[1]
+	for _, test := range []struct {
+		frames, slots     uint64
+		metered, expanded bool
+	}{
+		{2, 16, false, true}, {1, 16, false, false}, {2, uint64(len(fn.Code.Slots)), false, false}, {2, 16, true, false},
+	} {
+		e.maxFrames, e.maximum, e.metered = test.frames, test.slots*16, test.metered
+		e.values[0].Lo = 0
+		pc, _, err := e.Run(fn, 0, 1, 0, 20)
+		if err != nil {
+			t.Fatal(test, err)
+		}
+		if got := fn.Code.Code[pc].Op != 0x11; got != test.expanded {
+			t.Fatal(test, pc)
+		}
+	}
+	e.maxFrames, e.maximum, e.metered = 2, 16*16, false
+	// Refresh a moved table and enlarge metadata when entering another instance.
+	s := state.NewNative(state.DefaultLimits())
+	defer s.Close()
+	other, err := s.Allocate(m, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := s.GrowTable(other.Tables[0], 1, other.Functions[1]); !ok {
+		t.Fatal("growth failed")
+	}
+	extra, err := s.NewTable(module.TableType{Element: wasm.FuncRef, Limits: module.Limits{Min: 1}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	other.Tables = append(other.Tables, extra.Table)
+	if _, err := e.bindRuntimeData(other); err != nil {
+		t.Fatal(err)
+	}
+	if e.runtimeWords[2] != 2 || e.runtimeWords[3] != other.Tables[0].NativeAddress() {
+		t.Fatal(e.runtimeWords)
+	}
+	// Returning to the smaller instance must replace identities and table pairs.
+	if _, err := e.bindRuntimeData(fn.Instance); err != nil {
+		t.Fatal(err)
+	}
+	if e.runtimeWords[2] != 1 || e.runtimeWords[3] != fn.Instance.Tables[0].NativeAddress() {
+		t.Fatal(e.runtimeWords)
+	}
+	goStore := state.New(state.DefaultLimits())
+	defer goStore.Close()
+	goTable, _ := goStore.NewTable(module.TableType{Element: wasm.FuncRef, Limits: module.Limits{Min: 1}})
+	fn.Instance.Tables[0] = goTable.Table
+	if _, _, err := e.Run(fn, 0, 1, 0, 0); !errors.Is(err, wasm.ErrInvalid) {
+		t.Fatal("Go storage entered native view", err)
+	}
+}

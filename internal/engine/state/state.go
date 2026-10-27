@@ -7,12 +7,14 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"unsafe"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/memory"
 	"github.com/cpunion/wasmvm/internal/engine/simd"
 	"github.com/cpunion/wasmvm/internal/engine/value"
+	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
@@ -52,7 +54,7 @@ func New(limits Limits) *Store {
 	return &Store{limits: limits, functions: []*Function{nil}, types: make(map[string]uint32)}
 }
 
-// NewNative selects off-heap memory for the complete native execution backend.
+// NewNative selects off-heap memories and tables for native execution.
 func NewNative(limits Limits) *Store { s := New(limits); s.nativeMemory = true; return s }
 func (s *Store) RetainedModules(visit func(*slots.Module)) {
 	for _, in := range s.instances {
@@ -111,6 +113,7 @@ type Table struct {
 	Type          module.TableType
 	Values        []uint64
 	maximum       uint32
+	native        *native.Memory
 }
 type Extern struct {
 	Owner    *Store
@@ -242,7 +245,17 @@ func (s *Store) NewTable(t module.TableType) (Extern, error) {
 	if t.Limits.Min > maximum {
 		return Extern{}, limit("host table elements")
 	}
-	table := &Table{Owner: s, Type: t, Values: make([]uint64, int(t.Limits.Min)), maximum: maximum}
+	table := &Table{Owner: s, Type: t, maximum: maximum}
+	if s.nativeMemory {
+		var err error
+		table.native, err = native.NewMemory(uint64(t.Limits.Min)*8, uint64(maximum)*8)
+		if err != nil {
+			return Extern{}, err
+		}
+		table.refreshNative()
+	} else {
+		table.Values = make([]uint64, int(t.Limits.Min))
+	}
 	s.usage.TableElements += uint64(t.Limits.Min)
 	s.usage.Tables++
 	s.tables = append(s.tables, table)
@@ -257,14 +270,49 @@ func (s *Store) GrowTable(t *Table, delta uint32, initial uint64) (uint32, bool)
 	if delta == 0 {
 		return old, true
 	}
-	grown := make([]uint64, int(next))
-	copy(grown, t.Values)
+	var grown []uint64
+	if t.native != nil {
+		if err := t.native.Grow(next * 8); err != nil {
+			return old, false
+		}
+		t.refreshNative()
+		grown = t.Values
+	} else {
+		grown = make([]uint64, int(next))
+		copy(grown, t.Values)
+	}
 	for i := int(old); i < len(grown); i++ {
 		grown[i] = initial
 	}
 	t.Values = grown
 	s.usage.TableElements += uint64(delta)
 	return old, true
+}
+
+// NativeAddress is borrowed only by the serialized Store executor. The table
+// owner outlives every active/suspended frame. Growth invalidates the address;
+// the driver refreshes its native view after every host/helper handoff.
+func (t *Table) NativeAddress() uint64 {
+	if t.native == nil || t.Owner == nil {
+		return 0
+	}
+	return uint64(uintptr(unsafe.Pointer(unsafe.SliceData(t.Values))))
+}
+
+func (t *Table) refreshNative() {
+	buffer, err := t.native.Buffer()
+	if err != nil {
+		panic(err) // Only called immediately after successful allocation/growth.
+	}
+	t.Values = unsafe.Slice((*uint64)(unsafe.Pointer(unsafe.SliceData(buffer))), len(buffer)/8)
+}
+
+func (t *Table) release() {
+	if t.native != nil {
+		t.native.Close()
+		t.native = nil
+	}
+	t.Values = nil
 }
 func Range(size int, offset, count uint64) bool {
 	return offset <= uint64(size) && count <= uint64(size)-offset
