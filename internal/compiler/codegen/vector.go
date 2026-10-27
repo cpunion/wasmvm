@@ -88,6 +88,18 @@ func (e *functionEmitter) vectorConstant(dst byte, lo, hi uint64) {
 		e.vectorMove(dst, r)
 		return
 	}
+	if e.a.arch == "arm64" {
+		if instruction, ok := armVectorImmediate(lo, hi); ok {
+			e.a.word(instruction | uint32(dst))
+			return
+		}
+	} else if lo|hi == 0 {
+		e.vectorZero(dst)
+		return
+	} else if lo == ^uint64(0) && hi == lo {
+		e.a.xvector(0x76, dst, dst) // PCMPEQD: all ones without a scalar temporary.
+		return
+	}
 	e.constant(0, lo)
 	e.floatFromInteger(dst, e.operandRegister(0), true)
 	e.constant(0, hi)
