@@ -27,3 +27,17 @@ intervals, ±0.5% parity and ±0.25% A/A calibration. Missing/slower/inconclusiv
 required compiler/target evidence blocks merging. No milestone closes from a
 narrow workload or semantic CI alone. Require all Go/LLGo semantic jobs and at
 least 90% statement coverage per owned executable package.
+
+## Optional x86 instruction profiles
+
+After the portable 39-opcode implementation, add explicit SSSE3 and SSE4.1
+compiler inputs. A zero mask remains baseline SSE2. Only the native platform
+adapter detects host CPUID; code generation stays pure Go and rejects unknown
+features or an x86 mask on another target. The runtime passes the detected mask
+at compilation and does not assume support from the host compiler or build CPU.
+Record the mask in phase reports. Test forced baseline/SSSE3/SSE4.1 combinations,
+including all mixed-lane/alias/spill/fuel/cold-entry contracts, and execute an
+optional instruction only on a host advertising it. No AVX/OSXSAVE contract is
+introduced. Use detected profiles for byte permutations, packed population
+count, Q15 multiplication, widening, unsigned narrowing, i32 multiplication and
+floating-point rounding; preserve portable legalizations for masked features.
