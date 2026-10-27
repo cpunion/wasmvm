@@ -69,9 +69,9 @@ check the live table target against instance identities; native tables and
 refreshed metadata preserve mutation, growth and host reentry. They are not interpreted whole
 functions, but their boundary overhead still needs optimization.
 
-Go/LLGo semantic execution passes locally on arm64; Go amd64 execution also
-passes under Docker/Rosetta. Final native target/compiler CI and calibrated
-performance acceptance remain open. Full Core 3.0/Threads, Component Model and
+The complete Go/LLGo semantic matrix now passes on Linux amd64 and macOS arm64
+at code head `ab19548` ([CI](https://github.com/cpunion/wasmvm/actions/runs/40463558710)).
+Calibrated performance acceptance remains open. Full Core 3.0/Threads, Component Model and
 WASI 1/2/3 remain required subsequent work. See the
 [runtime scope](../benchmarks/native/runtime-plan.md),
 [numeric scope](../benchmarks/native/float-plan.md) and

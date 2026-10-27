@@ -688,3 +688,10 @@ passed: it still expected native selection to fail. The smoke script now takes
 an explicit build capability and verifies validate/inspect/run on both available
 backends, or unsupported errors for all three commands in a cgo-disabled Go
 build. It cannot accept either result by probing and adjusting its expectation.
+
+Final code head `ab19548` passes all four Go/LLGo × Linux amd64/macOS arm64
+[CI jobs](https://github.com/cpunion/wasmvm/actions/runs/40463558710), including
+the CLI correction, complete interpreter/native corpus and shared lifecycle
+tests. The amd64 Go job also passes coverage, race, strict-pointer, fuzz and
+no-cgo checks. This supersedes the earlier missing LLGo amd64 semantic evidence;
+it does not supply native amd64 performance evidence or close the blocked gate.
