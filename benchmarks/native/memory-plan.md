@@ -40,21 +40,33 @@ they are not claimed as complete native conformance.
 
 The first mixed-access diagnostic was 1.279/1.273 ns per iteration (Go/LLGo).
 Local bounded address proofs, indexed addressing, shared dead-copy removal,
-immediate selection and immutable arm64 constant registers reduce it to about
-0.57. No guard-page signal recovery or competitor fallback is involved.
+immediate selection and immutable arm64 constant registers first reduced it to
+about 0.57. The follow-up combines mask/shift address calculations, forwards
+integer comparison flags, removes a redundant pre-tee constant, and compacts
+arm64 branch reservations. These are shared compiler transformations, with
+independent cold entries and unchanged cancellation/fuel behavior. No guard-page signal recovery or competitor fallback is involved.
 
 Three randomized process blocks on local darwin/arm64 (M4 Max) produced the
-following advisory medians, in ns per source iteration. Startup, compilation,
-instantiation and first-call records remain separate. All workloads include their
-declared deterministic reset cost. Go is 1.27.3; LLGo uses the existing pinned
-runtime contribution. References are wazero 1.12.0, Wasmtime 48.0.1 and Wasmer 7.3.0.
+following advisory medians after those transformations, in ns per source
+iteration. Base is exact commit `adaa507`; both base and candidate execute native
+memory code. Startup, compilation, instantiation and first-call records remain
+separate. All workloads include their declared deterministic reset cost. Go is
+1.27.3; LLGo uses the existing pinned runtime contribution. References are wazero
+1.12.0, Wasmtime 48.0.1 and Wasmer 7.3.0.
 
-| Workload | Go | LLGo | wazero | Wasmtime | Wasmer |
+| Workload | Base Go / LLGo | Candidate Go / LLGo | wazero | Wasmtime | Wasmer |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Mixed i32 load/store | 0.571 | 0.569 | 0.818 | 0.480 | 0.533 |
-| Narrow, unaligned | 0.758 | 0.757 | 0.946 | 0.686 | 0.708 |
-| Dependent addresses | 2.075 | 2.080 | 2.989 | 2.058 | 2.047 |
-| Unaligned f64 | 0.712 | 0.714 | 0.773 | 0.703 | 0.703 |
+| Mixed i32 load/store | 0.600 / 0.572 | 0.543 / 0.559 | 0.837 | 0.480 | 0.513 |
+| Mixed, sustained | 0.558 / 0.553 | 0.532 / 0.565 | 0.806 | 0.493 | 0.533 |
+| Narrow, unaligned | 0.835 / 0.787 | 0.743 / 0.777 | 0.982 | 0.733 | 0.685 |
+| Dependent addresses | 2.078 / 2.112 | 2.118 / 2.167 | 3.069 | 2.130 | 2.150 |
+| Unaligned f64 | 0.775 / 0.765 | 0.757 / 0.718 | 0.787 | 0.710 | 0.725 |
+
+This local host is not isolated: variations are too large to establish small
+regressions or parity. Candidate code hashes match across Go/LLGo for all five
+rows. Code size grows by 8–9% versus `adaa507` because independent branch
+continuations retain their own checked paths; hot-path compaction does not imply
+smaller total functions. Earlier pre-optimization observations are retained.
 
 The 64-page growth fixture reports first-call time separately; warm calls measure
 quota-rejected growth and must not be normalized as allocation throughput. First
@@ -66,7 +78,7 @@ competitor rows. Raw observations are kept in `artifacts/native-memory/` locally
 **Acceptance remains blocked.** Mixed and narrow access still trail Cranelift;
 nearby results have no calibrated parity claim. Required native amd64 performance,
 Go/LLGo final-head CI, controlled A/A and all affected portfolio gates remain open.
-The baseline `b86ac60` has no executable native memory support; it exits to an
+The earlier baseline `b86ac60` has no executable native memory support; it exits to an
 unimplemented helper, so it is reported as unavailable rather than substituted
 with an interpreter. PR #26 remains the only open PR; this capability stays on a
 development branch until its own performance and semantic gates are ready.
@@ -86,8 +98,11 @@ Use the existing readiness/phase protocol and the same fixture bytes in every
 runner. Do not combine the growth-first-call metric with warm-loop throughput.
 
 
-A separate eight-block, 25-million-iteration integer regression diagnostic used
-fresh binaries from exact baseline `b86ac60`. Medians were baseline Go/LLGo
-1.546/1.543 and candidate 1.543/1.543 ns per iteration; references were
-1.542/1.538/1.536. This did not reproduce the apparent regression in the shorter
-three-block run. Both records are retained; neither substitutes for calibration.
+The follow-up also compares all ten numeric families and a 25-million-iteration
+integer chain against `adaa507` and all three references. All checksums pass;
+Go/LLGo candidate code hashes match for all 11 workloads. Timing is inconclusive:
+even identical generated code has large compiler/process-to-process differences
+on this shared host. No numeric regression or parity acceptance is inferred.
+The earlier eight-block integer check against `b86ac60` is retained alongside
+these newer observations, not substituted for them. Alternate-input execution
+passes 150 numeric and 80 memory checks across the five engines.

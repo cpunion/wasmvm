@@ -60,7 +60,10 @@ It executes 12,068 official scalar assertions per native tier across 13 complete
 scripts; native memory ownership, growth relocation and local bounds proofs are
 covered by targeted tests. The
 shared register/copy/control-flow optimizations approach competitor throughput;
-calibrated acceptance remains open. Complete the memory performance gate, calls, SIMD and the
+calibrated acceptance remains open. ARM64 mask/shift selection, predicate
+forwarding and branch layout compaction preserve independent continuation and
+cancellation semantics; their local diagnostic results do not close that gate.
+Complete the memory performance gate, calls, SIMD and the
 public runtime next, then run the full Core 2.0 backend matrix. See the
 [numeric scope](../benchmarks/native/float-plan.md) and
 [memory scope](../benchmarks/native/memory-plan.md); no milestone

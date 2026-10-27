@@ -26,6 +26,7 @@ type CompiledFunction struct {
 	ReferenceSlots             []uint32
 	Helpers, Calls, EdgeCopies uint32
 	FusedIntegers              uint32
+	ForwardedPredicates        uint32
 	UsesMemory                 bool
 	BoundsElided               uint32
 	MemoryGrows                uint32
@@ -98,7 +99,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	if err != nil {
 		return nil, err
 	}
-	a := assembler{arch: arch, labels: map[int]int{}, bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true}
+	a := assembler{arch: arch, labels: map[int]int{}, bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true, compactBranches: arch == "arm64"}
 	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered, memoryMinimum: uint64(config.MemoryMinimumPages) * 65536}
 	pcs := make([]int, len(f.Code))
 	for i := range pcs {
@@ -146,6 +147,11 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				continue
 			}
 		}
+		if e.compareBranchFallthrough(pc, pcs) {
+			out.ForwardedPredicates++
+			independentEntries = append(independentEntries, pc)
+			continue
+		}
 		a.mark(pcs[pc])
 		src := f.Sources[in.Source]
 		isControl := in.Op >= slots.ControlBase
@@ -162,6 +168,14 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				independentEntries = append(independentEntries, entry)
 			}
 			combinedThrough = region.end
+			continue
+		}
+		if end, ok := e.combineMaskShift(pc); ok {
+			out.FusedIntegers++
+			for entry := pc + 1; entry <= end; entry++ {
+				independentEntries = append(independentEntries, entry)
+			}
+			combinedThrough = end
 			continue
 		}
 		if end, ok := e.combineScalarCopies(pc); ok {
@@ -238,9 +252,13 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	// A validated function never falls through its final terminator.
 	for _, pc := range independentEntries {
 		a.mark(pcs[pc])
-		e.plain(f.Code[pc], false)
-
-		a.branch(pcs[pc+1], false, 0)
+		if f.Code[pc].Op == slots.ControlBase+uint32(ir.If) {
+			e.interrupt(uint32(pc))
+			e.conditionalEdges(f.Code[pc], pcs, -1)
+		} else {
+			e.plain(f.Code[pc], false)
+			a.branch(pcs[pc+1], false, 0)
+		}
 	}
 	e.emitPollExits()
 	for _, trap := range e.trapExits {

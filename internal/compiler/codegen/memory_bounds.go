@@ -132,6 +132,11 @@ func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, out *Compi
 	defer func() { e.regionLimit = 0; e.provenPCs = nil }()
 	for pc := start; pc <= r.end; pc++ {
 		in := e.f.Code[pc]
+		if end, ok := e.combineMaskShift(pc); ok {
+			out.FusedIntegers++
+			pc = end
+			continue
+		}
 		if end, ok := e.combineDeadImmediate(pc); ok {
 			out.ForwardedScalars++
 			pc = end

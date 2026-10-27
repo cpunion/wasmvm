@@ -233,6 +233,18 @@ eight expensive integer constants occupy otherwise unused caller-saved x1-x8.
 They are immutable, loaded once per entry and excluded from all scratch/slot
 assignments; arbitrary continuations still use their own mutable operand slots.
 
+The arm64 unmetered emitter folds a low-bit mask followed by a left shift (or
+power-of-two multiply) into UBFIZ when the intermediate is unobservable. Integer
+comparisons can feed conditional branches directly through NZCV; the canonical
+boolean remains materialized for cancellation and edge copies. Independent
+continuations use the retained boolean instead of inherited processor flags.
+After emission, one bounded layout pass removes spare words from known near
+conditional branches and relocates labels, jump tables, ADRs and continuation
+offsets together. Temporary code bytes may reach twice the body limit while
+branches reserve long forms; published bytes still obey the exact configured
+limit. This layout pass also applies to the precise-fuel tier without changing
+its instruction boundaries.
+
 The shared test driver executes 12,068 assertions per tier from 13 complete pinned
 scalar scripts (27 modules), including store, memory and memory_size; 347 frontend
 commands are counted separately. The full load, memory_trap, memory_grow and

@@ -1,6 +1,9 @@
 package codegen
 
-import "github.com/cpunion/wasmvm/internal/compiler/slots"
+import (
+	"github.com/cpunion/wasmvm/internal/compiler/ir"
+	"github.com/cpunion/wasmvm/internal/compiler/slots"
+)
 
 func (e *functionEmitter) branchZero(slot slots.Slot, label int) {
 	e.branchCondition(slot, label, false)
@@ -31,18 +34,45 @@ func (e *functionEmitter) branchCondition(slot slots.Slot, label int, nonzero bo
 // Prefer a direct conditional edge and let the other arm fall through. Edges
 // with copies keep their complete parallel-move plan on the selected path.
 func (e *functionEmitter) conditionalEdges(in slots.Instruction, pcs []int, next int) {
+	e.conditionalEdgesUsing(in, pcs, next, e.branchCondition)
+}
+
+func (e *functionEmitter) conditionalEdgesUsing(in slots.Instruction, pcs []int, next int, branch func(slots.Slot, int, bool)) {
 	yes, no := e.f.Edges[in.Extra], e.f.Edges[in.Extra+1]
 	if yes.Count == 0 && (int(no.PC) == next || no.Count != 0 || int(yes.PC) != next) {
-		e.branchCondition(in.A, pcs[yes.PC], true)
+		branch(in.A, pcs[yes.PC], true)
 		e.edge(in.Extra+1, pcs, next)
 	} else if no.Count == 0 {
-		e.branchCondition(in.A, pcs[no.PC], false)
+		branch(in.A, pcs[no.PC], false)
 		e.edge(in.Extra, pcs, next)
 	} else {
 		other := e.a.label()
-		e.branchZero(in.A, other)
+		branch(in.A, other, false)
 		e.edge(in.Extra, pcs, -1)
 		e.a.mark(other)
 		e.edge(in.Extra+1, pcs, next)
 	}
+}
+
+// Only normal fallthrough consumes the predecessor's integer comparison flags.
+// AArch64's interrupt load/CBNZ sequence preserves NZCV. The canonical boolean
+// remains materialized for polls, edge copies and arbitrary cold continuations.
+func (e *functionEmitter) compareBranchFallthrough(pc int, pcs []int) bool {
+	if !e.unmetered || e.a.arch != "arm64" || pc == 0 {
+		return false
+	}
+	in, previous := e.f.Code[pc], e.f.Code[pc-1]
+	if in.Op != slots.ControlBase+uint32(ir.If) || in.A != previous.Dst || previous.Op < 0x45 || previous.Op > 0x5a {
+		return false
+	}
+	cc := armIntegerCondition(previous.Op)
+	e.interrupt(uint32(pc))
+	e.conditionalEdgesUsing(in, pcs, pc+1, func(_ slots.Slot, label int, nonzero bool) {
+		condition := cc
+		if !nonzero {
+			condition ^= 1
+		}
+		e.a.branch(label, true, condition)
+	})
+	return true
 }
