@@ -65,6 +65,11 @@ function handles in module order, followed by `(length, native base)` per table.
 The common frame machine retains the referenced instance and tables. Every
 host/helper handoff refreshes table pointers, and instance changes replace
 function identities. No Go address or guest-supplied pointer enters this view.
+On arm64, unused constant-pool registers cache the most frequently referenced
+table metadata and function identities for one entry. All mutable state effects
+exit before changing them; every resume reloads the cache. Table elements always
+remain live loads. A missing view installs zero cached lengths and uses the
+checked call path. Partial or exhausted register capacity retains explicit loads.
 
 ## Exit protocol and safepoints
 

@@ -129,6 +129,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	if unmetered {
 		e.prepareRegisters()
 		e.prepareConstants(config)
+		e.prepareRuntimeRegisters(config)
 		e.contextLoad(0, nativeabi.PayloadOffset+24)
 		e.test(true)
 		e.branch(e.bad, "ne")

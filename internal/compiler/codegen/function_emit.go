@@ -25,6 +25,7 @@ type functionEmitter struct {
 	provenPCs                 map[int]bool
 	boundsElided              uint32
 	constantRegisters         map[uint64]byte
+	runtimeRegisters          map[uint32]byte
 	registers                 map[slots.Slot]byte
 	floatRegisters            map[slots.Slot]byte
 	registerSlots             []slots.Slot

@@ -53,22 +53,31 @@ func (e *functionEmitter) inlineIndirect(pc int, config Config) (int, uint32, bo
 		return pc, 0, false
 	}
 	fallback, done := e.a.label(), e.a.label()
-	e.contextLoad(0, nativeabi.RuntimeDataOffset)
-	e.test(true)
-	e.branch(fallback, "eq")
-	e.registerMove(e.operandRegister(2), e.operandRegister(0), true)
+	_, lengthCached := e.runtimeRegisters[uint32(offset)]
+	_, baseCached := e.runtimeRegisters[uint32(offset+8)]
+	needView := !lengthCached || !baseCached
+	for _, c := range candidates {
+		_, cached := e.runtimeRegisters[c.index*8]
+		needView = needView || !cached
+	}
+	if needView {
+		e.contextLoad(0, nativeabi.RuntimeDataOffset)
+		e.test(true)
+		e.branch(fallback, "eq")
+		e.registerMove(e.operandRegister(2), e.operandRegister(0), true)
+	}
 	e.slotLoad(e.f.Args[in.Extra+in.Count-1], 0, false, false)
-	e.pointerLoad(1, 2, uint32(offset))
+	e.runtimeLoad(1, uint32(offset))
 	e.compare(true)
 	e.branch(fallback, "hs")
-	e.pointerLoad(1, 2, uint32(offset+8))
+	e.runtimeLoad(1, uint32(offset+8))
 	if e.a.arch == "arm64" {
 		e.a.word(0xf8697949) // ldr x9, [x10, x9, lsl #3]
 	} else {
 		e.a.bytes(0x48, 0x8b, 0x04, 0xc1) // mov rax, [rcx + rax*8]
 	}
 	for _, c := range candidates {
-		e.pointerLoad(1, 2, c.index*8)
+		e.runtimeLoad(1, c.index*8)
 		e.compare(true)
 		e.branch(c.label, "eq")
 	}

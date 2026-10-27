@@ -112,3 +112,20 @@ reference handles. Generated code checks the live table index and target identit
 before expansion; the ordinary call path retains all other targets and traps.
 Native views are refreshed after host calls and helpers, including table growth.
 Precise fuel and logical frame/slot limits keep their existing contracts.
+
+The initial guarded implementation (`627f944`) passed the full Go/LLGo arm64
+semantic suites and Go amd64 execution, including the complete Core 2.0 corpus.
+Coverage was codegen 97.37%, native execution 94.71%, state 97.78%, public API
+96.92%; all executable owned packages passed 90%. New tests cover target/type
+changes, null/bounds traps, canonical type aliases, table growth, imported tables,
+host/cross-instance reentry, reference roots, rollback, exact fuel and logical
+quotas. Native storage also passed `cgocheck2`, vet and the no-cgo compiler build.
+
+Its three-block local diagnostic measured indirect-call Go/LLGo at 1.022/0.908
+ns per iteration, baseline 241.263/1068.711, wazero 2.093, Wasmtime 1.056 and
+Wasmer 0.756. The candidate remained slower than Wasmer; this is not acceptance.
+All four families and 95 alternate-input checks are retained in
+`artifacts/native-indirect/guarded-results.json`. The primary diagnostic used
+one million iterations for every engine, including the baseline. The next
+change caches stable metadata during each native entry using spare arm64
+constant registers; it does not cache mutable elements or relax any checks.
