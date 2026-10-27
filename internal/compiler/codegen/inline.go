@@ -8,7 +8,7 @@ import (
 
 // A leaf expression has no observable work except its returned scalar values.
 // Limit both the input and the expansion; shared expressions are emitted once.
-// Calls, traps, references, memory and control flow are deliberately ineligible.
+// Calls, traps, references, memory and conditional/backward edges are ineligible.
 type leafExpression struct {
 	op          uint32
 	bits        uint64

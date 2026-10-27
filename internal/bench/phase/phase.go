@@ -326,7 +326,7 @@ func dispatchKernel(ctx context.Context, input []byte, args options, out *report
 	}, close, nil
 }
 
-func benchmark(ctx context.Context, args options) (out report, err error) {
+func benchmark(ctx context.Context, args options, beforeSample ...func(int) error) (out report, err error) {
 	out = report{SchemaVersion: 1, Engine: "wasmvm", SourceRevision: sourceRevision, Compiler: runtime.Compiler, CompilerRevision: compilerRevision, RuntimeVersion: runtime.Version(), GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, Backend: args.backend, Mode: args.mode, Policy: "unmetered; bounded cancellation; checked Core 2.0", Iterations: args.iterations, Seed: args.seed, Samples: args.samples, Warmups: args.warmups, WarmupCallNs: []int64{}, WarmCallNs: []int64{}, WarmupResults: []uint32{}, WarmResults: []uint32{}, TimerPairNs: []int64{}}
 	start := time.Now()
 	input, err := os.ReadFile(args.path)
@@ -358,6 +358,11 @@ func benchmark(ctx context.Context, args options) (out report, err error) {
 		out.WarmupResults = append(out.WarmupResults, v)
 	}
 	for i := 0; i < args.samples; i++ {
+		for _, wait := range beforeSample {
+			if err := wait(i); err != nil {
+				return out, err
+			}
+		}
 		ns, v, e := call()
 		if e != nil {
 			return out, fmt.Errorf("sample %d: %w", i, e)
@@ -380,7 +385,8 @@ func RunCLI(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
-	ack, err := bufio.NewReader(stdin).ReadString('\n')
+	reader := bufio.NewReader(stdin)
+	ack, err := reader.ReadString('\n')
 	if err != nil || ack != "run\n" {
 		fmt.Fprintln(stderr, "expected run acknowledgement after ready")
 		return 1
@@ -391,7 +397,22 @@ func RunCLI(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	}
 	if err == nil {
 		var out report
-		out, err = benchmark(context.Background(), config)
+		var barriers []func(int) error
+		if os.Getenv("WASMVM_INTERLEAVE") == "1" {
+			barriers = append(barriers, func(index int) error {
+				if err := encoder.Encode(struct {
+					SampleReady int `json:"sampleReady"`
+				}{index}); err != nil {
+					return err
+				}
+				line, err := reader.ReadString('\n')
+				if err != nil || line != "sample\n" {
+					return errors.New("expected sample acknowledgement")
+				}
+				return nil
+			})
+		}
+		out, err = benchmark(context.Background(), config, barriers...)
 		if err == nil {
 			err = encoder.Encode(out)
 		}

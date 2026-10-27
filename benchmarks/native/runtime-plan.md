@@ -64,3 +64,22 @@ frame would fit both depth and slot quotas; otherwise it selects the ordinary
 native entry. The precise-fuel tier, recursive/indirect/imported calls and
 effectful callees retain their complete existing execution paths. This step
 does not accept the remaining guest-call architecture or the full native profile.
+
+After result forwarding, `2365102`'s three-block local direct-call diagnostic
+measured Go/LLGo 0.784/0.769 ns per iteration, versus wazero 1.321, Wasmtime 0.967
+and Wasmer 0.860. The identical-round native baseline was 260.909/1075.161.
+Indirect calls remain slow (LLGo 1087.408 versus Wasmer 0.800); integer/memory
+rows and all 75 alternate-input checks are retained. The earlier `27fff72`
+diagnostic was slower than Cranelift and remains in `artifacts/native-inline`.
+These are diagnostic observations, not calibrated or full-profile acceptance.
+
+The planned local direct-call check uses the existing 20/60 independent process
+blocks, seven warm samples, two warmups, identical-binary controls, simultaneous
+intervals and unchanged ±0.5%/±0.25% margins. All candidates and controls use
+25 million iterations of the same direct-call fixture; the independent Python
+oracle calculates its checksum before measurement. Three descriptive baseline
+processes retain 150,000 iterations. `warm-call-interleave-v1` now also applies
+to the owned public API runner; only warm execution is gated by this check.
+Preparation/first call, all earlier observations and both target/compiler
+requirements remain separate. Passing this case cannot accept indirect calls,
+helpers or the complete M2 portfolio.
