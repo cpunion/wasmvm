@@ -129,3 +129,32 @@ All four families and 95 alternate-input checks are retained in
 one million iterations for every engine, including the baseline. The next
 change caches stable metadata during each native entry using spare arm64
 constant registers; it does not cache mutable elements or relax any checks.
+
+Caching alone (`05bcc50`) did not improve the three-block diagnostic: LLGo was
+1.107 ns/iteration versus guarded 1.062 and Wasmer 0.843 in the same run. Those
+samples remain in `cached-results.json`. The next implementation (`3519b7a`)
+moves checked-call exits out of the successful loop, compares cached identities
+directly, and fuses single-use integer products into arm64 MADD while preserving
+shared products and aliases. Its diagnostic measured Go/LLGo 0.776/0.754 versus
+cached 1.018/1.071, guarded 1.036/0.904, wazero 2.059, Wasmtime 1.072 and Wasmer
+0.762. Direct-call/integer/memory rows and all 95 alternate-input checks remain
+in `compact-results.json`. These short samples still do not accept the feature.
+
+The planned local indirect-call check uses 25 million iterations, 20/60
+independent process blocks, seven warm calls, two warmups and per-call random
+interleaving. Use the same A/A controls, simultaneous intervals, ±0.5% parity
+and ±0.25% calibration margins as the earlier checks. The independent Python
+oracle calculates the expected result before measurement. Three descriptive
+`4d04b6b` baseline processes retain the original 15,000 iterations; their cost
+is reported separately. Both planned looks and every raw observation are retained.
+This checks one indirect-call case on this host, not the whole native profile.
+
+For architectural comparison, the pinned Wasmer 7.3.0 CLI's Cranelift output
+for these Wasm bytes keeps the loop in registers and uses a checked hardware
+indirect call (`blr`); the arithmetic callee uses `madd`, and each callee returns
+without a host-runtime handoff. The independent Wasmtime 48.0.1 CLI IR also has
+native indirect calls and type/table checks. These CLI diagnostics are separate
+from the measured C API runners; files and commands are retained under
+`artifacts/native-indirect/{wasmer-code,wasmtime-code}`. They explain why host
+round trips were the initial architectural bottleneck without asserting that
+the two independently built tools have byte-identical generated code.
