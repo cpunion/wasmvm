@@ -31,6 +31,7 @@ type CompiledFunction struct {
 	BoundsElided               uint32
 	MemoryGrows                uint32
 	ForwardedScalars           uint32
+	InlinedCalls, InlineSlots  uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -60,6 +61,10 @@ func CompileUnmeteredFunction(arch string, f *slots.Function, limits Limits) (*C
 type Config struct {
 	Unmetered          bool
 	MemoryMinimumPages uint32
+	// DirectCallees contains only immutable definitions in the same module.
+	// An expanded entry requires one additional logical frame and InlineSlots
+	// remaining slots. The runtime must select an ordinary entry otherwise.
+	DirectCallees map[uint32]*slots.Function
 }
 
 func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
@@ -117,7 +122,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	if unmetered {
 		e.prepareRegisters()
-		e.prepareConstants()
+		e.prepareConstants(config.DirectCallees)
 		e.contextLoad(0, nativeabi.PayloadOffset+24)
 		e.test(true)
 		e.branch(e.bad, "ne")
@@ -253,6 +258,11 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			e.leave(nativeabi.GrowMemory, uint64(pc), uint64(pc+1))
 		case op == 0x10 || op == 0x11:
 			out.Calls++
+			if op == 0x10 && e.inlineLeaf(pc, config.DirectCallees[src.Wasm.A]) {
+				out.InlinedCalls++
+				out.InlineSlots = max(out.InlineSlots, uint32(len(config.DirectCallees[src.Wasm.A].Slots)))
+				continue
+			}
 			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
 			e.leave(nativeabi.Call, uint64(pc), uint64(pc+1))
 		case helperOpcode(op):

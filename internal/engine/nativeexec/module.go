@@ -4,6 +4,7 @@ package nativeexec
 
 import (
 	"context"
+	"errors"
 	"math"
 	"runtime"
 
@@ -15,11 +16,17 @@ import (
 
 type Module struct {
 	code    *native.Code
-	entries map[*slots.Function][2]uint32
+	entries map[*slots.Function]functionEntries
 }
 type Lease struct {
 	code    *native.Lease
-	entries map[*slots.Function][2]uint32
+	entries map[*slots.Function]functionEntries
+}
+
+type functionEntries struct {
+	ordinary, metered, expanded uint32
+	inlineSlots                 uint32
+	hasExpansion                bool
 }
 
 // Compile prepares both policy tiers within one aggregate code-byte budget.
@@ -28,12 +35,16 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 	if !native.Available {
 		return nil, wasm.ErrUnsupported
 	}
-	out := &Module{entries: make(map[*slots.Function][2]uint32, len(m.Functions))}
+	out := &Module{entries: make(map[*slots.Function]functionEntries, len(m.Functions))}
 	var code []byte
 	var entries []uint32
 	definition := m.IR.Validated.Definition()
 	var minimum uint32
+	var importedFunctions uint32
 	for _, im := range definition.Imports {
+		if im.Kind == 0 {
+			importedFunctions++
+		}
 		if im.Kind == 2 {
 			minimum = im.Memory.Min
 		}
@@ -41,23 +52,54 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 	if len(definition.Memories) != 0 {
 		minimum = definition.Memories[0].Min
 	}
-	for _, f := range m.Functions {
-		var indexes [2]uint32
-		for tier := range indexes {
+	callees := make(map[uint32]*slots.Function, len(m.Functions))
+	for i, f := range m.Functions {
+		callees[importedFunctions+uint32(i)] = f
+	}
+	wantExpansion := map[*slots.Function]bool{}
+	// Publish all required ordinary tiers before spending spare code budget
+	// on optional expansion, including when later functions are large.
+	for tier := 0; tier < 3; tier++ {
+		for _, f := range m.Functions {
+			indexes := out.entries[f]
+			if tier == 2 && !wantExpansion[f] {
+				continue
+			}
 			if err := ctx.Err(); err != nil {
 				return nil, err
 			}
 			bounded := limits
 			bounded.MaxCodeBytes = min(limits.MaxCodeBytes, uint64(math.MaxUint32)) - uint64(len(code))
-			body, err := codegen.CompileFunctionWithConfig(runtime.GOARCH, f, bounded, codegen.Config{Unmetered: tier == 0, MemoryMinimumPages: minimum})
+			config := codegen.Config{Unmetered: tier != 1, MemoryMinimumPages: minimum}
+			if tier == 2 {
+				config.DirectCallees = callees
+			}
+			body, err := codegen.CompileFunctionWithConfig(runtime.GOARCH, f, bounded, config)
+			if tier == 2 && errors.Is(err, wasm.ErrLimit) {
+				// The optional expansion cannot consume the ordinary tiers'
+				// code budget or make an otherwise valid module unavailable.
+				continue
+			}
 			if err != nil {
 				return nil, err
 			}
-			indexes[tier] = uint32(len(entries))
+			if tier == 2 && body.InlinedCalls == 0 {
+				continue
+			}
+			index := uint32(len(entries))
+			switch tier {
+			case 0:
+				indexes.ordinary = index
+				wantExpansion[f] = body.Calls != 0
+			case 1:
+				indexes.metered = index
+			case 2:
+				indexes.expanded, indexes.inlineSlots, indexes.hasExpansion = index, body.InlineSlots, true
+			}
 			entries = append(entries, uint32(len(code)))
 			code = append(code, body.Entry.Code...)
+			out.entries[f] = indexes
 		}
-		out.entries[f] = indexes
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err

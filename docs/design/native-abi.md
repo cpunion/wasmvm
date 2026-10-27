@@ -41,6 +41,20 @@ Each ISA defines a register-role table for context, current guest frame, memory 
 
 Hardware-call fast paths, hardware guest-stack switching, or direct generated-code-to-Go callbacks are later design changes. They require new root, unwind, stack-limit, cancellation, and dual-compiler evidence; they are not implied by an instruction encoder passing arithmetic tests.
 
+The unmetered compiler can expand a same-module integer leaf of at most 32 slot
+instructions into disposable caller registers. Forward result edges are allowed;
+conditional/backward edges, calls, traps, references and mutable runtime state
+are excluded. Shared expressions emit once, and observable caller slots remain
+intact. Register pressure leaves the ordinary native call in place. Expansion
+does not add hardware stack frames or alter continuation IDs. Call cancellation
+polls remain, and the precise-fuel tier never expands calls. The module retains
+an ordinary entry alongside an optional expanded entry; the driver selects the
+latter only when the original callee's logical slot and depth requirements fit.
+Otherwise the ordinary entry checks limits when the call actually executes,
+including untaken conditional calls. Required entries consume the code budget
+before optional copies. This is an optimization of leaf calls, not acceptance
+of the general native guest-call ABI.
+
 ## Exit protocol and safepoints
 
 Every slow operation uses an explicit exit record. Initial statuses are `Return`, `Trap`, `HostCall`, `GrowMemory`, `GrowStack`, `Poll`, `FuelExhausted`, and `GuestGC`. `FuelExhausted` maps to the typed budget outcome rather than a generic guest trap; a poll that observes cancellation returns the separate canceled outcome through the driver. Additional feature-specific statuses need a defined owner and resume contract.

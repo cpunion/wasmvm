@@ -3,6 +3,7 @@ package nativeexec
 import (
 	"context"
 	"errors"
+	"runtime"
 	"testing"
 
 	"github.com/cpunion/wasmvm/internal/compiler/codegen"
@@ -44,6 +45,69 @@ func fixture(t *testing.T, largeEdge bool) *slots.Module {
 		m.Functions[0] = f
 	}
 	return m
+}
+
+func TestExpandedEntrySelectionAndAggregateBudget(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	d := &module.Module{Types: []module.FuncType{{Results: []wasm.ValueType{wasm.I32}}},
+		Functions: []module.Function{
+			{Body: module.Expr{{Op: 0x10, A: 1}, {Op: 0xb}}},
+			{Body: module.Expr{{Op: 0x41, Bits: 42}, {Op: 0xb}}},
+		}}
+	v, err := validate.Check(d, validate.DefaultLimits())
+	if err != nil {
+		t.Fatal(err)
+	}
+	i, err := lower.Compile(v, lower.DefaultLimits())
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := slots.Compile(i, slots.DefaultLimits())
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, fn, lease := prepare(t, m)
+	if !lease.entries[fn.Code].hasExpansion {
+		t.Fatalf("eligible leaf call was not expanded: caller=%+v callee=%+v", m.Functions[0], m.Functions[1])
+	}
+	for _, test := range []struct {
+		frames, slots uint64
+		metered       bool
+		wantPC        uint32
+	}{{2, 16, false, 2}, {1, 16, false, 0}, {2, 2, false, 0}, {2, 16, true, 0}} {
+		e.maxFrames, e.maximum, e.metered = test.frames, test.slots*16, test.metered
+		pc, fuel, err := e.Run(fn, 0, 1, 0, 10)
+		if err != nil || pc != test.wantPC {
+			t.Fatal(test, pc, err)
+		}
+		if !test.metered && fuel != 10 || test.metered && fuel != 9 {
+			t.Fatal("fuel changed across tier selection", test, fuel)
+		}
+		if pc == 2 && e.values[0].Lo != 42 {
+			t.Fatal(e.values)
+		}
+	}
+	// The complete ordinary tiers must still fit when an optional expanded
+	// copy would exceed the aggregate publication budget.
+	limits := codegen.DefaultLimits()
+	var ordinaryBytes uint64
+	for _, f := range m.Functions {
+		for _, unmetered := range []bool{true, false} {
+			body, err := codegen.CompileFunctionWithConfig(runtime.GOARCH, f, limits, codegen.Config{Unmetered: unmetered})
+			if err != nil {
+				t.Fatal(err)
+			}
+			ordinaryBytes += uint64(len(body.Entry.Code))
+		}
+	}
+	limits.MaxCodeBytes = ordinaryBytes
+	compiled, err := Compile(context.Background(), m, limits)
+	if err != nil {
+		t.Fatal("optional expansion displaced an ordinary tier", err)
+	}
+	compiled.Close()
 }
 
 func prepare(t *testing.T, m *slots.Module) (*Execution, *state.Function, *Lease) {

@@ -13,13 +13,14 @@ import (
 )
 
 type Execution struct {
-	ctx     context.Context
-	native  *native.Context
-	modules map[*slots.Module]*Lease
-	maximum uint64
-	metered bool
-	stop    func() bool
-	values  []value.Value
+	ctx       context.Context
+	native    *native.Context
+	modules   map[*slots.Module]*Lease
+	maximum   uint64
+	maxFrames uint64
+	metered   bool
+	stop      func() bool
+	values    []value.Value
 }
 
 func New(ctx context.Context, modules map[*slots.Module]*Lease, maxSlots, maxFrames uint32, metered bool) (*Execution, error) {
@@ -27,7 +28,7 @@ func New(ctx context.Context, modules map[*slots.Module]*Lease, maxSlots, maxFra
 	if err != nil {
 		return nil, err
 	}
-	e := &Execution{ctx: ctx, native: c, modules: modules, maximum: uint64(maxSlots) * 16, metered: metered}
+	e := &Execution{ctx: ctx, native: c, modules: modules, maximum: uint64(maxSlots) * 16, maxFrames: uint64(maxFrames), metered: metered}
 	e.stop = context.AfterFunc(ctx, c.Cancel)
 	return e, nil
 }
@@ -67,11 +68,14 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 	if err := e.native.BindMemory(memory); err != nil {
 		return 0, fuel, err
 	}
-	tier := 0
+	entry := entries.ordinary
 	s := native.State{Used: uint64(base) * 16, Depth: uint64(depth), Function: uint64(fn.Index), Continuation: uint64(pc), Fuel: fuel, Budget: 64}
 	if e.metered {
-		tier = 1
+		entry = entries.metered
 		s.Payload[3] = 1
+	} else if entries.hasExpansion && uint64(depth) < e.maxFrames &&
+		uint64(base)+uint64(len(fn.Code.Slots))+uint64(entries.inlineSlots) <= e.maximum/16 {
+		entry = entries.expanded
 	}
 	for {
 		if err := e.ctx.Err(); err != nil {
@@ -80,7 +84,7 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 		if err := e.native.SetState(s); err != nil {
 			return 0, s.Fuel, err
 		}
-		exit, err := e.native.Enter(module.code, entries[tier])
+		exit, err := e.native.Enter(module.code, entry)
 		if err != nil {
 			return 0, s.Fuel, err
 		}

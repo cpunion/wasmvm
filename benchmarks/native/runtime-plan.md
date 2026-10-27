@@ -50,3 +50,17 @@ rows, dispatch rows, samples, checksums, scripts and binary hashes are preserved
 under `artifacts/native-runtime/`; the checked integration source tree is
 `29f9dd4bfff6ee4fd555698f3785204a65343106`. Earlier PR #26 measurements cover its
 narrow integer compiler scope separately.
+
+The next call optimization expands bounded, straight-line, nontrapping integer
+leaf functions in the caller's generated code. The existing direct-call workload
+is the primary affected case; indirect calls, integer/memory loops and all
+alternate-input checks remain regression rows. Use `f0b1ded` as the exact owned
+baseline. Keep preparation, first call and warm execution separate.
+
+Expansion uses disposable registers, preserves observable caller slots and
+never creates a hardware guest stack. It applies only to the unmetered tier.
+An execution selects the expanded entry only when the original logical callee
+frame would fit both depth and slot quotas; otherwise it selects the ordinary
+native entry. The precise-fuel tier, recursive/indirect/imported calls and
+effectful callees retain their complete existing execution paths. This step
+does not accept the remaining guest-call architecture or the full native profile.

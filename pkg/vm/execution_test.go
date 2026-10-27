@@ -145,6 +145,66 @@ func TestSharedReentryLimitsAndErrors(t *testing.T) {
 	})
 }
 
+func TestLeafCallsPreserveLogicalQuotasAndExactFuel(t *testing.T) {
+	withBackends(t, func(t *testing.T, newEngine func() *Engine) {
+		d := &module.Module{
+			Types: []module.FuncType{
+				{Params: []wasm.ValueType{wasm.I32}, Results: []wasm.ValueType{wasm.I32}},
+				{Results: []wasm.ValueType{wasm.I32}},
+			},
+			Functions: []module.Function{
+				{Body: module.Expr{{Op: 0x20}, {Op: 4, Block: -1}, {Op: 0x10, A: 1}, {Op: 5}, {Op: 0x41, Bits: 7}, {Op: 0xb}, {Op: 0xb}}},
+				{Type: 1, Body: module.Expr{{Op: 0x41, Bits: 42}, {Op: 0xb}}},
+			},
+			Exports: []module.Export{{Name: "run", Kind: 0}},
+		}
+		for _, quota := range []string{"enough", "frames", "slots"} {
+			t.Run(quota, func(t *testing.T) {
+				e := newEngine()
+				defer e.Close()
+				m := compileDefinition(t, e, d)
+				config := DefaultStoreConfig()
+				if quota == "frames" {
+					config.Execution.MaxFrames = 1
+				} else if quota == "slots" {
+					config.Execution.MaxSlots = uint32(len(m.code.Functions[0].Slots))
+				}
+				s, err := e.NewStore(config)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer s.Close()
+				f := export(t, instantiate(t, NewLinker(s), m), "run")
+				// An untaken call must not fail an eagerly checked frame quota.
+				r, err := f.Call(nil, []Value{I32(0)}, CallOptions{})
+				if err != nil || bits(t, r.Values[0]) != 7 {
+					t.Fatal(r, err)
+				}
+				r, err = f.Call(nil, []Value{I32(1)}, CallOptions{})
+				if quota != "enough" {
+					if !errors.Is(err, wasm.ErrLimit) {
+						t.Fatal("logical frame quota bypassed", r, err)
+					}
+					return
+				}
+				if err != nil || bits(t, r.Values[0]) != 42 {
+					t.Fatal(r, err)
+				}
+				for fuel := uint64(0); fuel <= 5; fuel++ {
+					r, err = f.Call(nil, []Value{I32(1)}, CallOptions{Metered: true, Fuel: fuel})
+					if fuel < 4 {
+						if !errors.Is(err, wasm.ErrLimit) {
+							t.Fatal("fuel boundary", fuel, r, err)
+						}
+					} else if err != nil || bits(t, r.Values[0]) != 42 || r.FuelRemaining != fuel-4 {
+						t.Fatal("fuel accounting", fuel, r, err)
+					}
+				}
+			})
+		}
+	})
+}
+
 func TestConcurrentCallerUseAndCanceledCapability(t *testing.T) {
 	withBackends(t, func(t *testing.T, newEngine func() *Engine) {
 		_, s, _ := setupWithEngine(t, newEngine)

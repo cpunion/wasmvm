@@ -62,7 +62,8 @@ owns compiled publication and native entry. Public API/CLI selection, imports,
 start functions, indirect calls, globals, tables, growth, SIMD and bulk operations
 are connected. Numeric/scalar-memory/control code is emitted directly; fixed
 SIMD and state/bulk operations use explicit owned runtime helpers. Guest calls
-currently exit through the common frame driver. They are not interpreted whole
+normally exit through the common frame driver; bounded nontrapping integer
+leaves can expand into caller registers in the unmetered tier. They are not interpreted whole
 functions, but their boundary overhead still needs optimization.
 
 Go/LLGo semantic execution passes locally on arm64; Go amd64 execution also
