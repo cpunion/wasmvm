@@ -35,6 +35,32 @@ func TestRegisterPriorityIgnoresSelfCopiesAndIncludesTuples(t *testing.T) {
 	}
 }
 
+func TestRegisterPriorityUsesEmittedMemoryPlan(t *testing.T) {
+	f := &slots.Function{LocalCount: 1, Slots: []wasm.ValueType{wasm.I32, wasm.I32, wasm.I32, wasm.I32}, Sources: []ir.Source{{Wasm: module.Instr{Op: 0x41}}, {Wasm: module.Instr{Op: 0x28}}}}
+	r := memoryRegion{elided: map[int]bool{}, addresses: map[int]memoryAddress{}, guards: map[int]memoryGuard{}}
+	for i := 0; i < 100; i++ {
+		pc := len(f.Code)
+		f.Code = append(f.Code, slots.Instruction{Op: 0x41, Dst: 1, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
+			slots.Instruction{Op: 0x28, Source: 1, Dst: 3, A: 2, B: slots.NoSlot, C: slots.NoSlot})
+		r.elided[pc] = true
+		r.addresses[pc+1] = memoryAddress{local: 0, offset: 4}
+	}
+	r.end = len(f.Code) - 1
+	r.guards[1] = memoryGuard{address: 2, after: 8}
+	for _, arch := range []string{"amd64", "arm64"} {
+		e := functionEmitter{a: &assembler{arch: arch}, f: f, unmetered: true, usesMemory: true}
+		e.prepareRegisters(map[int]memoryRegion{0: r})
+		if len(e.registers) != 3 {
+			t.Fatal("deleted operations affected allocation", arch, e.registers)
+		}
+		for _, s := range []slots.Slot{0, 2, 3} {
+			if _, ok := e.registers[s]; !ok {
+				t.Fatal("emitted operand omitted", arch, s, e.registers)
+			}
+		}
+	}
+}
+
 func TestSharedLiteralsPreserveColdEntries(t *testing.T) {
 	if !native.Available {
 		t.Skip("native platform unavailable")

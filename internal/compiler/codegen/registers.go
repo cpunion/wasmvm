@@ -12,7 +12,7 @@ import (
 // assignment is identical at every CFG edge and continuation. This first local
 // allocator needs neither edge shuffles nor speculative liveness assumptions.
 // Operands, integer-core scratch, the frame base and context are excluded.
-func (e *functionEmitter) prepareRegisters() {
+func (e *functionEmitter) prepareRegisters(plans ...map[int]memoryRegion) {
 	weights := make([]uint64, len(e.f.Slots))
 	use := func(s slots.Slot) {
 		if s != slots.NoSlot {
@@ -25,7 +25,26 @@ func (e *functionEmitter) prepareRegisters() {
 			use(src)
 		}
 	}
-	for _, in := range e.f.Code {
+	var regions map[int]memoryRegion
+	if len(plans) != 0 {
+		regions = plans[0]
+	}
+	region := memoryRegion{end: -1}
+	for pc, in := range e.f.Code {
+		if next, ok := regions[pc]; ok {
+			region = next
+		} else if pc > region.end {
+			region = memoryRegion{end: -1}
+		}
+		if region.elided[pc] {
+			continue
+		}
+		if guard, ok := region.guards[pc]; ok {
+			use(guard.address)
+		}
+		if address, ok := region.addresses[pc]; ok {
+			in.A = address.local
+		}
 		if in.Op >= 0x20 && in.Op <= 0x22 {
 			local := slots.Slot(e.f.Sources[in.Source].Wasm.A)
 			if in.Op == 0x20 {

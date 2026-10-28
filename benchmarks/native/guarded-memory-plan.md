@@ -40,3 +40,8 @@ i32 constant/add temporary writes, using bounded backward liveness with actual
 remapped reads; reset canonical-state requirements at guards and possible traps.
 Keep every memory operation and every checked cold PC. This reuses the existing
 region emitter rather than introducing a separate optimizer or executor.
+
+Allocate fixed registers using the planned emitted operations: ignore deleted
+temporaries, count remapped local reads and retain the first guard's original
+address read. Build regions before register allocation; preserve the same
+register/cold-continuation contract and generic allocation for other functions.

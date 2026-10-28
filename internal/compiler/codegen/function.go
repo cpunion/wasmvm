@@ -136,8 +136,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	if e.usesMemory {
 		e.prepareMemory()
 	}
+	regions := e.memoryRegions()
 	if unmetered {
-		e.prepareRegisters()
+		e.prepareRegisters(regions)
 		e.prepareVectorConstants()
 		e.prepareConstants(config)
 		e.prepareRuntimeRegisters(config)
@@ -158,7 +159,6 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			out.ReferenceSlots = append(out.ReferenceSlots, uint32(i))
 		}
 	}
-	regions := e.memoryRegions()
 	var independentEntries []int
 	combinedThrough := -1
 	for pc, in := range f.Code {
