@@ -6,7 +6,6 @@ package numeric
 import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 	"math"
-	"math/bits"
 )
 
 // Eval evaluates a validated numeric opcode. The caller supplies two operands
@@ -15,49 +14,49 @@ import (
 func Eval(op uint32, a, b uint64) (uint64, wasm.TrapCode) {
 	switch op {
 	case 0x45:
-		return boolean(uint32(a) == 0), wasm.NoTrap
+		return I32Eqz(a), wasm.NoTrap
 	case 0x46:
-		return boolean(uint32(a) == uint32(b)), wasm.NoTrap
+		return I32Eq(a, b), wasm.NoTrap
 	case 0x47:
-		return boolean(uint32(a) != uint32(b)), wasm.NoTrap
+		return I32Ne(a, b), wasm.NoTrap
 	case 0x48:
-		return boolean(int32(a) < int32(b)), wasm.NoTrap
+		return I32LtS(a, b), wasm.NoTrap
 	case 0x49:
-		return boolean(uint32(a) < uint32(b)), wasm.NoTrap
+		return I32LtU(a, b), wasm.NoTrap
 	case 0x4a:
-		return boolean(int32(a) > int32(b)), wasm.NoTrap
+		return I32GtS(a, b), wasm.NoTrap
 	case 0x4b:
-		return boolean(uint32(a) > uint32(b)), wasm.NoTrap
+		return I32GtU(a, b), wasm.NoTrap
 	case 0x4c:
-		return boolean(int32(a) <= int32(b)), wasm.NoTrap
+		return I32LeS(a, b), wasm.NoTrap
 	case 0x4d:
-		return boolean(uint32(a) <= uint32(b)), wasm.NoTrap
+		return I32LeU(a, b), wasm.NoTrap
 	case 0x4e:
-		return boolean(int32(a) >= int32(b)), wasm.NoTrap
+		return I32GeS(a, b), wasm.NoTrap
 	case 0x4f:
-		return boolean(uint32(a) >= uint32(b)), wasm.NoTrap
+		return I32GeU(a, b), wasm.NoTrap
 	case 0x50:
-		return boolean(uint64(a) == 0), wasm.NoTrap
+		return I64Eqz(a), wasm.NoTrap
 	case 0x51:
-		return boolean(uint64(a) == uint64(b)), wasm.NoTrap
+		return I64Eq(a, b), wasm.NoTrap
 	case 0x52:
-		return boolean(uint64(a) != uint64(b)), wasm.NoTrap
+		return I64Ne(a, b), wasm.NoTrap
 	case 0x53:
-		return boolean(int64(a) < int64(b)), wasm.NoTrap
+		return I64LtS(a, b), wasm.NoTrap
 	case 0x54:
-		return boolean(uint64(a) < uint64(b)), wasm.NoTrap
+		return I64LtU(a, b), wasm.NoTrap
 	case 0x55:
-		return boolean(int64(a) > int64(b)), wasm.NoTrap
+		return I64GtS(a, b), wasm.NoTrap
 	case 0x56:
-		return boolean(uint64(a) > uint64(b)), wasm.NoTrap
+		return I64GtU(a, b), wasm.NoTrap
 	case 0x57:
-		return boolean(int64(a) <= int64(b)), wasm.NoTrap
+		return I64LeS(a, b), wasm.NoTrap
 	case 0x58:
-		return boolean(uint64(a) <= uint64(b)), wasm.NoTrap
+		return I64LeU(a, b), wasm.NoTrap
 	case 0x59:
-		return boolean(int64(a) >= int64(b)), wasm.NoTrap
+		return I64GeS(a, b), wasm.NoTrap
 	case 0x5a:
-		return boolean(uint64(a) >= uint64(b)), wasm.NoTrap
+		return I64GeU(a, b), wasm.NoTrap
 	case 0x5b:
 		return boolean(math.Float32frombits(uint32(a)) == math.Float32frombits(uint32(b))), wasm.NoTrap
 	case 0x5c:
@@ -83,17 +82,17 @@ func Eval(op uint32, a, b uint64) (uint64, wasm.TrapCode) {
 	case 0x66:
 		return boolean(math.Float64frombits(a) >= math.Float64frombits(b)), wasm.NoTrap
 	case 0x67:
-		return uint64(bits.LeadingZeros32(uint32(a))), wasm.NoTrap
+		return I32Clz(a), wasm.NoTrap
 	case 0x68:
-		return uint64(bits.TrailingZeros32(uint32(a))), wasm.NoTrap
+		return I32Ctz(a), wasm.NoTrap
 	case 0x69:
-		return uint64(bits.OnesCount32(uint32(a))), wasm.NoTrap
+		return I32Popcnt(a), wasm.NoTrap
 	case 0x6a:
-		return uint64(uint32(a) + uint32(b)), wasm.NoTrap
+		return I32Add(a, b), wasm.NoTrap
 	case 0x6b:
-		return uint64(uint32(a) - uint32(b)), wasm.NoTrap
+		return I32Sub(a, b), wasm.NoTrap
 	case 0x6c:
-		return uint64(uint32(a) * uint32(b)), wasm.NoTrap
+		return I32Mul(a, b), wasm.NoTrap
 	case 0x6d:
 		if uint32(b) == 0 {
 			return 0, wasm.TrapIntegerDivideByZero
@@ -121,33 +120,33 @@ func Eval(op uint32, a, b uint64) (uint64, wasm.TrapCode) {
 		}
 		return uint64(uint32(uint32(a) % uint32(b))), wasm.NoTrap
 	case 0x71:
-		return uint64(uint32(a) & uint32(b)), wasm.NoTrap
+		return I32And(a, b), wasm.NoTrap
 	case 0x72:
-		return uint64(uint32(a) | uint32(b)), wasm.NoTrap
+		return I32Or(a, b), wasm.NoTrap
 	case 0x73:
-		return uint64(uint32(a) ^ uint32(b)), wasm.NoTrap
+		return I32Xor(a, b), wasm.NoTrap
 	case 0x74:
-		return uint64(uint32(a) << (b & 31)), wasm.NoTrap
+		return I32Shl(a, b), wasm.NoTrap
 	case 0x75:
-		return uint64(uint32(int32(a) >> (b & 31))), wasm.NoTrap
+		return I32ShrS(a, b), wasm.NoTrap
 	case 0x76:
-		return uint64(uint32(a) >> (b & 31)), wasm.NoTrap
+		return I32ShrU(a, b), wasm.NoTrap
 	case 0x77:
-		return uint64(bits.RotateLeft32(uint32(a), int(b&31))), wasm.NoTrap
+		return I32Rotl(a, b), wasm.NoTrap
 	case 0x78:
-		return uint64(bits.RotateLeft32(uint32(a), -int(b&31))), wasm.NoTrap
+		return I32Rotr(a, b), wasm.NoTrap
 	case 0x79:
-		return uint64(bits.LeadingZeros64(uint64(a))), wasm.NoTrap
+		return I64Clz(a), wasm.NoTrap
 	case 0x7a:
-		return uint64(bits.TrailingZeros64(uint64(a))), wasm.NoTrap
+		return I64Ctz(a), wasm.NoTrap
 	case 0x7b:
-		return uint64(bits.OnesCount64(uint64(a))), wasm.NoTrap
+		return I64Popcnt(a), wasm.NoTrap
 	case 0x7c:
-		return uint64(uint64(a) + uint64(b)), wasm.NoTrap
+		return I64Add(a, b), wasm.NoTrap
 	case 0x7d:
-		return uint64(uint64(a) - uint64(b)), wasm.NoTrap
+		return I64Sub(a, b), wasm.NoTrap
 	case 0x7e:
-		return uint64(uint64(a) * uint64(b)), wasm.NoTrap
+		return I64Mul(a, b), wasm.NoTrap
 	case 0x7f:
 		if uint64(b) == 0 {
 			return 0, wasm.TrapIntegerDivideByZero
@@ -175,21 +174,21 @@ func Eval(op uint32, a, b uint64) (uint64, wasm.TrapCode) {
 		}
 		return uint64(uint64(uint64(a) % uint64(b))), wasm.NoTrap
 	case 0x83:
-		return uint64(uint64(a) & uint64(b)), wasm.NoTrap
+		return I64And(a, b), wasm.NoTrap
 	case 0x84:
-		return uint64(uint64(a) | uint64(b)), wasm.NoTrap
+		return I64Or(a, b), wasm.NoTrap
 	case 0x85:
-		return uint64(uint64(a) ^ uint64(b)), wasm.NoTrap
+		return I64Xor(a, b), wasm.NoTrap
 	case 0x86:
-		return uint64(uint64(a) << (b & 63)), wasm.NoTrap
+		return I64Shl(a, b), wasm.NoTrap
 	case 0x87:
-		return uint64(uint64(int64(a) >> (b & 63))), wasm.NoTrap
+		return I64ShrS(a, b), wasm.NoTrap
 	case 0x88:
-		return uint64(uint64(a) >> (b & 63)), wasm.NoTrap
+		return I64ShrU(a, b), wasm.NoTrap
 	case 0x89:
-		return uint64(bits.RotateLeft64(uint64(a), int(b&63))), wasm.NoTrap
+		return I64Rotl(a, b), wasm.NoTrap
 	case 0x8a:
-		return uint64(bits.RotateLeft64(uint64(a), -int(b&63))), wasm.NoTrap
+		return I64Rotr(a, b), wasm.NoTrap
 	case 0x8b:
 		return a & 0x7fffffff, wasm.NoTrap
 	case 0x8c:
@@ -247,7 +246,7 @@ func Eval(op uint32, a, b uint64) (uint64, wasm.TrapCode) {
 	case 0xa6:
 		return (a & 0x7fffffffffffffff) | (b & 0x8000000000000000), wasm.NoTrap
 	case 0xa7:
-		return uint64(uint32(a)), wasm.NoTrap
+		return I32WrapI64(a), wasm.NoTrap
 	case 0xa8:
 		return truncate(float64(math.Float32frombits(uint32(a))), 32, true, false)
 	case 0xa9:
@@ -265,9 +264,9 @@ func Eval(op uint32, a, b uint64) (uint64, wasm.TrapCode) {
 	case 0xb1:
 		return truncate(math.Float64frombits(a), 64, false, false)
 	case 0xac:
-		return uint64(int64(int32(a))), wasm.NoTrap
+		return I64ExtendI32S(a), wasm.NoTrap
 	case 0xad:
-		return uint64(uint32(a)), wasm.NoTrap
+		return I64ExtendI32U(a), wasm.NoTrap
 	case 0xb2:
 		return uint64(result32(float32(int32(a)))), wasm.NoTrap
 	case 0xb3:
@@ -297,15 +296,15 @@ func Eval(op uint32, a, b uint64) (uint64, wasm.TrapCode) {
 	case 0xbf:
 		return a, wasm.NoTrap
 	case 0xc0:
-		return uint64(uint32(int8(a))), wasm.NoTrap
+		return I32Extend8S(a), wasm.NoTrap
 	case 0xc1:
-		return uint64(uint32(int16(a))), wasm.NoTrap
+		return I32Extend16S(a), wasm.NoTrap
 	case 0xc2:
-		return uint64(uint64(int8(a))), wasm.NoTrap
+		return I64Extend8S(a), wasm.NoTrap
 	case 0xc3:
-		return uint64(uint64(int16(a))), wasm.NoTrap
+		return I64Extend16S(a), wasm.NoTrap
 	case 0xc4:
-		return uint64(uint64(int32(a))), wasm.NoTrap
+		return I64Extend32S(a), wasm.NoTrap
 	case 0xfc0000:
 		return truncate(float64(math.Float32frombits(uint32(a))), 32, true, true)
 	case 0xfc0001:
