@@ -153,6 +153,26 @@ func TestLeafExpansionKeepsOrdinaryCallsWhenIneligible(t *testing.T) {
 	}
 }
 
+func TestLeafExpansionAfterForwardedReturn(t *testing.T) {
+	callee := leafFixture(0x6a, nil)
+	// The former return block remains a valid continuation, but entry returns
+	// before reaching it. Do not lose direct-call expansion after forwarding.
+	callee.Code = append(callee.Code, callee.Code[len(callee.Code)-1])
+	if !CanExpandLeaf(callee) {
+		t.Fatal("forwarded leaf no longer recognized")
+	}
+	f := leafCaller(callee, 2, 5)
+	for _, arch := range []string{"amd64", "arm64"} {
+		compiled, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), Config{Unmetered: true, DirectCallees: map[uint32]*slots.Function{7: callee}})
+		if err != nil {
+			t.Fatal(arch, err)
+		}
+		if compiled.InlinedCalls != 1 || compiled.Calls != 1 {
+			t.Fatal(arch, compiled.InlinedCalls, compiled.Calls)
+		}
+	}
+}
+
 func TestExpandedResultForwardingAliasesAndColdEntries(t *testing.T) {
 	if !native.Available {
 		t.Skip("native platform unavailable")

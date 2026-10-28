@@ -98,7 +98,10 @@ func leafExpressions(f *slots.Function, inputs []slots.Slot) ([]*leafExpression,
 			}
 			continue
 		case op == slots.ControlBase+uint32(ir.Return):
-			if pc != len(f.Code)-1 || int(in.Count) != len(f.Signature.Results) {
+			// Return forwarding can leave an independently addressable return
+			// block after this exit. Its unreachable instructions do not belong
+			// to the leaf expression reached from the function entry.
+			if int(in.Count) != len(f.Signature.Results) {
 				return nil, false
 			}
 			result := make([]*leafExpression, in.Count)

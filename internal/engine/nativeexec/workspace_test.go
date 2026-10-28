@@ -30,13 +30,17 @@ func TestInvocationWorkspaceLifecycle(t *testing.T) {
 		if err := e.Begin(nil, metered); err != nil {
 			t.Fatal(err)
 		}
-		_, fuel, err := e.Run(fn, 0, 1, 0, 1)
+		pc, fuel, err := e.Run(fn, 0, 1, 0, 1)
 		want := uint64(1)
 		if metered {
 			want = 0
 		}
-		if err != nil || fuel != want || e.values[0].Lo != 42 {
+		if err != nil || fuel != want {
 			t.Fatal(fuel, e.values, err)
+		}
+		in := fn.Code.Code[pc]
+		if in.Count != 1 || e.values[fn.Code.Args[in.Extra]].Lo != 42 {
+			t.Fatal("workspace result", in, e.values)
 		}
 	}
 	memory, err := native.NewMemory(16, 16)

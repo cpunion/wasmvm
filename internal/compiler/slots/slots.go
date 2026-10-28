@@ -240,6 +240,21 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 	}
 	// All target PCs and value locations now exist. Resolve each parallel tuple
 	// before flattening it into a sequential, allocation-free transfer program.
+	budget.charge(uint64(len(f.Blocks)))
+	returns := make([]bool, len(f.Blocks))
+	for bi, b := range f.Blocks {
+		if len(b.Ops) != 0 || b.Term.Kind != ir.Return || len(b.Term.Args) != len(b.Params) || f.Sources[b.Term.Source].Fuel() != 0 {
+			continue
+		}
+		budget.charge(uint64(len(b.Params)))
+		returns[bi] = true
+		for i, v := range b.Params {
+			if b.Term.Args[i] != v {
+				returns[bi] = false
+				break
+			}
+		}
+	}
 	scratch := make(map[wasm.ValueType]Slot)
 	for bi, b := range f.Blocks {
 		at := out.BlockPC[bi] + uint32(len(b.Ops))
@@ -247,6 +262,21 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 			continue
 		}
 		in := &out.Code[at]
+		if b.Term.Kind == ir.Jump {
+			edge := b.Term.Edges[0]
+			if out.BlockPC[edge.Target] > at && returns[edge.Target] {
+				// Preserve the jump's source/fuel boundary and every original PC.
+				// A forward pure return needs neither its tuple copy nor a second
+				// dispatch. Backward edges retain their cancellation poll.
+				budget.charge(uint64(len(edge.Args)))
+				in.Op = ControlBase + uint32(ir.Return)
+				in.Extra, in.Count = uint32(len(out.Args)), uint32(len(edge.Args))
+				for _, v := range edge.Args {
+					out.Args = append(out.Args, out.ValueSlots[v])
+				}
+				continue
+			}
+		}
 		in.Extra = uint32(len(out.Edges))
 		in.Count = uint32(len(b.Term.Edges))
 		budget.charge(uint64(len(b.Term.Edges)))

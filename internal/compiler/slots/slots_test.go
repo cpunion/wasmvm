@@ -141,6 +141,27 @@ func checkSymbolic(t *testing.T, name string, f *ir.Function, out *Function) {
 			}
 		}
 		term := out.Code[int(out.BlockPC[bi])+len(b.Ops)]
+		if term.Op == ControlBase+uint32(ir.Return) && b.Term.Kind == ir.Jump {
+			edge := b.Term.Edges[0]
+			target := f.Blocks[edge.Target]
+			if term.Source != b.Term.Source || len(target.Ops) != 0 || target.Term.Kind != ir.Return ||
+				f.Sources[target.Term.Source].Fuel() != 0 || out.BlockPC[edge.Target] <= out.BlockPC[bi]+uint32(len(b.Ops)) ||
+				int(term.Count) != len(target.Term.Args) {
+				t.Fatal("invalid forwarded return")
+			}
+			// Substitute the actual incoming tuple independently of the lowering
+			// rule; each output must still be its original symbolic SSA value.
+			for i, v := range target.Term.Args {
+				for pi, param := range target.Params {
+					if param == v {
+						v = edge.Args[pi]
+						break
+					}
+				}
+				expect(out.Args[int(term.Extra)+i], v)
+			}
+			continue
+		}
 		if term.Op != ControlBase+uint32(b.Term.Kind) || term.Source != b.Term.Source {
 			t.Fatal("terminator mapping")
 		}
