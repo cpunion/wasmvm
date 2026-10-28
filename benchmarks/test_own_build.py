@@ -92,6 +92,33 @@ class IsolatedSourceTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "WASMVM_LLGO_REVISION"):
                 own_build.toolchains()
 
+    def test_environment_pin_does_not_override_the_executable_version(self):
+        with tempfile.TemporaryDirectory() as directory:
+            go, llgo = (Path(directory) / name for name in ("go", "llgo"))
+            go.write_bytes(b"go fixture")
+            llgo.write_bytes(b"llgo fixture")
+            version = "llgo (devel) linux/amd64"
+
+            def capture(command):
+                if command[1:] == ["env", "GOVERSION"]:
+                    return own_build.GO_VERSION
+                if command == [str(llgo), "version"]:
+                    return version
+                return "fixture build information"
+
+            with patch("own_build.shutil.which", return_value=str(go)), \
+                    patch("own_build.ci.capture", side_effect=capture), \
+                    patch.dict(os.environ, {"WASMVM_LLGO": str(llgo), "WASMVM_LLGO_REVISION": own_build.LLGO_REVISION}), \
+                    patch("own_build.platform.system", return_value="Linux"), \
+                    patch("own_build.platform.machine", return_value="x86_64"):
+                for version in ("llgo (devel) linux/amd64", "llgo v0.0.0-bc7c991d8fe9 linux/amd64"):
+                    with self.assertRaisesRegex(ValueError, "executable version"):
+                        own_build.toolchains()
+                version = "llgo v0.0.0-" + own_build.LLGO_REVISION[:12] + " linux/amd64"
+                identity = own_build.toolchains()["llgo"]
+                self.assertEqual(identity["version"], version)
+                self.assertEqual(identity["goBuildInfo"], "fixture build information")
+
 
 if __name__ == "__main__":
     unittest.main()

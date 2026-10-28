@@ -63,6 +63,9 @@ def toolchains():
         raise ValueError("own-engine Go toolchain differs from pin: " + version)
     if os.environ.get("WASMVM_LLGO_REVISION") != LLGO_REVISION:
         raise ValueError("verified WASMVM_LLGO_REVISION must match the pinned setup revision")
+    llgo_version = ci.capture([llgo, "version"])
+    if LLGO_REVISION[:12] not in llgo_version:
+        raise ValueError("LLGo executable version does not identify the pinned revision: " + llgo_version)
     common = {"goos": platform.system().lower(), "goarch": {"x86_64": "amd64", "aarch64": "arm64", "arm64": "arm64"}.get(platform.machine())}
     if common["goos"] not in ("linux", "darwin") or common["goarch"] is None:
         raise ValueError("own-engine benchmark host is outside the accepted platform matrix")
@@ -70,7 +73,8 @@ def toolchains():
         "go": {**common, "command": str(Path(go).resolve()), "revision": version,
                "version": ci.capture([go, "version"]), "binarySha256": digest(Path(go))},
         "llgo": {**common, "command": str(Path(llgo).resolve()), "revision": LLGO_REVISION,
-                 "version": ci.capture([llgo, "version"]), "binarySha256": digest(Path(llgo)),
+                 "version": llgo_version, "binarySha256": digest(Path(llgo)),
+                 "goBuildInfo": ci.capture([go, "version", "-m", llgo]),
                  "environment": ci.capture([llgo, "env", "LLGO_ROOT", "GOROOT"])},
     }
     return result
