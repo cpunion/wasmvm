@@ -1066,6 +1066,15 @@ M1/M2, PR #26 and subsequent GC/Threads/component/WASI stages remain open.
 
 ## Shared interpreter operand and metadata access (development)
 
+**Local provenance correction:** the early local rows below used a bootstrap
+`llgo (devel)` CLI. Its build info identifies `bc7c991...` with local changes,
+while its runtime source tree was pinned to `8b1389c`. Those rows remain
+bootstrap diagnostics, not verified fixed-compiler evidence. The linked CI
+builds independently report the pinned `8b1389c627c7` version and are unaffected.
+The final paired run below rebuilds both revisions with a clean pinned CLI;
+`3daa886` now rejects a missing/wrong executable version even when the revision
+environment variable is set, and records the CLI's Go build information.
+
 The [declared scope](../benchmarks/native/operand-plan.md) removes per-instruction
 getter closures and captured receiver/base allocations. The first method-based
 candidate `ccf7dfa` still emits three LLGo calls; `f6e77f7` reads guarded slots
@@ -1090,8 +1099,8 @@ but remains slower than wazero's 882 / 541. Sustained and SIMD results remain
 mixed; the source optimization does not change generated native loop code.
 
 
-Local macOS arm64 diagnostics compare exact `7f25ed9` / `43bb8a7`, using pinned
-Go/LLGo and wazero interpreter builds: three interleaved process blocks, seven
+Local macOS arm64 diagnostics compare exact `7f25ed9` / `43bb8a7`, using recorded
+Go/LLGo and pinned wazero interpreter builds: three interleaved process blocks, seven
 calls/two warmups, 100,000 source iterations per loop call. The six families
 pass 216 alternate-input/runtime checks. Startup, preparation, instantiation,
 first call and public API versus reused internal dispatch remain separate.
@@ -1140,3 +1149,65 @@ Even the optimized SIMD evaluator still allocates a 112-byte instruction copy
 and a 16-byte addressed result on its entry path; scalar host options cannot
 remove this source-level ownership problem. The next scoped change borrows
 immutable SIMD instructions and returns lane updates by value.
+
+
+## SIMD value ownership and packed integer arithmetic (development)
+
+Engine `1e296a8` borrows immutable pure-SIMD instructions and returns lane
+updates by value. This removes the normal-entry 112-byte instruction and
+16-byte result allocation requests emitted by the bootstrap LLGo CLI; local
+reported allocation traffic drops from roughly 160 B/op to zero for integer
+operations. These are compiler requests/runtime counters, not a general
+allocation-free claim. Floating-point operations still allocate in standard
+math bit-conversion helpers. A standard-library-only reproducer confirms
+~32 B for a round trip and ~48 B for a scalar add with a clean pinned CLI,
+including full LTO; see [LLGo #2935](https://github.com/xgo-dev/llgo/issues/2935).
+
+Engine `3bd89e3` implements packed modular add/subtract for all four integer
+lane widths, isolating carries/borrows with lane high-bit masks. Byte popcount
+counts bit pairs/nibbles/bytes in two words. The existing evaluator and native
+emission remain shared; no workload-specific execution path is introduced.
+Tests exhaust 65,536 byte pairs and check wider boundary/random values against
+independent scalar oracles. The [four final semantic jobs](https://github.com/cpunion/wasmvm/actions/runs/40617055082)
+pass; all 12 reports verify 148 scripts / 51,139 binary assertions. SIMD package
+coverage is **97.76% (262/268)**; every measured executable package exceeds 90%.
+The clean pinned CLI also passes local optimized SIMD/execution/VM tests.
+
+Final local comparison: exact `1e296a8` -> `3daa886` (production engine
+`3bd89e3`), Apple M4 Max. Both revisions were rebuilt with the clean CLI from
+`8b1389c627c77a02e56af03f08d9cdc19edffe77`, with `vcs.modified=false` verified.
+Go 1.27.3, default LLGo and `-O3 -lto=full` LLGo configurations stay separate.
+Three interleaved process blocks, seven calls/two warmups, 100,000 source
+iterations; six families pass 312 alternate-input/runtime checks. Startup,
+preparation, instantiation, first call and reused dispatch are separate raw
+fields. Public API warm medians, ns/source iteration:
+
+| Family | Go base -> head | LLGo default base -> head | LLGo -O3/full LTO base -> head | wazero interpreter (Go) |
+| --- | ---: | ---: | ---: | ---: |
+| Integer | 111.974 -> 104.863 | 123.978 -> 121.927 | 96.893 -> 94.625 | 87.728 |
+| Function calls | 134.974 -> 131.425 | 231.472 -> 230.347 | 152.685 -> 152.242 | 96.700 |
+| Memory | 201.463 -> 192.273 | 242.352 -> 245.255 | 180.465 -> 179.195 | 158.957 |
+| Shuffle | 159.355 -> 136.951 | 206.082 -> 187.865 | 151.568 -> 135.518 | 113.770 |
+| Popcount | 163.200 -> 116.743 | 230.100 -> 146.793 | 159.444 -> 109.879 | 134.422 |
+
+Only the final optimized-LLGo popcount row is ~18% lower than wazero's elapsed
+time here (Go is ~13% lower). Default LLGo popcount and other families still
+trail; neither a configuration win nor a single family accepts the interpreter.
+Single public-call LLGo control is 3083 -> 2917 ns/call with full LTO versus
+wazero 792. Packed pure evaluation leaves native emission unchanged and supplies no new
+native timing evidence. Earlier native results and PR #26's A/A failure remain
+separate.
+
+Isolated Eval component medians confirm the algorithmic effect under the same
+clean CLI: optimized LLGo i32x4.add **15.459 -> 6.355 ns/op**, byte popcount
+**43.064 -> 4.665 ns/op**. These are primitive timings with operand/checksum
+updates, not whole-runtime comparisons. Popcount reports zero allocation bytes;
+an add block retains 0.036 B/op of process-level counter traffic, so counters
+alone do not prove zero engine events. f32x4.add still reports ~192 B/op,
+consistent with the separately reproduced compiler-helper cost. M1/M2 and
+Core 3.0/Threads/components/WASI 1/2/3 remain open.
+
+Final raw results SHA-256: `391a54424bfd1402cc440d11e4bac83ef95b0c0dae853347cbf032cf40ba2d89`.
+Component results SHA-256: `e5325303b39a22de991c9153919ab45748c4006b0d388221dda5f233e1399c7c`.
+Retained under `artifacts/simd-packed-pinned` with exact source/binary/CLI hashes.
+These short local diagnostics lack all-target A/A calibration and do not authorize merging.
