@@ -213,6 +213,29 @@ instruction and original cold continuations retain the same contract. See the
 [scope](../../benchmarks/native/globals-plan.md) and [native ABI](native-abi.md).
 This removes helper transitions; broader global live ranges remain open.
 
+## Direct tables and function references
+
+Both emitters lower table.get/table.set and ref.func in precise and unmetered
+entries through the shared runtime view. Table length checks precede scaled
+addressing and preserve exact source/trap order. Reads and writes use the same
+native table cells as the Store's reference tracer, including imported aliases.
+Function IDs come from the current instance's immutable handle array. No Go
+pointer or machine function address is encoded as a guest reference. Spare
+arm64 metadata registers share the existing allocation pool; all element values
+remain live reads. Allocated reference registers access table cells directly;
+arm64 uses an extended length comparison and UXTW addressing to consume i32
+indices without changing their raw upper words. Precise and spilled paths share
+the element encoder with guarded indirect calls. Reference slots retain the
+conservative spill/root protocol.
+
+Ordinary entries request their own runtime view independently of optional leaf
+expansion. Host reentry, table growth and bulk helpers rebind on the next entry;
+empty, Go-backed and retired storage retain distinct boundary outcomes. Bulk
+operations and growth continue through explicit owned helpers. See the
+[scope](../../benchmarks/native/tables-plan.md) and [native ABI](native-abi.md).
+This removes the basic table/reference helper transitions, without accepting
+general call, register-allocation or whole-profile performance.
+
 ## Implemented private memory primitives
 
 `internal/engine/memory` enforces Core 2.0 page limits, independent host quotas,

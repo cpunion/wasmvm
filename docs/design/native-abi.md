@@ -133,7 +133,8 @@ signature. Native code checks the current table's unsigned index and compares
 the live reference with the instance's immutable function identity. A miss uses
 the original checked call, preserving bounds/null/type traps, imported and
 cross-instance calls. This is guarded expansion, not a static-table assumption.
-Entries using indirect expansion or direct numeric globals use `Payload[2]`
+Entries using indirect expansion, direct globals or table/reference operations
+use `Payload[2]`
 for an execution-owned native word array: function handles in module order,
 followed by `(length, native base)` per table, then one pointer per global
 index. Numeric cells follow these descriptors; only globals used by the current
@@ -156,6 +157,21 @@ the next Run, so host mutation and same/cross-instance reentry observe ordered
 writes. Functions without numeric globals never flush stale bindings. Suspension
 and close clear cached Go roots. Reference globals keep the existing helper/root
 protocol; this view does not provide shared-memory atomic globals or WasmGC.
+
+Both native tiers directly implement table.get/table.set and ref.func using this
+view. Table indices are zero-extended i32 values, compared with the current
+unsigned length before any element address is formed. Allocated arm64 homes
+use an extended comparison and UXTW addressing; no raw high index bits enter
+the address and the home itself is not overwritten. Empty native tables trap
+without dereferencing a null base; Go-backed and retired tables are rejected at
+binding, including empty Go tables. Element writes update Store-owned native
+storage immediately, so aliases and the reference tracer see the same cells.
+Function references load complete instance-specific handles, including imported
+functions, rather than machine addresses. Reference results have canonical zero
+high words. Every exit spills the existing typed reference map before host
+reentry or collection. Growth and bulk helpers remain explicit driver exits;
+every resume refreshes the table length/base view. Missing views fail at entry
+for direct operations; indirect-only expansion retains its checked fallback.
 
 ## Exit protocol and safepoints
 

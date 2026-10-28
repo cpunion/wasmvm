@@ -44,7 +44,9 @@ func tableFixture(typ wasm.ValueType, table uint32, pressure int) *slots.Functio
 		source, dst := uint32(len(f.Sources)), slots.Slot(len(f.Slots))
 		f.Slots = append(f.Slots, wasm.I64)
 		f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: 0x42, Bits: 0x123456789abcdef0 + uint64(i)}})
-		f.Code = append(f.Code, slots.Instruction{Op: 0x42, Source: source, Dst: dst, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot})
+		for range 5 {
+			f.Code = append(f.Code, slots.Instruction{Op: 0x42, Source: source, Dst: dst, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot})
+		}
 	}
 	f.Code = append(f.Code, slots.Instruction{Op: slots.ControlBase + uint32(ir.Return), Count: 3, Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot})
 	return f
@@ -121,7 +123,7 @@ func TestTablesHandlesAliasesBoundsAndEveryContinuation(t *testing.T) {
 										want[in.Dst] = value.Value{Lo: f.Sources[in.Source].Wasm.Bits}
 									}
 								}
-								s := native.State{Used: 16, Depth: 1, Continuation: uint64(pc), Budget: 64, Fuel: 10}
+								s := native.State{Used: 16, Depth: 1, Continuation: uint64(pc), Budget: 1024, Fuel: 10}
 								s.Payload[2] = address
 								if err := ctx.SetState(s); err != nil {
 									t.Fatal(err)

@@ -45,3 +45,11 @@ reference identity, not only nullness; this verification remains inside guest
 execution timing. Alternate inputs include partial tables and both null/function
 cases. Keep all baseline/candidate/reference results, including fixed-tail and
 API overhead, and do not subtract verification or startup costs from samples.
+
+The first direct lowering retains a table-copy gap (LLGo 1.725 versus Wasmtime
+1.230 ns/iteration) despite large improvements over the old helper path. Select
+allocated reference registers directly. On arm64, compare the full length with
+a zero-extended i32 home and use UXTW scaled addressing, preserving raw upper
+index words without scratch copies. Keep spilled operands and precise entries
+on the same checked semantics. Add pressure that forces index/value/result homes
+to spill, and preserve the first diagnostic rather than replacing it.

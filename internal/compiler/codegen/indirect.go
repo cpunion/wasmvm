@@ -71,10 +71,10 @@ func (e *functionEmitter) inlineIndirect(pc int, config Config) (int, uint32, bo
 			e.runtimeLoad(1, uint32(offset+8))
 			base = e.operandRegister(1)
 		}
-		e.a.word(0xf8697809 | uint32(base)<<5) // ldr x9, [base, x9, lsl #3]
+		e.tableElement(e.operandRegister(0), base, e.operandRegister(0), false, false)
 	} else {
 		e.runtimeLoad(1, uint32(offset+8))
-		e.a.bytes(0x48, 0x8b, 0x04, 0xc1) // mov rax, [rcx + rax*8]
+		e.tableElement(0, 1, 0, false, false)
 	}
 	for _, c := range candidates {
 		e.runtimeCompare(c.index * 8)
