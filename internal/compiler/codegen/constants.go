@@ -7,61 +7,66 @@ import (
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 )
 
-// Spare AArch64 caller-saved registers retain expensive integer constants for
-// one native entry. They are immutable and need no spill/root state. Every
-// continuation reloads the same pool before dispatch.
-func (e *functionEmitter) prepareConstants(config Config) {
-	if e.a.arch != "arm64" {
-		return
+// Score literal materialization savings in native instructions. Leaf analysis
+// is bounded separately; exhausting it only loses optional cache candidates.
+func (e *functionEmitter) constantPriorities(config Config, frequencies []uint64) map[uint64]uint64 {
+	weights := map[uint64]uint64{}
+	add := func(op uint32, v, w uint64) {
+		if op != 0x41 && op != 0x42 {
+			return
+		}
+		if op == 0x41 {
+			v = uint64(uint32(v))
+		}
+		probe := assembler{arch: "arm64"}
+		probe.aconst(1, v, v > math.MaxUint32)
+		if len(probe.code) > 4 {
+			weights[v] += uint64(len(probe.code)/4-1) * w
+		}
 	}
-	weights := map[uint64]int{}
-	functions := []*slots.Function{e.f}
-	for _, in := range e.f.Code {
+	for pc, in := range e.f.Code {
+		if in.Op == 0x41 || in.Op == 0x42 {
+			add(in.Op, e.f.Sources[in.Source].Wasm.Bits, frequency(frequencies, pc))
+		}
+	}
+	work := uint64(len(e.f.Code)) * 8
+	for pc, in := range e.f.Code {
+		var callees []*slots.Function
 		if in.Op == 0x10 {
 			callee := config.DirectCallees[e.f.Sources[in.Source].Wasm.A]
 			if _, ok := leafExpressions(callee, e.f.Args[in.Extra:in.Extra+in.Count]); ok {
-				functions = append(functions, callee)
+				callees = append(callees, callee)
 			}
 		} else if in.Op == 0x11 {
-			for _, index := range config.IndirectCallees[e.f.Sources[in.Source].Wasm.A] {
+			targets := config.IndirectCallees[e.f.Sources[in.Source].Wasm.A]
+			for _, index := range targets[:min(4, len(targets))] {
 				if callee := config.DirectCallees[index]; CanExpandLeaf(callee) {
-					functions = append(functions, callee)
+					callees = append(callees, callee)
 				}
 			}
 		}
-	}
-	for _, f := range functions {
-		for _, in := range f.Code {
-			if in.Op != 0x41 && in.Op != 0x42 {
-				continue
+		for _, callee := range callees {
+			if uint64(len(callee.Code)) > work {
+				return weights
 			}
-			v := f.Sources[in.Source].Wasm.Bits
-			if in.Op == 0x41 {
-				v = uint64(uint32(v))
-			}
-			probe := assembler{arch: "arm64"}
-			probe.aconst(1, v, v > math.MaxUint32)
-			if len(probe.code) > 4 {
-				weights[v] += len(probe.code) - 4
+			work -= uint64(len(callee.Code))
+			for _, literal := range callee.Code {
+				add(literal.Op, callee.Sources[literal.Source].Wasm.Bits, frequency(frequencies, pc))
 			}
 		}
 	}
-	values := make([]uint64, 0, len(weights))
-	for v := range weights {
-		values = append(values, v)
+	return weights
+}
+
+// Planned literals are immutable and reload on every independent entry.
+func (e *functionEmitter) prepareConstants() {
+	values := make([]uint64, 0, len(e.constantRegisters))
+	for value := range e.constantRegisters {
+		values = append(values, value)
 	}
-	sort.Slice(values, func(i, j int) bool {
-		if weights[values[i]] != weights[values[j]] {
-			return weights[values[i]] > weights[values[j]]
-		}
-		return values[i] < values[j]
-	})
-	available := e.spareCallerRegisters()
-	e.constantRegisters = map[uint64]byte{}
-	for i, v := range values[:min(len(available), len(values))] {
-		r := available[i]
-		e.a.aconst(uint32(r), v, v > math.MaxUint32)
-		e.constantRegisters[v] = r
+	sort.Slice(values, func(i, j int) bool { return values[i] < values[j] })
+	for _, value := range values {
+		e.a.aconst(uint32(e.constantRegisters[value]), value, value > math.MaxUint32)
 	}
 }
 

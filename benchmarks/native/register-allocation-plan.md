@@ -24,3 +24,12 @@ base/head against the same pinned competitors before any merge. Keep regressions
 all-target calibration and broader M2 acceptance open. Store-to-load forwarding
 and global live-range splitting are distinct optimizations requiring their own
 proofs; a register-priority change does not implement them implicitly.
+
+Initial implementation uses merged backward-edge intervals as priority hints:
+8 per nesting level, capped at 512, including overlapping/irreducible spans.
+These hints never prove correctness or remove checks. Edge, tuple/move and
+expanded-leaf literal scans have explicit work budgets; exhaustion loses only
+optional priorities. Candidate ordering is deterministic by savings, class and
+key. ARM metadata/literals compete for caller registers before scalar homes fill
+the inventory; FP/vector homes retain their separate shared pool. All mandatory
+cold reloads, full exit spills, root maps and physical register inventories stay.

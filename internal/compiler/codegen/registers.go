@@ -2,7 +2,6 @@ package codegen
 
 import (
 	"math/bits"
-	"sort"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -13,112 +12,15 @@ import (
 // allocator needs neither edge shuffles nor speculative liveness assumptions.
 // Operands, integer-core scratch, the frame base and context are excluded.
 func (e *functionEmitter) prepareRegisters(plans ...map[int]memoryRegion) {
-	weights := make([]uint64, len(e.f.Slots))
-	use := func(s slots.Slot) {
-		if s != slots.NoSlot {
-			weights[s]++
-		}
-	}
-	move := func(dst, src slots.Slot) {
-		if dst != slots.NoSlot && dst != src {
-			use(dst)
-			use(src)
-		}
-	}
 	var regions map[int]memoryRegion
 	if len(plans) != 0 {
 		regions = plans[0]
 	}
-	region := memoryRegion{end: -1}
-	for pc, in := range e.f.Code {
-		if next, ok := regions[pc]; ok {
-			region = next
-		} else if pc > region.end {
-			region = memoryRegion{end: -1}
-		}
-		if region.elided[pc] {
-			continue
-		}
-		if guard, ok := region.guards[pc]; ok {
-			use(guard.address)
-		}
-		if address, ok := region.addresses[pc]; ok {
-			in.A = address.local
-		}
-		if in.Op >= 0x20 && in.Op <= 0x22 {
-			local := slots.Slot(e.f.Sources[in.Source].Wasm.A)
-			if in.Op == 0x20 {
-				move(in.Dst, local)
-			} else {
-				move(local, in.A)
-				if in.Dst != local {
-					move(in.Dst, in.A)
-				}
-			}
-			continue
-		}
-		use(in.A)
-		use(in.B)
-		use(in.C)
-		use(in.Dst)
-	}
-	for _, m := range e.f.Moves {
-		use(m.Src)
-		use(m.Dst)
-	}
-	// Call and return tuples live in the argument arena, outside inline operands.
-	for _, s := range e.f.Args {
-		use(s)
-	}
-	var order []slots.Slot
-	for s, n := range weights {
-		if n != 0 {
-			order = append(order, slots.Slot(s))
-		}
-	}
-	sort.Slice(order, func(i, j int) bool {
-		if weights[order[i]] != weights[order[j]] {
-			return weights[order[i]] > weights[order[j]]
-		}
-		return order[i] < order[j]
-	})
-	available := e.integerRegisterPool()
-	floatAvailable := []byte{3, 4, 5, 6, 7, 8, 9, 10}
-	if e.a.arch == "arm64" {
-		floatAvailable = []byte{8, 9, 10, 11, 12, 13, 14, 15, 16, 17}
-	}
-	integers, floats := map[slots.Slot]byte{}, map[slots.Slot]byte{}
-	vectors := map[slots.Slot]byte{}
-	// Load before installing either map so every load reads the backing frame.
-	for _, s := range order {
-		t := e.f.Slots[s]
-		floating := t == wasm.F32 || t == wasm.F64 || t == wasm.V128
-		if floating && len(floats)+len(vectors) < len(floatAvailable) {
-			r := floatAvailable[len(floats)+len(vectors)]
-			if t == wasm.V128 {
-				e.vectorMemory(s, r, false)
-				vectors[s] = r
-			} else {
-				e.slotLoad(s, 0, false, t == wasm.F64)
-				e.floatFromInteger(r, e.operandRegister(0), t == wasm.F64)
-				floats[s] = r
-			}
-		} else if !floating && len(integers) < len(available) {
-			r := available[len(integers)]
-			e.slotLoad(s, 0, false, true)
-			e.registerMove(r, e.operandRegister(0), true)
-			integers[s] = r
-		} else {
-			continue
-		}
-		e.registerSlots = append(e.registerSlots, s)
-	}
-	e.registers, e.floatRegisters = integers, floats
-	e.vectorRegisters = vectors
+	e.allocateRegisters(Config{}, regions)
 }
 
-// Mutable slots and leaf expressions share the target inventory. Constants
-// and runtime metadata occupy only spare caller registers and remain immutable.
+// Mutable slots and leaf expressions share the target inventory. Planned
+// immutable constants and runtime metadata reserve disjoint ARM caller registers.
 func (e *functionEmitter) integerRegisterPool() []byte {
 	pool := []byte{3, 12, 13, 14, 15, 9, 10, 11}
 	if e.usesMemory {

@@ -6,24 +6,18 @@ import (
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 )
 
-// Table metadata, global cell pointers and function identities cannot change inside a native entry:
-// metadata changes and host calls exit to the serialized driver. Reuse spare
-// arm64 caller registers for these words, refreshing them on every resume.
-// Elements themselves remain live loads. No additional register spills or roots
-// are needed, and a missing runtime view installs zero lengths for checked exits.
-func (e *functionEmitter) prepareRuntimeRegisters(config Config) {
-	if e.a.arch != "arm64" {
-		return
-	}
-	weights := map[uint32]int{}
-	for _, in := range e.f.Code {
+// Metadata is immutable within one native entry; elements remain live loads.
+func (e *functionEmitter) runtimePriorities(config Config, frequencies []uint64) map[uint32]uint64 {
+	weights := map[uint32]uint64{}
+	for pc, in := range e.f.Code {
+		w := frequency(frequencies, pc)
 		if offset, _, ok := globalCell(e.f, in, config); ok {
-			weights[offset] += 2
+			weights[offset] += 2 * w
 		}
 		if offset, ok := referenceCell(e.f, in, config); ok {
-			weights[offset] += 2
+			weights[offset] += 2 * w
 			if in.Op != 0xd2 {
-				weights[offset+8] += 2
+				weights[offset+8] += 2 * w
 			}
 		}
 		if in.Op != 0x11 || config.FunctionCount == 0 {
@@ -35,44 +29,41 @@ func (e *functionEmitter) prepareRuntimeRegisters(config Config) {
 		if len(targets) == 0 || !valid {
 			continue
 		}
-		weights[uint32(offset)] += 2
-		weights[uint32(offset+8)] += 2
+		weights[offset] += 2 * w
+		weights[offset+8] += 2 * w
 		for _, index := range targets[:min(4, len(targets))] {
 			if index < config.FunctionCount {
-				weights[index*8]++
+				weights[index*8] += w
 			}
 		}
 	}
-	var offsets []uint32
-	for offset := range weights {
+	return weights
+}
+
+// Reload the planned words on every entry. Indirect-only missing views install
+// zeros for checked fallback; direct operations have already validated the view.
+func (e *functionEmitter) prepareRuntimeRegisters() {
+	offsets := make([]uint32, 0, len(e.runtimeRegisters))
+	for offset := range e.runtimeRegisters {
 		offsets = append(offsets, offset)
 	}
-	sort.Slice(offsets, func(i, j int) bool {
-		if weights[offsets[i]] != weights[offsets[j]] {
-			return weights[offsets[i]] > weights[offsets[j]]
-		}
-		return offsets[i] < offsets[j]
-	})
-	available := e.spareCallerRegisters()
-	offsets = offsets[:min(len(offsets), len(available))]
+	sort.Slice(offsets, func(i, j int) bool { return offsets[i] < offsets[j] })
 	if len(offsets) == 0 {
 		return
 	}
-	e.runtimeRegisters = map[uint32]byte{}
 	missing, done := e.a.label(), e.a.label()
 	e.contextLoad(0, nativeabi.RuntimeDataOffset)
 	e.test(true)
 	e.branch(missing, "eq")
 	e.registerMove(e.operandRegister(2), e.operandRegister(0), true)
-	for i, offset := range offsets {
+	for _, offset := range offsets {
 		e.pointerLoad(0, 2, offset)
-		e.registerMove(available[i], e.operandRegister(0), true)
-		e.runtimeRegisters[offset] = available[i]
+		e.registerMove(e.runtimeRegisters[offset], e.operandRegister(0), true)
 	}
 	e.a.branch(done, false, 0)
 	e.a.mark(missing)
-	for _, r := range available[:len(offsets)] {
-		e.a.aconst(uint32(r), 0, false)
+	for _, offset := range offsets {
+		e.a.aconst(uint32(e.runtimeRegisters[offset]), 0, false)
 	}
 	e.a.mark(done)
 }

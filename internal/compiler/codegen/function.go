@@ -147,10 +147,10 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	regions := e.memoryRegions()
 	if unmetered {
-		e.prepareRegisters(regions)
+		e.allocateRegisters(config, regions)
 		e.prepareVectorConstants()
-		e.prepareConstants(config)
-		e.prepareRuntimeRegisters(config)
+		e.prepareConstants()
+		e.prepareRuntimeRegisters()
 		e.contextLoad(0, nativeabi.PayloadOffset+24)
 		e.test(true)
 		e.branch(e.bad, "ne")
