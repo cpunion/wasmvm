@@ -29,3 +29,12 @@ Snapshot the immutable backend and metering selection once per Run invocation;
 use booleans inside the loop. Backend changes are only permitted while idle,
 and each host suspension starts a new Run invocation. This removes repeated
 interface inspection without changing backend calls or fuel ownership.
+
+The next candidate borrows each immutable Source and Wasm instruction rather
+than copying their aggregate metadata on every step. LLGo disassembly shows
+bytewise SIMD-immediate loads even for scalar instructions. Use a read-only
+Source receiver for fuel to avoid a second aggregate copy in metered execution;
+retain value semantics at existing SIMD and bulk helper boundaries. Recheck
+all original families and add the existing shuffle/popcount fixtures as SIMD
+regressions against the same pinned wazero interpreter. No source/fuel boundary,
+trap offset, instruction immediate or published-code ownership changes.
