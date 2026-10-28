@@ -1025,9 +1025,9 @@ completes 42 families and 1,176 alternate-input checks per target, comparing
 compilers**, so neither new AVX-512 path executes in this measurement. LLGo
 popcount measures 2.332 -> 2.350 ns/source iteration; i64 shifts 3.973 -> 3.879.
 These unchanged-profile measurements are not evidence for AVX-512 speed or
-correctness. Native validation on a capable host and performance acceptance
-remain open. Preserve this limitation rather than treating a passing diagnostic
-as feature acceptance.
+correctness. That initial run leaves native validation open; the later capable-host run
+below supplies execution evidence. Neither diagnostic establishes calibrated
+feature acceptance.
 
 Engine `64932ea` introduces exact SIMD immediate forms. Its
 [four semantic CI jobs](https://github.com/cpunion/wasmvm/actions/runs/40598533536)
@@ -1041,8 +1041,102 @@ entries and exact code limits.
 The following shared-mask and shuffle-copy reductions through `c52c58f` pass
 complete local Go/LLGo suites and amd64 tests, vet and cgo-disabled compilation.
 Latest local codegen coverage is **97.17% (4389/4517)**; every executable package
-remains above 90%. The final target matrix and paired 42-family comparison
-against the exact AVX-512 baseline are pending. Native benchmark reports now
-retain the host CPU description in addition to the selected feature mask, so
-ISA availability can be distinguished from selection or timing effects.
+remains above 90%. The [final four semantic jobs](https://github.com/cpunion/wasmvm/actions/runs/40609496290)
+pass through `7f25ed9`, with all 12 complete corpus reports verified.
+The [paired 42-family comparison](https://github.com/cpunion/wasmvm/actions/runs/40609500312)
+against `0bc1ba3` passes 1,176 alternate-input checks per target. Results are
+mixed: LLGo ARM unsigned f32 conversion improves 5.007 -> 4.938 ns/source
+iteration, while shuffle changes 2.170 -> 2.183 versus wazero's 2.092.
+AMD shuffle changes 2.096 -> 2.140 versus Wasmtime's 1.639. These are short
+diagnostics, not portfolio acceptance. Reports retain CPU descriptions and
+selected feature masks so ISA availability can be separated from selection.
+
+The [later native run](https://github.com/cpunion/wasmvm/actions/runs/40611342681)
+compares `7f25ed9` with `ccf7dfa` and supplies a capable **AMD EPYC 9V45** host:
+both own host compilers select **mask 31** and actually execute EVEX popcount
+and signed i64 shift. LLGo popcount is 1.526 ns/source iteration versus wazero
+2.860, Wasmtime 1.455 and Wasmer 2.814; i64 shift is 2.672 versus 7.511,
+2.520 and 3.472. Both own revisions already contain EVEX selection, so this
+is execution/competitor evidence, not an isolated head/base ISA speedup.
+The [same revision's semantic matrix](https://github.com/cpunion/wasmvm/actions/runs/40610849392)
+passes all four jobs and 12 complete reports. Native shuffle still trails the
+fastest reference; optional-ISA support does not close the performance gate.
 M1/M2, PR #26 and subsequent GC/Threads/component/WASI stages remain open.
+
+
+## Shared interpreter operand and metadata access (development)
+
+The [declared scope](../benchmarks/native/operand-plan.md) removes per-instruction
+getter closures and captured receiver/base allocations. The first method-based
+candidate `ccf7dfa` still emits three LLGo calls; `f6e77f7` reads guarded slots
+inline and snapshots backend/metering selection once per Run. Its
+[four semantic jobs](https://github.com/cpunion/wasmvm/actions/runs/40612478202)
+pass; all 12 complete reports are verified. Disassembly retains the earlier
+allocating/calling variants rather than attributing their results to later code.
+
+Engine `43bb8a7` borrows immutable Source/Wasm metadata instead of copying it
+for scalar dispatch. A read-only fuel receiver avoids another aggregate copy
+when metering. Existing SIMD/bulk helper value boundaries, immediate bits, fuel,
+trap offsets, cancellation and frame ownership remain unchanged. Full local Go
+and affected LLGo tests pass; every measured executable package exceeds 90%,
+including execution **98.48% (323/328)** and IR **99.52% (208/209)**.
+The [final engine matrix](https://github.com/cpunion/wasmvm/actions/runs/40613158896)
+passes all four compiler/target jobs; all 12 reports independently retain 148
+scripts and 51,139 binary assertions. The [paired native regressions](https://github.com/cpunion/wasmvm/actions/runs/40613243428)
+complete 42 families and 1,176 alternate-input checks per target. This amd64
+host selects mask 7; the earlier mask-31 result remains separate. LLGo native
+call-control improves 23144 -> 19046 ns/call on amd64 and 7709 -> 6542 on arm64,
+but remains slower than wazero's 882 / 541. Sustained and SIMD results remain
+mixed; the source optimization does not change generated native loop code.
+
+
+Local macOS arm64 diagnostics compare exact `7f25ed9` / `43bb8a7`, using pinned
+Go/LLGo and wazero interpreter builds: three interleaved process blocks, seven
+calls/two warmups, 100,000 source iterations per loop call. The six families
+pass 216 alternate-input/runtime checks. Startup, preparation, instantiation,
+first call and public API versus reused internal dispatch remain separate.
+Public API warm medians, ns/source iteration:
+
+| Family | Go base -> head | LLGo base -> head | wazero interpreter (Go) |
+| --- | ---: | ---: | ---: |
+| Integer | 227.255 -> 161.807 | 1071.383 -> 179.261 | 132.827 |
+| Function calls | 311.167 -> 203.893 | 1410.549 -> 355.843 | 143.813 |
+| Memory | 435.147 -> 288.059 | 2180.318 -> 374.500 | 250.843 |
+| Shuffle | 325.438 -> 270.686 | 1862.438 -> 866.340 | 181.599 |
+| Popcount | 314.368 -> 268.457 | 1517.051 -> 977.724 | 214.815 |
+
+The single-invocation public LLGo control is 6792 -> 5083 ns/call versus wazero
+1208. The scalar gains do not establish parity: calls and SIMD remain slower.
+These local measurements have no all-target A/A calibration. LLGo's default
+build is size-oriented `-Os`, without LTO; a separate identical-flags base/head
+`-O3 -lto=full` experiment is retained separately and does not overwrite these results.
+Raw default results: SHA-256
+`d52a152903ac23cbefb2bc3fd1c2f6c645d9a81dfc2f63174b0bdc89130707f0`,
+retained with build/source/binary provenance under `artifacts/operand-source`.
+Earlier method and inline-only diagnostics remain under `artifacts/operand`
+and `artifacts/operand-inline`; all are diagnostics, not merge authorization.
+
+
+The separate release-options experiment interleaves both default and optimized
+LLGo base/head configurations with Go and wazero in the same six-family run
+(312 alternate-input checks). The complete local LLGo `-O3 -lto=full` package
+suite passes. Identical source `43bb8a7`, public API warm ns/source iteration:
+
+| Family | LLGo default | LLGo -O3/full LTO | wazero interpreter (Go) |
+| --- | ---: | ---: | ---: |
+| Integer | 170.102 | 137.136 | 113.196 |
+| Function calls | 279.239 | 209.645 | 123.236 |
+| Memory | 248.451 | 202.625 | 164.993 |
+| Shuffle | 562.570 | 536.358 | 123.445 |
+| Popcount | 625.957 | 568.359 | 133.795 |
+
+Single-call LLGo control is 5041 -> 4375 ns/call versus wazero 1209. The
+optimized host build is not a VM-source gain and does not establish parity.
+Its full target matrix/release adoption remain open; default CI flags are
+unchanged. Raw results SHA-256:
+`e70ef6e4e6c31463228e8d9614f1a3730b462236943c8ff452adc1275831c30d`
+under `artifacts/llgo-release`, with both flag sets and exact archived sources.
+Even the optimized SIMD evaluator still allocates a 112-byte instruction copy
+and a 16-byte addressed result on its entry path; scalar host options cannot
+remove this source-level ownership problem. The next scoped change borrows
+immutable SIMD instructions and returns lane updates by value.
