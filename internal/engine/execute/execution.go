@@ -153,6 +153,14 @@ func (e *Execution) fail(err error) Status {
 // it in deferred panic cleanup before propagating the original host panic.
 func (e *Execution) Abort(err error) { e.fail(err) }
 func (e *Execution) poll() error     { return e.context.Err() }
+
+func (e *Execution) operand(base int, slot slots.Slot) value.Value {
+	if slot == slots.NoSlot {
+		return value.Value{}
+	}
+	return e.values[base+int(slot)]
+}
+
 func (e *Execution) ResumeHost(results []value.Value, err error) error {
 	if e.status != HostRequest || e.pending == nil {
 		return errors.New("no pending host request")
@@ -220,13 +228,7 @@ func (e *Execution) Run() Status {
 			}
 		}
 		f.pc++
-		get := func(s slots.Slot) value.Value {
-			if s == slots.NoSlot {
-				return value.Value{}
-			}
-			return e.values[base+int(s)]
-		}
-		a, b, c := get(in.A), get(in.B), get(in.C)
+		a, b, c := e.operand(base, in.A), e.operand(base, in.B), e.operand(base, in.C)
 		var result value.Value
 		trap := wasm.NoTrap
 		switch op := in.Op; {
