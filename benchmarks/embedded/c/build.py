@@ -16,6 +16,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tools-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--runtimes", nargs="+", choices=("wasmtime", "wasmer", "wasmedge"), default=("wasmtime", "wasmer", "wasmedge"))
     args = parser.parse_args()
     tools_dir, output_dir = args.tools_dir.resolve(), args.output_dir.resolve()
     installation = json.loads((tools_dir / "installation.json").read_text())
@@ -30,6 +31,8 @@ def main():
     for runtime, tool_id, library in [("wasmtime", "wasmtime-c-api", "wasmtime"),
                                        ("wasmer", "wasmer", "wasmer"),
                                        ("wasmedge", "wasmedge", "wasmedge")]:
+        if runtime not in args.runtimes:
+            continue
         tool = tools[tool_id]
         prefix = tools_dir / tool_id
         executable = output_dir / (runtime + "-phase")

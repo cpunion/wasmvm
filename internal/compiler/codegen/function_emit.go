@@ -1,6 +1,7 @@
 package codegen
 
 import (
+	"encoding/binary"
 	"math"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
@@ -10,12 +11,49 @@ import (
 )
 
 // rdi/x0 is the context, rsi/x12 is the current frame, and rax/rcx or x9/x10
-// carry operands. Every value is spilled before an exit or control transfer.
+// carry operands. The unmetered tier retains selected scalar slots in registers across control
+// transfers and spills them only on exits.
 type functionEmitter struct {
 	a                         *assembler
 	f                         *slots.Function
 	exit, bad, zero, overflow int
 	edgeCopies                uint32
+	unmetered                 bool
+	registers                 map[slots.Slot]byte
+	registerSlots             []slots.Slot
+	pollExits                 []pollExit
+	constantRegisters         map[uint64]byte
+}
+
+type pollExit struct {
+	label int
+	pc    uint32
+}
+
+func (e *functionEmitter) integer(in slots.Instruction) {
+	op := in.Op
+	if op == 0xd1 {
+		op = 0x50
+	}
+	wide := integerWide(op)
+	if e.registerInteger(op, in.Dst, in.A, in.B) {
+		return
+	}
+	if op >= 0x6d && op <= 0x70 || op >= 0x7f && op <= 0x82 {
+		e.contextConst(nativeabi.SourceOffset, uint64(e.f.Sources[in.Source].Wasm.Offset))
+	}
+	e.slotLoad(in.A, 0, false, wide)
+	e.slotLoad(in.B, 1, false, wide)
+	if e.a.arch == "amd64" {
+		integerAMD64Core(e.a, op, wide, e.zero, e.overflow)
+	} else {
+		integerARM64Core(e.a, op, wide, e.zero, e.overflow)
+	}
+	e.slotStore(in.Dst, 0, false)
+	if !e.unmetered {
+		e.constant(0, 0)
+		e.slotStore(in.Dst, 0, true)
+	}
 }
 
 func (e *functionEmitter) constant(reg byte, v uint64) {
@@ -104,6 +142,16 @@ func (e *functionEmitter) slotLoad(slot slots.Slot, reg byte, high, wide bool) {
 		e.constant(reg, 0)
 		return
 	}
+	if e.unmetered && e.f.Slots[slot] != wasm.V128 {
+		if high {
+			e.constant(reg, 0)
+			return
+		}
+		if r, ok := e.registers[slot]; ok {
+			e.registerMove(e.operandRegister(reg), r, wide)
+			return
+		}
+	}
 	offset := uint32(slot) * 16
 	if high {
 		offset += 8
@@ -131,6 +179,15 @@ func (e *functionEmitter) slotStore(slot slots.Slot, reg byte, high bool) {
 	if slot == slots.NoSlot {
 		return
 	}
+	if e.unmetered && e.f.Slots[slot] != wasm.V128 {
+		if high {
+			return
+		}
+		if r, ok := e.registers[slot]; ok {
+			e.registerMove(r, e.operandRegister(reg), true)
+			return
+		}
+	}
 	offset := uint32(slot) * 16
 	if high {
 		offset += 8
@@ -154,12 +211,24 @@ func (e *functionEmitter) move(dst, src slots.Slot) {
 	if dst == slots.NoSlot {
 		return
 	}
+	if d, ok := e.registers[dst]; ok {
+		if s, ok := e.registers[src]; ok {
+			e.registerMove(d, s, true)
+			return
+		}
+	}
 	e.slotLoad(src, 0, false, true)
-	e.slotLoad(src, 1, true, true)
+	if !e.unmetered || e.f.Slots[dst] == wasm.V128 {
+		e.slotLoad(src, 1, true, true)
+	}
 	e.slotStore(dst, 0, false)
 	e.slotStore(dst, 1, true)
 }
 func (e *functionEmitter) status(status nativeabi.Exit) {
+	e.spillRegisters()
+	e.rawStatus(status)
+}
+func (e *functionEmitter) rawStatus(status nativeabi.Exit) {
 	if e.a.arch == "amd64" {
 		e.a.bytes(0xb8)
 		e.a.word(uint32(status))
@@ -225,17 +294,7 @@ func (e *functionEmitter) boundary(pc uint32, src ir.Source, control bool) {
 	e.decrement()
 	e.contextStore(0, nativeabi.BudgetOffset)
 	if control {
-		ok := a.label()
-		if a.arch == "amd64" {
-			e.contextLoad(0, nativeabi.ControlOffset)
-		} else {
-			a.word(0x9100000f | uint32(nativeabi.ControlOffset)<<10) // add x15,x0,#control
-			a.word(0xc8dffde9)                                       // ldar x9,[x15]
-		}
-		e.test(true)
-		e.branch(ok, "eq")
-		e.leave(nativeabi.Poll, 0, uint64(pc))
-		a.mark(ok)
+		e.interrupt(pc)
 	}
 	if src.Fuel() == 0 {
 		return
@@ -256,7 +315,7 @@ func (e *functionEmitter) boundary(pc uint32, src ir.Source, control bool) {
 	a.mark(done)
 }
 
-func (e *functionEmitter) edge(index uint32, pcs []int) {
+func (e *functionEmitter) edge(index uint32, pcs []int, next int) {
 	edge := e.f.Edges[index]
 	if edge.Count > 256 {
 		e.edgeCopies++
@@ -266,5 +325,76 @@ func (e *functionEmitter) edge(index uint32, pcs []int) {
 	for _, m := range e.f.Moves[edge.Start : edge.Start+edge.Count] {
 		e.move(m.Dst, m.Src)
 	}
-	e.a.branch(pcs[edge.PC], false, 0)
+	if int(edge.PC) != next {
+		e.a.branch(pcs[edge.PC], false, 0)
+	}
+}
+
+// Interrupt polling is distinct from a scheduling round trip. A straight-line
+// sequence has at most 256 slot instructions between polls; every control
+// transfer also polls, so arbitrary forward/backward edges cannot evade it.
+func (e *functionEmitter) interrupt(pc uint32) {
+	// An aligned machine load is atomic on both targets. Only a nonzero
+	// observation needs acquire ordering; the cold exit supplies that fence.
+	// Keep register spills and continuation publication outside the hot region.
+	exit := e.a.label()
+	e.contextLoad(0, nativeabi.ControlOffset)
+	if e.a.arch == "arm64" {
+		e.a.compareBranch(exit, e.operandRegister(0), true, true)
+	} else {
+		e.test(true)
+		e.branch(exit, "ne")
+	}
+	e.pollExits = append(e.pollExits, pollExit{exit, pc})
+}
+
+func (e *functionEmitter) emitPollExits() {
+	for _, exit := range e.pollExits {
+		e.a.mark(exit.label)
+		if e.a.arch == "arm64" {
+			e.a.word(0xd50339bf) // dmb ishld: acquire after the atomic load.
+		}
+		e.leave(nativeabi.Poll, 0, uint64(exit.pc))
+	}
+}
+
+func (e *functionEmitter) literal(in slots.Instruction) {
+	src := e.f.Sources[in.Source]
+	op := in.Op
+	lo, hi := src.Wasm.Bits, uint64(0)
+	if op == 0xd0 {
+		lo = 0
+	}
+	if op == 0xfd000c {
+		lo = binary.LittleEndian.Uint64(src.Wasm.Vector[:8])
+		hi = binary.LittleEndian.Uint64(src.Wasm.Vector[8:])
+	}
+	if op == 0x41 || op == 0x42 {
+		if op == 0x41 {
+			lo = uint64(uint32(lo))
+		}
+		if r, ok := e.constantRegisters[lo]; ok {
+			if dst, ok := e.registers[in.Dst]; ok {
+				e.registerMove(dst, r, true)
+			} else {
+				e.registerMove(e.operandRegister(0), r, true)
+				e.slotStore(in.Dst, 0, false)
+			}
+			return
+		}
+	}
+	if r, ok := e.registers[in.Dst]; ok {
+		if e.a.arch == "arm64" {
+			e.a.aconst(uint32(r), lo, lo > math.MaxUint32)
+		} else {
+			e.a.xconst(r, lo)
+		}
+	} else {
+		e.constant(0, lo)
+		e.slotStore(in.Dst, 0, false)
+	}
+	if !e.unmetered || e.f.Slots[in.Dst] == wasm.V128 {
+		e.constant(0, hi)
+		e.slotStore(in.Dst, 0, true)
+	}
 }

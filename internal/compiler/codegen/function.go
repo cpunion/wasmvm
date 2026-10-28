@@ -1,7 +1,6 @@
 package codegen
 
 import (
-	"encoding/binary"
 	"math"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
@@ -26,6 +25,9 @@ type CompiledFunction struct {
 	Offsets                    []uint32
 	ReferenceSlots             []uint32
 	Helpers, Calls, EdgeCopies uint32
+	FusedIntegers              uint32
+	ForwardedIntegers          uint32
+	ForwardedPredicates        uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -37,7 +39,20 @@ type CompiledFunction struct {
 // in Continuation. Return publishes its PC for multi-result marshalling.
 // Move publishes a large edge-copy plan in Payload[0] and its destination PC
 // in Continuation; the driver copies it in bounded, cancelable chunks.
-func CompileFunction(arch string, f *slots.Function, limits Limits) (out *CompiledFunction, err error) {
+func CompileFunction(arch string, f *slots.Function, limits Limits) (*CompiledFunction, error) {
+	return compileFunction(arch, f, limits, false)
+}
+
+// CompileUnmeteredFunction emits bounded interrupt polls without periodic host
+// round trips or dynamic fuel checks. The driver must supply canonical scalar
+// values (Hi == 0), as required by value.Value, and Payload[3] == 0. Budget is
+// unused. All scalar slots are canonical on exit; vectors retain all 128 bits.
+// This is an internal compiler tier, not a complete public native backend.
+func CompileUnmeteredFunction(arch string, f *slots.Function, limits Limits) (*CompiledFunction, error) {
+	return compileFunction(arch, f, limits, true)
+}
+
+func compileFunction(arch string, f *slots.Function, limits Limits, unmetered bool) (out *CompiledFunction, err error) {
 	defer func() {
 		if p := recover(); p != nil {
 			if e, ok := p.(*wasm.Error); ok {
@@ -66,13 +81,21 @@ func CompileFunction(arch string, f *slots.Function, limits Limits) (out *Compil
 	if err != nil {
 		return nil, err
 	}
-	a := assembler{arch: arch, labels: map[int]int{}, bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true}
-	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label()}
+	a := assembler{arch: arch, labels: map[int]int{}, bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true, compactBranches: arch == "arm64"}
+	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered}
 	pcs := make([]int, len(f.Code))
 	for i := range pcs {
 		pcs[i] = a.label()
 	}
 	e.header(uint64(len(f.Slots))*16, len(pcs))
+	if unmetered {
+		e.prepareRegisters()
+		e.prepareConstants()
+		e.contextLoad(0, nativeabi.PayloadOffset+24)
+		e.test(true)
+		e.branch(e.bad, "ne")
+		e.contextLoad(0, nativeabi.ContinuationOffset)
+	}
 	a.dispatch(pcs)
 	out = &CompiledFunction{Function: f, Offsets: make([]uint32, len(pcs))}
 	for i, t := range f.Slots {
@@ -80,11 +103,68 @@ func CompileFunction(arch string, f *slots.Function, limits Limits) (out *Compil
 			out.ReferenceSlots = append(out.ReferenceSlots, uint32(i))
 		}
 	}
+	var independentEntries []int
+	combinedThrough := -1
 	for pc, in := range f.Code {
+		if pc <= combinedThrough {
+			continue
+		}
+		// Only fallthrough from the preceding constant proves an immediate.
+		// Keep the original PC as a generic cold entry for branches/resumption.
+		if unmetered && pc > 0 && pc%256 != 0 {
+			previous := f.Code[pc-1]
+			if (previous.Op == 0x41 || previous.Op == 0x42) && previous.Dst == in.B && in.B != slots.NoSlot &&
+				e.registerImmediate(in.Op, in.Dst, in.A, f.Sources[previous.Source].Wasm.Bits) {
+				independentEntries = append(independentEntries, pc)
+				continue
+			}
+		}
+		if e.compareBranchFallthrough(pc, pcs) {
+			out.ForwardedPredicates++
+			independentEntries = append(independentEntries, pc)
+			continue
+		}
 		a.mark(pcs[pc])
 		src := f.Sources[in.Source]
 		isControl := in.Op >= slots.ControlBase
-		e.boundary(uint32(pc), src, in.Op == 0x10 || in.Op == 0x11 || isControl)
+		if unmetered {
+			if pc%256 == 0 || in.Op == 0x10 || in.Op == 0x11 || isControl {
+				e.interrupt(uint32(pc))
+			}
+		} else {
+			e.boundary(uint32(pc), src, in.Op == 0x10 || in.Op == 0x11 || isControl)
+		}
+		if e.logicalShift(pc, in) {
+			out.FusedIntegers++
+			independentEntries = append(independentEntries, pc+1, pc+2)
+			combinedThrough = pc + 2
+			continue
+		}
+		if end, ok := e.combineIntegerCopies(pc); ok {
+			out.ForwardedIntegers++
+			for entry := pc + 1; entry <= end; entry++ {
+				independentEntries = append(independentEntries, entry)
+			}
+			combinedThrough = end
+			continue
+		}
+
+		if end, ok := e.combineMultiplyAdd(pc); ok {
+			out.FusedIntegers++
+			for entry := pc + 1; entry <= end; entry++ {
+				independentEntries = append(independentEntries, entry)
+			}
+			combinedThrough = end
+			continue
+		}
+		if end, ok := e.combineIntegerConstant(pc); ok {
+			out.FusedIntegers++
+			for entry := pc + 1; entry <= end; entry++ {
+				independentEntries = append(independentEntries, entry)
+			}
+			combinedThrough = end
+			continue
+		}
 		switch op := in.Op; {
 		case isControl:
 			kind := ir.TermKind(op - slots.ControlBase)
@@ -94,15 +174,9 @@ func CompileFunction(arch string, f *slots.Function, limits Limits) (out *Compil
 			case ir.Trap:
 				e.trap(wasm.TrapUnreachable, uint64(src.Wasm.Offset))
 			case ir.Jump:
-				e.edge(in.Extra, pcs)
+				e.edge(in.Extra, pcs, pc+1)
 			case ir.If:
-				other := a.label()
-				e.slotLoad(in.A, 0, false, false)
-				e.test(false)
-				e.branch(other, "eq")
-				e.edge(in.Extra, pcs)
-				a.mark(other)
-				e.edge(in.Extra+1, pcs)
+				e.conditionalEdges(in, pcs, pc+1)
 			case ir.Table:
 				targets := make([]int, in.Count)
 				for i := range targets {
@@ -118,7 +192,7 @@ func CompileFunction(arch string, f *slots.Function, limits Limits) (out *Compil
 				a.dispatch(targets)
 				for i, l := range targets {
 					a.mark(l)
-					e.edge(in.Extra+uint32(i), pcs)
+					e.edge(in.Extra+uint32(i), pcs, -1)
 				}
 			}
 		case op == 1 || op == 0x1a:
@@ -131,46 +205,16 @@ func CompileFunction(arch string, f *slots.Function, limits Limits) (out *Compil
 			}
 		case op == 0x1b || op == 0x1c:
 			other, done := a.label(), a.label()
-			e.slotLoad(in.C, 0, false, false)
-			e.test(false)
-			e.branch(other, "eq")
+			e.branchZero(in.C, other)
 			e.move(in.Dst, in.A)
 			a.branch(done, false, 0)
 			a.mark(other)
 			e.move(in.Dst, in.B)
 			a.mark(done)
 		case op >= 0x41 && op <= 0x44 || op == 0xd0 || op == 0xfd000c:
-			lo, hi := src.Wasm.Bits, uint64(0)
-			if op == 0xd0 {
-				lo = 0
-			}
-			if op == 0xfd000c {
-				lo = binary.LittleEndian.Uint64(src.Wasm.Vector[:8])
-				hi = binary.LittleEndian.Uint64(src.Wasm.Vector[8:])
-			}
-			e.constant(0, lo)
-			e.slotStore(in.Dst, 0, false)
-			e.constant(0, hi)
-			e.slotStore(in.Dst, 0, true)
+			e.literal(in)
 		case isInteger(op) || op == 0xd1:
-			if op == 0xd1 {
-				op = 0x50
-			}
-			wide := integerWide(op)
-			// Only division/remainder can trap; publish their source before entry.
-			if op >= 0x6d && op <= 0x70 || op >= 0x7f && op <= 0x82 {
-				e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
-			}
-			e.slotLoad(in.A, 0, false, wide)
-			e.slotLoad(in.B, 1, false, wide)
-			if arch == "amd64" {
-				integerAMD64Core(&a, op, wide, e.zero, e.overflow)
-			} else {
-				integerARM64Core(&a, op, wide, e.zero, e.overflow)
-			}
-			e.slotStore(in.Dst, 0, false)
-			e.constant(0, 0)
-			e.slotStore(in.Dst, 0, true)
+			e.integer(in)
 		case op == 0x10 || op == 0x11:
 			out.Calls++
 			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
@@ -184,8 +228,31 @@ func CompileFunction(arch string, f *slots.Function, limits Limits) (out *Compil
 		}
 	}
 	// A validated function never falls through its final terminator.
+	for _, pc := range independentEntries {
+		a.mark(pcs[pc])
+
+		in := f.Code[pc]
+		switch {
+		case in.Op == slots.ControlBase+uint32(ir.If):
+			e.interrupt(uint32(pc))
+			e.conditionalEdges(in, pcs, -1)
+			continue
+		case in.Op == 0x41 || in.Op == 0x42:
+			e.literal(in)
+		case in.Op == 0x20:
+			e.move(in.Dst, slots.Slot(f.Sources[in.Source].Wasm.A))
+		case in.Op == 0x21 || in.Op == 0x22:
+			e.move(slots.Slot(f.Sources[in.Source].Wasm.A), in.A)
+			e.move(in.Dst, in.A)
+		default:
+			e.integer(in)
+		}
+
+		a.branch(pcs[pc+1], false, 0)
+	}
+	e.emitPollExits()
 	a.mark(e.bad)
-	e.status(nativeabi.BadState)
+	e.rawStatus(nativeabi.BadState)
 	a.mark(e.zero)
 	e.trapCode(wasm.TrapIntegerDivideByZero)
 	a.mark(e.overflow)

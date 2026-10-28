@@ -41,20 +41,28 @@ type relocation struct {
 	conditional     bool
 }
 type assembler struct {
-	arch         string
-	code         []byte
-	labels       map[int]int
-	fixups       []relocation
-	next         int
-	bounded      bool
-	limit        uint64
-	longBranches bool
-	tables       []tableRelocation
-	addresses    []addressRelocation
+	arch                string
+	code                []byte
+	labels              map[int]int
+	fixups              []relocation
+	next                int
+	bounded             bool
+	limit               uint64
+	longBranches        bool
+	compactBranches     bool
+	tables              []tableRelocation
+	addresses           []addressRelocation
+	conditionalBranches []conditionalRelocation
 }
 
 func (a *assembler) reserve(n uint64) {
-	if a.bounded && (uint64(len(a.code)) > a.limit || n > a.limit-uint64(len(a.code))) {
+	limit := a.limit
+	// Until layout is final, each arm64 conditional may reserve two words.
+	// Published code still obeys the exact byte limit after compaction.
+	if a.compactBranches && limit <= math.MaxUint64/2 {
+		limit *= 2
+	}
+	if a.bounded && (uint64(len(a.code)) > limit || n > limit-uint64(len(a.code))) {
 		panic(&wasm.Error{Kind: wasm.ErrLimit, Detail: "native code bytes"})
 	}
 }
@@ -80,6 +88,15 @@ func (a *assembler) branch(label int, conditional bool, cc byte) {
 		a.word(0)
 	} else {
 		if conditional && a.longBranches {
+			if target, ok := a.labels[label]; ok {
+				delta := int64(target) - int64(len(a.code))
+				if delta%4 == 0 && delta >= -(1<<20) && delta < 1<<20 {
+					a.fixups = append(a.fixups, relocation{len(a.code), label, true})
+					a.word(0x54000000 | uint32(cc))
+					return
+				}
+			}
+			a.conditionalBranches = append(a.conditionalBranches, conditionalRelocation{len(a.code), label, 0x54000000 | uint32(cc)})
 			a.word(0x54000040 | uint32(cc^1)) // Inverted condition skips the long branch.
 			conditional = false
 		}
@@ -91,7 +108,41 @@ func (a *assembler) branch(label int, conditional bool, cc byte) {
 		}
 	}
 }
+
+// compareBranch branches on a register without changing integer flags. A known
+// nearby target uses one instruction; unresolved targets retain a long fallback.
+func (a *assembler) compareBranch(label int, register byte, wide, nonzero bool) {
+	ins := uint32(0x34000000) | uint32(register)
+	if wide {
+		ins |= 1 << 31
+	}
+	if nonzero {
+		ins |= 1 << 24
+	}
+	if target, ok := a.labels[label]; ok {
+		delta := int64(target) - int64(len(a.code))
+		if delta%4 == 0 && delta >= -(1<<20) && delta < 1<<20 {
+			a.fixups = append(a.fixups, relocation{len(a.code), label, true})
+			a.word(ins)
+			return
+		}
+	}
+	a.conditionalBranches = append(a.conditionalBranches, conditionalRelocation{len(a.code), label, ins})
+	a.word((ins ^ (1 << 24)) | 2<<5)
+	a.branch(label, false, 0)
+}
+
+type conditionalRelocation struct {
+	position, label int
+	instruction     uint32
+}
+
 func (a *assembler) finish() ([]byte, error) {
+	if a.compactBranches {
+		if err := a.compact(); err != nil {
+			return nil, err
+		}
+	}
 	for _, r := range a.fixups {
 		target, ok := a.labels[r.label]
 		if !ok {
@@ -124,6 +175,17 @@ func (a *assembler) finish() ([]byte, error) {
 			}
 			old := binary.LittleEndian.Uint32(a.code[r.position:])
 			binary.LittleEndian.PutUint32(a.code[r.position:], old&^mask|u)
+		}
+	}
+	// Relax forward conditional branches after all label positions are known.
+	// Keep their reserved size so continuation, dispatch and source offsets remain
+	// stable. A near cold exit then has no taken branch on the normal path.
+	for _, r := range a.conditionalBranches {
+		delta := int64(a.labels[r.label]) - int64(r.position)
+		if delta%4 == 0 && delta >= -(1<<20) && delta < 1<<20 {
+			ins := r.instruction | (uint32(delta/4)&0x7ffff)<<5
+			binary.LittleEndian.PutUint32(a.code[r.position:], ins)
+			binary.LittleEndian.PutUint32(a.code[r.position+4:], 0xd503201f) // nop
 		}
 	}
 	for _, r := range a.tables {

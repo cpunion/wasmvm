@@ -53,7 +53,7 @@ Polling is mandatory even when the caller has no deadline. Emit polls on loop ba
 
 There are two distinct accounting contracts:
 
-- **Scheduling budget:** bounds time spent inside native code before returning to the host. It may vary by backend and is refilled by the driver.
+- **Scheduling/interrupt policy:** the sliced baseline decrements a driver-refilled instruction budget and returns at exhaustion. The unmetered compiler polls an atomic interrupt word at control transfers and every 256 slot instructions in straight-line code, without mandatory Go round trips. These are distinct policies, recorded in comparisons; neither bypasses cancellation. A native C entry releases the Go scheduler resource, and both host compilers must demonstrate GC/timer/goroutine progress with `GOMAXPROCS=1`. Native worker admission, requested collection/yield, and controlled latency gates remain requirements for public runtime integration.
 - **Semantic fuel:** when enabled, charges defined guest operations consistently across interpreter and compiler. Optimizations cannot remove its charges or reorder a fuel trap past visible effects.
 
 The host checks cancellation, close, scheduler work, and requested guest collection after exits. Accepted native execution must also pass the independent measured cancellation/exit latency ceilings; deterministic work caps alone are not elapsed-time evidence. It yields to the host scheduler when servicing polling exits. Host Go GC uses its normal cgo transition; LLGo retains its normal registered native thread and stack. Neither host collector is required to understand generated guest frames. Long native slices and suspended host calls are still tested while another host goroutine repeatedly forces collection.
@@ -90,9 +90,51 @@ Every trap site maps to its module/function/instruction offset and preserves the
 
 The compiler pipeline is typed validation output -> control-flow IR -> verified lowering -> machine IR -> register allocation -> encoding/relocation -> immutable executable. Begin with explicit loads/spills and local allocation. Add SSA optimizations, global allocation, inlining, loop transformations, and check elimination only after each pass has differential and adversarial tests. Do not make LLVM part of the host dependency graph to obtain this tier.
 
+## Early unmetered compiler tier
+
+`CompileUnmeteredFunction` shares decoding, typed slot IR, instruction lowering,
+relocations and the C boundary with the sliced baseline. It rejects metered
+entry records; deterministic fuel continues through the existing precise tier.
+The static policy removes per-instruction fuel-flag tests and periodic host
+round trips, while retaining mandatory atomic interrupt checks. Poll exits and
+register spills live outside the hot instruction stream. On arm64 an aligned
+relaxed load checks the control word; a nonzero observation executes `DMB ISHLD`
+before publishing the exit, providing acquire ordering on the cold path. A zero
+observation consumes no host-published state and needs no acquire barrier. The
+control word is monotonic until the execution ends. This follows the Arm
+[load-to-load/store barrier mapping](https://support.arm.com/documentation/102336/0100/Limiting-the-scope-of-memory-barriers).
+
+A small fixed allocator assigns the most referenced scalar slots to eight
+amd64 or ten arm64 registers, excluding context, frame and constrained integer
+scratch registers. Assignments remain identical across CFG edges. Entries load
+the retained frame; every exit spills the cached slots, including reference
+handles. Remaining scalars and all vectors use the frame. Scalar `Hi == 0` is the
+existing `value.Value` contract; vector copies retain all 128 bits. The driver
+must preserve that contract on initial entry, helper results and resumption.
+Common arithmetic names allocated registers directly, while constrained
+instructions use the existing checked lowering. A constant immediately followed
+by a shift/rotate selects an immediate encoding on that fallthrough path. The
+original shift PC retains a cold generic entry, so a branch or resumed frame
+never inherits an unproved constant. Poll boundaries are not crossed. Both paths
+share the same integer lowering and register map.
+
+A bounded integer combiner selects arm64 `MADD` for multiply/add sequences,
+including an intervening constant. If a product slot remains observable, it is
+reconstructed as `sum - addend` modulo the instruction width; otherwise a bounded
+scan must prove an overwrite before any read, trap, helper or poll. The result
+register is written directly. Independent entries retain the original operations,
+and the precise fuel tier never combines instruction boundaries. This is general
+instruction selection, with no workload-specific pattern or competitor fallback.
+
+This is an early architecture improvement, not a complete native runtime.
+Native memory, guest calls, runtime exits, precise metering optimization, global
+liveness/allocation and the full-profile performance gates remain unfinished.
+Memory operations and guest calls must receive their own same-workload
+competitor comparisons before their development PRs can merge.
+
 ## M2 acceptance sequence
 
-These are ordered gates within the native-compiler milestone, not independently accepted substitutes for completing that milestone.
+These gates describe milestone completeness, not permission to postpone performance. Measure architecture and optimize alongside N1–N3. Each feature-development PR must reach competitor parity or better for its affected workloads before merging; full N5 acceptance still requires the entire portfolio.
 
 | Gate | Concrete deliverable | Required evidence |
 | --- | --- | --- |

@@ -72,9 +72,13 @@ func readSlot(t *testing.T, c *native.Context, base uint64, slot slots.Slot) val
 	}
 	return value.Value{Lo: binary.LittleEndian.Uint64(b[:8]), Hi: binary.LittleEndian.Uint64(b[8:])}
 }
-func functionContext(t *testing.T, f *slots.Function) (*CompiledFunction, *native.Lease, *native.Context) {
+func functionContext(t *testing.T, f *slots.Function, unmetered ...bool) (*CompiledFunction, *native.Lease, *native.Context) {
 	t.Helper()
-	compiled, err := CompileFunction(runtime.GOARCH, f, DefaultLimits())
+	compile := CompileFunction
+	if len(unmetered) != 0 && unmetered[0] {
+		compile = CompileUnmeteredFunction
+	}
+	compiled, err := compile(runtime.GOARCH, f, DefaultLimits())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,6 +147,17 @@ func runFunction(t *testing.T, compiled *CompiledFunction, lease *native.Lease, 
 }
 
 func TestNativeFunctionControlAndFuel(t *testing.T) {
+	for _, fast := range []bool{false, true} {
+		name := "baseline"
+		if fast {
+			name = "unmetered"
+		}
+		t.Run(name, func(t *testing.T) {
+			testNativeFunctionControlAndFuel(t, fast)
+		})
+	}
+}
+func testNativeFunctionControlAndFuel(t *testing.T, fast bool) {
 	if !native.Available {
 		return
 	}
@@ -157,7 +172,7 @@ func TestNativeFunctionControlAndFuel(t *testing.T) {
 	for index, m := range fixtures {
 		code := functionModule(t, m)
 		f := code.Functions[0]
-		compiled, lease, c := functionContext(t, f)
+		compiled, lease, c := functionContext(t, f, fast)
 		store := state.New(state.DefaultLimits())
 		defer store.Close()
 		instance, err := store.Allocate(code, nil)
@@ -172,6 +187,9 @@ func TestNativeFunctionControlAndFuel(t *testing.T) {
 				for _, fuel := range []uint64{0, 1, 2, 3, 5, 17, 1000} {
 					args := []value.Value{{Lo: arg}}
 					for _, metered := range []bool{false, true} {
+						if fast && metered {
+							continue
+						}
 						ref := interp.New(store, nil, interp.Config{Limits: interp.DefaultLimits(), Metered: metered, Fuel: fuel})
 						if err := ref.Start(instance.Functions[0], args); err != nil {
 							t.Fatal(err)
@@ -213,6 +231,17 @@ func TestNativeFunctionControlAndFuel(t *testing.T) {
 }
 
 func TestNativeFunctionValuesAndExits(t *testing.T) {
+	for _, fast := range []bool{false, true} {
+		name := "baseline"
+		if fast {
+			name = "unmetered"
+		}
+		t.Run(name, func(t *testing.T) {
+			testNativeFunctionValuesAndExits(t, fast)
+		})
+	}
+}
+func testNativeFunctionValuesAndExits(t *testing.T, fast bool) {
 	if !native.Available {
 		return
 	}
@@ -220,12 +249,15 @@ func TestNativeFunctionValuesAndExits(t *testing.T) {
 		m := functionFixture(module.FuncType{Params: []wasm.ValueType{typ, typ, wasm.I32}, Results: []wasm.ValueType{typ, typ}}, 0,
 			module.Expr{{Op: 0x20}, {Op: 0x20, A: 1}, {Op: 0x20, A: 2}, {Op: 0x1c, Types: []wasm.ValueType{typ}}, {Op: 0x20}, {Op: 0xb}})
 		f := functionModule(t, m).Functions[0]
-		compiled, lease, c := functionContext(t, f)
+		compiled, lease, c := functionContext(t, f, fast)
 		if typ.IsReference() && len(compiled.ReferenceSlots) == 0 {
 			t.Fatal("missing reference map")
 		}
 		for _, condition := range []uint64{0, 1} {
 			a, b := value.Value{Lo: 11, Hi: 22}, value.Value{Lo: 33, Hi: 44}
+			if fast && typ != wasm.V128 {
+				a.Hi, b.Hi = 0, 0
+			}
 			got, exit, _ := runFunction(t, compiled, lease, c, []value.Value{a, b, {Lo: condition}}, 0, false, 64)
 			want := b
 			if condition != 0 {
@@ -241,9 +273,9 @@ func TestNativeFunctionValuesAndExits(t *testing.T) {
 	m := functionFixture(module.FuncType{Results: []wasm.ValueType{wasm.I32}}, 0, module.Expr{{Op: 0x3f}, {Op: 0x41, Bits: 1}, {Op: 0x6a}, {Op: 0xb}})
 	m.Memories = []module.Limits{{Min: 1}}
 	f := functionModule(t, m).Functions[0]
-	compiled, lease, c := functionContext(t, f)
-	_, exit, s := runFunction(t, compiled, lease, c, nil, 10, true, 64)
-	if exit != native.RuntimeHelper || compiled.Helpers != 1 || s.Fuel != 9 {
+	compiled, lease, c := functionContext(t, f, fast)
+	_, exit, s := runFunction(t, compiled, lease, c, nil, 10, !fast, 64)
+	if exit != native.RuntimeHelper || compiled.Helpers != 1 || (s.Fuel != 9 && !fast || s.Fuel != 10 && fast) {
 		t.Fatal(exit, s, compiled.Helpers)
 	}
 	in := f.Code[s.Payload[0]]
@@ -253,52 +285,67 @@ func TestNativeFunctionValuesAndExits(t *testing.T) {
 	}
 	s, _ = c.State()
 	ret := f.Code[s.Payload[0]]
-	if v := readSlot(t, c, s.Used, f.Args[ret.Extra]); v.Lo != 42 || s.Fuel != 7 {
+	if v := readSlot(t, c, s.Used, f.Args[ret.Extra]); v.Lo != 42 || (s.Fuel != 7 && !fast || s.Fuel != 10 && fast) {
 		t.Fatal(v, s)
 	}
 	// Calls have a distinct exit and retain their complete argument/result plan.
 	m = functionFixture(module.FuncType{Results: []wasm.ValueType{wasm.I32}}, 0, module.Expr{{Op: 0x10}, {Op: 0xb}})
 	m.Imports = []module.Import{{Kind: 0}}
 	f = functionModule(t, m).Functions[0]
-	compiled, lease, c = functionContext(t, f)
-	_, exit, s = runFunction(t, compiled, lease, c, nil, 1, true, 64)
+	compiled, lease, c = functionContext(t, f, fast)
+	_, exit, s = runFunction(t, compiled, lease, c, nil, 1, !fast, 64)
 	if exit != native.Call || compiled.Calls != 1 || s.Continuation != 1 {
 		t.Fatal(exit, s)
 	}
 }
 
 func TestFunctionLimitsAndInvalidState(t *testing.T) {
+	for _, fast := range []bool{false, true} {
+		name := "baseline"
+		if fast {
+			name = "unmetered"
+		}
+		t.Run(name, func(t *testing.T) {
+			testFunctionLimitsAndInvalidState(t, fast)
+		})
+	}
+}
+func testFunctionLimitsAndInvalidState(t *testing.T, fast bool) {
+	compile := CompileFunction
+	if fast {
+		compile = CompileUnmeteredFunction
+	}
 	f := functionModule(t, sumFixture()).Functions[0]
 	for _, arch := range []string{"amd64", "arm64"} {
-		compiled, err := CompileFunction(arch, f, DefaultLimits())
+		compiled, err := compile(arch, f, DefaultLimits())
 		if err != nil {
 			t.Fatal(err)
 		}
 		for _, limits := range []Limits{{0, 1000, 1000}, {100000, 0, 1000}, {100000, 1000, 0}} {
-			if _, err := CompileFunction(arch, f, limits); !errors.Is(err, wasm.ErrLimit) {
+			if _, err := compile(arch, f, limits); !errors.Is(err, wasm.ErrLimit) {
 				t.Fatal(limits, err)
 			}
 		}
 		limits := DefaultLimits()
 		limits.MaxCodeBytes = uint64(len(compiled.Entry.Code))
-		if _, err := CompileFunction(arch, f, limits); err != nil {
+		if _, err := compile(arch, f, limits); err != nil {
 			t.Fatal(err)
 		}
 		limits.MaxCodeBytes--
-		if _, err := CompileFunction(arch, f, limits); !errors.Is(err, wasm.ErrLimit) {
+		if _, err := compile(arch, f, limits); !errors.Is(err, wasm.ErrLimit) {
 			t.Fatal(err)
 		}
 	}
-	if _, err := CompileFunction("bad", f, DefaultLimits()); err != wasm.ErrUnsupported {
+	if _, err := compile("bad", f, DefaultLimits()); err != wasm.ErrUnsupported {
 		t.Fatal(err)
 	}
-	if _, err := CompileFunction("amd64", nil, DefaultLimits()); err != wasm.ErrInvalid {
+	if _, err := compile("amd64", nil, DefaultLimits()); err != wasm.ErrInvalid {
 		t.Fatal(err)
 	}
 	if !native.Available {
 		return
 	}
-	_, lease, c := functionContext(t, f)
+	_, lease, c := functionContext(t, f, fast)
 	for _, s := range []native.State{{Used: 1}, {Used: uint64(len(f.Slots))*16 + 32}, {Continuation: uint64(len(f.Code))}} {
 		if err := c.SetState(s); err != nil {
 			t.Fatal(err)
@@ -317,18 +364,33 @@ func TestFunctionLimitsAndInvalidState(t *testing.T) {
 }
 
 func TestFunctionLargeOffsetsAndBranches(t *testing.T) {
+	for _, fast := range []bool{false, true} {
+		name := "baseline"
+		if fast {
+			name = "unmetered"
+		}
+		t.Run(name, func(t *testing.T) {
+			testFunctionLargeOffsetsAndBranches(t, fast)
+		})
+	}
+}
+func testFunctionLargeOffsetsAndBranches(t *testing.T, fast bool) {
+	compile := CompileFunction
+	if fast {
+		compile = CompileUnmeteredFunction
+	}
 	m := functionFixture(module.FuncType{Results: []wasm.ValueType{wasm.I32}}, 4097, module.Expr{
 		{Op: 0x41, Bits: 42}, {Op: 0x22, A: 4096}, {Op: 0x1a}, {Op: 0x20, A: 4096}, {Op: 0xb},
 	})
 	f := functionModule(t, m).Functions[0]
 	for _, arch := range []string{"amd64", "arm64"} {
-		if _, err := CompileFunction(arch, f, DefaultLimits()); err != nil {
+		if _, err := compile(arch, f, DefaultLimits()); err != nil {
 			t.Fatal(err)
 		}
 	}
 	if native.Available {
-		compiled, lease, c := functionContext(t, f)
-		got, exit, _ := runFunction(t, compiled, lease, c, nil, 5, true, 64)
+		compiled, lease, c := functionContext(t, f, fast)
+		got, exit, _ := runFunction(t, compiled, lease, c, nil, 5, !fast, 64)
 		if exit != native.Return || len(got) != 1 || got[0].Lo != 42 {
 			t.Fatal(exit, got)
 		}
@@ -341,26 +403,37 @@ func TestFunctionLargeOffsetsAndBranches(t *testing.T) {
 	}
 	long.Code = append(long.Code, slots.Instruction{Op: slots.ControlBase + uint32(ir.Return), Source: 1, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot, Dst: slots.NoSlot})
 	for _, arch := range []string{"amd64", "arm64"} {
-		if _, err := CompileFunction(arch, long, DefaultLimits()); err != nil {
+		if _, err := compile(arch, long, DefaultLimits()); err != nil {
 			t.Fatal(arch, err)
 		}
 	}
 	if native.Available {
-		compiled, lease, c := functionContext(t, long)
-		_, exit, s := runFunction(t, compiled, lease, c, nil, 12000, true, 64)
-		if exit != native.Return || s.Fuel != 0 {
+		compiled, lease, c := functionContext(t, long, fast)
+		_, exit, s := runFunction(t, compiled, lease, c, nil, 12000, !fast, 64)
+		if exit != native.Return || (s.Fuel != 0 && !fast || s.Fuel != 12000 && fast) {
 			t.Fatal(exit, s)
 		}
 	}
 }
 
 func TestFunctionCancelAndLargeMoves(t *testing.T) {
+	for _, fast := range []bool{false, true} {
+		name := "baseline"
+		if fast {
+			name = "unmetered"
+		}
+		t.Run(name, func(t *testing.T) {
+			testFunctionCancelAndLargeMoves(t, fast)
+		})
+	}
+}
+func testFunctionCancelAndLargeMoves(t *testing.T, fast bool) {
 	if !native.Available {
 		return
 	}
 	m := functionFixture(module.FuncType{}, 0, module.Expr{{Op: 3, Block: -64}, {Op: 0xc}, {Op: 0xb}, {Op: 0xb}})
 	f := functionModule(t, m).Functions[0]
-	_, lease, c := functionContext(t, f)
+	_, lease, c := functionContext(t, f, fast)
 	if err := c.SetState(native.State{Budget: ^uint64(0)}); err != nil {
 		t.Fatal(err)
 	}
@@ -401,7 +474,7 @@ func TestFunctionCancelAndLargeMoves(t *testing.T) {
 	for i := 1; i < len(f.Slots); i++ {
 		f.Moves = append(f.Moves, slots.Move{Dst: slots.Slot(i), Src: slots.Slot(i - 1)})
 	}
-	compiled, lease, c := functionContext(t, f)
+	compiled, lease, c := functionContext(t, f, fast)
 	if compiled.EdgeCopies != 1 {
 		t.Fatal(compiled.EdgeCopies)
 	}
@@ -428,6 +501,17 @@ func TestFunctionCancelAndLargeMoves(t *testing.T) {
 }
 
 func TestFunctionTupleCycles(t *testing.T) {
+	for _, fast := range []bool{false, true} {
+		name := "baseline"
+		if fast {
+			name = "unmetered"
+		}
+		t.Run(name, func(t *testing.T) {
+			testFunctionTupleCycles(t, fast)
+		})
+	}
+}
+func testFunctionTupleCycles(t *testing.T, fast bool) {
 	if !native.Available {
 		return
 	}
@@ -436,10 +520,13 @@ func TestFunctionTupleCycles(t *testing.T) {
 			{Op: 0x20}, {Op: 0x20, A: 1}, {Op: 3, Block: 1}, {Op: 0x21, A: 4}, {Op: 0x21, A: 3}, {Op: 0x20, A: 4}, {Op: 0x20, A: 3},
 			{Op: 0x20, A: 2}, {Op: 0x41, Bits: 1}, {Op: 0x6b}, {Op: 0x22, A: 2}, {Op: 0xd}, {Op: 0xb}, {Op: 0xb},
 		}}}}
-		compiled, lease, c := functionContext(t, functionModule(t, m).Functions[0])
+		compiled, lease, c := functionContext(t, functionModule(t, m).Functions[0], fast)
 		a, b := value.Value{Lo: 11, Hi: 22}, value.Value{Lo: 33, Hi: 44}
+		if fast && typ != wasm.V128 {
+			a.Hi, b.Hi = 0, 0
+		}
 		for n := uint64(1); n <= 4; n++ {
-			got, exit, _ := runFunction(t, compiled, lease, c, []value.Value{a, b, {Lo: n}}, 1000, true, 1)
+			got, exit, _ := runFunction(t, compiled, lease, c, []value.Value{a, b, {Lo: n}}, 1000, !fast, 1)
 			want := []value.Value{a, b}
 			if n%2 != 0 {
 				want = []value.Value{b, a}

@@ -4,6 +4,44 @@ Status: **proposed engineering requirements, not implemented capabilities or mea
 
 Correctness and bounded execution are prerequisites. A faster result obtained by omitting validation, bounds checks, fuel obligations, cancellation checks, or required feature semantics cannot satisfy this contract. M1 accepts the full declared Core 2.0 interpreter, M2 accepts the optimized interpreter and native compiler over that same scope, and M3 extends both backends to the declared Core 3.0 and Threads profiles. A small fast subset does not complete a milestone.
 
+## Per-feature merge gate
+
+Every feature-development PR compares the affected capability with pinned
+relevant competitors and the own baseline, using identical guest workloads and
+separate preparation/first/warm measurements. It may merge only after reaching
+parity or better on the affected workloads for both host compilers and required
+targets. Slower, missing or inconclusive evidence blocks merging. A tiny
+noise-bound control cannot establish either a win or a loss; resolve it with
+an appropriate measured workload before deciding. Do not waive a deficit by
+averaging unrelated cases or weakening safety settings.
+
+The initial native integer feature gate uses the existing sustained workload,
+20 independent process blocks (one predeclared extension to 60 if inconclusive),
+simultaneous 95% paired-bootstrap intervals adjusted for both planned looks, and
+identical-binary A/A controls. Practical parity means the entire interval lies
+within ±0.5%. An interval spanning faster and parity also passes if its upper
+bound is at most 1.005; crossing the boundary between two accepted outcomes is
+not a rejection. A/A intervals must resolve ±0.25% or the gate remains inconclusive. Candidate and control calls use 25 million iterations of the same sustained integer binary and seed; the three descriptive baseline calls retain five million. All warm rates and baseline ratios normalize each record by its own count. The longer candidate duration changes neither acceptance margins nor planned looks; earlier failed measurements remain visible.
+These feature-level equivalence limits do not replace the stricter full-portfolio
+throughput targets below. Record every methodology change with old/new evidence.
+
+The `warm-call-interleave-v1` protocol prepares each candidate serially, then
+randomizes individual warm calls across waiting processes within each block.
+Only one runtime executes a timed call at a time. Handshakes and final state or
+checksum inspection are outside call timers; necessary polling work stays
+inside. Each block still uses fresh processes and seven warm calls after two
+warmups; the process median remains the statistical unit. Raw records include
+the dispatch order and protocol events. This changes temporal pairing, not the
+workload, margins, planned looks or generated code. Earlier serial-call reports
+remain evidence; compare protocols explicitly rather than pooling their samples.
+
+Keep these checks proportional: reuse existing runners/fixtures and the current
+PR benchmark job, scope comparisons to the changed capability, and retain the
+full-profile controlled acceptance gate below. Begin native register allocation,
+memory access, calls and polling comparisons during their implementation, not
+after completing a slow whole backend. Compact shared stages and runtime
+contracts take precedence over benchmark-specific implementations.
+
 ## 1. Measure wasmvm implementation revisions
 
 The historical CLI harness builds official wazero executables selected by base/head dependency pins. The phase harness now adds exact wasmvm implementation builds under Go and LLGo, retaining wazero/other engines as explicitly separate references. Historical dependency-only results remain labeled as such.

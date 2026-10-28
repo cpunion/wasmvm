@@ -33,7 +33,7 @@ type State struct {
 }
 
 // Record is the fixed C ABI, verified against the C layout on each target. The
-// control word is accessed only by adapter atomics, including during execution.
+// control word is accessed only by adapter atomics or emitted atomic loads.
 // Arena is a pointer to owned native storage; no Go pointer crosses this ABI.
 type Record struct {
 	Version, Arena, Capacity, MaxDepth uint64

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install checksum-pinned Linux amd64 competitors without running installers."""
+"""Install checksum-pinned competitors for the declared host target without running installers."""
 
 import argparse
 import hashlib
@@ -150,8 +150,8 @@ def github_environment(destination, tools):
         output.write("LD_LIBRARY_PATH=" + os.pathsep.join(libraries) + "\n")
 
 
-def load_manifest(with_sdk=False):
-    manifest = json.loads(MANIFEST.read_text())
+def load_manifest(with_sdk=False, path=None):
+    manifest = json.loads((path or MANIFEST).read_text())
     manifest["sdkEnabled"] = with_sdk
     sdks = manifest.pop("sdks", [])
     for tool in manifest["tools"]:
@@ -168,19 +168,21 @@ def load_manifest(with_sdk=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--manifest", type=Path, default=MANIFEST)
     parser.add_argument("--destination", type=Path, default=DEFAULT_DESTINATION)
     parser.add_argument("--github-env", action="store_true", help="append paths to GITHUB_PATH and GITHUB_ENV")
     parser.add_argument("--sdk", action="store_true", help="also install pinned headers and shared libraries for embedded runners")
     args = parser.parse_args()
-    if platform.system() != "Linux" or platform.machine() not in {"x86_64", "amd64"}:
-        parser.error("these release assets require Linux amd64")
+    manifest = load_manifest(args.sdk, args.manifest)
+    arch = {"x86_64":"amd64", "amd64":"amd64", "aarch64":"arm64", "arm64":"arm64"}.get(platform.machine(), "unsupported")
+    if manifest["target"] != platform.system().lower()+"-"+arch:
+        parser.error("release assets do not match the host target")
     if args.github_env and not all(os.environ.get(name) for name in ("GITHUB_PATH", "GITHUB_ENV")):
         parser.error("--github-env requires GITHUB_PATH and GITHUB_ENV")
     # Check before resolve(), which would otherwise hide a symlink destination.
     if args.destination.is_symlink():
         parser.error("destination must not be a symlink")
     destination = args.destination.resolve()
-    manifest = load_manifest(args.sdk)
     report = install(destination, manifest)
     if args.github_env:
         github_environment(destination, manifest["tools"])

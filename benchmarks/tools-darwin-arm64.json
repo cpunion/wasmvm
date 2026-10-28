@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "target": "darwin-arm64",
+  "checksumProvenance": "GitHub release asset digests, independently verified on 2026-10-26",
+  "tools": [],
+  "sdks": [
+    {
+      "id": "wasmtime-c-api",
+      "version": "48.0.1",
+      "url": "https://github.com/bytecodealliance/wasmtime/releases/download/v48.0.1/wasmtime-v48.0.1-aarch64-macos-c-api.tar.xz",
+      "sha256": "9e3c636ed487a41026ff76388c5fa6f3a48ea0968408d033ed4b5e8082c20d69",
+      "size": 12858876,
+      "files": [
+        "wasmtime-v48.0.1-aarch64-macos-c-api/LICENSE",
+        "wasmtime-v48.0.1-aarch64-macos-c-api/lib/libwasmtime.dylib"
+      ],
+      "filePrefixes": [
+        "wasmtime-v48.0.1-aarch64-macos-c-api/include/"
+      ],
+      "includeDirectories": [
+        "wasmtime-v48.0.1-aarch64-macos-c-api/include"
+      ],
+      "libraryDirectories": [
+        "wasmtime-v48.0.1-aarch64-macos-c-api/lib"
+      ],
+      "license": "Apache-2.0 WITH LLVM-exception",
+      "sourceUrl": "https://github.com/bytecodealliance/wasmtime/tree/v48.0.1"
+    },
+    {
+      "id": "wasmer",
+      "version": "7.3.0",
+      "url": "https://github.com/wasmerio/wasmer/releases/download/v7.3.0/wasmer-darwin-arm64.tar.gz",
+      "sha256": "eefb3e28584b2a476bde8387c29c993a439d1781075bc868c0d596041ff40f9a",
+      "size": 288272129,
+      "files": [
+        "LICENSE",
+        "ATTRIBUTIONS",
+        "lib/libwasmer.dylib"
+      ],
+      "filePrefixes": [
+        "include/"
+      ],
+      "includeDirectories": [
+        "include"
+      ],
+      "libraryDirectories": [
+        "lib"
+      ],
+      "license": "MIT",
+      "sourceUrl": "https://github.com/wasmerio/wasmer/tree/v7.3.0"
+    }
+  ]
+}

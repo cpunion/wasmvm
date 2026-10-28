@@ -14,7 +14,7 @@ import (
 
 func TestCompleteCore2NativeCompilation(t *testing.T) {
 	scripts, modules, functions := 0, 0, 0
-	var codeBytes, helpers uint64
+	var codeBytes, fastBytes, helpers uint64
 	err := filepath.WalkDir("../../../artifacts/core2/fixtures", func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -66,6 +66,11 @@ func TestCompleteCore2NativeCompilation(t *testing.T) {
 				if err != nil {
 					t.Fatal(name, err)
 				}
+				fast, err := CompileUnmeteredFunction(runtime.GOARCH, function, DefaultLimits())
+				if err != nil {
+					t.Fatal(name, err)
+				}
+				fastBytes += uint64(len(fast.Entry.Code))
 				functions++
 				codeBytes += uint64(len(native.Entry.Code))
 				helpers += uint64(native.Helpers)
@@ -80,5 +85,6 @@ func TestCompleteCore2NativeCompilation(t *testing.T) {
 	if scripts != 148 || modules != 1716 || functions != 6236 {
 		t.Fatal(scripts, modules, functions)
 	}
+	t.Logf("Unmetered tier: %d native bytes; both tiers compiled all functions.", fastBytes)
 	t.Logf("Compiled %d Core 2.0 functions in %d modules: %d native bytes, %d explicit helper sites; compilation coverage is separate from execution conformance.", functions, modules, codeBytes, helpers)
 }

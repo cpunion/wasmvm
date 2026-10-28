@@ -8,7 +8,7 @@ struct wasmvm_record {
     uint64_t used, depth, function, continuation;
     uint64_t source, root_map, fuel, budget;
     uint64_t result_lo, result_hi, payload[4];
-    /* Accessed only with __atomic_* operations, never ordinary loads/stores. */
+    /* Adapter accesses use __atomic_*; generated code uses aligned atomic loads. */
     uint64_t control;
 };
 _Static_assert(sizeof(void *) == 8, "native ABI requires 64-bit pointers");

@@ -11,7 +11,18 @@ func (a *assembler) xop(wide bool, b ...byte) {
 	}
 	a.bytes(b...)
 }
-func (a *assembler) xconst(reg byte, v uint64) { a.bytes(0x48, 0xb8+reg); a.imm64(v) }
+func (a *assembler) xconst(reg byte, v uint64) {
+	if v <= 0xffffffff {
+		if reg >= 8 {
+			a.bytes(0x41)
+		}
+		a.bytes(0xb8 + reg&7)
+		a.word(uint32(v)) // A 32-bit register write clears the upper half.
+	} else {
+		a.bytes(0x48|reg>>3, 0xb8+(reg&7))
+		a.imm64(v)
+	}
+}
 
 func integerAMD64(a *assembler, op uint32, wide bool) {
 	a.xop(wide, 0x8b, 0x47, byte(nativeabi.ResultLoOffset)) // rax/eax = a
