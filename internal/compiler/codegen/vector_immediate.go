@@ -1,5 +1,23 @@
 package codegen
 
+// Both guest literals and compiler-created masks share these exact forms.
+// The fallback callers keep their different scalar/scratch register contracts.
+func (e *functionEmitter) vectorImmediate(dst byte, lo, hi uint64) bool {
+	if e.a.arch == "arm64" {
+		if instruction, ok := armVectorImmediate(lo, hi); ok {
+			e.a.word(instruction | uint32(dst))
+			return true
+		}
+	} else if lo|hi == 0 {
+		e.vectorZero(dst)
+		return true
+	} else if lo == ^uint64(0) && hi == lo {
+		e.a.xvector(0x76, dst, dst) // PCMPEQD: all ones without scalar scratch.
+		return true
+	}
+	return false
+}
+
 // Modified SIMD immediates fill a whole 128-bit register without scalar scratch
 // values. Reject every unrepresentable bit pattern rather than rounding a float.
 func armVectorImmediate(lo, hi uint64) (uint32, bool) {

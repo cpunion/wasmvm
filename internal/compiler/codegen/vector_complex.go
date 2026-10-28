@@ -56,11 +56,15 @@ func (e *functionEmitter) vectorComplexARM64(in slots.Instruction, d, l, r byte)
 	ins, binaryOp := uint32(0), false
 	switch op {
 	case 13:
-		e.vectorMove(3, l)
-		e.vectorMove(4, r)
+		table := l
+		if r != l+1 {
+			e.vectorMove(3, l)
+			e.vectorMove(4, r)
+			table = 3
+		}
 		b := e.f.Sources[in.Source].Wasm.Vector
-		e.vectorConstant(2, binary.LittleEndian.Uint64(b[:8]), binary.LittleEndian.Uint64(b[8:]))
-		e.a.word(0x4e022060 | uint32(d)) // TBL {v3,v4}, v2.
+		index := e.vectorConstantOperand([2]uint64{binary.LittleEndian.Uint64(b[:8]), binary.LittleEndian.Uint64(b[8:])}, 2)
+		e.a.word(0x4e002000 | uint32(index)<<16 | uint32(table)<<5 | uint32(d)) // TBL with two source registers.
 		return
 	case 14:
 		ins, binaryOp = 0x4e000000, true // TBL; indices >=16 produce zero.

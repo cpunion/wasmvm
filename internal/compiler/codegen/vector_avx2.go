@@ -6,14 +6,6 @@ import (
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 )
 
-func (e *functionEmitter) vectorConstantOperand(bits [2]uint64, scratch byte) byte {
-	if r, ok := e.vectorConstants[bits]; ok {
-		return r
-	}
-	e.vectorConstant(scratch, bits[0], bits[1])
-	return scratch
-}
-
 func (e *functionEmitter) vectorComplexAVX2(in slots.Instruction, l, r byte) bool {
 	op := in.Op & 0xffff
 	if op >= 124 && op <= 127 {
@@ -22,8 +14,7 @@ func (e *functionEmitter) vectorComplexAVX2(in slots.Instruction, l, r byte) boo
 	d := e.vectorDestination(in.Dst)
 	switch op {
 	case 13:
-		e.vectorShuffleAVX2(e.f.Sources[in.Source].Wasm.Vector, l, r)
-		d = 2
+		e.vectorShuffleAVX2(e.f.Sources[in.Source].Wasm.Vector, d, l, r)
 	case 14:
 		mask := e.vectorConstantOperand([2]uint64{0x7070707070707070, 0x7070707070707070}, 12)
 		e.a.xvex(1, 1, 0xdc, 1, r, mask, false)
@@ -112,15 +103,19 @@ func (e *functionEmitter) vectorExtMultiplyAVX2(d, l, r byte, size uint32, high,
 	}
 }
 
-func (e *functionEmitter) vectorShuffleAVX2(lanes [16]byte, l, r byte) {
+func (e *functionEmitter) vectorShuffleAVX2(lanes [16]byte, d, l, r byte) {
 	if source, control, ok := vectorDwordShuffle(lanes); ok {
 		s := l
 		if source == 1 {
 			s = r
 		}
-		e.a.xvex(1, 1, 0x70, 2, 0, s, false)
+		e.a.xvex(1, 1, 0x70, d, 0, s, false)
 		e.a.bytes(control)
 		return
+	}
+	both := false
+	for _, lane := range lanes {
+		both = both || lane/16 != lanes[0]/16
 	}
 	first := true
 	for source, s := range []byte{l, r} {
@@ -136,13 +131,16 @@ func (e *functionEmitter) vectorShuffleAVX2(lanes [16]byte, l, r byte) {
 			continue
 		}
 		index := e.vectorConstantOperand([2]uint64{binary.LittleEndian.Uint64(mask[:8]), binary.LittleEndian.Uint64(mask[8:])}, 12)
-		d := byte(2)
-		if !first {
-			d = 11
+		target := d
+		if both {
+			target = 2
 		}
-		e.a.xvex(2, 1, 0x00, d, s, index, false)
 		if !first {
-			e.a.xvex(1, 1, 0xeb, 2, 2, 11, false)
+			target = 11
+		}
+		e.a.xvex(2, 1, 0x00, target, s, index, false)
+		if !first {
+			e.a.xvex(1, 1, 0xeb, d, 2, 11, false)
 		}
 		first = false
 	}

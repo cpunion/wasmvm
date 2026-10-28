@@ -83,21 +83,21 @@ func (e *functionEmitter) vectorDestination(slot slots.Slot) byte {
 	}
 	return 2
 }
+
+func (e *functionEmitter) vectorConstantOperand(bits [2]uint64, scratch byte) byte {
+	if r, ok := e.vectorConstants[bits]; ok {
+		return r
+	}
+	e.vectorConstant(scratch, bits[0], bits[1])
+	return scratch
+}
+
 func (e *functionEmitter) vectorConstant(dst byte, lo, hi uint64) {
 	if r, ok := e.vectorConstants[[2]uint64{lo, hi}]; ok {
 		e.vectorMove(dst, r)
 		return
 	}
-	if e.a.arch == "arm64" {
-		if instruction, ok := armVectorImmediate(lo, hi); ok {
-			e.a.word(instruction | uint32(dst))
-			return
-		}
-	} else if lo|hi == 0 {
-		e.vectorZero(dst)
-		return
-	} else if lo == ^uint64(0) && hi == lo {
-		e.a.xvector(0x76, dst, dst) // PCMPEQD: all ones without a scalar temporary.
+	if e.vectorImmediate(dst, lo, hi) {
 		return
 	}
 	e.constant(0, lo)

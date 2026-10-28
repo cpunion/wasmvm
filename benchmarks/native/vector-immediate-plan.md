@@ -23,3 +23,11 @@ Run the full Go/LLGo/target semantic matrix and retain per-package coverage over
 90%. Reuse the 42 affected SIMD/scalar/call/memory families, exact own baseline
 and pinned references. Preserve every phase and failed result. This optimization
 and short diagnostics cannot close calibrated acceptance or PR #26.
+
+Cached masks must also be consumed directly by compiler-generated floating-point
+constants and NEON shuffle lookup operands, retaining each fallback's existing
+scratch contract. Let AVX2 shuffles write their final allocated destination;
+NEON TBL may name already-consecutive input registers directly. Preserve both
+inputs through two-source lookup and keep immutable masks read-only. The same
+shuffle/alias/spill/cold-entry suite and 42-family comparison cover these copy
+reductions.

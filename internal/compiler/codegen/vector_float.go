@@ -202,6 +202,9 @@ func (e *functionEmitter) vectorFloatConstant(d byte, wide bool, narrow, broad u
 		e.vectorMove(d, r)
 		return
 	}
+	if e.vectorImmediate(d, packed, packed) {
+		return
+	}
 	e.constant(0, bits)
 	e.vectorSplatBits(d, size)
 }
