@@ -236,12 +236,15 @@ observation consumes no host-published state and needs no acquire barrier. The
 control word is monotonic until the execution ends. This follows the Arm
 [load-to-load/store barrier mapping](https://support.arm.com/documentation/102336/0100/Limiting-the-scope-of-memory-barriers).
 
-A small fixed allocator assigns the most referenced scalar slots to eight
-amd64 registers (six with memory) or eighteen arm64 registers, excluding
-context, frame and constrained integer scratch registers. On arm64, mutable
-slots use x19-x28 followed by x1-x8; immutable constants and runtime metadata
-share only the remaining x1-x8. Leaf expansion uses the same inventory and
-excludes those immutable registers. Assignments remain identical across CFG
+A fixed allocator prioritizes scalar homes using bounded backward-CFG interval
+hints, with eight amd64 registers (six with memory) or eighteen arm64 registers,
+excluding context, frame and constrained integer scratch registers. ARM64 homes
+prefer x19-x28 and compete with immutable constants/runtime words for x1-x8 in
+one deterministic ranking. Literal materialization savings and runtime-word
+access savings use the same loop hints. Immutable classes no longer wait for all
+cold homes to allocate. FP/vector homes retain their separate physical pool.
+Analysis budgets fall back to lower-priority hints rather than changing execution.
+Leaf expansion uses the same inventory and excludes those immutable registers. Assignments remain identical across CFG
 edges. Entries load the retained frame; every exit spills the cached slots, including reference
 handles. Remaining scalars use the frame; vector slots use their separate cache
 or the frame. Scalar `Hi == 0` is the existing `value.Value` contract; vector copies retain all 128 bits. The driver

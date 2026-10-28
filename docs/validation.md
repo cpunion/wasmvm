@@ -2218,3 +2218,102 @@ forwarding, global live ranges, general calls and API costs remain distinct work
 Table-copy parity, all-target calibration and broader portfolio acceptance remain
 open. PR #26 remains the single active draft at its unchanged head; no merge or
 M1/M2/Core 3.0/Threads/components/WASI completion is inferred from these results.
+
+## Loop-weighted shared register priorities
+
+Scope is [shared register allocation](../benchmarks/native/register-allocation-plan.md),
+from engine `c921b5de933aea8d5a6724ec3eff106c2525f0bd` to
+`139ccf18454b4a010b8922d04ccf53040631a0cd`. Mutable scalar homes and immutable
+integer literal/runtime-word candidates compete in one deterministic ranking.
+ARM homes prefer x19-x28 and share x1-x8 with immutable words; other targets keep
+their existing inventories. FP/vector homes retain their separate shared bank.
+Cold homes no longer consume the entire inventory before metadata is considered.
+
+Merged backward-CFG intervals supply priority hints of 8 per nesting level,
+capped at 512. Shared latches merge; nested and overlapping/irreducible intervals
+remain hints, not correctness proofs. Explicit edge, tuple/move and leaf-literal
+work budgets lose only optional priorities when exhausted. Tuple inputs/results,
+edge moves, local-copy elimination and emitted memory-region plans participate.
+Literal scores measure materialization savings. No target-specific workload
+identity, new feature assumption, removed bounds check or reduced poll policy
+is introduced. Every cold entry reloads its selected homes/immutable words;
+exit spills, reference maps and raw scalar/vector contracts remain unchanged.
+
+Tests cover forward/self/nested/shared/overlapping backedges, saturation,
+pathological shared lists, tuple/move/leaf budgets, class/register exclusion,
+cold tails, deterministic bytes and code limits. A pressure fixture compares
+all physical slots, table effects and terminal state against precise execution
+from every original PC, including full-width handles and wrapped/invalid i32
+indices. Existing reference collection/reentry, cache-pressure, spill, numerical,
+SIMD, cancellation, helper/host rebinding and complete Core 2.0 suites stay active.
+Full local Go/LLGo release semantics and vet pass, with six reports retaining
+148 scripts and 51,139 binary assertions each. Local codegen coverage is 97.76%,
+nativeexec 94.93%; all 19 measured executable packages exceed 90%.
+
+The [final CI](https://github.com/cpunion/wasmvm/actions/runs/40774851885)
+passes all four Go/LLGo release x Linux amd64/macOS arm64 combinations at
+`139ccf1`. All twelve downloaded execution reports pass with the same script
+and assertion counts. Linux codegen coverage is 95.59%, nativeexec 94.93%; all
+19 executable packages exceed 90%. Only one final CI matrix is dispatched for
+this allocator source. Documentation-only follow-up commits leave its production
+source unchanged.
+
+Performance retains Go 1.27.3 and LLGo
+`8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f` with `-O3 -lto=full`, plus wazero
+1.12.0, Wasmtime 48.0.1 / Cranelift speed and Wasmer 7.3.0 / Cranelift. The
+exact `c921b5d` baseline binaries and source archives are hash-verified before
+reuse; candidate builds use the exact committed source and common head harness.
+All 924 alternate-input oracle checks pass across 21 families and eleven own
+API/dispatch/reference configurations. Three interleaved process blocks, seven
+calls and two warmups remain local ARM64 diagnostics. Host load changes about
+9/11/11 -> 8/10/11, with no CPU-heavy task from this work during timing. Startup,
+compilation, instantiation, first calls, warmed calls and cleanup remain separate.
+
+Primary public API medians, ns/source iteration unless otherwise labeled:
+
+| Workload / compiler | Base | Head | wazero | Wasmtime | Wasmer |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Table copy / Go | 1.649 | 1.166 | 1.331 | 1.180 | 5.690 |
+| Table copy / LLGo | 1.595 | 1.123 | 1.331 | 1.180 | 5.690 |
+| Table roundtrip / LLGo | 1.630 | 1.366 | 16.250 | 11.190 | 5.330 |
+| Globals/tables / LLGo | 1.500 | 1.408 | 30.817 | 22.500 | 5.800 |
+| ref.func loop / LLGo | 1.306 | 1.177 | 28.735 | 22.370 | 5.590 |
+| Global i32 / LLGo | 1.012 | 0.842 | 0.554 | 0.900 | 0.900 |
+| Global i64 / LLGo | 0.867 | 0.783 | 0.650 | 1.100 | 0.800 |
+| Image / LLGo, microseconds/pass | 1.210 | 1.290 | 2.995 | 1.175 | 1.225 |
+| CRC / LLGo, microseconds/packet | 1.697 | 1.663 | 1.568 | 1.609 | 1.531 |
+
+Table-copy LLGo is about 30% faster than its own baseline in this diagnostic;
+its median also falls below the three references. This does not pass controlled
+parity/calibration on all required compiler/target profiles. Retained LLGo
+regressions include shuffle 1.755 -> 1.874, integer 1.638 -> 1.655, unsigned
+conversion 10.261 -> 10.338, f32 globals 1.363 -> 1.392 and f64 globals
+1.267 -> 1.283 ns/iteration, plus the image row above. Go function-call,
+indirect-call, call-control, image and v128-global regressions remain in the full
+report. Candidate workload bytes are unchanged; register choices legitimately
+change generated code in multiple families, so those timing changes are not
+dismissed as byte-identical kernels.
+
+Table-copy LLGo compilation changes 2.299 -> 1.981 ms and first call
+162.958 -> 104.083 microseconds. Mixed globals/tables LLGo compilation changes
+0.539 -> 0.379 ms, first call 14.917 -> 15.250 microseconds (regression).
+Image LLGo compilation changes 1.092 -> 0.983 ms, first call
+49.667 -> 49.625 microseconds. These phases are not hidden in warm throughput.
+
+The same indirect-leaf configuration used by the runtime is retained in static
+probes. The ARM64 copy hot span falls 49 -> 41 instructions, with its runtime-
+view/metadata loads reduced from twelve to four. Two frame parameter reads and
+the stored-reference reload remain. The complete expanded body shrinks
+25,220 -> 20,996 bytes; the image body grows 9,092 -> 9,104 bytes on ARM64 and
+7,326 -> 7,367 on baseline amd64. Scalar homes, metadata and constants still
+have fixed lifetimes for an entire entry; this is not global live-range
+splitting or table store/load forwarding.
+
+Records in `artifacts/register-allocation` retain compiler/source identities,
+coverage, all six local and twelve CI reports, all phase observations, sample
+orders, code hashes and disassembly. Result SHA-256:
+`65d270f91230774771af8d6e882f1c74aa088c7c51d5683dc11b2cde61df613c`.
+All-target controlled performance, remaining portfolio/API/general-call costs,
+global allocation and M1/M2 acceptance remain open. PR #26 is still the single
+active draft at its unchanged head. Core 3.0/GC/Threads/components/WASI 1/2/3
+are not completed or implied by this allocator change.

@@ -127,11 +127,17 @@ in the [validation record](../validation.md).
 
 The complete native pipeline is: typed IR verification, optimization, legalization to target operations, instruction selection, register allocation, spill insertion, frame layout, branch resolution/relocations, code emission, and publication with trap/safepoint/source maps. Implement amd64 and arm64 emitters in Go. The baseline uses linear-scan allocation with separate integer/vector classes, fixed-register constraints, call clobbers, live-range splitting, parallel-move resolution, and verified spill reloads. Target tests check actual execution as well as encoding/disassembly.
 
-The current development allocator instead assigns stable registers by slot-use
-frequency; global live-range splitting remains required work. AArch64 mutable
-integer/reference slots share x1-x8 with immutable constants and table metadata,
-after filling x19-x28. Immutable pools use only remaining capacity, and leaf
-expansion excludes them through the shared target inventory. Every mutable
+The current development allocator assigns stable homes by bounded CFG loop-use
+priorities; global live-range splitting remains required work. Merged backward
+edge intervals provide capped frequency hints, including nested/overlapping
+spans. They do not prove reachability or justify removing a check. Tuple/move
+and expanded-leaf literal scans have separate work budgets and conservative
+priority fallbacks. Candidate ordering is deterministic by score, class and key.
+AArch64 integer/reference homes compete with immutable literal/runtime words
+before the inventory fills: homes prefer x19-x28, while all classes can use
+x1-x8. FP/vector homes retain their separate shared pool. Immutable words reload
+on every entry, including missing-view zeros for checked indirect fallback. Leaf
+expansion excludes them through the same target inventory. Every mutable
 allocation reloads at entry and spills on all exits; reserved ABI registers and
 the separate FP/vector bank remain excluded. Scalar `select`
 now uses CMOV/CSEL and directly names allocated integer/reference registers,

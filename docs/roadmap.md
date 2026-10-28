@@ -158,7 +158,16 @@ regressions. The globals/table loop has no remaining basic reference helpers.
 See the [table scope](../benchmarks/native/tables-plan.md),
 [validation](validation.md#direct-checked-tables-and-function-references) and
 [next allocation scope](../benchmarks/native/register-allocation-plan.md).
-The current frequency-based fixed register assignment still lacks the planned
+Engine `139ccf1` ranks scalar homes, integer literals and native runtime words
+together using bounded loop-frequency hints. Local Go/LLGo release semantics,
+every-cold-PC differential cases and all measured coverage thresholds pass.
+Twenty-one families and 924 oracle checks retain table-copy gains and image,
+shuffle and other regressions. The ARM64 copy hot span falls 49 -> 41
+instructions, with local LLGo 1.595 -> 1.123 ns/iteration versus Wasmtime 1.180;
+this is not controlled all-target acceptance. See the
+[allocation scope](../benchmarks/native/register-allocation-plan.md) and
+[validation](validation.md#loop-weighted-shared-register-priorities).
+The current stable-home register assignment still lacks the planned
 global live-range allocation/splitting. Calls, SIMD/application/preparation
 performance and all-target calibration remain open.
 Calibrated performance acceptance remains open. Full Core 3.0/Threads, Component Model and
