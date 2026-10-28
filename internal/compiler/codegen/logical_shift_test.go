@@ -93,8 +93,18 @@ func TestLogicalShiftDeadConstant(t *testing.T) {
 	checkLinearIntegerEntries(t, f)
 }
 
+func TestLogicalShiftX86RightAlias(t *testing.T) {
+	f := logicalShiftFixture(false, 2, 3, 5, 2, 1, false)
+	compiled, err := CompileUnmeteredFunction("amd64", f, DefaultLimits())
+	if err != nil || compiled.FusedIntegers != 1 {
+		t.Fatal("right-alias combination not selected", compiled, err)
+	}
+	// All aliases and original cold entries are executed on each host target
+	// by TestLogicalShiftAliasesAndCopies.
+}
+
 func TestLogicalShiftRejectsUnsafeCombinations(t *testing.T) {
-	for _, kind := range []string{"metered", "amd64-alias", "short", "poll", "opcode", "constant", "shift", "input", "count", "clobber", "live", "spill"} {
+	for _, kind := range []string{"metered", "short", "poll", "opcode", "constant", "shift", "input", "count", "clobber", "live", "spill"} {
 		t.Run(kind, func(t *testing.T) {
 			f := logicalShiftFixture(false, 2, 3, 5, 2, 4, false)
 			e := functionEmitter{f: f, unmetered: true, a: &assembler{arch: "arm64"}, registers: map[slots.Slot]byte{0: 19, 1: 20, 2: 21, 3: 22, 4: 23}}
@@ -102,9 +112,6 @@ func TestLogicalShiftRejectsUnsafeCombinations(t *testing.T) {
 			switch kind {
 			case "metered":
 				e.unmetered = false
-			case "amd64-alias":
-				e.a.arch = "amd64"
-				f.Code[2].Dst = 1
 			case "short":
 				f.Code = f.Code[:2]
 			case "poll":

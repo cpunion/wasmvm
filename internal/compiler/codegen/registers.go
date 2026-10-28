@@ -167,7 +167,7 @@ func (e *functionEmitter) canRegisterInteger(op uint32, dst, left, right slots.S
 	if integerWide(op) {
 		kind = op - 0x79
 	}
-	return (kind >= 3 && kind <= 5 || kind >= 10 && kind <= 17) && (e.a.arch == "arm64" || d != r || d == l)
+	return (kind >= 3 && kind <= 5 || kind >= 10 && kind <= 17) && (e.a.arch == "arm64" || kind != 4 || d != r || d == l)
 }
 
 func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot) bool {
@@ -219,11 +219,11 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 		a.arm(wide, ins|uint32(r)<<16|uint32(l)<<5|uint32(d))
 		return true
 	}
-	// Two-address x86 operations must preserve the right operand if it also
-	// names the destination. A live left alias can force this slot layout;
-	// retain constrained-register lowering when direct emission cannot handle it.
-	if d == r && d != l {
-		return false
+	// Commutative operations can start with either operand. Variable shifts
+	// capture their count in CL before replacing an aliased destination.
+	// Right-aliased subtraction retains the constrained-register fallback.
+	if d == r && d != l && kind < 13 {
+		l, r = r, l
 	}
 	if kind >= 13 && kind <= 17 {
 		e.registerMove(1, r, false) // Variable shifts and rotates use CL.

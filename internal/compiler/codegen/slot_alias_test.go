@@ -78,3 +78,15 @@ func TestLiveLiteralForcesRightOperandReuse(t *testing.T) {
 	f.Edges, f.Moves = nil, nil
 	checkLinearIntegerEntries(t, f)
 }
+
+func TestX86DirectRightOperandAliases(t *testing.T) {
+	for _, op := range []uint32{0x6a, 0x6b, 0x6c, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78,
+		0x7c, 0x7d, 0x7e, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8a} {
+		e := functionEmitter{a: &assembler{arch: "amd64"}, registers: map[slots.Slot]byte{0: 3, 1: 12}}
+		selected := e.registerInteger(op, 1, 0, 1)
+		want := op != 0x6b && op != 0x7d
+		if selected != want || selected && len(e.a.code) == 0 {
+			t.Fatal("wrong right-operand selection", op, selected, e.a.code)
+		}
+	}
+}
