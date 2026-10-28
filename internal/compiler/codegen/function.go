@@ -30,6 +30,7 @@ type CompiledFunction struct {
 	UsesMemory                    bool
 	BoundsElided                  uint32
 	MemoryGuards, GuardedAccesses uint32
+	LoopGuards                    uint32
 	DeadScalarOps                 uint32
 	MemoryGrows                   uint32
 	ForwardedScalars              uint32
@@ -174,6 +175,24 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				independentEntries = append(independentEntries, pc)
 				continue
 			}
+		}
+		if edge, ok := e.loopBackedges[pc]; ok {
+			e.interrupt(uint32(pc))
+			if arch == "arm64" {
+				cc := armIntegerCondition(f.Code[pc-1].Op)
+				if !edge.yes {
+					cc ^= 1
+				}
+				a.branch(edge.header, true, cc)
+				out.ForwardedPredicates++
+			} else {
+				e.branchCondition(in.A, edge.header, edge.yes)
+			}
+			if edge.exit != pc+1 {
+				a.branch(pcs[edge.exit], false, 0)
+			}
+			independentEntries = append(independentEntries, pc)
+			continue
 		}
 		if e.compareBranchFallthrough(pc, pcs) {
 			out.ForwardedPredicates++

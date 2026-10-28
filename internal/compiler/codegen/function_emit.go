@@ -42,6 +42,7 @@ type functionEmitter struct {
 	trapExits                 []nativeTrapExit
 	callExits                 []nativeCallExit
 	memoryFallbacks           []memoryFallback
+	loopBackedges             map[int]loopBackedge
 }
 
 type memoryFallback struct{ label, pc int }

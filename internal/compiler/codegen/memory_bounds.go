@@ -17,6 +17,7 @@ type memoryRegion struct {
 	guarded   uint32
 	addresses map[int]memoryAddress
 	elided    map[int]bool
+	loop      *memoryLoop
 }
 
 func (e *functionEmitter) codeLimit() int {
@@ -137,6 +138,12 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 		}
 		start = end
 	}
+	for start := 0; start < len(e.f.Code); start++ {
+		if r, ok := regions[start]; ok {
+			r.loop = e.memoryLoop(start, r)
+			regions[start] = r
+		}
+	}
 	return regions
 }
 
@@ -144,7 +151,17 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 // emitted again on a cold path, with all bounds checks, until the next region.
 // Thus direct resumption never inherits facts from instructions it did not run.
 func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, pcs []int, out *CompiledFunction) {
-	e.regionLimit = r.end + 1
+	out.GuardedAccesses += r.guarded
+	if r.loop != nil {
+		e.emitMemoryLoop(start, r, pcs, out)
+		return
+	}
+	out.DeadScalarOps += uint32(len(r.elided))
+	e.emitMemoryRegionRange(start, r.end, r, pcs, out)
+}
+
+func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, pcs []int, out *CompiledFunction) {
+	e.regionLimit = end + 1
 	e.regionEnd = r.end + 1
 	e.provenPCs = r.proven
 	e.guardPCs = r.guards
@@ -160,7 +177,7 @@ func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, pcs []int,
 		e.elidedPCs = nil
 	}()
 	var boundaries []int
-	for pc := start; pc <= r.end; pc++ {
+	for pc := start; pc <= end; pc++ {
 		_, guard := r.guards[pc]
 		_, address := r.addresses[pc]
 		// Every remapped access must reach memoryAt; earlier copy/vector
@@ -170,9 +187,7 @@ func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, pcs []int,
 		}
 	}
 	next := 0
-	out.GuardedAccesses += r.guarded
-	out.DeadScalarOps += uint32(len(r.elided))
-	for pc := start; pc <= r.end; pc++ {
+	for pc := start; pc <= end; pc++ {
 		if guard, ok := r.guards[pc]; ok {
 			cold := pcs[pc]
 			if pc == start {
@@ -185,7 +200,7 @@ func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, pcs []int,
 		for next < len(boundaries) && boundaries[next] <= pc {
 			next++
 		}
-		e.regionLimit = r.end + 1
+		e.regionLimit = end + 1
 		if next < len(boundaries) {
 			e.regionLimit = boundaries[next]
 		}
