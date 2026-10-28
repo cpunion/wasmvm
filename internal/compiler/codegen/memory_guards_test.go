@@ -175,19 +175,26 @@ func TestGuardedAffineWrapAndOffsets(t *testing.T) {
 }
 
 func TestGuardedFirstPCAndCanonicalPrefix(t *testing.T) {
-	for _, prefix := range []bool{false, true} {
+	for mode := 0; mode < 3; mode++ {
 		f := &slots.Function{LocalCount: 1, Signature: module.FuncType{Params: []wasm.ValueType{wasm.I32}}, Slots: make([]wasm.ValueType, 7),
 			Sources: []ir.Source{{Wasm: module.Instr{Op: 0x41, Bits: 5}}, {Wasm: module.Instr{Op: 0x41, Bits: 7}}, {Wasm: module.Instr{Op: 0x6a}},
 				{Wasm: module.Instr{Op: 0x28, Offset: 123}}, {Wasm: module.Instr{Op: 0x28, B: 4, Offset: 124}}, {Wasm: module.Instr{Op: 0x28, B: 8, Offset: 125}}, {Wasm: module.Instr{Op: 0x41}}, {Wasm: module.Instr{Op: 0xb}}}}
 		for i := range f.Slots {
 			f.Slots[i] = wasm.I32
 		}
-		if prefix {
+		if mode == 1 {
 			f.Code = []slots.Instruction{{Op: 0x41, Dst: 1, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
 				{Op: 0x41, Source: 1, Dst: 2, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot}, {Op: 0x6a, Source: 2, Dst: 3, A: 1, B: 2, C: slots.NoSlot}}
 		}
 		for i := 0; i < 3; i++ {
 			f.Code = append(f.Code, slots.Instruction{Op: 0x28, Source: uint32(3 + i), Dst: slots.Slot(4 + i), A: 0, B: slots.NoSlot, C: slots.NoSlot})
+			if mode == 2 && i == 0 {
+				f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: 0x6d, Offset: 333}})
+				f.Code = append(f.Code,
+					slots.Instruction{Op: 0x41, Source: 0, Dst: 1, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
+					slots.Instruction{Op: 0x41, Source: 6, Dst: 2, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
+					slots.Instruction{Op: 0x6d, Source: 8, Dst: 3, A: 1, B: 2, C: slots.NoSlot})
+			}
 		}
 		for i := 1; i <= 3; i++ {
 			f.Code = append(f.Code, slots.Instruction{Op: 0x41, Source: 6, Dst: slots.Slot(i), A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot})
@@ -199,6 +206,34 @@ func TestGuardedFirstPCAndCanonicalPrefix(t *testing.T) {
 		}
 		compareGuardedExecution(t, f, []uint64{0, 1, 65524, 65528, 65532, 0xffffffff})
 	}
+}
+
+func TestGuardedAddressFoldingKeepsExitSlots(t *testing.T) {
+	f := guardedMemoryFunction(t, 0x2d, 0, []uint32{1, 2, 3, 4, 5}, []uint32{0, 0, 0, 0, 0})
+	for _, arch := range []string{"amd64", "arm64"} {
+		c, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), Config{Unmetered: true, MemoryMinimumPages: 1})
+		if err != nil || c.DeadScalarOps == 0 {
+			t.Fatal("address arithmetic not removed", arch, c, err)
+		}
+	}
+	compareGuardedExecution(t, f, []uint64{0, 1, 65530, 65532, 0xfffffffe, 0xffffffff})
+}
+
+func TestGuardedVectorConstantStoresUseRemappedAddresses(t *testing.T) {
+	body := module.Expr{}
+	for bias := uint64(1); bias <= 3; bias++ {
+		body = append(body, module.Instr{Op: 0x20}, module.Instr{Op: 0x41, Bits: bias}, module.Instr{Op: 0x6a},
+			module.Instr{Op: 0xfd000c, Vector: [16]byte{byte(bias), 3, 5, 7, 8: 17, 19, 23, 29}}, module.Instr{Op: 0xfd000b})
+	}
+	body = append(body, module.Instr{Op: 0xb})
+	m := functionFixture(module.FuncType{Params: []wasm.ValueType{wasm.I32}}, 0, body)
+	m.Memories = []module.Limits{{Min: 1}}
+	f := functionModule(t, m).Functions[0]
+	c, err := CompileFunctionWithConfig("arm64", f, DefaultLimits(), Config{Unmetered: true, MemoryMinimumPages: 1})
+	if err != nil || c.MemoryGuards != 1 || c.DeadScalarOps == 0 {
+		t.Fatal(c, err)
+	}
+	compareGuardedExecution(t, f, []uint64{0, 1, 65515, 65517, 0xffffffff})
 }
 
 func TestGuardedLocalVersionsAndBoundaries(t *testing.T) {

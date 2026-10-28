@@ -24,6 +24,8 @@ type functionEmitter struct {
 	memoryMinimum             uint64
 	regionLimit               int
 	provenPCs                 map[int]bool
+	addresses                 map[int]memoryAddress
+	elidedPCs                 map[int]bool
 	boundsElided              uint32
 	constantRegisters         map[uint64]byte
 	runtimeRegisters          map[uint32]byte

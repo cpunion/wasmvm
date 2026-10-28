@@ -135,13 +135,20 @@ func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
 // about its value. The 256-instruction poll interval bounds this scan.
 func (e *functionEmitter) overwrittenBeforeExit(pc int, slot slots.Slot) bool {
 	for ; pc < e.codeLimit() && pc%256 != 0; pc++ {
+		if e.elidedPCs[pc] {
+			continue
+		}
 		in := e.f.Code[pc]
 		op := in.Op
 		if !plainOpcode(op) || scalarCanTrap(op) || isMemoryAccess(op) && !e.provenPCs[pc] {
 			return false
 		}
 		local := slots.Slot(e.f.Sources[in.Source].Wasm.A)
-		if in.A == slot || in.B == slot || in.C == slot || op == 0x20 && local == slot {
+		address := in.A
+		if remap, ok := e.addresses[pc]; ok {
+			address = remap.local
+		}
+		if address == slot || in.B == slot || in.C == slot || op == 0x20 && local == slot {
 			return false
 		}
 		if in.Dst == slot || (op == 0x21 || op == 0x22) && local == slot {

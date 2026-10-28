@@ -31,3 +31,12 @@ under identical pins/flags with the existing twelve families and native
 references. Reuse unchanged interpreter timing evidence; its full semantic
 matrix remains required. Keep preparation/first/warm separate, all failures
 and regressions visible, and the current parity/calibration gates unchanged.
+
+Retain guard-only candidate `5073a99` and its measured results. Refine guarded
+sites to address stable locals directly: strengthen the lower guard to b so
+the original additions cannot have wrapped, and fold their biases into memory
+offsets. Wrapping cases continue through the checked path. Remove only dead
+i32 constant/add temporary writes, using bounded backward liveness with actual
+remapped reads; reset canonical-state requirements at guards and possible traps.
+Keep every memory operation and every checked cold PC. This reuses the existing
+region emitter rather than introducing a separate optimizer or executor.

@@ -12,6 +12,11 @@ type memoryGuard struct {
 	before, after uint64
 }
 
+type memoryAddress struct {
+	local  slots.Slot
+	offset uint64
+}
+
 type addressRoot struct {
 	local   slots.Slot
 	version uint32
@@ -25,18 +30,19 @@ type affineAddress struct {
 }
 
 type addressGroup struct {
-	firstBias, minimum, end uint64
-	sites                   []int
+	firstBias, end uint64
+	sites          []int
 }
 
 // Regions are bounded by 256 instructions. Local versions prevent stale facts
 // after mutation; temporary recycling cannot change an address's local anchor.
 // A guard reads its first access's existing operand, introducing no hidden use.
-func (e *functionEmitter) memoryGuards(start, end int, proven map[int]bool) (map[int]memoryGuard, uint32) {
+func (e *functionEmitter) memoryGuards(start, end int, proven map[int]bool) (map[int]memoryGuard, map[int]memoryAddress, uint32) {
 	values := map[slots.Slot]affineAddress{}
 	versions := map[slots.Slot]uint32{}
 	index := map[addressRoot]int{}
 	var groups []addressGroup
+	sites := map[int]memoryAddress{}
 	local := func(s slots.Slot) bool { return s < slots.Slot(e.f.LocalCount) && e.f.Slots[s] == wasm.I32 }
 	get := func(s slots.Slot) affineAddress {
 		v, ok := values[s]
@@ -74,11 +80,12 @@ func (e *functionEmitter) memoryGuards(start, end int, proven map[int]bool) (map
 			if !found {
 				gi = len(groups)
 				index[a.root] = gi
-				groups = append(groups, addressGroup{firstBias: a.bias, minimum: a.bias})
+				groups = append(groups, addressGroup{firstBias: a.bias})
 			}
 			g := &groups[gi]
-			g.minimum, g.end = min(g.minimum, a.bias), max(g.end, n)
+			g.end = max(g.end, n)
 			g.sites = append(g.sites, pc)
+			sites[pc] = memoryAddress{a.root.local, a.bias + uint64(src.B)}
 		}
 		switch in.Op {
 		case 0x20:
@@ -103,6 +110,7 @@ func (e *functionEmitter) memoryGuards(start, end int, proven map[int]bool) (map
 		}
 	}
 	guards := map[int]memoryGuard{}
+	addresses := map[int]memoryAddress{}
 	var guarded uint32
 	for _, g := range groups {
 		if len(g.sites) < 3 {
@@ -112,7 +120,7 @@ func (e *functionEmitter) memoryGuards(start, end int, proven map[int]bool) (map
 		if after > 1<<32 {
 			continue
 		}
-		before := g.firstBias - g.minimum
+		before := g.firstBias
 		if before > (1<<32)-after {
 			continue
 		}
@@ -120,15 +128,16 @@ func (e *functionEmitter) memoryGuards(start, end int, proven map[int]bool) (map
 		guards[first] = memoryGuard{e.f.Code[first].A, before, after}
 		for _, pc := range g.sites {
 			proven[pc] = true
+			addresses[pc] = sites[pc]
 		}
 		guarded += uint32(len(g.sites))
 	}
-	return guards, guarded
+	return guards, addresses, guarded
 }
 
-// Relative bounds prove every index stays in one unsigned-i32 interval even
-// when all addresses wrapped before the first access. Failure takes the exact
-// checked continuation, preserving earlier stores and the original trap order.
+// Bounds exclude wrapping so guarded accesses can fold their address arithmetic.
+// Failure takes the exact checked continuation, preserving earlier stores and
+// the original trap order, including valid addresses produced by i32 wrapping.
 func (e *functionEmitter) emitMemoryGuard(g memoryGuard, cold int) {
 	e.slotLoad(g.address, 0, false, false)
 	if g.before != 0 {
@@ -157,4 +166,44 @@ func (e *functionEmitter) emitMemoryGuard(g memoryGuard, cold int) {
 		e.a.bytes(0x4c, 0x39, 0xd8) // cmp rax, r11
 	}
 	e.a.branch(cold, true, hi)
+}
+
+// All physical slots are observable at exits. A backwards killed set permits
+// deleting temporary writes only until an overwrite without intervening reads.
+// Guards and possible traps restore full canonical-state requirements.
+func (e *functionEmitter) deadAddressTemps(start, end int, r memoryRegion) map[int]bool {
+	killed, elided := map[slots.Slot]bool{}, map[int]bool{}
+	read := func(s slots.Slot) { delete(killed, s) }
+	write := func(s slots.Slot) {
+		if s != slots.NoSlot {
+			killed[s] = true
+		}
+	}
+	for pc := end - 1; pc >= start; pc-- {
+		in := e.f.Code[pc]
+		if (in.Op == 0x41 || in.Op == 0x6a) && in.Dst >= slots.Slot(e.f.LocalCount) && in.Dst != slots.NoSlot && e.f.Slots[in.Dst] == wasm.I32 && killed[in.Dst] {
+			elided[pc] = true
+			continue
+		}
+		write(in.Dst)
+		local := slots.Slot(e.f.Sources[in.Source].Wasm.A)
+		if in.Op == 0x21 || in.Op == 0x22 {
+			write(local)
+		}
+		address := in.A
+		if remap, ok := r.addresses[pc]; ok {
+			address = remap.local
+		}
+		read(address)
+		read(in.B)
+		read(in.C)
+		if in.Op == 0x20 {
+			read(local)
+		}
+		_, guard := r.guards[pc]
+		if guard || scalarCanTrap(in.Op) || isMemoryAccess(in.Op) && !r.proven[pc] {
+			clear(killed)
+		}
+	}
+	return elided
 }

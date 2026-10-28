@@ -30,6 +30,7 @@ type CompiledFunction struct {
 	UsesMemory                    bool
 	BoundsElided                  uint32
 	MemoryGuards, GuardedAccesses uint32
+	DeadScalarOps                 uint32
 	MemoryGrows                   uint32
 	ForwardedScalars              uint32
 	InlinedCalls, InlineSlots     uint32

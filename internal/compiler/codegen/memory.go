@@ -32,6 +32,10 @@ func (e *functionEmitter) prepareMemory() {
 }
 
 func (e *functionEmitter) memoryInstruction(in slots.Instruction, proven bool) {
+	e.memoryAt(in, proven, uint64(e.f.Sources[in.Source].Wasm.B))
+}
+
+func (e *functionEmitter) memoryAt(in slots.Instruction, proven bool, offset uint64) {
 	if proven {
 		e.boundsElided++
 	}
@@ -57,7 +61,6 @@ func (e *functionEmitter) memoryInstruction(in slots.Instruction, proven bool) {
 	}
 	// Widen the dynamic i32 address before adding the u32 immediate. The end
 	// address is at most 2^33+6, so host arithmetic cannot wrap before this check.
-	offset := uint64(source.B)
 	vector := nativeVectorMemoryOpcode(in.Op)
 	if e.a.arch == "arm64" && proven {
 		if r, ok := e.registers[in.A]; ok {

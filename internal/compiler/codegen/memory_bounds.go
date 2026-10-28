@@ -11,10 +11,12 @@ type boundedValue struct {
 	constant bool
 }
 type memoryRegion struct {
-	end     int
-	proven  map[int]bool
-	guards  map[int]memoryGuard
-	guarded uint32
+	end       int
+	proven    map[int]bool
+	guards    map[int]memoryGuard
+	guarded   uint32
+	addresses map[int]memoryAddress
+	elided    map[int]bool
 }
 
 func (e *functionEmitter) codeLimit() int {
@@ -121,12 +123,17 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 			}
 		}
 		var guards map[int]memoryGuard
+		var addresses map[int]memoryAddress
 		var guarded uint32
 		if candidates >= 3 {
-			guards, guarded = e.memoryGuards(start, end, proven)
+			guards, addresses, guarded = e.memoryGuards(start, end, proven)
 		}
 		if len(proven) != 0 {
-			regions[start] = memoryRegion{end: end - 1, proven: proven, guards: guards, guarded: guarded}
+			r := memoryRegion{end: end - 1, proven: proven, guards: guards, guarded: guarded, addresses: addresses}
+			if len(guards) != 0 {
+				r.elided = e.deadAddressTemps(start, end, r)
+			}
+			regions[start] = r
 		}
 		start = end
 	}
@@ -139,16 +146,28 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, pcs []int, out *CompiledFunction) {
 	e.regionLimit = r.end + 1
 	e.provenPCs = r.proven
+	e.addresses, e.elidedPCs = r.addresses, r.elided
 	e.vectorAliases = map[slots.Slot]slots.Slot{}
-	defer func() { e.regionLimit = 0; e.provenPCs = nil; e.vectorAliases = nil }()
+	defer func() {
+		e.regionLimit = 0
+		e.provenPCs = nil
+		e.vectorAliases = nil
+		e.addresses = nil
+		e.elidedPCs = nil
+	}()
 	var boundaries []int
 	for pc := start; pc <= r.end; pc++ {
-		if _, ok := r.guards[pc]; ok {
+		_, guard := r.guards[pc]
+		_, address := r.addresses[pc]
+		// Every remapped access must reach memoryAt; earlier copy/vector
+		// selection cannot consume it using the original address operand.
+		if guard || address || r.elided[pc] {
 			boundaries = append(boundaries, pc)
 		}
 	}
 	next := 0
 	out.GuardedAccesses += r.guarded
+	out.DeadScalarOps += uint32(len(r.elided))
 	for pc := start; pc <= r.end; pc++ {
 		if guard, ok := r.guards[pc]; ok {
 			cold := pcs[pc]
@@ -158,6 +177,8 @@ func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, pcs []int,
 			}
 			e.emitMemoryGuard(guard, cold)
 			out.MemoryGuards++
+		}
+		for next < len(boundaries) && boundaries[next] <= pc {
 			next++
 		}
 		e.regionLimit = r.end + 1
@@ -165,6 +186,14 @@ func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, pcs []int,
 			e.regionLimit = boundaries[next]
 		}
 		in := e.f.Code[pc]
+		if r.elided[pc] {
+			continue
+		}
+		if address, ok := r.addresses[pc]; ok {
+			in.A = address.local
+			e.memoryAt(in, true, address.offset)
+			continue
+		}
 		if end, ok := e.combineVectorAffine(pc); ok {
 			out.FusedVectors++
 			pc = end
