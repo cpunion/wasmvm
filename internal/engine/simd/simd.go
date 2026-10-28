@@ -4,7 +4,6 @@ package simd
 
 import (
 	"encoding/binary"
-	"math/bits"
 
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/numeric"
@@ -236,6 +235,10 @@ func Eval(in *module.Instr, a, b, c Value) (r Value) {
 			r = put(r, width*2, i, x+y)
 		}
 		return r
+	case op == 98:
+		return Value{Lo: popcountBytes(a.Lo), Hi: popcountBytes(a.Hi)}
+	case op >= 96 && op <= 223 && (op&31 == 14 || op&31 == 17):
+		return packedAddSub(a, b, uint(8)<<((op-96)/32), op&31 == 17)
 	case op >= 96 && op <= 223:
 		width := uint(8) << ((op - 96) / 32)
 		kind := (op - 96) % 32
@@ -311,27 +314,17 @@ func Eval(in *module.Instr, a, b, c Value) (r Value) {
 			case 1:
 				z = 0 - x
 			case 2:
-				if width == 8 {
-					z = uint64(bits.OnesCount8(uint8(x)))
-				} else if width == 16 {
-					z = saturate((sx*sy+0x4000)>>15, 16, false)
-				} else {
-					panic("simd: invalid integer opcode")
-				}
+				z = saturate((sx*sy+0x4000)>>15, 16, false)
 			case 11:
 				z = x << (b.Lo & (uint64(width) - 1))
 			case 12:
 				z = uint64(sx >> (b.Lo & (uint64(width) - 1)))
 			case 13:
 				z = x >> (b.Lo & (uint64(width) - 1))
-			case 14:
-				z = x + y
 			case 15:
 				z = saturate(sx+sy, width, false)
 			case 16:
 				z = saturate(int64(x+y), width, true)
-			case 17:
-				z = x - y
 			case 18:
 				z = saturate(sx-sy, width, false)
 			case 19:
