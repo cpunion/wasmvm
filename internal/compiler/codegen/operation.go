@@ -1,6 +1,9 @@
 package codegen
 
-import "github.com/cpunion/wasmvm/internal/compiler/slots"
+import (
+	"github.com/cpunion/wasmvm/internal/compiler/slots"
+	"github.com/cpunion/wasmvm/pkg/wasm"
+)
 
 // All straight-line instructions share one emitter on hot and cold paths.
 func plainOpcode(op uint32) bool {
@@ -19,6 +22,10 @@ func (e *functionEmitter) plain(in slots.Instruction, proven bool) {
 			e.move(in.Dst, in.A)
 		}
 	case op == 0x1b || op == 0x1c:
+		if e.f.Slots[in.Dst] != wasm.V128 {
+			e.scalarSelect(in)
+			return
+		}
 		other, done := a.label(), a.label()
 		e.branchZero(in.C, other)
 		e.move(in.Dst, in.A)
