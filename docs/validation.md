@@ -1333,3 +1333,77 @@ interval 0.986–1.022 fails the unchanged ±0.25% calibration band, and the
 Wasmtime/Wasmer comparisons are also inconclusive. Its raw failure is retained
 rather than using the Linux pass as all-target acceptance. Interpreter throughput and public-call
 controls also retain deficits. These results leave PR #26 and M1/M2 open.
+
+## Shared return forwarding
+
+The [scoped change](../benchmarks/native/return-plan.md) compares exact base
+`bc92e03854605d87b5f8fae71b0409af6541d11d` with engine
+`b91095284c4af0a06d418637774ed90bbe6fcc0b`. Slot lowering changes an unconditional
+forward edge to a pure, ordered return into a direct return of the original
+operands. Original PCs and the predecessor's source/fuel charge remain stable.
+Backward, conditional, effectful and reordered/subset return blocks retain
+their transfer plans. Native leaf expansion still recognizes the reached exit.
+
+The complete local Go and production-pinned LLGo package suites pass. New tests
+cover reverse-ordered mixed scalar/vector/reference results, explicit and
+implicit return fuel boundaries, ineligible control/tuple shapes, and native
+leaf recognition. Existing host suspension, arena relocation, resource limits
+and lifecycle tests remain enabled. All measured executable packages exceed
+90% coverage: slots 99.50%, codegen 97.17%, execute 98.50%, nativeexec 94.09%
+and public VM 96.42%. [Final production CI](https://github.com/cpunion/wasmvm/actions/runs/40628184046)
+passes all four Go/LLGo × Linux amd64/macOS arm64 jobs; all 12 execution reports
+retain 148 scripts and 51,139 binary assertions.
+
+Local phase diagnostics rebuild both exact source revisions using the same
+Go 1.27.3 and production LLGo `8b1389c` compilers. Default and `-O3 -lto=full`
+LLGo rows are separate; the proposed bitcast compiler is not used. Seven
+families and 22 runtime/backend/boundary configurations pass 616 alternate-input
+checks. Three interleaved process blocks retain seven calls, two warmups and
+100,000 source iterations, with preparation and first call separate. Public
+interpreter warm medians in ns/source iteration:
+
+| Family | Go base -> head | LLGo default base -> head | LLGo -O3/full LTO base -> head | wazero interpreter (Go) |
+| --- | ---: | ---: | ---: | ---: |
+| Direct source calls | 90.141 -> 80.296 | 190.915 -> 162.900 | 135.088 -> 128.990 | 80.628 |
+| Indirect calls | 95.120 -> 85.415 | 177.342 -> 170.141 | 139.556 -> 135.005 | 90.725 |
+| Integer | 67.202 -> 66.168 | 87.620 -> 87.517 | 74.379 -> 76.372 | 82.193 |
+| Memory | 124.914 -> 123.686 | 180.500 -> 181.988 | 145.061 -> 147.198 | 146.674 |
+| Shuffle | 101.985 -> 103.625 | 149.090 -> 151.347 | 111.527 -> 111.072 | 103.353 |
+
+Native direct-source-call medians, also ns/source iteration, compare all three
+pinned native references separately:
+
+| Build | Base -> head | wazero native | Wasmtime Cranelift | Wasmer Cranelift |
+| --- | ---: | ---: | ---: | ---: |
+| Go | 1.067 -> 1.059 | 1.580 | 0.950 | 0.840 |
+| LLGo default | 0.888 -> 0.891 | 1.580 | 0.950 | 0.840 |
+| LLGo -O3/full LTO | 0.881 -> 0.920 | 1.580 | 0.950 | 0.840 |
+
+Go interpreter call point estimates approach wazero, while LLGo interpreter
+and native calls still have deficits. Tiny public-call controls remain above
+the M2 budget: Go interpreter 2459 -> 2250 ns/call and LLGo default 2875 ->
+2834 ns/call; LLGo native regresses 6417 -> 6875 ns/call in this diagnostic.
+Preparation also needs investigation: optimized LLGo native source-call
+preparation medians rise 247,042 -> 622,958 ns, with base process values
+225,708–571,417 and head values 249,167–623,208. Do not attribute this spread
+or unchanged-loop timing differences to return forwarding without controlled
+evidence. SIMD floating-point results, other regressions, internal dispatch,
+startup, instantiation and all first-call samples remain in the raw report.
+
+The call fixture retains 33 slot instructions and 14 frame slots, with edge
+moves reduced 2 -> 1 and argument-pool entries 5 -> 6. Static baseline-target
+function emission retains one expanded leaf call. Expanded bodies grow
+3172 -> 3263 bytes on amd64 and 2880 -> 2948 on arm64 because the former
+return continuation remains independently addressable; these are static body
+sizes, not peak-memory measurements or complete publication sizes.
+
+Raw SHA-256:
+`a5652a5da78273c6050769586c75561cba13cb7707696e61341fc51a21cdbdb2`.
+Build/source/binary provenance, shape counts and raw observations remain under
+`artifacts/return-forward`. An initial harness invocation rejected its own
+one-sample correctness mode against the shared seven-sample validator; its
+failed report is retained separately before the protocol-consistent run.
+No new sustained benchmark is run for an unchanged native integer kernel.
+These local diagnostics do not close the missing all-target performance,
+call/preparation deficits or PR #26's ARM A/A calibration gate. M1/M2 and
+Core 3.0/Threads/Component Model/WASI 1/2/3 remain unfinished.

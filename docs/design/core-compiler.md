@@ -94,10 +94,19 @@ clobber input slots at an instruction or suspended-call boundary. Parallel
 edge copies use a linear expected-time resolver and typed scratch for cycles.
 Per-function frame slots and aggregate lowering/verification work are bounded.
 
+An unconditional forward edge to an empty return block can return its incoming
+tuple directly. This keeps every original instruction PC and the predecessor's
+source/fuel charge while removing the intermediate tuple copy and dispatch.
+Backward edges retain their cancellation poll. Conditional, effectful and
+reordered/subset return blocks keep their original transfer plan. Native leaf
+analysis stops at the reached return, preserving call expansion when a former
+return block remains independently addressable afterwards.
+
 Symbolic tests independently simulate slot reads, writes and edge transfers for
 every valid corpus function. This establishes lowering preservation, not
 instruction execution, runtime rooting or interpreter performance. The complete
-runtime and execution loop remain subsequent work.
+Core 2.0 execution corpus and current performance limits are recorded separately
+in the [validation record](../validation.md).
 
 ## Native compilation
 
