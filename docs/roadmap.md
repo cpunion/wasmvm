@@ -78,8 +78,8 @@ reuse. Canceled native contexts are discarded with their sticky control state.
 Boundary and helper overhead still need measurement and optimization.
 
 The complete Go/LLGo semantic matrix passes on Linux amd64 and macOS arm64
-through engine `342676e` with the explicit LLGo release profile
-([CI](https://github.com/cpunion/wasmvm/actions/runs/40656577132)); all 12
+through engine `3a9f291` with the explicit LLGo release profile
+([CI](https://github.com/cpunion/wasmvm/actions/runs/40672341762)); all 12
 interpreter/native-tier reports retain 148 scripts and 51,139 binary assertions.
 The interpreter avoids per-step closure/source copies and SIMD instruction/
 result objects. Packed integer operations improve local popcount throughput;
@@ -110,6 +110,14 @@ remain explicit. Follow the [operand scope](../benchmarks/native/operand-slots-p
 and [validation](validation.md#last-use-integer-operand-storage). The image
 emitter still checks all 13 memory access sites with the actual memory minimum;
 investigate guarded address groups while preserving trap order and cold PCs.
+Engine `3a9f291` adds those local guards, address folding, canonical-state-aware
+temporary deletion and emitted-operation register weights. All scalar/SIMD
+memory widths and cold continuations pass the full Go/LLGo target matrix. Image filtering
+improves about 22% under LLGo locally, while remaining slower than
+Wasmtime/Wasmer; regressions and code-growth costs remain in
+[validation](validation.md#guarded-memory-regions-and-address-folding).
+The measured Cranelift inner loop provides a concrete comparison for the
+remaining loop-range and register-allocation work; no performance gate closes.
 The current frequency-based fixed register assignment still lacks the planned
 global live-range allocation/splitting. Calls, SIMD/application/preparation
 performance and all-target calibration remain open.

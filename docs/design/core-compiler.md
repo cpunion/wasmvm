@@ -139,6 +139,23 @@ Use the platform's accepted baseline CPU feature set, with explicit detection an
 
 Initially emit explicit memory/table/stack bounds checks and explicit trap exits. Signal-handler recovery is not the default safety mechanism. Eliminate checks only with validated range/effect proofs covering growth, calls, 64-bit overflow and aliases. Imported or mutable function/table targets cannot be treated as immutable without valid guards. Mark the entire profile supported only when each operation has verified native lowering or a documented runtime helper with the same semantics; helper use is reported in performance evidence. Native execution must never interpret an unsupported function silently.
 
+The unmetered backend groups at least three affine accesses anchored in unchanged
+i32 locals within its existing <=256-instruction, positive-minimum-memory
+regions. Guards read the first access's existing address operand and validate
+the entire span against memory32 and the current binding. Failed guards enter
+the original checked instruction sequence at that access, preserving earlier
+effects and the actual first trap. Interior cold PCs keep all checks. The precise
+tier and unmatched addresses retain their existing lowering.
+
+After proving no address addition wrapped, the emitter folds biases into memory
+offsets. Bounded backwards liveness removes only dead i32 constant/add temporary
+writes; guards and possible traps restore full physical-frame requirements.
+Remapped accesses and removed instructions bound older fusion selectors. Fixed
+register weights reflect the emitted reads/writes, including guard operands.
+Local versions invalidate stale facts; CFG/helper/growth/poll boundaries reset
+analysis. All memory operations still execute in order. This is local region
+optimization, not the planned global live-range allocation or loop analysis.
+
 Use a private guest ABI with explicit VM frames: guest calls push checked logical frames and branch to native callee labels; returns branch to saved continuations. The initial backend keeps one bounded C entry frame, without hardware-stack switching or a native C/Go frame per guest call. Host interaction, collection, cancellation and traps leave through the explicit status protocol in the [native ABI](native-abi.md). Whole-function inlining and more advanced optimization follow correctness and profiling; both disabled and enabled optimizations must pass differential tests. A persistent AOT/cache file format is later work; generating native code in-process is required in M2.
 
 ## Implemented private memory primitives

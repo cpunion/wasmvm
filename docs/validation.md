@@ -1673,3 +1673,80 @@ remain under `artifacts/operand-register`, raw SHA-256
 The preliminary slot-only builds/shapes remain under `artifacts/operand-slots`;
 their x86 alias fallback was refined before the final warm comparison. The
 existing compiler, competitor and PR #26 calibration gates remain open.
+
+## Guarded memory regions and address folding
+
+Engine `3a9f291089dbee4ec07b03e6bdb839190232a565` implements the
+[guarded-memory scope](../benchmarks/native/guarded-memory-plan.md): versioned
+affine address groups, runtime span guards, original checked cold fallbacks,
+address folding, bounded dead temporary removal and emitted-operation register
+weights. Zero-minimum modules, unmatched patterns and the precise tier keep
+their existing checks. Original instructions, fuel, PCs and frame contracts
+remain unchanged. Memory operations are neither removed nor reordered.
+
+Tests exercise every scalar/SIMD memory opcode and lane, exact span ends,
+unaligned accesses, large offsets, i32 wrap, stale local versions, CFG/helper
+boundaries, first/interior cold PCs, canonical frame contents, earlier effects
+before a later trap, arithmetic-trap order, growth, bindings, limits and bounded
+cancellation. A constant-vector-store regression first reproduces an old fusion
+using a pre-remapping address; access boundaries fix it. The failing log remains
+under `artifacts/guarded-memory/vector-regression.log`.
+
+Complete local Go and LLGo release suites pass. Each of six execution reports
+retains 148 scripts and 51,139 binary assertions. Local codegen coverage is
+97.48%, execute 98.72%, nativeexec 94.09%; every measured executable package
+exceeds 90%. The final
+[CI](https://github.com/cpunion/wasmvm/actions/runs/40672341762) passes all four
+Go/LLGo release x Linux amd64/macOS arm64 jobs. All 12 downloaded execution
+reports retain 148 scripts and 51,139 binary assertions each. Linux codegen
+coverage is 94.39%; every measured executable package remains above 90%.
+
+Exact native comparisons retain base `342676e`, guard-only `5073a99`, folded
+`0e0318d` and final `3a9f291`. Compiler/reference pins and release flags are
+unchanged. The final run covers twelve families, thirteen configurations and
+624 alternate-input checks; intermediate rows cover native API execution.
+Three interleaved process blocks retain seven calls after two warmups. Unchanged
+interpreter timing is reused; its complete semantic matrix still runs.
+Final public native medians:
+
+| Application / host | Base | Head | wazero | Wasmtime | Wasmer |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| C image / Go, microseconds/pass | 2.782 | 2.097 | 2.782 | 1.075 | 1.125 |
+| C image / LLGo, microseconds/pass | 2.763 | 2.148 | 2.782 | 1.075 | 1.125 |
+| Rust CRC / Go, microseconds/packet | 1.623 | 1.648 | 1.507 | 1.531 | 1.516 |
+| Rust CRC / LLGo, microseconds/packet | 1.601 | 1.619 | 1.507 | 1.531 | 1.516 |
+
+Image filtering improves about 25% under Go and 22% under LLGo, but still trails
+Wasmtime/Wasmer. Thirteen explicit access checks become two span guards on the
+normal image path; cold checks remain. Fourteen temporary constant/add writes
+disappear. Complete function bodies, including entry/exit and cold paths, grow
+6230 -> 7389 bytes on amd64 and 6984 -> 7616 on arm64. CRC machine-code hashes
+remain identical across these engine revisions; its observed warm differences
+are not a code-generation improvement.
+
+Mixed regressions remain visible: LLGo native shuffle 1.611 -> 1.653,
+f64 SIMD 4.082 -> 4.226 and direct calls 0.825 -> 0.848 ns/source iteration.
+LLGo memory measures 0.626 -> 0.606 versus Wasmtime 0.500; small or rounded
+differences do not establish controlled parity. Native image preparation is
+Go 459250 -> 469166 ns, LLGo 1127834 -> 1051208 ns; first calls 110709 ->
+79250 / 113083 -> 82667 ns. CRC preparation is 340750 -> 342458 /
+825583 -> 830166 ns. No startup/preparation/boundary median is subtracted.
+
+A separate disassembly probe uses the same Wasmtime 48.0.1 C library and
+Cranelift/speed configuration as the reference adapter. Its image guest
+function occupies 508 bytes; the inner span at 0x110..0x1a0 has 37 instructions,
+nine byte loads, no per-access bounds comparisons and no stack spills. It is
+not a normalized size comparison with wasmvm's ABI/cold-path body. The adapter
+does not enable fuel/epoch interruption. The dump is evidence for further
+loop-range, register-allocation and policy analysis, not a measurement assigning
+the remaining speed difference to one cause. Retain assembly and library,
+input/object hashes under `artifacts/guarded-weights`.
+
+Raw reports remain under `artifacts/guarded-memory` (guard-only),
+`artifacts/guarded-fold` and `artifacts/guarded-weights`, SHA-256 respectively:
+`e64393eaacbbdf779b5632ee50d857e762147d11561ead048abc696173ed102e`,
+`a7790bbc5290eaf7e03a98f0d65f53724503ed3474a83751bee533939f67e12b`,
+`ae8025b6aae2ef0051a71bf339ed4498f122ee3107a36ae4a71826bb6206a4f1`.
+The later refinements do not consistently improve every row; no intermediate
+failure/regression is discarded. These diagnostics do not accept parity,
+resolve PR #26's ARM A/A failure, or close M1/M2 or later milestones.
