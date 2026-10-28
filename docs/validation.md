@@ -1750,3 +1750,89 @@ Raw reports remain under `artifacts/guarded-memory` (guard-only),
 The later refinements do not consistently improve every row; no intermediate
 failure/regression is discarded. These diagnostics do not accept parity,
 resolve PR #26's ARM A/A failure, or close M1/M2 or later milestones.
+
+## Shared AArch64 caller register capacity
+
+Engine `9ef5a125700f546e5f441d49939f5915224fad95` implements the
+[caller-register scope](../benchmarks/native/caller-registers-plan.md).
+Mutable integer/reference slots use x19-x28 then x1-x8. Immutable constants
+and runtime metadata share only the remaining caller registers; leaf expansion
+uses the common inventory without clobbering immutable words. ABI reservations,
+separate vector allocation, canonical exit spills and entry reloads remain.
+This expands the fixed allocator; it does not implement global live ranges.
+
+Tests cover exhausted and partial capacity, direct/indirect expansion, live
+metadata mutation, literal/spill state, 24 live integer/reference slots at large
+frame offsets and every original continuation. The pressure fallback fixture
+now exceeds 18 registers. Full local Go/LLGo release suites and vet pass. All six
+execution reports retain 148 scripts and 51,139 binary assertions each; local
+codegen coverage is 97.44%, execute 98.72%, nativeexec 94.09%, with every measured
+executable package above 90%. Final
+[CI](https://github.com/cpunion/wasmvm/actions/runs/40678438843) passes all four
+Go/LLGo release x Linux amd64/macOS arm64 jobs. All 12 downloaded execution
+reports retain those counts. Linux codegen coverage is 94.49%; every measured
+executable package remains above 90%.
+
+Exact source base `3a9f291` and head `9ef5a12` use unchanged compiler/reference
+pins and release flags. Twelve native API/dispatch families across eleven
+configurations pass 528 alternate-input checks. Three interleaved process
+blocks retain seven calls after two warmups. These are local diagnostics;
+startup, compilation/validation, instantiation, first call, warm calls and
+cleanup remain separate. Public native medians:
+
+| Workload / compiler | Unit | Base | Head | wazero | Wasmtime | Wasmer |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| C image / Go | microseconds/pass | 2.094 | 1.611 | 2.958 | 1.075 | 1.175 |
+| C image / LLGo | microseconds/pass | 2.138 | 1.643 | 2.958 | 1.075 | 1.175 |
+| Rust CRC / Go | microseconds/packet | 1.585 | 1.607 | 1.484 | 1.500 | 1.547 |
+| Rust CRC / LLGo | microseconds/packet | 1.651 | 1.630 | 1.484 | 1.500 | 1.547 |
+| f32 SIMD / LLGo | ns/iteration | 3.729 | 3.782 | 3.750 | 3.650 | 3.710 |
+| Memory / LLGo | ns/iteration | 0.635 | 0.619 | 0.859 | 0.520 | 0.600 |
+
+Image filtering improves about 23% on both compilers but still trails
+Wasmtime/Wasmer. The image inner backedge span falls from 63 instructions with
+two frame accesses (0x7d8..0x8d0) to 56 with none (0x874..0x950). The same nine
+byte loads remain; the live accumulator now stays in x1 and its rotation uses
+an immediate. Existing span checks and interrupt polling remain. The pinned
+Cranelift span has 37 instructions. This is code-generation evidence, not a
+controlled attribution of every timing difference or a safety-policy match.
+
+Larger exit/cold code remains a cost: complete arm64 image bodies grow
+7616 -> 9524 bytes, CRC 3572 -> 4096. All twelve amd64 guest-code hashes and the
+ten non-application arm64 hashes remain identical; their observed warm changes
+must not be attributed to different guest instructions. CRC Go regresses,
+while its small LLGo gain does not establish competitor parity. Unchanged
+interpreter timing is not repeated; complete interpreter semantics still run.
+
+Compilation/validation preparation remains separate: image Go 499625 -> 499084 ns,
+LLGo 1018375 -> 1153541 ns, an observed regression. Image first calls measure
+83250 -> 61292 / 82916 -> 62208 ns. CRC preparation is Go 338292 -> 346583 ns,
+LLGo 1116542 -> 817791 ns; first calls 105042 -> 102084 / 100334 -> 100959 ns.
+No phase median is subtracted from warm execution. Source/binary provenance,
+all phase records, code hashes and disassembly remain under
+`artifacts/caller-registers`, raw SHA-256
+`7ab4bfc8d6ccb48e34c78a11bdad130fed4f0969acbb806e65b969faf299632b`.
+The competitor, all-target calibration and PR #26 gates remain open. This
+branch is outside that PR's unchanged head; M1/M2 and all later stages remain
+unaccepted.
+
+A separate Wasmtime 48.0.1 policy-cost probe retains the original comparator and
+rebuilds paired epoch-disabled/enabled C adapters with the same SDK and C flags.
+Epoch-enabled code sets a one-tick deadline without incrementing the engine
+during timing; a separate pre-expired-deadline probe traps with `interrupt`.
+Thirty-two alternate-input checks pass. This proves the configuration is active,
+not asynchronous cancellation latency or policy equivalence. Its image inner
+span grows 37 -> 42 instructions, adding three epoch-check instructions and two
+stack accesses. It retains nine byte loads. Codegen and check placement change
+with the policy; the original unchecked-policy assembly is not the complete
+interruptible comparator.
+
+Timing remains inconclusive: the fresh three-block run observes LLGo image
+2.194 microseconds/pass, original Wasmtime 1.450, rebuilt epoch-off 1.550 and
+epoch-on 1.450. CRC measures 2.411, 2.297, 2.234 and 2.172 microseconds/packet.
+The recorded host load is approximately 20/37/28, and the unchanged original
+runners shift substantially from the earlier run. Do not infer zero/negative
+interruption cost, substitute these values for the original comparison, or
+accept parity. Retain SDK/source/binary hashes, configuration, phase records,
+expired-deadline output and disassembly under `artifacts/caller-registers/epoch`,
+raw SHA-256 `a6c9ae6b0e112db31c362603a4af8db42c2d9a0d80e5bdc543ec50c063c0a624`.

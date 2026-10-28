@@ -118,6 +118,13 @@ Wasmtime/Wasmer; regressions and code-growth costs remain in
 [validation](validation.md#guarded-memory-regions-and-address-folding).
 The measured Cranelift inner loop provides a concrete comparison for the
 remaining loop-range and register-allocation work; no performance gate closes.
+Engine `9ef5a12` shares eighteen arm64 integer registers across mutable slots,
+constants and runtime metadata. Local image filtering improves another 23%,
+and its inner loop drops two frame accesses, while full code grows and
+Wasmtime/Wasmer remain faster. Full local release semantics and the final
+four-job Go/LLGo target matrix pass. See the
+[register scope](../benchmarks/native/caller-registers-plan.md) and
+[validation](validation.md#shared-aarch64-caller-register-capacity).
 The current frequency-based fixed register assignment still lacks the planned
 global live-range allocation/splitting. Calls, SIMD/application/preparation
 performance and all-target calibration remain open.

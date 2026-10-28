@@ -208,11 +208,14 @@ control word is monotonic until the execution ends. This follows the Arm
 [load-to-load/store barrier mapping](https://support.arm.com/documentation/102336/0100/Limiting-the-scope-of-memory-barriers).
 
 A small fixed allocator assigns the most referenced scalar slots to eight
-amd64 or ten arm64 registers, excluding context, frame and constrained integer
-scratch registers. Assignments remain identical across CFG edges. Entries load
-the retained frame; every exit spills the cached slots, including reference
-handles. Remaining scalars and all vectors use the frame. Scalar `Hi == 0` is the
-existing `value.Value` contract; vector copies retain all 128 bits. The driver
+amd64 registers (six with memory) or eighteen arm64 registers, excluding
+context, frame and constrained integer scratch registers. On arm64, mutable
+slots use x19-x28 followed by x1-x8; immutable constants and runtime metadata
+share only the remaining x1-x8. Leaf expansion uses the same inventory and
+excludes those immutable registers. Assignments remain identical across CFG
+edges. Entries load the retained frame; every exit spills the cached slots, including reference
+handles. Remaining scalars use the frame; vector slots use their separate cache
+or the frame. Scalar `Hi == 0` is the existing `value.Value` contract; vector copies retain all 128 bits. The driver
 must preserve that contract on initial entry, helper results and resumption.
 Common arithmetic names allocated registers directly, while constrained
 instructions use the existing checked lowering. A constant immediately followed
@@ -332,9 +335,11 @@ minimum memory size. Each interior original PC has a checked cold continuation,
 so independent resumption cannot inherit an unexecuted proof. Shared scalar
 copy forwarding omits only copies overwritten before any read or observable exit.
 The precise fuel tier retains checks and instruction boundaries. On arm64, up to
-eight expensive integer constants occupy otherwise unused caller-saved x1-x8.
-They are immutable, loaded once per entry and excluded from all scratch/slot
-assignments; arbitrary continuations still use their own mutable operand slots.
+eight expensive integer constants occupy caller-saved x1-x8 left free by
+mutable slots. Runtime table metadata and function identities use the remaining
+capacity after constants. These words are immutable within an entry, refreshed
+on resume and excluded from leaf-expression allocation; arbitrary continuations
+still use their own mutable operand slots.
 
 The arm64 unmetered emitter folds a low-bit mask followed by a left shift (or
 power-of-two multiply) into UBFIZ when the intermediate is unobservable. Integer

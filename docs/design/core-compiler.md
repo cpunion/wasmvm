@@ -128,7 +128,12 @@ in the [validation record](../validation.md).
 The complete native pipeline is: typed IR verification, optimization, legalization to target operations, instruction selection, register allocation, spill insertion, frame layout, branch resolution/relocations, code emission, and publication with trap/safepoint/source maps. Implement amd64 and arm64 emitters in Go. The baseline uses linear-scan allocation with separate integer/vector classes, fixed-register constraints, call clobbers, live-range splitting, parallel-move resolution, and verified spill reloads. Target tests check actual execution as well as encoding/disassembly.
 
 The current development allocator instead assigns stable registers by slot-use
-frequency; global live-range splitting remains required work. Scalar `select`
+frequency; global live-range splitting remains required work. AArch64 mutable
+integer/reference slots share x1-x8 with immutable constants and table metadata,
+after filling x19-x28. Immutable pools use only remaining capacity, and leaf
+expansion excludes them through the shared target inventory. Every mutable
+allocation reloads at entry and spills on all exits; reserved ABI registers and
+the separate FP/vector bank remain excluded. Scalar `select`
 now uses CMOV/CSEL and directly names allocated integer/reference registers,
 falling back to scratch loads for spilled or FP bit patterns. It tests only low
 i32 condition bits and preserves source/destination aliases. The precise tier
