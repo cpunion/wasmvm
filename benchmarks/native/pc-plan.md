@@ -20,3 +20,10 @@ the ten integer/call/memory/SIMD/FP families and two pinned C/Rust applications.
 Retain the intermediate direct-dispatch and consumer-instantiation regressions;
 neither zero helper calls nor selected point estimates close a performance gate.
 Keep startup, preparation, first call, API/dispatch and all native rows separate.
+
+Borrow the active frame's bounded value slice alongside its PC. Operand/local/
+result and edge accesses can avoid repeatedly loading the execution arena and
+adding the frame base. Refresh this view on every frame transition and Run
+entry. Arguments copied after push must still read the preserved global arena,
+because growth can relocate and invalidate the former view. Keep the existing
+moving-arena regression and actual native growth/host-reentry tests enabled.

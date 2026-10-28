@@ -199,15 +199,15 @@ frames:
 		code := fn.Code
 		base := f.base
 		instance := fn.Instance
+		pc := f.pc
+		values := e.values[base : base+len(code.Slots)]
 		for {
-			pc := f.pc
 			if native {
 				var err error
-				pc, e.fuel, err = backend.Run(fn, f.base, len(e.frames), pc, e.fuel)
+				pc, e.fuel, err = backend.Run(fn, base, len(e.frames), pc, e.fuel)
 				if err != nil {
 					return e.fail(err)
 				}
-				f.pc = pc
 			}
 			in := code.Code[pc]
 			source := &code.Sources[in.Source]
@@ -225,16 +225,15 @@ frames:
 					return e.fail(err)
 				}
 			}
-			f.pc++
 			var a, b, c value.Value
 			if in.A != slots.NoSlot {
-				a = e.values[base+int(in.A)]
+				a = values[int(in.A)]
 			}
 			if in.B != slots.NoSlot {
-				b = e.values[base+int(in.B)]
+				b = values[int(in.B)]
 			}
 			if in.C != slots.NoSlot {
-				c = e.values[base+int(in.C)]
+				c = values[int(in.C)]
 			}
 			var result value.Value
 			trap := wasm.NoTrap
@@ -250,7 +249,7 @@ frames:
 					if fi == 0 {
 						e.result = e.result[:0]
 						for _, src := range outputs {
-							e.result = append(e.result, e.values[base+int(src)])
+							e.result = append(e.result, values[int(src)])
 						}
 						clear(e.frames)
 						e.frames = e.frames[:0]
@@ -260,7 +259,7 @@ frames:
 					}
 					parentBase := e.frames[fi-1].base
 					for i, src := range outputs {
-						e.values[parentBase+int(f.dest[i])] = e.values[base+int(src)]
+						e.values[parentBase+int(f.dest[i])] = values[int(src)]
 					}
 					e.frames[fi] = frame{}
 					e.frames = e.frames[:fi]
@@ -283,9 +282,9 @@ frames:
 					}
 				}
 				for _, move := range code.Moves[edge.Start : edge.Start+edge.Count] {
-					e.values[base+int(move.Dst)] = e.values[base+int(move.Src)]
+					values[int(move.Dst)] = values[int(move.Src)]
 				}
-				f.pc = edge.PC
+				pc = edge.PC
 				continue
 			case 1, 0x1a:
 			case 0x1b, 0x1c:
@@ -294,9 +293,9 @@ frames:
 					result = a
 				}
 			case 0x20:
-				result = e.values[base+int(im.A)]
+				result = values[int(im.A)]
 			case 0x21, 0x22:
-				e.values[base+int(im.A)] = a
+				values[int(im.A)] = a
 				result = a
 			case 0x23:
 				result = instance.Globals[im.A].Value
@@ -476,7 +475,7 @@ frames:
 					target = instance.Functions[im.A]
 				} else {
 					count--
-					index := uint64(uint32(e.values[base+int(inputs[count])].Lo))
+					index := uint64(uint32(values[int(inputs[count])].Lo))
 					table := instance.Tables[im.B]
 					if index >= uint64(len(table.Values)) {
 						trap = wasm.TrapTableBounds
@@ -500,6 +499,9 @@ frames:
 				if err := e.poll(); err != nil {
 					return e.fail(err)
 				}
+				// Publish the caller continuation before a host suspension or
+				// frame push. Straight-line execution keeps its PC local.
+				f.pc = pc + 1
 				if callee.Code == nil {
 					args := make([]value.Value, count)
 					for i := range args {
@@ -544,8 +546,9 @@ frames:
 				return e.fail(&wasm.Trap{Code: trap, Function: fn.Index, Offset: im.Offset})
 			}
 			if in.Dst != slots.NoSlot {
-				e.values[base+int(in.Dst)] = result
+				values[int(in.Dst)] = result
 			}
+			pc++
 		}
 	}
 	panic("interp: running without frames")
