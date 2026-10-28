@@ -157,6 +157,19 @@ offsets. Bounded backwards liveness removes only dead i32 constant/add temporary
 writes; guards and possible traps restore full physical-frame requirements.
 Remapped accesses and removed instructions bound older fusion selectors. Fixed
 register weights reflect the emitted reads/writes, including guard operands.
+For arm64 spans up to 4096 bytes, let `u = uint32(address - firstBias)` and
+`span = firstBias + after`. One unsigned interval check rejects both subtraction
+underflow and an end past memory32. A widened end check against the bound memory
+still admits an exact 4 GiB endpoint. Larger spans and amd64 keep the general
+lowering; guard failure preserves the original operand and checked continuation.
+
+Fusion stops at remapped accesses and deleted operations. Physical-state scans
+may cross accesses already proved safe, but stop at every later guard, possible
+trap, poll, CFG edge, helper and region end. These separate bounds allow dead
+literal removal without granting a fusion selector an original, stale address.
+AArch64 shift-plus-ADD/SUB/AND/OR/XOR selection uses the same observation scan;
+it retains live constants, rejects observed intermediate values and preserves
+aliases and all original cold PCs. Rotate forms apply only to logical operands.
 Local versions invalidate stale facts; CFG/helper/growth/poll boundaries reset
 analysis. All memory operations still execute in order. This is local region
 optimization, not the planned global live-range allocation or loop analysis.

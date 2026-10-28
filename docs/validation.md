@@ -1836,3 +1836,79 @@ interruption cost, substitute these values for the original comparison, or
 accept parity. Retain SDK/source/binary hashes, configuration, phase records,
 expired-deadline output and disassembly under `artifacts/caller-registers/epoch`,
 raw SHA-256 `a6c9ae6b0e112db31c362603a4af8db42c2d9a0d80e5bdc543ec50c063c0a624`.
+
+## Compact span guards and shifted operands
+
+Engine `102623b24e9d12cae96e5c934f5abdb1afd01a82` implements the
+[compact-guard scope](../benchmarks/native/compact-guards-plan.md). AArch64
+normalizes spans up to 4096 bytes around their root, combining unsigned lower
+and upper checks before testing a widened end against bound memory length.
+The original mutable operand and checked fallback remain intact, including
+wrapping addresses and an exact 4 GiB endpoint. Larger spans and amd64 retain
+the general guard lowering.
+
+Physical-state scans now cross already-proven accesses independently of fusion
+boundaries. Every later guard, possible trap, poll, CFG edge, helper and region
+end remains an observation boundary. This permits dead immediate removal and
+AArch64 shifted ADD/SUB/AND/OR/XOR operands; rotated forms remain limited to
+logical operations. Live intermediates/constants, aliases and original cold PCs
+keep their full state. Precise fuel and all existing safety policies remain.
+
+Tests execute cached/spilled guard operands, large raw high bits, normalized
+underflow/overflow, immediate encoding limits, exact memory32 endpoints,
+interior/failed cold continuations and later-guard frame observations. Scalar
+fusion tests cover both widths, masked counts, aliases, live constants and
+rejected trap/poll/region/target cases. Full local Go and LLGo release suites
+and vet pass. All six execution reports retain 148 scripts and 51,139 binary
+assertions each. Local codegen coverage is 97.49%, execute 98.72%, nativeexec
+94.09%; every measured executable package exceeds 90%. Linux codegen coverage
+is 94.44%, with every measured executable package above 90%. Final
+[four-job CI](https://github.com/cpunion/wasmvm/actions/runs/40686721435) passes
+Go/LLGo release x Linux amd64/macOS arm64. All 12 downloaded execution reports
+retain those script and binary-assertion counts.
+
+Exact base `9ef5a12` and head `102623b` retain compiler/reference pins and release
+flags. Twelve native API/dispatch families across eleven configurations pass
+528 alternate-input checks. Three interleaved blocks, seven calls and two
+warmups remain local diagnostics under host load approximately 18/19/24.
+No CPU-heavy task from this work runs during timing; unrelated host work is not
+controlled. All preparation/first/warm/cleanup phases remain separate.
+Public native medians:
+
+| Workload / compiler | Unit | Base | Head | wazero | Wasmtime | Wasmer |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| C image / Go | microseconds/pass | 1.671 | 1.439 | 2.904 | 1.100 | 1.125 |
+| C image / LLGo | microseconds/pass | 1.658 | 1.482 | 2.904 | 1.100 | 1.125 |
+| Rust CRC / LLGo | microseconds/packet | 1.697 | 1.629 | 1.619 | 1.484 | 1.562 |
+| f64 SIMD / LLGo | ns/iteration | 4.413 | 4.554 | 4.418 | 4.400 | 4.380 |
+| Memory / LLGo | ns/iteration | 0.642 | 0.666 | 0.927 | 0.560 | 0.640 |
+| Signed f64 conversion / LLGo | ns/iteration | 10.117 | 10.280 | 21.027 | 10.130 | 10.210 |
+
+Image filtering improves about 14% under Go and 11% under LLGo locally, while
+remaining slower than Wasmtime/Wasmer. Its configured arm64 inner span falls
+56 -> 48 instructions (0x874..0x950 -> 0x860..0x91c), retaining nine byte loads
+and no frame accesses. Its hot span guard falls ten -> six instructions;
+observation-aware literals and shifted operands account for the other four
+removed instructions. The precise tier and cold generic entries remain.
+Complete image bodies shrink 7389 -> 7371 bytes on amd64, 9524 -> 9472 on arm64.
+
+Configured static code hashes change in image, f64 SIMD and both scalar-convert
+families on arm64, and only image on amd64. The f64 SIMD body grows 2688 -> 2692
+bytes: ORR with a shifted operand reduces the post-loop sequence, while its
+extra original-PC continuation grows cold code. Its loop is not an inferred
+speedup. CRC hashes remain identical; its warm difference is not different guest
+instructions. Regressions above remain visible and no row proves controlled
+competitor parity. These shape probes configure direct leaf candidates;
+indirect expansion and host/compiler boundary costs remain measured by the
+actual runtime runners rather than inferred from those static probes.
+
+Image compile/validate preparation is Go 551584 -> 512792 ns, LLGo 1035458 ->
+1120458 ns, an observed LLGo regression. First calls are 64459 -> 54125 /
+64584 -> 56417 ns. CRC preparation is Go 375250 -> 345708 ns, LLGo 822250 ->
+813958 ns; first calls 109167 -> 101458 / 101458 -> 105959 ns. No phase median
+is subtracted. Source/binary provenance, full phase records, hashes and assembly
+remain under `artifacts/compact-guards`, raw SHA-256
+`c953045c95729be64a9b1247bd6043fdceb3049e195050e9de067ce5063f9e81`.
+Existing compiler, competitor and PR #26 calibration gates remain open. The
+branch remains outside that PR's unchanged head; neither M1/M2 nor the later
+Core 3.0/Threads/components/WASI stages are accepted by this increment.

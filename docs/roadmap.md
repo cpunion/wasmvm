@@ -125,6 +125,14 @@ Wasmtime/Wasmer remain faster. Full local release semantics and the final
 four-job Go/LLGo target matrix pass. See the
 [register scope](../benchmarks/native/caller-registers-plan.md) and
 [validation](validation.md#shared-aarch64-caller-register-capacity).
+Engine `102623b` normalizes small arm64 span guards and separates fusion from
+physical-state observation bounds. Generic shifted-operand selection and dead
+literal removal reduce the image inner loop from 56 to 48 instructions; local
+LLGo image throughput improves about 11%, with competitor gaps, regressions and
+compilation costs retained. Full local release semantics and the final four-job
+Go/LLGo target matrix pass. See the
+[compact scope](../benchmarks/native/compact-guards-plan.md) and
+[validation](validation.md#compact-span-guards-and-shifted-operands).
 The current frequency-based fixed register assignment still lacks the planned
 global live-range allocation/splitting. Calls, SIMD/application/preparation
 performance and all-target calibration remain open.

@@ -342,9 +342,13 @@ on resume and excluded from leaf-expression allocation; arbitrary continuations
 still use their own mutable operand slots.
 
 The arm64 unmetered emitter folds a low-bit mask followed by a left shift (or
-power-of-two multiply) into UBFIZ when the intermediate is unobservable. Integer
-comparisons can feed conditional branches directly through NZCV; the canonical
-boolean remains materialized for cancellation and edge copies. Independent
+power-of-two multiply) into UBFIZ when the intermediate is unobservable. Shift
+results can feed ADD/SUB or logical operations directly when their intermediate
+slot is dead before an observation. Logical forms also accept
+rotated operands; ADD/SUB keep the ordinary rotate lowering. Mutable constants
+remain materialized when live. Every original PC keeps its generic continuation.
+Integer comparisons can feed conditional branches directly through NZCV; the
+canonical boolean remains materialized for cancellation and edge copies. Independent
 continuations use the retained boolean instead of inherited processor flags.
 After emission, one bounded layout pass removes spare words from known near
 conditional branches and relocates labels, jump tables, ADRs and continuation
