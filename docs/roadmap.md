@@ -78,8 +78,8 @@ reuse. Canceled native contexts are discarded with their sticky control state.
 Boundary and helper overhead still need measurement and optimization.
 
 The complete Go/LLGo semantic matrix passes on Linux amd64 and macOS arm64
-through engine `4f531dd` with the explicit LLGo release profile
-([CI](https://github.com/cpunion/wasmvm/actions/runs/40649187641)); all 12
+through engine `342676e` with the explicit LLGo release profile
+([CI](https://github.com/cpunion/wasmvm/actions/runs/40656577132)); all 12
 interpreter/native-tier reports retain 148 scripts and 51,139 binary assertions.
 The interpreter avoids per-step closure/source copies and SIMD instruction/
 result objects. Packed integer operations improve local popcount throughput;
@@ -102,6 +102,14 @@ interpreter/call/SIMD regressions and preparation costs are retained in the
 [local](../benchmarks/native/local-slots-plan.md) and
 [literal](../benchmarks/native/literal-slots-plan.md) scopes; these increments
 do not close performance acceptance.
+Engine `342676e` also reuses last-use operands for all 58 nontrapping integer
+primitives and directly selects legal x86 right-operand aliases. The full
+target matrix passes; CRC frames fall to 14 slots. Local native call/memory
+medians improve, but remaining slower/regressed cases and preparation costs
+remain explicit. Follow the [operand scope](../benchmarks/native/operand-slots-plan.md)
+and [validation](validation.md#last-use-integer-operand-storage). The image
+emitter still checks all 13 memory access sites with the actual memory minimum;
+investigate guarded address groups while preserving trap order and cold PCs.
 The current frequency-based fixed register assignment still lacks the planned
 global live-range allocation/splitting. Calls, SIMD/application/preparation
 performance and all-target calibration remain open.

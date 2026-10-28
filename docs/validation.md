@@ -1611,3 +1611,65 @@ Final raw/source/binary provenance and code/frame shapes remain under
 `2f80425ac39e1af9e8b3e7ab3dd91eab1424a3f4bf29ed7f98d839cfa8c78df4`.
 These mixed local diagnostics do not accept parity, resolve PR #26's ARM A/A
 failure, or close M1/M2. Core 3.0/GC/Threads/components/WASI 1/2/3 remain open.
+
+## Last-use integer operand storage
+
+Engine `342676e65ca3ead426150a41e7890d3819a23004` releases consumed operands
+before allocating results for all 58 nontrapping scalar integer primitives,
+including wrap/extend/sign-extension. Locals, cross-block values and live
+literal aliases stay protected; calls retain distinct suspended input/output
+storage. Left-first reuse suits two-address targets. x86 directly selects
+right-aliased commutative operations and captures shift counts before replacing
+an aliased destination; subtraction keeps its scratch fallback.
+The shared layout changes no instruction, fuel boundary or continuation ABI.
+
+Tests cover all 58 operations, typed results, repeated SSA arguments, still-live
+literal aliases, both operand aliases, arbitrary cold entries and the existing
+full corpus/lifecycle matrix. Complete local Go/LLGo release suites pass.
+[Final CI](https://github.com/cpunion/wasmvm/actions/runs/40656577132) passes all
+four jobs; all 12 downloaded execution reports retain 148 scripts and 51,139
+binary assertions. Linux coverage is slots 99.61%, codegen 93.94%, execute
+98.72%, nativeexec 94.09%; every measured executable package remains above 90%.
+
+The exact measured base is `ff0e525` (engine `4f531dd`), head `342676e`, with
+unchanged compiler/reference pins and release flags. The same twelve families
+and 20 API/dispatch/reference configurations pass 960 alternate-input checks.
+Three interleaved process blocks, seven calls and two warmups remain local
+diagnostics. Public LLGo native medians:
+
+| Family | Unit | Base | Head | wazero | Wasmtime | Wasmer |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Integer | ns/iteration | 1.644 | 1.660 | 1.827 | 1.580 | 1.620 |
+| Direct calls | ns/iteration | 0.915 | 0.880 | 1.597 | 0.930 | 0.880 |
+| Memory | ns/iteration | 0.710 | 0.675 | 1.078 | 0.540 | 0.660 |
+| f32 SIMD | ns/iteration | 3.747 | 3.651 | 4.234 | 3.640 | 3.640 |
+| C image filter | microseconds/pass | 2.877 | 2.896 | 3.393 | 1.150 | 1.200 |
+| Rust CRC | microseconds/packet | 1.732 | 1.682 | 1.807 | 1.578 | 1.672 |
+
+Matching rounded call medians and small differences are not a controlled parity
+decision. Image filtering still trails Wasmtime/Wasmer substantially; integer
+and several other rows still regress. LLGo unsigned-f64 conversion measures
+9.246 -> 9.581 ns/iteration, Go interpreter shuffle 104.865 -> 109.970.
+LLGo interpreter image filtering measures 342.657 -> 339.222 microseconds/pass
+versus wazero 354.118; calls remain slower, 120.548 -> 119.932 ns/iteration
+versus 80.216. Interpreter CRC measures 77.919 -> 78.490 microseconds/packet.
+
+Preparation remains separate: CRC Go 342917 -> 323041 ns, LLGo 924083 ->
+894875 ns; image Go 434292 -> 429625 ns and LLGo 1108083 -> 1252750 ns, an
+observed regression. CRC first calls measure 102667 -> 102750 / 101083 ->
+92250 ns. No phase is subtracted from warmed execution.
+
+CRC frames fall 15 -> 14 slots, but static unmetered code grows 3803 -> 3813
+bytes on amd64 and 3568 -> 3572 on arm64. Smaller frames alone do not establish
+faster code. A separate probe uses the image module's actual two-page minimum:
+amd64 code falls 6295 -> 6230 bytes; arm64 remains 6984. It removes none of 13
+static memory access checks and retains three global helper exits. Guarded
+address groups with a checked cold path merit investigation; this own-code
+finding does not establish why another engine is faster.
+
+Source/binary provenance, phase records, configured code hashes and shapes
+remain under `artifacts/operand-register`, raw SHA-256
+`f308bbf71cc6287bd0c017d5e20292b8d4605c5671fb1116b3507d6ba33845a5`.
+The preliminary slot-only builds/shapes remain under `artifacts/operand-slots`;
+their x86 alias fallback was refined before the final warm comparison. The
+existing compiler, competitor and PR #26 calibration gates remain open.
