@@ -19,3 +19,9 @@ against wazero native, Wasmtime and Wasmer. Reuse the pinned Rust packet CRC
 SIMD/FP regressions, retaining first/preparation/warm phases and oracle checks.
 Use existing interleaving and diagnostic counts; do not introduce CRC-specific
 code or waive the wider application, preparation or ARM calibration deficits.
+
+The first branchless candidate `5a96815` cuts local LLGo CRC time roughly in
+half but remains slower than the references. Reuse allocated integer/reference
+registers directly and share the conditional-move encoder with the scratch and
+precise-tier paths. Preserve destination/condition/source aliases, extended
+register encodings and spill fallback; do not add workload-specific fusion.
