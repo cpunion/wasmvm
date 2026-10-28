@@ -74,6 +74,11 @@ All process/configuration/workload cases are interleaved in seeded random order.
 
 - **Owned wasmvm:** exact base/head commits, each built with pinned Go 1.27.3
   and LLGo runtime revision `8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f`.
+  The LLGo release profile uses `-O3 -lto=full`, also used by the semantic CI
+  and native integer probe. Both source revisions use the same flags; exact
+  build commands remain in each report. Earlier default `-Os` diagnostics are
+  retained separately. Profile/toolchain upgrades are baseline events, not
+  VM-source improvements or waivers of performance gates.
   `own_build.py` archives committed source into isolated trees and overlays only
   the two head instrumentation directories (`internal/bench/phase` and
   `benchmarks/embedded/wasmvm`). No engine/public-API file is copied from head

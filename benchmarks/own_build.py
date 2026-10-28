@@ -12,6 +12,7 @@ import ci
 
 MODULE = "github.com/cpunion/wasmvm"
 LLGO_REVISION = "8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f"
+LLGO_BUILD_FLAGS = ["-O3", "-lto=full"]
 GO_VERSION = "go1.27.3"
 HARNESS = ("internal/bench/phase", "benchmarks/embedded/wasmvm")
 ENGINE_PATHS = ("go.mod", "go.sum", "internal", "pkg", "cmd")
@@ -71,8 +72,10 @@ def toolchains():
         raise ValueError("own-engine benchmark host is outside the accepted platform matrix")
     result = {
         "go": {**common, "command": str(Path(go).resolve()), "revision": version,
+               "buildFlags": [],
                "version": ci.capture([go, "version"]), "binarySha256": digest(Path(go))},
         "llgo": {**common, "command": str(Path(llgo).resolve()), "revision": LLGO_REVISION,
+                 "buildFlags": list(LLGO_BUILD_FLAGS),
                  "version": llgo_version, "binarySha256": digest(Path(llgo)),
                  "goBuildInfo": ci.capture([go, "version", "-m", llgo]),
                  "environment": ci.capture([llgo, "env", "LLGO_ROOT", "GOROOT"])},
@@ -135,7 +138,7 @@ def build(head, base, temporary, base_sha, head_sha, native=False):
             if compiler == "go":
                 environment["CGO_ENABLED"] = "1" if native else "0"
             executable = target / "wasmvm-phase"
-            command = [toolchain["command"], "build", "-o", str(executable), "./benchmarks/embedded/wasmvm"]
+            command = [toolchain["command"], "build", *toolchain.get("buildFlags", []), "-o", str(executable), "./benchmarks/embedded/wasmvm"]
             subprocess.run(command, cwd=target, env=environment, check=True, timeout=600)
             dependencies = ci.capture([selected["go"]["command"], "list", "-deps", "./benchmarks/embedded/wasmvm"],
                                       cwd=target, env=environment).splitlines()
@@ -146,7 +149,7 @@ def build(head, base, temporary, base_sha, head_sha, native=False):
             cli = {"status": "baseline-unavailable", "reason": "the selected revision predates cmd/wasmvm"}
             if (target / "cmd/wasmvm/main.go").is_file():
                 cli_binary = target / "wasmvm-cli"
-                cli_command = [toolchain["command"], "build", "-o", str(cli_binary), "./cmd/wasmvm"]
+                cli_command = [toolchain["command"], "build", *toolchain.get("buildFlags", []), "-o", str(cli_binary), "./cmd/wasmvm"]
                 subprocess.run(cli_command, cwd=target, env=environment, check=True, timeout=600)
                 cli = {"status": "available", "binary": str(cli_binary),
                        "binarySha256": digest(cli_binary), "buildCommand": cli_command}

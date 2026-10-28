@@ -27,3 +27,10 @@ adding the frame base. Refresh this view on every frame transition and Run
 entry. Arguments copied after push must still read the preserved global arena,
 because growth can relocate and invalidate the former view. Keep the existing
 moving-arena regression and actual native growth/host-reentry tests enabled.
+
+The supported LLGo release profile now explicitly uses `-O3 -lto=full` in the
+shared benchmark builder, native probe and semantic CI. Both source revisions
+use the same profile. Keep the existing default `-Os` regressions visible and
+record the profile change separately from source-only comparisons. This does
+not accept the remaining source-call, SIMD, native-application or calibration
+deficits. No workload, competitor, safety policy or acceptance margin changes.

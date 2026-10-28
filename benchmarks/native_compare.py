@@ -94,7 +94,7 @@ def run(head, builds, runtimes, fixture, invoke, timeout):
         probe.write_text(source if optimized else source.replace("codegen.CompileUnmeteredFunction", "codegen.CompileFunction"))
         binary = target / "wasmvm-native-phase"
         environment = dict(os.environ, GOWORK="off", GOFLAGS="", GOTOOLCHAIN="local", CGO_ENABLED="1")
-        command = [build["toolchain"]["command"], "build", "-o", str(binary), "./benchmarks/native"]
+        command = [build["toolchain"]["command"], "build", *build["toolchain"].get("buildFlags", []), "-o", str(binary), "./benchmarks/native"]
         subprocess.run(command, cwd=target, env=environment, check=True, timeout=600)
         if own_build.hashes(target, own_build.ENGINE_PATHS, own_build.HARNESS) != before:
             raise ValueError("native probe build changed archived engine sources")
