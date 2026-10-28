@@ -1211,3 +1211,52 @@ Final raw results SHA-256: `391a54424bfd1402cc440d11e4bac83ef95b0c0dae853347cbf0
 Component results SHA-256: `e5325303b39a22de991c9153919ab45748c4006b0d388221dda5f233e1399c7c`.
 Retained under `artifacts/simd-packed-pinned` with exact source/binary/CLI hashes.
 These short local diagnostics lack all-target A/A calibration and do not authorize merging.
+
+
+## Proposed LLGo caller-side math bitcasts
+
+[LLGo PR #2936](https://github.com/xgo-dev/llgo/pull/2936) addresses
+[issue #2935](https://github.com/xgo-dev/llgo/issues/2935) by selecting the
+existing four LLVM bitcast intrinsics on every target. 386 retains its earlier
+x87/signaling-NaN protection. Direct calls no longer allocate temporary scalar
+storage; ordinary function values retain their existing supported path. No VM
+math implementation or compiler-specific VM fallback is added.
+
+Exact compiler base `748cf18118e4d2e9cd4f8e953490e50945572ef6` and proposed
+head `8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f` were built from clean checkouts,
+with full revisions and `vcs.modified=false` retained. Caller-side IR checks
+cover windows/386, linux/amd64, darwin/arm64 and wasip1/wasm. Raw-bit tests include
+signed zero, subnormals, infinities and quiet/signaling NaNs; function-value and
+reflection tests pass. The complete local wasmvm package suite also passes
+under the fixed compiler. Upstream CI/review and production-pin adoption remain
+separate requirements; the wasmvm production pin is still `8b1389c`.
+
+Local Apple M4 Max standalone default-compiler medians (100,000 calls, three
+process blocks): f32/f64 bit round trips change roughly 26 ns / 32 reported B
+per call to 1 ns / zero reported B. Scalar additions change roughly 37 ns /
+48 B to 1 ns / zero B. Full LTO removes the same allocator calls; one f64 block
+retains 0.026 B/call of process-counter traffic. Disassembly shows register
+moves/addition without allocator or math-helper calls. Hosted Mallocs zero is
+not used as evidence.
+
+The same exact wasmvm source `6d19583` is then rebuilt with both compilers,
+keeping default and `-O3 -lto=full` configurations separate. Ten interpreter
+families pass 440 alternate-input/runtime checks. Three interleaved process
+blocks, seven calls/two warmups and 100,000 source iterations retain public API,
+reused dispatch and all preparation/first-call phases separately. Selected
+public API warm medians, ns/source iteration:
+
+| Family | LLGo default base -> proposed | LLGo -O3/full LTO base -> proposed | wazero interpreter (Go) |
+| --- | ---: | ---: | ---: |
+| f32 arithmetic | 662.571 -> 200.403 | 424.703 -> 131.972 | 104.114 |
+| f64 arithmetic | 394.211 -> 180.997 | 266.575 -> 119.538 | 109.734 |
+| Unsigned f32 conversion | 826.282 -> 270.272 | 533.722 -> 180.191 | 167.623 |
+| Mixed casts | 617.868 -> 213.508 | 394.951 -> 149.140 | 135.463 |
+
+These gains remove a compiler-side cause of floating-point overhead but still
+trail the reference. Integer/call/memory/SIMD/control regressions remain visible
+in the raw report. No all-target or calibrated performance acceptance is claimed.
+Runtime raw SHA-256:
+`460eed4194ceb8fc7a3fdda5a171eed0e8e4b733bb045c436c181dc85f9ccdb8`.
+Raw reports, source/binary hashes and clean compiler build information remain
+under `artifacts/llgo-bitcasts`. M1/M2 and later profiles remain open.
