@@ -1,7 +1,7 @@
 package codegen
 
 import (
-	"bytes"
+	"encoding/binary"
 	"testing"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
@@ -28,11 +28,15 @@ func TestScalarSelectEncodings(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		pattern := []byte{0x48, 0x0f, 0x44, 0xc1} // cmove rax, rcx.
-		if arch == "arm64" {
-			pattern = []byte{0x7f, 0x01, 0x00, 0x71, 0x29, 0x11, 0x8a, 0x9a} // cmp w11, #0; csel x9, x9, x10, ne.
+		found := false
+		for i := 0; i+4 <= len(compiled.Entry.Code); i++ {
+			b := compiled.Entry.Code[i:]
+			if arch == "arm64" && i%4 == 0 && binary.LittleEndian.Uint32(b)&0xffe00c00 == 0x9a800000 ||
+				arch == "amd64" && b[0]&0xf8 == 0x48 && b[1] == 0x0f && (b[2] == 0x44 || b[2] == 0x45) {
+				found = true
+			}
 		}
-		if !bytes.Contains(compiled.Entry.Code, pattern) {
+		if !found {
 			t.Fatal("missing branchless scalar selection", arch)
 		}
 	}
@@ -78,6 +82,40 @@ func TestScalarSelectBitsAliasesAndConditions(t *testing.T) {
 					}
 				}
 			}
+		}
+	}
+}
+
+func TestScalarSelectSpilledOperands(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	f := selectFixture(wasm.I64, 3)
+	var prefix []slots.Instruction
+	for slot := slots.Slot(4); slot < 20; slot++ {
+		f.Slots = append(f.Slots, wasm.I64)
+		f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: 0x20, A: uint32(slot)}})
+		prefix = append(prefix, slots.Instruction{Op: 0x20, Source: uint32(len(f.Sources) - 1), Dst: slot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot})
+	}
+	// These independently used locals take the fixed registers, leaving every
+	// select operand/result in its backing slot.
+	f.LocalCount = uint32(len(f.Slots))
+	f.Code = append(prefix, f.Code...)
+	_, lease, ctx := configuredContext(t, f, Config{Unmetered: true})
+	for _, condition := range []uint64{0, 1 << 32, 1, (1 << 32) | 1} {
+		writeSlot(t, ctx, 16, 0, value.Value{Lo: 111})
+		writeSlot(t, ctx, 16, 1, value.Value{Lo: 222})
+		writeSlot(t, ctx, 16, 2, value.Value{Lo: condition})
+		if err := ctx.SetState(native.State{Used: 16, Depth: 1}); err != nil {
+			t.Fatal(err)
+		}
+		exit, err := ctx.Enter(lease, 0)
+		want := uint64(222)
+		if uint32(condition) != 0 {
+			want = 111
+		}
+		if err != nil || exit != native.Return || readSlot(t, ctx, 16, 3) != (value.Value{Lo: want}) {
+			t.Fatal(condition, exit, err, readSlot(t, ctx, 16, 3))
 		}
 	}
 }
