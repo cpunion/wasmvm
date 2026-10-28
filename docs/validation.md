@@ -2001,3 +2001,109 @@ disassembly remain under `artifacts/loop-guards`, raw SHA-256
 Existing competitor and PR #26 calibration gates remain open. This branch stays
 outside that PR's unchanged head. M1/M2 acceptance, global allocation, broader
 loop analysis and subsequent Core 3.0/GC/Threads/components/WASI stages remain open.
+
+## Direct numeric global cells
+
+Scope is [direct numeric globals](../benchmarks/native/globals-plan.md), from
+baseline `ccbcbd5868de49651402737ccef0e4e9cc8b13e5` (production engine
+`4304f73fb52e2e946e6f2b8877d90e4b87d7ee4c`). Implementation
+`9ad273d7b7e76026ee4fa3c997de958c78fe394b` adds typed numeric lowering;
+`a26c57cebe8bc67734304e86c781d9b7fa020f65` selects allocated integer/FP registers
+directly, removes canonical zero-word stores and avoids hash-table construction
+for small binding sets. Both amd64/arm64 emitters and precise/unmetered entries
+support i32/i64/f32/f64/v128. References retain the helper/root protocol.
+
+Execution-owned native cells deduplicate imported aliases by Global identity.
+The driver snapshots only referenced numeric globals and flushes after every
+native exit, before host/helper handling, traps, fuel or cancellation. Pointer
+caches never cache mutable values. Suspend/close clear Go binding roots, and a
+function without globals cannot flush a prior function's stale cells. No Go
+address crosses the ABI. Unmetered scalar cells follow the canonical zero-word
+contract; precise entries retain exact two-word copies.
+
+Tests cover all numeric types and NaN/vector bits, every original continuation,
+missing views, reference/invalid-assumption fallbacks, large displacements, code
+limits, integer/FP/vector register pressure and spills, small/large alias sets,
+rebinding/growth, root cleanup, host observation, same/cross-instance reentry,
+collection, and writes before trap/fuel/cancellation. Full local Go/LLGo release
+semantics and vet pass at the final engine. Each of six reports retains 148
+scripts and 51,139 binary assertions. Local coverage: codegen 97.66%, execute
+98.72%, nativeexec 95.24%, public VM 96.42%; all 19 measured executable packages
+exceed 90%.
+
+The [final CI](https://github.com/cpunion/wasmvm/actions/runs/40718959222)
+passes Go/LLGo release x Linux amd64/macOS arm64 at `a26c57c`. All twelve
+downloaded execution reports pass with the same script/assertion counts. Linux
+coverage is codegen 95.40%, execute 98.72%, nativeexec 95.24%, with every measured
+package above 90%. The earlier `9ad273d` run passed both Go jobs, then its
+remaining LLGo jobs were canceled in favor of the optimized source; it is not
+claimed as a completed four-job matrix. Documentation-only follow-up changes
+leave the tested production source unchanged.
+
+Performance retains Go 1.27.3 and LLGo
+`8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f` with `-O3 -lto=full`. The exact
+`4304f73` baseline binaries and source archives are hash-verified before reuse.
+References remain wazero 1.12.0, Wasmtime 48.0.1 / Cranelift speed and Wasmer
+7.3.0 / Cranelift, with the existing policy distinctions unchanged. Both first
+and optimized candidates pass 792 alternate-input oracle checks across eighteen
+families and eleven API/dispatch/reference configurations. Five owned numeric
+global loops use wasm-tools 1.258.0 and independent integer oracles, with source
+and binary hashes. Existing twelve families and mixed globals/tables remain.
+
+Three interleaved process blocks, seven calls and two warmups are local ARM64
+diagnostics only. Initial host load is about 27/18/14, optimized load about
+10/12/12. No CPU-heavy task from this work runs during timing. Startup,
+compilation, instantiation, first call, warm execution and cleanup stay separate.
+Primary public API medians (numeric/mixed globals: 10,000 iterations):
+
+| Workload / compiler | Unit | Base | Head | wazero | Wasmtime | Wasmer |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Global i32 / Go | ns/iteration | 230.383 | 2.704 | 1.550 | 1.600 | 2.100 |
+| Global i32 / LLGo | ns/iteration | 744.796 | 1.633 | 1.550 | 1.600 | 2.100 |
+| Global i64 / LLGo | ns/iteration | 742.587 | 1.533 | 1.704 | 1.500 | 1.900 |
+| Global f32 / LLGo | ns/iteration | 757.654 | 1.975 | 1.663 | 3.000 | 3.400 |
+| Global f64 / LLGo | ns/iteration | 747.433 | 2.000 | 1.575 | 3.000 | 3.300 |
+| Global v128 / LLGo | ns/iteration | 740.250 | 1.700 | 1.779 | 2.600 | 3.200 |
+| Globals/tables / LLGo | ns/iteration | 1865.475 | 1140.475 | 34.592 | 21.700 | 6.100 |
+| C image / Go | microseconds/pass | 1.313 | 1.372 | 3.011 | 1.150 | 1.175 |
+| C image / LLGo | microseconds/pass | 1.278 | 1.299 | 3.011 | 1.150 | 1.175 |
+| Rust CRC / LLGo | microseconds/packet | 1.714 | 1.818 | 1.682 | 1.563 | 1.672 |
+
+The first candidate's f32/f64 LLGo API medians were 5.067/5.133 ns/iteration;
+its image API regressed 1.380 -> 1.439 microseconds/pass. That entire slower
+comparison remains retained. Cross-run differences are not calibrated speedup
+estimates. Optimized LLGo regressions also remain: integer 1.623 -> 1.649,
+function calls 0.848 -> 0.861, memory 0.600 -> 0.630, unsigned conversion
+10.400 -> 10.602 ns/iteration, plus the image/CRC rows above. CRC generated
+code remains byte-identical; this does not dismiss its measured regression.
+
+Primary LLGo dispatch-only global medians are 0.758--1.200 ns/iteration versus
+1.533--2.000 through the public API. An additional component-scaling diagnostic
+retains both 10,000 and 100,000 global iterations and 40/400 image passes; it
+compares the same head and references, without replacing the fixed-count base/
+head results. At 100,000 iterations, LLGo API/dispatch f32 is 0.763/0.732,
+f64 0.786/0.744 and v128 0.622/0.548 ns/iteration, while wazero is
+0.672/0.673/0.525. Absolute results shift between runs. Fixed call costs matter,
+but isolated scaling still retains real competitor gaps; it does not accept a
+backend or prove a causal allocation-cost attribution.
+
+Image ARM64 code shrinks 9,520 -> 9,092 bytes with all three global helper exits
+removed; the bounded loop guard remains. Pure f32/f64 now use direct FP
+loads/stores without loop FP/GPR bit transfers. Mixed globals/tables still has
+three table/reference helper exits and a large competitor gap. Direct checked
+[table access](../benchmarks/native/tables-plan.md) is the next affected runtime/compiler scope. Global live-range
+allocation, API/runtime costs and all required controlled target comparisons
+remain open. PR #26 remains the single active draft at its unchanged head;
+this branch work does not mark M1/M2 or Core 3.0/Threads/components/WASI complete.
+
+Full local records are `artifacts/globals` and `artifacts/globals-optimized`:
+source/build identities, reports, coverage, full phase observations, sample
+orders, generated-code hashes and disassembly. Initial result SHA-256:
+`487e7f72c5214f881d537a8560161fc70b01a1cc554d605d29a034d50a65124f`;
+optimized result:
+`e98b1b9305e13e8fc2a750886b184f3f63821eabcad47d237bf3c5fd17ffc754`;
+scaling result:
+`bc78190d45bd97416c445c16e1e51797e6de189242a7e45be850788a87385cf3`.
+All-target parity, calibration, API/mixed-state costs and broader portfolio
+acceptance remain blocked. No sustained timing suite is repeated for unchanged
+kernels and these diagnostics do not pass the merge gates.

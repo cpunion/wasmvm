@@ -141,6 +141,14 @@ falls 48 -> 41 instructions, with local LLGo warm time improving about 8%, while
 competitor gaps, code growth and preparation/regression data remain explicit.
 See the [loop scope](../benchmarks/native/loop-guards-plan.md) and
 [validation](validation.md#remaining-span-guards-for-bounded-loops).
+Engine `a26c57c` directly lowers i32/i64/f32/f64/v128 globals on both targets
+and tiers through execution-owned, alias-deduplicated numeric cells. Host reentry,
+trap/fuel/cancel visibility and scalar/vector spills pass local Go/LLGo release
+semantics. Eighteen diagnostic families and 792 oracle checks per candidate keep
+API/mixed-table/portfolio gaps and regressions explicit. See the
+[global scope](../benchmarks/native/globals-plan.md) and
+[validation](validation.md#direct-numeric-global-cells). Checked table access,
+global live ranges, boundary costs and controlled acceptance remain required.
 The current frequency-based fixed register assignment still lacks the planned
 global live-range allocation/splitting. Calls, SIMD/application/preparation
 performance and all-target calibration remain open.
