@@ -401,7 +401,7 @@ func constant(in *Instance, expr module.Expr) value.Value {
 	case 0xd2:
 		return value.Value{Lo: in.Functions[x.A]}
 	case 0xfd000c:
-		return simd.Eval(x, value.Value{}, value.Value{}, value.Value{})
+		return simd.Eval(&x, value.Value{}, value.Value{}, value.Value{})
 	default:
 		panic("state: nonconstant validated initializer")
 	}

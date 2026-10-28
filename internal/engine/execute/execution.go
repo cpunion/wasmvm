@@ -397,7 +397,7 @@ func (e *Execution) Run() Status {
 			case sub == 11 || sub >= 88 && sub <= 91:
 				trap = instance.Memories[0].Store(op, uint32(a.Lo), im.B, im.Lane, b)
 			default:
-				result = simd.Eval(*im, a, b, c)
+				result = simd.Eval(im, a, b, c)
 			}
 		case op >= 0xfc0008 && op <= 0xfc0011:
 			var err error

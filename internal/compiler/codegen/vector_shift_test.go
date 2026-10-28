@@ -37,7 +37,7 @@ func TestPackedVectorMaskedShiftCounts(t *testing.T) {
 							if exit, err := c.Enter(lease, 0); err != nil || exit != native.Return {
 								t.Fatal(op, fast, count, exit, err)
 							}
-							want := simd.Eval(f.Sources[in.Source].Wasm, a, b, value.Value{})
+							want := simd.Eval(&f.Sources[in.Source].Wasm, a, b, value.Value{})
 							if got := readSlot(t, c, 16, in.Dst); got != want || readSlot(t, c, 16, in.B) != b {
 								t.Fatal(op, fast, count, a, got, want)
 							}
@@ -82,7 +82,7 @@ func TestPackedVectorReductionLaneOrder(t *testing.T) {
 						if exit, err := c.Enter(lease, 0); err != nil || exit != native.Return {
 							t.Fatal(op, lane, fast, exit, err)
 						}
-						want := simd.Eval(f.Sources[in.Source].Wasm, a, value.Value{}, value.Value{})
+						want := simd.Eval(&f.Sources[in.Source].Wasm, a, value.Value{}, value.Value{})
 						if got := readSlot(t, c, 16, in.Dst); got != want || readSlot(t, c, 16, in.A) != a {
 							t.Fatal(op, lane, fast, negative, got, want)
 						}

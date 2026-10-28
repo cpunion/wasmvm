@@ -23,7 +23,7 @@ func lane(v Value, width, index uint) uint64 {
 	return (x >> shift) & (^uint64(0) >> (64 - width))
 }
 func signed(x uint64, width uint) int64 { return int64(x<<(64-width)) >> (64 - width) }
-func put(v *Value, width, index uint, x uint64) {
+func put(v Value, width, index uint, x uint64) Value {
 	shift := index * width
 	mask := ^uint64(0) >> (64 - width)
 	x &= mask
@@ -33,6 +33,7 @@ func put(v *Value, width, index uint, x uint64) {
 	} else {
 		v.Lo = v.Lo&^(mask<<shift) | x<<shift
 	}
+	return v
 }
 func saturate(x int64, width uint, unsigned bool) uint64 {
 	lower, upper := -(int64(1) << (width - 1)), (int64(1)<<(width-1))-1
@@ -51,7 +52,8 @@ func saturate(x int64, width uint, unsigned bool) uint64 {
 // Eval executes a validated nonmemory SIMD instruction. Operands use Wasm
 // stack order, including scalar lane/shift inputs in Lo. Unknown and memory
 // opcodes panic as caller bugs; no fixed pure SIMD instruction traps.
-func Eval(in module.Instr, a, b, c Value) (r Value) {
+// The instruction is borrowed from immutable compiled code for this call.
+func Eval(in *module.Instr, a, b, c Value) (r Value) {
 	op := in.Op & 0xffff
 	if in.Op>>16 != 0xfd || !pureOpcode(op) {
 		panic("simd: nonnumeric or unknown opcode")
@@ -66,21 +68,21 @@ func Eval(in module.Instr, a, b, c Value) (r Value) {
 				v = b
 				n -= 16
 			}
-			put(&r, 8, uint(i), lane(v, 8, uint(n)))
+			r = put(r, 8, uint(i), lane(v, 8, uint(n)))
 		}
 		return r
 	case op == 14:
 		for i := uint(0); i < 16; i++ {
 			n := lane(b, 8, i)
 			if n < 16 {
-				put(&r, 8, i, lane(a, 8, uint(n)))
+				r = put(r, 8, i, lane(a, 8, uint(n)))
 			}
 		}
 		return r
 	case op >= 15 && op <= 20:
 		width := [6]uint{8, 16, 32, 64, 32, 64}[op-15]
 		for i := uint(0); i < 128/width; i++ {
-			put(&r, width, i, a.Lo)
+			r = put(r, width, i, a.Lo)
 		}
 		return r
 	case op >= 21 && op <= 34:
@@ -110,7 +112,7 @@ func Eval(in module.Instr, a, b, c Value) (r Value) {
 		}
 		if replace {
 			r = a
-			put(&r, width, uint(in.Lane), b.Lo)
+			r = put(r, width, uint(in.Lane), b.Lo)
 			return r
 		}
 		x := lane(a, width, uint(in.Lane))
@@ -172,7 +174,7 @@ func Eval(in module.Instr, a, b, c Value) (r Value) {
 				}
 			}
 			if yes {
-				put(&r, width, i, ^uint64(0))
+				r = put(r, width, i, ^uint64(0))
 			}
 		}
 		return r
@@ -215,7 +217,7 @@ func Eval(in module.Instr, a, b, c Value) (r Value) {
 		}
 		for i := uint(0); i < n; i++ {
 			x, _ := numeric.Eval(scalar, lane(a, from, i), 0)
-			put(&r, to, i, x)
+			r = put(r, to, i, x)
 		}
 		return r
 	case op >= 103 && op <= 106 || op == 116 || op == 117 || op == 122 || op == 148 || op >= 224 && op <= 247:
@@ -231,7 +233,7 @@ func Eval(in module.Instr, a, b, c Value) (r Value) {
 			if !unsigned {
 				x, y = uint64(signed(x, width)), uint64(signed(y, width))
 			}
-			put(&r, width*2, i, x+y)
+			r = put(r, width*2, i, x+y)
 		}
 		return r
 	case op >= 96 && op <= 223:
@@ -257,8 +259,8 @@ func Eval(in module.Instr, a, b, c Value) (r Value) {
 			}
 			n := 64 / width
 			for i := uint(0); i < n; i++ {
-				put(&r, width, i, saturate(signed(lane(a, 2*width, i), 2*width), width, kind == 6))
-				put(&r, width, i+n, saturate(signed(lane(b, 2*width, i), 2*width), width, kind == 6))
+				r = put(r, width, i, saturate(signed(lane(a, 2*width, i), 2*width), width, kind == 6))
+				r = put(r, width, i+n, saturate(signed(lane(b, 2*width, i), 2*width), width, kind == 6))
 			}
 			return r
 		case 7, 8, 9, 10, 28, 29, 30, 31:
@@ -283,7 +285,7 @@ func Eval(in module.Instr, a, b, c Value) (r Value) {
 				if multiply {
 					x *= y
 				}
-				put(&r, width, i, x)
+				r = put(r, width, i, x)
 			}
 			return r
 		case 26:
@@ -292,7 +294,7 @@ func Eval(in module.Instr, a, b, c Value) (r Value) {
 			}
 			for i := uint(0); i < 4; i++ {
 				x := signed(lane(a, 16, 2*i), 16)*signed(lane(b, 16, 2*i), 16) + signed(lane(a, 16, 2*i+1), 16)*signed(lane(b, 16, 2*i+1), 16)
-				put(&r, 32, i, uint64(x))
+				r = put(r, 32, i, uint64(x))
 			}
 			return r
 		}
@@ -361,7 +363,7 @@ func Eval(in module.Instr, a, b, c Value) (r Value) {
 			default:
 				panic("simd: invalid integer opcode")
 			}
-			put(&r, width, i, z)
+			r = put(r, width, i, z)
 		}
 		return r
 	}
@@ -433,7 +435,7 @@ func floating(op uint32, a, b Value) (r Value) {
 				z = y
 			}
 		}
-		put(&r, width, i, z)
+		r = put(r, width, i, z)
 	}
 	return r
 }

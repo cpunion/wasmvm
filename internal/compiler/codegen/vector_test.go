@@ -238,7 +238,7 @@ func TestNativeVectorOperationsAliasesAndSpills(t *testing.T) {
 								if in.C != slots.NoSlot {
 									c = initial[in.C]
 								}
-								initial[in.Dst] = simd.Eval(f.Sources[in.Source].Wasm, initial[in.A], b, c)
+								initial[in.Dst] = simd.Eval(&f.Sources[in.Source].Wasm, initial[in.A], b, c)
 							}
 							for i, want := range initial {
 								if got := readSlot(t, ctx, 16, slots.Slot(i)); got != want {

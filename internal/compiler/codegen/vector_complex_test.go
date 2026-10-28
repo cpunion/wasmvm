@@ -180,7 +180,7 @@ func TestNativeComplexSIMDMixedEdges(t *testing.T) {
 						if exit, err := ctx.Enter(lease, 0); err != nil || exit != native.Return {
 							t.Fatal(op, pattern, sample, fast, exit, err)
 						}
-						initial[in.Dst] = simd.Eval(f.Sources[in.Source].Wasm, a, b, value.Value{})
+						initial[in.Dst] = simd.Eval(&f.Sources[in.Source].Wasm, a, b, value.Value{})
 						for i, want := range initial {
 							if got := readSlot(t, ctx, 16, slots.Slot(i)); got != want {
 								t.Fatalf("op=%d pattern=%d sample=%d fast=%v slot=%d got=%x want=%x", op, pattern, sample, fast, i, got, want)

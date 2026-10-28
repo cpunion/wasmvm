@@ -166,7 +166,7 @@ func TestNativeVectorFloatMixedEdges(t *testing.T) {
 							t.Fatal(op, exit, err)
 						}
 						got := readSlot(t, c, 16, in.Dst)
-						want := simd.Eval(f.Sources[in.Source].Wasm, a, b, value.Value{})
+						want := simd.Eval(&f.Sources[in.Source].Wasm, a, b, value.Value{})
 						if !vectorFloatMatches(op, a, b, got, want) {
 							t.Fatalf("op=%x fast=%v a=%x b=%x got=%x want=%x", op, fast, a, b, got, want)
 						}
