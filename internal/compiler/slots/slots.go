@@ -176,6 +176,20 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 		out.BlockPC[bi] = uint32(len(out.Code))
 		for _, op := range b.Ops {
 			src := f.Sources[op.Source]
+			// Nontrapping integer evaluation reads every operand before writing
+			// its result. Prefer reusing the left operand for two-address targets.
+			code := src.Wasm.Op
+			reuse := (code >= 0x45 && code <= 0x5a || code >= 0x67 && code <= 0x8a ||
+				code == 0xa7 || code == 0xac || code == 0xad || code >= 0xc0 && code <= 0xc4) && src.Effects&ir.MayTrap == 0
+			if reuse {
+				for i := len(op.Args) - 1; i >= 0; i-- {
+					v := op.Args[i]
+					uses[v]--
+					if uses[v] == 0 {
+						release(v)
+					}
+				}
+			}
 			for _, v := range op.Results {
 				if pinned[v] || coalesced[v] {
 					continue
@@ -201,8 +215,8 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 					literals.add(key, out.ValueSlots[v], budget)
 				}
 			}
-			// Map operands before releasing slots. Local copies and identical
-			// literals can alias; call inputs/outputs remain distinct on suspension.
+			// SSA locations remain stable after release. Integer operands, local
+			// copies and equal literals can alias; suspended call tuples cannot.
 			in := Instruction{Op: src.Wasm.Op, Source: op.Source, Dst: NoSlot, A: NoSlot, B: NoSlot, C: NoSlot}
 			if in.Op == 0x10 || in.Op == 0x11 {
 				in.Extra = uint32(len(out.Args))
@@ -229,10 +243,12 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 				}
 			}
 			out.Code = append(out.Code, in)
-			for _, v := range op.Args {
-				uses[v]--
-				if uses[v] == 0 {
-					release(v)
+			if !reuse {
+				for _, v := range op.Args {
+					uses[v]--
+					if uses[v] == 0 {
+						release(v)
+					}
 				}
 			}
 			for _, v := range op.Results {

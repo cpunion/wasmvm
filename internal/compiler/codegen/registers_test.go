@@ -92,8 +92,8 @@ func TestAllocatedIntegerSemantics(t *testing.T) {
 	if !native.Available {
 		return
 	}
-	// Include destination/source aliasing in independently constructed slot IR,
-	// not just the non-overlapping operands produced by today's slot lowering.
+	// Include both destination/source aliases independently of the layouts
+	// selected by slot lowering, including typed and spill-path edge cases.
 	for _, dst := range []slots.Slot{0, 1, 2} {
 		for _, op := range integerOps() {
 			f := &slots.Function{

@@ -220,8 +220,8 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 		return true
 	}
 	// Two-address x86 operations must preserve the right operand if it also
-	// names the destination. Slot lowering normally avoids this overlap, but
-	// this emitter also accepts independently constructed trusted slot IR.
+	// names the destination. A live left alias can force this slot layout;
+	// retain constrained-register lowering when direct emission cannot handle it.
 	if d == r && d != l {
 		return false
 	}

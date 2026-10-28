@@ -6,6 +6,7 @@ import (
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/module"
+	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -49,6 +50,30 @@ func TestSharedLiteralsPreserveColdEntries(t *testing.T) {
 	// Keep the compiled straight-line slot layout and remove only its final
 	// result-edge transfer, allowing the independent integer checker to enter
 	// at every original operation with arbitrary, unequal initial slot bits.
+	f.Code = append(f.Code[:len(f.Code)-2], f.Code[len(f.Code)-1])
+	f.Edges, f.Moves = nil, nil
+	checkLinearIntegerEntries(t, f)
+}
+
+func TestLiveLiteralForcesRightOperandReuse(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	m := functionFixture(module.FuncType{Results: []wasm.ValueType{wasm.I32, wasm.I32}}, 0, module.Expr{
+		{Op: 0x41, Bits: 7}, {Op: 0x41, Bits: 7}, {Op: 0x41, Bits: 3}, {Op: 0x6b}, {Op: 0xb},
+	})
+	f := functionModule(t, m).Functions[0]
+	sub := f.Code[3]
+	if sub.Dst != sub.B || sub.Dst == sub.A {
+		t.Fatal("fixture did not preserve a live alias and reuse the right operand", f.Code)
+	}
+	for _, fast := range []bool{false, true} {
+		compiled, lease, c := functionContext(t, f, fast)
+		out, exit, state := runFunction(t, compiled, lease, c, nil, 100, !fast, 64)
+		if exit != native.Return || len(out) != 2 || out[0] != (value.Value{Lo: 7}) || out[1] != (value.Value{Lo: 4}) || !fast && state.Fuel != 96 {
+			t.Fatal(fast, exit, out, state)
+		}
+	}
 	f.Code = append(f.Code[:len(f.Code)-2], f.Code[len(f.Code)-1])
 	f.Edges, f.Moves = nil, nil
 	checkLinearIntegerEntries(t, f)

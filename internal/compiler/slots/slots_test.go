@@ -282,12 +282,12 @@ func TestReuseAndLimits(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := compiled.Functions[0]
-	// Three local arithmetic temporaries plus the dedicated return block value.
-	if len(f.Slots) != 4 {
+	// Two arithmetic temporaries plus the dedicated return block value.
+	if len(f.Slots) != 3 {
 		t.Fatalf("unbounded temporary growth: %d", len(f.Slots))
 	}
 	checkSymbolic(t, "reuse", m.Functions[0], f)
-	for _, limits := range []Limits{{3, 100000, 100000}, {100, 0, 100000}, {100, 100000, 0}} {
+	for _, limits := range []Limits{{2, 100000, 100000}, {100, 0, 100000}, {100, 100000, 0}} {
 		if got, err := Compile(m, limits); got != nil || !errors.Is(err, wasm.ErrLimit) {
 			t.Fatal(got, err)
 		}
