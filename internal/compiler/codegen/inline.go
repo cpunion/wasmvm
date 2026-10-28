@@ -187,13 +187,7 @@ func (e *functionEmitter) inlineLeaf(pc int, callee *slots.Function) (int, bool)
 	t := functionEmitter{a: &a, registers: map[slots.Slot]byte{}}
 	// These are ordinary allocated registers, never context, frame, SIMD,
 	// memory-cache, operand scratch or immutable constant-pool registers.
-	pool := []byte{3, 12, 13, 14, 15, 9, 10, 11}
-	if e.usesMemory {
-		pool = pool[:6]
-	}
-	if e.a.arch == "arm64" {
-		pool = []byte{19, 20, 21, 22, 23, 24, 25, 26, 27, 28}
-	}
+	pool := e.integerRegisterPool()
 	protected := map[byte]bool{}
 	for slot, r := range e.registers {
 		if !outputSlots[slot] && !e.overwrittenBeforeExit(end+1, slot) {

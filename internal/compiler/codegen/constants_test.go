@@ -54,7 +54,9 @@ func TestConstantPoolSpillsAndIndependentEntries(t *testing.T) {
 	values := []uint64{0, 1, 0xffff, 0xffffffff, 0x12345678, 0x87654321,
 		0xfedcba9876543210, 0x123456789abcdef0, 0xabcdef1234567890,
 		0x1122334455667788, 0x2233445566778899, 0x33445566778899aa,
-		0x445566778899aabb, 0x5566778899aabbcc, 0x66778899aabbccdd}
+		0x445566778899aabb, 0x5566778899aabbcc, 0x66778899aabbccdd,
+		0x778899aabbccddee, 0x8899aabbccddeeff, 0x99aabbccddeeff00,
+		0xaabbccddeeff0011, 0xbbccddeeff001122, 0xccddeeff00112233}
 	f := &slots.Function{}
 	for i, v := range values {
 		f.Slots = append(f.Slots, wasm.I64)

@@ -82,13 +82,7 @@ func (e *functionEmitter) prepareRegisters(plans ...map[int]memoryRegion) {
 		}
 		return order[i] < order[j]
 	})
-	available := []byte{3, 12, 13, 14, 15, 9, 10, 11} // rbx, r12-r15, r9-r11
-	if e.usesMemory {
-		available = available[:6]
-	}
-	if e.a.arch == "arm64" {
-		available = []byte{19, 20, 21, 22, 23, 24, 25, 26, 27, 28}
-	}
+	available := e.integerRegisterPool()
 	floatAvailable := []byte{3, 4, 5, 6, 7, 8, 9, 10}
 	if e.a.arch == "arm64" {
 		floatAvailable = []byte{8, 9, 10, 11, 12, 13, 14, 15, 16, 17}
@@ -121,6 +115,52 @@ func (e *functionEmitter) prepareRegisters(plans ...map[int]memoryRegion) {
 	}
 	e.registers, e.floatRegisters = integers, floats
 	e.vectorRegisters = vectors
+}
+
+// Mutable slots and leaf expressions share the target inventory. Constants
+// and runtime metadata occupy only spare caller registers and remain immutable.
+func (e *functionEmitter) integerRegisterPool() []byte {
+	pool := []byte{3, 12, 13, 14, 15, 9, 10, 11}
+	if e.usesMemory {
+		pool = pool[:6]
+	}
+	if e.a.arch == "arm64" {
+		pool = []byte{19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 1, 2, 3, 4, 5, 6, 7, 8}
+	}
+	var used [32]bool
+	for _, r := range e.constantRegisters {
+		used[r] = true
+	}
+	for _, r := range e.runtimeRegisters {
+		used[r] = true
+	}
+	free := pool[:0]
+	for _, r := range pool {
+		if !used[r] {
+			free = append(free, r)
+		}
+	}
+	return free
+}
+
+func (e *functionEmitter) spareCallerRegisters() []byte {
+	var used [32]bool
+	for _, r := range e.registers {
+		used[r] = true
+	}
+	for _, r := range e.constantRegisters {
+		used[r] = true
+	}
+	for _, r := range e.runtimeRegisters {
+		used[r] = true
+	}
+	var free []byte
+	for r := byte(1); r <= 8; r++ {
+		if !used[r] {
+			free = append(free, r)
+		}
+	}
+	return free
 }
 
 func (e *functionEmitter) operandRegister(reg byte) byte {

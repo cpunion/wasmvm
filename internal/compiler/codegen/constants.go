@@ -7,9 +7,9 @@ import (
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 )
 
-// AArch64's otherwise unused caller-saved x1-x8 retain expensive integer
-// constants for one native entry. They are immutable and need no spill/root
-// state. Every continuation reloads the same pool before dispatch.
+// Spare AArch64 caller-saved registers retain expensive integer constants for
+// one native entry. They are immutable and need no spill/root state. Every
+// continuation reloads the same pool before dispatch.
 func (e *functionEmitter) prepareConstants(config Config) {
 	if e.a.arch != "arm64" {
 		return
@@ -56,9 +56,10 @@ func (e *functionEmitter) prepareConstants(config Config) {
 		}
 		return values[i] < values[j]
 	})
+	available := e.spareCallerRegisters()
 	e.constantRegisters = map[uint64]byte{}
-	for i, v := range values[:min(8, len(values))] {
-		r := byte(i + 1)
+	for i, v := range values[:min(len(available), len(values))] {
+		r := available[i]
 		e.a.aconst(uint32(r), v, v > math.MaxUint32)
 		e.constantRegisters[v] = r
 	}

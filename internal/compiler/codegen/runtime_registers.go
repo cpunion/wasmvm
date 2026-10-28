@@ -9,7 +9,7 @@ import (
 
 // Table metadata and function identities cannot change inside a native entry:
 // every mutating operation/host call exits to the serialized driver. Reuse spare
-// arm64 constant registers for these words, refreshing them on every resume.
+// arm64 caller registers for these words, refreshing them on every resume.
 // Elements themselves remain live loads. No additional register spills or roots
 // are needed, and a missing runtime view installs zero lengths for checked exits.
 func (e *functionEmitter) prepareRuntimeRegisters(config Config) {
@@ -45,16 +45,7 @@ func (e *functionEmitter) prepareRuntimeRegisters(config Config) {
 		}
 		return offsets[i] < offsets[j]
 	})
-	used := map[byte]bool{}
-	for _, r := range e.constantRegisters {
-		used[r] = true
-	}
-	var available []byte
-	for r := byte(1); r <= 8; r++ {
-		if !used[r] {
-			available = append(available, r)
-		}
-	}
+	available := e.spareCallerRegisters()
 	offsets = offsets[:min(len(offsets), len(available))]
 	if len(offsets) == 0 {
 		return

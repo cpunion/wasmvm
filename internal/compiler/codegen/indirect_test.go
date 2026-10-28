@@ -29,7 +29,7 @@ func TestIndirectExpansionReadsLiveTargetsAndPreservesColdEntries(t *testing.T) 
 	if !native.Available {
 		t.Skip("native platform unavailable")
 	}
-	for _, constants := range []int{0, 5, 8} {
+	for _, constants := range []int{0, 5, 8, 13, 18} {
 		for _, table := range []uint32{0, 3000} {
 			f, config := indirectCaller()
 			// Exercise full, partial and exhausted metadata-register capacity.
@@ -68,6 +68,9 @@ func TestIndirectExpansionReadsLiveTargetsAndPreservesColdEntries(t *testing.T) 
 						for i, v := range initial {
 							writeSlot(t, ctx, 16, slots.Slot(i), v)
 						}
+						for i := 0; i < constants; i++ {
+							writeSlot(t, ctx, 16, slots.Slot(5+i), value.Value{})
+						}
 						s := native.State{Used: 16, Depth: 1, Continuation: uint64(pc)}
 						s.Payload[2] = uint64(uintptr(unsafe.Pointer(unsafe.SliceData(buffer))))
 						if err := ctx.SetState(s); err != nil {
@@ -89,6 +92,15 @@ func TestIndirectExpansionReadsLiveTargetsAndPreservesColdEntries(t *testing.T) 
 						for i, v := range initial {
 							if got := readSlot(t, ctx, 16, slots.Slot(i)); got != v {
 								t.Fatal(table, ref, index, pc, i, got, v)
+							}
+						}
+						for i := 0; i < constants; i++ {
+							v := value.Value{}
+							if want == native.Return && pc <= 6+i {
+								v.Lo = 0x123456789abcdef0 + uint64(i)
+							}
+							if got := readSlot(t, ctx, 16, slots.Slot(5+i)); got != v {
+								t.Fatal("constant under register pressure", constants, table, ref, index, pc, i, got, v)
 							}
 						}
 					}
