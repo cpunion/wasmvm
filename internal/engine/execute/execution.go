@@ -207,8 +207,8 @@ func (e *Execution) Run() Status {
 		}
 		base := f.base
 		in := code.Code[pc]
-		source := code.Sources[in.Source]
-		im := source.Wasm
+		source := &code.Sources[in.Source]
+		im := &source.Wasm
 		instance := fn.Instance
 		if metered {
 			cost := source.Fuel()
@@ -397,11 +397,11 @@ func (e *Execution) Run() Status {
 			case sub == 11 || sub >= 88 && sub <= 91:
 				trap = instance.Memories[0].Store(op, uint32(a.Lo), im.B, im.Lane, b)
 			default:
-				result = simd.Eval(im, a, b, c)
+				result = simd.Eval(*im, a, b, c)
 			}
 		case op >= 0xfc0008 && op <= 0xfc0011:
 			var err error
-			result, trap, err = e.bulk(instance, im, a, b, c)
+			result, trap, err = e.bulk(instance, *im, a, b, c)
 			if err != nil {
 				return e.fail(err)
 			}
