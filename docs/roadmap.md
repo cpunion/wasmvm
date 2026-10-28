@@ -78,12 +78,15 @@ reuse. Canceled native contexts are discarded with their sticky control state.
 Boundary and helper overhead still need measurement and optimization.
 
 The complete Go/LLGo semantic matrix passes on Linux amd64 and macOS arm64
-through engine `3bd89e3`
-([CI](https://github.com/cpunion/wasmvm/actions/runs/40617055082)); all 12
+through engine `a87954f`
+([CI](https://github.com/cpunion/wasmvm/actions/runs/40625855069)); all 12
 interpreter/native-tier reports retain 148 scripts and 51,139 binary assertions.
 The interpreter avoids per-step closure/source copies and SIMD instruction/
 result objects. Packed integer operations improve local popcount throughput;
-other families and floating-point compiler-helper costs remain open.
+value-based scalar dispatch and per-frame metadata reduce dispatch overhead.
+A proposed LLGo fix removes floating-point bitcast allocations; it is evaluated
+separately from the production pin. Calls, other performance families and
+all-target calibration remain open.
 Calibrated performance acceptance remains open. Full Core 3.0/Threads, Component Model and
 WASI 1/2/3 remain required subsequent work. See the
 [runtime scope](../benchmarks/native/runtime-plan.md),

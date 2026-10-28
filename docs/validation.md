@@ -1260,3 +1260,76 @@ Runtime raw SHA-256:
 `460eed4194ceb8fc7a3fdda5a171eed0e8e4b733bb045c436c181dc85f9ccdb8`.
 Raw reports, source/binary hashes and clean compiler build information remain
 under `artifacts/llgo-bitcasts`. M1/M2 and later profiles remain open.
+
+
+## Per-frame metadata and opcode dispatch
+
+The scoped follow-up caches immutable function/code/instance/base metadata for
+one active frame and refreshes it after frame transitions. The common driver
+still reloads the preserved value arena after push; a moving-arena regression
+explicitly invalidates old views during four nested frame/slot expansions.
+Every original PC, fuel charge, cancellation poll and trap boundary remains.
+
+The first metadata-only candidate `1e0b917` has mixed local LLGo results and is
+not an accepted standalone performance improvement. Candidate `884d302` replaces
+the scalar boolean-condition ladder with a value switch. Validated scalar and
+control opcodes can use dense/range dispatch; SIMD and bulk retain their
+existing handling. Disassembly confirms an indirect jump-table branch. No
+bytecode layout, opcode semantics, backend or instruction fusion is added.
+These changes are integrated through production engine `a87954f`.
+
+Local exact `1e0b917` -> `884d302`, with the same proposed LLGo compiler
+`8e45ed5e` on both sides, keeps the compiler change separate from VM-source
+changes. Go/LLGo default and optimized execution/VM tests pass locally; every
+measured executable package exceeds 90%. The four-job Go/LLGo × amd64/arm64 production matrix uses the existing
+`8b1389c` pin. [Final CI](https://github.com/cpunion/wasmvm/actions/runs/40625855069)
+passes all four jobs; all 12 reports independently retain 148 scripts and
+51,139 binary assertions. Every measured executable package exceeds 90%.
+Ten families pass 520 alternate-input/runtime checks, with three interleaved
+blocks, seven calls/two warmups and 100,000 source iterations. Public API warm
+medians, ns/source iteration:
+
+| Family | Go base -> head | LLGo default base -> head | LLGo -O3/full LTO base -> head | wazero interpreter (Go) |
+| --- | ---: | ---: | ---: | ---: |
+| Integer | 94.376 -> 68.459 | 119.142 -> 95.966 | 86.332 -> 75.823 | 83.977 |
+| Calls | 124.394 -> 97.290 | 232.915 -> 190.785 | 175.259 -> 142.285 | 89.389 |
+| Memory | 175.568 -> 124.823 | 225.419 -> 185.632 | 161.274 -> 147.697 | 146.613 |
+| Shuffle | 126.486 -> 104.427 | 173.359 -> 156.327 | 122.733 -> 112.055 | 104.705 |
+| Popcount | 104.884 -> 80.472 | 139.710 -> 123.518 | 102.957 -> 90.880 | 125.236 |
+| f32 arithmetic | 142.925 -> 116.083 | 191.196 -> 172.333 | 130.433 -> 121.518 | 105.084 |
+| f64 arithmetic | 127.171 -> 100.799 | 176.282 -> 150.619 | 117.696 -> 106.623 | 110.037 |
+| Unsigned f32 conversion | 220.499 -> 186.807 | 273.004 -> 242.811 | 181.162 -> 165.236 | 169.175 |
+| Mixed casts | 171.884 -> 138.850 | 206.954 -> 179.051 | 143.195 -> 136.102 | 136.690 |
+
+A few point estimates match or beat wazero; calls, f32 and other configurations
+still trail. The tiny public-call control also regresses in this local run
+(optimized LLGo 3084 -> 3917 ns/call, wazero 1041); keep this observation even
+though it is below reliable percentage-gating resolution. Startup, preparation,
+first call and reused dispatch remain separate. No all-target A/A or complete
+interpreter/native acceptance is claimed. No later stage is marked complete.
+
+Final source-comparison raw SHA-256:
+`1812eaea07cef340af8fbe241823f2418292d7fdc4f12f926df9a1a92257adf9`.
+Raw reports/source/binary hashes remain under the isolated frame worktree's
+`artifacts/frame-dispatch` and `artifacts/dispatch-switch`. The compiler proposal
+is still unmerged; these rows do not change the production toolchain pin.
+
+
+The [final paired PR-scope CI](https://github.com/cpunion/wasmvm/actions/runs/40625856666)
+also compares exact `6d19583` / `a87954f` with the **production default** Go/LLGo
+build flags and compiler `8b1389c`, separately from the proposed-toolchain local
+rows. Linux public interpreter ns/source iteration:
+
+| Family | Go base -> head | LLGo default base -> head | wazero interpreter |
+| --- | ---: | ---: | ---: |
+| Integer | 190.68 -> 132.13 | 224.14 -> 182.62 | 175.12 |
+| Calls | 248.00 -> 226.15 | 441.07 -> 430.60 | 181.27 |
+| Memory | 344.30 -> 246.05 | 445.21 -> 394.84 | 323.05 |
+
+Linux native integer timing passes its narrow unchanged competitor/A/A gate
+(Go 1.870, LLGo 1.868 ns/source iteration; wazero 1.908, Wasmtime/Wasmer 1.868).
+The macOS native job reaches 60 blocks but remains inconclusive: LLGo A/A
+interval 0.986–1.022 fails the unchanged ±0.25% calibration band, and the
+Wasmtime/Wasmer comparisons are also inconclusive. Its raw failure is retained
+rather than using the Linux pass as all-target acceptance. Interpreter throughput and public-call
+controls also retain deficits. These results leave PR #26 and M1/M2 open.
