@@ -330,7 +330,10 @@ Widened address arithmetic checks the entire access before any memory effect.
 
 The unmetered tier can prove bounded addresses from constants, masks, shifts and
 non-wrapping arithmetic in straight-line regions of at most 256 slot instructions.
-Facts never cross CFG entries, polls or helpers. Entry validates the assumed
+Straight-line facts do not cross original CFG entries or host exits. A separate
+bounded single-block loop proof can authorize private backedges for the current
+native entry. Those backedges still poll; dispatcher PCs and driver resumption
+always recheck the original header. No guard state is added to the ABI. Entry validates the assumed
 minimum memory size. Each interior original PC has a checked cold continuation,
 so independent resumption cannot inherit an unexecuted proof. Shared scalar
 copy forwarding omits only copies overwritten before any read or observable exit.

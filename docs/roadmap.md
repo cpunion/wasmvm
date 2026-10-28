@@ -133,6 +133,14 @@ compilation costs retained. Full local release semantics and the final four-job
 Go/LLGo target matrix pass. See the
 [compact scope](../benchmarks/native/compact-guards-plan.md) and
 [validation](validation.md#compact-span-guards-and-shifted-operands).
+Engine `4304f73` versions bounded, single-block +1 memory loops with one remaining-
+span guard, private polled backedges and original checked cold PCs. Full local
+Go/LLGo release suites and the final four-job target matrix pass, including
+97 added typed scalar/SIMD memory-loop cases. Image hot code
+falls 48 -> 41 instructions, with local LLGo warm time improving about 8%, while
+competitor gaps, code growth and preparation/regression data remain explicit.
+See the [loop scope](../benchmarks/native/loop-guards-plan.md) and
+[validation](validation.md#remaining-span-guards-for-bounded-loops).
 The current frequency-based fixed register assignment still lacks the planned
 global live-range allocation/splitting. Calls, SIMD/application/preparation
 performance and all-target calibration remain open.

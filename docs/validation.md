@@ -1912,3 +1912,92 @@ remain under `artifacts/compact-guards`, raw SHA-256
 Existing compiler, competitor and PR #26 calibration gates remain open. The
 branch remains outside that PR's unchanged head; neither M1/M2 nor the later
 Core 3.0/Threads/components/WASI stages are accepted by this increment.
+
+## Remaining-span guards for bounded loops
+
+Engine `4304f73fb52e2e946e6f2b8877d90e4b87d7ee4c` implements the
+[bounded-loop scope](../benchmarks/native/loop-guards-plan.md). One-block i32 +1
+loops with a literal exit bound can share one proof for the remaining accesses.
+The root must advance with the induction variable, its base stay invariant and
+the update follow every access. Internal entries, edge moves, helpers, growth,
+possible arithmetic traps, multiple guard groups, nonlinear recurrences and
+long prefixes retain ordinary checked code. Analysis stays within 256 operations.
+
+At the original header, the canonical prefix precedes a widened remaining-span
+check. Failed checks continue at the exact first checked access, preserving
+prefix effects, wrapping behavior and the actual first trap. Successful entries
+share a hot body and a private prefix/backedge without repeated span checks.
+Original dispatch PCs and cold conditions never inherit that proof. Backedges
+retain polling, and driver resumption or memory rebinding always rechecks.
+Warm-only temporary deletion still preserves every physical exit slot.
+
+Tests compare all frame words, complete native states and memory effects against
+ordinary checked execution from every original PC. Cases include first-access
+headers, both branch polarities, commuted comparisons, non-adjacent exits,
+future-iteration out-of-bounds effects, i32 wrapping, memory rebinding,
+cancellation, exact code limits and rejected recurrences/control. Separate guard
+probes execute cached/spilled operand combinations, near-uint32-limit counters,
+large biases and exact 4 GiB endpoints without allocating multi-GiB memory.
+A test-only follow-up `877c6d8` adds 97 frontend-validated scalar/SIMD width/lane
+loop cases, comparing successful private backedges, future-iteration bounds
+failures, wrapped addresses, complete frames and memory effects with ordinary
+checked execution. Production sources remain identical to `4304f73`.
+The first overflow-rejection fixture described a legal 4 GiB span; its failed
+assertion is retained in `artifacts/loop-guards/loop-go.log`, and the rejection
+case now exceeds memory32. This was a fixture correction, not a hidden engine
+failure. Both valid and invalid endpoints remain tested.
+
+Full local Go/LLGo release semantics and vet pass. All six execution reports retain
+148 scripts and 51,139 binary assertions each. Codegen coverage is 97.51%, execute
+98.72%, nativeexec 94.09%; every measured executable package exceeds 90%. Final
+Linux codegen coverage is 94.60%, with all 19 measured packages above 90%. The
+[engine CI](https://github.com/cpunion/wasmvm/actions/runs/40698445626) passes all
+four combinations. The final
+[typed-loop CI](https://github.com/cpunion/wasmvm/actions/runs/40705521756) passes
+Go/LLGo release x Linux amd64/macOS arm64. All 12 downloaded reports retain the
+script and binary-assertion counts. It reruns semantics for the added tests,
+without repeating benchmark timing.
+
+Exact source base `102623b` and head `4304f73` retain compiler/reference pins and
+release flags. Twelve native API/dispatch families, eleven configurations and
+528 alternate-input checks pass. Three interleaved process blocks, seven calls
+and two warmups remain local diagnostics; host load is approximately 7/8/8.
+No CPU-heavy task from this work runs during timing. Every preparation, first,
+warm and cleanup phase remains separate. Public native medians:
+
+| Workload / compiler | Unit | Base | Head | wazero | Wasmtime | Wasmer |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| C image / Go | microseconds/pass | 1.405 | 1.249 | 2.817 | 1.100 | 1.100 |
+| C image / LLGo | microseconds/pass | 1.443 | 1.330 | 2.817 | 1.100 | 1.100 |
+| Rust CRC / Go | microseconds/packet | 1.615 | 1.639 | 1.483 | 1.516 | 1.531 |
+| Rust CRC / LLGo | microseconds/packet | 1.744 | 1.667 | 1.483 | 1.516 | 1.531 |
+| Indirect calls / LLGo | ns/iteration | 0.843 | 0.926 | 2.063 | 1.100 | 0.830 |
+| Memory / LLGo | ns/iteration | 0.597 | 0.609 | 0.858 | 0.500 | 0.580 |
+| Integer / LLGo | ns/iteration | 1.639 | 1.654 | 1.535 | 1.580 | 1.590 |
+
+Image warm time improves about 11% under Go and 8% under LLGo, but still trails
+Wasmtime/Wasmer. Its arm64 hot backedge span falls 48 -> 41 instructions
+(0x860..0x91c -> 0x8ac..0x94c), retaining nine byte loads, no frame accesses and
+interrupt polling. One loop-range check replaces the repeated inner span check;
+Warm-only elisions increase 14 -> 16 logical temporary operations. The complete
+bodies grow 7371 -> 7562 bytes on amd64 and 9472 -> 9520 on arm64. Code size and
+first-entry work remain costs, not hidden by warm throughput.
+
+All eleven other configured static code hashes remain identical on both targets;
+their timing differences are not different guest instructions. This includes CRC,
+whose small LLGo gain and Go regression do not establish parity. Shape probes
+configure direct leaf candidates; actual runtime runners measure indirect
+expansion and host/compiler boundaries. Interpreter timing is unchanged and not
+repeated; its full semantic matrix still runs. Small or rounded medians, and the
+tiny-call control, are not controlled acceptance.
+
+Image compilation/validation preparation is Go 478333 -> 503541 ns (regression),
+LLGo 1004541 -> 958333 ns. First calls are 54250 -> 48167 / 56041 -> 51459 ns.
+CRC preparation is Go 333667 -> 331250 ns, LLGo 898208 -> 801291 ns; first calls
+100959 -> 101375 / 102625 -> 103458 ns. No phase median is subtracted. Exact
+source/binary metadata, full phase records, interval probes, code hashes and
+disassembly remain under `artifacts/loop-guards`, raw SHA-256
+`75da03c922b2419b58474ad432ac3e49437ab6b62d5e915a36e1287c27faf825`.
+Existing competitor and PR #26 calibration gates remain open. This branch stays
+outside that PR's unchanged head. M1/M2 acceptance, global allocation, broader
+loop analysis and subsequent Core 3.0/GC/Threads/components/WASI stages remain open.

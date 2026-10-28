@@ -171,8 +171,26 @@ AArch64 shift-plus-ADD/SUB/AND/OR/XOR selection uses the same observation scan;
 it retains live constants, rejects observed intermediate values and preserves
 aliases and all original cold PCs. Rotate forms apply only to logical operands.
 Local versions invalidate stale facts; CFG/helper/growth/poll boundaries reset
-analysis. All memory operations still execute in order. This is local region
-optimization, not the planned global live-range allocation or loop analysis.
+analysis. All memory operations still execute in order.
+
+A bounded loop analysis additionally recognizes one-block, literal-bounded i32
++1 recurrences whose accesses share one affine root. The update follows every
+access, the root's base remains invariant, edges have no moves, and a pure
+local/copy/constant/add prefix contains at most 16 operations. Calls, growth, possible arithmetic traps,
+internal CFG entries, nonlinear addresses and unsupported recurrences retain
+ordinary checked code. The entire candidate, including its branch, stays within
+one 256-instruction interval.
+
+The original header executes its canonical prefix, then checks `i < limit` and
+`uint32(firstAddress - firstBias) + (limit - 1 - i) + span <= 2^32` and the bound
+memory length, using widened arithmetic. A failed check resumes the exact first
+checked access without replaying prefix effects or trapping early. A successful
+check enters a shared body with a private prefix/backedge and no repeated span
+check. Original dispatcher PCs and cold conditional branches always target
+checked original headers. Private backedges keep interruption polls; any return
+to the driver loses the proof. Warm-only dead temporary removal preserves all
+physical slots at every exit. This is conservative loop versioning; global
+live-range allocation and broader loop/range optimization remain required.
 
 Use a private guest ABI with explicit VM frames: guest calls push checked logical frames and branch to native callee labels; returns branch to saved continuations. The initial backend keeps one bounded C entry frame, without hardware-stack switching or a native C/Go frame per guest call. Host interaction, collection, cancellation and traps leave through the explicit status protocol in the [native ABI](native-abi.md). Whole-function inlining and more advanced optimization follow correctness and profiling; both disabled and enabled optimizations must pass differential tests. A persistent AOT/cache file format is later work; generating native code in-process is required in M2.
 
