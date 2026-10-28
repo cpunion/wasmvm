@@ -25,6 +25,8 @@ type Execution struct {
 	runtimeData     *native.Memory
 	runtimeWords    []uint64
 	runtimeInstance *state.Instance
+	runtimeFunction *slots.Function
+	runtimeGlobals  []globalBinding
 }
 
 func New(ctx context.Context, modules map[*slots.Module]*Lease, maxSlots, maxFrames uint32, metered bool) (*Execution, error) {
@@ -67,6 +69,7 @@ func (e *Execution) Suspend() bool {
 	}
 	stopped := e.stop()
 	e.stop, e.ctx, e.runtimeInstance = nil, nil, nil
+	e.resetRuntimeGlobals()
 	e.reusable = e.native.BindMemory(nil) == nil && stopped
 	return e.reusable
 }
@@ -104,6 +107,7 @@ func (e *Execution) Close() {
 		e.runtimeData = nil
 	}
 	e.runtimeWords, e.runtimeInstance = nil, nil
+	e.resetRuntimeGlobals()
 }
 
 func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uint64) (uint32, uint64, error) {
@@ -132,6 +136,7 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 		return 0, fuel, err
 	}
 	entry := entries.ordinary
+	needsData := len(entries.globals) != 0
 	s := native.State{Used: uint64(base) * 16, Depth: uint64(depth), Function: uint64(fn.Index), Continuation: uint64(pc), Fuel: fuel, Budget: 64}
 	if e.metered {
 		entry = entries.metered
@@ -139,12 +144,13 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 	} else if entries.hasExpansion && uint64(depth) < e.maxFrames &&
 		uint64(base)+uint64(len(fn.Code.Slots))+uint64(entries.inlineSlots) <= e.maximum/16 {
 		entry = entries.expanded
-		if entries.usesRuntimeData {
-			var err error
-			s.Payload[2], err = e.bindRuntimeData(fn.Instance)
-			if err != nil {
-				return 0, fuel, err
-			}
+		needsData = needsData || entries.usesRuntimeData
+	}
+	if needsData {
+		var err error
+		s.Payload[2], err = e.bindRuntimeGlobals(fn.Instance, fn.Code, entries.globals)
+		if err != nil {
+			return 0, fuel, err
 		}
 	}
 	for {
@@ -155,6 +161,9 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 			return 0, s.Fuel, err
 		}
 		exit, err := e.native.Enter(module.code, entry)
+		if len(entries.globals) != 0 {
+			e.flushRuntimeGlobals()
+		}
 		if err != nil {
 			return 0, s.Fuel, err
 		}

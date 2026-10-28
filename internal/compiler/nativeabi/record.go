@@ -1,6 +1,16 @@
 package nativeabi
 
-import "unsafe"
+import (
+	"math"
+	"unsafe"
+)
+
+// GlobalPointerOffset locates a cell pointer after the immutable function IDs
+// and table length/address pairs. Both emitters use signed 32-bit displacements.
+func GlobalPointerOffset(functions, tables, index uint32) (uint32, bool) {
+	offset := uint64(functions)*8 + uint64(tables)*16 + uint64(index)*8
+	return uint32(offset), offset <= math.MaxInt32
+}
 
 type Exit uint32
 

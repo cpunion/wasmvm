@@ -10,6 +10,7 @@ import (
 
 	"github.com/cpunion/wasmvm/internal/compiler/codegen"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
+	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -28,6 +29,7 @@ type functionEntries struct {
 	inlineSlots                 uint32
 	hasExpansion                bool
 	usesRuntimeData             bool
+	globals                     []uint32
 }
 
 // Compile prepares both policy tiers within one aggregate code-byte budget.
@@ -42,6 +44,8 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 	definition := m.IR.Validated.Definition()
 	var minimum uint32
 	var importedFunctions uint32
+	var tables uint32
+	var globals []module.GlobalType
 	for _, im := range definition.Imports {
 		if im.Kind == 0 {
 			importedFunctions++
@@ -49,6 +53,16 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 		if im.Kind == 2 {
 			minimum = im.Memory.Min
 		}
+		if im.Kind == 1 {
+			tables++
+		}
+		if im.Kind == 3 {
+			globals = append(globals, im.Global)
+		}
+	}
+	tables += uint32(len(definition.Tables))
+	for _, g := range definition.Globals {
+		globals = append(globals, g.Type)
 	}
 	if len(definition.Memories) != 0 {
 		minimum = definition.Memories[0].Min
@@ -97,11 +111,11 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 			}
 			bounded := limits
 			bounded.MaxCodeBytes = min(limits.MaxCodeBytes, uint64(math.MaxUint32)) - uint64(len(code))
-			config := codegen.Config{Unmetered: tier != 1, MemoryMinimumPages: minimum, X86Features: features}
+			config := codegen.Config{Unmetered: tier != 1, MemoryMinimumPages: minimum, X86Features: features,
+				FunctionCount: importedFunctions + uint32(len(m.Functions)), TableCount: tables, Globals: globals}
 			if tier == 2 {
 				config.DirectCallees = callees
 				config.IndirectCallees = indirect
-				config.FunctionCount = importedFunctions + uint32(len(m.Functions))
 			}
 			body, err := codegen.CompileFunctionWithConfig(runtime.GOARCH, f, bounded, config)
 			if tier == 2 && errors.Is(err, wasm.ErrLimit) {
@@ -119,6 +133,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 			switch tier {
 			case 0:
 				indexes.ordinary = index
+				indexes.globals = body.GlobalIndices
 				wantExpansion[f] = body.Calls != 0
 			case 1:
 				indexes.metered = index

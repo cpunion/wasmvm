@@ -1,0 +1,61 @@
+{
+  "producer": "wasm-tools 1.258.0",
+  "origin": "authored in wasmvm; no third-party benchmark code",
+  "workloads": [
+    {
+      "id": "i32",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 30632,
+      "unit": "ns/source iteration",
+      "wat": "i32.wat",
+      "wasm": "i32.wasm",
+      "watSha256": "3e6dead1e4aefb457950619a433178dbc116d8e0b9b466acdfebd21cc78d7f6b",
+      "wasmSha256": "ad771354fc4727f217a1f2e97ba0ac8cfbee572b85844bd471901eccb623ac0e"
+    },
+    {
+      "id": "i64",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 30632,
+      "unit": "ns/source iteration",
+      "wat": "i64.wat",
+      "wasm": "i64.wasm",
+      "watSha256": "bb5b21c61f173b1e6cfdd93ea4dc6c96bd9fc3782b8061c0db8ca1c1ee9081a6",
+      "wasmSha256": "c1f2edb099696a605b990e2944b8dc7b6aeb4ac123e879a7017a7fa723301cb9"
+    },
+    {
+      "id": "f32",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 30632,
+      "unit": "ns/source iteration",
+      "wat": "f32.wat",
+      "wasm": "f32.wasm",
+      "watSha256": "13c795441cec0fd9693fd140d2412c2024c958ef6ed293a704a81c941fcdf0e4",
+      "wasmSha256": "f8f35aeaa992feabc4312b28331993533493dcb37647eaae621f0ce62c5f9cbf"
+    },
+    {
+      "id": "f64",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 30632,
+      "unit": "ns/source iteration",
+      "wat": "f64.wat",
+      "wasm": "f64.wasm",
+      "watSha256": "95cca8bf66a660eb55e472a5d4c67e4e6452c7dca14683f69a3fac7ce2600dd0",
+      "wasmSha256": "ab2eb2a65cf5f82566d4c4a8ba600776c9d4b1a794f99c648dc52a7410c33ce8"
+    },
+    {
+      "id": "v128",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 100352,
+      "unit": "ns/source iteration",
+      "wat": "v128.wat",
+      "wasm": "v128.wasm",
+      "watSha256": "ad146a80db330307aa835496c2eea06e57c2d7ab265bb0644e7855aec219057d",
+      "wasmSha256": "5900555eb76c51ac6822d7a3b658d64f788115d514242c192477ff348c829a3a"
+    }
+  ]
+}

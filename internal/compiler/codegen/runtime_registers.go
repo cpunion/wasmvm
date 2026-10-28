@@ -7,18 +7,21 @@ import (
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 )
 
-// Table metadata and function identities cannot change inside a native entry:
+// Table metadata, global cell pointers and function identities cannot change inside a native entry:
 // every mutating operation/host call exits to the serialized driver. Reuse spare
 // arm64 caller registers for these words, refreshing them on every resume.
 // Elements themselves remain live loads. No additional register spills or roots
 // are needed, and a missing runtime view installs zero lengths for checked exits.
 func (e *functionEmitter) prepareRuntimeRegisters(config Config) {
-	if e.a.arch != "arm64" || config.FunctionCount == 0 {
+	if e.a.arch != "arm64" {
 		return
 	}
 	weights := map[uint32]int{}
 	for _, in := range e.f.Code {
-		if in.Op != 0x11 {
+		if offset, _, ok := globalCell(e.f, in, config); ok {
+			weights[offset] += 2
+		}
+		if in.Op != 0x11 || config.FunctionCount == 0 {
 			continue
 		}
 		source := e.f.Sources[in.Source].Wasm

@@ -16,6 +16,10 @@ Cache immutable cell pointers in spare arm64 registers, sharing register pressur
 with the existing table metadata cache. Preserve scalar canonicalization, exact
 v128 bits, source PCs, fuel, code limits and cold continuations.
 
+Declare five isolated i32/i64/f32/f64/v128 mutable-global loops with independent
+integer oracles, plus the existing globals/tables and C image interaction cases.
+Use wasm-tools 1.258.0 and retain source/binary hashes.
+
 Test all numeric types, mutable aliases, precise high words, missing runtime views,
 reference fallbacks, host/global interactions, trap order and lifecycle cleanup.
 Run Go and pinned LLGo release semantics, >=90% measured-package coverage and the

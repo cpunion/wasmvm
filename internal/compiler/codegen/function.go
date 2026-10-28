@@ -6,6 +6,7 @@ import (
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
+	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
@@ -36,6 +37,8 @@ type CompiledFunction struct {
 	ForwardedScalars              uint32
 	InlinedCalls, InlineSlots     uint32
 	UsesRuntimeData               bool
+	GlobalIndices                 []uint32
+	NativeGlobals                 uint32
 	NativeVectors                 uint32
 	FusedVectors                  uint32
 	AliasedVectorReads            uint32
@@ -78,6 +81,9 @@ type Config struct {
 	// is checked against the current instance's function reference at runtime.
 	IndirectCallees map[uint32][]uint32
 	FunctionCount   uint32
+	TableCount      uint32
+	// Globals follows validated imported-then-defined global index order.
+	Globals []module.GlobalType
 }
 
 func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
@@ -134,6 +140,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		}
 	}
 	e.header(uint64(len(f.Slots))*16, len(pcs))
+	globalIndices := e.prepareGlobals(config)
 	if e.usesMemory {
 		e.prepareMemory()
 	}
@@ -149,7 +156,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		e.contextLoad(0, nativeabi.ContinuationOffset)
 	}
 	a.dispatch(pcs)
-	out = &CompiledFunction{Function: f, Offsets: make([]uint32, len(pcs)), UsesMemory: e.usesMemory}
+	out = &CompiledFunction{Function: f, Offsets: make([]uint32, len(pcs)), UsesMemory: e.usesMemory, GlobalIndices: globalIndices, UsesRuntimeData: len(globalIndices) != 0}
 	for _, in := range f.Code {
 		if nativeVectorOpcode(in.Op) || nativeVectorMemoryOpcode(in.Op) {
 			out.NativeVectors++
@@ -312,6 +319,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			e.vectorInstruction(in)
 		case plainOpcode(op):
 			e.plain(in, false)
+		case (op == 0x23 || op == 0x24) && e.globalInstruction(in, config):
+			out.NativeGlobals++
 		case op == 0x40:
 			out.MemoryGrows++
 			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))

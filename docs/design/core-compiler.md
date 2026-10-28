@@ -194,6 +194,23 @@ live-range allocation and broader loop/range optimization remain required.
 
 Use a private guest ABI with explicit VM frames: guest calls push checked logical frames and branch to native callee labels; returns branch to saved continuations. The initial backend keeps one bounded C entry frame, without hardware-stack switching or a native C/Go frame per guest call. Host interaction, collection, cancellation and traps leave through the explicit status protocol in the [native ABI](native-abi.md). Whole-function inlining and more advanced optimization follow correctness and profiling; both disabled and enabled optimizations must pass differential tests. A persistent AOT/cache file format is later work; generating native code in-process is required in M2.
 
+## Direct numeric globals
+
+Both emitters lower validated numeric global.get/set in precise and unmetered
+entries. An execution-owned native view provides per-index cell pointers;
+imported aliases share cells. Scalar precise copies preserve both words, while
+unmetered scalar values retain the canonical zero high word. V128 accesses use
+allocated vector operands and exact 128-bit loads/stores, including spilled
+values. Spare arm64 caller registers cache immutable pointers, sharing the
+existing allocator with table metadata. Mutable cell contents are always live.
+
+The driver snapshots only referenced numeric globals before Run and publishes
+writes after every native exit, before host/helper handling or errors. Reference
+globals keep the existing helper/root path. Missing views fail before any guest
+instruction and original cold continuations retain the same contract. See the
+[scope](../../benchmarks/native/globals-plan.md) and [native ABI](native-abi.md).
+This removes helper transitions; broader global live ranges remain open.
+
 ## Implemented private memory primitives
 
 `internal/engine/memory` enforces Core 2.0 page limits, independent host quotas,

@@ -133,16 +133,29 @@ signature. Native code checks the current table's unsigned index and compares
 the live reference with the instance's immutable function identity. A miss uses
 the original checked call, preserving bounds/null/type traps, imported and
 cross-instance calls. This is guarded expansion, not a static-table assumption.
-The expanded entry uses `Payload[2]` for an execution-owned native word array:
-function handles in module order, followed by `(length, native base)` per table.
+Entries using indirect expansion or direct numeric globals use `Payload[2]`
+for an execution-owned native word array: function handles in module order,
+followed by `(length, native base)` per table, then one pointer per global
+index. Numeric cells follow these descriptors; only globals used by the current
+function need cells. Imported aliases share a cell by canonical Global identity.
 The common frame machine retains the referenced instance and tables. Every
 host/helper handoff refreshes table pointers, and instance changes replace
 function identities. No Go address or guest-supplied pointer enters this view.
 On arm64, unused constant-pool registers cache the most frequently referenced
-table metadata and function identities for one entry. All mutable state effects
+table metadata, numeric cell pointers and function identities for one entry. All mutable state effects
 exit before changing them; every resume reloads the cache. Table elements always
 remain live loads. A missing view installs zero cached lengths and uses the
 checked call path. Partial or exhausted register capacity retains explicit loads.
+
+Both native tiers directly load/store i32/i64/f32/f64/v128 cells. Missing views
+are rejected before any guest instruction, including cold continuations. The
+driver snapshots canonical Go globals before each Run and flushes cells after
+every native exit, before servicing traps, fuel, cancellation, helpers or calls.
+Poll/Move resumes retain the current cells. Every host/helper handoff rebinds on
+the next Run, so host mutation and same/cross-instance reentry observe ordered
+writes. Functions without numeric globals never flush stale bindings. Suspension
+and close clear cached Go roots. Reference globals keep the existing helper/root
+protocol; this view does not provide shared-memory atomic globals or WasmGC.
 
 ## Exit protocol and safepoints
 
