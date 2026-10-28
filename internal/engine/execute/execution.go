@@ -154,13 +154,6 @@ func (e *Execution) fail(err error) Status {
 func (e *Execution) Abort(err error) { e.fail(err) }
 func (e *Execution) poll() error     { return e.context.Err() }
 
-func (e *Execution) operand(base int, slot slots.Slot) value.Value {
-	if slot == slots.NoSlot {
-		return value.Value{}
-	}
-	return e.values[base+int(slot)]
-}
-
 func (e *Execution) ResumeHost(results []value.Value, err error) error {
 	if e.status != HostRequest || e.pending == nil {
 		return errors.New("no pending host request")
@@ -195,15 +188,18 @@ func (e *Execution) Run() Status {
 	if err := e.poll(); err != nil {
 		return e.fail(err)
 	}
+	backend := e.config.Backend
+	native := backend != nil
+	metered := e.config.Metered && !native
 	for len(e.frames) > 0 {
 		fi := len(e.frames) - 1
 		f := &e.frames[fi]
 		fn := f.function
 		code := fn.Code
 		pc := f.pc
-		if e.config.Backend != nil {
+		if native {
 			var err error
-			pc, e.fuel, err = e.config.Backend.Run(fn, f.base, len(e.frames), pc, e.fuel)
+			pc, e.fuel, err = backend.Run(fn, f.base, len(e.frames), pc, e.fuel)
 			if err != nil {
 				return e.fail(err)
 			}
@@ -214,7 +210,7 @@ func (e *Execution) Run() Status {
 		source := code.Sources[in.Source]
 		im := source.Wasm
 		instance := fn.Instance
-		if e.config.Metered && e.config.Backend == nil {
+		if metered {
 			cost := source.Fuel()
 			if cost > e.fuel {
 				return e.fail(&wasm.Error{Kind: wasm.ErrLimit, Offset: im.Offset, Detail: "execution fuel"})
@@ -228,7 +224,16 @@ func (e *Execution) Run() Status {
 			}
 		}
 		f.pc++
-		a, b, c := e.operand(base, in.A), e.operand(base, in.B), e.operand(base, in.C)
+		var a, b, c value.Value
+		if in.A != slots.NoSlot {
+			a = e.values[base+int(in.A)]
+		}
+		if in.B != slots.NoSlot {
+			b = e.values[base+int(in.B)]
+		}
+		if in.C != slots.NoSlot {
+			c = e.values[base+int(in.C)]
+		}
 		var result value.Value
 		trap := wasm.NoTrap
 		switch op := in.Op; {
