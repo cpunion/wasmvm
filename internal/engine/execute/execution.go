@@ -238,8 +238,8 @@ frames:
 			}
 			var result value.Value
 			trap := wasm.NoTrap
-			switch op := in.Op; {
-			case op >= slots.ControlBase:
+			switch op := in.Op; op {
+			case slots.ControlBase + uint32(ir.Jump), slots.ControlBase + uint32(ir.If), slots.ControlBase + uint32(ir.Table), slots.ControlBase + uint32(ir.Return), slots.ControlBase + uint32(ir.Trap):
 				kind := ir.TermKind(op - slots.ControlBase)
 				if kind == ir.Trap {
 					trap = wasm.TrapUnreachable
@@ -287,22 +287,22 @@ frames:
 				}
 				f.pc = edge.PC
 				continue
-			case op == 1 || op == 0x1a:
-			case op == 0x1b || op == 0x1c:
+			case 1, 0x1a:
+			case 0x1b, 0x1c:
 				result = b
 				if uint32(c.Lo) != 0 {
 					result = a
 				}
-			case op == 0x20:
+			case 0x20:
 				result = e.values[base+int(im.A)]
-			case op == 0x21 || op == 0x22:
+			case 0x21, 0x22:
 				e.values[base+int(im.A)] = a
 				result = a
-			case op == 0x23:
+			case 0x23:
 				result = instance.Globals[im.A].Value
-			case op == 0x24:
+			case 0x24:
 				instance.Globals[im.A].Value = a
-			case op == 0x25:
+			case 0x25:
 				table := instance.Tables[im.A]
 				index := uint64(uint32(a.Lo))
 				if index >= uint64(len(table.Values)) {
@@ -310,7 +310,7 @@ frames:
 				} else {
 					result.Lo = table.Values[index]
 				}
-			case op == 0x26:
+			case 0x26:
 				table := instance.Tables[im.A]
 				index := uint64(uint32(a.Lo))
 				if index >= uint64(len(table.Values)) {
@@ -318,30 +318,48 @@ frames:
 				} else {
 					table.Values[index] = b.Lo
 				}
-			case op >= 0x28 && op <= 0x35:
+			case 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+				0x30, 0x31, 0x32, 0x33, 0x34, 0x35:
 				result, trap = instance.Memories[0].Load(op, uint32(a.Lo), im.B, 0, value.Value{})
-			case op >= 0x36 && op <= 0x3e:
+			case 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d,
+				0x3e:
 				trap = instance.Memories[0].Store(op, uint32(a.Lo), im.B, 0, b)
-			case op == 0x3f:
+			case 0x3f:
 				result.Lo = uint64(instance.Memories[0].Pages())
-			case op == 0x40:
+			case 0x40:
 				old, ok := e.store.GrowMemory(instance.Memories[0], uint32(a.Lo))
 				result.Lo = uint64(old)
 				if !ok {
 					result.Lo = uint64(^uint32(0))
 				}
-			case op >= 0x41 && op <= 0x44:
+			case 0x41, 0x42, 0x43, 0x44:
 				result.Lo = im.Bits
-			case op >= 0x45 && op <= 0xc4 || op >= 0xfc0000 && op <= 0xfc0007:
+			case 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c,
+				0x4d, 0x4e, 0x4f, 0x50, 0x51, 0x52, 0x53, 0x54,
+				0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c,
+				0x5d, 0x5e, 0x5f, 0x60, 0x61, 0x62, 0x63, 0x64,
+				0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c,
+				0x6d, 0x6e, 0x6f, 0x70, 0x71, 0x72, 0x73, 0x74,
+				0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b, 0x7c,
+				0x7d, 0x7e, 0x7f, 0x80, 0x81, 0x82, 0x83, 0x84,
+				0x85, 0x86, 0x87, 0x88, 0x89, 0x8a, 0x8b, 0x8c,
+				0x8d, 0x8e, 0x8f, 0x90, 0x91, 0x92, 0x93, 0x94,
+				0x95, 0x96, 0x97, 0x98, 0x99, 0x9a, 0x9b, 0x9c,
+				0x9d, 0x9e, 0x9f, 0xa0, 0xa1, 0xa2, 0xa3, 0xa4,
+				0xa5, 0xa6, 0xa7, 0xa8, 0xa9, 0xaa, 0xab, 0xac,
+				0xad, 0xae, 0xaf, 0xb0, 0xb1, 0xb2, 0xb3, 0xb4,
+				0xb5, 0xb6, 0xb7, 0xb8, 0xb9, 0xba, 0xbb, 0xbc,
+				0xbd, 0xbe, 0xbf, 0xc0, 0xc1, 0xc2, 0xc3, 0xc4,
+				0xfc0000, 0xfc0001, 0xfc0002, 0xfc0003, 0xfc0004, 0xfc0005, 0xfc0006, 0xfc0007:
 				result.Lo, trap = numeric.Eval(op, a.Lo, b.Lo)
-			case op == 0xd0:
-			case op == 0xd1:
+			case 0xd0:
+			case 0xd1:
 				if a.Lo == 0 {
 					result.Lo = 1
 				}
-			case op == 0xd2:
+			case 0xd2:
 				result.Lo = instance.Functions[im.A]
-			case op == 0x10 || op == 0x11:
+			case 0x10, 0x11:
 				count := in.Count
 				inputs := code.Args[in.Extra : in.Extra+count]
 				var target uint64
@@ -391,24 +409,27 @@ frames:
 					e.values[calleeBase+int(i)] = e.values[base+int(inputs[i])]
 				}
 				continue frames
-			case op>>16 == 0xfd:
-				sub := op & 0xffff
-				switch {
-				case sub <= 10 || sub >= 84 && sub <= 87 || sub == 92 || sub == 93:
-					result, trap = instance.Memories[0].Load(op, uint32(a.Lo), im.B, im.Lane, b)
-				case sub == 11 || sub >= 88 && sub <= 91:
-					trap = instance.Memories[0].Store(op, uint32(a.Lo), im.B, im.Lane, b)
-				default:
-					result = simd.Eval(im, a, b, c)
-				}
-			case op >= 0xfc0008 && op <= 0xfc0011:
-				var err error
-				result, trap, err = e.bulk(instance, *im, a, b, c)
-				if err != nil {
-					return e.fail(err)
-				}
 			default:
-				panic("interp: unknown validated opcode")
+				switch {
+				case op>>16 == 0xfd:
+					sub := op & 0xffff
+					switch {
+					case sub <= 10 || sub >= 84 && sub <= 87 || sub == 92 || sub == 93:
+						result, trap = instance.Memories[0].Load(op, uint32(a.Lo), im.B, im.Lane, b)
+					case sub == 11 || sub >= 88 && sub <= 91:
+						trap = instance.Memories[0].Store(op, uint32(a.Lo), im.B, im.Lane, b)
+					default:
+						result = simd.Eval(im, a, b, c)
+					}
+				case op >= 0xfc0008 && op <= 0xfc0011:
+					var err error
+					result, trap, err = e.bulk(instance, *im, a, b, c)
+					if err != nil {
+						return e.fail(err)
+					}
+				default:
+					panic("interp: unknown validated opcode")
+				}
 			}
 			if trap != wasm.NoTrap {
 				return e.fail(&wasm.Trap{Code: trap, Function: fn.Index, Offset: im.Offset})
