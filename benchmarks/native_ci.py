@@ -24,6 +24,7 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     report = {"status": "failed", "host": {"platform": platform.platform(), "loadBefore": os.getloadavg()}}
     try:
+        report["host"]["cpu"] = ci.capture(["lscpu"]) if platform.system() == "Linux" else ci.capture(["sysctl", "-n", "machdep.cpu.brand_string"])
         toolchains = own_build.toolchains()
         with tempfile.TemporaryDirectory(prefix="wasmvm-native-ci-") as directory:
             temporary = Path(directory)

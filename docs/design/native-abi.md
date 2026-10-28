@@ -426,3 +426,29 @@ call retains its check, so no cycle or forward skip can evade the bound.
 Precise-fuel scheduling remains unchanged. On amd64, a full-width aligned
 memory comparison replaces the separate control load/test; ARM64 retains
 load/CBNZ. The cold exits preserve acquire ordering, live slots and exact PCs.
+
+
+### Short-vector AVX-512 and exact SIMD immediates
+
+Compiler feature bits 3/4 describe independently usable AVX512F+VL and
+AVX512F+VL+BITALG capabilities. The platform requires XSAVE/OSXSAVE/AVX and
+XCR0 bits 1,2,5,6,7 before advertising either; BITALG additionally requires
+CPUID leaf 7 ECX bit 12. Both still use 128-bit slots and XMM0-XMM15 with k0.
+VPSRAVQ replaces signed-qword-shift legalization; VPOPCNTB replaces byte lookup
+and its masks. Other CPU/OS combinations retain the earlier legalizations.
+The first hosted amd64 comparison reports mask 7, so it does not execute
+AVX-512. Emission tests and LLVM encoding checks are not native-host acceptance.
+
+Guest literals and compiler-created floating masks share a bounded immediate
+selector. AArch64 MOVI/MVNI/FMOV forms reproduce exact bits for repeated byte,
+halfword and word patterns, shifted/complemented fields, MSL fills, doubleword
+byte masks and representable FP32/FP64 values. Unrepresentable values retain
+the old materialization path; no floating rounding is used in selection. x86
+uses zero/all-ones idioms where exact. Each caller retains its fallback scratch
+contract, immutable pool identity and cold-slot observability.
+
+AVX2 shuffle writes its final allocated result after both sources are consumed.
+NEON TBL names consecutive inputs directly when possible and reads a cached mask
+without copying it into scratch. Nonconsecutive inputs retain the existing safe
+scratch pair. No new execution framework, literal island or relocation mode is
+introduced, and neither semantic fuel nor cancellation polling moves.

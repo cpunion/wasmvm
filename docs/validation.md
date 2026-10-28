@@ -1006,3 +1006,43 @@ Linux CI coverage is codegen **94.23% (4168/4423)**, execute **98.47%
 every measured executable package exceeds 90%. Production sources are identical
 to `20d0a41`; the retained tests additionally execute aliased comparisons,
 original cancellation continuations and periodic PC 256 on both targets.
+
+
+## Short-vector AVX-512 and exact SIMD immediates (development)
+
+Engine `0bc1ba3` adds separate AVX512F+VL / AVX512BITALG+VL capabilities and
+complete CPU/OS-state gating. Synthetic tests remove every required CPU/state
+bit independently. LLVM 22 golden encodings cover EVEX.128 low/high registers;
+complete SIMD emission and exact/exceeded code budgets cover all 32 known masks.
+Host execution tests include only actually advertised capabilities, preserving
+baseline execution on older hosts. Local Go/LLGo complete suites, amd64 fallback
+execution, vet and cgo-disabled compilation pass. Local codegen coverage is
+**97.21% (4321/4445)**; every measured executable package exceeds 90%.
+
+The [initial two-target comparison](https://github.com/cpunion/wasmvm/actions/runs/40596344538)
+completes 42 families and 1,176 alternate-input checks per target, comparing
+`36b1d46` with `0bc1ba3`. The native amd64 host advertises **mask 7 for both
+compilers**, so neither new AVX-512 path executes in this measurement. LLGo
+popcount measures 2.332 -> 2.350 ns/source iteration; i64 shifts 3.973 -> 3.879.
+These unchanged-profile measurements are not evidence for AVX-512 speed or
+correctness. Native validation on a capable host and performance acceptance
+remain open. Preserve this limitation rather than treating a passing diagnostic
+as feature acceptance.
+
+Engine `64932ea` introduces exact SIMD immediate forms. Its
+[four semantic CI jobs](https://github.com/cpunion/wasmvm/actions/runs/40598533536)
+pass. A batch of **5,253 native ABI probes** checks every 8-bit immediate form
+against independent integer lane expansion and mathematical FP oracles, plus
+unsupported NaN, negative-zero, subnormal and unequal-half patterns. Probes
+rotate destination registers and publish one bounded native image. Existing
+compiler tests retain pool exhaustion, raw bits, aliases, spills, all cold
+entries and exact code limits.
+
+The following shared-mask and shuffle-copy reductions through `c52c58f` pass
+complete local Go/LLGo suites and amd64 tests, vet and cgo-disabled compilation.
+Latest local codegen coverage is **97.17% (4389/4517)**; every executable package
+remains above 90%. The final target matrix and paired 42-family comparison
+against the exact AVX-512 baseline are pending. Native benchmark reports now
+retain the host CPU description in addition to the selected feature mask, so
+ISA availability can be distinguished from selection or timing effects.
+M1/M2, PR #26 and subsequent GC/Threads/component/WASI stages remain open.
