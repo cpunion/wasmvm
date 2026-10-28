@@ -35,3 +35,11 @@ canonical predicates): consumer-side instantiation can expose these same small
 bodies to each package's optimizer. Keep the one semantic source and package
 boundaries; verify actual inlining, full semantics and measured results before
 retaining this representation. Preserve the original mixed measurements.
+
+The final diagnostic also reuses the existing `core2-v1` C image filter and
+Rust packet CRC from exact portfolio commit
+`2b20a742fdfd35e8e03ea9d2360458794ef9e039`. Validate their committed producer,
+source/WAT/binary hashes and independent input checksums. Preserve their declared
+40 image passes and 64 packets per call; do not normalize them as 100,000 tiny
+iterations. This adds application-shaped checks without a new execution path
+or another producer installation on timed hosts.
