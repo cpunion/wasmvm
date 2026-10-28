@@ -20,22 +20,23 @@ func DefaultLimits() Limits { return Limits{64 << 20, 1 << 20, 1 << 20} }
 // never an interior machine address. ReferenceSlots conservatively describes
 // every reference-bearing slot in the current frame (root-map ID zero).
 type CompiledFunction struct {
-	Entry                      nativeabi.Entry
-	Function                   *slots.Function
-	Offsets                    []uint32
-	ReferenceSlots             []uint32
-	Helpers, Calls, EdgeCopies uint32
-	FusedIntegers              uint32
-	ForwardedPredicates        uint32
-	UsesMemory                 bool
-	BoundsElided               uint32
-	MemoryGrows                uint32
-	ForwardedScalars           uint32
-	InlinedCalls, InlineSlots  uint32
-	UsesRuntimeData            bool
-	NativeVectors              uint32
-	FusedVectors               uint32
-	AliasedVectorReads         uint32
+	Entry                         nativeabi.Entry
+	Function                      *slots.Function
+	Offsets                       []uint32
+	ReferenceSlots                []uint32
+	Helpers, Calls, EdgeCopies    uint32
+	FusedIntegers                 uint32
+	ForwardedPredicates           uint32
+	UsesMemory                    bool
+	BoundsElided                  uint32
+	MemoryGuards, GuardedAccesses uint32
+	MemoryGrows                   uint32
+	ForwardedScalars              uint32
+	InlinedCalls, InlineSlots     uint32
+	UsesRuntimeData               bool
+	NativeVectors                 uint32
+	FusedVectors                  uint32
+	AliasedVectorReads            uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -189,7 +190,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			e.boundary(uint32(pc), src, in.Op == 0x10 || in.Op == 0x11 || isControl)
 		}
 		if region, ok := regions[pc]; ok {
-			e.emitMemoryRegion(pc, region, out)
+			e.emitMemoryRegion(pc, region, pcs, out)
 			for entry := pc + 1; entry <= region.end; entry++ {
 				independentEntries = append(independentEntries, entry)
 			}
@@ -332,6 +333,11 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			e.plain(f.Code[pc], false)
 			a.branch(pcs[pc+1], false, 0)
 		}
+	}
+	for _, fallback := range e.memoryFallbacks {
+		a.mark(fallback.label)
+		e.plain(f.Code[fallback.pc], false)
+		a.branch(pcs[fallback.pc+1], false, 0)
 	}
 	e.emitPollExits()
 	for _, call := range e.callExits {

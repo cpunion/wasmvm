@@ -37,7 +37,10 @@ type functionEmitter struct {
 	pollExits                 []pollExit
 	trapExits                 []nativeTrapExit
 	callExits                 []nativeCallExit
+	memoryFallbacks           []memoryFallback
 }
+
+type memoryFallback struct{ label, pc int }
 
 type nativeCallExit struct {
 	label, pc int

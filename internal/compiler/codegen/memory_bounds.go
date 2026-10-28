@@ -11,8 +11,10 @@ type boundedValue struct {
 	constant bool
 }
 type memoryRegion struct {
-	end    int
-	proven map[int]bool
+	end     int
+	proven  map[int]bool
+	guards  map[int]memoryGuard
+	guarded uint32
 }
 
 func (e *functionEmitter) codeLimit() int {
@@ -60,6 +62,7 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 			return boundedValue{max: math.MaxUint32}
 		}
 		proven := map[int]bool{}
+		candidates := 0
 		for pc := start; pc < end; pc++ {
 			in := e.f.Code[pc]
 			src := e.f.Sources[in.Source].Wasm
@@ -69,6 +72,8 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 				_, size := memoryAccess(in.Op)
 				if a.max+uint64(src.B)+uint64(size) <= e.memoryMinimum {
 					proven[pc] = true
+				} else {
+					candidates++
 				}
 			}
 			switch in.Op {
@@ -115,8 +120,13 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 				values[in.Dst] = v
 			}
 		}
+		var guards map[int]memoryGuard
+		var guarded uint32
+		if candidates >= 3 {
+			guards, guarded = e.memoryGuards(start, end, proven)
+		}
 		if len(proven) != 0 {
-			regions[start] = memoryRegion{end - 1, proven}
+			regions[start] = memoryRegion{end: end - 1, proven: proven, guards: guards, guarded: guarded}
 		}
 		start = end
 	}
@@ -126,12 +136,34 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 // Only uninterrupted normal entry consumes these proofs. Every interior PC is
 // emitted again on a cold path, with all bounds checks, until the next region.
 // Thus direct resumption never inherits facts from instructions it did not run.
-func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, out *CompiledFunction) {
+func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, pcs []int, out *CompiledFunction) {
 	e.regionLimit = r.end + 1
 	e.provenPCs = r.proven
 	e.vectorAliases = map[slots.Slot]slots.Slot{}
 	defer func() { e.regionLimit = 0; e.provenPCs = nil; e.vectorAliases = nil }()
+	var boundaries []int
 	for pc := start; pc <= r.end; pc++ {
+		if _, ok := r.guards[pc]; ok {
+			boundaries = append(boundaries, pc)
+		}
+	}
+	next := 0
+	out.GuardedAccesses += r.guarded
+	for pc := start; pc <= r.end; pc++ {
+		if guard, ok := r.guards[pc]; ok {
+			cold := pcs[pc]
+			if pc == start {
+				cold = e.a.label()
+				e.memoryFallbacks = append(e.memoryFallbacks, memoryFallback{cold, pc})
+			}
+			e.emitMemoryGuard(guard, cold)
+			out.MemoryGuards++
+			next++
+		}
+		e.regionLimit = r.end + 1
+		if next < len(boundaries) {
+			e.regionLimit = boundaries[next]
+		}
 		in := e.f.Code[pc]
 		if end, ok := e.combineVectorAffine(pc); ok {
 			out.FusedVectors++
