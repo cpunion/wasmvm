@@ -72,6 +72,21 @@ Lower SSA values and locals into reusable typed slots with precomputed frame siz
 
 The execution hot loop uses a program counter, explicit frame base and slot arrays. Operand reads are guarded direct slot loads; backend/metering selection is fixed for each Run invocation. Immutable source/instruction metadata is borrowed so scalar dispatch does not copy wide SIMD immediates. Scalar slots hold exact bit patterns; reference slots hold checked handles with type/root metadata. Frame allocation, locals, outgoing arguments, results, and spill areas use pre-sized storage, growing only at explicit checked boundaries. Guest calls push explicit frames rather than recursively calling Go. Return and `br_table` copy overlapping tuples correctly. Preserve suspended frame state across host calls and resume.
 
+The active PC and bounded frame-value view now stay local to that loop. Publish
+the caller's next PC before guest push or host suspension, and refresh both
+views at every frame transition or Run entry. Arguments copied after push read
+the preserved global arena, since growth can invalidate the former view.
+Nontrapping integer instructions call shared small numeric primitives directly,
+avoiding the generic evaluator's second opcode dispatch. Typed-bit instantiation
+exposes the same canonical implementations to LLGo's package optimizer; it is
+not a separate semantic evaluator. Trapping and FP operations keep the generic
+evaluator. Source/fuel/trap identities and all polls remain unchanged.
+
+The LLGo release profile uses `-O3 -lto=full` for engine/CLI builds, the native
+probe and semantic CI. Source comparisons apply identical flags to base/head.
+Default `-Os` diagnostics retain observed regressions; an inlined helper or a
+release-profile improvement does not establish a default-build performance win.
+
 Start with a simple verified lowering. Measure register/slot dispatch against a predecoded stack-dispatch prototype using identical complete semantics. The default design is slot bytecode; change it only with measured evidence covering both compilers, dispatch cost, bytecode size, compile latency, and representative workloads. Do not maintain two permanent production interpreters merely to preserve the experiment.
 
 Optimize demonstrated bottlenecks with direct local/constant forms, copy elimination, block layout, and bounded superinstructions. Fusion must preserve fuel, trap locations, memory effects and safepoints. Pre-resolve internal direct calls; indirect calls retain null, bounds, signature, ownership, and instance checks. Poll at calls, backedges and a maximum straight-line work interval; chunk bulk operations. An unmetered mode still observes cancellation and resource limits. There is no unchecked performance mode for untrusted guests.
@@ -111,6 +126,14 @@ in the [validation record](../validation.md).
 ## Native compilation
 
 The complete native pipeline is: typed IR verification, optimization, legalization to target operations, instruction selection, register allocation, spill insertion, frame layout, branch resolution/relocations, code emission, and publication with trap/safepoint/source maps. Implement amd64 and arm64 emitters in Go. The baseline uses linear-scan allocation with separate integer/vector classes, fixed-register constraints, call clobbers, live-range splitting, parallel-move resolution, and verified spill reloads. Target tests check actual execution as well as encoding/disassembly.
+
+The current development allocator instead assigns stable registers by slot-use
+frequency; global live-range splitting remains required work. Scalar `select`
+now uses CMOV/CSEL and directly names allocated integer/reference registers,
+falling back to scratch loads for spilled or FP bit patterns. It tests only low
+i32 condition bits and preserves source/destination aliases. The precise tier
+selects both input words; unmetered scalar storage follows its existing
+canonical-input contract. V128 retains its complete vector transfer path.
 
 Use the platform's accepted baseline CPU feature set, with explicit detection and recorded features for optional instructions. Specialized artifacts cannot run on a weaker CPU. Floating-point/vector operations require correct Wasm NaNs, signed zero, rounding, conversions and lane behavior. Division and conversion instructions often need explicit prechecks; host instruction traps and language overflow behavior are not automatically Wasm semantics.
 

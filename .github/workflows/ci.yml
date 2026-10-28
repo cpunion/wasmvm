@@ -3,6 +3,11 @@ name: Go and LLGo
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      evaluate_references:
+        description: Run unchanged candidate compatibility evaluations
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -156,7 +161,7 @@ jobs:
           go test -run '^$' -fuzz '^FuzzExecution$' -fuzztime=10s -parallel=2 ./internal/engine/execute
 
       - name: Evaluate unchanged wazero and measure harness coverage
-        if: github.event_name == 'workflow_dispatch' && matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
+        if: github.event_name == 'workflow_dispatch' && inputs.evaluate_references && matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
         shell: bash
         run: |
           go -C experiments/wazero vet ./...
@@ -165,11 +170,11 @@ jobs:
           awk '/^total:/ { found=1; sub(/%$/, "", $3); if ($3+0 < 90) exit 1 } END { if (!found) exit 2 }' artifacts/wazero/go-upstream/coverage-summary.txt
 
       - name: Check the alternate candidate's Go smoke probes
-        if: github.event_name == 'workflow_dispatch' && matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
+        if: github.event_name == 'workflow_dispatch' && inputs.evaluate_references && matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
         run: go -C experiments/wago test -count=1 -timeout=2m ./...
 
       - name: Run unchanged wazero with the fixed LLGo runtime
-        if: github.event_name == 'workflow_dispatch' && matrix.compiler == 'llgo'
+        if: github.event_name == 'workflow_dispatch' && inputs.evaluate_references && matrix.compiler == 'llgo'
         run: experiments/wazero/scripts/run.sh llgo upstream
 
       - name: Check benchmark fixtures and harness

@@ -1407,3 +1407,134 @@ No new sustained benchmark is run for an unchanged native integer kernel.
 These local diagnostics do not close the missing all-target performance,
 call/preparation deficits or PR #26's ARM A/A calibration gate. M1/M2 and
 Core 3.0/Threads/Component Model/WASI 1/2/3 remain unfinished.
+
+## Integer dispatch, active state and LLGo release profile
+
+The source baseline is `6e061ac2263dc80dbe99441f392ad762ff99f87d`.
+Candidate `af96ddc` extracts 58 nontrapping integer primitives shared by the
+generic evaluator and main dispatcher. Candidate `9769078` instantiates those
+same typed-bit bodies in consuming packages; default LLGo's 58 integer helper
+calls disappear from the main-loop disassembly, but its timings still regress.
+Neither candidate is accepted as an independent performance win.
+
+Engine `a7f2b1e128873a63139d2e02191a16468171810b` keeps its active PC and
+bounded frame-value view local, publishing the next PC at guest/host call
+boundaries. Arguments copied after push still read the relocated global arena.
+New repeated nested-host suspension tests retain continuation/result order in
+both fuel modes; moving-arena, cancellation, trap and reentry tests remain.
+
+Two configuration changes are recorded separately from VM-source improvements.
+The LLGo pin advances `8b1389c` -> `8e45ed5e` after
+[upstream PR #2936](https://github.com/xgo-dev/llgo/pull/2936) passes its CI; the
+contribution remains unmerged. Its caller-side math bitcasts remove the earlier
+FP allocations. The supported LLGo release build explicitly uses
+`-O3 -lto=full`, consistently in the common phase/CLI builder, native probe and
+semantic CI. Both source revisions in each comparison use identical compiler
+revisions and flags. Old default `-Os` rows are retained, not relabeled.
+
+[Release-profile CI](https://github.com/cpunion/wasmvm/actions/runs/40636529944)
+passes all four Go/LLGo × Linux amd64/macOS arm64 jobs through engine `a7f2b1e`;
+all 12 downloaded reports retain 148 scripts and 51,139 binary assertions.
+The earlier default-flag matrix also passes through `9769078`
+([CI](https://github.com/cpunion/wasmvm/actions/runs/40634334604)).
+
+Twelve local families and 22 runtime/backend/boundary configurations pass 1056
+alternate-input checks. Three interleaved process blocks retain seven calls and
+two warmups. Public interpreter medians, ns/source iteration:
+
+| Family | Go base -> head | LLGo release base -> head | wazero interpreter |
+| --- | ---: | ---: | ---: |
+| Integer | 64.915 -> 61.488 | 73.636 -> 64.158 | 81.925 |
+| Direct source calls | 79.368 -> 77.109 | 128.330 -> 117.747 | 79.792 |
+| Indirect calls | 85.522 -> 80.021 | 131.971 -> 122.247 | 90.265 |
+| Memory | 123.038 -> 118.917 | 144.348 -> 129.967 | 146.837 |
+| Signed f64 conversion | 160.580 -> 153.627 | 151.183 -> 128.740 | 162.623 |
+| Unsigned f64 conversion | 177.412 -> 164.926 | 176.510 -> 143.082 | 191.050 |
+
+The same run retains the default-flag regressions: LLGo source calls
+160.054 -> 182.055, memory 180.742 -> 186.922 and shuffle 151.855 -> 153.918
+ns/iteration. Go SIMD and several release FP/SIMD/control rows also regress.
+Removing helper calls does not prove a throughput gain, and switching profiles
+does not accept a default-build deficit. Release calls and f32 SIMD still trail
+wazero. Preparation/first-call and complete phase records remain separate.
+
+Application inputs reuse exact portfolio commit
+[`2b20a74`](https://github.com/cpunion/wasmvm/tree/2b20a742fdfd35e8e03ea9d2360458794ef9e039/benchmarks/embedded/portfolio):
+the Clang 22.1.8 image filter and Rust 1.98.0 packet CRC. Source/WAT/binary hashes
+and independent checksums are verified. Counts retain 40 image passes and 64
+packets per call. Interpreter medians in microseconds per pass/packet:
+
+| Application | Go base -> head | LLGo release base -> head | wazero interpreter |
+| --- | ---: | ---: | ---: |
+| C image filter | 261.311 -> 248.251 | 388.256 -> 354.282 | 350.913 |
+| Rust packet CRC | 92.868 -> 83.594 | 92.305 -> 78.306 | 127.669 |
+
+The image filter still trails wazero under LLGo. These local application inputs
+do not replace a complete controlled portfolio or all-target performance gate.
+Reports retain the mixed first candidates under `artifacts/integer-dispatch`
+and `artifacts/integer-consumer`, plus the final active-state comparison under
+`artifacts/active-frame`. Their raw SHA-256 values are respectively
+`68cad181172ed0431be0348325ef2e98be1ed5a70af71900e186baeed720ed2a`,
+`3cb5db09b428f0aa69dd275af1602802bc5ed27f6674f44bf6516279b84f0b74`,
+and `1c7bb456282980604682eea1b7742b84138183c48a326024c31083bd4ecd37e9`.
+
+## Native scalar select
+
+Native `select` previously emitted branches. Candidate `5a96815` emits
+CMOV/CSEL; final engine `f1513a828a1264e99bca25620894c4ce1e23cc29` directly
+uses allocated integer/reference registers with spill/FP scratch fallback.
+Condition tests use low i32 bits, including when a destination aliases the
+condition. Scalar NaN payloads and reference bits are preserved. The precise
+tier selects both input words, including its existing noncanonical continuation
+state; unmetered scalars retain the canonical-input contract. V128 keeps its
+complete prior implementation. Tests cover both targets' encodings, both native
+tiers, operand/destination aliases, high condition bits and register pressure.
+
+Full local Go and LLGo release execution suites pass. Every measured executable
+package exceeds 90% coverage: codegen 97.15%, execute 98.72%, numeric 100%,
+nativeexec 94.09% and VM 96.42%. The final
+[CI](https://github.com/cpunion/wasmvm/actions/runs/40639955242) passes all four
+Go/LLGo release × Linux amd64/macOS arm64 jobs. All 12 downloaded execution
+reports retain 148 scripts and 51,139 binary assertions each; Linux codegen
+coverage is 94.30%, with every executable package above 90%.
+
+The exact source comparison retains base `a7f2b1e`, intermediate `5a96815` and
+head `f1513a8`, all with the same pinned compilers/release flags. Twelve families
+and 15 native API/dispatch/reference configurations pass 720 alternate-input
+checks. Public native CRC medians, microseconds per 256-byte packet:
+
+| Build | Branches | Scratch CMOV/CSEL | Register CMOV/CSEL | wazero | Wasmtime | Wasmer |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Go | 7.704 | 3.477 | 2.870 | 1.700 | 1.703 | 1.766 |
+| LLGo release | 7.589 | 3.443 | 2.874 | 1.700 | 1.703 | 1.766 |
+
+This general opcode improvement is about 2.6x faster on that local application,
+but remains slower than every reference. Image-filter native LLGo is 3.132
+microseconds/pass versus wazero 2.982, Wasmtime 1.150 and Wasmer 1.200.
+Fixed slot-frequency allocation, temporary-value traffic and broader compiler
+optimization remain required work. Other native regressions remain visible:
+LLGo memory 0.825 -> 0.854 ns/source iteration, for example. Tiny call controls
+remain above budget. No phase or failed observation is subtracted or discarded.
+
+The CRC still has 138 slot instructions and 21 frame slots. Static unmetered
+function bodies shrink 3924 -> 3860 bytes on arm64 and 4336 -> 4258 on amd64;
+the implementation adds no runtime helper or CRC-specific execution path.
+
+Native CRC preparation process medians are Go 363,041 -> 349,166 ns and LLGo
+997,208 -> 902,334 ns; all individual preparation, first-call and cleanup samples
+remain in the report. The native dispatch validator now requires its existing
+measured `native` preparation component, instead of rejecting it as an unknown
+field; tests retain strict interpreter/native schemas and aggregate accounting.
+The initial harness rejection and intermediate measurements remain under
+`artifacts/native-select`, raw SHA-256
+`a1eeea5ccb77c35780b99bb50088c94471ad22cdf935599b3fdb8e9e74fec960`.
+Final raw/source/binary provenance remains under `artifacts/select-register`,
+raw SHA-256 `7f912a5ddec85f4b15be286708a1b7e8a02e17d4acbd60612ae32136a3b24120`.
+These diagnostics do not accept native/application parity, resolve PR #26's
+ARM A/A failure, or complete M1/M2. Core 3.0/GC/Threads/components/WASI 1/2/3
+remain required subsequent work.
+
+Manual semantic workflows now make unchanged wazero/wago compatibility
+evaluations an explicit `evaluate_references` option, defaulting to false.
+The four own-engine/compiler/target jobs, corpus, coverage, race, pointer and
+CLI checks remain required; this removes repeated M0 work from core iterations.
