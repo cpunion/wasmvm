@@ -140,6 +140,18 @@ func TestLeafExpansionKeepsOrdinaryCallsWhenIneligible(t *testing.T) {
 				callee.Slots[2] = wasm.ExternRef
 			case "pressure":
 				f = leafCaller(callee, 12, 16)
+				// Give the other live locals real uses. Eliminated self-copies
+				// no longer raise their priority above the call's output tuple.
+				source := uint32(len(f.Sources))
+				f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: 0x72}, Inputs: []wasm.ValueType{wasm.I32, wasm.I32}, Outputs: []wasm.ValueType{wasm.I32}})
+				tail := append([]slots.Instruction(nil), f.Code[16:]...)
+				f.Code = f.Code[:16]
+				for s := slots.Slot(0); s < 16; s++ {
+					if s != 12 {
+						f.Code = append(f.Code, slots.Instruction{Op: 0x72, Source: source, Dst: s, A: s, B: s, C: slots.NoSlot})
+					}
+				}
+				f.Code = append(f.Code, tail...)
 			case "signature":
 				callee.Signature.Params = nil
 			}

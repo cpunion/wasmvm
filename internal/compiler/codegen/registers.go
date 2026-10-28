@@ -19,18 +19,37 @@ func (e *functionEmitter) prepareRegisters() {
 			weights[s]++
 		}
 	}
+	move := func(dst, src slots.Slot) {
+		if dst != slots.NoSlot && dst != src {
+			use(dst)
+			use(src)
+		}
+	}
 	for _, in := range e.f.Code {
+		if in.Op >= 0x20 && in.Op <= 0x22 {
+			local := slots.Slot(e.f.Sources[in.Source].Wasm.A)
+			if in.Op == 0x20 {
+				move(in.Dst, local)
+			} else {
+				move(local, in.A)
+				if in.Dst != local {
+					move(in.Dst, in.A)
+				}
+			}
+			continue
+		}
 		use(in.A)
 		use(in.B)
 		use(in.C)
 		use(in.Dst)
-		if in.Op >= 0x20 && in.Op <= 0x22 {
-			use(slots.Slot(e.f.Sources[in.Source].Wasm.A))
-		}
 	}
 	for _, m := range e.f.Moves {
 		use(m.Src)
 		use(m.Dst)
+	}
+	// Call and return tuples live in the argument arena, outside inline operands.
+	for _, s := range e.f.Args {
+		use(s)
 	}
 	var order []slots.Slot
 	for s, n := range weights {

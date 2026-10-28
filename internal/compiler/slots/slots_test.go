@@ -85,13 +85,18 @@ func TestCompleteCore2Slots(t *testing.T) {
 }
 
 // Interpret slot transfers with symbolic SSA identities and local value
-// versions. Only local copy semantics are modeled; other operations introduce
-// fresh tokens. Every operand and selected edge must preserve its value.
+// versions and literal bits. Other operations introduce fresh tokens. Every
+// operand and selected edge must preserve its value.
 func checkSymbolic(t *testing.T, name string, f *ir.Function, out *Function) {
 	t.Helper()
 	for bi, b := range f.Blocks {
 		state := make([]int, len(out.Slots))
 		symbols := make([]int, len(f.Values))
+		literals := map[struct {
+			typ    wasm.ValueType
+			bits   uint64
+			vector [16]byte
+		}]int{}
 		for i := range symbols {
 			symbols[i] = i
 		}
@@ -149,6 +154,18 @@ func checkSymbolic(t *testing.T, name string, f *ir.Function, out *Function) {
 					state[src.A] = symbols[op.Args[0]]
 					if src.Op == 0x22 {
 						symbols[op.Results[0]] = symbols[op.Args[0]]
+					}
+				} else if src.Op >= 0x41 && src.Op <= 0x44 || src.Op == 0xfd000c {
+					v := op.Results[0]
+					key := struct {
+						typ    wasm.ValueType
+						bits   uint64
+						vector [16]byte
+					}{f.Values[v], src.Bits, src.Vector}
+					if token, found := literals[key]; found {
+						symbols[v] = token
+					} else {
+						literals[key] = symbols[v]
 					}
 				}
 				for _, v := range op.Results {
@@ -310,7 +327,11 @@ func TestTypedCyclicEdges(t *testing.T) {
 			t.Fatal(err)
 		}
 		out := compiled.Functions[0]
-		if len(out.Slots) != 8 || out.Slots[7] != typ {
+		want := 8
+		if typ == wasm.I32 || typ == wasm.V128 {
+			want-- // The two equal, overlapping literals share storage.
+		}
+		if len(out.Slots) != want || out.Slots[want-1] != typ {
 			t.Fatalf("scratch type/reuse: %v", out.Slots)
 		}
 		checkSymbolic(t, "cyclic edge", f, out)

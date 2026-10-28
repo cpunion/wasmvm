@@ -18,7 +18,7 @@ func (e *functionEmitter) plain(in slots.Instruction, proven bool) {
 		e.move(in.Dst, slots.Slot(src.Wasm.A))
 	case op == 0x21 || op == 0x22:
 		e.move(slots.Slot(src.Wasm.A), in.A)
-		if in.Dst != slots.NoSlot {
+		if in.Dst != slots.NoSlot && in.Dst != slots.Slot(src.Wasm.A) {
 			e.move(in.Dst, in.A)
 		}
 	case op == 0x1b || op == 0x1c:

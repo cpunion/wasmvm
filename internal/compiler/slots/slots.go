@@ -161,23 +161,34 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 	// crossing blocks and block parameters keep dedicated slots; this avoids a
 	// quadratic global interference graph and preserves loops conservatively.
 	var free, all [128][]Slot
+	var literals literalPool
 	release := func(v ir.Value) {
-		if !pinned[v] && !coalesced[v] && uses[v] == 0 {
+		if !pinned[v] && !coalesced[v] && uses[v] == 0 && literals.release(out.ValueSlots[v]) {
 			t := f.Values[v]
 			free[t] = append(free[t], out.ValueSlots[v])
 		}
 	}
 	for bi, b := range f.Blocks {
+		literals = literalPool{}
 		for t := range free {
 			free[t] = append(free[t][:0], all[t]...)
 		}
 		out.BlockPC[bi] = uint32(len(out.Code))
 		for _, op := range b.Ops {
+			src := f.Sources[op.Source]
 			for _, v := range op.Results {
 				if pinned[v] || coalesced[v] {
 					continue
 				}
 				t := f.Values[v]
+				key, constant := literalOf(src.Wasm, t)
+				if constant {
+					if shared := literals.values[key]; shared != nil {
+						shared.refs++
+						out.ValueSlots[v] = shared.slot
+						continue
+					}
+				}
 				if k := len(free[t]); k > 0 {
 					out.ValueSlots[v] = free[t][k-1]
 					free[t] = free[t][:k-1]
@@ -186,10 +197,12 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 					all[t] = append(all[t], s)
 					out.ValueSlots[v] = s
 				}
+				if constant {
+					literals.add(key, out.ValueSlots[v], budget)
+				}
 			}
-			// Map operands before releasing any slot. Only local copies can alias;
-			// call inputs/outputs remain distinct throughout suspension.
-			src := f.Sources[op.Source]
+			// Map operands before releasing slots. Local copies and identical
+			// literals can alias; call inputs/outputs remain distinct on suspension.
 			in := Instruction{Op: src.Wasm.Op, Source: op.Source, Dst: NoSlot, A: NoSlot, B: NoSlot, C: NoSlot}
 			if in.Op == 0x10 || in.Op == 0x11 {
 				in.Extra = uint32(len(out.Args))
