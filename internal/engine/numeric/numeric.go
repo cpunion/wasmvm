@@ -325,7 +325,7 @@ func Eval(op uint32, a, b uint64) (uint64, wasm.TrapCode) {
 		panic("numeric: nonnumeric opcode")
 	}
 }
-func boolean(v bool) uint64 {
+func boolean[T ~bool](v T) uint64 {
 	if v {
 		return 1
 	}
