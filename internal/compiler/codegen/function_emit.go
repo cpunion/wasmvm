@@ -238,7 +238,7 @@ func (e *functionEmitter) slotStore(slot slots.Slot, reg byte, high bool) {
 	a.word(0xf9000000 | uint32(reg+9) | base<<5 | (offset/8)<<10)
 }
 func (e *functionEmitter) move(dst, src slots.Slot) {
-	if dst == slots.NoSlot {
+	if dst == slots.NoSlot || dst == src {
 		return
 	}
 	if e.f.Slots[dst] == wasm.V128 {

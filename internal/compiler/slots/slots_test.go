@@ -84,13 +84,17 @@ func TestCompleteCore2Slots(t *testing.T) {
 	t.Logf("Symbolically checked %d functions in %d modules: %d SSA values use %d temporary slots (including edge scratch); no guest execution assertions run.", functions, modules, values, slots)
 }
 
-// Interpret the allocator's output using symbolic SSA identities, independently
-// of instruction semantics. Every operand must still contain its original
-// value, and every selected edge must implement simultaneous assignment.
+// Interpret slot transfers with symbolic SSA identities and local value
+// versions. Only local copy semantics are modeled; other operations introduce
+// fresh tokens. Every operand and selected edge must preserve its value.
 func checkSymbolic(t *testing.T, name string, f *ir.Function, out *Function) {
 	t.Helper()
 	for bi, b := range f.Blocks {
 		state := make([]int, len(out.Slots))
+		symbols := make([]int, len(f.Values))
+		for i := range symbols {
+			symbols[i] = i
+		}
 		for i := range state {
 			state[i] = -1
 		}
@@ -107,11 +111,14 @@ func checkSymbolic(t *testing.T, name string, f *ir.Function, out *Function) {
 				}
 			}
 		}
+		for i := range f.Locals {
+			state[i] = -2 - i
+		}
 		// Block-local definitions may share storage with other blocks. They will be
 		// overwritten before use; cross-block values have dedicated storage.
 		expect := func(s Slot, v ir.Value) {
-			if int(s) >= len(state) || state[s] != int(v) || out.Slots[s] != f.Values[v] {
-				t.Fatalf("%s block %d: slot %d = %d, want value %d (%s)", name, bi, s, state[s], v, f.Values[v])
+			if int(s) >= len(state) || state[s] != symbols[v] || out.Slots[s] != f.Values[v] {
+				t.Fatalf("%s block %d: slot %d = %d, want value %d token %d (%s)", name, bi, s, state[s], v, symbols[v], f.Values[v])
 			}
 		}
 		for oi, op := range b.Ops {
@@ -135,8 +142,17 @@ func checkSymbolic(t *testing.T, name string, f *ir.Function, out *Function) {
 				for i, v := range op.Args {
 					expect(args[i], v)
 				}
+				src := f.Sources[op.Source].Wasm
+				if src.Op == 0x20 {
+					symbols[op.Results[0]] = state[src.A]
+				} else if src.Op == 0x21 || src.Op == 0x22 {
+					state[src.A] = symbols[op.Args[0]]
+					if src.Op == 0x22 {
+						symbols[op.Results[0]] = symbols[op.Args[0]]
+					}
+				}
 				for _, v := range op.Results {
-					state[in.Dst] = int(v)
+					state[in.Dst] = symbols[v]
 				}
 			}
 		}
@@ -191,7 +207,7 @@ func checkSymbolic(t *testing.T, name string, f *ir.Function, out *Function) {
 				copied[move.Dst] = copied[move.Src]
 			}
 			for i, v := range f.Blocks[e.Target].Params {
-				if copied[out.ValueSlots[v]] != int(e.Args[i]) {
+				if copied[out.ValueSlots[v]] != symbols[e.Args[i]] {
 					t.Fatalf("%s block %d edge %d: wrong parallel tuple", name, bi, ei)
 				}
 			}

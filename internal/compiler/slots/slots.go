@@ -114,6 +114,8 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 	defs := make([]int, n)
 	pinned := make([]bool, n)
 	uses := make([]uint32, n)
+	budget.charge(uint64(n))
+	lastUse := make([]uint32, n)
 	for bi, b := range f.Blocks {
 		for _, v := range b.Params {
 			defs[v] = bi
@@ -125,28 +127,31 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 			}
 		}
 	}
-	use := func(v ir.Value, bi int) {
+	use := func(v ir.Value, bi, position int) {
 		uses[v]++
 		if defs[v] != bi {
 			pinned[v] = true
+		} else {
+			lastUse[v] = uint32(position)
 		}
 	}
 	for bi, b := range f.Blocks {
 		budget.charge(uint64(len(b.Ops)) + 1)
-		for _, op := range b.Ops {
+		for oi, op := range b.Ops {
 			for _, v := range op.Args {
-				use(v, bi)
+				use(v, bi, oi)
 			}
 		}
 		for _, v := range b.Term.Args {
-			use(v, bi)
+			use(v, bi, len(b.Ops))
 		}
 		for _, e := range b.Term.Edges {
 			for _, v := range e.Args {
-				use(v, bi)
+				use(v, bi, len(b.Ops))
 			}
 		}
 	}
+	coalesced := coalesceLocals(f, out, pinned, lastUse, budget)
 	for v, t := range f.Values {
 		if pinned[v] {
 			out.ValueSlots[v] = budget.addSlot(out, t)
@@ -157,7 +162,7 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 	// quadratic global interference graph and preserves loops conservatively.
 	var free, all [128][]Slot
 	release := func(v ir.Value) {
-		if !pinned[v] && uses[v] == 0 {
+		if !pinned[v] && !coalesced[v] && uses[v] == 0 {
 			t := f.Values[v]
 			free[t] = append(free[t], out.ValueSlots[v])
 		}
@@ -169,7 +174,7 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 		out.BlockPC[bi] = uint32(len(out.Code))
 		for _, op := range b.Ops {
 			for _, v := range op.Results {
-				if pinned[v] {
+				if pinned[v] || coalesced[v] {
 					continue
 				}
 				t := f.Values[v]
@@ -182,8 +187,8 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 					out.ValueSlots[v] = s
 				}
 			}
-			// Map operands before releasing any slot. Results do not overlap operands,
-			// including calls that suspend with their input/output locations retained.
+			// Map operands before releasing any slot. Only local copies can alias;
+			// call inputs/outputs remain distinct throughout suspension.
 			src := f.Sources[op.Source]
 			in := Instruction{Op: src.Wasm.Op, Source: op.Source, Dst: NoSlot, A: NoSlot, B: NoSlot, C: NoSlot}
 			if in.Op == 0x10 || in.Op == 0x11 {

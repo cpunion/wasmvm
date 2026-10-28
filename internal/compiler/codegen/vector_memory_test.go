@@ -284,7 +284,9 @@ func TestVectorAliasesPreserveEverySlotAndColdEntry(t *testing.T) {
 		}
 		fm.Write(0, data)
 		sm.Write(0, data)
-		if fast.AliasedVectorReads == 0 {
+		// Bodies 0 and 2 now coalesce the consumed copies. Body 1 still reads
+		// a materialized copy before either local changes, exercising aliases.
+		if bi == 1 && fast.AliasedVectorReads == 0 {
 			t.Fatal("copy chain not bypassed", bi)
 		}
 		for pc := range f.Code {
