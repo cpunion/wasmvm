@@ -39,6 +39,7 @@ type CompiledFunction struct {
 	UsesRuntimeData               bool
 	GlobalIndices                 []uint32
 	NativeGlobals                 uint32
+	NativeTables, NativeFunctions uint32
 	NativeVectors                 uint32
 	FusedVectors                  uint32
 	AliasedVectorReads            uint32
@@ -140,7 +141,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		}
 	}
 	e.header(uint64(len(f.Slots))*16, len(pcs))
-	globalIndices := e.prepareGlobals(config)
+	globalIndices, usesRuntimeData := e.prepareRuntimeData(config)
 	if e.usesMemory {
 		e.prepareMemory()
 	}
@@ -156,7 +157,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		e.contextLoad(0, nativeabi.ContinuationOffset)
 	}
 	a.dispatch(pcs)
-	out = &CompiledFunction{Function: f, Offsets: make([]uint32, len(pcs)), UsesMemory: e.usesMemory, GlobalIndices: globalIndices, UsesRuntimeData: len(globalIndices) != 0}
+	out = &CompiledFunction{Function: f, Offsets: make([]uint32, len(pcs)), UsesMemory: e.usesMemory, GlobalIndices: globalIndices, UsesRuntimeData: usesRuntimeData}
 	for _, in := range f.Code {
 		if nativeVectorOpcode(in.Op) || nativeVectorMemoryOpcode(in.Op) {
 			out.NativeVectors++
@@ -321,6 +322,12 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			e.plain(in, false)
 		case (op == 0x23 || op == 0x24) && e.globalInstruction(in, config):
 			out.NativeGlobals++
+		case (op == 0x25 || op == 0x26 || op == 0xd2) && e.referenceInstruction(in, config):
+			if op == 0xd2 {
+				out.NativeFunctions++
+			} else {
+				out.NativeTables++
+			}
 		case op == 0x40:
 			out.MemoryGrows++
 			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))

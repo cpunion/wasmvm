@@ -28,6 +28,7 @@ type functionEntries struct {
 	ordinary, metered, expanded uint32
 	inlineSlots                 uint32
 	hasExpansion                bool
+	directRuntimeData           bool
 	usesRuntimeData             bool
 	globals                     []uint32
 }
@@ -134,6 +135,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 			case 0:
 				indexes.ordinary = index
 				indexes.globals = body.GlobalIndices
+				indexes.directRuntimeData = body.UsesRuntimeData
 				wantExpansion[f] = body.Calls != 0
 			case 1:
 				indexes.metered = index

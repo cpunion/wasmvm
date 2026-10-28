@@ -1,10 +1,6 @@
 package codegen
 
-import (
-	"math"
-
-	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
-)
+import "github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 
 // RuntimeData is an owned uint64 array: function references in module order,
 // then (element count, native base) for each table. The driver refreshes table
@@ -13,8 +9,8 @@ import (
 func (e *functionEmitter) inlineIndirect(pc int, config Config) (int, uint32, bool) {
 	in := e.f.Code[pc]
 	source := e.f.Sources[in.Source]
-	offset := uint64(config.FunctionCount)*8 + uint64(source.Wasm.B)*16
-	if !e.unmetered || in.Count == 0 || config.FunctionCount == 0 || offset > math.MaxInt32-8 {
+	offset, valid := nativeabi.TablePairOffset(config.FunctionCount, source.Wasm.B)
+	if !e.unmetered || in.Count == 0 || config.FunctionCount == 0 || !valid {
 		return pc, 0, false
 	}
 	type candidate struct {

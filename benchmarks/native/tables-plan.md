@@ -38,3 +38,10 @@ Execute full Go/LLGo release semantics and the final Linux amd64/macOS arm64
 matrix, with >=90% coverage per measured executable package. Missing, slower or
 inconclusive controlled performance evidence still blocks merging and M2
 acceptance. Keep the single active PR and preserve all earlier failures.
+
+The owned fixtures are `table-roundtrip`, `table-copy-handles` and `ref-func`,
+with 100,000 primary iterations. Weighted indirect calls after each loop verify
+reference identity, not only nullness; this verification remains inside guest
+execution timing. Alternate inputs include partial tables and both null/function
+cases. Keep all baseline/candidate/reference results, including fixed-tail and
+API overhead, and do not subtract verification or startup costs from samples.

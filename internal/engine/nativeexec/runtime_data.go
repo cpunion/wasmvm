@@ -99,6 +99,9 @@ func (e *Execution) bindRuntimeGlobals(in *state.Instance, f *slots.Function, in
 		e.runtimeWords[binding.word+1] = binding.global.Value.Hi
 	}
 	for i, table := range in.Tables {
+		if table == nil || !table.IsNative() {
+			return 0, wasm.ErrInvalid
+		}
 		address := table.NativeAddress()
 		if len(table.Values) != 0 && address == 0 {
 			return 0, wasm.ErrInvalid

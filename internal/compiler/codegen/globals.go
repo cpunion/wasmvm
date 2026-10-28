@@ -31,11 +31,16 @@ func globalCell(f *slots.Function, in slots.Instruction, config Config) (uint32,
 	return offset, g.Value, ok
 }
 
-func (e *functionEmitter) prepareGlobals(config Config) []uint32 {
+func (e *functionEmitter) prepareRuntimeData(config Config) ([]uint32, bool) {
 	seen := map[uint32]bool{}
+	needed := false
 	for _, in := range e.f.Code {
 		if _, _, ok := globalCell(e.f, in, config); ok {
 			seen[e.f.Sources[in.Source].Wasm.A] = true
+			needed = true
+		}
+		if _, ok := referenceCell(e.f, in, config); ok {
+			needed = true
 		}
 	}
 	var indices []uint32
@@ -43,7 +48,7 @@ func (e *functionEmitter) prepareGlobals(config Config) []uint32 {
 		indices = append(indices, index)
 	}
 	sort.Slice(indices, func(i, j int) bool { return indices[i] < indices[j] })
-	if len(indices) != 0 {
+	if needed {
 		// The driver supplies this trusted view before any guest instruction,
 		// including arbitrary cold continuations. No Go pointer enters the ABI.
 		e.contextLoad(0, nativeabi.RuntimeDataOffset)
@@ -51,7 +56,7 @@ func (e *functionEmitter) prepareGlobals(config Config) []uint32 {
 		e.branch(e.bad, "eq")
 		e.contextLoad(0, nativeabi.ContinuationOffset)
 	}
-	return indices
+	return indices, needed
 }
 
 func (e *functionEmitter) globalInstruction(in slots.Instruction, config Config) bool {
@@ -59,13 +64,7 @@ func (e *functionEmitter) globalInstruction(in slots.Instruction, config Config)
 	if !ok {
 		return false
 	}
-	base := e.operandRegister(2)
-	if r, cached := e.runtimeRegisters[offset]; cached {
-		base = r
-	} else {
-		e.contextLoad(2, nativeabi.RuntimeDataOffset)
-		e.runtimeLoad(2, offset)
-	}
+	base := e.runtimeBase(offset)
 	if typ == wasm.V128 {
 		reg := byte(0)
 		if in.Op == 0x23 {

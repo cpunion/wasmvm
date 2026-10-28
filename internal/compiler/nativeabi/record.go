@@ -12,6 +12,12 @@ func GlobalPointerOffset(functions, tables, index uint32) (uint32, bool) {
 	return uint32(offset), offset <= math.MaxInt32
 }
 
+// TablePairOffset locates the length/base pair following the function IDs.
+func TablePairOffset(functions, index uint32) (uint32, bool) {
+	offset := uint64(functions)*8 + uint64(index)*16
+	return uint32(offset), offset <= math.MaxInt32-8
+}
+
 type Exit uint32
 
 const (

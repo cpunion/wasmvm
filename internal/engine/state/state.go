@@ -299,6 +299,10 @@ func (t *Table) NativeAddress() uint64 {
 	return uint64(uintptr(unsafe.Pointer(unsafe.SliceData(t.Values))))
 }
 
+// IsNative reports whether the table owns native storage, including an empty
+// table whose address is zero. Retirement clears the storage owner.
+func (t *Table) IsNative() bool { return t.native != nil }
+
 func (t *Table) refreshNative() {
 	buffer, err := t.native.Buffer()
 	if err != nil {

@@ -1,0 +1,39 @@
+{
+  "producer": "wasm-tools 1.258.0",
+  "origin": "authored in wasmvm; no third-party benchmark code",
+  "workloads": [
+    {
+      "id": "table-roundtrip",
+      "seed": 305419896,
+      "iterations": 100000,
+      "expectedChecksum": 3502725448,
+      "unit": "ns/source iteration",
+      "wat": "table-roundtrip.wat",
+      "wasm": "table-roundtrip.wasm",
+      "watSha256": "77979aab428d71edd60005ae561d22cd1b9e90abfb63623c24313c1b1e41a238",
+      "wasmSha256": "8bd6ac19fa8ee8b3917e39b7b4dc66e51cf79a9072add1810602458e3ba9f035"
+    },
+    {
+      "id": "table-copy-handles",
+      "seed": 305419896,
+      "iterations": 100000,
+      "expectedChecksum": 1999112016,
+      "unit": "ns/source iteration",
+      "wat": "table-copy-handles.wat",
+      "wasm": "table-copy-handles.wasm",
+      "watSha256": "55ee538e7c0348d754549c769fe061b0cad1350ae05a42315e8018667441dbd2",
+      "wasmSha256": "411c5d0bed9ed148fb51b6ba3097d092b32b60c8c6284b31801bb72ae6a7916d"
+    },
+    {
+      "id": "ref-func",
+      "seed": 305419896,
+      "iterations": 100000,
+      "expectedChecksum": 1999111728,
+      "unit": "ns/source iteration",
+      "wat": "ref-func.wat",
+      "wasm": "ref-func.wasm",
+      "watSha256": "26991ad2238337bb2f28bb678b8782d575d49378445ed688f33792eae927c4bb",
+      "wasmSha256": "3938b1b82e219f78aea2eb2d43be07bfa4f1ed231fe5059eb8660881af2708e6"
+    }
+  ]
+}

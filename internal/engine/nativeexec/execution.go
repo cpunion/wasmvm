@@ -136,7 +136,7 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 		return 0, fuel, err
 	}
 	entry := entries.ordinary
-	needsData := len(entries.globals) != 0
+	needsData := entries.directRuntimeData
 	s := native.State{Used: uint64(base) * 16, Depth: uint64(depth), Function: uint64(fn.Index), Continuation: uint64(pc), Fuel: fuel, Budget: 64}
 	if e.metered {
 		entry = entries.metered

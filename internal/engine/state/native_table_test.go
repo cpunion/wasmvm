@@ -25,6 +25,9 @@ func TestNativeTableStorageGrowthAndReclamation(t *testing.T) {
 			t.Fatal(err)
 		}
 		table := ex.Table
+		if !table.IsNative() {
+			t.Fatal("empty native table lost its storage owner")
+		}
 		if old, ok := s.GrowTable(table, 2, 7); old != 0 || !ok {
 			t.Fatal(old, ok)
 		}
@@ -45,7 +48,7 @@ func TestNativeTableStorageGrowthAndReclamation(t *testing.T) {
 		}
 		storage := table.native
 		s.Close()
-		if _, err := storage.Buffer(); !errors.Is(err, native.ErrClosed) || table.Values != nil || table.NativeAddress() != 0 {
+		if _, err := storage.Buffer(); !errors.Is(err, native.ErrClosed) || table.Values != nil || table.NativeAddress() != 0 || table.IsNative() {
 			t.Fatal(err, table)
 		}
 		if _, ok := s.GrowTable(table, 0, 0); ok {

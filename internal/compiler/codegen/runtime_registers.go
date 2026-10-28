@@ -1,14 +1,13 @@
 package codegen
 
 import (
-	"math"
 	"sort"
 
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 )
 
 // Table metadata, global cell pointers and function identities cannot change inside a native entry:
-// every mutating operation/host call exits to the serialized driver. Reuse spare
+// metadata changes and host calls exit to the serialized driver. Reuse spare
 // arm64 caller registers for these words, refreshing them on every resume.
 // Elements themselves remain live loads. No additional register spills or roots
 // are needed, and a missing runtime view installs zero lengths for checked exits.
@@ -21,13 +20,19 @@ func (e *functionEmitter) prepareRuntimeRegisters(config Config) {
 		if offset, _, ok := globalCell(e.f, in, config); ok {
 			weights[offset] += 2
 		}
+		if offset, ok := referenceCell(e.f, in, config); ok {
+			weights[offset] += 2
+			if in.Op != 0xd2 {
+				weights[offset+8] += 2
+			}
+		}
 		if in.Op != 0x11 || config.FunctionCount == 0 {
 			continue
 		}
 		source := e.f.Sources[in.Source].Wasm
 		targets := config.IndirectCallees[source.A]
-		offset := uint64(config.FunctionCount)*8 + uint64(source.B)*16
-		if len(targets) == 0 || offset > math.MaxInt32-8 {
+		offset, valid := nativeabi.TablePairOffset(config.FunctionCount, source.B)
+		if len(targets) == 0 || !valid {
 			continue
 		}
 		weights[uint32(offset)] += 2
@@ -70,6 +75,16 @@ func (e *functionEmitter) prepareRuntimeRegisters(config Config) {
 		e.a.aconst(uint32(r), 0, false)
 	}
 	e.a.mark(done)
+}
+
+// Return the physical register containing a trusted native cell/base pointer.
+func (e *functionEmitter) runtimeBase(offset uint32) byte {
+	if r, cached := e.runtimeRegisters[offset]; cached {
+		return r
+	}
+	e.contextLoad(2, nativeabi.RuntimeDataOffset)
+	e.runtimeLoad(2, offset)
+	return e.operandRegister(2)
 }
 
 func (e *functionEmitter) runtimeLoad(dst byte, offset uint32) {
