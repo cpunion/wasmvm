@@ -13,8 +13,8 @@ concurrency:
 
 env:
   GO_VERSION: '1.27.3'
-  # LLGo memory-hook contribution for xgo-dev/llgo#2918; not a released version.
-  LLGO_REVISION: 8b1389c627c77a02e56af03f08d9cdc19edffe77
+  # LLGo compatibility contributions, including math bitcasts in PR #2936; not a release.
+  LLGO_REVISION: 8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f
 
 jobs:
   test:

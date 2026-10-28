@@ -11,7 +11,7 @@ import tarfile
 import ci
 
 MODULE = "github.com/cpunion/wasmvm"
-LLGO_REVISION = "8b1389c627c77a02e56af03f08d9cdc19edffe77"
+LLGO_REVISION = "8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f"
 GO_VERSION = "go1.27.3"
 HARNESS = ("internal/bench/phase", "benchmarks/embedded/wasmvm")
 ENGINE_PATHS = ("go.mod", "go.sum", "internal", "pkg", "cmd")

@@ -55,7 +55,7 @@ jobs:
         id: llgo
         uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
         with:
-          llgo-version: 8b1389c627c77a02e56af03f08d9cdc19edffe77
+          llgo-version: 8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f
           install-method: source
           go-version: '1.27.3'
           llvm-version: '22'
@@ -64,7 +64,7 @@ jobs:
       - name: Verify the benchmark LLGo identity
         env:
           ACTUAL_LLGO_REVISION: ${{ steps.llgo.outputs.llgo-revision }}
-        run: test "$ACTUAL_LLGO_REVISION" = 8b1389c627c77a02e56af03f08d9cdc19edffe77
+        run: test "$ACTUAL_LLGO_REVISION" = 8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f
 
       - name: Check benchmark tooling
         run: python3 -m unittest discover -s head/benchmarks -p 'test_*.py'
@@ -99,7 +99,7 @@ jobs:
       - name: Measure direct API phases and warmed execution
         shell: bash
         env:
-          WASMVM_LLGO_REVISION: 8b1389c627c77a02e56af03f08d9cdc19edffe77
+          WASMVM_LLGO_REVISION: 8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f
         run: |
           python3 head/benchmarks/phase_ci.py --timeout 180 --suite "$BENCHMARK_SUITE" \
             --base-dir "$GITHUB_WORKSPACE/base" \
@@ -147,7 +147,7 @@ jobs:
         platform: ${{ fromJSON(inputs.suite == 'native-simd' && '[{"name":"linux-amd64","runner":"ubuntu-24.04","artifact":"native-amd64-comparison"},{"name":"macos-arm64","runner":"macos-15","artifact":"native-arm64-comparison"}]' || '[{"name":"macos-arm64","runner":"macos-15","artifact":"native-arm64-comparison"}]') }}
     timeout-minutes: 30
     env:
-      WASMVM_LLGO_REVISION: 8b1389c627c77a02e56af03f08d9cdc19edffe77
+      WASMVM_LLGO_REVISION: 8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -162,7 +162,7 @@ jobs:
       - uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
         id: llgo
         with:
-          llgo-version: 8b1389c627c77a02e56af03f08d9cdc19edffe77
+          llgo-version: 8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f
           install-method: source
           go-version: '1.27.3'
           llvm-version: '22'
