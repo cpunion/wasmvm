@@ -1538,3 +1538,76 @@ Manual semantic workflows now make unchanged wazero/wago compatibility
 evaluations an explicit `evaluate_references` option, defaulting to false.
 The four own-engine/compiler/target jobs, corpus, coverage, race, pointer and
 CLI checks remain required; this removes repeated M0 work from core iterations.
+
+## Shared local and literal slots
+
+Engine `4f531dd620a3c4920fb70d59e78286df7e2e02bd` coalesces block-local
+local.get/tee results only until the next local write. Identical typed numeric
+and vector literals share storage only while their SSA definitions overlap;
+last-alias release recycles it. Cross-block values remain dedicated. Linear
+scans and block-local pools retain bounded compilation. Native register weights
+ignore self-copies, include argument/return tuples, and avoid duplicate tee
+destinations. No Wasm opcode, source/fuel boundary or original PC is removed.
+
+The independent symbolic checker models local versions and exact literal bits.
+Tests cover old values across writes, tee, blocks, types/NaN payloads/signed
+zero/vector halves, alias release, bounded frames, quotas, suspended reference
+roots, zero-initialized reuse and arbitrary native cold-entry slot contents.
+Complete local Go and LLGo release suites pass: each of six execution reports
+retains 148 scripts and 51,139 binary assertions. Every executable package is
+above 90% coverage; locally slots is 99.60%, codegen 96.81%, execute 98.72%.
+
+The first local-only candidate `7bfd24b` remains an unaccepted intermediate:
+its initial native CRC process medians regress under both host compilers.
+Its [CI](https://github.com/cpunion/wasmvm/actions/runs/40646194361) retains 12
+passing execution reports, but three jobs fail uploading artifacts from the
+disabled reference evaluation. Commit `ff0e525fec3fdaea20b848651d8a7587ab7a9982`
+fixes that condition; its engine sources equal `4f531dd` exactly. The final
+[CI](https://github.com/cpunion/wasmvm/actions/runs/40649187641) passes all four
+Go/LLGo release x Linux amd64/macOS arm64 jobs. All 12 downloaded execution
+reports retain 148 scripts and 51,139 binary assertions each. Linux codegen
+coverage is 93.86%, slots 99.60%, with every executable package above 90%.
+
+Final measurements compare exact base `f1513a8`, intermediate `7bfd24b` and
+head `ff0e525`, with identical pinned Go/LLGo release compilers and reference
+binaries. Twelve families and 22 configurations pass 1056 alternate-input
+checks; intermediate rows cover native API execution. Three interleaved process
+blocks retain seven calls after two warmups, not a controlled acceptance run.
+The same pinned C/Rust portfolio commit `2b20a74`, producers, hashes, counts and
+independent checksum oracles are reused. Public native medians, microseconds
+per image pass or 256-byte CRC packet:
+
+| Application / host | Base | Intermediate | Head | wazero | Wasmtime | Wasmer |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| C image / Go | 3.366 | 3.360 | 3.375 | 3.429 | 1.200 | 1.225 |
+| C image / LLGo | 3.097 | 2.957 | 2.927 | 3.429 | 1.200 | 1.225 |
+| Rust CRC / Go | 2.987 | 3.236 | 2.039 | 1.818 | 1.531 | 1.641 |
+| Rust CRC / LLGo | 2.645 | 2.873 | 1.730 | 1.818 | 1.531 | 1.641 |
+
+LLGo native CRC is about 35% faster than its base and ahead of wazero in this
+run, but still slower than Wasmtime/Wasmer. Image filtering still has a large
+deficit against those engines. CRC instructions remain 138 while frame slots
+fall 21 -> 15; unmetered code shrinks 4258 -> 3803 bytes on amd64 and 3860 ->
+3568 on arm64. Image slots fall 17 -> 16, code 6575 -> 6281 / 7260 -> 6972.
+
+The report retains regressions instead of averaging them away. Go native
+indirect calls measure 1.077 -> 1.323 ns/source iteration; LLGo native memory
+0.752 -> 0.783 and f32 SIMD 3.882 -> 3.944. LLGo interpreter image filtering
+measures 364.717 -> 376.356 microseconds/pass versus wazero 352.943, and direct
+calls 143.485 -> 146.909 ns/iteration versus wazero 91.869. Tiny call controls
+remain unresolved. Go interpreter image/CRC improve 257.457 -> 247.429 and
+89.928 -> 85.182 microseconds, while LLGo CRC measures 80.042 -> 80.826.
+
+Preparation and first call remain separate. Native CRC preparation process
+medians are Go 384208 -> 381584 ns and LLGo 912875 -> 850125 ns; first calls
+163875 -> 112875 / 159625 -> 105875 ns. Image preparation is Go 442125 ->
+535375 ns, an observed regression, and LLGo 1310500 -> 1125500 ns. No startup,
+preparation or API boundary median is subtracted from warmed calls.
+
+The initial report remains under `artifacts/local-slots`, raw SHA-256
+`87f9bf014665017b95b51fad276515177cb8c667b10e2f9340a9f1f597184d99`.
+Final raw/source/binary provenance and code/frame shapes remain under
+`artifacts/literal-slots`, raw SHA-256
+`2f80425ac39e1af9e8b3e7ab3dd91eab1424a3f4bf29ed7f98d839cfa8c78df4`.
+These mixed local diagnostics do not accept parity, resolve PR #26's ARM A/A
+failure, or close M1/M2. Core 3.0/GC/Threads/components/WASI 1/2/3 remain open.

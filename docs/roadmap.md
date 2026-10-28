@@ -78,8 +78,8 @@ reuse. Canceled native contexts are discarded with their sticky control state.
 Boundary and helper overhead still need measurement and optimization.
 
 The complete Go/LLGo semantic matrix passes on Linux amd64 and macOS arm64
-through engine `f1513a8` with the explicit LLGo release profile
-([CI](https://github.com/cpunion/wasmvm/actions/runs/40639955242)); all 12
+through engine `4f531dd` with the explicit LLGo release profile
+([CI](https://github.com/cpunion/wasmvm/actions/runs/40649187641)); all 12
 interpreter/native-tier reports retain 148 scripts and 51,139 binary assertions.
 The interpreter avoids per-step closure/source copies and SIMD instruction/
 result objects. Packed integer operations improve local popcount throughput;
@@ -92,6 +92,16 @@ and profile upgrades are separate baseline events; default-flag regressions
 remain recorded. Native scalar select uses CMOV/CSEL with direct register reuse
 through engine `f1513a8`; its final matrix passes in the validation record.
 The pinned C/Rust application comparisons expose remaining compiler deficits.
+Engine `4f531dd` shares local reads/tee within proven lifetimes and identical
+numeric/vector literals while live, with copy-aware register weights including
+call/return tuples. The independent slot checker, arbitrary cold-entry tests
+and full Go/LLGo target matrix pass. CRC frames fall from 21 to 15 slots; local
+LLGo native CRC improves about 35%, but remaining competitor deficits,
+interpreter/call/SIMD regressions and preparation costs are retained in the
+[validation record](validation.md#shared-local-and-literal-slots). Follow the
+[local](../benchmarks/native/local-slots-plan.md) and
+[literal](../benchmarks/native/literal-slots-plan.md) scopes; these increments
+do not close performance acceptance.
 The current frequency-based fixed register assignment still lacks the planned
 global live-range allocation/splitting. Calls, SIMD/application/preparation
 performance and all-target calibration remain open.
