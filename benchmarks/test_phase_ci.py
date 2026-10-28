@@ -70,6 +70,20 @@ def complete_report():
 
 
 class PhaseIntegrityTests(unittest.TestCase):
+    def test_native_dispatch_requires_its_measured_preparation_part(self):
+        report = complete_report()
+        runtime = next(r for r in report["runtimes"] if r.get("mode") == "dispatch")
+        workload = report["fixtures"]["workloads"][0]
+        row = next(r for r in report["observations"] if r["runtime"] == runtime["id"] and r["workload"] == workload["id"])
+        runtime["backend"] = row["record"]["backend"] = "native"
+        with self.assertRaisesRegex(ValueError, "preparation detail"):
+            phase.validate_observation(row, runtime, workload)
+        row["record"]["preparationPartsNs"]["native"] = 20
+        phase.validate_observation(row, runtime, workload)
+        runtime["backend"] = row["record"]["backend"] = "interpreter"
+        with self.assertRaisesRegex(ValueError, "preparation detail"):
+            phase.validate_observation(row, runtime, workload)
+
     def test_complete_matrix_uses_only_warm_api_call_samples(self):
         report = complete_report()
         result = phase.summarize(report)

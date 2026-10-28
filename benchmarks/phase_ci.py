@@ -238,6 +238,8 @@ def validate_observation(observation, runtime, workload):
     if "preparationPartsNs" in record:
         parts = record["preparationPartsNs"]
         expected_parts = {"decode", "validate", "lower", "slots"} if own else {"parse", "validate"}
+        if own and runtime["backend"] == "native":
+            expected_parts.add("native")
         if set(parts) != expected_parts:
             raise ValueError("unexpected preparation detail")
         for value in parts.values():
