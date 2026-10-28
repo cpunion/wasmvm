@@ -182,7 +182,7 @@ jobs:
         run: python3 -m unittest discover -s benchmarks -p 'test_*.py'
 
       - name: Preserve evaluation evidence
-        if: always() && github.event_name == 'workflow_dispatch' && (matrix.compiler == 'llgo' || matrix.platform.name == 'linux-amd64')
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.evaluate_references && (matrix.compiler == 'llgo' || matrix.platform.name == 'linux-amd64')
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: wazero-evaluation-${{ matrix.compiler }}-${{ matrix.platform.name }}
