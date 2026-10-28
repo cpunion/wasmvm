@@ -191,228 +191,231 @@ func (e *Execution) Run() Status {
 	backend := e.config.Backend
 	native := backend != nil
 	metered := e.config.Metered && !native
+frames:
 	for len(e.frames) > 0 {
 		fi := len(e.frames) - 1
 		f := &e.frames[fi]
 		fn := f.function
 		code := fn.Code
-		pc := f.pc
-		if native {
-			var err error
-			pc, e.fuel, err = backend.Run(fn, f.base, len(e.frames), pc, e.fuel)
-			if err != nil {
-				return e.fail(err)
-			}
-			f.pc = pc
-		}
 		base := f.base
-		in := code.Code[pc]
-		source := &code.Sources[in.Source]
-		im := &source.Wasm
 		instance := fn.Instance
-		if metered {
-			cost := source.Fuel()
-			if cost > e.fuel {
-				return e.fail(&wasm.Error{Kind: wasm.ErrLimit, Offset: im.Offset, Detail: "execution fuel"})
-			}
-			e.fuel -= cost
-		}
-		e.steps++
-		if e.steps&63 == 0 {
-			if err := e.poll(); err != nil {
-				return e.fail(err)
-			}
-		}
-		f.pc++
-		var a, b, c value.Value
-		if in.A != slots.NoSlot {
-			a = e.values[base+int(in.A)]
-		}
-		if in.B != slots.NoSlot {
-			b = e.values[base+int(in.B)]
-		}
-		if in.C != slots.NoSlot {
-			c = e.values[base+int(in.C)]
-		}
-		var result value.Value
-		trap := wasm.NoTrap
-		switch op := in.Op; {
-		case op >= slots.ControlBase:
-			kind := ir.TermKind(op - slots.ControlBase)
-			if kind == ir.Trap {
-				trap = wasm.TrapUnreachable
-				break
-			}
-			if kind == ir.Return {
-				outputs := code.Args[in.Extra : in.Extra+in.Count]
-				if fi == 0 {
-					e.result = e.result[:0]
-					for _, src := range outputs {
-						e.result = append(e.result, e.values[base+int(src)])
-					}
-					clear(e.frames)
-					e.frames = e.frames[:0]
-					e.values = e.values[:0]
-					e.status = Done
-					return Done
+		for {
+			pc := f.pc
+			if native {
+				var err error
+				pc, e.fuel, err = backend.Run(fn, f.base, len(e.frames), pc, e.fuel)
+				if err != nil {
+					return e.fail(err)
 				}
-				parentBase := e.frames[fi-1].base
-				for i, src := range outputs {
-					e.values[parentBase+int(f.dest[i])] = e.values[base+int(src)]
-				}
-				e.frames[fi] = frame{}
-				e.frames = e.frames[:fi]
-				e.values = e.values[:base]
-				continue
+				f.pc = pc
 			}
-			index := uint32(0)
-			if kind == ir.If && uint32(a.Lo) == 0 {
-				index = 1
-			} else if kind == ir.Table {
-				index = uint32(a.Lo)
-				if index >= in.Count-1 {
-					index = in.Count - 1
+			in := code.Code[pc]
+			source := &code.Sources[in.Source]
+			im := &source.Wasm
+			if metered {
+				cost := source.Fuel()
+				if cost > e.fuel {
+					return e.fail(&wasm.Error{Kind: wasm.ErrLimit, Offset: im.Offset, Detail: "execution fuel"})
 				}
+				e.fuel -= cost
 			}
-			edge := code.Edges[in.Extra+index]
-			if edge.PC <= pc {
+			e.steps++
+			if e.steps&63 == 0 {
 				if err := e.poll(); err != nil {
 					return e.fail(err)
 				}
 			}
-			for _, move := range code.Moves[edge.Start : edge.Start+edge.Count] {
-				e.values[base+int(move.Dst)] = e.values[base+int(move.Src)]
+			f.pc++
+			var a, b, c value.Value
+			if in.A != slots.NoSlot {
+				a = e.values[base+int(in.A)]
 			}
-			f.pc = edge.PC
-			continue
-		case op == 1 || op == 0x1a:
-		case op == 0x1b || op == 0x1c:
-			result = b
-			if uint32(c.Lo) != 0 {
+			if in.B != slots.NoSlot {
+				b = e.values[base+int(in.B)]
+			}
+			if in.C != slots.NoSlot {
+				c = e.values[base+int(in.C)]
+			}
+			var result value.Value
+			trap := wasm.NoTrap
+			switch op := in.Op; {
+			case op >= slots.ControlBase:
+				kind := ir.TermKind(op - slots.ControlBase)
+				if kind == ir.Trap {
+					trap = wasm.TrapUnreachable
+					break
+				}
+				if kind == ir.Return {
+					outputs := code.Args[in.Extra : in.Extra+in.Count]
+					if fi == 0 {
+						e.result = e.result[:0]
+						for _, src := range outputs {
+							e.result = append(e.result, e.values[base+int(src)])
+						}
+						clear(e.frames)
+						e.frames = e.frames[:0]
+						e.values = e.values[:0]
+						e.status = Done
+						return Done
+					}
+					parentBase := e.frames[fi-1].base
+					for i, src := range outputs {
+						e.values[parentBase+int(f.dest[i])] = e.values[base+int(src)]
+					}
+					e.frames[fi] = frame{}
+					e.frames = e.frames[:fi]
+					e.values = e.values[:base]
+					continue frames
+				}
+				index := uint32(0)
+				if kind == ir.If && uint32(a.Lo) == 0 {
+					index = 1
+				} else if kind == ir.Table {
+					index = uint32(a.Lo)
+					if index >= in.Count-1 {
+						index = in.Count - 1
+					}
+				}
+				edge := code.Edges[in.Extra+index]
+				if edge.PC <= pc {
+					if err := e.poll(); err != nil {
+						return e.fail(err)
+					}
+				}
+				for _, move := range code.Moves[edge.Start : edge.Start+edge.Count] {
+					e.values[base+int(move.Dst)] = e.values[base+int(move.Src)]
+				}
+				f.pc = edge.PC
+				continue
+			case op == 1 || op == 0x1a:
+			case op == 0x1b || op == 0x1c:
+				result = b
+				if uint32(c.Lo) != 0 {
+					result = a
+				}
+			case op == 0x20:
+				result = e.values[base+int(im.A)]
+			case op == 0x21 || op == 0x22:
+				e.values[base+int(im.A)] = a
 				result = a
-			}
-		case op == 0x20:
-			result = e.values[base+int(im.A)]
-		case op == 0x21 || op == 0x22:
-			e.values[base+int(im.A)] = a
-			result = a
-		case op == 0x23:
-			result = instance.Globals[im.A].Value
-		case op == 0x24:
-			instance.Globals[im.A].Value = a
-		case op == 0x25:
-			table := instance.Tables[im.A]
-			index := uint64(uint32(a.Lo))
-			if index >= uint64(len(table.Values)) {
-				trap = wasm.TrapTableBounds
-			} else {
-				result.Lo = table.Values[index]
-			}
-		case op == 0x26:
-			table := instance.Tables[im.A]
-			index := uint64(uint32(a.Lo))
-			if index >= uint64(len(table.Values)) {
-				trap = wasm.TrapTableBounds
-			} else {
-				table.Values[index] = b.Lo
-			}
-		case op >= 0x28 && op <= 0x35:
-			result, trap = instance.Memories[0].Load(op, uint32(a.Lo), im.B, 0, value.Value{})
-		case op >= 0x36 && op <= 0x3e:
-			trap = instance.Memories[0].Store(op, uint32(a.Lo), im.B, 0, b)
-		case op == 0x3f:
-			result.Lo = uint64(instance.Memories[0].Pages())
-		case op == 0x40:
-			old, ok := e.store.GrowMemory(instance.Memories[0], uint32(a.Lo))
-			result.Lo = uint64(old)
-			if !ok {
-				result.Lo = uint64(^uint32(0))
-			}
-		case op >= 0x41 && op <= 0x44:
-			result.Lo = im.Bits
-		case op >= 0x45 && op <= 0xc4 || op >= 0xfc0000 && op <= 0xfc0007:
-			result.Lo, trap = numeric.Eval(op, a.Lo, b.Lo)
-		case op == 0xd0:
-		case op == 0xd1:
-			if a.Lo == 0 {
-				result.Lo = 1
-			}
-		case op == 0xd2:
-			result.Lo = instance.Functions[im.A]
-		case op == 0x10 || op == 0x11:
-			count := in.Count
-			inputs := code.Args[in.Extra : in.Extra+count]
-			var target uint64
-			if op == 0x10 {
-				target = instance.Functions[im.A]
-			} else {
-				count--
-				index := uint64(uint32(e.values[base+int(inputs[count])].Lo))
-				table := instance.Tables[im.B]
+			case op == 0x23:
+				result = instance.Globals[im.A].Value
+			case op == 0x24:
+				instance.Globals[im.A].Value = a
+			case op == 0x25:
+				table := instance.Tables[im.A]
+				index := uint64(uint32(a.Lo))
 				if index >= uint64(len(table.Values)) {
 					trap = wasm.TrapTableBounds
+				} else {
+					result.Lo = table.Values[index]
+				}
+			case op == 0x26:
+				table := instance.Tables[im.A]
+				index := uint64(uint32(a.Lo))
+				if index >= uint64(len(table.Values)) {
+					trap = wasm.TrapTableBounds
+				} else {
+					table.Values[index] = b.Lo
+				}
+			case op >= 0x28 && op <= 0x35:
+				result, trap = instance.Memories[0].Load(op, uint32(a.Lo), im.B, 0, value.Value{})
+			case op >= 0x36 && op <= 0x3e:
+				trap = instance.Memories[0].Store(op, uint32(a.Lo), im.B, 0, b)
+			case op == 0x3f:
+				result.Lo = uint64(instance.Memories[0].Pages())
+			case op == 0x40:
+				old, ok := e.store.GrowMemory(instance.Memories[0], uint32(a.Lo))
+				result.Lo = uint64(old)
+				if !ok {
+					result.Lo = uint64(^uint32(0))
+				}
+			case op >= 0x41 && op <= 0x44:
+				result.Lo = im.Bits
+			case op >= 0x45 && op <= 0xc4 || op >= 0xfc0000 && op <= 0xfc0007:
+				result.Lo, trap = numeric.Eval(op, a.Lo, b.Lo)
+			case op == 0xd0:
+			case op == 0xd1:
+				if a.Lo == 0 {
+					result.Lo = 1
+				}
+			case op == 0xd2:
+				result.Lo = instance.Functions[im.A]
+			case op == 0x10 || op == 0x11:
+				count := in.Count
+				inputs := code.Args[in.Extra : in.Extra+count]
+				var target uint64
+				if op == 0x10 {
+					target = instance.Functions[im.A]
+				} else {
+					count--
+					index := uint64(uint32(e.values[base+int(inputs[count])].Lo))
+					table := instance.Tables[im.B]
+					if index >= uint64(len(table.Values)) {
+						trap = wasm.TrapTableBounds
+						break
+					}
+					target = table.Values[index]
+					if target == 0 {
+						trap = wasm.TrapUninitializedElement
+						break
+					}
+				}
+				callee, ok := e.store.Function(target)
+				if !ok {
+					return e.fail(state.ErrReference)
+				}
+				if op == 0x11 && callee.TypeID != instance.Types[im.A] {
+					trap = wasm.TrapIndirectCallType
 					break
 				}
-				target = table.Values[index]
-				if target == 0 {
-					trap = wasm.TrapUninitializedElement
-					break
+				dest := code.Args[in.Extra+in.Count : in.Extra+in.Count+uint32(len(callee.Signature.Results))]
+				if err := e.poll(); err != nil {
+					return e.fail(err)
 				}
-			}
-			callee, ok := e.store.Function(target)
-			if !ok {
-				return e.fail(state.ErrReference)
-			}
-			if op == 0x11 && callee.TypeID != instance.Types[im.A] {
-				trap = wasm.TrapIndirectCallType
-				break
-			}
-			dest := code.Args[in.Extra+in.Count : in.Extra+in.Count+uint32(len(callee.Signature.Results))]
-			if err := e.poll(); err != nil {
-				return e.fail(err)
-			}
-			if callee.Code == nil {
-				args := make([]value.Value, count)
-				for i := range args {
-					args[i] = e.values[base+int(inputs[i])]
+				if callee.Code == nil {
+					args := make([]value.Value, count)
+					for i := range args {
+						args[i] = e.values[base+int(inputs[i])]
+					}
+					e.pending = &HostCall{Function: callee, Args: args}
+					e.pendingDest = dest
+					e.status = HostRequest
+					return HostRequest
 				}
-				e.pending = &HostCall{Function: callee, Args: args}
-				e.pendingDest = dest
-				e.status = HostRequest
-				return HostRequest
-			}
-			if err := e.push(callee, dest); err != nil {
-				return e.fail(err)
-			}
-			calleeBase := e.frames[len(e.frames)-1].base
-			for i := uint32(0); i < count; i++ {
-				e.values[calleeBase+int(i)] = e.values[base+int(inputs[i])]
-			}
-			continue
-		case op>>16 == 0xfd:
-			sub := op & 0xffff
-			switch {
-			case sub <= 10 || sub >= 84 && sub <= 87 || sub == 92 || sub == 93:
-				result, trap = instance.Memories[0].Load(op, uint32(a.Lo), im.B, im.Lane, b)
-			case sub == 11 || sub >= 88 && sub <= 91:
-				trap = instance.Memories[0].Store(op, uint32(a.Lo), im.B, im.Lane, b)
+				if err := e.push(callee, dest); err != nil {
+					return e.fail(err)
+				}
+				calleeBase := e.frames[len(e.frames)-1].base
+				for i := uint32(0); i < count; i++ {
+					e.values[calleeBase+int(i)] = e.values[base+int(inputs[i])]
+				}
+				continue frames
+			case op>>16 == 0xfd:
+				sub := op & 0xffff
+				switch {
+				case sub <= 10 || sub >= 84 && sub <= 87 || sub == 92 || sub == 93:
+					result, trap = instance.Memories[0].Load(op, uint32(a.Lo), im.B, im.Lane, b)
+				case sub == 11 || sub >= 88 && sub <= 91:
+					trap = instance.Memories[0].Store(op, uint32(a.Lo), im.B, im.Lane, b)
+				default:
+					result = simd.Eval(im, a, b, c)
+				}
+			case op >= 0xfc0008 && op <= 0xfc0011:
+				var err error
+				result, trap, err = e.bulk(instance, *im, a, b, c)
+				if err != nil {
+					return e.fail(err)
+				}
 			default:
-				result = simd.Eval(im, a, b, c)
+				panic("interp: unknown validated opcode")
 			}
-		case op >= 0xfc0008 && op <= 0xfc0011:
-			var err error
-			result, trap, err = e.bulk(instance, *im, a, b, c)
-			if err != nil {
-				return e.fail(err)
+			if trap != wasm.NoTrap {
+				return e.fail(&wasm.Trap{Code: trap, Function: fn.Index, Offset: im.Offset})
 			}
-		default:
-			panic("interp: unknown validated opcode")
-		}
-		if trap != wasm.NoTrap {
-			return e.fail(&wasm.Trap{Code: trap, Function: fn.Index, Offset: im.Offset})
-		}
-		if in.Dst != slots.NoSlot {
-			e.values[base+int(in.Dst)] = result
+			if in.Dst != slots.NoSlot {
+				e.values[base+int(in.Dst)] = result
+			}
 		}
 	}
 	panic("interp: running without frames")
