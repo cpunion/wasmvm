@@ -63,16 +63,31 @@ func (e *Execution) bindRuntimeGlobals(in *state.Instance, f *slots.Function, in
 	address := uint64(uintptr(unsafe.Pointer(unsafe.SliceData(e.runtimeWords))))
 	if changed || e.runtimeFunction != f {
 		e.resetRuntimeGlobals()
-		cells := map[*state.Global]int{}
+		// Most functions touch only one or two globals. Avoid a hash table on
+		// that common path, while keeping large binding sets linear overall.
+		var cells map[*state.Global]int
+		if len(indices) > 16 {
+			cells = make(map[*state.Global]int, len(indices))
+		}
 		for _, index := range indices {
 			if uint64(index) >= uint64(len(in.Globals)) || in.Globals[index] == nil || in.Globals[index].Type.Value.IsReference() {
 				return 0, wasm.ErrInvalid
 			}
 			g := in.Globals[index]
 			word, exists := cells[g]
+			if cells == nil {
+				for _, binding := range e.runtimeGlobals {
+					if binding.global == g {
+						word, exists = binding.word, true
+						break
+					}
+				}
+			}
 			if !exists {
-				word = int(descriptors) + len(in.Globals) + len(cells)*2
-				cells[g] = word
+				word = int(descriptors) + len(in.Globals) + len(e.runtimeGlobals)*2
+				if cells != nil {
+					cells[g] = word
+				}
 				e.runtimeGlobals = append(e.runtimeGlobals, globalBinding{g, word})
 			}
 			e.runtimeWords[int(descriptors)+int(index)] = address + uint64(word)*8

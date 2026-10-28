@@ -28,3 +28,10 @@ competitors for affected global workloads and the existing portfolio, separating
 preparation, first and warm execution. Retain failures and regressions; local
 diagnostics do not satisfy cross-target performance gates. Keep the single active
 PR and do not merge incomplete or slower profiles.
+
+The first direct-cell diagnostic retains a LLGo image API regression and slower
+floating global loops. Optimize allocated scalar loads/stores directly in their
+integer/FP registers and preserve canonical scalar zero words without redundant
+stores. Use bounded linear alias lookup for small binding sets and a hash map
+for larger sets. Keep the first result and compare a new exact candidate; these
+changes do not relax aliasing, cold-entry, fuel or publication contracts.

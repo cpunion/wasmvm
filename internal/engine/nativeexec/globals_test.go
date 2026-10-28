@@ -59,6 +59,28 @@ func TestRuntimeGlobalBindingAliasesRefreshAndCleanup(t *testing.T) {
 	if _, err := e.bindRuntimeGlobals(in, fn.Code, []uint32{99}); !errors.Is(err, wasm.ErrInvalid) {
 		t.Fatal(err)
 	}
+	// Large binding sets use bounded-cost identity deduplication, including
+	// aliases appearing after distinct cells and a cache-hit snapshot refresh.
+	large := &state.Instance{}
+	var many []uint32
+	for i := range 40 {
+		cell := &state.Global{Type: module.GlobalType{Value: wasm.I64}, Value: value.Value{Lo: uint64(i)}}
+		large.Globals = append(large.Globals, cell, cell)
+		many = append(many, uint32(i*2), uint32(i*2+1))
+	}
+	for range 2 {
+		if _, err := e.bindRuntimeGlobals(large, fn.Code, many); err != nil {
+			t.Fatal(err)
+		}
+		if len(e.runtimeGlobals) != 40 {
+			t.Fatal("large alias set", len(e.runtimeGlobals))
+		}
+		for i, binding := range e.runtimeGlobals {
+			if e.runtimeWords[i*2] != e.runtimeWords[i*2+1] || e.runtimeWords[binding.word] != uint64(i) {
+				t.Fatal("large global binding", i)
+			}
+		}
+	}
 	for _, close := range []bool{false, true} {
 		if _, err := e.bindRuntimeGlobals(in, fn.Code, indices); err != nil {
 			t.Fatal(err)

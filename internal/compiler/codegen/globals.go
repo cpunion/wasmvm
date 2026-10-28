@@ -59,10 +59,13 @@ func (e *functionEmitter) globalInstruction(in slots.Instruction, config Config)
 	if !ok {
 		return false
 	}
-	if _, cached := e.runtimeRegisters[offset]; !cached {
+	base := e.operandRegister(2)
+	if r, cached := e.runtimeRegisters[offset]; cached {
+		base = r
+	} else {
 		e.contextLoad(2, nativeabi.RuntimeDataOffset)
+		e.runtimeLoad(2, offset)
 	}
-	e.runtimeLoad(2, offset)
 	if typ == wasm.V128 {
 		reg := byte(0)
 		if in.Op == 0x23 {
@@ -71,11 +74,11 @@ func (e *functionEmitter) globalInstruction(in slots.Instruction, config Config)
 			reg = e.vectorOperand(in.A, 0)
 		}
 		if e.a.arch == "arm64" {
-			op := uint32(0x3dc00000) // ldr q, [x11]
+			op := uint32(0x3dc00000) // ldr q, [cell]
 			if in.Op == 0x24 {
 				op = 0x3d800000
 			}
-			e.a.word(op | 11<<5 | uint32(reg))
+			e.a.word(op | uint32(base)<<5 | uint32(reg))
 		} else {
 			e.a.bytes(0xf3)
 			if reg >= 8 {
@@ -92,6 +95,21 @@ func (e *functionEmitter) globalInstruction(in slots.Instruction, config Config)
 		}
 		return true
 	}
+	if e.unmetered {
+		slot := in.Dst
+		if in.Op == 0x24 {
+			slot = in.A
+		}
+		if r, ok := e.floatRegisters[slot]; ok {
+			e.globalRegisterMemory(r, base, in.Op == 0x24, typ)
+			return true
+		}
+		if r, ok := e.registers[slot]; ok {
+			e.globalRegisterMemory(r, base, in.Op == 0x24, typ)
+			return true
+		}
+	}
+	e.registerMove(e.operandRegister(2), base, true)
 	if in.Op == 0x23 {
 		e.pointerLoad(0, 2, 0)
 		e.slotStore(in.Dst, 0, false)
@@ -102,10 +120,55 @@ func (e *functionEmitter) globalInstruction(in slots.Instruction, config Config)
 	} else {
 		e.slotLoad(in.A, 0, false, true)
 		e.globalWordStore(0)
-		e.slotLoad(in.A, 0, true, true)
-		e.globalWordStore(8)
+		if !e.unmetered {
+			e.slotLoad(in.A, 0, true, true)
+			e.globalWordStore(8)
+		}
 	}
 	return true
+}
+
+// Scalar cells are canonical in this tier: Hi and the upper f32 word start at
+// zero and remain zero. Access allocated registers directly, avoiding FP/GPR
+// transfers and redundant zero stores. Precise entries retain two-word copies.
+func (e *functionEmitter) globalRegisterMemory(reg, base byte, store bool, typ wasm.ValueType) {
+	floating := typ == wasm.F32 || typ == wasm.F64
+	if e.a.arch == "arm64" {
+		op := uint32(0xf9400000)
+		if floating {
+			op = 0xbd400000
+			if typ == wasm.F64 {
+				op = 0xfd400000
+			}
+		}
+		if store {
+			op &^= 1 << 22
+		}
+		e.a.word(op | uint32(base)<<5 | uint32(reg))
+	} else {
+		op, rex := byte(0x8b), byte(0x48)|(reg>>3)<<2
+		if store {
+			op = 0x89
+		}
+		if floating {
+			prefix := byte(0xf3)
+			if typ == wasm.F64 {
+				prefix = 0xf2
+			}
+			e.a.bytes(prefix)
+			rex, op = 0x40|(reg>>3)<<2, 0x10
+			if store {
+				op = 0x11
+			}
+		}
+		if rex != 0x40 {
+			e.a.bytes(rex)
+		}
+		if floating {
+			e.a.bytes(0x0f)
+		}
+		e.a.bytes(op, (reg&7)<<3|base)
+	}
 }
 
 func (e *functionEmitter) globalWordStore(offset uint32) {

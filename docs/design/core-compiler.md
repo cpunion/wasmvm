@@ -201,7 +201,9 @@ entries. An execution-owned native view provides per-index cell pointers;
 imported aliases share cells. Scalar precise copies preserve both words, while
 unmetered scalar values retain the canonical zero high word. V128 accesses use
 allocated vector operands and exact 128-bit loads/stores, including spilled
-values. Spare arm64 caller registers cache immutable pointers, sharing the
+values. Allocated scalar integer/FP registers load/store directly, avoiding
+integer/FP bit transfers. Unmetered scalar stores retain canonical zero words
+without rewriting them. Spare arm64 caller registers cache immutable pointers, sharing the
 existing allocator with table metadata. Mutable cell contents are always live.
 
 The driver snapshots only referenced numeric globals before Run and publishes

@@ -162,7 +162,7 @@ func TestDirectGlobalsUnderRegisterPressure(t *testing.T) {
 	if !native.Available {
 		t.Skip("native platform unavailable")
 	}
-	for _, typ := range []wasm.ValueType{wasm.I64, wasm.V128} {
+	for _, typ := range []wasm.ValueType{wasm.I64, wasm.F32, wasm.F64, wasm.V128} {
 		f := globalFixture(typ)
 		ret := f.Code[len(f.Code)-1]
 		f.Code = f.Code[:len(f.Code)-1]
@@ -194,6 +194,9 @@ func TestDirectGlobalsUnderRegisterPressure(t *testing.T) {
 		words := unsafe.Slice((*uint64)(unsafe.Pointer(unsafe.SliceData(buffer))), 4)
 		words[0], words[1] = address+16, address+16
 		v := value.Value{Lo: 0xfedcba9876543210}
+		if typ == wasm.F32 {
+			v.Lo = 0xffc01234
+		}
 		if typ == wasm.V128 {
 			v.Hi = 0x123456789abcdef0
 		}
