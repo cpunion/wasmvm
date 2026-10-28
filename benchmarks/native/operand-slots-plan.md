@@ -9,7 +9,9 @@ still-live literal alias cannot be recycled. Calls and all other operations
 retain their current allocation order, including suspended input/output slots.
 
 Preserve instruction/source/fuel/PC boundaries and frame-count limits. No
-native register or continuation contract changes. Check both operand aliases,
+native register or continuation contract changes. Select legal x86 right-operand
+aliases directly for commutative operations and shifts, retaining the tested
+fallback for subtraction. Check both operand aliases,
 duplicate arguments, live old values, literal aliases, type changes, quotas,
 cold native entries, all integer operations and full Core 2.0 Go/LLGo semantics.
 Run the final four-target matrix with per-package coverage above 90%.
