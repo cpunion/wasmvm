@@ -2107,3 +2107,114 @@ scaling result:
 All-target parity, calibration, API/mixed-state costs and broader portfolio
 acceptance remain blocked. No sustained timing suite is repeated for unchanged
 kernels and these diagnostics do not pass the merge gates.
+
+## Direct checked tables and function references
+
+Scope is [table/reference lowering](../benchmarks/native/tables-plan.md), with
+baseline engine `a26c57cebe8bc67734304e86c781d9b7fa020f65`. Engine
+`dd79a743f9897104353514f3a32c6d1b236a0a5e` lowers table.get/table.set/ref.func
+on amd64/arm64 in precise and unmetered entries. Engine
+`c921b5de933aea8d5a6724ec3eff106c2525f0bd` directly accesses allocated reference
+registers and shares the element encoder with guarded indirect calls. ARM64
+uses extended comparisons and UXTW addressing to truncate i32 indices without
+changing raw home values. Precise and spilled paths retain checked semantics.
+
+Both tiers bind the execution-owned function/table metadata independently of
+optional call expansion. Function references load full instance-specific handles,
+including imported functions. Table writes use Store-owned native cells directly;
+imported aliases and root visitors see the same storage. Bounds precede address
+formation, with exact source/trap ordering. Empty native tables trap safely;
+Go-backed, nil and retired tables are rejected before native access, including
+empty Go tables. Missing views fail before any guest instruction. Growth and bulk
+helpers still exit and rebind. Every exit publishes the existing reference map.
+
+Tests cover both reference types, null/full-width handles, every original PC,
+large displacements, exact/overflowing indices, aliased tables, missing views,
+invalid assumptions, code limits, index/value/result spills, imported/defined
+function identities, host observation, same/cross-instance reentry, growth,
+collection and cleanup, and ordered writes before trap/fuel/cancellation. A host
+callback clears a table, releases its host root and collects while a native frame
+retains the reference, then grows/replaces the table and updates a numeric global
+before resumption. Both returned reference identities and the new global value
+are checked. Initial binding-test failures assumed the return occupied the last
+physical PC and that a retired instance reached table binding; these fixture
+assumptions were corrected, retaining the logs rather than changing engine errors.
+
+Full local Go/LLGo release suites and vet pass. Each local report retains 148
+scripts and 51,139 binary assertions. Local coverage: codegen 97.70%, execute
+98.72%, nativeexec 94.93%, public VM 96.42%; every measured package exceeds 90%.
+The [final CI](https://github.com/cpunion/wasmvm/actions/runs/40766482589) passes
+all four Go/LLGo release x Linux amd64/macOS arm64 combinations at `c921b5d`.
+All twelve downloaded reports pass with the same script/assertion counts. Linux
+codegen coverage is 95.50%, nativeexec 94.93%; all 19 executable packages exceed
+90%. Only one final CI matrix is dispatched after local performance corrections.
+Documentation-only follow-up commits leave the tested production source unchanged.
+
+Performance retains Go 1.27.3, LLGo
+`8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f` with `-O3 -lto=full`, wazero
+1.12.0, Wasmtime 48.0.1 / Cranelift speed and Wasmer 7.3.0 / Cranelift. The exact
+baseline binaries/source archives and reference binaries are hash-verified.
+Both candidates pass 924 alternate-input oracle checks across 21 families and
+11 API/dispatch/reference configurations. Three owned table/reference fixtures
+use wasm-tools 1.258.0, source/binary hashes and scalar oracles. Weighted indirect
+calls verify reference identity after each loop, inside guest timing. All eighteen
+previous families, phase separation and compiler/policy distinctions remain.
+
+Three interleaved process blocks, seven calls and two warmups remain local ARM64
+diagnostics. Host load is approximately 11/12/9 before the first run and 22/22/15
+before the register run. No CPU-heavy task from this work runs during timing.
+Preparation, instantiation, first call, warm calls and cleanup stay separate.
+Final primary public API medians (ns/source iteration):
+
+| Workload / compiler | Base | Head | wazero | Wasmtime | Wasmer |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Globals/tables / Go | 353.383 | 3.279 | 29.387 | 21.500 | 5.900 |
+| Globals/tables / LLGo | 1120.171 | 1.887 | 29.387 | 21.500 | 5.900 |
+| Table roundtrip / Go | 274.460 | 1.681 | 14.949 | 10.740 | 5.210 |
+| Table roundtrip / LLGo | 883.293 | 1.552 | 14.949 | 10.740 | 5.210 |
+| Table copy / Go | 350.480 | 1.752 | 1.543 | 1.150 | 5.640 |
+| Table copy / LLGo | 1295.402 | 1.650 | 1.543 | 1.150 | 5.640 |
+| ref.func loop / Go | 348.658 | 1.467 | 30.613 | 20.600 | 5.250 |
+| ref.func loop / LLGo | 1289.155 | 1.314 | 30.613 | 20.600 | 5.250 |
+
+The first candidate retained a table-copy gap (LLGo 1.725 versus Wasmtime 1.230)
+and other regressions; its full result remains. The register candidate still
+trails in table copy. Other retained LLGo changes include integer 1.625 -> 1.663,
+f32 globals 1.283 -> 1.308 ns/iteration and call control 4.750 -> 5.417
+microseconds/call. Image API changes 1.204 -> 1.249 microseconds/pass and still
+trails Wasmtime 1.075. Go call control, memory, scalar conversion and image
+regressions also remain in the full report. All 102 generated-code hashes across
+17 unaffected families x two targets x three tiers match baseline exactly; this
+does not dismiss their observed timing changes or accept the runtime boundary.
+
+Compilation and first-call costs are explicit. Mixed globals/tables LLGo compile
+changes 0.193 -> 0.424 ms (regression), while first call falls 10.923 ms -> 15.875
+microseconds. Table-copy LLGo compile is 2.253 -> 2.213 ms, first call 128.556 ms
+-> 157.041 microseconds. Image LLGo compile is 1.047 -> 0.992 ms, first call
+50.375 -> 50.959 microseconds. None of these phases is subtracted from warm calls.
+
+Static diagnostics configure the same indirect leaf candidates as the runtime.
+The mixed ARM64 expanded body shrinks 2,040 -> 2,000 bytes, removing its three
+remaining basic table/reference helper exits. All three new fixtures remove 19
+static helper sites, including their post-loop identity checks. The copy hot span
+shrinks 55 -> 49 instructions but still has two frame reads and twelve runtime-
+view/metadata loads. The current frequency allocator assigns cold tail homes
+before metadata, exhausting the spare cache. The pinned Wasmtime serialized-code
+inspection shows a 38-instruction loop span and reuses the stored reference for
+the subsequent get, omitting that element reload. Its default configuration also
+lacks our bounded interruption poll. These are code observations, not a claim
+that any one difference explains the entire timing gap. The dump helper is
+excluded from all timing comparisons; original comparator policies stay fixed.
+
+Records in `artifacts/tables` and `artifacts/tables-registers` retain source/build
+identities, all phase observations, orders, coverage, reports, exact code hashes
+and both engines' disassembly. Initial result SHA-256:
+`f3f8509b20480bbb2dcff0cbb238bbb7da2ba8c7e10b08f55817c03344ea2dc3`;
+register result:
+`dca50817531a86e8092f0c1546065e6a460306fbcdc869c1275bd107ac6a31c6`.
+The [next allocation scope](../benchmarks/native/register-allocation-plan.md)
+integrates loop priorities and runtime metadata with scalar homes. Store/load
+forwarding, global live ranges, general calls and API costs remain distinct work.
+Table-copy parity, all-target calibration and broader portfolio acceptance remain
+open. PR #26 remains the single active draft at its unchanged head; no merge or
+M1/M2/Core 3.0/Threads/components/WASI completion is inferred from these results.

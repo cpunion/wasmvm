@@ -149,6 +149,15 @@ API/mixed-table/portfolio gaps and regressions explicit. See the
 [global scope](../benchmarks/native/globals-plan.md) and
 [validation](validation.md#direct-numeric-global-cells). Checked table access,
 global live ranges, boundary costs and controlled acceptance remain required.
+Engine `c921b5d` directly lowers table.get/table.set and ref.func in both tiers
+and on both targets, using native table cells and instance-specific handles.
+Aliasing, checked indices, host growth/reentry, reference collection and ordered
+trap/fuel/cancellation effects pass local Go/LLGo release semantics. Twenty-one
+families and 924 oracle checks per candidate retain the table-copy gap and all
+regressions. The globals/table loop has no remaining basic reference helpers.
+See the [table scope](../benchmarks/native/tables-plan.md),
+[validation](validation.md#direct-checked-tables-and-function-references) and
+[next allocation scope](../benchmarks/native/register-allocation-plan.md).
 The current frequency-based fixed register assignment still lacks the planned
 global live-range allocation/splitting. Calls, SIMD/application/preparation
 performance and all-target calibration remain open.
