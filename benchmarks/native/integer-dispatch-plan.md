@@ -27,3 +27,11 @@ SIMD and floating-point regression families, keeping API/dispatch and all
 preparation/first-call phases separate. Inspect emitted dispatch for helper
 inlining and retain code-size changes, failures and regressions. Diagnostics
 do not waive the full performance gates or PR #26's ARM calibration failure.
+
+The first direct-call candidate `af96ddc` improves Go and optimized LLGo but
+regresses default LLGo. Disassembly retains cross-package integer helper calls
+without LTO. Test type-parameterized primitives over `~uint64` (and `~bool` for
+canonical predicates): consumer-side instantiation can expose these same small
+bodies to each package's optimizer. Keep the one semantic source and package
+boundaries; verify actual inlining, full semantics and measured results before
+retaining this representation. Preserve the original mixed measurements.
