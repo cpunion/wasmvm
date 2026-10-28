@@ -145,12 +145,16 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 // Thus direct resumption never inherits facts from instructions it did not run.
 func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, pcs []int, out *CompiledFunction) {
 	e.regionLimit = r.end + 1
+	e.regionEnd = r.end + 1
 	e.provenPCs = r.proven
+	e.guardPCs = r.guards
 	e.addresses, e.elidedPCs = r.addresses, r.elided
 	e.vectorAliases = map[slots.Slot]slots.Slot{}
 	defer func() {
 		e.regionLimit = 0
+		e.regionEnd = 0
 		e.provenPCs = nil
+		e.guardPCs = nil
 		e.vectorAliases = nil
 		e.addresses = nil
 		e.elidedPCs = nil
@@ -200,6 +204,11 @@ func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, pcs []int,
 			continue
 		}
 		if end, ok := e.combineMaskShift(pc); ok {
+			out.FusedIntegers++
+			pc = end
+			continue
+		}
+		if end, ok := e.combineShiftedInteger(pc); ok {
 			out.FusedIntegers++
 			pc = end
 			continue

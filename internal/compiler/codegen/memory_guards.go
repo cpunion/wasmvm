@@ -139,6 +139,10 @@ func (e *functionEmitter) memoryGuards(start, end int, proven map[int]bool) (map
 // Failure takes the exact checked continuation, preserving earlier stores and
 // the original trap order, including valid addresses produced by i32 wrapping.
 func (e *functionEmitter) emitMemoryGuard(g memoryGuard, cold int) {
+	if e.a.arch == "arm64" && g.before+g.after <= 4096 {
+		e.compactMemoryGuardARM64(g, cold)
+		return
+	}
 	e.slotLoad(g.address, 0, false, false)
 	if g.before != 0 {
 		e.constant(1, g.before)
@@ -166,6 +170,35 @@ func (e *functionEmitter) emitMemoryGuard(g memoryGuard, cold int) {
 		e.a.bytes(0x4c, 0x39, 0xd8) // cmp rax, r11
 	}
 	e.a.branch(cold, true, hi)
+}
+
+// Subtracting the first bias modulo i32 makes one unsigned interval reject
+// both a wrapped subtraction and a span end beyond memory32. CMN with span-1
+// permits an exact 2^32 end. W9 zero-extends before the final 64-bit length check;
+// the original mutable operand is unchanged on either checked fallback.
+func (e *functionEmitter) compactMemoryGuardARM64(g memoryGuard, cold int) {
+	r, cached := e.registers[g.address]
+	if !cached {
+		e.slotLoad(g.address, 0, false, false)
+		r = 9
+	}
+	if g.before != 0 {
+		e.a.word(0x51000009 | uint32(g.before)<<10 | uint32(r)<<5) // sub w9, address, bias
+	} else if cached {
+		e.registerMove(9, r, false)
+	}
+	span := uint32(g.before + g.after)
+	if span > 1 {
+		e.a.word(0x3100013f | (span-1)<<10) // cmn w9, span-1
+		e.a.branch(cold, true, 2)           // carry means root+span > 2^32
+	}
+	add := span << 10
+	if span == 4096 {
+		add = 1<<22 | 1<<10
+	}
+	e.a.word(0x91000129 | add) // add x9, root, span (no narrowing at 2^32)
+	e.a.word(0xeb11013f)       // cmp x9, bound memory length
+	e.a.branch(cold, true, 8)
 }
 
 // All physical slots are observable at exits. A backwards killed set permits

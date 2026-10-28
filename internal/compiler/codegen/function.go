@@ -214,6 +214,14 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			combinedThrough = end
 			continue
 		}
+		if end, ok := e.combineShiftedInteger(pc); ok {
+			out.FusedIntegers++
+			for entry := pc + 1; entry <= end; entry++ {
+				independentEntries = append(independentEntries, entry)
+			}
+			combinedThrough = end
+			continue
+		}
 		if e.logicalShift(pc, in) {
 			out.FusedIntegers++
 			independentEntries = append(independentEntries, pc+1, pc+2)

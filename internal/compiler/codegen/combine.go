@@ -134,7 +134,16 @@ func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
 // reader, poll, trap or helper exit. Entry at another PC makes no assumption
 // about its value. The 256-instruction poll interval bounds this scan.
 func (e *functionEmitter) overwrittenBeforeExit(pc int, slot slots.Slot) bool {
-	for ; pc < e.codeLimit() && pc%256 != 0; pc++ {
+	limit := e.codeLimit()
+	if e.regionEnd != 0 {
+		// Selection stops at remapped accesses; observation scans may cross
+		// proven accesses, but a later guard can expose the complete frame.
+		limit = e.regionEnd
+	}
+	for ; pc < limit && pc%256 != 0; pc++ {
+		if _, guard := e.guardPCs[pc]; guard {
+			return false
+		}
 		if e.elidedPCs[pc] {
 			continue
 		}
