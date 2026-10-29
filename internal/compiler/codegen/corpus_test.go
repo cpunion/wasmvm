@@ -63,11 +63,11 @@ func TestCompleteCore2NativeCompilation(t *testing.T) {
 			}
 			config := Config{Unmetered: true}
 			if len(m.Memories) != 0 {
-				config.MemoryMinimumPages = m.Memories[0].Min
+				config.MemoryMinimumPages = uint32(m.Memories[0].Min)
 			}
 			for _, imported := range m.Imports {
 				if imported.Kind == 2 {
-					config.MemoryMinimumPages = imported.Memory.Min
+					config.MemoryMinimumPages = uint32(imported.Memory.Min)
 				}
 			}
 			for _, function := range compiled.Functions {

@@ -119,9 +119,9 @@ func TestNativeScalarMemorySemantics(t *testing.T) {
 					var want value.Value
 					var trap wasm.TrapCode
 					if op <= 0x35 {
-						want, trap = reference.Load(op, actual, offset, 0, value.Value{})
+						want, trap = reference.Load(op, uint64(actual), uint64(offset), 0, value.Value{})
 					} else {
-						trap = reference.Store(op, actual, offset, 0, value.Value{Lo: bits})
+						trap = reference.Store(op, uint64(actual), uint64(offset), 0, value.Value{Lo: bits})
 					}
 					args := []value.Value{{Lo: address}}
 					if op >= 0x36 {

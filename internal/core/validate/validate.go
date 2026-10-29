@@ -108,13 +108,21 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 		c.fail("multiple memories are not in Core 2.0")
 	}
 	for _, mt := range c.memories {
-		c.bounds(mt, 65536)
+		max := uint64(65536)
+		if mt.Index64 {
+			max = 1 << 48
+		}
+		c.bounds(mt, max)
 	}
 	for _, tt := range c.tables {
 		if !tt.Element.IsReference() {
 			c.fail("invalid table element type")
 		}
-		c.bounds(tt.Limits, math.MaxUint32)
+		max := uint64(math.MaxUint32)
+		if tt.Limits.Index64 {
+			max = math.MaxUint64
+		}
+		c.bounds(tt.Limits, max)
 	}
 	for _, gt := range c.globals {
 		if !gt.Value.Valid() {
@@ -174,7 +182,7 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 			if c.table(e.Table).Element != e.Type {
 				c.fail("element/table type mismatch")
 			}
-			c.constant(e.Offset, wasm.I32)
+			c.constant(e.Offset, c.table(e.Table).Limits.AddressType())
 		} else if e.Mode != module.Passive && e.Mode != module.Declarative {
 			c.fail("invalid element mode")
 		}
@@ -191,7 +199,7 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 	for _, data := range m.Data {
 		if data.Mode == module.Active {
 			c.memory(data.Memory)
-			c.constant(data.Offset, wasm.I32)
+			c.constant(data.Offset, c.memories[data.Memory].AddressType())
 		} else if data.Mode != module.Passive {
 			c.fail("invalid data mode")
 		}
@@ -244,7 +252,10 @@ func (c *context) fail(detail string) {
 func (c *context) limit(detail string) {
 	panic(&wasm.Error{Kind: wasm.ErrLimit, Offset: c.at, Detail: detail})
 }
-func (c *context) bounds(l module.Limits, max uint32) {
+func (c *context) bounds(l module.Limits, max uint64) {
+	if l.Index64 && c.features&wasm.Memory64 == 0 {
+		c.fail("64-bit indices are disabled")
+	}
 	if l.Min > max || l.HasMax && (l.Max > max || l.Min > l.Max) {
 		c.fail("invalid limits")
 	}

@@ -98,3 +98,8 @@ Memory64 and shared memories remain separately unimplemented features.
 `--relaxed-simd` enables all 20 relaxed vector instructions for validate,
 inspect and run, independently of the other extensions. It uses the same
 permitted numeric projection on both backends and both native targets.
+
+`--memory64` enables the Memory64 proposal, including Table64, for all commands.
+It preserves 64-bit address operands and results on both execution backends;
+`--multi-memory` is additionally required for modules with multiple memories.
+Shared memories remain unsupported until the separate Threads capability.

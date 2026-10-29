@@ -159,7 +159,7 @@ func TestTablesAliasesReentryGrowthRootsAndOrderedExits(t *testing.T) {
 					t.Fatal("write before cancellation was lost")
 				}
 				for i := range table.external.Table.Values {
-					if err := table.TableSet(uint32(i), null); err != nil {
+					if err := table.TableSet(uint64(i), null); err != nil {
 						t.Fatal(err)
 					}
 				}

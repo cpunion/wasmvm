@@ -405,3 +405,40 @@ tests cover every opcode, default-off and reserved grammar, exact arity and
 operand types, all native destinations/spills/cold continuations, code-size
 limits, all four feature flags together, single-frame tails, fuel, cancellation
 and workspace reuse. Go and LLGo run the same semantic matrix.
+
+## Individually enabled Memory64 and Table64
+
+`wasm.Memory64` enables 64-bit limits and address/index types for memories and
+tables. A module limit stores `uint64` bounds and `Index64`; the validator
+selects i32/i64 for scalar/SIMD addresses, size/growth, indirect calls, active
+segments and bulk operations. `memory.init`/`table.init` keep i32 segment
+source/count operands. Cross-memory/table copies take destination and source
+address types separately, with the narrower count type.
+
+The decoded instruction retains the offset's low word in `B` and its upper
+word in `MemoryOffsetHigh`, filling padding on both native targets without
+increasing their instruction size. Existing i32 affine proofs and code remain
+available. I64 accesses currently retain complete checks: carry from the
+address plus offset and from the access end traps before adding the native
+base. Scalar and all fixed-SIMD accesses are generated on both native targets.
+Owned embedding tests additionally execute all 22 SIMD memory forms with i64
+addresses, lane preservation, high indices, traps and complete memory effects.
+Table get/set and guarded indirect leaf calls retain full index bits before
+length comparison; checked frame dispatch uses the same width contract.
+
+Growth checks the remaining quota/maximum before addition. A declared 64-bit
+maximum never grants an unbounded allocation: host limits and addressable
+storage remain independent bounds. Failure returns all one bits in the
+object's address type. Import matching includes that type, and every host
+reentry refreshes existing trusted descriptors after growth.
+
+The feature corpus contains all nine dedicated archived memory64 scripts, all
+three memory bulk scripts and all eight table-operation scripts, plus `call_indirect.wast`. All 13,069
+binary assertions in those 21 complete scripts run on every execution tier;
+70 malformed-text assertions are classified separately. The sole upstream
+`module definition` command compiles without instantiation, preserving the
+intended validation-only check for a minimum beyond host quotas. Producer
+normalization and four data-count encoder corrections retain before/after
+hashes. Generic Core 3.0 data/table declaration cases requiring unimplemented
+GC/typed-reference constant contexts remain in that later capability scope;
+the complete pinned Core 2.0 corpus remains independently required.

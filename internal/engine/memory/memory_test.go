@@ -49,7 +49,7 @@ func TestLimitsGrowthAndHostAccess(t *testing.T) {
 	if !m.Read(PageSize-4, got) || !bytes.Equal(got, []byte{1, 2, 3, 4, 0, 0, 0, 0}) {
 		t.Fatal(got)
 	}
-	for _, delta := range []uint32{1, MaxPages, math.MaxUint32} {
+	for _, delta := range []uint64{1, MaxPages, math.MaxUint32} {
 		if old, ok := m.Grow(delta); ok || old != 2 || m.Pages() != 2 {
 			t.Fatal(old, ok)
 		}
@@ -214,7 +214,7 @@ func TestEveryLoadAndBounds(t *testing.T) {
 			for l := 0; l < lanes; l++ {
 				for _, start := range []int{0, 1, 64 - tc.size} {
 					expected := expectedLoad(tc, m.bytes[start:start+tc.size], vectorBytes(previous), l)
-					for _, addr := range [][2]uint32{{uint32(start), 0}, {0, uint32(start)}} {
+					for _, addr := range [][2]uint64{{uint64(start), 0}, {0, uint64(start)}} {
 						got, trap := m.Load(tc.op, addr[0], addr[1], byte(l), previous)
 						if trap != wasm.NoTrap || !bytes.Equal(vectorBytes(got), expected) {
 							t.Fatalf("op=%x at=%v lane=%d got=%x want=%x trap=%v", tc.op, addr, l, vectorBytes(got), expected, trap)
@@ -222,7 +222,7 @@ func TestEveryLoadAndBounds(t *testing.T) {
 					}
 				}
 			}
-			for _, addr := range [][2]uint32{{uint32(65 - tc.size), 0}, {64, 0}, {math.MaxUint32, 1}, {1, math.MaxUint32}, {math.MaxUint32, math.MaxUint32}} {
+			for _, addr := range [][2]uint64{{uint64(65 - tc.size), 0}, {64, 0}, {math.MaxUint32, 1}, {1, math.MaxUint32}, {math.MaxUint32, math.MaxUint32}} {
 				if got, trap := m.Load(tc.op, addr[0], addr[1], 0, previous); trap != wasm.TrapMemoryBounds || got != (value.Value{}) {
 					t.Fatal(tc, addr, got, trap)
 				}
@@ -252,12 +252,12 @@ func TestEveryStoreAndBounds(t *testing.T) {
 					start = l * tc.size
 				}
 				copy(want[at:at+tc.size], raw[start:start+tc.size])
-				if trap := m.Store(tc.op, 0, uint32(at), byte(l), v); trap != wasm.NoTrap || !bytes.Equal(m.bytes, want) {
+				if trap := m.Store(tc.op, 0, uint64(at), byte(l), v); trap != wasm.NoTrap || !bytes.Equal(m.bytes, want) {
 					t.Fatal(tc, at, l, m.bytes, want, trap)
 				}
 			}
 		}
-		for _, addr := range [][2]uint32{{uint32(65 - tc.size), 0}, {64, 0}, {math.MaxUint32, 1}, {1, math.MaxUint32}, {math.MaxUint32, math.MaxUint32}} {
+		for _, addr := range [][2]uint64{{uint64(65 - tc.size), 0}, {64, 0}, {math.MaxUint32, 1}, {1, math.MaxUint32}, {math.MaxUint32, math.MaxUint32}} {
 			m := &Memory{bytes: bytes.Repeat([]byte{0xaa}, 64)}
 			before := append([]byte(nil), m.bytes...)
 			if trap := m.Store(tc.op, addr[0], addr[1], 0, v); trap != wasm.TrapMemoryBounds || !bytes.Equal(m.bytes, before) {
@@ -304,7 +304,7 @@ func FuzzMemoryRanges(f *testing.F) {
 			}
 		}
 		for _, tc := range loads() {
-			m.Load(tc.op, uint32(dst), uint32(src), 0, value.Value{})
+			m.Load(tc.op, uint64(uint32(dst)), uint64(uint32(src)), 0, value.Value{})
 		}
 	})
 }

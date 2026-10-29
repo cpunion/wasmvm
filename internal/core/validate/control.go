@@ -240,7 +240,7 @@ func (v *checker) instruction(in module.Instr) {
 			if v.table(in.B).Element != wasm.FuncRef {
 				v.fail("indirect call requires funcref table")
 			}
-			v.pop(wasm.I32)
+			v.pop(v.table(in.B).Limits.AddressType())
 		}
 		v.pops(sig.Params)
 		if tail {
@@ -304,7 +304,7 @@ func (v *checker) instruction(in module.Instr) {
 		if op == 0x26 {
 			v.pop(t)
 		}
-		v.pop(wasm.I32)
+		v.pop(v.table(in.A).Limits.AddressType())
 		if op == 0x25 {
 			v.push(t)
 		}
@@ -312,10 +312,10 @@ func (v *checker) instruction(in module.Instr) {
 		v.scalarMemory(in)
 	case op == 0x3f:
 		v.memory(in.A)
-		v.push(wasm.I32)
+		v.push(v.memories[in.A].AddressType())
 	case op == 0x40:
 		v.memory(in.A)
-		v.unary(wasm.I32, wasm.I32)
+		v.unary(v.memories[in.A].AddressType(), v.memories[in.A].AddressType())
 	case op >= 0x41 && op <= 0x44:
 		v.push([]wasm.ValueType{wasm.I32, wasm.I64, wasm.F32, wasm.F64}[op-0x41])
 	case op >= 0x45 && op <= 0xc4:

@@ -13,13 +13,14 @@ import (
 )
 
 const PageSize uint64 = 65536
-const MaxPages uint32 = 65536
+const MaxPages = 65536
+const MaxPages64 = 1 << 48
 
 type Memory struct {
 	bytes    []byte
 	owner    *native.Memory
 	declared module.Limits
-	maximum  uint32
+	maximum  uint64
 }
 
 // New applies the host page quota independently of the module declaration.
@@ -37,19 +38,23 @@ func NewNative(declared module.Limits, quota uint32) (*Memory, error) {
 }
 func (m *Memory) Native() *native.Memory { return m.owner }
 func newMemory(declared module.Limits, quota uint32, offheap bool) (*Memory, error) {
-	if declared.Min > MaxPages || declared.HasMax && (declared.Max > MaxPages || declared.Min > declared.Max) {
+	limit := uint64(MaxPages)
+	if declared.Index64 {
+		limit = MaxPages64
+	}
+	if declared.Min > limit || declared.HasMax && (declared.Max > limit || declared.Min > declared.Max) {
 		return nil, &wasm.Error{Kind: wasm.ErrInvalid, Detail: "memory limits"}
 	}
-	maximum := MaxPages
+	maximum := limit
 	if declared.HasMax {
 		maximum = declared.Max
 	}
-	if quota < maximum {
-		maximum = quota
+	if uint64(quota) < maximum {
+		maximum = uint64(quota)
 	}
 	hostMax := uint64(math.MaxInt) / PageSize
 	if uint64(maximum) > hostMax {
-		maximum = uint32(hostMax)
+		maximum = hostMax
 	}
 	if declared.Min > maximum {
 		return nil, &wasm.Error{Kind: wasm.ErrLimit, Detail: "initial memory pages"}
@@ -71,7 +76,7 @@ func newMemory(declared module.Limits, quota uint32, offheap bool) (*Memory, err
 	}
 	return m, nil
 }
-func (m *Memory) Pages() uint32         { return uint32(uint64(len(m.bytes)) / PageSize) }
+func (m *Memory) Pages() uint64         { return uint64(len(m.bytes)) / PageSize }
 func (m *Memory) Limits() module.Limits { return m.declared }
 
 // Release discards backing storage after its Store has excluded all users.
@@ -83,12 +88,12 @@ func (m *Memory) Release() {
 		m.owner.Close()
 	}
 }
-func (m *Memory) Grow(delta uint32) (uint32, bool) {
+func (m *Memory) Grow(delta uint64) (uint64, bool) {
 	old := m.Pages()
-	next := uint64(old) + uint64(delta)
-	if next > uint64(m.maximum) {
+	if delta > m.maximum-old {
 		return old, false
 	}
+	next := old + delta
 	if delta == 0 {
 		return old, true
 	}
@@ -183,8 +188,12 @@ func write(b []byte, n uint, x uint64) {
 	}
 }
 func sign(x uint64, n uint) uint64 { shift := 64 - 8*n; return uint64(int64(x<<shift) >> shift) }
-func (m *Memory) access(address, offset uint32, size uint) ([]byte, bool) {
-	at := uint64(address) + uint64(offset)
+func (m *Memory) access(address, offset uint64, size uint) ([]byte, bool) {
+	address = m.declared.Address(address)
+	if offset > math.MaxUint64-address {
+		return nil, false
+	}
+	at := address + offset
 	if !m.Range(at, uint64(size)) {
 		return nil, false
 	}
@@ -194,7 +203,7 @@ func (m *Memory) access(address, offset uint32, size uint) ([]byte, bool) {
 // Load implements every scalar and fixed-SIMD load, including lane operations.
 // The address addition is widened before bounds checking. All immediates and
 // lane indexes must have passed validation. previous supplies load_lane's input.
-func (m *Memory) Load(op uint32, address, offset uint32, lane byte, previous value.Value) (r value.Value, trap wasm.TrapCode) {
+func (m *Memory) Load(op uint32, address, offset uint64, lane byte, previous value.Value) (r value.Value, trap wasm.TrapCode) {
 	if op >= 0x28 && op <= 0x35 {
 		sizes := [14]uint{4, 8, 4, 8, 1, 1, 2, 2, 1, 1, 2, 2, 4, 4}
 		n := sizes[op-0x28]
@@ -275,7 +284,7 @@ func setLane(v *value.Value, size, index uint, x uint64) {
 
 // Store implements every scalar and fixed-SIMD store. An invalid range causes
 // no write, including vector and lane stores that straddle the memory end.
-func (m *Memory) Store(op uint32, address, offset uint32, lane byte, v value.Value) wasm.TrapCode {
+func (m *Memory) Store(op uint32, address, offset uint64, lane byte, v value.Value) wasm.TrapCode {
 	var n uint
 	x := v.Lo
 	switch {

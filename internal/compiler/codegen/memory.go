@@ -32,7 +32,7 @@ func (e *functionEmitter) prepareMemory() {
 }
 
 func (e *functionEmitter) memoryInstruction(in slots.Instruction, proven bool) {
-	e.memoryAt(in, proven, uint64(e.f.Sources[in.Source].Wasm.B))
+	e.memoryAt(in, proven, e.f.Sources[in.Source].Wasm.MemoryOffset())
 }
 
 func (e *functionEmitter) memoryAt(in slots.Instruction, proven bool, offset uint64) {
@@ -61,13 +61,14 @@ func (e *functionEmitter) memoryAt(in slots.Instruction, proven bool, offset uin
 		return
 	}
 	load, size := memoryAccess(in.Op)
+	wide := e.f.Slots[in.A] == wasm.I64
 	source := e.f.Sources[in.Source].Wasm
 	trap := 0
 	if !proven {
 		trap = e.trapExit(wasm.TrapMemoryBounds, source.Offset)
 	}
-	// Widen the dynamic i32 address before adding the u32 immediate. The end
-	// address is at most 2^33+6, so host arithmetic cannot wrap before this check.
+	// Keep the i32 path zero-extended. The i64 path checks carry from both
+	// address+offset and the complete access end before comparing the length.
 	vector := nativeVectorMemoryOpcode(in.Op)
 	if e.a.arch == "arm64" && proven {
 		if r, ok := e.registers[in.A]; ok {
@@ -104,13 +105,30 @@ func (e *functionEmitter) memoryAt(in slots.Instruction, proven bool, offset uin
 			}
 		}
 	}
-	e.slotLoad(in.A, 0, false, false)
+	e.slotLoad(in.A, 0, false, wide)
 	if e.a.arch == "arm64" {
-		e.memoryOffsetARM64(offset)
+		if wide && offset != 0 {
+			if offset < 4096 {
+				e.a.word(0xb1000129 | uint32(offset)<<10) // ADDS x9, x9, #offset.
+			} else {
+				e.constant(1, offset)
+				e.a.word(0xab0a0129) // ADDS x9, x9, x10.
+			}
+			e.a.branch(trap, true, 2) // Carry is a u65 address overflow.
+		} else {
+			e.memoryOffsetARM64(offset)
+		}
 		if !proven {
-			e.a.word(0x9100012a | size<<10) // add x10, x9, #size
-			e.a.word(0xeb11015f)            // cmp x10, x17
-			e.a.branch(trap, true, 8)       // unsigned end > length
+			ins := uint32(0x9100012a)
+			if wide {
+				ins = 0xb100012a // ADDS also checks the complete access end.
+			}
+			e.a.word(ins | size<<10)
+			if wide {
+				e.a.branch(trap, true, 2)
+			}
+			e.a.word(0xeb11015f)      // cmp x10, x17
+			e.a.branch(trap, true, 8) // unsigned end > length
 		}
 		e.a.word(0x8b090209) // add x9, x16, x9
 		if vector {
@@ -127,10 +145,19 @@ func (e *functionEmitter) memoryAt(in slots.Instruction, proven bool, offset uin
 				e.constant(1, offset)
 				e.a.bytes(0x48, 0x01, 0xc8)
 			}
+			if wide {
+				e.a.branch(trap, true, 2)
+			}
 		}
 		if !proven {
-			e.a.bytes(0x48, 0x8d, 0x48, byte(size)) // lea rcx,[rax+size]
-			e.a.bytes(0x4c, 0x39, 0xd9)             // cmp rcx,r11
+			if wide {
+				e.registerMove(1, 0, true)
+				e.a.bytes(0x48, 0x83, 0xc1, byte(size))
+				e.a.branch(trap, true, 2)
+			} else {
+				e.a.bytes(0x48, 0x8d, 0x48, byte(size)) // lea rcx,[rax+size]
+			}
+			e.a.bytes(0x4c, 0x39, 0xd9) // cmp rcx,r11
 			e.a.branch(trap, true, 7)
 		}
 		if vector {

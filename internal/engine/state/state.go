@@ -113,7 +113,7 @@ type Table struct {
 	Owner         *Store
 	Type          module.TableType
 	Values        []uint64
-	maximum       uint32
+	maximum       uint64
 	native        *native.Memory
 }
 type Extern struct {
@@ -193,7 +193,7 @@ func (s *Store) NewMemory(t module.Limits) (Extern, error) {
 	s.memories = append(s.memories, owned)
 	return Extern{Owner: s, Kind: 2, Memory: owned}, nil
 }
-func (s *Store) GrowMemory(m *Memory, delta uint32) (uint32, bool) {
+func (s *Store) GrowMemory(m *Memory, delta uint64) (uint64, bool) {
 	if s.closed || m.Owner != s {
 		return 0, false
 	}
@@ -226,7 +226,7 @@ func (s *Store) NewTable(t module.TableType) (Extern, error) {
 	if s.closed {
 		return Extern{}, wasm.ErrClosed
 	}
-	if !t.Element.IsReference() || t.Limits.HasMax && t.Limits.Min > t.Limits.Max {
+	if !t.Element.IsReference() || t.Limits.HasMax && t.Limits.Min > t.Limits.Max || !t.Limits.Index64 && (t.Limits.Min > math.MaxUint32 || t.Limits.HasMax && t.Limits.Max > math.MaxUint32) {
 		return Extern{}, fmt.Errorf("%w: table type", wasm.ErrInvalid)
 	}
 	if s.usage.Tables >= uint64(s.limits.MaxTables) {
@@ -235,13 +235,13 @@ func (s *Store) NewTable(t module.TableType) (Extern, error) {
 	if uint64(t.Limits.Min) > uint64(s.limits.MaxTableElements)-s.usage.TableElements {
 		return Extern{}, limit("Store table elements")
 	}
-	maximum := s.limits.MaxTableElements
+	maximum := uint64(s.limits.MaxTableElements)
 	if t.Limits.HasMax && t.Limits.Max < maximum {
 		maximum = t.Limits.Max
 	}
 	hostMax := uint64(math.MaxInt) / 8
 	if uint64(maximum) > hostMax {
-		maximum = uint32(hostMax)
+		maximum = hostMax
 	}
 	if t.Limits.Min > maximum {
 		return Extern{}, limit("host table elements")
@@ -262,15 +262,15 @@ func (s *Store) NewTable(t module.TableType) (Extern, error) {
 	s.tables = append(s.tables, table)
 	return Extern{Owner: s, Kind: 1, Table: table}, nil
 }
-func (s *Store) GrowTable(t *Table, delta uint32, initial uint64) (uint32, bool) {
-	old := uint32(len(t.Values))
-	next := uint64(old) + uint64(delta)
-	if s.closed || t.Owner != s || next > uint64(t.maximum) || uint64(delta) > uint64(s.limits.MaxTableElements)-s.usage.TableElements {
+func (s *Store) GrowTable(t *Table, delta uint64, initial uint64) (uint64, bool) {
+	old := uint64(len(t.Values))
+	if s.closed || t.Owner != s || delta > t.maximum-old || uint64(delta) > uint64(s.limits.MaxTableElements)-s.usage.TableElements {
 		return old, false
 	}
 	if delta == 0 {
 		return old, true
 	}
+	next := old + delta
 	var grown []uint64
 	if t.native != nil {
 		if err := t.native.Grow(next * 8); err != nil {
@@ -348,7 +348,7 @@ func (in *Instance) DropElement(index uint32) {
 }
 func limit(detail string) error { return &wasm.Error{Kind: wasm.ErrLimit, Detail: detail} }
 func sameLimits(actual, required module.Limits) bool {
-	return actual.Min >= required.Min && (!required.HasMax || actual.HasMax && actual.Max <= required.Max)
+	return actual.Index64 == required.Index64 && actual.Min >= required.Min && (!required.HasMax || actual.HasMax && actual.Max <= required.Max)
 }
 func (s *Store) matches(ex Extern, im module.Import, definition *module.Module) bool {
 	if ex.Owner != s || ex.Kind != im.Kind {
@@ -380,7 +380,7 @@ func (s *Store) matches(ex Extern, im module.Import, definition *module.Module) 
 			return false
 		}
 		actual := ex.Table.Type
-		actual.Limits.Min = uint32(len(ex.Table.Values))
+		actual.Limits.Min = uint64(len(ex.Table.Values))
 		return actual.Element == im.Table.Element && sameLimits(actual.Limits, im.Table.Limits)
 	case 2:
 		if ex.Memory == nil || ex.Memory.Owner != s {

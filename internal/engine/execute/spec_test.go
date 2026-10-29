@@ -456,6 +456,20 @@ func (r *specRunner) runCommand(t *testing.T, cmd specCommand, path string) {
 		t.Fatalf("%s:%d %s: %s", name, cmd.Line, cmd.Type, fmt.Sprintf(format, args...))
 	}
 	switch cmd.Type {
+	case "module_definition":
+		// Official definition commands validate/compile without allocating an
+		// instance; the declared minimum can intentionally exceed host quotas.
+		compiled, err := compileWithFeatures(input, r.features)
+		if err != nil {
+			fail("%v", err)
+		}
+		if r.tier != 0 {
+			code, err := nativeexec.Compile(r.context, compiled, codegen.DefaultLimits())
+			if err != nil {
+				fail("%v", err)
+			}
+			code.Close()
+		}
 	case "module":
 		in, err := r.instantiate(input)
 		if err != nil {

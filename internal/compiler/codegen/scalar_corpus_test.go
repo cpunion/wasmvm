@@ -122,7 +122,7 @@ func TestPinnedScalarNativeExecution(t *testing.T) {
 					}
 					if len(m.Memories) != 0 {
 						limits := m.Memories[0]
-						config.MemoryMinimumPages = limits.Min
+						config.MemoryMinimumPages = uint32(limits.Min)
 						maximum := uint64(256)
 						if limits.HasMax {
 							maximum = min(maximum, uint64(limits.Max))

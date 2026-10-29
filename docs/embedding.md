@@ -220,3 +220,12 @@ multiply/add, and signed byte dot products. The same permitted projection is
 used on amd64/arm64 and every CPU feature mask. The four-byte dot widens before
 accumulation; the two-byte dot wraps only its final i16 result. This does not
 enable the complete Core 3.0 profile.
+
+Enable both Memory64 and Table64 with `wasm.Memory64`. Set `MemoryType.Index64`
+or `TableType.Limits.Index64` for host-created objects; their address widths
+must match imports. `Min`/`Max`, host memory growth/page counts, and host table
+indices/growth/size use `uint64`. Existing 32-bit guest instructions keep i32
+operands/results; 64-bit objects use i64, including the complete `-1` growth
+failure value. Store quotas remain explicit independent caps and no oversized
+allocation or growth can wrap those caps. Multi-Memory still needs its own flag.
+Memory64/Table64 do not enable WasmGC or the complete Core 3.0 profile.

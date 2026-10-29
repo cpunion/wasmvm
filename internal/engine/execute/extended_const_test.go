@@ -37,6 +37,10 @@ func TestRelaxedSIMDProposal(t *testing.T) {
 	runProposal(t, proposalCorpus{"relaxed-simd", "c3f9359af2cd607cc46b0a3274f90ea52543a2f2", wasm.RelaxedSIMD, []string{"i16x8_relaxed_q15mulr_s", "i32x4_relaxed_trunc", "i8x16_relaxed_swizzle", "relaxed_dot_product", "relaxed_laneselect", "relaxed_madd_nmadd", "relaxed_min_max"}, 23, 93, 85, 0})
 }
 
+func TestMemory64Proposal(t *testing.T) {
+	runProposal(t, proposalCorpus{"memory64", "9003cd5e24e53b84cd9027ea3dd7ae57159a6db1", wasm.Memory64 | wasm.MultiMemory | wasm.ExtendedConst, []string{"address64", "align64", "endianness64", "float_memory64", "load64", "memory64", "memory_grow64", "memory_redundancy64", "memory_trap64", "memory_copy", "memory_fill", "memory_init", "table_copy", "table_copy_mixed", "table_fill", "table_get", "table_grow", "table_init", "table_set", "table_size", "call_indirect"}, 1041, 13599, 13069, 70})
+}
+
 func runProposal(t *testing.T, corpus proposalCorpus) {
 	root := filepath.Join("../../../testdata", corpus.name)
 	raw, err := os.ReadFile(filepath.Join(root, "manifest.json"))

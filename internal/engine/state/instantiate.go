@@ -185,7 +185,7 @@ func (in *Instance) Initialize() error {
 		if segment.Mode != module.Active {
 			continue
 		}
-		offset := uint64(uint32(constant(in, segment.Offset, scratch).Lo))
+		offset := in.Tables[segment.Table].Type.Limits.Address(constant(in, segment.Offset, scratch).Lo)
 		if !in.Tables[segment.Table].Init(offset, 0, uint64(len(in.Elements[i])), in.Elements[i]) {
 			return &wasm.Trap{Code: wasm.TrapTableBounds}
 		}
@@ -200,7 +200,7 @@ func (in *Instance) Initialize() error {
 		if segment.Mode != module.Active {
 			continue
 		}
-		offset := uint64(uint32(constant(in, segment.Offset, scratch).Lo))
+		offset := in.Memories[segment.Memory].Limits().Address(constant(in, segment.Offset, scratch).Lo)
 		if !in.Memories[segment.Memory].Init(offset, 0, uint64(len(in.Data[i])), in.Data[i]) {
 			return &wasm.Trap{Code: wasm.TrapMemoryBounds}
 		}

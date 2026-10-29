@@ -25,6 +25,7 @@ Options precede the module path. All commands accept:
   --tail-call            Enable proper direct and indirect tail calls
   --multi-memory         Enable multiple private memories
   --relaxed-simd         Enable all twenty relaxed SIMD instructions
+  --memory64             Enable 64-bit memory and table indices
   --timeout duration     Overall deadline (default 30s; 0 disables)
 Run also accepts:
   --export name          Required exported function name
@@ -58,6 +59,7 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	tailCall := flags.Bool("tail-call", false, "")
 	multiMemory := flags.Bool("multi-memory", false, "")
 	relaxedSIMD := flags.Bool("relaxed-simd", false, "")
+	memory64 := flags.Bool("memory64", false, "")
 	timeout := flags.Duration("timeout", 30*time.Second, "")
 	var exported, fuel string
 	if command == "run" {
@@ -117,6 +119,9 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 	if *relaxedSIMD {
 		config.Features |= wasm.RelaxedSIMD
+	}
+	if *memory64 {
+		config.Features |= wasm.Memory64
 	}
 	engine, err := vm.NewEngineWithConfig(config)
 	if err != nil {
