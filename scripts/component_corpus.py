@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare pinned component grammar inputs and verify ABI reference assets."""
+"""Prepare pinned component grammar/type/ABI inputs and verify reference assets."""
 import hashlib
 import io
 import json
@@ -34,6 +34,12 @@ def prepare(destination=None):
     commands = json.loads((destination / "binary.json").read_text())["commands"]
     if len(commands) != 132 or sum(c["type"] == "assert_malformed" for c in commands) != 80:
         raise ValueError("incomplete component binary script")
+    for name, counts in manifest.get("semanticScripts", {}).items():
+        commands = json.loads((destination / (name + ".json")).read_text())["commands"]
+        if (len(commands) != counts["commands"] or
+                sum(c["type"] == "assert_invalid" for c in commands) != counts["invalid"] or
+                sum(c["type"] in ("module", "module_definition") for c in commands) != counts["valid"]):
+            raise ValueError("incomplete component semantic script: " + name)
     reference = ROOT / "testdata/component-canonical"
     pins = json.loads((reference / "manifest.json").read_text())
     for name, want in pins["sha256"].items():

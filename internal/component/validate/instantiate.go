@@ -181,6 +181,12 @@ func (c *substitution) value(in *model.Type) (*model.Type, error) {
 		return nil, err
 	}
 	info := c.pool.values[in]
+	if info.resourceName != nil {
+		info.resourceName, err = c.typ(info.resourceName)
+		if err != nil {
+			return nil, err
+		}
+	}
 	info.minimumResource = out.ResourceID
 	for _, fs := range [][]model.Field{out.Fields, out.Cases} {
 		for _, f := range fs {

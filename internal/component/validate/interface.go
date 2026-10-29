@@ -22,6 +22,7 @@ func (s *TypeScope) interfaceType(def *model.TypeDef) (*Type, error) {
 		return nil, err
 	}
 	firstResource := s.pool.resources + 1
+	body.deferVisibility = def.Kind == model.Instance
 	if err := s.pool.charge(uint64(len(def.Declarations))); err != nil {
 		return nil, err
 	}
@@ -126,6 +127,21 @@ func (s *TypeScope) Declare(d *model.Import, exporting bool) (*Type, error) {
 	if d.Type.Sort == model.InstanceSort {
 		t, err = s.pool.freshInstance(t)
 		if err != nil {
+			return nil, err
+		}
+	}
+	if !s.deferVisibility {
+		if err := s.checkVisible(t, exporting, d.Type.Sort == model.TypeSort); err != nil {
+			return nil, err
+		}
+	}
+	if d.Type.Sort == model.TypeSort && !fresh {
+		t, err = s.publish(t, exporting)
+		if err != nil {
+			return nil, err
+		}
+	} else if d.Type.Sort == model.TypeSort || d.Type.Sort == model.InstanceSort {
+		if err := s.expose(t, exporting); err != nil {
 			return nil, err
 		}
 	}
