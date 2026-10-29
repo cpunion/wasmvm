@@ -2344,3 +2344,35 @@ raw shared-memory descriptor is used. Helper overhead, contention/scaling and
 representative feature performance remain explicit follow-ups. Phase-separated
 exact-base/head and pinned-competitor measurements are retained with this PR's
 artifact evidence; they do not close M3 performance acceptance.
+
+## WASI Preview 1 host implementation
+
+The Linux/macOS adapter supplies all 46 typed imports, checked Memory32 ABI,
+rights, stable directory handles, explicit sockets and independently owned P1
+process resources. It executes all 72 complete pinned official programs in the
+interpreter, unmetered native and precise-fuel native tiers. Reports count guest
+programs, not unknown internal assertion totals. A separate Go 1.27.3 program
+combines goroutines, GC, panic/recover, stdio, filesystem I/O, randomness and
+timed waits on all three tiers under both host compilers.
+
+Local Go/LLGo full package tests, Go race checks, cgo-free builds, vet and
+cgocheck2 pass on macOS arm64. Every executable package exceeds 90% statement
+coverage; the new host capability package measures 91.35% and P1 90.59% in the
+retained full Go profile. The exact-head CI matrix remains the integration gate.
+Source revisions, original producer hashes and custom-section stripping are
+recorded in the P1 input manifest; original instructions/data are unchanged.
+
+Authored cases cover symlink/rename races, no-follow and dot-dot escapes,
+read-only hard-link rights, output-pointer faults before effects, descriptor and
+poll-worker quotas, partial I/O, all socket operations, nonblocking/sync flags,
+Store versus Process shutdown and file-stream cancellation/descriptor lifetime.
+File.Fd's conversion back to blocking mode and negative Unix I/O counts exposed
+by blocked-pipe tests were corrected; SyscallConn preserves controlled access.
+
+The real Go guest exceeds the default 64 MiB aggregate native code budget. Its
+rejection is retained with function/tier/budget diagnostics. The test explicitly
+selects 256 MiB; the default remains unchanged. Darwin's bounded MAP_JIT virtual
+reservation grows to 1 GiB to permit that explicitly budgeted image. This does
+not establish compact-code or compilation-performance acceptance. Legacy
+wasi-threads, threaded LLGo guests, components/WASI 0.2/0.3 and remaining
+performance gates are still open.

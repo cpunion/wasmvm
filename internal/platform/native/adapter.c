@@ -36,8 +36,11 @@ void wasmvm_cpu_probe(uint32_t *ecx1, uint32_t *ebx7, uint32_t *ecx7, uint64_t *
 
 /* One bounded MAP_JIT arena also supports hardened processes which permit only
  * a single JIT mapping. All metadata lives outside the executable mapping.
+ * Reserve 1 GiB of virtual address space; pages become resident only as code
+ * is published. Per-module code quotas remain separate. Large real Go guests
+ * exceed the former 64 MiB process arena even with an explicit larger quota.
  * The embedding application supplies its own entitlements. */
-#define JIT_BYTES (64u * 1024u * 1024u)
+#define JIT_BYTES (1024u * 1024u * 1024u)
 struct block { size_t start, size; int used; struct block *next; };
 static pthread_mutex_t jit_lock = PTHREAD_MUTEX_INITIALIZER;
 static void *jit_base;

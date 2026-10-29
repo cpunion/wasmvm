@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/cpunion/wasmvm/pkg/vm"
@@ -31,14 +32,32 @@ Options precede the module path. All commands accept:
   --function-references  Enable typed function references and non-null references
   --memory64             Enable 64-bit memory and table indices
   --timeout duration     Overall deadline (default 30s; 0 disables)
+  --native-code-bytes n  Native code budget per module (default 67108864)
 Run also accepts:
-  --export name          Required exported function name
+  --export name          Exported function (required for core run; _start for WASI)
   --fuel count           Shared instruction budget, including the start function
+  --wasi                 Install WASI Preview 1; arguments become guest argv
+  --env key=value        Explicit guest environment entry; may be repeated
+  --dir guest=host       Explicit writable directory capability; may be repeated
+  --read-only-dir g=h    Explicit read-only directory capability
+  --stdin path           Read guest stdin from a file (default: process stdin)
 
 Argument types: i32, i64, f32, f64, f32bits, f64bits, v128, funcref, externref, exnref.
 Integers accept decimal or 0x hex; v128 uses low64,high64; references accept null.
-Output is JSON. Core run installs no WASI or host imports.
+Core output is JSON. WASI run writes guest stdout/stderr and returns its exit code.
+Core run installs no WASI or host imports.
 `
+
+type stringList []string
+
+func (s *stringList) String() string         { return strings.Join(*s, ",") }
+func (s *stringList) Set(value string) error { *s = append(*s, value); return nil }
+
+type wasiOptions struct {
+	env, dirs, readOnlyDirs    stringList
+	stdinFile, argv0, exported string
+	args                       []string
+}
 
 // Main returns an exit code: 0 success, 1 VM/I/O failure, 2 command misuse.
 func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
@@ -69,10 +88,18 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	functionReferences := flags.Bool("function-references", false, "")
 	memory64 := flags.Bool("memory64", false, "")
 	timeout := flags.Duration("timeout", 30*time.Second, "")
+	codeBytes := flags.Uint64("native-code-bytes", vm.DefaultEngineConfig().Native.MaxCodeBytes, "")
 	var exported, fuel string
+	var wasiMode bool
+	var wasiConfig wasiOptions
 	if command == "run" {
 		flags.StringVar(&exported, "export", "", "")
 		flags.StringVar(&fuel, "fuel", "", "")
+		flags.BoolVar(&wasiMode, "wasi", false, "")
+		flags.Var(&wasiConfig.env, "env", "")
+		flags.Var(&wasiConfig.dirs, "dir", "")
+		flags.Var(&wasiConfig.readOnlyDirs, "read-only-dir", "")
+		flags.StringVar(&wasiConfig.stdinFile, "stdin", "", "")
 	}
 	flags.Usage = func() { fmt.Fprint(stderr, usage) }
 	if err := flags.Parse(args[1:]); err != nil {
@@ -82,6 +109,13 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	positional := flags.Args()
+	if wasiMode && exported == "" {
+		exported = "_start"
+	}
+	if !wasiMode && (len(wasiConfig.env)+len(wasiConfig.dirs)+len(wasiConfig.readOnlyDirs) != 0 || wasiConfig.stdinFile != "") {
+		fmt.Fprintln(stderr, "WASI capability flags require --wasi")
+		return 2
+	}
 	if len(positional) == 0 || command != "run" && len(positional) != 1 || command == "run" && exported == "" || *timeout < 0 {
 		fmt.Fprint(stderr, usage)
 		return 2
@@ -98,6 +132,9 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 	values := make([]vm.Value, 0, len(positional)-1)
 	for _, arg := range positional[1:] {
+		if wasiMode {
+			break
+		}
 		v, err := parseValue(arg)
 		if err != nil {
 			fmt.Fprintln(stderr, err)
@@ -115,6 +152,7 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 	config := vm.DefaultEngineConfig()
 	config.Backend = *backend
+	config.Native.MaxCodeBytes = *codeBytes
 	config.Profile = *profile
 	if config.Profile == "core3" {
 		config.Features = wasm.Core3Features
@@ -182,6 +220,12 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 			return failure(stderr, err)
 		}
 		defer store.Close()
+		if wasiMode {
+			wasiConfig.argv0 = positional[0]
+			wasiConfig.args = positional[1:]
+			wasiConfig.exported = exported
+			return runWASI(ctx, store, compiled, options, wasiConfig, stdout, stderr)
+		}
 		instance, err := vm.NewLinker(store).Instantiate(ctx, compiled, options)
 		if err != nil {
 			return failure(stderr, err)

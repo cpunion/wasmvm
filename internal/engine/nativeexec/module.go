@@ -107,7 +107,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 	// Publish all required ordinary tiers before spending spare code budget
 	// on optional expansion, including when later functions are large.
 	for tier := 0; tier < 3; tier++ {
-		for _, f := range m.Functions {
+		for functionIndex, f := range m.Functions {
 			indexes := out.entries[f]
 			if tier == 2 && !wantExpansion[f] {
 				continue
@@ -130,7 +130,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 				continue
 			}
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("native function %d tier %d (%d instructions, %d slots, %d/%d code bytes): %w", importedFunctions+uint32(functionIndex), tier, len(f.Code), len(f.Slots), len(code), limits.MaxCodeBytes, err)
 			}
 			if tier == 2 && body.InlinedCalls == 0 {
 				continue

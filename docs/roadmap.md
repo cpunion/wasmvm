@@ -1,6 +1,6 @@
 # Development Plan and Acceptance Gates
 
-Plan date: **2026-10-26**. M0 candidate evaluation and benchmark infrastructure are complete through PRs [#1](https://github.com/cpunion/wasmvm/pull/1), [#2](https://github.com/cpunion/wasmvm/pull/2), and [#3](https://github.com/cpunion/wasmvm/pull/3). The owner has selected a [project-owned core](design/own-core.md). **M1 acceptance remains open; M2 executes the complete Core 2.0 profile but has unmet performance gates; M3 is in progress; M4–M7 are not implemented.** This plan prioritizes complete core execution and compilation before WASI integration. Design approval does not close an implementation or performance gate.
+Plan date: **2026-10-26**. M0 candidate evaluation and benchmark infrastructure are complete through PRs [#1](https://github.com/cpunion/wasmvm/pull/1), [#2](https://github.com/cpunion/wasmvm/pull/2), and [#3](https://github.com/cpunion/wasmvm/pull/3). The owner has selected a [project-owned core](design/own-core.md). **M1 acceptance remains open; M2 executes the complete Core 2.0 profile but has unmet performance gates; M3 is in progress; M4 is in progress; M5–M7 are not implemented.** This plan prioritizes complete core execution and compilation before WASI integration. Design approval does not close an implementation or performance gate.
 
 Implement functional stages in dependency order. Local performance follow-ups may continue alongside later capabilities under the current integration decision. Independent work within a stage can proceed in parallel after agreeing on shared contracts. Small implementation PRs may merge while the stage remains in progress; every required deliverable, supported-platform result, and exit gate must pass before that stage is complete. Do not replace full profiles with convenient instruction subsets or quietly move failing requirements to a later stage.
 
@@ -323,6 +323,13 @@ See [the execution and ownership contract](design/exception-handling.md).
 ## M4 — P1, legacy wasi-threads, and LLGo guests
 
 **Objective:** provide complete declared P1 host interfaces and the actual ABI required by the pinned guest toolchains.
+
+The P1 adapter implements all 46 typed imports on Linux/macOS, with the complete
+72-program upstream inventory on both backends and native fuel policies. A real
+Go 1.27.3 guest adds goroutines, linear-memory GC, panic/recover, I/O and timers.
+[Process ownership and host limitations](design/wasi-preview1.md) are explicit.
+Legacy wasi-threads, its pinned LLGo guests and M4 performance acceptance remain
+open; P1 implementation alone does not complete this stage.
 
 - Implement the pinned P1 WITX operation set and publish per-operation/platform behavior: arguments/environment, stdio, descriptors/rights/preopens, filesystem, clocks/random, polling, exit and applicable socket operations. Explicitly document specification-permitted unsupported host operations; do not claim full behavior from a hello-world subset.
 - Inject capabilities and enforce directory boundaries using platform-appropriate handles. Test symlink/`..`/TOCTOU escape attempts, rights reduction, fd reuse, partial I/O, ABI pointer overflow, cancellation and resource cleanup.

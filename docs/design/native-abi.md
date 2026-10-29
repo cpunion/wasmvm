@@ -304,8 +304,9 @@ and enters through the same C ABI under Go and LLGo. Cancellation uses a
 lock-free release/acquire control word; the adapter normalizes and restores
 the host floating-point environment. Every field offset is checked against C.
 
-Linux mappings transition RW to RX. Darwin uses a shared, bounded 64-MiB
+Linux mappings transition RW to RX. Darwin uses a shared, bounded 1-GiB virtual
 MAP_JIT arena with thread write protection and instruction-cache invalidation;
+pages are populated on publication, independently of each module's code quota;
 released ranges coalesce for reuse. The process reserves the arena until exit.
 Callback-allowlist JIT mode is outside this initial platform adapter; hardened
 embedders must supply the applicable JIT entitlements.
