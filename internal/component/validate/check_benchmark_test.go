@@ -15,6 +15,10 @@ func BenchmarkComponentCompositionValidation(b *testing.B) {
 	benchmarkComponentValidation(b, "../decode/testdata/composition.wasm")
 }
 
+func BenchmarkComponentValueStartValidation(b *testing.B) {
+	benchmarkComponentValidation(b, "testdata/value-start.wasm")
+}
+
 func benchmarkComponentValidation(b *testing.B, path string) {
 	input, err := os.ReadFile(path)
 	if err != nil {

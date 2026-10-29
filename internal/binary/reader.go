@@ -86,6 +86,16 @@ func (r *Reader) U32() (uint32, error) {
 	return uint32(v), err
 }
 
+func (r *Reader) U16() (uint16, error) {
+	v, err := r.leb(16, false)
+	return uint16(v), err
+}
+
+func (r *Reader) S16() (int16, error) {
+	v, err := r.leb(16, true)
+	return int16(v), err
+}
+
 func (r *Reader) U64() (uint64, error) { return r.leb(64, false) }
 
 func (r *Reader) S32() (int32, error) {

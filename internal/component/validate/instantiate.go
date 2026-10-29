@@ -95,6 +95,7 @@ func (p *TypePool) captures(root *Type, cutoff uint64) ([]uint64, error) {
 // Component instantiation's import substitution is a separate linking step.
 func (p *TypePool) freshInstance(t *Type) (*Type, error) {
 	bindings := map[uint64]*Type{}
+	symbols := map[*valueBinding]*valueBinding{}
 	visited := map[*Type]bool{}
 	var collect func(*Type) error
 	collect = func(t *Type) error {
@@ -106,7 +107,11 @@ func (p *TypePool) freshInstance(t *Type) (*Type, error) {
 		}
 		visited[t] = true
 		for _, e := range t.Exports {
-			if e.Sort == model.TypeSort && e.Fresh {
+			if e.Sort == model.ValueSort && e.Fresh {
+				if symbols[e.Type.valueBinding] == nil {
+					symbols[e.Type.valueBinding] = &valueBinding{}
+				}
+			} else if e.Sort == model.TypeSort && e.Fresh {
 				if bindings[e.Type.Resource] == nil {
 					r, err := p.abstract()
 					if err != nil {
@@ -125,7 +130,7 @@ func (p *TypePool) freshInstance(t *Type) (*Type, error) {
 	if err := collect(t); err != nil {
 		return nil, err
 	}
-	c := substitution{pool: p, bindings: bindings, types: map[*Type]*Type{}, values: map[*model.Type]*model.Type{}, cloneAll: true}
+	c := substitution{pool: p, bindings: bindings, symbols: symbols, types: map[*Type]*Type{}, values: map[*model.Type]*model.Type{}, cloneAll: true}
 	return c.typ(t)
 }
 
@@ -138,6 +143,21 @@ type substitution struct {
 	valueBindings map[*model.Type]*model.Type
 	cloneAll      bool
 	publishing    *TypeScope
+	symbols       map[*valueBinding]*valueBinding
+}
+
+func (c *substitution) symbol(in *valueBinding) (*valueBinding, error) {
+	for n := 0; n <= len(c.symbols); n++ {
+		next := c.symbols[in]
+		if next == nil || next == in {
+			return in, nil
+		}
+		if err := c.pool.charge(1); err != nil {
+			return nil, err
+		}
+		in = next
+	}
+	return nil, invalid("cyclic value substitution")
 }
 
 func (c *substitution) id(id uint64) (uint64, error) {
@@ -256,6 +276,10 @@ func (c *substitution) typ(in *Type) (*Type, error) {
 	out := *in
 	c.types[in] = &out
 	var err error
+	out.valueBinding, err = c.symbol(in.valueBinding)
+	if err != nil {
+		return nil, err
+	}
 	out.Value, err = c.value(in.Value)
 	if err != nil {
 		return nil, err

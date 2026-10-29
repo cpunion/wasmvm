@@ -18,6 +18,11 @@ func FuzzComponentCheck(f *testing.F) {
 		f.Fatal(err)
 	}
 	f.Add(composition)
+	values, err := os.ReadFile("testdata/value-start.wasm")
+	if err != nil {
+		f.Fatal(err)
+	}
+	f.Add(values)
 	f.Add([]byte("\x00asm\x0d\x00\x01\x00"))
 	f.Fuzz(func(t *testing.T, input []byte) {
 		definition, err := decode.Decode(input, decode.Limits{MaxBytes: 1 << 16, MaxNodes: 1 << 14, MaxNameBytes: 1024, MaxNesting: 16})

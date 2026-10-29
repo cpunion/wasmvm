@@ -73,7 +73,7 @@ func TestExternSortsAndTypeNamespaceIsolation(t *testing.T) {
 		}
 	}
 	for _, sort := range []model.Sort{model.ValueSort} {
-		if _, err := s.Reference(model.ExternType{Sort: sort}); !errors.Is(err, wasm.ErrUnsupported) {
+		if _, err := s.Reference(model.ExternType{Sort: sort}); !errors.Is(err, wasm.ErrInvalid) {
 			t.Fatal(err)
 		}
 	}

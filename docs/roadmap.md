@@ -360,8 +360,11 @@ canonical declarations have an ordered checker. Component instantiation,
 interface subtyping/ascription and resource binder substitution now pass 13
 complete generated semantic scripts: 461 binary commands, with five producer
 text-parser assertions reported separately. The version-suffix script remains
-blocked by the pinned producer grammar. Value/start definitions, most async
-canonical plans and actual component execution remain open. See
+blocked by the pinned producer grammar. Bounded literal values, linear value
+consumption/equality bounds and start signatures now have static plans; the
+pinned producer does not generate their text syntax, so authored tests are
+reported separately. Most async canonical plans and actual component execution
+remain open. See
 [the current ABI and frontend boundary](design/component-abi.md).
 
 Implement component binary decoding/validation/composition, imports/exports, Canonical ABI lift/lower, strings/lists/records/variants, realloc/post-return, and resource own/borrow/drop with cleanup on failure. Keep component and core instance boundaries explicit. Pin WASI **0.2.12** WIT; implement the full declared CLI world and its dependencies, then separately reported sockets/HTTP interfaces. Earlier prototypes must not displace required core work.

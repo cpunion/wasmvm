@@ -1,10 +1,7 @@
 package validate
 
 import (
-	"fmt"
-
 	"github.com/cpunion/wasmvm/internal/component/model"
-	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
 // Extern is a named component type declaration. Attribute values are retained
@@ -89,7 +86,19 @@ func (s *TypeScope) Reference(ref model.ExternType) (*Type, error) {
 		return &Type{Kind: 0x50, CoreModule: m, owner: s.pool, depth: 1}, nil
 	}
 	if ref.Sort == model.ValueSort {
-		return nil, fmt.Errorf("%w: component external sort %#x", wasm.ErrUnsupported, ref.Sort)
+		if ref.Bound == 0 {
+			if uint64(ref.Index) >= uint64(len(s.items[model.ValueSort])) {
+				return nil, invalid("value equality bound index")
+			}
+			return s.items[model.ValueSort][ref.Index], nil
+		}
+		if ref.Bound != 1 {
+			return nil, invalid("value bound kind")
+		}
+		if ref.Value == nil {
+			return nil, invalid("missing external value type")
+		}
+		return s.valueType(*ref.Value)
 	}
 	t, err := s.At(ref.Index)
 	if err != nil {
@@ -152,7 +161,7 @@ func (s *TypeScope) Declare(d *model.Import, exporting bool) (*Type, error) {
 	if err = names.add(d.Name, d.Type.Sort, t, s.pool); err != nil {
 		return nil, err
 	}
-	if fresh {
+	if fresh || d.Type.Sort == model.ValueSort && d.Type.Bound == 1 {
 		i := len(names.ordered) - 1
 		names.ordered[i].Fresh = true
 		names.raw[d.Name.Text] = names.ordered[i]

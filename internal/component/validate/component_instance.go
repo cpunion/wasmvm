@@ -19,7 +19,7 @@ func (c *componentContext) item(item model.SortIndex) (Extern, error) {
 			return e, invalid("Core module argument index")
 		}
 		e.Type = &Type{Kind: 0x50, CoreModule: c.modules[item.Index], owner: s.pool, depth: 1}
-	case model.FunctionSort, model.ComponentSort, model.InstanceSort:
+	case model.FunctionSort, model.ComponentSort, model.InstanceSort, model.ValueSort:
 		if uint64(item.Index) >= uint64(len(s.items[item.Sort])) {
 			return e, invalid("component argument index")
 		}
@@ -52,6 +52,9 @@ func (c *componentContext) componentInstance(expr *model.InstanceExpr) error {
 			}
 			e, err := c.item(arg.Item)
 			if err != nil {
+				return err
+			}
+			if err := c.use(arg.Item); err != nil {
 				return err
 			}
 			args[arg.Name] = e
@@ -89,6 +92,9 @@ func (c *componentContext) componentInstance(expr *model.InstanceExpr) error {
 			if err != nil {
 				return err
 			}
+			if err := c.use(e.Item); err != nil {
+				return err
+			}
 			parsed, err := parseName(e.Name.Text)
 			if err != nil {
 				return err
@@ -116,7 +122,7 @@ func (c *componentContext) componentInstance(expr *model.InstanceExpr) error {
 	}
 	c.result.scope.items[model.InstanceSort] = append(c.result.scope.items[model.InstanceSort], instance)
 	c.result.Instances = append(c.result.Instances, &ComponentInstance{Definition: expr, Type: instance})
-	return nil
+	return c.addLinear(model.InstanceSort, instance, nil)
 }
 
 func (c *componentContext) freshExports(exports []Extern, r *relation) error {
@@ -127,7 +133,14 @@ func (c *componentContext) freshExports(exports []Extern, r *relation) error {
 			return err
 		}
 		for _, e := range exports {
-			if e.Sort == model.TypeSort && e.Fresh && r.bindings[e.Type.Resource] == nil {
+			if e.Sort == model.ValueSort && e.Fresh && r.symbols[e.Type.valueBinding] == nil {
+				if c.localValues == nil {
+					c.localValues = map[*valueBinding]bool{}
+				}
+				v := &valueBinding{}
+				r.symbols[e.Type.valueBinding] = v
+				c.localValues[v] = true
+			} else if e.Sort == model.TypeSort && e.Fresh && r.bindings[e.Type.Resource] == nil {
 				t, err := r.pool.abstract()
 				if err != nil {
 					return err
@@ -153,7 +166,9 @@ func (c *componentContext) exportBinders(e *Extern) error {
 		if err := c.result.scope.pool.charge(1); err != nil {
 			return err
 		}
-		if e.Sort == model.TypeSort && e.Type.Kind == model.Resource {
+		if e.Sort == model.ValueSort {
+			e.Fresh = c.localValues[e.Type.valueBinding]
+		} else if e.Sort == model.TypeSort && e.Type.Kind == model.Resource {
 			id := e.Type.Resource
 			e.Fresh = c.localResources[id] && !c.exportedResources[id]
 			c.exportedResources[id] = true
