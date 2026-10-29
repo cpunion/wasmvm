@@ -327,7 +327,12 @@ and active-segment initialization each reuse one bounded scratch stack, with
 small expressions on local storage. Evaluation uses unsigned wrapping integer
 arithmetic, preserves subtraction order and resolves imports per instance.
 Both backends share this path, including segment trap ordering and cleanup;
-initializers never execute a guest function or consume function fuel.
+initializers never execute a guest function or consume function fuel. Entirely static
+integer expressions fold once during bounded lowering into an immutable
+expression-identity-to-bits map, leaving the validated definition untouched.
+Instance-dependent expressions use the same wrapping arithmetic primitives.
+Private globals share one instance-lifetime cell allocation and pre-sized
+pointer views; host globals retain their independent lifetime and quotas.
 
 The full archived feature proposal corpus is pinned in
 [testdata/extended-const](../../testdata/extended-const/README.md), alongside

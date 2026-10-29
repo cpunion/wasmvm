@@ -108,14 +108,23 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 		ex.Memory.OwnerInstance = instance
 		instance.Memories = append(instance.Memories, ex.Memory)
 	}
-	for _, g := range definition.Globals {
-		ex, e := s.NewGlobal(g.Type, constant(instance, g.Init, scratch))
-		if e != nil {
-			return nil, e
-		}
-		ex.Global.OwnerInstance = instance
-		instance.Globals = append(instance.Globals, ex.Global)
+	// The validated private globals have one instance lifetime. Allocate their
+	// cells and pointer views together instead of one host allocation per cell.
+	count := len(definition.Globals)
+	if uint64(count) > uint64(s.limits.MaxGlobals)-s.usage.Globals {
+		return nil, limit("globals")
 	}
+	globals := make([]Global, count)
+	storeBase, instanceBase := len(s.globals), len(instance.Globals)
+	s.globals = append(s.globals, make([]*Global, count)...)
+	instance.Globals = append(instance.Globals, make([]*Global, count)...)
+	for i := range definition.Globals {
+		g := &definition.Globals[i]
+		cell := &globals[i]
+		*cell = Global{OwnerInstance: instance, Owner: s, Type: g.Type, Value: constant(instance, g.Init, scratch)}
+		s.globals[storeBase+i], instance.Globals[instanceBase+i] = cell, cell
+	}
+	s.usage.Globals += uint64(count)
 	instance.Elements = make([][]uint64, len(definition.Elements))
 	for i, segment := range definition.Elements {
 		n := uint64(len(segment.Functions)) + uint64(len(segment.Expressions))

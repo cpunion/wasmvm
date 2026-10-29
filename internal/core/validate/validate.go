@@ -277,7 +277,8 @@ func (c *context) constant(expr module.Expr, want wasm.ValueType) {
 	}
 	var local [16]wasm.ValueType
 	stack := local[:0]
-	for _, in := range expr[:len(expr)-1] {
+	for i := range expr[:len(expr)-1] {
+		in := &expr[i]
 		c.at = in.Offset
 		var got wasm.ValueType
 		switch in.Op {

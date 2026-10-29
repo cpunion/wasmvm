@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
+	constops "github.com/cpunion/wasmvm/internal/core/constant"
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/memory"
 	"github.com/cpunion/wasmvm/internal/engine/simd"
@@ -393,7 +394,7 @@ func (s *Store) matches(ex Extern, im module.Import, definition *module.Module) 
 	}
 	return false
 }
-func constantValue(in *Instance, x module.Instr) value.Value {
+func constantValue(in *Instance, x *module.Instr) value.Value {
 	switch x.Op {
 	case 0x41, 0x42, 0x43, 0x44:
 		return value.Value{Lo: x.Bits}
@@ -404,7 +405,7 @@ func constantValue(in *Instance, x module.Instr) value.Value {
 	case 0xd2:
 		return value.Value{Lo: in.Functions[x.A]}
 	case 0xfd000c:
-		return simd.Eval(&x, value.Value{}, value.Value{}, value.Value{})
+		return simd.Eval(x, value.Value{}, value.Value{}, value.Value{})
 	default:
 		panic("state: nonconstant validated initializer")
 	}
@@ -414,26 +415,20 @@ func constantValue(in *Instance, x module.Instr) value.Value {
 // all expressions in one allocation/initialization phase, never across Stores.
 func constant(in *Instance, expr module.Expr, scratch []value.Value) value.Value {
 	if len(expr) == 2 {
-		return constantValue(in, expr[0])
+		return constantValue(in, &expr[0])
+	}
+	if in != nil {
+		if x, ok := in.Compiled.IR.FoldedConstant(expr); ok {
+			return value.Value{Lo: x}
+		}
 	}
 	stack := scratch[:0]
-	for _, x := range expr[:len(expr)-1] {
+	for i := range expr[:len(expr)-1] {
+		x := &expr[i]
 		switch x.Op {
 		case 0x6a, 0x6b, 0x6c, 0x7c, 0x7d, 0x7e:
 			n := len(stack)
-			a, b := stack[n-2].Lo, stack[n-1].Lo
-			switch x.Op {
-			case 0x6a, 0x7c:
-				a += b
-			case 0x6b, 0x7d:
-				a -= b
-			case 0x6c, 0x7e:
-				a *= b
-			}
-			if x.Op <= 0x6c {
-				a = uint64(uint32(a))
-			}
-			stack[n-2] = value.Value{Lo: a}
+			stack[n-2] = value.Value{Lo: constops.Binary(x.Op, stack[n-2].Lo, stack[n-1].Lo)}
 			stack = stack[:n-1]
 		default:
 			stack = append(stack, constantValue(in, x))
