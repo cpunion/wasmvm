@@ -311,10 +311,10 @@ func (v *checker) instruction(in module.Instr) {
 	case op >= 0x28 && op <= 0x3e:
 		v.scalarMemory(in)
 	case op == 0x3f:
-		v.memory(0)
+		v.memory(in.A)
 		v.push(wasm.I32)
 	case op == 0x40:
-		v.memory(0)
+		v.memory(in.A)
 		v.unary(wasm.I32, wasm.I32)
 	case op >= 0x41 && op <= 0x44:
 		v.push([]wasm.ValueType{wasm.I32, wasm.I64, wasm.F32, wasm.F64}[op-0x41])

@@ -31,11 +31,19 @@ func (e *Execution) bulk(in *state.Instance, op module.Instr, a, b, c value.Valu
 		return
 	}
 	if op.Op <= 0xfc000b {
-		m := in.Memories[0]
-		if !m.Range(dst, n) || op.Op == 0xfc0008 && !state.Range(len(in.Data[op.A]), src, n) || op.Op == 0xfc000a && !m.Range(src, n) {
+		var m, source *state.Memory
+		switch op.Op {
+		case 0xfc0008:
+			m = in.Memories[op.B]
+		case 0xfc000a:
+			m, source = in.Memories[op.A], in.Memories[op.B]
+		case 0xfc000b:
+			m = in.Memories[op.A]
+		}
+		if !m.Range(dst, n) || op.Op == 0xfc0008 && !state.Range(len(in.Data[op.A]), src, n) || op.Op == 0xfc000a && !source.Range(src, n) {
 			return r, wasm.TrapMemoryBounds, nil
 		}
-		backwards := op.Op == 0xfc000a && dst > src
+		backwards := op.Op == 0xfc000a && m.Memory == source.Memory && dst > src
 		for done := uint64(0); done < n; {
 			if err = e.poll(); err != nil {
 				return
@@ -52,7 +60,7 @@ func (e *Execution) bulk(in *state.Instance, op module.Instr, a, b, c value.Valu
 			case 0xfc0008:
 				m.Init(dst+at, src+at, chunk, in.Data[op.A])
 			case 0xfc000a:
-				m.Copy(dst+at, src+at, chunk)
+				m.CopyFrom(source.Memory, dst+at, src+at, chunk)
 			case 0xfc000b:
 				m.Fill(dst+at, byte(b.Lo), chunk)
 			}

@@ -22,9 +22,9 @@ func (e *Execution) resetRuntimeGlobals() {
 
 // The common frame machine retains every active/suspended instance and
 // serializes access, growth and reclamation. This execution owns the metadata
-// and numeric cells; table storage belongs to the Store. No Go address
+// and numeric cells; table and linear-memory storage belong to the Store. No Go address
 // crosses the ABI. Every entry refreshes table pointers after intervening host
-// calls/helpers. Immutable function identities are copied only on instance change.
+// calls/helpers, and appends memory length/base pairs after global cells. Immutable function identities are copied only on instance change.
 func (e *Execution) bindRuntimeData(in *state.Instance) (uint64, error) {
 	return e.bindRuntimeGlobals(in, nil, nil)
 }
@@ -34,6 +34,10 @@ func (e *Execution) bindRuntimeGlobals(in *state.Instance, f *slots.Function, in
 	words := descriptors
 	if len(indices) != 0 {
 		words += uint64(len(in.Globals)) + uint64(len(indices))*2
+	}
+	memoryBase := words
+	if len(in.Memories) > 1 {
+		words += uint64(len(in.Memories)) * 2
 	}
 	if words > uint64(^uint(0)>>1)/8 {
 		return 0, wasm.ErrLimit
@@ -108,6 +112,23 @@ func (e *Execution) bindRuntimeGlobals(in *state.Instance, f *slots.Function, in
 		}
 		offset := len(in.Functions) + 2*i
 		e.runtimeWords[offset], e.runtimeWords[offset+1] = uint64(len(table.Values)), address
+	}
+	if len(in.Memories) > 1 {
+		for i, memory := range in.Memories {
+			if memory == nil || memory.Native() == nil {
+				return 0, wasm.ErrInvalid
+			}
+			buffer, err := memory.Native().Buffer()
+			if err != nil {
+				return 0, err
+			}
+			var base uint64
+			if len(buffer) != 0 {
+				base = uint64(uintptr(unsafe.Pointer(unsafe.SliceData(buffer))))
+			}
+			at := int(memoryBase) + i*2
+			e.runtimeWords[at], e.runtimeWords[at+1] = uint64(len(buffer)), base
+		}
 	}
 	return address, nil
 }

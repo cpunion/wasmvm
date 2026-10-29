@@ -87,3 +87,10 @@ Use `--tail-call` before the module path to enable `return_call` and
 `return_call_indirect` in validate, inspect and run. It can be combined with
 `--extended-const`; the feature mask is `2` for Tail Call or `3` for both.
 The default Core 2.0 grammar still rejects tail-call opcodes.
+
+## Multi-Memory
+
+Use `--multi-memory` before the module path for validate, inspect and run.
+The feature mask adds bit `4`; flags combine independently. The command's
+existing resource, timeout and fuel options apply to indexed memory operations.
+Memory64 and shared memories remain separately unimplemented features.

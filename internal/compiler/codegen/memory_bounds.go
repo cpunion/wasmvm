@@ -31,7 +31,7 @@ func (e *functionEmitter) codeLimit() int {
 // Facts start unknown at every CFG entry, helper, growth and poll boundary. Each
 // region has at most 256 instructions, so compiler work stays linear in input.
 func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
-	if !e.unmetered || !e.usesMemory || e.memoryMinimum == 0 {
+	if !e.unmetered || !e.usesMemory || e.memoryMinimum == 0 || e.memoryViews {
 		return nil
 	}
 	starts := make([]bool, len(e.f.Code))

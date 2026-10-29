@@ -14,35 +14,37 @@ import (
 // carry operands. The unmetered tier retains selected scalar slots in registers across control
 // transfers and spills them only on exits.
 type functionEmitter struct {
-	a                         *assembler
-	f                         *slots.Function
-	exit, bad, zero, overflow int
-	edgeCopies                uint32
-	unmetered                 bool
-	x86Features               X86Features
-	usesMemory                bool
-	memoryMinimum             uint64
-	regionLimit               int
-	regionEnd                 int
-	provenPCs                 map[int]bool
-	guardPCs                  map[int]memoryGuard
-	addresses                 map[int]memoryAddress
-	elidedPCs                 map[int]bool
-	boundsElided              uint32
-	constantRegisters         map[uint64]byte
-	runtimeRegisters          map[uint32]byte
-	registers                 map[slots.Slot]byte
-	floatRegisters            map[slots.Slot]byte
-	vectorRegisters           map[slots.Slot]byte
-	vectorConstants           map[[2]uint64]byte
-	vectorAliases             map[slots.Slot]slots.Slot
-	aliasedVectorReads        uint32
-	registerSlots             []slots.Slot
-	pollExits                 []pollExit
-	trapExits                 []nativeTrapExit
-	callExits                 []nativeCallExit
-	memoryFallbacks           []memoryFallback
-	loopBackedges             map[int]loopBackedge
+	a                                                            *assembler
+	f                                                            *slots.Function
+	exit, bad, zero, overflow                                    int
+	edgeCopies                                                   uint32
+	unmetered                                                    bool
+	x86Features                                                  X86Features
+	usesMemory                                                   bool
+	memoryViews                                                  bool
+	memoryFunctions, memoryTables, memoryGlobals, memoryBindings uint32
+	memoryMinimum                                                uint64
+	regionLimit                                                  int
+	regionEnd                                                    int
+	provenPCs                                                    map[int]bool
+	guardPCs                                                     map[int]memoryGuard
+	addresses                                                    map[int]memoryAddress
+	elidedPCs                                                    map[int]bool
+	boundsElided                                                 uint32
+	constantRegisters                                            map[uint64]byte
+	runtimeRegisters                                             map[uint32]byte
+	registers                                                    map[slots.Slot]byte
+	floatRegisters                                               map[slots.Slot]byte
+	vectorRegisters                                              map[slots.Slot]byte
+	vectorConstants                                              map[[2]uint64]byte
+	vectorAliases                                                map[slots.Slot]slots.Slot
+	aliasedVectorReads                                           uint32
+	registerSlots                                                []slots.Slot
+	pollExits                                                    []pollExit
+	trapExits                                                    []nativeTrapExit
+	callExits                                                    []nativeCallExit
+	memoryFallbacks                                              []memoryFallback
+	loopBackedges                                                map[int]loopBackedge
 }
 
 type memoryFallback struct{ label, pc int }

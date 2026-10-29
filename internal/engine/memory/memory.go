@@ -136,11 +136,14 @@ func (m *Memory) Fill(dst uint64, b byte, count uint64) bool {
 	}
 	return true
 }
-func (m *Memory) Copy(dst, src, count uint64) bool {
-	if !m.Range(dst, count) || !m.Range(src, count) {
+func (m *Memory) Copy(dst, src, count uint64) bool { return m.CopyFrom(m, dst, src, count) }
+
+// CopyFrom supports independent memories and aliases, with complete prechecks.
+func (m *Memory) CopyFrom(source *Memory, dst, src, count uint64) bool {
+	if !m.Range(dst, count) || !source.Range(src, count) {
 		return false
 	}
-	copy(m.bytes[int(dst):int(dst+count)], m.bytes[int(src):int(src+count)])
+	copy(m.bytes[int(dst):int(dst+count)], source.bytes[int(src):int(src+count)])
 	return true
 }
 func (m *Memory) Init(dst, src, count uint64, data []byte) bool {

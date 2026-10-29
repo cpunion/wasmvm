@@ -29,6 +29,10 @@ func TestTailCallProposal(t *testing.T) {
 	runProposal(t, proposalCorpus{"tail-call", "a6003d06aefef41e20a3e36fe2e500062555c895", wasm.TailCall, []string{"return_call", "return_call_indirect"}, 46, 119, 102, 11})
 }
 
+func TestMultiMemoryProposal(t *testing.T) {
+	runProposal(t, proposalCorpus{"multi-memory", "cf8b5aa27257311b8eac80ae83f4ba22ee308064", wasm.MultiMemory, []string{"address0", "address1", "align0", "binary0", "data0", "data1", "data_drop0", "exports0", "float_exprs0", "float_exprs1", "float_memory0", "imports0", "imports1", "imports2", "imports3", "imports4", "linking0", "linking1", "linking2", "linking3", "load0", "load1", "load2", "memory-multi", "memory_copy0", "memory_copy1", "memory_fill0", "memory_init0", "memory_size0", "memory_size1", "memory_size2", "memory_size3", "memory_trap0", "memory_trap1", "simd_memory-multi", "start0", "store0", "store1", "traps0"}, 197, 830, 697, 0})
+}
+
 func runProposal(t *testing.T, corpus proposalCorpus) {
 	root := filepath.Join("../../../testdata", corpus.name)
 	raw, err := os.ReadFile(filepath.Join(root, "manifest.json"))

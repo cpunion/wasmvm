@@ -1,0 +1,406 @@
+{
+  "source": "https://github.com/WebAssembly/multi-memory",
+  "revision": "cf8b5aa27257311b8eac80ae83f4ba22ee308064",
+  "producer": "WABT wast2json 1.0.41",
+  "producerRevision": "03a00a1334e6121fb0cce4fccbd6bb109b68acaa",
+  "arguments": [
+    "--enable-multi-memory",
+    "--no-check"
+  ],
+  "scripts": {
+    "address0": {
+      "commands": 92,
+      "binaryAssertions": 91,
+      "textAssertions": 0
+    },
+    "address1": {
+      "commands": 127,
+      "binaryAssertions": 126,
+      "textAssertions": 0
+    },
+    "align0": {
+      "commands": 5,
+      "binaryAssertions": 4,
+      "textAssertions": 0
+    },
+    "binary0": {
+      "commands": 7,
+      "binaryAssertions": 2,
+      "textAssertions": 0
+    },
+    "data0": {
+      "commands": 7,
+      "binaryAssertions": 0,
+      "textAssertions": 0
+    },
+    "data1": {
+      "commands": 14,
+      "binaryAssertions": 14,
+      "textAssertions": 0
+    },
+    "data_drop0": {
+      "commands": 11,
+      "binaryAssertions": 4,
+      "textAssertions": 0
+    },
+    "exports0": {
+      "commands": 8,
+      "binaryAssertions": 0,
+      "textAssertions": 0
+    },
+    "float_exprs0": {
+      "commands": 14,
+      "binaryAssertions": 8,
+      "textAssertions": 0
+    },
+    "float_exprs1": {
+      "commands": 3,
+      "binaryAssertions": 2,
+      "textAssertions": 0
+    },
+    "float_memory0": {
+      "commands": 30,
+      "binaryAssertions": 20,
+      "textAssertions": 0
+    },
+    "imports0": {
+      "commands": 8,
+      "binaryAssertions": 6,
+      "textAssertions": 0
+    },
+    "imports1": {
+      "commands": 5,
+      "binaryAssertions": 4,
+      "textAssertions": 0
+    },
+    "imports2": {
+      "commands": 20,
+      "binaryAssertions": 14,
+      "textAssertions": 0
+    },
+    "imports3": {
+      "commands": 10,
+      "binaryAssertions": 8,
+      "textAssertions": 0
+    },
+    "imports4": {
+      "commands": 16,
+      "binaryAssertions": 8,
+      "textAssertions": 0
+    },
+    "linking0": {
+      "commands": 6,
+      "binaryAssertions": 4,
+      "textAssertions": 0
+    },
+    "linking1": {
+      "commands": 14,
+      "binaryAssertions": 9,
+      "textAssertions": 0
+    },
+    "linking2": {
+      "commands": 11,
+      "binaryAssertions": 8,
+      "textAssertions": 0
+    },
+    "linking3": {
+      "commands": 14,
+      "binaryAssertions": 10,
+      "textAssertions": 0
+    },
+    "load0": {
+      "commands": 3,
+      "binaryAssertions": 2,
+      "textAssertions": 0
+    },
+    "load1": {
+      "commands": 18,
+      "binaryAssertions": 15,
+      "textAssertions": 0
+    },
+    "load2": {
+      "commands": 38,
+      "binaryAssertions": 37,
+      "textAssertions": 0
+    },
+    "memory-multi": {
+      "commands": 6,
+      "binaryAssertions": 4,
+      "textAssertions": 0
+    },
+    "memory_copy0": {
+      "commands": 29,
+      "binaryAssertions": 21,
+      "textAssertions": 0
+    },
+    "memory_copy1": {
+      "commands": 14,
+      "binaryAssertions": 8,
+      "textAssertions": 0
+    },
+    "memory_fill0": {
+      "commands": 16,
+      "binaryAssertions": 11,
+      "textAssertions": 0
+    },
+    "memory_init0": {
+      "commands": 13,
+      "binaryAssertions": 8,
+      "textAssertions": 0
+    },
+    "memory_size0": {
+      "commands": 8,
+      "binaryAssertions": 7,
+      "textAssertions": 0
+    },
+    "memory_size1": {
+      "commands": 15,
+      "binaryAssertions": 14,
+      "textAssertions": 0
+    },
+    "memory_size2": {
+      "commands": 21,
+      "binaryAssertions": 20,
+      "textAssertions": 0
+    },
+    "memory_size3": {
+      "commands": 2,
+      "binaryAssertions": 2,
+      "textAssertions": 0
+    },
+    "memory_trap0": {
+      "commands": 14,
+      "binaryAssertions": 13,
+      "textAssertions": 0
+    },
+    "memory_trap1": {
+      "commands": 168,
+      "binaryAssertions": 167,
+      "textAssertions": 0
+    },
+    "simd_memory-multi": {
+      "commands": 1,
+      "binaryAssertions": 0,
+      "textAssertions": 0
+    },
+    "start0": {
+      "commands": 9,
+      "binaryAssertions": 6,
+      "textAssertions": 0
+    },
+    "store0": {
+      "commands": 5,
+      "binaryAssertions": 2,
+      "textAssertions": 0
+    },
+    "store1": {
+      "commands": 13,
+      "binaryAssertions": 4,
+      "textAssertions": 0
+    },
+    "traps0": {
+      "commands": 15,
+      "binaryAssertions": 14,
+      "textAssertions": 0
+    }
+  },
+  "sha256": {
+    "LICENSE.tests": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+    "address0/script.0.wasm": "ebfaf452e7ace09edad54b7c1975e52b483aa169b5242116733286eaa5681ffc",
+    "address0/script.json": "6480eda1619e3713d2f81fa07cb0b91407e4769ac0aabc6faf015f476a9229f4",
+    "address0.wast": "0ae3d1d2578c4da0699e57eb75a589f712fe5577e53bf1ffc80a9e0cdbff5e77",
+    "address1/script.0.wasm": "0503ed045601d503f40b7252608ed14b22f928d61b5b60025c1455b8867af8d9",
+    "address1/script.json": "69e56092e09b80a63ad2f9ab232691391dd94caba25c2209ffde2a27fca5b061",
+    "address1.wast": "2039d4dcec17c94917a3f7923c55e55e29e7b19e6204095f2081a186866f1c1a",
+    "align0/script.0.wasm": "a55b148879d8c11fcae8cfbb44659202e22fec547c455f4742b6f826bdfb98f4",
+    "align0/script.json": "ccc3ce18e6c3ea38b5e08f878616024e40a0aad02c30c7bf3cdd39107fba0908",
+    "align0.wast": "a5bce1892f58d0716217bb2b9520570676e3100dfd855e9088e2048cbc4a2280",
+    "binary0/script.0.wasm": "d31de5a7649984ea197c413a2521414858551b426e69d130bed97ba815d2a2e2",
+    "binary0/script.1.wasm": "e652f2b92fb25593c502b02fb2bf429d03e6d8d2c9ecbe52f53a6c32fed31e8d",
+    "binary0/script.2.wasm": "6a9985f013555caf6018d10773c898c63d31b4f8785376776c0d7b73314a063c",
+    "binary0/script.3.wasm": "821edc14db46dc95ca07f310303e58fd7b42c4f35c27e6d3d31ce5b49d77a57c",
+    "binary0/script.4.wasm": "42baeea33671114d5ff991704a56a21c902c5ea9091b87a3e955832f8640d197",
+    "binary0/script.5.wasm": "8cb823373aab1fd2c2baf7088d0408771fd8a068e66c7992f0b34f4bf63b5a35",
+    "binary0/script.6.wasm": "9d7688b9b599354accec33bce720468ed416914079f9b8dc1f9ebb7eb4e622fe",
+    "binary0/script.json": "b6ecd1e955a5557645393108697a1d54f3e4a0be80d95f51da8119529329215e",
+    "binary0.wast": "fe317e775d1374c51eb742c568fe0c1377014907b0281f18971ff0d8beddbb18",
+    "data0/script.0.wasm": "4157e2f309708836edf043458f300e9add1e93f268d14772284233c95d4ffd4f",
+    "data0/script.1.wasm": "3585c22ea7062b7167333d0f64cea28e440258a668a3b107df80e837254eb4af",
+    "data0/script.2.wasm": "9f3cc215ff59360ad7316333a259a4371d8d67984b1eba1bd83e83c0cfb4a26e",
+    "data0/script.3.wasm": "99ba7076d23cc6a1e475568f2aa65ed83cd0f58c35efe3d2ea7eb8f6099abe6a",
+    "data0/script.4.wasm": "edc0292ae1214180ade4f46326a627165787606235b46647a2c0114168f9ebc1",
+    "data0/script.5.wasm": "99ba7076d23cc6a1e475568f2aa65ed83cd0f58c35efe3d2ea7eb8f6099abe6a",
+    "data0/script.6.wasm": "edc0292ae1214180ade4f46326a627165787606235b46647a2c0114168f9ebc1",
+    "data0/script.json": "31bc381159f06307a6de86c9851348e40a1859f97d4e4cfc70319abfaa84675f",
+    "data0.wast": "7e12af1c9c52716cc7df1b407c302b39aa2eed150486f1214f64c5381ec44140",
+    "data1/script.0.wasm": "48e13e90a633607de37b1ece5d36c858192d34870722ce9fffcae18fd198013f",
+    "data1/script.1.wasm": "385e02f4dbeff2b3a5c80d5af7cb7ba86037c8080c1e9ae53c8dada8a55ad9f9",
+    "data1/script.10.wasm": "3ef3f838c8eb8f046614fd005ad8adf8b201bdf84ca253bf1545a2fbcf4dc52c",
+    "data1/script.11.wasm": "ceba52e7a099489258318799df6e0ad75ce27a20540eb880c9064059dd0b61b1",
+    "data1/script.12.wasm": "4baa2b5ebbe06c2948fe766783b50022214b96a095b5c84282bd62f923689938",
+    "data1/script.13.wasm": "fbc7017e4afcbb9c94b94a46659f1ff50366f8e16178a6f10f08072b79112d95",
+    "data1/script.2.wasm": "a2d299da85b1407ffe59ce24f81a2bb8dfcef93bacd24adc17573951a0db5432",
+    "data1/script.3.wasm": "ff0d329324b279bbc5771351936434d48bed05cba73c1b041666001e870c3c64",
+    "data1/script.4.wasm": "2b35cc9648e7e7fba67496a1c4148ef34554b0d77eb86e694ae3c31f8588733e",
+    "data1/script.5.wasm": "f40ddeecb16f918107ff01296d5b8e794781fd46fe72125cfabf0462ff2d7f68",
+    "data1/script.6.wasm": "fabeaa8401790588424c873ac58e3fce0e54d761216b7d6f8712648370d8a5a6",
+    "data1/script.7.wasm": "0a5006e502b33851a4b18630293b1866fa061466297e2c78931215c36a62c6b2",
+    "data1/script.8.wasm": "70d312aa556904f5e035ca0c60bf9944d652c80c8ff251bde452cd8fa16fb1cf",
+    "data1/script.9.wasm": "dded699cca56c2186af2e13b77d73fa0bde7b25c3f090f45b11bda9b119ae0fc",
+    "data1/script.json": "7d59796560ca14f374651ca09e4810374c66a7f5250e708fbfb82f1683d26b63",
+    "data1.wast": "effa6a1484493ef5d28bad9f93a9a1f2f462e4748b079c07af02178cbc62f565",
+    "data_drop0/script.0.wasm": "5f65faf6a4af381c78ea72ffbff813b3553d51c651b3bf5708255e2bbb3d61b4",
+    "data_drop0/script.json": "9334ce251c1e9a7035075c8a04dedbe2f4d140764d0e22cb0f70cff8701ec229",
+    "data_drop0.wast": "4cd981a5ab79836baa05834322e42636bd8dc2c05204130cec18bff78d933a55",
+    "exports0/script.0.wasm": "723670019eb3c666d0d74e06d468ab9ce8af6ea81bc00d0f5d9b1d4e3f0c7367",
+    "exports0/script.1.wasm": "4f05d614e1b04f6b98fa3d30dade5f6778acf8795f2abcce2467a16d603b66aa",
+    "exports0/script.2.wasm": "09fbeb9fd35addc7ecd9da91acb1eb64e0b1b88211dbebeee60d5c32aabf66cd",
+    "exports0/script.3.wasm": "65be1a45f1f62d8809d4275b16d27af59d361a5bd040004041593e24f0a1833f",
+    "exports0/script.4.wasm": "3985b170ed00e2383435e42c4a63451697e66b57ee0321d42abc58d047bfe1e3",
+    "exports0/script.5.wasm": "24a3bf3a84ae08109b1d4da6ed4b271bd8eeba6be1c3d0eb383e9d25a11d143e",
+    "exports0/script.6.wasm": "723670019eb3c666d0d74e06d468ab9ce8af6ea81bc00d0f5d9b1d4e3f0c7367",
+    "exports0/script.7.wasm": "62763f58230f3ed8391f235b639b67232a5dd3bc20526728b972a7e780ed7a9e",
+    "exports0/script.json": "41d7a031d33b27e92f8a8961660d6c4a85e66a5d67604636e3c766e8ff2823f1",
+    "exports0.wast": "5d4215df4a11585a1d2f3393cfdb25eda3d842df6123bf51383dd30fdbfc171e",
+    "float_exprs0/script.0.wasm": "a82addef515270bbf5426666320e6d96853cb696789eeec7b76b9ac7fc16c2c7",
+    "float_exprs0/script.json": "c4e9b132b02473af76c472c0ec87777060c02341604d910601ae16138ac453ad",
+    "float_exprs0.wast": "0f170be704a1e36d2f453d08b597cab3332cd0128332f4eb04432bb4cf089f0a",
+    "float_exprs1/script.0.wasm": "6a870f684bfd1dd1592126165ce46b81922b2d9eef85d7b780fd83c09cc5ba27",
+    "float_exprs1/script.json": "c51fdd6d393e4caccd605fa766f0579360acf6ed356c4fdc7387dd7740769392",
+    "float_exprs1.wast": "8fc3383298eac32d2d99114f818c41cc33d710a2d753daa48bb4001c5b8f0c5b",
+    "float_memory0/script.0.wasm": "67cd8747d2d3df6ae57077e6f7c0fefdb7b00b8036d43e42f0af8112ebed1f3a",
+    "float_memory0/script.1.wasm": "0eaaded7a06be919e77848671e463ba3effe53e83e109679484044fe1ad725c9",
+    "float_memory0/script.json": "63ea003e165164e1938cb17c064ea00c04c213c98fd5a347f0b64d081766ee3d",
+    "float_memory0.wast": "915985df616d6d6dbda999d682fd70344ace735f64c339d53c49ec8d6ad1e5a2",
+    "imports0/script.0.wasm": "21eabdbd350e9fbbef124fd826d7896dc1df113b04e6a079d71617c7ef536c6a",
+    "imports0/script.1.wasm": "a0ae665a434b4995ebc4fae9958794292e9e0eb0365de80e4a184b10d65f513e",
+    "imports0/script.2.wasm": "0ec6f80a41106aa0974c7220c28db49b4eb8039c1ed74275c0cff9f35dc8dd72",
+    "imports0/script.3.wasm": "90106a7991461b79e4217700dc335931748b93703638fcd2f700428e14b58950",
+    "imports0/script.4.wasm": "53009d18168c86e2ea45fd114ec3c20c90058bb83ad565e4267123d56bb79bdc",
+    "imports0/script.5.wasm": "e7c9426667dfb8a11097584f9d708e9667eb538b8204a24b37c401bccf24652a",
+    "imports0/script.6.wasm": "7097e07140c13999144d330b143dec3e408b13bfce423b06a716f2a93cec0287",
+    "imports0/script.json": "aa490191a4f11da245d9035463ba479ec9c190d83de73ac9af491ef420d8cb40",
+    "imports0.wast": "8e952d2f3c29bf3fc8afe5264bb09a40233e8b75b73076c6b1690d0d99080901",
+    "imports1/script.0.wasm": "fc5ac75faf180b891d01ae4cf230842edaadec17cbea2c0ae3efe4c13ed6d46e",
+    "imports1/script.json": "c2233b8573787eb9bd3add553b6751b856c34e0b7a2eacbeb153600504ce446d",
+    "imports1.wast": "ed4e1b3c87bb3adf4e5252aa7fb1b8023f8a7051b81cffe95b0ee6f4099fd29d",
+    "imports2/script.0.wasm": "599e0ee4101ce08c6023ecf1583edfd39b55e78e7ecb490254ac09560cdcbef0",
+    "imports2/script.1.wasm": "10f754844ef2a8a6cce13a47ea4a4c7c9d145c2e9f3c0f90e4e3b36946d5c7e8",
+    "imports2/script.10.wasm": "83f659db75cd3f82ca3fae858dbf3a313de4d59e4f8f98b7bc6e1129ab6df68e",
+    "imports2/script.2.wasm": "7a9738575065d6cc93eb3fd1203f18c2fa4ec578268fde808cbc0b25a8b54741",
+    "imports2/script.3.wasm": "2224ed73e2ce3c4b0547e146d5a3ead85e1b92c9d6c79aba3fefa653321029cb",
+    "imports2/script.4.wasm": "ae4f17ec1b1f1242e08e42e790bf69664daa71834651abbcb2059e1c409d3798",
+    "imports2/script.5.wasm": "bb9f0c4a14a92ad412ad5aab5e3ba340a540f0e428a519bbce20587cea6d00c8",
+    "imports2/script.6.wasm": "d5a8e5cfdfe6c511fa308468f1a39a04d2f0d49677b3a0601973b81ee212427d",
+    "imports2/script.7.wasm": "d1d3895d54e501676dcef657f9f88fca76c6a0d2a8471d41d48b289ef9dcc9d3",
+    "imports2/script.8.wasm": "32ea6480962533a9fb60e5d6e9936aabdc87f71dae3844f2a020354295f85fb5",
+    "imports2/script.9.wasm": "b58f7609547ceafc4cd1ab2045b10d93177257cce2f4838287bd4610567739f2",
+    "imports2/script.json": "4bce22f70cb1441910883bbd61cf3bb2917704836d3533bd8200e82094d40412",
+    "imports2.wast": "0bb7710256a6182bd7e22e13bb9c176aa84136b7077ef7bc6862079e5478bbd6",
+    "imports3/script.0.wasm": "21eabdbd350e9fbbef124fd826d7896dc1df113b04e6a079d71617c7ef536c6a",
+    "imports3/script.1.wasm": "a2158838de358767a5ec60f1a9dc304c26246d62a8a4e0c5cef6cf59345963e4",
+    "imports3/script.2.wasm": "f74f98d0dc86ce5a672a6db947dcf382ab37d7c7b2730ef257a626adbdd45e22",
+    "imports3/script.3.wasm": "d511a7ffe95fbd8c25ff92d2c964dcc6e3516255962c03be51e34da2c5d5d697",
+    "imports3/script.4.wasm": "d0cd04cd942c5b4890c49b93dc684cab2ce8528b7971f41e53b52e599a8d9c51",
+    "imports3/script.5.wasm": "81de299812f710470ffa6f5167fceebaed7bdb4c0aac5f5b901a9468068f2f67",
+    "imports3/script.6.wasm": "135e1357d4da62689ae4a0d84582a17d36812d48e896959b4017e2a320740348",
+    "imports3/script.7.wasm": "da44255ca4e7173a3687a5afcb8cf8d771f8da2762936a9f347ff071a3230f19",
+    "imports3/script.8.wasm": "041a0adab4a9d899b2082c41697551e05fcaede883ad6c458edcec9983bb12f3",
+    "imports3/script.json": "0b16bfed4517e24d6135b56593b8f16e8933b536665d26a4aec4c12df028669c",
+    "imports3.wast": "b130b3336a212eb926203d87bf377519a982db51126a78523b546a7850b63d4b",
+    "imports4/script.0.wasm": "e2317e11c168f2523c5603cc7a02783c84251a04f0c5f99368c278b9dba40816",
+    "imports4/script.1.wasm": "4b20de0fafb2058b43457eaf3836dbf6ca62c687d0f2121a14918661c1cf3a5f",
+    "imports4/script.2.wasm": "6e6d07de7f440a7c15ee2cf3af260f35ed8e0e3eeafd055c604f905d775301ca",
+    "imports4/script.3.wasm": "165a97a9166b5cdb69a4720202cf8e57083c0a68f7235a64de9f27447afb6aa1",
+    "imports4/script.4.wasm": "6caf7fcc97c8b6e68763b3c7059e787dc55dc48699c351f0150a524a3e851d15",
+    "imports4/script.json": "95fe1925d14bdc52c68fb9f0172e71207956daad55e8a519fb30a7acf38df2cf",
+    "imports4.wast": "ab45e1db2f5405f3a31b0e1c2320add2d2323e92f56bc3b8c2b61d1f11b8b48c",
+    "linking0/script.0.wasm": "b548d2f5733914693db64a6e8e19b115ac9f100c8d52654c2811ee17dc0bc753",
+    "linking0/script.1.wasm": "0c45b82fae6fd867fd6e0530db29e14503acc36785eb79f51574249335f6eb23",
+    "linking0/script.2.wasm": "76afa1bd8e72846610aceb9e0d7414b7945a02ea4494b7a0045e51b88d9e22fd",
+    "linking0/script.json": "9e9664f05d5956fdc7d54e11b764539d9fb31812aab4b9658a4e744e251781e8",
+    "linking0.wast": "54a8ed8cd839a63cb39aa2613e36629b04c87d4693dcca2a98bddb1ddffc527a",
+    "linking1/script.0.wasm": "5b92a39a138090d9bd7f828f9eb26f9929b2126da0be1886ce77c8f8b8d8bf0d",
+    "linking1/script.1.wasm": "dfbad5a7b92cb091033e4b2c1bfe4b574a149e28a4747dbf82e01be3b91b15d5",
+    "linking1/script.2.wasm": "bd1dcda9424fda8ee2595717db5cfb6291cddd072c938bb30bd840c41dae7294",
+    "linking1/script.3.wasm": "c174ed8921856b5861a8413542c5296b375b2148c9b57a1c4ed802f815da2371",
+    "linking1/script.4.wasm": "e981879c5dc18b8e9767747ea8d33befad5988e896de42d763f8fbed16287922",
+    "linking1/script.5.wasm": "038bfe6dbdf4380649de35a84399dadc7656c785ae6e248cf1c1f3be3561cee1",
+    "linking1/script.json": "4afa82c8e96f93de6cba747cca39f9411eaf22a2d8c7d6f43c642e0a3cac9a3e",
+    "linking1.wast": "ce06017db2c85c3480e34cebe639f612745fc1ffda1272bc6ab3e4272b2d4171",
+    "linking2/script.0.wasm": "5b92a39a138090d9bd7f828f9eb26f9929b2126da0be1886ce77c8f8b8d8bf0d",
+    "linking2/script.1.wasm": "b025721155178d5f7c3a148199d2d4c9b0e2ece88b41ffffdb7bcfab353d2fc2",
+    "linking2/script.json": "9b03f850cdf6377b1e605ee1505a8affeb182cb73a71ffbd1dd52907e331aef6",
+    "linking2.wast": "96a364eb12eef12e6a4d9f926166167a91aabe217b94e682342213b386c60587",
+    "linking3/script.0.wasm": "2483f4a2c6b3c1c5084aa11e813434cbb17862de40f779c6ec62741cffaf4c8b",
+    "linking3/script.1.wasm": "83ead38473b972777052a2a18c970ba632cdc8f7daf496a737071e7b4c9c0cc8",
+    "linking3/script.2.wasm": "f045a6997d6198e134ce389d0b97bcf9a7f6403d50870e205929a65735e67666",
+    "linking3/script.3.wasm": "0d9bf89120e258566cb1420392d73ac10dabe10f8ca6562025cf90dca1dbfbf6",
+    "linking3/script.4.wasm": "755ed5c4535792b53c2e75513a39b514ec60606581ff33e9e36007443002a42c",
+    "linking3/script.5.wasm": "e88e150a01df3f7372e512b966d8c32f93c68acfca69a3ba44212832b3c31f3a",
+    "linking3/script.json": "a06979c3caa376b0389ef00c4038027965ac259d00f67eac087e413def9aaffb",
+    "linking3.wast": "2487cc4e0b85d8e94bf32816a6b00a7fa477817a65de5a6588ce55a930d3f5d4",
+    "load0/script.0.wasm": "bb34eedf6f18a08563f763962c0eaf73c4dffb0fb5548be3a55ec8eb0a93527b",
+    "load0/script.json": "4f8e99de24a03e1fce79b1f42851f5c0586626484750766c12658fd062b8affb",
+    "load0.wast": "00dbea5cae594b8a16f4a177aa1ef5f72c3042c8c31f33e1577f696ccf7339d8",
+    "load1/script.0.wasm": "deeb62046da74d7d464164aa1af23a204152487a1ebba5093f80be358c5bbbee",
+    "load1/script.1.wasm": "a7b7738185147482ef77ce298b3fc98355c57738807b6a219dea93e0e72bdaaf",
+    "load1/script.json": "3be3887fd7d7ebf2ea7297e29c8482f40e18c313d9c2137f68bbe3dbe4aad444",
+    "load1.wast": "19b977db2c0aac9654909a7378572fe1e6a1551a49059b46948d68e788737021",
+    "load2/script.0.wasm": "a2e2f7e3f44422b597b7f77faebd4b33b6cf0ab069872e45b75fcc5a8a1bb90f",
+    "load2/script.json": "b1232985f0a41e281e3190113ebbf338a35bbcd844743ab962d1d0c3fbafdfc9",
+    "load2.wast": "a270a935feaab17acf2192526ccc1e3d8b7f90551afbc9e9152655e9f63c0747",
+    "memory-multi/script.0.wasm": "259937199818401cdd808f74da4ee9e383a34072cc98c8e713782c1ebf942e91",
+    "memory-multi/script.1.wasm": "1f3dde2511ce4af3375ce69cdaf4039acea4fcc4421ecb02ebd31c2c96c35407",
+    "memory-multi/script.json": "ae45fdd6b16208836249c3b3009cf701609577e0dfa0e5f5471b884f68730a46",
+    "memory-multi.wast": "622e23c6952721b4f3fae1ebda5feef668741a7ed2cde84ba4068153efbaef70",
+    "memory_copy0/script.0.wasm": "744f5137c61f4932a2553f5f0294a0ed68a2a784d00d54062d467269c65eefd1",
+    "memory_copy0/script.json": "49e5f1df49664aa728f1dda2c4152dad69c097e0a334463cad0c5f44082e60cd",
+    "memory_copy0.wast": "5434c232c4e29e89888a1e05a42b298186c6a18263aef5d74666d967f9402aac",
+    "memory_copy1/script.0.wasm": "bf8b6cbe1899207a527088e2d67eac4948286f2876c87668d3b4e2da54072c5e",
+    "memory_copy1/script.json": "a7fcc1ebe8ee748f11f1c41745144db7fe9357ca78b59b635568fb072404933d",
+    "memory_copy1.wast": "0c0a25890b3415d7cf0a0f43cd7904ad44e9e2fc6a1462fef48703102805e1bc",
+    "memory_fill0/script.0.wasm": "4744761b4a0e79b167660327e1aea7b3ac5411abd61e2e6e530fd2d6a9e4a435",
+    "memory_fill0/script.json": "45058b7072d5a882d1db50c463012e9281a0349db03c731c6448d108a35db65a",
+    "memory_fill0.wast": "d747201062f410ed64b23ca9687397c33e8f5adbcd4dda54ea742e903922f767",
+    "memory_init0/script.0.wasm": "773db2accc6922398acc183ed1575653fdbb8b5469e48fe984d5c0f46f5f7552",
+    "memory_init0/script.json": "6b1db90c8db210cbf1bf68027df4e8fe56499ad1395449799cf82144b780a9d7",
+    "memory_init0.wast": "b13986c12b2d0c4d9150a004b1cf209e06ec91010e5dfe9abc21258ccb678687",
+    "memory_size0/script.0.wasm": "eb5ec7713d9cd2ab567807fe031165777169df2b45a28c94d400f7a9d5ff23d3",
+    "memory_size0/script.json": "b581fd998cfe373bb70942a14b1ee4949652573ab6d848e7e058dfa126ee5315",
+    "memory_size0.wast": "34280de026ac1d919583b866e6e7c722337f6445c157f4bf80895e46f49290a3",
+    "memory_size1/script.0.wasm": "b056405782f458e1de0a519ee3acf852fbea2f85ed2dd077674f7e8481270210",
+    "memory_size1/script.json": "cf378093f0fbc25783313c1c737910949b611936ae5846e61f6edcf7ee99cca6",
+    "memory_size1.wast": "7856b32b39b9bf839f90f0f818177d85e8ab704d6933c7b68bd7b90e1829b1fa",
+    "memory_size2/script.0.wasm": "a2d964f968d415b67dee5901e4643ced2d431cacd02193279535f4357f37c7c5",
+    "memory_size2/script.json": "baca4ae7b56bd88630ddee2787bfca7a5f9600e6ea65ee508526d2327578f4c3",
+    "memory_size2.wast": "4737a54f4aa62ec6b10f4ef8c299fb7e354941ce13a8def85a79b1e24413bc39",
+    "memory_size3/script.0.wasm": "b2bf275979ec4d0ed34db786ae3d83c2625c4a754dac7432153885449c7ddfbe",
+    "memory_size3/script.1.wasm": "4ca6bb8b125d7f82da33f52024865698ada7e140b817fbac78efb42290d52478",
+    "memory_size3/script.json": "4e5c685816c237ce77338508c721ad1495398ac81d381d8daa24be68126d92a8",
+    "memory_size3.wast": "e8c279897c70d60be758c571c2864a3b2da87d404dfe43e65ac91ad3e139281e",
+    "memory_trap0/script.0.wasm": "f48cb6a9cad0e7cb5a49b7ad65bc4f4d89f901b653294cd8aeb093329cf0262c",
+    "memory_trap0/script.json": "0013944f27fa44948711df20cc161d7af635111a785632c30a243384ecebb3f2",
+    "memory_trap0.wast": "2ff7905e32759145f5be3a6910f09edce9f781a98f9eb602dbd96da1c5315409",
+    "memory_trap1/script.0.wasm": "2f043ea6dcfd1bba25229e3052bc2afd945072d056a5e1fd08f05ef05c8fb321",
+    "memory_trap1/script.json": "941dd3b1dba261ecb932a37a3823046debbc38f6f2ebfb59b934211fc85f676f",
+    "memory_trap1.wast": "c0bfa1f480766ccfc1c0a4cdefa26b8ae8d01004414c5498afdb2131ab99375c",
+    "simd_memory-multi/script.0.wasm": "99c82bb603acbafe36d6c375a67f3f30e7eaf41ba7bffb7a1b7527fcc524363e",
+    "simd_memory-multi/script.json": "0337feec8c46f7892aef73c082f7b2f3ed130fc974d8fe5018b842298f1b42bf",
+    "simd_memory-multi.wast": "bef9c29ed24ba98c6defaf365c27d0d31052b894f9fb10df23ee66bbf77d421c",
+    "start0/script.0.wasm": "0f39ae61079e81138dac311f2ba4612ac8782f7b2f4e9e8831ea29e59495f257",
+    "start0/script.json": "a9e52e5bd201838368978601cd0026d6cbb2812d228066cf860f471f8058c60a",
+    "start0.wast": "139c266bd44d5f821b6d0b994ff1ec2a5e659357cd21921dfadf5b679a1dec0a",
+    "store0/script.0.wasm": "72073cc028ba83224a0ec46fd07e183496e19dfdbd7f49a8aa0c1d26979ac2bb",
+    "store0/script.json": "e734d946d1720bb02941c70b5fe1438b16dabb84402b129cf9a9feac82dafaa6",
+    "store0.wast": "971c814c669b126ac3dc11e9a6185d315af2ba996cb416d9e3e26773bcee0c71",
+    "store1/script.0.wasm": "4bbad8c9dcb17a733e7912ad250c3ecc719a87f32a7450f24d13277ea8d611e9",
+    "store1/script.1.wasm": "4bbad8c9dcb17a733e7912ad250c3ecc719a87f32a7450f24d13277ea8d611e9",
+    "store1/script.2.wasm": "898045d79a9fb6243e4a554f3f9dc289f209741b856fc7b609fb5c6724ed98ec",
+    "store1/script.json": "e44a5cc92825bc776d8d692f516f21ee1ee7b7a79000f24e52ff1b3787f7ff48",
+    "store1.wast": "e03b4970ac4e6322bbc8b46e17c226f18c7f8102f5f3e1aca91a889b87fe2cad",
+    "traps0/script.0.wasm": "d715c1226489a62cb3bdc10c165111b7f4b2160e0fe789fe4341174c46a9f04c",
+    "traps0/script.json": "ad0114c48f50ace562331a498474010c5e728f837e900a53c804718cf9d8dcef",
+    "traps0.wast": "43a8f235560f920409936d541a8f44feaa1f82c34f22ef505c4d5c38b3678499"
+  }
+}

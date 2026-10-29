@@ -1,0 +1,3 @@
+{"source_filename": "simd_memory-multi.wast",
+ "commands": [
+  {"type": "module", "line": 5, "filename": "script.0.wasm"}]}

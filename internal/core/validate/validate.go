@@ -104,7 +104,7 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 	for _, g := range m.Globals {
 		c.globals = append(c.globals, g.Type)
 	}
-	if len(c.memories) > 1 {
+	if len(c.memories) > 1 && c.features&wasm.MultiMemory == 0 {
 		c.fail("multiple memories are not in Core 2.0")
 	}
 	for _, mt := range c.memories {

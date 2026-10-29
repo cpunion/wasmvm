@@ -202,7 +202,7 @@ WASI 1/2/3 remain required subsequent work. See the
 
 **Objective:** extend the same frontend, IR and both execution backends to the full pinned Core 3.0 binary profile and the separately enabled Threads profile.
 
-Implemented individually enabled extensions include Tail Call and Extended Constant Expressions.
+Implemented individually enabled extensions include Multi-Memory, Tail Call and Extended Constant Expressions.
 The first extension is Extended Constant Expressions:
 `EngineConfig.Features = wasm.ExtendedConst` (CLI `--extended-const`). It covers
 all six integer operations, typed/limited validation and instance-specific
@@ -218,6 +218,12 @@ transfers retire the current frame before dispatch, preserving the original
 return destination, host caller capability and pending argument roots. The full
 archived proposal suite covers 102 binary assertions in two scripts. Typed
 `return_call_ref` belongs to the future function-references capability.
+
+Multi-Memory adds indexed private-memory access under `wasm.MultiMemory`
+(CLI `--multi-memory`). Scalar and fixed-SIMD memory operations are generated
+on both native targets. Independent/aliased imports, growth, data segments,
+bulk copy/fill/init and quotas share the existing Store. The complete archived
+proposal corpus contributes 697 binary assertions in 39 scripts.
 
 Local follow-ups are tracked without blocking subsequent capability work:
 

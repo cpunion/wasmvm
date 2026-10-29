@@ -366,3 +366,18 @@ including across module boundaries. Pending arguments remain typed roots;
 the removed frame's locals do not. Host reentry sees the released frame quota.
 Each tail instruction consumes one fuel unit, and all transfers poll cancellation.
 Native direct tail-entry optimizations remain local follow-up work.
+
+## Multiple memories
+
+`wasm.MultiMemory` enables multiple imports/definitions and indexed scalar,
+fixed-SIMD, size/grow, active data and bulk operations. Memarg bit 6 selects an
+explicit memory index before the offset; alignment remains separate. Default
+Core 2.0 retains its original grammar and single-memory validation rule.
+
+Typed IR preserves the memory identity in every memarg, and validation checks
+the selected memory independently. Native code selects entry-stable length/base
+pairs in the existing ABI view; the interpreter uses the same module indices.
+Bulk copy validates both complete ranges before writing, copies between
+independent memories and preserves memmove ordering when imported indices alias
+the same object, including across scheduling chunks. Store page/memory quotas,
+failed allocation rollback and host callback capabilities remain unchanged.
