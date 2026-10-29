@@ -211,7 +211,10 @@ func (ex Extern) GlobalSet(v Value) error {
 }
 
 func (s *Store) referenceFeature(typ wasm.ValueType) error {
-	if typ > 255 && typ.IsReference() && s.engine.config.Features&wasm.FunctionReferences == 0 {
+	if typ.IsGCReference() && s.engine.config.Features&wasm.GC == 0 {
+		return wasm.ErrUnsupported
+	}
+	if typ > 255 && typ.IsReference() && s.engine.config.Features&(wasm.FunctionReferences|wasm.GC) == 0 {
 		return wasm.ErrUnsupported
 	}
 	return nil

@@ -307,6 +307,10 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				e.trap(wasm.TrapUnreachable, uint64(src.Wasm.Offset))
 			case ir.Jump:
 				e.edge(in.Extra, pcs, pc+1)
+			case ir.IfCast:
+				out.Helpers++
+				e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
+				e.leave(nativeabi.RuntimeHelper, uint64(pc), uint64(pc))
 			case ir.IfNull:
 				e.nullConditionalEdges(in, pcs, pc+1)
 			case ir.If:
@@ -442,7 +446,7 @@ func integerWide(op uint32) bool {
 	return op >= 0x50 && op <= 0x5a || op >= 0x79 && op <= 0x8a || op == 0xac || op == 0xad || op >= 0xc2
 }
 func helperOpcode(op uint32) bool {
-	return op >= 0x23 && op <= 0x26 || op >= 0x28 && op <= 0x40 || op >= 0x5b && op <= 0x66 || op >= 0x8b && op <= 0xbf || op == 0xd2 || op >= 0xfc0000 && op <= 0xfc0011 || op>>16 == 0xfd
+	return op >= 0x23 && op <= 0x26 || op >= 0x28 && op <= 0x40 || op >= 0x5b && op <= 0x66 || op >= 0x8b && op <= 0xbf || op == 0xd2 || op == 0xd3 || op>>16 == 0xfb || op >= 0xfc0000 && op <= 0xfc0011 || op>>16 == 0xfd
 }
 
 func checkFunction(f *slots.Function) error {
@@ -485,17 +489,17 @@ func checkFunction(f *slots.Function) error {
 					return wasm.ErrInvalid
 				}
 			case ir.Trap:
-			case ir.Jump, ir.If, ir.Table, ir.IfNull:
-				if in.Count == 0 || kind == ir.Jump && in.Count != 1 || (kind == ir.If || kind == ir.IfNull) && in.Count != 2 || uint64(in.Extra)+uint64(in.Count) > uint64(len(f.Edges)) {
+			case ir.Jump, ir.If, ir.Table, ir.IfNull, ir.IfCast:
+				if in.Count == 0 || kind == ir.Jump && in.Count != 1 || (kind == ir.If || kind == ir.IfNull || kind == ir.IfCast) && in.Count != 2 || uint64(in.Extra)+uint64(in.Count) > uint64(len(f.Edges)) {
 					return wasm.ErrInvalid
 				}
 			default:
 				return wasm.ErrInvalid
 			}
 		}
-		if in.Op >= 0x10 && in.Op <= 0x15 {
+		if in.Op >= 0x10 && in.Op <= 0x15 || in.Op>>16 == 0xfb {
 			outputs := 0
-			if in.Op <= 0x11 || in.Op == 0x14 {
+			if in.Op <= 0x11 || in.Op == 0x14 || in.Op>>16 == 0xfb {
 				outputs = len(f.Sources[in.Source].Outputs)
 			}
 			if uint64(in.Extra)+uint64(in.Count)+uint64(outputs) > uint64(len(f.Args)) {

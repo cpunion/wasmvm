@@ -32,6 +32,7 @@ type decoder struct {
 	nodes          uint64
 	needsDataCount bool
 	inCode         bool
+	definition     *module.Module
 }
 
 // Decode takes a snapshot of input. It returns no partial module on failure.
@@ -75,6 +76,7 @@ func DecodeWithFeatures(input []byte, limits Limits, features wasm.Features) (re
 		d.failAt(4, "unknown binary version")
 	}
 	m := new(module.Module)
+	d.definition = m
 	last, codeCount := byte(0), uint32(0)
 	for d.r.Remaining() != 0 {
 		at := d.r.Offset()
@@ -104,11 +106,7 @@ func DecodeWithFeatures(input []byte, limits Limits, features wasm.Features) (re
 			name := d.name()
 			m.Custom = append(m.Custom, module.Custom{Name: name, Data: d.bytes(uint64(d.r.Remaining()))})
 		case 1:
-			m.Types = make([]module.FuncType, d.count())
-			for i := range m.Types {
-				d.expect(0x60)
-				m.Types[i] = module.FuncType{Params: d.types(), Results: d.types()}
-			}
+			d.typeSection(m)
 		case 2:
 			m.Imports = make([]module.Import, d.count())
 			for i := range m.Imports {
@@ -277,11 +275,11 @@ func (d *decoder) count() uint32 {
 func (d *decoder) valueType() wasm.ValueType {
 	at := d.r.Offset()
 	b := d.byte()
-	if (b == 0x63 || b == 0x64) && d.features&wasm.FunctionReferences != 0 {
+	if (b == 0x63 || b == 0x64) && d.features&(wasm.FunctionReferences|wasm.GC) != 0 {
 		return d.heapReference(b == 0x63)
 	}
 	t := wasm.ValueType(b)
-	if !t.Valid() {
+	if !t.Valid() || t.IsGCReference() && d.features&wasm.GC == 0 {
 		d.failAt(at, "unknown value type")
 	}
 	return t
@@ -303,11 +301,16 @@ func (d *decoder) heapReference(nullable bool) wasm.ValueType {
 		t = wasm.FuncRef
 	case -17:
 		t = wasm.ExternRef
+	case -18, -19, -20, -21, -22, -15, -14, -13:
+		if d.features&wasm.GC == 0 {
+			d.fail("GC heap types are disabled")
+		}
+		t = wasm.ValueType(byte(int8(h)) & 0x7f)
 	default:
-		if h < 0 || d.features&wasm.FunctionReferences == 0 {
+		if h < 0 || d.features&(wasm.FunctionReferences|wasm.GC) == 0 {
 			d.fail("unknown heap type")
 		}
-		return wasm.FunctionReference(uint32(h), nullable)
+		return d.definition.Reference(uint32(h), nullable)
 	}
 	if !nullable {
 		t = t.NonNull()
@@ -350,7 +353,7 @@ func (d *decoder) table() module.TableType {
 
 func (d *decoder) tableDefinition() (module.TableType, module.Expr) {
 	saved := d.r
-	if d.features&wasm.FunctionReferences != 0 && d.byte() == 0x40 {
+	if d.features&(wasm.FunctionReferences|wasm.GC) != 0 && d.byte() == 0x40 {
 		d.expect(0)
 		t := d.table()
 		return t, d.expr()
@@ -387,7 +390,7 @@ func (d *decoder) element() module.Element {
 			d.expect(0)
 		}
 		s.Functions = d.indexes()
-		if d.features&wasm.FunctionReferences != 0 {
+		if d.features&(wasm.FunctionReferences|wasm.GC) != 0 {
 			s.Type = wasm.FuncRef.NonNull()
 		}
 	} else {

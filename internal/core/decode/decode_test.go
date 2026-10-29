@@ -234,6 +234,13 @@ func FuzzDecode(f *testing.F) {
 		f.Fatal(err)
 	}
 	f.Add(input)
+	for _, name := range []string{"gc.wasm", "gc-composition.wasm"} {
+		raw, err := os.ReadFile("../../../pkg/vm/testdata/" + name)
+		if err != nil {
+			f.Fatal(err)
+		}
+		f.Add(raw)
+	}
 	f.Fuzz(func(t *testing.T, input []byte) {
 		l := DefaultLimits()
 		l.MaxBytes = 1 << 16

@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"github.com/cpunion/wasmvm/internal/engine/state"
 	"math"
 
 	"github.com/cpunion/wasmvm/internal/engine/value"
@@ -74,7 +75,7 @@ func (s *Store) rawLocked(v Value, t wasm.ValueType) (value.Value, error) {
 			return value.Value{}, ErrType
 		}
 		// Null still carries a static heap type; preserve its import/call contract.
-		if !wasm.ReferenceSubtype(v.kind, t, nil) {
+		if !s.state.ReferenceSubtype(v.kind, t) {
 			return value.Value{}, ErrType
 		}
 		return value.Value{}, nil
@@ -82,12 +83,18 @@ func (s *Store) rawLocked(v Value, t wasm.ValueType) (value.Value, error) {
 	if v.ref.store != s || v.ref.released || s.closing {
 		return value.Value{}, ErrReference
 	}
-	if index, indexed := t.TypeIndex(); indexed {
-		f, ok := s.state.Function(v.ref.id)
-		if !t.Canonical() || !ok || f.TypeID != index {
-			return value.Value{}, ErrType
-		}
+	// Existing roots pin their identity until release. Same-type copies and
+	// abstract host access must not inspect guest state while it is executing.
+	if t == v.kind || t == wasm.FuncRef || t == wasm.ExternRef {
+		return value.Value{Lo: v.ref.id}, nil
 	}
+	if !s.state.IsLiveReference(v.ref.id) {
+		return value.Value{}, ErrReference
+	}
+	if !s.state.TestReference(v.ref.id, t) {
+		return value.Value{}, ErrType
+	}
+
 	return value.Value{Lo: v.ref.id}, nil
 }
 func (s *Store) rootLocked(t wasm.ValueType, raw value.Value) (Value, error) {
@@ -128,7 +135,14 @@ func (s *Store) NewExternRef(object any) (Value, error) {
 	if s.closing {
 		return Value{}, wasm.ErrClosed
 	}
-	if uint64(len(s.externs)) >= uint64(s.config.MaxExternRefs) || s.nextExtern == math.MaxUint64 {
+	if v, ok := object.(Value); ok && v.ref != nil && v.kind.IsExternalReference() && state.IsExternalizedGuest(v.ref.id) {
+		raw, err := s.rawLocked(v, wasm.ExternRef)
+		if err != nil {
+			return Value{}, err
+		}
+		return s.rootLocked(wasm.ExternRef, raw)
+	}
+	if uint64(len(s.externs)) >= uint64(s.config.MaxExternRefs) || s.nextExtern >= state.MaxExternalIdentity {
 		return Value{}, resourceLimit("external references")
 	}
 	id := s.nextExtern + 1
@@ -155,6 +169,9 @@ func (s *Store) ExternRef(v Value) (any, error) {
 	}
 	if raw.Lo == 0 {
 		return nil, nil
+	}
+	if state.IsExternalizedGuest(raw.Lo) {
+		return v, nil
 	}
 	obj, ok := s.externs[raw.Lo]
 	if !ok {

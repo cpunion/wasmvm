@@ -84,7 +84,12 @@ func (budget *VerifyBudget) Verify(f *Function) (err error) {
 			}
 		}
 	}
-	matches := func(a, b wasm.ValueType) bool { return a == b || wasm.ReferenceSubtype(a, b, f.TypeLabels) }
+	matches := func(a, b wasm.ValueType) bool {
+		if f.TypeHierarchy != nil {
+			return f.TypeHierarchy.ReferenceSubtype(a, b, f.TypeLabels)
+		}
+		return wasm.ReferenceSubtype(a, b, f.TypeLabels)
+	}
 	defs := make([]definition, len(f.Values))
 	pred := make([][]int, len(f.Blocks))
 	valueType := func(id Value) wasm.ValueType {
@@ -150,6 +155,10 @@ func (budget *VerifyBudget) Verify(f *Function) (err error) {
 			if t.Kind == If && (len(t.Edges) != 2 || op != 4 && op != 0xd) || t.Kind == Table && (len(t.Edges) == 0 || op != 0xe) {
 				fail("branch targets/source")
 			}
+		case IfCast:
+			if len(t.Args) != 1 || !valueType(t.Args[0]).IsReference() || len(t.Edges) != 2 || (op != 0xfb0018 && op != 0xfb0019) || len(s.Wasm.Types) != 2 {
+				fail("cast branch source/arity")
+			}
 		case IfNull:
 			if len(t.Args) != 1 || !valueType(t.Args[0]).IsReference() || len(t.Edges) != 2 || (op != 0xd5 && op != 0xd6) {
 				fail("null branch source/arity")
@@ -196,6 +205,15 @@ func (budget *VerifyBudget) Verify(f *Function) (err error) {
 			step(uint64(len(edge.Args)))
 			for i, id := range edge.Args {
 				actual := valueType(id)
+				if t.Kind == IfCast && id == t.Args[0] {
+					actual = s.Wasm.Types[1]
+					if ei == 1 {
+						actual = s.Wasm.Types[0]
+						if s.Wasm.Types[1].Nullable() {
+							actual = actual.NonNull()
+						}
+					}
+				}
 				if t.Kind == IfNull && ei == 1 && id == t.Args[0] {
 					actual = actual.NonNull()
 				}

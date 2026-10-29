@@ -26,10 +26,11 @@ type StoreConfig struct {
 	Limits                                  StoreLimits
 	Execution                               ExecutionLimits
 	MaxExternRefs, MaxHostRoots, MaxReentry uint32
+	CollectEveryAllocation                  bool
 }
 
 func DefaultStoreConfig() StoreConfig {
-	return StoreConfig{state.DefaultLimits(), execute.DefaultLimits(), 1 << 20, 1 << 20, 32}
+	return StoreConfig{Limits: state.DefaultLimits(), Execution: execute.DefaultLimits(), MaxExternRefs: 1 << 20, MaxHostRoots: 1 << 20, MaxReentry: 32}
 }
 
 type CallOptions struct {
@@ -76,7 +77,10 @@ func (e *Engine) NewStore(config StoreConfig) (*Store, error) {
 	if e.config.Backend == "native" {
 		core = state.NewNative(config.Limits)
 	}
-	return &Store{engine: e, config: config, state: core, nativeModules: make(map[*slots.Module]*nativeexec.Lease), closed: make(chan struct{}), roots: make(map[*reference]struct{}), externs: make(map[uint64]any)}, nil
+	s := &Store{engine: e, config: config, state: core, nativeModules: make(map[*slots.Module]*nativeexec.Lease), closed: make(chan struct{}), roots: make(map[*reference]struct{}), externs: make(map[uint64]any)}
+	core.CollectEveryAllocation = config.CollectEveryAllocation
+	core.HeapSafepoint = func() { s.mu.Lock(); defer s.mu.Unlock(); s.collectLocked(s.active) }
+	return s, nil
 }
 func resourceLimit(detail string) error { return &wasm.Error{Kind: wasm.ErrLimit, Detail: detail} }
 func (s *Store) begin(ctx context.Context, options CallOptions) (*operation, error) {
@@ -188,19 +192,15 @@ func (s *Store) Collect() error {
 	return nil
 }
 func (s *Store) collectLocked(op *operation) {
-	var functions []uint64
+	var roots []state.ReferenceValue
 	var active []*state.Instance
 	marked := make(map[uint64]bool)
 	visit := func(t wasm.ValueType, v value.Value) {
-		if v.Lo == 0 {
-			return
-		}
-		if t.IsFunctionReference() {
-			functions = append(functions, v.Lo)
-		} else if t.IsExternalReference() {
-			marked[v.Lo] = true
+		if t.IsReference() && v.Lo != 0 {
+			roots = append(roots, state.ReferenceValue{Type: t, Value: v})
 		}
 	}
+
 	for r := range s.roots {
 		visit(r.kind, value.Value{Lo: r.id})
 	}
@@ -211,8 +211,7 @@ func (s *Store) collectLocked(op *operation) {
 			frame.RetainedInstances(func(in *state.Instance) { active = append(active, in) })
 		}
 	}
-	s.state.CollectFailed(functions, active)
-	s.state.RetainedValues(visit)
+	s.state.CollectReferences(roots, active, func(id uint64) { marked[id] = true })
 	if len(s.nativeModules) != 0 {
 		live := make(map[*slots.Module]bool)
 		s.state.RetainedModules(func(m *slots.Module) { live[m] = true })

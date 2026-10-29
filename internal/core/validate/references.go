@@ -6,10 +6,13 @@ func (c *context) valueType(t wasm.ValueType, bound int) {
 	if !t.Valid() {
 		c.fail("invalid value type")
 	}
+	if t.IsGCReference() && c.features&wasm.GC == 0 {
+		c.fail("GC reference types are disabled")
+	}
 	if t <= 255 {
 		return
 	}
-	if c.features&wasm.FunctionReferences == 0 {
+	if c.features&(wasm.FunctionReferences|wasm.GC) == 0 {
 		c.fail("typed references are disabled")
 	}
 	if t.Canonical() {
@@ -17,15 +20,18 @@ func (c *context) valueType(t wasm.ValueType, bound int) {
 	}
 	if index, indexed := t.TypeIndex(); indexed {
 		c.index(index, bound, "reference type")
+		if t.Storage() != c.m.Reference(index, true).Storage() {
+			c.fail("indexed reference family")
+		}
 	}
 }
 
 func (c *context) matches(actual, expected wasm.ValueType) bool {
-	return actual == expected || actual == 0 || wasm.ReferenceSubtype(actual, expected, c.typeLabels)
+	return actual == expected || actual == 0 || c.registry.Hierarchy.ReferenceSubtype(actual, expected, c.typeLabels)
 }
 
 func (c *context) functionReference(index uint32) wasm.ValueType {
-	if c.features&wasm.FunctionReferences == 0 {
+	if c.features&(wasm.FunctionReferences|wasm.GC) == 0 {
 		return wasm.FuncRef
 	}
 	return wasm.FunctionReference(c.funcTypeIndices[index], false)

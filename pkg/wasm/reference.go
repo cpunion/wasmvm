@@ -36,11 +36,15 @@ func (t ValueType) referenceEncoding() bool {
 	if flags&referenceIndexed == 0 {
 		return t>>16 == 0 && flags&referenceCanonical == 0 && flags&referenceNullable == 0
 	}
-	return byte(t) == byte(FuncRef)
+	return byte(t) == byte(FuncRef) || byte(t) == byte(StructRef) || byte(t) == byte(ArrayRef)
 }
 
-func (t ValueType) IsFunctionReference() bool { return t.IsReference() && byte(t) == byte(FuncRef) }
-func (t ValueType) IsExternalReference() bool { return t.IsReference() && byte(t) == byte(ExternRef) }
+func (t ValueType) IsFunctionReference() bool {
+	return t.IsReference() && (byte(t) == byte(FuncRef) || byte(t) == byte(NoFuncRef))
+}
+func (t ValueType) IsExternalReference() bool {
+	return t.IsReference() && (byte(t) == byte(ExternRef) || byte(t) == byte(NoExternRef))
+}
 func (t ValueType) Nullable() bool {
 	return t.IsReference() && (t&referenceExtended == 0 || t&referenceNullable != 0)
 }
@@ -50,13 +54,19 @@ func (t ValueType) Defaultable() bool { return t.Valid() && (!t.IsReference() ||
 // Full types remain in validation, SSA, signatures and operation schemas.
 func (t ValueType) Storage() ValueType {
 	if t.IsReference() {
-		return ValueType(byte(t))
+		if t.IsFunctionReference() {
+			return FuncRef
+		}
+		if t.IsExternalReference() {
+			return ExternRef
+		}
+		return AnyRef
 	}
 	return t
 }
 func (t ValueType) Canonical() bool { return t&referenceCanonical != 0 }
 func (t ValueType) TypeIndex() (uint32, bool) {
-	return uint32(t >> 16), t.IsFunctionReference() && t&referenceIndexed != 0
+	return uint32(t >> 16), t.IsReference() && t&referenceIndexed != 0
 }
 func (t ValueType) NonNull() ValueType {
 	if !t.IsReference() {
@@ -77,25 +87,94 @@ func (t ValueType) WithNull() ValueType {
 // ReferenceSubtype implements nullability and invariant function-reference
 // types. labels optionally normalizes equivalent module-local type indices.
 func ReferenceSubtype(actual, expected ValueType, labels []uint32) bool {
+	return referenceSubtype(actual, expected, labels, nil)
+}
+
+// IndexedReference creates a module-local reference to a composite type.
+func IndexedReference(family ValueType, index uint32, nullable bool) ValueType {
+	t := FunctionReference(index, nullable)
+	return t&^255 | family&255
+}
+
+// WithTypeIndex replaces a validated indexed reference identity.
+func (t ValueType) WithTypeIndex(index uint32, canonical bool) ValueType {
+	t = t&((1<<16)-1) | ValueType(index)<<16
+	if canonical {
+		return t | referenceCanonical
+	}
+	return t &^ referenceCanonical
+}
+func (t ValueType) HeapName() string {
+	switch ValueType(byte(t)) {
+	case FuncRef:
+		return "func"
+	case ExternRef:
+		return "extern"
+	case AnyRef:
+		return "any"
+	case EqRef:
+		return "eq"
+	case I31Ref:
+		return "i31"
+	case StructRef:
+		return "struct"
+	case ArrayRef:
+		return "array"
+	case NoneRef:
+		return "none"
+	case NoFuncRef:
+		return "nofunc"
+	case NoExternRef:
+		return "noextern"
+	}
+	return "unknown"
+}
+func (t ValueType) IsInternalReference() bool {
+	return t.IsReference() && !t.IsFunctionReference() && !t.IsExternalReference()
+}
+func (t ValueType) IsGCReference() bool {
+	return t.IsReference() && (byte(t) != byte(FuncRef) && byte(t) != byte(ExternRef))
+}
+
+func referenceSubtype(actual, expected ValueType, labels []uint32, nominal func(uint32, uint32) bool) bool {
 	if actual == expected {
 		return true
 	}
-	if !actual.IsReference() || !expected.IsReference() || byte(actual) != byte(expected) || actual.Nullable() && !expected.Nullable() {
+	if !actual.IsReference() || !expected.IsReference() || actual.Nullable() && !expected.Nullable() {
 		return false
 	}
-	e, indexed := expected.TypeIndex()
-	if !indexed {
-		return true
-	}
-	a, indexed := actual.TypeIndex()
-	if !indexed || actual.Canonical() != expected.Canonical() {
-		return false
-	}
-	if !actual.Canonical() && labels != nil {
-		if uint64(a) >= uint64(len(labels)) || uint64(e) >= uint64(len(labels)) {
+	a, ai := actual.TypeIndex()
+	e, ei := expected.TypeIndex()
+	af, ef := ValueType(byte(actual)), ValueType(byte(expected))
+	if ai && ei {
+		if actual.Canonical() != expected.Canonical() {
 			return false
 		}
-		a, e = labels[a], labels[e]
+		if !actual.Canonical() && labels != nil {
+			if uint64(a) >= uint64(len(labels)) || uint64(e) >= uint64(len(labels)) {
+				return false
+			}
+			a, e = labels[a], labels[e]
+		}
+		if a == e {
+			return true
+		}
+		if nominal != nil {
+			return nominal(a, e)
+		}
+		return false
 	}
-	return a == e
+	if af == NoneRef && expected.IsInternalReference() || af == NoFuncRef && expected.IsFunctionReference() || af == NoExternRef && expected.IsExternalReference() {
+		return true
+	}
+	if ei {
+		return false
+	}
+	if af == ef {
+		return true
+	}
+	if ef == AnyRef && actual.IsInternalReference() {
+		return true
+	}
+	return ef == EqRef && (af == I31Ref || af == StructRef || af == ArrayRef)
 }

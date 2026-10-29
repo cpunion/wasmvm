@@ -192,7 +192,7 @@ func TestCloseReleasesAllStateAndRejectsAllocation(t *testing.T) {
 	s.Close()
 	s.Close()
 	s.CollectFailed(nil, nil)
-	if s.Usage() != (Usage{}) || len(s.functions) != 0 || s.types != nil || !in.disposed || len(tab.Table.Values) != 0 || mem.Memory.Pages() != 0 || g.Global.Value.Lo != 0 {
+	if s.Usage() != (Usage{}) || len(s.functions) != 0 || s.registry.Keys != nil || !in.disposed || len(tab.Table.Values) != 0 || mem.Memory.Pages() != 0 || g.Global.Value.Lo != 0 {
 		t.Fatal("close retained resources")
 	}
 	if _, ok := s.Function(host.Function); ok {

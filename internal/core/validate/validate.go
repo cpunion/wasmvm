@@ -23,8 +23,9 @@ type Module struct {
 type FunctionInfo struct{ MaxStack, MaxControl uint32 }
 
 // ConstantStack is the maximum validated initializer operand depth.
-func (m *Module) ConstantStack() uint32 { return m.types.constantStack }
-func (m *Module) TypeLabels() []uint32  { return m.types.typeLabels }
+func (m *Module) ConstantStack() uint32              { return m.types.constantStack }
+func (m *Module) TypeLabels() []uint32               { return m.types.typeLabels }
+func (m *Module) TypeHierarchy() *wasm.TypeHierarchy { return &m.types.registry.Hierarchy }
 
 func (m *Module) Definition() *module.Module { return m.definition }
 func (m *Module) FunctionInfo(index uint32) (FunctionInfo, bool) {
@@ -42,6 +43,7 @@ type context struct {
 	funcs           []module.FuncType
 	funcTypeIndices []uint32
 	typeLabels      []uint32
+	registry        module.TypeRegistry
 	tables          []module.TableType
 	memories        []module.Limits
 	globals         []module.GlobalType
@@ -75,22 +77,11 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 	if m == nil {
 		c.fail("nil module")
 	}
-	c.typeLabels = make([]uint32, len(m.Types))
-	keys := make(map[string]uint32)
-	for i, typ := range m.Types {
-		for _, ts := range [][]wasm.ValueType{typ.Params, typ.Results} {
-			for _, t := range ts {
-				c.valueType(t, i)
-			}
-		}
-		key := module.SignatureKey(typ, c.typeLabels)
-		label, found := keys[key]
-		if !found {
-			label = uint32(i)
-			keys[key] = label
-		}
-		c.typeLabels[i] = label
-	}
+	c.checkTypes()
+	// Validation retains normalized identities and ancestry, not a second copy
+	// of every decoded composite shape.
+	c.registry.Types = nil
+	c.registry.Keys = nil
 	for _, im := range m.Imports {
 		switch im.Kind {
 		case 0:
@@ -193,7 +184,7 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 	}
 	for i, table := range m.Tables {
 		if m.TableInit != nil && m.TableInit[i] != nil {
-			if features&wasm.FunctionReferences == 0 {
+			if features&(wasm.FunctionReferences|wasm.GC) == 0 {
 				c.fail("table initializers are disabled")
 			}
 			c.constant(m.TableInit[i], table.Element)
@@ -295,6 +286,9 @@ func (c *context) index(index uint32, length int, kind string) {
 }
 func (c *context) typ(index uint32) module.FuncType {
 	c.index(index, len(c.m.Types), "type")
+	if c.m.TypeDef(index).Kind != module.FunctionKind {
+		c.fail("function type required")
+	}
 	return c.m.Types[index]
 }
 func (c *context) function(index uint32) module.FuncType {
@@ -359,6 +353,14 @@ func (c *context) constant(expr module.Expr, want wasm.ValueType) {
 				c.fail("constant operand type mismatch")
 			}
 			stack = stack[:len(stack)-1]
+			continue
+		case 0xfb0000, 0xfb0001, 0xfb0006, 0xfb0007, 0xfb0008, 0xfb001a, 0xfb001b, 0xfb001c:
+			v := checker{context: c, stack: stack, control: []frame{{}}}
+			v.gc(*in)
+			stack = v.stack
+			if uint32(len(stack)) > c.constantStack {
+				c.constantStack = uint32(len(stack))
+			}
 			continue
 		default:
 			c.fail("nonconstant initializer")

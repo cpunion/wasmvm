@@ -17,3 +17,15 @@ func TestNondefaultableLocalInitializationIsRequiredInUnreachableCode(t *testing
 		t.Fatal("unreachable local.set may initialize", err)
 	}
 }
+
+func TestUnreachableGCConversionRefinesNullability(t *testing.T) {
+	for _, tc := range []struct {
+		op  uint32
+		typ wasm.ValueType
+	}{{0xfb001a, wasm.AnyRef.NonNull()}, {0xfb001b, wasm.ExternRef.NonNull()}} {
+		m := &module.Module{Types: []module.FuncType{{Results: []wasm.ValueType{tc.typ}}}, Functions: []module.Function{{Body: module.Expr{{Op: 0}, {Op: tc.op}, {Op: 0xb}}}}}
+		if _, err := CheckWithFeatures(m, DefaultLimits(), wasm.GC); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
