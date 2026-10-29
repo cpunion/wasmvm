@@ -126,6 +126,32 @@ func (s *TypeScope) checkVisible(t *Type, exporting, root bool) error {
 }
 
 func (s *TypeScope) publish(t *Type, exporting bool) (*Type, error) {
+	if t.Kind == model.Instance {
+		known := s.visibility.exports
+		if !exporting {
+			known = s.visibility.imports
+		}
+		if err := s.pool.charge(uint64(len(known))); err != nil {
+			return nil, err
+		}
+		r := substitution{pool: s.pool, bindings: map[uint64]*Type{}, typeBindings: map[*Type]*Type{}, valueBindings: map[*model.Type]*model.Type{}, types: map[*Type]*Type{}, values: map[*model.Type]*model.Type{}, cloneAll: true, publishing: s}
+		for key := range known {
+			if key.resource != nil {
+				r.typeBindings[key.resource] = key.resource
+			}
+			if key.value != nil {
+				r.valueBindings[key.value] = key.value
+			}
+		}
+		out, err := r.typ(t)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.expose(out, exporting); err != nil {
+			return nil, err
+		}
+		return out, nil
+	}
 	if err := s.pool.charge(1); err != nil {
 		return nil, err
 	}

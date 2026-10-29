@@ -19,6 +19,7 @@ type CanonicalFunction struct {
 	Memory, Realloc, PostReturn *uint32
 	Memory64                    bool
 	Signature                   module.FuncType
+	Async                       bool
 }
 
 func (c *componentContext) canonical(def *model.Canonical) error {
@@ -31,6 +32,9 @@ func (c *componentContext) canonical(def *model.Canonical) error {
 	}
 	if def.Op >= 2 && def.Op <= 4 {
 		return c.resourceBuiltin(def)
+	}
+	if def.Op == 0x0e || def.Op == 0x15 || def.Op == 0x20 || def.Op == 0x21 || def.Op == 0x27 {
+		return c.asyncBuiltin(def)
 	}
 	if def.Op > 1 {
 		return fmt.Errorf("%w: canonical operation %#x", wasm.ErrUnsupported, def.Op)
@@ -167,6 +171,70 @@ func (c *componentContext) canonical(def *model.Canonical) error {
 	return nil
 }
 
+// These operations have static plans only. Their task/handle/thread execution
+// remains an async-runtime capability, independent of successful validation.
+func (c *componentContext) asyncBuiltin(def *model.Canonical) error {
+	info := &CanonicalFunction{Definition: def, Async: true}
+	f := module.FuncType{}
+	s := c.result.scope
+	switch def.Op {
+	case 0x0e, 0x15:
+		t, err := s.At(def.Index)
+		if err != nil {
+			return err
+		}
+		kind := model.Stream
+		if def.Op == 0x15 {
+			kind = model.Future
+		}
+		if t.Kind != kind {
+			return invalid("stream/future constructor type")
+		}
+		info.Type = t
+		f.Results = []wasm.ValueType{wasm.I64}
+	case 0x20, 0x21:
+		e, err := c.coreAt(model.SortIndex{Sort: model.CoreMemorySort, Index: def.Index})
+		if err != nil {
+			return err
+		}
+		if e.Descriptor.Memory.Shared {
+			return invalid("async canonical memory is shared")
+		}
+		index := def.Index
+		info.Memory = &index
+		info.Memory64 = e.Descriptor.Memory.Index64
+		f.Params = []wasm.ValueType{wasm.I32, e.Descriptor.Memory.AddressType()}
+		f.Results = []wasm.ValueType{wasm.I32}
+	case 0x27:
+		if uint64(def.Index) >= uint64(len(s.core.ids)) {
+			return invalid("thread closure type index")
+		}
+		id := s.core.ids[def.Index]
+		if id == 0 || s.pool.registry.Types[id].Definition.Kind != module.FunctionKind {
+			return invalid("thread closure requires function type")
+		}
+		closure := s.pool.registry.Types[id].Function
+		if len(closure.Params) != 1 || len(closure.Results) != 0 || (closure.Params[0] != wasm.I32 && closure.Params[0] != wasm.I64) {
+			return invalid("thread closure signature")
+		}
+		e, err := c.coreAt(model.SortIndex{Sort: model.CoreTableSort, Index: def.Extra})
+		if err != nil {
+			return err
+		}
+		if e.Descriptor.Table.Element != wasm.FuncRef {
+			return invalid("thread table element type")
+		}
+		f.Params = []wasm.ValueType{e.Descriptor.Table.Limits.AddressType(), closure.Params[0]}
+		f.Results = []wasm.ValueType{wasm.I32}
+	}
+	info.Signature = f
+	if err := c.addSignature(f); err != nil {
+		return err
+	}
+	c.result.Canonical = append(c.result.Canonical, info)
+	return nil
+}
+
 func (c *componentContext) hasPointers(t *model.Type) (bool, error) {
 	if t == nil {
 		return false, nil
@@ -219,15 +287,16 @@ func (c *componentContext) resourceBuiltin(def *model.Canonical) error {
 	if t.Kind != model.Resource {
 		return invalid("canonical resource type index")
 	}
-	if def.Op != 3 && t.definingScope != c.result.scope {
+	representation, local := c.representations[t.Resource]
+	if def.Op != 3 && !local {
 		return invalid("resource representation belongs to another component")
 	}
 	f := module.FuncType{Params: []wasm.ValueType{wasm.I32}}
 	if def.Op == 2 {
-		f.Params[0] = t.Representation
+		f.Params[0] = representation
 		f.Results = []wasm.ValueType{wasm.I32}
 	} else if def.Op == 4 {
-		f.Results = []wasm.ValueType{t.Representation}
+		f.Results = []wasm.ValueType{representation}
 	}
 	if err := c.addSignature(f); err != nil {
 		return err

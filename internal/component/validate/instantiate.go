@@ -125,29 +125,43 @@ func (p *TypePool) freshInstance(t *Type) (*Type, error) {
 	if err := collect(t); err != nil {
 		return nil, err
 	}
-	if len(bindings) == 0 {
-		return t, nil
-	}
-	c := substitution{pool: p, bindings: bindings, types: map[*Type]*Type{}, values: map[*model.Type]*model.Type{}}
+	c := substitution{pool: p, bindings: bindings, types: map[*Type]*Type{}, values: map[*model.Type]*model.Type{}, cloneAll: true}
 	return c.typ(t)
 }
 
 type substitution struct {
-	pool     *TypePool
-	bindings map[uint64]*Type
-	types    map[*Type]*Type
-	values   map[*model.Type]*model.Type
+	pool          *TypePool
+	bindings      map[uint64]*Type
+	types         map[*Type]*Type
+	values        map[*model.Type]*model.Type
+	typeBindings  map[*Type]*Type
+	valueBindings map[*model.Type]*model.Type
+	cloneAll      bool
+	publishing    *TypeScope
 }
 
-func (c *substitution) id(id uint64) uint64 {
-	if r := c.bindings[id]; r != nil {
-		return r.Resource
+func (c *substitution) id(id uint64) (uint64, error) {
+	for n := 0; n <= len(c.bindings); n++ {
+		r := c.bindings[id]
+		if r == nil || r.Resource == id {
+			return id, nil
+		}
+		if err := c.pool.charge(1); err != nil {
+			return 0, err
+		}
+		id = r.Resource
 	}
-	return id
+	return 0, invalid("cyclic resource substitution")
 }
 
 func (c *substitution) value(in *model.Type) (*model.Type, error) {
-	if in == nil || !c.pool.values[in].resource {
+	if in == nil {
+		return nil, nil
+	}
+	if replacement, ok := c.valueBindings[in]; ok {
+		return replacement, nil
+	}
+	if primitive(in.Kind) || !c.cloneAll && !c.pool.values[in].resource {
 		return in, nil
 	}
 	if out := c.values[in]; out != nil {
@@ -158,8 +172,11 @@ func (c *substitution) value(in *model.Type) (*model.Type, error) {
 	}
 	out := *in
 	c.values[in] = &out
-	out.ResourceID = c.id(in.ResourceID)
 	var err error
+	out.ResourceID, err = c.id(in.ResourceID)
+	if err != nil {
+		return nil, err
+	}
 	for _, fs := range []struct {
 		in  []model.Field
 		out *[]model.Field
@@ -205,14 +222,33 @@ func (c *substitution) value(in *model.Type) (*model.Type, error) {
 }
 
 func (c *substitution) typ(in *Type) (*Type, error) {
+	if replacement, ok := c.typeBindings[in]; ok {
+		return replacement, nil
+	}
 	if out := c.types[in]; out != nil {
 		return out, nil
 	}
 	if in.Kind == model.Resource {
-		if r := c.bindings[in.Resource]; r != nil {
-			return r, nil
+		if !c.cloneAll && c.bindings[in.Resource] == nil {
+			return in, nil
 		}
-		return in, nil
+		if err := c.pool.charge(1); err != nil {
+			return nil, err
+		}
+		out := *in
+		var err error
+		out.Resource, err = c.id(in.Resource)
+		if err != nil {
+			return nil, err
+		}
+		out.minimumResource = out.Resource
+		if c.bindings[in.Resource] != nil {
+			out.Representation = 0
+			out.Destructor = nil
+			out.definingScope = nil
+		}
+		c.types[in] = &out
+		return &out, nil
 	}
 	if err := c.pool.charge(1 + uint64(len(in.Parameters)) + uint64(len(in.Captures)) + uint64(len(in.Imports)) + uint64(len(in.Exports))); err != nil {
 		return nil, err
@@ -241,7 +277,11 @@ func (c *substitution) typ(in *Type) (*Type, error) {
 	}{{in.Imports, &out.Imports}, {in.Exports, &out.Exports}} {
 		*es.out = append([]Extern(nil), es.in...)
 		for i := range *es.out {
-			(*es.out)[i].Type, err = c.typ(es.in[i].Type)
+			if c.publishing != nil && es.in[i].Sort == model.TypeSort {
+				(*es.out)[i].Type, err = c.publicType(es.in[i].Type)
+			} else {
+				(*es.out)[i].Type, err = c.typ(es.in[i].Type)
+			}
 			if err != nil {
 				return nil, err
 			}
@@ -249,7 +289,10 @@ func (c *substitution) typ(in *Type) (*Type, error) {
 	}
 	out.Captures = append([]uint64(nil), in.Captures...)
 	for i, id := range out.Captures {
-		out.Captures[i] = c.id(id)
+		out.Captures[i], err = c.id(id)
+		if err != nil {
+			return nil, err
+		}
 	}
 	sort.Slice(out.Captures, func(i, j int) bool { return out.Captures[i] < out.Captures[j] })
 	out.minimumResource = 0
@@ -268,4 +311,23 @@ func (c *substitution) typ(in *Type) (*Type, error) {
 		}
 	}
 	return &out, nil
+}
+
+func (c *substitution) publicType(in *Type) (*Type, error) {
+	known := c.publishing.visibility.exports
+	if in.Kind == model.Resource && known[nameable{resource: in}] || in.Value != nil && named(in.Value.Kind) && known[nameable{value: in.Value}] {
+		// Existing external names remain usable by dependent functions. Only
+		// this exported type binding receives a new name, preserving order.
+		if err := c.pool.charge(1); err != nil {
+			return nil, err
+		}
+		out := *in
+		if in.Value != nil {
+			value := *in.Value
+			out.Value = &value
+			c.pool.values[&value] = c.pool.values[in.Value]
+		}
+		return &out, nil
+	}
+	return c.typ(in)
 }
