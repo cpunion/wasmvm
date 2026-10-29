@@ -27,6 +27,9 @@ func TestDirectoryCapabilities(t *testing.T) {
 		if _, _, err := d.Open(name, unix.O_RDONLY, 0); err == nil {
 			t.Fatal("invalid path", name)
 		}
+		if err := d.Mkdir(name); err == nil {
+			t.Fatal("invalid mutation path", name)
+		}
 	}
 	if err = d.Mkdir("a"); err != nil {
 		t.Fatal(err)
@@ -322,6 +325,10 @@ func TestFileReadinessAndClose(t *testing.T) {
 	}
 	defer r.Close()
 	defer w.Close()
+	// A deadline can expire before its cancellation notification is delivered.
+	if _, _, err := Poll(pendingDeadline{context.Background()}, Descriptor(r), true); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatal("expired deadline entered a kernel wait", err)
+	}
 	if _, _, ready, err := Ready(int(r.Fd()), true); err != nil || ready {
 		t.Fatal("empty pipe", ready, err)
 	}
@@ -356,6 +363,10 @@ func TestFileReadinessAndClose(t *testing.T) {
 		t.Fatal("closed poll", err)
 	}
 }
+
+type pendingDeadline struct{ context.Context }
+
+func (pendingDeadline) Deadline() (time.Time, bool) { return time.Unix(0, 0), true }
 
 func TestUnsignedTimestampDomain(t *testing.T) {
 	for _, value := range []uint64{0, 1, 1<<63 - 1, 1 << 63, ^uint64(0)} {
