@@ -5,10 +5,10 @@ This work uses Component Model revision
 implemented in `internal/component/canonical`, independently of the Core
 interpreter/native backend. Component binary decoding is implemented separately
 in `internal/component/decode`. The [type subsystem](component-validation.md)
-checks ordered Core composition, synchronous canonical declarations and boundary
-type names. Component instantiation/interface subtyping, complete binary
-validation, runtime calls/post-return and WASI 0.2 worlds remain required by this
-foundation. It does not establish M5 completion.
+checks ordered Core/component composition, interface subtyping, resource
+substitution, synchronous canonical declarations and boundary type names.
+Complete binary validation, runtime calls/post-return and WASI 0.2 worlds remain
+required by this foundation. It does not establish M5 completion.
 
 ## Representation and limits
 
@@ -81,8 +81,8 @@ The complete pinned binary script adds 132 grammar commands: 80 malformed
 rejections and 52 decoded definitions. Sixteen of those definitions require
 later semantic rejection. This is not a claim that they passed validation.
 
-Next integration is component semantic validation and lexical index/type
-spaces, Core module/instance composition, canonical function lift/lower and
-post-return, then resource transactions and declared WASI 0.2.12 worlds. Async
+Next integration completes value/start validation and executes the validated
+Core/component composition plans, canonical function lift/lower and post-return,
+then resource transactions and declared WASI 0.2.12 worlds. Async
 function/task/future/stream support and WASI 0.3.2 follow separately. No component
 or WASI support is inferred from passing only these value primitives.

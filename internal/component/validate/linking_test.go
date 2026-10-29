@@ -128,7 +128,7 @@ func TestComponentCheckLimitsAndUnsupported(t *testing.T) {
 	if _, err := Check(&model.Binary{}, Limits{}); !errors.Is(err, wasm.ErrLimit) {
 		t.Fatal(err)
 	}
-	for _, kind := range []byte{5, 9, 12, 255} {
+	for _, kind := range []byte{9, 12, 255} {
 		c, err := Check(&model.Binary{Definitions: []model.Definition{{Kind: kind}}}, DefaultLimits())
 		if c != nil || !errors.Is(err, wasm.ErrUnsupported) {
 			t.Fatal(kind, c, err)

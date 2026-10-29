@@ -38,14 +38,21 @@ def prepare(destination=None):
         commands = json.loads((destination / (name + ".json")).read_text())["commands"]
         if (len(commands) != counts["commands"] or
                 sum(c["type"] == "assert_invalid" for c in commands) != counts["invalid"] or
-                sum(c["type"] in ("module", "module_definition") for c in commands) != counts["valid"]):
+                sum(c["type"] in ("module", "module_definition") for c in commands) != counts["valid"] or
+                sum(c.get("module_type") == "text" and c["type"] == "assert_malformed"
+                    for c in commands) != counts.get("textParser", 0)):
             raise ValueError("incomplete component semantic script: " + name)
     reference = ROOT / "testdata/component-canonical"
     pins = json.loads((reference / "manifest.json").read_text())
     for name, want in pins["sha256"].items():
         if hashlib.sha256((reference / name).read_bytes()).hexdigest() != want:
             raise ValueError("canonical reference input hash changed: " + name)
-    print("Verified 132 binary grammar commands and 1,024 canonical layout cases")
+    scripts = manifest.get("semanticScripts", {})
+    binary = sum(c["invalid"] + c["valid"] for c in scripts.values())
+    text = sum(c.get("textParser", 0) for c in scripts.values())
+    print(f"Verified 132 grammar commands, {len(scripts)} semantic scripts "
+          f"({binary} binary commands; {text} separate text-parser assertions), "
+          "and 1,024 canonical layout cases")
     return manifest
 
 

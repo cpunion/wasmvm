@@ -8,7 +8,15 @@ import (
 )
 
 func BenchmarkCanonicalModuleValidation(b *testing.B) {
-	input, err := os.ReadFile("testdata/canonical-math.wasm")
+	benchmarkComponentValidation(b, "testdata/canonical-math.wasm")
+}
+
+func BenchmarkComponentCompositionValidation(b *testing.B) {
+	benchmarkComponentValidation(b, "../decode/testdata/composition.wasm")
+}
+
+func benchmarkComponentValidation(b *testing.B, path string) {
+	input, err := os.ReadFile(path)
 	if err != nil {
 		b.Fatal(err)
 	}

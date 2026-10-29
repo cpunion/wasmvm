@@ -2419,3 +2419,61 @@ The larger external-visibility script remains diagnostic, with unsupported
 component-instance/ascription paths preserved as failures; it is not counted as
 passing conformance. M5/M6 completion and competitor performance acceptance stay
 open.
+
+
+## Component instances and binder-aware interface matching
+
+The ordered checker merged in [PR #42](https://github.com/cpunion/wasmvm/pull/42)
+at `777c748`, after [all four Go/LLGo Linux/macOS jobs passed](https://github.com/cpunion/wasmvm/actions/runs/40933962369).
+All 180 Core/proposal/P1/thread execution reports were downloaded and verified.
+
+The next increment adds component instantiation and synthesized instances,
+interface subtyping/ascription, argument/resource substitution, fresh exported
+resources and outer component aliases. Public name tokens stay separate from
+nominal identity. Imported resources retain identity across child round trips;
+representation authority stays with their defining component. All traversals,
+including substitution chains, consume the compilation work budget.
+
+The pinned offline inventory now contains 13 complete generated semantic
+scripts and 461 binary commands: 100 accepted definitions and 361 invalid
+rejections. Five producer text-parser assertions are recorded separately.
+wasm-tools 1.258.0 cannot generate the official version-suffix attribute script;
+its source and explicit producer limitation are retained. No pass is claimed.
+Stream/future constructors, waitable wait/poll and indirect thread creation have
+static plans only, without async execution.
+
+Local full Go tests, Go race checks and LLGo component tests pass. The changed
+validator package has 92.6% statement coverage. Bounded whole-component fuzzing
+completed 816,987 executions in 10 seconds without a failure. The coverage
+percentage measures this package, not Component Model conformance. Component
+value/start validation, remaining async plans, actual execution and WASI 0.2/0.3
+worlds remain open; M5/M6 and full performance acceptance are not complete.
+
+Scoped local measurements on darwin/arm64 use Go 1.27.3 and LLGo `8e45ed5`
+with `-O3 -lto=full`, five 300 ms samples per row. Values below are medians in
+microseconds per validation. Base is `c086823`, with the identical benchmark
+harness overlaid; head is this implementation. Decode and validation contain no
+guest execution. Builds happen before timing, and test-process startup is
+outside the Go benchmark timer.
+
+| Fixture and phase | Go base → head | LLGo base → head |
+| --- | --- | --- |
+| Canonical math: validation after decode | 3.244 → 3.382 (+4.3%) | 6.406 → 6.527 (+1.9%) |
+| Canonical math: owned decode + validation | 4.801 → 4.921 (+2.5%) | 8.917 → 9.120 (+2.3%) |
+| Child composition: validation after decode | Unsupported → 5.422 | Unsupported → 10.171 |
+| Child composition: owned decode + validation | Unsupported → 8.015 | Unsupported → 14.592 |
+
+The small existing-fixture overhead remains a local optimization follow-up.
+These samples are descriptive, not calibrated performance acceptance. Test
+binary build wall times were Go base/head 0.427/0.312 s and LLGo 19.610/17.862 s;
+cache state differs, so those are build diagnostics, not throughput comparisons.
+LLGo allocation counters are unavailable and are not interpreted as zero.
+Competitor warm component-validation comparisons remain pending; CLI compile
+or process-start measurements are not substituted for that phase. Raw outputs
+and the base overlay are retained under
+`artifacts/components/instances-benchmark/`.
+
+```sh
+go test -run '^$' -bench 'Benchmark(CanonicalModule|ComponentComposition)Validation' -benchtime=300ms -count=5 ./internal/component/validate
+llgo test -O3 -lto=full -run '^$' -bench 'Benchmark(CanonicalModule|ComponentComposition)Validation' -benchtime=300ms -count=5 ./internal/component/validate
+```

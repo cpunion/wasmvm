@@ -6,9 +6,10 @@ component and instance type declarations, lexical aliases and Core module
 types. It never executes a start function or calls a resource destructor.
 The ordered component checker now validates embedded Core modules and their
 instances, all five Core external sorts, aliases, imports/exports and synchronous
-canonical function/resource declarations. It shares Core import matching with
-the runtime. Component instantiation, value/start definitions, interface subtyping
-and async canonical declarations still return unsupported. This is not a
+canonical function/resource declarations. Component instances support instantiation
+and synthesized exports, binder-aware interface subtyping and export ascription.
+It shares Core import matching with the runtime. Value/start definitions and
+most async canonical declarations still return unsupported. This is not a
 complete binary component validator or runtime.
 
 Each lexical scope starts with empty component and Core type index spaces.
@@ -42,8 +43,12 @@ shared value pairs once and bounds total comparison work. Type graphs and
 published metadata are immutable; one pool belongs to one compilation.
 Allocation budgets and nominal IDs are not speculative transactions: discard
 the compilation after a failed declaration rather than retrying against a
-partially populated scope. Interface equality currently returns unsupported
-until binder-aware linking is connected.
+partially populated scope. Linking uses a separate bounded relation: component
+imports are contravariant, exports are covariant and function value types are
+invariant. Abstract resource binders are substituted across arguments; repeated
+instantiations generate distinct local resources while equality aliases and
+imported identities remain intact. Representation authority is tracked by
+nominal identity in the defining component, independently of public name tokens.
 
 ## Boundary names and canonical plans
 
@@ -63,7 +68,11 @@ canonical memories. These checks never invoke allocators, post-return functions
 or guest start functions; actual calls, transfer transactions and lockdown after
 traps remain runtime integration work.
 
-The offline corpus includes three complete semantic scripts (`abi`,
-`core-modules`, `defined-types`), totaling 81 commands. The wider external
-visibility script remains diagnostic while component instantiation and interface
-ascription are unfinished; it is not included in the passing corpus count.
+The offline corpus includes 13 complete generated semantic scripts and checks
+461 binary commands (361 invalid rejections and 100 accepted definitions). Five
+text-parser assertions are reported separately and do not count as binary
+validation passes. See the [corpus inventory](../../testdata/component-binary/README.md)
+for the pinned version-suffix producer limitation. A few async builtins have
+static signature/index plans to cover the complete `indicies` script; these
+plans do not execute async work. Component execution, canonical calls and WASI
+worlds remain separate deliverables.

@@ -20,6 +20,7 @@ type Component struct {
 	Children      []*Component
 	Canonical     []*CanonicalFunction
 	Type          *Type
+	Instances     []*ComponentInstance
 }
 
 func (c *Component) Definition() *model.Binary { return c.definition }
@@ -35,12 +36,15 @@ type CoreInstance struct {
 }
 
 type componentContext struct {
-	result    *Component
-	parent    *componentContext
-	core      map[model.Sort][]CoreExtern
-	modules   []*CoreModuleType
-	functions []module.FuncType
-	pointers  map[*model.Type]bool
+	result            *Component
+	parent            *componentContext
+	core              map[model.Sort][]CoreExtern
+	modules           []*CoreModuleType
+	functions         []module.FuncType
+	pointers          map[*model.Type]bool
+	localResources    map[uint64]bool
+	exportedResources map[uint64]bool
+	representations   map[uint64]wasm.ValueType
 }
 
 func Check(definition *model.Binary, limits Limits) (*Component, error) {
@@ -60,7 +64,7 @@ func checkComponent(definition *model.Binary, pool *TypePool, parent *componentC
 	if err != nil {
 		return nil, err
 	}
-	c := &componentContext{result: &Component{definition: definition, scope: scope}, parent: parent, core: map[model.Sort][]CoreExtern{}, pointers: map[*model.Type]bool{}}
+	c := &componentContext{result: &Component{definition: definition, scope: scope}, parent: parent, core: map[model.Sort][]CoreExtern{}, pointers: map[*model.Type]bool{}, localResources: map[uint64]bool{}, exportedResources: map[uint64]bool{}, representations: map[uint64]wasm.ValueType{}}
 	if err := pool.charge(uint64(len(definition.Definitions))); err != nil {
 		return nil, err
 	}
@@ -102,10 +106,16 @@ func (c *componentContext) definition(d model.Definition) error {
 		}
 		c.result.Children = append(c.result.Children, child)
 		s.items[model.ComponentSort] = append(s.items[model.ComponentSort], child.Type)
+	case 5:
+		return c.componentInstance(d.Instance)
 	case 6:
 		return c.alias(d.Alias)
 	case 7:
-		_, err := s.Define(d.Type, c.functions)
+		t, err := s.Define(d.Type, c.functions)
+		if err == nil && t.Kind == model.Resource {
+			c.localResources[t.Resource] = true
+			c.representations[t.Resource] = t.Representation
+		}
 		return err
 	case 8:
 		return c.canonical(d.Canonical)
@@ -204,6 +214,23 @@ func (c *componentContext) alias(a *model.Alias) error {
 		c.modules = append(c.modules, at.modules[a.Index])
 		return nil
 	}
+	if a.Kind == 2 && a.Sort == model.ComponentSort {
+		at := c
+		for i := uint32(0); i < a.Count; i++ {
+			at = at.parent
+			if at == nil {
+				return invalid("outer component scope out of bounds")
+			}
+		}
+		if uint64(a.Index) >= uint64(len(at.result.scope.items[model.ComponentSort])) {
+			return invalid("outer component index out of bounds")
+		}
+		if err := c.result.scope.pool.charge(1); err != nil {
+			return err
+		}
+		c.result.scope.items[model.ComponentSort] = append(c.result.scope.items[model.ComponentSort], at.result.scope.items[model.ComponentSort][a.Index])
+		return nil
+	}
 	return c.result.scope.aliasDeclaration(a)
 }
 
@@ -242,14 +269,38 @@ func (c *componentContext) export(e *model.Export) error {
 		if e.Type.Sort != e.Item.Sort {
 			return invalid("component export type sort")
 		}
-		ok, err := s.pool.equal(t, expected)
+		r := s.pool.relation()
+		ok, err := r.typ(t, expected)
 		if err != nil {
 			return err
 		}
 		if !ok {
 			return invalid("component export type ascription")
 		}
-		t = expected
+		if expected.Kind == model.Component {
+			t = expected
+		} else {
+			rewrite := r.rewrite()
+			if err := s.pool.charge(uint64(len(s.visibility.exports))); err != nil {
+				return err
+			}
+			for key := range s.visibility.exports {
+				if key.resource != nil {
+					if _, ok := rewrite.typeBindings[key.resource]; !ok {
+						rewrite.typeBindings[key.resource] = key.resource
+					}
+				}
+				if key.value != nil {
+					if _, ok := rewrite.valueBindings[key.value]; !ok {
+						rewrite.valueBindings[key.value] = key.value
+					}
+				}
+			}
+			t, err = rewrite.typ(expected)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	if err := s.checkVisible(t, true, e.Item.Sort == model.TypeSort); err != nil {
 		return err
@@ -261,13 +312,20 @@ func (c *componentContext) export(e *model.Export) error {
 			return err
 		}
 	} else if e.Item.Sort == model.InstanceSort {
-		if err := s.expose(t, true); err != nil {
+		var err error
+		t, err = s.publish(t, true)
+		if err != nil {
 			return err
 		}
 	}
 	if err := s.exports.add(e.Name, e.Item.Sort, t, s.pool); err != nil {
 		return err
 	}
+	last := len(s.exports.ordered) - 1
+	if err := c.exportBinders(&s.exports.ordered[last]); err != nil {
+		return err
+	}
+	s.exports.raw[e.Name.Text] = s.exports.ordered[last]
 	if e.Item.Sort == model.TypeSort {
 		_, err := s.Alias(t)
 		return err

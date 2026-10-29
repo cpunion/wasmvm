@@ -37,7 +37,7 @@ func TestInstanceImportsFreshenResourcesAndPreserveEquality(t *testing.T) {
 	}
 	for _, v := range []*Type{first, second} {
 		r := v.Exports[0].Type.Resource
-		if v.Exports[0].Type != v.Exports[1].Type {
+		if v.Exports[0].Type.Resource != v.Exports[1].Type.Resource {
 			t.Fatal("lost equality alias")
 		}
 		f := v.Exports[3].Type
