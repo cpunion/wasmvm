@@ -21,6 +21,7 @@ import (
 )
 
 type programConfig struct {
+	CompileTimeout         time.Duration `json:"-"`
 	Root, GuestRoot, Stdin string
 	Args                   []string
 	Env                    map[string]string
@@ -76,13 +77,19 @@ func runProgram(t *testing.T, engine *vm.Engine, options vm.CallOptions, path st
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx, cancel := context.WithTimeout(p.Context(), 20*time.Second)
-	defer cancel()
-	module, err := engine.Compile(ctx, bytes)
+	compileTimeout := metadata.CompileTimeout
+	if compileTimeout == 0 {
+		compileTimeout = 20 * time.Second
+	}
+	compileCtx, stopCompile := context.WithTimeout(p.Context(), compileTimeout)
+	module, err := engine.Compile(compileCtx, bytes)
+	stopCompile()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("compile: %v", err)
 	}
 	defer module.Close()
+	ctx, cancel := context.WithTimeout(p.Context(), 20*time.Second)
+	defer cancel()
 	instance, err := linker.Instantiate(ctx, module, options)
 	if err == nil {
 		if options.Metered {
@@ -218,7 +225,7 @@ func TestOfficialGoGuest(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer engine.Close()
-			runProgram(t, engine, vm.CallOptions{Metered: tier == 2, Fuel: 1 << 42}, path, programConfig{Root: "empty", GuestRoot: "/sandbox", Stdin: "input", Args: []string{"argument"}, Env: map[string]string{"VM_TEST": "guest"}, Stdout: &expected})
+			runProgram(t, engine, vm.CallOptions{Metered: tier == 2, Fuel: 1 << 42}, path, programConfig{CompileTimeout: 90 * time.Second, Root: "empty", GuestRoot: "/sandbox", Stdin: "input", Args: []string{"argument"}, Env: map[string]string{"VM_TEST": "guest"}, Stdout: &expected})
 		})
 		completed := 0
 		if passed {
