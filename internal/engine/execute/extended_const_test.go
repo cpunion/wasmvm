@@ -38,7 +38,7 @@ func TestRelaxedSIMDProposal(t *testing.T) {
 }
 
 func TestMemory64Proposal(t *testing.T) {
-	runProposal(t, proposalCorpus{"memory64", "9003cd5e24e53b84cd9027ea3dd7ae57159a6db1", wasm.Memory64 | wasm.MultiMemory | wasm.ExtendedConst, []string{"address64", "align64", "endianness64", "float_memory64", "load64", "memory64", "memory_grow64", "memory_redundancy64", "memory_trap64", "memory_copy", "memory_fill", "memory_init", "table_copy", "table_copy_mixed", "table_fill", "table_get", "table_grow", "table_init", "table_set", "table_size"}, 1003, 13428, 12912, 59})
+	runProposal(t, proposalCorpus{"memory64", "9003cd5e24e53b84cd9027ea3dd7ae57159a6db1", wasm.Memory64 | wasm.MultiMemory | wasm.ExtendedConst, []string{"address64", "align64", "endianness64", "float_memory64", "load64", "memory64", "memory_grow64", "memory_redundancy64", "memory_trap64", "memory_copy", "memory_fill", "memory_init", "table_copy", "table_copy_mixed", "table_fill", "table_get", "table_grow", "table_init", "table_set", "table_size", "call_indirect"}, 1041, 13599, 13069, 70})
 }
 
 func runProposal(t *testing.T, corpus proposalCorpus) {

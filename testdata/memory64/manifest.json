@@ -111,6 +111,11 @@
       "commands": 40,
       "binaryAssertions": 39,
       "textAssertions": 0
+    },
+    "call_indirect": {
+      "commands": 171,
+      "binaryAssertions": 157,
+      "textAssertions": 11
     }
   },
   "sha256": {
@@ -231,6 +236,44 @@
     "align64/script.99.wasm": "410f358e1d872812686dd138bdccf9e941d3338493ae391a00b67f70d96400e5",
     "align64/script.json": "c66643f66fa128a6a04e2914afde43f110529244e8c31a5b66cb20c70093a738",
     "align64.wast": "0fe5c5f98e884696fdaf9e193a4cf2affaa256a261919df419b054bdf22a6efb",
+    "call_indirect/script.0.wasm": "2f88f722c6ba93115ee62b98a15ef72027a7547cfb9fa6419b2c49ffe0f42332",
+    "call_indirect/script.1.wasm": "4f5ce14da8472cb94d3d964c5aa3e68ad2956dc37e3901fdcfc9883b30c22c17",
+    "call_indirect/script.10.wat": "7c1c4480d089ddee06acbb23532e557a9c469e209556bfe00fff347ac49c9ac7",
+    "call_indirect/script.11.wat": "6f6f386592eb70cfc079e10b29c62188fc5524929de82d18d3e69d6aa37dcc71",
+    "call_indirect/script.12.wat": "7c3a217325af4c373f2a01c38384c11f468e56386c268c218d481ff695d8fa96",
+    "call_indirect/script.13.wasm": "cd31beaa7d9fef9c1c88643bec12e79d7dccd9218854968fe8c2ae5c76902994",
+    "call_indirect/script.14.wasm": "28246d96df656f8f4b234dd1460fbd5a2e5ba5b6af8885164afbb2b4a649538e",
+    "call_indirect/script.15.wasm": "1a5eaf6cc357cd439dcc22e927840a0dc609e39720b1e565e62764e31e0084d4",
+    "call_indirect/script.16.wasm": "aac8080f8325e8dba8ce1ae204e1fb0c255c008c36ab606cbc0bde69c4c5aca2",
+    "call_indirect/script.17.wasm": "4c970fe6f02e58aa53203f9e0466e2aec3c1490f357f3355ac6dce16fe91bf75",
+    "call_indirect/script.18.wasm": "d9571c10588f23d1f8402e3c1d4c09faf8100ded35a2367048b52e40b337bc8b",
+    "call_indirect/script.19.wasm": "5326201b7d259febc122d527160505dcb36d8cae039a06df116870b35f8e3cfe",
+    "call_indirect/script.2.wat": "29dcef9c91e1fe668b61952c57569ec43845ccc6d98d23b8447828a3a336a7b0",
+    "call_indirect/script.20.wasm": "8bdca827f32d628346cc2490055664d8d44516f6b5aed1c618f0f7b4b51fc70f",
+    "call_indirect/script.21.wasm": "69f68fe42f2a9772c0494f8e6dbcef3b3ea47cec18023631e78e784cc5e62d33",
+    "call_indirect/script.22.wasm": "27f1f3f80aacd10f82a3af416a5ce134ec3f72a75478fc3e39841e4ade66a427",
+    "call_indirect/script.23.wasm": "737c8561edc66b13d4bb8a5cf73b4efe3f7bc204e2d7aa353a83cc689704470f",
+    "call_indirect/script.24.wasm": "0c44bb07bfe3809634c819d52eaf3a1d486b9ebc0cb146b115a55118a230e1f6",
+    "call_indirect/script.25.wasm": "7388ef37aed0a6ca0891c732499ef6ab4d8183289434c42c27a058431d3d3c2b",
+    "call_indirect/script.26.wasm": "32ca46337c8e9509d720a6406155d52458a7205570240282560b9824a4cda8bf",
+    "call_indirect/script.27.wasm": "572a3dafb4e9a1268b33d46c53b482b472338b5d7a5754f9b6126b4350db024e",
+    "call_indirect/script.28.wasm": "32aaddc7aade4cd642b0b0703d6b1b14bdf406dd2f1d9b637b0fc234418bb120",
+    "call_indirect/script.29.wasm": "36af2b379ddc0365cda647e6c12c00641ffeb0e8781cd0a3d8bddfd2962081b7",
+    "call_indirect/script.3.wat": "2efbf5b5b359e9f59d77aabf422798c64383357a00cf15ef8c024677102a74b3",
+    "call_indirect/script.30.wasm": "1e5323277450ae0ce184ca09a704738e05e34f1ba4c66d1059abe92f14f242f6",
+    "call_indirect/script.31.wasm": "36ada94e6ce9ea8484e3da76f0c0336fd3b5ee47f45bfcdbb5072a6dc505f50b",
+    "call_indirect/script.32.wasm": "9ced3b35bcbe93f42de18bbf44e65f38c84adb0a4f28d1fb3238e29cb6bd1efe",
+    "call_indirect/script.33.wasm": "d47d570dbbe6dfcf5e29306f24452f2e9905052a80c7e280c3d2744b90416c03",
+    "call_indirect/script.34.wasm": "8ea7610739a80e13aa16f02a0c60be4a0f926be4150467156671afab686161a3",
+    "call_indirect/script.35.wasm": "68dcb94a7d2912a973d2f7b5d606275be355ebcf24c83c7270d43e57ab106c41",
+    "call_indirect/script.4.wat": "94658a4c3bacaae78804ac80c77f558c0b8ca0582256ae103676ae61023d7519",
+    "call_indirect/script.5.wat": "f0e1303a9fb915358be8b39f1f40328259099c8b62d1348f19ac7f32668dba2a",
+    "call_indirect/script.6.wat": "efe99919151fb3048efeddbca1720cb2ab7e019540b9d3c1cb054c675bf77405",
+    "call_indirect/script.7.wat": "b94e2c28f0be3212621b559ce61f5fec0ba81a83b36258f36a5b94bd4078d8b5",
+    "call_indirect/script.8.wat": "658b0ea26516a8555f3f16a3eb2dddf7d3d1cc3bbedbd9e274edd78c90a1434a",
+    "call_indirect/script.9.wat": "8e101e7ddd30944a73ce648c442baeaa189e38d3887c741b2cd97c025d2ee107",
+    "call_indirect/script.json": "012a77549f02586ef7fc861cf1197940766c3189d7030d6dcbeb4590356356b3",
+    "call_indirect.wast": "b3305c082b3f076e139be9d94f7355f2b481cedcf77b78fda25f9cd97df86c61",
     "endianness64/script.0.wasm": "c09e1092ec0a7180dfb9052e1ad32a2e904f245528339fe5107a6fa9fefdf6ee",
     "endianness64/script.json": "4f602743cb30e5a054f9d970f6fa5858a2c611dd301941acc19f217f87b0899f",
     "endianness64.wast": "81822902583b0c51918b41d40a46ac4e240e3ac47a17384f1675ba3fa3445d99",
@@ -1148,5 +1191,5 @@
       "reason": "WABT 1.0.41 omits required data count for an invalid data-index instruction; encode the actual data segment count to preserve the upstream semantic assertion."
     }
   },
-  "scope": "All nine dedicated memory64 scripts, all three memory bulk scripts, and all eight table-operation scripts (including mixed widths). Generic data/binary scripts are covered separately by the base corpus; Core 3.0 GC/typed-reference constant contexts remain outside this feature scope."
+  "scope": "All 21 Memory64/Table64-bearing archived scripts expressible without GC/typed-reference declarations: nine dedicated memory64 scripts, three memory bulk scripts, eight table-operation scripts, and call_indirect. The two other bearing scripts (imports, table) require the separate GC/typed-reference profile."
 }

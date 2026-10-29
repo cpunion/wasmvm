@@ -433,9 +433,9 @@ object's address type. Import matching includes that type, and every host
 reentry refreshes existing trusted descriptors after growth.
 
 The feature corpus contains all nine dedicated archived memory64 scripts, all
-three memory bulk scripts and all eight table-operation scripts. All 12,912
-binary assertions in those 20 complete scripts run on every execution tier;
-59 malformed-text assertions are classified separately. The sole upstream
+three memory bulk scripts and all eight table-operation scripts, plus `call_indirect.wast`. All 13,069
+binary assertions in those 21 complete scripts run on every execution tier;
+70 malformed-text assertions are classified separately. The sole upstream
 `module definition` command compiles without instantiation, preserving the
 intended validation-only check for a minimum beyond host quotas. Producer
 normalization and four data-count encoder corrections retain before/after

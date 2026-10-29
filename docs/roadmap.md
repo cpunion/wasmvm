@@ -237,8 +237,8 @@ Memory64 includes Table64 under `wasm.Memory64` (CLI `--memory64`). Scalar,
 SIMD, size/grow, bulk, indirect/tail calls, initialization and imported types
 preserve the selected address width. The 64-bit paths check u65 effective
 addresses and host quotas without truncation; mixed copies use the narrower
-count type. All 20 applicable complete archived scripts provide 12,912 binary
-assertions per tier, with 59 text-parser assertions classified separately.
+count type. All 21 applicable complete archived scripts provide 13,069 binary
+assertions per tier, with 70 text-parser assertions classified separately.
 Core 3.0 GC/reference-dependent combinations remain subsequent scope.
 
 Local follow-ups are tracked without blocking subsequent capability work:
