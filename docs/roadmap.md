@@ -4,6 +4,16 @@ Plan date: **2026-10-26**. M0 candidate evaluation and benchmark infrastructure 
 
 Implement stages in order. Independent work within a stage can proceed in parallel after agreeing on shared contracts. Small implementation PRs may merge while the stage remains in progress; every required deliverable, supported-platform result, and exit gate must pass before that stage is complete. Do not replace full profiles with convenient instruction subsets or quietly move failing requirements to a later stage.
 
+## Current integration decision
+
+On 2026-10-29 the owner authorized merging the accumulated Core 2.0 work before
+its outstanding performance and calibration gates close, and continuing feature
+development. PR #26 merged as `49ff47b`; the subsequent owned interpreter/native
+integration is reviewed separately. This authorization applies to the current
+integration, not a declaration that M1/M2 are complete or a permanent waiver of
+future performance comparisons. Failed measurements remain in the validation
+record. Final-head semantic CI and resolved review findings remain required.
+
 ## Stage overview
 
 | Stage | Complete outcome | Required evidence |
