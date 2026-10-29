@@ -195,9 +195,9 @@ func (s *Store) collectLocked(op *operation) {
 		if v.Lo == 0 {
 			return
 		}
-		if t == wasm.FuncRef {
+		if t.IsFunctionReference() {
 			functions = append(functions, v.Lo)
-		} else if t == wasm.ExternRef {
+		} else if t.IsExternalReference() {
 			marked[v.Lo] = true
 		}
 	}

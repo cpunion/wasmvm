@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
@@ -83,6 +84,7 @@ func (budget *VerifyBudget) Verify(f *Function) (err error) {
 			}
 		}
 	}
+	matches := func(a, b wasm.ValueType) bool { return a == b || wasm.ReferenceSubtype(a, b, f.TypeLabels) }
 	defs := make([]definition, len(f.Values))
 	pred := make([][]int, len(f.Blocks))
 	valueType := func(id Value) wasm.ValueType {
@@ -111,7 +113,7 @@ func (budget *VerifyBudget) Verify(f *Function) (err error) {
 		}
 		for oi, op := range b.Ops {
 			s := source(op.Source)
-			if s.Wasm.Op != 1 && s.Wasm.Op != 0x10 && s.Wasm.Op != 0x11 && s.Wasm.Op < 0x1a {
+			if s.Wasm.Op != 1 && s.Wasm.Op != 0x10 && s.Wasm.Op != 0x11 && s.Wasm.Op != 0x14 && s.Wasm.Op < 0x1a {
 				fail("control instruction in operation list")
 			}
 			if len(op.Args) != len(s.Inputs) || len(op.Results) != len(s.Outputs) {
@@ -119,7 +121,7 @@ func (budget *VerifyBudget) Verify(f *Function) (err error) {
 			}
 			step(uint64(len(op.Args)) + uint64(len(op.Results)))
 			for i, id := range op.Args {
-				if valueType(id) != s.Inputs[i] {
+				if !matches(valueType(id), s.Inputs[i]) {
 					fail("operation input type")
 				}
 			}
@@ -148,27 +150,31 @@ func (budget *VerifyBudget) Verify(f *Function) (err error) {
 			if t.Kind == If && (len(t.Edges) != 2 || op != 4 && op != 0xd) || t.Kind == Table && (len(t.Edges) == 0 || op != 0xe) {
 				fail("branch targets/source")
 			}
+		case IfNull:
+			if len(t.Args) != 1 || !valueType(t.Args[0]).IsReference() || len(t.Edges) != 2 || (op != 0xd5 && op != 0xd6) {
+				fail("null branch source/arity")
+			}
 		case Return:
 			if op != 0xb || len(t.Edges) != 0 || len(t.Args) != len(f.Signature.Results) {
 				fail("return arity/source")
 			}
 			for i, id := range t.Args {
-				if valueType(id) != f.Signature.Results[i] {
+				if !matches(valueType(id), f.Signature.Results[i]) {
 					fail("return type")
 				}
 			}
 		case TailCall:
-			if op != 0x12 && op != 0x13 || len(t.Edges) != 0 || len(t.Args) != len(s.Inputs) || len(s.Outputs) != len(f.Signature.Results) {
+			if !module.IsTailCall(op) || len(t.Edges) != 0 || len(t.Args) != len(s.Inputs) || len(s.Outputs) != len(f.Signature.Results) {
 				fail("tail call arity/source")
 			}
 			step(uint64(len(t.Args)) + uint64(len(s.Outputs)))
 			for i, typ := range s.Outputs {
-				if typ != f.Signature.Results[i] {
+				if !matches(typ, f.Signature.Results[i]) {
 					fail("tail call return type")
 				}
 			}
 			for i, id := range t.Args {
-				if valueType(id) != s.Inputs[i] {
+				if !matches(valueType(id), s.Inputs[i]) {
 					fail("tail call operand type")
 				}
 			}
@@ -179,7 +185,7 @@ func (budget *VerifyBudget) Verify(f *Function) (err error) {
 		default:
 			fail("missing terminator")
 		}
-		for _, edge := range t.Edges {
+		for ei, edge := range t.Edges {
 			if uint64(edge.Target) >= uint64(len(f.Blocks)) {
 				fail("block index")
 			}
@@ -189,7 +195,11 @@ func (budget *VerifyBudget) Verify(f *Function) (err error) {
 			}
 			step(uint64(len(edge.Args)))
 			for i, id := range edge.Args {
-				if valueType(id) != valueType(params[i]) {
+				actual := valueType(id)
+				if t.Kind == IfNull && ei == 1 && id == t.Args[0] {
+					actual = actual.NonNull()
+				}
+				if !matches(actual, valueType(params[i])) {
 					fail("edge type")
 				}
 			}

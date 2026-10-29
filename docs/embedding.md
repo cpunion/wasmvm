@@ -1,231 +1,126 @@
-# Embedding the Core 2.0 runtime
+# Core command line
 
-`pkg/vm` implements the Core 2.0 binary profile with the project-owned interpreter
-and an experimental native backend. Both use the same frame, host-call, memory,
-root and lifecycle contracts. Select native explicitly:
+Build with `go build -o wasmvm ./cmd/wasmvm` or, with the pinned toolchain,
+`llgo build -o wasmvm ./cmd/wasmvm`. CI builds and executes both binaries on
+Linux amd64 and macOS arm64. The interpreter build also supports `CGO_ENABLED=0`.
 
-```go
-config := vm.DefaultEngineConfig()
-config.Backend = "native"
-engine, err := vm.NewEngineWithConfig(config)
+```sh
+./wasmvm validate module.wasm
+./wasmvm inspect module.wasm
+./wasmvm run --export add --fuel 1000 module.wasm i32:17 i32:25
 ```
 
-Native execution requires the platform adapter on linux/amd64 or darwin/arm64;
-standard Go requires `CGO_ENABLED=1`, while LLGo uses its C interop adapter.
-Unsupported platforms and unknown profiles fail without backend fallback.
-Compilation prepares both unmetered and precise-fuel code within the aggregate
-`Native.MaxCodeBytes` limit. Calls and SIMD/state helpers still cross explicit
-runtime boundaries; the complete semantic corpus does not establish competitive
-performance for those paths. See the [runtime scope](../benchmarks/native/runtime-plan.md).
-Core 3.0, Threads, components and WASI are still unimplemented.
+Options precede the filename. `validate` performs binary decoding and static
+validation only: it does not lower code, link imports, instantiate or execute
+start. `inspect` performs the same frontend checks and prints copied metadata,
+including import/export signatures, memory/table limits and global types.
+Inspection does not require imports to be available. `run` compiles, instantiates
+and calls the explicitly named export using the public embedding API.
 
-The [package examples](../pkg/vm/example_test.go) are executable tests under Go
-and LLGo. They demonstrate compiling and calling an exported add function, and
-linking an explicitly typed host function into a guest module.
+Inspection limits the total number of parameter/result types repeated across
+all import/export JSON signatures to 1,048,576. Exceeding this presentation
+budget reports a resource-limit error before expansion or output; the binary
+can still pass `validate`. This bounds amplification when many functions share
+one large binary signature. All commands retain the frontend's input/node limits.
 
-```go
-engine := vm.NewEngine()
-defer engine.Close()
-compiled, err := engine.Compile(ctx, wasmBytes)
-if err != nil { return err }
-defer compiled.Close()
-store, err := engine.NewStore(vm.DefaultStoreConfig())
-if err != nil { return err }
-defer store.Close()
-instance, err := vm.NewLinker(store).Instantiate(ctx, compiled, vm.CallOptions{})
-if err != nil { return err }
-add, err := instance.Export("add")
-if err != nil { return err }
-result, err := add.Call(ctx, []vm.Value{vm.I32(17), vm.I32(25)}, vm.CallOptions{
-    Metered: true, Fuel: 3,
-})
-if err != nil { return err }
-bits, _, err := result.Values[0].Bits()
-if err != nil { return err }
-fmt.Println(uint32(bits)) // 42
+All commands accept `--backend interpreter` (default) or `--backend native`,
+`--profile core2`, and `--timeout 30s`. Native requires the supported platform
+adapter; build standard Go with `CGO_ENABLED=1` to include it.
+`--timeout 0` disables the default deadline. Unknown backends/profiles and
+unavailable native platforms fail explicitly. Core run installs no host imports or WASI capabilities;
+modules requiring imports fail linking. WASI command execution is an M4 item.
+Ctrl-C requests cancellation. The VM checks deadlines at documented bounded
+phase/execution boundaries; this is not a hard preemption guarantee for OS file
+reads, host allocations or arbitrary embedding callbacks.
+
+`--fuel N` on run covers the start function and selected export together, using
+the instantiation receipt to transfer the remaining budget. `--fuel 0` enables
+metering with zero fuel; omitting the flag disables instruction metering.
+Segment initialization is not instruction fuel. Trap, quota or cancellation
+errors may leave initialization/execution effects in the temporary Store, which
+is always closed before command exit.
+
+Arguments use explicit `type:value` syntax:
+
+| Type | Examples | Meaning |
+| --- | --- | --- |
+| i32 / i64 | `i32:-1`, `i64:0xffffffffffffffff` | Signed decimal or exact unsigned bits; range checked |
+| f32 / f64 | `f32:1.25`, `f64:-Inf`, `f32:NaN` | Floating-point value |
+| f32bits / f64bits | `f32bits:0x7f800001` | Exact bits, including NaN payload and negative zero |
+| v128 | `v128:0x1234,0xabcd` | Low 64 bits followed by high 64 bits |
+| funcref / externref | `funcref:null` | Only null references can be supplied from command text |
+
+Successful output is JSON. Numeric results contain the Wasm type, exact bits
+and a readable value; vectors contain low/high bits. Reference results report
+null/non-null without exposing a reusable Store identity. Every report names
+the backend and profile. Metered run also reports `fuelRemaining`.
+
+Errors go to stderr. Exit code 0 means success, 1 means a VM or I/O failure,
+and 2 means invalid command syntax. `--help` describes the accepted options.
+
+For a checked example already in the repository:
+
+```sh
+./wasmvm run --export run --fuel 20 \
+  benchmarks/embedded/fixtures/call-control.wasm i32:305419896 i32:1
 ```
 
-## Ownership and shutdown
+This returns i32 bits `0x12345678`. These CLI checks establish correct execution;
+process startup and JSON/file I/O costs are separate from engine benchmarks.
 
-An Engine supports concurrent compilation. Compilation snapshots the input;
-the caller must not concurrently modify it while the snapshot is taken.
-`Engine.Validate` decodes and statically validates without lowering; `Inspect` adds copied import/export signatures and object limits without linking or executing.
+## Extended Constant Expressions
 
-CompiledModule owns immutable code and metadata, can instantiate in multiple
-Stores of its Engine, and returns copied metadata from `Info`. Descriptors can
-be shared among entries within one snapshot; copy a descriptor before editing
-it independently. Snapshots never alias engine code or other snapshots. Each
-referenced function signature is copied only once, keeping metadata storage
-linear in the decoded module rather than multiplying signature size by the
-number of functions. `Inspect` follows the same ownership rules. Closing the
-Engine prevents new compilation and Store creation. Existing compiled modules,
-Stores and calls remain usable. Closing a CompiledModule prevents new
-instantiation through that handle; existing instances retain their code.
+Pass `--extended-const` before the module path for validate, inspect or run:
 
-A Store is one isolation domain and allows one executing operation at a time.
-Concurrent calls or mutable object accesses return `vm.ErrBusy`. Independent
-Stores can run concurrently. Host callbacks use `Caller.Call` or `CallRef` to
-reenter the current Store. A `vm.Execution` binds a function and per-run options;
-`Run` can be repeated but cannot overlap. Its `Close` cancels that Execution's
-active call without closing the Store. The initial public call driver allocates
-continuations per call; internal warmed-dispatch allocation measurements do not
-describe public API allocation costs.
-
-`Store.Close` is an idempotent, nonblocking cancellation request, safe inside a
-callback. Backing storage and host references are released after all active
-calls and callbacks leave. External code can use `WaitClosed(ctx)` to await
-that point. A callback must not wait for its own Store to close. User callbacks
-must cooperate with `Caller.Context()` cancellation; the VM cannot preempt an
-arbitrary blocked Go callback. Host panic propagation performs deferred cleanup
-of frames, callback capabilities, temporary roots and the Store execution lease.
-
-Successfully published instances and host-created memories/tables/globals live
-until Store close. Failed instances are reclaimed when unreachable; references
-that escaped into imported state or explicit host roots preserve their owners.
-Imported-state effects are not rolled back after a later initialization/start
-failure. Releasing the last root allows a subsequent `Collect` to reclaim a
-failed instance, including an unreachable cycle. There is no individual
-successful-instance unload operation in this version.
-
-## Values and host references
-
-`wasm.ValueType` identifies types. `vm.Value` contains exact scalar/vector bits
-or an opaque reference. Constructors are `I32`, `I64`, `F32`, `F64`, `F32Bits`,
-`F64Bits`, `V128` and `NullRef`. Integer constructors take unsigned bits so
-signedness is determined by the Wasm instruction. `Bits` does not expose
-reference identities. A zero Value is invalid rather than an implicit i32.
-
-`Store.NewExternRef(object)` creates a persistent root. `Store.ExternRef(value)`
-reads the Go object; the object table contains normal Go references, never
-integer-encoded Go pointers. Passing a nil Go object still creates a non-null
-externref; use `NullRef(wasm.ExternRef)` for a null reference. Function exports
-provide `Reference()`, and `Store.CallRef` invokes a rooted function reference.
-
-Values copied in Go share one root token. `Store.Root(value)` creates a separate
-root. `Value.Release()` invalidates all copies of its token, is idempotent, and
-does not invalidate independent roots or references already held by a guest.
-Public call results and table/global reads return caller-owned roots. Release
-them when no longer needed. Unreleased roots consume the host-root quota and
-keep their targets alive. References from another Store or a released token
-return `vm.ErrReference`; internal function identity reuse cannot revive them.
-Externref identities increase monotonically and reject overflow rather than
-wrapping. Root operations and object-table access are synchronized with GC.
-
-Host callback arguments have temporary roots valid through the callback. Use
-`caller.Store().Root(arg)` to retain one. `Caller.NewExternRef` creates a
-callback-scoped root that remains valid through result handoff, then is released
-automatically. This is suitable for returning a newly created externref. Roots
-created through `Store.NewExternRef` remain the host's responsibility, including
-when used as callback results. Do not release a result's root before the
-callback hands it back to the VM.
-
-`Release` removes a root; it does not promise immediate Go-object collection.
-Use `Store.Collect` between calls or `Caller.Collect` at a host suspension point.
-Collection visits running/suspended guest slots, pending host arguments,
-globals, tables, passive elements, active instance owners and explicit roots.
-Store close releases all remaining roots and objects. Go finalizer timing is
-not part of the contract. This Core 2.0 reference management is not WasmGC.
-
-## Host imports and memory
-
-`Store.NewFunction(FunctionType, HostFunction)` uses explicit parameter/result
-types, with no reflection inference. `Linker.Define(module, name, extern)` binds
-functions, tables, memories and globals. Duplicate bindings, missing imports,
-type mismatches and foreign Store objects are rejected. Callback errors are
-propagated unchanged; invalid callback result values return `vm.ErrType` or
-`ErrReference` without resuming the guest with unchecked data.
-
-Extern methods provide copied memory reads/writes, checked growth, typed
-table/global access and function calls. No raw memory slice escapes. During a
-callback, `Caller.ReadMemory` and `WriteMemory` access the calling guest's memory
-by index. A directly called host function has no guest memory. Caller operations
-are serialized: concurrent capability use returns `ErrBusy`, and using a saved
-Caller after callback completion returns `wasm.ErrClosed`. Callbacks must join
-their own capability operations before returning; the driver drains an
-in-flight operation before resuming its suspended guest.
-
-## Limits, cancellation and errors
-
-Start with `DefaultEngineConfig` and `DefaultStoreConfig`, then explicitly
-change required quotas. Zero fields in a supplied configuration mean zero,
-not an unspecified default. Compiler phases have independent byte/node/depth/
-slot/work limits. Store limits include instances, function identities, types,
-globals, memory/table object counts, pages/elements, passive segment storage,
-external objects and host roots. Canonical signatures retain a bounded
-Store-lifetime cache. Logical storage quotas do not promise a process-RSS
-ceiling during host allocation/copying or deferred Go collection.
-
-Guest frame and slot limits cover all suspended and nested continuations of
-one operation. `MaxReentry` limits additional host-mediated nested calls; zero
-permits the outer call and rejects reentry. Fuel v1 is shared across those
-continuations, charges before Wasm instruction effects, and is reported as
-`CallResult.FuelRemaining`. Every new top-level call resets its supplied fuel.
-Instantiation's start call receives the supplied options. The immutable `Instance.StartFuelRemaining()` receipt can carry its remaining budget into a later call; segment application
-is initialization work rather than instruction fuel.
-
-Context cancellation is checked between bounded compiler/initialization phases,
-at guest entry/calls/backedges, at most every 64 straight-line instructions and
-between bounded bulk-operation chunks. Large Go allocations or arbitrary host
-callbacks do not have a hard preemption guarantee. Cancellation during bulk
-execution may leave partial effects. No default WASI or ambient I/O capability
-is installed.
-
-Use `errors.Is` for `wasm.ErrMalformed`, `ErrInvalid`, `ErrUnsupported`,
-`ErrLimit`, `ErrTrap`, `ErrClosed`, and the `vm` link/type/reference/busy errors.
-`*wasm.Trap` includes the trap code, function index and original instruction
-byte offset when execution supplies them. Context cancellation and user callback
-errors remain distinct from Wasm traps.
-
-M1 remains open for own-engine benchmark integration and final
-acceptance. This API increment does not claim native execution, WASI support,
-controlled performance-gate acceptance or production security review.
-
-## Individually enabled extensions
-
-The default engine validates complete Core 2.0. To enable Extended Constant
-Expressions on either backend:
-
-```go
-config := vm.DefaultEngineConfig()
-config.Features = wasm.ExtendedConst
-engine, err := vm.NewEngineWithConfig(config)
+```sh
+wasmvm validate --extended-const module.wasm
+wasmvm inspect --backend native --extended-const module.wasm
+wasmvm run --extended-const --export run module.wasm
 ```
 
-This permits i32/i64 add, sub and mul in global initializers and active segment
-offsets. Validation applies the configured operand-stack limit. Imported
-immutable globals resolve separately for each instance; mutable or
-module-defined global reads remain invalid. `Inspect` and `CompiledModule.Info`
-report the enabled feature mask. Unknown feature bits return `ErrUnsupported`.
-The complete `core3` profile is not yet implemented.
+The JSON `features` field reports the enabled bit mask (`1` for this extension).
+The base profile remains `core2`; this option does not select full Core 3.0.
 
-Enable proper direct and indirect tail calls with `config.Features |= wasm.TailCall`.
-Tail calls can cross modules and have different parameter lists with matching
-results. They reuse the current guest frame, while ordinary calls retain their
-normal frame requirement. Both backends support metered execution and bounded
-cancellation; host callbacks retain their originating module capability after
-the tail frame is retired. Combining feature bits enables only those extensions,
-not the complete Core 3.0 profile.
+## Tail Call
 
-Use `config.Features |= wasm.MultiMemory` to enable multiple private memories.
-All scalar/SIMD and bulk operations address the selected module memory; exports
-and host `Caller` memory indices follow the same import-then-definition order.
-Aliased imports share growth and contents. Store quotas count underlying
-allocations, while out-of-bounds bulk operations leave the destination unchanged.
-This extension does not enable Memory64 or shared-memory Threads.
+Use `--tail-call` before the module path to enable `return_call` and
+`return_call_indirect` in validate, inspect and run. It can be combined with
+`--extended-const`; the feature mask is `2` for Tail Call or `3` for both.
+The default Core 2.0 grammar still rejects tail-call opcodes.
 
-Relaxed SIMD is enabled independently with `wasm.RelaxedSIMD`. All 20
-instructions work in both backends. The implementation chooses strict swizzle,
-saturating conversions, bit selection, strict min/max and Q15, unfused
-multiply/add, and signed byte dot products. The same permitted projection is
-used on amd64/arm64 and every CPU feature mask. The four-byte dot widens before
-accumulation; the two-byte dot wraps only its final i16 result. This does not
-enable the complete Core 3.0 profile.
+## Multi-Memory
 
-Enable both Memory64 and Table64 with `wasm.Memory64`. Set `MemoryType.Index64`
-or `TableType.Limits.Index64` for host-created objects; their address widths
-must match imports. `Min`/`Max`, host memory growth/page counts, and host table
-indices/growth/size use `uint64`. Existing 32-bit guest instructions keep i32
-operands/results; 64-bit objects use i64, including the complete `-1` growth
-failure value. Store quotas remain explicit independent caps and no oversized
-allocation or growth can wrap those caps. Multi-Memory still needs its own flag.
-Memory64/Table64 do not enable WasmGC or the complete Core 3.0 profile.
+Use `--multi-memory` before the module path for validate, inspect and run.
+The feature mask adds bit `4`; flags combine independently. The command's
+existing resource, timeout and fuel options apply to indexed memory operations.
+Memory64 needs its own flag; shared memories remain unimplemented.
+
+`--relaxed-simd` enables all 20 relaxed vector instructions for validate,
+inspect and run, independently of the other extensions. It uses the same
+permitted numeric projection on both backends and both native targets.
+
+`--memory64` enables the Memory64 proposal, including Table64, for all commands.
+It preserves 64-bit address operands and results on both execution backends;
+`--multi-memory` is additionally required for modules with multiple memories.
+Shared memories remain unsupported until the separate Threads capability.
+
+`--function-references` enables typed and non-null function/external references,
+`call_ref`, null assertions/branches, nondefaultable locals and explicit table
+initializers. It adds feature bit `32`. `return_call_ref` also requires
+`--tail-call`. Recursive types and WasmGC are not enabled by this flag.
+
+Typed Function References is enabled with `wasm.FunctionReferences`.
+`Extern.Reference()` then exposes a canonical non-null function-reference type;
+`FunctionType()` returns canonical reference types in its copied signature.
+Canonical indices belong to that Store. Module-local indices constructed with
+`wasm.FunctionReference` are for compiler inputs, not host signatures. Use types
+obtained from the Store's exports when creating typed host objects/callbacks.
+`ValueType.NonNull()` and `WithNull()` adjust nullability. `NullRef` rejects
+non-null types. Host calls and object writes check the referenced function's
+canonical signature, Store ownership and root lifetime.
+
+`Store.NewTable(typ, initial)` optionally initializes every element from a rooted
+value; non-null element types require an initializer. Existing one-argument
+calls continue to create defaultable tables. Indexed typed references retain
+ordinary Store roots through calls, callbacks, reentry and failed instances.
+This is not a WasmGC heap or recursive/subtype support.

@@ -14,6 +14,7 @@ const (
 	TrapIntegerOverflow
 	TrapIntegerDivideByZero
 	TrapInvalidConversion
+	TrapNullReference
 )
 
 func (c TrapCode) String() string {
@@ -36,6 +37,8 @@ func (c TrapCode) String() string {
 		return "integer divide by zero"
 	case TrapInvalidConversion:
 		return "invalid conversion to integer"
+	case TrapNullReference:
+		return "null reference"
 	default:
 		return "unknown trap"
 	}

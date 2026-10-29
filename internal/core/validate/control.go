@@ -12,6 +12,7 @@ type frame struct {
 	height               int
 	in, out              []wasm.ValueType
 	unreachable, hadElse bool
+	initMark             int
 }
 type checker struct {
 	*context
@@ -21,6 +22,8 @@ type checker struct {
 	info            FunctionInfo
 	record          bool
 	inputs, outputs []wasm.ValueType
+	initialized     []bool
+	setLocals       []uint32
 }
 
 func (c *context) body(f *module.Function) FunctionInfo {
@@ -28,9 +31,7 @@ func (c *context) body(f *module.Function) FunctionInfo {
 	n := uint64(len(sig.Params))
 	for _, group := range f.Locals {
 		n += uint64(group.Count)
-		if !group.Type.Valid() {
-			c.fail("invalid local type")
-		}
+		c.valueType(group.Type, len(c.m.Types))
 	}
 	if n > math.MaxUint32 {
 		c.fail("too many locals including parameters")
@@ -47,6 +48,15 @@ func (c *context) body(f *module.Function) FunctionInfo {
 			at++
 		}
 	}
+	for _, typ := range v.locals[len(sig.Params):] {
+		if !typ.Defaultable() {
+			v.initialized = make([]bool, len(v.locals))
+			for i, typ := range v.locals {
+				v.initialized[i] = i < len(sig.Params) || typ.Defaultable()
+			}
+			break
+		}
+	}
 	v.enter(0, nil, sig.Results)
 	for pc, in := range f.Body {
 		c.at = in.Offset
@@ -54,7 +64,7 @@ func (c *context) body(f *module.Function) FunctionInfo {
 			c.fail("instruction after function end")
 		}
 		v.inputs, v.outputs = v.inputs[:0], v.outputs[:0]
-		v.record = c.visitor != nil && (in.Op == 1 || in.Op == 0x10 || in.Op >= 0x11 && in.Op <= 0x13 || in.Op >= 0x1a)
+		v.record = c.visitor != nil && (in.Op == 1 || module.IsCall(in.Op) || in.Op >= 0x1a)
 		v.instruction(in)
 		if c.visitor != nil {
 			for i, j := 0, len(v.inputs)-1; i < j; i, j = i+1, j-1 {
@@ -84,7 +94,7 @@ func (v *checker) pop(want wasm.ValueType) wasm.ValueType {
 	}
 	got := v.stack[len(v.stack)-1]
 	v.stack = v.stack[:len(v.stack)-1]
-	if want != 0 && got != 0 && got != want {
+	if want != 0 && got != 0 && !v.matches(got, want) {
 		v.fail("operand type mismatch")
 	}
 	if v.record {
@@ -113,7 +123,7 @@ func (v *checker) enter(op uint32, in, out []wasm.ValueType) {
 	if uint64(len(v.control)) >= uint64(v.limits.MaxControl) {
 		v.limit("control stack")
 	}
-	v.control = append(v.control, frame{op: op, height: len(v.stack), in: in, out: out})
+	v.control = append(v.control, frame{op: op, height: len(v.stack), in: in, out: out, initMark: len(v.setLocals)})
 	v.push(in...)
 	if uint32(len(v.control)) > v.info.MaxControl {
 		v.info.MaxControl = uint32(len(v.control))
@@ -138,13 +148,8 @@ func (v *checker) block(t int64) module.FuncType {
 		}
 		return v.typ(uint32(t))
 	}
-	if t < -128 {
-		v.fail("invalid block type")
-	}
-	typ := wasm.ValueType(byte(t) & 0x7f)
-	if !typ.Valid() {
-		v.fail("invalid block type")
-	}
+	typ := module.BlockResult(t)
+	v.valueType(typ, len(v.m.Types))
 	return module.FuncType{Results: []wasm.ValueType{typ}}
 }
 func (v *checker) unary(in, out wasm.ValueType)  { v.pop(in); v.push(out) }
@@ -173,6 +178,7 @@ func (v *checker) instruction(in module.Instr) {
 		}
 		f.unreachable = false
 		f.hadElse = true
+		v.resetInitializers(f.initMark)
 		v.push(f.in...)
 	case op == 0x0b:
 		f := *v.top()
@@ -185,11 +191,12 @@ func (v *checker) instruction(in module.Instr) {
 				v.fail("implicit else result mismatch")
 			}
 			for i, t := range f.in {
-				if t != f.out[i] {
+				if !v.matches(t, f.out[i]) {
 					v.fail("implicit else type mismatch")
 				}
 			}
 		}
+		v.resetInitializers(f.initMark)
 		v.control = v.control[:len(v.control)-1]
 		v.push(f.out...)
 	case op == 0x0c || op == 0x0d:
@@ -218,7 +225,7 @@ func (v *checker) instruction(in module.Instr) {
 				v.fail("branch table arity mismatch")
 			}
 			for i, t := range values {
-				if t != 0 && t != other[i] {
+				if t != 0 && !v.matches(t, other[i]) {
 					v.fail("branch table type mismatch")
 				}
 			}
@@ -227,17 +234,23 @@ func (v *checker) instruction(in module.Instr) {
 	case op == 0x0f:
 		v.pops(v.control[0].out)
 		v.unreachable()
-	case op >= 0x10 && op <= 0x13:
-		tail := op >= 0x12
+	case module.IsCall(op):
+		tail := module.IsTailCall(op)
 		if tail && v.features&wasm.TailCall == 0 {
 			v.fail("tail calls are disabled")
 		}
 		var sig module.FuncType
 		if op == 0x10 || op == 0x12 {
 			sig = v.function(in.A)
+		} else if op == 0x14 || op == 0x15 {
+			if v.features&wasm.FunctionReferences == 0 {
+				v.fail("function references are disabled")
+			}
+			sig = v.typ(in.A)
+			v.pop(wasm.FunctionReference(in.A, true))
 		} else {
 			sig = v.typ(in.A)
-			if v.table(in.B).Element != wasm.FuncRef {
+			if !v.table(in.B).Element.IsFunctionReference() {
 				v.fail("indirect call requires funcref table")
 			}
 			v.pop(v.table(in.B).Limits.AddressType())
@@ -249,7 +262,7 @@ func (v *checker) instruction(in module.Instr) {
 				v.fail("tail call result arity")
 			}
 			for i, t := range want {
-				if t != sig.Results[i] {
+				if !v.matches(sig.Results[i], t) {
 					v.fail("tail call result type")
 				}
 			}
@@ -276,6 +289,7 @@ func (v *checker) instruction(in module.Instr) {
 		if len(in.Types) != 1 || !in.Types[0].Valid() {
 			v.fail("typed select requires one value type")
 		}
+		v.valueType(in.Types[0], len(v.m.Types))
 		v.pop(wasm.I32)
 		v.pop(in.Types[0])
 		v.pop(in.Types[0])
@@ -283,8 +297,15 @@ func (v *checker) instruction(in module.Instr) {
 	case op >= 0x20 && op <= 0x22:
 		v.index(in.A, len(v.locals), "local")
 		t := v.locals[in.A]
+		if op == 0x20 && v.initialized != nil && !v.initialized[in.A] {
+			v.fail("uninitialized nonnullable local")
+		}
 		if op != 0x20 {
 			v.pop(t)
+			if v.initialized != nil && !v.initialized[in.A] {
+				v.initialized[in.A] = true
+				v.setLocals = append(v.setLocals, in.A)
+			}
 		}
 		if op != 0x21 {
 			v.push(t)
@@ -321,7 +342,8 @@ func (v *checker) instruction(in module.Instr) {
 	case op >= 0x45 && op <= 0xc4:
 		v.numeric(op)
 	case op == 0xd0:
-		t := wasm.ValueType(in.A)
+		t := in.ReferenceType()
+		v.valueType(t, len(v.m.Types))
 		if !t.IsReference() {
 			v.fail("invalid reference type")
 		}
@@ -337,7 +359,21 @@ func (v *checker) instruction(in module.Instr) {
 		if !v.refs[in.A] {
 			v.fail("undeclared function reference")
 		}
-		v.push(wasm.FuncRef)
+		v.push(v.functionReference(in.A))
+	case op == 0xd4:
+		if v.features&wasm.FunctionReferences == 0 {
+			v.fail("function references are disabled")
+		}
+		t := v.pop(0)
+		if t != 0 && !t.IsReference() {
+			v.fail("reference required")
+		}
+		v.push(t.NonNull())
+	case op == 0xd5 || op == 0xd6:
+		if v.features&wasm.FunctionReferences == 0 {
+			v.fail("function references are disabled")
+		}
+		v.referenceBranch(op, in.A)
 	case op>>16 == 0xfc:
 		v.misc(in)
 	case op>>16 == 0xfd:

@@ -80,15 +80,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 	// independently of map iteration order and table contents at instantiation.
 	keys := make([]string, len(definition.Types))
 	for i, typ := range definition.Types {
-		key := make([]byte, 0, len(typ.Params)+len(typ.Results)+1)
-		for _, p := range typ.Params {
-			key = append(key, byte(p))
-		}
-		key = append(key, 0)
-		for _, r := range typ.Results {
-			key = append(key, byte(r))
-		}
-		keys[i] = string(key)
+		keys[i] = module.SignatureKey(typ, m.IR.Validated.TypeLabels())
 	}
 	bySignature := map[string][]uint32{}
 	for i, f := range m.Functions {

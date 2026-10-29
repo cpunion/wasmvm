@@ -11,6 +11,10 @@ func (d *decoder) blockType() int64 {
 	if b == 0x40 {
 		return -64
 	}
+	if (b == 0x63 || b == 0x64) && d.features&wasm.FunctionReferences != 0 {
+		t := d.heapReference(b == 0x63)
+		return int64(uint64(t) | 1<<63)
+	}
 	if wasm.ValueType(b).Valid() {
 		return int64(int8(b | 0x80))
 	}
@@ -56,6 +60,12 @@ func (d *decoder) expr() module.Expr {
 			if op == 0x13 {
 				in.B = d.u32()
 			}
+		case (op == 0x14 || op == 0x15 || op == 0xd5 || op == 0xd6) && d.features&wasm.FunctionReferences != 0:
+			if op == 0x15 && d.features&wasm.TailCall == 0 {
+				d.failAt(in.Offset, "tail calls are disabled")
+			}
+			in.A = d.u32()
+		case op == 0xd4 && d.features&wasm.FunctionReferences != 0:
 		case op == 0x1c:
 			in.Types = d.types()
 		case op >= 0x28 && op <= 0x3e:
@@ -71,7 +81,8 @@ func (d *decoder) expr() module.Expr {
 		case op == 0x44:
 			in.Bits = must(d.r.F64Bits())
 		case op == 0xd0:
-			in.A = uint32(d.refType())
+			t := d.heapReference(true)
+			in.A, in.Bits = uint32(t), uint64(t)
 		case op == 0xfc:
 			sub := d.u32()
 			in.Op = op<<16 | sub

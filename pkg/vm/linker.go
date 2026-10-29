@@ -40,6 +40,13 @@ func (s *Store) NewFunction(signature FunctionType, callback HostFunction) (Exte
 	if callback == nil {
 		return Extern{}, ErrType
 	}
+	for _, ts := range [][]wasm.ValueType{signature.Params, signature.Results} {
+		for _, typ := range ts {
+			if err := s.referenceFeature(typ); err != nil {
+				return Extern{}, err
+			}
+		}
+	}
 	ex, err := s.state.NewHost(signature, callback)
 	if err != nil {
 		return Extern{}, err
@@ -79,7 +86,15 @@ func (ex Extern) Reference() (Value, error) {
 	s := ex.store
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.rootLocked(wasm.FuncRef, rawReference(ex.external.Function))
+	typ := wasm.FuncRef
+	if s.engine.config.Features&wasm.FunctionReferences != 0 {
+		f, ok := s.state.Function(ex.external.Function)
+		if !ok {
+			return Value{}, ErrReference
+		}
+		typ = wasm.CanonicalFunctionReference(f.TypeID, false)
+	}
+	return s.rootLocked(typ, rawReference(ex.external.Function))
 }
 
 type Linker struct {

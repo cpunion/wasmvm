@@ -331,7 +331,7 @@ func trapMatches(code wasm.TrapCode, text string) bool {
 	if code.String() == text {
 		return true
 	}
-	return code == wasm.TrapTableBounds && text == "undefined element" || code == wasm.TrapUninitializedElement && strings.HasPrefix(text, "uninitialized element")
+	return code == wasm.TrapNullReference && text == "null function reference" || code == wasm.TrapTableBounds && text == "undefined element" || code == wasm.TrapUninitializedElement && strings.HasPrefix(text, "uninitialized element")
 }
 func specLanes(t *testing.T, v specValue) (uint, []string) {
 	t.Helper()
@@ -403,6 +403,21 @@ func parseSpec(t *testing.T, v specValue) value.Value {
 	}
 	return value.Value{Lo: binary.LittleEndian.Uint64(raw[:8]), Hi: binary.LittleEndian.Uint64(raw[8:])}
 }
+func (r *specRunner) match(t *testing.T, action specAction, want specValue, got value.Value) bool {
+	if want.Type == "funcref" && len(want.Value) != 0 {
+		var text string
+		if err := json.Unmarshal(want.Value, &text); err != nil {
+			t.Fatal(err)
+		}
+		if text != "null" {
+			index := specUint(t, text)
+			in := r.instance(action.Module)
+			return in != nil && index < uint64(len(in.Functions)) && got.Lo == in.Functions[index] && got.Hi == 0
+		}
+	}
+	return matchSpec(t, want, got)
+}
+
 func matchSpec(t *testing.T, want specValue, got value.Value) bool {
 	t.Helper()
 	if want.Type == "externref" || want.Type == "funcref" {
@@ -503,7 +518,7 @@ func (r *specRunner) runCommand(t *testing.T, cmd specCommand, path string) {
 		if len(cmd.Either) != 0 {
 			if len(got) == 1 {
 				for _, want := range cmd.Either {
-					if matchSpec(t, want, got[0]) {
+					if r.match(t, cmd.Action, want, got[0]) {
 						return
 					}
 				}
@@ -514,7 +529,7 @@ func (r *specRunner) runCommand(t *testing.T, cmd specCommand, path string) {
 			fail("results %v want %v", got, cmd.Expected)
 		}
 		for i, want := range cmd.Expected {
-			if !matchSpec(t, want, got[i]) {
+			if !r.match(t, cmd.Action, want, got[i]) {
 				fail("%s result %d: got %#v want %s (%s)", cmd.Action.Field, i, got[i], want.Value, want.Type)
 			}
 		}

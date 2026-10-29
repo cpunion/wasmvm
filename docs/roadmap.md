@@ -202,7 +202,7 @@ WASI 1/2/3 remain required subsequent work. See the
 
 **Objective:** extend the same frontend, IR and both execution backends to the full pinned Core 3.0 binary profile and the separately enabled Threads profile.
 
-Implemented individually enabled extensions include Memory64/Table64, Relaxed SIMD, Multi-Memory, Tail Call and Extended Constant Expressions.
+Implemented individually enabled extensions include Typed Function References, Memory64/Table64, Relaxed SIMD, Multi-Memory, Tail Call and Extended Constant Expressions.
 The first extension is Extended Constant Expressions:
 `EngineConfig.Features = wasm.ExtendedConst` (CLI `--extended-const`). It covers
 all six integer operations, typed/limited validation and instance-specific
@@ -217,7 +217,7 @@ and checked native call exits share the existing compiler/frame pipeline. Tail
 transfers retire the current frame before dispatch, preserving the original
 return destination, host caller capability and pending argument roots. The full
 archived proposal suite covers 102 binary assertions in two scripts. Typed
-`return_call_ref` belongs to the future function-references capability.
+`return_call_ref` additionally requires Function References.
 
 Multi-Memory adds indexed private-memory access under `wasm.MultiMemory`
 (CLI `--multi-memory`). Scalar and fixed-SIMD memory operations are generated
@@ -256,6 +256,19 @@ Local follow-ups are tracked without blocking subsequent capability work:
   overflow checks until an equally complete proof is available.
 - Add target-specific relaxed SIMD lowering where useful, while preserving a
   documented permitted projection and complete fallback ISA coverage.
+
+Typed Function References adds acyclic invariant function types, nullable and
+non-null typed references, `call_ref`, `return_call_ref` (also Tail Call),
+`ref.as_non_null`, both null branches, scoped local initialization and table
+definition initializers. Full types stay in validation/SSA/signatures; physical
+slots retain their existing reference storage domains and 16-byte values.
+Store-local canonical signature IDs match equivalent types across modules;
+imports, host values and retained roots preserve nullability and heap types.
+The 19 complete pinned proposal scripts add 978 binary assertions per tier.
+This standalone proposal does not implement recursive groups, GC subtyping,
+heap objects, final EH or Threads. General typed calls use the common frame
+machine; direct native call dispatch/expansion is tracked local optimization.
+See [the implementation and evidence](design/function-references.md).
 
 - **Types and GC:** recursive type-group canonicalization, explicit subtyping/variance/nullability, typed references, structs/arrays/i31/casts/conversions, stable generation-checked handles, Store-private guest heap, quotas and tracing. Root stacks/locals/globals/tables, host roots, temporary allocation operands, suspended native/interpreter frames and exception payloads. Retire generation-overflow slots. Forced collection at every allocation/safepoint must preserve live objects and reclaim unreachable cycles.
 - **Control flow:** proper tail calls without growing host/guest call stacks, final EH with tag identity, `try_table`, `exnref`, `throw_ref`, unwinding and host boundaries. Legacy EH is not substituted for final EH.

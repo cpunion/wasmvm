@@ -53,7 +53,7 @@ func (s *Store) CollectFailed(functionRoots []uint64, active []*Instance) {
 		}
 	}
 	visit := func(t wasm.ValueType, v value.Value) {
-		if t == wasm.FuncRef {
+		if t.IsFunctionReference() {
 			markFunction(v.Lo)
 		}
 	}
@@ -69,7 +69,7 @@ func (s *Store) CollectFailed(functionRoots []uint64, active []*Instance) {
 		markFunction(ref)
 	}
 	for _, table := range s.tables {
-		if table.OwnerInstance == nil && table.Type.Element == wasm.FuncRef {
+		if table.OwnerInstance == nil && table.Type.Element.IsFunctionReference() {
 			for _, ref := range table.Values {
 				markFunction(ref)
 			}
@@ -224,5 +224,6 @@ func (s *Store) Close() {
 	s.memories = nil
 	s.globals = nil
 	s.types = nil
+	s.typeDefinitions = nil
 	s.usage = Usage{}
 }

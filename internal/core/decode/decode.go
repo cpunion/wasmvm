@@ -135,7 +135,14 @@ func DecodeWithFeatures(input []byte, limits Limits, features wasm.Features) (re
 		case 4:
 			m.Tables = make([]module.TableType, d.count())
 			for i := range m.Tables {
-				m.Tables[i] = d.table()
+				var init module.Expr
+				m.Tables[i], init = d.tableDefinition()
+				if init != nil {
+					if m.TableInit == nil {
+						m.TableInit = make([]module.Expr, len(m.Tables))
+					}
+					m.TableInit[i] = init
+				}
 			}
 		case 5:
 			m.Memories = make([]module.Limits, d.count())
@@ -269,7 +276,11 @@ func (d *decoder) count() uint32 {
 }
 func (d *decoder) valueType() wasm.ValueType {
 	at := d.r.Offset()
-	t := wasm.ValueType(d.byte())
+	b := d.byte()
+	if (b == 0x63 || b == 0x64) && d.features&wasm.FunctionReferences != 0 {
+		return d.heapReference(b == 0x63)
+	}
+	t := wasm.ValueType(b)
 	if !t.Valid() {
 		d.failAt(at, "unknown value type")
 	}
@@ -277,9 +288,29 @@ func (d *decoder) valueType() wasm.ValueType {
 }
 func (d *decoder) refType() wasm.ValueType {
 	at := d.r.Offset()
-	t := wasm.ValueType(d.byte())
+	t := d.valueType()
 	if !t.IsReference() {
 		d.failAt(at, "reference type required")
+	}
+	return t
+}
+
+func (d *decoder) heapReference(nullable bool) wasm.ValueType {
+	h := must(d.r.S33())
+	var t wasm.ValueType
+	switch h {
+	case -16:
+		t = wasm.FuncRef
+	case -17:
+		t = wasm.ExternRef
+	default:
+		if h < 0 || d.features&wasm.FunctionReferences == 0 {
+			d.fail("unknown heap type")
+		}
+		return wasm.FunctionReference(uint32(h), nullable)
+	}
+	if !nullable {
+		t = t.NonNull()
 	}
 	return t
 }
@@ -316,6 +347,17 @@ func (d *decoder) bounds() module.Limits {
 func (d *decoder) table() module.TableType {
 	return module.TableType{Element: d.refType(), Limits: d.bounds()}
 }
+
+func (d *decoder) tableDefinition() (module.TableType, module.Expr) {
+	saved := d.r
+	if d.features&wasm.FunctionReferences != 0 && d.byte() == 0x40 {
+		d.expect(0)
+		t := d.table()
+		return t, d.expr()
+	}
+	d.r = saved
+	return d.table(), nil
+}
 func (d *decoder) globalType() module.GlobalType {
 	t := d.valueType()
 	mut := d.byte()
@@ -345,6 +387,9 @@ func (d *decoder) element() module.Element {
 			d.expect(0)
 		}
 		s.Functions = d.indexes()
+		if d.features&wasm.FunctionReferences != 0 {
+			s.Type = wasm.FuncRef.NonNull()
+		}
 	} else {
 		if flag != 4 {
 			s.Type = d.refType()

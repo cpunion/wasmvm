@@ -63,7 +63,7 @@ func (v *checker) misc(in module.Instr) {
 		v.pop(at)
 	case sub == 12:
 		v.index(in.A, len(v.m.Elements), "element segment")
-		if v.table(in.B).Element != v.m.Elements[in.A].Type {
+		if !v.matches(v.m.Elements[in.A].Type, v.table(in.B).Element) {
 			v.fail("table.init element type mismatch")
 		}
 		v.pop(wasm.I32)
@@ -72,7 +72,7 @@ func (v *checker) misc(in module.Instr) {
 	case sub == 13:
 		v.index(in.A, len(v.m.Elements), "element segment")
 	case sub == 14:
-		if v.table(in.A).Element != v.table(in.B).Element {
+		if !v.matches(v.table(in.B).Element, v.table(in.A).Element) {
 			v.fail("table.copy element type mismatch")
 		}
 		dst, src := v.table(in.A).Limits.AddressType(), v.table(in.B).Limits.AddressType()

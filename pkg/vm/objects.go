@@ -19,7 +19,7 @@ func (s *Store) NewMemory(typ MemoryType) (Extern, error) {
 	}
 	return Extern{store: s, external: ex}, nil
 }
-func (s *Store) NewTable(typ TableType) (Extern, error) {
+func (s *Store) NewTable(typ TableType, initial ...Value) (Extern, error) {
 	op, err := s.begin(nil, CallOptions{})
 	if err != nil {
 		return Extern{}, err
@@ -28,7 +28,23 @@ func (s *Store) NewTable(typ TableType) (Extern, error) {
 	if typ.Limits.Index64 && s.engine.config.Features&wasm.Memory64 == 0 {
 		return Extern{}, wasm.ErrUnsupported
 	}
-	ex, err := s.state.NewTable(typ)
+	if err := s.referenceFeature(typ.Element); err != nil {
+		return Extern{}, err
+	}
+	if len(initial) > 1 {
+		return Extern{}, ErrType
+	}
+	var bits []uint64
+	if len(initial) == 1 {
+		s.mu.Lock()
+		raw, e := s.rawLocked(initial[0], typ.Element)
+		s.mu.Unlock()
+		if e != nil {
+			return Extern{}, e
+		}
+		bits = []uint64{raw.Lo}
+	}
+	ex, err := s.state.NewTable(typ, bits...)
 	if err != nil {
 		return Extern{}, err
 	}
@@ -44,6 +60,9 @@ func (s *Store) NewGlobal(typ GlobalType, initial Value) (Extern, error) {
 	raw, err := s.rawLocked(initial, typ.Value)
 	s.mu.Unlock()
 	if err != nil {
+		return Extern{}, err
+	}
+	if err := s.referenceFeature(typ.Value); err != nil {
 		return Extern{}, err
 	}
 	ex, err := s.state.NewGlobal(typ, raw)
@@ -188,5 +207,12 @@ func (ex Extern) GlobalSet(v Value) error {
 		return err
 	}
 	g.Value = raw
+	return nil
+}
+
+func (s *Store) referenceFeature(typ wasm.ValueType) error {
+	if typ > 255 && typ.IsReference() && s.engine.config.Features&wasm.FunctionReferences == 0 {
+		return wasm.ErrUnsupported
+	}
 	return nil
 }

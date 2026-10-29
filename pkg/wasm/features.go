@@ -15,7 +15,9 @@ const (
 	RelaxedSIMD
 	// Memory64 enables the proposal's 64-bit memory and table indices.
 	Memory64
+	// FunctionReferences enables typed, non-null function references and calls.
+	FunctionReferences
 )
 
 // SupportedFeatures lists extensions implemented by both execution backends.
-const SupportedFeatures = ExtendedConst | TailCall | MultiMemory | RelaxedSIMD | Memory64
+const SupportedFeatures = ExtendedConst | TailCall | MultiMemory | RelaxedSIMD | Memory64 | FunctionReferences

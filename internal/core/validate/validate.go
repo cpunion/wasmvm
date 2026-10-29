@@ -24,6 +24,7 @@ type FunctionInfo struct{ MaxStack, MaxControl uint32 }
 
 // ConstantStack is the maximum validated initializer operand depth.
 func (m *Module) ConstantStack() uint32 { return m.types.constantStack }
+func (m *Module) TypeLabels() []uint32  { return m.types.typeLabels }
 
 func (m *Module) Definition() *module.Module { return m.definition }
 func (m *Module) FunctionInfo(index uint32) (FunctionInfo, bool) {
@@ -34,18 +35,20 @@ func (m *Module) FunctionInfo(index uint32) (FunctionInfo, bool) {
 }
 
 type context struct {
-	m             *module.Module
-	limits        Limits
-	features      wasm.Features
-	constantStack uint32
-	funcs         []module.FuncType
-	tables        []module.TableType
-	memories      []module.Limits
-	globals       []module.GlobalType
-	importGlobals int
-	refs          map[uint32]bool
-	at            uint64
-	visitor       func(int, module.Instr, []wasm.ValueType, []wasm.ValueType) error
+	m               *module.Module
+	limits          Limits
+	features        wasm.Features
+	constantStack   uint32
+	funcs           []module.FuncType
+	funcTypeIndices []uint32
+	typeLabels      []uint32
+	tables          []module.TableType
+	memories        []module.Limits
+	globals         []module.GlobalType
+	importGlobals   int
+	refs            map[uint32]bool
+	at              uint64
+	visitor         func(int, module.Instr, []wasm.ValueType, []wasm.ValueType) error
 }
 
 // Check validates a decoded module without modifying it. The caller transfers
@@ -72,19 +75,27 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 	if m == nil {
 		c.fail("nil module")
 	}
-	for _, typ := range m.Types {
+	c.typeLabels = make([]uint32, len(m.Types))
+	keys := make(map[string]uint32)
+	for i, typ := range m.Types {
 		for _, ts := range [][]wasm.ValueType{typ.Params, typ.Results} {
 			for _, t := range ts {
-				if !t.Valid() {
-					c.fail("invalid function value type")
-				}
+				c.valueType(t, i)
 			}
 		}
+		key := module.SignatureKey(typ, c.typeLabels)
+		label, found := keys[key]
+		if !found {
+			label = uint32(i)
+			keys[key] = label
+		}
+		c.typeLabels[i] = label
 	}
 	for _, im := range m.Imports {
 		switch im.Kind {
 		case 0:
 			c.funcs = append(c.funcs, c.typ(im.Type))
+			c.funcTypeIndices = append(c.funcTypeIndices, im.Type)
 		case 1:
 			c.tables = append(c.tables, im.Table)
 		case 2:
@@ -98,6 +109,7 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 	c.importGlobals = len(c.globals)
 	for _, f := range m.Functions {
 		c.funcs = append(c.funcs, c.typ(f.Type))
+		c.funcTypeIndices = append(c.funcTypeIndices, f.Type)
 	}
 	c.tables = append(c.tables, m.Tables...)
 	c.memories = append(c.memories, m.Memories...)
@@ -115,6 +127,7 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 		c.bounds(mt, max)
 	}
 	for _, tt := range c.tables {
+		c.valueType(tt.Element, len(m.Types))
 		if !tt.Element.IsReference() {
 			c.fail("invalid table element type")
 		}
@@ -125,9 +138,7 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 		c.bounds(tt.Limits, max)
 	}
 	for _, gt := range c.globals {
-		if !gt.Value.Valid() {
-			c.fail("invalid global value type")
-		}
+		c.valueType(gt.Value, len(m.Types))
 	}
 	names := make(map[string]bool)
 	for _, e := range m.Exports {
@@ -159,6 +170,9 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 	for _, g := range m.Globals {
 		declare(g.Init)
 	}
+	for _, init := range m.TableInit {
+		declare(init)
+	}
 	for _, e := range m.Elements {
 		declare(e.Offset)
 		for _, idx := range e.Functions {
@@ -174,12 +188,26 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 	for _, g := range m.Globals {
 		c.constant(g.Init, g.Type.Value)
 	}
+	if m.TableInit != nil && len(m.TableInit) != len(m.Tables) {
+		c.fail("table initializer count")
+	}
+	for i, table := range m.Tables {
+		if m.TableInit != nil && m.TableInit[i] != nil {
+			if features&wasm.FunctionReferences == 0 {
+				c.fail("table initializers are disabled")
+			}
+			c.constant(m.TableInit[i], table.Element)
+		} else if !table.Element.Defaultable() {
+			c.fail("nondefaultable table needs an initializer")
+		}
+	}
 	for _, e := range m.Elements {
 		if !e.Type.IsReference() {
 			c.fail("invalid element reference type")
 		}
+		c.valueType(e.Type, len(m.Types))
 		if e.Mode == module.Active {
-			if c.table(e.Table).Element != e.Type {
+			if !c.matches(e.Type, c.table(e.Table).Element) {
 				c.fail("element/table type mismatch")
 			}
 			c.constant(e.Offset, c.table(e.Table).Limits.AddressType())
@@ -188,7 +216,7 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 		}
 		for _, idx := range e.Functions {
 			c.function(idx)
-			if e.Type != wasm.FuncRef {
+			if !c.matches(c.functionReference(idx), e.Type) {
 				c.fail("function element type mismatch")
 			}
 		}
@@ -311,13 +339,14 @@ func (c *context) constant(expr module.Expr, want wasm.ValueType) {
 			}
 			got = g.Value
 		case 0xd0:
-			got = wasm.ValueType(in.A)
+			got = in.ReferenceType()
+			c.valueType(got, len(c.m.Types))
 			if !got.IsReference() {
 				c.fail("invalid null reference type")
 			}
 		case 0xd2:
 			c.function(in.A)
-			got = wasm.FuncRef
+			got = c.functionReference(in.A)
 		case 0x6a, 0x6b, 0x6c, 0x7c, 0x7d, 0x7e:
 			if c.features&wasm.ExtendedConst == 0 {
 				c.fail("extended constant expressions are disabled")
@@ -342,7 +371,7 @@ func (c *context) constant(expr module.Expr, want wasm.ValueType) {
 			c.constantStack = uint32(len(stack))
 		}
 	}
-	if len(stack) != 1 || stack[0] != want {
+	if len(stack) != 1 || !c.matches(stack[0], want) {
 		c.fail("initializer type mismatch")
 	}
 }

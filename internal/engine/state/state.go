@@ -39,20 +39,21 @@ type Usage struct {
 	SegmentBytes, SegmentElements                             uint64
 }
 type Store struct {
-	closed       bool
-	nativeMemory bool
-	limits       Limits
-	usage        Usage
-	functions    []*Function // index zero is the null function reference
-	instances    []*Instance
-	tables       []*Table
-	memories     []*Memory
-	globals      []*Global
-	types        map[string]uint32
+	closed          bool
+	nativeMemory    bool
+	limits          Limits
+	usage           Usage
+	functions       []*Function // index zero is the null function reference
+	instances       []*Instance
+	tables          []*Table
+	memories        []*Memory
+	globals         []*Global
+	types           map[string]uint32
+	typeDefinitions []module.FuncType
 }
 
 func New(limits Limits) *Store {
-	return &Store{limits: limits, functions: []*Function{nil}, types: make(map[string]uint32)}
+	return &Store{limits: limits, functions: []*Function{nil}, types: make(map[string]uint32), typeDefinitions: []module.FuncType{{}}}
 }
 
 // NewNative selects off-heap memories and tables for native execution.
@@ -67,22 +68,17 @@ func (s *Store) TypeID(t module.FuncType) uint32 {
 	if s.closed {
 		return 0
 	}
-	key := make([]byte, 0, len(t.Params)+1+len(t.Results))
-	for _, v := range t.Params {
-		key = append(key, byte(v))
-	}
-	key = append(key, 0)
-	for _, v := range t.Results {
-		key = append(key, byte(v))
-	}
-	if id, ok := s.types[string(key)]; ok {
+	key := module.SignatureKey(t, nil)
+	if id, ok := s.types[key]; ok {
 		return id
 	}
+
 	if uint64(len(s.types)) >= uint64(s.limits.MaxTypes) {
 		return 0
 	}
 	id := uint32(len(s.types) + 1)
-	s.types[string(key)] = id
+	s.types[key] = id
+	s.typeDefinitions = append(s.typeDefinitions, module.FuncType{Params: append([]wasm.ValueType(nil), t.Params...), Results: append([]wasm.ValueType(nil), t.Results...)})
 	return id
 }
 
@@ -155,7 +151,7 @@ func (s *Store) NewHost(t module.FuncType, host any) (Extern, error) {
 	t = module.FuncType{Params: append([]wasm.ValueType(nil), t.Params...), Results: append([]wasm.ValueType(nil), t.Results...)}
 	for _, ts := range [][]wasm.ValueType{t.Params, t.Results} {
 		for _, typ := range ts {
-			if !typ.Valid() {
+			if !s.validType(typ) {
 				return Extern{}, fmt.Errorf("%w: host value type", wasm.ErrInvalid)
 			}
 		}
@@ -211,7 +207,7 @@ func (s *Store) NewGlobal(t module.GlobalType, v value.Value) (Extern, error) {
 	if s.closed {
 		return Extern{}, wasm.ErrClosed
 	}
-	if !t.Value.Valid() {
+	if !s.validType(t.Value) {
 		return Extern{}, fmt.Errorf("%w: global type", wasm.ErrInvalid)
 	}
 	if s.usage.Globals >= uint64(s.limits.MaxGlobals) {
@@ -222,11 +218,11 @@ func (s *Store) NewGlobal(t module.GlobalType, v value.Value) (Extern, error) {
 	s.globals = append(s.globals, g)
 	return Extern{Owner: s, Kind: 3, Global: g}, nil
 }
-func (s *Store) NewTable(t module.TableType) (Extern, error) {
+func (s *Store) NewTable(t module.TableType, initial ...uint64) (Extern, error) {
 	if s.closed {
 		return Extern{}, wasm.ErrClosed
 	}
-	if !t.Element.IsReference() || t.Limits.HasMax && t.Limits.Min > t.Limits.Max || !t.Limits.Index64 && (t.Limits.Min > math.MaxUint32 || t.Limits.HasMax && t.Limits.Max > math.MaxUint32) {
+	if !t.Element.IsReference() || !s.validType(t.Element) || len(initial) > 1 || len(initial) == 0 && !t.Element.Defaultable() || t.Limits.HasMax && t.Limits.Min > t.Limits.Max || !t.Limits.Index64 && (t.Limits.Min > math.MaxUint32 || t.Limits.HasMax && t.Limits.Max > math.MaxUint32) {
 		return Extern{}, fmt.Errorf("%w: table type", wasm.ErrInvalid)
 	}
 	if s.usage.Tables >= uint64(s.limits.MaxTables) {
@@ -256,6 +252,11 @@ func (s *Store) NewTable(t module.TableType) (Extern, error) {
 		table.refreshNative()
 	} else {
 		table.Values = make([]uint64, int(t.Limits.Min))
+	}
+	if len(initial) != 0 && initial[0] != 0 {
+		for i := range table.Values {
+			table.Values[i] = initial[0]
+		}
 	}
 	s.usage.TableElements += uint64(t.Limits.Min)
 	s.usage.Tables++
@@ -350,38 +351,21 @@ func limit(detail string) error { return &wasm.Error{Kind: wasm.ErrLimit, Detail
 func sameLimits(actual, required module.Limits) bool {
 	return actual.Index64 == required.Index64 && actual.Min >= required.Min && (!required.HasMax || actual.HasMax && actual.Max <= required.Max)
 }
-func (s *Store) matches(ex Extern, im module.Import, definition *module.Module) bool {
+func (s *Store) matches(ex Extern, im module.Import, in *Instance) bool {
 	if ex.Owner != s || ex.Kind != im.Kind {
 		return false
 	}
 	switch im.Kind {
 	case 0:
 		f, ok := s.Function(ex.Function)
-		if !ok {
-			return false
-		}
-		t := definition.Types[im.Type]
-		if len(t.Params) != len(f.Signature.Params) || len(t.Results) != len(f.Signature.Results) {
-			return false
-		}
-		for i, v := range t.Params {
-			if v != f.Signature.Params[i] {
-				return false
-			}
-		}
-		for i, v := range t.Results {
-			if v != f.Signature.Results[i] {
-				return false
-			}
-		}
-		return true
+		return ok && f.TypeID == in.Types[im.Type]
 	case 1:
 		if ex.Table == nil || ex.Table.Owner != s {
 			return false
 		}
 		actual := ex.Table.Type
 		actual.Limits.Min = uint64(len(ex.Table.Values))
-		return actual.Element == im.Table.Element && sameLimits(actual.Limits, im.Table.Limits)
+		return actual.Element == canonicalType(im.Table.Element, in.Types) && sameLimits(actual.Limits, im.Table.Limits)
 	case 2:
 		if ex.Memory == nil || ex.Memory.Owner != s {
 			return false
@@ -390,10 +374,38 @@ func (s *Store) matches(ex Extern, im module.Import, definition *module.Module) 
 		actual.Min = ex.Memory.Pages()
 		return sameLimits(actual, im.Memory)
 	case 3:
-		return ex.Global != nil && ex.Global.Owner == s && ex.Global.Type == im.Global
+		return ex.Global != nil && ex.Global.Owner == s && ex.Global.Type.Mutable == im.Global.Mutable && (ex.Global.Type.Value == canonicalType(im.Global.Value, in.Types) || !im.Global.Mutable && wasm.ReferenceSubtype(ex.Global.Type.Value, canonicalType(im.Global.Value, in.Types), nil))
 	}
 	return false
 }
+
+func (s *Store) validType(t wasm.ValueType) bool {
+	if !t.Valid() {
+		return false
+	}
+	if id, indexed := t.TypeIndex(); indexed {
+		return t.Canonical() && id != 0 && uint64(id) < uint64(len(s.typeDefinitions))
+	}
+	return true
+}
+
+func canonicalType(t wasm.ValueType, ids []uint32) wasm.ValueType {
+	if index, indexed := t.TypeIndex(); indexed && !t.Canonical() {
+		return wasm.CanonicalFunctionReference(ids[index], t.Nullable())
+	}
+	return t
+}
+func canonicalSignature(t module.FuncType, ids []uint32) module.FuncType {
+	result := module.FuncType{Params: make([]wasm.ValueType, len(t.Params)), Results: make([]wasm.ValueType, len(t.Results))}
+	for i, v := range t.Params {
+		result.Params[i] = canonicalType(v, ids)
+	}
+	for i, v := range t.Results {
+		result.Results[i] = canonicalType(v, ids)
+	}
+	return result
+}
+
 func constantValue(in *Instance, x *module.Instr) value.Value {
 	switch x.Op {
 	case 0x41, 0x42, 0x43, 0x44:

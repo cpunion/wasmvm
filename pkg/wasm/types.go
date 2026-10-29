@@ -2,8 +2,9 @@ package wasm
 
 import "fmt"
 
-// ValueType identifies a Core 2.0 value type by its binary encoding.
-type ValueType byte
+// ValueType retains legacy binary codes and compact typed-reference metadata.
+// Indexed types are module-local until resolved against a Store's type domain.
+type ValueType uint64
 
 const (
 	I32       ValueType = 0x7f
@@ -15,9 +16,27 @@ const (
 	ExternRef ValueType = 0x6f
 )
 
-func (t ValueType) IsReference() bool { return t == FuncRef || t == ExternRef }
-func (t ValueType) Valid() bool       { return t >= V128 && t <= I32 || t.IsReference() }
+func (t ValueType) IsReference() bool {
+	return t.referenceEncoding() && (byte(t) == byte(FuncRef) || byte(t) == byte(ExternRef))
+}
+func (t ValueType) Valid() bool { return t >= V128 && t <= I32 || t.IsReference() }
 func (t ValueType) String() string {
+	if t.IsReference() && t > 255 {
+		heap := "func"
+		if !t.IsFunctionReference() {
+			heap = "extern"
+		}
+		if index, ok := t.TypeIndex(); ok {
+			heap = fmt.Sprintf("type[%d]", index)
+			if t.Canonical() {
+				heap = fmt.Sprintf("canonical[%d]", index)
+			}
+		}
+		if t.Nullable() {
+			return "(ref null " + heap + ")"
+		}
+		return "(ref " + heap + ")"
+	}
 	switch t {
 	case I32:
 		return "i32"
@@ -34,6 +53,6 @@ func (t ValueType) String() string {
 	case ExternRef:
 		return "externref"
 	default:
-		return fmt.Sprintf("type(%#x)", byte(t))
+		return fmt.Sprintf("type(%#x)", uint64(t))
 	}
 }

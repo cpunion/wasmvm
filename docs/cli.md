@@ -93,7 +93,7 @@ The default Core 2.0 grammar still rejects tail-call opcodes.
 Use `--multi-memory` before the module path for validate, inspect and run.
 The feature mask adds bit `4`; flags combine independently. The command's
 existing resource, timeout and fuel options apply to indexed memory operations.
-Memory64 and shared memories remain separately unimplemented features.
+Memory64 needs its own flag; shared memories remain unimplemented.
 
 `--relaxed-simd` enables all 20 relaxed vector instructions for validate,
 inspect and run, independently of the other extensions. It uses the same
@@ -103,3 +103,8 @@ permitted numeric projection on both backends and both native targets.
 It preserves 64-bit address operands and results on both execution backends;
 `--multi-memory` is additionally required for modules with multiple memories.
 Shared memories remain unsupported until the separate Threads capability.
+
+`--function-references` enables typed and non-null function/external references,
+`call_ref`, null assertions/branches, nondefaultable locals and explicit table
+initializers. It adds feature bit `32`. `return_call_ref` also requires
+`--tail-call`. Recursive types and WasmGC are not enabled by this flag.
