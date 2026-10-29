@@ -114,6 +114,8 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 	defs := make([]int, n)
 	pinned := make([]bool, n)
 	uses := make([]uint32, n)
+	budget.charge(uint64(n))
+	lastUse := make([]uint32, n)
 	for bi, b := range f.Blocks {
 		for _, v := range b.Params {
 			defs[v] = bi
@@ -125,28 +127,31 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 			}
 		}
 	}
-	use := func(v ir.Value, bi int) {
+	use := func(v ir.Value, bi, position int) {
 		uses[v]++
 		if defs[v] != bi {
 			pinned[v] = true
+		} else {
+			lastUse[v] = uint32(position)
 		}
 	}
 	for bi, b := range f.Blocks {
 		budget.charge(uint64(len(b.Ops)) + 1)
-		for _, op := range b.Ops {
+		for oi, op := range b.Ops {
 			for _, v := range op.Args {
-				use(v, bi)
+				use(v, bi, oi)
 			}
 		}
 		for _, v := range b.Term.Args {
-			use(v, bi)
+			use(v, bi, len(b.Ops))
 		}
 		for _, e := range b.Term.Edges {
 			for _, v := range e.Args {
-				use(v, bi)
+				use(v, bi, len(b.Ops))
 			}
 		}
 	}
+	coalesced := coalesceLocals(f, out, pinned, lastUse, budget)
 	for v, t := range f.Values {
 		if pinned[v] {
 			out.ValueSlots[v] = budget.addSlot(out, t)
@@ -156,23 +161,48 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 	// crossing blocks and block parameters keep dedicated slots; this avoids a
 	// quadratic global interference graph and preserves loops conservatively.
 	var free, all [128][]Slot
+	var literals literalPool
 	release := func(v ir.Value) {
-		if !pinned[v] && uses[v] == 0 {
+		if !pinned[v] && !coalesced[v] && uses[v] == 0 && literals.release(out.ValueSlots[v]) {
 			t := f.Values[v]
 			free[t] = append(free[t], out.ValueSlots[v])
 		}
 	}
 	for bi, b := range f.Blocks {
+		literals = literalPool{}
 		for t := range free {
 			free[t] = append(free[t][:0], all[t]...)
 		}
 		out.BlockPC[bi] = uint32(len(out.Code))
 		for _, op := range b.Ops {
+			src := f.Sources[op.Source]
+			// Nontrapping integer evaluation reads every operand before writing
+			// its result. Prefer reusing the left operand for two-address targets.
+			code := src.Wasm.Op
+			reuse := (code >= 0x45 && code <= 0x5a || code >= 0x67 && code <= 0x8a ||
+				code == 0xa7 || code == 0xac || code == 0xad || code >= 0xc0 && code <= 0xc4) && src.Effects&ir.MayTrap == 0
+			if reuse {
+				for i := len(op.Args) - 1; i >= 0; i-- {
+					v := op.Args[i]
+					uses[v]--
+					if uses[v] == 0 {
+						release(v)
+					}
+				}
+			}
 			for _, v := range op.Results {
-				if pinned[v] {
+				if pinned[v] || coalesced[v] {
 					continue
 				}
 				t := f.Values[v]
+				key, constant := literalOf(src.Wasm, t)
+				if constant {
+					if shared := literals.values[key]; shared != nil {
+						shared.refs++
+						out.ValueSlots[v] = shared.slot
+						continue
+					}
+				}
 				if k := len(free[t]); k > 0 {
 					out.ValueSlots[v] = free[t][k-1]
 					free[t] = free[t][:k-1]
@@ -181,10 +211,12 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 					all[t] = append(all[t], s)
 					out.ValueSlots[v] = s
 				}
+				if constant {
+					literals.add(key, out.ValueSlots[v], budget)
+				}
 			}
-			// Map operands before releasing any slot. Results do not overlap operands,
-			// including calls that suspend with their input/output locations retained.
-			src := f.Sources[op.Source]
+			// SSA locations remain stable after release. Integer operands, local
+			// copies and equal literals can alias; suspended call tuples cannot.
 			in := Instruction{Op: src.Wasm.Op, Source: op.Source, Dst: NoSlot, A: NoSlot, B: NoSlot, C: NoSlot}
 			if in.Op == 0x10 || in.Op == 0x11 {
 				in.Extra = uint32(len(out.Args))
@@ -211,10 +243,12 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 				}
 			}
 			out.Code = append(out.Code, in)
-			for _, v := range op.Args {
-				uses[v]--
-				if uses[v] == 0 {
-					release(v)
+			if !reuse {
+				for _, v := range op.Args {
+					uses[v]--
+					if uses[v] == 0 {
+						release(v)
+					}
 				}
 			}
 			for _, v := range op.Results {
@@ -240,6 +274,21 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 	}
 	// All target PCs and value locations now exist. Resolve each parallel tuple
 	// before flattening it into a sequential, allocation-free transfer program.
+	budget.charge(uint64(len(f.Blocks)))
+	returns := make([]bool, len(f.Blocks))
+	for bi, b := range f.Blocks {
+		if len(b.Ops) != 0 || b.Term.Kind != ir.Return || len(b.Term.Args) != len(b.Params) || f.Sources[b.Term.Source].Fuel() != 0 {
+			continue
+		}
+		budget.charge(uint64(len(b.Params)))
+		returns[bi] = true
+		for i, v := range b.Params {
+			if b.Term.Args[i] != v {
+				returns[bi] = false
+				break
+			}
+		}
+	}
 	scratch := make(map[wasm.ValueType]Slot)
 	for bi, b := range f.Blocks {
 		at := out.BlockPC[bi] + uint32(len(b.Ops))
@@ -247,6 +296,21 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 			continue
 		}
 		in := &out.Code[at]
+		if b.Term.Kind == ir.Jump {
+			edge := b.Term.Edges[0]
+			if out.BlockPC[edge.Target] > at && returns[edge.Target] {
+				// Preserve the jump's source/fuel boundary and every original PC.
+				// A forward pure return needs neither its tuple copy nor a second
+				// dispatch. Backward edges retain their cancellation poll.
+				budget.charge(uint64(len(edge.Args)))
+				in.Op = ControlBase + uint32(ir.Return)
+				in.Extra, in.Count = uint32(len(out.Args)), uint32(len(edge.Args))
+				for _, v := range edge.Args {
+					out.Args = append(out.Args, out.ValueSlots[v])
+				}
+				continue
+			}
+		}
 		in.Extra = uint32(len(out.Edges))
 		in.Count = uint32(len(b.Term.Edges))
 		budget.charge(uint64(len(b.Term.Edges)))

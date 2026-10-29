@@ -91,7 +91,7 @@ func integerARM64Core(a *assembler, op uint32, wide bool, zero, overflow int) (b
 		} else {
 			a.arm(wide, 0x6b0a013f)
 		}
-		cc := [...]uint32{0, 0, 1, 11, 3, 12, 8, 13, 9, 10, 2}[index]
+		cc := uint32(armIntegerCondition(op))
 		a.word(0x1a9f07e9 | ((cc ^ 1) << 12))
 	} else if op >= 0x67 && op <= 0x8a {
 		kind := op - 0x67

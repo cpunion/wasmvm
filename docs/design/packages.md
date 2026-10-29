@@ -1,6 +1,8 @@
 # Package and Directory Design
 
-Status: M1 implementation in progress, 2026-10-26. **Entries marked as existing or implemented have been created; other paths are planned.** `pkg/wasm` implements value-type identifiers and frontend error categories; the other public packages reserve APIs. No VM execution API exists yet.
+Status: development implementation, 2026-10-27. `pkg/vm` provides the Core 2.0
+embedding API and interpreter/native selection. Component and WASI packages
+remain placeholders. Planned paths below are not support claims.
 
 ## Directory tree
 
@@ -22,11 +24,11 @@ wasmvm/
 │   ├── roadmap.md
 │   └── validation.md
 ├── cmd/
-│   └── wasmvm/                    # Planned: run/inspect/validate CLI
+│   └── wasmvm/                    # Implemented: run/inspect/validate CLI
 ├── pkg/
 │   ├── README.md                  # Existing: public package overview
 │   ├── wasm/                      # Implemented: value-type identifiers, frontend errors and trap codes; values/features planned
-│   ├── vm/                        # Existing doc.go: Engine/Store/Linker/Instance
+│   ├── vm/                        # Implemented: Engine/Store/Linker/Instance/Execution
 │   ├── component/                 # Existing doc.go: component compile/link/run API
 │   └── wasi/
 │       ├── preview1/              # Existing doc.go: wasi_snapshot_preview1
@@ -45,7 +47,9 @@ wasmvm/
 │   │   ├── ir/                    # Implemented: typed CFG/SSA, effects/fuel and bounded verifier
 │   │   ├── lower/                 # Implemented: complete validated Core 2.0 to typed IR
 │   │   ├── slots/                 # Implemented: typed reusable slots, flat bytecode and parallel edge moves
-│   │   ├── passes/                # Planned: verified optimizations
+│   │   ├── codegen/               # Implemented: owned amd64/arm64 scalar/control emitters
+│   │   ├── nativeabi/             # Implemented: fixed entry frames and typed exit record
+│   │   ├── passes/                # Planned: further verified optimizations
 │   │   ├── machine/               # Planned: target IR and instruction selection
 │   │   └── regalloc/              # Planned: liveness, registers, spills and moves
 │   ├── engine/
@@ -53,10 +57,8 @@ wasmvm/
 │   │   ├── simd/                  # Implemented: all 214 nonmemory Core 2.0 SIMD operations
 │   │   ├── numeric/               # Implemented: complete scalar Core 2.0 numeric primitives and traps
 │   │   ├── state/                 # Implemented: private Store/Instance state, typed imports and initialization
-│   │   ├── interp/                # Implemented: full Core 2.0 dispatch, explicit frames, budgets and host exits
-│   │   ├── native/                # Planned: native artifacts, maps and driver
-│   │   │   ├── amd64/             # Planned: Go instruction encoder/target lowering
-│   │   │   └── arm64/             # Planned: Go instruction encoder/target lowering
+│   │   ├── execute/               # Implemented: shared frames, interpreter dispatch and runtime effects
+│   │   ├── nativeexec/            # Implemented: native publication, arena and typed-exit driver
 │   │   ├── memory/                # Implemented: private memory and checked accesses; shared/atomics planned
 │   │   ├── heap/                  # Planned: WasmGC, roots, externref, handles
 │   │   └── schedule/              # Planned: task budgets, cancellation, thread lifecycle
@@ -72,9 +74,8 @@ wasmvm/
 │   │   ├── threads/               # Planned: instance-per-thread ABI
 │   │   ├── preview2/              # Planned: P2 bindings
 │   │   └── preview3/              # Planned: P3 bindings
-│   ├── platform/                 # Planned: isolated OS/compiler differences
-│   │   ├── execmem/               # Planned: W^X, protection and instruction cache
-│   │   └── callbridge/            # Planned: small Go/LLGo C ABI adapters
+│   ├── platform/
+│   │   └── native/                # Implemented: C ABI bridge, W^X, native memory and ownership
 │   └── spectest/                 # Planned: WAST assertions, fixture loader
 ├── tests/                         # Planned: cross-package/language integration
 │   ├── spec/                     # Core/proposal conformance
@@ -125,7 +126,7 @@ cmd / examples / tests
                          internal/engine + internal/core
 ```
 
-Internal dependencies flow through `interp/native → state → memory/heap` and `interp/native → compiler/ir → core/module/types`. The frontend lowers validated modules through `compiler/lower`; the native backend uses `compiler/{passes,machine,regalloc}` and `platform/{execmem,callbridge}`. Compiler logic must remain buildable and testable without importing a cgo-only execution adapter. `compiler/ir` does not import either backend or runtime state. Separate execution interfaces from artifact creation to avoid `native → callbridge → native` cycles. Decoding and validation depend only on static Core types, not instances or the interpreter. Scheduling drives Execution through narrow interfaces; `state` must not import the entire interpreter in return. `state` implements a root visitor consumed by `heap`, avoiding a `heap → state → heap` cycle.
+Internal dependencies flow through `execute/nativeexec → state → memory/heap` and `nativeexec → compiler/codegen → core/module/types`. The frontend lowers validated modules through `compiler/lower`; the native backend uses `compiler/{codegen,nativeabi}` and `platform/native`. Compiler logic must remain buildable and testable without importing a cgo-only execution adapter. `compiler/ir` does not import either backend or runtime state. Separate execution interfaces from artifact creation to avoid `native → callbridge → native` cycles. Decoding and validation depend only on static Core types, not instances or the interpreter. Scheduling drives Execution through narrow interfaces; `state` must not import the entire interpreter in return. `state` implements a root visitor consumed by `heap`, avoiding a `heap → state → heap` cycle.
 
 `pkg/vm` assembles and encapsulates the runtime. Internal execution code accepts internal interfaces/state and must not import `pkg/vm`. WASI adapters may register host functions through `pkg/vm` because the VM does not import WASI. The CLI selects and assembles adapters.
 
@@ -135,7 +136,7 @@ Definitions needed by both public and internal APIs belong in `pkg/wasm`, or in 
 
 1. M0: retain existing evaluation modules and comparison tooling as independent references.
 2. M1: implement `binary`, `core/{module,decode,validate}`, `compiler/{ir,lower,slots}`, `engine/{state,interp,memory}`, the core CLI and embedding examples; wire real wasmvm benchmarks. Complete Core 2.0 includes fixed SIMD.
-3. M2: implement `compiler/{passes,machine,regalloc}`, `engine/native/{amd64,arm64}` and isolated execution adapters; optimize the interpreter and pass the same complete profile plus performance gates.
+3. M2: implement `compiler/{passes,machine,regalloc}`, `engine/nativeexec` and isolated execution adapters; optimize the interpreter and pass the same complete profile plus performance gates.
 4. M3: extend `core/types`, `engine/heap`, scheduling, both backends and memory to full Core 3.0 plus separate Core Threads.
 5. M4: implement P1 and legacy threads adapters, capabilities and Go/LLGo guest integrations.
 6. M5/M6: add component decoding/validation/canonical ABI/resources/async and versioned P2/P3 bindings.

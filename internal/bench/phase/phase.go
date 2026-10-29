@@ -15,13 +15,16 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/cpunion/wasmvm/internal/compiler/codegen"
 	"github.com/cpunion/wasmvm/internal/compiler/lower"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/decode"
 	"github.com/cpunion/wasmvm/internal/core/validate"
-	"github.com/cpunion/wasmvm/internal/engine/interp"
+	"github.com/cpunion/wasmvm/internal/engine/execute"
+	"github.com/cpunion/wasmvm/internal/engine/nativeexec"
 	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/internal/engine/value"
+	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -46,29 +49,30 @@ type phases struct {
 	Cleanup         int64 `json:"cleanup"`
 }
 type report struct {
-	SchemaVersion    int              `json:"schemaVersion"`
-	Engine           string           `json:"engine"`
-	SourceRevision   string           `json:"sourceRevision"`
-	Compiler         string           `json:"compiler"`
-	CompilerRevision string           `json:"compilerRevision"`
-	RuntimeVersion   string           `json:"runtimeVersion"`
-	GOOS             string           `json:"goos"`
-	GOARCH           string           `json:"goarch"`
-	Backend          string           `json:"backend"`
-	Mode             string           `json:"mode"`
-	Policy           string           `json:"policy"`
-	Iterations       uint32           `json:"iterations"`
-	Seed             uint32           `json:"seed"`
-	Samples          int              `json:"samples"`
-	Warmups          int              `json:"warmups"`
-	Phases           phases           `json:"phasesNs"`
-	PreparationParts map[string]int64 `json:"preparationPartsNs,omitempty"`
-	Result           uint32           `json:"result"`
-	WarmupCallNs     []int64          `json:"warmupCallNs"`
-	WarmCallNs       []int64          `json:"warmCallNs"`
-	WarmupResults    []uint32         `json:"warmupResults"`
-	WarmResults      []uint32         `json:"warmResults"`
-	TimerPairNs      []int64          `json:"timerPairNs"`
+	SchemaVersion     int              `json:"schemaVersion"`
+	Engine            string           `json:"engine"`
+	SourceRevision    string           `json:"sourceRevision"`
+	Compiler          string           `json:"compiler"`
+	CompilerRevision  string           `json:"compilerRevision"`
+	RuntimeVersion    string           `json:"runtimeVersion"`
+	GOOS              string           `json:"goos"`
+	GOARCH            string           `json:"goarch"`
+	Backend           string           `json:"backend"`
+	Mode              string           `json:"mode"`
+	Policy            string           `json:"policy"`
+	NativeCPUFeatures uint32           `json:"nativeCPUFeatures,omitempty"`
+	Iterations        uint32           `json:"iterations"`
+	Seed              uint32           `json:"seed"`
+	Samples           int              `json:"samples"`
+	Warmups           int              `json:"warmups"`
+	Phases            phases           `json:"phasesNs"`
+	PreparationParts  map[string]int64 `json:"preparationPartsNs,omitempty"`
+	Result            uint32           `json:"result"`
+	WarmupCallNs      []int64          `json:"warmupCallNs"`
+	WarmCallNs        []int64          `json:"warmCallNs"`
+	WarmupResults     []uint32         `json:"warmupResults"`
+	WarmResults       []uint32         `json:"warmResults"`
+	TimerPairNs       []int64          `json:"timerPairNs"`
 }
 
 func parseOptions(args []string, stderr io.Writer) (options, error) {
@@ -95,7 +99,7 @@ func parseOptions(args []string, stderr io.Writer) (options, error) {
 	if out.path == "" || !hasExpected || flags.NArg() != 0 {
 		return out, errors.New("--wasm and --expected are required; no positional arguments")
 	}
-	if out.backend != "interpreter" {
+	if out.backend != "interpreter" && out.backend != "native" {
 		return out, wasm.ErrUnsupported
 	}
 	if out.mode != "api" && out.mode != "dispatch" {
@@ -136,7 +140,12 @@ func pure(imports int, start bool) error {
 
 func publicKernel(ctx context.Context, input []byte, args options, out *report) (call kernel, close func(), err error) {
 	start := time.Now()
-	engine := vm.NewEngine()
+	config := vm.DefaultEngineConfig()
+	config.Backend = args.backend
+	engine, err := vm.NewEngineWithConfig(config)
+	if err != nil {
+		return nil, func() {}, err
+	}
 	store, err := engine.NewStore(vm.DefaultStoreConfig())
 	out.Phases.EngineSetup = time.Since(start).Nanoseconds()
 	var compiled *vm.CompiledModule
@@ -207,12 +216,27 @@ func publicKernel(ctx context.Context, input []byte, args options, out *report) 
 func dispatchKernel(ctx context.Context, input []byte, args options, out *report) (call kernel, close func(), err error) {
 	start := time.Now()
 	store := state.New(state.DefaultLimits())
+	if args.backend == "native" {
+		store = state.NewNative(state.DefaultLimits())
+	}
+	var nativeCode *nativeexec.Module
+	var nativeLease *nativeexec.Lease
+	var execution *execute.Execution
 	ctx, cancel := context.WithCancel(ctx)
 	out.Phases.EngineSetup = time.Since(start).Nanoseconds()
 	close = func() {
 		start := time.Now()
 		cancel()
+		if execution != nil {
+			execution.Close()
+		}
 		store.Close()
+		if nativeLease != nil {
+			nativeLease.Close()
+		}
+		if nativeCode != nil {
+			nativeCode.Close()
+		}
 		out.Phases.Cleanup = time.Since(start).Nanoseconds()
 	}
 	out.PreparationParts = make(map[string]int64)
@@ -238,6 +262,14 @@ func dispatchKernel(ctx context.Context, input []byte, args options, out *report
 	start = time.Now()
 	compiled, err := slots.Compile(ir, slots.DefaultLimits())
 	out.PreparationParts["slots"] = time.Since(start).Nanoseconds()
+	if err == nil && args.backend == "native" {
+		start = time.Now()
+		nativeCode, err = nativeexec.Compile(ctx, compiled, codegen.DefaultLimits())
+		if err == nil {
+			nativeLease, err = nativeCode.Acquire()
+		}
+		out.PreparationParts["native"] = time.Since(start).Nanoseconds()
+	}
 	out.Phases.CompileValidate = time.Since(preparationStart).Nanoseconds()
 	if err != nil {
 		return nil, close, err
@@ -267,7 +299,14 @@ func dispatchKernel(ctx context.Context, input []byte, args options, out *report
 	if err = signature(fn.Signature); err != nil {
 		return nil, close, err
 	}
-	execution := interp.New(store, ctx, interp.Config{Limits: interp.DefaultLimits()})
+	config := execute.Config{Limits: execute.DefaultLimits()}
+	if nativeLease != nil {
+		config.Backend, err = nativeexec.New(ctx, map[*slots.Module]*nativeexec.Lease{compiled: nativeLease}, config.Limits.MaxSlots, config.Limits.MaxFrames, false)
+		if err != nil {
+			return nil, close, err
+		}
+	}
+	execution = execute.New(store, ctx, config)
 	arguments := []value.Value{{Lo: uint64(args.seed)}, {Lo: uint64(args.iterations)}}
 	return func() (int64, uint32, error) {
 		start := time.Now()
@@ -277,10 +316,10 @@ func dispatchKernel(ctx context.Context, input []byte, args options, out *report
 		if err != nil {
 			return elapsed, 0, err
 		}
-		if status != interp.Done {
+		if status != execute.Done {
 			err := execution.Err()
 			if err == nil {
-				err = errors.New("unexpected interpreter suspension")
+				err = errors.New("unexpected execution suspension")
 			}
 			return elapsed, 0, err
 		}
@@ -289,8 +328,11 @@ func dispatchKernel(ctx context.Context, input []byte, args options, out *report
 	}, close, nil
 }
 
-func benchmark(ctx context.Context, args options) (out report, err error) {
+func benchmark(ctx context.Context, args options, beforeSample ...func(int) error) (out report, err error) {
 	out = report{SchemaVersion: 1, Engine: "wasmvm", SourceRevision: sourceRevision, Compiler: runtime.Compiler, CompilerRevision: compilerRevision, RuntimeVersion: runtime.Version(), GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, Backend: args.backend, Mode: args.mode, Policy: "unmetered; bounded cancellation; checked Core 2.0", Iterations: args.iterations, Seed: args.seed, Samples: args.samples, Warmups: args.warmups, WarmupCallNs: []int64{}, WarmCallNs: []int64{}, WarmupResults: []uint32{}, WarmResults: []uint32{}, TimerPairNs: []int64{}}
+	if args.backend == "native" {
+		out.NativeCPUFeatures = native.CPUFeatures()
+	}
 	start := time.Now()
 	input, err := os.ReadFile(args.path)
 	out.Phases.Load = time.Since(start).Nanoseconds()
@@ -321,6 +363,11 @@ func benchmark(ctx context.Context, args options) (out report, err error) {
 		out.WarmupResults = append(out.WarmupResults, v)
 	}
 	for i := 0; i < args.samples; i++ {
+		for _, wait := range beforeSample {
+			if err := wait(i); err != nil {
+				return out, err
+			}
+		}
 		ns, v, e := call()
 		if e != nil {
 			return out, fmt.Errorf("sample %d: %w", i, e)
@@ -343,7 +390,8 @@ func RunCLI(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
-	ack, err := bufio.NewReader(stdin).ReadString('\n')
+	reader := bufio.NewReader(stdin)
+	ack, err := reader.ReadString('\n')
 	if err != nil || ack != "run\n" {
 		fmt.Fprintln(stderr, "expected run acknowledgement after ready")
 		return 1
@@ -354,7 +402,22 @@ func RunCLI(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	}
 	if err == nil {
 		var out report
-		out, err = benchmark(context.Background(), config)
+		var barriers []func(int) error
+		if os.Getenv("WASMVM_INTERLEAVE") == "1" {
+			barriers = append(barriers, func(index int) error {
+				if err := encoder.Encode(struct {
+					SampleReady int `json:"sampleReady"`
+				}{index}); err != nil {
+					return err
+				}
+				line, err := reader.ReadString('\n')
+				if err != nil || line != "sample\n" {
+					return errors.New("expected sample acknowledgement")
+				}
+				return nil
+			})
+		}
+		out, err = benchmark(context.Background(), config, barriers...)
 		if err == nil {
 			err = encoder.Encode(out)
 		}

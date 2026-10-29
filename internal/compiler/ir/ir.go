@@ -23,7 +23,7 @@ type Source struct {
 // compiler-generated edge transfers have no additional charge. A loop header
 // is charged when entered from outside; a branch back to its body charges the
 // branch and subsequent body operations. This is fuel model version 1.
-func (s Source) Fuel() uint64 {
+func (s *Source) Fuel() uint64 {
 	if s.Wasm.Op == 5 || s.Wasm.Op == 0xb {
 		return 0
 	}

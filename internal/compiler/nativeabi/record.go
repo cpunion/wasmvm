@@ -1,6 +1,22 @@
 package nativeabi
 
-import "unsafe"
+import (
+	"math"
+	"unsafe"
+)
+
+// GlobalPointerOffset locates a cell pointer after the immutable function IDs
+// and table length/address pairs. Both emitters use signed 32-bit displacements.
+func GlobalPointerOffset(functions, tables, index uint32) (uint32, bool) {
+	offset := uint64(functions)*8 + uint64(tables)*16 + uint64(index)*8
+	return uint32(offset), offset <= math.MaxInt32
+}
+
+// TablePairOffset locates the length/base pair following the function IDs.
+func TablePairOffset(functions, index uint32) (uint32, bool) {
+	offset := uint64(functions)*8 + uint64(index)*16
+	return uint32(offset), offset <= math.MaxInt32-8
+}
 
 type Exit uint32
 
@@ -19,17 +35,18 @@ const (
 	Move
 )
 
-const ABIVersion = 1
+const ABIVersion = 2
 
-// State contains only scalar bits and guest handles. Continuation and RootMap
-// are compiler-owned IDs, never addresses supplied by guest memory. The driver
-// reads or replaces State only while execution is idle.
+// State contains scalar bits, guest handles and explicitly designated native
+// runtime addresses. Continuation and RootMap are compiler-owned IDs, never
+// addresses supplied by guest memory. The driver accesses State only while idle.
 type State struct {
 	// Used is the byte offset of the current frame in Arena.
 	Used, Depth, Function, Continuation uint64
 	Source, RootMap, Fuel, Budget       uint64
 	ResultLo, ResultHi                  uint64
-	Payload                             [4]uint64
+	// Payload[2] is a trusted native runtime view, never a guest address.
+	Payload [4]uint64
 }
 
 // Record is the fixed C ABI, verified against the C layout on each target. The
@@ -38,7 +55,8 @@ type State struct {
 type Record struct {
 	Version, Arena, Capacity, MaxDepth uint64
 	State
-	Control uint64
+	Control                uint64
+	MemoryBase, MemorySize uint64
 }
 
 const (
@@ -57,5 +75,8 @@ const (
 	ResultLoOffset     = unsafe.Offsetof(Record{}.State) + unsafe.Offsetof(State{}.ResultLo)
 	ResultHiOffset     = unsafe.Offsetof(Record{}.State) + unsafe.Offsetof(State{}.ResultHi)
 	PayloadOffset      = unsafe.Offsetof(Record{}.State) + unsafe.Offsetof(State{}.Payload)
+	RuntimeDataOffset  = PayloadOffset + 16
 	ControlOffset      = unsafe.Offsetof(Record{}.Control)
+	MemoryBaseOffset   = unsafe.Offsetof(Record{}.MemoryBase)
+	MemorySizeOffset   = unsafe.Offsetof(Record{}.MemorySize)
 )

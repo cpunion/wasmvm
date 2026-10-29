@@ -29,8 +29,14 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 			s.usage = oldUsage
 			clear(s.functions[oldFunctions:])
 			s.functions = s.functions[:oldFunctions]
+			for _, table := range s.tables[oldTables:] {
+				table.release()
+			}
 			clear(s.tables[oldTables:])
 			s.tables = s.tables[:oldTables]
+			for _, m := range s.memories[oldMemories:] {
+				m.Release()
+			}
 			clear(s.memories[oldMemories:])
 			s.memories = s.memories[:oldMemories]
 			clear(s.globals[oldGlobals:])

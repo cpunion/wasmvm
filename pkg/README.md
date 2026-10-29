@@ -1,6 +1,6 @@
 # Public Packages
 
-`wasm` implements Core 2.0 type/error contracts. `vm` implements the owned interpreter embedding API, including numeric/reference Values, Engine, Store, CompiledModule, Linker, Instance, Execution, typed host functions, object access and lifecycle management. See the [embedding guide](../docs/embedding.md) and [executable examples](vm/example_test.go). Component and WASI packages remain reserved.
+`wasm` implements Core 2.0 type/error contracts. `vm` implements the owned interpreter/native embedding API, including numeric/reference Values, Engine, Store, CompiledModule, Linker, Instance, Execution, typed host functions, object access and lifecycle management. See the [embedding guide](../docs/embedding.md) and [executable examples](vm/example_test.go). Component and WASI packages remain reserved.
 
 | Path | Responsibility |
 | --- | --- |

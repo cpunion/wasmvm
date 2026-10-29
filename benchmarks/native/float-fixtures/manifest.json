@@ -1,0 +1,115 @@
+{
+  "producer": "wasm-tools 1.258.0",
+  "workloads": [
+    {
+      "id": "arithmetic-f32",
+      "family": "arithmetic",
+      "wide": false,
+      "wasm": "arithmetic-f32.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 1065361420,
+      "wasmSha256": "5e9b067f90f3226db3ba6379ad65350371c8c2668cad614b6603e630aa0b5db3",
+      "sourceSha256": "7ffa7c1bd33f988a4e6b805356209b30f5303aee0d7ad314c58cf9ef6e2747e9"
+    },
+    {
+      "id": "arithmetic-f64",
+      "family": "arithmetic",
+      "wide": true,
+      "wasm": "arithmetic-f64.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 1068504077,
+      "wasmSha256": "a2029116e594e07cdd5a8ea3b6a794848def7005c318472c70ba677e326416d7",
+      "sourceSha256": "7f8874e056bfc3d910d44cb40331f9a039e41244f8e3180d90f279f1544cf286"
+    },
+    {
+      "id": "minmax-f32",
+      "family": "minmax",
+      "wide": false,
+      "wasm": "minmax-f32.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 1068783224,
+      "wasmSha256": "0f52d9b9fa0d39e19510ec7d5b76e5773236c4e20a1ce1cc494ba80ea90da426",
+      "sourceSha256": "f0890ffa3c82dd8517e12d31cc2082758a47cbc44de59127fb9aa58310df7ecb"
+    },
+    {
+      "id": "minmax-f64",
+      "family": "minmax",
+      "wide": true,
+      "wasm": "minmax-f64.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 1073121999,
+      "wasmSha256": "b261936a013395762ab69cb279ab6eea8c49da963a74460f7850b039390dea1f",
+      "sourceSha256": "e93c37d038061ebc4a1fbb8c2d3a9b9a41c15d5124807c6a231ad9cc86565c43"
+    },
+    {
+      "id": "rounding-f32",
+      "family": "rounding",
+      "wide": false,
+      "wasm": "rounding-f32.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 1051496436,
+      "wasmSha256": "9d23c8cdb28b4299a2b1d3223a222bfa16875dae8333507b02a5993aae18a32b",
+      "sourceSha256": "ed2704f7f123ad5e9407a6410f430f19f47a43fb25359996e281008ff0238907"
+    },
+    {
+      "id": "rounding-f64",
+      "family": "rounding",
+      "wide": true,
+      "wasm": "rounding-f64.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 1346814725,
+      "wasmSha256": "c57b17c79076834aa48872945948aa0d6fd01e13d7fd11b697c330bbf8de856b",
+      "sourceSha256": "5c2317b1c44668d265f1b5b19e65a6a54ab3f0ccaf2634ad87ccf0321f879ddc"
+    },
+    {
+      "id": "convert-signed-f32",
+      "family": "convert-signed",
+      "wide": false,
+      "wasm": "convert-signed-f32.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 623406344,
+      "wasmSha256": "57f5b0ff238ed59fa7025eac31dff9cce7f9b8e616984d6fff321138744969ec",
+      "sourceSha256": "78834f3b7b03ef2c85417ecc8a255471e555c11d9104c39b9d744150c79686a1"
+    },
+    {
+      "id": "convert-signed-f64",
+      "family": "convert-signed",
+      "wide": true,
+      "wasm": "convert-signed-f64.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 3308854616,
+      "wasmSha256": "5ef7249fdcf901ba6c72184a11cd9bb587d1e82340c58ff33fcb74e5a7121373",
+      "sourceSha256": "5b77427daf6691ed2b7ce97f1fd1a6edcbeaf1416d319daa03e06a85af8775a5"
+    },
+    {
+      "id": "convert-unsigned-f32",
+      "family": "convert-unsigned",
+      "wide": false,
+      "wasm": "convert-unsigned-f32.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 2997781760,
+      "wasmSha256": "133f8566e98d8ef31c5f5a1c9ff8aaea3b5aa20602ab920f1376151f5595ab8a",
+      "sourceSha256": "dddd346e4623dbe601fc5d31ce10bda43310cfe11ea0241b4ce35a046c94f305"
+    },
+    {
+      "id": "convert-unsigned-f64",
+      "family": "convert-unsigned",
+      "wide": true,
+      "wasm": "convert-unsigned-f64.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 3901338106,
+      "wasmSha256": "b06399c381e7b2d1b8c83696efde1867aed4f3040835f693663965ebb5eeb6a1",
+      "sourceSha256": "207781043dd00fd7ece40e3d65aea05f3bc8c912329f4016fd8970a488c27204"
+    }
+  ]
+}

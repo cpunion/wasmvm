@@ -90,7 +90,7 @@ func TestIntegerCopyForwarding(t *testing.T) {
 					slots.Instruction{Op: 0x22, Source: 2, Dst: 6, A: dst, B: slots.NoSlot, C: slots.NoSlot},
 					slots.Instruction{Op: slots.ControlBase + uint32(ir.Return), Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot})
 				compiled, err := CompileUnmeteredFunction("arm64", f, DefaultLimits())
-				if err != nil || compiled.ForwardedIntegers != 1 {
+				if err != nil || compiled.ForwardedScalars != 1 {
 					t.Fatal(compiled, err)
 				}
 				checkLinearIntegerEntries(t, f)
@@ -108,10 +108,21 @@ func TestMultiplyAddForwardsLocalResult(t *testing.T) {
 			for local := slots.Slot(0); local < 5; local++ {
 				f := multiplyAddFixture(wide, swap, 2, 3, 4, 4)
 				f.LocalCount = 5
+				// A shorter copy/constant group must not consume the multiply before
+				// the longer multiply-add selector can see it.
+				f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{A: 0}})
+				f.Code = append([]slots.Instruction{
+					{Op: 0x20, Source: 2, Dst: 0, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
+					{Op: f.Sources[1].Wasm.Op, Source: 1, Dst: 1, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
+				}, f.Code...)
 				f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{A: uint32(local)}})
 				last := f.Code[len(f.Code)-1]
-				f.Code[len(f.Code)-1] = slots.Instruction{Op: 0x21, Source: 2, Dst: slots.NoSlot, A: 3, B: slots.NoSlot, C: slots.NoSlot}
+				f.Code[len(f.Code)-1] = slots.Instruction{Op: 0x21, Source: 3, Dst: slots.NoSlot, A: 3, B: slots.NoSlot, C: slots.NoSlot}
 				f.Code = append(f.Code, last)
+				compiled, err := CompileUnmeteredFunction("arm64", f, DefaultLimits())
+				if err != nil || compiled.FusedIntegers != 1 {
+					t.Fatal("copy pass suppressed multiply-add", compiled, err)
+				}
 				checkLinearIntegerEntries(t, f)
 			}
 		}

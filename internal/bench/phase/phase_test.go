@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -36,39 +37,49 @@ func TestBothBoundariesAndEveryOracleVector(t *testing.T) {
 	if err = json.Unmarshal(data, &manifest); err != nil {
 		t.Fatal(err)
 	}
-	for _, mode := range []string{"api", "dispatch"} {
-		for _, workload := range manifest.Workloads {
-			for _, vector := range workload.ValidationCases {
-				args := optionsFor(filepath.Join(fixtures, filepath.Base(workload.Wasm)), mode)
-				args.seed, args.iterations, args.expected = vector.Seed, vector.Iterations, vector.ExpectedChecksum
-				out, err := benchmark(context.Background(), args)
-				if err != nil {
-					t.Fatal(mode, workload.Wasm, vector, err)
-				}
-				if out.Engine != "wasmvm" || out.Backend != "interpreter" || out.Mode != mode || out.Result != vector.ExpectedChecksum || len(out.WarmResults) != 2 || len(out.WarmupResults) != 1 || len(out.TimerPairNs) != 2 {
-					t.Fatal(out)
-				}
-				for _, v := range append(out.WarmResults, out.WarmupResults...) {
-					if v != vector.ExpectedChecksum {
-						t.Fatal(v)
+	for _, backend := range []string{"interpreter", "native"} {
+		if backend == "native" && !native.Available {
+			continue
+		}
+		for _, mode := range []string{"api", "dispatch"} {
+			for _, workload := range manifest.Workloads {
+				for _, vector := range workload.ValidationCases {
+					args := optionsFor(filepath.Join(fixtures, filepath.Base(workload.Wasm)), mode)
+					args.backend = backend
+					args.seed, args.iterations, args.expected = vector.Seed, vector.Iterations, vector.ExpectedChecksum
+					out, err := benchmark(context.Background(), args)
+					if err != nil {
+						t.Fatal(mode, workload.Wasm, vector, err)
 					}
-				}
-				if mode == "dispatch" {
-					if len(out.PreparationParts) != 4 {
-						t.Fatal(out.PreparationParts)
+					if out.Engine != "wasmvm" || out.Backend != backend || out.Mode != mode || out.Result != vector.ExpectedChecksum || len(out.WarmResults) != 2 || len(out.WarmupResults) != 1 || len(out.TimerPairNs) != 2 {
+						t.Fatal(out)
 					}
-					var sum int64
-					for _, ns := range out.PreparationParts {
-						if ns < 0 {
-							t.Fatal(ns)
+					for _, v := range append(out.WarmResults, out.WarmupResults...) {
+						if v != vector.ExpectedChecksum {
+							t.Fatal(v)
 						}
-						sum += ns
 					}
-					if sum > out.Phases.CompileValidate {
-						t.Fatal(sum, out.Phases)
+					if mode == "dispatch" {
+						parts := 4
+						if backend == "native" {
+							parts++
+						}
+						if len(out.PreparationParts) != parts {
+							t.Fatal(out.PreparationParts)
+						}
+						var sum int64
+						for _, ns := range out.PreparationParts {
+							if ns < 0 {
+								t.Fatal(ns)
+							}
+							sum += ns
+						}
+						if sum > out.Phases.CompileValidate {
+							t.Fatal(sum, out.Phases)
+						}
+					} else if out.PreparationParts != nil {
+						t.Fatal("invented public subphases")
 					}
-				} else if out.PreparationParts != nil {
-					t.Fatal("invented public subphases")
 				}
 			}
 		}
@@ -188,6 +199,39 @@ func TestOptionsAndReadyProtocol(t *testing.T) {
 }
 
 type failingWriter struct{ after, writes int }
+
+func TestInterleavedWarmCalls(t *testing.T) {
+	t.Setenv("WASMVM_INTERLEAVE", "1")
+	for _, backend := range []string{"interpreter", "native"} {
+		if backend == "native" && !native.Available {
+			continue
+		}
+		for _, mode := range []string{"api", "dispatch"} {
+			args := []string{"--wasm", filepath.Join(fixtures, "call-control.wasm"), "--backend", backend, "--mode", mode, "--iterations", "1", "--seed", "7", "--expected", "7", "--samples", "2", "--warmups", "1"}
+			for _, input := range []string{"run\nsample\nsample\n", "run\n", "run\nsample\n", "run\ninvalid\n"} {
+				var out, diagnostic bytes.Buffer
+				code := RunCLI(args, strings.NewReader(input), &out, &diagnostic)
+				if input != "run\nsample\nsample\n" {
+					if code != 1 || !strings.Contains(diagnostic.String(), "sample acknowledgement") {
+						t.Fatal(backend, mode, input, code, &diagnostic)
+					}
+					continue
+				}
+				lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+				if code != 0 || len(lines) != 4 || lines[1] != `{"sampleReady":0}` || lines[2] != `{"sampleReady":1}` {
+					t.Fatal(backend, mode, code, &out, &diagnostic)
+				}
+				var result report
+				if err := json.Unmarshal([]byte(lines[3]), &result); err != nil || len(result.WarmResults) != 2 || result.WarmResults[0] != 7 || result.WarmResults[1] != 7 {
+					t.Fatal(result, err)
+				}
+			}
+			if code := RunCLI(args, strings.NewReader("run\nsample\nsample\n"), &failingWriter{after: 1}, io.Discard); code != 1 {
+				t.Fatal("ignored sample event failure", code)
+			}
+		}
+	}
+}
 
 func (w *failingWriter) Write(p []byte) (int, error) {
 	if w.writes >= w.after {

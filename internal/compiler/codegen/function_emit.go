@@ -19,10 +19,37 @@ type functionEmitter struct {
 	exit, bad, zero, overflow int
 	edgeCopies                uint32
 	unmetered                 bool
+	x86Features               X86Features
+	usesMemory                bool
+	memoryMinimum             uint64
+	regionLimit               int
+	regionEnd                 int
+	provenPCs                 map[int]bool
+	guardPCs                  map[int]memoryGuard
+	addresses                 map[int]memoryAddress
+	elidedPCs                 map[int]bool
+	boundsElided              uint32
+	constantRegisters         map[uint64]byte
+	runtimeRegisters          map[uint32]byte
 	registers                 map[slots.Slot]byte
+	floatRegisters            map[slots.Slot]byte
+	vectorRegisters           map[slots.Slot]byte
+	vectorConstants           map[[2]uint64]byte
+	vectorAliases             map[slots.Slot]slots.Slot
+	aliasedVectorReads        uint32
 	registerSlots             []slots.Slot
 	pollExits                 []pollExit
-	constantRegisters         map[uint64]byte
+	trapExits                 []nativeTrapExit
+	callExits                 []nativeCallExit
+	memoryFallbacks           []memoryFallback
+	loopBackedges             map[int]loopBackedge
+}
+
+type memoryFallback struct{ label, pc int }
+
+type nativeCallExit struct {
+	label, pc int
+	source    uint64
 }
 
 type pollExit struct {
@@ -147,6 +174,13 @@ func (e *functionEmitter) slotLoad(slot slots.Slot, reg byte, high, wide bool) {
 			e.constant(reg, 0)
 			return
 		}
+		if r, ok := e.floatRegisters[slot]; ok {
+			e.floatToInteger(e.operandRegister(reg), r, e.f.Slots[slot] == wasm.F64)
+			if !wide {
+				e.registerMove(e.operandRegister(reg), e.operandRegister(reg), false)
+			}
+			return
+		}
 		if r, ok := e.registers[slot]; ok {
 			e.registerMove(e.operandRegister(reg), r, wide)
 			return
@@ -183,6 +217,10 @@ func (e *functionEmitter) slotStore(slot slots.Slot, reg byte, high bool) {
 		if high {
 			return
 		}
+		if r, ok := e.floatRegisters[slot]; ok {
+			e.floatFromInteger(r, e.operandRegister(reg), e.f.Slots[slot] == wasm.F64)
+			return
+		}
 		if r, ok := e.registers[slot]; ok {
 			e.registerMove(r, e.operandRegister(reg), true)
 			return
@@ -208,8 +246,28 @@ func (e *functionEmitter) slotStore(slot slots.Slot, reg byte, high bool) {
 	a.word(0xf9000000 | uint32(reg+9) | base<<5 | (offset/8)<<10)
 }
 func (e *functionEmitter) move(dst, src slots.Slot) {
-	if dst == slots.NoSlot {
+	if dst == slots.NoSlot || dst == src {
 		return
+	}
+	if e.f.Slots[dst] == wasm.V128 {
+		source := src
+		if alias, ok := e.vectorAliases[src]; ok {
+			source = alias
+		}
+		r := e.vectorOperand(src, 0)
+		e.vectorStore(dst, r)
+		if e.vectorAliases != nil && source != dst {
+			if _, cached := e.vectorRegisters[source]; cached {
+				e.vectorAliases[dst] = source
+			}
+		}
+		return
+	}
+	if d, ok := e.floatRegisters[dst]; ok {
+		if s, ok := e.floatRegisters[src]; ok {
+			e.floatMove(d, s, e.f.Slots[dst] == wasm.F64)
+			return
+		}
 	}
 	if d, ok := e.registers[dst]; ok {
 		if s, ok := e.registers[src]; ok {
@@ -331,18 +389,30 @@ func (e *functionEmitter) edge(index uint32, pcs []int, next int) {
 }
 
 // Interrupt polling is distinct from a scheduling round trip. A straight-line
-// sequence has at most 256 slot instructions between polls; every control
+// sequence has at most 256 slot instructions between polls; every real control
 // transfer also polls, so arbitrary forward/backward edges cannot evade it.
+// A no-copy jump to the next PC is ordinary fallthrough and cannot skip a poll.
+func (e *functionEmitter) fallthroughEdge(pc int) bool {
+	in := e.f.Code[pc]
+	if in.Op != slots.ControlBase+uint32(ir.Jump) {
+		return false
+	}
+	edge := e.f.Edges[in.Extra]
+	return edge.PC == uint32(pc+1) && edge.Count == 0
+}
+
 func (e *functionEmitter) interrupt(pc uint32) {
 	// An aligned machine load is atomic on both targets. Only a nonzero
 	// observation needs acquire ordering; the cold exit supplies that fence.
 	// Keep register spills and continuation publication outside the hot region.
 	exit := e.a.label()
-	e.contextLoad(0, nativeabi.ControlOffset)
 	if e.a.arch == "arm64" {
+		e.contextLoad(0, nativeabi.ControlOffset)
 		e.a.compareBranch(exit, e.operandRegister(0), true, true)
 	} else {
-		e.test(true)
+		e.a.bytes(0x48, 0x83, 0xbf) // cmpq $0, control(%rdi), one aligned 64-bit load.
+		e.a.word(uint32(nativeabi.ControlOffset))
+		e.a.bytes(0)
 		e.branch(exit, "ne")
 	}
 	e.pollExits = append(e.pollExits, pollExit{exit, pc})
@@ -368,6 +438,24 @@ func (e *functionEmitter) literal(in slots.Instruction) {
 	if op == 0xfd000c {
 		lo = binary.LittleEndian.Uint64(src.Wasm.Vector[:8])
 		hi = binary.LittleEndian.Uint64(src.Wasm.Vector[8:])
+		if r, ok := e.vectorConstants[[2]uint64{lo, hi}]; ok {
+			e.vectorStore(in.Dst, r)
+		} else {
+			e.vectorConstant(0, lo, hi)
+			e.vectorStore(in.Dst, 0)
+		}
+		return
+	}
+	if r, ok := e.floatRegisters[in.Dst]; ok && e.a.arch == "arm64" {
+		wide := e.f.Slots[in.Dst] == wasm.F64
+		if immediate, ok := floatImmediate(lo, wide); ok {
+			ins := uint32(0x1e201000) | uint32(immediate)<<13 | uint32(r)
+			if wide {
+				ins |= 1 << 22
+			}
+			e.a.word(ins)
+			return
+		}
 	}
 	if op == 0x41 || op == 0x42 {
 		if op == 0x41 {
@@ -397,4 +485,18 @@ func (e *functionEmitter) literal(in slots.Instruction) {
 		e.constant(0, hi)
 		e.slotStore(in.Dst, 0, true)
 	}
+}
+
+// Keep source publication and register spills off successful conversion paths.
+// Each trap site retains its original instruction offset.
+type nativeTrapExit struct {
+	label  int
+	code   wasm.TrapCode
+	source uint64
+}
+
+func (e *functionEmitter) trapExit(code wasm.TrapCode, source uint64) int {
+	label := e.a.label()
+	e.trapExits = append(e.trapExits, nativeTrapExit{label, code, source})
+	return label
 }

@@ -5,7 +5,7 @@ import "github.com/cpunion/wasmvm/internal/compiler/slots"
 // Select a literal operand without materializing a dead temporary. Every
 // interior instruction retains an independent generic continuation.
 func (e *functionEmitter) combineIntegerConstant(pc int) (int, bool) {
-	if !e.unmetered || e.a.arch != "amd64" || pc+1 >= len(e.f.Code) || pc/256 != (pc+1)/256 {
+	if !e.unmetered || e.a.arch != "amd64" || pc+1 >= e.codeLimit() || pc/256 != (pc+1)/256 {
 		return 0, false
 	}
 	constant, in := e.f.Code[pc], e.f.Code[pc+1]
@@ -14,7 +14,7 @@ func (e *functionEmitter) combineIntegerConstant(pc int) (int, bool) {
 	}
 	bits := e.f.Sources[constant.Source].Wasm.Bits
 	end, original := pc+1, in.Dst
-	if pc+2 < len(e.f.Code) && pc/256 == (pc+2)/256 {
+	if pc+2 < e.codeLimit() && pc/256 == (pc+2)/256 {
 		next := e.f.Code[pc+2]
 		if (next.Op == 0x21 || next.Op == 0x22) && next.A == original {
 			dst := slots.Slot(e.f.Sources[next.Source].Wasm.A)

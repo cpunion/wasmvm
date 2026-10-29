@@ -9,7 +9,7 @@ import "github.com/cpunion/wasmvm/internal/compiler/slots"
 // Constant operands can use the immutable pool directly; temporary constant
 // slots are omitted only when overwritten before any subsequent observation.
 func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
-	if !e.unmetered || e.a.arch != "arm64" || pc+1 >= len(e.f.Code) {
+	if !e.unmetered || e.a.arch != "arm64" || pc+1 >= e.codeLimit() {
 		return 0, false
 	}
 	start := pc
@@ -18,7 +18,7 @@ func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
 	if in := &e.f.Code[pc]; in.Op == 0x41 || in.Op == 0x42 {
 		var ok bool
 		pooled, ok = e.literalRegister(*in)
-		if !ok || pc+2 >= len(e.f.Code) {
+		if !ok || pc+2 >= e.codeLimit() {
 			return 0, false
 		}
 		prefix = in
@@ -36,7 +36,7 @@ func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
 		}
 		end++
 	}
-	if end >= len(e.f.Code) || start/256 != end/256 {
+	if end >= e.codeLimit() || start/256 != end/256 {
 		return 0, false
 	}
 	add := e.f.Code[end]
@@ -74,7 +74,7 @@ func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
 	}
 	result := add.Dst
 	originalEnd := end
-	if end+1 < len(e.f.Code) && (end+1)/256 == pc/256 {
+	if end+1 < e.codeLimit() && (end+1)/256 == pc/256 {
 		next := e.f.Code[end+1]
 		local := slots.Slot(e.f.Sources[next.Source].Wasm.A)
 		if reg, ok := e.registers[local]; ok && (next.Op == 0x21 || next.Op == 0x22) && next.A == add.Dst {
@@ -134,15 +134,30 @@ func (e *functionEmitter) combineMultiplyAdd(pc int) (int, bool) {
 // reader, poll, trap or helper exit. Entry at another PC makes no assumption
 // about its value. The 256-instruction poll interval bounds this scan.
 func (e *functionEmitter) overwrittenBeforeExit(pc int, slot slots.Slot) bool {
-	for ; pc < len(e.f.Code) && pc%256 != 0; pc++ {
+	limit := e.codeLimit()
+	if e.regionEnd != 0 {
+		// Selection stops at remapped accesses; observation scans may cross
+		// proven accesses, but a later guard can expose the complete frame.
+		limit = e.regionEnd
+	}
+	for ; pc < limit && pc%256 != 0; pc++ {
+		if _, guard := e.guardPCs[pc]; guard {
+			return false
+		}
+		if e.elidedPCs[pc] {
+			continue
+		}
 		in := e.f.Code[pc]
 		op := in.Op
-		if !(op == 1 || op >= 0x1a && op <= 0x1c || op >= 0x20 && op <= 0x22 || op >= 0x41 && op <= 0x44 || isInteger(op)) ||
-			op >= 0x6d && op <= 0x70 || op >= 0x7f && op <= 0x82 {
+		if !plainOpcode(op) || scalarCanTrap(op) || isMemoryAccess(op) && !e.provenPCs[pc] {
 			return false
 		}
 		local := slots.Slot(e.f.Sources[in.Source].Wasm.A)
-		if in.A == slot || in.B == slot || in.C == slot || op == 0x20 && local == slot {
+		address := in.A
+		if remap, ok := e.addresses[pc]; ok {
+			address = remap.local
+		}
+		if address == slot || in.B == slot || in.C == slot || op == 0x20 && local == slot {
 			return false
 		}
 		if in.Dst == slot || (op == 0x21 || op == 0x22) && local == slot {
@@ -150,4 +165,42 @@ func (e *functionEmitter) overwrittenBeforeExit(pc int, slot slots.Slot) bool {
 		}
 	}
 	return false
+}
+
+// Recognize the complete pattern without emitting code. Copy forwarding uses
+// the same selection so a shorter group cannot hide a multiply-add candidate.
+func (e *functionEmitter) multiplyAddTail(pc int) (int, slots.Slot, bool, bool) {
+	if pc+1 >= e.codeLimit() {
+		return 0, slots.NoSlot, false, false
+	}
+	mul := e.f.Code[pc]
+	if mul.Op != 0x6c && mul.Op != 0x7e {
+		return 0, slots.NoSlot, false, false
+	}
+	end := pc + 1
+	constant := e.f.Code[end].Op == 0x41 || e.f.Code[end].Op == 0x42
+	if constant {
+		if e.f.Code[end].Dst == mul.Dst {
+			return 0, slots.NoSlot, false, false
+		}
+		end++
+	}
+	if end >= e.codeLimit() || pc/256 != end/256 {
+		return 0, slots.NoSlot, false, false
+	}
+	add := e.f.Code[end]
+	if add.Op != mul.Op-2 {
+		return 0, slots.NoSlot, false, false
+	}
+	addend := add.B
+	if add.A != mul.Dst {
+		if add.B != mul.Dst {
+			return 0, slots.NoSlot, false, false
+		}
+		addend = add.A
+	}
+	if addend == mul.Dst {
+		return 0, slots.NoSlot, false, false
+	}
+	return end, addend, constant, true
 }

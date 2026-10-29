@@ -1,8 +1,18 @@
 # Development Plan and Acceptance Gates
 
-Plan date: **2026-10-26**. M0 candidate evaluation and benchmark infrastructure are complete through PRs [#1](https://github.com/cpunion/wasmvm/pull/1), [#2](https://github.com/cpunion/wasmvm/pull/2), and [#3](https://github.com/cpunion/wasmvm/pull/3). The owner has selected a [project-owned core](design/own-core.md). **M1 acceptance remains open; the M2 native boundary is in progress; M3–M7 are not implemented.** This plan prioritizes complete core execution and compilation before WASI integration. Design approval does not close an implementation or performance gate.
+Plan date: **2026-10-26**. M0 candidate evaluation and benchmark infrastructure are complete through PRs [#1](https://github.com/cpunion/wasmvm/pull/1), [#2](https://github.com/cpunion/wasmvm/pull/2), and [#3](https://github.com/cpunion/wasmvm/pull/3). The owner has selected a [project-owned core](design/own-core.md). **M1 acceptance remains open; M2 executes the complete Core 2.0 profile but has unmet performance gates; M3–M7 are not implemented.** This plan prioritizes complete core execution and compilation before WASI integration. Design approval does not close an implementation or performance gate.
 
 Implement stages in order. Independent work within a stage can proceed in parallel after agreeing on shared contracts. Small implementation PRs may merge while the stage remains in progress; every required deliverable, supported-platform result, and exit gate must pass before that stage is complete. Do not replace full profiles with convenient instruction subsets or quietly move failing requirements to a later stage.
+
+## Current integration decision
+
+On 2026-10-29 the owner authorized merging the accumulated Core 2.0 work before
+its outstanding performance and calibration gates close, and continuing feature
+development. PR #26 merged as `49ff47b`; the subsequent owned interpreter/native
+integration is reviewed separately. This authorization applies to the current
+integration, not a declaration that M1/M2 are complete or a permanent waiver of
+future performance comparisons. Failed measurements remain in the validation
+record. Final-head semantic CI and resolved review findings remain required.
 
 ## Stage overview
 
@@ -53,6 +63,130 @@ The Store reclaims unescaped failed instances and releases storage after executi
 ## M2 — Fast interpreter and complete native compiler
 
 **Objective:** make both interpretation and Wasm-to-native execution satisfy the [performance contract](design/performance-contract.md), without changing the accepted Core 2.0 semantics.
+
+The development native backend now executes the same complete Core 2.0 corpus:
+51,139 binary assertions in 148 scripts, separately under the unmetered and
+precise-fuel tiers. The interpreter and native backend share `engine/execute`'s
+explicit frames, calls, host requests, roots and cleanup; `engine/nativeexec`
+owns compiled publication and native entry. Public API/CLI selection, imports,
+start functions, indirect calls, globals, tables, growth, SIMD and bulk operations
+are connected. Numeric/scalar-memory/control code and all 236 Core 2.0 fixed-SIMD
+operations are emitted directly, including every memory operation, permutation,
+integer and floating-point operation. Baseline SSE2 legalizations and NEON cover
+the complete inventory. Detected SSSE3/SSE4.1 and OS-validated AVX2 profiles accelerate x86 operations;
+masked profiles retain portable behavior. Packed shifts/reductions and shared
+immutable masks replace per-lane or repeated-constant work. State/bulk
+operations use explicit owned runtime helpers. Guest calls
+normally exit through the common frame driver; bounded nontrapping integer
+leaves can expand into caller registers in the unmetered tier. Indirect leaves
+check the live table target against instance identities; native tables and
+refreshed metadata preserve mutation, growth and host reentry. They are not interpreted whole
+functions. Each Store retains one bounded outer-call workspace; nested reentry
+keeps independent arenas and shared logical limits. Idle workspaces release
+instance frames and memory bindings, and stop their cancellation writer before
+reuse. Canceled native contexts are discarded with their sticky control state.
+Boundary and helper overhead still need measurement and optimization.
+
+The complete Go/LLGo semantic matrix passes on Linux amd64 and macOS arm64
+through engine `3a9f291` with the explicit LLGo release profile
+([CI](https://github.com/cpunion/wasmvm/actions/runs/40672341762)); all 12
+interpreter/native-tier reports retain 148 scripts and 51,139 binary assertions.
+The interpreter avoids per-step closure/source copies and SIMD instruction/
+result objects. Packed integer operations improve local popcount throughput;
+value-based scalar dispatch and per-frame metadata reduce dispatch overhead.
+Shared return forwarding removes an intermediate result copy and dispatch.
+Shared integer primitives and active PC/frame-value views reduce repeated
+dispatch/state access. LLGo `8e45ed5e` removes floating-point bitcast allocations;
+the supported release profile uses `-O3 -lto=full` in CI and benchmarks. Compiler
+and profile upgrades are separate baseline events; default-flag regressions
+remain recorded. Native scalar select uses CMOV/CSEL with direct register reuse
+through engine `f1513a8`; its final matrix passes in the validation record.
+The pinned C/Rust application comparisons expose remaining compiler deficits.
+Engine `4f531dd` shares local reads/tee within proven lifetimes and identical
+numeric/vector literals while live, with copy-aware register weights including
+call/return tuples. The independent slot checker, arbitrary cold-entry tests
+and full Go/LLGo target matrix pass. CRC frames fall from 21 to 15 slots; local
+LLGo native CRC improves about 35%, but remaining competitor deficits,
+interpreter/call/SIMD regressions and preparation costs are retained in the
+[validation record](validation.md#shared-local-and-literal-slots). Follow the
+[local](../benchmarks/native/local-slots-plan.md) and
+[literal](../benchmarks/native/literal-slots-plan.md) scopes; these increments
+do not close performance acceptance.
+Engine `342676e` also reuses last-use operands for all 58 nontrapping integer
+primitives and directly selects legal x86 right-operand aliases. The full
+target matrix passes; CRC frames fall to 14 slots. Local native call/memory
+medians improve, but remaining slower/regressed cases and preparation costs
+remain explicit. Follow the [operand scope](../benchmarks/native/operand-slots-plan.md)
+and [validation](validation.md#last-use-integer-operand-storage). The image
+emitter still checks all 13 memory access sites with the actual memory minimum;
+investigate guarded address groups while preserving trap order and cold PCs.
+Engine `3a9f291` adds those local guards, address folding, canonical-state-aware
+temporary deletion and emitted-operation register weights. All scalar/SIMD
+memory widths and cold continuations pass the full Go/LLGo target matrix. Image filtering
+improves about 22% under LLGo locally, while remaining slower than
+Wasmtime/Wasmer; regressions and code-growth costs remain in
+[validation](validation.md#guarded-memory-regions-and-address-folding).
+The measured Cranelift inner loop provides a concrete comparison for the
+remaining loop-range and register-allocation work; no performance gate closes.
+Engine `9ef5a12` shares eighteen arm64 integer registers across mutable slots,
+constants and runtime metadata. Local image filtering improves another 23%,
+and its inner loop drops two frame accesses, while full code grows and
+Wasmtime/Wasmer remain faster. Full local release semantics and the final
+four-job Go/LLGo target matrix pass. See the
+[register scope](../benchmarks/native/caller-registers-plan.md) and
+[validation](validation.md#shared-aarch64-caller-register-capacity).
+Engine `102623b` normalizes small arm64 span guards and separates fusion from
+physical-state observation bounds. Generic shifted-operand selection and dead
+literal removal reduce the image inner loop from 56 to 48 instructions; local
+LLGo image throughput improves about 11%, with competitor gaps, regressions and
+compilation costs retained. Full local release semantics and the final four-job
+Go/LLGo target matrix pass. See the
+[compact scope](../benchmarks/native/compact-guards-plan.md) and
+[validation](validation.md#compact-span-guards-and-shifted-operands).
+Engine `4304f73` versions bounded, single-block +1 memory loops with one remaining-
+span guard, private polled backedges and original checked cold PCs. Full local
+Go/LLGo release suites and the final four-job target matrix pass, including
+97 added typed scalar/SIMD memory-loop cases. Image hot code
+falls 48 -> 41 instructions, with local LLGo warm time improving about 8%, while
+competitor gaps, code growth and preparation/regression data remain explicit.
+See the [loop scope](../benchmarks/native/loop-guards-plan.md) and
+[validation](validation.md#remaining-span-guards-for-bounded-loops).
+Engine `a26c57c` directly lowers i32/i64/f32/f64/v128 globals on both targets
+and tiers through execution-owned, alias-deduplicated numeric cells. Host reentry,
+trap/fuel/cancel visibility and scalar/vector spills pass local Go/LLGo release
+semantics. Eighteen diagnostic families and 792 oracle checks per candidate keep
+API/mixed-table/portfolio gaps and regressions explicit. See the
+[global scope](../benchmarks/native/globals-plan.md) and
+[validation](validation.md#direct-numeric-global-cells). Checked table access,
+global live ranges, boundary costs and controlled acceptance remain required.
+Engine `c921b5d` directly lowers table.get/table.set and ref.func in both tiers
+and on both targets, using native table cells and instance-specific handles.
+Aliasing, checked indices, host growth/reentry, reference collection and ordered
+trap/fuel/cancellation effects pass local Go/LLGo release semantics. Twenty-one
+families and 924 oracle checks per candidate retain the table-copy gap and all
+regressions. The globals/table loop has no remaining basic reference helpers.
+See the [table scope](../benchmarks/native/tables-plan.md),
+[validation](validation.md#direct-checked-tables-and-function-references) and
+[next allocation scope](../benchmarks/native/register-allocation-plan.md).
+Engine `139ccf1` ranks scalar homes, integer literals and native runtime words
+together using bounded loop-frequency hints. Local Go/LLGo release semantics,
+every-cold-PC differential cases and all measured coverage thresholds pass.
+Twenty-one families and 924 oracle checks retain table-copy gains and image,
+shuffle and other regressions. The ARM64 copy hot span falls 49 -> 41
+instructions, with local LLGo 1.595 -> 1.123 ns/iteration versus Wasmtime 1.180;
+this is not controlled all-target acceptance. See the
+[allocation scope](../benchmarks/native/register-allocation-plan.md) and
+[validation](validation.md#loop-weighted-shared-register-priorities).
+The current stable-home register assignment still lacks the planned
+global live-range allocation/splitting. Calls, SIMD/application/preparation
+performance and all-target calibration remain open.
+Calibrated performance acceptance remains open. Full Core 3.0/Threads, Component Model and
+WASI 1/2/3 remain required subsequent work. See the
+[runtime scope](../benchmarks/native/runtime-plan.md),
+[numeric scope](../benchmarks/native/float-plan.md) and
+[memory scope](../benchmarks/native/memory-plan.md) and
+[SIMD floating-point scope](../benchmarks/native/vector-float-plan.md) and
+[complete integer SIMD scope](../benchmarks/native/vector-integer-plan.md).
 
 1. **Interpreter performance.** Profile dispatch, copies, bounds checks, calls, slot/frame allocation and code footprint. Compare predecoded stack versus slot prototypes; retain the measured production choice. Add specialization/fusion only with preserved trap/fuel/safepoint behavior and full regression results.
 2. **Native boundary first.** Implement the [native ABI](design/native-abi.md): bounded entry frame, explicit guest frame arena, typed exits, continuation/root maps, host-call marshalling, cancellation polling, executable-memory publication and active-code ownership. Exercise the same ABI probes with Go and LLGo before accepting emitted guest programs.

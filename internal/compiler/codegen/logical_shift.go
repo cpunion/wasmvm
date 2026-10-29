@@ -7,7 +7,7 @@ import "github.com/cpunion/wasmvm/internal/compiler/slots"
 // the second logical operand in the same instruction.
 // The original intermediate may disappear only when overwritten before an exit.
 func (e *functionEmitter) logicalShift(pc int, in slots.Instruction) bool {
-	if !e.unmetered || pc+2 >= len(e.f.Code) || pc/256 != (pc+2)/256 {
+	if !e.unmetered || pc+2 >= e.codeLimit() || pc/256 != (pc+2)/256 {
 		return false
 	}
 	wide, first, literal := integerWide(in.Op), uint32(0x71), uint32(0x41)
@@ -37,9 +37,6 @@ func (e *functionEmitter) logicalShift(pc int, in slots.Instruction) bool {
 	}
 	count := uint32(e.f.Sources[constant.Source].Wasm.Bits) & (width - 1)
 	if e.a.arch == "amd64" {
-		if !e.canRegisterInteger(in.Op, shift.Dst, in.A, in.B) {
-			return false
-		}
 		e.registerInteger(in.Op, shift.Dst, in.A, in.B)
 		if count != 0 {
 			e.registerImmediate(shift.Op, shift.Dst, shift.Dst, uint64(count))

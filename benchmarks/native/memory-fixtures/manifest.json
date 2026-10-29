@@ -1,0 +1,45 @@
+{
+  "producer": "wasm-tools 1.258.0",
+  "workloads": [
+    {
+      "id": "narrow-unaligned",
+      "wasm": "narrow-unaligned.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 2010447593,
+      "measurement": "warm ns/iteration; deterministic reset included",
+      "wasmSha256": "64c1c16bb9294d30394fbb26c468e05f59f262b4ef70b9edb59153c85a05db11",
+      "sourceSha256": "6f747b853c47a0a4ce438a717a86e55002fba27738e0c721e5e7fb847826f6f4"
+    },
+    {
+      "id": "dependent-address",
+      "wasm": "dependent-address.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 2349411192,
+      "measurement": "warm ns/iteration; deterministic reset included",
+      "wasmSha256": "cbdc8625abf12a3f42ec266b72caebce49ab695124670aa7d805f4dc3370cb61",
+      "sourceSha256": "b93b9d738fe5205fd6111bcabddb59c85008f949929a404d7325f27cd9ecd3ff"
+    },
+    {
+      "id": "float64-unaligned",
+      "wasm": "float64-unaligned.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 150580104,
+      "measurement": "warm ns/iteration; deterministic reset included",
+      "wasmSha256": "0ba5131e426f05cea8be9b908eb6e476d67b06d4ea2125bdb864d3500ef89cd5",
+      "sourceSha256": "c5255f913f85033ffe6f99e0809599ea117d7a92bf30b4e8185123c07a76c502"
+    },
+    {
+      "id": "growth-first-call",
+      "wasm": "growth-first-call.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 305861688,
+      "measurement": "first call grows 64 pages; warm calls measure failed growth",
+      "wasmSha256": "b06a9d36326b90ace7bd2b8621ff6104a2b88c258d2bcdf02e3b804b9b91ec6b",
+      "sourceSha256": "5f91f4f2fa71b309a63ea1c3a0ef1d8ff167b5fe2618f30e22d0913100745261"
+    }
+  ]
+}

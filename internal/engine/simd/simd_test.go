@@ -143,7 +143,7 @@ func TestOfficialPureSIMDExpressions(t *testing.T) {
 						stack = stack[:n]
 						if in.Op>>16 == 0xfd {
 							seen[in.Op&0xffff] = true
-							r = Eval(in, operands[0], operands[1], operands[2])
+							r = Eval(&in, operands[0], operands[1], operands[2])
 						} else {
 							var trap wasm.TrapCode
 							r.Lo, trap = numeric.Eval(in.Op, operands[0].Lo, operands[1].Lo)
@@ -274,7 +274,7 @@ func TestPureOpcodeBoundary(t *testing.T) {
 					t.Errorf("accepted non-pure opcode %d", op)
 				}
 			}()
-			Eval(module.Instr{Op: 0xfd0000 | op}, Value{}, Value{}, Value{})
+			Eval(&module.Instr{Op: 0xfd0000 | op}, Value{}, Value{}, Value{})
 		}()
 	}
 	if count != 214 {
@@ -285,7 +285,7 @@ func TestPureOpcodeBoundary(t *testing.T) {
 			t.Fatal("wrong prefix")
 		}
 	}()
-	Eval(module.Instr{Op: 12}, Value{}, Value{}, Value{})
+	Eval(&module.Instr{Op: 12}, Value{}, Value{}, Value{})
 }
 func FuzzPureSIMD(f *testing.F) {
 	f.Add(uint64(0), uint64(0), uint64(0), uint64(0))
@@ -293,7 +293,7 @@ func FuzzPureSIMD(f *testing.F) {
 	f.Fuzz(func(t *testing.T, a, b, c, d uint64) {
 		for op := uint32(12); op <= 255; op++ {
 			if pureOpcode(op) {
-				Eval(module.Instr{Op: 0xfd0000 | op}, Value{Lo: a, Hi: b}, Value{Lo: c, Hi: d}, Value{Lo: d, Hi: a})
+				Eval(&module.Instr{Op: 0xfd0000 | op}, Value{Lo: a, Hi: b}, Value{Lo: c, Hi: d}, Value{Lo: d, Hi: a})
 			}
 		}
 	})

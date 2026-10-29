@@ -101,60 +101,120 @@ func TestComparisonBranchFlagsAndColdEntries(t *testing.T) {
 }
 
 func TestComparisonFlagsPollPublishesBoolean(t *testing.T) {
-	if !native.Available || runtime.GOARCH != "arm64" {
+	if !native.Available {
 		return
 	}
-	f := &slots.Function{Slots: []wasm.ValueType{wasm.I32, wasm.I32, wasm.I32}, Sources: []ir.Source{{}}, Args: []slots.Slot{2}, Edges: []slots.Edge{{PC: 3}, {PC: 3}}, Code: []slots.Instruction{
-		{Op: 1, Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
-		{Op: 0x49, Dst: 2, A: 0, B: 1, C: slots.NoSlot},
-		{Op: slots.ControlBase + uint32(ir.If), Dst: slots.NoSlot, A: 2, B: slots.NoSlot, C: slots.NoSlot, Count: 2},
-		{Op: slots.ControlBase + uint32(ir.Return), Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot, Count: 1},
-	}}
-	compiled, err := CompileUnmeteredFunction("arm64", f, DefaultLimits())
-	if err != nil {
-		t.Fatal(err)
-	}
-	// Publish cancellation after the adapter check but before the comparison.
-	// Entry at PC 1 reaches the generated poll at PC 2 with a fresh predicate.
-	var prefix []byte
-	for _, word := range []uint32{0xd2800029, 0x9100000a | uint32(nativeabi.ControlOffset)<<10, 0xc89ffd49} {
-		prefix = binary.LittleEndian.AppendUint32(prefix, word)
-	}
-	code, err := native.Publish(append(prefix, compiled.Entry.Code...), []uint32{0}, DefaultLimits().MaxCodeBytes)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer code.Close()
-	lease, err := code.Acquire()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer lease.Close()
-	for _, a := range []uint64{0, 9} {
-		ctx, err := native.NewContext(64, 64, 1)
+	for _, padding := range []int{0, 254} {
+		f := &slots.Function{Slots: []wasm.ValueType{wasm.I32, wasm.I32, wasm.I32}, Sources: []ir.Source{{}}, Args: []slots.Slot{2}, Edges: []slots.Edge{{PC: 3}, {PC: 3}}, Code: []slots.Instruction{
+			{Op: 1, Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
+			{Op: 0x49, Dst: 2, A: 0, B: 1, C: slots.NoSlot},
+			{Op: slots.ControlBase + uint32(ir.If), Dst: slots.NoSlot, A: 2, B: slots.NoSlot, C: slots.NoSlot, Count: 2},
+			{Op: slots.ControlBase + uint32(ir.Return), Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot, Count: 1},
+		}}
+		if padding != 0 {
+			prefix := make([]slots.Instruction, padding)
+			for i := range prefix {
+				prefix[i] = slots.Instruction{Op: 1, Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot}
+			}
+			f.Code = append(prefix, f.Code...)
+			for i := range f.Edges {
+				f.Edges[i].PC += uint32(padding)
+			}
+		}
+		compiled, err := CompileUnmeteredFunction(runtime.GOARCH, f, DefaultLimits())
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer ctx.Close()
-		writeSlot(t, ctx, 16, 0, value.Value{Lo: a})
-		writeSlot(t, ctx, 16, 1, value.Value{Lo: 7})
-		writeSlot(t, ctx, 16, 2, value.Value{Lo: 99})
-		if err = ctx.SetState(native.State{Used: 16, Depth: 1, Continuation: 1}); err != nil {
+		// Publish cancellation after the adapter check but before the comparison.
+		// The comparison reaches its original branch poll, including PC 256.
+		var prefix []byte
+		if runtime.GOARCH == "arm64" {
+			for _, word := range []uint32{0xd2800029, 0x9100000a | uint32(nativeabi.ControlOffset)<<10, 0xc89ffd49} {
+				prefix = binary.LittleEndian.AppendUint32(prefix, word)
+			}
+		} else {
+			prefix = []byte{0x48, 0xc7, 0x87}
+			prefix = binary.LittleEndian.AppendUint32(prefix, uint32(nativeabi.ControlOffset))
+			prefix = binary.LittleEndian.AppendUint32(prefix, 1)
+		}
+		code, err := native.Publish(append(prefix, compiled.Entry.Code...), []uint32{0}, DefaultLimits().MaxCodeBytes)
+		if err != nil {
 			t.Fatal(err)
 		}
-		if exit, err := ctx.Enter(lease, 0); err != nil || exit != native.Poll {
-			t.Fatal(exit, err)
+		defer code.Close()
+		lease, err := code.Acquire()
+		if err != nil {
+			t.Fatal(err)
 		}
-		s, err := ctx.State()
-		if err != nil || s.Continuation != 2 {
-			t.Fatal(s, err)
+		defer lease.Close()
+		for _, a := range []uint64{0, 9} {
+			ctx, err := native.NewContext(64, 64, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer ctx.Close()
+			writeSlot(t, ctx, 16, 0, value.Value{Lo: a})
+			writeSlot(t, ctx, 16, 1, value.Value{Lo: 7})
+			writeSlot(t, ctx, 16, 2, value.Value{Lo: 99})
+			if err = ctx.SetState(native.State{Used: 16, Depth: 1, Continuation: uint64(1 + padding)}); err != nil {
+				t.Fatal(err)
+			}
+			if exit, err := ctx.Enter(lease, 0); err != nil || exit != native.Poll {
+				t.Fatal(exit, err)
+			}
+			s, err := ctx.State()
+			if err != nil || s.Continuation != uint64(2+padding) {
+				t.Fatal(s, err)
+			}
+			want := uint64(0)
+			if a < 7 {
+				want = 1
+			}
+			if got := readSlot(t, ctx, 16, 2).Lo; got != want {
+				t.Fatal(got, want)
+			}
 		}
-		want := uint64(0)
-		if a < 7 {
-			want = 1
-		}
-		if got := readSlot(t, ctx, 16, 2).Lo; got != want {
-			t.Fatal(got, want)
+	}
+}
+
+func TestComparisonBranchAliasedInputs(t *testing.T) {
+	for op := uint32(0x45); op <= 0x5a; op++ {
+		for _, dst := range []slots.Slot{0, 1} {
+			f := &slots.Function{Slots: []wasm.ValueType{wasm.I64, wasm.I64, wasm.I32, wasm.I32}, Sources: []ir.Source{{}}, Args: []slots.Slot{2, 3}, Edges: []slots.Edge{{PC: 2}, {PC: 3}},
+				Code: []slots.Instruction{
+					{Op: op, Dst: dst, A: 0, B: 1, C: slots.NoSlot},
+					{Op: slots.ControlBase + uint32(ir.If), Dst: slots.NoSlot, A: dst, B: slots.NoSlot, C: slots.NoSlot, Count: 2},
+					{Op: slots.ControlBase + uint32(ir.Return), Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot, Count: 1},
+					{Op: slots.ControlBase + uint32(ir.Return), Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot, Count: 1, Extra: 1},
+				}}
+			for _, arch := range []string{"amd64", "arm64"} {
+				compiled, err := CompileUnmeteredFunction(arch, f, DefaultLimits())
+				if err != nil || (compiled.ForwardedPredicates == 1) != (arch == "arm64") {
+					t.Fatal(op, dst, arch, err)
+				}
+			}
+			if !native.Available {
+				continue
+			}
+			compiled, lease, ctx := functionContext(t, f, true)
+			for _, a := range []uint64{0, 1, 9, 0xffffffff, 1 << 63, ^uint64(0)} {
+				for _, b := range []uint64{0, 7, 1 << 32, 1 << 63} {
+					condition, trap := numeric.Eval(op, a, b)
+					if trap != wasm.NoTrap {
+						t.Fatal(trap)
+					}
+					out, exit, _ := runFunction(t, compiled, lease, ctx, []value.Value{{Lo: a}, {Lo: b}, {Lo: 11}, {Lo: 22}}, 0, false, 0)
+					want := uint64(22)
+					if condition != 0 {
+						want = 11
+					}
+					if exit != native.Return || out[0].Lo != want || readSlot(t, ctx, 16, dst).Lo != condition {
+						t.Fatal(op, dst, a, b, out, condition)
+					}
+				}
+			}
+			ctx.Close()
+			lease.Close()
 		}
 	}
 }

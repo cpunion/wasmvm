@@ -39,7 +39,139 @@ The context contains frame-arena base/limit/current offsets, module and function
 
 Each ISA defines a register-role table for context, current guest frame, memory base, scratch registers, allocatable integers, and allocatable vectors. Callee-saved registers modified by generated code are saved once at native entry and restored on every exit. The initial arm64 allocator excludes x18 and preserves the platform frame/link conventions. SIMD values spanning a yield are spilled in full, independent of the platform's narrower preservation rules. The amd64 adapter follows the System V contract; Windows is a separate future ABI. Sources: [AAPCS64](https://github.com/ARM-software/abi-aa/blob/main/aapcs64/aapcs64.rst), [x86-64 psABI](https://gitlab.com/x86-psABIs/x86-64-ABI).
 
+Scalar FP and vector slots share one physical register allocator: xmm3-xmm10
+on amd64, v8-v17 on arm64. Vector spills, reloads, locals, select and edge copies
+always preserve all 128 bits. Scratch vectors are separate from those slots:
+0-2 plus xmm11-xmm12 on amd64; arm64 reserves v0-v4. Immutable vector
+literals and legalization masks use xmm13-xmm15 or v18-v31, reload at every entry, and never become a
+writable result register. Baseline SSE2 implements packed i32 multiplication
+without requiring SSE4.1; NEON uses native packed operations. Integer i16/i32
+affine fusion uses modular distributivity and MLA on arm64, retains observable
+intermediate values, and preserves every original PC as a cold continuation.
+Precise-fuel code does not fuse instructions and charges each SIMD opcode once.
+
+All 52 Core 2.0 SIMD floating-point instructions lower directly on SSE2 and
+NEON. SSE2 rounding uses signed mantissa thresholds, ordered corrections and
+negative-zero restoration; it never assumes SSE4.1. Saturating conversions
+handle NaNs, signed/unsigned boundaries and zeroed upper lanes explicitly.
+Unsigned i32-to-f32 conversion splits exact 16-bit halves before the final
+rounding; i32-to-f64 conversion remains exact. Min/max preserve WebAssembly
+zero/NaN behavior, while pseudo-min/max and sign-only operations preserve the
+selected operand's exact bits. No floating-point multiply/add is contracted.
+
+Immutable vector literals can feed any adjacent native vector operation,
+including a following local assignment. Bounded backward-edge spans prioritize
+loop literals over one-time initialization without changing cold-entry values.
+An omitted temporary must be overwritten
+before a reader, trap, helper, poll or control edge; every interior PC keeps a
+standalone continuation. ARM64 selections use BSL/BIT/BIF to target allocated
+result registers directly, preserving aliased inputs without scratch copies.
+
+All 236 fixed-SIMD operations now have direct native lowering. The remaining
+39 integer/permutation operations use NEON or SSE2 packed legalizations, including
+widening/narrowing, pairwise sums, widening multiplication, Q15, dot products and
+byte permutations. SSE2's general byte permutation expansion is explicit.
+Optional SSSE3 supplies byte lookup and Q15 instructions; SSE4.1 supplies packed
+rounding, widening, unsigned narrowing and i32 multiplication. SSE4.1 min/max
+uses ordered blending and canonical NaN selection while pseudo-min/max retain
+selected raw bits. AVX2 enables VEX.128 three-operand arithmetic, selection,
+permutation, narrowing/widening and packed variable shifts. The platform adapter
+queries CPUID and reads XCR0 only after CPUID advertises XSAVE/OSXSAVE/AVX.
+The AVX2 bit requires both XMM/YMM OS state and CPUID leaf 7 AVX2; synthetic
+CPU-only support cannot enable the path. A pure-Go compiler
+configuration records the selected bit mask and rejects unknown/wrong-target
+features. A zero mask always retains SSE2. Native phase reports record the mask;
+legacy baseline report adapters use zero without altering their engine sources.
+
+Variable shifts mask the scalar count once and broadcast it to packed lanes.
+SSE2 byte masks prevent cross-byte contamination; signed i64 right shift uses
+an explicit sign correction. ARM64 uses packed minimum/maximum reductions,
+weighted sign masks and scalar extraction for the two i64 signs. Compiler-made
+masks share the immutable literal pool, with loop frequency and materialization
+cost determining priority. Every entry reloads this pool; no guest slot aliases
+its registers. Tests exhaust the register budget through v31 and resume every
+original PC independently.
+
+All 22 Core 2.0 SIMD memory instructions lower directly on both targets. Full
+vectors, widening and zero-extending loads, scalar splats and lane accesses
+share scalar memory's widened address and exact-width bounds checks. ARM64 uses
+NEON; amd64 requires only baseline SSE2. A lane access never reads or writes a
+whole vector outside its declared width. Entry reloads the memory binding after
+growth; an out-of-bounds store has no partial effect.
+For proven ARM64 accesses, small static offsets adjust the stable memory base
+before a UXTW-indexed load/store. This removes an addition from the dynamic
+address dependency; larger offsets retain scaled or full-address forms. No
+alignment, wrapped i32 index or cold-entry bounds assumption changes.
+
+Bounded range analysis includes native SIMD operations and proves an access
+against the module's minimum memory size. Each original interior PC retains a
+checked cold entry. Unproved memory accesses stop copy/dead-value elimination,
+preserving every intermediate slot observable in a trap frame. Within a proven
+straight-line region, vector copies remain materialized, while consumers may
+read an equal source register to shorten dependencies. Writes invalidate both
+the destination's alias and aliases naming it; no equality survives a region,
+poll, helper or control-flow boundary.
+
 Hardware-call fast paths, hardware guest-stack switching, or direct generated-code-to-Go callbacks are later design changes. They require new root, unwind, stack-limit, cancellation, and dual-compiler evidence; they are not implied by an instruction encoder passing arithmetic tests.
+
+The unmetered compiler can expand a same-module integer leaf of at most 32 slot
+instructions into disposable caller registers. Forward result edges are allowed;
+conditional/backward edges, calls, traps, references and mutable runtime state
+are excluded. Shared expressions emit once, and observable caller slots remain
+intact. Register pressure leaves the ordinary native call in place. Expansion
+does not add hardware stack frames or alter continuation IDs. Call cancellation
+polls remain, and the precise-fuel tier never expands calls. The module retains
+an ordinary entry alongside an optional expanded entry; the driver selects the
+latter only when the original callee's logical slot and depth requirements fit.
+Otherwise the ordinary entry checks limits when the call actually executes,
+including untaken conditional calls. Required entries consume the code budget
+before optional copies. This is an optimization of leaf calls, not acceptance
+of the general native guest-call ABI.
+
+Indirect calls may expand up to four eligible same-module leaves per structural
+signature. Native code checks the current table's unsigned index and compares
+the live reference with the instance's immutable function identity. A miss uses
+the original checked call, preserving bounds/null/type traps, imported and
+cross-instance calls. This is guarded expansion, not a static-table assumption.
+Entries using indirect expansion, direct globals or table/reference operations
+use `Payload[2]`
+for an execution-owned native word array: function handles in module order,
+followed by `(length, native base)` per table, then one pointer per global
+index. Numeric cells follow these descriptors; only globals used by the current
+function need cells. Imported aliases share a cell by canonical Global identity.
+The common frame machine retains the referenced instance and tables. Every
+host/helper handoff refreshes table pointers, and instance changes replace
+function identities. No Go address or guest-supplied pointer enters this view.
+On arm64, unused constant-pool registers cache the most frequently referenced
+table metadata, numeric cell pointers and function identities for one entry. All mutable state effects
+exit before changing them; every resume reloads the cache. Table elements always
+remain live loads. A missing view installs zero cached lengths and uses the
+checked call path. Partial or exhausted register capacity retains explicit loads.
+
+Both native tiers directly load/store i32/i64/f32/f64/v128 cells. Missing views
+are rejected before any guest instruction, including cold continuations. The
+driver snapshots canonical Go globals before each Run and flushes cells after
+every native exit, before servicing traps, fuel, cancellation, helpers or calls.
+Poll/Move resumes retain the current cells. Every host/helper handoff rebinds on
+the next Run, so host mutation and same/cross-instance reentry observe ordered
+writes. Functions without numeric globals never flush stale bindings. Suspension
+and close clear cached Go roots. Reference globals keep the existing helper/root
+protocol; this view does not provide shared-memory atomic globals or WasmGC.
+
+Both native tiers directly implement table.get/table.set and ref.func using this
+view. Table indices are zero-extended i32 values, compared with the current
+unsigned length before any element address is formed. Allocated arm64 homes
+use an extended comparison and UXTW addressing; no raw high index bits enter
+the address and the home itself is not overwritten. Empty native tables trap
+without dereferencing a null base; Go-backed and retired tables are rejected at
+binding, including empty Go tables. Element writes update Store-owned native
+storage immediately, so aliases and the reference tracer see the same cells.
+Function references load complete instance-specific handles, including imported
+functions, rather than machine addresses. Reference results have canonical zero
+high words. Every exit spills the existing typed reference map before host
+reentry or collection. Growth and bulk helpers remain explicit driver exits;
+every resume refreshes the table length/base view. Missing views fail at entry
+for direct operations; indirect-only expansion retains its checked fallback.
 
 ## Exit protocol and safepoints
 
@@ -104,12 +236,18 @@ observation consumes no host-published state and needs no acquire barrier. The
 control word is monotonic until the execution ends. This follows the Arm
 [load-to-load/store barrier mapping](https://support.arm.com/documentation/102336/0100/Limiting-the-scope-of-memory-barriers).
 
-A small fixed allocator assigns the most referenced scalar slots to eight
-amd64 or ten arm64 registers, excluding context, frame and constrained integer
-scratch registers. Assignments remain identical across CFG edges. Entries load
-the retained frame; every exit spills the cached slots, including reference
-handles. Remaining scalars and all vectors use the frame. Scalar `Hi == 0` is the
-existing `value.Value` contract; vector copies retain all 128 bits. The driver
+A fixed allocator prioritizes scalar homes using bounded backward-CFG interval
+hints, with eight amd64 registers (six with memory) or eighteen arm64 registers,
+excluding context, frame and constrained integer scratch registers. ARM64 homes
+prefer x19-x28 and compete with immutable constants/runtime words for x1-x8 in
+one deterministic ranking. Literal materialization savings and runtime-word
+access savings use the same loop hints. Immutable classes no longer wait for all
+cold homes to allocate. FP/vector homes retain their separate physical pool.
+Analysis budgets fall back to lower-priority hints rather than changing execution.
+Leaf expansion uses the same inventory and excludes those immutable registers. Assignments remain identical across CFG
+edges. Entries load the retained frame; every exit spills the cached slots, including reference
+handles. Remaining scalars use the frame; vector slots use their separate cache
+or the frame. Scalar `Hi == 0` is the existing `value.Value` contract; vector copies retain all 128 bits. The driver
 must preserve that contract on initial entry, helper results and resumption.
 Common arithmetic names allocated registers directly, while constrained
 instructions use the existing checked lowering. A constant immediately followed
@@ -127,7 +265,7 @@ and the precise fuel tier never combines instruction boundaries. This is general
 instruction selection, with no workload-specific pattern or competitor fallback.
 
 This is an early architecture improvement, not a complete native runtime.
-Native memory, guest calls, runtime exits, precise metering optimization, global
+Complete native memory integration, guest calls, runtime exits, precise metering optimization, global
 liveness/allocation and the full-profile performance gates remain unfinished.
 Memory operations and guest calls must receive their own same-workload
 competitor comparisons before their development PRs can merge.
@@ -181,3 +319,180 @@ copies publish explicit exits; connecting them to the runtime driver remains
 subsequent work. Public native
 backend selection remains unsupported until the complete Core 2.0 backend is
 implemented and validated.
+
+## Local scalar floating-point development
+
+The scalar development branch emits f32/f64 comparisons, arithmetic, rounding,
+min/max, sign changes and bit reinterpretation through the same function emitter.
+It uses baseline SSE2 on amd64 and scalar FP instructions on arm64. All 26
+saturating, trapping, widening and narrowing conversions are emitted natively.
+Together with integer lowering, this covers all 136 Core 2.0 scalar numeric
+operations; runtime calls and SIMD remain separate open work.
+
+Fixed typed FP registers complement the existing integer cache. Entries reload
+retained slots and every exit spills them; FP scratch registers remain separate.
+A bounded copy/constant combiner forwards FP dependencies and following local
+assignments while preserving intermediate slots. Each interior original PC has
+an independent cold entry, and neither fuel nor cancellation boundaries are
+combined. All 256 ARM scalar FP immediate encodings are checked. Tests cover
+both widths, aliases, register pressure, helper frame updates, every continuation,
+source clobbers, poll boundaries and the scan limit. These implementation results
+are separate from the still-open native runtime and competitor acceptance gates.
+
+
+## Local scalar memory development
+
+ABI version 2 extends the fixed record from 152 to 168 bytes, appending
+`MemoryBase` at offset 152 and `MemorySize` at offset 160. Existing fields retain
+their offsets. The platform verifies the same layout in C, Go and LLGo.
+
+`native.Memory` owns zeroed off-heap storage and copies bytes through idle-only
+accessors. Context bindings retain storage; close retires the owner and waits for
+bindings and active entry to drain. Only one context enters a given memory at a
+time. Growth allocates, copies, commits, and refreshes the context at the next
+entry; failure leaves the previous allocation and size intact. The eventual
+Store must account for peak old-plus-new bytes, instance/aggregate quotas and
+shared/imported ownership. This private-memory owner is not Core Threads support.
+
+The emitter supports all 23 scalar loads/stores, memory.size and the explicit
+GrowMemory exit. A growth exit names the charged instruction and resumes after
+it; the idle driver writes old page count or i32(-1), then reenters. Each entry
+reloads the memory base and length. amd64 reserves r10/r11; arm64 reserves x16/x17.
+Widened address arithmetic checks the entire access before any memory effect.
+
+The unmetered tier can prove bounded addresses from constants, masks, shifts and
+non-wrapping arithmetic in straight-line regions of at most 256 slot instructions.
+Straight-line facts do not cross original CFG entries or host exits. A separate
+bounded single-block loop proof can authorize private backedges for the current
+native entry. Those backedges still poll; dispatcher PCs and driver resumption
+always recheck the original header. No guard state is added to the ABI. Entry validates the assumed
+minimum memory size. Each interior original PC has a checked cold continuation,
+so independent resumption cannot inherit an unexecuted proof. Shared scalar
+copy forwarding omits only copies overwritten before any read or observable exit.
+The precise fuel tier retains checks and instruction boundaries. On arm64, up to
+eight expensive integer constants occupy caller-saved x1-x8 left free by
+mutable slots. Runtime table metadata and function identities use the remaining
+capacity after constants. These words are immutable within an entry, refreshed
+on resume and excluded from leaf-expression allocation; arbitrary continuations
+still use their own mutable operand slots.
+
+The arm64 unmetered emitter folds a low-bit mask followed by a left shift (or
+power-of-two multiply) into UBFIZ when the intermediate is unobservable. Shift
+results can feed ADD/SUB or logical operations directly when their intermediate
+slot is dead before an observation. Logical forms also accept
+rotated operands; ADD/SUB keep the ordinary rotate lowering. Mutable constants
+remain materialized when live. Every original PC keeps its generic continuation.
+Integer comparisons can feed conditional branches directly through NZCV; the
+canonical boolean remains materialized for cancellation and edge copies. Independent
+continuations use the retained boolean instead of inherited processor flags.
+After emission, one bounded layout pass removes spare words from known near
+conditional branches and relocates labels, jump tables, ADRs and continuation
+offsets together. Temporary code bytes may reach twice the body limit while
+branches reserve long forms; published bytes still obey the exact configured
+limit. This layout pass also applies to the precise-fuel tier without changing
+its instruction boundaries.
+
+The shared test driver executes 12,068 assertions per tier from 13 complete pinned
+scalar scripts (27 modules), including store, memory and memory_size; 347 frontend
+commands are counted separately. The full load, memory_trap, memory_grow and
+memory_redundancy scripts still need calls, globals or import/linking in the Store
+driver, and are not claimed as passed. Targeted tests cover all access widths,
+sign extension, raw floating bits, aligned/unaligned bounds, growth relocation,
+fuel-before-store, continuation checks and concurrent memory lifetime. The
+[development scope](../../benchmarks/native/memory-plan.md) records performance
+limitations. Public native selection and M2 acceptance remain open.
+
+
+## Shared Core 2.0 runtime integration (development)
+
+`engine/execute` owns frames, limits, host requests and roots for both backends.
+`engine/nativeexec` prepares both native tiers and dispatches only published C
+entries. Scalar/control code and all 236 fixed-SIMD operations run natively.
+Ordinary calls and state/bulk
+effects use validated typed exits. Each helper instruction has already consumed its
+fuel and cannot be charged a second time by the common machine. Large edge-copy
+plans are serviced in bounded chunks. No function falls back to slot dispatch.
+
+Native frame slots, linear memories and tables use pointer-free off-heap
+allocations. Table elements remain Store-local uint64 reference handles scanned
+by the same root visitor. Failed allocation and unreachable-instance cleanup
+release their storage. Trusted Store code borrows private slices while native execution is idle;
+no slice is exposed through `pkg/vm`. Arena growth preserves live slots, clears
+new/reused locals, updates the record and invalidates the old view. Memory growth
+refreshes the shared Memory object's view and every resumed entry's base/length.
+One Store operation excludes concurrent access. Suspended parents retain memory
+bindings while host reentry uses another context against the same idle owner.
+Logical page quotas bound growth; peak old-plus-new storage is at most twice the
+aggregate logical memory limit. Physical arena capacity is bounded by MaxSlots.
+
+CompiledModule retirement preserves Store-held executable leases. Failed module
+leases are swept with unreachable failed instances, including escaped-function
+roots; Store close releases publication only after execution and callbacks drain.
+The common root visitor scans typed slots in the same arena, so host collection
+does not require copying a guest frame. Full native corpus, public host/reentry,
+fuel, cancellation, close and panic tests exercise these contracts with Go/LLGo.
+Call/helper speed and the final target matrix remain open acceptance gates.
+
+
+### Bounded reusable invocation workspace
+
+Each Store owns at most one idle outer-call workspace containing the existing
+shared execution driver and, for native mode, its off-heap arena/context.
+A call removes the workspace from the cache until it leaves. Host reentry uses
+fresh independent workspaces and the same remaining frame/slot/fuel limits; it
+cannot overwrite or cache its suspended parent's workspace. Arguments and
+public results keep their existing copied/rooted ownership. Raw borrowed
+results remain valid through public encoding; their pointer-free values are
+not guest GC roots once the invocation's frames leave. Reused locals are zeroed.
+
+Before caching, quiescence releases guest frame references, pending host
+requests, the invocation context and the linear-memory binding. Native metadata
+keeps bounded storage but drops its former instance identity so that the next
+entry rebuilds it from live Store state. Policy rebinding resets fuel, steps,
+metering and execution limits without replacing the backend.
+
+The former native cancellation callback must stop before it starts. A callback
+that already started makes the workspace non-reusable, even if native entry has
+returned: its sticky control word is never reset. Discard/close serializes with
+late cancellation through Context ownership. Normal release stops the callback
+before operation completion cancels its context. Store close retires an idle
+workspace before state and executable leases; an active call retains ownership
+until its deferred cleanup, including panic and close-from-callback paths.
+
+
+### Fallthrough interrupt polling
+
+Unmetered no-copy jumps to the immediately following slot PC are ordinary
+fallthrough. They no longer add a duplicate interrupt poll. Periodic PCs still
+poll every 256 instructions, including when that PC is a fallthrough jump.
+Every nonadjacent/backward/conditional/table transfer, copied edge and guest
+call retains its check, so no cycle or forward skip can evade the bound.
+Precise-fuel scheduling remains unchanged. On amd64, a full-width aligned
+memory comparison replaces the separate control load/test; ARM64 retains
+load/CBNZ. The cold exits preserve acquire ordering, live slots and exact PCs.
+
+
+### Short-vector AVX-512 and exact SIMD immediates
+
+Compiler feature bits 3/4 describe independently usable AVX512F+VL and
+AVX512F+VL+BITALG capabilities. The platform requires XSAVE/OSXSAVE/AVX and
+XCR0 bits 1,2,5,6,7 before advertising either; BITALG additionally requires
+CPUID leaf 7 ECX bit 12. Both still use 128-bit slots and XMM0-XMM15 with k0.
+VPSRAVQ replaces signed-qword-shift legalization; VPOPCNTB replaces byte lookup
+and its masks. Other CPU/OS combinations retain the earlier legalizations.
+The first hosted amd64 comparison reports mask 7, so it does not execute
+AVX-512. Emission tests and LLVM encoding checks are not native-host acceptance.
+
+Guest literals and compiler-created floating masks share a bounded immediate
+selector. AArch64 MOVI/MVNI/FMOV forms reproduce exact bits for repeated byte,
+halfword and word patterns, shifted/complemented fields, MSL fills, doubleword
+byte masks and representable FP32/FP64 values. Unrepresentable values retain
+the old materialization path; no floating rounding is used in selection. x86
+uses zero/all-ones idioms where exact. Each caller retains its fallback scratch
+contract, immutable pool identity and cold-slot observability.
+
+AVX2 shuffle writes its final allocated result after both sources are consumed.
+NEON TBL names consecutive inputs directly when possible and reads a cached mask
+without copying it into scratch. Nonconsecutive inputs retain the existing safe
+scratch pair. No new execution framework, literal island or relocation mode is
+introduced, and neither semantic fuel nor cancellation polling moves.

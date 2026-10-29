@@ -5,7 +5,9 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/cpunion/wasmvm/internal/engine/interp"
+	"github.com/cpunion/wasmvm/internal/compiler/slots"
+	"github.com/cpunion/wasmvm/internal/engine/execute"
+	"github.com/cpunion/wasmvm/internal/engine/nativeexec"
 	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -19,7 +21,7 @@ var (
 )
 
 type StoreLimits = state.Limits
-type ExecutionLimits = interp.Limits
+type ExecutionLimits = execute.Limits
 type StoreConfig struct {
 	Limits                                  StoreLimits
 	Execution                               ExecutionLimits
@@ -27,7 +29,7 @@ type StoreConfig struct {
 }
 
 func DefaultStoreConfig() StoreConfig {
-	return StoreConfig{state.DefaultLimits(), interp.DefaultLimits(), 1 << 20, 1 << 20, 32}
+	return StoreConfig{state.DefaultLimits(), execute.DefaultLimits(), 1 << 20, 1 << 20, 32}
 }
 
 type CallOptions struct {
@@ -39,16 +41,18 @@ type CallResult struct {
 	FuelRemaining uint64
 }
 type Store struct {
-	mu         sync.Mutex
-	engine     *Engine
-	config     StoreConfig
-	state      *state.Store
-	closing    bool
-	closed     chan struct{}
-	active     *operation
-	roots      map[*reference]struct{}
-	externs    map[uint64]any
-	nextExtern uint64
+	mu            sync.Mutex
+	engine        *Engine
+	config        StoreConfig
+	state         *state.Store
+	closing       bool
+	closed        chan struct{}
+	active        *operation
+	roots         map[*reference]struct{}
+	externs       map[uint64]any
+	nextExtern    uint64
+	nativeModules map[*slots.Module]*nativeexec.Lease
+	workspace     *callWorkspace
 }
 type operation struct {
 	store   *Store
@@ -56,7 +60,7 @@ type operation struct {
 	cancel  context.CancelFunc
 	options CallOptions
 	fuel    uint64
-	frames  []*interp.Execution
+	frames  []*execute.Execution
 	pending []*state.Instance
 	depth   uint32
 	collect bool
@@ -68,7 +72,11 @@ func (e *Engine) NewStore(config StoreConfig) (*Store, error) {
 	if e.closed {
 		return nil, wasm.ErrClosed
 	}
-	return &Store{engine: e, config: config, state: state.New(config.Limits), closed: make(chan struct{}), roots: make(map[*reference]struct{}), externs: make(map[uint64]any)}, nil
+	core := state.New(config.Limits)
+	if e.config.Backend == "native" {
+		core = state.NewNative(config.Limits)
+	}
+	return &Store{engine: e, config: config, state: core, nativeModules: make(map[*slots.Module]*nativeexec.Lease), closed: make(chan struct{}), roots: make(map[*reference]struct{}), externs: make(map[uint64]any)}, nil
 }
 func resourceLimit(detail string) error { return &wasm.Error{Kind: wasm.ErrLimit, Detail: detail} }
 func (s *Store) begin(ctx context.Context, options CallOptions) (*operation, error) {
@@ -118,7 +126,15 @@ func (s *Store) Close() {
 	}
 }
 func (s *Store) closeLocked() {
+	if s.workspace != nil {
+		s.workspace.execution.Close()
+		s.workspace = nil
+	}
 	s.state.Close()
+	for _, lease := range s.nativeModules {
+		lease.Close()
+	}
+	s.nativeModules = nil
 	for r := range s.roots {
 		r.released = true
 	}
@@ -197,6 +213,16 @@ func (s *Store) collectLocked(op *operation) {
 	}
 	s.state.CollectFailed(functions, active)
 	s.state.RetainedValues(visit)
+	if len(s.nativeModules) != 0 {
+		live := make(map[*slots.Module]bool)
+		s.state.RetainedModules(func(m *slots.Module) { live[m] = true })
+		for m, lease := range s.nativeModules {
+			if !live[m] {
+				lease.Close()
+				delete(s.nativeModules, m)
+			}
+		}
+	}
 	for id := range s.externs {
 		if !marked[id] {
 			delete(s.externs, id)

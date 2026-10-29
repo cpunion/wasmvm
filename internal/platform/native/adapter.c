@@ -6,6 +6,30 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#ifdef __x86_64__
+#include <cpuid.h>
+#endif
+
+void wasmvm_cpu_probe(uint32_t *ecx1, uint32_t *ebx7, uint32_t *ecx7, uint64_t *xcr0) {
+    *ecx1 = *ebx7 = *ecx7 = 0;
+    *xcr0 = 0;
+#ifdef __x86_64__
+    unsigned int eax, ebx, ecx, edx;
+    if (!__get_cpuid(1, &eax, &ebx, &ecx, &edx)) return;
+    *ecx1 = ecx;
+    const unsigned int avx_state = (1u << 26) | (1u << 27) | (1u << 28);
+    if ((ecx & avx_state) == avx_state) {
+        unsigned int low, high;
+        __asm__ volatile ("xgetbv" : "=a"(low), "=d"(high) : "c"(0));
+        *xcr0 = ((uint64_t)high << 32) | low;
+    }
+    if (__get_cpuid_max(0, NULL) >= 7) {
+        __cpuid_count(7, 0, eax, ebx, ecx, edx);
+        *ebx7 = ebx;
+        *ecx7 = ecx;
+    }
+#endif
+}
 #ifdef __APPLE__
 #include <pthread.h>
 #include <libkern/OSCacheControl.h>
@@ -100,7 +124,7 @@ void wasmvm_deallocate(void *p) { free(p); }
 void wasmvm_cancel(struct wasmvm_record *ctx) { __atomic_store_n(&ctx->control, 1, __ATOMIC_RELEASE); }
 
 uint32_t wasmvm_enter(const void *entry, struct wasmvm_record *ctx) {
-    if (ctx->version != 1 || ctx->used > ctx->capacity || ctx->depth > ctx->max_depth) return 0;
+    if (ctx->version != 2 || ctx->used > ctx->capacity || ctx->depth > ctx->max_depth) return 0;
     if (__atomic_load_n(&ctx->control, __ATOMIC_ACQUIRE)) return 6; /* Poll */
     fenv_t saved;
     if (fegetenv(&saved) != 0) return 0;
@@ -123,7 +147,8 @@ uint64_t wasmvm_layout(uint32_t field) {
         offsetof(struct wasmvm_record, root_map), offsetof(struct wasmvm_record, fuel),
         offsetof(struct wasmvm_record, budget), offsetof(struct wasmvm_record, result_lo),
         offsetof(struct wasmvm_record, result_hi), offsetof(struct wasmvm_record, payload),
-        offsetof(struct wasmvm_record, control)
+        offsetof(struct wasmvm_record, control),
+        offsetof(struct wasmvm_record, memory_base), offsetof(struct wasmvm_record, memory_size)
     };
     return field < sizeof(offsets)/sizeof(offsets[0]) ? offsets[field] : UINT64_MAX;
 }

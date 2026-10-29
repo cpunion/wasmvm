@@ -1,7 +1,7 @@
 package codegen
 
 import (
-	"sort"
+	"math/bits"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -11,55 +11,58 @@ import (
 // assignment is identical at every CFG edge and continuation. This first local
 // allocator needs neither edge shuffles nor speculative liveness assumptions.
 // Operands, integer-core scratch, the frame base and context are excluded.
-func (e *functionEmitter) prepareRegisters() {
-	weights := make([]uint64, len(e.f.Slots))
-	use := func(s slots.Slot) {
-		if s != slots.NoSlot && e.f.Slots[s] != wasm.V128 {
-			weights[s]++
-		}
+func (e *functionEmitter) prepareRegisters(plans ...map[int]memoryRegion) {
+	var regions map[int]memoryRegion
+	if len(plans) != 0 {
+		regions = plans[0]
 	}
-	for _, in := range e.f.Code {
-		use(in.A)
-		use(in.B)
-		use(in.C)
-		use(in.Dst)
-		if in.Op >= 0x20 && in.Op <= 0x22 {
-			use(slots.Slot(e.f.Sources[in.Source].Wasm.A))
-		}
+	e.allocateRegisters(Config{}, regions)
+}
+
+// Mutable slots and leaf expressions share the target inventory. Planned
+// immutable constants and runtime metadata reserve disjoint ARM caller registers.
+func (e *functionEmitter) integerRegisterPool() []byte {
+	pool := []byte{3, 12, 13, 14, 15, 9, 10, 11}
+	if e.usesMemory {
+		pool = pool[:6]
 	}
-	for _, m := range e.f.Moves {
-		use(m.Src)
-		use(m.Dst)
-	}
-	var order []slots.Slot
-	for s, n := range weights {
-		if n != 0 {
-			order = append(order, slots.Slot(s))
-		}
-	}
-	sort.Slice(order, func(i, j int) bool {
-		if weights[order[i]] != weights[order[j]] {
-			return weights[order[i]] > weights[order[j]]
-		}
-		return order[i] < order[j]
-	})
-	available := []byte{3, 12, 13, 14, 15, 9, 10, 11} // rbx, r12-r15, r9-r11
 	if e.a.arch == "arm64" {
-		available = []byte{19, 20, 21, 22, 23, 24, 25, 26, 27, 28}
+		pool = []byte{19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 1, 2, 3, 4, 5, 6, 7, 8}
 	}
-	if len(order) > len(available) {
-		order = order[:len(available)]
+	var used [32]bool
+	for _, r := range e.constantRegisters {
+		used[r] = true
 	}
-	// Load before installing the map: slotLoad must read the backing frame.
-	for i, s := range order {
-		e.slotLoad(s, 0, false, true)
-		e.registerMove(available[i], e.operandRegister(0), true)
+	for _, r := range e.runtimeRegisters {
+		used[r] = true
 	}
-	e.registerSlots = order
-	e.registers = make(map[slots.Slot]byte, len(order))
-	for i, s := range order {
-		e.registers[s] = available[i]
+	free := pool[:0]
+	for _, r := range pool {
+		if !used[r] {
+			free = append(free, r)
+		}
 	}
+	return free
+}
+
+func (e *functionEmitter) spareCallerRegisters() []byte {
+	var used [32]bool
+	for _, r := range e.registers {
+		used[r] = true
+	}
+	for _, r := range e.constantRegisters {
+		used[r] = true
+	}
+	for _, r := range e.runtimeRegisters {
+		used[r] = true
+	}
+	var free []byte
+	for r := byte(1); r <= 8; r++ {
+		if !used[r] {
+			free = append(free, r)
+		}
+	}
+	return free
 }
 
 func (e *functionEmitter) operandRegister(reg byte) byte {
@@ -88,19 +91,22 @@ func (e *functionEmitter) registerMove(dst, src byte, wide bool) {
 }
 
 func (e *functionEmitter) spillRegisters() {
-	registers := e.registers
-	if len(registers) == 0 {
-		return
-	}
-	e.registers = nil
+	registers, floats := e.registers, e.floatRegisters
+	e.registers, e.floatRegisters = nil, nil
 	// Stable order makes emitted code independent of Go map iteration order.
 	for _, s := range e.registerSlots {
+		if r, ok := e.vectorRegisters[s]; ok {
+			e.vectorMemory(s, r, true)
+			continue
+		}
 		if r, ok := registers[s]; ok {
 			e.registerMove(e.operandRegister(0), r, true)
-			e.slotStore(slots.Slot(s), 0, false)
+		} else {
+			e.floatToInteger(e.operandRegister(0), floats[s], e.f.Slots[s] == wasm.F64)
 		}
+		e.slotStore(s, 0, false)
 	}
-	e.registers = registers
+	e.registers, e.floatRegisters = registers, floats
 }
 
 // Common integer operations can name the allocated registers directly. The
@@ -122,7 +128,7 @@ func (e *functionEmitter) canRegisterInteger(op uint32, dst, left, right slots.S
 	if integerWide(op) {
 		kind = op - 0x79
 	}
-	return (kind >= 3 && kind <= 5 || kind >= 10 && kind <= 17) && (e.a.arch == "arm64" || d != r || d == l)
+	return (kind >= 3 && kind <= 5 || kind >= 10 && kind <= 17) && (e.a.arch == "arm64" || kind != 4 || d != r || d == l)
 }
 
 func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot) bool {
@@ -174,11 +180,11 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 		a.arm(wide, ins|uint32(r)<<16|uint32(l)<<5|uint32(d))
 		return true
 	}
-	// Two-address x86 operations must preserve the right operand if it also
-	// names the destination. Slot lowering normally avoids this overlap, but
-	// this emitter also accepts independently constructed trusted slot IR.
-	if d == r && d != l {
-		return false
+	// Commutative operations can start with either operand. Variable shifts
+	// capture their count in CL before replacing an aliased destination.
+	// Right-aliased subtraction retains the constrained-register fallback.
+	if d == r && d != l && kind < 13 {
+		l, r = r, l
 	}
 	if kind >= 13 && kind <= 17 {
 		e.registerMove(1, r, false) // Variable shifts and rotates use CL.
@@ -211,10 +217,7 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 	default:
 		return false
 	}
-	// Arithmetic writes the complete result, including i32 zero extension.
-	if d != l {
-		e.registerMove(d, l, wide)
-	}
+	e.registerMove(d, l, wide)
 	src, dest := r, d
 	if kind == 5 {
 		src, dest = d, r
@@ -233,7 +236,7 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 	return true
 }
 
-// Immediate selection is valid only along a proven constant fallthrough.
+// Immediate shift selection is valid only along a proven constant fallthrough.
 // The original slot PC keeps the generic instruction for independent entry.
 func (e *functionEmitter) canRegisterImmediate(op uint32, dst, left slots.Slot, bits uint64) bool {
 	_, dok := e.registers[dst]
@@ -251,10 +254,49 @@ func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, val
 	if e.a.arch == "amd64" && e.x86ArithmeticImmediate(op, d, l, value) {
 		return true
 	}
+	wide := integerWide(op)
+	if !wide {
+		value = uint64(uint32(value))
+	}
+	if op == 0x6c || op == 0x7e {
+		if value != 0 && value&(value-1) == 0 {
+			shift := uint32(0x74)
+			if wide {
+				shift = 0x86
+			}
+			return e.registerImmediate(shift, dst, left, uint64(bits.TrailingZeros64(value)))
+		}
+	}
+	if e.a.arch == "arm64" {
+		ins, ok := uint32(0), false
+		switch op {
+		case 0x6a, 0x7c, 0x6b, 0x7d:
+			if value < 4096 {
+				ins, ok = 0x11000000|uint32(value)<<10, true
+				if op == 0x6b || op == 0x7d {
+					ins |= 1 << 30
+				}
+			}
+		case 0x71, 0x83:
+			if value != 0 && value != ^uint64(0) && value&(value+1) == 0 {
+				ins, ok = 0x53000000|uint32(bits.Len64(value)-1)<<10, true
+				if wide {
+					ins |= 1 << 22
+				}
+			}
+		case 0x6c, 0x7e:
+			if value > 2 && (value-1)&(value-2) == 0 {
+				ins, ok = 0x0b000000|uint32(l)<<16|uint32(bits.TrailingZeros64(value-1))<<10, true
+			}
+		}
+		if ok {
+			e.a.arm(wide, ins|uint32(l)<<5|uint32(d))
+			return true
+		}
+	}
 	if !(op >= 0x74 && op <= 0x78 || op >= 0x86 && op <= 0x8a) {
 		return false
 	}
-	wide := integerWide(op)
 	first, width := uint32(0x74), uint32(32)
 	if wide {
 		first, width = 0x86, 64
@@ -262,11 +304,7 @@ func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, val
 	kind, count := op-first, uint32(value)&(width-1)
 	a := e.a
 	if a.arch == "amd64" {
-		// A nonzero i32 shift writes and zero-extends its destination. Retain
-		// canonicalization when the masked count is zero and no write occurs.
-		if d != l || !wide && count == 0 {
-			e.registerMove(d, l, wide)
-		}
+		e.registerMove(d, l, wide)
 		rex := byte(0x40) | d>>3
 		if wide {
 			rex |= 8

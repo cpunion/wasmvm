@@ -84,13 +84,22 @@ func TestCompleteCore2Slots(t *testing.T) {
 	t.Logf("Symbolically checked %d functions in %d modules: %d SSA values use %d temporary slots (including edge scratch); no guest execution assertions run.", functions, modules, values, slots)
 }
 
-// Interpret the allocator's output using symbolic SSA identities, independently
-// of instruction semantics. Every operand must still contain its original
-// value, and every selected edge must implement simultaneous assignment.
+// Interpret slot transfers with symbolic SSA identities and local value
+// versions and literal bits. Other operations introduce fresh tokens. Every
+// operand and selected edge must preserve its value.
 func checkSymbolic(t *testing.T, name string, f *ir.Function, out *Function) {
 	t.Helper()
 	for bi, b := range f.Blocks {
 		state := make([]int, len(out.Slots))
+		symbols := make([]int, len(f.Values))
+		literals := map[struct {
+			typ    wasm.ValueType
+			bits   uint64
+			vector [16]byte
+		}]int{}
+		for i := range symbols {
+			symbols[i] = i
+		}
 		for i := range state {
 			state[i] = -1
 		}
@@ -107,11 +116,14 @@ func checkSymbolic(t *testing.T, name string, f *ir.Function, out *Function) {
 				}
 			}
 		}
+		for i := range f.Locals {
+			state[i] = -2 - i
+		}
 		// Block-local definitions may share storage with other blocks. They will be
 		// overwritten before use; cross-block values have dedicated storage.
 		expect := func(s Slot, v ir.Value) {
-			if int(s) >= len(state) || state[s] != int(v) || out.Slots[s] != f.Values[v] {
-				t.Fatalf("%s block %d: slot %d = %d, want value %d (%s)", name, bi, s, state[s], v, f.Values[v])
+			if int(s) >= len(state) || state[s] != symbols[v] || out.Slots[s] != f.Values[v] {
+				t.Fatalf("%s block %d: slot %d = %d, want value %d token %d (%s)", name, bi, s, state[s], v, symbols[v], f.Values[v])
 			}
 		}
 		for oi, op := range b.Ops {
@@ -135,12 +147,54 @@ func checkSymbolic(t *testing.T, name string, f *ir.Function, out *Function) {
 				for i, v := range op.Args {
 					expect(args[i], v)
 				}
+				src := f.Sources[op.Source].Wasm
+				if src.Op == 0x20 {
+					symbols[op.Results[0]] = state[src.A]
+				} else if src.Op == 0x21 || src.Op == 0x22 {
+					state[src.A] = symbols[op.Args[0]]
+					if src.Op == 0x22 {
+						symbols[op.Results[0]] = symbols[op.Args[0]]
+					}
+				} else if src.Op >= 0x41 && src.Op <= 0x44 || src.Op == 0xfd000c {
+					v := op.Results[0]
+					key := struct {
+						typ    wasm.ValueType
+						bits   uint64
+						vector [16]byte
+					}{f.Values[v], src.Bits, src.Vector}
+					if token, found := literals[key]; found {
+						symbols[v] = token
+					} else {
+						literals[key] = symbols[v]
+					}
+				}
 				for _, v := range op.Results {
-					state[in.Dst] = int(v)
+					state[in.Dst] = symbols[v]
 				}
 			}
 		}
 		term := out.Code[int(out.BlockPC[bi])+len(b.Ops)]
+		if term.Op == ControlBase+uint32(ir.Return) && b.Term.Kind == ir.Jump {
+			edge := b.Term.Edges[0]
+			target := f.Blocks[edge.Target]
+			if term.Source != b.Term.Source || len(target.Ops) != 0 || target.Term.Kind != ir.Return ||
+				f.Sources[target.Term.Source].Fuel() != 0 || out.BlockPC[edge.Target] <= out.BlockPC[bi]+uint32(len(b.Ops)) ||
+				int(term.Count) != len(target.Term.Args) {
+				t.Fatal("invalid forwarded return")
+			}
+			// Substitute the actual incoming tuple independently of the lowering
+			// rule; each output must still be its original symbolic SSA value.
+			for i, v := range target.Term.Args {
+				for pi, param := range target.Params {
+					if param == v {
+						v = edge.Args[pi]
+						break
+					}
+				}
+				expect(out.Args[int(term.Extra)+i], v)
+			}
+			continue
+		}
 		if term.Op != ControlBase+uint32(b.Term.Kind) || term.Source != b.Term.Source {
 			t.Fatal("terminator mapping")
 		}
@@ -170,7 +224,7 @@ func checkSymbolic(t *testing.T, name string, f *ir.Function, out *Function) {
 				copied[move.Dst] = copied[move.Src]
 			}
 			for i, v := range f.Blocks[e.Target].Params {
-				if copied[out.ValueSlots[v]] != int(e.Args[i]) {
+				if copied[out.ValueSlots[v]] != symbols[e.Args[i]] {
 					t.Fatalf("%s block %d edge %d: wrong parallel tuple", name, bi, ei)
 				}
 			}
@@ -228,12 +282,12 @@ func TestReuseAndLimits(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := compiled.Functions[0]
-	// Three local arithmetic temporaries plus the dedicated return block value.
-	if len(f.Slots) != 4 {
+	// Two arithmetic temporaries plus the dedicated return block value.
+	if len(f.Slots) != 3 {
 		t.Fatalf("unbounded temporary growth: %d", len(f.Slots))
 	}
 	checkSymbolic(t, "reuse", m.Functions[0], f)
-	for _, limits := range []Limits{{3, 100000, 100000}, {100, 0, 100000}, {100, 100000, 0}} {
+	for _, limits := range []Limits{{2, 100000, 100000}, {100, 0, 100000}, {100, 100000, 0}} {
 		if got, err := Compile(m, limits); got != nil || !errors.Is(err, wasm.ErrLimit) {
 			t.Fatal(got, err)
 		}
@@ -273,7 +327,11 @@ func TestTypedCyclicEdges(t *testing.T) {
 			t.Fatal(err)
 		}
 		out := compiled.Functions[0]
-		if len(out.Slots) != 8 || out.Slots[7] != typ {
+		want := 8
+		if typ == wasm.I32 || typ == wasm.V128 {
+			want-- // The two equal, overlapping literals share storage.
+		}
+		if len(out.Slots) != want || out.Slots[want-1] != typ {
 			t.Fatalf("scratch type/reuse: %v", out.Slots)
 		}
 		checkSymbolic(t, "cyclic edge", f, out)

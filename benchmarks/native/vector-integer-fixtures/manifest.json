@@ -1,0 +1,248 @@
+{
+  "producer": "wasm-tools 1.258.0",
+  "origin": "authored in wasmvm; no third-party benchmark code",
+  "workloads": [
+    {
+      "id": "shuffle",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 286294192,
+      "unit": "ns/source iteration",
+      "wat": "shuffle.wat",
+      "wasm": "shuffle.wasm",
+      "watSha256": "a8230467e09fb86cf2d4419a3dd4cf2c1d956a47e0f4e1fdf49dffc009841b96",
+      "wasmSha256": "c85864c485f1aacda30e274c6010944c3f058171627c8e485952db78036d2ae1"
+    },
+    {
+      "id": "swizzle",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 2915958825,
+      "unit": "ns/source iteration",
+      "wat": "swizzle.wat",
+      "wasm": "swizzle.wasm",
+      "watSha256": "b48ff7ff9a796774537924ec23b7e1d4cf17b4ee2a5e19aaef29d1449a64aabe",
+      "wasmSha256": "61698d9f316051369475980f720503f86ae4d9c62288e7e6a44f22347f23432b"
+    },
+    {
+      "id": "popcount",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 6,
+      "unit": "ns/source iteration",
+      "wat": "popcount.wat",
+      "wasm": "popcount.wasm",
+      "watSha256": "dcf852ef4e141ce03dbf9244bda923f0680a4884c2fce093f2baafda5a4da675",
+      "wasmSha256": "653c6d855bd5e38a167811a76ab060f300e5cef0df38a1c066e7c3be062e7e48"
+    },
+    {
+      "id": "narrow",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 4294901760,
+      "unit": "ns/source iteration",
+      "wat": "narrow.wat",
+      "wasm": "narrow.wasm",
+      "watSha256": "5b0b0be25ee909d049fb7c3938b185bebc68abfb233e2177b1b34f29392ac738",
+      "wasmSha256": "286b1d0366089b4bd3a5137462a86fe2bd40c220b91397428e9fe9094120cd06"
+    },
+    {
+      "id": "average",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 2968739514,
+      "unit": "ns/source iteration",
+      "wat": "average.wat",
+      "wasm": "average.wasm",
+      "watSha256": "021fc31d8d091febb9e182508b6807ea18dffd19de894d96aabedce9628abb12",
+      "wasmSha256": "10242b2a497645c080d36c53cc8535b19bfae0726cf5721dc25b27990932dcc7"
+    },
+    {
+      "id": "q15",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 7730339,
+      "unit": "ns/source iteration",
+      "wat": "q15.wat",
+      "wasm": "q15.wasm",
+      "watSha256": "fcb6ea10be4fa21d62f38ab70d1873a2e5d61f4c0c946c7462844777b9f3f61a",
+      "wasmSha256": "d7940508010a1ed36509654b1d3d27c3cd7da71a4683082baac81cf99a9d8075"
+    },
+    {
+      "id": "dot",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 4031746237,
+      "unit": "ns/source iteration",
+      "wat": "dot.wat",
+      "wasm": "dot.wasm",
+      "watSha256": "cf9dfa634a2e6409afcf070e76fdbeb0326b8e0e492f71f118e04e34780c58b5",
+      "wasmSha256": "ad7d86a8eae71f7c85f8cabd3bacefa6bc0a95f86412b096bfd5eb271d8783df"
+    },
+    {
+      "id": "pairwise",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 134,
+      "unit": "ns/source iteration",
+      "wat": "pairwise.wat",
+      "wasm": "pairwise.wasm",
+      "watSha256": "c63be7898fbf4541887e837d07931ae71c2051bcb85d91019de9d5a2264e3e4d",
+      "wasmSha256": "271288e585eb660796dd2c51a064dd9d1519cd50f48a974093ca44b212a88081"
+    },
+    {
+      "id": "extend-i16",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 0,
+      "unit": "ns/source iteration",
+      "wat": "extend-i16.wat",
+      "wasm": "extend-i16.wasm",
+      "watSha256": "250adda20c89d201663cab64ba27ce9181c6e6a631c8a44df8fb683efb01baac",
+      "wasmSha256": "c5c6d10a1664e5368ff6491ebea65c9e659f157bbf79470be39943a706456b25"
+    },
+    {
+      "id": "extend-i32",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 0,
+      "unit": "ns/source iteration",
+      "wat": "extend-i32.wat",
+      "wasm": "extend-i32.wasm",
+      "watSha256": "68d4cd925721cfff29fcfce1a97535e8c4a5d7419b6c7fa0bc9b4f581ad893f5",
+      "wasmSha256": "5ebacfb6d4cb70f10079d307ce9dddf8f121da430267a017de192ffe31263ef8"
+    },
+    {
+      "id": "extend-i64",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 0,
+      "unit": "ns/source iteration",
+      "wat": "extend-i64.wat",
+      "wasm": "extend-i64.wasm",
+      "watSha256": "f2f1c4d6f42db200aff0e1dfae475b823f66b781bebcca6b0e8f4dcd158d6134",
+      "wasmSha256": "0a399349f373973125b7697b09e45e7edfa47434695bab548e5716c9eec81aeb"
+    },
+    {
+      "id": "extmul-i16",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 0,
+      "unit": "ns/source iteration",
+      "wat": "extmul-i16.wat",
+      "wasm": "extmul-i16.wasm",
+      "watSha256": "5733f629bfcc98365280bac02c16384f484304cc4636a2413c253dcfbd83fb6e",
+      "wasmSha256": "ee23266339e3c80f343e69f102b9de9481595b31e5e2db2d78c0389eed2cab2f"
+    },
+    {
+      "id": "extmul-i32",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 1798812740,
+      "unit": "ns/source iteration",
+      "wat": "extmul-i32.wat",
+      "wasm": "extmul-i32.wasm",
+      "watSha256": "88d77e5e9eef1d26f00f2d3073b4e243ae964e7b377f0cc44062effdd00ffed8",
+      "wasmSha256": "744f9968a069d448b589fef923ed38919c94a5ad5c5009c87f699b662991dab7"
+    },
+    {
+      "id": "extmul-i64",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 3977264232,
+      "unit": "ns/source iteration",
+      "wat": "extmul-i64.wat",
+      "wasm": "extmul-i64.wasm",
+      "watSha256": "427c5a4e39ab432e8b5a74cd6d79cc02922a4d1ab2ba39d2f4393efb25c65806",
+      "wasmSha256": "e01d9cc57e32046d99384c84b9c7609f78937942f4ce99b15c0a1a25408406bf"
+    },
+    {
+      "id": "shift-i8",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 0,
+      "unit": "ns/source iteration",
+      "wat": "shift-i8.wat",
+      "wasm": "shift-i8.wasm",
+      "watSha256": "85a62c4b83773164de9fa374fdfaef45994da8701dc58ba8a999617ce5c633ba",
+      "wasmSha256": "5b2faf13a5ec9e2b4a86bf3b9ddc0cc118c0bc6ae9e148c0756433a5635d05c0"
+    },
+    {
+      "id": "reduce-i8",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 5136080,
+      "unit": "ns/source iteration",
+      "wat": "reduce-i8.wat",
+      "wasm": "reduce-i8.wasm",
+      "watSha256": "781df07583d1307dd31c7e377307d542fca76874b9c4687a72a85ffbdcd11015",
+      "wasmSha256": "a55097c8433099178af61d334e61335f9729d4d019dd51dd789719d2c7057b2c"
+    },
+    {
+      "id": "shift-i16",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 0,
+      "unit": "ns/source iteration",
+      "wat": "shift-i16.wat",
+      "wasm": "shift-i16.wasm",
+      "watSha256": "dfe7388d54b529fa408654653775c903ad23431bb3a94e9578981185c494a498",
+      "wasmSha256": "d4f1eec8b6f8189c9cff7b4b9bd9cafdb0333b298d9722754aced18c8f16a23e"
+    },
+    {
+      "id": "reduce-i16",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 2045152,
+      "unit": "ns/source iteration",
+      "wat": "reduce-i16.wat",
+      "wasm": "reduce-i16.wasm",
+      "watSha256": "53f574cbb3331c25d10625cd314442fa406c605964eedf72842290778b611e28",
+      "wasmSha256": "413161e5b2d434a2283a1f80c9cdcabae72187620b82a53d57293891e0bbd278"
+    },
+    {
+      "id": "shift-i32",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 0,
+      "unit": "ns/source iteration",
+      "wat": "shift-i32.wat",
+      "wasm": "shift-i32.wasm",
+      "watSha256": "849f0b60f050342748dba353bc9f90836ad4dabf10d723cc548ae1627a359562",
+      "wasmSha256": "1867325b1ca80162453b81c51b96e9ccd39f3417870df1a678aadc726ea7e77f"
+    },
+    {
+      "id": "reduce-i32",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 2048000,
+      "unit": "ns/source iteration",
+      "wat": "reduce-i32.wat",
+      "wasm": "reduce-i32.wasm",
+      "watSha256": "bde9814b1ff3a5af83a366cab27989f1d8663fd3f746ffa1c1c01f67562a1b3d",
+      "wasmSha256": "d7d6c8abc9cf3c682879c3f78ea2d6aa0f43f278349d92ce228de1fb0b623011"
+    },
+    {
+      "id": "shift-i64",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 0,
+      "unit": "ns/source iteration",
+      "wat": "shift-i64.wat",
+      "wasm": "shift-i64.wasm",
+      "watSha256": "b6d2abfa017e455c731b8c350d3a6c07af83cc4231d97fdcaa1a97f2cc458281",
+      "wasmSha256": "bebafbd2fe587ed5e53ab306508e943603722a3a5ab53e37cc80b6dbd85c2d82"
+    },
+    {
+      "id": "reduce-i64",
+      "seed": 305419896,
+      "iterations": 10000,
+      "expectedChecksum": 2048000,
+      "unit": "ns/source iteration",
+      "wat": "reduce-i64.wat",
+      "wasm": "reduce-i64.wasm",
+      "watSha256": "6ee2c98174555d252568db18789acc3a8628588166bcbb5a1a400860983f9adf",
+      "wasmSha256": "ebce498b411d4127d20fdc077d6a868ba553a09d88dc9fdea0a894a096b4bc7c"
+    }
+  ]
+}

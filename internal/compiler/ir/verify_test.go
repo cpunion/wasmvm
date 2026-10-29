@@ -117,12 +117,12 @@ func TestEffectsAndFuel(t *testing.T) {
 		t.Fatal("call effects")
 	}
 	for _, op := range []uint32{0, 1, 2, 3, 4, 0xc, 0xd, 0xe, 0xf, 0x41, 0xfd007b} {
-		if (Source{Wasm: module.Instr{Op: op}}).Fuel() != 1 {
+		if (&Source{Wasm: module.Instr{Op: op}}).Fuel() != 1 {
 			t.Fatal("instruction fuel")
 		}
 	}
 	for _, op := range []uint32{5, 0xb} {
-		if (Source{Wasm: module.Instr{Op: op}}).Fuel() != 0 {
+		if (&Source{Wasm: module.Instr{Op: op}}).Fuel() != 0 {
 			t.Fatal("delimiter fuel")
 		}
 	}

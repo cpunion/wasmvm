@@ -11,7 +11,8 @@ import tarfile
 import ci
 
 MODULE = "github.com/cpunion/wasmvm"
-LLGO_REVISION = "8b1389c627c77a02e56af03f08d9cdc19edffe77"
+LLGO_REVISION = "8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f"
+LLGO_BUILD_FLAGS = ["-O3", "-lto=full"]
 GO_VERSION = "go1.27.3"
 HARNESS = ("internal/bench/phase", "benchmarks/embedded/wasmvm")
 ENGINE_PATHS = ("go.mod", "go.sum", "internal", "pkg", "cmd")
@@ -63,14 +64,20 @@ def toolchains():
         raise ValueError("own-engine Go toolchain differs from pin: " + version)
     if os.environ.get("WASMVM_LLGO_REVISION") != LLGO_REVISION:
         raise ValueError("verified WASMVM_LLGO_REVISION must match the pinned setup revision")
+    llgo_version = ci.capture([llgo, "version"])
+    if LLGO_REVISION[:12] not in llgo_version:
+        raise ValueError("LLGo executable version does not identify the pinned revision: " + llgo_version)
     common = {"goos": platform.system().lower(), "goarch": {"x86_64": "amd64", "aarch64": "arm64", "arm64": "arm64"}.get(platform.machine())}
     if common["goos"] not in ("linux", "darwin") or common["goarch"] is None:
         raise ValueError("own-engine benchmark host is outside the accepted platform matrix")
     result = {
         "go": {**common, "command": str(Path(go).resolve()), "revision": version,
+               "buildFlags": [],
                "version": ci.capture([go, "version"]), "binarySha256": digest(Path(go))},
         "llgo": {**common, "command": str(Path(llgo).resolve()), "revision": LLGO_REVISION,
-                 "version": ci.capture([llgo, "version"]), "binarySha256": digest(Path(llgo)),
+                 "buildFlags": list(LLGO_BUILD_FLAGS),
+                 "version": llgo_version, "binarySha256": digest(Path(llgo)),
+                 "goBuildInfo": ci.capture([go, "version", "-m", llgo]),
                  "environment": ci.capture([llgo, "env", "LLGO_ROOT", "GOROOT"])},
     }
     return result
@@ -93,6 +100,16 @@ def prepare(head, checkout, revision, target):
     # Only these two instrumentation directories come from head. No core or
     # public VM implementation file is ever copied over the baseline.
     archive(head, ci.capture(["git", "-C", str(head), "rev-parse", "HEAD"]), target, HARNESS)
+    # The optional profile is diagnostic metadata. Old engines predate the
+    # adapter query and always select baseline SSE2; do not alter their sources
+    # merely to compile today's common phase-report schema.
+    adapter = target / "internal/platform/native/adapter.go"
+    phase = target / "internal/bench/phase/phase.go"
+    if adapter.is_file() and phase.is_file() and "func CPUFeatures()" not in adapter.read_text():
+        content = phase.read_text()
+        content = content.replace('"github.com/cpunion/wasmvm/internal/platform/native"\n', '')
+        content = content.replace("out.NativeCPUFeatures = native.CPUFeatures()", "out.NativeCPUFeatures = 0")
+        phase.write_text(content)
     after = hashes(target, ENGINE_PATHS, HARNESS)
     if after != sources:
         raise ValueError("harness overlay changed engine sources")
@@ -101,7 +118,7 @@ def prepare(head, checkout, revision, target):
             "harnessHashes": hashes(target, HARNESS)}
 
 
-def build(head, base, temporary, base_sha, head_sha):
+def build(head, base, temporary, base_sha, head_sha, native=False):
     selected = toolchains()
     result = {}
     for name, checkout, revision in (("base", base, base_sha), ("head", head, head_sha)):
@@ -119,9 +136,9 @@ def build(head, base, temporary, base_sha, head_sha):
                                  + "; compilerRevision = " + json.dumps(toolchain["revision"]) + " }\n")
             environment = dict(os.environ, GOWORK="off", GOFLAGS="", GOTOOLCHAIN="local")
             if compiler == "go":
-                environment["CGO_ENABLED"] = "0"
+                environment["CGO_ENABLED"] = "1" if native else "0"
             executable = target / "wasmvm-phase"
-            command = [toolchain["command"], "build", "-o", str(executable), "./benchmarks/embedded/wasmvm"]
+            command = [toolchain["command"], "build", *toolchain.get("buildFlags", []), "-o", str(executable), "./benchmarks/embedded/wasmvm"]
             subprocess.run(command, cwd=target, env=environment, check=True, timeout=600)
             dependencies = ci.capture([selected["go"]["command"], "list", "-deps", "./benchmarks/embedded/wasmvm"],
                                       cwd=target, env=environment).splitlines()
@@ -132,7 +149,7 @@ def build(head, base, temporary, base_sha, head_sha):
             cli = {"status": "baseline-unavailable", "reason": "the selected revision predates cmd/wasmvm"}
             if (target / "cmd/wasmvm/main.go").is_file():
                 cli_binary = target / "wasmvm-cli"
-                cli_command = [toolchain["command"], "build", "-o", str(cli_binary), "./cmd/wasmvm"]
+                cli_command = [toolchain["command"], "build", *toolchain.get("buildFlags", []), "-o", str(cli_binary), "./cmd/wasmvm"]
                 subprocess.run(cli_command, cwd=target, env=environment, check=True, timeout=600)
                 cli = {"status": "available", "binary": str(cli_binary),
                        "binarySha256": digest(cli_binary), "buildCommand": cli_command}

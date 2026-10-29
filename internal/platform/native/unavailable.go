@@ -6,6 +6,8 @@ import "unsafe"
 
 const Available = false
 
+func CPUFeatures() uint32 { return 0 }
+
 func publish([]byte) unsafe.Pointer                      { return nil }
 func unpublish(unsafe.Pointer, uint64)                   {}
 func allocate(uint64) unsafe.Pointer                     { return nil }

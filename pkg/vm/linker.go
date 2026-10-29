@@ -127,7 +127,8 @@ func (l *Linker) Instantiate(ctx context.Context, compiled *CompiledModule, opti
 		return nil, err
 	}
 	defer op.finish()
-	code, err := compiled.acquire(l.store.engine)
+	op.collect = true
+	code, err := compiled.acquireForStore(l.store)
 	if err != nil {
 		return nil, err
 	}

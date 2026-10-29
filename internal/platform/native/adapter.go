@@ -13,6 +13,16 @@ import "unsafe"
 
 const Available = true
 
+// CPUFeatures reports SSSE3/SSE4.1/AVX2/AVX512F+VL/AVX512BITALG+VL in bits 0-4.
+// AVX-512 requires XMM/YMM/opmask/ZMM OS state even for 128-bit instructions.
+// Other targets return zero.
+func CPUFeatures() uint32 {
+	var ecx1, ebx7, ecx7 C.uint32_t
+	var xcr0 C.uint64_t
+	C.wasmvm_cpu_probe(&ecx1, &ebx7, &ecx7, &xcr0)
+	return x86FeatureMask(uint32(ecx1), uint32(ebx7), uint32(ecx7), uint64(xcr0))
+}
+
 func publish(code []byte) unsafe.Pointer {
 	return C.wasmvm_publish(unsafe.Pointer(&code[0]), C.size_t(len(code)))
 }

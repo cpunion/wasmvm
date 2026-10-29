@@ -4,11 +4,14 @@ import (
 	"context"
 	"sync"
 
+	"github.com/cpunion/wasmvm/internal/compiler/codegen"
 	"github.com/cpunion/wasmvm/internal/compiler/lower"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/decode"
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/core/validate"
+	"github.com/cpunion/wasmvm/internal/engine/nativeexec"
+	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
@@ -16,13 +19,14 @@ type DecodeLimits = decode.Limits
 type ValidationLimits = validate.Limits
 type LoweringLimits = lower.Limits
 type SlotLimits = slots.Limits
+type NativeLimits = codegen.Limits
 type FunctionType = module.FuncType
 type MemoryType = module.Limits
 type TableType = module.TableType
 type GlobalType = module.GlobalType
 
-// EngineConfig selects the complete Core 2.0 interpreter and bounded compiler
-// phases. Native execution and other profiles are not implemented in M1.
+// EngineConfig selects Core 2.0 execution and bounded compiler phases.
+// Native requires a supported platform adapter; no backend fallback is used.
 type EngineConfig struct {
 	Backend  string
 	Profile  string
@@ -30,10 +34,11 @@ type EngineConfig struct {
 	Validate ValidationLimits
 	Lower    LoweringLimits
 	Slots    SlotLimits
+	Native   NativeLimits
 }
 
 func DefaultEngineConfig() EngineConfig {
-	return EngineConfig{"interpreter", "core2", decode.DefaultLimits(), validate.DefaultLimits(), lower.DefaultLimits(), slots.DefaultLimits()}
+	return EngineConfig{"interpreter", "core2", decode.DefaultLimits(), validate.DefaultLimits(), lower.DefaultLimits(), slots.DefaultLimits(), codegen.DefaultLimits()}
 }
 
 type Engine struct {
@@ -44,7 +49,7 @@ type Engine struct {
 
 func NewEngine() *Engine { e, _ := NewEngineWithConfig(DefaultEngineConfig()); return e }
 func NewEngineWithConfig(config EngineConfig) (*Engine, error) {
-	if config.Backend != "interpreter" || config.Profile != "core2" {
+	if config.Backend != "interpreter" && config.Backend != "native" || config.Backend == "native" && !native.Available || config.Profile != "core2" {
 		return nil, wasm.ErrUnsupported
 	}
 	return &Engine{config: config}, nil
@@ -90,7 +95,18 @@ func (e *Engine) Compile(ctx context.Context, input []byte) (*CompiledModule, er
 	if err = e.check(ctx); err != nil {
 		return nil, err
 	}
-	return &CompiledModule{engine: e, code: code}, nil
+	out := &CompiledModule{engine: e, code: code}
+	if e.config.Backend == "native" {
+		out.native, err = nativeexec.Compile(ctx, code, e.config.Native)
+		if err != nil {
+			return nil, err
+		}
+		if err = e.check(ctx); err != nil {
+			out.Close()
+			return nil, err
+		}
+	}
+	return out, nil
 }
 
 func (e *Engine) check(ctx context.Context) error {
@@ -136,6 +152,7 @@ func (e *Engine) Inspect(ctx context.Context, input []byte) (ModuleInfo, error) 
 		return ModuleInfo{}, err
 	}
 	info := describeModule(v.Definition())
+	info.Backend = e.config.Backend
 	if err := e.check(ctx); err != nil {
 		return ModuleInfo{}, err
 	}
@@ -146,9 +163,18 @@ type CompiledModule struct {
 	mu     sync.Mutex
 	engine *Engine
 	code   *slots.Module
+	native *nativeexec.Module
 }
 
-func (m *CompiledModule) Close() { m.mu.Lock(); m.code = nil; m.mu.Unlock() }
+func (m *CompiledModule) Close() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.code = nil
+	if m.native != nil {
+		m.native.Close()
+		m.native = nil
+	}
+}
 func (m *CompiledModule) acquire(e *Engine) (*slots.Module, error) {
 	if m == nil {
 		return nil, ErrReference
@@ -196,7 +222,9 @@ func (m *CompiledModule) Info() (ModuleInfo, error) {
 	if err != nil {
 		return ModuleInfo{}, err
 	}
-	return describeModule(code.IR.Validated.Definition()), nil
+	info := describeModule(code.IR.Validated.Definition())
+	info.Backend = m.engine.config.Backend
+	return info, nil
 }
 func describeModule(d *module.Module) ModuleInfo {
 	info := ModuleInfo{Backend: "interpreter", Profile: "core2", Functions: uint32(len(d.Functions)), HasStart: d.HasStart}
@@ -249,4 +277,28 @@ func describeModule(d *module.Module) ModuleInfo {
 		info.Exports = append(info.Exports, ExportInfo{ex.Name, objects[ex.Kind][ex.Index]})
 	}
 	return info
+}
+
+// acquireForStore retains executable publication before a concurrent Close can
+// retire it. Existing instances keep leases; no new code is acquired after close.
+func (m *CompiledModule) acquireForStore(s *Store) (*slots.Module, error) {
+	if m == nil {
+		return nil, ErrReference
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.engine != s.engine {
+		return nil, ErrReference
+	}
+	if m.code == nil {
+		return nil, wasm.ErrClosed
+	}
+	if m.native != nil && s.nativeModules[m.code] == nil {
+		lease, err := m.native.Acquire()
+		if err != nil {
+			return nil, err
+		}
+		s.nativeModules[m.code] = lease
+	}
+	return m.code, nil
 }

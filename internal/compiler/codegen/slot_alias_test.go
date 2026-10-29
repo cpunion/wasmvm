@@ -1,0 +1,118 @@
+package codegen
+
+import (
+	"testing"
+
+	"github.com/cpunion/wasmvm/internal/compiler/ir"
+	"github.com/cpunion/wasmvm/internal/compiler/slots"
+	"github.com/cpunion/wasmvm/internal/core/module"
+	"github.com/cpunion/wasmvm/internal/engine/value"
+	"github.com/cpunion/wasmvm/internal/platform/native"
+	"github.com/cpunion/wasmvm/pkg/wasm"
+)
+
+func TestRegisterPriorityIgnoresSelfCopiesAndIncludesTuples(t *testing.T) {
+	f := &slots.Function{LocalCount: 13, Args: []slots.Slot{11, 12}}
+	for i := 0; i < 13; i++ {
+		f.Slots = append(f.Slots, wasm.I64)
+		f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: 0x20, A: uint32(i)}})
+		for j := 0; j < 100; j++ {
+			f.Code = append(f.Code, slots.Instruction{Op: 0x20, Source: uint32(i), Dst: slots.Slot(i), A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot})
+		}
+	}
+	f.Code = append(f.Code, slots.Instruction{Op: 0x7c, Dst: 12, A: 10, B: 10, C: slots.NoSlot})
+	for _, arch := range []string{"amd64", "arm64"} {
+		e := functionEmitter{a: &assembler{arch: arch}, f: f, unmetered: true}
+		e.prepareRegisters()
+		if len(e.registers) != 3 {
+			t.Fatal("eliminated copies consumed registers", arch, e.registers)
+		}
+		for _, s := range []slots.Slot{10, 11, 12} {
+			if _, ok := e.registers[s]; !ok {
+				t.Fatal("real operand or tuple omitted", arch, s, e.registers)
+			}
+		}
+	}
+}
+
+func TestRegisterPriorityUsesEmittedMemoryPlan(t *testing.T) {
+	f := &slots.Function{LocalCount: 1, Slots: []wasm.ValueType{wasm.I32, wasm.I32, wasm.I32, wasm.I32}, Sources: []ir.Source{{Wasm: module.Instr{Op: 0x41}}, {Wasm: module.Instr{Op: 0x28}}}}
+	r := memoryRegion{elided: map[int]bool{}, addresses: map[int]memoryAddress{}, guards: map[int]memoryGuard{}}
+	for i := 0; i < 100; i++ {
+		pc := len(f.Code)
+		f.Code = append(f.Code, slots.Instruction{Op: 0x41, Dst: 1, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
+			slots.Instruction{Op: 0x28, Source: 1, Dst: 3, A: 2, B: slots.NoSlot, C: slots.NoSlot})
+		r.elided[pc] = true
+		r.addresses[pc+1] = memoryAddress{local: 0, offset: 4}
+	}
+	r.end = len(f.Code) - 1
+	r.guards[1] = memoryGuard{address: 2, after: 8}
+	for _, arch := range []string{"amd64", "arm64"} {
+		e := functionEmitter{a: &assembler{arch: arch}, f: f, unmetered: true, usesMemory: true}
+		e.prepareRegisters(map[int]memoryRegion{0: r})
+		if len(e.registers) != 3 {
+			t.Fatal("deleted operations affected allocation", arch, e.registers)
+		}
+		for _, s := range []slots.Slot{0, 2, 3} {
+			if _, ok := e.registers[s]; !ok {
+				t.Fatal("emitted operand omitted", arch, s, e.registers)
+			}
+		}
+	}
+}
+
+func TestSharedLiteralsPreserveColdEntries(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	m := functionFixture(module.FuncType{Results: []wasm.ValueType{wasm.I64}}, 0, module.Expr{
+		{Op: 0x42, Bits: 0x123456789abcdef0}, {Op: 0x42, Bits: 0x123456789abcdef0}, {Op: 0x85},
+		{Op: 0x42, Bits: 7}, {Op: 0x42, Bits: 7}, {Op: 0x7c}, {Op: 0x7c}, {Op: 0xb},
+	})
+	f := functionModule(t, m).Functions[0]
+	if f.Code[0].Dst != f.Code[1].Dst || f.Code[3].Dst != f.Code[4].Dst {
+		t.Fatal("fixture does not exercise shared literal storage", f.Code)
+	}
+	// Keep the compiled straight-line slot layout and remove only its final
+	// result-edge transfer, allowing the independent integer checker to enter
+	// at every original operation with arbitrary, unequal initial slot bits.
+	f.Code = append(f.Code[:len(f.Code)-2], f.Code[len(f.Code)-1])
+	f.Edges, f.Moves = nil, nil
+	checkLinearIntegerEntries(t, f)
+}
+
+func TestLiveLiteralForcesRightOperandReuse(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	m := functionFixture(module.FuncType{Results: []wasm.ValueType{wasm.I32, wasm.I32}}, 0, module.Expr{
+		{Op: 0x41, Bits: 7}, {Op: 0x41, Bits: 7}, {Op: 0x41, Bits: 3}, {Op: 0x6b}, {Op: 0xb},
+	})
+	f := functionModule(t, m).Functions[0]
+	sub := f.Code[3]
+	if sub.Dst != sub.B || sub.Dst == sub.A {
+		t.Fatal("fixture did not preserve a live alias and reuse the right operand", f.Code)
+	}
+	for _, fast := range []bool{false, true} {
+		compiled, lease, c := functionContext(t, f, fast)
+		out, exit, state := runFunction(t, compiled, lease, c, nil, 100, !fast, 64)
+		if exit != native.Return || len(out) != 2 || out[0] != (value.Value{Lo: 7}) || out[1] != (value.Value{Lo: 4}) || !fast && state.Fuel != 96 {
+			t.Fatal(fast, exit, out, state)
+		}
+	}
+	f.Code = append(f.Code[:len(f.Code)-2], f.Code[len(f.Code)-1])
+	f.Edges, f.Moves = nil, nil
+	checkLinearIntegerEntries(t, f)
+}
+
+func TestX86DirectRightOperandAliases(t *testing.T) {
+	for _, op := range []uint32{0x6a, 0x6b, 0x6c, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78,
+		0x7c, 0x7d, 0x7e, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8a} {
+		e := functionEmitter{a: &assembler{arch: "amd64"}, registers: map[slots.Slot]byte{0: 3, 1: 12}}
+		selected := e.registerInteger(op, 1, 0, 1)
+		want := op != 0x6b && op != 0x7d
+		if selected != want || selected && len(e.a.code) == 0 {
+			t.Fatal("wrong right-operand selection", op, selected, e.a.code)
+		}
+	}
+}
