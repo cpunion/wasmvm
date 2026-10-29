@@ -46,7 +46,7 @@ func TestFunctionReferencesProposal(t *testing.T) {
 }
 
 func TestGCProposal(t *testing.T) {
-	runProposal(t, proposalCorpus{"gc", "756060f5816c7e2159f4817fbdee76cf52f9c923", wasm.SupportedFeatures, []string{"br_table", "array", "array_copy", "array_fill", "array_init_data", "array_init_elem", "array_new_data", "array_new_elem", "binary-gc", "br_on_cast", "br_on_cast_fail", "extern", "i31", "ref_cast", "ref_eq", "ref_test", "struct", "type-subtyping-invalid", "type-subtyping", "ref_null", "type-canon", "type-equivalence", "type-rec"}, 272, 964, 802, 1})
+	runProposal(t, proposalCorpus{"gc", "756060f5816c7e2159f4817fbdee76cf52f9c923", wasm.Core3Features, []string{"br_table", "array", "array_copy", "array_fill", "array_init_data", "array_init_elem", "array_new_data", "array_new_elem", "binary-gc", "br_on_cast", "br_on_cast_fail", "extern", "i31", "ref_cast", "ref_eq", "ref_test", "struct", "type-subtyping-invalid", "type-subtyping", "ref_null", "type-canon", "type-equivalence", "type-rec"}, 272, 964, 802, 1})
 }
 
 func runProposal(t *testing.T, corpus proposalCorpus) {
@@ -136,5 +136,5 @@ func runProposal(t *testing.T, corpus proposalCorpus) {
 }
 
 func TestExceptionHandlingSpec(t *testing.T) {
-	runProposal(t, proposalCorpus{"exception-handling", "aa4dcf44b8de3f3f3270ca067422172518ecc341", wasm.SupportedFeatures, []string{"cast", "tag", "throw", "throw_ref", "try_table", "imports", "exports", "instance", "ref_null"}, 325, 482, 305, 18})
+	runProposal(t, proposalCorpus{"exception-handling", "aa4dcf44b8de3f3f3270ca067422172518ecc341", wasm.Core3Features, []string{"cast", "tag", "throw", "throw_ref", "try_table", "imports", "exports", "instance", "ref_null"}, 325, 482, 305, 18})
 }

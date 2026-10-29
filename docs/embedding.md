@@ -1,3 +1,13 @@
+## Shared linear memory
+
+Enable `wasm.Threads`, create a shared memory (with an explicit maximum), and
+use `Extern.ShareMemory()` followed by `otherStore.ImportMemory(cap)` to share
+it between Stores of the same Engine. Close the capability when no more imports
+are needed; existing Store bindings remain valid. Each Store reserves the
+backing's host maximum against its page quota. `EngineConfig.MaxWaiters` bounds
+waiter resources. See [Core Threads](design/core-threads.md) for synchronization,
+wait cancellation, native backing and lifetime details.
+
 # Development Plan and Acceptance Gates
 
 Plan date: **2026-10-26**. M0 candidate evaluation and benchmark infrastructure are complete through PRs [#1](https://github.com/cpunion/wasmvm/pull/1), [#2](https://github.com/cpunion/wasmvm/pull/2), and [#3](https://github.com/cpunion/wasmvm/pull/3). The owner has selected a [project-owned core](design/own-core.md). **M1 acceptance remains open; M2 executes the complete Core 2.0 profile but has unmet performance gates; M3 is in progress; M4–M7 are not implemented.** This plan prioritizes complete core execution and compilation before WASI integration. Design approval does not close an implementation or performance gate.

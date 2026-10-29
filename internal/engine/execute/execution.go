@@ -659,6 +659,17 @@ frames:
 				continue frames
 			default:
 				switch {
+
+				case op>>16 == 0xfe:
+					if op&0xffff == 3 {
+						e.store.Domain.Fence()
+						break
+					}
+					var err error
+					result, trap, err = instance.Memories[im.Memory].Atomic(e.context, e.store.Domain, op&0xffff, a.Lo, im.MemoryOffset(), b.Lo, c.Lo)
+					if err != nil {
+						return e.fail(err)
+					}
 				case op>>16 == 0xfd:
 					sub := op & 0xffff
 					switch {

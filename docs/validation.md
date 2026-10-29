@@ -2317,3 +2317,30 @@ All-target controlled performance, remaining portfolio/API/general-call costs,
 global allocation and M1/M2 acceptance remain open. PR #26 is still the single
 active draft at its unchanged head. Core 3.0/GC/Threads/components/WASI 1/2/3
 are not completed or implied by this allocator change.
+
+## Core Threads implementation
+
+The feature adds all 67 atomic instructions and shared ordinary/SIMD/bulk/host
+memory access on the interpreter and both native targets. Its pinned complete
+applicable corpus contributes 17 scripts, 946 actually executed commands and
+579 binary assertions per tier; six text-parser assertions remain separately
+classified. Nested thread/wait commands execute concurrently with isolated
+Stores and explicit memory capabilities, and join before cleanup.
+
+Local macOS arm64 validation uses Go 1.27.3 and LLGo revision
+`8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f` with `-O3 -lto=full`.
+Full Go and LLGo package tests, Go race tests including the entire Threads
+corpus, vet, cgo-free build/adapter checks and `cgocheck2` ownership tests pass.
+All 21 executable packages exceed 90% statement coverage; the lowest is
+Core validation at 93.21%, with memory at 97.33% and public VM at 93.28%.
+The exact-head Linux/macOS × Go/LLGo CI reports remain the integration gate.
+
+Authored tests cover concurrent cross-Store RMW, shared growth, mixed-width
+atomic alignment/bounds, Memory64, ordinary/SIMD/bulk/host access, wait32/64 queue
+identity, notify counts, mismatch/timeout, cancellation, Store/capability close,
+waiter limits and per-Store maximum reservations. Native shared-memory accesses
+use individually checked synchronized helpers; no whole-function fallback or
+raw shared-memory descriptor is used. Helper overhead, contention/scaling and
+representative feature performance remain explicit follow-ups. Phase-separated
+exact-base/head and pinned-competitor measurements are retained with this PR's
+artifact evidence; they do not close M3 performance acceptance.

@@ -38,6 +38,7 @@ func DefaultLimits() Limits {
 }
 
 type Usage struct {
+	SharedMemoryPages, ReservedSharedMemoryPages              uint64
 	HeapObjects, HeapBytes                                    uint64
 	Tags                                                      uint64
 	Tables, Memories                                          uint64
@@ -46,6 +47,8 @@ type Usage struct {
 }
 type Store struct {
 	closed                    bool
+	Domain                    *memory.Domain
+	reservedShared            uint64
 	nativeMemory              bool
 	limits                    Limits
 	usage                     Usage
@@ -68,6 +71,7 @@ type Store struct {
 
 func New(limits Limits) *Store {
 	s := &Store{limits: limits, functions: []*Function{nil}, heapThreshold: 1 << 20}
+	s.Domain = memory.NewDomain(1<<16, native.Available)
 	s.registry.Init()
 	return s
 }
@@ -82,7 +86,17 @@ func (s *Store) RetainedModules(visit func(*slots.Module)) {
 		visit(in.Compiled)
 	}
 }
-func (s *Store) Usage() Usage { return s.usage }
+func (s *Store) Usage() Usage {
+	u := s.usage
+	u.ReservedSharedMemoryPages = s.reservedShared
+	for _, m := range s.memories {
+		if m.Shared() {
+			u.SharedMemoryPages += m.Pages()
+		}
+	}
+	u.MemoryPages += u.SharedMemoryPages
+	return u
+}
 func (s *Store) TypeID(t module.FuncType) uint32 {
 	if s.closed {
 		return 0
@@ -179,18 +193,28 @@ func (s *Store) NewMemory(t module.Limits) (Extern, error) {
 	if s.usage.Memories >= uint64(s.limits.MaxMemories) {
 		return Extern{}, limit("memories")
 	}
-	if uint64(t.Min) > uint64(s.limits.MaxMemoryPages)-s.usage.MemoryPages {
+	if uint64(t.Min) > uint64(s.limits.MaxMemoryPages)-s.usage.MemoryPages-s.reservedShared {
 		return Extern{}, limit("Store memory pages")
 	}
 	allocate := memory.New
 	if s.nativeMemory {
 		allocate = memory.NewNative
 	}
-	m, err := allocate(t, s.limits.MaxMemoryPages)
+	var m *memory.Memory
+	var err error
+	if t.Shared {
+		m, err = memory.NewShared(t, uint32(uint64(s.limits.MaxMemoryPages)-s.usage.MemoryPages-s.reservedShared), s.Domain)
+	} else {
+		m, err = allocate(t, s.limits.MaxMemoryPages)
+	}
 	if err != nil {
 		return Extern{}, err
 	}
-	s.usage.MemoryPages += uint64(t.Min)
+	if t.Shared {
+		s.reservedShared += m.ReservationPages()
+	} else {
+		s.usage.MemoryPages += uint64(t.Min)
+	}
 	s.usage.Memories++
 	owned := &Memory{Owner: s, Memory: m}
 	s.memories = append(s.memories, owned)
@@ -200,8 +224,11 @@ func (s *Store) GrowMemory(m *Memory, delta uint64) (uint64, bool) {
 	if s.closed || m.Owner != s {
 		return 0, false
 	}
+	if m.Shared() {
+		return m.Grow(delta)
+	}
 	old := m.Pages()
-	if uint64(delta) > uint64(s.limits.MaxMemoryPages)-s.usage.MemoryPages {
+	if uint64(delta) > uint64(s.limits.MaxMemoryPages)-s.usage.MemoryPages-s.reservedShared {
 		return old, false
 	}
 	_, ok := m.Grow(delta)
@@ -229,7 +256,7 @@ func (s *Store) NewTable(t module.TableType, initial ...uint64) (Extern, error) 
 	if s.closed {
 		return Extern{}, wasm.ErrClosed
 	}
-	if !t.Element.IsReference() || !s.validType(t.Element) || len(initial) > 1 || len(initial) == 0 && !t.Element.Defaultable() || t.Limits.HasMax && t.Limits.Min > t.Limits.Max || !t.Limits.Index64 && (t.Limits.Min > math.MaxUint32 || t.Limits.HasMax && t.Limits.Max > math.MaxUint32) {
+	if t.Limits.Shared || !t.Element.IsReference() || !s.validType(t.Element) || len(initial) > 1 || len(initial) == 0 && !t.Element.Defaultable() || t.Limits.HasMax && t.Limits.Min > t.Limits.Max || !t.Limits.Index64 && (t.Limits.Min > math.MaxUint32 || t.Limits.HasMax && t.Limits.Max > math.MaxUint32) {
 		return Extern{}, fmt.Errorf("%w: table type", wasm.ErrInvalid)
 	}
 	if s.usage.Tables >= uint64(s.limits.MaxTables) {
@@ -356,7 +383,7 @@ func (in *Instance) DropElement(index uint32) {
 }
 func limit(detail string) error { return &wasm.Error{Kind: wasm.ErrLimit, Detail: detail} }
 func sameLimits(actual, required module.Limits) bool {
-	return actual.Index64 == required.Index64 && actual.Min >= required.Min && (!required.HasMax || actual.HasMax && actual.Max <= required.Max)
+	return actual.Shared == required.Shared && actual.Index64 == required.Index64 && actual.Min >= required.Min && (!required.HasMax || actual.HasMax && actual.Max <= required.Max)
 }
 func (s *Store) matches(ex Extern, im module.Import, in *Instance) bool {
 	if ex.Owner != s || ex.Kind != im.Kind {

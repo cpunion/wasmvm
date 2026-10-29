@@ -1,3 +1,11 @@
+## Core profiles and Threads
+
+Use `--profile core3` for the full Core 3.0 binary profile. Add `--threads`
+independently to validate, inspect or run shared-memory/atomic modules; Core 3.0
+does not implicitly enable Threads. Inspection reports `shared: true` for shared
+memories. Core Threads does not provide the legacy `wasi.thread-spawn` import;
+that adapter and WASI remain subsequent work. See [Core Threads](design/core-threads.md).
+
 # Development Plan and Acceptance Gates
 
 Plan date: **2026-10-26**. M0 candidate evaluation and benchmark infrastructure are complete through PRs [#1](https://github.com/cpunion/wasmvm/pull/1), [#2](https://github.com/cpunion/wasmvm/pull/2), and [#3](https://github.com/cpunion/wasmvm/pull/3). The owner has selected a [project-owned core](design/own-core.md). **M1 acceptance remains open; M2 executes the complete Core 2.0 profile but has unmet performance gates; M3 is in progress; M4–M7 are not implemented.** This plan prioritizes complete core execution and compilation before WASI integration. Design approval does not close an implementation or performance gate.

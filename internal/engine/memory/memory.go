@@ -1,5 +1,4 @@
-// Package memory implements private Core 2.0 linear memory. Store execution
-// must serialize access; shared memory and host concurrency are later profiles.
+// Package memory owns private and domain-synchronized shared linear memory.
 package memory
 
 import (
@@ -17,16 +16,22 @@ const MaxPages = 65536
 const MaxPages64 = 1 << 48
 
 type Memory struct {
-	bytes    []byte
-	owner    *native.Memory
-	declared module.Limits
-	maximum  uint64
+	bytes       []byte
+	owner       *native.Memory
+	declared    module.Limits
+	domain      *Domain
+	refs        uint64
+	reservation uint64
+	maximum     uint64
 }
 
 // New applies the host page quota independently of the module declaration.
 // A zero quota is literal. Allocations are exact-size; growth can transiently
 // retain old and new buffers until the old allocation is collected.
 func New(declared module.Limits, quota uint32) (*Memory, error) {
+	if declared.Shared {
+		return nil, wasm.ErrInvalid
+	}
 	return newMemory(declared, quota, false)
 }
 
@@ -34,9 +39,17 @@ func New(declared module.Limits, quota uint32) (*Memory, error) {
 // Only the serialized Store accesses its view; growth refreshes every alias
 // through this single Memory object before generated code can reenter.
 func NewNative(declared module.Limits, quota uint32) (*Memory, error) {
+	if declared.Shared {
+		return nil, wasm.ErrInvalid
+	}
 	return newMemory(declared, quota, true)
 }
-func (m *Memory) Native() *native.Memory { return m.owner }
+func (m *Memory) Native() *native.Memory {
+	if m.domain != nil {
+		return nil
+	}
+	return m.owner
+}
 func newMemory(declared module.Limits, quota uint32, offheap bool) (*Memory, error) {
 	limit := uint64(MaxPages)
 	if declared.Index64 {
@@ -76,20 +89,20 @@ func newMemory(declared module.Limits, quota uint32, offheap bool) (*Memory, err
 	}
 	return m, nil
 }
-func (m *Memory) Pages() uint64         { return uint64(len(m.bytes)) / PageSize }
+func (m *Memory) pages() uint64         { return uint64(len(m.bytes)) / PageSize }
 func (m *Memory) Limits() module.Limits { return m.declared }
 
 // Release discards backing storage after its Store has excluded all users.
 // It is idempotent and prevents subsequent growth of a retired memory object.
-func (m *Memory) Release() {
+func (m *Memory) release() {
 	m.bytes = nil
 	m.maximum = 0
 	if m.owner != nil {
 		m.owner.Close()
 	}
 }
-func (m *Memory) Grow(delta uint64) (uint64, bool) {
-	old := m.Pages()
+func (m *Memory) grow(delta uint64) (uint64, bool) {
+	old := m.pages()
 	if delta > m.maximum-old {
 		return old, false
 	}
@@ -109,20 +122,22 @@ func (m *Memory) Grow(delta uint64) (uint64, bool) {
 	m.bytes = grown
 	return old, true
 }
-func fits(size, offset, count uint64) bool        { return offset <= size && count <= size-offset }
-func (m *Memory) Range(offset, count uint64) bool { return fits(uint64(len(m.bytes)), offset, count) }
+func fits(size, offset, count uint64) bool { return offset <= size && count <= size-offset }
+func (m *Memory) rangeBytes(offset, count uint64) bool {
+	return fits(uint64(len(m.bytes)), offset, count)
+}
 
 // Read/Write copy across the host boundary without exposing a growth-sensitive
 // backing slice. A rejected range leaves both source and destination unchanged.
-func (m *Memory) Read(offset uint64, dst []byte) bool {
-	if !m.Range(offset, uint64(len(dst))) {
+func (m *Memory) readBytes(offset uint64, dst []byte) bool {
+	if !m.rangeBytes(offset, uint64(len(dst))) {
 		return false
 	}
 	copy(dst, m.bytes[int(offset):])
 	return true
 }
-func (m *Memory) Write(offset uint64, src []byte) bool {
-	if !m.Range(offset, uint64(len(src))) {
+func (m *Memory) writeBytes(offset uint64, src []byte) bool {
+	if !m.rangeBytes(offset, uint64(len(src))) {
 		return false
 	}
 	copy(m.bytes[int(offset):], src)
@@ -132,8 +147,8 @@ func (m *Memory) Write(offset uint64, src []byte) bool {
 // Fill, Copy and Init precheck the entire operation before any mutation. They
 // are synchronous primitives; scheduling/cancellation chunking belongs to the
 // runtime integration rather than weakening the out-of-bounds atomicity rule.
-func (m *Memory) Fill(dst uint64, b byte, count uint64) bool {
-	if !m.Range(dst, count) {
+func (m *Memory) fill(dst uint64, b byte, count uint64) bool {
+	if !m.rangeBytes(dst, count) {
 		return false
 	}
 	for i := uint64(0); i < count; i++ {
@@ -141,18 +156,18 @@ func (m *Memory) Fill(dst uint64, b byte, count uint64) bool {
 	}
 	return true
 }
-func (m *Memory) Copy(dst, src, count uint64) bool { return m.CopyFrom(m, dst, src, count) }
+func (m *Memory) copyBytes(dst, src, count uint64) bool { return m.copyFrom(m, dst, src, count) }
 
 // CopyFrom supports independent memories and aliases, with complete prechecks.
-func (m *Memory) CopyFrom(source *Memory, dst, src, count uint64) bool {
-	if !m.Range(dst, count) || !source.Range(src, count) {
+func (m *Memory) copyFrom(source *Memory, dst, src, count uint64) bool {
+	if !m.rangeBytes(dst, count) || !source.rangeBytes(src, count) {
 		return false
 	}
 	copy(m.bytes[int(dst):int(dst+count)], source.bytes[int(src):int(src+count)])
 	return true
 }
-func (m *Memory) Init(dst, src, count uint64, data []byte) bool {
-	if !m.Range(dst, count) || !fits(uint64(len(data)), src, count) {
+func (m *Memory) initBytes(dst, src, count uint64, data []byte) bool {
+	if !m.rangeBytes(dst, count) || !fits(uint64(len(data)), src, count) {
 		return false
 	}
 	copy(m.bytes[int(dst):int(dst+count)], data[int(src):int(src+count)])
@@ -194,7 +209,7 @@ func (m *Memory) access(address, offset uint64, size uint) ([]byte, bool) {
 		return nil, false
 	}
 	at := address + offset
-	if !m.Range(at, uint64(size)) {
+	if !m.rangeBytes(at, uint64(size)) {
 		return nil, false
 	}
 	return m.bytes[int(at):int(at+uint64(size))], true
@@ -203,7 +218,7 @@ func (m *Memory) access(address, offset uint64, size uint) ([]byte, bool) {
 // Load implements every scalar and fixed-SIMD load, including lane operations.
 // The address addition is widened before bounds checking. All immediates and
 // lane indexes must have passed validation. previous supplies load_lane's input.
-func (m *Memory) Load(op uint32, address, offset uint64, lane byte, previous value.Value) (r value.Value, trap wasm.TrapCode) {
+func (m *Memory) load(op uint32, address, offset uint64, lane byte, previous value.Value) (r value.Value, trap wasm.TrapCode) {
 	if op >= 0x28 && op <= 0x35 {
 		sizes := [14]uint{4, 8, 4, 8, 1, 1, 2, 2, 1, 1, 2, 2, 4, 4}
 		n := sizes[op-0x28]
@@ -284,7 +299,7 @@ func setLane(v *value.Value, size, index uint, x uint64) {
 
 // Store implements every scalar and fixed-SIMD store. An invalid range causes
 // no write, including vector and lane stores that straddle the memory end.
-func (m *Memory) Store(op uint32, address, offset uint64, lane byte, v value.Value) wasm.TrapCode {
+func (m *Memory) store(op uint32, address, offset uint64, lane byte, v value.Value) wasm.TrapCode {
 	var n uint
 	x := v.Lo
 	switch {

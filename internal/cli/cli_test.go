@@ -401,7 +401,7 @@ func TestRelaxedSIMDCLIWithAllExtensions(t *testing.T) {
 		}
 		args = append(args, path)
 		code, out, diagnostic := invoke(t, nil, args...)
-		if code != 0 || diagnostic != "" || jsonObject(t, out)["features"] != float64(wasm.SupportedFeatures&^wasm.Core3Rules) {
+		if code != 0 || diagnostic != "" || jsonObject(t, out)["features"] != float64(wasm.Core3Features&^wasm.Core3Rules) {
 			t.Fatal(code, out, diagnostic)
 		}
 		if command == "run" && !strings.Contains(out, "0x00000070") {

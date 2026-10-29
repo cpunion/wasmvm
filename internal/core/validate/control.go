@@ -398,6 +398,8 @@ func (v *checker) instruction(in module.Instr) {
 		v.gc(in)
 	case op>>16 == 0xfc:
 		v.misc(in)
+	case op>>16 == 0xfe:
+		v.atomic(in)
 	case op>>16 == 0xfd:
 		v.simd(in)
 	default:

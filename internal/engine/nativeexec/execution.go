@@ -128,7 +128,7 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 	var memory *native.Memory
 	if len(fn.Instance.Memories) != 0 {
 		memory = fn.Instance.Memories[0].Native()
-		if memory == nil {
+		if memory == nil && !fn.Instance.Memories[0].Shared() {
 			return 0, fuel, wasm.ErrInvalid
 		}
 	}
@@ -202,7 +202,7 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 			// Reject mismatched exits instead of interpreting arbitrary code.
 			valid := exit == native.Return && op == slots.ControlBase+uint32(ir.Return) ||
 				exit == native.Call && (op >= 0x10 && op <= 0x15) || exit == native.GrowMemory && op == 0x40 ||
-				exit == native.RuntimeHelper && (op == 8 || op == 10 || op >= 0x23 && op <= 0x26 || op == 0xd2 || op == 0xd3 || op>>16 == 0xfb || op == slots.ControlBase+uint32(ir.IfCast) || op >= 0xfc0008 && op <= 0xfc0011 || op>>16 == 0xfd)
+				exit == native.RuntimeHelper && (op>>16 == 0xfe || sharedMemoryBoundary(fn, fn.Code.Code[pc]) || op == 8 || op == 10 || op >= 0x23 && op <= 0x26 || op == 0xd2 || op == 0xd3 || op>>16 == 0xfb || op == slots.ControlBase+uint32(ir.IfCast) || op >= 0xfc0008 && op <= 0xfc0011 || op>>16 == 0xfd)
 			if !valid {
 				return 0, s.Fuel, wasm.ErrInvalid
 			}
@@ -211,4 +211,18 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 			return 0, s.Fuel, wasm.ErrInvalid
 		}
 	}
+}
+
+func sharedMemoryBoundary(fn *state.Function, in slots.Instruction) bool {
+	op := in.Op
+	memoryAccess := op >= 0x28 && op <= 0x40 || op>>16 == 0xfd && (op&0xffff <= 11 || op&0xffff >= 84 && op&0xffff <= 93)
+	if !memoryAccess {
+		return false
+	}
+	source := fn.Code.Sources[in.Source].Wasm
+	index := source.Memory
+	if op == 0x3f || op == 0x40 {
+		index = source.A
+	}
+	return uint64(index) < uint64(len(fn.Instance.Memories)) && fn.Instance.Memories[index].Shared()
 }

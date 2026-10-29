@@ -210,7 +210,18 @@ binary assertions per tier, including cross-proposal combinations. It retains
 1,239 separately classified text-parser assertions, ten compiled valid quoted
 modules and one explicitly pinned producer correction. See [the profile
 contract](design/core3.md). This completes the core-profile implementation
-scope; M3 remains open for Core Threads and its remaining acceptance gates.
+scope; M3 remains open for its remaining validation and performance acceptance gates.
+
+Core Threads now adds shared linear memory, all 67 atomic instructions and
+wait/notify on both backends under independent `wasm.Threads` / `--threads`.
+Same-Engine capabilities retain backing across Store closure, reserve per-Store
+growth budgets and share one synchronization domain for all ordinary/atomic,
+SIMD, bulk and host accesses. All 17 applicable complete upstream scripts run
+with nested concurrent commands: 946 commands, 579 binary assertions and six
+classified parser assertions per tier. The native compiler uses individual
+checked shared-memory helpers; reducing their overhead and contention remains
+a local optimization. See [the ownership and memory-model contract](design/core-threads.md).
+P1/legacy wasi-threads is the next functional stage.
 
 Implemented individually enabled extensions include final Exception Handling, WasmGC, Typed Function References, Memory64/Table64, Relaxed SIMD, Multi-Memory, Tail Call and Extended Constant Expressions.
 The first extension is Extended Constant Expressions:
@@ -345,6 +356,6 @@ Every supported capability needs pinned scope, positive/negative/limit/lifecycle
 
 Before each PR, run targeted tests and appropriate shared checks; report exact coverage and unsupported paths. Submit a contribution PR, resolve review findings, and merge only after the **final head** passes required checks. Performance-sensitive PRs need the benchmark evidence described in the performance contract; hosted timing noise cannot be relabeled a pass on a controlled performance gate. PRs may advance an incomplete stage, but only the complete acceptance record closes it.
 
-The implementation priority is competitive native code generation for the complete Core 2.0 profile. Every feature-development PR must reach parity or better against pinned competitors for its affected workloads before merging; architecture/performance work accompanies functionality from the start. Keep shared compiler stages and runtime contracts compact and extensible. The platform boundary and fixed entry-frame emitter are in progress. Existing measurement evidence is retained; additional benchmark infrastructure is deferred while core functionality advances. M1 performance evidence and M2 backend acceptance remain explicit open gates.
+The implementation priority is competitive native code generation for the complete Core 2.0 profile. Every feature-development PR retains affected-workload comparisons and targets parity or better against pinned competitors; under the current integration decision, local optimization may follow semantic integration; architecture/performance work accompanies functionality from the start. Keep shared compiler stages and runtime contracts compact and extensible. The platform boundary and fixed entry-frame emitter are in progress. Existing measurement evidence is retained; additional benchmark infrastructure is deferred while core functionality advances. M1 performance evidence and M2 backend acceptance remain explicit open gates.
 
 Before production release, select a project license, define public API compatibility, resolve isolation/lifecycle failures, review parser/validator/compiler/memory/filesystem boundaries, and publish actual supported platforms. A stage completion is not a security-audit claim or permission to publish a release.
