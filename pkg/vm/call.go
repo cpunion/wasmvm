@@ -2,6 +2,7 @@ package vm
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/cpunion/wasmvm/internal/engine/execute"
@@ -226,7 +227,7 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 		case execute.Done:
 			return e.Results(), nil
 		case execute.Failed:
-			return nil, e.Err()
+			return nil, op.exceptionError(e.Err())
 		case execute.HostRequest:
 			if err := op.ctx.Err(); err != nil {
 				return nil, err
@@ -238,7 +239,7 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 			}
 			e.SetFuel(op.fuel)
 			if err = e.ResumeHost(results, err); err != nil {
-				return nil, err
+				return nil, op.exceptionError(err)
 			}
 		}
 	}
@@ -271,7 +272,18 @@ func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]valu
 	}()
 	results, err := request.Function.Host.(HostFunction)(caller, args)
 	panicked = false
+
 	if err != nil {
+		var ex *Exception
+		if errors.As(err, &ex) && ex != nil {
+			s.mu.Lock()
+			raw, e := s.rawLocked(ex.reference, wasm.ExnRef.NonNull())
+			s.mu.Unlock()
+			if e != nil {
+				return nil, e
+			}
+			return nil, &state.Exception{Owner: s.state, Ref: raw.Lo}
+		}
 		return nil, err
 	}
 	caller.mu.Lock()

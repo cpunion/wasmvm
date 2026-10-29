@@ -32,7 +32,22 @@ type Instruction struct {
 // Every instruction retains its original source and fuel boundary.
 type Edge struct{ PC, Start, Count uint32 }
 type Move struct{ Dst, Src Slot }
+
+// Handler and ProtectedBlock are cold-path unwind metadata. No per-step handler
+// stack is needed, and native code resumes at the same checked target PCs.
+type Handler struct {
+	Parent  uint32
+	Catches []Catch
+}
+type Catch struct {
+	Kind    byte
+	Tag, PC uint32
+	Dest    []Slot
+}
+type ProtectedBlock struct{ Start, End, Handler uint32 }
 type Function struct {
+	Handlers   []Handler
+	Protected  []ProtectedBlock
 	Signature  module.FuncType
 	Sources    []ir.Source
 	Slots      []wasm.ValueType
@@ -272,11 +287,11 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 		if len(term.Args) > 0 {
 			in.A = out.ValueSlots[term.Args[0]]
 		}
-		if term.Kind == ir.TailCall {
+		if term.Kind == ir.TailCall || term.Kind == ir.Throw {
 			in.Op = f.Sources[term.Source].Wasm.Op
 			in.A = NoSlot
 		}
-		if term.Kind == ir.Return || term.Kind == ir.TailCall {
+		if term.Kind == ir.Return || term.Kind == ir.TailCall || term.Kind == ir.Throw {
 			in.Extra = uint32(len(out.Args))
 			in.Count = uint32(len(term.Args))
 			budget.charge(uint64(len(term.Args)))
@@ -347,6 +362,30 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 			budget.charge(uint64(len(ordered)))
 			out.Moves = append(out.Moves, ordered...)
 			out.Edges = append(out.Edges, edge)
+		}
+	}
+
+	for _, h := range f.Handlers {
+		budget.charge(1 + uint64(len(h.Catches)))
+		outH := Handler{Parent: h.Parent}
+		for _, c := range h.Catches {
+			catch := Catch{Kind: c.Kind, Tag: c.Tag, PC: out.BlockPC[c.Target]}
+			budget.charge(uint64(len(f.Blocks[c.Target].Params)))
+			for _, v := range f.Blocks[c.Target].Params {
+				catch.Dest = append(catch.Dest, out.ValueSlots[v])
+			}
+			outH.Catches = append(outH.Catches, catch)
+		}
+		out.Handlers = append(out.Handlers, outH)
+	}
+	for bi, b := range f.Blocks {
+		if b.Handler != 0 {
+			end := uint32(len(out.Code))
+			if bi+1 < len(f.Blocks) {
+				end = out.BlockPC[bi+1]
+			}
+			budget.charge(1)
+			out.Protected = append(out.Protected, ProtectedBlock{out.BlockPC[bi], end, b.Handler})
 		}
 	}
 	return out

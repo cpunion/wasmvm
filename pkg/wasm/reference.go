@@ -60,6 +60,9 @@ func (t ValueType) Storage() ValueType {
 		if t.IsExternalReference() {
 			return ExternRef
 		}
+		if t.IsExceptionReference() {
+			return ExnRef
+		}
 		return AnyRef
 	}
 	return t
@@ -106,6 +109,10 @@ func (t ValueType) WithTypeIndex(index uint32, canonical bool) ValueType {
 }
 func (t ValueType) HeapName() string {
 	switch ValueType(byte(t)) {
+	case ExnRef:
+		return "exn"
+	case NoExnRef:
+		return "noexn"
 	case FuncRef:
 		return "func"
 	case ExternRef:
@@ -130,10 +137,13 @@ func (t ValueType) HeapName() string {
 	return "unknown"
 }
 func (t ValueType) IsInternalReference() bool {
-	return t.IsReference() && !t.IsFunctionReference() && !t.IsExternalReference()
+	return t.IsReference() && !t.IsFunctionReference() && !t.IsExternalReference() && !t.IsExceptionReference()
+}
+func (t ValueType) IsExceptionReference() bool {
+	return t.IsReference() && (byte(t) == byte(ExnRef) || byte(t) == byte(NoExnRef))
 }
 func (t ValueType) IsGCReference() bool {
-	return t.IsReference() && (byte(t) != byte(FuncRef) && byte(t) != byte(ExternRef))
+	return t.IsReference() && !t.IsExceptionReference() && (byte(t) != byte(FuncRef) && byte(t) != byte(ExternRef))
 }
 
 func referenceSubtype(actual, expected ValueType, labels []uint32, nominal func(uint32, uint32) bool) bool {
@@ -164,7 +174,7 @@ func referenceSubtype(actual, expected ValueType, labels []uint32, nominal func(
 		}
 		return false
 	}
-	if af == NoneRef && expected.IsInternalReference() || af == NoFuncRef && expected.IsFunctionReference() || af == NoExternRef && expected.IsExternalReference() {
+	if af == NoExnRef && expected.IsExceptionReference() || af == NoneRef && expected.IsInternalReference() || af == NoFuncRef && expected.IsFunctionReference() || af == NoExternRef && expected.IsExternalReference() {
 		return true
 	}
 	if ei {

@@ -52,11 +52,14 @@ func parseValue(input string) (vm.Value, error) {
 		}
 		hi, e := strconv.ParseUint(parts[1], 0, 64)
 		return vm.V128(lo, hi), e
-	case "funcref", "externref":
+	case "funcref", "externref", "exnref":
 		if raw != "null" {
 			return vm.Value{}, fmt.Errorf("CLI references must be null")
 		}
 		t := wasm.FuncRef
+		if kind == "exnref" {
+			t = wasm.ExnRef
+		}
 		if kind == "externref" {
 			t = wasm.ExternRef
 		}

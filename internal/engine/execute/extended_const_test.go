@@ -134,3 +134,7 @@ func runProposal(t *testing.T, corpus proposalCorpus) {
 		})
 	}
 }
+
+func TestExceptionHandlingSpec(t *testing.T) {
+	runProposal(t, proposalCorpus{"exception-handling", "aa4dcf44b8de3f3f3270ca067422172518ecc341", wasm.SupportedFeatures, []string{"cast", "tag", "throw", "throw_ref", "try_table", "imports", "exports", "instance", "ref_null"}, 325, 482, 305, 18})
+}

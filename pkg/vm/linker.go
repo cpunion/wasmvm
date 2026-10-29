@@ -15,6 +15,7 @@ const (
 	TableKind
 	MemoryKind
 	GlobalKind
+	TagKind
 )
 
 // Extern is a Store-owned function, table, memory or global. Its fields cannot

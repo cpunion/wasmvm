@@ -49,6 +49,7 @@ const (
 	Trap
 	TailCall
 	IfCast
+	Throw
 	IfNull // edges are ordered null, non-null; the latter refines its condition
 )
 
@@ -58,10 +59,24 @@ type Terminator struct {
 	Args   []Value
 	Edges  []Edge
 }
+
+// Handler is a shared immutable chain, indexed from one. Its parent is older.
+// Exceptional edges deliver runtime payloads directly into target parameters.
+type Handler struct {
+	Parent  uint32
+	Catches []Catch
+}
+type Catch struct {
+	Kind   byte
+	Tag    uint32
+	Target BlockID
+	Types  []wasm.ValueType
+}
 type Block struct {
-	Params []Value
-	Ops    []Operation
-	Term   Terminator
+	Handler uint32
+	Params  []Value
+	Ops     []Operation
+	Term    Terminator
 }
 type Function struct {
 	Signature     module.FuncType
@@ -69,6 +84,7 @@ type Function struct {
 	Values        []wasm.ValueType
 	Sources       []Source
 	Blocks        []Block
+	Handlers      []Handler
 	TypeLabels    []uint32
 	TypeHierarchy *wasm.TypeHierarchy
 }
@@ -96,6 +112,8 @@ const (
 
 func EffectsOf(op uint32) Effects {
 	switch {
+	case op == 8 || op == 10:
+		return MayTrap | MayAllocate | ReadHeap
 	case op == 0:
 		return MayTrap
 	case module.IsCall(op):
@@ -176,4 +194,16 @@ func EffectsOf(op uint32) Effects {
 		}
 	}
 	return 0
+}
+
+// Successors includes exceptional edges for reachability and dominance.
+func (f *Function) Successors(b Block, visit func(BlockID)) {
+	for _, e := range b.Term.Edges {
+		visit(e.Target)
+	}
+	for h := b.Handler; h != 0; h = f.Handlers[h-1].Parent {
+		for _, c := range f.Handlers[h-1].Catches {
+			visit(c.Target)
+		}
+	}
 }

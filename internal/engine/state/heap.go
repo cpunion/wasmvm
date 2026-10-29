@@ -20,6 +20,7 @@ type ReferenceValue struct {
 }
 type heapObject struct {
 	Type          uint32
+	Tag           *Tag
 	Data          []byte
 	Layout        *heapLayout
 	Length        uint32
@@ -138,12 +139,17 @@ func (s *Store) TestReference(ref uint64, expected wasm.ValueType) bool {
 		if !ok {
 			return false
 		}
+		if o.Tag != nil {
+			return s.registry.Subtype(wasm.ExnRef.NonNull(), expected)
+		}
 		d := s.registry.Types[o.Type].Definition
 		family := wasm.StructRef
 		if d.Kind == 0x5e {
 			family = wasm.ArrayRef
 		}
 		actual = wasm.IndexedReference(family, o.Type, false).WithTypeIndex(o.Type, true)
+	case expected.IsExceptionReference():
+		return false
 	case ref&i31Tag != 0:
 		actual = wasm.I31Ref.NonNull()
 	case ref&externalTag != 0:

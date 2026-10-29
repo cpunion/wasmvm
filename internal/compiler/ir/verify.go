@@ -111,7 +111,47 @@ func (budget *VerifyBudget) Verify(f *Function) (err error) {
 		}
 		defs[id] = definition{block, position, true}
 	}
+
+	for i, h := range f.Handlers {
+		step(1 + uint64(len(h.Catches)))
+		if h.Parent > uint32(i) || len(h.Catches) == 0 {
+			fail("handler parent")
+		}
+		for _, c := range h.Catches {
+			if c.Kind > 3 || uint64(c.Target) >= uint64(len(f.Blocks)) {
+				fail("catch kind/target")
+			}
+			ps := f.Blocks[c.Target].Params
+			if len(ps) != len(c.Types) {
+				fail("catch arity")
+			}
+			for j, t := range c.Types {
+				step(1)
+				if !matches(t, valueType(ps[j])) {
+					fail("catch type")
+				}
+			}
+			if c.Kind&1 != 0 && (len(c.Types) == 0 || c.Types[len(c.Types)-1] != wasm.ExnRef.NonNull()) {
+				fail("catch reference")
+			}
+			if c.Kind == 2 && len(c.Types) != 0 || c.Kind == 3 && len(c.Types) != 1 {
+				fail("catch-all arity")
+			}
+		}
+	}
+	succ := make([][]BlockID, len(f.Blocks))
 	for bi, b := range f.Blocks {
+		if uint64(b.Handler) > uint64(len(f.Handlers)) {
+			fail("block handler")
+		}
+		f.Successors(b, func(target BlockID) {
+			step(1)
+			if uint64(target) >= uint64(len(f.Blocks)) {
+				fail("successor index")
+			}
+			succ[bi] = append(succ[bi], target)
+			pred[target] = append(pred[target], bi)
+		})
 		step(uint64(len(b.Params)) + uint64(len(b.Ops)) + uint64(len(b.Term.Edges)))
 		for _, id := range b.Params {
 			define(id, bi, -1)
@@ -145,7 +185,7 @@ func (budget *VerifyBudget) Verify(f *Function) (err error) {
 			if len(t.Args) != 0 || len(t.Edges) != 1 {
 				fail("jump arity")
 			}
-			if op != 2 && op != 3 && op != 5 && op != 0xb && op != 0xc && op != 0xf {
+			if op != 2 && op != 3 && op != 0x1f && op != 5 && op != 0xb && op != 0xc && op != 0xf {
 				fail("jump source")
 			}
 		case If, Table:
@@ -187,6 +227,17 @@ func (budget *VerifyBudget) Verify(f *Function) (err error) {
 					fail("tail call operand type")
 				}
 			}
+
+		case Throw:
+			if (op != 8 && op != 10) || len(t.Edges) != 0 || len(t.Args) != len(s.Inputs) || len(s.Outputs) != 0 {
+				fail("throw arity/source")
+			}
+			for i, id := range t.Args {
+				step(1)
+				if !matches(valueType(id), s.Inputs[i]) {
+					fail("throw operand type")
+				}
+			}
 		case Trap:
 			if op != 0 || len(t.Args) != 0 || len(t.Edges) != 0 {
 				fail("trap arity/source")
@@ -221,7 +272,6 @@ func (budget *VerifyBudget) Verify(f *Function) (err error) {
 					fail("edge type")
 				}
 			}
-			pred[edge.Target] = append(pred[edge.Target], bi)
 		}
 	}
 	if len(f.Blocks[0].Params) != 0 || len(pred[0]) != 0 {
@@ -241,13 +291,13 @@ func (budget *VerifyBudget) Verify(f *Function) (err error) {
 	for len(stack) > 0 {
 		step(1)
 		top := &stack[len(stack)-1]
-		edges := f.Blocks[top.block].Term.Edges
+		edges := succ[top.block]
 		if top.next == len(edges) {
 			order = append(order, top.block)
 			stack = stack[:len(stack)-1]
 			continue
 		}
-		next := int(edges[top.next].Target)
+		next := int(edges[top.next])
 		top.next++
 		if !seen[next] {
 			seen[next] = true

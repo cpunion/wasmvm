@@ -22,6 +22,9 @@ func (c *context) field(index, field uint32) module.FieldType {
 	return d.Fields[field]
 }
 func (c *context) refTop(t wasm.ValueType) wasm.ValueType {
+	if t.IsExceptionReference() {
+		return wasm.ExnRef
+	}
 	if t.IsFunctionReference() {
 		return wasm.FuncRef
 	}

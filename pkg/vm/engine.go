@@ -200,6 +200,7 @@ type ExternType struct {
 	Table    *TableType
 	Memory   *MemoryType
 	Global   *GlobalType
+	Tag      *FunctionType
 }
 
 type ImportInfo struct {
@@ -230,7 +231,7 @@ func (m *CompiledModule) Info() (ModuleInfo, error) {
 }
 func describeModule(d *module.Module) ModuleInfo {
 	info := ModuleInfo{Backend: "interpreter", Profile: "core2", Functions: uint32(len(d.Functions)), HasStart: d.HasStart}
-	objects := [4][]ExternType{}
+	objects := [5][]ExternType{}
 	// Copy each referenced type once. A short binary can declare many functions
 	// with one large signature; per-function copies would multiply their memory
 	// cost, bypassing the frontend's aggregate byte/node bounds.
@@ -241,6 +242,11 @@ func describeModule(d *module.Module) ModuleInfo {
 			types[index] = &FunctionType{Params: append([]wasm.ValueType(nil), t.Params...), Results: append([]wasm.ValueType(nil), t.Results...)}
 		}
 		return ExternType{Kind: FunctionKind, Function: types[index]}
+	}
+
+	tagType := func(index uint32) ExternType {
+		t := functionType(index)
+		return ExternType{Kind: TagKind, Tag: t.Function}
 	}
 	for _, im := range d.Imports {
 		desc := ExternType{Kind: ExternKind(im.Kind)}
@@ -253,6 +259,8 @@ func describeModule(d *module.Module) ModuleInfo {
 		case 2:
 			m := im.Memory
 			desc.Memory = &m
+		case 4:
+			desc = tagType(im.Type)
 		case 3:
 			g := im.Global
 			desc.Global = &g
@@ -274,6 +282,9 @@ func describeModule(d *module.Module) ModuleInfo {
 	for _, g := range d.Globals {
 		t := g.Type
 		objects[3] = append(objects[3], ExternType{Kind: GlobalKind, Global: &t})
+	}
+	for _, t := range d.Tags {
+		objects[4] = append(objects[4], tagType(t))
 	}
 	for _, ex := range d.Exports {
 		info.Exports = append(info.Exports, ExportInfo{ex.Name, objects[ex.Kind][ex.Index]})

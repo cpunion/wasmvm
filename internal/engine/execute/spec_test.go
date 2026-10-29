@@ -40,6 +40,7 @@ type specAction struct {
 }
 type specCommand struct {
 	Type, Name, As, Filename, Text string
+	Instance, Module               string
 	Line                           int
 	ModuleType                     string `json:"module_type"`
 	Action                         specAction
@@ -52,6 +53,7 @@ type specRunner struct {
 	last              *state.Instance
 	named, registered map[string]*state.Instance
 	spectest          map[string]state.Extern
+	definitions       map[string][]byte
 	tier              int
 	features          wasm.Features
 	modules           map[*slots.Module]*nativeexec.Lease
@@ -65,7 +67,7 @@ func newSpec(t *testing.T, ctx context.Context, tier int) *specRunner {
 		s = state.NewNative(state.DefaultLimits())
 	}
 	t.Cleanup(s.Close)
-	r := &specRunner{tier: tier, t: t, modules: make(map[*slots.Module]*nativeexec.Lease), store: s, context: ctx, named: make(map[string]*state.Instance), registered: make(map[string]*state.Instance), spectest: make(map[string]state.Extern)}
+	r := &specRunner{tier: tier, t: t, modules: make(map[*slots.Module]*nativeexec.Lease), definitions: make(map[string][]byte), store: s, context: ctx, named: make(map[string]*state.Instance), registered: make(map[string]*state.Instance), spectest: make(map[string]state.Extern)}
 	for _, fn := range []struct {
 		name   string
 		params []wasm.ValueType
@@ -331,7 +333,7 @@ func trapMatches(code wasm.TrapCode, text string) bool {
 	if code.String() == text {
 		return true
 	}
-	return code == wasm.TrapCastFailure && text == "cast" || code == wasm.TrapNullReference && (text == "null function reference" || text == "null i31 reference" || text == "null array reference" || text == "null structure reference") || code == wasm.TrapIndirectCallType && text == "indirect call" || code == wasm.TrapTableBounds && text == "undefined element" || code == wasm.TrapUninitializedElement && strings.HasPrefix(text, "uninitialized element")
+	return code == wasm.TrapCastFailure && text == "cast" || code == wasm.TrapNullReference && (text == "null exception reference" || text == "null function reference" || text == "null i31 reference" || text == "null array reference" || text == "null structure reference") || code == wasm.TrapIndirectCallType && text == "indirect call" || code == wasm.TrapTableBounds && text == "undefined element" || code == wasm.TrapUninitializedElement && strings.HasPrefix(text, "uninitialized element")
 }
 func specLanes(t *testing.T, v specValue) (uint, []string) {
 	t.Helper()
@@ -387,7 +389,7 @@ func specUint(t *testing.T, s string) uint64 {
 }
 func parseSpec(t *testing.T, v specValue) value.Value {
 	t.Helper()
-	if v.Type == "externref" || v.Type == "funcref" || v.Type == "anyref" {
+	if v.Type == "externref" || v.Type == "funcref" || v.Type == "exnref" || v.Type == "anyref" {
 		var s string
 		if err := json.Unmarshal(v.Value, &s); err != nil {
 			t.Fatal(err)
@@ -414,11 +416,11 @@ func parseSpec(t *testing.T, v specValue) value.Value {
 	return value.Value{Lo: binary.LittleEndian.Uint64(raw[:8]), Hi: binary.LittleEndian.Uint64(raw[8:])}
 }
 func (r *specRunner) match(t *testing.T, action specAction, want specValue, got value.Value) bool {
-	refs := map[string]wasm.ValueType{"i31ref": wasm.I31Ref, "structref": wasm.StructRef, "arrayref": wasm.ArrayRef, "eqref": wasm.EqRef, "externref": wasm.ExternRef, "funcref": wasm.FuncRef}
+	refs := map[string]wasm.ValueType{"i31ref": wasm.I31Ref, "structref": wasm.StructRef, "arrayref": wasm.ArrayRef, "eqref": wasm.EqRef, "externref": wasm.ExternRef, "funcref": wasm.FuncRef, "exnref": wasm.ExnRef}
 	if typ, ok := refs[want.Type]; ok && len(want.Value) == 0 {
 		return r.store.TestReference(got.Lo, typ.NonNull())
 	}
-	if want.Type == "refnull" || want.Type == "nullref" || want.Type == "nullfuncref" || want.Type == "nullexternref" {
+	if want.Type == "refnull" || want.Type == "nullref" || want.Type == "nullfuncref" || want.Type == "nullexternref" || want.Type == "nullexnref" {
 		return got.Lo == 0 && got.Hi == 0
 	}
 	if want.Type == "anyref" {
@@ -441,7 +443,7 @@ func (r *specRunner) match(t *testing.T, action specAction, want specValue, got 
 
 func matchSpec(t *testing.T, want specValue, got value.Value) bool {
 	t.Helper()
-	if want.Type == "externref" || want.Type == "funcref" {
+	if want.Type == "externref" || want.Type == "funcref" || want.Type == "exnref" {
 		if len(want.Value) == 0 {
 			return got.Lo != 0
 		}
@@ -492,7 +494,21 @@ func (r *specRunner) runCommand(t *testing.T, cmd specCommand, path string) {
 		t.Fatalf("%s:%d %s: %s", name, cmd.Line, cmd.Type, fmt.Sprintf(format, args...))
 	}
 	switch cmd.Type {
+	case "module_instance":
+		data, ok := r.definitions[cmd.Module]
+		if !ok {
+			fail("unknown module definition %s", cmd.Module)
+		}
+		in, err := r.instantiate(data)
+		if err != nil {
+			fail("%v", err)
+		}
+		r.last = in
+		if cmd.Instance != "" {
+			r.named[cmd.Instance] = in
+		}
 	case "module_definition":
+		r.definitions[cmd.Name] = input
 		// Official definition commands validate/compile without allocating an
 		// instance; the declared minimum can intentionally exceed host quotas.
 		compiled, err := compileWithFeatures(input, r.features)
@@ -553,6 +569,11 @@ func (r *specRunner) runCommand(t *testing.T, cmd specCommand, path string) {
 			if !r.match(t, cmd.Action, want, got[i]) {
 				fail("%s result %d: got %#v want %s (%s)", cmd.Action.Field, i, got[i], want.Value, want.Type)
 			}
+		}
+	case "assert_exception":
+		_, err := r.action(t, cmd.Action)
+		if !errors.Is(err, wasm.ErrException) {
+			fail("got %v want exception", err)
 		}
 	case "assert_trap":
 		_, err := r.action(t, cmd.Action)

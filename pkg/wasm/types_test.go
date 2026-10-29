@@ -8,7 +8,7 @@ import (
 )
 
 func TestValueTypes(t *testing.T) {
-	names := map[wasm.ValueType]string{wasm.I32: "i32", wasm.I64: "i64", wasm.F32: "f32", wasm.F64: "f64", wasm.V128: "v128", wasm.FuncRef: "funcref", wasm.ExternRef: "externref", wasm.AnyRef: "anyref", wasm.EqRef: "eqref", wasm.I31Ref: "i31ref", wasm.StructRef: "structref", wasm.ArrayRef: "arrayref", wasm.NoneRef: "nullref", wasm.NoFuncRef: "nullfuncref", wasm.NoExternRef: "nullexternref"}
+	names := map[wasm.ValueType]string{wasm.ExnRef: "exnref", wasm.NoExnRef: "nullexnref", wasm.I32: "i32", wasm.I64: "i64", wasm.F32: "f32", wasm.F64: "f64", wasm.V128: "v128", wasm.FuncRef: "funcref", wasm.ExternRef: "externref", wasm.AnyRef: "anyref", wasm.EqRef: "eqref", wasm.I31Ref: "i31ref", wasm.StructRef: "structref", wasm.ArrayRef: "arrayref", wasm.NoneRef: "nullref", wasm.NoFuncRef: "nullfuncref", wasm.NoExternRef: "nullexternref"}
 	for i := 0; i < 256; i++ {
 		typ := wasm.ValueType(i)
 		name, valid := names[typ]
@@ -18,7 +18,7 @@ func TestValueTypes(t *testing.T) {
 		if valid && typ.String() != name {
 			t.Fatalf("name(%d) = %q", i, typ)
 		}
-		if typ.IsReference() != (typ >= wasm.ArrayRef && typ <= wasm.NoFuncRef) {
+		if typ.IsReference() != (typ >= wasm.ExnRef && typ <= wasm.NoExnRef) {
 			t.Fatalf("reference(%d)", i)
 		}
 	}

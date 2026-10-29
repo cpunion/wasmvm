@@ -2,8 +2,9 @@
 
 `wasm.GC` (CLI `--gc`) enables the complete standalone GC v1 proposal, including
 its typed-function-reference prerequisite. Tail Call remains separately enabled.
-This increment does not select a complete Core 3.0 profile or implement final
-exception handling, Threads, shared GC, components or WASI.
+This GC increment does not select a complete Core 3.0 profile. Final
+[exception handling](exception-handling.md) is independently enabled; Threads,
+shared GC, components and WASI remain subsequent work.
 
 The frontend supports recursive groups, final/open definitions, explicit
 single-parent subtyping, function variance, struct width/field variance, arrays,

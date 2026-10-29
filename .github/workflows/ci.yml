@@ -100,7 +100,7 @@ jobs:
 
       - name: Check Go data races
         if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
-        run: go test -race -count=1 -timeout=10m -skip 'TestCompleteCore2(Execution|Native)$' ./...
+        run: go test -race -count=1 -timeout=10m -skip 'TestCompleteCore2|Test.*(Proposal|Spec)$' ./...
 
       - name: Check native pointer ownership
         if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'

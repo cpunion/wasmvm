@@ -1,0 +1,17 @@
+(module
+ (type $box (struct (field (mut exnref)) (field externref)))
+ (import "h" "payload" (global $payload (mut externref)))
+ (tag $inner (param externref))
+ (tag $outer (export "tag") (param (ref $box) funcref exnref v128))
+ (func $answer (export "answer") (result i32) i32.const 42)
+ (func (export "read") (param (ref $box)) (result externref)
+  (struct.get $box 1 (local.get 0)))
+ (func $start (local exnref)
+  (local.set 0 (block $caught (result exnref)
+   (try_table (catch_all_ref $caught) (throw $inner (global.get $payload)))
+   unreachable))
+  (throw $outer
+   (struct.new $box (local.get 0) (global.get $payload))
+   (ref.func $answer) (local.get 0) (v128.const i64x2 11 22)))
+ (start $start)
+)

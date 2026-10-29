@@ -27,17 +27,19 @@ type Limits struct {
 	MaxTypes                                                                 uint32
 	MaxHeapObjects                                                           uint32
 	MaxHeapBytes                                                             uint64
+	MaxTags                                                                  uint32
 	MaxTables, MaxMemories                                                   uint32
 	MaxFunctions, MaxGlobals, MaxInstances, MaxMemoryPages, MaxTableElements uint32
 	MaxSegmentBytes, MaxSegmentElements                                      uint64
 }
 
 func DefaultLimits() Limits {
-	return Limits{MaxHeapObjects: 1 << 20, MaxHeapBytes: 64 << 20, MaxTypes: 1 << 20, MaxTables: 1 << 16, MaxMemories: 1024, MaxFunctions: 1 << 20, MaxGlobals: 1 << 20, MaxInstances: 1024, MaxMemoryPages: 4096, MaxTableElements: 1 << 20, MaxSegmentBytes: 64 << 20, MaxSegmentElements: 1 << 20}
+	return Limits{MaxTags: 1 << 20, MaxHeapObjects: 1 << 20, MaxHeapBytes: 64 << 20, MaxTypes: 1 << 20, MaxTables: 1 << 16, MaxMemories: 1024, MaxFunctions: 1 << 20, MaxGlobals: 1 << 20, MaxInstances: 1024, MaxMemoryPages: 4096, MaxTableElements: 1 << 20, MaxSegmentBytes: 64 << 20, MaxSegmentElements: 1 << 20}
 }
 
 type Usage struct {
 	HeapObjects, HeapBytes                                    uint64
+	Tags                                                      uint64
 	Tables, Memories                                          uint64
 	Functions, Globals, Instances, MemoryPages, TableElements uint64
 	SegmentBytes, SegmentElements                             uint64
@@ -51,6 +53,7 @@ type Store struct {
 	instances                 []*Instance
 	tables                    []*Table
 	memories                  []*Memory
+	tags                      []*Tag
 	globals                   []*Global
 	registry                  module.TypeRegistry
 	heap                      []heapSlot
@@ -129,6 +132,7 @@ type Extern struct {
 	Table    *Table
 	Memory   *Memory
 	Global   *Global
+	Tag      *Tag
 }
 type Instance struct {
 	published, disposed bool
@@ -140,6 +144,7 @@ type Instance struct {
 	Tables              []*Table
 	Memories            []*Memory
 	Globals             []*Global
+	Tags                []*Tag
 	Elements            [][]uint64
 	Data                [][]byte
 	Exports             map[string]Extern
@@ -158,31 +163,9 @@ func (s *Store) NewHost(t module.FuncType, host any, referenceType ...wasm.Value
 	if uint64(len(s.functions)-1) >= uint64(s.limits.MaxFunctions) {
 		return Extern{}, limit("functions")
 	}
-	// Copy signatures before publication, so a host cannot mutate call typing.
-	t = module.FuncType{Params: append([]wasm.ValueType(nil), t.Params...), Results: append([]wasm.ValueType(nil), t.Results...)}
-	for _, ts := range [][]wasm.ValueType{t.Params, t.Results} {
-		for _, typ := range ts {
-			if !s.validType(typ) {
-				return Extern{}, fmt.Errorf("%w: host value type", wasm.ErrInvalid)
-			}
-		}
-	}
-	if len(referenceType) > 1 {
-		return Extern{}, fmt.Errorf("%w: host function type", wasm.ErrInvalid)
-	}
-	var typeID uint32
-	if len(referenceType) == 1 {
-		rt := referenceType[0]
-		id, ok := rt.TypeIndex()
-		if !ok || !rt.IsFunctionReference() || !s.validType(rt) || module.SignatureKey(t, nil) != module.SignatureKey(s.registry.Types[id].Function, nil) {
-			return Extern{}, fmt.Errorf("%w: host function type", wasm.ErrInvalid)
-		}
-		typeID = id
-	} else {
-		typeID = s.TypeID(t)
-	}
-	if typeID == 0 {
-		return Extern{}, limit("function types")
+	t, typeID, err := s.hostSignature(t, referenceType)
+	if err != nil {
+		return Extern{}, err
 	}
 	id := uint64(len(s.functions))
 	s.functions = append(s.functions, &Function{Owner: s, Signature: t, TypeID: typeID, Host: host})
@@ -397,6 +380,8 @@ func (s *Store) matches(ex Extern, im module.Import, in *Instance) bool {
 		actual := ex.Memory.Limits()
 		actual.Min = ex.Memory.Pages()
 		return sameLimits(actual, im.Memory)
+	case 4:
+		return ex.Tag != nil && ex.Tag.Owner == s && ex.Tag.TypeID == in.Types[im.Type]
 	case 3:
 		return ex.Global != nil && ex.Global.Owner == s && ex.Global.Type.Mutable == im.Global.Mutable && (ex.Global.Type.Value == canonicalType(im.Global.Value, in.Types) || !im.Global.Mutable && s.registry.Subtype(ex.Global.Type.Value, canonicalType(im.Global.Value, in.Types)))
 	}
@@ -534,3 +519,33 @@ func (s *Store) ReferenceSubtype(actual, expected wasm.ValueType) bool {
 }
 
 type constantFailure struct{ err error }
+
+func (s *Store) hostSignature(t module.FuncType, referenceType []wasm.ValueType) (module.FuncType, uint32, error) {
+	// Copy signatures before publication, so a host cannot mutate call typing.
+	t = module.FuncType{Params: append([]wasm.ValueType(nil), t.Params...), Results: append([]wasm.ValueType(nil), t.Results...)}
+	for _, ts := range [][]wasm.ValueType{t.Params, t.Results} {
+		for _, typ := range ts {
+			if !s.validType(typ) {
+				return module.FuncType{}, 0, fmt.Errorf("%w: host value type", wasm.ErrInvalid)
+			}
+		}
+	}
+	if len(referenceType) > 1 {
+		return module.FuncType{}, 0, fmt.Errorf("%w: host function type", wasm.ErrInvalid)
+	}
+	var typeID uint32
+	if len(referenceType) == 1 {
+		rt := referenceType[0]
+		id, ok := rt.TypeIndex()
+		if !ok || !rt.IsFunctionReference() || !s.validType(rt) || module.SignatureKey(t, nil) != module.SignatureKey(s.registry.Types[id].Function, nil) {
+			return module.FuncType{}, 0, fmt.Errorf("%w: host function type", wasm.ErrInvalid)
+		}
+		typeID = id
+	} else {
+		typeID = s.TypeID(t)
+	}
+	if typeID == 0 {
+		return module.FuncType{}, 0, limit("function types")
+	}
+	return t, typeID, nil
+}

@@ -23,6 +23,13 @@ func (s *Store) layout(typ uint32) (*heapLayout, error) {
 		return nil, wasm.ErrInvalid
 	}
 	d := s.registry.Types[typ].Definition
+
+	if d.Kind == module.FunctionKind {
+		d.Fields = make([]module.FieldType, len(s.registry.Types[typ].Function.Params))
+		for i, t := range s.registry.Types[typ].Function.Params {
+			d.Fields[i] = module.FieldType{Value: t}
+		}
+	}
 	l := &heapLayout{}
 	width := func(f module.FieldType) int {
 		if f.Value.IsReference() {

@@ -64,7 +64,7 @@ func (c *context) body(f *module.Function) FunctionInfo {
 			c.fail("instruction after function end")
 		}
 		v.inputs, v.outputs = v.inputs[:0], v.outputs[:0]
-		v.record = c.visitor != nil && (in.Op == 1 || module.IsCall(in.Op) || in.Op >= 0x1a)
+		v.record = c.visitor != nil && (in.Op == 1 || in.Op == 8 || in.Op == 10 || module.IsCall(in.Op) || in.Op >= 0x1a)
 		v.instruction(in)
 		if c.visitor != nil {
 			for i, j := 0, len(v.inputs)-1; i < j; i, j = i+1, j-1 {
@@ -160,13 +160,26 @@ func (v *checker) instruction(in module.Instr) {
 	case op == 0:
 		v.unreachable()
 	case op == 1:
-	case op == 2 || op == 3 || op == 4:
+	case op == 2 || op == 3 || op == 4 || op == 0x1f:
 		if op == 4 {
 			v.pop(wasm.I32)
+		}
+		if op == 0x1f {
+			v.catches(in.Catches)
 		}
 		sig := v.block(in.Block)
 		v.pops(sig.Params)
 		v.enter(op, sig.Params, sig.Results)
+	case op == 8 || op == 10:
+		if v.features&wasm.ExceptionHandling == 0 {
+			v.fail("exceptions are disabled")
+		}
+		if op == 8 {
+			v.pops(v.tag(in.A).Params)
+		} else {
+			v.pop(wasm.ExnRef)
+		}
+		v.unreachable()
 	case op == 5:
 		f := v.top()
 		if f.op != 4 || f.hadElse {

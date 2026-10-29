@@ -10,6 +10,7 @@ var (
 	ErrInvalid     = errors.New("invalid WebAssembly module")
 	ErrLimit       = errors.New("WebAssembly resource limit exceeded")
 	ErrUnsupported = errors.New("unsupported WebAssembly feature")
+	ErrException   = errors.New("uncaught WebAssembly exception")
 	ErrTrap        = errors.New("WebAssembly execution trap")
 	ErrClosed      = errors.New("WebAssembly object is closed")
 )

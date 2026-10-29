@@ -30,6 +30,7 @@ func (s *Store) AllocateContext(ctx context.Context, compiled *slots.Module, res
 	scratch := constantScratch(compiled, local[:])
 	oldSerial, allocatingMark := s.heapSerial, len(s.allocating)
 	oldUsage, oldFunctions, oldTypes := s.usage, len(s.functions), s.registry.Count()
+	oldTags := len(s.tags)
 	oldTables, oldMemories, oldGlobals := len(s.tables), len(s.memories), len(s.globals)
 	defer func() {
 		clear(s.allocating[allocatingMark:])
@@ -62,6 +63,8 @@ func (s *Store) AllocateContext(ctx context.Context, compiled *slots.Module, res
 			s.memories = s.memories[:oldMemories]
 			clear(s.globals[oldGlobals:])
 			s.globals = s.globals[:oldGlobals]
+			clear(s.tags[oldTags:])
+			s.tags = s.tags[:oldTags]
 			s.registry.Rollback(oldTypes)
 			for id := range s.heapLayouts {
 				if int(id) > oldTypes {
@@ -96,6 +99,8 @@ func (s *Store) AllocateContext(ctx context.Context, compiled *slots.Module, res
 			instance.Memories = append(instance.Memories, ex.Memory)
 		case 3:
 			instance.Globals = append(instance.Globals, ex.Global)
+		case 4:
+			instance.Tags = append(instance.Tags, ex.Tag)
 		}
 	}
 	if s.usage.Instances >= uint64(s.limits.MaxInstances) {
@@ -111,6 +116,15 @@ func (s *Store) AllocateContext(ctx context.Context, compiled *slots.Module, res
 		instance.Functions = append(instance.Functions, id)
 		s.functions = append(s.functions, &Function{Owner: s, Signature: s.registry.Types[instance.Types[f.Type]].Function, TypeID: instance.Types[f.Type], Instance: instance, Code: compiled.Functions[i], Index: index})
 		s.usage.Functions++
+	}
+
+	for _, t := range definition.Tags {
+		id := instance.Types[t]
+		ex, e := s.newTag(s.registry.Types[id].Function, id, instance)
+		if e != nil {
+			return nil, e
+		}
+		instance.Tags = append(instance.Tags, ex.Tag)
 	}
 	for i, t := range definition.Tables {
 		t.Element = canonicalType(t.Element, instance.Types)
@@ -191,6 +205,8 @@ func (s *Store) AllocateContext(ctx context.Context, compiled *slots.Module, res
 			external.Memory = instance.Memories[ex.Index]
 		case 3:
 			external.Global = instance.Globals[ex.Index]
+		case 4:
+			external.Tag = instance.Tags[ex.Index]
 		}
 		instance.Exports[ex.Name] = external
 	}

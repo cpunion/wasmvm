@@ -123,6 +123,9 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 			for _, ref := range in.Functions {
 				markFunction(ref)
 			}
+			for _, t := range in.Tags {
+				mark(t.OwnerInstance)
+			}
 			for _, t := range in.Tables {
 				mark(t.OwnerInstance)
 			}
@@ -139,6 +142,16 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 		for oh < len(objects) {
 			o := objects[oh]
 			oh++
+
+			if o.Tag != nil {
+				mark(o.Tag.OwnerInstance)
+				for i, t := range o.Tag.Signature.Params {
+					if t.IsReference() {
+						visit(t, o.get(uint32(i)))
+					}
+				}
+				continue
+			}
 			d := s.registry.Types[o.Type].Definition
 			if d.Kind == module.ArrayKind {
 				if d.Fields[0].Value.IsReference() {
@@ -207,12 +220,27 @@ func (s *Store) dispose(in *Instance) {
 	in.Tables = nil
 	in.Memories = nil
 	in.Globals = nil
+	in.Tags = nil
 	in.Elements = nil
 	in.Data = nil
 	in.Exports = nil
 }
 
 func (s *Store) sweepObjects() {
+	tags := s.tags[:0]
+	for _, t := range s.tags {
+		if s.closed || t.OwnerInstance != nil && t.OwnerInstance.disposed {
+			s.usage.Tags--
+			t.Owner = nil
+			t.OwnerInstance = nil
+			t.Signature = module.FuncType{}
+			t.TypeID = 0
+		} else {
+			tags = append(tags, t)
+		}
+	}
+	clear(s.tags[len(tags):])
+	s.tags = tags
 	tables := s.tables[:0]
 	for _, t := range s.tables {
 		if s.closed || t.OwnerInstance != nil && t.OwnerInstance.disposed {
@@ -295,6 +323,7 @@ func (s *Store) Close() {
 	s.tables = nil
 	s.memories = nil
 	s.globals = nil
+	s.tags = nil
 	s.registry = module.TypeRegistry{}
 	for i := 1; i < len(s.heap); i++ {
 		s.releaseObject(uint32(i))
