@@ -192,6 +192,15 @@ func TestDirectoryCapabilities(t *testing.T) {
 	if _, err = d.Stat("absolute", true); !errors.Is(err, ErrOutside) {
 		t.Fatal("stat followed escape", err)
 	}
+	if err = d.Symlink("../escape", "parent-escape"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = d.Stat("parent-escape", true); !errors.Is(err, ErrOutside) {
+		t.Fatal("stat followed parent escape", err)
+	}
+	if err = d.SetTimes("parent-escape", true, 1, 1, 5); !errors.Is(err, ErrOutside) {
+		t.Fatal("timestamp followed parent escape", err)
+	}
 	if err = Link(d, "missing", true, d, "never"); err == nil {
 		t.Fatal("missing followed link")
 	}
