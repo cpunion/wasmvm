@@ -28,6 +28,9 @@ func destructorCount() uint32
 //go:linkname probeSIMD C.wasmvm_probe_simd
 func probeSIMD(seed uint32) uint32
 
+//go:linkname growMemory C.wasmvm_grow_memory
+func growMemory(pages uint32) uint32
+
 type node struct {
 	value int
 	next  *node
@@ -100,6 +103,12 @@ func main() {
 	for i := range heads {
 		heads[i] = <-ready
 	}
+	// Grow shared memory while other pthreads retain parked collector roots.
+	if growMemory(1) == ^uint32(0) {
+		panic("shared memory growth failed")
+	}
+	retained := make([]byte, 64<<10)
+	retained[0], retained[len(retained)-1] = 0x12, 0x34
 	for i := 0; i < 3; i++ {
 		runtime.GC()
 		for _, head := range heads {
@@ -127,5 +136,9 @@ func main() {
 	if recoverValue(42) != 42 {
 		panic("main exception state")
 	}
+	if retained[0] != 0x12 || retained[len(retained)-1] != 0x34 {
+		panic("shared memory growth lost retained data")
+	}
+	runtime.KeepAlive(retained)
 	fmt.Println("llgo-threads-ok", sum)
 }

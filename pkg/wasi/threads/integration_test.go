@@ -187,6 +187,19 @@ func TestLLGoThreadedGuest(t *testing.T) {
 					t.Fatal(err)
 				}
 				defer g.Close()
+				observer, err := e.NewStore(vm.DefaultStoreConfig())
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer observer.Close()
+				memory, err := observer.ImportMemory(g.memories[[2]string{"env", "memory"}])
+				if err != nil {
+					t.Fatal(err)
+				}
+				initialPages, err := memory.MemoryPages()
+				if err != nil {
+					t.Fatal(err)
+				}
 				err = g.Run()
 				code, expected := uint32(0), uint32(0)
 				var exit *preview1.ExitError
@@ -209,6 +222,10 @@ func TestLLGoThreadedGuest(t *testing.T) {
 					t.Fatal("guest panic missing", string(diagnostic.Bytes()))
 				}
 				if mode == "all" {
+					pages, err := memory.MemoryPages()
+					if err != nil || pages <= initialPages {
+						t.Fatal("guest did not grow shared memory", initialPages, pages, err)
+					}
 					entries, err := os.ReadDir(dir)
 					if err != nil || len(entries) != 8 {
 						t.Fatal("thread files", len(entries), err)

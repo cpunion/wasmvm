@@ -45,6 +45,9 @@ rechecks closure before publication. `WaitClosed` joins worker execution, Store
 reclamation and P1 callbacks/resources; it cannot complete while a child or an
 initialization reservation is live. No asynchronous work retains a Caller or
 guest-memory slice. Preserve typed P1 exit, trap and context errors.
+Panics in executing host callbacks become `HostPanicError` after group cleanup,
+including panics in module initialization. Injected capability cleanup must
+return promptly without panicking.
 
 ## CLI and validation
 
@@ -61,6 +64,8 @@ TID exhaustion, quota/type/link failures and concurrent close. The guest exercis
 C pthread join/TLS/destructors, Goexit defers, cross-thread GC, EH, actual SIMD,
 concurrent file I/O and worker process exit/panic. Coverage and race checks are
 additional implementation evidence, not proofs of the native memory model.
+The guest explicitly grows shared memory while other pthreads are parked;
+the harness checks that its backing actually gains pages and retains data.
 
 Competitive host-call and shared-memory performance, controlled M4 performance
 acceptance and component/WASI 0.2/0.3 support remain separate work.

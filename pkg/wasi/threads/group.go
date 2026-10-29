@@ -81,10 +81,14 @@ func New(ctx context.Context, engine *vm.Engine, module *vm.CompiledModule, proc
 		switch {
 		case im.Kind == vm.MemoryKind && im.Memory.Shared && !im.Memory.Index64:
 			key := [2]string{im.Module, im.Name}
-			if old, found := imports[key]; found && old != *im.Memory {
-				return nil, fmt.Errorf("%w: inconsistent shared memory %s.%s", vm.ErrLink, im.Module, im.Name)
+			typ := *im.Memory
+			if old, found := imports[key]; found {
+				typ.Min, typ.Max = max(old.Min, typ.Min), min(old.Max, typ.Max)
+				if typ.Min > typ.Max {
+					return nil, fmt.Errorf("%w: inconsistent shared memory %s.%s", vm.ErrLink, im.Module, im.Name)
+				}
 			}
-			imports[key] = *im.Memory
+			imports[key] = typ
 		case im.Kind == vm.FunctionKind && im.Module == "wasi_snapshot_preview1":
 		case im.Kind == vm.FunctionKind && im.Module == "wasi" && im.Name == "thread-spawn" && signature(im.Function, []wasm.ValueType{wasm.I32}, []wasm.ValueType{wasm.I32}):
 			spawns = true

@@ -51,6 +51,10 @@ uint32_t wasmvm_destructor_count(void) {
   return atomic_load(&failures) ? UINT32_MAX : atomic_load(&destructors);
 }
 
+uint32_t wasmvm_grow_memory(uint32_t pages) {
+  return __builtin_wasm_memory_grow(0, pages);
+}
+
 uint32_t wasmvm_probe_simd(uint32_t seed) {
   typedef uint32_t lanes4 __attribute__((vector_size(16)));
   static volatile lanes4 stored;

@@ -6,7 +6,7 @@
     "archiveSHA256": "2dd8344d7fbd0d2b43000e9c95f6d28e73dffa316d846f6556d7be8e16f4e2ff",
     "license": "No license file is present in this pinned proposal archive. Preserve the original source archive and notices; redistribution clearance remains a release requirement."
   },
-  "archiveSHA256": "4bc19a14268080f12f114c669b7edfff72396753e5e820c13128b94a0d5694ec",
+  "archiveSHA256": "5a34f79a225c2df9965ddc2b90521db9f9e2c05edc5e1e22095150ceccb62508",
   "official": [
     "thread_spawn-simple.wasm",
     "wasi_threads_exit_main_block.wasm",
@@ -39,13 +39,13 @@
       "-target",
       "wasi"
     ],
-    "originalSHA256": "8464b52dd4ce8bc3a3174a46ab6354e0aae2cc6bc8fdac9218bb2705ea891593",
-    "strippedSHA256": "fb6c8a935d25f3c234f2987d9c011e78d3c490b9b3cdd202a1a5c241b4a2456e",
+    "originalSHA256": "0ad8ea6fb79595cb60786722a7aae423e13f4a377881a06ad7ff5d6fce2de168",
+    "strippedSHA256": "50e8f25c2a9d5db7ee9f61d730c38f4a2299ae48c1583b33e318d546c594adba",
     "strip": "wasm-tools 1.258.0 strip --all; custom sections only",
     "sources": {
-      "main.go": "11bc93dfe627a0c6dd1473b1e7d08950035a99104172fe6412b9bd8cb49df20d",
+      "main.go": "e9756a08c9ba478eb8ff8ca2e4f50c3b860d8c9b416e4d5eaa99363e37076aee",
       "go.mod": "85b06d7c9d4343bc0fefbc3ddf9f9939ab93177fc56668bd530837097587cdf1",
-      "_wrap/probe.c": "ed2984ec04d9e89c03e0643a2b0ae9d2026a3bc16cd656dbbfd0f924b38bc9c6"
+      "_wrap/probe.c": "c58be842b1c6bdd0156bf5717b0f831f21ea6b6384dbe9791741d49da1100ae7"
     },
     "imports": [
       [
@@ -168,7 +168,7 @@
     },
     "dataSegments": 3,
     "activeDataSegments": 0,
-    "simdInstructions": 6104,
+    "simdInstructions": 6110,
     "nativeCodeQuotaBytes": 268435456,
     "expected": {
       "all": {
@@ -185,7 +185,7 @@
     }
   },
   "sha256": {
-    "guest-llgo.wasm": "fb6c8a935d25f3c234f2987d9c011e78d3c490b9b3cdd202a1a5c241b4a2456e",
+    "guest-llgo.wasm": "50e8f25c2a9d5db7ee9f61d730c38f4a2299ae48c1583b33e318d546c594adba",
     "notices/Go-LICENSE": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
     "notices/LLGo/LICENSE": "0a15c7f1df742af0cb5cbe168a0327fb46cb105c1bf8d7fd4f10a71f9f408fb0",
     "notices/LLGo/LICENSES/BlakeSmith-AR-MIT.txt": "2e36d7d733ee71dd8263abfd3bce486cdbca109f85721a3839fd3ae43a16cd25",
@@ -230,7 +230,7 @@
     "official/wasi_threads_return_main_wasi_read.wasm": "6e93871294f47d7f0e98b9ea70b8fd90536197ea364dadbdda75b3bfe52ea1a6",
     "official/wasi_threads_spawn.json": "0032fa4c940f83eed887af0b2270c958c52f3978f3b6001e6415f936d55535e1",
     "official/wasi_threads_spawn.wasm": "604523d495a3f1a1c2844fd7872d8cd34ea2b569be129f80511b4f8ded568e5f",
-    "records/producers.json": "55706488ae25f780e26ed165a27ace13c8bf4bb1cce3da1aece819a5d27e5e8c",
+    "records/producers.json": "8356dacbf377060f22ef46934f1b2f33595046b3221c8396c261124d7e0b743c",
     "records/upstream.tar.gz": "2dd8344d7fbd0d2b43000e9c95f6d28e73dffa316d846f6556d7be8e16f4e2ff"
   },
   "officialCProducer": {

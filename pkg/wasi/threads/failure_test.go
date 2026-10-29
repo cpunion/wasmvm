@@ -173,3 +173,29 @@ func TestGroupImportTypeFailureReclaimsProcess(t *testing.T) {
 		}
 	})
 }
+
+func TestGroupSharedImportAliasesIntersectLimits(t *testing.T) {
+	engines(t, func(t *testing.T, e *vm.Engine, options vm.CallOptions) {
+		b, err := os.ReadFile("testdata/alias-compatible.wasm")
+		if err != nil {
+			t.Fatal(err)
+		}
+		m, err := e.Compile(nil, b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer m.Close()
+		p, _ := preview1.NewProcess(preview1.DefaultConfig())
+		defer p.Close()
+		g, err := New(nil, e, m, p, Config{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(g.memories) != 1 {
+			t.Fatal("duplicate shared backing")
+		}
+		if err := g.Run(); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
