@@ -48,6 +48,7 @@ type context struct {
 	tables          []module.TableType
 	memories        []module.Limits
 	globals         []module.GlobalType
+	constantGlobals int
 	importGlobals   int
 	refs            map[uint32]bool
 	at              uint64
@@ -101,6 +102,7 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 		}
 	}
 	c.importGlobals = len(c.globals)
+	c.constantGlobals = c.importGlobals
 	for _, f := range m.Functions {
 		c.funcs = append(c.funcs, c.typ(f.Type))
 		c.funcTypeIndices = append(c.funcTypeIndices, f.Type)
@@ -184,12 +186,19 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 	for _, data := range m.Data {
 		declare(data.Offset)
 	}
+	// Definitions see only preceding immutable globals. Tables precede global
+	// definitions in the specification; active segments follow them.
 	for _, g := range m.Globals {
 		c.constant(g.Init, g.Type.Value)
+		if c.features&wasm.Core3Rules != 0 {
+			c.constantGlobals++
+		}
 	}
 	if m.TableInit != nil && len(m.TableInit) != len(m.Tables) {
 		c.fail("table initializer count")
 	}
+	allGlobals := c.constantGlobals
+	c.constantGlobals = c.importGlobals
 	for i, table := range m.Tables {
 		if m.TableInit != nil && m.TableInit[i] != nil {
 			if features&(wasm.FunctionReferences|wasm.GC) == 0 {
@@ -200,6 +209,7 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 			c.fail("nondefaultable table needs an initializer")
 		}
 	}
+	c.constantGlobals = allGlobals
 	for _, e := range m.Elements {
 		if !e.Type.IsReference() {
 			c.fail("invalid element reference type")
@@ -334,7 +344,7 @@ func (c *context) constant(expr module.Expr, want wasm.ValueType) {
 		case 0xfd000c:
 			got = wasm.V128
 		case 0x23:
-			c.index(in.A, c.importGlobals, "constant imported global")
+			c.index(in.A, c.constantGlobals, "constant global")
 			g := c.globals[in.A]
 			if g.Mutable {
 				c.fail("constant global must be immutable")

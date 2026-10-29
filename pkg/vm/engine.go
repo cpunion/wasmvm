@@ -25,7 +25,7 @@ type MemoryType = module.Limits
 type TableType = module.TableType
 type GlobalType = module.GlobalType
 
-// EngineConfig selects Core 2.0 execution and bounded compiler phases.
+// EngineConfig selects the Core 2.0 or 3.0 profile and bounded compiler phases.
 // Native requires a supported platform adapter; no backend fallback is used.
 type EngineConfig struct {
 	Backend  string
@@ -50,7 +50,10 @@ type Engine struct {
 
 func NewEngine() *Engine { e, _ := NewEngineWithConfig(DefaultEngineConfig()); return e }
 func NewEngineWithConfig(config EngineConfig) (*Engine, error) {
-	if config.Backend != "interpreter" && config.Backend != "native" || config.Backend == "native" && !native.Available || config.Profile != "core2" || config.Features & ^wasm.SupportedFeatures != 0 {
+	if config.Profile == "core3" {
+		config.Features |= wasm.Core3Features
+	}
+	if config.Backend != "interpreter" && config.Backend != "native" || config.Backend == "native" && !native.Available || config.Profile != "core2" && config.Profile != "core3" || config.Features & ^wasm.SupportedFeatures != 0 {
 		return nil, wasm.ErrUnsupported
 	}
 	return &Engine{config: config}, nil
@@ -137,7 +140,7 @@ func (e *Engine) frontend(ctx context.Context, input []byte) (*validate.Module, 
 	return v, nil
 }
 
-// Validate performs binary decoding and static Core 2.0 validation. It does not
+// Validate decodes and checks the selected binary profile. It does not
 // lower code, resolve imports, instantiate, or execute a start function.
 func (e *Engine) Validate(ctx context.Context, input []byte) error {
 	_, err := e.frontend(contextOrBackground(ctx), input)
@@ -154,6 +157,7 @@ func (e *Engine) Inspect(ctx context.Context, input []byte) (ModuleInfo, error) 
 	}
 	info := describeModule(v.Definition())
 	info.Backend, info.Features = e.config.Backend, e.config.Features
+	info.Profile = e.config.Profile
 	if err := e.check(ctx); err != nil {
 		return ModuleInfo{}, err
 	}
@@ -227,6 +231,7 @@ func (m *CompiledModule) Info() (ModuleInfo, error) {
 	}
 	info := describeModule(code.IR.Validated.Definition())
 	info.Backend, info.Features = m.engine.config.Backend, m.engine.config.Features
+	info.Profile = m.engine.config.Profile
 	return info, nil
 }
 func describeModule(d *module.Module) ModuleInfo {
