@@ -47,7 +47,7 @@ The owner selected a **project-owned core** after M0. Wazero and other engines r
 | M2 | Fast interpreter and complete Core 2.0 native compiler for amd64/arm64 | In progress: complete native semantic corpus; call/helper optimization and performance acceptance remain |
 | M3 | Full Core 3.0 and separate Core Threads on both backends | Full Core 3.0 and Core Threads implemented; cross-platform validation and performance acceptance remain |
 | M4 | P1, legacy wasi-threads and pinned Go/LLGo guest integration | P1 and legacy threads/Go/LLGo guests implemented; performance acceptance open |
-| M5 | Component Model and WASI 0.2 by declared world/interface | Planned |
+| M5 | Component Model and WASI 0.2 by declared world/interface | In progress: frontend, ABI primitives and type checking; composition/runtime/worlds remain |
 | M6 | WASI 0.3 native async and cumulative component features | Planned |
 | M7 | Further optimization and separately gated experimental proposals | Deferred |
 

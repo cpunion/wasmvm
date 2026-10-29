@@ -1,8 +1,9 @@
 # Package and Directory Design
 
-Status: development implementation, 2026-10-27. `pkg/vm` provides the Core 2.0
-embedding API and interpreter/native selection. Component and WASI packages
-remain placeholders. Planned paths below are not support claims.
+Status: development implementation, 2026-10-30. `pkg/vm` provides Core execution
+and interpreter/native selection; P1 and legacy threads have public adapters.
+The public component/P2/P3 packages remain placeholders. Planned paths below
+are not support claims.
 
 ## Directory tree
 
@@ -36,7 +37,6 @@ wasmvm/
 │       ├── preview2/              # Existing doc.go: WASI 0.2 worlds
 │       └── preview3/              # Existing doc.go: WASI 0.3 worlds
 ├── internal/
-│   ├── component/                # In progress: owned binary model/decoder and Canonical ABI values
 │   ├── compat/                    # Existing: shared host compiler probes
 │   ├── binary/                    # Implemented: bounded reader, LEB128, float bits, UTF-8 names
 │   ├── core/
@@ -64,10 +64,11 @@ wasmvm/
 │   │   ├── heap/                  # Planned: WasmGC, roots, externref, handles
 │   │   └── schedule/              # Planned: task budgets, cancellation, thread lifecycle
 │   ├── component/
-│   │   ├── decode/                # Planned: component binary decoding
-│   │   ├── validate/              # Planned: component types and composition rules
-│   │   ├── canon/                 # Planned: lift/lower, post-return
-│   │   ├── resource/              # Planned: own/borrow/drop and handles
+│   │   ├── model/                 # Implemented: owned binary AST and immutable resolved value graphs
+│   │   ├── decode/                # Implemented: bounded pinned component grammar
+│   │   ├── validate/              # In progress: types/lexical declarations; whole-binary linking remains
+│   │   ├── canonical/             # Implemented: value/layout/string/resource primitives; call integration remains
+│   │   ├── runtime/               # Planned: composition, call scopes, transfer transactions and post-return
 │   │   └── async/                 # Planned: task/future/stream state machines
 │   ├── wasi/
 │   │   ├── host/                  # Implemented: stable directory handles and descriptor I/O

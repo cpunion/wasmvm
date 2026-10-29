@@ -252,11 +252,11 @@ func (d *decoder) typeDef() *model.TypeDef {
 	case model.List, model.Option:
 		v := d.valueType()
 		x.Element = &v
-	case 0x67:
+	case model.FixedList:
 		v := d.valueType()
 		x.Element = &v
 		x.Length = d.u32()
-	case 0x63:
+	case model.Map:
 		k, v := d.valueType(), d.valueType()
 		x.Key, x.Element = &k, &v
 	case model.Tuple:
@@ -275,7 +275,7 @@ func (d *decoder) typeDef() *model.TypeDef {
 		x.Resource = d.u32()
 	case model.Stream, model.Future:
 		x.Element = d.maybeValue()
-	case model.Function, 0x43:
+	case model.Function, model.AsyncFunction:
 		x.Parameters = d.namedTypes()
 		x.Result = d.result()
 	case model.Resource:
