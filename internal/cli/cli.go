@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/cpunion/wasmvm/pkg/vm"
+	wasithreads "github.com/cpunion/wasmvm/pkg/wasi/threads"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
@@ -37,6 +38,8 @@ Run also accepts:
   --export name          Exported function (required for core run; _start for WASI)
   --fuel count           Shared instruction budget, including the start function
   --wasi                 Install WASI Preview 1; arguments become guest argv
+  --wasi-threads         Install P1 and legacy wasi.thread-spawn (enables Core Threads)
+  --max-threads n        Total process threads, including main (default 256)
   --env key=value        Explicit guest environment entry; may be repeated
   --dir guest=host       Explicit writable directory capability; may be repeated
   --read-only-dir g=h    Explicit read-only directory capability
@@ -54,6 +57,8 @@ func (s *stringList) String() string         { return strings.Join(*s, ",") }
 func (s *stringList) Set(value string) error { *s = append(*s, value); return nil }
 
 type wasiOptions struct {
+	threads                    bool
+	maxThreads                 uint
 	env, dirs, readOnlyDirs    stringList
 	stdinFile, argv0, exported string
 	args                       []string
@@ -96,6 +101,8 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		flags.StringVar(&exported, "export", "", "")
 		flags.StringVar(&fuel, "fuel", "", "")
 		flags.BoolVar(&wasiMode, "wasi", false, "")
+		flags.BoolVar(&wasiConfig.threads, "wasi-threads", false, "")
+		flags.UintVar(&wasiConfig.maxThreads, "max-threads", uint(wasithreads.DefaultMaxThreads), "")
 		flags.Var(&wasiConfig.env, "env", "")
 		flags.Var(&wasiConfig.dirs, "dir", "")
 		flags.Var(&wasiConfig.readOnlyDirs, "read-only-dir", "")
@@ -109,6 +116,16 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	positional := flags.Args()
+	if wasiConfig.threads {
+		wasiMode = true
+		if wasiConfig.maxThreads == 0 || wasiConfig.maxThreads >= 1<<29 || exported != "" && exported != "_start" {
+			fmt.Fprintln(stderr, "--wasi-threads requires _start and 1 <= --max-threads < 2^29")
+			return 2
+		}
+	} else if command == "run" && wasiConfig.maxThreads != uint(wasithreads.DefaultMaxThreads) {
+		fmt.Fprintln(stderr, "--max-threads requires --wasi-threads")
+		return 2
+	}
 	if wasiMode && exported == "" {
 		exported = "_start"
 	}
@@ -172,7 +189,7 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if *exceptions {
 		config.Features |= wasm.ExceptionHandling
 	}
-	if *threads {
+	if *threads || wasiConfig.threads {
 		config.Features |= wasm.Threads
 	}
 	if *gc {
@@ -224,7 +241,7 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 			wasiConfig.argv0 = positional[0]
 			wasiConfig.args = positional[1:]
 			wasiConfig.exported = exported
-			return runWASI(ctx, store, compiled, options, wasiConfig, stdout, stderr)
+			return runWASI(ctx, engine, store, compiled, options, wasiConfig, stdout, stderr)
 		}
 		instance, err := vm.NewLinker(store).Instantiate(ctx, compiled, options)
 		if err != nil {

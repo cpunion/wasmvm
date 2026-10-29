@@ -75,4 +75,13 @@ cleanup. One Process can serve several isolated Stores. Store closure cancels on
 Store's calls. Process closure or proc_exit cancels the shared resource domain;
 ExitError carries the guest status separately from errno/trap/cancellation.
 Detailed [P1 ownership, limits and host behavior](design/wasi-preview1.md) apply.
-Legacy wasi-threads and component/WASI 0.2/0.3 execution remain subsequent scope.
+
+For legacy threaded commands, create `threads.New(ctx, engine, compiled,
+process, threads.DefaultConfig())`, then call `group.Run()`. Successful
+construction transfers Process ownership; Engine and CompiledModule remain
+borrowed. The same compiled module can serve successive Groups. Keep both open
+until workers have joined. `group.Close()` requests cancellation;
+`group.WaitClosed(cleanupContext)` joins Stores and Process resources. The
+per-thread Store/fuel and process thread quotas are explicit in Config.
+See [thread group ownership](design/wasi-threads.md). Component/WASI 0.2/0.3
+execution remains subsequent scope.

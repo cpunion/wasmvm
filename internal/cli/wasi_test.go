@@ -86,7 +86,7 @@ func TestWASIPipeCancellationAndFlagRestore(t *testing.T) {
 	if err != nil || (before^after)&(unix.O_NONBLOCK|unix.O_APPEND|unix.O_ASYNC) != 0 {
 		t.Fatal("stdio flags changed", before, after, err)
 	}
-	stream, err := borrowFile(w, before)
+	stream, err := cliStreams("", w, &diagnostic)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,5 +103,36 @@ func TestWASIPipeCancellationAndFlagRestore(t *testing.T) {
 	closed.Close()
 	if _, err := cliStreams("", closed, &diagnostic); err == nil {
 		t.Fatal("closed stdout accepted")
+	}
+}
+
+func TestWASIStdioAliasesRetainNonblockingUntilCleanup(t *testing.T) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	defer w.Close()
+	if err := unix.SetNonblock(host.Descriptor(w), false); err != nil {
+		t.Fatal(err)
+	}
+	streams, err := cliStreams("", w, w)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer streams.Close()
+	if err := streams.streams[1].Close(); err != nil {
+		t.Fatal(err)
+	}
+	flags, err := unix.FcntlInt(uintptr(host.Descriptor(w)), unix.F_GETFL, 0)
+	if err != nil || flags&unix.O_NONBLOCK == 0 {
+		t.Fatal("closing stdout made live stderr blocking", flags, err)
+	}
+	if err := streams.Close(); err != nil {
+		t.Fatal(err)
+	}
+	flags, err = unix.FcntlInt(uintptr(host.Descriptor(w)), unix.F_GETFL, 0)
+	if err != nil || flags&unix.O_NONBLOCK != 0 {
+		t.Fatal("stdio flags not restored after all streams closed", flags, err)
 	}
 }

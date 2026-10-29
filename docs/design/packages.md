@@ -32,7 +32,7 @@ wasmvm/
 │   ├── component/                 # Existing doc.go: component compile/link/run API
 │   └── wasi/
 │       ├── preview1/              # Implemented: P1 Process, typed ABI and capabilities
-│       ├── threads/               # Existing doc.go: optional legacy wasi-threads
+│       ├── threads/               # Implemented: legacy spawn, thread groups and lifecycle
 │       ├── preview2/              # Existing doc.go: WASI 0.2 worlds
 │       └── preview3/              # Existing doc.go: WASI 0.3 worlds
 ├── internal/

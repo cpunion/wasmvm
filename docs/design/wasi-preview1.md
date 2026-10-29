@@ -82,5 +82,6 @@ It needs an explicit 256 MiB native code budget; the default module budget stays
 now reserves 1 GiB of virtual address space, with pages populated on publication.
 Compiler errors identify the function, tier and consumed code budget.
 
-Legacy wasi-threads and LLGo's threaded guest integration remain the next M4
-capability. Performance comparisons and calibrated M1–M3 acceptance remain open.
+[Legacy wasi-threads](wasi-threads.md) now binds the same Process into isolated
+thread Stores and executes the pinned LLGo guest. Calibrated M1–M4 performance
+acceptance remains open; components/WASI 0.2/0.3 remain separate capabilities.

@@ -1,4 +1,6 @@
-// Package threads is reserved for the optional legacy wasi-threads ABI.
-// This extension is separate from Preview 1 and component threading.
-// It currently contains no implementation.
+// Package threads implements the legacy wasi.thread-spawn ABI on Linux and
+// macOS. Each worker has an independent Store, instance and execution stack;
+// shared linear memories and Preview 1 Process capabilities form the group.
 package threads
+
+const DefaultMaxThreads uint32 = 256

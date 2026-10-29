@@ -9,6 +9,6 @@ import (
 	"io"
 )
 
-func runWASI(_ context.Context, _ *vm.Store, _ *vm.CompiledModule, _ vm.CallOptions, _ wasiOptions, _ io.Writer, stderr io.Writer) int {
+func runWASI(_ context.Context, _ *vm.Engine, _ *vm.Store, _ *vm.CompiledModule, _ vm.CallOptions, _ wasiOptions, _ io.Writer, stderr io.Writer) int {
 	return failure(stderr, wasm.ErrUnsupported)
 }

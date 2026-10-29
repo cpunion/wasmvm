@@ -328,8 +328,13 @@ The P1 adapter implements all 46 typed imports on Linux/macOS, with the complete
 72-program upstream inventory on both backends and native fuel policies. A real
 Go 1.27.3 guest adds goroutines, linear-memory GC, panic/recover, I/O and timers.
 [Process ownership and host limitations](design/wasi-preview1.md) are explicit.
-Legacy wasi-threads, its pinned LLGo guests and M4 performance acceptance remain
-open; P1 implementation alone does not complete this stage.
+Legacy wasi-threads now runs the complete 15-program proposal inventory and a
+pinned LLGo/SDK25 guest in interpreter/native/fuel tiers. The guest covers C
+pthread/TLS/destructors, Goexit defers, concurrent GC/EH, actual SIMD and I/O,
+including worker process exit and panic. [Group ownership](design/wasi-threads.md)
+and per-thread fuel limits are explicit. M4 performance acceptance remains open;
+this semantic implementation does not close it. Components/WASI 0.2 are the next
+functional stage.
 
 - Implement the pinned P1 WITX operation set and publish per-operation/platform behavior: arguments/environment, stdio, descriptors/rights/preopens, filesystem, clocks/random, polling, exit and applicable socket operations. Explicitly document specification-permitted unsupported host operations; do not claim full behavior from a hello-world subset.
 - Inject capabilities and enforce directory boundaries using platform-appropriate handles. Test symlink/`..`/TOCTOU escape attempts, rights reduction, fd reuse, partial I/O, ABI pointer overflow, cancellation and resource cleanup.
