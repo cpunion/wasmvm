@@ -387,3 +387,25 @@ func TestMultiMemoryCLI(t *testing.T) {
 		}
 	}
 }
+
+func TestRelaxedSIMDCLIWithAllExtensions(t *testing.T) {
+	data, err := os.ReadFile("../../pkg/vm/testdata/relaxed-simd.wasm")
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := writeModule(t, data)
+	for _, command := range []string{"validate", "inspect", "run"} {
+		args := []string{command, "--relaxed-simd", "--multi-memory", "--tail-call", "--extended-const"}
+		if command == "run" {
+			args = append(args, "--export", "run")
+		}
+		args = append(args, path)
+		code, out, diagnostic := invoke(t, nil, args...)
+		if code != 0 || diagnostic != "" || jsonObject(t, out)["features"] != float64(wasm.SupportedFeatures) {
+			t.Fatal(code, out, diagnostic)
+		}
+		if command == "run" && !strings.Contains(out, "0x00000070") {
+			t.Fatal(out)
+		}
+	}
+}

@@ -263,7 +263,7 @@ func matches(t *testing.T, c constant, got Value) bool {
 
 func TestPureOpcodeBoundary(t *testing.T) {
 	count := 0
-	for op := uint32(0); op <= 256; op++ {
+	for op := uint32(0); op <= 0x130; op++ {
 		if pureOpcode(op) {
 			count++
 			continue
@@ -277,7 +277,7 @@ func TestPureOpcodeBoundary(t *testing.T) {
 			Eval(&module.Instr{Op: 0xfd0000 | op}, Value{}, Value{}, Value{})
 		}()
 	}
-	if count != 214 {
+	if count != 234 {
 		t.Fatal(count)
 	}
 	defer func() {
@@ -291,7 +291,7 @@ func FuzzPureSIMD(f *testing.F) {
 	f.Add(uint64(0), uint64(0), uint64(0), uint64(0))
 	f.Add(^uint64(0), uint64(0x8000000080000000), uint64(0x7ff0000000000001), uint64(31))
 	f.Fuzz(func(t *testing.T, a, b, c, d uint64) {
-		for op := uint32(12); op <= 255; op++ {
+		for op := uint32(12); op <= 0x113; op++ {
 			if pureOpcode(op) {
 				Eval(&module.Instr{Op: 0xfd0000 | op}, Value{Lo: a, Hi: b}, Value{Lo: c, Hi: d}, Value{Lo: d, Hi: a})
 			}

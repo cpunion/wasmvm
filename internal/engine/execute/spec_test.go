@@ -44,6 +44,7 @@ type specCommand struct {
 	ModuleType                     string `json:"module_type"`
 	Action                         specAction
 	Expected                       []specValue
+	Either                         []specValue
 }
 type specRunner struct {
 	store             *state.Store
@@ -484,6 +485,16 @@ func (r *specRunner) runCommand(t *testing.T, cmd specCommand, path string) {
 		got, err := r.action(t, cmd.Action)
 		if err != nil {
 			fail("%s: %v", cmd.Action.Field, err)
+		}
+		if len(cmd.Either) != 0 {
+			if len(got) == 1 {
+				for _, want := range cmd.Either {
+					if matchSpec(t, want, got[0]) {
+						return
+					}
+				}
+			}
+			fail("%s results %#v match no permitted alternative", cmd.Action.Field, got)
 		}
 		if len(got) != len(cmd.Expected) {
 			fail("results %v want %v", got, cmd.Expected)

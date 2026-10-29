@@ -32,3 +32,26 @@ func TestTailGrammarIsExplicitAndBounded(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestRelaxedSIMDGrammarIsExplicitAndBounded(t *testing.T) {
+	for op := uint32(0x100); op <= 0x12f; op++ {
+		body := append([]byte{0xfd}, uleb(op)...)
+		input := function(append(body, 0xb)...)
+		if _, err := Decode(input, DefaultLimits()); !errors.Is(err, wasm.ErrMalformed) {
+			t.Fatal("extension enabled by default", op, err)
+		}
+		m, err := DecodeWithFeatures(input, DefaultLimits(), wasm.RelaxedSIMD)
+		if op > 0x113 {
+			if !errors.Is(err, wasm.ErrMalformed) {
+				t.Fatal("reserved relaxed opcode", op, err)
+			}
+		} else if err != nil || m.Functions[0].Body[0].Op != 0xfd0000|op {
+			t.Fatal(op, err)
+		}
+	}
+	for _, body := range [][]byte{{0xfd}, {0xfd, 0x80}, {0xfd, 0x80, 0x80, 0x80, 0x80, 0x10}} {
+		if _, err := DecodeWithFeatures(function(body...), DefaultLimits(), wasm.RelaxedSIMD); !errors.Is(err, wasm.ErrMalformed) {
+			t.Fatal(body, err)
+		}
+	}
+}

@@ -26,8 +26,43 @@ func vectorLaneBits(v value.Value, wide bool, lane int) uint64 {
 	return uint64(uint32(bits >> ((lane % 2) * 32)))
 }
 
-func vectorFloatMatches(op uint32, a, b, got, want value.Value) bool {
+func vectorFloatMatches(op uint32, a, b, got, want value.Value, third ...value.Value) bool {
 	if got == want {
+		return true
+	}
+	if op >= 0x10d && op <= 0x110 {
+		op = [...]uint32{232, 233, 244, 245}[op-0x10d]
+	}
+	if op >= 0x105 && op <= 0x108 {
+		// Each unfused stage has the ordinary Wasm arithmetic-NaN contract.
+		// Exact lane comparison above still enforces signed zeros and all
+		// finite results; only already-NaN results may differ in payload.
+		wide := op >= 0x107
+		lanes, mask, mantissa, quiet := 4, uint64(0x7fc00000), uint64(0x007fffff), uint64(0x00400000)
+		if wide {
+			lanes, mask, mantissa, quiet = 2, 0x7ff8000000000000, 0x000fffffffffffff, 0x0008000000000000
+		}
+		for i := 0; i < lanes; i++ {
+			g, w := vectorLaneBits(got, wide, i), vectorLaneBits(want, wide, i)
+			if g == w {
+				continue
+			}
+			if g&mask != mask || w&mask != mask {
+				return false
+			}
+			noncanonical := func(v value.Value) bool {
+				x := vectorLaneBits(v, wide, i)
+				exponent := mask &^ quiet
+				return x&exponent == exponent && x&mantissa != 0 && x&mantissa != quiet
+			}
+			c := value.Value{}
+			if len(third) != 0 {
+				c = third[0]
+			}
+			if !noncanonical(a) && !noncanonical(b) && !noncanonical(c) && g&mantissa != quiet {
+				return false
+			}
+		}
 		return true
 	}
 	if !nativeVectorFloatOpcode(0xfd0000 + op) {
