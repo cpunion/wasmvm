@@ -1,0 +1,333 @@
+package canonical
+
+import (
+	"encoding/binary"
+
+	"github.com/cpunion/wasmvm/internal/component/model"
+	"github.com/cpunion/wasmvm/pkg/wasm"
+)
+
+// Value is a host-owned component value. Fields and tuple/list elements retain
+// type order; variants use Case and zero or one payload in Elements. Bits uses
+// Scalar's representation, or the declared flags bitmap/enum discriminant.
+type Value struct {
+	Bits     uint64
+	Text     string
+	Elements []Value
+	Case     uint32
+}
+
+// Codec belongs to one synchronous call. All type graphs/layouts are immutable;
+// transfer and value budgets are aggregate across nested lists and strings.
+type Codec struct {
+	Transfer  *Transfer
+	Layouts   *Builder
+	MaxValues uint64
+	values    uint64
+}
+
+func (c *Codec) visit(depth uint32) error {
+	if err := c.Transfer.check(); err != nil {
+		return err
+	}
+	if c.values >= c.MaxValues || depth >= c.Layouts.limits.MaxDepth {
+		return exhausted()
+	}
+	c.values++
+	return nil
+}
+
+func scalarKind(k model.Kind) bool { return k >= model.Char && k <= model.Bool }
+
+func cases(t *model.Type) []model.Field {
+	if t.Kind == model.Option {
+		return []model.Field{{}, {Type: t.Element}}
+	}
+	return t.Cases
+}
+
+func (c *Codec) Load(t *model.Type, at uint64) (Value, error) { return c.load(t, at, 0) }
+
+func (c *Codec) load(t *model.Type, at uint64, depth uint32) (Value, error) {
+	if err := c.visit(depth); err != nil {
+		return Value{}, err
+	}
+	l, err := c.Layouts.Build(t)
+	if err != nil {
+		return Value{}, err
+	}
+	if err := c.Transfer.rangeCheck(at, l.Size, l.Align); err != nil {
+		return Value{}, err
+	}
+	if scalarKind(t.Kind) {
+		s, err := LoadScalar(c.Transfer.Memory, at, t.Kind)
+		return Value{Bits: s.Bits}, err
+	}
+	switch t.Kind {
+	case model.String:
+		s, err := c.Transfer.LoadString(at)
+		return Value{Text: s}, err
+	case model.Record, model.Tuple:
+		if uint64(len(t.Fields)) > c.MaxValues-c.values {
+			return Value{}, exhausted()
+		}
+		if err := c.Transfer.charge(uint64(len(t.Fields)) * 64); err != nil {
+			return Value{}, err
+		}
+		v := Value{Elements: make([]Value, len(t.Fields))}
+		for i, f := range t.Fields {
+			v.Elements[i], err = c.load(f.Type, at+l.Offsets[i], depth+1)
+			if err != nil {
+				return Value{}, err
+			}
+		}
+		return v, nil
+	case model.List:
+		ptr, n, err := c.loadPair(at)
+		if err != nil {
+			return Value{}, err
+		}
+		return c.loadList(t.Element, ptr, n, depth)
+	case model.Flags, model.Enum:
+		bits, err := c.loadInt(at, l.Size)
+		if err != nil {
+			return Value{}, err
+		}
+		if t.Kind == model.Enum {
+			if bits >= uint64(len(t.Labels)) {
+				return Value{}, scalarTrap("invalid enum discriminant")
+			}
+		} else {
+			bits &= (uint64(1) << len(t.Labels)) - 1
+		}
+		return Value{Bits: bits}, nil
+	case model.Variant, model.Option, model.Result:
+		cs := cases(t)
+		size, _ := discriminant(len(cs))
+		index, err := c.loadInt(at, size)
+		if err != nil {
+			return Value{}, err
+		}
+		if index >= uint64(len(cs)) {
+			return Value{}, scalarTrap("invalid variant discriminant")
+		}
+		v := Value{Case: uint32(index)}
+		if cs[index].Type != nil {
+			if err := c.Transfer.charge(64); err != nil {
+				return Value{}, err
+			}
+			child, err := c.load(cs[index].Type, at+l.PayloadOffset, depth+1)
+			if err != nil {
+				return Value{}, err
+			}
+			v.Elements = []Value{child}
+		}
+		return v, nil
+	}
+	return Value{}, wasm.ErrUnsupported
+}
+
+func (c *Codec) loadList(t *model.Type, at, n uint64, depth uint32) (Value, error) {
+	l, err := c.Layouts.Build(t)
+	if err != nil {
+		return Value{}, err
+	}
+	if n > c.MaxValues-c.values || n > MaxStringBytes/l.Size {
+		return Value{}, exhausted()
+	}
+	if err := c.Transfer.rangeCheck(at, n*l.Size, l.Align); err != nil {
+		return Value{}, err
+	}
+	// Account for host value slots independently of guest element byte size.
+	if err := c.Transfer.charge(n * 64); err != nil {
+		return Value{}, err
+	}
+	v := Value{Elements: make([]Value, int(n))}
+	for i := range v.Elements {
+		v.Elements[i], err = c.load(t, at+uint64(i)*l.Size, depth+1)
+		if err != nil {
+			return Value{}, err
+		}
+	}
+	return v, nil
+}
+
+func (c *Codec) loadInt(at, size uint64) (uint64, error) {
+	var b [8]byte
+	if err := c.Transfer.Memory.Read(at, b[:size]); err != nil {
+		return 0, err
+	}
+	return binary.LittleEndian.Uint64(b[:]), nil
+}
+
+func (c *Codec) storeInt(at, size, value uint64) error {
+	var b [8]byte
+	binary.LittleEndian.PutUint64(b[:], value)
+	return c.Transfer.Memory.Write(at, b[:size])
+}
+
+func (c *Codec) loadPair(at uint64) (uint64, uint64, error) {
+	w := c.Transfer.pointerSize()
+	ptr, err := c.loadInt(at, w)
+	if err != nil {
+		return 0, 0, err
+	}
+	n, err := c.loadInt(at+w, w)
+	return ptr, n, err
+}
+
+func (c *Codec) storePair(at, ptr, n uint64) error {
+	w := c.Transfer.pointerSize()
+	if err := c.storeInt(at, w, ptr); err != nil {
+		return err
+	}
+	return c.storeInt(at+w, w, n)
+}
+
+// Store validates all host values before allocating or modifying guest memory.
+// Realloc and memory failures may preserve earlier guest allocation effects;
+// callers must retain the enclosing instance until normal cleanup completes.
+func (c *Codec) Store(t *model.Type, at uint64, value Value) error {
+	if err := c.validate(t, value, 0); err != nil {
+		return err
+	}
+	return c.store(t, at, value, 0)
+}
+
+func (c *Codec) validate(t *model.Type, v Value, depth uint32) error {
+	if err := c.visit(depth); err != nil {
+		return err
+	}
+	if _, err := c.Layouts.Build(t); err != nil {
+		return err
+	}
+	if scalarKind(t.Kind) {
+		_, err := LowerScalar(Scalar{t.Kind, v.Bits})
+		return err
+	}
+	switch t.Kind {
+	case model.String:
+		return c.Transfer.validateString(v.Text)
+	case model.List:
+		if uint64(len(v.Elements)) > c.MaxValues-c.values {
+			return exhausted()
+		}
+		for _, v := range v.Elements {
+			if err := c.validate(t.Element, v, depth+1); err != nil {
+				return err
+			}
+		}
+	case model.Record, model.Tuple:
+		if len(v.Elements) != len(t.Fields) {
+			return invalid("host aggregate arity")
+		}
+		for i, f := range t.Fields {
+			if err := c.validate(f.Type, v.Elements[i], depth+1); err != nil {
+				return err
+			}
+		}
+	case model.Flags:
+		if v.Bits>>len(t.Labels) != 0 {
+			return invalid("host flags bitmap")
+		}
+	case model.Enum:
+		if v.Bits >= uint64(len(t.Labels)) {
+			return invalid("host enum discriminant")
+		}
+	case model.Variant, model.Option, model.Result:
+		cs := cases(t)
+		if uint64(v.Case) >= uint64(len(cs)) {
+			return invalid("host variant discriminant")
+		}
+		child := cs[v.Case].Type
+		if child == nil {
+			if len(v.Elements) != 0 {
+				return invalid("unexpected variant payload")
+			}
+		} else {
+			if len(v.Elements) != 1 {
+				return invalid("missing variant payload")
+			}
+			return c.validate(child, v.Elements[0], depth+1)
+		}
+	default:
+		return wasm.ErrUnsupported
+	}
+	return nil
+}
+
+func (c *Codec) store(t *model.Type, at uint64, v Value, depth uint32) error {
+	if err := c.Transfer.check(); err != nil {
+		return err
+	}
+	l, err := c.Layouts.Build(t)
+	if err != nil {
+		return err
+	}
+	if err := c.Transfer.rangeCheck(at, l.Size, l.Align); err != nil {
+		return err
+	}
+	if scalarKind(t.Kind) {
+		return StoreScalar(c.Transfer.Memory, at, Scalar{t.Kind, v.Bits})
+	}
+	switch t.Kind {
+	case model.String:
+		return c.Transfer.StoreString(at, v.Text)
+	case model.Record, model.Tuple:
+		for i, f := range t.Fields {
+			if err := c.store(f.Type, at+l.Offsets[i], v.Elements[i], depth+1); err != nil {
+				return err
+			}
+		}
+	case model.List:
+		ptr, err := c.storeList(t.Element, v.Elements, depth)
+		if err != nil {
+			return err
+		}
+		return c.storePair(at, ptr, uint64(len(v.Elements)))
+	case model.Flags, model.Enum:
+		return c.storeInt(at, l.Size, v.Bits)
+	case model.Variant, model.Option, model.Result:
+		cs := cases(t)
+		size, _ := discriminant(len(cs))
+		if err := c.storeInt(at, size, uint64(v.Case)); err != nil {
+			return err
+		}
+		if child := cs[v.Case].Type; child != nil {
+			return c.store(child, at+l.PayloadOffset, v.Elements[0], depth+1)
+		}
+	default:
+		return wasm.ErrUnsupported
+	}
+	return nil
+}
+
+func (c *Codec) storeList(t *model.Type, values []Value, depth uint32) (uint64, error) {
+	l, err := c.Layouts.Build(t)
+	if err != nil {
+		return 0, err
+	}
+	if uint64(len(values)) > MaxStringBytes/l.Size {
+		return 0, exhausted()
+	}
+	n := uint64(len(values)) * l.Size
+	if err := c.Transfer.charge(n); err != nil {
+		return 0, err
+	}
+	if c.Transfer.Realloc == nil {
+		return 0, invalid("missing realloc")
+	}
+	ptr, err := c.Transfer.Realloc(0, 0, l.Align, n)
+	if err != nil {
+		return 0, err
+	}
+	if err := c.Transfer.rangeCheck(ptr, n, l.Align); err != nil {
+		return 0, err
+	}
+	for i, v := range values {
+		if err := c.store(t, ptr+uint64(i)*l.Size, v, depth+1); err != nil {
+			return 0, err
+		}
+	}
+	return ptr, nil
+}

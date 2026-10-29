@@ -346,6 +346,15 @@ functional stage.
 
 ## M5 — Component Model and WASI 0.2
 
+The component frontend/value foundation is in progress: an owned binary decoder
+preserves ordered lexical definitions and shares the Core grammar; the complete
+pinned binary script passes 132 syntax commands. Synchronous canonical layouts,
+memory/flat values, three string encodings and resource scopes have Go/LLGo tests
+and 1,024 independent reference layout cases. These are not component execution
+or WASI 0.2 support. Semantic validation, composition, call/post-return and
+resource-transfer integration plus the declared worlds remain required. See
+[the current ABI and frontend boundary](design/component-abi.md).
+
 Implement component binary decoding/validation/composition, imports/exports, Canonical ABI lift/lower, strings/lists/records/variants, realloc/post-return, and resource own/borrow/drop with cleanup on failure. Keep component and core instance boundaries explicit. Pin WASI **0.2.12** WIT; implement the full declared CLI world and its dependencies, then separately reported sockets/HTTP interfaces. Earlier prototypes must not displace required core work.
 
 **Exit gate:** components from at least two pinned guest toolchains compose on both backends and host compilers. Versioned WIT/world/operation coverage, encoding/ownership/reentry/error cases and resource cleanup all pass. Parsing or one sample is not complete component/P2 support.

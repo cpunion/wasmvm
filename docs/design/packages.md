@@ -36,6 +36,7 @@ wasmvm/
 │       ├── preview2/              # Existing doc.go: WASI 0.2 worlds
 │       └── preview3/              # Existing doc.go: WASI 0.3 worlds
 ├── internal/
+│   ├── component/                # In progress: owned binary model/decoder and Canonical ABI values
 │   ├── compat/                    # Existing: shared host compiler probes
 │   ├── binary/                    # Implemented: bounded reader, LEB128, float bits, UTF-8 names
 │   ├── core/

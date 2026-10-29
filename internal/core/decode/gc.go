@@ -16,44 +16,56 @@ func (d *decoder) typeSection(m *module.Module) {
 		return
 	}
 	for range count {
-		start := uint32(len(m.Types))
-		saved := d.r
-		b := d.byte()
-		n := uint32(1)
-		if b == 0x4e {
-			n = d.count()
-		} else {
-			d.r = saved
-		}
-		m.TypeGroups = append(m.TypeGroups, module.TypeGroup{Start: start, Count: n})
-		for range n {
-			b = d.byte()
-			def := module.TypeDef{}
-			if b == 0x50 || b == 0x4f {
-				def.Open = b == 0x50
-				def.Supers = d.indexes()
-				b = d.byte()
-			}
-			def.Kind = b
-			var f module.FuncType
-			switch b {
-			case module.FunctionKind:
-				f = module.FuncType{Params: d.types(), Results: d.types()}
-			case module.StructKind:
-				def.Fields = make([]module.FieldType, d.count())
-				for i := range def.Fields {
-					def.Fields[i] = d.fieldType()
-				}
-			case module.ArrayKind:
-				d.charge(1)
-				def.Fields = []module.FieldType{d.fieldType()}
-			default:
-				d.fail("unknown composite type")
-			}
-			m.Types = append(m.Types, f)
-			m.TypeDefs = append(m.TypeDefs, def)
-		}
+		d.typeGroup(m)
 	}
+	resolveTypeReferences(m)
+}
+
+func (d *decoder) typeGroup(m *module.Module) {
+	start := uint32(len(m.Types))
+	saved := d.r
+	b := d.byte()
+	n := uint32(1)
+	if b == 0x4e {
+		n = d.count()
+	} else {
+		d.r = saved
+	}
+	m.TypeGroups = append(m.TypeGroups, module.TypeGroup{Start: start, Count: n})
+	for range n {
+		b = d.byte()
+		def := module.TypeDef{}
+		if b == 0x50 || b == 0x4f {
+			def.Open = b == 0x50
+			def.Supers = d.indexes()
+			b = d.byte()
+		}
+		def.Kind = b
+		var f module.FuncType
+		switch b {
+		case module.FunctionKind:
+			f = module.FuncType{Params: d.types(), Results: d.types()}
+		case module.StructKind:
+			def.Fields = make([]module.FieldType, d.count())
+			for i := range def.Fields {
+				def.Fields[i] = d.fieldType()
+			}
+		case module.ArrayKind:
+			d.charge(1)
+			def.Fields = []module.FieldType{d.fieldType()}
+		default:
+			d.fail("unknown composite type")
+		}
+		m.Types = append(m.Types, f)
+		m.TypeDefs = append(m.TypeDefs, def)
+	}
+}
+
+func resolveTypeReferences(m *module.Module) {
+	resolveTypeReferencesFrom(m, 0)
+}
+
+func resolveTypeReferencesFrom(m *module.Module, start int) {
 	// Forward references inside a recursive group receive their physical family
 	// after all member shapes have been decoded. This never expands a recursion.
 	resolve := func(t wasm.ValueType) wasm.ValueType {
@@ -62,7 +74,7 @@ func (d *decoder) typeSection(m *module.Module) {
 		}
 		return t
 	}
-	for i := range m.Types {
+	for i := start; i < len(m.Types); i++ {
 		for j, t := range m.Types[i].Params {
 			m.Types[i].Params[j] = resolve(t)
 		}

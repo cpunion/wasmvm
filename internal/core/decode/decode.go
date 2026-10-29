@@ -68,12 +68,17 @@ func DecodeWithFeatures(input []byte, limits Limits, features wasm.Features) (re
 	}
 	owned := append([]byte(nil), input...)
 	d := decoder{r: binary.New(owned), limits: limits, features: features}
+	return d.module(), nil
+}
+
+func (d *decoder) module() *module.Module {
+	base := d.r.Offset()
 	header := d.bytes(8)
 	if string(header[:4]) != "\x00asm" {
-		d.failAt(0, "bad magic")
+		d.failAt(base, "bad magic")
 	}
 	if string(header[4:]) != "\x01\x00\x00\x00" {
-		d.failAt(4, "unknown binary version")
+		d.failAt(base+4, "unknown binary version")
 	}
 	m := new(module.Module)
 	d.definition = m
@@ -81,7 +86,7 @@ func DecodeWithFeatures(input []byte, limits Limits, features wasm.Features) (re
 	for d.r.Remaining() != 0 {
 		at := d.r.Offset()
 		id := d.byte()
-		if id > 13 || id == 13 && features&wasm.ExceptionHandling == 0 {
+		if id > 13 || id == 13 && d.features&wasm.ExceptionHandling == 0 {
 			d.failAt(at, "unknown section")
 		}
 		rank := id
@@ -164,7 +169,7 @@ func DecodeWithFeatures(input []byte, limits Limits, features wasm.Features) (re
 			for i := range m.Exports {
 				e := &m.Exports[i]
 				e.Name, e.Kind = d.name(), d.byte()
-				if e.Kind > 4 || e.Kind == 4 && features&wasm.ExceptionHandling == 0 {
+				if e.Kind > 4 || e.Kind == 4 && d.features&wasm.ExceptionHandling == 0 {
 					d.fail("unknown export kind")
 				}
 				e.Index = d.u32()
@@ -242,7 +247,7 @@ func DecodeWithFeatures(input []byte, limits Limits, features wasm.Features) (re
 	if d.needsDataCount && !m.HasDataCount {
 		d.fail("data count section required")
 	}
-	return m, nil
+	return m
 }
 
 func must[T any](v T, err error) T { check(err); return v }
