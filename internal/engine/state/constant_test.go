@@ -59,10 +59,16 @@ func TestConstantDeepStackAndAllocationCleanup(t *testing.T) {
 	if err != nil || in.Globals[0].Value.Lo != 64 {
 		t.Fatal(in, err)
 	}
+	if !s.HasUnpublished() {
+		t.Fatal("unpublished instance was hidden")
+	}
 	if err := in.Initialize(); err != nil {
 		t.Fatal(err)
 	}
 	s.CollectFailed(nil, nil)
+	if s.HasUnpublished() {
+		t.Fatal("disposed instance retained")
+	}
 	if got := s.Usage(); got != (Usage{}) {
 		t.Fatal("failed allocation retained state", got)
 	}

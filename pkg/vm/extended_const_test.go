@@ -80,3 +80,24 @@ func TestExtendedConstPublicAPI(t *testing.T) {
 		}
 	})
 }
+
+func TestSuccessfulPublicationStillCollectsReleasedExternRefs(t *testing.T) {
+	withBackends(t, func(t *testing.T, newEngine func() *Engine) {
+		e, s, l := setupWithEngine(t, newEngine)
+		v, err := s.NewExternRef("released before publication")
+		if err != nil {
+			t.Fatal(err)
+		}
+		v.Release()
+		compiled, err := e.Compile(nil, addBinary)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer compiled.Close()
+		instantiate(t, l, compiled)
+		u, err := s.Usage()
+		if err != nil || u.ExternRefs != 0 || u.Core.Instances != 1 {
+			t.Fatal(u, err)
+		}
+	})
+}
