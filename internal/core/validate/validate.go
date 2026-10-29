@@ -22,6 +22,9 @@ type Module struct {
 }
 type FunctionInfo struct{ MaxStack, MaxControl uint32 }
 
+// ConstantStack is the maximum validated initializer operand depth.
+func (m *Module) ConstantStack() uint32 { return m.types.constantStack }
+
 func (m *Module) Definition() *module.Module { return m.definition }
 func (m *Module) FunctionInfo(index uint32) (FunctionInfo, bool) {
 	if uint64(index) >= uint64(len(m.functions)) {
@@ -33,6 +36,8 @@ func (m *Module) FunctionInfo(index uint32) (FunctionInfo, bool) {
 type context struct {
 	m             *module.Module
 	limits        Limits
+	features      wasm.Features
+	constantStack uint32
 	funcs         []module.FuncType
 	tables        []module.TableType
 	memories      []module.Limits
@@ -45,7 +50,15 @@ type context struct {
 
 // Check validates a decoded module without modifying it. The caller transfers
 // exclusive mutation rights to the resulting immutable module on success.
-func Check(m *module.Module, limits Limits) (result *Module, err error) {
+func Check(m *module.Module, limits Limits) (*Module, error) {
+	return CheckWithFeatures(m, limits, 0)
+}
+
+// CheckWithFeatures enables only explicitly selected, implemented extensions.
+func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) (result *Module, err error) {
+	if features & ^wasm.SupportedFeatures != 0 {
+		return nil, wasm.ErrUnsupported
+	}
 	defer func() {
 		if failure := recover(); failure != nil {
 			if e, ok := failure.(*wasm.Error); ok {
@@ -55,7 +68,7 @@ func Check(m *module.Module, limits Limits) (result *Module, err error) {
 			}
 		}
 	}()
-	c := context{m: m, limits: limits, refs: make(map[uint32]bool)}
+	c := context{m: m, limits: limits, features: features, refs: make(map[uint32]bool)}
 	if m == nil {
 		c.fail("nil module")
 	}
@@ -259,42 +272,65 @@ func (c *context) global(index uint32) module.GlobalType {
 	return c.globals[index]
 }
 func (c *context) constant(expr module.Expr, want wasm.ValueType) {
-	if len(expr) != 2 || expr[1].Op != 0x0b {
+	if len(expr) < 2 || expr[len(expr)-1].Op != 0x0b {
 		c.fail("constant expression must produce one value")
 	}
-	in := expr[0]
-	c.at = in.Offset
-	var got wasm.ValueType
-	switch in.Op {
-	case 0x41:
-		got = wasm.I32
-	case 0x42:
-		got = wasm.I64
-	case 0x43:
-		got = wasm.F32
-	case 0x44:
-		got = wasm.F64
-	case 0xfd000c:
-		got = wasm.V128
-	case 0x23:
-		c.index(in.A, c.importGlobals, "constant imported global")
-		g := c.globals[in.A]
-		if g.Mutable {
-			c.fail("constant global must be immutable")
+	var local [16]wasm.ValueType
+	stack := local[:0]
+	for _, in := range expr[:len(expr)-1] {
+		c.at = in.Offset
+		var got wasm.ValueType
+		switch in.Op {
+		case 0x41:
+			got = wasm.I32
+		case 0x42:
+			got = wasm.I64
+		case 0x43:
+			got = wasm.F32
+		case 0x44:
+			got = wasm.F64
+		case 0xfd000c:
+			got = wasm.V128
+		case 0x23:
+			c.index(in.A, c.importGlobals, "constant imported global")
+			g := c.globals[in.A]
+			if g.Mutable {
+				c.fail("constant global must be immutable")
+			}
+			got = g.Value
+		case 0xd0:
+			got = wasm.ValueType(in.A)
+			if !got.IsReference() {
+				c.fail("invalid null reference type")
+			}
+		case 0xd2:
+			c.function(in.A)
+			got = wasm.FuncRef
+		case 0x6a, 0x6b, 0x6c, 0x7c, 0x7d, 0x7e:
+			if c.features&wasm.ExtendedConst == 0 {
+				c.fail("extended constant expressions are disabled")
+			}
+			got = wasm.I32
+			if in.Op >= 0x7c {
+				got = wasm.I64
+			}
+			if len(stack) < 2 || stack[len(stack)-1] != got || stack[len(stack)-2] != got {
+				c.fail("constant operand type mismatch")
+			}
+			stack = stack[:len(stack)-1]
+			continue
+		default:
+			c.fail("nonconstant initializer")
 		}
-		got = g.Value
-	case 0xd0:
-		got = wasm.ValueType(in.A)
-		if !got.IsReference() {
-			c.fail("invalid null reference type")
+		if uint64(len(stack)) >= uint64(c.limits.MaxStack) {
+			panic(&wasm.Error{Kind: wasm.ErrLimit, Offset: c.at, Detail: "constant operand stack"})
 		}
-	case 0xd2:
-		c.function(in.A)
-		got = wasm.FuncRef
-	default:
-		c.fail("nonconstant initializer")
+		stack = append(stack, got)
+		if uint32(len(stack)) > c.constantStack {
+			c.constantStack = uint32(len(stack))
+		}
 	}
-	if got != want {
+	if len(stack) != 1 || stack[0] != want {
 		c.fail("initializer type mismatch")
 	}
 }

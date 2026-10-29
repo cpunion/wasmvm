@@ -329,3 +329,17 @@ func TestNativeCommand(t *testing.T) {
 		t.Fatal(result)
 	}
 }
+
+func TestExtendedConstFlag(t *testing.T) {
+	path := writeModule(t, binary(section(6, []byte{1, 0x7f, 0, 0x41, 20, 0x41, 22, 0x6a, 0xb})))
+	code, _, _ := invoke(t, nil, "validate", path)
+	if code != 1 {
+		t.Fatal("extended const accepted by default", code)
+	}
+	for _, command := range []string{"validate", "inspect"} {
+		code, out, diagnostic := invoke(t, nil, command, "--extended-const", path)
+		if code != 0 || diagnostic != "" || jsonObject(t, out)["features"] != float64(wasm.ExtendedConst) {
+			t.Fatal(code, out, diagnostic)
+		}
+	}
+}

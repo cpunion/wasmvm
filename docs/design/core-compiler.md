@@ -309,3 +309,27 @@ Debugging must retain module/function/byte-offset and guest stack information wi
 | Performance | Own base/head and competitors; isolated subsystem workloads plus representative applications; raw results and compiler/platform metadata |
 
 Run semantic tests with Go and LLGo, and retain Go race/fuzz diagnostics separately. Target at least **90% statement coverage per owned executable core package**, with uncovered paths explained; assembly/machine-code correctness requires target execution tests rather than that percentage. Coverage and passing differential samples cannot substitute for a complete conformance manifest. Missing tests or unsupported operations block profile acceptance. [The roadmap](../roadmap.md) closes a milestone only after all its correctness, compiler, lifecycle, and performance gates pass.
+
+## Individually enabled constant expressions
+
+`EngineConfig.Features` is an explicit additive `wasm.Features` mask over the
+complete default `core2` profile. `wasm.ExtendedConst` enables the six i32/i64
+add/sub/mul instructions in constant expressions. Unknown feature bits fail
+with `ErrUnsupported`; enabling this flag does not select full Core 3.0.
+`Inspect` and compiled metadata report the enabled mask; the CLI accepts
+`--extended-const` for validate, inspect and run.
+
+Validation uses a typed operand stack, permits only imported immutable globals,
+requires exactly one result of the destination type and applies `MaxStack` to
+initializer depth as well as function bodies. Decode node limits bound total
+initializer work. Validation records the maximum initializer depth. Allocation
+and active-segment initialization each reuse one bounded scratch stack, with
+small expressions on local storage. Evaluation uses unsigned wrapping integer
+arithmetic, preserves subtraction order and resolves imports per instance.
+Both backends share this path, including segment trap ordering and cleanup;
+initializers never execute a guest function or consume function fuel.
+
+The full archived feature proposal corpus is pinned in
+[testdata/extended-const](../../testdata/extended-const/README.md), alongside
+explicit default-profile rejection, resource, wrapping, cross-instance and
+public API tests. Core 3.0 profile acceptance remains separate.

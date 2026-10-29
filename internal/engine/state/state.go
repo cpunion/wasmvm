@@ -393,8 +393,7 @@ func (s *Store) matches(ex Extern, im module.Import, definition *module.Module) 
 	}
 	return false
 }
-func constant(in *Instance, expr module.Expr) value.Value {
-	x := expr[0]
+func constantValue(in *Instance, x module.Instr) value.Value {
 	switch x.Op {
 	case 0x41, 0x42, 0x43, 0x44:
 		return value.Value{Lo: x.Bits}
@@ -409,4 +408,44 @@ func constant(in *Instance, expr module.Expr) value.Value {
 	default:
 		panic("state: nonconstant validated initializer")
 	}
+}
+
+// constant evaluates already validated initializers. Scratch is shared across
+// all expressions in one allocation/initialization phase, never across Stores.
+func constant(in *Instance, expr module.Expr, scratch []value.Value) value.Value {
+	if len(expr) == 2 {
+		return constantValue(in, expr[0])
+	}
+	stack := scratch[:0]
+	for _, x := range expr[:len(expr)-1] {
+		switch x.Op {
+		case 0x6a, 0x6b, 0x6c, 0x7c, 0x7d, 0x7e:
+			n := len(stack)
+			a, b := stack[n-2].Lo, stack[n-1].Lo
+			switch x.Op {
+			case 0x6a, 0x7c:
+				a += b
+			case 0x6b, 0x7d:
+				a -= b
+			case 0x6c, 0x7e:
+				a *= b
+			}
+			if x.Op <= 0x6c {
+				a = uint64(uint32(a))
+			}
+			stack[n-2] = value.Value{Lo: a}
+			stack = stack[:n-1]
+		default:
+			stack = append(stack, constantValue(in, x))
+		}
+	}
+	return stack[0]
+}
+
+func constantScratch(compiled *slots.Module, local []value.Value) []value.Value {
+	n := compiled.IR.Validated.ConstantStack()
+	if n <= uint32(cap(local)) {
+		return local[:n]
+	}
+	return make([]value.Value, n)
 }

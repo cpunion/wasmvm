@@ -22,6 +22,8 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 		return nil, fmt.Errorf("%w: missing compiled module", wasm.ErrInvalid)
 	}
 	definition := compiled.IR.Validated.Definition()
+	var local [16]value.Value
+	scratch := constantScratch(compiled, local[:])
 	oldUsage, oldFunctions, oldTypes := s.usage, len(s.functions), len(s.types)
 	oldTables, oldMemories, oldGlobals := len(s.tables), len(s.memories), len(s.globals)
 	defer func() {
@@ -107,7 +109,7 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 		instance.Memories = append(instance.Memories, ex.Memory)
 	}
 	for _, g := range definition.Globals {
-		ex, e := s.NewGlobal(g.Type, constant(instance, g.Init))
+		ex, e := s.NewGlobal(g.Type, constant(instance, g.Init, scratch))
 		if e != nil {
 			return nil, e
 		}
@@ -125,7 +127,7 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 			values = append(values, instance.Functions[f])
 		}
 		for _, expr := range segment.Expressions {
-			values = append(values, constant(instance, expr).Lo)
+			values = append(values, constant(instance, expr, scratch).Lo)
 		}
 		instance.Elements[i] = values
 		s.usage.SegmentElements += n
@@ -168,11 +170,13 @@ func (in *Instance) Initialize() error {
 		return wasm.ErrClosed
 	}
 	definition := in.Compiled.IR.Validated.Definition()
+	var local [16]value.Value
+	scratch := constantScratch(in.Compiled, local[:])
 	for i, segment := range definition.Elements {
 		if segment.Mode != module.Active {
 			continue
 		}
-		offset := uint64(uint32(constant(in, segment.Offset).Lo))
+		offset := uint64(uint32(constant(in, segment.Offset, scratch).Lo))
 		if !in.Tables[segment.Table].Init(offset, 0, uint64(len(in.Elements[i])), in.Elements[i]) {
 			return &wasm.Trap{Code: wasm.TrapTableBounds}
 		}
@@ -187,7 +191,7 @@ func (in *Instance) Initialize() error {
 		if segment.Mode != module.Active {
 			continue
 		}
-		offset := uint64(uint32(constant(in, segment.Offset).Lo))
+		offset := uint64(uint32(constant(in, segment.Offset, scratch).Lo))
 		if !in.Memories[segment.Memory].Init(offset, 0, uint64(len(in.Data[i])), in.Data[i]) {
 			return &wasm.Trap{Code: wasm.TrapMemoryBounds}
 		}

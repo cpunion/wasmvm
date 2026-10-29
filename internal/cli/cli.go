@@ -20,7 +20,8 @@ const usage = `usage: wasmvm <validate|inspect|run> [options] module.wasm [type:
 
 Options precede the module path. All commands accept:
   --backend name         interpreter (default) or native (supported hosts)
-  --profile core2        Binary profile (only core2 is implemented)
+  --profile core2        Base binary profile
+  --extended-const       Enable extended constant expressions
   --timeout duration     Overall deadline (default 30s; 0 disables)
 Run also accepts:
   --export name          Required exported function name
@@ -50,6 +51,7 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	flags.SetOutput(stderr)
 	backend := flags.String("backend", "interpreter", "")
 	profile := flags.String("profile", "core2", "")
+	extendedConst := flags.Bool("extended-const", false, "")
 	timeout := flags.Duration("timeout", 30*time.Second, "")
 	var exported, fuel string
 	if command == "run" {
@@ -98,6 +100,9 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	config := vm.DefaultEngineConfig()
 	config.Backend = *backend
 	config.Profile = *profile
+	if *extendedConst {
+		config.Features |= wasm.ExtendedConst
+	}
 	engine, err := vm.NewEngineWithConfig(config)
 	if err != nil {
 		return failure(stderr, err)
@@ -112,7 +117,7 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		if err = engine.Validate(ctx, input); err != nil {
 			return failure(stderr, err)
 		}
-		return output(stdout, stderr, map[string]any{"valid": true, "backend": *backend, "profile": *profile})
+		return output(stdout, stderr, map[string]any{"valid": true, "backend": *backend, "profile": *profile, "features": config.Features})
 	case "inspect":
 		info, err := engine.Inspect(ctx, input)
 		if err != nil {
@@ -156,7 +161,7 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 			out[i] = formatValue(v)
 			v.Release()
 		}
-		response := map[string]any{"backend": *backend, "profile": *profile, "export": exported, "results": out}
+		response := map[string]any{"backend": *backend, "profile": *profile, "features": config.Features, "export": exported, "results": out}
 		if options.Metered {
 			response["fuelRemaining"] = result.FuelRemaining
 		}
@@ -228,7 +233,7 @@ func describe(info vm.ModuleInfo) (map[string]any, error) {
 		d["name"] = ex.Name
 		exports = append(exports, d)
 	}
-	return map[string]any{"backend": info.Backend, "profile": info.Profile, "definedFunctions": info.Functions, "hasStart": info.HasStart, "imports": imports, "exports": exports}, nil
+	return map[string]any{"backend": info.Backend, "profile": info.Profile, "features": info.Features, "definedFunctions": info.Functions, "hasStart": info.HasStart, "imports": imports, "exports": exports}, nil
 }
 func describeType(t vm.ExternType) map[string]any {
 	result := make(map[string]any)
