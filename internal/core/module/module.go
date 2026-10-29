@@ -74,13 +74,15 @@ type Data struct {
 
 // Instr retains raw numeric bits, byte offsets and unvalidated immediates.
 // Prefixed operations use prefix<<16 | subopcode. A and B hold index/memarg
-// operands in their binary order. Block holds the signed block type. Vector
+// operands in their binary order; Memory identifies scalar/SIMD memargs.
+// Block holds the signed block type. Vector
 // holds v128/shuffle bytes; Lane holds a lane immediate. Labels excludes the
 // default br_table target, which is in A. Types is the typed-select vector.
 type Instr struct {
 	Op     uint32
 	Offset uint64
 	A, B   uint32
+	Memory uint32 // memory index for scalar and SIMD memargs
 	Block  int64
 	Bits   uint64
 	Vector [16]byte

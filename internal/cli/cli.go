@@ -23,6 +23,7 @@ Options precede the module path. All commands accept:
   --profile core2        Base binary profile
   --extended-const       Enable extended constant expressions
   --tail-call            Enable proper direct and indirect tail calls
+  --multi-memory         Enable multiple private memories
   --timeout duration     Overall deadline (default 30s; 0 disables)
 Run also accepts:
   --export name          Required exported function name
@@ -54,6 +55,7 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	profile := flags.String("profile", "core2", "")
 	extendedConst := flags.Bool("extended-const", false, "")
 	tailCall := flags.Bool("tail-call", false, "")
+	multiMemory := flags.Bool("multi-memory", false, "")
 	timeout := flags.Duration("timeout", 30*time.Second, "")
 	var exported, fuel string
 	if command == "run" {
@@ -107,6 +109,9 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 	if *tailCall {
 		config.Features |= wasm.TailCall
+	}
+	if *multiMemory {
+		config.Features |= wasm.MultiMemory
 	}
 	engine, err := vm.NewEngineWithConfig(config)
 	if err != nil {

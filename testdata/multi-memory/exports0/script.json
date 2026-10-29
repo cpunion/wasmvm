@@ -1,0 +1,10 @@
+{"source_filename": "exports0.wast",
+ "commands": [
+  {"type": "module", "line": 3, "filename": "script.0.wasm"}, 
+  {"type": "module", "line": 4, "filename": "script.1.wasm"}, 
+  {"type": "module", "line": 5, "filename": "script.2.wasm"}, 
+  {"type": "module", "line": 6, "filename": "script.3.wasm"}, 
+  {"type": "module", "line": 32, "filename": "script.4.wasm"}, 
+  {"type": "module", "line": 40, "filename": "script.5.wasm"}, 
+  {"type": "module", "line": 49, "filename": "script.6.wasm"}, 
+  {"type": "module", "line": 50, "filename": "script.7.wasm"}]}

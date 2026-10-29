@@ -45,14 +45,17 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 	definition := m.IR.Validated.Definition()
 	var minimum uint32
 	var importedFunctions uint32
-	var tables uint32
+	var tables, memories uint32
 	var globals []module.GlobalType
 	for _, im := range definition.Imports {
 		if im.Kind == 0 {
 			importedFunctions++
 		}
 		if im.Kind == 2 {
-			minimum = im.Memory.Min
+			memories++
+			if memories == 1 {
+				minimum = im.Memory.Min
+			}
 		}
 		if im.Kind == 1 {
 			tables++
@@ -62,10 +65,11 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 		}
 	}
 	tables += uint32(len(definition.Tables))
+	memories += uint32(len(definition.Memories))
 	for _, g := range definition.Globals {
 		globals = append(globals, g.Type)
 	}
-	if len(definition.Memories) != 0 {
+	if len(definition.Memories) != 0 && memories == uint32(len(definition.Memories)) {
 		minimum = definition.Memories[0].Min
 	}
 	callees := make(map[uint32]*slots.Function, len(m.Functions))
@@ -113,7 +117,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 			bounded := limits
 			bounded.MaxCodeBytes = min(limits.MaxCodeBytes, uint64(math.MaxUint32)) - uint64(len(code))
 			config := codegen.Config{Unmetered: tier != 1, MemoryMinimumPages: minimum, X86Features: features,
-				FunctionCount: importedFunctions + uint32(len(m.Functions)), TableCount: tables, Globals: globals}
+				FunctionCount: importedFunctions + uint32(len(m.Functions)), TableCount: tables, MemoryCount: memories, Globals: globals}
 			if tier == 2 {
 				config.DirectCallees = callees
 				config.IndirectCallees = indirect

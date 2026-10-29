@@ -496,3 +496,23 @@ NEON TBL names consecutive inputs directly when possible and reads a cached mask
 without copying it into scratch. Nonconsecutive inputs retain the existing safe
 scratch pair. No new execution framework, literal island or relocation mode is
 introduced, and neither semantic fuel nor cancellation polling moves.
+
+## Indexed linear memories
+
+Multi-memory functions use the existing trusted runtime view. Length/base pairs
+follow function IDs, table pairs and any numeric-global pointer/cell area. The
+existing prefix and fixed ABI record remain unchanged. The reserved memory
+registers select the declared memory at every scalar/SIMD access or size query;
+these are generated native loads/stores, not interpreter dispatch. Memory zero
+keeps its existing cached path in functions that never select another memory.
+
+Every native reentry refreshes indexed views after growth, helpers and host
+callbacks. The serialized Store owns and retains all backing storage throughout
+entry; zero-length memories have a zero descriptor base and trap before any
+access. Global alias deduplication reserves its complete cell area before the
+memory descriptors, making offsets independent of actual alias counts.
+
+Mixed-memory functions conservatively retain individual bounds checks and omit
+single-memory region proofs. Per-memory guard regions and descriptor/register
+caching are local optimization follow-ups. Both targets and fuel tiers use the
+same layout and checked address arithmetic.

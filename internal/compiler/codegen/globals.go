@@ -33,7 +33,7 @@ func globalCell(f *slots.Function, in slots.Instruction, config Config) (uint32,
 
 func (e *functionEmitter) prepareRuntimeData(config Config) ([]uint32, bool) {
 	seen := map[uint32]bool{}
-	needed := false
+	needed := e.memoryViews
 	for _, in := range e.f.Code {
 		if _, _, ok := globalCell(e.f, in, config); ok {
 			seen[e.f.Sources[in.Source].Wasm.A] = true

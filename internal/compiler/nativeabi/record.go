@@ -18,6 +18,17 @@ func TablePairOffset(functions, index uint32) (uint32, bool) {
 	return uint32(offset), offset <= math.MaxInt32-8
 }
 
+// MemoryPairOffset appends length/base pairs after any numeric-global view.
+// Existing function/table/global offsets remain unchanged.
+func MemoryPairOffset(functions, tables, globals, bindings, index uint32) (uint32, bool) {
+	words := uint64(functions) + uint64(tables)*2
+	if bindings != 0 {
+		words += uint64(globals) + uint64(bindings)*2
+	}
+	offset := (words + uint64(index)*2) * 8
+	return uint32(offset), offset <= math.MaxInt32-8
+}
+
 type Exit uint32
 
 const (

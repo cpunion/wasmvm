@@ -225,19 +225,26 @@ func TestLimitsAndMetadata(t *testing.T) {
 func FuzzValidate(f *testing.F) {
 	f.Add([]byte("\x00asm\x01\x00\x00\x00"))
 	f.Add([]byte{0, 97, 115, 109, 1, 0, 0, 0, 1, 4, 1, 0x60, 0, 0, 3, 2, 1, 0, 10, 7, 1, 5, 0, 0x41, 1, 0x1a, 0xb})
+	input, err := os.ReadFile("../../../pkg/vm/testdata/multi-memory.wasm")
+	if err != nil {
+		f.Fatal(err)
+	}
+	f.Add(input)
 	f.Fuzz(func(t *testing.T, input []byte) {
 		limits := decode.DefaultLimits()
 		limits.MaxBytes = 1 << 16
 		limits.MaxNodes = 4096
 		limits.MaxLocals = 4096
 		limits.MaxNesting = 64
-		m, err := decode.Decode(input, limits)
-		if err != nil {
-			return
-		}
-		checked, err := Check(m, Limits{4096, 4096, 65})
-		if err != nil && (checked != nil || (!errors.Is(err, wasm.ErrInvalid) && !errors.Is(err, wasm.ErrLimit))) {
-			t.Fatalf("invalid failure: %v", err)
+		for _, features := range []wasm.Features{0, wasm.SupportedFeatures} {
+			m, err := decode.DecodeWithFeatures(input, limits, features)
+			if err != nil {
+				continue
+			}
+			checked, err := CheckWithFeatures(m, Limits{4096, 4096, 65}, features)
+			if err != nil && (checked != nil || (!errors.Is(err, wasm.ErrInvalid) && !errors.Is(err, wasm.ErrLimit))) {
+				t.Fatalf("invalid failure: %v", err)
+			}
 		}
 	})
 }

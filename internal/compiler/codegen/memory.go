@@ -36,6 +36,13 @@ func (e *functionEmitter) memoryInstruction(in slots.Instruction, proven bool) {
 }
 
 func (e *functionEmitter) memoryAt(in slots.Instruction, proven bool, offset uint64) {
+	if e.memoryViews {
+		index := e.f.Sources[in.Source].Wasm.Memory
+		if in.Op == 0x3f {
+			index = e.f.Sources[in.Source].Wasm.A
+		}
+		e.selectMemory(index)
+	}
 	if proven {
 		e.boundsElided++
 	}
@@ -302,4 +309,23 @@ func memoryAccess(op uint32) (load bool, size uint32) {
 
 func isMemoryAccess(op uint32) bool {
 	return op >= 0x28 && op <= 0x3e || nativeVectorMemoryOpcode(op)
+}
+
+// Select an entry-stable native view using the same reserved registers as the
+// default memory. No Go address is embedded; each helper/host reentry refreshes
+// the descriptor, including aliases whose backing storage grew.
+func (e *functionEmitter) selectMemory(index uint32) {
+	offset, ok := nativeabi.MemoryPairOffset(e.memoryFunctions, e.memoryTables, e.memoryGlobals, e.memoryBindings, index)
+	if !ok {
+		panic(&wasm.Error{Kind: wasm.ErrLimit, Detail: "native memory descriptor offset"})
+	}
+	base, length := byte(10), byte(11)
+	if e.a.arch == "arm64" {
+		base, length = 16, 17
+	}
+	e.contextLoad(2, nativeabi.RuntimeDataOffset)
+	e.runtimeLoad(0, offset)
+	e.registerMove(length, e.operandRegister(0), true)
+	e.runtimeLoad(0, offset+8)
+	e.registerMove(base, e.operandRegister(0), true)
 }

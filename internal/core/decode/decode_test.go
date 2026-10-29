@@ -224,16 +224,23 @@ func FuzzDecode(f *testing.F) {
 	for _, input := range [][]byte{magic, function(0x41, 0, 0x1a, 0x0b), fixture(section(9, 0)), fixture(section(11, 1, 1, 1, 0))} {
 		f.Add(input)
 	}
+	input, err := os.ReadFile("../../../pkg/vm/testdata/multi-memory.wasm")
+	if err != nil {
+		f.Fatal(err)
+	}
+	f.Add(input)
 	f.Fuzz(func(t *testing.T, input []byte) {
 		l := DefaultLimits()
 		l.MaxBytes = 1 << 16
 		l.MaxNodes = 4096
 		l.MaxLocals = 4096
 		l.MaxNesting = 64
-		m, err := Decode(input, l)
-		if err != nil {
-			if m != nil || (!errors.Is(err, wasm.ErrMalformed) && !errors.Is(err, wasm.ErrLimit)) {
-				t.Fatalf("bad failure: %v", err)
+		for _, features := range []wasm.Features{0, wasm.SupportedFeatures} {
+			m, err := DecodeWithFeatures(input, l, features)
+			if err != nil {
+				if m != nil || (!errors.Is(err, wasm.ErrMalformed) && !errors.Is(err, wasm.ErrLimit)) {
+					t.Fatalf("bad failure: %v", err)
+				}
 			}
 		}
 	})

@@ -205,3 +205,10 @@ normal frame requirement. Both backends support metered execution and bounded
 cancellation; host callbacks retain their originating module capability after
 the tail frame is retired. Combining feature bits enables only those extensions,
 not the complete Core 3.0 profile.
+
+Use `config.Features |= wasm.MultiMemory` to enable multiple private memories.
+All scalar/SIMD and bulk operations address the selected module memory; exports
+and host `Caller` memory indices follow the same import-then-definition order.
+Aliased imports share growth and contents. Store quotas count underlying
+allocations, while out-of-bounds bulk operations leave the destination unchanged.
+This extension does not enable Memory64 or shared-memory Threads.

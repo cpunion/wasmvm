@@ -59,9 +59,9 @@ func (d *decoder) expr() module.Expr {
 		case op == 0x1c:
 			in.Types = d.types()
 		case op >= 0x28 && op <= 0x3e:
-			in.A, in.B = d.memarg()
+			in.A, in.B, in.Memory = d.memarg()
 		case op == 0x3f || op == 0x40:
-			d.expect(0)
+			in.A = d.memoryIndex()
 		case op == 0x41:
 			in.Bits = uint64(uint32(must(d.r.S32())))
 		case op == 0x42:
@@ -79,16 +79,15 @@ func (d *decoder) expr() module.Expr {
 			case sub <= 7:
 			case sub == 8:
 				in.A = d.u32()
-				d.expect(0)
+				in.B = d.memoryIndex()
 				d.needsDataCount = d.needsDataCount || d.inCode
 			case sub == 9:
 				in.A = d.u32()
 				d.needsDataCount = d.needsDataCount || d.inCode
 			case sub == 10:
-				d.expect(0)
-				d.expect(0)
+				in.A, in.B = d.memoryIndex(), d.memoryIndex()
 			case sub == 11:
-				d.expect(0)
+				in.A = d.memoryIndex()
 			case sub == 12 || sub == 14:
 				in.A, in.B = d.u32(), d.u32()
 			case sub >= 13 && sub <= 17:
@@ -104,13 +103,13 @@ func (d *decoder) expr() module.Expr {
 			in.Op = op<<16 | sub
 			switch {
 			case sub <= 11 || sub == 92 || sub == 93:
-				in.A, in.B = d.memarg()
+				in.A, in.B, in.Memory = d.memarg()
 			case sub == 12 || sub == 13:
 				copy(in.Vector[:], d.bytes(16))
 			case sub >= 21 && sub <= 34:
 				in.Lane = d.byte()
 			case sub >= 84 && sub <= 91:
-				in.A, in.B = d.memarg()
+				in.A, in.B, in.Memory = d.memarg()
 				in.Lane = d.byte()
 			}
 		case op == 0 || op == 1 || op == 0x0f || op == 0x1a || op == 0x1b || op == 0xd1 || op >= 0x45 && op <= 0xc4:
@@ -124,11 +123,24 @@ func (d *decoder) expr() module.Expr {
 	}
 }
 
-func (d *decoder) memarg() (uint32, uint32) {
+func (d *decoder) memoryIndex() uint32 {
+	if d.features&wasm.MultiMemory == 0 {
+		d.expect(0)
+		return 0
+	}
+	return d.u32()
+}
+
+func (d *decoder) memarg() (uint32, uint32, uint32) {
 	at := d.r.Offset()
 	align := d.u32()
+	var memory uint32
+	if d.features&wasm.MultiMemory != 0 && align&64 != 0 {
+		align &^= 64
+		memory = d.u32()
+	}
 	if align >= 32 {
 		d.failAt(at, "malformed memory alignment flags")
 	}
-	return align, d.u32()
+	return align, d.u32(), memory
 }

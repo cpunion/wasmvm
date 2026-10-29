@@ -6,7 +6,7 @@ import (
 )
 
 func (v *checker) alignment(in module.Instr, max uint32) {
-	v.memory(0)
+	v.memory(in.Memory)
 	if in.A > max {
 		v.fail("alignment exceeds natural alignment")
 	}
@@ -38,13 +38,16 @@ func (v *checker) misc(in module.Instr) {
 		}
 		v.unary(input, output)
 	case sub == 8:
-		v.memory(0)
+		v.memory(in.B)
 		v.index(in.A, len(v.m.Data), "data segment")
 		v.threeI32()
 	case sub == 9:
 		v.index(in.A, len(v.m.Data), "data segment")
 	case sub == 10 || sub == 11:
-		v.memory(0)
+		v.memory(in.A)
+		if sub == 10 {
+			v.memory(in.B)
+		}
 		v.threeI32()
 	case sub == 12:
 		v.index(in.A, len(v.m.Elements), "element segment")

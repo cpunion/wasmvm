@@ -323,14 +323,14 @@ frames:
 				}
 			case 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
 				0x30, 0x31, 0x32, 0x33, 0x34, 0x35:
-				result, trap = instance.Memories[0].Load(op, uint32(a.Lo), im.B, 0, value.Value{})
+				result, trap = instance.Memories[im.Memory].Load(op, uint32(a.Lo), im.B, 0, value.Value{})
 			case 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d,
 				0x3e:
-				trap = instance.Memories[0].Store(op, uint32(a.Lo), im.B, 0, b)
+				trap = instance.Memories[im.Memory].Store(op, uint32(a.Lo), im.B, 0, b)
 			case 0x3f:
-				result.Lo = uint64(instance.Memories[0].Pages())
+				result.Lo = uint64(instance.Memories[im.A].Pages())
 			case 0x40:
-				old, ok := e.store.GrowMemory(instance.Memories[0], uint32(a.Lo))
+				old, ok := e.store.GrowMemory(instance.Memories[im.A], uint32(a.Lo))
 				result.Lo = uint64(old)
 				if !ok {
 					result.Lo = uint64(^uint32(0))
@@ -569,9 +569,9 @@ frames:
 					sub := op & 0xffff
 					switch {
 					case sub <= 10 || sub >= 84 && sub <= 87 || sub == 92 || sub == 93:
-						result, trap = instance.Memories[0].Load(op, uint32(a.Lo), im.B, im.Lane, b)
+						result, trap = instance.Memories[im.Memory].Load(op, uint32(a.Lo), im.B, im.Lane, b)
 					case sub == 11 || sub >= 88 && sub <= 91:
-						trap = instance.Memories[0].Store(op, uint32(a.Lo), im.B, im.Lane, b)
+						trap = instance.Memories[im.Memory].Store(op, uint32(a.Lo), im.B, im.Lane, b)
 					default:
 						result = simd.Eval(im, a, b, c)
 					}

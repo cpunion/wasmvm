@@ -29,3 +29,18 @@ func TestTablePairOffset(t *testing.T) {
 		}
 	}
 }
+
+func TestMemoryPairOffsetPreservesPriorDescriptors(t *testing.T) {
+	for _, tc := range []struct {
+		funcs, tables, globals, bindings, index, want uint32
+		ok                                            bool
+	}{
+		{3, 2, 100, 0, 1, 72, true}, {3, 2, 2, 2, 1, 120, true},
+		{268435454, 0, 0, 0, 0, 2147483632, true}, {268435455, 0, 0, 0, 0, 2147483640, false},
+	} {
+		got, ok := MemoryPairOffset(tc.funcs, tc.tables, tc.globals, tc.bindings, tc.index)
+		if got != tc.want || ok != tc.ok {
+			t.Fatal(tc, got, ok)
+		}
+	}
+}

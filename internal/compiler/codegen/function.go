@@ -83,6 +83,7 @@ type Config struct {
 	IndirectCallees map[uint32][]uint32
 	FunctionCount   uint32
 	TableCount      uint32
+	MemoryCount     uint32
 	// Globals follows validated imported-then-defined global index order.
 	Globals []module.GlobalType
 }
@@ -137,12 +138,22 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	for _, in := range f.Code {
 		if isMemoryAccess(in.Op) || in.Op == 0x3f || in.Op == 0x40 {
 			e.usesMemory = true
-			break
+			index := f.Sources[in.Source].Wasm.Memory
+			if in.Op == 0x3f || in.Op == 0x40 {
+				index = f.Sources[in.Source].Wasm.A
+			}
+			if index != 0 && index >= config.MemoryCount {
+				return nil, wasm.ErrInvalid
+			}
+			if index != 0 && in.Op != 0x40 {
+				e.memoryViews = true
+			}
 		}
 	}
 	e.header(uint64(len(f.Slots))*16, len(pcs))
 	globalIndices, usesRuntimeData := e.prepareRuntimeData(config)
-	if e.usesMemory {
+	e.memoryFunctions, e.memoryTables, e.memoryGlobals, e.memoryBindings = config.FunctionCount, config.TableCount, uint32(len(config.Globals)), uint32(len(globalIndices))
+	if e.usesMemory && !e.memoryViews {
 		e.prepareMemory()
 	}
 	regions := e.memoryRegions()

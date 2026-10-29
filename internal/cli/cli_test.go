@@ -365,3 +365,25 @@ func TestTailCallCLIAndFeatureComposition(t *testing.T) {
 		}
 	}
 }
+
+func TestMultiMemoryCLI(t *testing.T) {
+	data, err := os.ReadFile("../../pkg/vm/testdata/multi-memory-basic.wasm")
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := writeModule(t, data)
+	if code, _, _ := invoke(t, nil, "validate", path); code != 1 {
+		t.Fatal("multi-memory accepted by default")
+	}
+	for _, command := range []string{"validate", "inspect", "run"} {
+		args := []string{command, "--multi-memory"}
+		if command == "run" {
+			args = append(args, "--export", "run")
+		}
+		args = append(args, path)
+		code, out, diagnostic := invoke(t, nil, args...)
+		if code != 0 || diagnostic != "" || jsonObject(t, out)["features"] != float64(wasm.MultiMemory) {
+			t.Fatal(code, out, diagnostic)
+		}
+	}
+}
