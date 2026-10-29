@@ -3,8 +3,6 @@
 package validate
 
 import (
-	"math"
-
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -45,6 +43,8 @@ type context struct {
 	funcTypeIndices []uint32
 	typeLabels      []uint32
 	registry        module.TypeRegistry
+	lexicalTypes    bool
+	lexicalBound    uint32
 	tables          []module.TableType
 	memories        []module.Limits
 	globals         []module.GlobalType
@@ -119,28 +119,10 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 		c.fail("multiple memories are not in Core 2.0")
 	}
 	for _, mt := range c.memories {
-		if mt.Shared && (features&wasm.Threads == 0 || !mt.HasMax) {
-			c.fail("shared memory requires Threads and a maximum")
-		}
-		max := uint64(65536)
-		if mt.Index64 {
-			max = 1 << 48
-		}
-		c.bounds(mt, max)
+		c.memoryType(mt)
 	}
 	for _, tt := range c.tables {
-		if tt.Limits.Shared {
-			c.fail("shared tables are not Core Threads")
-		}
-		c.valueType(tt.Element, len(m.Types))
-		if !tt.Element.IsReference() {
-			c.fail("invalid table element type")
-		}
-		max := uint64(math.MaxUint32)
-		if tt.Limits.Index64 {
-			max = math.MaxUint64
-		}
-		c.bounds(tt.Limits, max)
+		c.tableType(tt)
 	}
 	for _, gt := range c.globals {
 		c.valueType(gt.Value, len(m.Types))

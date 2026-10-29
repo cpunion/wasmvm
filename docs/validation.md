@@ -2376,3 +2376,27 @@ reservation grows to 1 GiB to permit that explicitly budgeted image. This does
 not establish compact-code or compilation-performance acceptance. Legacy
 wasi-threads, threaded LLGo guests, components/WASI 0.2/0.3 and remaining
 performance gates are still open.
+## Component frontend and lexical type validation
+
+The frontend/Canonical ABI foundation merged in
+[PR #40](https://github.com/cpunion/wasmvm/pull/40). Its final head `0183b15`
+passed the four Go/LLGo Linux-amd64/macOS-arm64 jobs in
+[run 40919202259](https://github.com/cpunion/wasmvm/actions/runs/40919202259).
+All 180 existing Core/proposal/P1/thread execution reports were downloaded and
+checked, in addition to the new 132-command binary grammar and 1,024-case
+reference-layout tests. The 16 invalid grammar cases still only passed syntax
+decoding; this did not establish semantic validation or component execution.
+
+The next increment adds bounded value/function/resource and lexical interface
+type checking, Core module type groups/descriptors through the shared Core
+validator, name/attribute constraints and independent instance-import resource
+binders. Local full Go package tests and targeted LLGo Core/component/engine
+tests pass, including full Core 2.0/3.0 regression execution. Race, cgo-free and
+Linux cross builds pass. The declaration-prefix fuzzer completed 1,400,969
+executions in 10 seconds after resource substitution was added, without a
+failure. This count is not a full component conformance count.
+
+Whole-binary linking, canonical declaration checking, interface subtyping,
+component-instantiation import substitution, exported resource visibility and
+component execution remain open. The [type design](design/component-validation.md)
+records those boundaries; M5/M6 are not complete.

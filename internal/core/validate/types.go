@@ -25,62 +25,71 @@ func (c *context) checkTypes() {
 		if uint64(g.Start) != next || end > uint64(len(m.Types)) {
 			c.fail("invalid recursive type group")
 		}
-		for i := g.Start; uint64(i) < end; i++ {
-			bound := int(i)
-			if c.features&wasm.GC != 0 {
-				bound = int(end)
-			}
-			for _, ts := range [][]wasm.ValueType{m.Types[i].Params, m.Types[i].Results} {
-				for _, t := range ts {
-					c.valueType(t, bound)
-				}
-			}
-			d := m.TypeDef(i)
-			if len(d.Supers) > 1 {
-				c.fail("multiple supertypes")
-			}
-			for _, parent := range d.Supers {
-				c.index(parent, int(i), "supertype")
-				if !m.TypeDef(parent).Open {
-					c.fail("final supertype")
-				}
-			}
-			switch d.Kind {
-			case module.FunctionKind:
-				if len(d.Fields) != 0 {
-					c.fail("function fields")
-				}
-			case module.StructKind, module.ArrayKind:
-				if d.Kind == module.ArrayKind && len(d.Fields) != 1 {
-					c.fail("array field count")
-				}
-				if len(m.Types[i].Params) != 0 || len(m.Types[i].Results) != 0 {
-					c.fail("nonfunction signature")
-				}
-			default:
-				c.fail("unknown composite type")
-			}
-			for _, f := range d.Fields {
-				c.valueType(f.Value, bound)
-				if f.Packed != 0 && (f.Packed != 8 && f.Packed != 16 || f.Value != wasm.I32) {
-					c.fail("invalid packed field")
-				}
-			}
-		}
-		if !c.registry.InternGroup(m, g.Start, g.Count, c.typeLabels, math.MaxUint32) {
-			c.limit("canonical types")
-		}
-		for i := g.Start; uint64(i) < end; i++ {
-			for _, p := range m.TypeDef(i).Supers {
-				c.structuralSubtype(i, p)
-			}
-		}
+		c.checkTypeGroup(g, math.MaxUint32)
 		next = end
 	}
 	if next != uint64(len(m.Types)) {
 		c.fail("incomplete type groups")
 	}
 }
+func (c *context) checkTypeGroup(g module.TypeGroup, maximum uint32) {
+	m := c.m
+	end := uint64(g.Start) + uint64(g.Count)
+	for i := g.Start; uint64(i) < end; i++ {
+		bound := int(i)
+		if c.features&wasm.GC != 0 {
+			bound = int(end)
+		}
+		for _, ts := range [][]wasm.ValueType{m.Types[i].Params, m.Types[i].Results} {
+			for _, t := range ts {
+				c.valueType(t, bound)
+			}
+		}
+		d := m.TypeDef(i)
+		if len(d.Supers) > 1 {
+			c.fail("multiple supertypes")
+		}
+		for _, parent := range d.Supers {
+			c.index(parent, int(i), "supertype")
+			if c.lexicalTypes && (c.m.TypeDef(parent).Kind == 0 || parent < c.lexicalBound && (c.typeLabels[parent] == 0 || uint64(c.typeLabels[parent]) >= uint64(len(c.registry.Types)))) {
+				c.fail("unbound lexical supertype")
+			}
+			if !m.TypeDef(parent).Open {
+				c.fail("final supertype")
+			}
+		}
+		switch d.Kind {
+		case module.FunctionKind:
+			if len(d.Fields) != 0 {
+				c.fail("function fields")
+			}
+		case module.StructKind, module.ArrayKind:
+			if d.Kind == module.ArrayKind && len(d.Fields) != 1 {
+				c.fail("array field count")
+			}
+			if len(m.Types[i].Params) != 0 || len(m.Types[i].Results) != 0 {
+				c.fail("nonfunction signature")
+			}
+		default:
+			c.fail("unknown composite type")
+		}
+		for _, f := range d.Fields {
+			c.valueType(f.Value, bound)
+			if f.Packed != 0 && (f.Packed != 8 && f.Packed != 16 || f.Value != wasm.I32) {
+				c.fail("invalid packed field")
+			}
+		}
+	}
+	if !c.registry.InternGroup(m, g.Start, g.Count, c.typeLabels, maximum) {
+		c.limit("canonical types")
+	}
+	for i := g.Start; uint64(i) < end; i++ {
+		for _, p := range m.TypeDef(i).Supers {
+			c.structuralSubtype(i, p)
+		}
+	}
+}
+
 func (c *context) storageMatches(a, b module.FieldType) bool {
 	if a.Packed != b.Packed || a.Mutable != b.Mutable {
 		return false

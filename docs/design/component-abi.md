@@ -4,8 +4,9 @@ This work uses Component Model revision
 `d095e2f60ddae1f9a1e9b1e2fb547ec1114da677`. The synchronous value ABI is
 implemented in `internal/component/canonical`, independently of the Core
 interpreter/native backend. Component binary decoding is implemented separately
-in `internal/component/decode`; linking/semantic validation, runtime
-calls/post-return and WASI 0.2 worlds are not implemented by this
+in `internal/component/decode`. The [type subsystem](component-validation.md)
+checks expressions and lexical declarations; complete binary linking/validation,
+runtime calls/post-return and WASI 0.2 worlds are not implemented by this
 foundation. It does not establish M5 completion.
 
 ## Representation and limits

@@ -26,6 +26,9 @@ func (c *context) valueType(t wasm.ValueType, bound int) {
 	}
 	if index, indexed := t.TypeIndex(); indexed {
 		c.index(index, bound, "reference type")
+		if c.lexicalTypes && (c.m.TypeDef(index).Kind == 0 || index < c.lexicalBound && (c.typeLabels[index] == 0 || uint64(c.typeLabels[index]) >= uint64(len(c.registry.Types)))) {
+			c.fail("reference to unbound lexical Core type")
+		}
 		if t.Storage() != c.m.Reference(index, true).Storage() {
 			c.fail("indexed reference family")
 		}

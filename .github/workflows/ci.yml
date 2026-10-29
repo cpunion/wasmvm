@@ -137,6 +137,7 @@ jobs:
             --require github.com/cpunion/wasmvm/internal/cli \
             --require github.com/cpunion/wasmvm/internal/component/canonical \
             --require github.com/cpunion/wasmvm/internal/component/decode \
+            --require github.com/cpunion/wasmvm/internal/component/validate \
             --require github.com/cpunion/wasmvm/internal/core/constant \
             --require github.com/cpunion/wasmvm/internal/core/decode \
             --require github.com/cpunion/wasmvm/internal/core/validate \

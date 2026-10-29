@@ -91,12 +91,43 @@ func (b *Builder) build(t *model.Type, depth uint32) (*Layout, error) {
 		scalar(4, wasm.F32)
 	case model.F64:
 		scalar(8, wasm.F64)
-	case model.String, model.List:
-		out.Size, out.Align = 2*b.pointer, b.pointer
-		out.Flat, out.FlatCount = []wasm.ValueType{b.address, b.address}, 2
-		if t.Kind == model.List {
+	case model.ErrorContext, model.Future, model.Stream:
+		scalar(4, wasm.I32)
+		if t.Element != nil {
 			if _, err := b.build(t.Element, depth+1); err != nil {
 				return nil, err
+			}
+		}
+	case model.FixedList:
+		if t.Length == 0 {
+			return nil, invalid("empty fixed list")
+		}
+		child, err := b.build(t.Element, depth+1)
+		if err != nil {
+			return nil, err
+		}
+		if child.Size > b.limits.MaxBytes/uint64(t.Length) || child.FlatCount > math.MaxUint64/uint64(t.Length) {
+			return nil, exhausted()
+		}
+		out.Size, out.Align = child.Size*uint64(t.Length), child.Align
+		out.FlatCount = child.FlatCount * uint64(t.Length)
+		if out.FlatCount <= MaxFlatParams {
+			out.Flat = make([]wasm.ValueType, 0, out.FlatCount)
+			for i := uint32(0); i < t.Length; i++ {
+				out.Flat = append(out.Flat, child.Flat...)
+			}
+		}
+	case model.String, model.List, model.Map:
+		out.Size, out.Align = 2*b.pointer, b.pointer
+		out.Flat, out.FlatCount = []wasm.ValueType{b.address, b.address}, 2
+		if t.Kind == model.List || t.Kind == model.Map {
+			if _, err := b.build(t.Element, depth+1); err != nil {
+				return nil, err
+			}
+			if t.Kind == model.Map {
+				if _, err := b.build(t.Key, depth+1); err != nil {
+					return nil, err
+				}
 			}
 		}
 	case model.Own, model.Borrow:
