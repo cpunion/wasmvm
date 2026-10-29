@@ -1,0 +1,2765 @@
+{
+  "sourceRevision": "58b6206a46013fb53d23990e5a650584a5361043",
+  "prebuiltRevision": "9dfd4867f12498bd6411a57739c24b4880668683",
+  "producer": "wasm-tools 1.258.0 strip --all",
+  "tests": [
+    {
+      "path": "c/clock_getres-monotonic.wasm",
+      "originalSHA256": "24422bc967e9746c5d40feb69bc4d14d54b2f8f5339636976d5c167fe41f3f6a",
+      "producers": {
+        "module": {
+          "name": "clock_getres-monotonic..wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 114761
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "c/clock_getres-realtime.wasm",
+      "originalSHA256": "d2ce6c5b1cefb074a005189e1022c15293e06b49c1c3bd87e7c5c0b8cf277786",
+      "producers": {
+        "module": {
+          "name": "clock_getres-realtime..wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 114741
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "c/clock_gettime-monotonic.wasm",
+      "originalSHA256": "0c99910e7037352141a6871ef73c66945b8c2855f132505fb54c4060f74cdfff",
+      "producers": {
+        "module": {
+          "name": "clock_gettime-monotonic..wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 113044
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "c/clock_gettime-realtime.wasm",
+      "originalSHA256": "f2e2b286b04c3758bb4b9bb535eeea0e366747524854b941e4b7c352e0575eac",
+      "producers": {
+        "module": {
+          "name": "clock_gettime-realtime..wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 112776
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "c/fdopendir-with-access.wasm",
+      "originalSHA256": "aec08e32e00edd33f4b0a74f4f663563dc0f261ba9d89e66dfc82de75d2882ec",
+      "producers": {
+        "module": {
+          "name": "fdopendir-with-access..wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "C_plus_plus_14": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 241286
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "c/fopen-with-access.wasm",
+      "originalSHA256": "d61b02227e7e03669bdd5851e92c54770f8949b5f80a942250bee8bb928ba5ea",
+      "producers": {
+        "module": {
+          "name": "fopen-with-access..wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "C_plus_plus_14": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 258262
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "c/fopen-with-no-access.wasm",
+      "originalSHA256": "957ab8d3ead289bc8ab4d732c3ff476847f3c7a4b6795c4ae4300725ba05b8ab",
+      "producers": {
+        "module": {
+          "name": "fopen-with-no-access..wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "C_plus_plus_14": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 253476
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "c/lseek.wasm",
+      "originalSHA256": "a0d85d05a2c592279343221f8f1b8ab7eedb5aaced817d085f13d510439d78c0",
+      "producers": {
+        "module": {
+          "name": "lseek..wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "C_plus_plus_14": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 266168
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "c/pread-with-access.wasm",
+      "originalSHA256": "d412041a716c8e0a57bc888a65cb9649ead1ba97ee2ad7141b1864615ba39bee",
+      "producers": {
+        "module": {
+          "name": "pread-with-access..wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "C_plus_plus_14": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 238136
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "c/pwrite-with-access.wasm",
+      "originalSHA256": "a06dfda7a9e9705492e0c3cb3977a921691b97f680115a94ee8c03402dabff35",
+      "producers": {
+        "module": {
+          "name": "pwrite-with-access..wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "C_plus_plus_14": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 242060
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "c/pwrite-with-append.wasm",
+      "originalSHA256": "9e99d962eac42f0a6a72a1015014b5498d9553b6aecec859d220984c8f8543a9",
+      "producers": {
+        "module": {
+          "name": "pwrite-with-append..wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "C_plus_plus_14": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 239629
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "c/sock_shutdown-invalid_fd.wasm",
+      "originalSHA256": "775a93d26d98fc7e2e10811f7b52a3763a9daa23369071ed00e519ea849eab00",
+      "producers": {
+        "module": {
+          "name": "sock_shutdown-invalid_fd..wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 113535
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "c/sock_shutdown-not_sock.wasm",
+      "originalSHA256": "e605aa962ec43455eb6efbdd558e9ef9a6a149557cf8d84a6e4f97be6ff727aa",
+      "producers": {
+        "module": {
+          "name": "sock_shutdown-not_sock..wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 113527
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "c/stat-dev-ino.wasm",
+      "originalSHA256": "76cf5563c24491fad6919347cc3c254282a1c1bb7daf3ad60936429d72346a10",
+      "producers": {
+        "module": {
+          "name": "stat-dev-ino..wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "C_plus_plus_14": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 237675
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/big_random_buf.wasm",
+      "originalSHA256": "0eeac039904bd0d02cc2a595a391ed11f307b92a23654d7cd3953ef7a252bb0e",
+      "producers": {
+        "module": {
+          "name": "big_random_buf.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2239635
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/clock_time_get.wasm",
+      "originalSHA256": "9051e4e62443156e561ed00928e8f8b51741c2f28da6ac1c542618369db20fd4",
+      "producers": {
+        "module": {
+          "name": "clock_time_get.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2227536
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/close_preopen.wasm",
+      "originalSHA256": "ccdb5eb906c62021904c80d6f5aa68da064e053bd00c0408b34bdc77d4d79b83",
+      "producers": {
+        "module": {
+          "name": "close_preopen.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2258744
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/dangling_fd.wasm",
+      "originalSHA256": "dd2cc51aa0d52c45d62bd1000b41e8aa2d518510ae9016569d815852ce8958b3",
+      "producers": {
+        "module": {
+          "name": "dangling_fd.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2275667
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/dangling_symlink.wasm",
+      "originalSHA256": "c3966a8ac456351314cd6b846ffe28c1f2dd07917b77480ef26dcc5fc4b03fe1",
+      "producers": {
+        "module": {
+          "name": "dangling_symlink.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2280333
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/dir_fd_op_failures.wasm",
+      "originalSHA256": "495ca0350ca624996edd2e4167a2ba45f884df9bf81e5ffd8a6181df060b014c",
+      "producers": {
+        "module": {
+          "name": "dir_fd_op_failures.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2298625
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/directory_seek.wasm",
+      "originalSHA256": "077daf182d15df17b6724680f3fa33b76456cdcc92a8a6385ba7c94091a8fc31",
+      "producers": {
+        "module": {
+          "name": "directory_seek.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2259921
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/fd_advise.wasm",
+      "originalSHA256": "b22579c81c8007945bd6d30c7d081b8b45e74cc87bdb7e2c1610cc44a2ae4196",
+      "producers": {
+        "module": {
+          "name": "fd_advise.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2254141
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/fd_fdstat_set_rights.wasm",
+      "originalSHA256": "8d12f09254c037844a744af3c7fd9a429c25a50cbc8b7c5f7fe20ca7bfbff197",
+      "producers": {
+        "module": {
+          "name": "fd_fdstat_set_rights.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2267409
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/fd_filestat_set.wasm",
+      "originalSHA256": "809e0252494c8d03daa5edb92a25ba6c97f3e637b3a06c82aa60e7fd17c6bb9b",
+      "producers": {
+        "module": {
+          "name": "fd_filestat_set.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2253500
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/fd_flags_set.wasm",
+      "originalSHA256": "3013dfb0dc86a24c800ae4bc06558b799b47bae919d1d8ae14e7a50b46dda860",
+      "producers": {
+        "module": {
+          "name": "fd_flags_set.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2260044
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/fd_readdir.wasm",
+      "originalSHA256": "de2875be51201f7d015f3affa8473aba7894c469d438936ebd58239e0bb2cfce",
+      "producers": {
+        "module": {
+          "name": "fd_readdir.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2326265
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/file_allocate.wasm",
+      "originalSHA256": "26258dc4925d4fa3208fec8e353cc244e3321a8f7667df7b856bd35e8844f965",
+      "producers": {
+        "module": {
+          "name": "file_allocate.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2255294
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/file_pread_pwrite.wasm",
+      "originalSHA256": "86015d312a278df7f7971044c537a171458970c8a39950259d88826f34739369",
+      "producers": {
+        "module": {
+          "name": "file_pread_pwrite.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2270082
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/file_seek_tell.wasm",
+      "originalSHA256": "52a2ce7bb516eb03942c55fde80dfd266a03e34c9eef15937b4df94880ebb5dd",
+      "producers": {
+        "module": {
+          "name": "file_seek_tell.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2262354
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/file_truncation.wasm",
+      "originalSHA256": "5909aee2773f70ec9e8d8139aa8cd4a81dbf4a7cf8cfc0b7654fc3b11e8df6ab",
+      "producers": {
+        "module": {
+          "name": "file_truncation.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2253219
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/file_unbuffered_write.wasm",
+      "originalSHA256": "e329789b42180a9396eecf4043d67f8c9b7f7b9d886712a2c10062e724e5d795",
+      "producers": {
+        "module": {
+          "name": "file_unbuffered_write.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2256031
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/fstflags_validate.wasm",
+      "originalSHA256": "7c71d0471a831e254bba5d4185108641672580340a69a52a265fa98cf1750e16",
+      "producers": {
+        "module": {
+          "name": "fstflags_validate.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2251028
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/interesting_paths.wasm",
+      "originalSHA256": "96e3f87a41380e1cfbab8698a1ff1f60b2136338d04e75ddf786bc38113f3726",
+      "producers": {
+        "module": {
+          "name": "interesting_paths.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2266661
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/isatty.wasm",
+      "originalSHA256": "3158b3ee9607c252c7a1315bd782c20db3ce62d9e4e9e5bfc66d4e1938980107",
+      "producers": {
+        "module": {
+          "name": "isatty.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2253539
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/nofollow_errors.wasm",
+      "originalSHA256": "56a16ebd20260ce87047206caaf5f41a64d7006db7cc3643e8f7a23a8ab5f7b5",
+      "producers": {
+        "module": {
+          "name": "nofollow_errors.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2265363
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/overwrite_preopen.wasm",
+      "originalSHA256": "737f5c6e9cc50001c629ed3733994b4ee29d82bc69c8510f56b607efaba81722",
+      "producers": {
+        "module": {
+          "name": "overwrite_preopen.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2261492
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/path_exists.wasm",
+      "originalSHA256": "3e2eee2e2b18f3a30f9a24568f5a740fe3c49ab0751732db614c4658440163bc",
+      "producers": {
+        "module": {
+          "name": "path_exists.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2257845
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/path_filestat.wasm",
+      "originalSHA256": "34bfb791a26fee136d895af5d098d13a77190030daa4c2cf2e8a6fb79b7e2df5",
+      "producers": {
+        "module": {
+          "name": "path_filestat.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2265329
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/path_link.wasm",
+      "originalSHA256": "f2464693f5782b04ba216aa5903322053fbd6e37dbb01c1899bce34cc3536312",
+      "producers": {
+        "module": {
+          "name": "path_link.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2305065
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/path_open_create_existing.wasm",
+      "originalSHA256": "fd4c9f923c44c8418785816e8151b846d52fbabcc1c3e8b4e5196024b873a3f6",
+      "producers": {
+        "module": {
+          "name": "path_open_create_existing.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2256367
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/path_open_dirfd_not_dir.wasm",
+      "originalSHA256": "debe3855ba815e18a9d94135c8d1aa14fea15ee23f9fbec7997d67635c0cb599",
+      "producers": {
+        "module": {
+          "name": "path_open_dirfd_not_dir.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2256189
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/path_open_missing.wasm",
+      "originalSHA256": "f184101f22f12a0773c123167650984ec89c38ab4c287b3325a81786db6edfb8",
+      "producers": {
+        "module": {
+          "name": "path_open_missing.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2255172
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/path_open_nonblock.wasm",
+      "originalSHA256": "09ab3588e59eb46f57df68a388203ffff1456168bb43f1b22ad71e4bf88c51ba",
+      "producers": {
+        "module": {
+          "name": "path_open_nonblock.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2248402
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/path_open_preopen.wasm",
+      "originalSHA256": "7fc66e7d98ff4c9ff0b33bc3f94beb0df5e5b2cbf2381bfccea5cc37b646bffa",
+      "producers": {
+        "module": {
+          "name": "path_open_preopen.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2296626
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/path_open_read_write.wasm",
+      "originalSHA256": "984a1a794dba9f92157a0659b9b0c9a86409f443d9ba95d36b75f757b481ad47",
+      "producers": {
+        "module": {
+          "name": "path_open_read_write.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2263302
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/path_rename.wasm",
+      "originalSHA256": "abf3094ce081955bae5dafec7d1fee0af099eec90a90ed6263b76b4dcad8ca2c",
+      "producers": {
+        "module": {
+          "name": "path_rename.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2302555
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/path_rename_dir_trailing_slashes.wasm",
+      "originalSHA256": "3afdfc2b59ac41b5cc7bb7a79a396d92e530933cc9015a60a7cf13cf1433874c",
+      "producers": {
+        "module": {
+          "name": "path_rename_dir_trailing_slashes.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2251597
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/path_symlink_trailing_slashes.wasm",
+      "originalSHA256": "abfef89e5d7fcc6d511a3b33b21e152e202d6d0b4dd9dd70903aeb07476f678e",
+      "producers": {
+        "module": {
+          "name": "path_symlink_trailing_slashes.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2304712
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/poll_oneoff_stdio.wasm",
+      "originalSHA256": "c9a5275b24b0ba42d6b9cadbf9881273c1459da8846bd676ab87518255f1ecb0",
+      "producers": {
+        "module": {
+          "name": "poll_oneoff_stdio.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2327261
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/readlink.wasm",
+      "originalSHA256": "4c14edbca77b40d9ed1f18c9a4dec7d9a8db7837ab0dac18fe44959d6eb240bc",
+      "producers": {
+        "module": {
+          "name": "readlink.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2258406
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/remove_directory_trailing_slashes.wasm",
+      "originalSHA256": "7958360c7b44ec0e00ad564c8c3748c07166d9e97791375b36ed4fc5bf1f2363",
+      "producers": {
+        "module": {
+          "name": "remove_directory_trailing_slashes.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2290026
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/remove_nonempty_directory.wasm",
+      "originalSHA256": "f81efdcb63855c00c3f1f13e74b33fef3ae66e71062cf7548e1142176c368b68",
+      "producers": {
+        "module": {
+          "name": "remove_nonempty_directory.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2255834
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/renumber.wasm",
+      "originalSHA256": "23b09192d804836ef363d3c1c26489fb2184e7dead88de03f84313da504a2f77",
+      "producers": {
+        "module": {
+          "name": "renumber.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2263055
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/sched_yield.wasm",
+      "originalSHA256": "352eab473b418acbe69af9d2a56f03477efb3db0184a42594831e1b198abf69b",
+      "producers": {
+        "module": {
+          "name": "sched_yield.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2226843
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/stdio.wasm",
+      "originalSHA256": "4d6b7998c2bf42c1b6dd9074e405079da979e10002f9fbebe300afaa281247aa",
+      "producers": {
+        "module": {
+          "name": "stdio.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2256559
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/symlink_create.wasm",
+      "originalSHA256": "437beb46801df016b610c788e6cd3a25a67d19172929c94f306d4930075869a7",
+      "producers": {
+        "module": {
+          "name": "symlink_create.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2253509
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/symlink_filestat.wasm",
+      "originalSHA256": "3615aef9933238d488dfa9709320b28e2efefdb1b8770de4bd401e70b6e7ba79",
+      "producers": {
+        "module": {
+          "name": "symlink_filestat.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2256423
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/symlink_loop.wasm",
+      "originalSHA256": "867a3c8335d9db280846a17ce650bb7f4e433039e31bbdd711abc93249bbf392",
+      "producers": {
+        "module": {
+          "name": "symlink_loop.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2279793
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/truncation_rights.wasm",
+      "originalSHA256": "b46b2dfb28eec188a4c316a560d2f882fa2538cfae9c2aee074289e6041d02bb",
+      "producers": {
+        "module": {
+          "name": "truncation_rights.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2262896
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "rust/unlink_file_trailing_slashes.wasm",
+      "originalSHA256": "56458bfa63cd385cd8490eeb7e3b3a0505ea9405bf4482eba62cd37a95ed96a4",
+      "producers": {
+        "module": {
+          "name": "unlink_file_trailing_slashes.wasm",
+          "producers": [
+            [
+              "language",
+              {
+                "C11": "",
+                "Rust": ""
+              }
+            ],
+            [
+              "processed-by",
+              {
+                "clang": "22.1.0-wasi-sdk (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)",
+                "rustc": "1.98.1 (48a229cea 2026-09-01)"
+              }
+            ]
+          ],
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2299588
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "assemblyscript/args_get-multiple-arguments.wasm",
+      "originalSHA256": "ffbb7037b67e55ca3f740c014d7464631ce235f717acf276cb18a426bdacf8b3",
+      "producers": {
+        "module": {
+          "name": null,
+          "producers": null,
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 8026
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "assemblyscript/args_sizes_get-multiple-arguments.wasm",
+      "originalSHA256": "cde355e98428825d1c524ac60a6424f68e9fd870fd2483aae5c6db8336e99af0",
+      "producers": {
+        "module": {
+          "name": null,
+          "producers": null,
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2014
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "assemblyscript/args_sizes_get-no-arguments.wasm",
+      "originalSHA256": "d859ca8aa56d4707a27ab84e6aef97f4b1d0e2300c28f05fe9dd892e07ddccac",
+      "producers": {
+        "module": {
+          "name": null,
+          "producers": null,
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2014
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "assemblyscript/environ_get-multiple-variables.wasm",
+      "originalSHA256": "8cb31b2aba4d84bff02ad1700674015dd2eefb95693b6bacadfca2eb10a75a98",
+      "producers": {
+        "module": {
+          "name": null,
+          "producers": null,
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 10334
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "assemblyscript/environ_sizes_get-multiple-variables.wasm",
+      "originalSHA256": "87dad26d7c4378bbfdd113a1d2105bb950a1a5bce90e24a33c8585b55ffe2e73",
+      "producers": {
+        "module": {
+          "name": null,
+          "producers": null,
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2017
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "assemblyscript/environ_sizes_get-no-variables.wasm",
+      "originalSHA256": "927756fd4a52ef1c9f7554dc516870fcfba47dbcc104bd4d8ac9e189a83d5067",
+      "producers": {
+        "module": {
+          "name": null,
+          "producers": null,
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 2017
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "assemblyscript/fd_write-to-invalid-fd.wasm",
+      "originalSHA256": "654a1a568bfcdb96d27f6980e66f4606e373629b489ef74561980360da6cc1e4",
+      "producers": {
+        "module": {
+          "name": null,
+          "producers": null,
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 1983
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "assemblyscript/fd_write-to-stdout.wasm",
+      "originalSHA256": "3187ffcfc83cd220eb1e6e7e58d6db38296183c334d8fa9aa4f2b6db880847a8",
+      "producers": {
+        "module": {
+          "name": null,
+          "producers": null,
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 5071
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "assemblyscript/proc_exit-failure.wasm",
+      "originalSHA256": "922778bf601d35ce3f400d72e10646a8a86612f23a76e4e88079b8af680bf9de",
+      "producers": {
+        "module": {
+          "name": null,
+          "producers": null,
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 155
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "assemblyscript/proc_exit-success.wasm",
+      "originalSHA256": "083e6cbca1bf4c89a14d08954c75078774a3aed70c55a9cc79291f9da75284f9",
+      "producers": {
+        "module": {
+          "name": null,
+          "producers": null,
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 155
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "assemblyscript/random_get-non-zero-length.wasm",
+      "originalSHA256": "41b3de91da5c5b5b14604285805525cd2a3aac468e4d83c326edfd70b8f6bcd4",
+      "producers": {
+        "module": {
+          "name": null,
+          "producers": null,
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 1999
+          },
+          "dependencies": null
+        }
+      }
+    },
+    {
+      "path": "assemblyscript/random_get-zero-length.wasm",
+      "originalSHA256": "250fb9671184e5df73d4663f36be043f11c9149ee6d5721deef3e890c085746d",
+      "producers": {
+        "module": {
+          "name": null,
+          "producers": null,
+          "authors": null,
+          "description": null,
+          "licenses": null,
+          "source": null,
+          "homepage": null,
+          "revision": null,
+          "version": null,
+          "range": {
+            "start": 0,
+            "end": 4740
+          },
+          "dependencies": null
+        }
+      }
+    }
+  ],
+  "sha256": {
+    "LICENSE.Go": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+    "LICENSE.tests": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+    "assemblyscript/args_get-multiple-arguments.json": "b696924892fb4656d56d966f495883407f1160632982b822a6566eeb33cbc24e",
+    "assemblyscript/args_get-multiple-arguments.wasm": "ffbb7037b67e55ca3f740c014d7464631ce235f717acf276cb18a426bdacf8b3",
+    "assemblyscript/args_sizes_get-multiple-arguments.json": "b696924892fb4656d56d966f495883407f1160632982b822a6566eeb33cbc24e",
+    "assemblyscript/args_sizes_get-multiple-arguments.wasm": "cde355e98428825d1c524ac60a6424f68e9fd870fd2483aae5c6db8336e99af0",
+    "assemblyscript/args_sizes_get-no-arguments.wasm": "d859ca8aa56d4707a27ab84e6aef97f4b1d0e2300c28f05fe9dd892e07ddccac",
+    "assemblyscript/environ_get-multiple-variables.json": "2a775cc527cd483a613c8fde975adbf3d618019ae2c0a5ddfef7050635ed99ad",
+    "assemblyscript/environ_get-multiple-variables.wasm": "8cb31b2aba4d84bff02ad1700674015dd2eefb95693b6bacadfca2eb10a75a98",
+    "assemblyscript/environ_sizes_get-multiple-variables.json": "4901634e709b64bb93df9d5124f998fcaa9f018c531a5764008bab2bc1556efd",
+    "assemblyscript/environ_sizes_get-multiple-variables.wasm": "87dad26d7c4378bbfdd113a1d2105bb950a1a5bce90e24a33c8585b55ffe2e73",
+    "assemblyscript/environ_sizes_get-no-variables.wasm": "927756fd4a52ef1c9f7554dc516870fcfba47dbcc104bd4d8ac9e189a83d5067",
+    "assemblyscript/fd_write-to-invalid-fd.wasm": "654a1a568bfcdb96d27f6980e66f4606e373629b489ef74561980360da6cc1e4",
+    "assemblyscript/fd_write-to-stdout.json": "ff10809a08143886ca7382293be505b0a2241ea698818234ff251f9b48b511c9",
+    "assemblyscript/fd_write-to-stdout.wasm": "3187ffcfc83cd220eb1e6e7e58d6db38296183c334d8fa9aa4f2b6db880847a8",
+    "assemblyscript/manifest.json": "411fac22d4292bb64ef62e601535b1e7861181329848afeda40a9becb2f109a8",
+    "assemblyscript/proc_exit-failure.json": "4cfb7267e375ac9e5cab2dc34f6584abd9768dac102d66d900337c6fcb2c522c",
+    "assemblyscript/proc_exit-failure.wasm": "922778bf601d35ce3f400d72e10646a8a86612f23a76e4e88079b8af680bf9de",
+    "assemblyscript/proc_exit-success.wasm": "083e6cbca1bf4c89a14d08954c75078774a3aed70c55a9cc79291f9da75284f9",
+    "assemblyscript/random_get-non-zero-length.wasm": "41b3de91da5c5b5b14604285805525cd2a3aac468e4d83c326edfd70b8f6bcd4",
+    "assemblyscript/random_get-zero-length.wasm": "250fb9671184e5df73d4663f36be043f11c9149ee6d5721deef3e890c085746d",
+    "c/clock_getres-monotonic.wasm": "a5bb34bc04ddb1a8f71061c3b5fff847b69d9f85258eee645c73cfc9520b4638",
+    "c/clock_getres-realtime.wasm": "602af60ddf210df05f7160c652bad5896825182609c43d836163ad257da68940",
+    "c/clock_gettime-monotonic.wasm": "e45cbc57534490b0c45afe444d834845ee85badc3dbf4c97e5b0c898ee2cd7f5",
+    "c/clock_gettime-realtime.wasm": "a3e8bc54a20a48222119557956551a9a2224cab35619dede49d1160ae6ae2dbe",
+    "c/fdopendir-with-access.json": "ee3eb5f323581c2fec24aa18bbd06c318ad0009cb428e955111cb01412c82d8d",
+    "c/fdopendir-with-access.wasm": "4def59d79927afd047ffd0315096a959539c4cd43d3ce7216070c4bd59388728",
+    "c/fopen-with-access.json": "ee3eb5f323581c2fec24aa18bbd06c318ad0009cb428e955111cb01412c82d8d",
+    "c/fopen-with-access.wasm": "57256cbd6c35b98664db3a3652d1d011ac884e064f976336462494a71e41c00b",
+    "c/fopen-with-no-access.wasm": "0fbb82dd7d646413d984dc6a89b0f8b264e3ccd2609273c260789e64f71e4679",
+    "c/fs-tests.dir/file": "7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
+    "c/fs-tests.dir/fopendir.dir/file-0": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "c/fs-tests.dir/fopendir.dir/file-1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "c/fs-tests.dir/lseek.txt": "924592b9b103f14f833faafb67f480691f01988aa457c0061769f58cd47311bc",
+    "c/fs-tests.dir/pread.txt": "f29a78e2b8fd00d8a58cf6ad12636eacd28bdc44cb6353ee31987eaeac60af66",
+    "c/fs-tests.dir/writeable/.gitignore": "240a3e0d37d2e86b614063f5347eb02d4f99ca6c254de6b82871ff8d95532a7d",
+    "c/lseek.json": "ee3eb5f323581c2fec24aa18bbd06c318ad0009cb428e955111cb01412c82d8d",
+    "c/lseek.wasm": "3efbd7a04a34f40f8d275d7fab7416135a6509e139cfacdfb31ca8fee550ac4c",
+    "c/manifest.json": "ce36b8594b9b67c6ec68061eaad5208acfd824f569d13850acfd78e09176b170",
+    "c/pread-with-access.json": "ee3eb5f323581c2fec24aa18bbd06c318ad0009cb428e955111cb01412c82d8d",
+    "c/pread-with-access.wasm": "e6eeef82257c782ba2dde32f856aa296f6735f692d4dbdd2e7a6f5a70b383668",
+    "c/pwrite-with-access.json": "ee3eb5f323581c2fec24aa18bbd06c318ad0009cb428e955111cb01412c82d8d",
+    "c/pwrite-with-access.wasm": "07c6bc42abd46fc1055e8d40d1643b4d5ed3742d380868e6e850d8cfb264662d",
+    "c/pwrite-with-append.json": "ee3eb5f323581c2fec24aa18bbd06c318ad0009cb428e955111cb01412c82d8d",
+    "c/pwrite-with-append.wasm": "1407593249ba301ec70c976061217fcc3d8dac0760858e88ac2fb829ae4cdfbe",
+    "c/sock_shutdown-invalid_fd.wasm": "d56288b866fe546293b9b3913d1c1a9e2032e34b7f120c11ffcea0c7909b5966",
+    "c/sock_shutdown-not_sock.wasm": "0b15be0997470641cd7440a9ca310d426480a2f05ea1e53ffe928e7be11de983",
+    "c/stat-dev-ino.json": "ee3eb5f323581c2fec24aa18bbd06c318ad0009cb428e955111cb01412c82d8d",
+    "c/stat-dev-ino.wasm": "50ec2c9031fb61c75372143f506de9203a1c5672b808a2135956674a40bee66a",
+    "integration/go-guest.wasm": "eac413fdc52b2dcdeef8d92b8313c3971ba851cd9ae1bff28318fd4cde92b64a",
+    "rust/big_random_buf.wasm": "ce053da296d9a7ff6c6e56d8ac170d20cf4e494826097bf1989b88772c93cfe1",
+    "rust/clock_time_get.wasm": "0230de72744c22d6812efdbb377269e9566cb655c71fbd0a655f6ba9e6cc7e2a",
+    "rust/close_preopen.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/close_preopen.wasm": "a1790a2d88affc2cc7ce44cadf3d79c25838a561d48e7d185e87eac45bb02688",
+    "rust/dangling_fd.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/dangling_fd.wasm": "6c0661b01d2b476a910388275a4c458d027cec5c33c476a5d537d731c5ac9d92",
+    "rust/dangling_symlink.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/dangling_symlink.wasm": "d737347840d5e77d79beb6ce09d40f84fcc0ae626bd9fc9701f4da5d619a423d",
+    "rust/dir_fd_op_failures.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/dir_fd_op_failures.wasm": "5f27abb8b584dd87d7cf57c50c95d4a9c2f835589ec928952a7c49bb726aca69",
+    "rust/directory_seek.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/directory_seek.wasm": "a9b62045f2a5130f7fac5f793798aa33f3b23fd4ea2f2dace2741b6e6f748882",
+    "rust/fd_advise.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/fd_advise.wasm": "fa101276a669bd9ce75ff5a5d39dfb51cccbc311b5583e569e63541306ed8fe4",
+    "rust/fd_fdstat_set_rights.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/fd_fdstat_set_rights.wasm": "e2bd139b3bfc322afbda66ea782495716599fd74de2c5bbc7a3960936500bda3",
+    "rust/fd_filestat_set.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/fd_filestat_set.wasm": "c1df412b7acf82e46aae46190a127b8aa6fe533e4f5a9b42458b0c663baa506d",
+    "rust/fd_flags_set.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/fd_flags_set.wasm": "f9c4912b8a037760465e11a226e81bddd87dcd67935528051d5ef4ad90a8494b",
+    "rust/fd_readdir.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/fd_readdir.wasm": "c29796588a2fd106821cde2b88f7c0c43eafd4c594e8e125aaf5477b5396fc57",
+    "rust/file_allocate.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/file_allocate.wasm": "5c455d7dca5b6cb901dfc06f8bc9e659f856696ebf8abfc04c06abb1a96f3f4d",
+    "rust/file_pread_pwrite.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/file_pread_pwrite.wasm": "bd08813567323e10bb8805d53cef06c7b31486cdb4deb0af9ed68ffe9d53cd54",
+    "rust/file_seek_tell.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/file_seek_tell.wasm": "8ddc7de1bbea65d7b8b3f6ecc2e7a13fb108bf2def81999c63df2988382c5183",
+    "rust/file_truncation.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/file_truncation.wasm": "9e852a5cd514bb279654c853eb386f3c29e4a6f0984727aa6ea5629ce3608588",
+    "rust/file_unbuffered_write.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/file_unbuffered_write.wasm": "d71623dca4fe9d82758cd75db4d43a934ea10dd46ee49638c8c1de4cda3e2290",
+    "rust/fs-tests.dir/.keep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "rust/fstflags_validate.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/fstflags_validate.wasm": "3275d2e1fbfd19d573b900877abd8016311b81e914650dd558525b1bf2a3f94d",
+    "rust/interesting_paths.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/interesting_paths.wasm": "1533d999cacfd8c5fc3f48afc834adac725a21b57f51a2d2d4a5ff2940261212",
+    "rust/isatty.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/isatty.wasm": "081107f4503124ad5eb48d1eb42eebc70601c87bd8b55bf1e4196d6ea121a842",
+    "rust/manifest.json": "39d7f5f260e0a84f9a1bdd5df9c309000d2dc114fd71626c68d2479a0aafd608",
+    "rust/nofollow_errors.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/nofollow_errors.wasm": "1e21092c441a64bfc60b79784da53d0956446cee849293f86d0de0e73d712059",
+    "rust/overwrite_preopen.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/overwrite_preopen.wasm": "ef603f1664c12ecdfde0351dd9e6fd4602042a0fde25a3a75e2c11784f779852",
+    "rust/path_exists.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/path_exists.wasm": "a2f5bb010aad523c5a2768c2b9685d5b81a2982718b62028b52e3e0884987591",
+    "rust/path_filestat.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/path_filestat.wasm": "2282b55c7a31bce366a9b89591b875b228a431ee557adf276c60ea6314a0ab59",
+    "rust/path_link.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/path_link.wasm": "45a6e9b0d4f75527bd404b91b150d3a89216a3d8847e2f0625395b7319a213c4",
+    "rust/path_open_create_existing.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/path_open_create_existing.wasm": "bdde305a05ea2aba15b7cc7c4b768bb541e24df3b96936e4d597fb97744b2c2c",
+    "rust/path_open_dirfd_not_dir.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/path_open_dirfd_not_dir.wasm": "df7ff28307918c02203cec64e4eed3766a2f6b4c9c894c539fa02a26c8b89dd4",
+    "rust/path_open_missing.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/path_open_missing.wasm": "3c513ce1d95f515acb3bc5298254ec6dc0d679b5ad76b04fc9ec55948d93172a",
+    "rust/path_open_nonblock.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/path_open_nonblock.wasm": "b2421481651159a94fe48e898144faba63638eaabd3fe198cb7fbaf9723216db",
+    "rust/path_open_preopen.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/path_open_preopen.wasm": "b9f036f5321578f63a2cd787f93b21b99412027f5746d82307ad1a04ff717c66",
+    "rust/path_open_read_write.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/path_open_read_write.wasm": "2f2e2e2886703c5c9c347900f9d5525d922d5629195b03d3c232b9b9c63ea366",
+    "rust/path_rename.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/path_rename.wasm": "8b3fe453861e5287ba7ce855b0b30e47eb5d57546fc0e176947bd4b933698365",
+    "rust/path_rename_dir_trailing_slashes.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/path_rename_dir_trailing_slashes.wasm": "6e920a8dc36e7191adac5933ab7783a18cbe4e5f026e9ad39d6dc8fd1b53d0ee",
+    "rust/path_symlink_trailing_slashes.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/path_symlink_trailing_slashes.wasm": "017eddb8da0ed78be05623139863a5e0a0463f7900578cb715dcc4014783d0e4",
+    "rust/poll_oneoff_stdio.wasm": "befe8781d0e3deac618466906c5071eef22b09227380f46e49e353fda0508492",
+    "rust/readlink.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/readlink.wasm": "3eac99b3f347410a3806f6025dca61400deef36cf1a5f66d65aa0e70eddce6ea",
+    "rust/remove_directory_trailing_slashes.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/remove_directory_trailing_slashes.wasm": "d09939eb36d85f384f70a2a765e7926891a0da2c9107705dc32e100e25aa4fdd",
+    "rust/remove_nonempty_directory.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/remove_nonempty_directory.wasm": "111d73afb34ce6cb2c7eeaaa7c899eb6dc379ee91d93a31d724065ffe4e354c9",
+    "rust/renumber.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/renumber.wasm": "e2c616360f8eaacbb5c330188cac8716258e6a062a271aa542b25ffd7f4d034f",
+    "rust/sched_yield.wasm": "144eeac18fbff602b55f956ed2f49f80b0bf70741483aeca56f4c1cd31e68f63",
+    "rust/stdio.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/stdio.wasm": "bb173415e77bde8343914c639a1a2c70ebe45f2c3feb3cd15068c405406b9c98",
+    "rust/symlink_create.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/symlink_create.wasm": "3be97b1943a4bd240141addd461b5a7d9e8750dedf33f162693a187cf13047af",
+    "rust/symlink_filestat.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/symlink_filestat.wasm": "dc0c668481bc88c21fe49250559fe6691377d49c217bf7c60166d65b4ed154aa",
+    "rust/symlink_loop.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/symlink_loop.wasm": "17ad8a2994bd4b0a72e323d2c20b9203d14f6e2ac9fd1a4f80da8bf0d33cb227",
+    "rust/truncation_rights.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/truncation_rights.wasm": "0e76500082b35e0e4798f1455bb9e267c87144507e23f0791207016998d048e7",
+    "rust/unlink_file_trailing_slashes.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "rust/unlink_file_trailing_slashes.wasm": "4bc05855757ef0b5eb7934396adab04d2f9a12b55bb07d9796c2d6461136ddd3",
+    "source/assemblyscript/BUCK": "29eed2fea97e7de98c850db9970b4b114b1f35b3b0396ed8cf490322a69b0bd5",
+    "source/assemblyscript/src/args_get-multiple-arguments.json": "b696924892fb4656d56d966f495883407f1160632982b822a6566eeb33cbc24e",
+    "source/assemblyscript/src/args_get-multiple-arguments.ts": "d6d1936913e35f7f2fb708d6690f3c5544848dd895501386499a8bfe0bb9f70a",
+    "source/assemblyscript/src/args_sizes_get-multiple-arguments.json": "b696924892fb4656d56d966f495883407f1160632982b822a6566eeb33cbc24e",
+    "source/assemblyscript/src/args_sizes_get-multiple-arguments.ts": "eefcdca224ed650d521af6d64e3be6b5ec4c5e1f8b37a57bd7d57b7bb43a010f",
+    "source/assemblyscript/src/args_sizes_get-no-arguments.ts": "351fec1f0bded10333b59e1ca46bb4138e4425ee53ac0fc092024de0d07246b2",
+    "source/assemblyscript/src/environ_get-multiple-variables.json": "2a775cc527cd483a613c8fde975adbf3d618019ae2c0a5ddfef7050635ed99ad",
+    "source/assemblyscript/src/environ_get-multiple-variables.ts": "edc4f9c56aee6807ce422f696175def2678f684999164e564db40657c16e5859",
+    "source/assemblyscript/src/environ_sizes_get-multiple-variables.json": "4901634e709b64bb93df9d5124f998fcaa9f018c531a5764008bab2bc1556efd",
+    "source/assemblyscript/src/environ_sizes_get-multiple-variables.ts": "1fd73e824d8bbb80b7fcbccf1a2e6d3afb8957f5319737fc4296df16d8087008",
+    "source/assemblyscript/src/environ_sizes_get-no-variables.ts": "782f5b08c3d4b1cf019da21c6b4e507e190a5d1132d488ac358451f1cc3cebff",
+    "source/assemblyscript/src/fd_write-to-invalid-fd.ts": "ae13eecda8d86ffc10f7437dbb212f161db44b0a5bb3590a4a81a40de30ac2eb",
+    "source/assemblyscript/src/fd_write-to-stdout.json": "ff10809a08143886ca7382293be505b0a2241ea698818234ff251f9b48b511c9",
+    "source/assemblyscript/src/fd_write-to-stdout.ts": "5076ca5a3ac93a1a8f567a1c52aec6945e12b60c34d7c31ae7e4cc017b1bfc54",
+    "source/assemblyscript/src/proc_exit-failure.json": "4cfb7267e375ac9e5cab2dc34f6584abd9768dac102d66d900337c6fcb2c522c",
+    "source/assemblyscript/src/proc_exit-failure.ts": "7ab6f190c00a69fb9ff97634e94819b83b8e51bb989f3a55c4a9b6e730445a0c",
+    "source/assemblyscript/src/proc_exit-success.ts": "d7ad17fb37770e27da177032b1003987c3083e719672c149d52727487b2d9748",
+    "source/assemblyscript/src/random_get-non-zero-length.ts": "9fa66c6d2fc7917ec61d8fb82225a4f4f11032ccd5fa2a8cbe66dbaca8f312b0",
+    "source/assemblyscript/src/random_get-zero-length.ts": "b295d1c825875ae49e6eee3cae080c63446551a2bedac02df3022ffc2c83dc8e",
+    "source/c/BUCK": "6ddd23a06338bacf00e1b81d4b0e6510732b157e4b8f6323329da62474bdb09c",
+    "source/c/src/clock_getres-monotonic.c": "dbcc41c6d96b80b5f9016e17d70839b02c5716bf3e45efc821aef749af4d0a4b",
+    "source/c/src/clock_getres-realtime.c": "fc77e7c42d9b7cfbce6d91e292424b9391c08e41c41d42cbdd063b80562e9688",
+    "source/c/src/clock_gettime-monotonic.c": "93ddd7ea632085d53cd320c8ef2f7607d35a373156072dac6614c5780349cf5a",
+    "source/c/src/clock_gettime-realtime.c": "669cefbeb09e762de0fa726ec9eef5acea3eaf9d24c47dfe955d3fd7386b54e6",
+    "source/c/src/fdopendir-with-access.c": "12dcab46536ca8274c4c1c93ac850fb85c024609a2bf604682faa5e0e8945267",
+    "source/c/src/fdopendir-with-access.json": "ee3eb5f323581c2fec24aa18bbd06c318ad0009cb428e955111cb01412c82d8d",
+    "source/c/src/fopen-with-access.c": "6fba409e1290a9b6d246e9e320b059f9a8d57f1cb0f2816420814b0f1b9503a4",
+    "source/c/src/fopen-with-access.json": "ee3eb5f323581c2fec24aa18bbd06c318ad0009cb428e955111cb01412c82d8d",
+    "source/c/src/fopen-with-no-access.c": "7ef4888565f125d837567f28fca98a7f958101d2ae9faf46f6bb2db4aeccbb88",
+    "source/c/src/lseek.c": "e1b0be4df20574a1264deacec2c650ff3322fda82b9f008139afd81db43d906a",
+    "source/c/src/lseek.json": "ee3eb5f323581c2fec24aa18bbd06c318ad0009cb428e955111cb01412c82d8d",
+    "source/c/src/pread-with-access.c": "1aaf8001f9f1b6c90f122410249af713373927fc4b1c6b92bb8db52eb0b9afec",
+    "source/c/src/pread-with-access.json": "ee3eb5f323581c2fec24aa18bbd06c318ad0009cb428e955111cb01412c82d8d",
+    "source/c/src/pwrite-with-access.c": "28198121a3d76e6156f66c47c68a7242048af1e7d0b50689559975302e2f05b9",
+    "source/c/src/pwrite-with-access.json": "ee3eb5f323581c2fec24aa18bbd06c318ad0009cb428e955111cb01412c82d8d",
+    "source/c/src/pwrite-with-append.c": "60b4c7a765cee58e277b8963a228d802a209895a17d5e96a054c7f939b90f156",
+    "source/c/src/pwrite-with-append.json": "ee3eb5f323581c2fec24aa18bbd06c318ad0009cb428e955111cb01412c82d8d",
+    "source/c/src/sock_shutdown-invalid_fd.c": "68aff5011c03937b56190e1c7af160ce9edea1bf6cce2af088f87d2e663330e0",
+    "source/c/src/sock_shutdown-not_sock.c": "2bddda9ade613ed11b339d5b10c196731d6e69b44390b47cb0adb7ff5efa48fb",
+    "source/c/src/stat-dev-ino.c": "88894fa050c43f4854f77135a03bffbff68bf7604390d502a2c48164f4c68f82",
+    "source/c/src/stat-dev-ino.json": "ee3eb5f323581c2fec24aa18bbd06c318ad0009cb428e955111cb01412c82d8d",
+    "source/go-guest/go.mod": "dbb8765dd29c2e0ab82543492d9cdf5a691c85d7c43180fdced72f83403f4d5a",
+    "source/go-guest/main.go": "4dac311b100a480b48de915d715741c714121a12fab03f8585fa2c505595c064",
+    "source/rust/BUCK": "1e6b05d602d6664bd6effe070a9602bed5271fd8d88f9996d5274582ea5420d4",
+    "source/rust/src/bin/big_random_buf.rs": "4355b2039e3096493f01160de16c1f19b632b746284366a4971342ea5c4bd2ba",
+    "source/rust/src/bin/clock_time_get.rs": "7a40bd6895a96d4a27c889c45687bb9e2ec1e36abd88210f42a4c93dd5bc65d7",
+    "source/rust/src/bin/close_preopen.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/close_preopen.rs": "28c5b6b490aa52ba427d151986476c475e705a5e631e917b28547f7d8727f653",
+    "source/rust/src/bin/dangling_fd.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/dangling_fd.rs": "f472faef9e7ff26e690408afbe5c32c8f2789d3484b0952c089a531bd9a25502",
+    "source/rust/src/bin/dangling_symlink.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/dangling_symlink.rs": "70112d4ab31e6547e9652f9b372a0f40647c0fa2b53736b22e33c53095fe67fa",
+    "source/rust/src/bin/dir_fd_op_failures.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/dir_fd_op_failures.rs": "15196b23ecd9ada4e0ef115f720d4596dd79b5ea4d82c0ba2d31d0499a29a621",
+    "source/rust/src/bin/directory_seek.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/directory_seek.rs": "d28a30b540173ad35f066c646dec085267d834e4293d17d20494f7e38d34302f",
+    "source/rust/src/bin/fd_advise.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/fd_advise.rs": "34ce395ad34482684faab1416516a3ae7ed6ce4e16a8c4c2ae859cb9b72837b6",
+    "source/rust/src/bin/fd_fdstat_set_rights.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/fd_fdstat_set_rights.rs": "477dbdea9f550524d2836e1e6b1bf774b548ec82d3a5211f41c42f6d2a3bc275",
+    "source/rust/src/bin/fd_filestat_set.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/fd_filestat_set.rs": "fd4ba09743a16fbe84c5c64b82d4d6300e683ec7e47477e72f6805fbe08a9c71",
+    "source/rust/src/bin/fd_flags_set.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/fd_flags_set.rs": "b4f4005641f3fbcc286a271b89f061632e53c5843b6b635c3e11f635620a50f8",
+    "source/rust/src/bin/fd_readdir.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/fd_readdir.rs": "8255136572ee60c0a150da40fd55b72d432044398ef7cbb4a24a16489fa24d23",
+    "source/rust/src/bin/file_allocate.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/file_allocate.rs": "34384a7bd1cb324aa4ed9cc8a91004d7df310b8da6f3392b323874222e58539f",
+    "source/rust/src/bin/file_pread_pwrite.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/file_pread_pwrite.rs": "16068dc7fe33ac2463fcc5c8b46847ab2d167fee9e36792ab396c18c936feb74",
+    "source/rust/src/bin/file_seek_tell.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/file_seek_tell.rs": "88ffec17d20f472ebdf86ac74ba4d10745dcd31aea0d55444422af633601db28",
+    "source/rust/src/bin/file_truncation.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/file_truncation.rs": "e6aea2a610a2e22b3bcec3b8c16940d7b672f2e3c83360a3a11ce7fd7b5b512d",
+    "source/rust/src/bin/file_unbuffered_write.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/file_unbuffered_write.rs": "938576be7734b8189384bed7d81c95468e0736e4554d8d022a2572e6987eaec0",
+    "source/rust/src/bin/fstflags_validate.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/fstflags_validate.rs": "6c794dc10779f8cab4966df6232db7a8dc3f36da64aa1ca001f33d2a78017626",
+    "source/rust/src/bin/interesting_paths.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/interesting_paths.rs": "18514d70e5649f996aaa88ca49f83834393de6f5320904d95379001dd0f50735",
+    "source/rust/src/bin/isatty.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/isatty.rs": "f098b7126fbdab14b79522b17809b41736b1802c2820ea9065ada7feb90a3b26",
+    "source/rust/src/bin/manifest.json": "ae70bcb0c60b1a563e294f8fd62c0ba54ced5bfae9817dc62f797e598a4a0ca0",
+    "source/rust/src/bin/nofollow_errors.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/nofollow_errors.rs": "1b2f0cfda22b1f6c472995b8f717942af03966e25237dd7cf316979d45ae557b",
+    "source/rust/src/bin/overwrite_preopen.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/overwrite_preopen.rs": "480ea4635c909f6e87883f09c8ee3db2eeabfe01de8337b68d775ee00030eec0",
+    "source/rust/src/bin/path_exists.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/path_exists.rs": "92058d02851861f77498bfd7657c0ab53e869671671649744ace2c68dc0ebe36",
+    "source/rust/src/bin/path_filestat.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/path_filestat.rs": "1178c56ea02600aa188c943fc0908c130e076cfd5ed6be379f3c52f629725245",
+    "source/rust/src/bin/path_link.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/path_link.rs": "2de3210fa0c2423a40eddbf9ae3b6cf51392e8004b91d636c5967574c2ba59fc",
+    "source/rust/src/bin/path_open_create_existing.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/path_open_create_existing.rs": "a4609a3fac9e4a528211c202121460aff8fdb51393add1e9e2719b47c3a3f32c",
+    "source/rust/src/bin/path_open_dirfd_not_dir.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/path_open_dirfd_not_dir.rs": "922d3ebd3aa3c19ecc3a945cb622e62c5b9ecff6121258b08a18c3e4465afaa0",
+    "source/rust/src/bin/path_open_missing.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/path_open_missing.rs": "fea4fdc6d498185929cc4c5178e6b607967efa81d80fda583a93480387ee6878",
+    "source/rust/src/bin/path_open_nonblock.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/path_open_nonblock.rs": "e7987b60e7b2d35765177312b2fd41d9c4de404143847513c3374a72bb78a3a3",
+    "source/rust/src/bin/path_open_preopen.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/path_open_preopen.rs": "893787614da88e2aed118b7eac55e5191eb2c7e571fdd1dcf0a1aebfff3e72a5",
+    "source/rust/src/bin/path_open_read_write.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/path_open_read_write.rs": "25ee234f22c055d3626b61771727d545cd3e182afa2bd016b8aa9b131549783a",
+    "source/rust/src/bin/path_rename.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/path_rename.rs": "b5356f8c7b4c462ba806a810d58fb5add30143ed82fe9f158bec922e84e6398d",
+    "source/rust/src/bin/path_rename_dir_trailing_slashes.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/path_rename_dir_trailing_slashes.rs": "0c04ce29a756467752b65e2ee820ee3971a0bd1e2e98e3840a0087e91e725253",
+    "source/rust/src/bin/path_symlink_trailing_slashes.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/path_symlink_trailing_slashes.rs": "ebe9bce94b1a2af4fb468633b9e1d856b96c865a4ebe3b92b2e1f223ae33a1c4",
+    "source/rust/src/bin/poll_oneoff_stdio.rs": "026a57ac034ade4f10f779b1d2d83101c2dee99cd394476f660a5ec88b49d556",
+    "source/rust/src/bin/readlink.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/readlink.rs": "1dd11f8a1c85562195c0dac5b64c5f43a51d9c158c9976a80a3d58a7c6bcbe5d",
+    "source/rust/src/bin/remove_directory_trailing_slashes.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/remove_directory_trailing_slashes.rs": "81e16452c94af7f7426ff4b9940326b3f2405a4863f9ffbe6ba583d4be568916",
+    "source/rust/src/bin/remove_nonempty_directory.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/remove_nonempty_directory.rs": "588e9b9162825994b80646543f332b333898d1c167973286c34ed03c5c4cd090",
+    "source/rust/src/bin/renumber.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/renumber.rs": "14398a7c325cabd0a051488af10b5a72e3d3ed759c2cd87a236ad8b206182dd5",
+    "source/rust/src/bin/sched_yield.rs": "d2fa1e2b2ca425936fbe27715628a7d006e37de89db2ccc08a4cd8a91d08f742",
+    "source/rust/src/bin/stdio.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/stdio.rs": "8d074e58d1e50b6eca71b7efe3ce507ef8eef1d1db085122b4631d2397a67053",
+    "source/rust/src/bin/symlink_create.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/symlink_create.rs": "68c8d5d3d5ea6d135e97aac8630994d043208f53f41023715aa22f802b193e34",
+    "source/rust/src/bin/symlink_filestat.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/symlink_filestat.rs": "ac90fe301f26a4b68b6d46754ae153d94dddd538de9e1b33712436376f9d39f1",
+    "source/rust/src/bin/symlink_loop.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/symlink_loop.rs": "c6c9486554e264fb5f0bd383d34d8849abdf745edebd9696bfcc0e42a9cf1d3b",
+    "source/rust/src/bin/truncation_rights.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/truncation_rights.rs": "23ad21820bddc3d3d20e9754a07cfdf9e521307ba2811511173a8e065c99c7ed",
+    "source/rust/src/bin/unlink_file_trailing_slashes.json": "edde1b667229a18e8ed6cf5d1b6fe8f6a02a30094dc05dd47f3167894758b84b",
+    "source/rust/src/bin/unlink_file_trailing_slashes.rs": "38039a3b0c496758958040c3b21a5b04faccccb923fa3b3a578e991b3059f439",
+    "source/rust/src/config.rs": "ec08538b0478060c4468c1acf9804ebba250af60010c37175467dc6015068fca",
+    "source/rust/src/lib.rs": "85afb02ec2b0e497f6e3286ffcace3066458396287e9de984d104c32e6623568"
+  },
+  "integrations": [
+    {
+      "name": "go-runtime",
+      "path": "integration/go-guest.wasm",
+      "producer": "go1.27.3",
+      "flags": [
+        "-trimpath",
+        "-ldflags=-s -w"
+      ],
+      "originalSHA256": "32fbf56275b3d1c8b37268d2d649c46a10921319744e894e31f33a9abf3412c4",
+      "sourceSHA256": {
+        "testdata/wasi-preview1/guest-go/go.mod": "dbb8765dd29c2e0ab82543492d9cdf5a691c85d7c43180fdced72f83403f4d5a",
+        "testdata/wasi-preview1/guest-go/main.go": "4dac311b100a480b48de915d715741c714121a12fab03f8585fa2c505595c064"
+      },
+      "nativeCodeBudget": 268435456
+    }
+  ]
+}

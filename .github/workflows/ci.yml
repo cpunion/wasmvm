@@ -79,6 +79,7 @@ jobs:
         run: |
           python3 scripts/core2_corpus.py
           python3 scripts/core3_corpus.py
+          python3 scripts/preview1_corpus.py
 
       - name: Run the same package tests
         shell: bash
@@ -102,7 +103,7 @@ jobs:
 
       - name: Check Go data races
         if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
-        run: go test -race -count=1 -timeout=10m -skip 'TestCompleteCore[23]|Test.*(Proposal|Spec)$' ./...
+        run: go test -race -count=1 -timeout=10m -skip 'TestCompleteCore[23]|Test.*(Proposal|Spec)$|TestP1Conformance$|TestOfficialGoGuest$' ./...
 
       - name: Check native pointer ownership
         if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
@@ -147,6 +148,8 @@ jobs:
             --require github.com/cpunion/wasmvm/internal/engine/execute \
             --require github.com/cpunion/wasmvm/internal/engine/nativeexec \
             --require github.com/cpunion/wasmvm/internal/platform/native \
+            --require github.com/cpunion/wasmvm/internal/wasi/host \
+            --require github.com/cpunion/wasmvm/pkg/wasi/preview1 \
             --require github.com/cpunion/wasmvm/pkg/wasm \
             --require github.com/cpunion/wasmvm/pkg/vm
 
@@ -209,6 +212,7 @@ jobs:
             artifacts/conformance/core2.json*
             artifacts/conformance/core3-*.json
             artifacts/conformance/proposals/*.json
+            artifacts/conformance/wasi/*.json
           if-no-files-found: error
 
       - name: Preserve corpus provenance

@@ -132,6 +132,30 @@ func (l *Linker) Define(module, name string, ex Extern) error {
 	return nil
 }
 
+// DefineModule atomically publishes a host module's exports. A duplicate or
+// foreign export leaves every existing linker binding unchanged.
+func (l *Linker) DefineModule(module string, exports map[string]Extern) error {
+	l.store.mu.Lock()
+	defer l.store.mu.Unlock()
+	if l.store.closing {
+		return wasm.ErrClosed
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	for name, ex := range exports {
+		if ex.store != l.store || ex.store == nil {
+			return ErrReference
+		}
+		if _, exists := l.entries[[2]string{module, name}]; exists {
+			return ErrLink
+		}
+	}
+	for name, ex := range exports {
+		l.entries[[2]string{module, name}] = ex
+	}
+	return nil
+}
+
 type Instance struct {
 	store              *Store
 	instance           *state.Instance

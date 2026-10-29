@@ -31,7 +31,7 @@ wasmvm/
 │   ├── vm/                        # Implemented: Engine/Store/Linker/Instance/Execution
 │   ├── component/                 # Existing doc.go: component compile/link/run API
 │   └── wasi/
-│       ├── preview1/              # Existing doc.go: wasi_snapshot_preview1
+│       ├── preview1/              # Implemented: P1 Process, typed ABI and capabilities
 │       ├── threads/               # Existing doc.go: optional legacy wasi-threads
 │       ├── preview2/              # Existing doc.go: WASI 0.2 worlds
 │       └── preview3/              # Existing doc.go: WASI 0.3 worlds
@@ -69,8 +69,7 @@ wasmvm/
 │   │   ├── resource/              # Planned: own/borrow/drop and handles
 │   │   └── async/                 # Planned: task/future/stream state machines
 │   ├── wasi/
-│   │   ├── host/                  # Planned: host capabilities behind public adapters
-│   │   ├── preview1/              # Planned: P1 ABI implementation
+│   │   ├── host/                  # Implemented: stable directory handles and descriptor I/O
 │   │   ├── threads/               # Planned: instance-per-thread ABI
 │   │   ├── preview2/              # Planned: P2 bindings
 │   │   └── preview3/              # Planned: P3 bindings

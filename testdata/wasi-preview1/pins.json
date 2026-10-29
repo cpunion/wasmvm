@@ -1,0 +1,24 @@
+{
+  "wasi": {
+    "size": 132264,
+    "sha256": "fb304de14f1aab39a35bafea7d692980f216a2ed99463d6cdea8d245f4350949"
+  },
+  "testsuite": {
+    "size": 193862,
+    "sha256": "aedf904f5893833332047c33982aca6e6c1989ff0ab06df10b0adbcc86b9d3e3"
+  },
+  "prebuilt": {
+    "sourceRevision": "58b6206a46013fb53d23990e5a650584a5361043",
+    "prebuiltRevision": "9dfd4867f12498bd6411a57739c24b4880668683",
+    "archiveSize": 65334636,
+    "archiveSHA256": "8c366c894f609e4b56181cb3f3fee94269a46a79bb7a593867a4d0ecdb1af9cf",
+    "sourceFilesCompared": 136,
+    "sourceDifferences": [],
+    "wasmFiles": 127
+  },
+  "fixtures": {
+    "file": "inputs.tar.gz",
+    "size": 2499948,
+    "sha256": "0c87e4263ff5c20c3e8b017246ce8560ca21f09bb42e6eae3eb364d680150113"
+  }
+}
