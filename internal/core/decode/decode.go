@@ -355,7 +355,7 @@ func (d *decoder) bounds() module.Limits {
 		d.fail("unknown limits flag")
 	}
 	read := func() uint64 { return uint64(d.u32()) }
-	if wide {
+	if wide || d.features&wasm.Core3Rules != 0 {
 		read = func() uint64 { return must(d.r.U64()) }
 	}
 	l := module.Limits{Min: read(), HasMax: flag&1 != 0, Index64: wide}

@@ -202,6 +202,16 @@ WASI 1/2/3 remain required subsequent work. See the
 
 **Objective:** extend the same frontend, IR and both execution backends to the full pinned Core 3.0 binary profile and the separately enabled Threads profile.
 
+The complete pinned Core 3.0 binary profile is now selected through
+`EngineConfig.Profile = "core3"` or CLI `--profile core3`. Both backends share
+the final limit grammar, defined-global initialization rules and all previously
+implemented instructions. The full inventory contains 259 scripts and 61,395
+binary assertions per tier, including cross-proposal combinations. It retains
+1,239 separately classified text-parser assertions, ten compiled valid quoted
+modules and one explicitly pinned producer correction. See [the profile
+contract](design/core3.md). This completes the core-profile implementation
+scope; M3 remains open for Core Threads and its remaining acceptance gates.
+
 Implemented individually enabled extensions include final Exception Handling, WasmGC, Typed Function References, Memory64/Table64, Relaxed SIMD, Multi-Memory, Tail Call and Extended Constant Expressions.
 The first extension is Extended Constant Expressions:
 `EngineConfig.Features = wasm.ExtendedConst` (CLI `--extended-const`). It covers
@@ -287,7 +297,8 @@ share the existing explicit frame machine across both backends. Suspended
 call-site protection, proper tail retirement, host rethrow, quota-limited
 payloads and joint GC tracing preserve tag identity and failed-instance owners.
 The complete pinned final-spec EH-bearing inventory adds 305 binary assertions
-in nine scripts per tier. Combined Core 3.0 acceptance and Threads remain open.
+in nine scripts per tier. The complete final Core 3.0 profile above supersedes this isolated proposal
+inventory. Threads and calibrated performance acceptance remain open.
 See [the execution and ownership contract](design/exception-handling.md).
 
 - **Types and GC:** retain the implemented recursive types, nominal subtyping, typed objects, generation-checked handles, quotas and tracing while extending the full Core 3.0 combinations. Root stacks/locals/globals/tables, host roots, temporary allocation operands, suspended native/interpreter frames and exception payloads. Retire generation-overflow slots. Forced collection at every allocation/safepoint must preserve live objects and reclaim unreachable cycles.

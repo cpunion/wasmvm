@@ -20,7 +20,7 @@ const usage = `usage: wasmvm <validate|inspect|run> [options] module.wasm [type:
 
 Options precede the module path. All commands accept:
   --backend name         interpreter (default) or native (supported hosts)
-  --profile core2        Base binary profile
+  --profile name         core2 (default) or core3 binary profile
   --extended-const       Enable extended constant expressions
   --tail-call            Enable proper direct and indirect tail calls
   --multi-memory         Enable multiple private memories
@@ -114,6 +114,9 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	config := vm.DefaultEngineConfig()
 	config.Backend = *backend
 	config.Profile = *profile
+	if config.Profile == "core3" {
+		config.Features = wasm.Core3Features
+	}
 	if *extendedConst {
 		config.Features |= wasm.ExtendedConst
 	}

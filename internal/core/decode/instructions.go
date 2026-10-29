@@ -171,7 +171,7 @@ func (d *decoder) memarg(in *module.Instr) {
 		align &^= 64
 		memory = d.u32()
 	}
-	if align >= 32 {
+	if align >= 64 || align >= 32 && d.features&wasm.Core3Rules == 0 {
 		d.failAt(at, "malformed memory alignment flags")
 	}
 	in.A, in.Memory = align, memory

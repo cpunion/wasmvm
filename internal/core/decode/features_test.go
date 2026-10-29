@@ -84,3 +84,27 @@ func TestRelaxedSIMDGrammarIsExplicitAndBounded(t *testing.T) {
 		}
 	}
 }
+
+func TestFinalCore3LimitAndMemargGrammar(t *testing.T) {
+	// Final Core 3.0 uses u64 limit fields for i32-addressed objects too.
+	large := []byte{0, 0x80, 0x80, 0x80, 0x80, 0x10}
+	input := fixture(section(5, append([]byte{1}, large...)...))
+	if _, err := Decode(input, DefaultLimits()); !errors.Is(err, wasm.ErrMalformed) {
+		t.Fatal(err)
+	}
+	m, err := DecodeWithFeatures(input, DefaultLimits(), wasm.Core3Features)
+	if err != nil || m.Memories[0].Index64 || m.Memories[0].Min != 1<<32 {
+		t.Fatal(m, err)
+	}
+	// Alignment 63 is syntactically valid; semantic validation rejects it for
+	// ordinary loads. Flag bit 7 remains malformed.
+	for _, align := range []byte{31, 32, 63} {
+		m, err := DecodeWithFeatures(function(0x28, align, 0, 0xb), DefaultLimits(), wasm.Core3Features)
+		if err != nil || m.Functions[0].Body[0].A != uint32(align) {
+			t.Fatal(m, err)
+		}
+	}
+	if _, err := DecodeWithFeatures(function(0x28, 0x80, 1, 0, 0xb), DefaultLimits(), wasm.Core3Features); !errors.Is(err, wasm.ErrMalformed) {
+		t.Fatal(err)
+	}
+}

@@ -75,8 +75,10 @@ jobs:
           test -z "$(gofmt -l .)"
           go vet ./...
 
-      - name: Verify complete pinned Core 2.0 inputs
-        run: python3 scripts/core2_corpus.py
+      - name: Verify complete pinned core inputs
+        run: |
+          python3 scripts/core2_corpus.py
+          python3 scripts/core3_corpus.py
 
       - name: Run the same package tests
         shell: bash
@@ -100,7 +102,7 @@ jobs:
 
       - name: Check Go data races
         if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
-        run: go test -race -count=1 -timeout=10m -skip 'TestCompleteCore2|Test.*(Proposal|Spec)$' ./...
+        run: go test -race -count=1 -timeout=10m -skip 'TestCompleteCore[23]|Test.*(Proposal|Spec)$' ./...
 
       - name: Check native pointer ownership
         if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
@@ -205,6 +207,7 @@ jobs:
           name: core2-execution-${{ matrix.compiler }}-${{ matrix.platform.name }}
           path: |
             artifacts/conformance/core2.json*
+            artifacts/conformance/core3-*.json
             artifacts/conformance/proposals/*.json
           if-no-files-found: error
 
@@ -213,5 +216,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: core2-inputs-${{ matrix.compiler }}-${{ matrix.platform.name }}
-          path: artifacts/core2/evidence.json
+          path: |
+            artifacts/core2/evidence.json
+            artifacts/core3/evidence.json
           if-no-files-found: error

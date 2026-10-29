@@ -21,7 +21,14 @@ const (
 	GC
 	// ExceptionHandling enables final tags, try_table, throw and exception references.
 	ExceptionHandling
+	// Core3Rules enables final limit encodings and defined immutable globals.
+	// Core3Features selects the complete profile, including its prerequisites.
+	Core3Rules
 )
 
-// SupportedFeatures lists extensions implemented by both execution backends.
-const SupportedFeatures = ExtendedConst | TailCall | MultiMemory | RelaxedSIMD | Memory64 | FunctionReferences | GC | ExceptionHandling
+// Core3Features selects the full pinned Core 3.0 binary profile on both backends.
+// Core Threads and Component Model features are separate.
+const Core3Features = ExtendedConst | TailCall | MultiMemory | RelaxedSIMD | Memory64 | FunctionReferences | GC | ExceptionHandling | Core3Rules
+
+// SupportedFeatures includes all accepted core feature flags.
+const SupportedFeatures = Core3Features

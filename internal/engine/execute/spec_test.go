@@ -32,6 +32,7 @@ import (
 type specValue struct {
 	Type     string
 	LaneType string `json:"lane_type"`
+	Values   []specValue
 	Value    json.RawMessage
 }
 type specAction struct {
@@ -120,6 +121,17 @@ func compileWithFeatures(data []byte, features wasm.Features) (*slots.Module, er
 	return slots.Compile(ir, slots.DefaultLimits())
 }
 func (r *specRunner) resolve(m, n string) (state.Extern, bool) {
+	if m == "spectest" && n == "table64" && r.features&wasm.Memory64 != 0 {
+		if ex, ok := r.spectest[n]; ok {
+			return ex, true
+		}
+		ex, err := r.store.NewTable(module.TableType{Element: wasm.FuncRef, Limits: module.Limits{Min: 10, Max: 20, HasMax: true, Index64: true}})
+		if err != nil {
+			r.t.Fatal(err)
+		}
+		r.spectest[n] = ex
+		return ex, true
+	}
 	if in := r.registered[m]; in != nil {
 		ex, ok := in.Exports[n]
 		return ex, ok
@@ -416,6 +428,14 @@ func parseSpec(t *testing.T, v specValue) value.Value {
 	return value.Value{Lo: binary.LittleEndian.Uint64(raw[:8]), Hi: binary.LittleEndian.Uint64(raw[8:])}
 }
 func (r *specRunner) match(t *testing.T, action specAction, want specValue, got value.Value) bool {
+	if want.Type == "either" {
+		for _, v := range want.Values {
+			if r.match(t, action, v, got) {
+				return true
+			}
+		}
+		return false
+	}
 	refs := map[string]wasm.ValueType{"i31ref": wasm.I31Ref, "structref": wasm.StructRef, "arrayref": wasm.ArrayRef, "eqref": wasm.EqRef, "externref": wasm.ExternRef, "funcref": wasm.FuncRef, "exnref": wasm.ExnRef}
 	if typ, ok := refs[want.Type]; ok && len(want.Value) == 0 {
 		return r.store.TestReference(got.Lo, typ.NonNull())

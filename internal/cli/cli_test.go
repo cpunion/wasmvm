@@ -223,7 +223,7 @@ func TestTypedValuesRoundTrip(t *testing.T) {
 func TestErrorsAndNoImplicitHostImports(t *testing.T) {
 	valid := functionModule(nil, nil, nil)
 	path := writeModule(t, valid)
-	cases := [][]string{{"validate", "--backend", "unknown", path}, {"validate", "--profile", "core3", path}, {"inspect", filepath.Join(t.TempDir(), "absent")}, {"run", "--export", "missing", path}, {"run", "--export", "run", path, "i32:1"}}
+	cases := [][]string{{"validate", "--backend", "unknown", path}, {"validate", "--profile", "unknown", path}, {"inspect", filepath.Join(t.TempDir(), "absent")}, {"run", "--export", "missing", path}, {"run", "--export", "run", path, "i32:1"}}
 	for _, args := range cases {
 		if code, out, err := invoke(t, nil, args...); code != 1 || out != "" || err == "" {
 			t.Fatal(args, code, out, err)
@@ -401,7 +401,7 @@ func TestRelaxedSIMDCLIWithAllExtensions(t *testing.T) {
 		}
 		args = append(args, path)
 		code, out, diagnostic := invoke(t, nil, args...)
-		if code != 0 || diagnostic != "" || jsonObject(t, out)["features"] != float64(wasm.SupportedFeatures) {
+		if code != 0 || diagnostic != "" || jsonObject(t, out)["features"] != float64(wasm.SupportedFeatures&^wasm.Core3Rules) {
 			t.Fatal(code, out, diagnostic)
 		}
 		if command == "run" && !strings.Contains(out, "0x00000070") {

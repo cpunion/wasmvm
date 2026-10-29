@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "profile": "Core 3.0 binary",
+  "source": {
+    "url": "https://codeload.github.com/WebAssembly/spec/tar.gz/aa4dcf44b8de3f3f3270ca067422172518ecc341",
+    "revision": "aa4dcf44b8de3f3f3270ca067422172518ecc341",
+    "size": 15026745,
+    "sha256": "7cef3d5f47b583b0939d00720093d2d80813db0509f50faf10d1d13d0a5795db"
+  },
+  "producer": {
+    "version": "wasm-tools 1.258.0",
+    "revision": "5c6d31c78f8bd503f558441ef9c732950a141d1a"
+  },
+  "fixtures": {
+    "file": "inputs.tar.gz",
+    "size": 1383413,
+    "sha256": "af9f7715d382daa9b82c47a8263c2ada9510ffe1bc8759f164827e9b68270a8d"
+  }
+}
