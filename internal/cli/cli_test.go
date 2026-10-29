@@ -343,3 +343,25 @@ func TestExtendedConstFlag(t *testing.T) {
 		}
 	}
 }
+
+func TestTailCallCLIAndFeatureComposition(t *testing.T) {
+	data, err := os.ReadFile("../../pkg/vm/testdata/tail-call-combined.wasm")
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := writeModule(t, data)
+	for _, command := range []string{"validate", "inspect", "run"} {
+		args := []string{command, "--tail-call", "--extended-const"}
+		if command == "run" {
+			args = append(args, "--export", "run")
+		}
+		args = append(args, path)
+		code, out, diagnostic := invoke(t, nil, args...)
+		if code != 0 || diagnostic != "" || jsonObject(t, out)["features"] != float64(wasm.TailCall|wasm.ExtendedConst) {
+			t.Fatal(code, out, diagnostic)
+		}
+		if command == "run" && !strings.Contains(out, "0x0000002a") {
+			t.Fatal(out)
+		}
+	}
+}

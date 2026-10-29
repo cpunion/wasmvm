@@ -42,6 +42,7 @@ type frame struct {
 }
 type HostCall struct {
 	Function *state.Function
+	Caller   *state.Instance
 	Args     []value.Value
 }
 type Execution struct {
@@ -51,6 +52,7 @@ type Execution struct {
 	frames      []frame
 	values      []value.Value
 	result      []value.Value
+	tailArgs    []value.Value
 	pending     *HostCall
 	pendingDest []slots.Slot
 	status      Status
@@ -146,6 +148,8 @@ func (e *Execution) fail(err error) Status {
 	e.values = e.values[:0]
 	e.pending = nil
 	e.pendingDest = nil
+	clear(e.tailArgs)
+	e.tailArgs = e.tailArgs[:0]
 	return Failed
 }
 
@@ -467,11 +471,12 @@ frames:
 				}
 			case 0xd2:
 				result.Lo = instance.Functions[im.A]
-			case 0x10, 0x11:
+			case 0x10, 0x11, 0x12, 0x13:
+				tail := op >= 0x12
 				count := in.Count
 				inputs := code.Args[in.Extra : in.Extra+count]
 				var target uint64
-				if op == 0x10 {
+				if op == 0x10 || op == 0x12 {
 					target = instance.Functions[im.A]
 				} else {
 					count--
@@ -491,13 +496,51 @@ frames:
 				if !ok {
 					return e.fail(state.ErrReference)
 				}
-				if op == 0x11 && callee.TypeID != instance.Types[im.A] {
+				if (op == 0x11 || op == 0x13) && callee.TypeID != instance.Types[im.A] {
 					trap = wasm.TrapIndirectCallType
 					break
 				}
-				dest := code.Args[in.Extra+in.Count : in.Extra+in.Count+uint32(len(callee.Signature.Results))]
+				var dest []slots.Slot
+				if tail {
+					dest = f.dest
+				} else {
+					dest = code.Args[in.Extra+in.Count : in.Extra+in.Count+uint32(len(callee.Signature.Results))]
+				}
 				if err := e.poll(); err != nil {
 					return e.fail(err)
+				}
+				if tail {
+					// Preserve the tuple before retiring/reusing the current frame.
+					// This supports overlapping/permuted arguments and a different
+					// callee signature without charging an additional guest frame.
+					if callee.Code != nil && uint64(base)+uint64(len(callee.Code.Slots)) > uint64(e.config.Limits.MaxSlots) {
+						return e.fail(&wasm.Error{Kind: wasm.ErrLimit, Detail: "guest frame slots"})
+					}
+					if int(count) > cap(e.tailArgs) {
+						e.tailArgs = make([]value.Value, count)
+					} else {
+						e.tailArgs = e.tailArgs[:count]
+					}
+					for i, src := range inputs[:count] {
+						e.tailArgs[i] = values[int(src)]
+					}
+					e.values = e.values[:base]
+					e.frames[fi] = frame{}
+					e.frames = e.frames[:fi]
+					if callee.Code == nil {
+						e.pending = &HostCall{Function: callee, Caller: instance, Args: append([]value.Value(nil), e.tailArgs...)}
+						e.pendingDest, e.status = dest, HostRequest
+						clear(e.tailArgs)
+						e.tailArgs = e.tailArgs[:0]
+						return HostRequest
+					}
+					if err := e.push(callee, dest); err != nil {
+						return e.fail(err)
+					}
+					copy(e.values[base:], e.tailArgs)
+					clear(e.tailArgs)
+					e.tailArgs = e.tailArgs[:0]
+					continue frames
 				}
 				// Publish the caller continuation before a host suspension or
 				// frame push. Straight-line execution keeps its PC local.
@@ -507,7 +550,7 @@ frames:
 					for i := range args {
 						args[i] = e.values[base+int(inputs[i])]
 					}
-					e.pending = &HostCall{Function: callee, Args: args}
+					e.pending = &HostCall{Function: callee, Caller: instance, Args: args}
 					e.pendingDest = dest
 					e.status = HostRequest
 					return HostRequest
@@ -578,5 +621,8 @@ func (e *Execution) RetainedValues(visit func(wasm.ValueType, value.Value)) {
 func (e *Execution) RetainedInstances(visit func(*state.Instance)) {
 	for _, f := range e.frames {
 		visit(f.function.Instance)
+	}
+	if e.pending != nil && e.pending.Caller != nil && (len(e.frames) == 0 || e.frames[len(e.frames)-1].function.Instance != e.pending.Caller) {
+		visit(e.pending.Caller)
 	}
 }

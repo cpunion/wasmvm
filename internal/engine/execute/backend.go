@@ -48,6 +48,7 @@ type Backend interface {
 func (e *Execution) Close() {
 	e.Abort(nil)
 	e.values = nil
+	e.tailArgs = nil
 	if e.config.Backend != nil {
 		e.config.Backend.Close()
 	}

@@ -195,6 +195,15 @@ func checkSymbolic(t *testing.T, name string, f *ir.Function, out *Function) {
 			}
 			continue
 		}
+		if b.Term.Kind == ir.TailCall {
+			if term.Op != f.Sources[b.Term.Source].Wasm.Op || term.Source != b.Term.Source || int(term.Count) != len(b.Term.Args) {
+				t.Fatal("tail call mapping")
+			}
+			for i, v := range b.Term.Args {
+				expect(out.Args[int(term.Extra)+i], v)
+			}
+			continue
+		}
 		if term.Op != ControlBase+uint32(b.Term.Kind) || term.Source != b.Term.Source {
 			t.Fatal("terminator mapping")
 		}

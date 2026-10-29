@@ -80,3 +80,10 @@ wasmvm run --extended-const --export run module.wasm
 
 The JSON `features` field reports the enabled bit mask (`1` for this extension).
 The base profile remains `core2`; this option does not select full Core 3.0.
+
+## Tail Call
+
+Use `--tail-call` before the module path to enable `return_call` and
+`return_call_indirect` in validate, inspect and run. It can be combined with
+`--extended-const`; the feature mask is `2` for Tail Call or `3` for both.
+The default Core 2.0 grammar still rejects tail-call opcodes.

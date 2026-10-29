@@ -198,6 +198,12 @@ func (l *lowerer) visit(pc int, in module.Instr, inputs, outputs []wasm.ValueTyp
 		// Structurally unreachable operations have no run-time effect or fuel.
 	case op == 0:
 		l.terminate(ir.Terminator{Kind: ir.Trap, Source: source})
+	case op == 0x12 || op == 0x13:
+		l.budget.charge(uint64(len(inputs)))
+		l.f.Sources[pc].Inputs = append([]wasm.ValueType(nil), inputs...)
+		// The callee return schema is verified, but creates no local SSA results.
+		l.f.Sources[pc].Outputs = append([]wasm.ValueType(nil), l.f.Signature.Results...)
+		l.terminate(ir.Terminator{Kind: ir.TailCall, Source: source, Args: l.copyValues(l.suffix(len(inputs)))})
 	case op == 0xc || op == 0xf:
 		label := l.frames[0].label
 		if op == 0xc {

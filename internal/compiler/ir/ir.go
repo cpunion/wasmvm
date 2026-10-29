@@ -47,6 +47,7 @@ const (
 	Table
 	Return
 	Trap
+	TailCall
 )
 
 type Terminator struct {
@@ -91,7 +92,7 @@ func EffectsOf(op uint32) Effects {
 	switch {
 	case op == 0:
 		return MayTrap
-	case op == 0x10 || op == 0x11:
+	case op >= 0x10 && op <= 0x13:
 		return ReadGlobal | WriteGlobal | ReadMemory | WriteMemory | ReadTable | WriteTable | ReadSegment | WriteSegment | MayTrap | MayCallHost | MayAllocate | MaySuspend
 	case op == 0x20:
 		return ReadLocal

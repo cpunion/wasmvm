@@ -102,7 +102,7 @@ func compile(data []byte) (*slots.Module, error) {
 	return compileWithFeatures(data, 0)
 }
 func compileWithFeatures(data []byte, features wasm.Features) (*slots.Module, error) {
-	m, err := decode.Decode(data, decode.DefaultLimits())
+	m, err := decode.DecodeWithFeatures(data, decode.DefaultLimits(), features)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func (r *specRunner) resolve(m, n string) (state.Extern, bool) {
 	}
 	return state.Extern{}, false
 }
-func (r *specRunner) instantiate(data []byte) (*state.Instance, error) {
+func (r *specRunner) allocate(data []byte) (*state.Instance, error) {
 	compiled, err := compileWithFeatures(data, r.features)
 	if err != nil {
 		return nil, err
@@ -149,11 +149,18 @@ func (r *specRunner) instantiate(data []byte) (*state.Instance, error) {
 		r.modules[compiled] = lease
 		r.t.Cleanup(lease.Close)
 	}
+	return in, nil
+}
+func (r *specRunner) instantiate(data []byte) (*state.Instance, error) {
+	in, err := r.allocate(data)
+	if err != nil {
+		return nil, err
+	}
 	if err := in.Initialize(); err != nil {
 		r.store.CollectFailed(nil, nil)
 		return nil, err
 	}
-	def := compiled.IR.Validated.Definition()
+	def := in.Compiled.IR.Validated.Definition()
 	if def.HasStart {
 		if _, err := r.call(in.Functions[def.Start], nil); err != nil {
 			r.store.CollectFailed(nil, nil)

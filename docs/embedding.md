@@ -197,3 +197,11 @@ immutable globals resolve separately for each instance; mutable or
 module-defined global reads remain invalid. `Inspect` and `CompiledModule.Info`
 report the enabled feature mask. Unknown feature bits return `ErrUnsupported`.
 The complete `core3` profile is not yet implemented.
+
+Enable proper direct and indirect tail calls with `config.Features |= wasm.TailCall`.
+Tail calls can cross modules and have different parameter lists with matching
+results. They reuse the current guest frame, while ordinary calls retain their
+normal frame requirement. Both backends support metered execution and bounded
+cancellation; host callbacks retain their originating module capability after
+the tail frame is retired. Combining feature bits enables only those extensions,
+not the complete Core 3.0 profile.

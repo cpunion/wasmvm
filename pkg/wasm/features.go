@@ -7,7 +7,9 @@ type Features uint64
 const (
 	// ExtendedConst permits i32/i64 add, sub and mul in constant expressions.
 	ExtendedConst Features = 1 << iota
+	// TailCall enables return_call and return_call_indirect.
+	TailCall
 )
 
 // SupportedFeatures lists extensions implemented by both execution backends.
-const SupportedFeatures = ExtendedConst
+const SupportedFeatures = ExtendedConst | TailCall

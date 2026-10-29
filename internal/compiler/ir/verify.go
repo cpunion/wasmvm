@@ -157,6 +157,21 @@ func (budget *VerifyBudget) Verify(f *Function) (err error) {
 					fail("return type")
 				}
 			}
+		case TailCall:
+			if op != 0x12 && op != 0x13 || len(t.Edges) != 0 || len(t.Args) != len(s.Inputs) || len(s.Outputs) != len(f.Signature.Results) {
+				fail("tail call arity/source")
+			}
+			step(uint64(len(t.Args)) + uint64(len(s.Outputs)))
+			for i, typ := range s.Outputs {
+				if typ != f.Signature.Results[i] {
+					fail("tail call return type")
+				}
+			}
+			for i, id := range t.Args {
+				if valueType(id) != s.Inputs[i] {
+					fail("tail call operand type")
+				}
+			}
 		case Trap:
 			if op != 0 || len(t.Args) != 0 || len(t.Edges) != 0 {
 				fail("trap arity/source")

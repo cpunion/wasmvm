@@ -25,7 +25,8 @@ type Instruction struct {
 }
 
 // Calls store input slots followed by output slots in Args[Extra:], with Count
-// inputs and Source.Outputs outputs. Returns store Count slots at Extra.
+// inputs and Source.Outputs outputs. Tail calls store only inputs, with no
+// local result slots. Returns store Count slots at Extra.
 // Other operations have at most three inline operands and one inline result.
 // Branches address Count edges starting at Extra; A is the condition/index.
 // Every instruction retains its original source and fuel boundary.
@@ -262,7 +263,11 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 		if len(term.Args) > 0 {
 			in.A = out.ValueSlots[term.Args[0]]
 		}
-		if term.Kind == ir.Return {
+		if term.Kind == ir.TailCall {
+			in.Op = f.Sources[term.Source].Wasm.Op
+			in.A = NoSlot
+		}
+		if term.Kind == ir.Return || term.Kind == ir.TailCall {
 			in.Extra = uint32(len(out.Args))
 			in.Count = uint32(len(term.Args))
 			budget.charge(uint64(len(term.Args)))
