@@ -3,8 +3,9 @@
 This work uses Component Model revision
 `d095e2f60ddae1f9a1e9b1e2fb547ec1114da677`. The synchronous value ABI is
 implemented in `internal/component/canonical`, independently of the Core
-interpreter/native backend. Component binary decoding, linking/validation,
-runtime calls/post-return and WASI 0.2 worlds are not implemented by this
+interpreter/native backend. Component binary decoding is implemented separately
+in `internal/component/decode`; linking/semantic validation, runtime
+calls/post-return and WASI 0.2 worlds are not implemented by this
 foundation. It does not establish M5 completion.
 
 ## Representation and limits
@@ -65,7 +66,20 @@ its source, seed, outputs and license are in
 This is not a count of complete official component tests. Authored tests add
 malformed memory/string/value cases, quotas, resource lifecycle and concurrency.
 
-Next integration is component binary decoding/validation and lexical index/type
+The binary decoder preserves ordered/repeated sections, lexical component/type
+scopes, Core types/modules/instance declarations, aliases, canonical operations,
+imports/exports and length-delimited values. It shares Core type/descriptor and
+module grammar with the existing Core decoder; embedded module slices borrow
+the enclosing decoder's owned snapshot. All nested syntax uses the same aggregate
+node/name/byte quotas. This includes parsing pinned async/threading opcodes, and
+does not establish their runtime support. Value-definition bytes are retained
+for type-directed validation rather than treated as already valid values.
+
+The complete pinned binary script adds 132 grammar commands: 80 malformed
+rejections and 52 decoded definitions. Sixteen of those definitions require
+later semantic rejection. This is not a claim that they passed validation.
+
+Next integration is component semantic validation and lexical index/type
 spaces, Core module/instance composition, canonical function lift/lower and
 post-return, then resource transactions and declared WASI 0.2.12 worlds. Async
 function/task/future/stream support and WASI 0.3.2 follow separately. No component

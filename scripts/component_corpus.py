@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+"""Prepare pinned component grammar inputs and verify ABI reference assets."""
+import hashlib
+import io
+import json
+from pathlib import Path
+import tarfile
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def prepare(destination=None):
+    inputs = ROOT / "testdata/component-binary"
+    manifest = json.loads((inputs / "manifest.json").read_text())
+    archive = (inputs / "inputs.tar.gz").read_bytes()
+    if hashlib.sha256(archive).hexdigest() != manifest["archiveSHA256"]:
+        raise ValueError("component grammar archive hash changed")
+    destination = Path(destination or ROOT / "artifacts/components/binary-corpus")
+    expected = manifest["sha256"]
+    destination.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(fileobj=io.BytesIO(archive)) as source:
+        members = source.getmembers()
+        if len(members) != len(expected) or {m.name for m in members} != set(expected):
+            raise ValueError("component grammar inventory changed")
+        for member in members:
+            if not member.isfile():
+                raise ValueError("non-file component grammar input")
+            if hashlib.sha256(source.extractfile(member).read()).hexdigest() != expected[member.name]:
+                raise ValueError("component grammar hash changed: " + member.name)
+        source.extractall(destination, filter="data")
+    for name, want in expected.items():
+        if hashlib.sha256((destination / name).read_bytes()).hexdigest() != want:
+            raise ValueError("extracted component grammar hash changed: " + name)
+    commands = json.loads((destination / "binary.json").read_text())["commands"]
+    if len(commands) != 132 or sum(c["type"] == "assert_malformed" for c in commands) != 80:
+        raise ValueError("incomplete component binary script")
+    reference = ROOT / "testdata/component-canonical"
+    pins = json.loads((reference / "manifest.json").read_text())
+    for name, want in pins["sha256"].items():
+        if hashlib.sha256((reference / name).read_bytes()).hexdigest() != want:
+            raise ValueError("canonical reference input hash changed: " + name)
+    print("Verified 132 binary grammar commands and 1,024 canonical layout cases")
+    return manifest
+
+
+if __name__ == "__main__":
+    prepare()

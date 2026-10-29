@@ -81,6 +81,7 @@ jobs:
           python3 scripts/core3_corpus.py
           python3 scripts/preview1_corpus.py
           python3 scripts/wasi_threads_corpus.py
+          python3 scripts/component_corpus.py
 
       - name: Run the same package tests
         shell: bash
@@ -134,6 +135,8 @@ jobs:
             --require github.com/cpunion/wasmvm/internal/binary \
             --require github.com/cpunion/wasmvm/internal/bench/phase \
             --require github.com/cpunion/wasmvm/internal/cli \
+            --require github.com/cpunion/wasmvm/internal/component/canonical \
+            --require github.com/cpunion/wasmvm/internal/component/decode \
             --require github.com/cpunion/wasmvm/internal/core/constant \
             --require github.com/cpunion/wasmvm/internal/core/decode \
             --require github.com/cpunion/wasmvm/internal/core/validate \
