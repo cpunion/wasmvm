@@ -1,0 +1,257 @@
+{
+  "schemaVersion": 1,
+  "proposal": {
+    "repository": "https://github.com/WebAssembly/wasi-threads",
+    "revision": "f8ea03cc0ffbde143415e945497de112f6f9fd53",
+    "archiveSHA256": "2dd8344d7fbd0d2b43000e9c95f6d28e73dffa316d846f6556d7be8e16f4e2ff",
+    "license": "No license file is present in this pinned proposal archive. Preserve the original source archive and notices; redistribution clearance remains a release requirement."
+  },
+  "archiveSHA256": "4bc19a14268080f12f114c669b7edfff72396753e5e820c13128b94a0d5694ec",
+  "official": [
+    "thread_spawn-simple.wasm",
+    "wasi_threads_exit_main_block.wasm",
+    "wasi_threads_exit_main_busy.wasm",
+    "wasi_threads_exit_main_wasi.wasm",
+    "wasi_threads_exit_main_wasi_read.wasm",
+    "wasi_threads_exit_nonmain_block.wasm",
+    "wasi_threads_exit_nonmain_busy.wasm",
+    "wasi_threads_exit_nonmain_wasi.wasm",
+    "wasi_threads_exit_nonmain_wasi_read.wasm",
+    "wasi_threads_noop.wasm",
+    "wasi_threads_return_main_block.wasm",
+    "wasi_threads_return_main_busy.wasm",
+    "wasi_threads_return_main_wasi.wasm",
+    "wasi_threads_return_main_wasi_read.wasm",
+    "wasi_threads_spawn.wasm"
+  ],
+  "producers": {
+    "revision": "8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f",
+    "compilerVersion": "llgo v1.0.9-0.20261028022956-8e45ed5e8bbd",
+    "goVersion": "go1.27.3",
+    "LLVM": "22.1.8",
+    "LLD": "22.1.8",
+    "wasiSDK": "25.0 (clang 19.1.5 runtime)",
+    "CFLAGS": "-msimd128",
+    "flags": [
+      "build",
+      "-O3",
+      "-lto=full",
+      "-target",
+      "wasi"
+    ],
+    "originalSHA256": "8464b52dd4ce8bc3a3174a46ab6354e0aae2cc6bc8fdac9218bb2705ea891593",
+    "strippedSHA256": "fb6c8a935d25f3c234f2987d9c011e78d3c490b9b3cdd202a1a5c241b4a2456e",
+    "strip": "wasm-tools 1.258.0 strip --all; custom sections only",
+    "sources": {
+      "main.go": "11bc93dfe627a0c6dd1473b1e7d08950035a99104172fe6412b9bd8cb49df20d",
+      "go.mod": "85b06d7c9d4343bc0fefbc3ddf9f9939ab93177fc56668bd530837097587cdf1",
+      "_wrap/probe.c": "ed2984ec04d9e89c03e0643a2b0ae9d2026a3bc16cd656dbbfd0f924b38bc9c6"
+    },
+    "imports": [
+      [
+        "env",
+        "memory"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "args_get"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "args_sizes_get"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "environ_get"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "environ_sizes_get"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "clock_time_get"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "fd_close"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "fd_fdstat_get"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "fd_seek"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "fd_write"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "poll_oneoff"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "proc_exit"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "sched_yield"
+      ],
+      [
+        "wasi",
+        "thread-spawn"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "path_filestat_get"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "fd_fdstat_set_flags"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "fd_filestat_get"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "fd_filestat_set_size"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "fd_pread"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "fd_prestat_dir_name"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "fd_prestat_get"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "fd_pwrite"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "fd_read"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "fd_readdir"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "fd_sync"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "path_open"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "sock_accept"
+      ],
+      [
+        "wasi_snapshot_preview1",
+        "sock_shutdown"
+      ]
+    ],
+    "sharedMemory": {
+      "min": 1029,
+      "max": 8192,
+      "pages": 65536
+    },
+    "dataSegments": 3,
+    "activeDataSegments": 0,
+    "simdInstructions": 6104,
+    "nativeCodeQuotaBytes": 268435456,
+    "expected": {
+      "all": {
+        "exitCode": 0,
+        "stdout": "llgo-threads-ok 828\n"
+      },
+      "exit": {
+        "exitCode": 23
+      },
+      "panic": {
+        "exitCode": 2,
+        "stderrContains": "expected-worker-panic"
+      }
+    }
+  },
+  "sha256": {
+    "guest-llgo.wasm": "fb6c8a935d25f3c234f2987d9c011e78d3c490b9b3cdd202a1a5c241b4a2456e",
+    "notices/Go-LICENSE": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+    "notices/LLGo/LICENSE": "0a15c7f1df742af0cb5cbe168a0327fb46cb105c1bf8d7fd4f10a71f9f408fb0",
+    "notices/LLGo/LICENSES/BlakeSmith-AR-MIT.txt": "2e36d7d733ee71dd8263abfd3bce486cdbca109f85721a3839fd3ae43a16cd25",
+    "notices/LLGo/LICENSES/CRC16-MIT.txt": "aaa1410055dc49273ad6eed5338cad6114ecc46d2523e4da2508ea46c97458c6",
+    "notices/LLGo/LICENSES/Cobra-Apache-2.0.txt": "5e3400b93bbb099e83e52bab885e7441750673c21f97988ca3f1240639b63283",
+    "notices/LLGo/LICENSES/Cobra-pflag-BSD-3-Clause.txt": "b8514c577c1c4b46cee454d5a882b15fa411e72c5bd7f801f241591789fce61a",
+    "notices/LLGo/LICENSES/Go-BSD-3-Clause.txt": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+    "notices/LLGo/LICENSES/Go-Serial-BSD-3-Clause.txt": "0a41272e523e32fc7e71f285dabfb6a39a2d87b188b47a0c1c88b93141975a83",
+    "notices/LLGo/LICENSES/Go-YAML-LICENSE.txt": "d18f6323b71b0b768bb5e9616e36da390fbd39369a81807cca352de4e4e6aa0b",
+    "notices/LLGo/LICENSES/Go-YAML-NOTICE.txt": "f6c2dd3a67b576eafb89b80200b8b1627230bf3821a0c14cb99a22ac19107d00",
+    "notices/LLGo/LICENSES/GoHex-MIT.txt": "0f487352b77b20c375f2656e80ec818ec66cede30aabaa638eb7c2b7b35b85b5",
+    "notices/LLGo/LICENSES/GoTTY-MIT.txt": "19fc696b4c840cc2b50278ddbd537dae85fcb5359dba1f3ac8ec0d78eae14a4b",
+    "notices/LLGo/LICENSES/Goselect-MIT.txt": "6bf6c31c34fd39e7b29d4cfc7dae7a180eee92393408dda13c9f4267907021bb",
+    "notices/LLGo/LICENSES/Nordic-BSD-3-Clause.txt": "4e28036d3d388314e4315dc24395c09250ab5e4cc4bbe5f5324f06ff6d4866b2",
+    "notices/LLGo/LICENSES/Qiniu-X-Apache-2.0.txt": "2da5bcc8cff0ae5ba36d9923145e34eed3340a458a269f663c3582430f8c358f",
+    "notices/LLGo/LICENSES/Target-Device-Notices.txt": "1d78e9db14a88c0cf5d84e6b67813b89302fb86572afd1152a84582de57da436",
+    "notices/LLGo/LICENSES/TinyGo-BSD-3-Clause.txt": "b51264cf951607cde87bd388b953264d0fa9b75d1f4f96ac828b29ebbb57294e",
+    "notices/LLGo/LICENSES/XGo-LLVM-Apache-2.0-WITH-LLVM-exception.txt": "3340babe8ac7bc6ae294d93aa01c310a250d43d5b760e5c12954882d4e5c83c7",
+    "notices/LLGo/LICENSES/XGo-Plan9Asm-Apache-2.0.txt": "3a4c7aaab5be16e125917253cc589d718076bd32641f4c8e219c32fc2a883c09",
+    "notices/LLGo/THIRD_PARTY_NOTICES.md": "4320d867496f785067e9444d9e73cd42068ff5df85a4730ced6df0fa1d7ad2b7",
+    "official/thread_spawn-simple.wasm": "6f915abd02502f0248cc04ef10e6bf15fbf57727849730112d23188414bccddc",
+    "official/wasi_threads_exit_main_block.json": "c657cb2227bceecff15bb4b4898477c18b5d6ca81e44f38f45a217ef0545cac8",
+    "official/wasi_threads_exit_main_block.wasm": "d5c55d24c7d13dd7f915d753ecddf2eed5fbc6424e703e74333824204c5581a4",
+    "official/wasi_threads_exit_main_busy.json": "c657cb2227bceecff15bb4b4898477c18b5d6ca81e44f38f45a217ef0545cac8",
+    "official/wasi_threads_exit_main_busy.wasm": "848b7c955a2b2bb5fa4749bb5ce4d2731e246484843b3f21ecf64c38e34976b3",
+    "official/wasi_threads_exit_main_wasi.json": "c657cb2227bceecff15bb4b4898477c18b5d6ca81e44f38f45a217ef0545cac8",
+    "official/wasi_threads_exit_main_wasi.wasm": "d09900889f96b524f9bc0e319f223e1b3454083a60c6b351bfd92702f3df7dc1",
+    "official/wasi_threads_exit_main_wasi_read.json": "c657cb2227bceecff15bb4b4898477c18b5d6ca81e44f38f45a217ef0545cac8",
+    "official/wasi_threads_exit_main_wasi_read.wasm": "1f1c032569f26d1051d4c62c2af802f4683d77f593349a1bfa8c3771f0bc7455",
+    "official/wasi_threads_exit_nonmain_block.json": "c657cb2227bceecff15bb4b4898477c18b5d6ca81e44f38f45a217ef0545cac8",
+    "official/wasi_threads_exit_nonmain_block.wasm": "0e4a5532aca70050084e06907b26524115a626467f20ecb39b59dc8e17b96189",
+    "official/wasi_threads_exit_nonmain_busy.json": "c657cb2227bceecff15bb4b4898477c18b5d6ca81e44f38f45a217ef0545cac8",
+    "official/wasi_threads_exit_nonmain_busy.wasm": "39f05304537d72ad08b8ad463c3d918a72e8c61ee2a9564325996a6611606a2f",
+    "official/wasi_threads_exit_nonmain_wasi.json": "c657cb2227bceecff15bb4b4898477c18b5d6ca81e44f38f45a217ef0545cac8",
+    "official/wasi_threads_exit_nonmain_wasi.wasm": "454aed27c394d8c09c58aa93d32faeff4a06091325f703bb6d619d0f855ccee0",
+    "official/wasi_threads_exit_nonmain_wasi_read.json": "c657cb2227bceecff15bb4b4898477c18b5d6ca81e44f38f45a217ef0545cac8",
+    "official/wasi_threads_exit_nonmain_wasi_read.wasm": "5acc08f8ca6f099c79f8f022a6052df8818a0cc71ee8a2adb2468c59286ca2d2",
+    "official/wasi_threads_noop.wasm": "81cb5abbca95e962918c3f332328cea4bc61c236b5b9f9844b09143f2cfc6098",
+    "official/wasi_threads_return_main_block.wasm": "cbd464fe9efb373fb87717a0ddcee600aab45173246da9b6d8172817d49fff77",
+    "official/wasi_threads_return_main_busy.wasm": "d9ed35b2eb1420a5774d8b25592d6a00f65c09f7e500ff4c18bfb9371f8e679a",
+    "official/wasi_threads_return_main_wasi.wasm": "0fe3a15829ff2a98dc875f43b4a10831a6086146c8400bddbe6ef9d3f8e807ea",
+    "official/wasi_threads_return_main_wasi_read.wasm": "6e93871294f47d7f0e98b9ea70b8fd90536197ea364dadbdda75b3bfe52ea1a6",
+    "official/wasi_threads_spawn.json": "0032fa4c940f83eed887af0b2270c958c52f3978f3b6001e6415f936d55535e1",
+    "official/wasi_threads_spawn.wasm": "604523d495a3f1a1c2844fd7872d8cd34ea2b569be129f80511b4f8ded568e5f",
+    "records/producers.json": "55706488ae25f780e26ed165a27ace13c8bf4bb1cce3da1aece819a5d27e5e8c",
+    "records/upstream.tar.gz": "2dd8344d7fbd0d2b43000e9c95f6d28e73dffa316d846f6556d7be8e16f4e2ff"
+  },
+  "officialCProducer": {
+    "clang": "22.1.8",
+    "LLD": "22.1.8",
+    "wasiSDK": "25.0",
+    "flags": [
+      "--target=wasm32-wasip1-threads",
+      "-matomics",
+      "-mbulk-memory",
+      "-pthread",
+      "-O2",
+      "-nostdlib",
+      "SDK25 crt1-command.o",
+      "thread_spawn-simple.c",
+      "wasi_thread_spawn.S",
+      "-lc",
+      "SDK25 libclang_rt.builtins-wasm32.a",
+      "--import-memory",
+      "--export=wasi_thread_start",
+      "--max-memory=16777216"
+    ]
+  }
+}

@@ -80,6 +80,7 @@ jobs:
           python3 scripts/core2_corpus.py
           python3 scripts/core3_corpus.py
           python3 scripts/preview1_corpus.py
+          python3 scripts/wasi_threads_corpus.py
 
       - name: Run the same package tests
         shell: bash
@@ -150,6 +151,7 @@ jobs:
             --require github.com/cpunion/wasmvm/internal/platform/native \
             --require github.com/cpunion/wasmvm/internal/wasi/host \
             --require github.com/cpunion/wasmvm/pkg/wasi/preview1 \
+            --require github.com/cpunion/wasmvm/pkg/wasi/threads \
             --require github.com/cpunion/wasmvm/pkg/wasm \
             --require github.com/cpunion/wasmvm/pkg/vm
 

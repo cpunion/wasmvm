@@ -49,6 +49,24 @@ require an explicit larger quota as shown above. Missing native permissions or
 exhausted resources are reported, without switching to interpretation.
 
 [Declared P1 host behavior](design/wasi-preview1.md) distinguishes optional
-unsupported clocks/signals from missing imports. Core Threads and P1 do not
-provide legacy `wasi.thread-spawn`; that adapter and components/WASI 0.2/0.3
-remain subsequent capabilities.
+unsupported clocks/signals from missing imports.
+
+## Legacy WASI threads
+
+`--wasi-threads` installs P1 plus `wasi.thread-spawn` and enables Core Threads.
+Each worker receives a separate Store/instance; shared memories and process
+resources are retained until the group has joined. Use the Core 3.0 profile
+for LLGo's final EH:
+
+```sh
+wasmvm run --wasi-threads --profile core3 --backend native \
+  --native-code-bytes 268435456 --max-threads 256 \
+  --dir /work=/tmp/work guest-llgo.wasm
+```
+
+The command entry is `_start`. `--max-threads` includes the main thread and
+pending creation, default 256. With this adapter, fuel is a separate budget
+for each thread including initialization; the timeout covers the entire
+process. Exit/trap/cancellation stops and joins all workers. See
+[the lifecycle contract](design/wasi-threads.md). Components/WASI 0.2/0.3
+remain separate capabilities.

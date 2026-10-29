@@ -6,6 +6,14 @@ Correctness and bounded execution are prerequisites. A faster result obtained by
 
 ## Per-feature merge gate
 
+**Current integration policy (owner decision, 2026-10-29):** complete, bounded
+semantic capabilities may advance while local optimization and incomplete
+performance evidence remain tracked follow-up work. Retain affected-workload
+comparisons, failures and unmet targets; do not claim performance acceptance.
+Architectural failures that prevent correct, bounded, complete execution still
+block integration. This supersedes the historical per-feature blocking rule
+below; the controlled milestone acceptance requirements remain open.
+
 Every feature-development PR compares the affected capability with pinned
 relevant competitors and the own baseline, using identical guest workloads and
 separate preparation/first/warm measurements. It may merge only after reaching

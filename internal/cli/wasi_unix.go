@@ -15,6 +15,7 @@ import (
 	"github.com/cpunion/wasmvm/internal/wasi/host"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasi/preview1"
+	"github.com/cpunion/wasmvm/pkg/wasi/threads"
 	"golang.org/x/sys/unix"
 )
 
@@ -105,7 +106,7 @@ func cliStreams(stdinPath string, stdout, stderr io.Writer) ([]preview1.Stream, 
 	}
 	return streams, nil
 }
-func runWASI(ctx context.Context, store *vm.Store, module *vm.CompiledModule, options vm.CallOptions, args wasiOptions, stdout, stderr io.Writer) int {
+func runWASI(ctx context.Context, engine *vm.Engine, store *vm.Store, module *vm.CompiledModule, options vm.CallOptions, args wasiOptions, stdout, stderr io.Writer) int {
 	config := preview1.DefaultConfig()
 	config.Args = append([]string{filepath.Base(args.argv0)}, args.args...)
 	for _, env := range args.env {
@@ -143,6 +144,27 @@ func runWASI(ctx context.Context, store *vm.Store, module *vm.CompiledModule, op
 	defer func() { stop(); cancel() }()
 	if ctx.Err() != nil {
 		cancel()
+	}
+	if args.threads {
+		config := threads.DefaultConfig()
+		config.MaxThreads, config.Execution = uint32(args.maxThreads), options
+		group, err := threads.New(guestCtx, engine, module, p, config)
+		if err != nil {
+			return failure(stderr, err)
+		}
+		defer func() { group.Close(); group.WaitClosed(nil) }()
+		err = group.Run()
+		var exit *preview1.ExitError
+		if errors.As(err, &exit) {
+			return int(exit.Code)
+		}
+		if err != nil {
+			if ctx.Err() != nil {
+				err = ctx.Err()
+			}
+			return failure(stderr, err)
+		}
+		return 0
 	}
 	l := vm.NewLinker(store)
 	if err = p.Install(store, l); err != nil {
