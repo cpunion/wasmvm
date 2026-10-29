@@ -15,8 +15,9 @@ func resourceInterface() *model.TypeDef {
 		{Kind: 1, Type: &model.TypeDef{Kind: model.Borrow, Resource: 0}},
 		{Kind: 1, Type: &model.TypeDef{Kind: model.Own, Resource: 0}},
 		{Kind: 1, Type: &model.TypeDef{Kind: model.Record, Fields: []model.NamedType{{Name: "input", Type: *idx(2)}, {Name: "output", Type: *idx(3)}}}},
-		{Kind: 1, Type: &model.TypeDef{Kind: model.Function, Parameters: []model.NamedType{{Name: "handles", Type: *idx(4)}}, Result: idx(3)}},
-		{Kind: 4, Export: external("use", model.FunctionSort, 5)},
+		{Kind: 4, Export: external("handles", model.TypeSort, 4)},
+		{Kind: 1, Type: &model.TypeDef{Kind: model.Function, Parameters: []model.NamedType{{Name: "handles", Type: *idx(5)}}, Result: idx(3)}},
+		{Kind: 4, Export: external("use", model.FunctionSort, 6)},
 	}}
 }
 
@@ -39,7 +40,7 @@ func TestInstanceImportsFreshenResourcesAndPreserveEquality(t *testing.T) {
 		if v.Exports[0].Type != v.Exports[1].Type {
 			t.Fatal("lost equality alias")
 		}
-		f := v.Exports[2].Type
+		f := v.Exports[3].Type
 		if f.Result.ResourceID != r || f.Parameters[0].Type.Fields[0].Type.ResourceID != r || f.Parameters[0].Type.Fields[1].Type.ResourceID != r {
 			t.Fatal("incomplete dependent substitution", f)
 		}
@@ -53,7 +54,7 @@ func TestInstanceImportsFreshenResourcesAndPreserveEquality(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if equal, err := Equal(first.Exports[2].Type, second.Exports[2].Type, 100); err != nil || equal {
+	if equal, err := Equal(first.Exports[3].Type, second.Exports[3].Type, 100); err != nil || equal {
 		t.Fatal(equal, err)
 	}
 }
@@ -65,7 +66,7 @@ func TestNestedResourcesAndCapturedComponentTypes(t *testing.T) {
 		{Kind: 1, Type: &model.TypeDef{Kind: model.Component, Declarations: []model.TypeDeclaration{
 			{Kind: 2, Alias: &model.Alias{Kind: 2, Sort: model.TypeSort, Count: 1, Index: 0}},
 			{Kind: 4, Export: external("file", model.TypeSort, 0)},
-			{Kind: 1, Type: &model.TypeDef{Kind: model.Own, Resource: 0}},
+			{Kind: 1, Type: &model.TypeDef{Kind: model.Own, Resource: 1}},
 			{Kind: 1, Type: &model.TypeDef{Kind: model.Function, Result: idx(2)}},
 			{Kind: 4, Export: external("make", model.FunctionSort, 3)},
 		}}},
@@ -125,14 +126,10 @@ func TestCaptureTraversalChargesRepeatedEdges(t *testing.T) {
 		fields[i] = *idx(1)
 	}
 	define(t, s, &model.TypeDef{Kind: model.Tuple, Tuple: fields})
+	function := define(t, s, &model.TypeDef{Kind: model.Function, Parameters: []model.NamedType{{Name: "input", Type: *idx(2)}}})
 	completed := 0
 	for i := 0; i < 10; i++ {
-		_, err = s.Define(&model.TypeDef{Kind: model.Instance, Declarations: []model.TypeDeclaration{
-			{Kind: 2, Alias: &model.Alias{Kind: 2, Sort: model.TypeSort, Count: 1, Index: 0}},
-			{Kind: 4, Export: external("resource", model.TypeSort, 0)},
-			{Kind: 2, Alias: &model.Alias{Kind: 2, Sort: model.TypeSort, Count: 1, Index: 2}},
-			{Kind: 4, Export: external("handles", model.TypeSort, 2)},
-		}}, nil)
+		_, err = s.pool.captures(function, ^uint64(0))
 		if err != nil {
 			break
 		}

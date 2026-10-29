@@ -4,9 +4,12 @@ The component decoder produces unvalidated, ordered definitions. The
 `internal/component/validate` type pool resolves value/function/resource types,
 component and instance type declarations, lexical aliases and Core module
 types. It never executes a start function or calls a resource destructor.
-This is a type subsystem, not yet a complete binary component validator or
-runtime; composition, canonical declarations, exported resource visibility,
-interface subtyping and resource-binder substitution still need integration.
+The ordered component checker now validates embedded Core modules and their
+instances, all five Core external sorts, aliases, imports/exports and synchronous
+canonical function/resource declarations. It shares Core import matching with
+the runtime. Component instantiation, value/start definitions, interface subtyping
+and async canonical declarations still return unsupported. This is not a
+complete binary component validator or runtime.
 
 Each lexical scope starts with empty component and Core type index spaces.
 Equality aliases preserve identity, while resource bounds introduce fresh
@@ -41,3 +44,26 @@ Allocation budgets and nominal IDs are not speculative transactions: discard
 the compilation after a failed declaration rather than retrying against a
 partially populated scope. Interface equality currently returns unsupported
 until binder-aware linking is connected.
+
+## Boundary names and canonical plans
+
+Structural equality does not confer an external type name. Publication creates
+a new binding for records, variants, enums, flags and resources without naming
+the original private binding. Resource nameability and nominal resource identity
+are separate. Function imports cannot use export-only names. Instance type
+bodies defer nameability until used at a boundary; component type bodies check
+it eagerly. Aliases across a real component boundary do not inherit the parent's
+visible names. Traversal of shared interfaces consumes work budget without
+recursively expanding duplicate paths.
+
+Canonical plans check duplicate options, memory/address width, allocator and
+post-return signatures, direct/spilled arguments/results, memory/realloc
+requirements and resource representation authority. Shared memories cannot be
+canonical memories. These checks never invoke allocators, post-return functions
+or guest start functions; actual calls, transfer transactions and lockdown after
+traps remain runtime integration work.
+
+The offline corpus includes three complete semantic scripts (`abi`,
+`core-modules`, `defined-types`), totaling 81 commands. The wider external
+visibility script remains diagnostic while component instantiation and interface
+ascription are unfinished; it is not included in the passing corpus count.

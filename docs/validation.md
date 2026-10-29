@@ -2400,3 +2400,22 @@ Whole-binary linking, canonical declaration checking, interface subtyping,
 component-instantiation import substitution, exported resource visibility and
 component execution remain open. The [type design](design/component-validation.md)
 records those boundaries; M5/M6 are not complete.
+
+## Core composition and canonical definition validation
+
+The lexical type subsystem merged in [PR #41](https://github.com/cpunion/wasmvm/pull/41)
+at `ddf15ee`, after [all four Go/LLGo Linux/macOS jobs passed](https://github.com/cpunion/wasmvm/actions/runs/40926004925).
+All 180 execution reports were downloaded and verified. Its component validator
+coverage was 95.83%; Core validator coverage was 93.73%.
+
+The next ordered-checker increment adds Core module instances and shared import
+matching, typed aliases, synchronous canonical signatures/options and boundary
+nameability. Three complete pinned semantic scripts pass 81 commands: five valid
+definitions and 76 invalid rejections. These are validation results, not guest
+execution counts. Local full Go and LLGo Core/engine regression pass; subsequent
+nameability changes were rechecked under Go/race and LLGo. Interface instance
+construction/subtyping, value/start definitions and async remain unsupported.
+The larger external-visibility script remains diagnostic, with unsupported
+component-instance/ascription paths preserved as failures; it is not counted as
+passing conformance. M5/M6 completion and competitor performance acceptance stay
+open.

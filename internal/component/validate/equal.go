@@ -7,6 +7,21 @@ import "github.com/cpunion/wasmvm/pkg/wasm"
 // aliases. Nominal identities are local to their compilation pool. Interface
 // width subtyping and binder substitution belong to component linking.
 func Equal(a, b *Type, maxNodes uint32) (bool, error) {
+	c := equality{remaining: maxNodes, visited: map[pair]bool{}}
+	return c.typ(a, b)
+}
+
+func (p *TypePool) equal(a, b *Type) (bool, error) {
+	budget := p.limits.MaxNodes - p.nodes
+	c := equality{remaining: budget, visited: map[pair]bool{}}
+	ok, err := c.typ(a, b)
+	if charge := p.charge(uint64(budget - c.remaining)); charge != nil {
+		return false, charge
+	}
+	return ok, err
+}
+
+func (c *equality) typ(a, b *Type) (bool, error) {
 	if a == nil || b == nil {
 		return a == b, nil
 	}
@@ -21,7 +36,6 @@ func Equal(a, b *Type, maxNodes uint32) (bool, error) {
 		// equality is not a substitute for binder-aware interface subtyping.
 		return false, wasm.ErrUnsupported
 	}
-	c := equality{remaining: maxNodes, visited: map[pair]bool{}}
 	if a.Value != nil || b.Value != nil {
 		return c.value(a.Value, b.Value)
 	}

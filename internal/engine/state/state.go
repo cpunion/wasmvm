@@ -382,9 +382,6 @@ func (in *Instance) DropElement(index uint32) {
 	in.Elements[index] = nil
 }
 func limit(detail string) error { return &wasm.Error{Kind: wasm.ErrLimit, Detail: detail} }
-func sameLimits(actual, required module.Limits) bool {
-	return actual.Shared == required.Shared && actual.Index64 == required.Index64 && actual.Min >= required.Min && (!required.HasMax || actual.HasMax && actual.Max <= required.Max)
-}
 func (s *Store) matches(ex Extern, im module.Import, in *Instance) bool {
 	if ex.Owner != s || ex.Kind != im.Kind {
 		return false
@@ -392,25 +389,32 @@ func (s *Store) matches(ex Extern, im module.Import, in *Instance) bool {
 	switch im.Kind {
 	case 0:
 		f, ok := s.Function(ex.Function)
-		return ok && s.registry.FunctionSubtype(f.TypeID, in.Types[im.Type])
+		return ok && module.ExternSubtype(&s.registry, module.Import{Kind: 0, Type: f.TypeID}, module.Import{Kind: 0, Type: in.Types[im.Type]})
 	case 1:
 		if ex.Table == nil || ex.Table.Owner != s {
 			return false
 		}
 		actual := ex.Table.Type
 		actual.Limits.Min = uint64(len(ex.Table.Values))
-		return actual.Element == canonicalType(im.Table.Element, in.Types) && sameLimits(actual.Limits, im.Table.Limits)
+		expected := im
+		expected.Table.Element = canonicalType(im.Table.Element, in.Types)
+		return module.ExternSubtype(&s.registry, module.Import{Kind: 1, Table: actual}, expected)
 	case 2:
 		if ex.Memory == nil || ex.Memory.Owner != s {
 			return false
 		}
 		actual := ex.Memory.Limits()
 		actual.Min = ex.Memory.Pages()
-		return sameLimits(actual, im.Memory)
+		return module.ExternSubtype(&s.registry, module.Import{Kind: 2, Memory: actual}, im)
 	case 4:
-		return ex.Tag != nil && ex.Tag.Owner == s && ex.Tag.TypeID == in.Types[im.Type]
+		return ex.Tag != nil && ex.Tag.Owner == s && module.ExternSubtype(&s.registry, module.Import{Kind: 4, Type: ex.Tag.TypeID}, module.Import{Kind: 4, Type: in.Types[im.Type]})
 	case 3:
-		return ex.Global != nil && ex.Global.Owner == s && ex.Global.Type.Mutable == im.Global.Mutable && (ex.Global.Type.Value == canonicalType(im.Global.Value, in.Types) || !im.Global.Mutable && s.registry.Subtype(ex.Global.Type.Value, canonicalType(im.Global.Value, in.Types)))
+		if ex.Global == nil || ex.Global.Owner != s {
+			return false
+		}
+		expected := im
+		expected.Global.Value = canonicalType(im.Global.Value, in.Types)
+		return module.ExternSubtype(&s.registry, module.Import{Kind: 3, Global: ex.Global.Type}, expected)
 	}
 	return false
 }

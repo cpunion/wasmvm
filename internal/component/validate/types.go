@@ -38,12 +38,14 @@ type Type struct {
 	resource         bool
 	depth            uint32
 	minimumResource  uint64
+	definingScope    *TypeScope
 }
 
 type traits struct {
 	borrow, resource bool
 	depth            uint32
 	minimumResource  uint64
+	resourceName     *Type
 }
 
 // TypePool bounds total metadata across lexical scopes. It caches primitive
@@ -56,6 +58,7 @@ type TypePool struct {
 	values     map[*model.Type]traits
 	primitives map[model.Kind]*Type
 	layouts    *canonical.Builder
+	layouts32  *canonical.Builder
 	registry   module.TypeRegistry
 }
 
@@ -77,6 +80,8 @@ type TypeScope struct {
 	items            map[model.Sort][]*Type
 	imports, exports nameSet
 	core             *coreScope
+	visibility       visibility
+	deferVisibility  bool
 }
 
 func (p *TypePool) Scope(parent *TypeScope, component bool) (*TypeScope, error) {
@@ -168,6 +173,11 @@ func (s *TypeScope) Outer(count, index uint32) (*Type, error) {
 	if crossed && t.resource {
 		return nil, invalid("outer alias captures resource across component boundary")
 	}
+	if at != s && !crossed {
+		if err := s.inheritNames(at); err != nil {
+			return nil, err
+		}
+	}
 	return s.Alias(t)
 }
 
@@ -235,6 +245,7 @@ func (s *TypeScope) Define(def *model.TypeDef, functions []module.FuncType) (*Ty
 			return nil, err
 		}
 		t.Representation = def.Representation
+		t.definingScope = s
 		if def.Destructor != nil {
 			index := *def.Destructor
 			t.Destructor = &index
@@ -255,6 +266,7 @@ func (s *TypeScope) resolve(def *model.TypeDef) (*Type, error) {
 	t := &Type{Kind: def.Kind, owner: s.pool, depth: 1}
 	v := &model.Type{Kind: def.Kind}
 	var err error
+	var resourceName *Type
 	include := func(child *model.Type) {
 		if child != nil {
 			info := s.pool.values[child]
@@ -365,6 +377,7 @@ func (s *TypeScope) resolve(def *model.TypeDef) (*Type, error) {
 		}
 		v.ResourceID, t.resource, t.borrow = r.Resource, true, def.Kind == model.Borrow
 		t.minimumResource = r.Resource
+		resourceName = r
 	case model.Function, model.AsyncFunction:
 		t.Parameters, t.Result = fields(def.Parameters, true), resolve(def.Result)
 		if err == nil && t.Result != nil && s.pool.values[t.Result].borrow {
@@ -393,7 +406,7 @@ func (s *TypeScope) resolve(def *model.TypeDef) (*Type, error) {
 			return nil, invalid("value type is at least 2^28 bytes in the memory64 ABI")
 		}
 		t.Value = v
-		s.pool.values[v] = traits{t.borrow, t.resource, t.depth, t.minimumResource}
+		s.pool.values[v] = traits{borrow: t.borrow, resource: t.resource, depth: t.depth, minimumResource: t.minimumResource, resourceName: resourceName}
 	}
 	return t, nil
 }

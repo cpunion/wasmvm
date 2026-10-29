@@ -355,8 +355,10 @@ or WASI 0.2 support. Semantic validation, composition, call/post-return and
 resource-transfer integration plus the declared worlds remain required. The
 [type subsystem](design/component-validation.md) resolves bounded lexical
 value/function/resource/interface declarations and embedded Core module types,
-with a shared Core validator/registry. Whole-binary linking, interface subtyping
-and binder substitution remain open. See
+with a shared Core validator/registry. Core module composition and synchronous
+canonical declarations now have an ordered checker; three complete semantic
+scripts cover 81 commands. Component instantiation, interface subtyping,
+value/start definitions and binder substitution remain open. See
 [the current ABI and frontend boundary](design/component-abi.md).
 
 Implement component binary decoding/validation/composition, imports/exports, Canonical ABI lift/lower, strings/lists/records/variants, realloc/post-return, and resource own/borrow/drop with cleanup on failure. Keep component and core instance boundaries explicit. Pin WASI **0.2.12** WIT; implement the full declared CLI world and its dependencies, then separately reported sockets/HTTP interfaces. Earlier prototypes must not displace required core work.
