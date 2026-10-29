@@ -19,7 +19,9 @@ const (
 	FunctionReferences
 	// GC enables recursive/subtype definitions and the WasmGC instruction set.
 	GC
+	// ExceptionHandling enables final tags, try_table, throw and exception references.
+	ExceptionHandling
 )
 
 // SupportedFeatures lists extensions implemented by both execution backends.
-const SupportedFeatures = ExtendedConst | TailCall | MultiMemory | RelaxedSIMD | Memory64 | FunctionReferences | GC
+const SupportedFeatures = ExtendedConst | TailCall | MultiMemory | RelaxedSIMD | Memory64 | FunctionReferences | GC | ExceptionHandling

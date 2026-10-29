@@ -40,6 +40,7 @@ type context struct {
 	limits          Limits
 	features        wasm.Features
 	constantStack   uint32
+	tags            []module.FuncType
 	funcs           []module.FuncType
 	funcTypeIndices []uint32
 	typeLabels      []uint32
@@ -93,6 +94,8 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 			c.memories = append(c.memories, im.Memory)
 		case 3:
 			c.globals = append(c.globals, im.Global)
+		case 4:
+			c.tags = append(c.tags, c.tagType(im.Type))
 		default:
 			c.fail("invalid import kind")
 		}
@@ -101,6 +104,9 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 	for _, f := range m.Functions {
 		c.funcs = append(c.funcs, c.typ(f.Type))
 		c.funcTypeIndices = append(c.funcTypeIndices, f.Type)
+	}
+	for _, t := range m.Tags {
+		c.tags = append(c.tags, c.tagType(t))
 	}
 	c.tables = append(c.tables, m.Tables...)
 	c.memories = append(c.memories, m.Memories...)
@@ -147,6 +153,8 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 			c.memory(e.Index)
 		case 3:
 			c.global(e.Index)
+		case 4:
+			c.tag(e.Index)
 		default:
 			c.fail("invalid export kind")
 		}

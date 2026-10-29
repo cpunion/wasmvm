@@ -124,6 +124,13 @@ type Data struct {
 // Block holds the signed block type. Vector
 // holds v128/shuffle bytes; Lane holds a lane immediate. Labels excludes the
 // default br_table target, which is in A. Types is the typed-select vector.
+// Catch describes one ordered try_table arm. Kinds 0/1 are tagged, and
+// kinds 1/3 append a non-null exception reference to the branch tuple.
+type Catch struct {
+	Kind       byte
+	Tag, Label uint32
+}
+
 type Instr struct {
 	Op     uint32
 	Offset uint64
@@ -138,6 +145,7 @@ type Instr struct {
 	Lane             byte
 	Labels           []uint32
 	Types            []wasm.ValueType
+	Catches          []Catch
 }
 
 func (in *Instr) MemoryOffset() uint64 { return uint64(in.B) | uint64(in.MemoryOffsetHigh)<<32 }
@@ -155,6 +163,7 @@ type Module struct {
 	Tables       []TableType
 	TableInit    []Expr // nil entries use the element type's default value
 	Memories     []Limits
+	Tags         []uint32
 	Globals      []Global
 	Exports      []Export
 	HasStart     bool

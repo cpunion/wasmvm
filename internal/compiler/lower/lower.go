@@ -49,6 +49,18 @@ func Compile(m *validate.Module, limits Limits) (result *Module, err error) {
 	b.charge(uint64(len(definition.Functions)))
 	result = &Module{Validated: m, Functions: make([]*ir.Function, len(definition.Functions))}
 	result.foldConstants(&b)
+
+	var tags []module.FuncType
+	for _, im := range definition.Imports {
+		if im.Kind == 4 {
+			b.charge(1)
+			tags = append(tags, definition.Types[im.Type])
+		}
+	}
+	for _, t := range definition.Tags {
+		b.charge(1)
+		tags = append(tags, definition.Types[t])
+	}
 	for index := range definition.Functions {
 		f := &definition.Functions[index]
 		sig := definition.Types[f.Type]
@@ -62,7 +74,7 @@ func Compile(m *validate.Module, limits Limits) (result *Module, err error) {
 		for pc, in := range f.Body {
 			out.Sources[pc] = ir.Source{Wasm: in, Effects: ir.EffectsOf(in.Op)}
 		}
-		l := lowerer{budget: &b, definition: definition, f: out, current: 0}
+		l := lowerer{budget: &b, definition: definition, f: out, current: 0, tags: tags}
 		l.newBlock(nil)
 		exit := l.newBlock(sig.Results)
 		l.frames = append(l.frames, control{end: exit, label: exit})
@@ -92,6 +104,8 @@ type lowerer struct {
 	stack      []ir.Value
 	frames     []control
 	incoming   []int
+	handler    uint32
+	tags       []module.FuncType
 }
 
 func (l *lowerer) newValue(t wasm.ValueType) ir.Value {
@@ -103,7 +117,7 @@ func (l *lowerer) newValue(t wasm.ValueType) ir.Value {
 func (l *lowerer) newBlock(types []wasm.ValueType) ir.BlockID {
 	l.budget.charge(1 + uint64(len(types)))
 	id := ir.BlockID(len(l.f.Blocks))
-	b := ir.Block{}
+	b := ir.Block{Handler: l.handler}
 	for _, t := range types {
 		b.Params = append(b.Params, l.newValue(t))
 	}
@@ -131,6 +145,7 @@ func (l *lowerer) jump(target ir.BlockID, source uint32) {
 	}
 }
 func (l *lowerer) switchTo(target ir.BlockID, height int) {
+	l.handler = l.f.Blocks[target].Handler
 	l.stack = l.stack[:height]
 	if l.incoming[target] == 0 {
 		l.current = -1
@@ -151,7 +166,7 @@ func (l *lowerer) blockType(t int64) module.FuncType {
 func (l *lowerer) visit(pc int, in module.Instr, inputs, outputs []wasm.ValueType) error {
 	source := uint32(pc)
 	switch op := in.Op; {
-	case op == 2 || op == 3 || op == 4:
+	case op == 2 || op == 3 || op == 4 || op == 0x1f:
 		sig := l.blockType(in.Block)
 		height := len(l.stack)
 		var condition ir.Value
@@ -174,6 +189,27 @@ func (l *lowerer) visit(pc int, in module.Instr, inputs, outputs []wasm.ValueTyp
 			}
 		} else {
 			l.jump(begin, source)
+		}
+
+		if op == 0x1f && l.incoming[begin] != 0 && len(in.Catches) != 0 {
+			h := ir.Handler{Parent: l.handler}
+			l.budget.charge(1 + uint64(len(in.Catches)))
+			for _, c := range in.Catches {
+				target := l.frames[len(l.frames)-1-int(c.Label)].label
+				var types []wasm.ValueType
+				if c.Kind < 2 {
+					types = l.tags[c.Tag].Params
+				}
+				ts := append([]wasm.ValueType(nil), types...)
+				if c.Kind&1 != 0 {
+					ts = append(ts, wasm.ExnRef.NonNull())
+				}
+				l.budget.charge(uint64(len(ts)))
+				h.Catches = append(h.Catches, ir.Catch{Kind: c.Kind, Tag: c.Tag, Target: target, Types: ts})
+				l.incoming[target]++
+			}
+			l.f.Handlers = append(l.f.Handlers, h)
+			l.f.Blocks[begin].Handler = uint32(len(l.f.Handlers))
 		}
 		l.frames = append(l.frames, f)
 		l.switchTo(begin, height)
@@ -198,6 +234,11 @@ func (l *lowerer) visit(pc int, in module.Instr, inputs, outputs []wasm.ValueTyp
 		// Structurally unreachable operations have no run-time effect or fuel.
 	case op == 0:
 		l.terminate(ir.Terminator{Kind: ir.Trap, Source: source})
+
+	case op == 8 || op == 10:
+		l.budget.charge(uint64(len(inputs)))
+		l.f.Sources[pc].Inputs = append([]wasm.ValueType(nil), inputs...)
+		l.terminate(ir.Terminator{Kind: ir.Throw, Source: source, Args: l.copyValues(l.suffix(len(inputs)))})
 	case module.IsTailCall(op):
 		l.budget.charge(uint64(len(inputs)))
 		l.f.Sources[pc].Inputs = append([]wasm.ValueType(nil), inputs...)
@@ -301,12 +342,13 @@ func (l *lowerer) prune() {
 	for len(pending) > 0 {
 		id := pending[len(pending)-1]
 		pending = pending[:len(pending)-1]
-		for _, edge := range f.Blocks[id].Term.Edges {
-			if !seen[edge.Target] {
-				seen[edge.Target] = true
-				pending = append(pending, edge.Target)
+		f.Successors(f.Blocks[id], func(target ir.BlockID) {
+			l.budget.charge(1)
+			if !seen[target] {
+				seen[target] = true
+				pending = append(pending, target)
 			}
-		}
+		})
 	}
 	blocks := make([]ir.BlockID, len(f.Blocks))
 	var compact []ir.Block
@@ -349,5 +391,29 @@ func (l *lowerer) prune() {
 			remap(edge.Args)
 		}
 	}
+
+	used := make([]bool, len(f.Handlers)+1)
+	for _, b := range compact {
+		for h := b.Handler; h != 0 && !used[h]; h = f.Handlers[h-1].Parent {
+			used[h] = true
+		}
+	}
+	mapping := make([]uint32, len(used))
+	var handlers []ir.Handler
+	for i, h := range f.Handlers {
+		if !used[i+1] {
+			continue
+		}
+		h.Parent = mapping[h.Parent]
+		for j := range h.Catches {
+			h.Catches[j].Target = blocks[h.Catches[j].Target]
+		}
+		handlers = append(handlers, h)
+		mapping[i+1] = uint32(len(handlers))
+	}
+	for i := range compact {
+		compact[i].Handler = mapping[compact[i].Handler]
+	}
+	f.Handlers = handlers
 	f.Blocks, f.Values = compact, types
 }

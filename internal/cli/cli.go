@@ -25,6 +25,7 @@ Options precede the module path. All commands accept:
   --tail-call            Enable proper direct and indirect tail calls
   --multi-memory         Enable multiple private memories
   --relaxed-simd         Enable all twenty relaxed SIMD instructions
+  --exception-handling   Enable final exception handling
   --gc                   Enable WasmGC and typed function references
   --function-references  Enable typed function references and non-null references
   --memory64             Enable 64-bit memory and table indices
@@ -33,7 +34,7 @@ Run also accepts:
   --export name          Required exported function name
   --fuel count           Shared instruction budget, including the start function
 
-Argument types: i32, i64, f32, f64, f32bits, f64bits, v128, funcref, externref.
+Argument types: i32, i64, f32, f64, f32bits, f64bits, v128, funcref, externref, exnref.
 Integers accept decimal or 0x hex; v128 uses low64,high64; references accept null.
 Output is JSON. Core run installs no WASI or host imports.
 `
@@ -62,6 +63,7 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	multiMemory := flags.Bool("multi-memory", false, "")
 	relaxedSIMD := flags.Bool("relaxed-simd", false, "")
 	gc := flags.Bool("gc", false, "")
+	exceptions := flags.Bool("exception-handling", false, "")
 	functionReferences := flags.Bool("function-references", false, "")
 	memory64 := flags.Bool("memory64", false, "")
 	timeout := flags.Duration("timeout", 30*time.Second, "")
@@ -123,6 +125,9 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 	if *relaxedSIMD {
 		config.Features |= wasm.RelaxedSIMD
+	}
+	if *exceptions {
+		config.Features |= wasm.ExceptionHandling
 	}
 	if *gc {
 		config.Features |= wasm.GC
@@ -230,7 +235,9 @@ const maxInspectionTypeValues = 1 << 20
 func describe(info vm.ModuleInfo) (map[string]any, error) {
 	remaining := uint64(maxInspectionTypeValues)
 	charge := func(t vm.ExternType) bool {
-		if t.Kind != vm.FunctionKind {
+		if t.Kind == vm.TagKind {
+			t.Function = t.Tag
+		} else if t.Kind != vm.FunctionKind {
 			return true
 		}
 		n := uint64(len(t.Function.Params)) + uint64(len(t.Function.Results))
@@ -274,6 +281,13 @@ func describeType(t vm.ExternType) map[string]any {
 		}
 	}
 	switch t.Kind {
+	case vm.TagKind:
+		result["kind"] = "tag"
+		params := make([]string, len(t.Tag.Params))
+		for i, v := range t.Tag.Params {
+			params[i] = v.String()
+		}
+		result["params"] = params
 	case vm.FunctionKind:
 		result["kind"] = "function"
 		params := make([]string, len(t.Function.Params))

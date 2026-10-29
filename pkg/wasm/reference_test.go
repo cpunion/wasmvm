@@ -54,3 +54,17 @@ func TestTypedReferenceDomainsAndNullability(t *testing.T) {
 		t.Fatal("abstract supertype")
 	}
 }
+
+func TestExceptionReferenceLattice(t *testing.T) {
+	for _, actual := range []wasm.ValueType{wasm.ExnRef, wasm.ExnRef.NonNull(), wasm.NoExnRef, wasm.NoExnRef.NonNull()} {
+		if !actual.IsExceptionReference() || actual.IsGCReference() || actual.IsInternalReference() || actual.Storage() != wasm.ExnRef {
+			t.Fatal(actual)
+		}
+		if !wasm.ReferenceSubtype(actual, wasm.ExnRef, nil) || wasm.ReferenceSubtype(actual, wasm.AnyRef, nil) {
+			t.Fatal("exception domain", actual)
+		}
+	}
+	if !wasm.ReferenceSubtype(wasm.NoExnRef.NonNull(), wasm.ExnRef.NonNull(), nil) || wasm.ReferenceSubtype(wasm.ExnRef, wasm.ExnRef.NonNull(), nil) {
+		t.Fatal("exception nullability")
+	}
+}

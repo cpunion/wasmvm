@@ -9,6 +9,12 @@ func (c *context) valueType(t wasm.ValueType, bound int) {
 	if t.IsGCReference() && c.features&wasm.GC == 0 {
 		c.fail("GC reference types are disabled")
 	}
+	if t.IsExceptionReference() {
+		if c.features&wasm.ExceptionHandling == 0 {
+			c.fail("exception references are disabled")
+		}
+		return
+	}
 	if t <= 255 {
 		return
 	}

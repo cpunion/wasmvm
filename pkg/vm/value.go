@@ -85,7 +85,7 @@ func (s *Store) rawLocked(v Value, t wasm.ValueType) (value.Value, error) {
 	}
 	// Existing roots pin their identity until release. Same-type copies and
 	// abstract host access must not inspect guest state while it is executing.
-	if t == v.kind || t == wasm.FuncRef || t == wasm.ExternRef {
+	if t == v.kind || t == wasm.FuncRef || t == wasm.ExternRef || t == wasm.ExnRef {
 		return value.Value{Lo: v.ref.id}, nil
 	}
 	if !s.state.IsLiveReference(v.ref.id) {

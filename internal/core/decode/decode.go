@@ -81,13 +81,18 @@ func DecodeWithFeatures(input []byte, limits Limits, features wasm.Features) (re
 	for d.r.Remaining() != 0 {
 		at := d.r.Offset()
 		id := d.byte()
-		if id > 12 {
+		if id > 13 || id == 13 && features&wasm.ExceptionHandling == 0 {
 			d.failAt(at, "unknown section")
 		}
 		rank := id
 		if id == 12 {
 			rank = 10
 		} else if id >= 10 {
+			rank++
+		}
+		if id == 13 {
+			rank = 6
+		} else if rank >= 6 {
 			rank++
 		}
 		if id != 0 {
@@ -121,6 +126,8 @@ func DecodeWithFeatures(input []byte, limits Limits, features wasm.Features) (re
 					im.Memory = d.bounds()
 				case 3:
 					im.Global = d.globalType()
+				case 4:
+					im.Type = d.tagType()
 				default:
 					d.fail("unknown import kind")
 				}
@@ -157,7 +164,7 @@ func DecodeWithFeatures(input []byte, limits Limits, features wasm.Features) (re
 			for i := range m.Exports {
 				e := &m.Exports[i]
 				e.Name, e.Kind = d.name(), d.byte()
-				if e.Kind > 3 {
+				if e.Kind > 4 || e.Kind == 4 && features&wasm.ExceptionHandling == 0 {
 					d.fail("unknown export kind")
 				}
 				e.Index = d.u32()
@@ -214,6 +221,11 @@ func DecodeWithFeatures(input []byte, limits Limits, features wasm.Features) (re
 					d.fail("unknown data segment flag")
 				}
 				s.Bytes = d.bytes(uint64(d.u32()))
+			}
+		case 13:
+			m.Tags = make([]uint32, d.count())
+			for i := range m.Tags {
+				m.Tags[i] = d.tagType()
 			}
 		case 12:
 			m.HasDataCount, m.DataCount = true, d.u32()
@@ -275,11 +287,11 @@ func (d *decoder) count() uint32 {
 func (d *decoder) valueType() wasm.ValueType {
 	at := d.r.Offset()
 	b := d.byte()
-	if (b == 0x63 || b == 0x64) && d.features&(wasm.FunctionReferences|wasm.GC) != 0 {
+	if (b == 0x63 || b == 0x64) && d.features&(wasm.FunctionReferences|wasm.GC|wasm.ExceptionHandling) != 0 {
 		return d.heapReference(b == 0x63)
 	}
 	t := wasm.ValueType(b)
-	if !t.Valid() || t.IsGCReference() && d.features&wasm.GC == 0 {
+	if !t.Valid() || !d.referenceEnabled(t) {
 		d.failAt(at, "unknown value type")
 	}
 	return t
@@ -301,6 +313,11 @@ func (d *decoder) heapReference(nullable bool) wasm.ValueType {
 		t = wasm.FuncRef
 	case -17:
 		t = wasm.ExternRef
+	case -23, -12:
+		if d.features&wasm.ExceptionHandling == 0 {
+			d.fail("exception references are disabled")
+		}
+		t = wasm.ValueType(byte(int8(h)) & 0x7f)
 	case -18, -19, -20, -21, -22, -15, -14, -13:
 		if d.features&wasm.GC == 0 {
 			d.fail("GC heap types are disabled")
@@ -403,4 +420,15 @@ func (d *decoder) element() module.Element {
 		}
 	}
 	return s
+}
+
+func (d *decoder) referenceEnabled(t wasm.ValueType) bool {
+	return (!t.IsGCReference() || d.features&wasm.GC != 0) && (!t.IsExceptionReference() || d.features&wasm.ExceptionHandling != 0)
+}
+func (d *decoder) tagType() uint32 {
+	if d.features&wasm.ExceptionHandling == 0 {
+		d.fail("tags are disabled")
+	}
+	d.expect(0)
+	return d.u32()
 }

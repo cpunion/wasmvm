@@ -202,7 +202,7 @@ WASI 1/2/3 remain required subsequent work. See the
 
 **Objective:** extend the same frontend, IR and both execution backends to the full pinned Core 3.0 binary profile and the separately enabled Threads profile.
 
-Implemented individually enabled extensions include WasmGC, Typed Function References, Memory64/Table64, Relaxed SIMD, Multi-Memory, Tail Call and Extended Constant Expressions.
+Implemented individually enabled extensions include final Exception Handling, WasmGC, Typed Function References, Memory64/Table64, Relaxed SIMD, Multi-Memory, Tail Call and Extended Constant Expressions.
 The first extension is Extended Constant Expressions:
 `EngineConfig.Features = wasm.ExtendedConst` (CLI `--extended-const`). It covers
 all six integer operations, typed/limited validation and instance-specific
@@ -279,6 +279,16 @@ All 23 complete proposal scripts add 802 binary assertions per tier. Forced
 collection and joint object/failed-instance tracing cover host roots, construction
 operands and reentry. Final EH/GC, Threads and full Core 3.0 combinations remain
 subsequent scope. See [the heap and type contract](design/wasm-gc.md).
+
+Final Exception Handling adds tags, ordered `try_table` catches, `throw`,
+`throw_ref` and a separate exception-reference domain under
+`wasm.ExceptionHandling` (CLI `--exception-handling`). Immutable handler chains
+share the existing explicit frame machine across both backends. Suspended
+call-site protection, proper tail retirement, host rethrow, quota-limited
+payloads and joint GC tracing preserve tag identity and failed-instance owners.
+The complete pinned final-spec EH-bearing inventory adds 305 binary assertions
+in nine scripts per tier. Combined Core 3.0 acceptance and Threads remain open.
+See [the execution and ownership contract](design/exception-handling.md).
 
 - **Types and GC:** retain the implemented recursive types, nominal subtyping, typed objects, generation-checked handles, quotas and tracing while extending the full Core 3.0 combinations. Root stacks/locals/globals/tables, host roots, temporary allocation operands, suspended native/interpreter frames and exception payloads. Retire generation-overflow slots. Forced collection at every allocation/safepoint must preserve live objects and reclaim unreachable cycles.
 - **Control flow:** proper tail calls without growing host/guest call stacks, final EH with tag identity, `try_table`, `exnref`, `throw_ref`, unwinding and host boundaries. Legacy EH is not substituted for final EH.

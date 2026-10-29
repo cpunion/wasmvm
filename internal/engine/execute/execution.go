@@ -36,10 +36,12 @@ type Config struct {
 	Backend Backend
 }
 type frame struct {
-	function *state.Function
-	pc       uint32
-	base     int
-	dest     []slots.Slot
+	function  *state.Function
+	pc        uint32
+	callPC    uint32
+	suspended bool
+	base      int
+	dest      []slots.Slot
 }
 type HostCall struct {
 	Function *state.Function
@@ -163,7 +165,17 @@ func (e *Execution) ResumeHost(results []value.Value, err error) error {
 	if e.status != HostRequest || e.pending == nil {
 		return errors.New("no pending host request")
 	}
+
 	if err != nil {
+		if ex, ok := e.store.ExceptionError(err); ok {
+			e.pending = nil
+			e.pendingDest = nil
+			if e.raise(ex) {
+				e.status = Running
+				return nil
+			}
+			return e.err
+		}
 		e.fail(err)
 		return err
 	}
@@ -200,6 +212,7 @@ frames:
 	for len(e.frames) > 0 {
 		fi := len(e.frames) - 1
 		f := &e.frames[fi]
+		f.suspended = false
 		fn := f.function
 		code := fn.Code
 		base := f.base
@@ -320,6 +333,38 @@ frames:
 				}
 				pc = edge.PC
 				continue
+
+			case 8, 10:
+				f.pc = pc
+				var ex *state.Exception
+				if op == 8 {
+					var local [8]value.Value
+					operands := local[:0]
+					if int(in.Count) > cap(operands) {
+						operands = make([]value.Value, in.Count)
+					} else {
+						operands = operands[:in.Count]
+					}
+					for i, s := range code.Args[in.Extra : in.Extra+in.Count] {
+						operands[i] = values[int(s)]
+					}
+					var err error
+					ex, err = e.store.NewException(instance.Tags[im.A], operands, e.RetainedValues)
+					if err != nil {
+						return e.fail(err)
+					}
+				} else {
+					ref := values[int(code.Args[in.Extra])].Lo
+					if ref == 0 {
+						trap = wasm.TrapNullReference
+						break
+					}
+					ex = &state.Exception{Owner: e.store, Ref: ref}
+				}
+				if e.raise(ex) {
+					continue frames
+				}
+				return Failed
 			case 1, 0x1a:
 			case 0x1b, 0x1c:
 				result = b
@@ -593,6 +638,7 @@ frames:
 				// Publish the caller continuation before a host suspension or
 				// frame push. Straight-line execution keeps its PC local.
 				f.pc = pc + 1
+				f.callPC, f.suspended = pc, true
 				if callee.Code == nil {
 					args := make([]value.Value, count)
 					for i := range args {
@@ -648,6 +694,9 @@ frames:
 // RetainedValues covers reference slots in active or suspended frames. Slot
 // types remain fixed even when temporaries are reused, including edge scratch.
 func (e *Execution) RetainedValues(visit func(wasm.ValueType, value.Value)) {
+	if ex, ok := e.store.ExceptionError(e.err); ok {
+		visit(wasm.ExnRef.NonNull(), value.Value{Lo: ex.Ref})
+	}
 	for _, f := range e.frames {
 		for i, t := range f.function.Code.Slots {
 			if t.IsReference() {

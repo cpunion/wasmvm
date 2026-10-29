@@ -18,6 +18,8 @@ const (
 	EqRef       ValueType = 0x6d
 	I31Ref      ValueType = 0x6c
 	StructRef   ValueType = 0x6b
+	ExnRef      ValueType = 0x69
+	NoExnRef    ValueType = 0x74
 	ArrayRef    ValueType = 0x6a
 	NoneRef     ValueType = 0x71
 	NoExternRef ValueType = 0x72
@@ -25,7 +27,7 @@ const (
 )
 
 func (t ValueType) IsReference() bool {
-	return t.referenceEncoding() && (byte(t) >= byte(ArrayRef) && byte(t) <= byte(NoFuncRef))
+	return t.referenceEncoding() && (byte(t) >= byte(ExnRef) && byte(t) <= byte(NoExnRef))
 }
 func (t ValueType) Valid() bool { return t >= V128 && t <= I32 || t.IsReference() }
 func (t ValueType) String() string {
@@ -53,6 +55,10 @@ func (t ValueType) String() string {
 		return "f64"
 	case V128:
 		return "v128"
+	case NoExnRef:
+		return "nullexnref"
+	case ExnRef:
+		return "exnref"
 	case NoneRef:
 		return "nullref"
 	case NoFuncRef:

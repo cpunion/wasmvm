@@ -211,6 +211,12 @@ func (ex Extern) GlobalSet(v Value) error {
 }
 
 func (s *Store) referenceFeature(typ wasm.ValueType) error {
+	if typ.IsExceptionReference() {
+		if s.engine.config.Features&wasm.ExceptionHandling == 0 {
+			return wasm.ErrUnsupported
+		}
+		return nil
+	}
 	if typ.IsGCReference() && s.engine.config.Features&wasm.GC == 0 {
 		return wasm.ErrUnsupported
 	}

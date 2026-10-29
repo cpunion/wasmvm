@@ -11,11 +11,11 @@ func (d *decoder) blockType() int64 {
 	if b == 0x40 {
 		return -64
 	}
-	if (b == 0x63 || b == 0x64) && d.features&(wasm.FunctionReferences|wasm.GC) != 0 {
+	if (b == 0x63 || b == 0x64) && d.features&(wasm.FunctionReferences|wasm.GC|wasm.ExceptionHandling) != 0 {
 		t := d.heapReference(b == 0x63)
 		return int64(uint64(t) | 1<<63)
 	}
-	if wasm.ValueType(b).Valid() && (!wasm.ValueType(b).IsGCReference() || d.features&wasm.GC != 0) {
+	if wasm.ValueType(b).Valid() && d.referenceEnabled(wasm.ValueType(b)) {
 		return int64(int8(b | 0x80))
 	}
 	d.r = saved
@@ -35,8 +35,22 @@ func (d *decoder) expr() module.Expr {
 		d.charge(1)
 		in := module.Instr{Offset: d.r.Offset(), Op: uint32(d.byte())}
 		switch op := in.Op; {
-		case op == 2 || op == 3 || op == 4:
+		case op == 2 || op == 3 || op == 4 || op == 0x1f && d.features&wasm.ExceptionHandling != 0:
 			in.Block = d.blockType()
+			if op == 0x1f {
+				in.Catches = make([]module.Catch, d.count())
+				for i := range in.Catches {
+					c := &in.Catches[i]
+					c.Kind = d.byte()
+					if c.Kind > 3 {
+						d.fail("unknown catch kind")
+					}
+					if c.Kind < 2 {
+						c.Tag = d.u32()
+					}
+					c.Label = d.u32()
+				}
+			}
 			if uint64(len(stack)) > uint64(d.limits.MaxNesting) {
 				d.limit("control nesting")
 			}
@@ -51,6 +65,9 @@ func (d *decoder) expr() module.Expr {
 			stack = stack[:len(stack)-1]
 		case op == 0x0c || op == 0x0d || op == 0x10 || op >= 0x20 && op <= 0x26 || op == 0xd2:
 			in.A = d.u32()
+		case op == 0x08 && d.features&wasm.ExceptionHandling != 0:
+			in.A = d.u32()
+		case op == 0x0a && d.features&wasm.ExceptionHandling != 0:
 		case op == 0x0e:
 			in.Labels, in.A = d.indexes(), d.u32()
 		case op == 0x11:
