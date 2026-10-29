@@ -69,6 +69,21 @@ func TestCompleteNativeSIMDInventory(t *testing.T) {
 // Execute only profiles advertised by the actual host; emission tests above
 // independently exercise all masks even when running on a different ISA.
 func vectorTestProfiles(op uint32) []X86Features {
+	if op >= 0x100 && op <= 0x113 {
+		// Exercise the strict legalization selected by the relaxed projection.
+		switch {
+		case op == 0x100:
+			return vectorTestProfiles(14)
+		case op >= 0x101 && op <= 0x104:
+			return vectorTestProfiles([]uint32{248, 249, 252, 253}[op-0x101])
+		case op >= 0x109 && op <= 0x10c:
+			return vectorTestProfiles(82)
+		case op >= 0x10d && op <= 0x110:
+			return vectorTestProfiles([]uint32{232, 233, 244, 245}[op-0x10d])
+		case op == 0x111:
+			return vectorTestProfiles(130)
+		}
+	}
 	profiles := []X86Features{0}
 	if !native.Available || runtime.GOARCH != "amd64" {
 		return profiles

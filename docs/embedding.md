@@ -212,3 +212,11 @@ and host `Caller` memory indices follow the same import-then-definition order.
 Aliased imports share growth and contents. Store quotas count underlying
 allocations, while out-of-bounds bulk operations leave the destination unchanged.
 This extension does not enable Memory64 or shared-memory Threads.
+
+Relaxed SIMD is enabled independently with `wasm.RelaxedSIMD`. All 20
+instructions work in both backends. The implementation chooses strict swizzle,
+saturating conversions, bit selection, strict min/max and Q15, unfused
+multiply/add, and signed byte dot products. The same permitted projection is
+used on amd64/arm64 and every CPU feature mask. The four-byte dot widens before
+accumulation; the two-byte dot wraps only its final i16 result. This does not
+enable the complete Core 3.0 profile.

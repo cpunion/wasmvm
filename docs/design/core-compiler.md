@@ -381,3 +381,27 @@ Bulk copy validates both complete ranges before writing, copies between
 independent memories and preserves memmove ordering when imported indices alias
 the same object, including across scheduling chunks. Store page/memory quotas,
 failed allocation rollback and host callback capabilities remain unchanged.
+
+## Individually enabled relaxed SIMD
+
+`wasm.RelaxedSIMD` enables the complete 0x100–0x113 instruction range. Reserved
+opcodes and all prototype encodings remain rejected. The existing vector
+validator records exact unary, binary and ternary types, including unreachable
+stack handling; IR, slot lowering, quotas, fuel and cancellation stay shared.
+
+The selected projection uses fixed-SIMD swizzle, saturating conversions,
+bitselect, strict min/max and Q15, separately rounded multiplication/addition,
+and signed byte products. Both native targets use that same policy. Existing
+strict legalizations are reused; multiply/add and byte dots generate packed
+native operations. Four-byte dots widen before pair sums, including
+`-128 * -128`, then accumulate modulo i32. Two-byte dots wrap at i16 only after
+the pair sum. Baseline amd64 needs only SSE2; arm64 needs baseline NEON.
+Target-specific fused or relaxed instructions remain local optimizations.
+
+The full pinned seven-script feature corpus contains 85 binary assertions.
+The runner matches each WABT `either` as one complete permitted result vector,
+never as a Cartesian product of independently accepted lane values. Additional
+tests cover every opcode, default-off and reserved grammar, exact arity and
+operand types, all native destinations/spills/cold continuations, code-size
+limits, all four feature flags together, single-frame tails, fuel, cancellation
+and workspace reuse. Go and LLGo run the same semantic matrix.

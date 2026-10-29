@@ -11,7 +11,9 @@ const (
 	TailCall
 	// MultiMemory enables indexed access to multiple private memories.
 	MultiMemory
+	// RelaxedSIMD enables all twenty relaxed vector instructions.
+	RelaxedSIMD
 )
 
 // SupportedFeatures lists extensions implemented by both execution backends.
-const SupportedFeatures = ExtendedConst | TailCall | MultiMemory
+const SupportedFeatures = ExtendedConst | TailCall | MultiMemory | RelaxedSIMD

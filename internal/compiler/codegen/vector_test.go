@@ -17,6 +17,12 @@ import (
 func vectorTypes(op uint32) ([]wasm.ValueType, wasm.ValueType) {
 	p, r := []wasm.ValueType{wasm.V128, wasm.V128}, wasm.V128
 	switch {
+	case op >= 0x100 && op <= 0x113:
+		if op >= 0x101 && op <= 0x104 {
+			p = p[:1]
+		} else if op >= 0x105 && op <= 0x10c || op == 0x113 {
+			p = append(p, wasm.V128)
+		}
 	case nativeVectorComplexOpcode(0xfd0000 + op):
 		kind := (op - 96) % 32
 		if op == 98 || op >= 124 && op <= 127 || op >= 128 && kind >= 7 && kind <= 10 {
@@ -167,7 +173,7 @@ func TestNativeVectorOperationsAliasesAndSpills(t *testing.T) {
 	}
 	seed := uint64(0x9e3779b97f4a7c15)
 	next := func() uint64 { seed ^= seed << 13; seed ^= seed >> 7; seed ^= seed << 17; return seed }
-	for op := uint32(13); op < 256; op++ {
+	for op := uint32(13); op < 0x114; op++ {
 		if !nativeVectorOpcode(0xfd0000 + op) {
 			continue
 		}
@@ -187,7 +193,11 @@ func TestNativeVectorOperationsAliasesAndSpills(t *testing.T) {
 					if compiled.NativeVectors != 1 || compiled.Helpers != 0 {
 						t.Fatal("vector instruction escaped", op, compiled)
 					}
-					for sample := 0; sample < 7; sample++ {
+					samples := 7
+					if op >= 0x100 {
+						samples += len(relaxedVectorEdges)
+					}
+					for sample := 0; sample < samples; sample++ {
 						for _, entry := range []int{0, pc, pc + 1} {
 							initial := make([]value.Value, len(f.Slots))
 							for i, typ := range f.Slots {
@@ -197,6 +207,9 @@ func TestNativeVectorOperationsAliasesAndSpills(t *testing.T) {
 								}
 								if sample == 1 {
 									v = value.Value{Lo: ^uint64(0), Hi: ^uint64(0)}
+								}
+								if sample >= 7 {
+									v = relaxedVectorEdges[(sample-7+i)%len(relaxedVectorEdges)]
 								}
 								if typ != wasm.V128 {
 									v.Hi = 0
@@ -225,9 +238,12 @@ func TestNativeVectorOperationsAliasesAndSpills(t *testing.T) {
 							if err != nil || state.Fuel != 1000-cost {
 								t.Fatal("vector fuel charged per machine instruction", op, entry, state.Fuel, cost, err)
 							}
-							inputA, inputB := initial[0], value.Value{}
+							inputA, inputB, inputC := initial[0], value.Value{}, value.Value{}
 							if f.Code[pc].B != slots.NoSlot {
 								inputB = initial[f.Code[pc].B]
+							}
+							if f.Code[pc].C != slots.NoSlot {
+								inputC = initial[f.Code[pc].C]
 							}
 							if entry <= pc {
 								in := f.Code[pc]
@@ -242,7 +258,7 @@ func TestNativeVectorOperationsAliasesAndSpills(t *testing.T) {
 							}
 							for i, want := range initial {
 								if got := readSlot(t, ctx, 16, slots.Slot(i)); got != want {
-									if entry <= pc && slots.Slot(i) == f.Code[pc].Dst && vectorFloatMatches(op, inputA, inputB, got, want) {
+									if entry <= pc && slots.Slot(i) == f.Code[pc].Dst && vectorFloatMatches(op, inputA, inputB, got, want, inputC) {
 										continue
 									}
 									t.Fatalf("op=%x lane=%d mode=%+v entry=%d slot=%d got=%x want=%x", op, lane, mode, entry, i, got, want)

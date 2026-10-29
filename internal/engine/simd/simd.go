@@ -1,4 +1,4 @@
-// Package simd implements the pure fixed-SIMD Core 2.0 operations. Memory
+// Package simd implements the pure fixed and relaxed SIMD operations. Memory
 // instructions are handled by the memory subsystem at their checked boundary.
 package simd
 
@@ -50,12 +50,15 @@ func saturate(x int64, width uint, unsigned bool) uint64 {
 
 // Eval executes a validated nonmemory SIMD instruction. Operands use Wasm
 // stack order, including scalar lane/shift inputs in Lo. Unknown and memory
-// opcodes panic as caller bugs; no fixed pure SIMD instruction traps.
+// opcodes panic as caller bugs; no pure SIMD instruction traps.
 // The instruction is borrowed from immutable compiled code for this call.
 func Eval(in *module.Instr, a, b, c Value) (r Value) {
 	op := in.Op & 0xffff
 	if in.Op>>16 != 0xfd || !pureOpcode(op) {
 		panic("simd: nonnumeric or unknown opcode")
+	}
+	if op >= 0x100 {
+		return relaxed(op, a, b, c)
 	}
 	switch {
 	case op == 12:
@@ -364,6 +367,9 @@ func Eval(in *module.Instr, a, b, c Value) (r Value) {
 }
 
 func pureOpcode(op uint32) bool {
+	if op >= 0x100 && op <= 0x113 {
+		return true
+	}
 	if op < 12 || op > 255 || op >= 84 && op <= 93 {
 		return false
 	}

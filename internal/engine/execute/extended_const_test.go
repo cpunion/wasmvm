@@ -33,6 +33,10 @@ func TestMultiMemoryProposal(t *testing.T) {
 	runProposal(t, proposalCorpus{"multi-memory", "cf8b5aa27257311b8eac80ae83f4ba22ee308064", wasm.MultiMemory, []string{"address0", "address1", "align0", "binary0", "data0", "data1", "data_drop0", "exports0", "float_exprs0", "float_exprs1", "float_memory0", "imports0", "imports1", "imports2", "imports3", "imports4", "linking0", "linking1", "linking2", "linking3", "load0", "load1", "load2", "memory-multi", "memory_copy0", "memory_copy1", "memory_fill0", "memory_init0", "memory_size0", "memory_size1", "memory_size2", "memory_size3", "memory_trap0", "memory_trap1", "simd_memory-multi", "start0", "store0", "store1", "traps0"}, 197, 830, 697, 0})
 }
 
+func TestRelaxedSIMDProposal(t *testing.T) {
+	runProposal(t, proposalCorpus{"relaxed-simd", "c3f9359af2cd607cc46b0a3274f90ea52543a2f2", wasm.RelaxedSIMD, []string{"i16x8_relaxed_q15mulr_s", "i32x4_relaxed_trunc", "i8x16_relaxed_swizzle", "relaxed_dot_product", "relaxed_laneselect", "relaxed_madd_nmadd", "relaxed_min_max"}, 23, 93, 85, 0})
+}
+
 func runProposal(t *testing.T, corpus proposalCorpus) {
 	root := filepath.Join("../../../testdata", corpus.name)
 	raw, err := os.ReadFile(filepath.Join(root, "manifest.json"))

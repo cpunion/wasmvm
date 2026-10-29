@@ -97,7 +97,8 @@ func (d *decoder) expr() module.Expr {
 			}
 		case op == 0xfd:
 			sub := d.u32()
-			if sub > 255 || simdOpcodes[sub/64]&(uint64(1)<<(sub%64)) == 0 {
+			relaxed := sub >= 0x100 && sub <= 0x113 && d.features&wasm.RelaxedSIMD != 0
+			if !relaxed && (sub > 255 || simdOpcodes[sub/64]&(uint64(1)<<(sub%64)) == 0) {
 				d.failAt(in.Offset, "unknown SIMD opcode")
 			}
 			in.Op = op<<16 | sub

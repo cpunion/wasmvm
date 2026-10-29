@@ -202,7 +202,7 @@ WASI 1/2/3 remain required subsequent work. See the
 
 **Objective:** extend the same frontend, IR and both execution backends to the full pinned Core 3.0 binary profile and the separately enabled Threads profile.
 
-Implemented individually enabled extensions include Multi-Memory, Tail Call and Extended Constant Expressions.
+Implemented individually enabled extensions include Relaxed SIMD, Multi-Memory, Tail Call and Extended Constant Expressions.
 The first extension is Extended Constant Expressions:
 `EngineConfig.Features = wasm.ExtendedConst` (CLI `--extended-const`). It covers
 all six integer operations, typed/limited validation and instance-specific
@@ -225,6 +225,14 @@ on both native targets. Independent/aliased imports, growth, data segments,
 bulk copy/fill/init and quotas share the existing Store. The complete archived
 proposal corpus contributes 697 binary assertions in 39 scripts.
 
+Relaxed SIMD adds all 20 instructions under `wasm.RelaxedSIMD` (CLI
+`--relaxed-simd`). The interpreter and both native targets use a fixed permitted
+projection: strict swizzle, saturating conversions, bit selection, strict
+min/max and Q15, separately rounded multiply/add, and signed byte dot products.
+Every instruction is generated natively; no function or opcode is interpreted
+by a native helper. All seven archived proposal scripts contribute 85 binary
+assertions, including complete permitted alternatives and consistency checks.
+
 Local follow-ups are tracked without blocking subsequent capability work:
 
 - Compile extended initialization plans and reduce global-state materialization.
@@ -234,9 +242,14 @@ Local follow-ups are tracked without blocking subsequent capability work:
   local initialization, reference roots, fuel and cancellation. General tail
   transfers currently use the shared bounded frame driver.
 
+- Track guards per memory and reuse trusted descriptors in mixed-memory native
+  functions. PR #30 retains local phase-separated competitor measurements.
+- Add target-specific relaxed SIMD lowering where useful, while preserving a
+  documented permitted projection and complete fallback ISA coverage.
+
 - **Types and GC:** recursive type-group canonicalization, explicit subtyping/variance/nullability, typed references, structs/arrays/i31/casts/conversions, stable generation-checked handles, Store-private guest heap, quotas and tracing. Root stacks/locals/globals/tables, host roots, temporary allocation operands, suspended native/interpreter frames and exception payloads. Retire generation-overflow slots. Forced collection at every allocation/safepoint must preserve live objects and reclaim unreachable cycles.
 - **Control flow:** proper tail calls without growing host/guest call stacks, final EH with tag identity, `try_table`, `exnref`, `throw_ref`, unwinding and host boundaries. Legacy EH is not substituted for final EH.
-- **Remaining Core 3.0:** extended constants, Memory64 **and Table64**, multi-memory, relaxed SIMD, and every remaining feature in the pinned profile. Include address/index overflow and permitted nondeterministic numeric outcomes.
+- **Remaining Core 3.0:** Memory64 **and Table64**, and every remaining feature in the pinned profile. Include address/index overflow and permitted nondeterministic numeric outcomes.
 - **Shared memory and threads:** ordinary/atomic accesses, mixed widths, growth, bulk operations and fences share an explicit synchronization domain. Implement wait/notify with no lost wakeups, exact timeout/not-equal/success outcomes, and one-time notify/cancel/close arbitration. Core Threads does not imply a shared WasmGC heap. Do not introduce unsynchronized native accesses while only the Go path holds locks.
 - **Interactions and speed:** run GC/EH/host-reentry, thread/growth/cancellation, multiple memory/table and parallel Store workloads. Extend performance coverage to allocation/collection pauses, casts, exceptions/tail calls, atomic/wait latency and thread scaling; set workload budgets before optimization. Retain all M2 gates for the earlier profile.
 

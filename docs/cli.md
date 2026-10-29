@@ -94,3 +94,7 @@ Use `--multi-memory` before the module path for validate, inspect and run.
 The feature mask adds bit `4`; flags combine independently. The command's
 existing resource, timeout and fuel options apply to indexed memory operations.
 Memory64 and shared memories remain separately unimplemented features.
+
+`--relaxed-simd` enables all 20 relaxed vector instructions for validate,
+inspect and run, independently of the other extensions. It uses the same
+permitted numeric projection on both backends and both native targets.

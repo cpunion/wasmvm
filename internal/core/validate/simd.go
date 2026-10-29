@@ -12,6 +12,20 @@ func (v *checker) lane(in module.Instr, count byte) {
 }
 func (v *checker) simd(in module.Instr) {
 	op := in.Op & 0xffff
+	if op >= 0x100 && op <= 0x113 {
+		if v.features&wasm.RelaxedSIMD == 0 {
+			v.fail("relaxed SIMD is disabled")
+		}
+		if op >= 0x105 && op <= 0x10c || op == 0x113 {
+			v.pop(wasm.V128)
+		}
+		if op >= 0x101 && op <= 0x104 {
+			v.unary(wasm.V128, wasm.V128)
+		} else {
+			v.binary(wasm.V128, wasm.V128)
+		}
+		return
+	}
 	switch {
 	case op <= 11 || op == 92 || op == 93:
 		var align uint32

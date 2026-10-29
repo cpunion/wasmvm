@@ -1,0 +1,72 @@
+{
+  "source": "https://github.com/WebAssembly/relaxed-simd",
+  "revision": "c3f9359af2cd607cc46b0a3274f90ea52543a2f2",
+  "producer": "WABT wast2json 1.0.41",
+  "producerRevision": "03a00a1334e6121fb0cce4fccbd6bb109b68acaa",
+  "arguments": [
+    "--enable-relaxed-simd",
+    "--no-check"
+  ],
+  "scripts": {
+    "i16x8_relaxed_q15mulr_s": {
+      "commands": 3,
+      "binaryAssertions": 2,
+      "textAssertions": 0
+    },
+    "i32x4_relaxed_trunc": {
+      "commands": 17,
+      "binaryAssertions": 16,
+      "textAssertions": 0
+    },
+    "i8x16_relaxed_swizzle": {
+      "commands": 6,
+      "binaryAssertions": 5,
+      "textAssertions": 0
+    },
+    "relaxed_dot_product": {
+      "commands": 11,
+      "binaryAssertions": 10,
+      "textAssertions": 0
+    },
+    "relaxed_laneselect": {
+      "commands": 12,
+      "binaryAssertions": 11,
+      "textAssertions": 0
+    },
+    "relaxed_madd_nmadd": {
+      "commands": 19,
+      "binaryAssertions": 17,
+      "textAssertions": 0
+    },
+    "relaxed_min_max": {
+      "commands": 25,
+      "binaryAssertions": 24,
+      "textAssertions": 0
+    }
+  },
+  "sha256": {
+    "LICENSE.tests": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+    "i16x8_relaxed_q15mulr_s/script.0.wasm": "36f76a4824f8b6281408b9cd00d9432a426ecbf03c895ea54c4a0135f770b8b7",
+    "i16x8_relaxed_q15mulr_s/script.json": "e32e8e9238235f0c42cc2604ff48869b9eb09b043a1fc7efdfef4b2f78e5730a",
+    "i16x8_relaxed_q15mulr_s.wast": "960cb860d9bc1daa169fc826186410c8d61c6c366caa52d1964c1b7ccf793513",
+    "i32x4_relaxed_trunc/script.0.wasm": "43ee1ae17cb6cb9b7b457a7a4b6187f1a0e0c2cff092b37b157cc4a8c9eeabfe",
+    "i32x4_relaxed_trunc/script.json": "8e90feaf88c7a2c49b7ea095839d0f29aa6c2c8979ef6b038c6d4defd8d52124",
+    "i32x4_relaxed_trunc.wast": "8dba13bdca93fd437cc4dea72f215d6a12dbfe4795419d27d438b7f8c7fd7679",
+    "i8x16_relaxed_swizzle/script.0.wasm": "dc56dd8ee195af673222b18237db5ea731d7c3875c103aea37ff13b8ce305c17",
+    "i8x16_relaxed_swizzle/script.json": "b3d25447e169d163eb64a5f1fdc07ced0fac90f6ad569eb60fd0227d010468b1",
+    "i8x16_relaxed_swizzle.wast": "3643b9910f667c0eee41ad807a88da3a3991206996bd672a833f6e211967a852",
+    "relaxed_dot_product/script.0.wasm": "39bfce051a54395cc1b6d2987286d8dd867c42e3a8813567ecb4f5ff9c47c6e8",
+    "relaxed_dot_product/script.json": "4269bdb1ea4c2699abbf93b04ff5241779df464dd02b9a510f74e2b075561d04",
+    "relaxed_dot_product.wast": "b2fc7ff0d3b9d4094074c9cca0f77318cc00782fee54507aefc3da01882db1c1",
+    "relaxed_laneselect/script.0.wasm": "10ac36655b831d8bcf943e43102f281c0565d8f2f3638bbeeebd8d7ba22e38a9",
+    "relaxed_laneselect/script.json": "4bc70fc2bba574bd64bd46c229b4152c897db0b2e7c2db71132dce4ef4508c63",
+    "relaxed_laneselect.wast": "737512504b248b5f75760c072616614b281a392a9ac4869a383e52bb915c76bf",
+    "relaxed_madd_nmadd/script.0.wasm": "dd2afdc5d7c1f143dcbce1326336f7b39723be2225c9a9439260c0d608a7e3aa",
+    "relaxed_madd_nmadd/script.1.wasm": "2f0dcb487b35d5fcef05f48a90821cb4d89a5f2a2301d8d2a48e5a118a4b5e39",
+    "relaxed_madd_nmadd/script.json": "33174b04ff226f4303f68de5b6298d112779686c814aa8ebab9fece7da2916ad",
+    "relaxed_madd_nmadd.wast": "fabb05b1fb7c9bce892985ffad35e1fdc5a326ea707adec688a84233d142a9ad",
+    "relaxed_min_max/script.0.wasm": "b8f0a69921c057b24639a9da7cfe87a619fa38dbfc269bbc989b64d1b340f277",
+    "relaxed_min_max/script.json": "8c63bbc16dbbd598b94276079e8f0db3e395ef6c27b52a03bb47825bf39f6582",
+    "relaxed_min_max.wast": "c047852eea0e0d1221337a1527f30e6381533e3b5d72eec5d3e64abf117d95de"
+  }
+}
