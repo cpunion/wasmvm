@@ -10,6 +10,7 @@ import (
 	"github.com/cpunion/wasmvm/internal/core/decode"
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/core/validate"
+	"github.com/cpunion/wasmvm/internal/engine/memory"
 	"github.com/cpunion/wasmvm/internal/engine/nativeexec"
 	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -28,24 +29,26 @@ type GlobalType = module.GlobalType
 // EngineConfig selects the Core 2.0 or 3.0 profile and bounded compiler phases.
 // Native requires a supported platform adapter; no backend fallback is used.
 type EngineConfig struct {
-	Backend  string
-	Profile  string
-	Features wasm.Features
-	Decode   DecodeLimits
-	Validate ValidationLimits
-	Lower    LoweringLimits
-	Slots    SlotLimits
-	Native   NativeLimits
+	Backend    string
+	Profile    string
+	Features   wasm.Features
+	MaxWaiters uint32
+	Decode     DecodeLimits
+	Validate   ValidationLimits
+	Lower      LoweringLimits
+	Slots      SlotLimits
+	Native     NativeLimits
 }
 
 func DefaultEngineConfig() EngineConfig {
-	return EngineConfig{Backend: "interpreter", Profile: "core2", Decode: decode.DefaultLimits(), Validate: validate.DefaultLimits(), Lower: lower.DefaultLimits(), Slots: slots.DefaultLimits(), Native: codegen.DefaultLimits()}
+	return EngineConfig{MaxWaiters: 1 << 16, Backend: "interpreter", Profile: "core2", Decode: decode.DefaultLimits(), Validate: validate.DefaultLimits(), Lower: lower.DefaultLimits(), Slots: slots.DefaultLimits(), Native: codegen.DefaultLimits()}
 }
 
 type Engine struct {
 	mu     sync.Mutex
 	closed bool
 	config EngineConfig
+	domain *memory.Domain
 }
 
 func NewEngine() *Engine { e, _ := NewEngineWithConfig(DefaultEngineConfig()); return e }
@@ -56,7 +59,7 @@ func NewEngineWithConfig(config EngineConfig) (*Engine, error) {
 	if config.Backend != "interpreter" && config.Backend != "native" || config.Backend == "native" && !native.Available || config.Profile != "core2" && config.Profile != "core3" || config.Features & ^wasm.SupportedFeatures != 0 {
 		return nil, wasm.ErrUnsupported
 	}
-	return &Engine{config: config}, nil
+	return &Engine{config: config, domain: memory.NewDomain(config.MaxWaiters, native.Available)}, nil
 }
 
 // Close prevents new compilation and Store creation. Existing compiled modules

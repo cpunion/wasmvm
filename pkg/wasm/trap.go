@@ -17,10 +17,16 @@ const (
 	TrapNullReference
 	TrapArrayBounds
 	TrapCastFailure
+	TrapAtomicUnaligned
+	TrapWaitUnshared
 )
 
 func (c TrapCode) String() string {
 	switch c {
+	case TrapAtomicUnaligned:
+		return "unaligned atomic access"
+	case TrapWaitUnshared:
+		return "atomic wait on unshared memory"
 	case NoTrap:
 		return "no trap"
 	case TrapUnreachable:

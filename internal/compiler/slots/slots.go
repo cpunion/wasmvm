@@ -18,6 +18,10 @@ const NoSlot Slot = math.MaxUint32
 // ControlBase separates internal control instructions from Wasm opcodes.
 const ControlBase uint32 = 1 << 24
 
+// SharedMemoryOp is a compiler-private checked helper boundary; its original
+// scalar/SIMD operation remains in Source.Wasm.
+const SharedMemoryOp uint32 = 0xff0000
+
 type Instruction struct {
 	Op, Source   uint32
 	Dst, A, B, C Slot

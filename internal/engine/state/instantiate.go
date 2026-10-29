@@ -28,6 +28,7 @@ func (s *Store) AllocateContext(ctx context.Context, compiled *slots.Module, res
 	definition := compiled.IR.Validated.Definition()
 	var local [16]value.Value
 	scratch := constantScratch(compiled, local[:])
+	oldReserved := s.reservedShared
 	oldSerial, allocatingMark := s.heapSerial, len(s.allocating)
 	oldUsage, oldFunctions, oldTypes := s.usage, len(s.functions), s.registry.Count()
 	oldTags := len(s.tags)
@@ -49,6 +50,7 @@ func (s *Store) AllocateContext(ctx context.Context, compiled *slots.Module, res
 			s.rollbackHeap(oldSerial)
 			oldUsage.HeapBytes, oldUsage.HeapObjects = s.usage.HeapBytes, s.usage.HeapObjects
 			s.usage = oldUsage
+			s.reservedShared = oldReserved
 			clear(s.functions[oldFunctions:])
 			s.functions = s.functions[:oldFunctions]
 			for _, table := range s.tables[oldTables:] {

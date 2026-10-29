@@ -77,6 +77,7 @@ func (e *Engine) NewStore(config StoreConfig) (*Store, error) {
 	if e.config.Backend == "native" {
 		core = state.NewNative(config.Limits)
 	}
+	core.Domain = e.domain
 	s := &Store{engine: e, config: config, state: core, nativeModules: make(map[*slots.Module]*nativeexec.Lease), closed: make(chan struct{}), roots: make(map[*reference]struct{}), externs: make(map[uint64]any)}
 	core.CollectEveryAllocation = config.CollectEveryAllocation
 	core.HeapSafepoint = func() { s.mu.Lock(); defer s.mu.Unlock(); s.collectLocked(s.active) }

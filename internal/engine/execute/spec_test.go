@@ -42,6 +42,9 @@ type specAction struct {
 type specCommand struct {
 	Type, Name, As, Filename, Text string
 	Instance, Module               string
+	Thread                         string
+	SharedModule                   string `json:"shared_module"`
+	Commands                       []specCommand
 	Line                           int
 	ModuleType                     string `json:"module_type"`
 	Action                         specAction
@@ -49,6 +52,11 @@ type specCommand struct {
 	Either                         []specValue
 }
 type specRunner struct {
+	closed            bool
+	progress          *specProgress
+	cancel            context.CancelFunc
+	threads           map[string]*specThread
+	children          []*specThread
 	store             *state.Store
 	context           context.Context
 	last              *state.Instance
@@ -62,13 +70,19 @@ type specRunner struct {
 }
 
 func newSpec(t *testing.T, ctx context.Context, tier int) *specRunner {
+	return newSpecOwned(t, ctx, tier, true)
+}
+func newSpecOwned(t *testing.T, ctx context.Context, tier int, cleanup bool) *specRunner {
 	t.Helper()
 	s := state.New(state.DefaultLimits())
 	if tier != 0 {
 		s = state.NewNative(state.DefaultLimits())
 	}
-	t.Cleanup(s.Close)
-	r := &specRunner{tier: tier, t: t, modules: make(map[*slots.Module]*nativeexec.Lease), definitions: make(map[string][]byte), store: s, context: ctx, named: make(map[string]*state.Instance), registered: make(map[string]*state.Instance), spectest: make(map[string]state.Extern)}
+	ctx, cancel := context.WithCancel(ctx)
+	r := &specRunner{cancel: cancel, threads: make(map[string]*specThread), tier: tier, t: t, modules: make(map[*slots.Module]*nativeexec.Lease), definitions: make(map[string][]byte), store: s, context: ctx, named: make(map[string]*state.Instance), registered: make(map[string]*state.Instance), spectest: make(map[string]state.Extern)}
+	if cleanup {
+		t.Cleanup(r.close)
+	}
 	for _, fn := range []struct {
 		name   string
 		params []wasm.ValueType
@@ -162,7 +176,6 @@ func (r *specRunner) allocate(data []byte) (*state.Instance, error) {
 			return nil, err
 		}
 		r.modules[compiled] = lease
-		r.t.Cleanup(lease.Close)
 	}
 	return in, nil
 }
@@ -345,7 +358,7 @@ func trapMatches(code wasm.TrapCode, text string) bool {
 	if code.String() == text {
 		return true
 	}
-	return code == wasm.TrapCastFailure && text == "cast" || code == wasm.TrapNullReference && (text == "null exception reference" || text == "null function reference" || text == "null i31 reference" || text == "null array reference" || text == "null structure reference") || code == wasm.TrapIndirectCallType && text == "indirect call" || code == wasm.TrapTableBounds && text == "undefined element" || code == wasm.TrapUninitializedElement && strings.HasPrefix(text, "uninitialized element")
+	return code == wasm.TrapAtomicUnaligned && text == "unaligned atomic" || code == wasm.TrapWaitUnshared && text == "expected shared memory" || code == wasm.TrapCastFailure && text == "cast" || code == wasm.TrapNullReference && (text == "null exception reference" || text == "null function reference" || text == "null i31 reference" || text == "null array reference" || text == "null structure reference") || code == wasm.TrapIndirectCallType && text == "indirect call" || code == wasm.TrapTableBounds && text == "undefined element" || code == wasm.TrapUninitializedElement && strings.HasPrefix(text, "uninitialized element")
 }
 func specLanes(t *testing.T, v specValue) (uint, []string) {
 	t.Helper()
@@ -499,6 +512,9 @@ func matchSpec(t *testing.T, want specValue, got value.Value) bool {
 }
 
 func (r *specRunner) runCommand(t *testing.T, cmd specCommand, path string) {
+	if r.progress != nil {
+		r.progress.record(cmd)
+	}
 	t.Helper()
 	name := filepath.Base(filepath.Dir(path))
 	var input []byte
@@ -514,6 +530,10 @@ func (r *specRunner) runCommand(t *testing.T, cmd specCommand, path string) {
 		t.Fatalf("%s:%d %s: %s", name, cmd.Line, cmd.Type, fmt.Sprintf(format, args...))
 	}
 	switch cmd.Type {
+	case "thread":
+		r.startThread(t, cmd, path)
+	case "wait":
+		r.waitThread(t, cmd.Thread)
 	case "module_instance":
 		data, ok := r.definitions[cmd.Module]
 		if !ok {

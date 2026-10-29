@@ -260,7 +260,11 @@ func (s *Store) sweepObjects() {
 	for _, m := range s.memories {
 		if s.closed || m.OwnerInstance != nil && m.OwnerInstance.disposed {
 			s.usage.Memories--
-			s.usage.MemoryPages -= uint64(m.Pages())
+			if m.Shared() {
+				s.reservedShared -= m.ReservationPages()
+			} else {
+				s.usage.MemoryPages -= uint64(m.Pages())
+			}
 			m.Release()
 			m.Owner = nil
 			m.OwnerInstance = nil

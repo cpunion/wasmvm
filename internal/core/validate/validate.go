@@ -119,6 +119,9 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 		c.fail("multiple memories are not in Core 2.0")
 	}
 	for _, mt := range c.memories {
+		if mt.Shared && (features&wasm.Threads == 0 || !mt.HasMax) {
+			c.fail("shared memory requires Threads and a maximum")
+		}
 		max := uint64(65536)
 		if mt.Index64 {
 			max = 1 << 48
@@ -126,6 +129,9 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 		c.bounds(mt, max)
 	}
 	for _, tt := range c.tables {
+		if tt.Limits.Shared {
+			c.fail("shared tables are not Core Threads")
+		}
 		c.valueType(tt.Element, len(m.Types))
 		if !tt.Element.IsReference() {
 			c.fail("invalid table element type")

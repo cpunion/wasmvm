@@ -126,6 +126,18 @@ func (d *decoder) expr() module.Expr {
 			default:
 				d.failAt(in.Offset, "unknown miscellaneous opcode")
 			}
+
+		case op == 0xfe && d.features&wasm.Threads != 0:
+			sub := d.u32()
+			if sub > 3 && (sub < 0x10 || sub > 0x4e) {
+				d.failAt(in.Offset, "unknown atomic opcode")
+			}
+			in.Op = op<<16 | sub
+			if sub == 3 {
+				d.expect(0)
+			} else {
+				d.memarg(&in)
+			}
 		case op == 0xfd:
 			sub := d.u32()
 			relaxed := sub >= 0x100 && sub <= 0x113 && d.features&wasm.RelaxedSIMD != 0

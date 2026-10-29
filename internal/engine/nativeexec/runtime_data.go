@@ -115,6 +115,11 @@ func (e *Execution) bindRuntimeGlobals(in *state.Instance, f *slots.Function, in
 	}
 	if len(in.Memories) > 1 {
 		for i, memory := range in.Memories {
+			if memory != nil && memory.Shared() {
+				at := int(memoryBase) + i*2
+				e.runtimeWords[at], e.runtimeWords[at+1] = 0, 0
+				continue
+			}
 			if memory == nil || memory.Native() == nil {
 				return 0, wasm.ErrInvalid
 			}

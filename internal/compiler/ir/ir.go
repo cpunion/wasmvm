@@ -112,6 +112,8 @@ const (
 
 func EffectsOf(op uint32) Effects {
 	switch {
+	case op>>16 == 0xfe:
+		return ReadMemory | WriteMemory | MayTrap | MaySuspend
 	case op == 8 || op == 10:
 		return MayTrap | MayAllocate | ReadHeap
 	case op == 0:

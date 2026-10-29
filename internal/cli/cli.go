@@ -26,6 +26,7 @@ Options precede the module path. All commands accept:
   --multi-memory         Enable multiple private memories
   --relaxed-simd         Enable all twenty relaxed SIMD instructions
   --exception-handling   Enable final exception handling
+  --threads              Enable Core Threads, shared memory and atomics
   --gc                   Enable WasmGC and typed function references
   --function-references  Enable typed function references and non-null references
   --memory64             Enable 64-bit memory and table indices
@@ -62,6 +63,7 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	tailCall := flags.Bool("tail-call", false, "")
 	multiMemory := flags.Bool("multi-memory", false, "")
 	relaxedSIMD := flags.Bool("relaxed-simd", false, "")
+	threads := flags.Bool("threads", false, "")
 	gc := flags.Bool("gc", false, "")
 	exceptions := flags.Bool("exception-handling", false, "")
 	functionReferences := flags.Bool("function-references", false, "")
@@ -131,6 +133,9 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 	if *exceptions {
 		config.Features |= wasm.ExceptionHandling
+	}
+	if *threads {
+		config.Features |= wasm.Threads
 	}
 	if *gc {
 		config.Features |= wasm.GC
@@ -308,6 +313,9 @@ func describeType(t vm.ExternType) map[string]any {
 		result["element"] = t.Table.Element.String()
 		limits(t.Table.Limits)
 	case vm.MemoryKind:
+		if t.Memory.Shared {
+			result["shared"] = true
+		}
 		result["kind"] = "memory"
 		limits(*t.Memory)
 	case vm.GlobalKind:

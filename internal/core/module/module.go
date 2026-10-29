@@ -32,6 +32,7 @@ type Limits struct {
 	Min, Max uint64
 	HasMax   bool
 	Index64  bool
+	Shared   bool
 }
 
 func (l Limits) AddressType() wasm.ValueType {

@@ -24,6 +24,8 @@ const (
 	// Core3Rules enables final limit encodings and defined immutable globals.
 	// Core3Features selects the complete profile, including its prerequisites.
 	Core3Rules
+	// Threads enables shared linear memory and all Core Threads atomics.
+	Threads
 )
 
 // Core3Features selects the full pinned Core 3.0 binary profile on both backends.
@@ -31,4 +33,4 @@ const (
 const Core3Features = ExtendedConst | TailCall | MultiMemory | RelaxedSIMD | Memory64 | FunctionReferences | GC | ExceptionHandling | Core3Rules
 
 // SupportedFeatures includes all accepted core feature flags.
-const SupportedFeatures = Core3Features
+const SupportedFeatures = Core3Features | Threads

@@ -123,7 +123,7 @@ func DecodeWithFeatures(input []byte, limits Limits, features wasm.Features) (re
 				case 1:
 					im.Table = d.table()
 				case 2:
-					im.Memory = d.bounds()
+					im.Memory = d.bounds(true)
 				case 3:
 					im.Global = d.globalType()
 				case 4:
@@ -152,7 +152,7 @@ func DecodeWithFeatures(input []byte, limits Limits, features wasm.Features) (re
 		case 5:
 			m.Memories = make([]module.Limits, d.count())
 			for i := range m.Memories {
-				m.Memories[i] = d.bounds()
+				m.Memories[i] = d.bounds(true)
 			}
 		case 6:
 			m.Globals = make([]module.Global, d.count())
@@ -348,24 +348,25 @@ func (d *decoder) indexes() []uint32 {
 	}
 	return xs
 }
-func (d *decoder) bounds() module.Limits {
+func (d *decoder) bounds(sharedAllowed bool) module.Limits {
 	flag := d.byte()
 	wide := flag&4 != 0 && d.features&wasm.Memory64 != 0
-	if flag > 1 && !(wide && flag <= 5 && flag&2 == 0) {
+	shared := flag&2 != 0 && sharedAllowed && d.features&wasm.Threads != 0
+	if flag&^byte(7) != 0 || flag&4 != 0 && !wide || flag&2 != 0 && !shared {
 		d.fail("unknown limits flag")
 	}
 	read := func() uint64 { return uint64(d.u32()) }
 	if wide || d.features&wasm.Core3Rules != 0 {
 		read = func() uint64 { return must(d.r.U64()) }
 	}
-	l := module.Limits{Min: read(), HasMax: flag&1 != 0, Index64: wide}
+	l := module.Limits{Min: read(), HasMax: flag&1 != 0, Index64: wide, Shared: shared}
 	if l.HasMax {
 		l.Max = read()
 	}
 	return l
 }
 func (d *decoder) table() module.TableType {
-	return module.TableType{Element: d.refType(), Limits: d.bounds()}
+	return module.TableType{Element: d.refType(), Limits: d.bounds(false)}
 }
 
 func (d *decoder) tableDefinition() (module.TableType, module.Expr) {

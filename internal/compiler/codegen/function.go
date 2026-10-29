@@ -83,6 +83,7 @@ type Config struct {
 	IndirectCallees map[uint32][]uint32
 	FunctionCount   uint32
 	TableCount      uint32
+	SharedMemories  []bool
 	MemoryCount     uint32
 	// Globals follows validated imported-then-defined global index order.
 	Globals []module.GlobalType
@@ -124,6 +125,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	if err := checkFunction(f); err != nil {
 		return nil, err
 	}
+	originalFunction := f
+	f = sharedMemoryHelpers(f, config.SharedMemories)
 	empty, err := nativeabi.Wrap(arch, nil, limits.MaxCodeBytes)
 	if err != nil {
 		return nil, err
@@ -168,7 +171,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		e.contextLoad(0, nativeabi.ContinuationOffset)
 	}
 	a.dispatch(pcs)
-	out = &CompiledFunction{Function: f, Offsets: make([]uint32, len(pcs)), UsesMemory: e.usesMemory, GlobalIndices: globalIndices, UsesRuntimeData: usesRuntimeData}
+	out = &CompiledFunction{Function: originalFunction, Offsets: make([]uint32, len(pcs)), UsesMemory: e.usesMemory, GlobalIndices: globalIndices, UsesRuntimeData: usesRuntimeData}
 	for _, in := range f.Code {
 		if nativeVectorOpcode(in.Op) || nativeVectorMemoryOpcode(in.Op) {
 			out.NativeVectors++
@@ -446,7 +449,7 @@ func integerWide(op uint32) bool {
 	return op >= 0x50 && op <= 0x5a || op >= 0x79 && op <= 0x8a || op == 0xac || op == 0xad || op >= 0xc2
 }
 func helperOpcode(op uint32) bool {
-	return op == 8 || op == 10 || op >= 0x23 && op <= 0x26 || op >= 0x28 && op <= 0x40 || op >= 0x5b && op <= 0x66 || op >= 0x8b && op <= 0xbf || op == 0xd2 || op == 0xd3 || op>>16 == 0xfb || op >= 0xfc0000 && op <= 0xfc0011 || op>>16 == 0xfd
+	return op == slots.SharedMemoryOp || op>>16 == 0xfe || op == 8 || op == 10 || op >= 0x23 && op <= 0x26 || op >= 0x28 && op <= 0x40 || op >= 0x5b && op <= 0x66 || op >= 0x8b && op <= 0xbf || op == 0xd2 || op == 0xd3 || op>>16 == 0xfb || op >= 0xfc0000 && op <= 0xfc0011 || op>>16 == 0xfd
 }
 
 func checkFunction(f *slots.Function) error {
