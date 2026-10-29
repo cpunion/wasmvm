@@ -161,7 +161,7 @@ func TestTablesHandlesAliasesBoundsAndEveryContinuation(t *testing.T) {
 }
 
 func TestReferencesRetainCheckedFallbacks(t *testing.T) {
-	for _, kind := range []string{"tables", "index", "wide-index", "get-type", "set-type", "no-get", "no-set", "functions", "function-type", "function-destination", "table-offset", "function-offset"} {
+	for _, kind := range []string{"tables", "index", "float-index", "get-type", "set-type", "no-get", "no-set", "functions", "function-type", "function-destination", "table-offset", "function-offset"} {
 		f := tableFixture(wasm.FuncRef, 0, 0)
 		config := Config{FunctionCount: 3, TableCount: 2}
 		switch kind {
@@ -169,8 +169,8 @@ func TestReferencesRetainCheckedFallbacks(t *testing.T) {
 			config.TableCount = 0
 		case "index":
 			f.Sources[0].Wasm.A = 2
-		case "wide-index":
-			f.Slots[0] = wasm.I64
+		case "float-index":
+			f.Slots[0] = wasm.F64
 		case "get-type":
 			f.Slots[2] = wasm.I32
 		case "set-type":

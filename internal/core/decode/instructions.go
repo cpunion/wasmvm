@@ -59,7 +59,7 @@ func (d *decoder) expr() module.Expr {
 		case op == 0x1c:
 			in.Types = d.types()
 		case op >= 0x28 && op <= 0x3e:
-			in.A, in.B, in.Memory = d.memarg()
+			d.memarg(&in)
 		case op == 0x3f || op == 0x40:
 			in.A = d.memoryIndex()
 		case op == 0x41:
@@ -104,13 +104,13 @@ func (d *decoder) expr() module.Expr {
 			in.Op = op<<16 | sub
 			switch {
 			case sub <= 11 || sub == 92 || sub == 93:
-				in.A, in.B, in.Memory = d.memarg()
+				d.memarg(&in)
 			case sub == 12 || sub == 13:
 				copy(in.Vector[:], d.bytes(16))
 			case sub >= 21 && sub <= 34:
 				in.Lane = d.byte()
 			case sub >= 84 && sub <= 91:
-				in.A, in.B, in.Memory = d.memarg()
+				d.memarg(&in)
 				in.Lane = d.byte()
 			}
 		case op == 0 || op == 1 || op == 0x0f || op == 0x1a || op == 0x1b || op == 0xd1 || op >= 0x45 && op <= 0xc4:
@@ -132,7 +132,7 @@ func (d *decoder) memoryIndex() uint32 {
 	return d.u32()
 }
 
-func (d *decoder) memarg() (uint32, uint32, uint32) {
+func (d *decoder) memarg(in *module.Instr) {
 	at := d.r.Offset()
 	align := d.u32()
 	var memory uint32
@@ -143,5 +143,11 @@ func (d *decoder) memarg() (uint32, uint32, uint32) {
 	if align >= 32 {
 		d.failAt(at, "malformed memory alignment flags")
 	}
-	return align, d.u32(), memory
+	in.A, in.Memory = align, memory
+	if d.features&wasm.Memory64 != 0 {
+		offset := must(d.r.U64())
+		in.B, in.MemoryOffsetHigh = uint32(offset), uint32(offset>>32)
+	} else {
+		in.B = d.u32()
+	}
 }

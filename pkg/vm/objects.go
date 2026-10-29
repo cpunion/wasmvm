@@ -10,6 +10,9 @@ func (s *Store) NewMemory(typ MemoryType) (Extern, error) {
 		return Extern{}, err
 	}
 	defer op.finish()
+	if typ.Index64 && s.engine.config.Features&wasm.Memory64 == 0 {
+		return Extern{}, wasm.ErrUnsupported
+	}
 	ex, err := s.state.NewMemory(typ)
 	if err != nil {
 		return Extern{}, err
@@ -22,6 +25,9 @@ func (s *Store) NewTable(typ TableType) (Extern, error) {
 		return Extern{}, err
 	}
 	defer op.finish()
+	if typ.Limits.Index64 && s.engine.config.Features&wasm.Memory64 == 0 {
+		return Extern{}, wasm.ErrUnsupported
+	}
 	ex, err := s.state.NewTable(typ)
 	if err != nil {
 		return Extern{}, err
@@ -77,7 +83,7 @@ func (ex Extern) WriteMemory(offset uint64, src []byte) error {
 	}
 	return nil
 }
-func (ex Extern) MemoryPages() (uint32, error) {
+func (ex Extern) MemoryPages() (uint64, error) {
 	op, err := ex.access(MemoryKind)
 	if err != nil {
 		return 0, err
@@ -85,7 +91,7 @@ func (ex Extern) MemoryPages() (uint32, error) {
 	defer op.finish()
 	return ex.external.Memory.Pages(), nil
 }
-func (ex Extern) GrowMemory(delta uint32) (old uint32, ok bool, err error) {
+func (ex Extern) GrowMemory(delta uint64) (old uint64, ok bool, err error) {
 	op, err := ex.access(MemoryKind)
 	if err != nil {
 		return 0, false, err
@@ -94,15 +100,15 @@ func (ex Extern) GrowMemory(delta uint32) (old uint32, ok bool, err error) {
 	old, ok = ex.store.state.GrowMemory(ex.external.Memory, delta)
 	return
 }
-func (ex Extern) TableSize() (uint32, error) {
+func (ex Extern) TableSize() (uint64, error) {
 	op, err := ex.access(TableKind)
 	if err != nil {
 		return 0, err
 	}
 	defer op.finish()
-	return uint32(len(ex.external.Table.Values)), nil
+	return uint64(len(ex.external.Table.Values)), nil
 }
-func (ex Extern) TableGet(index uint32) (Value, error) {
+func (ex Extern) TableGet(index uint64) (Value, error) {
 	op, err := ex.access(TableKind)
 	if err != nil {
 		return Value{}, err
@@ -117,7 +123,7 @@ func (ex Extern) TableGet(index uint32) (Value, error) {
 	defer s.mu.Unlock()
 	return s.rootLocked(t.Type.Element, rawReference(t.Values[index]))
 }
-func (ex Extern) TableSet(index uint32, v Value) error {
+func (ex Extern) TableSet(index uint64, v Value) error {
 	op, err := ex.access(TableKind)
 	if err != nil {
 		return err
@@ -137,7 +143,7 @@ func (ex Extern) TableSet(index uint32, v Value) error {
 	t.Values[index] = raw.Lo
 	return nil
 }
-func (ex Extern) GrowTable(delta uint32, initial Value) (old uint32, ok bool, err error) {
+func (ex Extern) GrowTable(delta uint64, initial Value) (old uint64, ok bool, err error) {
 	op, err := ex.access(TableKind)
 	if err != nil {
 		return 0, false, err

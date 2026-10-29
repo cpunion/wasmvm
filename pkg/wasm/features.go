@@ -13,7 +13,9 @@ const (
 	MultiMemory
 	// RelaxedSIMD enables all twenty relaxed vector instructions.
 	RelaxedSIMD
+	// Memory64 enables the proposal's 64-bit memory and table indices.
+	Memory64
 )
 
 // SupportedFeatures lists extensions implemented by both execution backends.
-const SupportedFeatures = ExtendedConst | TailCall | MultiMemory | RelaxedSIMD
+const SupportedFeatures = ExtendedConst | TailCall | MultiMemory | RelaxedSIMD | Memory64

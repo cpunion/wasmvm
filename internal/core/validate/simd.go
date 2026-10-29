@@ -45,7 +45,7 @@ func (v *checker) simd(in module.Instr) {
 		if op == 11 {
 			v.pop(wasm.V128)
 		}
-		v.pop(wasm.I32)
+		v.pop(v.memories[in.Memory].AddressType())
 		if op != 11 {
 			v.push(wasm.V128)
 		}
@@ -90,7 +90,7 @@ func (v *checker) simd(in module.Instr) {
 		v.alignment(in, align)
 		v.lane(in, byte(16>>align))
 		v.pop(wasm.V128)
-		v.pop(wasm.I32)
+		v.pop(v.memories[in.Memory].AddressType())
 		if op <= 87 {
 			v.push(wasm.V128)
 		}

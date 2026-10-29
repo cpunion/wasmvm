@@ -20,10 +20,11 @@ func (e *Execution) bulk(in *state.Instance, op module.Instr, a, b, c value.Valu
 		in.DropElement(op.A)
 		return
 	case 0xfc000f:
-		old, ok := e.store.GrowTable(in.Tables[op.A], uint32(b.Lo), a.Lo)
+		table := in.Tables[op.A]
+		old, ok := e.store.GrowTable(table, table.Type.Limits.Address(b.Lo), a.Lo)
 		r.Lo = uint64(old)
 		if !ok {
-			r.Lo = uint64(^uint32(0))
+			r.Lo = table.Type.Limits.Failure()
 		}
 		return
 	case 0xfc0010:
@@ -39,6 +40,15 @@ func (e *Execution) bulk(in *state.Instance, op module.Instr, a, b, c value.Valu
 			m, source = in.Memories[op.A], in.Memories[op.B]
 		case 0xfc000b:
 			m = in.Memories[op.A]
+		}
+		dst = m.Limits().Address(a.Lo)
+		if op.Op == 0xfc000b {
+			n = m.Limits().Address(c.Lo)
+		} else if op.Op == 0xfc000a {
+			src = source.Limits().Address(b.Lo)
+			if m.Limits().Index64 && source.Limits().Index64 {
+				n = c.Lo
+			}
 		}
 		if !m.Range(dst, n) || op.Op == 0xfc0008 && !state.Range(len(in.Data[op.A]), src, n) || op.Op == 0xfc000a && !source.Range(src, n) {
 			return r, wasm.TrapMemoryBounds, nil
@@ -79,6 +89,16 @@ func (e *Execution) bulk(in *state.Instance, op module.Instr, a, b, c value.Valu
 		source = in.Tables[op.B].Values
 	case 0xfc0011:
 		table = in.Tables[op.A]
+	}
+	dst = table.Type.Limits.Address(a.Lo)
+	if op.Op == 0xfc0011 {
+		n = table.Type.Limits.Address(c.Lo)
+	} else if op.Op == 0xfc000e {
+		sourceLimits := in.Tables[op.B].Type.Limits
+		src = sourceLimits.Address(b.Lo)
+		if table.Type.Limits.Index64 && sourceLimits.Index64 {
+			n = c.Lo
+		}
 	}
 	if !state.Range(len(table.Values), dst, n) || op.Op != 0xfc0011 && !state.Range(len(source), src, n) {
 		return r, wasm.TrapTableBounds, nil

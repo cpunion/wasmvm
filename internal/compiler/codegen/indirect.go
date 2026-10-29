@@ -1,6 +1,9 @@
 package codegen
 
-import "github.com/cpunion/wasmvm/internal/compiler/nativeabi"
+import (
+	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
+	"github.com/cpunion/wasmvm/pkg/wasm"
+)
 
 // RuntimeData is an owned uint64 array: function references in module order,
 // then (element count, native base) for each table. The driver refreshes table
@@ -62,7 +65,8 @@ func (e *functionEmitter) inlineIndirect(pc int, config Config) (int, uint32, bo
 		e.branch(fallback, "eq")
 		e.registerMove(e.operandRegister(2), e.operandRegister(0), true)
 	}
-	e.slotLoad(e.f.Args[in.Extra+in.Count-1], 0, false, false)
+	indexSlot := e.f.Args[in.Extra+in.Count-1]
+	e.slotLoad(indexSlot, 0, false, e.f.Slots[indexSlot] == wasm.I64)
 	e.runtimeCompare(uint32(offset))
 	e.branch(fallback, "hs")
 	if e.a.arch == "arm64" {

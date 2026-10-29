@@ -6,9 +6,32 @@ import "github.com/cpunion/wasmvm/pkg/wasm"
 
 type FuncType struct{ Params, Results []wasm.ValueType }
 type Limits struct {
-	Min, Max uint32
+	Min, Max uint64
 	HasMax   bool
+	Index64  bool
 }
+
+func (l Limits) AddressType() wasm.ValueType {
+	if l.Index64 {
+		return wasm.I64
+	}
+	return wasm.I32
+}
+
+func (l Limits) Address(bits uint64) uint64 {
+	if l.Index64 {
+		return bits
+	}
+	return uint64(uint32(bits))
+}
+
+func (l Limits) Failure() uint64 {
+	if l.Index64 {
+		return ^uint64(0)
+	}
+	return uint64(^uint32(0))
+}
+
 type TableType struct {
 	Element wasm.ValueType
 	Limits  Limits
@@ -83,13 +106,19 @@ type Instr struct {
 	Offset uint64
 	A, B   uint32
 	Memory uint32 // memory index for scalar and SIMD memargs
-	Block  int64
-	Bits   uint64
-	Vector [16]byte
-	Lane   byte
-	Labels []uint32
-	Types  []wasm.ValueType
+	// The upper displacement word fills padding on the native targets.
+	// B retains the low word so the Core 2.0 representation stays compact.
+	MemoryOffsetHigh uint32
+	Block            int64
+	Bits             uint64
+	Vector           [16]byte
+	Lane             byte
+	Labels           []uint32
+	Types            []wasm.ValueType
 }
+
+func (in *Instr) MemoryOffset() uint64 { return uint64(in.B) | uint64(in.MemoryOffsetHigh)<<32 }
+
 type Expr []Instr
 
 // Module owns all retained bytes; callers must not mutate it after validation

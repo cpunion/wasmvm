@@ -48,7 +48,7 @@ func TestDirectTablesBindBothTiersAndRejectNonNativeStorage(t *testing.T) {
 	goStore := state.New(state.DefaultLimits())
 	defer goStore.Close()
 	for _, length := range []uint32{0, 1} {
-		table, err := goStore.NewTable(module.TableType{Element: wasm.FuncRef, Limits: module.Limits{Min: length}})
+		table, err := goStore.NewTable(module.TableType{Element: wasm.FuncRef, Limits: module.Limits{Min: uint64(length)}})
 		if err != nil {
 			t.Fatal(err)
 		}

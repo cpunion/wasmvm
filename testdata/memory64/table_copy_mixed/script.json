@@ -1,0 +1,6 @@
+{"source_filename": "testdata/memory64/table_copy_mixed.wast",
+ "commands": [
+  {"type": "module", "line": 2, "filename": "script.0.wasm"}, 
+  {"type": "assert_invalid", "line": 20, "filename": "script.1.wasm", "text": "type mismatch", "module_type": "binary"}, 
+  {"type": "assert_invalid", "line": 30, "filename": "script.2.wasm", "text": "type mismatch", "module_type": "binary"}, 
+  {"type": "assert_invalid", "line": 40, "filename": "script.3.wasm", "text": "type mismatch", "module_type": "binary"}]}

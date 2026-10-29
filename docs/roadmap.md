@@ -202,7 +202,7 @@ WASI 1/2/3 remain required subsequent work. See the
 
 **Objective:** extend the same frontend, IR and both execution backends to the full pinned Core 3.0 binary profile and the separately enabled Threads profile.
 
-Implemented individually enabled extensions include Relaxed SIMD, Multi-Memory, Tail Call and Extended Constant Expressions.
+Implemented individually enabled extensions include Memory64/Table64, Relaxed SIMD, Multi-Memory, Tail Call and Extended Constant Expressions.
 The first extension is Extended Constant Expressions:
 `EngineConfig.Features = wasm.ExtendedConst` (CLI `--extended-const`). It covers
 all six integer operations, typed/limited validation and instance-specific
@@ -233,6 +233,14 @@ Every instruction is generated natively; no function or opcode is interpreted
 by a native helper. All seven archived proposal scripts contribute 85 binary
 assertions, including complete permitted alternatives and consistency checks.
 
+Memory64 includes Table64 under `wasm.Memory64` (CLI `--memory64`). Scalar,
+SIMD, size/grow, bulk, indirect/tail calls, initialization and imported types
+preserve the selected address width. The 64-bit paths check u65 effective
+addresses and host quotas without truncation; mixed copies use the narrower
+count type. All 20 applicable complete archived scripts provide 12,912 binary
+assertions per tier, with 59 text-parser assertions classified separately.
+Core 3.0 GC/reference-dependent combinations remain subsequent scope.
+
 Local follow-ups are tracked without blocking subsequent capability work:
 
 - Compile extended initialization plans and reduce global-state materialization.
@@ -244,12 +252,14 @@ Local follow-ups are tracked without blocking subsequent capability work:
 
 - Track guards per memory and reuse trusted descriptors in mixed-memory native
   functions. PR #30 retains local phase-separated competitor measurements.
+- Extend native range proofs to i64 addresses and mixed memories; retain explicit
+  overflow checks until an equally complete proof is available.
 - Add target-specific relaxed SIMD lowering where useful, while preserving a
   documented permitted projection and complete fallback ISA coverage.
 
 - **Types and GC:** recursive type-group canonicalization, explicit subtyping/variance/nullability, typed references, structs/arrays/i31/casts/conversions, stable generation-checked handles, Store-private guest heap, quotas and tracing. Root stacks/locals/globals/tables, host roots, temporary allocation operands, suspended native/interpreter frames and exception payloads. Retire generation-overflow slots. Forced collection at every allocation/safepoint must preserve live objects and reclaim unreachable cycles.
 - **Control flow:** proper tail calls without growing host/guest call stacks, final EH with tag identity, `try_table`, `exnref`, `throw_ref`, unwinding and host boundaries. Legacy EH is not substituted for final EH.
-- **Remaining Core 3.0:** Memory64 **and Table64**, and every remaining feature in the pinned profile. Include address/index overflow and permitted nondeterministic numeric outcomes.
+- **Remaining Core 3.0:** every remaining feature in the pinned profile. Include address/index overflow and permitted nondeterministic numeric outcomes.
 - **Shared memory and threads:** ordinary/atomic accesses, mixed widths, growth, bulk operations and fences share an explicit synchronization domain. Implement wait/notify with no lost wakeups, exact timeout/not-equal/success outcomes, and one-time notify/cancel/close arbitration. Core Threads does not imply a shared WasmGC heap. Do not introduce unsynchronized native accesses while only the Go path holds locks.
 - **Interactions and speed:** run GC/EH/host-reentry, thread/growth/cancellation, multiple memory/table and parallel Store workloads. Extend performance coverage to allocation/collection pauses, casts, exceptions/tail calls, atomic/wait latency and thread scaling; set workload budgets before optimization. Retain all M2 gates for the earlier profile.
 

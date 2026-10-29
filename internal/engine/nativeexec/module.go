@@ -53,8 +53,8 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 		}
 		if im.Kind == 2 {
 			memories++
-			if memories == 1 {
-				minimum = im.Memory.Min
+			if memories == 1 && !im.Memory.Index64 {
+				minimum = uint32(im.Memory.Min)
 			}
 		}
 		if im.Kind == 1 {
@@ -69,8 +69,8 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 	for _, g := range definition.Globals {
 		globals = append(globals, g.Type)
 	}
-	if len(definition.Memories) != 0 && memories == uint32(len(definition.Memories)) {
-		minimum = definition.Memories[0].Min
+	if len(definition.Memories) != 0 && memories == uint32(len(definition.Memories)) && !definition.Memories[0].Index64 {
+		minimum = uint32(definition.Memories[0].Min)
 	}
 	callees := make(map[uint32]*slots.Function, len(m.Functions))
 	for i, f := range m.Functions {

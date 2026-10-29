@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
+	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
 type boundedValue struct {
@@ -33,6 +34,11 @@ func (e *functionEmitter) codeLimit() int {
 func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 	if !e.unmetered || !e.usesMemory || e.memoryMinimum == 0 || e.memoryViews {
 		return nil
+	}
+	for _, in := range e.f.Code {
+		if isMemoryAccess(in.Op) && (e.f.Slots[in.A] == wasm.I64 || e.f.Sources[in.Source].Wasm.MemoryOffsetHigh != 0) {
+			return nil // Existing affine proofs are specifically modulo i32.
+		}
 	}
 	starts := make([]bool, len(e.f.Code))
 	starts[0] = true

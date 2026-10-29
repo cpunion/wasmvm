@@ -229,6 +229,11 @@ func FuzzDecode(f *testing.F) {
 		f.Fatal(err)
 	}
 	f.Add(input)
+	input, err = os.ReadFile("../../../pkg/vm/testdata/memory64.wasm")
+	if err != nil {
+		f.Fatal(err)
+	}
+	f.Add(input)
 	f.Fuzz(func(t *testing.T, input []byte) {
 		l := DefaultLimits()
 		l.MaxBytes = 1 << 16

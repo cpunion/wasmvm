@@ -299,12 +299,17 @@ func (d *decoder) indexes() []uint32 {
 }
 func (d *decoder) bounds() module.Limits {
 	flag := d.byte()
-	if flag > 1 {
+	wide := flag&4 != 0 && d.features&wasm.Memory64 != 0
+	if flag > 1 && !(wide && flag <= 5 && flag&2 == 0) {
 		d.fail("unknown limits flag")
 	}
-	l := module.Limits{Min: d.u32(), HasMax: flag == 1}
+	read := func() uint64 { return uint64(d.u32()) }
+	if wide {
+		read = func() uint64 { return must(d.r.U64()) }
+	}
+	l := module.Limits{Min: read(), HasMax: flag&1 != 0, Index64: wide}
 	if l.HasMax {
-		l.Max = d.u32()
+		l.Max = read()
 	}
 	return l
 }

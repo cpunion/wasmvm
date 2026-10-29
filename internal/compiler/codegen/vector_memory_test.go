@@ -106,9 +106,9 @@ func TestNativeVectorMemoryBoundsLanesAndSpills(t *testing.T) {
 						var want value.Value
 						var trap wasm.TrapCode
 						if load {
-							want, trap = ref.Load(op, actual, offset, byte(lane), input)
+							want, trap = ref.Load(op, uint64(actual), uint64(offset), byte(lane), input)
 						} else {
-							trap = ref.Store(op, actual, offset, byte(lane), input)
+							trap = ref.Store(op, uint64(actual), uint64(offset), byte(lane), input)
 						}
 						out, exit, state := runFunction(t, compiled, lease, c, args, 1000, !fast, 256)
 						if trap != wasm.NoTrap {

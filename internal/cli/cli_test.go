@@ -395,7 +395,7 @@ func TestRelaxedSIMDCLIWithAllExtensions(t *testing.T) {
 	}
 	path := writeModule(t, data)
 	for _, command := range []string{"validate", "inspect", "run"} {
-		args := []string{command, "--relaxed-simd", "--multi-memory", "--tail-call", "--extended-const"}
+		args := []string{command, "--relaxed-simd", "--multi-memory", "--tail-call", "--extended-const", "--memory64"}
 		if command == "run" {
 			args = append(args, "--export", "run")
 		}
@@ -406,6 +406,28 @@ func TestRelaxedSIMDCLIWithAllExtensions(t *testing.T) {
 		}
 		if command == "run" && !strings.Contains(out, "0x00000070") {
 			t.Fatal(out)
+		}
+	}
+}
+
+func TestMemory64CLI(t *testing.T) {
+	data, err := os.ReadFile("../../pkg/vm/testdata/memory64-empty.wasm")
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := writeModule(t, data)
+	if code, _, _ := invoke(t, nil, "validate", path); code != 1 {
+		t.Fatal("memory64 accepted by default")
+	}
+	for _, command := range []string{"validate", "inspect", "run"} {
+		args := []string{command, "--memory64"}
+		if command == "run" {
+			args = append(args, "--export", "run")
+		}
+		args = append(args, path)
+		code, out, diagnostic := invoke(t, nil, args...)
+		if code != 0 || diagnostic != "" || jsonObject(t, out)["features"] != float64(wasm.Memory64) {
+			t.Fatal(code, out, diagnostic)
 		}
 	}
 }

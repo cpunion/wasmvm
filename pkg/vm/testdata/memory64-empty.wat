@@ -1,0 +1,10 @@
+(module
+  (memory i64 0 0)
+  (table i64 0 0 funcref)
+  (func (export "run") (result i64) (memory.size))
+  (func (export "grow") (param i64) (result i64) (memory.grow (local.get 0)))
+  (func (export "table-size") (result i64) (table.size))
+  (func (export "table-grow") (param i64) (result i64)
+    (table.grow (ref.null func) (local.get 0)))
+  (func (export "load") (param i64) (result i32) (i32.load (local.get 0)))
+)

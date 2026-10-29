@@ -61,7 +61,7 @@ func main() {
 	}
 	config := codegen.Config{Unmetered: true}
 	if len(m.Memories) != 0 {
-		config.MemoryMinimumPages = m.Memories[0].Min
+		config.MemoryMinimumPages = uint32(m.Memories[0].Min)
 	}
 	if *tier == "sliced" {
 		config.Unmetered = false

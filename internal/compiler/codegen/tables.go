@@ -14,7 +14,7 @@ func referenceCell(f *slots.Function, in slots.Instruction, config Config) (uint
 		offset := uint64(index) * 8
 		return uint32(offset), index < config.FunctionCount && offset <= math.MaxInt32 && in.Dst != slots.NoSlot && f.Slots[in.Dst] == wasm.FuncRef
 	}
-	if in.Op != 0x25 && in.Op != 0x26 || index >= config.TableCount || in.A == slots.NoSlot || f.Slots[in.A] != wasm.I32 {
+	if in.Op != 0x25 && in.Op != 0x26 || index >= config.TableCount || in.A == slots.NoSlot || f.Slots[in.A] != wasm.I32 && f.Slots[in.A] != wasm.I64 {
 		return 0, false
 	}
 	ref := in.Dst
@@ -51,7 +51,7 @@ func (e *functionEmitter) referenceInstruction(in slots.Instruction, config Conf
 		if _, cached := e.runtimeRegisters[offset]; !cached {
 			e.contextLoad(2, nativeabi.RuntimeDataOffset)
 		}
-		e.slotLoad(in.A, 0, false, false)
+		e.slotLoad(in.A, 0, false, e.f.Slots[in.A] == wasm.I64)
 		e.runtimeCompare(offset)
 		e.branch(e.trapExit(wasm.TrapTableBounds, e.f.Sources[in.Source].Wasm.Offset), "hs")
 		base := e.runtimeBase(offset + 8)
@@ -76,11 +76,12 @@ func (e *functionEmitter) referenceInstruction(in slots.Instruction, config Conf
 // UXTW addressing consume the original i32 home without changing its upper
 // word. This also preserves raw cold-frame values while truncating guest indices.
 func (e *functionEmitter) registerTable(in slots.Instruction, offset uint32) {
+	wide := e.f.Slots[in.A] == wasm.I64
 	index := e.operandRegister(0)
 	if r, ok := e.registers[in.A]; ok && e.a.arch == "arm64" {
 		index = r
 	} else {
-		e.slotLoad(in.A, 0, false, false)
+		e.slotLoad(in.A, 0, false, wide)
 	}
 	if _, cached := e.runtimeRegisters[offset]; !cached {
 		e.contextLoad(2, nativeabi.RuntimeDataOffset)
@@ -92,8 +93,12 @@ func (e *functionEmitter) registerTable(in slots.Instruction, offset uint32) {
 			e.runtimeLoad(1, offset)
 			length = e.operandRegister(1)
 		}
-		e.a.word(0xeb20401f | uint32(index)<<16 | uint32(length)<<5) // cmp length, windex, uxtw
-		e.a.branch(trap, true, 9)                                    // b.ls: length <= uint32(index)
+		ins := uint32(0xeb20401f) // cmp length, windex, uxtw
+		if wide {
+			ins = 0xeb00001f // cmp length, xindex
+		}
+		e.a.word(ins | uint32(index)<<16 | uint32(length)<<5)
+		e.a.branch(trap, true, 9) // b.ls: length <= uint32(index)
 	} else {
 		e.runtimeCompare(offset)
 		e.branch(trap, "hs")
@@ -112,7 +117,7 @@ func (e *functionEmitter) registerTable(in slots.Instruction, offset uint32) {
 			reg = e.operandRegister(1)
 		}
 	}
-	e.tableElement(reg, base, index, store, true)
+	e.tableElement(reg, base, index, store, !wide)
 	if !store && !cached {
 		e.slotStore(slot, 0, false)
 	}
