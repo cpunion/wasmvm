@@ -120,7 +120,7 @@ func (e *Engine) frontend(ctx context.Context, input []byte) (*validate.Module, 
 	if err := e.check(ctx); err != nil {
 		return nil, err
 	}
-	m, err := decode.Decode(input, e.config.Decode)
+	m, err := decode.DecodeWithFeatures(input, e.config.Decode, e.config.Features)
 	if err != nil {
 		return nil, err
 	}

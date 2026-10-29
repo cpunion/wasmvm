@@ -232,9 +232,7 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 				return nil, err
 			}
 			request := e.Host()
-			var callerInstance *state.Instance
-			e.RetainedInstances(func(in *state.Instance) { callerInstance = in })
-			results, err := op.host(request, callerInstance)
+			results, err := op.host(request, request.Caller)
 			if err == nil {
 				err = op.ctx.Err()
 			}

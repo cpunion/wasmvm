@@ -28,6 +28,7 @@ func DefaultLimits() Limits { return Limits{32 << 20, 2 << 20, 1 << 20, 10000, 1
 type decoder struct {
 	r              binary.Reader
 	limits         Limits
+	features       wasm.Features
 	nodes          uint64
 	needsDataCount bool
 	inCode         bool
@@ -36,7 +37,15 @@ type decoder struct {
 // Decode takes a snapshot of input. It returns no partial module on failure.
 // Returned data/custom slices never alias the caller's bytes. A successful
 // decode still requires complete semantic validation before use.
-func Decode(input []byte, limits Limits) (result *module.Module, err error) {
+func Decode(input []byte, limits Limits) (*module.Module, error) {
+	return DecodeWithFeatures(input, limits, 0)
+}
+
+// DecodeWithFeatures preserves the base grammar unless extensions are explicit.
+func DecodeWithFeatures(input []byte, limits Limits, features wasm.Features) (result *module.Module, err error) {
+	if features & ^wasm.SupportedFeatures != 0 {
+		return nil, wasm.ErrUnsupported
+	}
 	defer func() {
 		if failure := recover(); failure != nil {
 			switch e := failure.(type) {
@@ -57,7 +66,7 @@ func Decode(input []byte, limits Limits) (result *module.Module, err error) {
 		return nil, &wasm.Error{Kind: wasm.ErrLimit, Detail: "module bytes"}
 	}
 	owned := append([]byte(nil), input...)
-	d := decoder{r: binary.New(owned), limits: limits}
+	d := decoder{r: binary.New(owned), limits: limits, features: features}
 	header := d.bytes(8)
 	if string(header[:4]) != "\x00asm" {
 		d.failAt(0, "bad magic")

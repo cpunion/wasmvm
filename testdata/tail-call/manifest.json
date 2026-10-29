@@ -1,0 +1,70 @@
+{
+  "source": "https://github.com/WebAssembly/tail-call",
+  "revision": "a6003d06aefef41e20a3e36fe2e500062555c895",
+  "producer": "WABT wast2json 1.0.41",
+  "producerRevision": "03a00a1334e6121fb0cce4fccbd6bb109b68acaa",
+  "arguments": [
+    "--enable-tail-call",
+    "--no-check"
+  ],
+  "scripts": {
+    "return_call": {
+      "commands": 44,
+      "binaryAssertions": 41,
+      "textAssertions": 0
+    },
+    "return_call_indirect": {
+      "commands": 75,
+      "binaryAssertions": 61,
+      "textAssertions": 11
+    }
+  },
+  "sha256": {
+    "LICENSE.tests": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+    "return_call/script.0.wasm": "36eee067986eafccfc8bc1c775953e20bc3894eb585239fca518de9d5d675b72",
+    "return_call/script.1.wasm": "05f61c21cb213b6af5f92dc3a248d932455f86c7b63098d124622aa46040cb97",
+    "return_call/script.10.wasm": "6711e2288de99464acb9b0b08281a952da276a6a3700dbac88ec88510670f757",
+    "return_call/script.11.wasm": "2ffa659b57af72629a42a155608fc9cab06f4abd421e658e471b867f36cfed78",
+    "return_call/script.12.wasm": "c49b6b96396ebf7df94355041c89d7c94da80b936abfc1b45afbdca6ea538728",
+    "return_call/script.2.wasm": "d25874c634e34d4ba2a58ac9fc22d92a90270087cdd507df9f286299dc0c2faa",
+    "return_call/script.3.wasm": "a59822421d2c6fed317fb372bb3b9ddd7e4ca3252b7803045b47f4f7405f7d2c",
+    "return_call/script.4.wasm": "a1c46c82112ccb268b324f4133eb69b18ac617b5aaebbd5acc77fea1c35f0ab1",
+    "return_call/script.5.wasm": "947b18ca17d1d0294ac9efa0a57a8e43ef42efc67e7fb1bfa627d0dae91008b7",
+    "return_call/script.6.wasm": "c2b42c086501f219f02f42446ad19eb50a38fb63efd0b3c7fcefd898ecf937e3",
+    "return_call/script.7.wasm": "b1e5c02a361f5c1be7605bcb1cf47b9f11af3b070b8ff11f89315d810526b554",
+    "return_call/script.8.wasm": "ad374ab9dddb86847754c903feae9184cc65e06a807774a8c9706740edbb5e22",
+    "return_call/script.9.wasm": "49d78a859c8e76d57a5cefadf429b97210e9721d476a9dbbb5ce86e0b659693d",
+    "return_call/script.json": "cd2b1dcc2cbb2ac2d9128fd2d2932c90aa03fad130a391efc776153fcec0db31",
+    "return_call.wast": "1674ca8c8b251910d6765dfebf35981af7bdafd034e58e36be1f660899905c69",
+    "return_call_indirect/script.0.wasm": "7fd1607a78a7f43b36a4c80454991c7ab47e4296bf0cc7e3d3ea61692d0460dc",
+    "return_call_indirect/script.1.wat": "742981846aee2b1f617946bcafa3d2e9c879ce774fbed73babb09aa368581916",
+    "return_call_indirect/script.10.wat": "38b75d8e68c4bc0b152b2c52bb30a8f85e3770e326bfc3773933bf2de5a848a8",
+    "return_call_indirect/script.11.wat": "746b1617446a6ab81db4843627f39776a314a5faa6095acaf2969f0bc006ed1d",
+    "return_call_indirect/script.12.wasm": "f3327540824f3cd55d41353baf9ff317a2e9d64a2550942177f8da1bcf2f7983",
+    "return_call_indirect/script.13.wasm": "fa1e2b1c2023f1272cacc4f33a6e5217683f41f2ccd2d4bc7b90c863034e5aac",
+    "return_call_indirect/script.14.wasm": "dee4ea986ab589a40fe36b149583bd8d28f3cff2c88246d85d2f80d41eacb2c3",
+    "return_call_indirect/script.15.wasm": "8fcf235a22f7778c4838162ca4e60e3b894174f4b05146776820b97e8b4edee3",
+    "return_call_indirect/script.16.wasm": "f768869750e5d97f232ab7213c271a709df4c8d576c6f0e167a6b7b330b90143",
+    "return_call_indirect/script.17.wasm": "084d3a115f4f8b9727cc2827aba1c6e71e12c221b2460211c84930f9e259e4e9",
+    "return_call_indirect/script.18.wasm": "bd760526dfe1c0c93aeea7fdbf6ada1ae9a1f31f4a5aed80a9cb2115944910a0",
+    "return_call_indirect/script.19.wasm": "0da0266fc8eede7ff86e36a00b2f8246fcd0f70d1214cdc18b847044db29921f",
+    "return_call_indirect/script.2.wat": "795cb24b7642441300357c7b151cbf208aabd8427738b9112f7e839c7222e82c",
+    "return_call_indirect/script.20.wasm": "d818ec3989ec1d791ba0bd3217b7b434af1632f6445975fb0d314d22e1c3b5b2",
+    "return_call_indirect/script.21.wasm": "2009579940cacc9c77f0518a654ef2422f51ec75731491aad0407a40aeb82c15",
+    "return_call_indirect/script.22.wasm": "1370df0fd8642d97a84525c632864ce1d24e11a097b8299d758181c2951a2faf",
+    "return_call_indirect/script.23.wasm": "0ebcd8198b6d6006bf5cf591d2c38a3cc118e7534560a1450ddc9f225b4e63e9",
+    "return_call_indirect/script.24.wasm": "bc5e1113297c74e404209055468355f53fa07cd6e3adba3be4ff417df70fb079",
+    "return_call_indirect/script.25.wasm": "533414917669d91bbf062150735370f51bc9e1afe42e5ba8773c6c0573fb77e6",
+    "return_call_indirect/script.26.wasm": "777984d6397ea3598f82c9bf8daed57d57afa91eca8403f1a30a0efb122e79ca",
+    "return_call_indirect/script.27.wasm": "8ea7610739a80e13aa16f02a0c60be4a0f926be4150467156671afab686161a3",
+    "return_call_indirect/script.3.wat": "3b0a89e952d90b26422ded6356214cc7669cad3ee8529f1d9d0973abce176fa7",
+    "return_call_indirect/script.4.wat": "9150f0f03a4257533b3dd9791329943ea3ce83ed4a811c37215e9c9a651c5484",
+    "return_call_indirect/script.5.wat": "4b25c9a47b218a4e2ca6f958d28227d9f32e6b50a0b4c683851b35ba30c70b52",
+    "return_call_indirect/script.6.wat": "fdd1fad08972c6607ff7e57df895e4a51c0a99d88b933ef7749f1940b3a123bc",
+    "return_call_indirect/script.7.wat": "af340a044119c0fef41f7d9b71569fa13adbc555c415580dc9de8d4749e65d30",
+    "return_call_indirect/script.8.wat": "67a07cf627a170b7937334792e903cc1b5159b4179e4eead292db26378841677",
+    "return_call_indirect/script.9.wat": "9aa4e9cb74c0df5c5cee3706a6f59c96874db57010ee4ee7850155cb5e1210c3",
+    "return_call_indirect/script.json": "00224f793808b3cd637a063fc69f0c4904fd1cc5fe56f279cdf0d41050c64201",
+    "return_call_indirect.wast": "d2e28fda89934d972bf429d7a021caac759934fe68bc2af354501e3ce0c6c138"
+  }
+}

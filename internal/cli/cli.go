@@ -22,6 +22,7 @@ Options precede the module path. All commands accept:
   --backend name         interpreter (default) or native (supported hosts)
   --profile core2        Base binary profile
   --extended-const       Enable extended constant expressions
+  --tail-call            Enable proper direct and indirect tail calls
   --timeout duration     Overall deadline (default 30s; 0 disables)
 Run also accepts:
   --export name          Required exported function name
@@ -52,6 +53,7 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	backend := flags.String("backend", "interpreter", "")
 	profile := flags.String("profile", "core2", "")
 	extendedConst := flags.Bool("extended-const", false, "")
+	tailCall := flags.Bool("tail-call", false, "")
 	timeout := flags.Duration("timeout", 30*time.Second, "")
 	var exported, fuel string
 	if command == "run" {
@@ -102,6 +104,9 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	config.Profile = *profile
 	if *extendedConst {
 		config.Features |= wasm.ExtendedConst
+	}
+	if *tailCall {
+		config.Features |= wasm.TailCall
 	}
 	engine, err := vm.NewEngineWithConfig(config)
 	if err != nil {

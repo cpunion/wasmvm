@@ -54,7 +54,7 @@ func (c *context) body(f *module.Function) FunctionInfo {
 			c.fail("instruction after function end")
 		}
 		v.inputs, v.outputs = v.inputs[:0], v.outputs[:0]
-		v.record = c.visitor != nil && (in.Op == 1 || in.Op == 0x10 || in.Op == 0x11 || in.Op >= 0x1a)
+		v.record = c.visitor != nil && (in.Op == 1 || in.Op == 0x10 || in.Op >= 0x11 && in.Op <= 0x13 || in.Op >= 0x1a)
 		v.instruction(in)
 		if c.visitor != nil {
 			for i, j := 0, len(v.inputs)-1; i < j; i, j = i+1, j-1 {
@@ -227,9 +227,13 @@ func (v *checker) instruction(in module.Instr) {
 	case op == 0x0f:
 		v.pops(v.control[0].out)
 		v.unreachable()
-	case op == 0x10 || op == 0x11:
+	case op >= 0x10 && op <= 0x13:
+		tail := op >= 0x12
+		if tail && v.features&wasm.TailCall == 0 {
+			v.fail("tail calls are disabled")
+		}
 		var sig module.FuncType
-		if op == 0x10 {
+		if op == 0x10 || op == 0x12 {
 			sig = v.function(in.A)
 		} else {
 			sig = v.typ(in.A)
@@ -239,7 +243,20 @@ func (v *checker) instruction(in module.Instr) {
 			v.pop(wasm.I32)
 		}
 		v.pops(sig.Params)
-		v.push(sig.Results...)
+		if tail {
+			want := v.control[0].out
+			if len(want) != len(sig.Results) {
+				v.fail("tail call result arity")
+			}
+			for i, t := range want {
+				if t != sig.Results[i] {
+					v.fail("tail call result type")
+				}
+			}
+			v.unreachable()
+		} else {
+			v.push(sig.Results...)
+		}
 	case op == 0x1a:
 		v.pop(0)
 	case op == 0x1b:

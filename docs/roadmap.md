@@ -1,18 +1,20 @@
 # Development Plan and Acceptance Gates
 
-Plan date: **2026-10-26**. M0 candidate evaluation and benchmark infrastructure are complete through PRs [#1](https://github.com/cpunion/wasmvm/pull/1), [#2](https://github.com/cpunion/wasmvm/pull/2), and [#3](https://github.com/cpunion/wasmvm/pull/3). The owner has selected a [project-owned core](design/own-core.md). **M1 acceptance remains open; M2 executes the complete Core 2.0 profile but has unmet performance gates; M3–M7 are not implemented.** This plan prioritizes complete core execution and compilation before WASI integration. Design approval does not close an implementation or performance gate.
+Plan date: **2026-10-26**. M0 candidate evaluation and benchmark infrastructure are complete through PRs [#1](https://github.com/cpunion/wasmvm/pull/1), [#2](https://github.com/cpunion/wasmvm/pull/2), and [#3](https://github.com/cpunion/wasmvm/pull/3). The owner has selected a [project-owned core](design/own-core.md). **M1 acceptance remains open; M2 executes the complete Core 2.0 profile but has unmet performance gates; M3 is in progress; M4–M7 are not implemented.** This plan prioritizes complete core execution and compilation before WASI integration. Design approval does not close an implementation or performance gate.
 
-Implement stages in order. Independent work within a stage can proceed in parallel after agreeing on shared contracts. Small implementation PRs may merge while the stage remains in progress; every required deliverable, supported-platform result, and exit gate must pass before that stage is complete. Do not replace full profiles with convenient instruction subsets or quietly move failing requirements to a later stage.
+Implement functional stages in dependency order. Local performance follow-ups may continue alongside later capabilities under the current integration decision. Independent work within a stage can proceed in parallel after agreeing on shared contracts. Small implementation PRs may merge while the stage remains in progress; every required deliverable, supported-platform result, and exit gate must pass before that stage is complete. Do not replace full profiles with convenient instruction subsets or quietly move failing requirements to a later stage.
 
 ## Current integration decision
 
-On 2026-10-29 the owner authorized merging the accumulated Core 2.0 work before
-its outstanding performance and calibration gates close, and continuing feature
-development. PR #26 merged as `49ff47b`; the subsequent owned interpreter/native
-integration is reviewed separately. This authorization applies to the current
-integration, not a declaration that M1/M2 are complete or a permanent waiver of
-future performance comparisons. Failed measurements remain in the validation
-record. Final-head semantic CI and resolved review findings remain required.
+On 2026-10-29 the owner authorized merging the accumulated Core 2.0 work and
+then clarified that local optimization must not block completing capabilities.
+PRs #26, #27 and #28 have merged with their recorded semantic evidence and
+performance limitations. Complete feature implementations may advance while
+local performance work remains tracked separately. Architecture issues that
+prevent correct, bounded execution remain blocking. Final-head Go/LLGo semantic
+CI, coverage, resolved review findings and truthful capability reporting remain
+required. Performance comparisons, failed measurements and milestone performance
+acceptance remain open until their own evidence passes.
 
 ## Stage overview
 
@@ -200,13 +202,31 @@ WASI 1/2/3 remain required subsequent work. See the
 
 **Objective:** extend the same frontend, IR and both execution backends to the full pinned Core 3.0 binary profile and the separately enabled Threads profile.
 
-The first individually enabled extension is Extended Constant Expressions:
+Implemented individually enabled extensions include Tail Call and Extended Constant Expressions.
+The first extension is Extended Constant Expressions:
 `EngineConfig.Features = wasm.ExtendedConst` (CLI `--extended-const`). It covers
 all six integer operations, typed/limited validation and instance-specific
 global/segment evaluation shared by both backends. The three complete archived
 proposal scripts provide 215 binary assertions per execution tier. Default
 Core 2.0 remains strict; this increment does not enable a `core3` profile or
 complete M3. See the [initializer contract](design/core-compiler.md#individually-enabled-constant-expressions).
+
+Tail Call adds `return_call` and `return_call_indirect` under `wasm.TailCall`
+(CLI `--tail-call`). Validation, explicit tail terminators, typed argument tuples
+and checked native call exits share the existing compiler/frame pipeline. Tail
+transfers retire the current frame before dispatch, preserving the original
+return destination, host caller capability and pending argument roots. The full
+archived proposal suite covers 102 binary assertions in two scripts. Typed
+`return_call_ref` belongs to the future function-references capability.
+
+Local follow-ups are tracked without blocking subsequent capability work:
+
+- Compile extended initialization plans and reduce global-state materialization.
+  The retained PR #28 diagnostic shows 56.6 us versus Wasmtime 3.0 us for 2,048
+  static globals under LLGo native. This is not performance acceptance.
+- Lower eligible native tail transfers directly, preserving argument shuffles,
+  local initialization, reference roots, fuel and cancellation. General tail
+  transfers currently use the shared bounded frame driver.
 
 - **Types and GC:** recursive type-group canonicalization, explicit subtyping/variance/nullability, typed references, structs/arrays/i31/casts/conversions, stable generation-checked handles, Store-private guest heap, quotas and tracing. Root stacks/locals/globals/tables, host roots, temporary allocation operands, suspended native/interpreter frames and exception payloads. Retire generation-overflow slots. Forced collection at every allocation/safepoint must preserve live objects and reclaim unreachable cycles.
 - **Control flow:** proper tail calls without growing host/guest call stacks, final EH with tag identity, `try_table`, `exnref`, `throw_ref`, unwinding and host boundaries. Legacy EH is not substituted for final EH.

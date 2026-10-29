@@ -117,7 +117,7 @@ func slotPriorities(f *slots.Function, regions map[int]memoryRegion, frequencies
 		if w == 1 {
 			continue
 		}
-		if in.Op == 0x10 || in.Op == 0x11 || in.Op == slots.ControlBase+uint32(ir.Return) {
+		if in.Op >= 0x10 && in.Op <= 0x13 || in.Op == slots.ControlBase+uint32(ir.Return) {
 			count := uint64(in.Count)
 			if in.Op == 0x10 || in.Op == 0x11 {
 				count += uint64(len(f.Sources[in.Source].Outputs))

@@ -51,6 +51,11 @@ func (d *decoder) expr() module.Expr {
 			in.Labels, in.A = d.indexes(), d.u32()
 		case op == 0x11:
 			in.A, in.B = d.u32(), d.u32()
+		case (op == 0x12 || op == 0x13) && d.features&wasm.TailCall != 0:
+			in.A = d.u32()
+			if op == 0x13 {
+				in.B = d.u32()
+			}
 		case op == 0x1c:
 			in.Types = d.types()
 		case op >= 0x28 && op <= 0x3e:

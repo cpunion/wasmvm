@@ -211,11 +211,11 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		src := f.Sources[in.Source]
 		isControl := in.Op >= slots.ControlBase
 		if unmetered {
-			if pc%256 == 0 || in.Op == 0x10 || in.Op == 0x11 || isControl && !e.fallthroughEdge(pc) {
+			if pc%256 == 0 || in.Op >= 0x10 && in.Op <= 0x13 || isControl && !e.fallthroughEdge(pc) {
 				e.interrupt(uint32(pc))
 			}
 		} else {
-			e.boundary(uint32(pc), src, in.Op == 0x10 || in.Op == 0x11 || isControl)
+			e.boundary(uint32(pc), src, in.Op >= 0x10 && in.Op <= 0x13 || isControl)
 		}
 		if region, ok := regions[pc]; ok {
 			e.emitMemoryRegion(pc, region, pcs, out)
@@ -332,6 +332,11 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			out.MemoryGrows++
 			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
 			e.leave(nativeabi.GrowMemory, uint64(pc), uint64(pc+1))
+		case op == 0x12 || op == 0x13:
+			out.Calls++
+			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
+			// Tail calls discard this continuation in the common frame driver.
+			e.leave(nativeabi.Call, uint64(pc), uint64(pc))
 		case op == 0x10 || op == 0x11:
 			out.Calls++
 			var end int
@@ -475,8 +480,12 @@ func checkFunction(f *slots.Function) error {
 				return wasm.ErrInvalid
 			}
 		}
-		if in.Op == 0x10 || in.Op == 0x11 {
-			if uint64(in.Extra)+uint64(in.Count)+uint64(len(f.Sources[in.Source].Outputs)) > uint64(len(f.Args)) {
+		if in.Op >= 0x10 && in.Op <= 0x13 {
+			outputs := 0
+			if in.Op <= 0x11 {
+				outputs = len(f.Sources[in.Source].Outputs)
+			}
+			if uint64(in.Extra)+uint64(in.Count)+uint64(outputs) > uint64(len(f.Args)) {
 				return wasm.ErrInvalid
 			}
 		}

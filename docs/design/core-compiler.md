@@ -338,3 +338,31 @@ The full archived feature proposal corpus is pinned in
 [testdata/extended-const](../../testdata/extended-const/README.md), alongside
 explicit default-profile rejection, resource, wrapping, cross-instance and
 public API tests. Core 3.0 profile acceptance remains separate.
+
+## Proper tail calls
+
+`wasm.TailCall` enables the two instructions in the original Tail Call proposal.
+The feature bit reaches decoding and validation independently: default Core 2.0
+still rejects their binary encodings. Tail calls require exactly matching return
+types, permit different parameter tuples, and make following code unreachable.
+The function-references proposal's `return_call_ref` remains a separate feature.
+
+Lowering emits a terminal `ir.TailCall`, verified against its typed operand
+and callee return schemas, with no intermediate result slots. Slot code retains the original Wasm
+opcode and source location, and stores the complete input tuple. Both native
+policy tiers publish a checked call boundary; no whole-function interpretation
+or competitor fallback is involved.
+
+The common frame machine resolves and checks the target before retiring the
+caller. A reusable pointer-free tuple buffer protects overlapping arguments
+before frame storage can grow or be reused. Replacement checks the callee's
+actual slot requirement at the caller's former base, rather than requiring
+space for both frames. The callee inherits the caller's original destination.
+An ordinary call continues to consume a new frame.
+
+A host tail transfer retires the guest frame before suspension. `HostCall.Caller`
+keeps the originating instance available to host memory access and collection,
+including across module boundaries. Pending arguments remain typed roots;
+the removed frame's locals do not. Host reentry sees the released frame quota.
+Each tail instruction consumes one fuel unit, and all transfers poll cancellation.
+Native direct tail-entry optimizations remain local follow-up work.
