@@ -1,0 +1,13 @@
+{
+  "revision": "d095e2f60ddae1f9a1e9b1e2fb547ec1114da677",
+  "sourcePath": "design/mvp/canonical-abi/definitions.py",
+  "seed": 20261030,
+  "uniqueTypes": 512,
+  "cases": 1024,
+  "sha256": {
+    "layout-oracle.json": "745b3a34d898fdd4b6444bcfcbe70114facf8d4e9eecd736140e88dce812e9db",
+    "definitions.py": "eff34e28dc0917f8a3690cb6cf3a182977b168a38ba2171c9c49b0edba38c8ca",
+    "generate.py": "5955fa63db217d1a10c241648a28c38f5b09a16e95cf5b5d7e35c49ef700c3cb",
+    "LICENSE-APACHE": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+  }
+}
