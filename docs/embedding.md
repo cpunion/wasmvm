@@ -179,3 +179,21 @@ errors remain distinct from Wasm traps.
 M1 remains open for own-engine benchmark integration and final
 acceptance. This API increment does not claim native execution, WASI support,
 controlled performance-gate acceptance or production security review.
+
+## Individually enabled extensions
+
+The default engine validates complete Core 2.0. To enable Extended Constant
+Expressions on either backend:
+
+```go
+config := vm.DefaultEngineConfig()
+config.Features = wasm.ExtendedConst
+engine, err := vm.NewEngineWithConfig(config)
+```
+
+This permits i32/i64 add, sub and mul in global initializers and active segment
+offsets. Validation applies the configured operand-stack limit. Imported
+immutable globals resolve separately for each instance; mutable or
+module-defined global reads remain invalid. `Inspect` and `CompiledModule.Info`
+report the enabled feature mask. Unknown feature bits return `ErrUnsupported`.
+The complete `core3` profile is not yet implemented.

@@ -30,6 +30,7 @@ type GlobalType = module.GlobalType
 type EngineConfig struct {
 	Backend  string
 	Profile  string
+	Features wasm.Features
 	Decode   DecodeLimits
 	Validate ValidationLimits
 	Lower    LoweringLimits
@@ -38,7 +39,7 @@ type EngineConfig struct {
 }
 
 func DefaultEngineConfig() EngineConfig {
-	return EngineConfig{"interpreter", "core2", decode.DefaultLimits(), validate.DefaultLimits(), lower.DefaultLimits(), slots.DefaultLimits(), codegen.DefaultLimits()}
+	return EngineConfig{Backend: "interpreter", Profile: "core2", Decode: decode.DefaultLimits(), Validate: validate.DefaultLimits(), Lower: lower.DefaultLimits(), Slots: slots.DefaultLimits(), Native: codegen.DefaultLimits()}
 }
 
 type Engine struct {
@@ -49,7 +50,7 @@ type Engine struct {
 
 func NewEngine() *Engine { e, _ := NewEngineWithConfig(DefaultEngineConfig()); return e }
 func NewEngineWithConfig(config EngineConfig) (*Engine, error) {
-	if config.Backend != "interpreter" && config.Backend != "native" || config.Backend == "native" && !native.Available || config.Profile != "core2" {
+	if config.Backend != "interpreter" && config.Backend != "native" || config.Backend == "native" && !native.Available || config.Profile != "core2" || config.Features & ^wasm.SupportedFeatures != 0 {
 		return nil, wasm.ErrUnsupported
 	}
 	return &Engine{config: config}, nil
@@ -126,7 +127,7 @@ func (e *Engine) frontend(ctx context.Context, input []byte) (*validate.Module, 
 	if err = e.check(ctx); err != nil {
 		return nil, err
 	}
-	v, err := validate.Check(m, e.config.Validate)
+	v, err := validate.CheckWithFeatures(m, e.config.Validate, e.config.Features)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +153,7 @@ func (e *Engine) Inspect(ctx context.Context, input []byte) (ModuleInfo, error) 
 		return ModuleInfo{}, err
 	}
 	info := describeModule(v.Definition())
-	info.Backend = e.config.Backend
+	info.Backend, info.Features = e.config.Backend, e.config.Features
 	if err := e.check(ctx); err != nil {
 		return ModuleInfo{}, err
 	}
@@ -211,6 +212,7 @@ type ExportInfo struct {
 }
 type ModuleInfo struct {
 	Backend, Profile string
+	Features         wasm.Features
 	Imports          []ImportInfo
 	Exports          []ExportInfo
 	Functions        uint32
@@ -223,7 +225,7 @@ func (m *CompiledModule) Info() (ModuleInfo, error) {
 		return ModuleInfo{}, err
 	}
 	info := describeModule(code.IR.Validated.Definition())
-	info.Backend = m.engine.config.Backend
+	info.Backend, info.Features = m.engine.config.Backend, m.engine.config.Features
 	return info, nil
 }
 func describeModule(d *module.Module) ModuleInfo {

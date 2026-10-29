@@ -67,3 +67,16 @@ For a checked example already in the repository:
 
 This returns i32 bits `0x12345678`. These CLI checks establish correct execution;
 process startup and JSON/file I/O costs are separate from engine benchmarks.
+
+## Extended Constant Expressions
+
+Pass `--extended-const` before the module path for validate, inspect or run:
+
+```sh
+wasmvm validate --extended-const module.wasm
+wasmvm inspect --backend native --extended-const module.wasm
+wasmvm run --extended-const --export run module.wasm
+```
+
+The JSON `features` field reports the enabled bit mask (`1` for this extension).
+The base profile remains `core2`; this option does not select full Core 3.0.

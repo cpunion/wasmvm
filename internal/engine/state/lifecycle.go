@@ -18,6 +18,17 @@ func (s *Store) Publish(in *Instance) error {
 	return nil
 }
 
+// HasUnpublished reports whether any instance can still become unreachable.
+// Published instances and host-owned objects remain Store-lifetime roots.
+func (s *Store) HasUnpublished() bool {
+	for _, in := range s.instances {
+		if !in.published {
+			return true
+		}
+	}
+	return false
+}
+
 // CollectFailed reclaims unpublished instances unreachable from published
 // instances, host-owned objects, explicit function roots, or active instances.
 // It runs only at a serialized safepoint. The driver must supply every active

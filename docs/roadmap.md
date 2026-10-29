@@ -200,6 +200,14 @@ WASI 1/2/3 remain required subsequent work. See the
 
 **Objective:** extend the same frontend, IR and both execution backends to the full pinned Core 3.0 binary profile and the separately enabled Threads profile.
 
+The first individually enabled extension is Extended Constant Expressions:
+`EngineConfig.Features = wasm.ExtendedConst` (CLI `--extended-const`). It covers
+all six integer operations, typed/limited validation and instance-specific
+global/segment evaluation shared by both backends. The three complete archived
+proposal scripts provide 215 binary assertions per execution tier. Default
+Core 2.0 remains strict; this increment does not enable a `core3` profile or
+complete M3. See the [initializer contract](design/core-compiler.md#individually-enabled-constant-expressions).
+
 - **Types and GC:** recursive type-group canonicalization, explicit subtyping/variance/nullability, typed references, structs/arrays/i31/casts/conversions, stable generation-checked handles, Store-private guest heap, quotas and tracing. Root stacks/locals/globals/tables, host roots, temporary allocation operands, suspended native/interpreter frames and exception payloads. Retire generation-overflow slots. Forced collection at every allocation/safepoint must preserve live objects and reclaim unreachable cycles.
 - **Control flow:** proper tail calls without growing host/guest call stacks, final EH with tag identity, `try_table`, `exnref`, `throw_ref`, unwinding and host boundaries. Legacy EH is not substituted for final EH.
 - **Remaining Core 3.0:** extended constants, Memory64 **and Table64**, multi-memory, relaxed SIMD, and every remaining feature in the pinned profile. Include address/index overflow and permitted nondeterministic numeric outcomes.

@@ -16,6 +16,7 @@ func DefaultLimits() Limits { return Limits{8 << 20, 100 << 20} }
 type Module struct {
 	Validated *validate.Module
 	Functions []*ir.Function
+	constants map[*module.Instr]uint64
 }
 type budget struct{ remaining uint64 }
 
@@ -47,6 +48,7 @@ func Compile(m *validate.Module, limits Limits) (result *Module, err error) {
 	definition := m.Definition()
 	b.charge(uint64(len(definition.Functions)))
 	result = &Module{Validated: m, Functions: make([]*ir.Function, len(definition.Functions))}
+	result.foldConstants(&b)
 	for index := range definition.Functions {
 		f := &definition.Functions[index]
 		sig := definition.Types[f.Type]

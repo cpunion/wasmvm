@@ -52,6 +52,7 @@ type specRunner struct {
 	named, registered map[string]*state.Instance
 	spectest          map[string]state.Extern
 	tier              int
+	features          wasm.Features
 	modules           map[*slots.Module]*nativeexec.Lease
 	t                 *testing.T
 }
@@ -98,11 +99,14 @@ func newSpec(t *testing.T, ctx context.Context, tier int) *specRunner {
 	return r
 }
 func compile(data []byte) (*slots.Module, error) {
+	return compileWithFeatures(data, 0)
+}
+func compileWithFeatures(data []byte, features wasm.Features) (*slots.Module, error) {
 	m, err := decode.Decode(data, decode.DefaultLimits())
 	if err != nil {
 		return nil, err
 	}
-	validated, err := validate.Check(m, validate.DefaultLimits())
+	validated, err := validate.CheckWithFeatures(m, validate.DefaultLimits(), features)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +128,7 @@ func (r *specRunner) resolve(m, n string) (state.Extern, bool) {
 	return state.Extern{}, false
 }
 func (r *specRunner) instantiate(data []byte) (*state.Instance, error) {
-	compiled, err := compile(data)
+	compiled, err := compileWithFeatures(data, r.features)
 	if err != nil {
 		return nil, err
 	}
@@ -275,70 +279,7 @@ func completeCore2(t *testing.T, tier int) {
 				if strings.HasPrefix(cmd.Type, "assert_") {
 					assertions++
 				}
-				var input []byte
-				if cmd.Filename != "" {
-					input, err = os.ReadFile(filepath.Join(filepath.Dir(path), cmd.Filename))
-					if err != nil {
-						t.Fatal(err)
-					}
-				}
-				fail := func(format string, args ...any) {
-					t.Helper()
-					t.Fatalf("%s:%d %s: %s", name, cmd.Line, cmd.Type, fmt.Sprintf(format, args...))
-				}
-				switch cmd.Type {
-				case "module":
-					in, err := r.instantiate(input)
-					if err != nil {
-						fail("%v", err)
-					}
-					r.last = in
-					if cmd.Name != "" {
-						r.named[cmd.Name] = in
-					}
-				case "register":
-					in := r.instance(cmd.Name)
-					if in == nil {
-						fail("unknown registration")
-					}
-					r.registered[cmd.As] = in
-				case "action":
-					if _, err := r.action(t, cmd.Action); err != nil {
-						fail("%v", err)
-					}
-				case "assert_malformed", "assert_invalid", "assert_unlinkable", "assert_uninstantiable":
-					_, err := r.instantiate(input)
-					want := map[string]error{"assert_malformed": wasm.ErrMalformed, "assert_invalid": wasm.ErrInvalid, "assert_unlinkable": state.ErrLink, "assert_uninstantiable": wasm.ErrTrap}[cmd.Type]
-					if !errors.Is(err, want) {
-						fail("got %v, want %v (%s)", err, want, cmd.Text)
-					}
-				case "assert_return":
-					got, err := r.action(t, cmd.Action)
-					if err != nil {
-						fail("%s: %v", cmd.Action.Field, err)
-					}
-					if len(got) != len(cmd.Expected) {
-						fail("results %v want %v", got, cmd.Expected)
-					}
-					for i, want := range cmd.Expected {
-						if !matchSpec(t, want, got[i]) {
-							fail("%s result %d: got %#v want %s (%s)", cmd.Action.Field, i, got[i], want.Value, want.Type)
-						}
-					}
-				case "assert_trap":
-					_, err := r.action(t, cmd.Action)
-					var trap *wasm.Trap
-					if !errors.As(err, &trap) || !trapMatches(trap.Code, cmd.Text) {
-						fail("%s got %v want trap %s", cmd.Action.Field, err, cmd.Text)
-					}
-				case "assert_exhaustion":
-					_, err := r.action(t, cmd.Action)
-					if !errors.Is(err, wasm.ErrLimit) || (!strings.Contains(err.Error(), "guest call stack exhausted") && !strings.Contains(err.Error(), "guest frame slots")) {
-						fail("got %v want call-stack exhaustion", err)
-					}
-				default:
-					fail("unclassified command")
-				}
+				r.runCommand(t, cmd, path)
 			}
 		})
 		return nil
@@ -489,4 +430,74 @@ func matchSpec(t *testing.T, want specValue, got value.Value) bool {
 		}
 	}
 	return true
+}
+
+func (r *specRunner) runCommand(t *testing.T, cmd specCommand, path string) {
+	t.Helper()
+	name := filepath.Base(filepath.Dir(path))
+	var input []byte
+	var err error
+	if cmd.Filename != "" {
+		input, err = os.ReadFile(filepath.Join(filepath.Dir(path), cmd.Filename))
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	fail := func(format string, args ...any) {
+		t.Helper()
+		t.Fatalf("%s:%d %s: %s", name, cmd.Line, cmd.Type, fmt.Sprintf(format, args...))
+	}
+	switch cmd.Type {
+	case "module":
+		in, err := r.instantiate(input)
+		if err != nil {
+			fail("%v", err)
+		}
+		r.last = in
+		if cmd.Name != "" {
+			r.named[cmd.Name] = in
+		}
+	case "register":
+		in := r.instance(cmd.Name)
+		if in == nil {
+			fail("unknown registration")
+		}
+		r.registered[cmd.As] = in
+	case "action":
+		if _, err := r.action(t, cmd.Action); err != nil {
+			fail("%v", err)
+		}
+	case "assert_malformed", "assert_invalid", "assert_unlinkable", "assert_uninstantiable":
+		_, err := r.instantiate(input)
+		want := map[string]error{"assert_malformed": wasm.ErrMalformed, "assert_invalid": wasm.ErrInvalid, "assert_unlinkable": state.ErrLink, "assert_uninstantiable": wasm.ErrTrap}[cmd.Type]
+		if !errors.Is(err, want) {
+			fail("got %v, want %v (%s)", err, want, cmd.Text)
+		}
+	case "assert_return":
+		got, err := r.action(t, cmd.Action)
+		if err != nil {
+			fail("%s: %v", cmd.Action.Field, err)
+		}
+		if len(got) != len(cmd.Expected) {
+			fail("results %v want %v", got, cmd.Expected)
+		}
+		for i, want := range cmd.Expected {
+			if !matchSpec(t, want, got[i]) {
+				fail("%s result %d: got %#v want %s (%s)", cmd.Action.Field, i, got[i], want.Value, want.Type)
+			}
+		}
+	case "assert_trap":
+		_, err := r.action(t, cmd.Action)
+		var trap *wasm.Trap
+		if !errors.As(err, &trap) || !trapMatches(trap.Code, cmd.Text) {
+			fail("%s got %v want trap %s", cmd.Action.Field, err, cmd.Text)
+		}
+	case "assert_exhaustion":
+		_, err := r.action(t, cmd.Action)
+		if !errors.Is(err, wasm.ErrLimit) || (!strings.Contains(err.Error(), "guest call stack exhausted") && !strings.Contains(err.Error(), "guest frame slots")) {
+			fail("got %v want call-stack exhaustion", err)
+		}
+	default:
+		fail("unclassified command")
+	}
 }

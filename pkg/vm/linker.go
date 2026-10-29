@@ -168,6 +168,12 @@ func (l *Linker) Instantiate(ctx context.Context, compiled *CompiledModule, opti
 	if err = l.store.state.Publish(in); err != nil {
 		return nil, err
 	}
+	// Successful publication owns its code lease. Without externref payloads
+	// or unpublished instances there is nothing a Store scan can reclaim.
+	// Failure paths retain collection, including orphaned native leases.
+	l.store.mu.Lock()
+	op.collect = len(l.store.externs) != 0 || l.store.state.HasUnpublished()
+	l.store.mu.Unlock()
 	return &Instance{store: l.store, instance: in, startFuelRemaining: op.fuel}, nil
 }
 func (in *Instance) Export(name string) (Extern, error) {
