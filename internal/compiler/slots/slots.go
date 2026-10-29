@@ -73,7 +73,7 @@ func (b *budget) addSlot(f *Function, t wasm.ValueType) Slot {
 	}
 	b.charge(1)
 	s := Slot(len(f.Slots))
-	f.Slots = append(f.Slots, t)
+	f.Slots = append(f.Slots, t.Storage())
 	return s
 }
 
@@ -166,7 +166,7 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 	release := func(v ir.Value) {
 		if !pinned[v] && !coalesced[v] && uses[v] == 0 && literals.release(out.ValueSlots[v]) {
 			t := f.Values[v]
-			free[t] = append(free[t], out.ValueSlots[v])
+			free[t.Storage()] = append(free[t.Storage()], out.ValueSlots[v])
 		}
 	}
 	for bi, b := range f.Blocks {
@@ -204,12 +204,12 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 						continue
 					}
 				}
-				if k := len(free[t]); k > 0 {
-					out.ValueSlots[v] = free[t][k-1]
-					free[t] = free[t][:k-1]
+				if k := len(free[t.Storage()]); k > 0 {
+					out.ValueSlots[v] = free[t.Storage()][k-1]
+					free[t.Storage()] = free[t.Storage()][:k-1]
 				} else {
 					s := budget.addSlot(out, t)
-					all[t] = append(all[t], s)
+					all[t.Storage()] = append(all[t.Storage()], s)
 					out.ValueSlots[v] = s
 				}
 				if constant {
@@ -219,7 +219,7 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 			// SSA locations remain stable after release. Integer operands, local
 			// copies and equal literals can alias; suspended call tuples cannot.
 			in := Instruction{Op: src.Wasm.Op, Source: op.Source, Dst: NoSlot, A: NoSlot, B: NoSlot, C: NoSlot}
-			if in.Op == 0x10 || in.Op == 0x11 {
+			if in.Op == 0x10 || in.Op == 0x11 || in.Op == 0x14 {
 				in.Extra = uint32(len(out.Args))
 				in.Count = uint32(len(op.Args))
 				budget.charge(uint64(len(op.Args)) + uint64(len(op.Results)))

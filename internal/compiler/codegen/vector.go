@@ -136,7 +136,7 @@ func (e *functionEmitter) prepareVectorConstants() {
 	// this changes allocation priority only, never a continuation's semantics.
 	deltas := make([]int, len(e.f.Code)+1)
 	for pc, in := range e.f.Code {
-		if in.Op != slots.ControlBase+uint32(ir.Jump) && in.Op != slots.ControlBase+uint32(ir.If) && in.Op != slots.ControlBase+uint32(ir.Table) {
+		if in.Op != slots.ControlBase+uint32(ir.Jump) && in.Op != slots.ControlBase+uint32(ir.If) && in.Op != slots.ControlBase+uint32(ir.Table) && in.Op != slots.ControlBase+uint32(ir.IfNull) {
 			continue
 		}
 		for _, edge := range e.f.Edges[in.Extra : in.Extra+in.Count] {

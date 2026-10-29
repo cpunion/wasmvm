@@ -41,6 +41,10 @@ func TestMemory64Proposal(t *testing.T) {
 	runProposal(t, proposalCorpus{"memory64", "9003cd5e24e53b84cd9027ea3dd7ae57159a6db1", wasm.Memory64 | wasm.MultiMemory | wasm.ExtendedConst, []string{"address64", "align64", "endianness64", "float_memory64", "load64", "memory64", "memory_grow64", "memory_redundancy64", "memory_trap64", "memory_copy", "memory_fill", "memory_init", "table_copy", "table_copy_mixed", "table_fill", "table_get", "table_grow", "table_init", "table_set", "table_size", "call_indirect"}, 1041, 13599, 13069, 70})
 }
 
+func TestFunctionReferencesProposal(t *testing.T) {
+	runProposal(t, proposalCorpus{"function-references", "74d2ec81d15efd3c0f2fba46a023f376101d8e46", wasm.FunctionReferences | wasm.TailCall, []string{"br_on_non_null", "br_on_null", "br_table", "call_ref", "elem", "func", "linking", "local_init", "ref", "ref_as_non_null", "ref_is_null", "ref_null", "return_call_ref", "select", "table", "table-sub", "type-equivalence", "unreached-invalid", "unreached-valid"}, 588, 1174, 978, 29})
+}
+
 func runProposal(t *testing.T, corpus proposalCorpus) {
 	root := filepath.Join("../../../testdata", corpus.name)
 	raw, err := os.ReadFile(filepath.Join(root, "manifest.json"))

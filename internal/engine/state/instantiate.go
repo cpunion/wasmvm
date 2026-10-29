@@ -43,6 +43,7 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 			s.memories = s.memories[:oldMemories]
 			clear(s.globals[oldGlobals:])
 			s.globals = s.globals[:oldGlobals]
+			s.typeDefinitions = s.typeDefinitions[:oldTypes+1]
 			for key, id := range s.types {
 				if int(id) > oldTypes {
 					delete(s.types, key)
@@ -51,13 +52,21 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 		}
 	}()
 	instance = &Instance{Owner: s, Compiled: compiled, Exports: make(map[string]Extern)}
+	instance.Types = make([]uint32, len(definition.Types))
+	for i, t := range definition.Types {
+		id := s.TypeID(canonicalSignature(t, instance.Types))
+		if id == 0 {
+			return nil, limit("function types")
+		}
+		instance.Types[i] = id
+	}
 	for _, im := range definition.Imports {
 		var ex Extern
 		var found bool
 		if resolve != nil {
 			ex, found = resolve(im.Module, im.Name)
 		}
-		if !found || !s.matches(ex, im, definition) {
+		if !found || !s.matches(ex, im, instance) {
 			return nil, fmt.Errorf("%w: %s.%s", ErrLink, im.Module, im.Name)
 		}
 		switch im.Kind {
@@ -77,23 +86,21 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 	if uint64(len(definition.Functions)) > uint64(s.limits.MaxFunctions)-uint64(len(s.functions)-1) {
 		return nil, limit("functions")
 	}
-	instance.Types = make([]uint32, len(definition.Types))
-	for i, t := range definition.Types {
-		id := s.TypeID(t)
-		if id == 0 {
-			return nil, limit("function types")
-		}
-		instance.Types[i] = id
-	}
+
 	for i, f := range definition.Functions {
 		id := uint64(len(s.functions))
 		index := uint32(len(instance.Functions))
 		instance.Functions = append(instance.Functions, id)
-		s.functions = append(s.functions, &Function{Owner: s, Signature: definition.Types[f.Type], TypeID: instance.Types[f.Type], Instance: instance, Code: compiled.Functions[i], Index: index})
+		s.functions = append(s.functions, &Function{Owner: s, Signature: s.typeDefinitions[instance.Types[f.Type]], TypeID: instance.Types[f.Type], Instance: instance, Code: compiled.Functions[i], Index: index})
 		s.usage.Functions++
 	}
-	for _, t := range definition.Tables {
-		ex, e := s.NewTable(t)
+	for i, t := range definition.Tables {
+		t.Element = canonicalType(t.Element, instance.Types)
+		var initial []uint64
+		if len(definition.TableInit) != 0 && definition.TableInit[i] != nil {
+			initial = []uint64{constant(instance, definition.TableInit[i], scratch).Lo}
+		}
+		ex, e := s.NewTable(t, initial...)
 		if e != nil {
 			return nil, e
 		}
@@ -121,7 +128,9 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 	for i := range definition.Globals {
 		g := &definition.Globals[i]
 		cell := &globals[i]
-		*cell = Global{OwnerInstance: instance, Owner: s, Type: g.Type, Value: constant(instance, g.Init, scratch)}
+		typ := g.Type
+		typ.Value = canonicalType(typ.Value, instance.Types)
+		*cell = Global{OwnerInstance: instance, Owner: s, Type: typ, Value: constant(instance, g.Init, scratch)}
 		s.globals[storeBase+i], instance.Globals[instanceBase+i] = cell, cell
 	}
 	s.usage.Globals += uint64(count)

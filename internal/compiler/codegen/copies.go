@@ -172,5 +172,5 @@ func (e *functionEmitter) forwardScalarResult(pc int) bool {
 // These operations can exit before producing their result. Copies needed by
 // a trap frame must remain materialized ahead of them.
 func scalarCanTrap(op uint32) bool {
-	return op >= 0x6d && op <= 0x70 || op >= 0x7f && op <= 0x82 || op >= 0xa8 && op <= 0xab || op >= 0xae && op <= 0xb1
+	return op == 0xd4 || op >= 0x6d && op <= 0x70 || op >= 0x7f && op <= 0x82 || op >= 0xa8 && op <= 0xab || op >= 0xae && op <= 0xb1
 }

@@ -222,11 +222,11 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		src := f.Sources[in.Source]
 		isControl := in.Op >= slots.ControlBase
 		if unmetered {
-			if pc%256 == 0 || in.Op >= 0x10 && in.Op <= 0x13 || isControl && !e.fallthroughEdge(pc) {
+			if pc%256 == 0 || in.Op >= 0x10 && in.Op <= 0x15 || isControl && !e.fallthroughEdge(pc) {
 				e.interrupt(uint32(pc))
 			}
 		} else {
-			e.boundary(uint32(pc), src, in.Op >= 0x10 && in.Op <= 0x13 || isControl)
+			e.boundary(uint32(pc), src, in.Op >= 0x10 && in.Op <= 0x15 || isControl)
 		}
 		if region, ok := regions[pc]; ok {
 			e.emitMemoryRegion(pc, region, pcs, out)
@@ -307,6 +307,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				e.trap(wasm.TrapUnreachable, uint64(src.Wasm.Offset))
 			case ir.Jump:
 				e.edge(in.Extra, pcs, pc+1)
+			case ir.IfNull:
+				e.nullConditionalEdges(in, pcs, pc+1)
 			case ir.If:
 				e.conditionalEdges(in, pcs, pc+1)
 			case ir.Table:
@@ -343,12 +345,12 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			out.MemoryGrows++
 			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
 			e.leave(nativeabi.GrowMemory, uint64(pc), uint64(pc+1))
-		case op == 0x12 || op == 0x13:
+		case op == 0x12 || op == 0x13 || op == 0x15:
 			out.Calls++
 			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
 			// Tail calls discard this continuation in the common frame driver.
 			e.leave(nativeabi.Call, uint64(pc), uint64(pc))
-		case op == 0x10 || op == 0x11:
+		case op == 0x10 || op == 0x11 || op == 0x14:
 			out.Calls++
 			var end int
 			var expanded bool
@@ -357,7 +359,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				if expanded {
 					out.InlineSlots = max(out.InlineSlots, uint32(len(config.DirectCallees[src.Wasm.A].Slots)))
 				}
-			} else {
+			} else if op == 0x11 {
 				var needed uint32
 				end, needed, expanded = e.inlineIndirect(pc, config)
 				if expanded {
@@ -473,7 +475,7 @@ func checkFunction(f *slots.Function) error {
 			return wasm.ErrInvalid
 		}
 		if in.Op >= slots.ControlBase {
-			if in.Op > slots.ControlBase+uint32(ir.Trap) {
+			if in.Op > slots.ControlBase+uint32(ir.IfNull) {
 				return wasm.ErrInvalid
 			}
 			kind := ir.TermKind(in.Op - slots.ControlBase)
@@ -483,17 +485,17 @@ func checkFunction(f *slots.Function) error {
 					return wasm.ErrInvalid
 				}
 			case ir.Trap:
-			case ir.Jump, ir.If, ir.Table:
-				if in.Count == 0 || kind == ir.Jump && in.Count != 1 || kind == ir.If && in.Count != 2 || uint64(in.Extra)+uint64(in.Count) > uint64(len(f.Edges)) {
+			case ir.Jump, ir.If, ir.Table, ir.IfNull:
+				if in.Count == 0 || kind == ir.Jump && in.Count != 1 || (kind == ir.If || kind == ir.IfNull) && in.Count != 2 || uint64(in.Extra)+uint64(in.Count) > uint64(len(f.Edges)) {
 					return wasm.ErrInvalid
 				}
 			default:
 				return wasm.ErrInvalid
 			}
 		}
-		if in.Op >= 0x10 && in.Op <= 0x13 {
+		if in.Op >= 0x10 && in.Op <= 0x15 {
 			outputs := 0
-			if in.Op <= 0x11 {
+			if in.Op <= 0x11 || in.Op == 0x14 {
 				outputs = len(f.Sources[in.Source].Outputs)
 			}
 			if uint64(in.Extra)+uint64(in.Count)+uint64(outputs) > uint64(len(f.Args)) {

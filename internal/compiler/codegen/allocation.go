@@ -19,7 +19,7 @@ func instructionFrequencies(f *slots.Function) []uint64 {
 	work := uint64(len(f.Code)+len(f.Edges)) * 4
 	found := false
 	for pc, in := range f.Code {
-		if in.Op < slots.ControlBase+uint32(ir.Jump) || in.Op > slots.ControlBase+uint32(ir.Table) {
+		if in.Op < slots.ControlBase+uint32(ir.Jump) || in.Op > slots.ControlBase+uint32(ir.Table) && in.Op != slots.ControlBase+uint32(ir.IfNull) {
 			continue
 		}
 		if uint64(in.Count) > work {
@@ -117,9 +117,9 @@ func slotPriorities(f *slots.Function, regions map[int]memoryRegion, frequencies
 		if w == 1 {
 			continue
 		}
-		if in.Op >= 0x10 && in.Op <= 0x13 || in.Op == slots.ControlBase+uint32(ir.Return) {
+		if in.Op >= 0x10 && in.Op <= 0x15 || in.Op == slots.ControlBase+uint32(ir.Return) {
 			count := uint64(in.Count)
-			if in.Op == 0x10 || in.Op == 0x11 {
+			if in.Op == 0x10 || in.Op == 0x11 || in.Op == 0x14 {
 				count += uint64(len(f.Sources[in.Source].Outputs))
 			}
 			if count <= work {
@@ -128,7 +128,7 @@ func slotPriorities(f *slots.Function, regions map[int]memoryRegion, frequencies
 					use(s, w-1)
 				}
 			}
-		} else if in.Op >= slots.ControlBase+uint32(ir.Jump) && in.Op <= slots.ControlBase+uint32(ir.Table) {
+		} else if in.Op >= slots.ControlBase+uint32(ir.Jump) && (in.Op <= slots.ControlBase+uint32(ir.Table) || in.Op == slots.ControlBase+uint32(ir.IfNull)) {
 			if uint64(in.Count) > work {
 				continue
 			}

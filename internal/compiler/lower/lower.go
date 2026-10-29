@@ -53,7 +53,7 @@ func Compile(m *validate.Module, limits Limits) (result *Module, err error) {
 		f := &definition.Functions[index]
 		sig := definition.Types[f.Type]
 		b.charge(uint64(len(f.Body)) + uint64(len(sig.Params)) + uint64(f.LocalCount))
-		out := &ir.Function{Signature: sig, Locals: append([]wasm.ValueType(nil), sig.Params...), Sources: make([]ir.Source, len(f.Body))}
+		out := &ir.Function{Signature: sig, Locals: append([]wasm.ValueType(nil), sig.Params...), Sources: make([]ir.Source, len(f.Body)), TypeLabels: m.TypeLabels()}
 		for _, group := range f.Locals {
 			for n := uint32(0); n < group.Count; n++ {
 				out.Locals = append(out.Locals, group.Type)
@@ -144,7 +144,7 @@ func (l *lowerer) blockType(t int64) module.FuncType {
 		return module.FuncType{}
 	}
 	if t < 0 {
-		return module.FuncType{Results: []wasm.ValueType{wasm.ValueType(byte(t) & 0x7f)}}
+		return module.FuncType{Results: []wasm.ValueType{module.BlockResult(t)}}
 	}
 	return l.definition.Types[t]
 }
@@ -198,12 +198,31 @@ func (l *lowerer) visit(pc int, in module.Instr, inputs, outputs []wasm.ValueTyp
 		// Structurally unreachable operations have no run-time effect or fuel.
 	case op == 0:
 		l.terminate(ir.Terminator{Kind: ir.Trap, Source: source})
-	case op == 0x12 || op == 0x13:
+	case module.IsTailCall(op):
 		l.budget.charge(uint64(len(inputs)))
 		l.f.Sources[pc].Inputs = append([]wasm.ValueType(nil), inputs...)
 		// The callee return schema is verified, but creates no local SSA results.
 		l.f.Sources[pc].Outputs = append([]wasm.ValueType(nil), l.f.Signature.Results...)
 		l.terminate(ir.Terminator{Kind: ir.TailCall, Source: source, Args: l.copyValues(l.suffix(len(inputs)))})
+	case op == 0xd5 || op == 0xd6:
+		ref := l.stack[len(l.stack)-1]
+		l.stack = l.stack[:len(l.stack)-1]
+		label := l.frames[len(l.frames)-1-int(in.A)].label
+		if op == 0xd5 {
+			cont := l.newBlock([]wasm.ValueType{l.f.Values[ref].NonNull()})
+			l.incoming[cont]++
+			l.terminate(ir.Terminator{Kind: ir.IfNull, Source: source, Args: []ir.Value{ref}, Edges: []ir.Edge{l.edge(label), {Target: cont, Args: []ir.Value{ref}}}})
+			l.current = int(cont)
+			l.stack = append(l.stack, l.f.Blocks[cont].Params...)
+		} else {
+			cont := l.newBlock(nil)
+			l.incoming[cont]++
+			l.stack = append(l.stack, ref)
+			edge := l.edge(label)
+			l.stack = l.stack[:len(l.stack)-1]
+			l.terminate(ir.Terminator{Kind: ir.IfNull, Source: source, Args: []ir.Value{ref}, Edges: []ir.Edge{{Target: cont}, edge}})
+			l.current = int(cont)
+		}
 	case op == 0xc || op == 0xf:
 		label := l.frames[0].label
 		if op == 0xc {

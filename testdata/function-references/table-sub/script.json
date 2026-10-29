@@ -1,0 +1,5 @@
+{"source_filename": "/tmp/wasmvm-function-references/all/table-sub.wast",
+ "commands": [
+  {"type": "module", "line": 1, "filename": "script.0.wasm"}, 
+  {"type": "assert_invalid", "line": 13, "filename": "script.1.wasm", "text": "type mismatch", "module_type": "binary"}, 
+  {"type": "assert_invalid", "line": 24, "filename": "script.2.wasm", "text": "type mismatch", "module_type": "binary"}]}

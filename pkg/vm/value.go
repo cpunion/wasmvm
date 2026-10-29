@@ -31,7 +31,7 @@ func F32Bits(v uint32) Value             { return Value{kind: wasm.F32, bits: va
 func F64Bits(v uint64) Value             { return Value{kind: wasm.F64, bits: value.Value{Lo: v}} }
 func V128(lo, hi uint64) Value           { return Value{kind: wasm.V128, bits: value.Value{Lo: lo, Hi: hi}} }
 func NullRef(t wasm.ValueType) (Value, error) {
-	if !t.IsReference() {
+	if !t.IsReference() || !t.Nullable() {
 		return Value{}, ErrType
 	}
 	return Value{kind: t}, nil
@@ -57,17 +57,36 @@ func (v Value) Release() {
 }
 func (s *Store) releaseLocked(r *reference) { r.released = true; delete(s.roots, r) }
 func (s *Store) rawLocked(v Value, t wasm.ValueType) (value.Value, error) {
-	if v.kind != t || !t.Valid() {
+	if !t.Valid() {
 		return value.Value{}, ErrType
 	}
 	if !t.IsReference() {
+		if v.kind != t {
+			return value.Value{}, ErrType
+		}
 		return v.bits, nil
 	}
+	if !v.kind.IsReference() || v.kind.Storage() != t.Storage() {
+		return value.Value{}, ErrType
+	}
 	if v.ref == nil {
+		if !t.Nullable() {
+			return value.Value{}, ErrType
+		}
+		// Null still carries a static heap type; preserve its import/call contract.
+		if !wasm.ReferenceSubtype(v.kind, t, nil) {
+			return value.Value{}, ErrType
+		}
 		return value.Value{}, nil
 	}
 	if v.ref.store != s || v.ref.released || s.closing {
 		return value.Value{}, ErrReference
+	}
+	if index, indexed := t.TypeIndex(); indexed {
+		f, ok := s.state.Function(v.ref.id)
+		if !t.Canonical() || !ok || f.TypeID != index {
+			return value.Value{}, ErrType
+		}
 	}
 	return value.Value{Lo: v.ref.id}, nil
 }

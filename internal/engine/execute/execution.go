@@ -8,6 +8,7 @@ import (
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
+	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/numeric"
 	"github.com/cpunion/wasmvm/internal/engine/simd"
 	"github.com/cpunion/wasmvm/internal/engine/state"
@@ -242,7 +243,7 @@ frames:
 			var result value.Value
 			trap := wasm.NoTrap
 			switch op := in.Op; op {
-			case slots.ControlBase + uint32(ir.Jump), slots.ControlBase + uint32(ir.If), slots.ControlBase + uint32(ir.Table), slots.ControlBase + uint32(ir.Return), slots.ControlBase + uint32(ir.Trap):
+			case slots.ControlBase + uint32(ir.IfNull), slots.ControlBase + uint32(ir.Jump), slots.ControlBase + uint32(ir.If), slots.ControlBase + uint32(ir.Table), slots.ControlBase + uint32(ir.Return), slots.ControlBase + uint32(ir.Trap):
 				kind := ir.TermKind(op - slots.ControlBase)
 				if kind == ir.Trap {
 					trap = wasm.TrapUnreachable
@@ -271,7 +272,9 @@ frames:
 					continue frames
 				}
 				index := uint32(0)
-				if kind == ir.If && uint32(a.Lo) == 0 {
+				if kind == ir.IfNull && a.Lo != 0 {
+					index = 1
+				} else if kind == ir.If && uint32(a.Lo) == 0 {
 					index = 1
 				} else if kind == ir.Table {
 					index = uint32(a.Lo)
@@ -466,19 +469,32 @@ frames:
 				0xfc0002, 0xfc0003, 0xfc0004, 0xfc0005, 0xfc0006, 0xfc0007:
 				result.Lo, trap = numeric.Eval(op, a.Lo, b.Lo)
 			case 0xd0:
+			case 0xd4:
+				if a.Lo == 0 {
+					trap = wasm.TrapNullReference
+				} else {
+					result = a
+				}
 			case 0xd1:
 				if a.Lo == 0 {
 					result.Lo = 1
 				}
 			case 0xd2:
 				result.Lo = instance.Functions[im.A]
-			case 0x10, 0x11, 0x12, 0x13:
-				tail := op >= 0x12
+			case 0x10, 0x11, 0x12, 0x13, 0x14, 0x15:
+				tail := module.IsTailCall(op)
 				count := in.Count
 				inputs := code.Args[in.Extra : in.Extra+count]
 				var target uint64
 				if op == 0x10 || op == 0x12 {
 					target = instance.Functions[im.A]
+				} else if op == 0x14 || op == 0x15 {
+					count--
+					target = values[int(inputs[count])].Lo
+					if target == 0 {
+						trap = wasm.TrapNullReference
+						break
+					}
 				} else {
 					count--
 					table := instance.Tables[im.B]
@@ -497,7 +513,7 @@ frames:
 				if !ok {
 					return e.fail(state.ErrReference)
 				}
-				if (op == 0x11 || op == 0x13) && callee.TypeID != instance.Types[im.A] {
+				if (op == 0x11 || op == 0x13 || op == 0x14 || op == 0x15) && callee.TypeID != instance.Types[im.A] {
 					trap = wasm.TrapIndirectCallType
 					break
 				}

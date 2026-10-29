@@ -8,7 +8,7 @@ import (
 
 func TestTrapCodes(t *testing.T) {
 	seen := make(map[string]bool)
-	for code := NoTrap; code <= TrapInvalidConversion; code++ {
+	for code := NoTrap; code <= TrapNullReference; code++ {
 		s := code.String()
 		if s == "" || s == "unknown trap" || seen[s] {
 			t.Fatal(code, s)

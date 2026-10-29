@@ -37,6 +37,26 @@ func (e *functionEmitter) conditionalEdges(in slots.Instruction, pcs []int, next
 	e.conditionalEdgesUsing(in, pcs, next, e.branchCondition)
 }
 
+func (e *functionEmitter) nullConditionalEdges(in slots.Instruction, pcs []int, next int) {
+	e.conditionalEdgesUsing(in, pcs, next, func(slot slots.Slot, label int, null bool) {
+		r, cached := e.registers[slot]
+		if !cached {
+			e.slotLoad(slot, 0, false, true)
+			r = e.operandRegister(0)
+		}
+		if e.a.arch == "arm64" {
+			e.a.compareBranch(label, r, true, !null)
+		} else {
+			e.a.bytes(0x48|(r>>3)<<2|r>>3, 0x85, 0xc0|(r&7)<<3|(r&7))
+			cc := byte(5)
+			if null {
+				cc = 4
+			}
+			e.a.branch(label, true, cc)
+		}
+	})
+}
+
 func (e *functionEmitter) conditionalEdgesUsing(in slots.Instruction, pcs []int, next int, branch func(slots.Slot, int, bool)) {
 	yes, no := e.f.Edges[in.Extra], e.f.Edges[in.Extra+1]
 	if yes.Count == 0 && (int(no.PC) == next || no.Count != 0 || int(yes.PC) != next) {

@@ -201,7 +201,7 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 			op := fn.Code.Code[pc].Op
 			// Reject mismatched exits instead of interpreting arbitrary code.
 			valid := exit == native.Return && op == slots.ControlBase+uint32(ir.Return) ||
-				exit == native.Call && (op >= 0x10 && op <= 0x13) || exit == native.GrowMemory && op == 0x40 ||
+				exit == native.Call && (op >= 0x10 && op <= 0x15) || exit == native.GrowMemory && op == 0x40 ||
 				exit == native.RuntimeHelper && (op >= 0x23 && op <= 0x26 || op == 0xd2 || op >= 0xfc0008 && op <= 0xfc0011 || op>>16 == 0xfd)
 			if !valid {
 				return 0, s.Fuel, wasm.ErrInvalid

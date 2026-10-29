@@ -48,6 +48,7 @@ const (
 	Return
 	Trap
 	TailCall
+	IfNull // edges are ordered null, non-null; the latter refines its condition
 )
 
 type Terminator struct {
@@ -62,11 +63,12 @@ type Block struct {
 	Term   Terminator
 }
 type Function struct {
-	Signature module.FuncType
-	Locals    []wasm.ValueType
-	Values    []wasm.ValueType
-	Sources   []Source
-	Blocks    []Block
+	Signature  module.FuncType
+	Locals     []wasm.ValueType
+	Values     []wasm.ValueType
+	Sources    []Source
+	Blocks     []Block
+	TypeLabels []uint32
 }
 
 type Effects uint32
@@ -92,10 +94,12 @@ func EffectsOf(op uint32) Effects {
 	switch {
 	case op == 0:
 		return MayTrap
-	case op >= 0x10 && op <= 0x13:
+	case module.IsCall(op):
 		return ReadGlobal | WriteGlobal | ReadMemory | WriteMemory | ReadTable | WriteTable | ReadSegment | WriteSegment | MayTrap | MayCallHost | MayAllocate | MaySuspend
 	case op == 0x20:
 		return ReadLocal
+	case op == 0xd4:
+		return MayTrap
 	case op == 0x21 || op == 0x22:
 		return WriteLocal
 	case op == 0x23:
