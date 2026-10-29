@@ -242,8 +242,33 @@ frames:
 			}
 			var result value.Value
 			trap := wasm.NoTrap
+			if in.Op>>16 == 0xfb {
+				var local [5]value.Value
+				operands := local[:0]
+				if int(in.Count) > cap(operands) {
+					operands = make([]value.Value, 0, in.Count)
+				}
+				for _, slot := range code.Args[in.Extra : in.Extra+in.Count] {
+					operands = append(operands, values[int(slot)])
+				}
+				var err error
+				result, err = e.store.GC(e.context, instance, im, operands, e.RetainedValues)
+				if err != nil {
+					var t *wasm.Trap
+					if errors.As(err, &t) {
+						t.Function = fn.Index
+					}
+					return e.fail(err)
+				}
+				if in.Dst != slots.NoSlot {
+					values[int(in.Dst)] = result
+				}
+				pc++
+				f.pc = pc
+				continue
+			}
 			switch op := in.Op; op {
-			case slots.ControlBase + uint32(ir.IfNull), slots.ControlBase + uint32(ir.Jump), slots.ControlBase + uint32(ir.If), slots.ControlBase + uint32(ir.Table), slots.ControlBase + uint32(ir.Return), slots.ControlBase + uint32(ir.Trap):
+			case slots.ControlBase + uint32(ir.IfCast), slots.ControlBase + uint32(ir.IfNull), slots.ControlBase + uint32(ir.Jump), slots.ControlBase + uint32(ir.If), slots.ControlBase + uint32(ir.Table), slots.ControlBase + uint32(ir.Return), slots.ControlBase + uint32(ir.Trap):
 				kind := ir.TermKind(op - slots.ControlBase)
 				if kind == ir.Trap {
 					trap = wasm.TrapUnreachable
@@ -272,7 +297,9 @@ frames:
 					continue frames
 				}
 				index := uint32(0)
-				if kind == ir.IfNull && a.Lo != 0 {
+				if kind == ir.IfCast && !e.store.TestReference(a.Lo, module.ResolveType(im.Types[1], instance.Types)) {
+					index = 1
+				} else if kind == ir.IfNull && a.Lo != 0 {
 					index = 1
 				} else if kind == ir.If && uint32(a.Lo) == 0 {
 					index = 1
@@ -468,6 +495,10 @@ frames:
 				0xba, 0xbb, 0xbc, 0xbd, 0xbe, 0xbf, 0xfc0000, 0xfc0001,
 				0xfc0002, 0xfc0003, 0xfc0004, 0xfc0005, 0xfc0006, 0xfc0007:
 				result.Lo, trap = numeric.Eval(op, a.Lo, b.Lo)
+			case 0xd3:
+				if a.Lo == b.Lo {
+					result.Lo = 1
+				}
 			case 0xd0:
 			case 0xd4:
 				if a.Lo == 0 {
@@ -513,7 +544,7 @@ frames:
 				if !ok {
 					return e.fail(state.ErrReference)
 				}
-				if (op == 0x11 || op == 0x13 || op == 0x14 || op == 0x15) && callee.TypeID != instance.Types[im.A] {
+				if (op == 0x11 || op == 0x13 || op == 0x14 || op == 0x15) && !e.store.FunctionSubtype(callee.TypeID, instance.Types[im.A]) {
 					trap = wasm.TrapIndirectCallType
 					break
 				}

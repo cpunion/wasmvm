@@ -31,7 +31,7 @@ func (ex Extern) Call(ctx context.Context, args []Value, options CallOptions) (C
 	}
 	return ex.store.Call(ctx, ex, args, options)
 }
-func (s *Store) NewFunction(signature FunctionType, callback HostFunction) (Extern, error) {
+func (s *Store) NewFunction(signature FunctionType, callback HostFunction, referenceType ...wasm.ValueType) (Extern, error) {
 	op, err := s.begin(nil, CallOptions{})
 	if err != nil {
 		return Extern{}, err
@@ -47,7 +47,12 @@ func (s *Store) NewFunction(signature FunctionType, callback HostFunction) (Exte
 			}
 		}
 	}
-	ex, err := s.state.NewHost(signature, callback)
+	for _, typ := range referenceType {
+		if err := s.referenceFeature(typ); err != nil {
+			return Extern{}, err
+		}
+	}
+	ex, err := s.state.NewHost(signature, callback, referenceType...)
 	if err != nil {
 		return Extern{}, err
 	}
@@ -87,7 +92,7 @@ func (ex Extern) Reference() (Value, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	typ := wasm.FuncRef
-	if s.engine.config.Features&wasm.FunctionReferences != 0 {
+	if s.engine.config.Features&(wasm.FunctionReferences|wasm.GC) != 0 {
 		f, ok := s.state.Function(ex.external.Function)
 		if !ok {
 			return Value{}, ErrReference
@@ -153,7 +158,7 @@ func (l *Linker) Instantiate(ctx context.Context, compiled *CompiledModule, opti
 		imports[key] = ex.external
 	}
 	l.mu.Unlock()
-	in, err := l.store.state.Allocate(code, func(module, name string) (state.Extern, bool) {
+	in, err := l.store.state.AllocateContext(op.ctx, code, func(module, name string) (state.Extern, bool) {
 		ex, ok := imports[[2]string{module, name}]
 		return ex, ok
 	})

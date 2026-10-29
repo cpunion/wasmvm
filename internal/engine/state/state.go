@@ -4,6 +4,7 @@
 package state
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -24,36 +25,48 @@ var ErrReference = errors.New("foreign or stale WebAssembly reference")
 
 type Limits struct {
 	MaxTypes                                                                 uint32
+	MaxHeapObjects                                                           uint32
+	MaxHeapBytes                                                             uint64
 	MaxTables, MaxMemories                                                   uint32
 	MaxFunctions, MaxGlobals, MaxInstances, MaxMemoryPages, MaxTableElements uint32
 	MaxSegmentBytes, MaxSegmentElements                                      uint64
 }
 
 func DefaultLimits() Limits {
-	return Limits{MaxTypes: 1 << 20, MaxTables: 1 << 16, MaxMemories: 1024, MaxFunctions: 1 << 20, MaxGlobals: 1 << 20, MaxInstances: 1024, MaxMemoryPages: 4096, MaxTableElements: 1 << 20, MaxSegmentBytes: 64 << 20, MaxSegmentElements: 1 << 20}
+	return Limits{MaxHeapObjects: 1 << 20, MaxHeapBytes: 64 << 20, MaxTypes: 1 << 20, MaxTables: 1 << 16, MaxMemories: 1024, MaxFunctions: 1 << 20, MaxGlobals: 1 << 20, MaxInstances: 1024, MaxMemoryPages: 4096, MaxTableElements: 1 << 20, MaxSegmentBytes: 64 << 20, MaxSegmentElements: 1 << 20}
 }
 
 type Usage struct {
+	HeapObjects, HeapBytes                                    uint64
 	Tables, Memories                                          uint64
 	Functions, Globals, Instances, MemoryPages, TableElements uint64
 	SegmentBytes, SegmentElements                             uint64
 }
 type Store struct {
-	closed          bool
-	nativeMemory    bool
-	limits          Limits
-	usage           Usage
-	functions       []*Function // index zero is the null function reference
-	instances       []*Instance
-	tables          []*Table
-	memories        []*Memory
-	globals         []*Global
-	types           map[string]uint32
-	typeDefinitions []module.FuncType
+	closed                    bool
+	nativeMemory              bool
+	limits                    Limits
+	usage                     Usage
+	functions                 []*Function // index zero is the null function reference
+	instances                 []*Instance
+	tables                    []*Table
+	memories                  []*Memory
+	globals                   []*Global
+	registry                  module.TypeRegistry
+	heap                      []heapSlot
+	heapLayouts               map[uint32]*heapLayout
+	heapFree                  []uint32
+	heapSerial, heapThreshold uint64
+	temporary                 []ReferenceValue
+	allocating                []*Instance
+	HeapSafepoint             func()
+	CollectEveryAllocation    bool
 }
 
 func New(limits Limits) *Store {
-	return &Store{limits: limits, functions: []*Function{nil}, types: make(map[string]uint32), typeDefinitions: []module.FuncType{{}}}
+	s := &Store{limits: limits, functions: []*Function{nil}, heapThreshold: 1 << 20}
+	s.registry.Init()
+	return s
 }
 
 // NewNative selects off-heap memories and tables for native execution.
@@ -62,24 +75,21 @@ func (s *Store) RetainedModules(visit func(*slots.Module)) {
 	for _, in := range s.instances {
 		visit(in.Compiled)
 	}
+	for _, in := range s.allocating {
+		visit(in.Compiled)
+	}
 }
 func (s *Store) Usage() Usage { return s.usage }
 func (s *Store) TypeID(t module.FuncType) uint32 {
 	if s.closed {
 		return 0
 	}
-	key := module.SignatureKey(t, nil)
-	if id, ok := s.types[key]; ok {
-		return id
-	}
-
-	if uint64(len(s.types)) >= uint64(s.limits.MaxTypes) {
+	m := &module.Module{Types: []module.FuncType{t}}
+	ids, ok := s.registry.InternModule(m, s.limits.MaxTypes)
+	if !ok {
 		return 0
 	}
-	id := uint32(len(s.types) + 1)
-	s.types[key] = id
-	s.typeDefinitions = append(s.typeDefinitions, module.FuncType{Params: append([]wasm.ValueType(nil), t.Params...), Results: append([]wasm.ValueType(nil), t.Results...)})
-	return id
+	return ids[0]
 }
 
 // Host requests are returned by the interpreter to its driver. Guest calls do
@@ -122,6 +132,7 @@ type Extern struct {
 }
 type Instance struct {
 	published, disposed bool
+	initializerContext  context.Context
 	Owner               *Store
 	Compiled            *slots.Module
 	Types               []uint32
@@ -140,7 +151,7 @@ func (s *Store) Function(ref uint64) (*Function, bool) {
 	}
 	return s.functions[ref], true
 }
-func (s *Store) NewHost(t module.FuncType, host any) (Extern, error) {
+func (s *Store) NewHost(t module.FuncType, host any, referenceType ...wasm.ValueType) (Extern, error) {
 	if s.closed {
 		return Extern{}, wasm.ErrClosed
 	}
@@ -156,7 +167,20 @@ func (s *Store) NewHost(t module.FuncType, host any) (Extern, error) {
 			}
 		}
 	}
-	typeID := s.TypeID(t)
+	if len(referenceType) > 1 {
+		return Extern{}, fmt.Errorf("%w: host function type", wasm.ErrInvalid)
+	}
+	var typeID uint32
+	if len(referenceType) == 1 {
+		rt := referenceType[0]
+		id, ok := rt.TypeIndex()
+		if !ok || !rt.IsFunctionReference() || !s.validType(rt) || module.SignatureKey(t, nil) != module.SignatureKey(s.registry.Types[id].Function, nil) {
+			return Extern{}, fmt.Errorf("%w: host function type", wasm.ErrInvalid)
+		}
+		typeID = id
+	} else {
+		typeID = s.TypeID(t)
+	}
 	if typeID == 0 {
 		return Extern{}, limit("function types")
 	}
@@ -358,7 +382,7 @@ func (s *Store) matches(ex Extern, im module.Import, in *Instance) bool {
 	switch im.Kind {
 	case 0:
 		f, ok := s.Function(ex.Function)
-		return ok && f.TypeID == in.Types[im.Type]
+		return ok && s.registry.FunctionSubtype(f.TypeID, in.Types[im.Type])
 	case 1:
 		if ex.Table == nil || ex.Table.Owner != s {
 			return false
@@ -374,7 +398,7 @@ func (s *Store) matches(ex Extern, im module.Import, in *Instance) bool {
 		actual.Min = ex.Memory.Pages()
 		return sameLimits(actual, im.Memory)
 	case 3:
-		return ex.Global != nil && ex.Global.Owner == s && ex.Global.Type.Mutable == im.Global.Mutable && (ex.Global.Type.Value == canonicalType(im.Global.Value, in.Types) || !im.Global.Mutable && wasm.ReferenceSubtype(ex.Global.Type.Value, canonicalType(im.Global.Value, in.Types), nil))
+		return ex.Global != nil && ex.Global.Owner == s && ex.Global.Type.Mutable == im.Global.Mutable && (ex.Global.Type.Value == canonicalType(im.Global.Value, in.Types) || !im.Global.Mutable && s.registry.Subtype(ex.Global.Type.Value, canonicalType(im.Global.Value, in.Types)))
 	}
 	return false
 }
@@ -384,26 +408,20 @@ func (s *Store) validType(t wasm.ValueType) bool {
 		return false
 	}
 	if id, indexed := t.TypeIndex(); indexed {
-		return t.Canonical() && id != 0 && uint64(id) < uint64(len(s.typeDefinitions))
+		if !t.Canonical() || id == 0 || uint64(id) >= uint64(len(s.registry.Types)) {
+			return false
+		}
+		k := s.registry.Types[id].Definition.Kind
+		return k == module.FunctionKind && t.IsFunctionReference() || k == module.StructKind && byte(t) == byte(wasm.StructRef) || k == module.ArrayKind && byte(t) == byte(wasm.ArrayRef)
 	}
 	return true
 }
 
 func canonicalType(t wasm.ValueType, ids []uint32) wasm.ValueType {
 	if index, indexed := t.TypeIndex(); indexed && !t.Canonical() {
-		return wasm.CanonicalFunctionReference(ids[index], t.Nullable())
+		return t.WithTypeIndex(ids[index], true)
 	}
 	return t
-}
-func canonicalSignature(t module.FuncType, ids []uint32) module.FuncType {
-	result := module.FuncType{Params: make([]wasm.ValueType, len(t.Params)), Results: make([]wasm.ValueType, len(t.Results))}
-	for i, v := range t.Params {
-		result.Params[i] = canonicalType(v, ids)
-	}
-	for i, v := range t.Results {
-		result.Results[i] = canonicalType(v, ids)
-	}
-	return result
 }
 
 func constantValue(in *Instance, x *module.Instr) value.Value {
@@ -426,7 +444,7 @@ func constantValue(in *Instance, x *module.Instr) value.Value {
 // constant evaluates already validated initializers. Scratch is shared across
 // all expressions in one allocation/initialization phase, never across Stores.
 func constant(in *Instance, expr module.Expr, scratch []value.Value) value.Value {
-	if len(expr) == 2 {
+	if len(expr) == 2 && expr[0].Op>>16 != 0xfb {
 		return constantValue(in, &expr[0])
 	}
 	if in != nil {
@@ -434,16 +452,67 @@ func constant(in *Instance, expr module.Expr, scratch []value.Value) value.Value
 			return value.Value{Lo: x}
 		}
 	}
+	mark := 0
+	if in != nil {
+		mark = len(in.Owner.temporary)
+		defer func() { clear(in.Owner.temporary[mark:]); in.Owner.temporary = in.Owner.temporary[:mark] }()
+	}
 	stack := scratch[:0]
 	for i := range expr[:len(expr)-1] {
 		x := &expr[i]
+		if x.Op>>16 == 0xfb {
+			op := x.Op & 0xffff
+			count := 1
+			resultType := wasm.I31Ref.NonNull()
+			switch op {
+			case 0:
+				count = len(in.Owner.registry.Types[in.Types[x.A]].Definition.Fields)
+				resultType = canonicalType(in.Compiled.IR.Validated.Definition().Reference(x.A, false), in.Types)
+			case 1:
+				count = 0
+				resultType = canonicalType(in.Compiled.IR.Validated.Definition().Reference(x.A, false), in.Types)
+			case 6:
+				count = 2
+				resultType = canonicalType(in.Compiled.IR.Validated.Definition().Reference(x.A, false), in.Types)
+			case 7:
+				count = 1
+				resultType = canonicalType(in.Compiled.IR.Validated.Definition().Reference(x.A, false), in.Types)
+			case 8:
+				count = int(x.B)
+				resultType = canonicalType(in.Compiled.IR.Validated.Definition().Reference(x.A, false), in.Types)
+			case 26:
+				resultType = wasm.AnyRef
+			case 27:
+				resultType = wasm.ExternRef
+			}
+			n := len(stack) - count
+			v, err := in.Owner.GC(in.initializerContext, in, x, stack[n:])
+			if err != nil {
+				panic(constantFailure{err})
+			}
+			stack = append(stack[:n], v)
+			in.Owner.temporary = append(in.Owner.temporary, ReferenceValue{resultType, v})
+			continue
+		}
 		switch x.Op {
 		case 0x6a, 0x6b, 0x6c, 0x7c, 0x7d, 0x7e:
 			n := len(stack)
 			stack[n-2] = value.Value{Lo: constops.Binary(x.Op, stack[n-2].Lo, stack[n-1].Lo)}
 			stack = stack[:n-1]
 		default:
-			stack = append(stack, constantValue(in, x))
+			v := constantValue(in, x)
+			stack = append(stack, v)
+			if in != nil {
+				t := wasm.ValueType(0)
+				if x.Op == 0xd2 {
+					t = wasm.FuncRef
+				} else if x.Op == 0x23 {
+					t = in.Globals[x.A].Type.Value
+				}
+				if t.IsReference() {
+					in.Owner.temporary = append(in.Owner.temporary, ReferenceValue{t, v})
+				}
+			}
 		}
 	}
 	return stack[0]
@@ -456,3 +525,12 @@ func constantScratch(compiled *slots.Module, local []value.Value) []value.Value 
 	}
 	return make([]value.Value, n)
 }
+
+func (s *Store) FunctionSubtype(actual, expected uint32) bool {
+	return s.registry.FunctionSubtype(actual, expected)
+}
+func (s *Store) ReferenceSubtype(actual, expected wasm.ValueType) bool {
+	return s.registry.Subtype(actual, expected)
+}
+
+type constantFailure struct{ err error }

@@ -202,7 +202,7 @@ WASI 1/2/3 remain required subsequent work. See the
 
 **Objective:** extend the same frontend, IR and both execution backends to the full pinned Core 3.0 binary profile and the separately enabled Threads profile.
 
-Implemented individually enabled extensions include Typed Function References, Memory64/Table64, Relaxed SIMD, Multi-Memory, Tail Call and Extended Constant Expressions.
+Implemented individually enabled extensions include WasmGC, Typed Function References, Memory64/Table64, Relaxed SIMD, Multi-Memory, Tail Call and Extended Constant Expressions.
 The first extension is Extended Constant Expressions:
 `EngineConfig.Features = wasm.ExtendedConst` (CLI `--extended-const`). It covers
 all six integer operations, typed/limited validation and instance-specific
@@ -270,7 +270,17 @@ heap objects, final EH or Threads. General typed calls use the common frame
 machine; direct native call dispatch/expansion is tracked local optimization.
 See [the implementation and evidence](design/function-references.md).
 
-- **Types and GC:** recursive type-group canonicalization, explicit subtyping/variance/nullability, typed references, structs/arrays/i31/casts/conversions, stable generation-checked handles, Store-private guest heap, quotas and tracing. Root stacks/locals/globals/tables, host roots, temporary allocation operands, suspended native/interpreter frames and exception payloads. Retire generation-overflow slots. Forced collection at every allocation/safepoint must preserve live objects and reclaim unreachable cycles.
+WasmGC adds the complete standalone GC v1 proposal under `wasm.GC` (CLI `--gc`),
+including recursive groups, nominal subtyping, all heap operations, cast branches,
+i31, reference equality and conversions. The Store owns a quota-limited tracing
+heap with generation-checked handles. Both backends retain 16-byte values and
+share individual checked heap helpers; i31/equality emit native instructions.
+All 23 complete proposal scripts add 802 binary assertions per tier. Forced
+collection and joint object/failed-instance tracing cover host roots, construction
+operands and reentry. Final EH/GC, Threads and full Core 3.0 combinations remain
+subsequent scope. See [the heap and type contract](design/wasm-gc.md).
+
+- **Types and GC:** retain the implemented recursive types, nominal subtyping, typed objects, generation-checked handles, quotas and tracing while extending the full Core 3.0 combinations. Root stacks/locals/globals/tables, host roots, temporary allocation operands, suspended native/interpreter frames and exception payloads. Retire generation-overflow slots. Forced collection at every allocation/safepoint must preserve live objects and reclaim unreachable cycles.
 - **Control flow:** proper tail calls without growing host/guest call stacks, final EH with tag identity, `try_table`, `exnref`, `throw_ref`, unwinding and host boundaries. Legacy EH is not substituted for final EH.
 - **Remaining Core 3.0:** every remaining feature in the pinned profile. Include address/index overflow and permitted nondeterministic numeric outcomes.
 - **Shared memory and threads:** ordinary/atomic accesses, mixed widths, growth, bulk operations and fences share an explicit synchronization domain. Implement wait/notify with no lost wakeups, exact timeout/not-equal/success outcomes, and one-time notify/cancel/close arbitration. Core Threads does not imply a shared WasmGC heap. Do not introduce unsynchronized native accesses while only the Go path holds locks.

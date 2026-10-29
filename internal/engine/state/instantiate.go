@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -14,7 +15,10 @@ type Resolver func(module, name string) (Extern, bool)
 // Allocate links all imports and constructs instance state without applying
 // active segments or calling start. Failure rolls back every new allocation
 // and canonical type; imported objects are never modified in this phase.
-func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *Instance, err error) {
+func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (*Instance, error) {
+	return s.AllocateContext(context.Background(), compiled, resolve)
+}
+func (s *Store) AllocateContext(ctx context.Context, compiled *slots.Module, resolve Resolver) (instance *Instance, err error) {
 	if s.closed {
 		return nil, wasm.ErrClosed
 	}
@@ -24,10 +28,25 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 	definition := compiled.IR.Validated.Definition()
 	var local [16]value.Value
 	scratch := constantScratch(compiled, local[:])
-	oldUsage, oldFunctions, oldTypes := s.usage, len(s.functions), len(s.types)
+	oldSerial, allocatingMark := s.heapSerial, len(s.allocating)
+	oldUsage, oldFunctions, oldTypes := s.usage, len(s.functions), s.registry.Count()
 	oldTables, oldMemories, oldGlobals := len(s.tables), len(s.memories), len(s.globals)
 	defer func() {
+		clear(s.allocating[allocatingMark:])
+		s.allocating = s.allocating[:allocatingMark]
+		if failure := recover(); failure != nil {
+			switch e := failure.(type) {
+			case *wasm.Error:
+				instance, err = nil, e
+			case constantFailure:
+				instance, err = nil, e.err
+			default:
+				panic(failure)
+			}
+		}
 		if err != nil {
+			s.rollbackHeap(oldSerial)
+			oldUsage.HeapBytes, oldUsage.HeapObjects = s.usage.HeapBytes, s.usage.HeapObjects
 			s.usage = oldUsage
 			clear(s.functions[oldFunctions:])
 			s.functions = s.functions[:oldFunctions]
@@ -43,23 +62,22 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 			s.memories = s.memories[:oldMemories]
 			clear(s.globals[oldGlobals:])
 			s.globals = s.globals[:oldGlobals]
-			s.typeDefinitions = s.typeDefinitions[:oldTypes+1]
-			for key, id := range s.types {
+			s.registry.Rollback(oldTypes)
+			for id := range s.heapLayouts {
 				if int(id) > oldTypes {
-					delete(s.types, key)
+					delete(s.heapLayouts, id)
 				}
 			}
 		}
 	}()
-	instance = &Instance{Owner: s, Compiled: compiled, Exports: make(map[string]Extern)}
-	instance.Types = make([]uint32, len(definition.Types))
-	for i, t := range definition.Types {
-		id := s.TypeID(canonicalSignature(t, instance.Types))
-		if id == 0 {
-			return nil, limit("function types")
-		}
-		instance.Types[i] = id
+	instance = &Instance{initializerContext: ctx, Owner: s, Compiled: compiled, Exports: make(map[string]Extern)}
+	s.allocating = append(s.allocating, instance)
+	var ok bool
+	instance.Types, ok = s.registry.InternModule(definition, s.limits.MaxTypes)
+	if !ok {
+		return nil, limit("canonical types")
 	}
+
 	for _, im := range definition.Imports {
 		var ex Extern
 		var found bool
@@ -91,7 +109,7 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 		id := uint64(len(s.functions))
 		index := uint32(len(instance.Functions))
 		instance.Functions = append(instance.Functions, id)
-		s.functions = append(s.functions, &Function{Owner: s, Signature: s.typeDefinitions[instance.Types[f.Type]], TypeID: instance.Types[f.Type], Instance: instance, Code: compiled.Functions[i], Index: index})
+		s.functions = append(s.functions, &Function{Owner: s, Signature: s.registry.Types[instance.Types[f.Type]].Function, TypeID: instance.Types[f.Type], Instance: instance, Code: compiled.Functions[i], Index: index})
 		s.usage.Functions++
 	}
 	for i, t := range definition.Tables {
@@ -125,14 +143,17 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 	storeBase, instanceBase := len(s.globals), len(instance.Globals)
 	s.globals = append(s.globals, make([]*Global, count)...)
 	instance.Globals = append(instance.Globals, make([]*Global, count)...)
+
 	for i := range definition.Globals {
-		g := &definition.Globals[i]
-		cell := &globals[i]
-		typ := g.Type
+		typ := definition.Globals[i].Type
 		typ.Value = canonicalType(typ.Value, instance.Types)
-		*cell = Global{OwnerInstance: instance, Owner: s, Type: typ, Value: constant(instance, g.Init, scratch)}
-		s.globals[storeBase+i], instance.Globals[instanceBase+i] = cell, cell
+		globals[i] = Global{OwnerInstance: instance, Owner: s, Type: typ}
+		s.globals[storeBase+i], instance.Globals[instanceBase+i] = &globals[i], &globals[i]
 	}
+	for i := range definition.Globals {
+		globals[i].Value = constant(instance, definition.Globals[i].Init, scratch)
+	}
+
 	s.usage.Globals += uint64(count)
 	instance.Elements = make([][]uint64, len(definition.Elements))
 	for i, segment := range definition.Elements {
@@ -175,6 +196,7 @@ func (s *Store) Allocate(compiled *slots.Module, resolve Resolver) (instance *In
 	}
 	s.instances = append(s.instances, instance)
 	s.usage.Instances++
+	instance.initializerContext = nil
 	return instance, nil
 }
 
@@ -222,7 +244,7 @@ func (in *Instance) Initialize() error {
 // passive elements. Frame/host roots are supplied by their respective owners.
 func (in *Instance) RetainedValues(visit func(wasm.ValueType, value.Value)) {
 	for _, g := range in.Globals {
-		if g.Type.Value.IsReference() {
+		if g != nil && g.Type.Value.IsReference() {
 			visit(g.Type.Value, g.Value)
 		}
 	}
@@ -233,7 +255,7 @@ func (in *Instance) RetainedValues(visit func(wasm.ValueType, value.Value)) {
 	}
 	for i, segment := range in.Elements {
 		for _, ref := range segment {
-			visit(in.Compiled.IR.Validated.Definition().Elements[i].Type, value.Value{Lo: ref})
+			visit(canonicalType(in.Compiled.IR.Validated.Definition().Elements[i].Type, in.Types), value.Value{Lo: ref})
 		}
 	}
 }

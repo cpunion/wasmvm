@@ -17,7 +17,9 @@ const (
 	Memory64
 	// FunctionReferences enables typed, non-null function references and calls.
 	FunctionReferences
+	// GC enables recursive/subtype definitions and the WasmGC instruction set.
+	GC
 )
 
 // SupportedFeatures lists extensions implemented by both execution backends.
-const SupportedFeatures = ExtendedConst | TailCall | MultiMemory | RelaxedSIMD | Memory64 | FunctionReferences
+const SupportedFeatures = ExtendedConst | TailCall | MultiMemory | RelaxedSIMD | Memory64 | FunctionReferences | GC

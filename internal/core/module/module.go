@@ -12,7 +12,7 @@ func SignatureKey(t FuncType, labels []uint32) string {
 	b := make([]byte, 0, 8*(len(t.Params)+len(t.Results)+1))
 	appendType := func(v wasm.ValueType) {
 		if index, ok := v.TypeIndex(); ok && !v.Canonical() && labels != nil {
-			v = wasm.FunctionReference(labels[index], v.Nullable())
+			v = v.WithTypeIndex(labels[index], false)
 		}
 		for n := uint(0); n < 64; n += 8 {
 			b = append(b, byte(uint64(v)>>n))
@@ -148,6 +148,8 @@ type Expr []Instr
 // and publication. It has no runtime state and cannot execute by itself.
 type Module struct {
 	Types        []FuncType
+	TypeDefs     []TypeDef
+	TypeGroups   []TypeGroup
 	Imports      []Import
 	Functions    []Function
 	Tables       []TableType

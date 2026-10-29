@@ -53,7 +53,7 @@ func Compile(m *validate.Module, limits Limits) (result *Module, err error) {
 		f := &definition.Functions[index]
 		sig := definition.Types[f.Type]
 		b.charge(uint64(len(f.Body)) + uint64(len(sig.Params)) + uint64(f.LocalCount))
-		out := &ir.Function{Signature: sig, Locals: append([]wasm.ValueType(nil), sig.Params...), Sources: make([]ir.Source, len(f.Body)), TypeLabels: m.TypeLabels()}
+		out := &ir.Function{Signature: sig, Locals: append([]wasm.ValueType(nil), sig.Params...), Sources: make([]ir.Source, len(f.Body)), TypeLabels: m.TypeLabels(), TypeHierarchy: m.TypeHierarchy()}
 		for _, group := range f.Locals {
 			for n := uint32(0); n < group.Count; n++ {
 				out.Locals = append(out.Locals, group.Type)
@@ -204,6 +204,31 @@ func (l *lowerer) visit(pc int, in module.Instr, inputs, outputs []wasm.ValueTyp
 		// The callee return schema is verified, but creates no local SSA results.
 		l.f.Sources[pc].Outputs = append([]wasm.ValueType(nil), l.f.Signature.Results...)
 		l.terminate(ir.Terminator{Kind: ir.TailCall, Source: source, Args: l.copyValues(l.suffix(len(inputs)))})
+	case op == 0xfb0018 || op == 0xfb0019:
+		ref := l.stack[len(l.stack)-1]
+		l.stack = l.stack[:len(l.stack)-1]
+		label := l.frames[len(l.frames)-1-int(in.A)].label
+		diff := in.Types[0]
+		if in.Types[1].Nullable() {
+			diff = diff.NonNull()
+		}
+		fall := diff
+		if op == 0xfb0019 {
+			fall = in.Types[1]
+		}
+		cont := l.newBlock([]wasm.ValueType{fall})
+		l.incoming[cont]++
+		l.stack = append(l.stack, ref)
+		branch := l.edge(label)
+		l.stack = l.stack[:len(l.stack)-1]
+		edges := []ir.Edge{branch, {Target: cont, Args: []ir.Value{ref}}}
+		if op == 0xfb0019 {
+			edges[0], edges[1] = edges[1], edges[0]
+		}
+		l.terminate(ir.Terminator{Kind: ir.IfCast, Source: source, Args: []ir.Value{ref}, Edges: edges})
+		l.current = int(cont)
+		l.stack = append(l.stack, l.f.Blocks[cont].Params...)
+
 	case op == 0xd5 || op == 0xd6:
 		ref := l.stack[len(l.stack)-1]
 		l.stack = l.stack[:len(l.stack)-1]

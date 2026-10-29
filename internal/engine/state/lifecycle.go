@@ -1,6 +1,7 @@
 package state
 
 import (
+	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -36,11 +37,22 @@ func (s *Store) HasUnpublished() bool {
 // discovery is iterative, so cycles and deep instance chains cannot recurse
 // through the host stack. Imported effects are never rolled back.
 func (s *Store) CollectFailed(functionRoots []uint64, active []*Instance) {
+	roots := make([]ReferenceValue, len(functionRoots))
+	for i, ref := range functionRoots {
+		roots[i] = ReferenceValue{wasm.FuncRef, value.Value{Lo: ref}}
+	}
+	s.CollectReferences(roots, active, nil)
+}
+
+// CollectReferences traverses the joint object/instance graph. External roots
+// discovered through internalized references are handed back to the host.
+func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, external func(uint64)) {
 	if s.closed {
 		return
 	}
 	marked := make(map[*Instance]bool)
 	queue := make([]*Instance, 0, len(active))
+	var objects []*heapObject
 	mark := func(in *Instance) {
 		if in != nil && in.Owner == s && !in.disposed && !marked[in] {
 			marked[in] = true
@@ -53,49 +65,109 @@ func (s *Store) CollectFailed(functionRoots []uint64, active []*Instance) {
 		}
 	}
 	visit := func(t wasm.ValueType, v value.Value) {
+		if v.Lo == 0 {
+			return
+		}
 		if t.IsFunctionReference() {
 			markFunction(v.Lo)
+			return
+		}
+		if v.Lo&heapTag != 0 {
+			if o, ok := s.heapObject(v.Lo); ok && !o.Mark {
+				o.Mark = true
+				objects = append(objects, o)
+			}
+		} else if v.Lo&i31Tag != 0 {
+		} else if v.Lo&externalTag != 0 {
+			if external != nil {
+				external(v.Lo &^ externalTag)
+			}
+		} else if t.IsExternalReference() && external != nil {
+			external(v.Lo)
 		}
 	}
 	for _, in := range s.instances {
-		if in.published {
+		if in.published || len(s.allocating) != 0 {
 			mark(in)
 		}
 	}
 	for _, in := range active {
 		mark(in)
 	}
-	for _, ref := range functionRoots {
-		markFunction(ref)
+	for _, in := range s.allocating {
+		mark(in)
 	}
-	for _, table := range s.tables {
-		if table.OwnerInstance == nil && table.Type.Element.IsFunctionReference() {
-			for _, ref := range table.Values {
-				markFunction(ref)
+	for _, r := range roots {
+		visit(r.Type, r.Value)
+	}
+	for _, r := range s.temporary {
+		visit(r.Type, r.Value)
+	}
+	for _, t := range s.tables {
+		if t.OwnerInstance == nil {
+			for _, ref := range t.Values {
+				visit(t.Type.Element, value.Value{Lo: ref})
 			}
 		}
 	}
-	for _, global := range s.globals {
-		if global.OwnerInstance == nil {
-			visit(global.Type.Value, global.Value)
+	for _, g := range s.globals {
+		if g != nil && g.OwnerInstance == nil {
+			visit(g.Type.Value, g.Value)
 		}
 	}
-	for head := 0; head < len(queue); head++ {
-		in := queue[head]
-		for _, ref := range in.Functions {
-			markFunction(ref)
+	ih, oh := 0, 0
+	for ih < len(queue) || oh < len(objects) {
+		for ih < len(queue) {
+			in := queue[ih]
+			ih++
+			for _, ref := range in.Functions {
+				markFunction(ref)
+			}
+			for _, t := range in.Tables {
+				mark(t.OwnerInstance)
+			}
+			for _, m := range in.Memories {
+				mark(m.OwnerInstance)
+			}
+			for _, g := range in.Globals {
+				if g != nil {
+					mark(g.OwnerInstance)
+				}
+			}
+			in.RetainedValues(visit)
 		}
-		for _, table := range in.Tables {
-			mark(table.OwnerInstance)
+		for oh < len(objects) {
+			o := objects[oh]
+			oh++
+			d := s.registry.Types[o.Type].Definition
+			if d.Kind == module.ArrayKind {
+				if d.Fields[0].Value.IsReference() {
+					for i := uint32(0); i < o.Length; i++ {
+						visit(d.Fields[0].Value, o.get(i))
+					}
+				}
+			} else {
+				for i, f := range d.Fields {
+					if f.Value.IsReference() {
+						visit(f.Value, o.get(uint32(i)))
+					}
+				}
+			}
 		}
-		for _, memory := range in.Memories {
-			mark(memory.OwnerInstance)
-		}
-		for _, global := range in.Globals {
-			mark(global.OwnerInstance)
-		}
-		in.RetainedValues(visit)
 	}
+	for i := 1; i < len(s.heap); i++ {
+		o := s.heap[i].Object
+		if o == nil {
+			continue
+		}
+		if !o.Mark {
+			s.releaseObject(uint32(i))
+		} else {
+			o.Mark = false
+		}
+	}
+	s.heapThreshold = max(1<<20, s.usage.HeapBytes*2)
+
 	kept := s.instances[:0]
 	for _, in := range s.instances {
 		if marked[in] {
@@ -199,7 +271,7 @@ func (s *Store) RetainedValues(visit func(wasm.ValueType, value.Value)) {
 		}
 	}
 	for _, g := range s.globals {
-		if g.OwnerInstance == nil && g.Type.Value.IsReference() {
+		if g != nil && g.OwnerInstance == nil && g.Type.Value.IsReference() {
 			visit(g.Type.Value, g.Value)
 		}
 	}
@@ -223,7 +295,15 @@ func (s *Store) Close() {
 	s.tables = nil
 	s.memories = nil
 	s.globals = nil
-	s.types = nil
-	s.typeDefinitions = nil
+	s.registry = module.TypeRegistry{}
+	for i := 1; i < len(s.heap); i++ {
+		s.releaseObject(uint32(i))
+	}
+	s.heap = nil
+	s.heapLayouts = nil
+	s.heapFree = nil
+	s.temporary = nil
+	s.allocating = nil
+	s.HeapSafepoint = nil
 	s.usage = Usage{}
 }

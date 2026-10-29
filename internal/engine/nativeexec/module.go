@@ -5,6 +5,7 @@ package nativeexec
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"runtime"
 
@@ -79,8 +80,8 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 	// Index structurally identical types once. Bound code expansion per type,
 	// independently of map iteration order and table contents at instantiation.
 	keys := make([]string, len(definition.Types))
-	for i, typ := range definition.Types {
-		keys[i] = module.SignatureKey(typ, m.IR.Validated.TypeLabels())
+	for i := range definition.Types {
+		keys[i] = fmt.Sprint(m.IR.Validated.TypeLabels()[i])
 	}
 	bySignature := map[string][]uint32{}
 	for i, f := range m.Functions {

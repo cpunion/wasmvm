@@ -7,12 +7,14 @@ import (
 
 // All straight-line instructions share one emitter on hot and cold paths.
 func plainOpcode(op uint32) bool {
-	return op == 1 || op >= 0x1a && op <= 0x1c || op >= 0x20 && op <= 0x22 || isMemoryAccess(op) || op == 0x3f || op >= 0x41 && op <= 0x44 || isInteger(op) || isFloat(op) || isConversion(op) || op == 0xd0 || op == 0xd1 || op == 0xd4 || op == 0xfd000c || nativeVectorOpcode(op)
+	return op == 1 || op >= 0x1a && op <= 0x1c || op >= 0x20 && op <= 0x22 || isMemoryAccess(op) || op == 0x3f || op >= 0x41 && op <= 0x44 || isInteger(op) || isFloat(op) || isConversion(op) || op == 0xd0 || op == 0xd1 || op == 0xd4 || op == 0xd3 || op >= 0xfb001c && op <= 0xfb001e || op == 0xfd000c || nativeVectorOpcode(op)
 }
 func (e *functionEmitter) plain(in slots.Instruction, proven bool) {
 	a := e.a
 	src := e.f.Sources[in.Source]
 	switch op := in.Op; {
+	case op == 0xd3 || op >= 0xfb001c && op <= 0xfb001e:
+		e.gcScalar(in)
 	case op == 1 || op == 0x1a:
 	case op == 0x20:
 		e.move(in.Dst, slots.Slot(src.Wasm.A))

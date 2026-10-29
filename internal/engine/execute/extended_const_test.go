@@ -45,6 +45,10 @@ func TestFunctionReferencesProposal(t *testing.T) {
 	runProposal(t, proposalCorpus{"function-references", "74d2ec81d15efd3c0f2fba46a023f376101d8e46", wasm.FunctionReferences | wasm.TailCall, []string{"br_on_non_null", "br_on_null", "br_table", "call_ref", "elem", "func", "linking", "local_init", "ref", "ref_as_non_null", "ref_is_null", "ref_null", "return_call_ref", "select", "table", "table-sub", "type-equivalence", "unreached-invalid", "unreached-valid"}, 588, 1174, 978, 29})
 }
 
+func TestGCProposal(t *testing.T) {
+	runProposal(t, proposalCorpus{"gc", "756060f5816c7e2159f4817fbdee76cf52f9c923", wasm.SupportedFeatures, []string{"br_table", "array", "array_copy", "array_fill", "array_init_data", "array_init_elem", "array_new_data", "array_new_elem", "binary-gc", "br_on_cast", "br_on_cast_fail", "extern", "i31", "ref_cast", "ref_eq", "ref_test", "struct", "type-subtyping-invalid", "type-subtyping", "ref_null", "type-canon", "type-equivalence", "type-rec"}, 272, 964, 802, 1})
+}
+
 func runProposal(t *testing.T, corpus proposalCorpus) {
 	root := filepath.Join("../../../testdata", corpus.name)
 	raw, err := os.ReadFile(filepath.Join(root, "manifest.json"))

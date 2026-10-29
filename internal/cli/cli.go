@@ -25,6 +25,7 @@ Options precede the module path. All commands accept:
   --tail-call            Enable proper direct and indirect tail calls
   --multi-memory         Enable multiple private memories
   --relaxed-simd         Enable all twenty relaxed SIMD instructions
+  --gc                   Enable WasmGC and typed function references
   --function-references  Enable typed function references and non-null references
   --memory64             Enable 64-bit memory and table indices
   --timeout duration     Overall deadline (default 30s; 0 disables)
@@ -60,6 +61,7 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	tailCall := flags.Bool("tail-call", false, "")
 	multiMemory := flags.Bool("multi-memory", false, "")
 	relaxedSIMD := flags.Bool("relaxed-simd", false, "")
+	gc := flags.Bool("gc", false, "")
 	functionReferences := flags.Bool("function-references", false, "")
 	memory64 := flags.Bool("memory64", false, "")
 	timeout := flags.Duration("timeout", 30*time.Second, "")
@@ -121,6 +123,9 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 	if *relaxedSIMD {
 		config.Features |= wasm.RelaxedSIMD
+	}
+	if *gc {
+		config.Features |= wasm.GC
 	}
 	if *functionReferences {
 		config.Features |= wasm.FunctionReferences

@@ -219,12 +219,21 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 			// SSA locations remain stable after release. Integer operands, local
 			// copies and equal literals can alias; suspended call tuples cannot.
 			in := Instruction{Op: src.Wasm.Op, Source: op.Source, Dst: NoSlot, A: NoSlot, B: NoSlot, C: NoSlot}
-			if in.Op == 0x10 || in.Op == 0x11 || in.Op == 0x14 {
+			if in.Op == 0x10 || in.Op == 0x11 || in.Op == 0x14 || in.Op>>16 == 0xfb {
 				in.Extra = uint32(len(out.Args))
+				if in.Op>>16 == 0xfb && len(op.Args) > 0 {
+					in.A = out.ValueSlots[op.Args[0]]
+				}
+				if in.Op>>16 == 0xfb && len(op.Args) > 1 {
+					in.B = out.ValueSlots[op.Args[1]]
+				}
 				in.Count = uint32(len(op.Args))
 				budget.charge(uint64(len(op.Args)) + uint64(len(op.Results)))
 				for _, v := range op.Args {
 					out.Args = append(out.Args, out.ValueSlots[v])
+				}
+				if len(op.Results) > 0 {
+					in.Dst = out.ValueSlots[op.Results[0]]
 				}
 				for _, v := range op.Results {
 					out.Args = append(out.Args, out.ValueSlots[v])

@@ -331,7 +331,7 @@ func trapMatches(code wasm.TrapCode, text string) bool {
 	if code.String() == text {
 		return true
 	}
-	return code == wasm.TrapNullReference && text == "null function reference" || code == wasm.TrapTableBounds && text == "undefined element" || code == wasm.TrapUninitializedElement && strings.HasPrefix(text, "uninitialized element")
+	return code == wasm.TrapCastFailure && text == "cast" || code == wasm.TrapNullReference && (text == "null function reference" || text == "null i31 reference" || text == "null array reference" || text == "null structure reference") || code == wasm.TrapIndirectCallType && text == "indirect call" || code == wasm.TrapTableBounds && text == "undefined element" || code == wasm.TrapUninitializedElement && strings.HasPrefix(text, "uninitialized element")
 }
 func specLanes(t *testing.T, v specValue) (uint, []string) {
 	t.Helper()
@@ -372,6 +372,13 @@ func specWidth(t *testing.T, s string) uint {
 }
 func specUint(t *testing.T, s string) uint64 {
 	t.Helper()
+	if strings.HasPrefix(s, "-") {
+		v, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return uint64(v)
+	}
 	v, err := strconv.ParseUint(s, 10, 64)
 	if err != nil {
 		t.Fatal(err)
@@ -380,7 +387,7 @@ func specUint(t *testing.T, s string) uint64 {
 }
 func parseSpec(t *testing.T, v specValue) value.Value {
 	t.Helper()
-	if v.Type == "externref" || v.Type == "funcref" {
+	if v.Type == "externref" || v.Type == "funcref" || v.Type == "anyref" {
 		var s string
 		if err := json.Unmarshal(v.Value, &s); err != nil {
 			t.Fatal(err)
@@ -388,8 +395,11 @@ func parseSpec(t *testing.T, v specValue) value.Value {
 		if s == "null" {
 			return value.Value{}
 		}
-		if v.Type != "externref" {
+		if v.Type != "externref" && v.Type != "anyref" {
 			t.Fatal("unexpected concrete funcref")
+		}
+		if v.Type == "anyref" {
+			return value.Value{Lo: state.Internalize(specUint(t, s) + 1)}
 		}
 		return value.Value{Lo: specUint(t, s) + 1}
 	}
@@ -404,6 +414,17 @@ func parseSpec(t *testing.T, v specValue) value.Value {
 	return value.Value{Lo: binary.LittleEndian.Uint64(raw[:8]), Hi: binary.LittleEndian.Uint64(raw[8:])}
 }
 func (r *specRunner) match(t *testing.T, action specAction, want specValue, got value.Value) bool {
+	refs := map[string]wasm.ValueType{"i31ref": wasm.I31Ref, "structref": wasm.StructRef, "arrayref": wasm.ArrayRef, "eqref": wasm.EqRef, "externref": wasm.ExternRef, "funcref": wasm.FuncRef}
+	if typ, ok := refs[want.Type]; ok && len(want.Value) == 0 {
+		return r.store.TestReference(got.Lo, typ.NonNull())
+	}
+	if want.Type == "refnull" || want.Type == "nullref" || want.Type == "nullfuncref" || want.Type == "nullexternref" {
+		return got.Lo == 0 && got.Hi == 0
+	}
+	if want.Type == "anyref" {
+		return got == parseSpec(t, want)
+	}
+
 	if want.Type == "funcref" && len(want.Value) != 0 {
 		var text string
 		if err := json.Unmarshal(want.Value, &text); err != nil {
@@ -448,7 +469,7 @@ func matchSpec(t *testing.T, want specValue, got value.Value) bool {
 			} else if x&canonical != canonical {
 				return false
 			}
-		} else if x != specUint(t, s) {
+		} else if x != (specUint(t, s) & (^uint64(0) >> (64 - w))) {
 			return false
 		}
 	}

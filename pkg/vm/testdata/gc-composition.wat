@@ -1,0 +1,20 @@
+(module
+ (type $node (struct (field v128) (field i32)))
+ (type $getter (func (param i64) (result i64)))
+ (memory $wide i64 1)
+ (memory $narrow 1)
+ (table $refs i64 1 (ref null $node))
+ (global $g (ref $node) (struct.new $node (v128.const i64x2 7 11) (i32.add (i32.const 40) (i32.const 2))))
+ (func $get (type $getter)
+  (i64.store $wide (local.get 0) (i64.const 7))
+  (i32.store $narrow (i32.const 0) (struct.get $node 1 (table.get $refs (local.get 0))))
+  (i64.add
+   (i64x2.extract_lane 1
+    (i8x16.relaxed_swizzle (struct.get $node 0 (table.get $refs (local.get 0)))
+     (v128.const i8x16 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15)))
+   (i64.add (i64.load $wide (local.get 0)) (i64.extend_i32_u (i32.load $narrow (i32.const 0))))))
+ (elem declare func $get)
+ (func (export "run") (result i64)
+  (table.set $refs (i64.const 0) (global.get $g))
+  (return_call_ref $getter (i64.const 0) (ref.func $get)))
+)

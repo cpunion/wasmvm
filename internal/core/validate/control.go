@@ -243,7 +243,7 @@ func (v *checker) instruction(in module.Instr) {
 		if op == 0x10 || op == 0x12 {
 			sig = v.function(in.A)
 		} else if op == 0x14 || op == 0x15 {
-			if v.features&wasm.FunctionReferences == 0 {
+			if v.features&(wasm.FunctionReferences|wasm.GC) == 0 {
 				v.fail("function references are disabled")
 			}
 			sig = v.typ(in.A)
@@ -360,8 +360,15 @@ func (v *checker) instruction(in module.Instr) {
 			v.fail("undeclared function reference")
 		}
 		v.push(v.functionReference(in.A))
+	case op == 0xd3:
+		if v.features&wasm.GC == 0 {
+			v.fail("GC is disabled")
+		}
+		v.pop(wasm.EqRef)
+		v.pop(wasm.EqRef)
+		v.push(wasm.I32)
 	case op == 0xd4:
-		if v.features&wasm.FunctionReferences == 0 {
+		if v.features&(wasm.FunctionReferences|wasm.GC) == 0 {
 			v.fail("function references are disabled")
 		}
 		t := v.pop(0)
@@ -370,10 +377,12 @@ func (v *checker) instruction(in module.Instr) {
 		}
 		v.push(t.NonNull())
 	case op == 0xd5 || op == 0xd6:
-		if v.features&wasm.FunctionReferences == 0 {
+		if v.features&(wasm.FunctionReferences|wasm.GC) == 0 {
 			v.fail("function references are disabled")
 		}
 		v.referenceBranch(op, in.A)
+	case op>>16 == 0xfb:
+		v.gc(in)
 	case op>>16 == 0xfc:
 		v.misc(in)
 	case op>>16 == 0xfd:

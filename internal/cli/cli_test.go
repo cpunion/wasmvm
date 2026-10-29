@@ -395,7 +395,7 @@ func TestRelaxedSIMDCLIWithAllExtensions(t *testing.T) {
 	}
 	path := writeModule(t, data)
 	for _, command := range []string{"validate", "inspect", "run"} {
-		args := []string{command, "--relaxed-simd", "--multi-memory", "--tail-call", "--extended-const", "--memory64", "--function-references"}
+		args := []string{command, "--relaxed-simd", "--multi-memory", "--tail-call", "--extended-const", "--memory64", "--function-references", "--gc"}
 		if command == "run" {
 			args = append(args, "--export", "run")
 		}

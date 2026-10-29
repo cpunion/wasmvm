@@ -214,7 +214,7 @@ func TestAllocationRollback(t *testing.T) {
 			if in, err := s.Allocate(compiled, nil); in != nil || !errors.Is(err, wasm.ErrLimit) {
 				t.Fatal(in, err)
 			}
-			if s.Usage() != (Usage{}) || len(s.functions) != 1 || len(s.instances) != 0 || len(s.types) != 0 || len(s.tables) != 0 || len(s.memories) != 0 || len(s.globals) != 0 {
+			if s.Usage() != (Usage{}) || len(s.functions) != 1 || len(s.instances) != 0 || len(s.registry.Keys) != 0 || len(s.tables) != 0 || len(s.memories) != 0 || len(s.globals) != 0 {
 				t.Fatal("failed allocation retained state", s.Usage())
 			}
 		})
