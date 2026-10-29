@@ -49,8 +49,8 @@ func TestDirectoryCapabilities(t *testing.T) {
 		if _, err := d.Stat(name, false); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := d.Stat(name, true); err != nil {
-			t.Fatal(err)
+		if st, err := d.Stat(name, true); err != nil || st.Mode&unix.S_IFMT != unix.S_IFREG || st.Size != 4 {
+			t.Fatal("followed file", st, err)
 		}
 	}
 	subfile, sub, err := d.Open("a", unix.O_RDONLY, 0)
@@ -180,11 +180,17 @@ func TestDirectoryCapabilities(t *testing.T) {
 	if err = Link(d, "loop", true, d, "never"); !errors.Is(err, unix.ELOOP) {
 		t.Fatal(err)
 	}
+	if _, err = d.Stat("loop", true); !errors.Is(err, unix.ELOOP) {
+		t.Fatal("stat followed loop", err)
+	}
 	if err = os.Symlink("/", filepath.Join(path, "absolute")); err != nil {
 		t.Fatal(err)
 	}
 	if err = Link(d, "absolute", true, d, "never"); !errors.Is(err, ErrOutside) {
 		t.Fatal(err)
+	}
+	if _, err = d.Stat("absolute", true); !errors.Is(err, ErrOutside) {
+		t.Fatal("stat followed escape", err)
 	}
 	if err = Link(d, "missing", true, d, "never"); err == nil {
 		t.Fatal("missing followed link")

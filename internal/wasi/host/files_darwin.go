@@ -10,7 +10,9 @@ import (
 	"unsafe"
 )
 
-func pathHandleFlags() int { return unix.O_EVTONLY }
+func (d *Directory) pathHandle(name string) (*os.File, error) {
+	return d.Root.OpenFile(name, unix.O_EVTONLY, 0)
+}
 func convertStat(s unix.Stat_t) Stat {
 	at, mt, ct, bad := statTimes(s.Atim, s.Mtim, s.Ctim)
 	return Stat{Dev: uint64(s.Dev), Inode: uint64(s.Ino), Nlink: uint64(s.Nlink), Size: uint64(s.Size), Atime: at, Mtime: mt, Ctime: ct, Mode: uint32(s.Mode), TimeOverflow: bad}

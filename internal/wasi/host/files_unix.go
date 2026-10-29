@@ -161,7 +161,7 @@ func (d *Directory) Stat(name string, follow bool) (Stat, error) {
 		return Stat{}, err
 	}
 	if follow || strings.HasSuffix(name, "/") {
-		f, err := d.Root.OpenFile(name, pathHandleFlags(), 0)
+		f, err := d.pathHandle(name)
 		if err != nil {
 			return Stat{}, pathError(err)
 		}
@@ -314,7 +314,7 @@ func (d *Directory) SetTimes(name string, follow bool, at, mt uint64, flags uint
 		if err := checkPath(name); err != nil {
 			return err
 		}
-		f, err := d.Root.OpenFile(name, pathHandleFlags(), 0)
+		f, err := d.pathHandle(name)
 		if err != nil {
 			return pathError(err)
 		}
