@@ -3145,3 +3145,77 @@ Raw phase/diagnostic logs, reference JSON, source-base API failures, fixture/WIT
 hashes and coverage are under `artifacts/components/wall-clock-*`. IO/poll,
 monotonic subscriptions, streams, complete worlds and remaining component/async
 mechanisms remain required. No M5/M6 or performance acceptance is claimed.
+
+
+## Complete poll and monotonic-clock interfaces
+
+Wall-clock merged in [PR #54](https://github.com/cpunion/wasmvm/pull/54) at
+`1ddce99` after [all four final semantic jobs passed](https://github.com/cpunion/wasmvm/actions/runs/41023242783).
+All 180 downloaded execution reports passed. This increment is rebased on the
+merged production tree; preceding validation notes and package comments differ.
+
+All three `wasi:io/poll@0.2.12` operations and all four stable monotonic-clock
+operations now execute through the shared component runtime with one checked
+nominal pollable identity. Tests cover coherent readiness notifications,
+duplicate indices, empty/list/domain quotas, missing/foreign/closed capabilities,
+all eight independently valid contract mismatches, cancellation and Store/provider
+close during block/poll, timer races, concurrent close, failed publication and
+provisional/detached cleanup. No waiter goroutine is created per polled source.
+Provider Close prevents new publication and joins in-flight creation/cleanup
+and already dispatched internal timer callbacks. The explicit provider owns
+abandoned entries until closed; Store close invalidates handles and cancels calls
+without synthesizing guest destructors.
+
+Absolute and relative subscriptions preserve full unsigned input ranges. Tests
+check past/zero deadlines, real delayed wakeup without shortened duration, huge
+pending instants/durations and deterministic resource drops. Signed timer limits
+are chunked; relative u64 deadline overflow remains pending rather than wrapping.
+Clock origin and microsecond ticks are provider policy, separately documented.
+Go/LLGo release, both own backends, race and vet pass locally. P2 statement
+coverage is **94.75%** (451/476), and every executable package gate passes using
+unchanged-package profiles plus the updated affected profile. All ten authored
+fixtures reproduce and independently validate with wasm-tools 1.258.0; unchanged
+release IO WIT, hashes and the existing WASI license are retained.
+
+The same component executes all seven operations with Wasmtime 48.0.1's actual
+WASIp2 provider. An initial probe incorrectly assumed a past deadline's first
+nonblocking ready must return true. The pinned reference
+[explicitly yields once](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/wasi/src/p2/host/clocks.rs)
+for scheduler fairness. The final shared probe blocks before asserting completed
+readiness, then checks exact duplicate indices, huge deadlines and drops. The
+original reference failure remains separately recorded. Targeted authored tests
+are not complete upstream conformance, guest-toolchain or world acceptance.
+
+Three sequential 200 ms own samples use Go 1.27.3 and LLGo `8e45ed5 -O3 -lto=full`
+on Apple M4 Max arm64. Each warm call executes 128 complete zero-duration
+subscription/create, block and resource.drop lifetimes in guest code. Results
+and final own domain entry counts are checked. Three 10,000-call reference
+samples use the pinned Wasmtime 48.0.1 C SDK, same binary and batch size. Scalar
+C API call overhead is amortized across 128 lifetimes. The source base `145a3bc`
+lacks Poller/MonotonicClock: both compilers reject the unchanged new probe,
+retained as unsupported. The unchanged wall-clock workload is a separate
+common-path baseline:
+
+| Median ns | Go interpreter | Go native | LLGo interpreter | LLGo native |
+| --- | ---: | ---: | ---: | ---: |
+| Complete subscription lifetime | 2,397.8 | 3,260.1 | 15,736.7 | 19,608.4 |
+| Existing wall-clock call base -> head | 863.4 -> 850.5 | 1,337 -> 1,332 | 2,798 -> 2,834 | 4,253 -> 4,267 |
+
+Actual Wasmtime WASIp2: **359.2 ns / lifetime**, or 45,983.9 ns / 128-lifetime
+call. LLGo remains roughly **44x/55x** behind. Go reports about **69 allocations
+and 3.5 kB per lifetime** in this complete path, a significant allocation budget
+for shared call/resource conversion work. These measurements do not attribute
+the entire gap to one function. Shared typed call plans, ownership conversion
+and allocation reduction remain architectural performance investigation/work;
+this capability increment claims no performance parity or acceptance.
+
+File/Engine/compiler, provider/Store binding/instantiation, lookup and first
+calls are outside warm timing and reported separately. Fuel is disabled, own
+cancellation/logical quotas remain enabled, and reference Stores use defaults.
+Reference immediate subscriptions yield to Tokio; own subscriptions are directly
+ready. Preserve that policy difference even though the reference remains faster.
+Samples are local and uncalibrated; LLGo allocation counters are unavailable.
+Raw original/final samples, failed reference probe, pinned reference source,
+fixture hashes and coverage summaries are under `artifacts/components/poll-*`.
+IO error/streams/stdio, remaining component resource/host/async mechanisms,
+complete CLI/HTTP worlds and WASI 0.3 remain required; M5/M6 stay open.

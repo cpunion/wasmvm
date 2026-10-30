@@ -407,6 +407,12 @@ Datetime contracts, cancellable configurable sources and explicit default clock
 granularity. Monotonic-clock requires the upcoming pollable resource provider;
 IO/poll/streams and the complete CLI/HTTP worlds remain required.
 
+Complete poll and monotonic-clock interfaces now share a nominal pollable
+domain, cancellable multi-source waits and bounded timer subscriptions. Host
+provider lifetime is explicit and independently closed; Store close does not
+synthesize resource drops. IO error/streams/stdio, remaining world dependencies,
+standalone component resource mechanisms and async deliverables remain open.
+
 **Exit gate:** components from at least two pinned guest toolchains compose on both backends and host compilers. Versioned WIT/world/operation coverage, encoding/ownership/reentry/error cases and resource cleanup all pass. Parsing or one sample is not complete component/P2 support.
 
 ## M6 — WASI 0.3 native async

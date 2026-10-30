@@ -127,3 +127,58 @@ All operations execute through both own backends/compilers and the same binary
 using Wasmtime 48.0.1's actual WASIp2 provider. The complete clocks package still
 requires monotonic-clock with pollable subscriptions. IO/poll, streams, remaining
 world dependencies and async/WASI 0.3 remain separate required work.
+
+
+## Pollables and monotonic clock
+
+`NewPoller(PollConfig)` implements the entire `wasi:io/poll@0.2.12` interface:
+pollable.ready, pollable.block and poll. `NewMonotonicClock(poller)` implements
+all four stable `wasi:clocks/monotonic-clock@0.2.12` operations. Its Imports
+includes both interfaces and binds the identical nominal pollable declaration.
+The checker verifies borrow/own, list element kinds, parameter counts, scalar
+widths and that shared declaration before any guest effects. Numeric resource
+IDs, foreign Pollers and foreign Stores do not confer authority.
+
+A Poller is an explicit host capability owner, like the P1 Process. Close it
+after closing its bound Instances; Store closure cancels active calls and
+invalidates guest handles, while the Poller retains its independently owned
+subscription entries until explicit drop or Poller.Close. Closing the provider
+wakes active waits and reclaims abandoned subscriptions, joins already dispatched
+timer callbacks, and stops future publication. Concurrent/repeated Close waits
+for the same reclamation. Timer callbacks run no guest/user code. This separate
+ownership is intentional; a Store close does not synthesize guest destructors.
+
+The domain defaults to 1,024 live pollables and 1,024 items per poll. MaxPollItems
+may be configured through 65,534, leaving two cancellation slots in the standard
+reflect.Select limit. Provider entries and Core/Canonical resource quotas remain
+independent. Representation IDs never recycle within a provider. Failed
+publication releases provisional timers; quota exhaustion is reported explicitly.
+
+`PollSource.Readiness` supplies a coherent nonblocking readiness/notification
+snapshot for future IO adapters or embedder capabilities. Sources may change
+readiness repeatedly: after a notification, a false snapshot must supply the
+next notification channel. IO failure counts as ready; the IO operation reports
+the error. Poller borrows externally supplied sources and does not close their
+external IO ownership. Multi-source poll returns each ready input index,
+including duplicate occurrences, and rejects empty/oversized lists. Snapshot
+and notification selection avoid lost wakeups and allocate no goroutine per
+source. Single-source block needs neither a result list nor reflective select.
+All waits observe call context/Store and provider cancellation.
+
+The monotonic clock has a private origin and explicit microsecond ticks. Now is
+nondecreasing and resolution is 1,000 ns. Absolute past and zero-duration
+subscriptions become ready; future subscriptions remain pending. Relative
+deadlines use unquantized elapsed time so a rounded read cannot shorten the
+requested duration. Durations beyond signed time.Duration are waited in bounded
+chunks. A relative deadline exceeding the u64 clock range remains pending rather
+than wrapping into readiness. Explicit resource drop and provider Close cancel
+and join timer work. These synchronous pollables are separate from Component
+Model native async, futures/streams and WASI 0.3.
+
+The same fixture executes all seven operations through Wasmtime 48.0.1's actual
+WASIp2 provider. Its zero-deadline resource deliberately yields to its scheduler;
+a first nonblocking ready may therefore be false. The shared semantic probe
+blocks before asserting completed readiness, then verifies duplicate indices,
+huge deadlines and explicit drops. This scheduling policy differs from own
+immediate readiness, and remains visible in performance interpretation. IO error,
+streams/stdio, filesystem, sockets/HTTP and complete worlds are still required.

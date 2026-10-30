@@ -238,3 +238,31 @@ measure realtime, but own default ticks are explicitly quantized to microseconds
 reference clock precision/default Store policies differ. Fuel is disabled and
 own cancellation/logical quotas remain enabled. Local timings and source-base
 unsupported APIs do not establish calibrated performance acceptance.
+
+
+## Poll/monotonic subscription lifetime
+
+`BenchmarkPollClockSubscriptions` invokes `churn(128)`: every guest iteration
+creates an immediate monotonic subscription, blocks on it and explicitly drops
+its resource. Compilation, Engine/provider/Store binding, lookup and first call
+are separately reported outside warm timing. ns/subscription divides complete
+batch time by 128; it is not a pure timer or handle-table primitive. Every batch
+result and final provider entry count are checked. Source base has no Poller API;
+retain the missing-API compilation failures and use the unchanged wall-clock
+benchmark separately for common-path base/head regression.
+
+Build `c/poll_clock.c` against the pinned Wasmtime 48.0.1 SDK and run:
+
+```sh
+"$OUTPUT/wasmtime-poll-clock" pkg/wasi/preview2/testdata/poll-clock.wasm 10000
+```
+
+It uses the actual WASIp2 provider, verifies now/resolution and the in-guest probe
+of every remaining operation, then times the same 128-lifetime batch. Scalar C
+result conversion is amortized over the batch. Its zero-duration subscriptions
+yield to Tokio once, while own immediate subscriptions are ready directly; keep
+this policy difference explicit. Fuel is off, own cancellation/quotas remain
+enabled, and reference Stores use defaults. Local samples alone establish no
+performance acceptance. The original probe's premature ready assertion and its
+reference failure are retained separately from the final block-before-ready
+probe. See the pinned primary reference's clocks.rs for the scheduling rationale.
