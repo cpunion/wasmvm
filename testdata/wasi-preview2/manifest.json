@@ -5,7 +5,8 @@
   "archiveSha256": "2b0e47bc02953267ad163c6c1188b65baed1292351998cb032f3dcd28d005992",
   "files": {
     "cli.wit": "fb6ac5d23fcaf3d231142a3c2f9bb1e9bc1fe5af6f1f329f6b1a5555ce0d3873",
-    "LICENSE.WASI.md": "df9d92b8ccd14dbe7acf4c0cd490a5431e1237bdd31ab01f8ddb901b72de33b8"
+    "LICENSE.WASI.md": "df9d92b8ccd14dbe7acf4c0cd490a5431e1237bdd31ab01f8ddb901b72de33b8",
+    "random.wit": "48578c40213d5cab6650980905fa146a0be8c39c4433ee5e7e00637b87dbe08f"
   },
   "implementedInterfaces": {
     "wasi:cli/environment@0.2.12": [
@@ -16,6 +17,17 @@
     "wasi:cli/exit@0.2.12": [
       "exit",
       "exit-with-code"
+    ],
+    "wasi:random/random@0.2.12": [
+      "get-random-bytes",
+      "get-random-u64"
+    ],
+    "wasi:random/insecure@0.2.12": [
+      "get-insecure-random-bytes",
+      "get-insecure-random-u64"
+    ],
+    "wasi:random/insecure-seed@0.2.12": [
+      "insecure-seed"
     ]
   },
   "completeWorlds": []

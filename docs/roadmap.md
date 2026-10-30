@@ -389,6 +389,12 @@ exports and reports a typed guest outcome after bounded reclamation. Both own
 backends and the actual Wasmtime WASIp2 provider execute the same binary. The
 complete CLI/HTTP worlds and other M5 deliverables remain open.
 
+All five operations in `wasi:random/random`, `insecure` and `insecure-seed` at
+0.2.12 now execute with explicit initialization, independent stream state,
+bounded packed-byte transfer and cancellation. Both own backends and the actual
+Wasmtime WASIp2 provider execute the same fixture. IO, clocks, filesystem,
+sockets, complete CLI/HTTP worlds and the other M5 deliverables remain required.
+
 **Exit gate:** components from at least two pinned guest toolchains compose on both backends and host compilers. Versioned WIT/world/operation coverage, encoding/ownership/reentry/error cases and resource cleanup all pass. Parsing or one sample is not complete component/P2 support.
 
 ## M6 — WASI 0.3 native async

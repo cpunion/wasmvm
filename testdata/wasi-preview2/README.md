@@ -9,3 +9,7 @@ Only `wasi:cli/environment@0.2.12` is implemented in this increment, covering
 get-environment, get-arguments and initial-cwd. No complete CLI or HTTP world
 is claimed. Runtime fixtures are project-authored WAT converted and validated
 with wasm-tools 1.258.0; they are not an upstream conformance suite.
+
+`random.wit` is copied unchanged from the same pinned release archive and uses
+the same WASI license. The manifest enumerates all five implemented interfaces
+and each operation; complete CLI/HTTP worlds and WASI 0.3 remain open.

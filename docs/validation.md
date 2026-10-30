@@ -2946,3 +2946,78 @@ retained separately from the four independently validated Core ABI fixtures.
 Final local full Go, affected LLGo/race and updated byte benchmarks pass; earlier
 head timings remain as historical raw logs. Required CI must run again at the
 corrected head before merging.
+
+
+## Complete WASI random interfaces
+
+The exit interface merged in [PR #50](https://github.com/cpunion/wasmvm/pull/50)
+at `f3eca72` after [all four final semantic jobs passed](https://github.com/cpunion/wasmvm/actions/runs/41004817111).
+All 180 downloaded execution reports passed at that exact head. Packed-byte
+normalization merged in [PR #51](https://github.com/cpunion/wasmvm/pull/51) at
+`a661ec7` after [all four corrected-head jobs passed](https://github.com/cpunion/wasmvm/actions/runs/41010470056),
+with all 180 execution reports verified. The random implementation is rebased
+on that exact production tree and its affected Go/LLGo/race checks pass.
+
+All five operations across `wasi:random/random`, `insecure` and `insecure-seed` at
+0.2.12 now execute through the shared component runtime. NewRandom acquires
+independent AES-256 keys and hash-map seed before binding, then guest callbacks
+generate without entropy IO. Secure/insecure streams retain independent state,
+u64 consumes the matching byte stream, and seed results are owned/stable. Public
+configuration controls request bounds; deterministic secure seeds are not an
+API option. Empty/default-maximum/oversized requests, exact import contracts,
+entropy initialization failure and packed transfer limits pass.
+
+Both own backends execute the same fixtures with Go and LLGo release, including
+cancellation/Store close while waiting for a stream lease, cancellation during
+generation, concurrent separate Stores sharing a provider, retained results and
+independent OpenSSL AES-256-CTR vectors. Full Go, affected LLGo, race and vet pass;
+every executable package coverage gate passes, with P2 **95.29%** (162/170).
+wasm-tools 1.258.0 validates/reproduces all five new components. The unchanged
+release random WIT, archive/file hashes and WASI license are retained. Wasmtime
+48.0.1's actual WASIp2 provider executes the same binary and verifies all five
+operations before timing. These targeted checks do not replace an upstream
+conformance suite, complete CLI/HTTP world or two guest-language toolchains.
+
+Three sequential 200 ms own samples use Go 1.27.3 and LLGo `8e45ed5 -O3 -lto=full`
+on Apple M4 Max arm64. Each warm operation generates 16 KiB of secure bytes,
+lowers the list to guest memory, reads its length in the guest and resets the
+allocator in post-return. All file/engine/compiler, entropy initialization,
+Store/binding/instantiation, lookup and first-call phases are reported outside
+the warm timer. Reference context/linker/provider setup and first call are
+separate; its warm scalar result avoids dynamic per-byte C API result conversion.
+Source base `eb68b71` has no random provider: both compilers reject the unchanged
+benchmark for missing APIs, retained as unsupported. The existing environment
+operation supplies an independent common-path regression baseline.
+
+| Median ns / call | Go interpreter | Go native | LLGo interpreter | LLGo native | Actual Wasmtime WASIp2 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Secure 16 KiB generation/count | 7,119 | 8,483 | 65,337 | 69,723 | 39,741.4 |
+| Existing environment base -> head | 2,461 -> 2,454 | 5,384 -> 5,377 | 6,751 -> 6,824 | 14,425 -> 14,433 | — |
+
+| Separate 16 KiB diagnostic (ns) | Go default | Go purego | LLGo release |
+| --- | ---: | ---: | ---: |
+| Cipher only, preallocated buffer | 1,596 | 48,453 | 57,817 |
+| Provider generation/allocation/lease | 2,499 | 49,743 | 59,261 |
+
+These diagnostic scopes are not an additive time profile. The large LLGo cipher
+cost already exists outside the VM. LLGo's pinned
+[default build tags](https://github.com/xgo-dev/llgo/blob/8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f/internal/build/build.go#L1577)
+select purego; the Go software-path control supports investigating hardware AES
+support. A separate stdlib-only reproduction passes its OpenSSL vector and
+measures 1,589 / 49,051 / 55,368 ns under Go default / Go purego / LLGo release.
+This performance gap is reported in [llgo #2948](https://github.com/xgo-dev/llgo/issues/2948).
+
+The reference's pinned [random context](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/wasi/src/random.rs)
+uses StdRng for secure random and SmallRng for insecure data; its
+[P2 byte operation](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/wasi/src/p2/host/random.rs)
+collects random values through an iterator. Own calls generate bounded chunks
+through Go's AES-256-CTR implementation. Algorithms and limits differ; observed
+LLGo times remain about **1.64x/1.75x** behind the reference. Core call/bulk-copy
+costs and LLGo crypto acceleration remain open, with no parity/acceptance claim.
+
+Fuel is disabled, own cancellation/logical quotas remain enabled, and reference
+Stores use default policy. Samples are local and uncalibrated; LLGo allocation
+counters are unavailable. Raw startup/warm and diagnostic logs, source-base
+failures, fixture/WIT hashes and summaries are under `artifacts/components/random-*`
+and `api-free-aes-*`. IO, clocks, filesystem, sockets, complete worlds, remaining
+component mechanisms and async/WASI 0.3 remain required; M5/M6 stay open.
