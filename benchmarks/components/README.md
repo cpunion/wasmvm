@@ -101,3 +101,26 @@ llgo test -O3 -lto=full -run '^$' -bench '^BenchmarkEnvironmentArgumentCount$' -
 All phases retain the usual unmetered/default-reference policy differences.
 The source base has no P2 provider, so it has no successful interface timing;
 the existing component PublicWarm probe is a separate regression diagnostic.
+
+## WASI exit lifetime
+
+`BenchmarkExitCall` prepares batches of fresh component instances before timing
+`exit-with-code(42)`. Every call must return a typed exit and reclaim its Store.
+Compilation, import binding/instantiation and export lookup are excluded. This
+operation cannot reuse an exited instance and is not a warm repeated call.
+
+`c/exit.c` uses Wasmtime 48.0.1's actual WASIp2 provider on the same fixture. It
+checks both operations and codes 0/1/42/255, then reports file/engine/compiler/
+linker, per-instance setup, instantiate, lookup, exit call and explicit Store
+verification/destruction as distinct phases. Its call timer excludes Store
+destruction; own calls include cancellation and deferred Store reclamation.
+Keep both reference phases visible when comparing these different policies.
+
+Build with the pinned SDK as for `c/environment.c`, then run:
+
+```sh
+"$OUTPUT/wasmtime-exit" pkg/wasi/preview2/testdata/exit.wasm 10000
+```
+
+Source base has no exit provider: retain that unsupported result, and use the
+existing component public-call benchmark separately for common-path regression.

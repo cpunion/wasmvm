@@ -12,6 +12,10 @@
       "get-environment",
       "get-arguments",
       "initial-cwd"
+    ],
+    "wasi:cli/exit@0.2.12": [
+      "exit",
+      "exit-with-code"
     ]
   },
   "completeWorlds": []
