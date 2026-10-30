@@ -10,7 +10,7 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
-func TestHTTPBodyBufferWrapBackpressureAndFlush(t *testing.T) {
+func TestHTTPBodyBufferWrapBackpressureAndFinish(t *testing.T) {
 	for _, capacity := range []uint32{0, 1<<20 + 1} {
 		if _, err := newHTTPBodyBuffer(capacity); !errors.Is(err, wasm.ErrLimit) {
 			t.Fatal(err)
@@ -25,10 +25,10 @@ func TestHTTPBodyBufferWrapBackpressureAndFlush(t *testing.T) {
 	if n, err := b.read(ctx, out, false); n != 0 || !errors.Is(err, ErrWouldBlock) {
 		t.Fatal(n, err)
 	}
-	if ready, _ := b.readiness(true, false); ready {
+	if ready, _ := b.readiness(true); ready {
 		t.Fatal("empty read ready")
 	}
-	ready, changed := b.readiness(false, false)
+	ready, changed := b.readiness(false)
 	if !ready {
 		t.Fatal("empty buffer not writable")
 	}
@@ -40,17 +40,11 @@ func TestHTTPBodyBufferWrapBackpressureAndFlush(t *testing.T) {
 	default:
 		t.Fatal("lost write notification")
 	}
-	if ready, _ := b.readiness(false, false); ready {
+	if ready, _ := b.readiness(false); ready {
 		t.Fatal("full buffer writable")
 	}
 	if n, err := b.write(ctx, []byte("x")); n != 0 || !errors.Is(err, ErrWouldBlock) {
 		t.Fatal(n, err)
-	}
-	if err := b.flush(ctx); !errors.Is(err, ErrWouldBlock) {
-		t.Fatal(err)
-	}
-	if ready, _ := b.readiness(false, true); ready {
-		t.Fatal("pending bytes flush ready")
 	}
 	if n, err := b.read(ctx, out[:3], false); n != 3 || err != nil || string(out[:n]) != "abc" {
 		t.Fatal(n, err)
@@ -60,12 +54,6 @@ func TestHTTPBodyBufferWrapBackpressureAndFlush(t *testing.T) {
 	}
 	if n, err := b.read(ctx, out, false); n != 4 || err != nil || string(out[:n]) != "defg" {
 		t.Fatal(n, err, string(out[:n]))
-	}
-	if err := b.flush(ctx); err != nil {
-		t.Fatal(err)
-	}
-	if ready, _ := b.readiness(false, true); !ready {
-		t.Fatal("empty buffer flush blocked")
 	}
 	if n, err := b.write(ctx, nil); n != 0 || err != nil {
 		t.Fatal(n, err)
@@ -101,14 +89,8 @@ func TestHTTPBodyBufferErrorsCancellationDiscardAndClose(t *testing.T) {
 	if _, err := b.read(ctx, out, false); !errors.Is(err, failure) {
 		t.Fatal(err)
 	}
-	if err := b.flush(ctx); !errors.Is(err, failure) {
-		t.Fatal(err)
-	}
 	b.close()
 	b.close()
-	if err := b.flush(ctx); !errors.Is(err, io.ErrClosedPipe) {
-		t.Fatal(err)
-	}
 	b, _ = newHTTPBodyBuffer(4)
 	b.write(ctx, []byte("full"))
 	b.discard()
@@ -128,9 +110,6 @@ func TestHTTPBodyBufferErrorsCancellationDiscardAndClose(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := b.read(cancelled, out, true); !errors.Is(err, context.Canceled) {
-		t.Fatal(err)
-	}
-	if err := b.flush(cancelled); !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
 	b, _ = newHTTPBodyBuffer(4)
@@ -174,7 +153,7 @@ func TestHTTPBodyBufferConcurrentTransport(t *testing.T) {
 					return
 				}
 				if len(packet) > 0 {
-					ready, changed := b.readiness(false, false)
+					ready, changed := b.readiness(false)
 					if ready {
 						continue
 					}
@@ -214,28 +193,33 @@ func TestHTTPBodyBufferConcurrentTransport(t *testing.T) {
 	}
 }
 
-func TestHTTPBodyBufferFinishedFlushWaitsForDelivery(t *testing.T) {
-	b, _ := newHTTPBodyBuffer(4)
+func TestHTTPBodyBufferGrowthPreservesQueuedBytes(t *testing.T) {
+	b, _ := newHTTPBodyBuffer(16384)
 	ctx := context.Background()
-	if _, err := b.write(ctx, []byte("data")); err != nil {
-		t.Fatal(err)
-	}
-	if err := b.finish(nil); err != nil {
-		t.Fatal(err)
-	}
-	if ready, _ := b.readiness(false, true); ready {
-		t.Fatal("finish acknowledged undelivered bytes")
-	}
-	if err := b.flush(ctx); !errors.Is(err, ErrWouldBlock) {
-		t.Fatal(err)
-	}
-	if n, err := b.read(ctx, make([]byte, 4), true); n != 4 || err != nil {
+	if n, err := b.write(ctx, []byte("abc")); n != 3 || err != nil {
 		t.Fatal(n, err)
 	}
-	if ready, _ := b.readiness(false, true); !ready {
-		t.Fatal("drained finished body is not flush-ready")
+	first := make([]byte, 2)
+	if n, err := b.read(ctx, first, false); n != 2 || err != nil || string(first) != "ab" {
+		t.Fatal(n, err)
 	}
-	if err := b.flush(ctx); err != nil {
-		t.Fatal(err)
+	tail := make([]byte, 10000)
+	for i := range tail {
+		tail[i] = byte(i)
+	}
+	if n, err := b.write(ctx, tail); n != len(tail) || err != nil {
+		t.Fatal(n, err)
+	}
+	all := make([]byte, 10001)
+	if n, err := b.read(ctx, all, false); n != len(all) || err != nil {
+		t.Fatal(n, err)
+	}
+	if all[0] != 'c' {
+		t.Fatal("lost queued prefix")
+	}
+	for i := range tail {
+		if all[i+1] != tail[i] {
+			t.Fatal("lost data while growing", i)
+		}
 	}
 }

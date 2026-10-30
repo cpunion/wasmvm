@@ -436,6 +436,15 @@ acceptance remain required.
 
 **Exit gate:** components from at least two pinned guest toolchains compose on both backends and host compilers. Versioned WIT/world/operation coverage, encoding/ownership/reentry/error cases and resource cleanup all pass. Parsing or one sample is not complete component/P2 support.
 
+HTTP now supplies all 51 stable types operations, outgoing handling and the
+standard guest incoming handler on Linux/Darwin. The authored proxy consumer
+executes bounded bodies, headers/trailers and request/response ownership on
+both own backends and host compilers; actual Wasmtime HTTPp2 executes the same
+client and incoming guest. See [HTTP design](design/wasi-http.md). Independent
+guest-toolchain/full-world acceptance, remaining component semantics and
+performance gates still block M5 completion. P2 pollables do not supply
+canonical async or WASI 0.3.
+
 ## M6 — WASI 0.3 native async
 
 Pin WASI **0.3.2** and its cumulative Component Model requirements. Implement canonical async lift/lower, task transitions, suspension/resumption, futures/streams, cancellation, backpressure, reentrancy and completion/error behavior. Deliver the declared CLI and HTTP service/middleware scope with explicit versioned bindings; P2 pollables and P3 async remain separate adapters.

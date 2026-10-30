@@ -3635,3 +3635,101 @@ All HTTP resource bindings, client/proxy execution, transport/TLS/timeouts,
 permission/ownership integration, full performance comparisons and world/guest
 toolchain conformance remain required before HTTP acceptance. Canonical async
 and WASI 0.3 remain separate open work.
+
+
+## Stable WASI HTTP client and proxy (2026-10-31)
+
+This supersedes the preparation-only scope above. `HTTP` implements all 51
+stable types operations, outgoing handling and the standard guest incoming
+handler on Linux/Darwin. `HTTPHandler` creates independent request Stores and
+streams responses concurrently with guest execution. URL and resolved-connect
+grants default to deny; private transports, bounded resources/headers/body
+queues, timeout options, ownership rollback and joined shutdown share existing
+IO/network/canonical contracts. No reference engine is used for own execution.
+
+The full authored proxy-world consumer checks HTTP/HTTPS requests, 4096-byte
+bodies, request/reply trailers and guest incoming handling on interpreter/native
+and Go/LLGo release. An independent strict server validates every request byte.
+API tests cover immutable/cloned fields, all metadata/options, single-use
+body/future states, parent/child lifetime traps, foreign resources, quotas,
+failed publication, cancellation, TLS trust rejection, response truncation and
+typed IO downcasts. A 257-byte body queue exercises real incoming streaming and
+discard-to-trailers backpressure. Empty/redirect responses do not follow
+redirects. All 39 error-code payloads roundtrip through response-outparam.set;
+this is payload/ABI coverage, not 39 generated physical network failures.
+Eight valid contract mutations reject binding before guest effects.
+
+Local final Go/LLGo package binaries, Go race tests, vet and no-cgo build pass.
+Preview 2 statement coverage is **90.27% (4806/5324)**. The required four-job
+final-head CI and full execution-report/coverage audit remain merge conditions.
+The actual unmodified Wasmtime 48.0.1 Rust HTTPp2 provider executes the same
+HTTP client and incoming handler; the latter independently checks status,
+complete response bytes and trailers. Private-root HTTPS is tested on own code,
+without claiming a default-hook reference TLS comparison. Complete-world and
+two guest-language-toolchain acceptance remain open, as do M5/M6 and WASI 0.3.
+
+Three serial samples on Apple M4 Max / Darwin arm64 use Go 1.27.3, pinned LLGo
+`8e45ed5 -O3 -lto=full` and Rust 1.98.0. Each call checks 128 lifetimes after ten
+warmup batches. Fields and body use 1000 measured batches/sample; full requests
+use 20. Fuel is off; quotas/cancellation and loopback grants remain enabled.
+The body workload produces/finishes 4096 bytes without a network consumer;
+it is not a bidirectional streaming throughput claim. Preparation and first
+batch are outside warmed measurements. Medians below are ns per lifetime:
+
+| Scope | Go interpreter | Go native | LLGo interpreter | LLGo native | Actual Wasmtime HTTPp2 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Fields operations/drop | 22,396 | 32,386 | 53,733 | 81,412 | 2,328 |
+| 4 KiB body production/finish | 12,366 | 15,484 | 30,174 | 39,966 | 1,266 |
+| 4 KiB POST/response/trailers | 137,349 | 192,985 | 354,735 | 440,687 | 129,309 |
+
+LLGo remains about **23.1×/35.0× slower for fields**, **23.8×/31.6× for
+body production**, and **2.74×/3.41× for full requests**. Performance acceptance
+is unmet. Native code is slower than the interpreter for these host-call-heavy
+workloads; Go fields batches allocate 67,985/74,138 objects for the two backends.
+Shared canonical/host-call and resource-transfer overhead is explicit follow-up
+work. LLGo reports zero allocation counts; that counter is unavailable and does
+not mean zero allocation. These are local descriptive samples, not controlled
+regression or platform acceptance.
+
+The full requests use one common external server for all processes. It records
+12 connections/33,024 checked requests for each own compiler (both backends,
+including benchmark calibration/warmups), versus 11,904 connections/11,904
+requests for the reference. All final runs report zero invalid messages. The
+actual reference opens a connection per request; own code pools connections.
+These rates include complete policy/connection costs and do not prove pure
+engine parity. Reference sample rates span 120,972–161,625 ns/request.
+
+Separate complete-request phases, in ns (first means a batch of 128 and includes
+its initial connection; connection establishment is not isolated by subtraction):
+
+| Phase | Go interpreter/native | LLGo interpreter/native | Wasmtime |
+| --- | ---: | ---: | ---: |
+| Load | 353,958 / 353,958 | 99,667 / 99,667 | 40,209 |
+| Engine | 1,000 / 916 | 1,167 / 1,167 | 85,666 |
+| Compile | 1,486,917 / 4,988,334 | 2,082,000 / 9,085,291 | 14,693,042 |
+| Provider/Store setup | 38,625 / 40,791 | 49,250 / 52,375 | 123,292 |
+| Bind/instantiate | 642,958 / 509,459 | 434,834 / 473,917 | 103,916 |
+| Lookup | 292 / 250 | 375 / 291 | 875 |
+| First batch | 18,657,333 / 24,005,542 | 49,509,292 / 55,969,916 | 16,942,083 |
+| Owner teardown | 24,167 / 29,791 | 111,417 / 112,958 | 179,917 |
+
+Source base `a37898a` lacks NewHTTP under both compilers; that absence is retained
+as an API-baseline failure. The unchanged wall-clock medians, interpreter/native,
+change Go 843.6/1315 -> 837.6/1302 ns, LLGo 2754/4226 -> 2706/3989 ns. No regression
+guarantee is inferred. Raw logs, phases, source/compiler/binary hashes and
+server counters remain in `artifacts/components/http-*`; reproduction commands
+are in [the benchmark guide](../benchmarks/components/README.md).
+
+Failures remain visible: the earlier valid guest without an explicit request
+Trailer declaration loses its trailer under the default reference sender and
+fails strict validation. Its binary/logs are retained separately. A sustained
+100-batch reference attempt fails around 15,977 server connections; local
+TIME_WAIT/ephemeral-port pressure is suspected, not established as a provider
+bug. Final shorter samples use a fresh shared endpoint without changing guest
+assertions or sender behavior. Sustained request acceptance remains open.
+
+A separate standard-library-only cancellation reproducer reports Go client
+cancellation at 10–28 µs and LLGo at 1.00–1.01 s (eight samples). See
+[llgo #2953](https://github.com/xgo-dev/llgo/issues/2953). Tests allow three seconds
+for eventual completion; protocol timeout values and typed error assertions
+remain unchanged. The pinned compiler is not silently patched or upgraded.

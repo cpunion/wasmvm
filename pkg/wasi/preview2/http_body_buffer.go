@@ -15,6 +15,7 @@ import (
 type httpBodyBuffer struct {
 	mu                           sync.Mutex
 	data                         []byte
+	capacity                     int
 	head, count                  int
 	changed                      chan struct{}
 	finished, closed, discarding bool
@@ -26,7 +27,7 @@ func newHTTPBodyBuffer(capacity uint32) (*httpBodyBuffer, error) {
 	if capacity == 0 || capacity > 1<<20 {
 		return nil, wasm.ErrLimit
 	}
-	return &httpBodyBuffer{data: make([]byte, int(capacity)), changed: make(chan struct{})}, nil
+	return &httpBodyBuffer{capacity: int(capacity), changed: make(chan struct{})}, nil
 }
 func (b *httpBodyBuffer) notify() { close(b.changed); b.changed = make(chan struct{}) }
 func (b *httpBodyBuffer) write(ctx context.Context, data []byte) (int, error) {
@@ -43,7 +44,7 @@ func (b *httpBodyBuffer) write(ctx context.Context, data []byte) (int, error) {
 	}
 	n := len(data)
 	if !b.discarding {
-		n = min(n, len(b.data)-b.count)
+		n = min(n, b.capacity-b.count)
 		if n == 0 {
 			return 0, ErrWouldBlock
 		}
@@ -52,6 +53,17 @@ func (b *httpBodyBuffer) write(ctx context.Context, data []byte) (int, error) {
 		return 0, wasm.ErrLimit
 	}
 	if !b.discarding {
+		if needed := b.count + n; needed > len(b.data) {
+			size := min(b.capacity, max(needed, min(4096, b.capacity), len(b.data)*2))
+			dataCopy := make([]byte, size)
+			if b.count != 0 {
+				first := min(b.count, len(b.data)-b.head)
+				copy(dataCopy, b.data[b.head:b.head+first])
+				copy(dataCopy[first:], b.data[:b.count-first])
+			}
+			b.data = dataCopy
+			b.head = 0
+		}
 		tail := (b.head + b.count) % len(b.data)
 		first := min(n, len(b.data)-tail)
 		copy(b.data[tail:tail+first], data[:first])
@@ -101,35 +113,17 @@ func (b *httpBodyBuffer) read(ctx context.Context, out []byte, blocking bool) (i
 		}
 	}
 }
-func (b *httpBodyBuffer) readiness(read, flushing bool) (bool, <-chan struct{}) {
+func (b *httpBodyBuffer) readiness(read bool) (bool, <-chan struct{}) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	ready := b.closed || b.failure != nil
 	if read {
 		ready = ready || b.finished || b.count != 0
-	} else if flushing {
-		ready = ready || b.count == 0
+
 	} else {
-		ready = ready || b.finished || b.discarding || b.count < len(b.data)
+		ready = ready || b.finished || b.discarding || b.count < b.capacity
 	}
 	return ready, b.changed
-}
-func (b *httpBodyBuffer) flush(ctx context.Context) error {
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	if b.closed {
-		return io.ErrClosedPipe
-	}
-	if b.failure != nil {
-		return b.failure
-	}
-	if b.count != 0 {
-		return ErrWouldBlock
-	}
-	return nil
 }
 func (b *httpBodyBuffer) finish(err error) error {
 	b.mu.Lock()

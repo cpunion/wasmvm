@@ -2,20 +2,20 @@
   "producer": "wasm-tools 1.258.0",
   "wasiVersion": "0.2.12",
   "wasiArchiveSha256": "2b0e47bc02953267ad163c6c1188b65baed1292351998cb032f3dcd28d005992",
-  "worldSha256": "a997c6953fc98c36d6ebaf88c840b1332b4b5f85d7b333ec7677b91a30dc2f9c",
+  "worldSha256": "116ca51f0e8f4d56afbf568a0b5234782675c5a29414fd2469ad0d09de7d9493",
   "stableTypesOperations": 51,
   "unstableFeatures": [],
   "scope": "HTTP field workload importing the complete stable types interface; not full HTTP world conformance",
   "binarySha256": {
-    "http-fields.wasm": "3a7f06f8afb42a1cacb24a494923149b6f637cac6019f93a7fea3e92ab89f25f",
-    "http-fields-api.wasm": "1c7cb1abc4dcdb6675e219473e8a4cb0fb7d771b0c7385094a6e7c210854f572",
-    "http-contract-tuple-order.wasm": "4b169822e02061729c66dd5963304333f87868afef1ecd5fd074969748eaa05b",
-    "http-contract-value-width.wasm": "2e73f33b918ceb42d9991edd83430c25351c5abbbd4f7c4e3dffed71f9ee7066",
-    "http-contract-header-error.wasm": "3fae87d664a547f26c68108e5c3e558584f2521d9740bcab4222d0834d03394e",
-    "http-contract-clone-result.wasm": "2d8256cfba10de44263880c54b77477fc3c04bb854987e55939303f4ce2185b4",
-    "http-contract-lookup-result.wasm": "e5947e86a0caaf7e60701739f9837bda5eae30b9fe39b6b30314e43a1d7fa9f4",
-    "http-contract-request-option.wasm": "811f961854cf8c044c5984df64759da44f6168759e624a2e793d78b374bf102d",
-    "http-contract-request-path.wasm": "07af9edf8590fe4df2973f52a2b9feac1120a8ef6a038a580efa0b861abdd7f8",
-    "http-contract-http-error.wasm": "a37d5a5a24bfc027542307598004291997f7d7f9f2dca3ad53ca616086f9991b"
+    "http-fields.wasm": "e0ae93aa5aff125bd91315ed956fd673a9cba2a332b89d658c6974b8f8b43742",
+    "http-fields-api.wasm": "ad6a5fd7051ca1ca8afb85a5afd3319c6782e8009b4ff5a428d5cd432442ba62",
+    "http-contract-tuple-order.wasm": "34155de77c4a9acdaaf117d6c81078e3bf095fe06de023aa786493ab055e9596",
+    "http-contract-value-width.wasm": "82f31a0b6664a488eaa87da7184209ddab9aad12d2d9902b41ba7414449eb6c4",
+    "http-contract-header-error.wasm": "d4d10491157b7ad145688f433fc6c5c31a01c66b3ac8432ddf60249b7ffd4c71",
+    "http-contract-clone-result.wasm": "8fde11f24335b1cab2bd146b7978ebbdf76a50676b3bc28b7ba20d6e9b48c132",
+    "http-contract-lookup-result.wasm": "617a36ebd8ed968ced2753f49bc1ac3a29b043cd18ceee85d25abc3bbc506cd6",
+    "http-contract-request-option.wasm": "773f74fbd0dc980d0fc19b9028745926c30d4e43ef8853ec0a2444b30fb86f39",
+    "http-contract-request-path.wasm": "6ad0bb0a6f272bb4c9e3fd2c3b76f933e959eb8c13c5c4ec1ca34485b1822566",
+    "http-contract-http-error.wasm": "781dfea9f55e4b1a050bd602403a8b65bd9b43968fc050cc53c8c3c54387f4e5"
   }
 }

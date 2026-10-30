@@ -30,8 +30,8 @@ impl WasiHttpView for State {
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = env::args().collect();
-    if args.len() != 3 {
-        return Err("usage: http_fields COMPONENT COUNT".into());
+    if args.len() != 3 && args.len() != 4 {
+        return Err("usage: http_fields COMPONENT COUNT [body]".into());
     }
     let count: u64 = args[2].parse()?;
     if count == 0 {
@@ -62,12 +62,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let t = Instant::now();
     let instance = linker.instantiate(&mut store, &component)?;
     let instantiate = t.elapsed().as_nanos();
-    let probe = instance.get_typed_func::<(), (u32,)>(&mut store, "probe")?;
-    if probe.call(&mut store, ())?.0 != 42 {
-        return Err("field probe failed".into());
-    }
     let t = Instant::now();
-    let batch = instance.get_typed_func::<(u32,), (u32,)>(&mut store, "fields-batch")?;
+    let workload = if args.get(3).map(|s| s.as_str()) == Some("body") {
+        "body-batch"
+    } else {
+        "fields-batch"
+    };
+    let batch = instance.get_typed_func::<(u32,), (u32,)>(&mut store, workload)?;
     let lookup = t.elapsed().as_nanos();
     let t = Instant::now();
     if batch.call(&mut store, (128,))?.0 != 128 {
@@ -96,7 +97,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     drop(engine);
     let close = t.elapsed().as_nanos();
     println!(
-        "{{\"runtime\":\"wasmtime-48.0.1-typed-http-p2\",\"load_ns\":{load},\"engine_ns\":{engine_time},\"compile_ns\":{compile},\"setup_ns\":{setup},\"instantiate_ns\":{instantiate},\"lookup_ns\":{lookup},\"first_ns\":{first},\"warm_ns_per_call\":{},\"warm_fields_lifetime_ns\":{},\"lifetimes_per_call\":128,\"close_ns\":{close},\"checksum\":{checksum}}}",
+        "{{\"runtime\":\"wasmtime-48.0.1-typed-http-p2\",\"load_ns\":{load},\"engine_ns\":{engine_time},\"compile_ns\":{compile},\"setup_ns\":{setup},\"instantiate_ns\":{instantiate},\"lookup_ns\":{lookup},\"first_ns\":{first},\"warm_ns_per_call\":{},\"warm_lifetime_ns\":{},\"lifetimes_per_call\":128,\"close_ns\":{close},\"checksum\":{checksum}}}",
         warm as f64 / count as f64,
         warm as f64 / count as f64 / 128.0
     );

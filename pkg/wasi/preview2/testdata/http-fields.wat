@@ -406,11 +406,13 @@
     (global $heap (;0;) (mut i32) i32.const 8192)
     (export "probe" (func 89))
     (export "cabi_post_probe" (func 90))
-    (export "fields-batch" (func 91))
-    (export "cabi_post_fields-batch" (func 92))
+    (export "body-batch" (func 91))
+    (export "cabi_post_body-batch" (func 92))
+    (export "fields-batch" (func 93))
+    (export "cabi_post_fields-batch" (func 94))
     (export "memory" (memory 0))
-    (export "cabi_realloc" (func 93))
-    (export "_initialize" (func 94))
+    (export "cabi_realloc" (func 95))
+    (export "_initialize" (func 96))
     (func (;89;) (type 9) (result i32)
       call $probe
     )
@@ -419,6 +421,70 @@
       global.set $heap
     )
     (func (;91;) (type 0) (param i32) (result i32)
+      (local $at i32) (local $request i32) (local $body i32) (local $stream i32)
+      local.get 0
+      i32.const 128
+      i32.gt_u
+      if ;; label = @1
+        unreachable
+      end
+      block $end
+        loop $next
+          local.get $at
+          local.get 0
+          i32.ge_u
+          br_if $end
+          call $new-fields
+          call $new-outgoing-request
+          local.set $request
+          local.get $request
+          i32.const 64
+          call $outgoing-request.body
+          i32.const 64
+          call $ok
+          i32.const 68
+          i32.load
+          local.set $body
+          local.get $body
+          i32.const 64
+          call $outgoing-body.write
+          i32.const 64
+          call $ok
+          i32.const 68
+          i32.load
+          local.set $stream
+          local.get $stream
+          i32.const 2048
+          i32.const 4096
+          i32.const 64
+          call $output-stream.blocking-write-and-flush
+          i32.const 64
+          call $ok
+          local.get $stream
+          call $drop-output-stream
+          local.get $body
+          i32.const 0
+          i32.const 0
+          i32.const 64
+          call $outgoing-body.finish
+          i32.const 64
+          call $ok
+          local.get $request
+          call $drop-outgoing-request
+          local.get $at
+          i32.const 1
+          i32.add
+          local.set $at
+          br $next
+        end
+      end
+      local.get $at
+    )
+    (func (;92;) (type 1) (param i32)
+      i32.const 8192
+      global.set $heap
+    )
+    (func (;93;) (type 0) (param i32) (result i32)
       (local $at i32)
       local.get 0
       i32.const 128
@@ -447,11 +513,11 @@
       end
       local.get $at
     )
-    (func (;92;) (type 1) (param i32)
+    (func (;94;) (type 1) (param i32)
       i32.const 8192
       global.set $heap
     )
-    (func (;93;) (type 12) (param i32 i32 i32 i32) (result i32)
+    (func (;95;) (type 12) (param i32 i32 i32 i32) (result i32)
       (local $ptr i32)
       global.get $heap
       local.get 2
@@ -468,15 +534,15 @@
       global.set $heap
       local.get $ptr
     )
-    (func (;94;) (type 17))
-    (func $ok (;95;) (type 1) (param i32)
+    (func (;96;) (type 17))
+    (func $ok (;97;) (type 1) (param i32)
       local.get 0
       i32.load8_u
       if ;; label = @1
         unreachable
       end
     )
-    (func $probe (;96;) (type 9) (result i32)
+    (func $probe (;98;) (type 9) (result i32)
       (local $h i32) (local $copy i32) (local $other i32) (local $list i32)
       call $new-fields
       local.set $h
@@ -625,8 +691,9 @@
     )
     (data (;0;) (i32.const 1024) "x-key")
     (data (;1;) (i32.const 1032) "one")
-    (data (;2;) (i32.const 1040) "X-KEY")
-    (data (;3;) (i32.const 1056) "bad name")
+    (data (;2;) (i32.const 2048) "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+    (data (;3;) (i32.const 1040) "X-KEY")
+    (data (;4;) (i32.const 1056) "bad name")
     (@producers
       (processed-by "wit-component" "0.258.0")
     )
@@ -1497,10 +1564,14 @@
   (func $probe (;74;) (type 28) (canon lift (core func $probe) (post-return $cabi_post_probe)))
   (export $"#func75 probe" (@name "probe") (;75;) "probe" (func $probe))
   (type (;29;) (func (param "count" u32) (result u32)))
-  (alias core export $main "fields-batch" (core func $fields-batch (;140;)))
-  (alias core export $main "cabi_post_fields-batch" (core func $cabi_post_fields-batch (;141;)))
-  (func $fields-batch (;76;) (type 29) (canon lift (core func $fields-batch) (post-return $cabi_post_fields-batch)))
-  (export $"#func77 fields-batch" (@name "fields-batch") (;77;) "fields-batch" (func $fields-batch))
+  (alias core export $main "body-batch" (core func $body-batch (;140;)))
+  (alias core export $main "cabi_post_body-batch" (core func $cabi_post_body-batch (;141;)))
+  (func $body-batch (;76;) (type 29) (canon lift (core func $body-batch) (post-return $cabi_post_body-batch)))
+  (export $"#func77 body-batch" (@name "body-batch") (;77;) "body-batch" (func $body-batch))
+  (alias core export $main "fields-batch" (core func $fields-batch (;142;)))
+  (alias core export $main "cabi_post_fields-batch" (core func $cabi_post_fields-batch (;143;)))
+  (func $fields-batch (;78;) (type 29) (canon lift (core func $fields-batch) (post-return $cabi_post_fields-batch)))
+  (export $"#func79 fields-batch" (@name "fields-batch") (;79;) "fields-batch" (func $fields-batch))
   (@producers
     (processed-by "wit-component" "0.258.0")
   )
