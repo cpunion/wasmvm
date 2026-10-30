@@ -8,6 +8,9 @@
     "layout-oracle.json": "745b3a34d898fdd4b6444bcfcbe70114facf8d4e9eecd736140e88dce812e9db",
     "definitions.py": "eff34e28dc0917f8a3690cb6cf3a182977b168a38ba2171c9c49b0edba38c8ca",
     "generate.py": "5955fa63db217d1a10c241648a28c38f5b09a16e95cf5b5d7e35c49ef700c3cb",
-    "LICENSE-APACHE": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
-  }
+    "LICENSE-APACHE": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+    "generate_collections.py": "a66593555ac45f8ee086643cf7c9e7cb0a41edcbc97c6e30d8293d90877c387d",
+    "collection-oracle.json": "74da47f0e7ece8350a6679b00fd278e503f284368af25eb41c05bb20b0be489d"
+  },
+  "collectionMemoryCases": 56
 }

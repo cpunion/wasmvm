@@ -148,12 +148,18 @@ func (c *Codec) load(t *model.Type, at uint64, depth uint32) (Value, error) {
 			}
 		}
 		return v, nil
-	case model.List:
+	case model.List, model.Map:
 		ptr, n, err := c.loadPair(at)
 		if err != nil {
 			return Value{}, err
 		}
-		return c.loadList(t.Element, ptr, n, depth)
+		element := t.Element
+		if t.Kind == model.Map {
+			element = l.Entry
+		}
+		return c.loadList(element, ptr, n, depth)
+	case model.FixedList:
+		return c.loadList(t.Element, at, uint64(t.Length), depth)
 	case model.Flags, model.Enum:
 		bits, err := c.loadInt(at, l.Size)
 		if err != nil {
@@ -297,10 +303,10 @@ func (c *Codec) validate(t *model.Type, v Value, depth uint32) error {
 			if err := c.visit(depth + 1); err != nil {
 				return err
 			}
-			if err := c.validate(t.Key, entry.Elements[0], depth+1); err != nil {
+			if err := c.validate(t.Key, entry.Elements[0], depth+2); err != nil {
 				return err
 			}
-			if err := c.validate(t.Element, entry.Elements[1], depth+1); err != nil {
+			if err := c.validate(t.Element, entry.Elements[1], depth+2); err != nil {
 				return err
 			}
 		}
@@ -366,12 +372,26 @@ func (c *Codec) store(t *model.Type, at uint64, v Value, depth uint32) error {
 				return err
 			}
 		}
-	case model.List:
-		ptr, err := c.storeList(t.Element, v.Elements, depth)
+	case model.List, model.Map:
+		element := t.Element
+		if t.Kind == model.Map {
+			element = l.Entry
+		}
+		ptr, err := c.storeList(element, v.Elements, depth)
 		if err != nil {
 			return err
 		}
 		return c.storePair(at, ptr, uint64(len(v.Elements)))
+	case model.FixedList:
+		child, err := c.Layouts.Build(t.Element)
+		if err != nil {
+			return err
+		}
+		for i, value := range v.Elements {
+			if err := c.store(t.Element, at+uint64(i)*child.Size, value, depth+1); err != nil {
+				return err
+			}
+		}
 	case model.Flags, model.Enum:
 		return c.storeInt(at, l.Size, v.Bits)
 	case model.Variant, model.Option, model.Result:

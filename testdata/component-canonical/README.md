@@ -18,3 +18,9 @@ in `manifest.json`. The production implementation never imports or executes
 the Python reference. Cases cover primitives, strings/lists, records/tuples,
 variants, flags/enums, option/results and mixed nested payloads. Separate Go
 tests cover malformed inputs, resource/lifecycle behavior and quota boundaries.
+
+The collection memory oracle adds 56 independent byte-level store/load cases
+for maps (including ordered duplicate keys) and fixed lists, with memory32/64.
+`generate_collections.py` invokes the same unchanged pinned reference and records
+the type-directed host values and exact guest bytes. Its source/output hashes
+are in the manifest; these cases are separate from the 1,024 layout cases.

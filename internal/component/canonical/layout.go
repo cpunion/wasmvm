@@ -29,6 +29,8 @@ type Layout struct {
 	// full count without expanding a shared type DAG into an exponential slice.
 	Flat      []wasm.ValueType
 	FlatCount uint64
+	// Entry is the cached tuple schema used by the map's list representation.
+	Entry *model.Type
 }
 
 type Builder struct {
@@ -126,6 +128,10 @@ func (b *Builder) build(t *model.Type, depth uint32) (*Layout, error) {
 			}
 			if t.Kind == model.Map {
 				if _, err := b.build(t.Key, depth+1); err != nil {
+					return nil, err
+				}
+				out.Entry = &model.Type{Kind: model.Tuple, Fields: []model.Field{{Type: t.Key}, {Type: t.Element}}}
+				if _, err := b.build(out.Entry, depth); err != nil {
 					return nil, err
 				}
 			}

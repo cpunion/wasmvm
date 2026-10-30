@@ -36,14 +36,35 @@ func (c *Codec) liftFlat(t *model.Type, slots []Slot, at *int, depth uint32) (Va
 		return Value{Bits: v.Bits}, err
 	}
 	switch t.Kind {
-	case model.String, model.List:
+	case model.String, model.List, model.Map:
 		ptr, n := slots[*at].Bits, slots[*at+1].Bits
 		*at += 2
 		if t.Kind == model.String {
 			s, err := c.Transfer.LiftString(ptr, n)
 			return Value{Text: s}, err
 		}
-		return c.loadList(t.Element, ptr, n, depth)
+		element := t.Element
+		if t.Kind == model.Map {
+			layout, _ := c.Layouts.Build(t)
+			element = layout.Entry
+		}
+		return c.loadList(element, ptr, n, depth)
+	case model.FixedList:
+		if uint64(t.Length) > c.MaxValues-c.values {
+			return Value{}, exhausted()
+		}
+		if err := c.Transfer.charge(uint64(t.Length) * 64); err != nil {
+			return Value{}, err
+		}
+		value := Value{Elements: make([]Value, t.Length)}
+		for i := range value.Elements {
+			var err error
+			value.Elements[i], err = c.liftFlat(t.Element, slots, at, depth+1)
+			if err != nil {
+				return Value{}, err
+			}
+		}
+		return value, nil
 	case model.Record, model.Tuple:
 		if uint64(len(t.Fields)) > c.MaxValues-c.values {
 			return Value{}, exhausted()
@@ -126,20 +147,37 @@ func (c *Codec) lowerFlat(t *model.Type, v Value, out []Slot, depth uint32) ([]S
 		return append(out, slot), err
 	}
 	switch t.Kind {
-	case model.String, model.List:
+	case model.String, model.List, model.Map:
 		var ptr, n uint64
 		var err error
 		if t.Kind == model.String {
 			ptr, n, err = c.Transfer.LowerString(v.Text)
 		} else {
 			n = uint64(len(v.Elements))
-			ptr, err = c.storeList(t.Element, v.Elements, depth)
+			element := t.Element
+			if t.Kind == model.Map {
+				layout, err := c.Layouts.Build(t)
+				if err != nil {
+					return nil, err
+				}
+				element = layout.Entry
+			}
+			ptr, err = c.storeList(element, v.Elements, depth)
 		}
 		if err != nil {
 			return nil, err
 		}
 		flat := c.Layouts.address
 		return append(out, Slot{flat, ptr}, Slot{flat, n}), nil
+	case model.FixedList:
+		var err error
+		for _, value := range v.Elements {
+			out, err = c.lowerFlat(t.Element, value, out, depth+1)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return out, nil
 	case model.Record, model.Tuple:
 		var err error
 		for i, f := range t.Fields {
