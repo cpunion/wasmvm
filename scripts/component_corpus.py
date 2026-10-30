@@ -47,6 +47,14 @@ def prepare(destination=None):
     for name, want in pins["sha256"].items():
         if hashlib.sha256((reference / name).read_bytes()).hexdigest() != want:
             raise ValueError("canonical reference input hash changed: " + name)
+    authored = ROOT / "pkg/component/testdata"
+    values = json.loads((authored / "resource-values.json").read_text())
+    generator = ROOT / "scripts/build_resource_value_fixtures.py"
+    if hashlib.sha256(generator.read_bytes()).hexdigest() != values["generatorSHA256"]:
+        raise ValueError("resource value fixture generator hash changed")
+    for name, pin in values["fixtures"].items():
+        if hashlib.sha256((authored / name).read_bytes()).hexdigest() != pin["sha256"]:
+            raise ValueError("authored resource value fixture hash changed: " + name)
     scripts = manifest.get("semanticScripts", {})
     binary = sum(c["invalid"] + c["valid"] for c in scripts.values())
     text = sum(c.get("textParser", 0) for c in scripts.values())

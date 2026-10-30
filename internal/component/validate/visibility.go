@@ -36,6 +36,9 @@ func named(kind model.Kind) bool {
 }
 
 func (s *TypeScope) checkVisible(t *Type, exporting, root bool) error {
+	if exporting && !root && t.Value != nil && t.borrow {
+		return invalid("borrow in exported value")
+	}
 	if err := s.pool.charge(1 + uint64(len(t.Parameters))); err != nil {
 		return err
 	}

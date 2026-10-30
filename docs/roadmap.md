@@ -368,8 +368,9 @@ components and executes canonical calls, starts and copied values through both
 own backends. Map/fixed-list ABI conversions and resource.new/rep/drop now
 execute through the same runtime. Own/borrow calls and host nominal resource
 bindings now execute with opaque capabilities, scoped borrows and failure
-cleanup. Standalone resource values/starts, local cm64 borrows, remaining async
-plans and WASI worlds remain open. The first complete WASI interface, `wasi:cli/environment@0.2.12`, now supplies
+cleanup. Standalone resource values/starts now execute with scoped factory
+bindings, affine exported occurrences and initialization cleanup. Local cm64
+borrows, remaining async plans and WASI worlds remain open. The first complete WASI interface, `wasi:cli/environment@0.2.12`, now supplies
 all three operations with explicit configuration and host signature checks; the
 CLI/HTTP worlds remain open. See [WASI scope](design/wasi-preview2.md) and
 [runtime scope](design/component-runtime.md). See
@@ -399,7 +400,7 @@ Host Core modules now compile in the component Engine's own domain and bind
 through checked root/nested imports. The shared Core relation covers all object
 descriptors and GC subtyping; bounded per-instantiation matching and publication
 leases preserve immutable plans and concurrent Store lifetime. Host component
-bindings, abstract host types, standalone resource values/starts, local cm64
+bindings, abstract host types, local cm64
 borrows and the remaining async/world deliverables are still required.
 
 The complete wall-clock interface now supplies now/resolution with checked
@@ -453,6 +454,18 @@ retains all stable CLI imports; this advances binding coverage after compiler
 DCE. See [world assembly](design/wasi-worlds.md). Complete upstream conformance,
 resource values/starts, local cm64 borrow conversion and performance acceptance
 remain required before M5 closes.
+
+
+The synchronous resource-value increment now supports host value factories,
+owned and borrowed start arguments, guest-created start results, child and
+nested interface transfers, affine resource exports and unpublished ownership
+cleanup. Resource-free value reads remain repeatable. Pinned Wasmtime 48.0.1
+rejects the experimental component value extension, so that capability has no
+direct competitor timing. The common resource-call workload remains a separate
+regression/comparison probe. This does not close local cm64 borrow, abstract host
+type/component binding, complete upstream world conformance, performance, async
+or WASI 0.3 deliverables; M5/M6 remain open.
+
 
 ## M6 — WASI 0.3 native async
 

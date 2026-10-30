@@ -180,8 +180,13 @@ func preflight(p *validate.Component, root bool) error {
 		return value(t.Element)
 	}
 	for _, start := range p.Starts {
-		if start.Type.ContainsResource() {
-			return unsupported("resource-bearing component start")
+		for _, param := range start.Type.Parameters {
+			if err := value(param.Type); err != nil {
+				return err
+			}
+		}
+		if err := value(start.Type.Result); err != nil {
+			return err
 		}
 	}
 	for _, f := range p.Canonical {
@@ -216,9 +221,6 @@ func preflight(p *validate.Component, root bool) error {
 			return value(e.Type.Result)
 		}
 		if e.Sort == model.ValueSort {
-			if e.Type.ContainsResource() {
-				return unsupported("standalone resource value binding")
-			}
 			return value(e.Type.Value)
 		}
 		if e.Sort == model.TypeSort && e.Type.Value != nil {

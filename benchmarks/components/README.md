@@ -428,3 +428,23 @@ all unified World providers in setup. Set `WASMVM_COMMAND_BENCH_PREOPEN` to the
 same directory, use 1000-call fixed samples, and verify captured bytes outside
 the timer. Full-import reference linking is a separate diagnostic, not replaced
 by a narrowed synthetic provider. See [world assembly](../../docs/design/wasi-worlds.md).
+
+
+`resource_values.go` times a guest-created standalone own value produced by a
+component start. Build/run with either Go or the pinned LLGo release profile:
+
+```sh
+go run benchmarks/components/resource_values.go pkg/component/testdata/resource-value-guest-start.wasm interpreter 10000
+llgo run -O3 -lto=full benchmarks/components/resource_values.go pkg/component/testdata/resource-value-guest-start.wasm native 10000
+```
+
+It reports load, engine creation, compile, first preparation/extraction/drop/close
+and repeated per-instance preparation/extraction/drop/close separately. The
+public Instantiate API combines Store creation, composition, binding and start;
+its preparation number is not pure guest execution. Each value is affine, so
+repeating extraction requires a fresh instance. Runner build/process startup
+stay outside the timers. Source base rejects this fixture during Compile;
+Wasmtime 48.0.1 rejects the experimental component value extension. Preserve
+those rejections instead of assigning a speed ratio. Use the existing
+`BenchmarkOwnedResourceLifetime` and unchanged C resource runner on ownership.wasm
+for the separate common-workload base/head/competitor regression comparison.

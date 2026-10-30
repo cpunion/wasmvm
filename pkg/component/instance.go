@@ -15,11 +15,17 @@ import (
 
 type HostFunction func(*Caller, []Value) (*Value, error)
 
+// ValueFactory creates one imported value after all static bindings and provider
+// checks succeed, before guest initialization. Its Caller expires on return.
+type ValueFactory func(*Caller) (Value, error)
+
 type Imports struct {
 	Functions      map[string]HostFunction
 	FunctionChecks map[string]FunctionCheck
 	Instances      map[string]Imports
 	Values         map[string]Value
+	ValueFactories map[string]ValueFactory
+	ValueChecks    map[string]func(ValueType) error
 	Resources      map[string]*HostResourceType
 	CoreModules    map[string]*CoreModule
 }
@@ -42,6 +48,8 @@ type Instance struct {
 	hostTypes         map[*hostResourceDefinition]*resourceType
 	importResourceIDs map[uint64]*resourceType
 	functionChecks    []pendingFunctionCheck
+	initialValues     []*boundValue
+	initialCreated    []*Resource
 	engine            *Engine
 	coreBindings      *validate.CoreBindings
 	hostModules       map[*CoreModule]*coreModuleLease
@@ -89,7 +97,8 @@ func (in *Instance) Function(path ...string) (*Function, error) {
 
 func (in *Instance) Value(ctx context.Context, path ...string) (Value, error) {
 	var result Value
-	_, err := in.store.WithCaller(ctx, vm.CallOptions{}, func(c *vm.Caller) error {
+	var typ *model.Type
+	_, err := in.store.WithCallerCleanup(ctx, vm.CallOptions{}, func(c *vm.Caller) error {
 		exports := in.exports
 		for i, name := range path {
 			e, ok := exports[name]
@@ -97,9 +106,22 @@ func (in *Instance) Value(ctx context.Context, path ...string) (Value, error) {
 				return vm.ErrLink
 			}
 			if i == len(path)-1 && e.sort == model.ValueSort {
-				var err error
-				result, err = in.codec(c, nil, nil).Clone(e.valueType, e.value)
-				return err
+				v := e.value
+				if v.consumed {
+					return wasm.ErrTrap
+				}
+				codec := in.codec(c, v.scope, nil)
+				copy, err := codec.Clone(v.typ, v.value)
+				if err == nil && v.resource {
+					err = codec.AcceptResult(v.typ, &copy)
+				}
+				if err = codec.Finish(err); err != nil {
+					return err
+				}
+				v.consumed = v.resource
+				result = copy
+				typ = v.typ
+				return nil
 			}
 			if e.instance == nil {
 				return vm.ErrType
@@ -107,8 +129,33 @@ func (in *Instance) Value(ctx context.Context, path ...string) (Value, error) {
 			exports = e.instance
 		}
 		return vm.ErrLink
+	}, func(c *vm.Caller) error {
+		var failed error
+		canonical.VisitReferences(typ, &result, func(ref *Resource) {
+			if err := in.cleanupResource(c, ref); failed == nil {
+				failed = err
+			}
+		})
+		return failed
 	})
+	if err != nil {
+		return Value{}, err
+	}
 	return result, err
+}
+
+// Aliases and projected instance views share a value occurrence. Its original
+// type and scope retain the nominal identities used when it was produced.
+type boundValue struct {
+	typ       *model.Type
+	expected  *validate.Type
+	scope     *namespace
+	value     Value
+	resource  bool
+	consumed  bool
+	validated bool
+	factory   ValueFactory
+	check     func(ValueType) error
 }
 
 type item struct {
@@ -118,8 +165,7 @@ type item struct {
 	function  *Function
 	instance  map[string]item
 	component *closure
-	value     Value
-	valueType *model.Type
+	value     *boundValue
 	resource  *resourceType
 }
 
@@ -178,10 +224,15 @@ func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.
 	in.initializing = &canonical.Codec{Transfer: &canonical.Transfer{Context: contextOrBackground(ctx), MaxBytes: in.config.MaxBytes}, Layouts: in.layouts[0], MaxValues: in.config.MaxValues}
 	published := false
 	defer func() {
+		for _, v := range in.initialValues {
+			v.expected, v.factory, v.check = nil, nil, nil
+		}
 		in.initializing = nil
 		in.bindings = nil
 		in.importResourceIDs = nil
 		in.functionChecks = nil
+		in.initialValues = nil
+		in.initialCreated = nil
 		in.coreBindings = nil
 		if !published {
 			in.Close()
@@ -199,13 +250,31 @@ func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.
 			return nil, fmt.Errorf("component function %q: %w", c.name, err)
 		}
 	}
-	_, err = store.WithCaller(ctx, options, func(caller *vm.Caller) error {
+	for _, v := range in.initialValues {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if v.check != nil {
+			if err := v.check(ValueType{v.typ, in.importResourceIDs}); err != nil {
+				return nil, err
+			}
+		}
+	}
+	_, err = store.WithCallerCleanup(ctx, options, func(caller *vm.Caller) (err error) {
+		importsScope := &namespace{resources: in.importResourceIDs}
+		in.initializing.Resources = &resourceCodec{in: in, n: importsScope, core: caller}
+		complete := false
+		defer func() { err = finishResources(in.initializing, complete, err) }()
+		if err := in.initializeValues(caller, importsScope); err != nil {
+			return err
+		}
 		n, err := in.instantiate(caller, &closure{plan: plan}, bindings, cores)
 		if err == nil {
 			in.exports = n.exports
 		}
+		complete = err == nil
 		return err
-	})
+	}, in.cleanupInitialValues)
 	if err != nil {
 		return nil, err
 	}
@@ -295,29 +364,40 @@ func (in *Instance) bind(types []validate.Extern, imports Imports) (map[string]i
 			}
 		case model.ValueSort:
 			v, ok := imports.Values[name]
-			if !ok {
+			factory := imports.ValueFactories[name]
+			if ok && factory != nil {
+				return nil, fmt.Errorf("%w: ambiguous component value %q", vm.ErrLink, name)
+			}
+			if !ok && factory == nil {
 				return nil, fmt.Errorf("%w: missing component value %q", vm.ErrLink, name)
 			}
+			e.value = &boundValue{typ: expected.Type.Value, expected: expected.Type, resource: expected.Type.ContainsResource(), factory: factory, check: imports.ValueChecks[name]}
+			in.initialValues = append(in.initialValues, e.value)
+			if factory != nil || e.value.resource {
+				// Resource authority can only be checked after all nominal imports
+				// bind. Factories run later, inside the shared Core session.
+				e.value.value = v
+				break
+			}
 			var err error
-			e.value, err = in.initializing.Clone(expected.Type.Value, v)
+			e.value.value, err = in.initializing.Clone(expected.Type.Value, v)
 			if err != nil {
 				return nil, err
 			}
-			e.valueType = expected.Type.Value
 			if literal, ok := expected.Type.LiteralValue(); ok {
 				literal, err = in.initializing.Clone(expected.Type.Value, literal)
 				if err != nil {
 					return nil, err
 				}
-				if !equalValue(e.value, literal) {
+				if !equalValue(e.value.value, literal) {
 					return nil, vm.ErrType
 				}
 			}
 			key := expected.Type.ValueKey()
-			if earlier, ok := in.bindings[key]; ok && !equalValue(earlier, e.value) {
+			if earlier, ok := in.bindings[key]; ok && !equalValue(earlier, e.value.value) {
 				return nil, vm.ErrType
 			}
-			in.bindings[key] = e.value
+			in.bindings[key] = e.value.value
 		default:
 			return nil, unsupported("host import sort")
 		}
@@ -327,7 +407,7 @@ func (in *Instance) bind(types []validate.Extern, imports Imports) (map[string]i
 }
 
 func equalValue(a, b Value) bool {
-	if a.Bits != b.Bits || a.Case != b.Case || a.Text != b.Text || len(a.Elements) != len(b.Elements) {
+	if a.Bits != b.Bits || a.Case != b.Case || a.Text != b.Text || !equalResource(a.Resource, b.Resource) || len(a.Elements) != len(b.Elements) {
 		return false
 	}
 	for i := range a.Elements {
@@ -336,6 +416,15 @@ func equalValue(a, b Value) bool {
 		}
 	}
 	return true
+}
+
+func equalResource(a, b *Resource) bool {
+	if a == b {
+		return true
+	}
+	at, ai, ax, _, _, ae := canonical.ReferenceInfo(a)
+	bt, bi, bx, _, _, be := canonical.ReferenceInfo(b)
+	return ae == nil && be == nil && at == bt && ai == bi && ax == bx
 }
 
 func (in *Instance) charge(n uint64) error {
@@ -482,18 +571,26 @@ func (in *Instance) instantiate(caller *vm.Caller, component *closure, args map[
 			f := n.at(model.SortIndex{Sort: model.FunctionSort, Index: d.Start.Function}).function
 			arguments := make([]Value, len(d.Start.Arguments))
 			for i, index := range d.Start.Arguments {
-				arguments[i] = n.at(model.SortIndex{Sort: model.ValueSort, Index: index}).value
+				arguments[i] = n.at(model.SortIndex{Sort: model.ValueSort, Index: index}).value.value
 			}
 			v, err := f.call(caller, arguments)
 			if err != nil {
 				return nil, err
 			}
 			if v != nil {
+				bound := &boundValue{typ: f.typ.Result, scope: f.scope, value: *v, resource: f.typ.ResultContainsResource(), validated: true}
+				// Track the returned capability before a bounded aggregate copy can
+				// fail; unpublished ownership must still be reclaimed.
+				in.initialValues = append(in.initialValues, bound)
+				previous := in.initializing.Resources
+				in.initializing.Resources = in.codec(caller, f.scope, nil).Resources
 				copy, err := in.initializing.Clone(f.typ.Result, *v)
+				in.initializing.Resources = previous
 				if err != nil {
 					return nil, err
 				}
-				n.add(item{sort: model.ValueSort, value: copy, valueType: f.typ.Result})
+				bound.value = copy
+				n.add(item{sort: model.ValueSort, value: bound})
 			}
 		case 10:
 			e := args[d.Import.Name.Text]
@@ -516,7 +613,7 @@ func (in *Instance) instantiate(caller *vm.Caller, component *closure, args map[
 			if err != nil {
 				return nil, err
 			}
-			n.add(item{sort: model.ValueSort, value: copy, valueType: v.Type.Value})
+			n.add(item{sort: model.ValueSort, value: &boundValue{typ: v.Type.Value, value: copy}})
 		}
 	}
 	return n, nil
@@ -527,9 +624,6 @@ func (in *Instance) project(e item, typ *validate.Type) (item, error) {
 		return item{}, err
 	}
 	if e.sort != model.InstanceSort {
-		if e.sort == model.ValueSort {
-			e.valueType = typ.Value
-		}
 		return e, nil
 	}
 	exports := map[string]item{}
