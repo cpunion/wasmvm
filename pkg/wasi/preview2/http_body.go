@@ -35,6 +35,19 @@ type httpBody struct {
 	failure        error
 }
 
+// A transport timeout, explicit body drop and pump completion may race to
+// release the same input. io.Closer does not require repeated Close to succeed.
+type httpOwnedReader struct {
+	io.ReadCloser
+	once sync.Once
+	err  error
+}
+
+func (r *httpOwnedReader) Close() error {
+	r.once.Do(func() { r.err = r.ReadCloser.Close() })
+	return r.err
+}
+
 func (p *HTTP) newBody(outgoing bool) (*httpBody, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -96,6 +109,7 @@ func (b *httpBody) pump(reader io.ReadCloser, trailers http.Header, first, betwe
 	if err := b.owner.startWorker(); err != nil {
 		return err
 	}
+	reader = &httpOwnedReader{ReadCloser: reader}
 	b.mu.Lock()
 	b.reader = reader
 	b.mu.Unlock()
