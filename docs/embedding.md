@@ -114,3 +114,24 @@ Import names and signatures come from the component, including nested
 Closing host prevents new bindings; existing bound Instances keep their module
 until close. `host.Info()` supplies an owned Core metadata snapshot. See
 [component lifetime and matching](design/component-runtime.md#host-core-module-imports).
+
+
+## WASI pollable ownership
+
+Create an explicit provider domain and bind the complete clock/poll interfaces:
+
+```go
+poller, err := preview2.NewPoller(preview2.PollConfig{})
+// Check err; defer poller.Close().
+clock, err := preview2.NewMonotonicClock(poller)
+// Check err, then use clock.Imports() when instantiating the component.
+// Close/wait for the Instance before the deferred provider Close.
+```
+
+The returned Imports includes poll and monotonic-clock with one nominal pollable
+type. Merge its versioned Instances with other explicit providers as needed.
+An embedder can create an additional pollable in a host callback through
+`poller.NewPollable(caller, source)`. PollSource returns a nonblocking coherent
+readiness/change-channel snapshot and remains externally owned. Provider Close
+cancels pending polling, reclaims abandoned timers and joins timer callbacks;
+Store close cancels only its calls/handles. See [the full provider contract](design/wasi-preview2.md#pollables-and-monotonic-clock).

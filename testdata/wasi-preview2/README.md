@@ -18,3 +18,9 @@ and each operation; complete CLI/HTTP worlds and WASI 0.3 remain open.
 `clocks.wit` is copied unchanged from the same pinned release archive and license.
 The manifest records its SHA256 and only the implemented wall-clock operations;
 monotonic-clock, unstable timezone and complete worlds are not implied.
+
+
+`io.wit` is retained unchanged with its release archive checksum and WASI license.
+Only the complete poll interface is implemented from this file so far; error and
+streams remain required. The manifest also lists all four monotonic-clock
+operations, separately from wall-clock and complete-world acceptance.

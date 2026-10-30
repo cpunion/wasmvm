@@ -32,3 +32,14 @@ components vary result kind, field names/order/width/count and parameter count.
 All seven binaries reproduce and validate with wasm-tools 1.258.0. The same
 positive binary executes with the actual Wasmtime 48.0.1 WASIp2 provider;
 provider precision differs explicitly from the own quantized default.
+
+
+`poll-clock` executes all poll/monotonic operations, borrowed-list duplicate
+indices, full u64 future deadlines and zero-duration creation/block/drop loops.
+`probe` performs shared in-guest semantic checks; `churn(128)` is a complete
+subscription-lifetime workload. `poll-source` additionally imports an embedder
+factory for controllable readiness/cancellation tests. Four poll and four
+monotonic mismatch fixtures independently validate; a wrong owned list retains
+the method's required borrow receiver, so producer grammar checks are separate
+from provider signature checks. All ten binaries reproduce with wasm-tools
+1.258.0. The actual Wasmtime 48.0.1 WASIp2 provider executes `poll-clock` unchanged.
