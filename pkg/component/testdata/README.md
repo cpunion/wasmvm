@@ -51,3 +51,12 @@ and validated with wasm-tools 1.258.0 (`--features all`). Retained results must
 survive allocator reuse. Packed raw-byte storage is independent of the selected
 string encoding; it performs no UTF-8 validation. The pure `bytes` fixture is
 also executed unchanged by Wasmtime 48.0.1 C API and typed Rust API probes.
+
+
+`byte-value-imports` is the existing authored value-import grammar with a u8
+list element. `byte-value-constant-bound` adds a four-byte literal and equality
+bound. They are manually authored from the same pinned value grammar; the WAT
+files describe their intended structure. wasm-tools 1.258.0 does not support
+these value imports/value section, so its diagnostic failures are retained.
+Own Go/LLGo tests verify equivalent packed/element-wise nested bindings and
+literal bounds, owned exports and rejection of unequal bytes.

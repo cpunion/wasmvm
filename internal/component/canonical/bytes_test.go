@@ -62,6 +62,13 @@ func TestPackedByteOwnershipAndLegacyInputs(t *testing.T) {
 		if err != nil || s != v.Text {
 			t.Fatal(s, err)
 		}
+		for _, kind := range []model.Kind{model.List, model.FixedList} {
+			typ := &model.Type{Kind: kind, Element: typ(model.U8), Length: 4}
+			got, err := valueCodec(false).Clone(typ, value)
+			if err != nil || !reflect.DeepEqual(got, v) {
+				t.Fatal("byte clone was not normalized", got, err)
+			}
+		}
 	}
 	for _, value := range []Value{{Text: "x", Elements: []Value{}}, {Elements: []Value{{Bits: 256}}}} {
 		if _, err := value.ByteString(); !errors.Is(err, wasm.ErrInvalid) {
@@ -112,6 +119,11 @@ func TestPackedByteOwnershipAndLegacyInputs(t *testing.T) {
 
 func TestPackedByteLimitsAndFailures(t *testing.T) {
 	typ := &model.Type{Kind: model.List, Element: typ(model.U8)}
+	conversion := valueCodec(false)
+	conversion.Transfer.MaxBytes = 3
+	if _, err := conversion.Clone(typ, Value{Elements: []Value{{Bits: 1}, {Bits: 2}}}); !errors.Is(err, wasm.ErrLimit) {
+		t.Fatal("legacy conversion exceeded its scratch/output budget", err)
+	}
 	for _, wide := range []bool{false, true} {
 		for _, empty := range []bool{false, true} {
 			data := "\xff\x00"

@@ -2879,7 +2879,7 @@ realloc/memory errors and transfer/element budgets pass. All existing 1,024 layo
 and 56 collection reference cases remain present with unchanged expected values
 and independent reference bytes. A test-only shape expansion compares packed
 results at byte-sequence nodes. Full Go, affected LLGo release, race and vet pass;
-all executable package coverage gates pass (canonical **93.22%**, component
+all executable package coverage gates pass (canonical **93.24%**, component
 **90.75%**, P2 **95.88%**). wasm-tools 1.258.0 validates and reproduces all four new
 fixtures exactly. This is shared IO/random infrastructure; those interfaces and
 complete WASI worlds remain required.
@@ -2907,13 +2907,13 @@ a harness failure and excluded from successful timings.
 | Median ns / 16 KiB call | Go interpreter | Go native | LLGo interpreter | LLGo native |
 | --- | ---: | ---: | ---: | ---: |
 | Legacy source base | 2,066,890 | 2,076,478 | 7,990,498 | 7,908,796 |
-| Legacy input at head | 1,286,829 | 1,284,435 | 4,810,880 | 5,156,176 |
-| Packed head | 5,319 | 6,102 | 10,691 | 14,910 |
+| Legacy input at head | 1,588,158 | 1,453,173 | 6,142,223 | 7,267,104 |
+| Packed head | 6,079 | 6,996 | 13,003 | 20,346 |
 
 Wasmtime dynamic C API: **353,960 ns**; typed Rust: **469.9 ns**.
 LLGo packed transfer improves the original legacy workload by roughly
-747x/530x, but still trails the typed reference by roughly
-23x/32x. Surpassing the dynamic C API does not meet the performance target.
+615x/389x, but still trails the typed reference by roughly
+28x/43x. Surpassing the dynamic C API does not meet the performance target.
 
 The API effect is supported by Wasmtime's pinned primary implementation:
 [dynamic C calls](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/c-api/src/component/func.rs)
@@ -2933,3 +2933,16 @@ of its isolated rerun. Raw phase logs, dependency build failures, fixture hashes
 source-base unsupported rows and final summaries are under
 `artifacts/components/packed-*`. This shared transport does not complete WASI
 IO/random, complete worlds, remaining component mechanisms or async/WASI 0.3.
+
+
+A composition check before merge exposed a byte-value identity regression:
+packed and element-wise data normalized differently when bound to an equal
+value or literal. The failing source-head regression is retained. Owned clones
+now normalize both forms to immutable packed bytes before equality checks,
+including nested aggregates. New value import/constant-bound binaries check all
+representation combinations and reject unequal content. Their authored value
+grammar is not supported by wasm-tools 1.258.0; its validation diagnostics are
+retained separately from the four independently validated Core ABI fixtures.
+Final local full Go, affected LLGo/race and updated byte benchmarks pass; earlier
+head timings remain as historical raw logs. Required CI must run again at the
+corrected head before merging.

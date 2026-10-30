@@ -58,7 +58,14 @@ func (c *Codec) clone(t *model.Type, v Value) (Value, error) {
 		}
 		return Value{Text: v.Text}, nil
 	}
-	if byteSequence(t) && v.Elements == nil {
+	if byteSequence(t) {
+		if v.Elements != nil {
+			if err := c.Transfer.charge(2 * uint64(len(v.Elements))); err != nil {
+				return Value{}, err
+			}
+			data, err := v.ByteString()
+			return Value{Text: data}, err
+		}
 		if err := c.Transfer.charge(uint64(len(v.Text))); err != nil {
 			return Value{}, err
 		}
