@@ -26,6 +26,72 @@ type Codec struct {
 	values    uint64
 }
 
+// Validate checks a host value before calls or transfers cause guest effects.
+func (c *Codec) Validate(t *model.Type, v Value) error { return c.validate(t, v, 0) }
+
+// Clone validates and copies the declared value shape, discarding irrelevant
+// fields. Host aggregate slices never alias cached literals or instance state.
+// Strings are immutable; their retained bytes still consume transfer budget.
+func (c *Codec) Clone(t *model.Type, v Value) (Value, error) {
+	if err := c.validate(t, v, 0); err != nil {
+		return Value{}, err
+	}
+	return c.clone(t, v)
+}
+
+func (c *Codec) clone(t *model.Type, v Value) (Value, error) {
+	if scalarKind(t.Kind) || t.Kind == model.Flags || t.Kind == model.Enum {
+		return Value{Bits: v.Bits}, nil
+	}
+	if t.Kind == model.String {
+		if err := c.Transfer.charge(uint64(len(v.Text))); err != nil {
+			return Value{}, err
+		}
+		return Value{Text: v.Text}, nil
+	}
+	if err := c.Transfer.charge(uint64(len(v.Elements)) * 64); err != nil {
+		return Value{}, err
+	}
+	out := Value{}
+	if len(v.Elements) != 0 {
+		out.Elements = make([]Value, len(v.Elements))
+	}
+	if t.Kind == model.Variant || t.Kind == model.Option || t.Kind == model.Result {
+		out.Case = v.Case
+	}
+	for i, element := range v.Elements {
+		var child *model.Type
+		switch t.Kind {
+		case model.Record, model.Tuple:
+			child = t.Fields[i].Type
+		case model.Variant, model.Option, model.Result:
+			child = cases(t)[v.Case].Type
+		case model.List, model.FixedList:
+			child = t.Element
+		case model.Map:
+			if err := c.Transfer.charge(128); err != nil {
+				return Value{}, err
+			}
+			key, err := c.clone(t.Key, element.Elements[0])
+			if err != nil {
+				return Value{}, err
+			}
+			value, err := c.clone(t.Element, element.Elements[1])
+			if err != nil {
+				return Value{}, err
+			}
+			out.Elements[i] = Value{Elements: []Value{key, value}}
+			continue
+		}
+		var err error
+		out.Elements[i], err = c.clone(child, element)
+		if err != nil {
+			return Value{}, err
+		}
+	}
+	return out, nil
+}
+
 func (c *Codec) visit(depth uint32) error {
 	if err := c.Transfer.check(); err != nil {
 		return err
@@ -208,12 +274,33 @@ func (c *Codec) validate(t *model.Type, v Value, depth uint32) error {
 	switch t.Kind {
 	case model.String:
 		return c.Transfer.validateString(v.Text)
-	case model.List:
+	case model.List, model.FixedList:
+		if t.Kind == model.FixedList && uint64(len(v.Elements)) != uint64(t.Length) {
+			return invalid("host fixed-list length")
+		}
 		if uint64(len(v.Elements)) > c.MaxValues-c.values {
 			return exhausted()
 		}
 		for _, v := range v.Elements {
 			if err := c.validate(t.Element, v, depth+1); err != nil {
+				return err
+			}
+		}
+	case model.Map:
+		if uint64(len(v.Elements)) > c.MaxValues-c.values {
+			return exhausted()
+		}
+		for _, entry := range v.Elements {
+			if len(entry.Elements) != 2 {
+				return invalid("host map entry arity")
+			}
+			if err := c.visit(depth + 1); err != nil {
+				return err
+			}
+			if err := c.validate(t.Key, entry.Elements[0], depth+1); err != nil {
+				return err
+			}
+			if err := c.validate(t.Element, entry.Elements[1], depth+1); err != nil {
 				return err
 			}
 		}

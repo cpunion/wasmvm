@@ -38,6 +38,10 @@ func (s *Store) NewFunction(signature FunctionType, callback HostFunction, refer
 		return Extern{}, err
 	}
 	defer op.finish()
+	return s.newFunction(signature, callback, referenceType...)
+}
+
+func (s *Store) newFunction(signature FunctionType, callback HostFunction, referenceType ...wasm.ValueType) (Extern, error) {
 	if callback == nil {
 		return Extern{}, ErrType
 	}
@@ -172,6 +176,10 @@ func (l *Linker) Instantiate(ctx context.Context, compiled *CompiledModule, opti
 		return nil, err
 	}
 	defer op.finish()
+	return l.instantiate(op, compiled)
+}
+
+func (l *Linker) instantiate(op *operation, compiled *CompiledModule) (*Instance, error) {
 	op.collect = true
 	code, err := compiled.acquireForStore(l.store)
 	if err != nil {

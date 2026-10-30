@@ -84,6 +84,6 @@ later semantic rejection. This is not a claim that they passed validation.
 Value/start definitions now have bounded static plans and a literal decoder
 that produces the same canonical value representation. Next integration
 executes the validated Core/component composition plans, canonical function lift/lower and post-return,
-then resource transactions and declared WASI 0.2.12 worlds. Async
+then resource transactions and declared WASI 0.2.12 worlds. The [synchronous runtime](component-runtime.md) now connects the non-resource call subset, including realloc and post-return; this does not imply full Component Model or WASI support. Async
 function/task/future/stream support and WASI 0.3.2 follow separately. No component
 or WASI support is inferred from passing only these value primitives.

@@ -1,0 +1,8 @@
+(component (component $c0)
+(component $c1 (alias outer 1 $c0 (component $previous)) (instance (instantiate $previous)) (instance (instantiate $previous)))
+(component $c2 (alias outer 1 $c1 (component $previous)) (instance (instantiate $previous)) (instance (instantiate $previous)))
+(component $c3 (alias outer 1 $c2 (component $previous)) (instance (instantiate $previous)) (instance (instantiate $previous)))
+(component $c4 (alias outer 1 $c3 (component $previous)) (instance (instantiate $previous)) (instance (instantiate $previous)))
+(component $c5 (alias outer 1 $c4 (component $previous)) (instance (instantiate $previous)) (instance (instantiate $previous)))
+(component $c6 (alias outer 1 $c5 (component $previous)) (instance (instantiate $previous)) (instance (instantiate $previous)))
+(instance (instantiate $c6)))

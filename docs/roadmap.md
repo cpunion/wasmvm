@@ -363,8 +363,10 @@ text-parser assertions reported separately. The version-suffix script remains
 blocked by the pinned producer grammar. Bounded literal values, linear value
 consumption/equality bounds and start signatures now have static plans; the
 pinned producer does not generate their text syntax, so authored tests are
-reported separately. Most async canonical plans and actual component execution
-remain open. See
+reported separately. A synchronous execution profile now compiles Core modules, composes child
+components and executes canonical calls, starts and copied values through both
+own backends. Resource transfer, map/fixed-list ABI conversion, remaining async
+plans and WASI worlds remain open. See [runtime scope](design/component-runtime.md). See
 [the current ABI and frontend boundary](design/component-abi.md).
 
 Implement component binary decoding/validation/composition, imports/exports, Canonical ABI lift/lower, strings/lists/records/variants, realloc/post-return, and resource own/borrow/drop with cleanup on failure. Keep component and core instance boundaries explicit. Pin WASI **0.2.12** WIT; implement the full declared CLI world and its dependencies, then separately reported sockets/HTTP interfaces. Earlier prototypes must not displace required core work.
