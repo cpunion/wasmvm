@@ -3733,3 +3733,10 @@ cancellation at 10–28 µs and LLGo at 1.00–1.01 s (eight samples). See
 [llgo #2953](https://github.com/xgo-dev/llgo/issues/2953). Tests allow three seconds
 for eventual completion; protocol timeout values and typed error assertions
 remain unchanged. The pinned compiler is not silently patched or upgraded.
+
+
+The first final-head macOS LLGo CI attempt exposed a test that polled a truncated
+response only 100 times before the pinned netpoll fallback tick. The typed IO
+assertion now uses blocking-read with a three-second call deadline, preserving
+both the stream failure and its HTTP error-code downcast. The original failed
+job is retained in pr61-ci-failed.log; no production or benchmark code changed.

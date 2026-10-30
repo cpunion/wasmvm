@@ -3,6 +3,7 @@
 package preview2
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -221,16 +222,23 @@ func TestHTTPRealFailuresFuturesAndErrorDowncast(t *testing.T) {
 		t.Fatal(v)
 	}
 	var cause component.Value
-	for i := 0; i < 100; i++ {
-		v := a.call("streams", "[method]input-stream.read", input, component.Value{Bits: 16})
+	read, err := a.in.Function("streams", "[method]input-stream.blocking-read")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	for cause.Resource == nil {
+		result, err := read.Call(ctx, []component.Value{input, {Bits: 16}}, component.CallOptions{})
+		if err != nil {
+			t.Fatal("truncated body did not report its IO failure", err)
+		}
+		v := *result.Value
 		if v.Case == 1 && v.Elements[0].Case == 0 {
 			cause = v.Elements[0].Elements[0]
-			break
+		} else if v.Case == 1 {
+			t.Fatal("truncated body lost its typed IO failure", v)
 		}
-		time.Sleep(time.Millisecond)
-	}
-	if cause.Resource == nil {
-		t.Fatal("missing HTTP IO failure")
 	}
 	code := a.raw("http-error-code", cause)
 	if code.Case != 1 || code.Elements[0].Case != 25 {
