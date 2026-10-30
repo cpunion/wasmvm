@@ -266,3 +266,38 @@ enabled, and reference Stores use defaults. Local samples alone establish no
 performance acceptance. The original probe's premature ready assertion and its
 reference failure are retained separately from the final block-before-ready
 probe. See the pinned primary reference's clocks.rs for the scheduling rationale.
+
+
+## IO transfer and backend costs
+
+`BenchmarkIOWriteBatch` invokes `write-batch(128)`: each guest iteration writes
+and flushes 4 KiB through the standard stdout stream. The sink checks first/last
+bytes and counts every byte; source ownership and every returned batch count
+are verified. File load, Engine/compiler, provider setup, Store/binding,
+lookup and first call are separately reported outside warm time. ns/write
+amortizes one guest call across 128 complete operations; it is not a pure memcpy.
+Source base lacks the IO provider APIs; the unchanged wall-clock probe supplies
+the independent common-path base/head comparison.
+
+`BenchmarkIOOutput` separates sink-only, blocking-backend and queued-backend
+operation costs on the same checked source. Diagnostics include their normal
+allocation/scheduling policies and are not an additive profile of guest time.
+
+`c/io_streams.c` uses Wasmtime 48.0.1's actual WASIp2 provider with explicit stdin
+bytes and a custom checked stdout sink. It verifies the full exercise and terminal
+absence before timing the same binary/batch. Error and protocol cases are
+separate process modes, outside timing:
+
+```sh
+"$OUTPUT/wasmtime-io-streams" pkg/wasi/preview2/testdata/io-streams.wasm 1000
+"$OUTPUT/wasmtime-io-streams" pkg/wasi/preview2/testdata/io-streams.wasm 1 error
+"$OUTPUT/wasmtime-io-streams" pkg/wasi/preview2/testdata/io-streams.wasm 1 parent-drop
+```
+
+Scalar C result overhead is amortized across 128 operations. Both sinks use the
+same endpoint/count checks. Reference scheduling/buffering and default Store
+policies differ; own cancellation/quotas remain enabled and fuel is off. Preserve
+the observed reference acceptance of unchecked stdio writes, rejected by own
+WIT permit checks. Initial error-probe result alignment and harness-only negative
+failures are retained separately from the corrected final probes. Local samples
+alone establish no calibrated performance acceptance.

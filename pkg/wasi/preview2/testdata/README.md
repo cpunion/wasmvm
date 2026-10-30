@@ -43,3 +43,20 @@ monotonic mismatch fixtures independently validate; a wrong owned list retains
 the method's required borrow receiver, so producer grammar checks are separate
 from provider signature checks. All ten binaries reproduce with wasm-tools
 1.258.0. The actual Wasmtime 48.0.1 WASIp2 provider executes `poll-clock` unchanged.
+
+
+`io-streams.wit` selects the pinned error/poll/streams, stdio and terminal
+interfaces. `scripts/build_wasi_io_fixtures.py` checks the WASI archive hash and
+wasm-tools 1.258.0, emits a legacy-name dummy Core module for the exact WIT ABI,
+replaces the authored guest bodies, and encodes/validates the final component.
+The Core WAT, printed component, binary and checksum manifest are retained.
+`exercise` checks all stream operations, exact bytes/counts, EOF and drops;
+`error-probe` checks a real failure resource, debug string and later closed state.
+Other exports check terminals, write permits, blocking size and parent/child
+ownership. `write-batch(128)` writes/flushes 4 KiB per iteration to a checked sink.
+
+Eight contract components alter one valid WIT signature and retain unreachable
+bodies: binding must fail. `io-errors` separately checks an embedder error factory,
+owned debug snapshots, UTF-8 limits, typed causes and expired/stale capabilities.
+All ten components independently validate. Reproduction does not imply an
+upstream conformance corpus or complete CLI/HTTP world acceptance.

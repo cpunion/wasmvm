@@ -1,0 +1,52 @@
+{
+  "producer": "wasm-tools 1.258.0",
+  "wasiVersion": "0.2.12",
+  "wasiArchiveSha256": "2b0e47bc02953267ad163c6c1188b65baed1292351998cb032f3dcd28d005992",
+  "worldSha256": "16fd9e5b4c11f15dcb0b8534de42b77614373971407555fa204791f148a14c7b",
+  "binarySha256": {
+    "io-streams.wasm": "ad4e7e7307051c65fa360c6ac666513a1671e2b8c9474dfa35e1bd3c11670c64",
+    "io-errors.wasm": "d2d7ceaccbbcae8a2951d8a12d7d465df1b7b964920833fd7229799c4ebce12a",
+    "io-contract-read-width.wasm": "5f0b2c063b80b117c395e18bad00fe4bf4ee12872841a677f7ec0c6821e90709",
+    "io-contract-write-list.wasm": "a13f48fdcc590c70dd27da7b89a4754a973445cea767ab1c0889459acff83304",
+    "io-contract-subscribe-result.wasm": "6bca9f1ba7c986a913da5a2772584e0272ba3da03432b3045c8b1f98849a9b3f",
+    "io-contract-error-case.wasm": "df83017727f432e805f139c74e48f624cd84dfa55eaaeca5c4b4a2568edb7d22",
+    "io-contract-error-label.wasm": "7bf9a1b2037a2ead8b6832dfa3cad168d0737db00b9ad1099c55c2ca5bfe3165",
+    "io-contract-skip-result.wasm": "1c0336ec7032d8f654bdb6238ad1e5ce8d83438fb4f3d5b82aecbb7f9e00b928",
+    "io-contract-extra-argument.wasm": "5e0bf1c2e06b1d9b9fff38bd926b402ba5da974d41cc940fc64af684c8a97593",
+    "io-contract-debug-result.wasm": "e205688bef9e9eea9dbc200b73da699e5097e724e13c9556018b3425e8621558"
+  },
+  "contractChanges": {
+    "read-width": [
+      "read: func(len: u64)",
+      "read: func(len: u32)"
+    ],
+    "write-list": [
+      "write: func(contents: list<u8>)",
+      "write: func(contents: list<u16>)"
+    ],
+    "subscribe-result": [
+      "subscribe: func() -> pollable",
+      "subscribe: func() -> u32"
+    ],
+    "error-case": [
+      "last-operation-failed(error)",
+      "last-operation-failed(u32)"
+    ],
+    "error-label": [
+      "last-operation-failed(error)",
+      "failure(error)"
+    ],
+    "skip-result": [
+      "skip: func(len: u64) -> result<u64,",
+      "skip: func(len: u64) -> result<u32,"
+    ],
+    "extra-argument": [
+      "check-write: func()",
+      "check-write: func(unexpected: u32)"
+    ],
+    "debug-result": [
+      "to-debug-string: func() -> string",
+      "to-debug-string: func() -> u32"
+    ]
+  }
+}

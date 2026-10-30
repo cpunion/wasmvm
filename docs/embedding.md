@@ -135,3 +135,28 @@ An embedder can create an additional pollable in a host callback through
 readiness/change-channel snapshot and remains externally owned. Provider Close
 cancels pending polling, reclaims abandoned timers and joins timer callbacks;
 Store close cancels only its calls/handles. See [the full provider contract](design/wasi-preview2.md#pollables-and-monotonic-clock).
+
+
+## WASI IO
+
+Configure explicit sources and bind `process.Imports()` through `pkg/component`:
+
+```go
+output := preview2.NewOutputBuffer(1 << 20)
+process, err := preview2.NewIO(preview2.IOConfig{
+    Stdin: preview2.NewBytesInput([]byte("input")),
+    Stdout: output,
+})
+// Check err. Successful construction transfers source ownership.
+// Instantiate with process.Imports(); close/wait for the Instance on teardown.
+// Then process.Close() and process.WaitClosed(cleanupContext).
+```
+
+Drain output concurrently when using a bounded sink that can fill. An embedder
+can implement InputSource/OutputSource for authorized capabilities; prompt
+methods, readiness and cancellation/close behavior are required contracts.
+`NewInput`/`NewOutput` mint owned stream capabilities from active callbacks for an
+additional source. Provider creation/cleanup is independent of Store close.
+The IO owner also owns its borrowed Poller; use that same Poller when constructing
+a monotonic clock. Terminal presence is explicit, with none as the default.
+See [IO ownership and limits](design/wasi-preview2.md#io-stdio-and-terminals).

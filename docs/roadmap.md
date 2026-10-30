@@ -413,6 +413,13 @@ provider lifetime is explicit and independently closed; Store close does not
 synthesize resource drops. IO error/streams/stdio, remaining world dependencies,
 standalone component resource mechanisms and async deliverables remain open.
 
+IO error/streams, stdio and terminal interfaces now supply all declared
+operations through checked resources, cancellable reads/backpressure, bounded
+output and explicit owner cleanup. The shared actual WASIp2 fixture covers all
+operations and error resources. Filesystem/preopens, sockets/HTTP, remaining
+component mechanisms, guest-toolchain/world conformance and performance
+acceptance remain required.
+
 **Exit gate:** components from at least two pinned guest toolchains compose on both backends and host compilers. Versioned WIT/world/operation coverage, encoding/ownership/reentry/error cases and resource cleanup all pass. Parsing or one sample is not complete component/P2 support.
 
 ## M6 — WASI 0.3 native async

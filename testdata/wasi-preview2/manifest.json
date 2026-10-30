@@ -45,6 +45,46 @@
       "resolution",
       "subscribe-instant",
       "subscribe-duration"
+    ],
+    "wasi:io/error@0.2.12": [
+      "[method]error.to-debug-string"
+    ],
+    "wasi:io/streams@0.2.12": [
+      "[method]input-stream.read",
+      "[method]input-stream.blocking-read",
+      "[method]input-stream.skip",
+      "[method]input-stream.blocking-skip",
+      "[method]input-stream.subscribe",
+      "[method]output-stream.check-write",
+      "[method]output-stream.write",
+      "[method]output-stream.blocking-write-and-flush",
+      "[method]output-stream.flush",
+      "[method]output-stream.blocking-flush",
+      "[method]output-stream.subscribe",
+      "[method]output-stream.write-zeroes",
+      "[method]output-stream.blocking-write-zeroes-and-flush",
+      "[method]output-stream.splice",
+      "[method]output-stream.blocking-splice"
+    ],
+    "wasi:cli/stdin@0.2.12": [
+      "get-stdin"
+    ],
+    "wasi:cli/stdout@0.2.12": [
+      "get-stdout"
+    ],
+    "wasi:cli/stderr@0.2.12": [
+      "get-stderr"
+    ],
+    "wasi:cli/terminal-input@0.2.12": [],
+    "wasi:cli/terminal-output@0.2.12": [],
+    "wasi:cli/terminal-stdin@0.2.12": [
+      "get-terminal-stdin"
+    ],
+    "wasi:cli/terminal-stdout@0.2.12": [
+      "get-terminal-stdout"
+    ],
+    "wasi:cli/terminal-stderr@0.2.12": [
+      "get-terminal-stderr"
     ]
   },
   "completeWorlds": []
