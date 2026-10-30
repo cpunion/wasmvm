@@ -9,7 +9,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func tcpOption(fd int, family uint32, name string, value uint64) (component.Value, error) {
+func socketOption(fd int, family uint32, name string, value uint64) (component.Value, error) {
 	set := strings.HasPrefix(name, "set-")
 	name = strings.TrimPrefix(name, "set-")
 	level, option := unix.SOL_SOCKET, unix.SO_KEEPALIVE
@@ -32,11 +32,11 @@ func tcpOption(fd int, family uint32, name string, value uint64) (component.Valu
 	case "send-buffer-size":
 		option = unix.SO_SNDBUF
 	default:
-		return component.Value{}, tcpCode(NetworkInvalidArgument)
+		return component.Value{}, socketCode(NetworkInvalidArgument)
 	}
 	if set {
 		if name != "keep-alive-enabled" && value == 0 {
-			return component.Value{}, tcpCode(NetworkInvalidArgument)
+			return component.Value{}, socketCode(NetworkInvalidArgument)
 		}
 		if multiplier != 1 {
 			value = (value-1)/multiplier + 1

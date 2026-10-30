@@ -352,7 +352,7 @@ resolution lifetimes. No stub/reference implementation is substituted. See the
 [reference source](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/wasi/src/p2/ip_name_lookup.rs)
 and [host lookup policy](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/wasi/src/sockets/ip_name_lookup.rs).
 This is P2 polling over asynchronous host work, not canonical async or WASI 0.3.
-UDP, HTTP and complete worlds remain required.
+HTTP and complete worlds remain required.
 
 ## TCP sockets
 
@@ -399,4 +399,16 @@ Wasmtime provider. Actual TCP reference execution uses Wasmtime 48.0.1's Rust
 WASIp2 provider with explicit `inherit_network().allow_tcp(true)`. Its C API
 exposes address inheritance but no `allow_tcp` setter; the retained C probe
 returns access-denied even for the common consumer. No replacement network
-provider is used. UDP/HTTP, complete worlds and canonical async remain required.
+provider is used. HTTP, complete worlds and canonical async remain required.
+
+
+## UDP datagrams
+
+On Linux/Darwin, `UDP` implements all 19 socket/create and incoming/outgoing
+stream operations. It uses the same Network/IO pollable domains, with separate
+bind/send/receive grants and bounded datagram batching, peer filtering, send
+permits and joined resource cleanup. See [the UDP contract](wasi-udp.md) for
+lifecycle, limits, errors and validation scopes. The complete IPv4/IPv6 guest
+executes on both backends and the actual pinned Wasmtime Rust WASIp2 provider.
+HTTP, complete worlds, remaining component mechanisms and native async remain
+required.

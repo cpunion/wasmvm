@@ -4,7 +4,6 @@ package preview2
 
 import (
 	"context"
-	"net/netip"
 	"sync"
 
 	"github.com/cpunion/wasmvm/pkg/component"
@@ -266,52 +265,17 @@ func (p *TCP) release(s *tcpSocket) {
 		p.retire(s)
 	}
 }
-func (p *TCP) authorize(ctx context.Context, address SocketAddress, connect bool) (err error) {
+func (p *TCP) authorize(ctx context.Context, address SocketAddress, connect bool) error {
 	callback := p.config.AllowBind
 	if connect {
 		callback = p.config.AllowConnect
 	}
-	if callback == nil {
-		return &NetworkError{Code: NetworkAccessDenied}
-	}
-	joint, cancel := context.WithCancel(ctx)
-	stop := context.AfterFunc(p.ctx, cancel)
-	defer cancel()
-	defer stop()
-	complete := false
-	defer func() {
-		if !complete {
-			_ = recover()
-			err = &NetworkError{Code: NetworkAccessDenied}
-		}
-	}()
-	err = callback(joint, address)
-	complete = true
-	if joint.Err() != nil {
-		return joint.Err()
-	}
-	if err != nil {
-		return &NetworkError{Code: NetworkAccessDenied, Cause: err}
-	}
-	return nil
+	return socketAuthorize(ctx, p.ctx, address, callback)
 }
-func tcpFailure(err error) *component.Value { return networkFailure(socketError(err)) }
-func tcpCode(code NetworkErrorCode) error   { return &NetworkError{Code: code} }
 func (s *tcpSocket) checkAddress(address SocketAddress, connect bool) error {
-	ip := address.Address.Addr()
-	if uint32(0) == s.family && !ip.Is4() || s.family == 1 && !ip.Is6() {
-		return tcpCode(NetworkInvalidArgument)
-	}
-	if ip.IsMulticast() || ip == netBroadcast || ip.Is4In6() || connect && (address.Address.Port() == 0 || ip.IsUnspecified()) {
-		return tcpCode(NetworkInvalidArgument)
-	}
-	return nil
+	return socketCheckAddress(s.family, address, connect)
 }
 
-// Kept as a value, rather than querying any host interface or route.
-var netBroadcast = netipBroadcast()
-
-func netipBroadcast() netip.Addr { return netip.AddrFrom4([4]byte{255, 255, 255, 255}) }
 func tcpCreate(c *component.Caller, p *TCP, family uint32) (component.Value, error) {
 	if err := p.reserve(); err != nil {
 		return component.Value{}, err

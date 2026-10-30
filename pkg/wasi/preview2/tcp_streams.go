@@ -135,7 +135,7 @@ func (s *tcpSource) Close() error {
 }
 func (p *TCP) streams(c *component.Caller, s *tcpSocket) (component.Value, error) {
 	if s.streams {
-		return component.Value{}, tcpCode(NetworkInvalidState)
+		return component.Value{}, socketCode(NetworkInvalidState)
 	}
 	if err := p.child(s); err != nil {
 		return component.Value{}, err

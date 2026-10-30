@@ -78,18 +78,22 @@ func socketAddressQuery(fd int, peer bool) (SocketAddress, error) {
 	if errno != 0 {
 		return SocketAddress{}, errno
 	}
+	return socketDecodeAddress(&raw, size)
+}
+
+func socketDecodeAddress(raw *unix.RawSockaddrAny, size uint32) (SocketAddress, error) {
 	switch raw.Addr.Family {
 	case unix.AF_INET:
 		if size < unix.SizeofSockaddrInet4 {
 			return SocketAddress{}, socketAddressError()
 		}
-		address := (*unix.RawSockaddrInet4)(unsafe.Pointer(&raw))
+		address := (*unix.RawSockaddrInet4)(unsafe.Pointer(raw))
 		return SocketAddress{Address: netip.AddrPortFrom(netip.AddrFrom4(address.Addr), socketWire16(address.Port))}, nil
 	case unix.AF_INET6:
 		if size < unix.SizeofSockaddrInet6 {
 			return SocketAddress{}, socketAddressError()
 		}
-		address := (*unix.RawSockaddrInet6)(unsafe.Pointer(&raw))
+		address := (*unix.RawSockaddrInet6)(unsafe.Pointer(raw))
 		return SocketAddress{Address: netip.AddrPortFrom(netip.AddrFrom16(address.Addr), socketWire16(address.Port)), FlowInfo: socketWire32(address.Flowinfo), ScopeID: address.Scope_id}, nil
 	}
 	return SocketAddress{}, socketAddressError()

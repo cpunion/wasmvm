@@ -3532,4 +3532,67 @@ The unchanged wall-clock workload changes Go **856.6 -> 851.2 / 1,325 -> 1,324
 ns**, LLGo **2,658 -> 2,652 / 4,030 -> 4,021 ns**. These uncontrolled samples do
 not establish a regression guarantee. UDP/HTTP, complete worlds/toolchain
 conformance, remaining component mechanisms and native async/WASI 0.3 remain
-required; M5/M6 stay open. Final cross-platform CI is recorded in the PR.
+required; M5/M6 stay open. The final-head Go/LLGo × Linux/macOS matrix passed at
+`ec3fa07bcb5f35baa2470eababd691d016316a75`; all 180 execution reports and
+coverage gates were verified before [PR #59](https://github.com/cpunion/wasmvm/pull/59)
+merged ([CI](https://github.com/cpunion/wasmvm/actions/runs/41066359930)).
+
+## Complete WASI UDP interfaces (2026-10-30)
+
+All 19 Linux/Darwin UDP/create and datagram-stream operations execute on both
+own backends. The shared guest checks connected/unconnected IPv4/IPv6,
+zero-length packets, options, readiness, explicit peers and resource drops;
+the actual Wasmtime 48.0.1 Rust WASIp2 provider executes the identical common
+binary with UDP explicitly enabled. Eleven components reproduce and validate
+with wasm-tools 1.258.0; eight valid type mutations reject binding. The full
+consumer's missing `network-error-code` requirement remains separate from the
+narrow common consumer; no reference provider is substituted.
+
+Go 1.27.3 and pinned LLGo release tests, race checks and vet pass locally.
+Preview 2 statement coverage is **91.5%**. Tests cover separate bind/send/receive
+grants, denied packet filtering, callback panic/cancellation, zero/oversized
+packets, partial batch success, send-permit misuse, peer mismatch, stream
+reconfiguration, quotas and partial-publication rollback, orphaned pollables,
+blocked-poll cancellation, parent revocation, concurrent close and retained
+physical-close failures. Shared transport helpers preserve complete IPv6
+flow/scope values and FD leases; TCP protocol state remains independent.
+
+Local serial medians on Apple M4 Max use three samples (100 own / 1,000
+reference batches each), ten warmup batches and the same persistent connected
+IPv4 guest. Each batch makes 128 roundtrips, **4 KiB per direction**, including
+check-send/send and receive/readiness. Socket/stream setup, first batch and
+teardown are excluded from warm timing. Fuel is off; own quotas/cancellation
+remain enabled with loopback grants. Reference network inheritance, policy and
+completion-based scheduling differ.
+
+| Warm scope | Go interpreter | Go native | LLGo interpreter | LLGo native | Actual Wasmtime WASIp2 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Roundtrip, ns | 53,371 | 57,061 | 89,737 | 103,764 | 42,166 |
+| Batch of 128, ns | 6,831,475 | 7,303,845 | 11,486,282 | 13,281,848 | 5,397,239 |
+
+LLGo is **2.13× / 2.46× slower**; performance acceptance remains open. Go
+allocates 9.45/9.09 MB and 71,019/64,692 objects per batch. LLGo allocation
+counters are unavailable. These full guest/provider rates include canonical
+aggregate transfer, permissions, resources and kernel IO; they do not isolate
+raw UDP syscall efficiency. General call/transfer overhead remains explicit
+optimization work.
+
+| Separate phase, ns | Go interpreter/native | LLGo interpreter/native | Wasmtime |
+| --- | ---: | ---: | ---: |
+| Component compilation | 729,417 / 2,965,625 | 1,210,958 / 4,238,500 | 7,365,125 |
+| Provider/Store setup | 23,375 / 23,208 | 28,583 / 29,708 | 79,917 |
+| Bind/instantiate | 357,166 / 119,542 | 197,041 / 204,625 | 83,084 |
+| Endpoint/stream setup | 87,583 / 103,917 | 153,000 / 211,334 | 55,333 |
+| First batch | 6,754,583 / 7,077,042 | 12,387,084 / 15,648,250 | 4,409,500 |
+| Session drop | 12,959 / 21,292 | 143,833 / 145,042 | 28,792 |
+| Owner teardown | 24,667 / 28,000 | 80,792 / 76,042 | 163,833 |
+
+Source base TCP head `ec3fa07` lacks NewUDP under both compilers; that API
+absence is retained independently of engine support. Unchanged wall-clock
+medians change Go **886.9 -> 885.0 / 1,371 -> 1,350 ns**, LLGo **2,796 -> 2,974 /
+4,251 -> 4,349 ns**. These uncontrolled local samples are descriptive; they do
+not establish performance acceptance or a regression guarantee. Raw phases,
+compiler/binary identities, producer hashes and failures are retained in
+`artifacts/components/udp-*`. Final cross-platform CI is recorded in the PR.
+HTTP, complete worlds/toolchain conformance, remaining component mechanisms
+and native async/WASI 0.3 remain required; M5/M6 stay open.

@@ -370,3 +370,19 @@ TCP performance reference. The normal Rust build uses pinned stable 1.98.0;
 an initial default-nightly dependency compile failure is retained without
 patching the shared dependency cache. Source base lacks NewTCP; preserve that
 API-baseline failure and compare the unchanged wall-clock workload separately.
+
+### WASI UDP persistent transfer
+
+`BenchmarkUDPRoundtripBatch` and the Rust `udp` binary run `udp-common.wasm`.
+Both execute connected/unconnected IPv4/IPv6 assertions before timing a
+persistent connected IPv4 session. Each guest call checks 128 roundtrips of
+4 KiB per direction, including check-send/send and receive/readiness. Ten
+batches warm the session. Load, engine, compile, provider/Store setup,
+bind/instantiate, lookup, endpoint/stream setup, first batch, warm batches,
+owned-resource drops and owner teardown remain separate. Own fuel is off;
+quota/cancellation checks remain enabled, and grants authorize loopback only.
+The actual Wasmtime 48.0.1 Rust WASIp2 provider uses explicit
+`inherit_network().allow_udp(true)`, with different default scheduling/policy.
+Build with pinned `cargo +1.98.0 ... --bin udp`; invoke `udp COMPONENT COUNT`.
+No replacement reference provider is installed. Preserve source-base NewUDP
+API absence separately from the unchanged wall-clock probe.

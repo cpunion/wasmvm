@@ -91,7 +91,7 @@ func (p *TCP) Imports() component.Imports {
 		defer p.active.Done()
 		value, err := tcpCreate(c, p, uint32(args[0].Bits))
 		if err != nil {
-			return tcpFailure(err), nil
+			return socketFailure(err), nil
 		}
 		return streamOK(&value), nil
 	}}, FunctionChecks: map[string]component.FunctionCheck{"create-tcp-socket": contracts["create-tcp-socket"]}}
@@ -121,7 +121,7 @@ func (p *TCP) method(name string) component.HostFunction {
 			return &value, err
 		}
 		if err != nil {
-			return tcpFailure(err), nil
+			return socketFailure(err), nil
 		}
 		if payload {
 			return streamOK(&value), nil
