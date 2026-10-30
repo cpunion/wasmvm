@@ -23,19 +23,20 @@ type DecodeLimits = decode.Limits
 type ValidationLimits = validate.Limits
 
 type Config struct {
-	Core       vm.EngineConfig
-	Store      vm.StoreConfig
-	Decode     DecodeLimits
-	Validate   ValidationLimits
-	MaxValues  uint64
-	MaxBytes   uint64
-	MaxNesting uint32
+	Core         vm.EngineConfig
+	Store        vm.StoreConfig
+	Decode       DecodeLimits
+	Validate     ValidationLimits
+	MaxValues    uint64
+	MaxBytes     uint64
+	MaxNesting   uint32
+	MaxResources uint32
 }
 
 func DefaultConfig() Config {
 	core := vm.DefaultEngineConfig()
 	core.Profile, core.Features = "core3", wasm.SupportedFeatures
-	return Config{Core: core, Store: vm.DefaultStoreConfig(), Decode: decode.DefaultLimits(), Validate: validate.DefaultLimits(), MaxValues: 1 << 20, MaxBytes: 64 << 20, MaxNesting: 128}
+	return Config{Core: core, Store: vm.DefaultStoreConfig(), Decode: decode.DefaultLimits(), Validate: validate.DefaultLimits(), MaxValues: 1 << 20, MaxBytes: 64 << 20, MaxNesting: 128, MaxResources: 1 << 16}
 }
 
 type Engine struct {
@@ -46,7 +47,7 @@ type Engine struct {
 }
 
 func NewEngine(config Config) (*Engine, error) {
-	if config.MaxValues == 0 || config.MaxBytes == 0 || config.MaxNesting == 0 {
+	if config.MaxValues == 0 || config.MaxBytes == 0 || config.MaxNesting == 0 || config.MaxResources == 0 {
 		return nil, wasm.ErrLimit
 	}
 	core, err := vm.NewEngineWithConfig(config.Core)
@@ -176,7 +177,7 @@ func preflight(p *validate.Component, root bool) error {
 		return value(t.Element)
 	}
 	for _, f := range p.Canonical {
-		if f.Definition.Op > 1 || f.Async {
+		if f.Definition.Op > 4 || f.Async {
 			return unsupported("resource or async canonical operation")
 		}
 		for _, param := range f.Type.Parameters {

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdint.h>
+#include <string.h>
 
 static uint64_t now(void) {
   struct timespec t;
@@ -19,8 +20,11 @@ static void check(wasmtime_error_t *e) {
   exit(1);
 }
 int main(int argc, char **argv) {
-  if (argc != 3) return 2;
+  if (argc != 3 && argc != 4) return 2;
+  uint32_t batch = argc == 4 ? (uint32_t)strtoul(argv[3], NULL, 10) : 0;
+  if (argc == 4 && !batch) return 2;
   uint64_t count = strtoull(argv[2], NULL, 10), t = now();
+  if (!count) return 2;
   FILE *file = fopen(argv[1], "rb");
   if (!file) return 3;
   fseek(file, 0, SEEK_END);
@@ -47,21 +51,24 @@ int main(int argc, char **argv) {
   check(wasmtime_component_linker_instantiate(linker, context, component, &instance));
   uint64_t instantiate = now() - t;
   t = now();
-  wasmtime_component_export_index_t *index = wasmtime_component_instance_get_export_index(&instance, context, NULL, "add", 3);
+  const char *name = batch ? "churn" : "add";
+  wasmtime_component_export_index_t *index = wasmtime_component_instance_get_export_index(&instance, context, NULL, name, strlen(name));
   wasmtime_component_func_t function;
   if (!index || !wasmtime_component_instance_get_func(&instance, context, index, &function)) return 5;
   uint64_t lookup = now() - t;
   wasmtime_component_val_t args[2] = {{.kind = WASMTIME_COMPONENT_U32, .of.u32 = 0}, {.kind = WASMTIME_COMPONENT_U32, .of.u32 = 5}}, result = {.kind = WASMTIME_COMPONENT_U32, .of.u32 = 0};
+  size_t nargs = batch ? 1 : 2;
+  args[0].of.u32 = batch;
   t = now();
-  check(wasmtime_component_func_call(&function, context, args, 2, &result, 1));
+  check(wasmtime_component_func_call(&function, context, args, nargs, &result, 1));
   uint64_t first = now() - t;
-  if (result.kind != WASMTIME_COMPONENT_U32 || result.of.u32 != 5) return 6;
+  if (result.kind != WASMTIME_COMPONENT_U32 || result.of.u32 != (batch ? batch : 5)) return 6;
   uint64_t checksum = 0;
   t = now();
   for (uint64_t i = 0; i < count; i++) {
-    args[0].of.u32 = (uint32_t)i;
-    check(wasmtime_component_func_call(&function, context, args, 2, &result, 1));
-    if (result.kind != WASMTIME_COMPONENT_U32 || result.of.u32 != (uint32_t)i + 5) return 7;
+    args[0].of.u32 = batch ? batch : (uint32_t)i;
+    check(wasmtime_component_func_call(&function, context, args, nargs, &result, 1));
+    if (result.kind != WASMTIME_COMPONENT_U32 || result.of.u32 != (batch ? batch : (uint32_t)i + 5)) return 7;
     checksum += result.of.u32;
   }
   uint64_t warm = now() - t;

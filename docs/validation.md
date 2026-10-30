@@ -2629,3 +2629,60 @@ The synchronous runtime's tiny-call competitor gap remains open.
 
 Resource own/borrow transfer, generative host resource bindings, component/Core
 module host binding and component async/WASI 0.2/0.3 worlds remain required.
+
+
+## Component resource instruction execution
+
+Map and fixed-list transfers merged in [PR #46](https://github.com/cpunion/wasmvm/pull/46)
+at `1f6db34` after [all four semantic jobs passed](https://github.com/cpunion/wasmvm/actions/runs/40984842528).
+All 180 downloaded execution reports were verified against that exact head.
+
+The resource instruction increment executes resource.new/rep/drop using nominal
+runtime declarations and independent component handle domains. Imported type
+round trips retain identity; repeated instantiation freshens it. Representations
+preserve i32/i64 width. Destructors execute through the active Core Caller and
+consume ownership before guest code; traps cannot resurrect handles. Post-return
+leave guards, a shared Store handle quota, failed instantiation and sealed
+shutdown domains retain their bounded lifetime contracts.
+
+A bounded 10-second execution fuzz run completes 496,113 cases without a panic.
+Local full Go, pinned LLGo release component tests and Go race checks pass with
+both own backends. Coverage is canonical **94.04%**, component runtime **90.17%**,
+validation **92.45%**; every required package remains above 90%. An initial full
+Go run under concurrent compiler load hit the pre-existing wasi-threads 100 ms
+setup deadline. Its failing log is retained; the subsequent full run passes.
+wasm-tools 1.258.0 independently validates the six new fixtures. Wasmtime
+48.0.1 executes the 32-bit churn/type-round-trip probes. Its cm64-enabled compile
+panics on I64/I32 assertions for the 64-bit fixture; that failed reference row
+is retained rather than counted as a semantic or performance pass.
+
+Three local 200 ms samples use Go 1.27.3 and LLGo `8e45ed5 -O3 -lto=full` on
+Apple M4 Max arm64. A warm call executes 128 guest resource lifetimes, including
+the loop, new/rep/drop and the Core destructor; results are checked per batch.
+Compile, setup, lookup and first call stay outside these timers. The independent
+Wasmtime C API probe executes the same binary and batch. Medians in ns/lifetime:
+
+| Probe | Go interpreter | Go native | LLGo interpreter | LLGo native | Wasmtime C API |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Complete guest resource lifetime | 578.8 | 1,399.0 | 1,448.0 | 3,836.0 | 29.5 |
+
+These measurements expose a substantial helper/dispatch gap; LLGo remains about
+49x/130x behind the reference on this workload. They do not establish controlled
+acceptance: fuel is disabled, own cancellation/quotas remain enabled and the
+reference uses its default Store policy. Source base `1f6db34` rejects resource
+instructions, so it has no successful component throughput row.
+
+A separate pure table probe removes Core dispatch, guest looping and destructors
+and measures New + Rep + Drop. The exact base is extracted with git archive and
+receives only the unchanged benchmark file; no implementation patch is applied.
+Sequential source-base/head medians are Go **46.65 -> 62.41 ns** (+33.8%), LLGo
+**181.2 -> 143.3 ns** (-20.9%). This isolates the shared quota/64-bit table change
+from complete guest execution. The first contended table samples are retained
+as diagnostics. The competitor exposes no equivalent public table primitive;
+its complete guest timing is not substituted for pure-table performance.
+LLGo allocation counters remain unavailable. Raw logs, failed reference output,
+phase summary and toolchain pins are in `artifacts/components/resources-*`.
+
+Own/borrow codec transactions, opaque host capabilities, host resource/module/
+component bindings, component async and WASI 0.2/0.3 worlds remain required. This
+instruction increment does not complete M5/M6 or meet the performance target.

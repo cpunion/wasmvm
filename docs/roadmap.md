@@ -350,9 +350,9 @@ The component frontend/value foundation is in progress: an owned binary decoder
 preserves ordered lexical definitions and shares the Core grammar; the complete
 pinned binary script passes 132 syntax commands. Synchronous canonical layouts,
 memory/flat values, three string encodings and resource scopes have Go/LLGo tests
-and 1,024 independent reference layout cases. These are not component execution
-or WASI 0.2 support. Semantic validation, composition, call/post-return and
-resource-transfer integration plus the declared worlds remain required. The
+and 1,024 independent reference layout cases. The value primitives alone do not
+establish complete component execution or WASI 0.2 support. Resource-transfer
+integration and the declared worlds remain required. The
 [type subsystem](design/component-validation.md) resolves bounded lexical
 value/function/resource/interface declarations and embedded Core module types,
 with a shared Core validator/registry. Core module composition and synchronous
@@ -365,8 +365,9 @@ consumption/equality bounds and start signatures now have static plans; the
 pinned producer does not generate their text syntax, so authored tests are
 reported separately. A synchronous execution profile now compiles Core modules, composes child
 components and executes canonical calls, starts and copied values through both
-own backends. Resource transfer, map/fixed-list ABI conversion, remaining async
-plans and WASI worlds remain open. See [runtime scope](design/component-runtime.md). See
+own backends. Map/fixed-list ABI conversions and resource.new/rep/drop now
+execute through the same runtime. Own/borrow transfer, host nominal resource
+binding, remaining async plans and WASI worlds remain open. See [runtime scope](design/component-runtime.md). See
 [the current ABI and frontend boundary](design/component-abi.md).
 
 Implement component binary decoding/validation/composition, imports/exports, Canonical ABI lift/lower, strings/lists/records/variants, realloc/post-return, and resource own/borrow/drop with cleanup on failure. Keep component and core instance boundaries explicit. Pin WASI **0.2.12** WIT; implement the full declared CLI world and its dependencies, then separately reported sockets/HTTP interfaces. Earlier prototypes must not displace required core work.

@@ -40,7 +40,8 @@ allocation effects; the runtime must retain instance ownership through cleanup.
 
 `Resources` holds nominal resource declarations and owned/borrowed handles.
 Handles do not reuse IDs, preventing stale handles from gaining authority.
-Live entries and the 28-bit index domain are bounded. `Take` consumes ownership
+Live entries share one bounded Store quota, and each table has a bounded 28-bit
+index domain. Representations preserve all 64 bits for cm64 resource types. `Take` consumes ownership
 without a destructor; `Drop` removes the handle before invoking a destructor
 outside the lock. A failed destructor cannot resurrect ownership. `Drain`
 attempts all remaining destructors and returns the first error, after call
@@ -52,6 +53,8 @@ borrowed-handle drop has no resource destructor. Ending a scope with outstanding
 borrowed handles reports escape and invalidates those handles. Reentry and
 concurrent independent scopes are covered by race tests.
 
+The synchronous runtime now executes resource.new/rep/drop using these tables
+and the active Core Caller, including nominal bindings across child instances.
 These resource primitives are not yet wired into own/borrow value conversion.
 The codec returns unsupported for those conversions until the runtime supplies
 an ownership-transfer transaction and scope lifetime. Call reentry guards,

@@ -104,3 +104,54 @@ func BenchmarkComponentRuntime(b *testing.B) {
 		})
 	}
 }
+
+// The batch includes the guest loop and new/rep/drop/destructor execution. It
+// amortizes the public call boundary; compilation/startup stay outside timing.
+func BenchmarkResourceInstructions(b *testing.B) {
+	input, err := os.ReadFile("testdata/resources.wasm")
+	if err != nil {
+		b.Fatal(err)
+	}
+	for _, backend := range []string{"interpreter", "native"} {
+		if backend == "native" && !native.Available {
+			continue
+		}
+		b.Run(backend, func(b *testing.B) {
+			config := DefaultConfig()
+			config.Core.Backend = backend
+			e, err := NewEngine(config)
+			if err != nil {
+				b.Fatal(err)
+			}
+			defer e.Close()
+			m, err := e.Compile(nil, input)
+			if err != nil {
+				b.Fatal(err)
+			}
+			defer m.Close()
+			in, err := m.Instantiate(nil, Imports{}, vm.CallOptions{})
+			if err != nil {
+				b.Fatal(err)
+			}
+			defer in.Close()
+			f, err := in.Function("churn")
+			if err != nil {
+				b.Fatal(err)
+			}
+			args := []Value{{Bits: 128}}
+			if _, err := f.Call(nil, args, vm.CallOptions{}); err != nil {
+				b.Fatal(err)
+			}
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				v, err := f.Call(nil, args, vm.CallOptions{})
+				if err != nil || v.Value.Bits != 128 {
+					b.Fatal(v, err)
+				}
+			}
+			b.StopTimer()
+			b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N)/128, "ns/resource")
+		})
+	}
+}

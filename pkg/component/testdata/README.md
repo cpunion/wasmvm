@@ -13,3 +13,13 @@ intent; these binaries are authored tests, not independent conformance oracles.
 The fixtures cover three string encodings, memory32/64, host calls,
 post-return, spilled parameters/results, type ascription, outer closures,
 value equality/moves, void/float calls, map/fixed-list calls, bounded instance expansion and traps.
+
+
+Resource fixtures cover new/rep/drop, i32/i64 representations, guest destructor
+effects/traps, nominal identity across repeated child instantiation, imported
+type round trips, aggregate handle quotas, post-return leave guards and failed initialization
+(including host panic/cancellation after resource creation). Raw u32
+handle exports are intentional test plumbing, not host ownership capabilities.
+Wasmtime 48.0.1 executes the 32-bit probes. With
+`-W component-model-memory64=y`, the 64-bit probe currently triggers a Cranelift
+I64/I32 assertion; retain that failure separately from successful own execution.

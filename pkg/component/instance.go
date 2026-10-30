@@ -33,6 +33,8 @@ type Instance struct {
 	callDepth        uint32
 	work             uint64
 	bindings         map[any]Value
+	resourceTables   []*canonical.Resources
+	resourceBudget   *canonical.ResourceBudget
 }
 
 func (in *Instance) Close() {
@@ -40,6 +42,9 @@ func (in *Instance) Close() {
 	in.closed = true
 	in.mu.Unlock()
 	in.store.Close()
+	for _, table := range in.resourceTables {
+		table.Close()
+	}
 }
 
 func (in *Instance) WaitClosed(ctx context.Context) error { return in.store.WaitClosed(ctx) }
@@ -100,6 +105,7 @@ type item struct {
 	component *closure
 	value     Value
 	valueType *model.Type
+	resource  *resourceType
 }
 
 type closure struct {
@@ -108,21 +114,27 @@ type closure struct {
 }
 
 type namespace struct {
-	parent  *namespace
-	items   map[model.Sort][]item
-	exports map[string]item
-	failed  bool
-	blocked bool
+	parent    *namespace
+	plan      *validate.Component
+	resources map[uint64]*resourceType
+	handles   *canonical.Resources
+	items     map[model.Sort][]item
+	exports   map[string]item
+	failed    bool
+	blocked   bool
 }
 
 func (n *namespace) at(index model.SortIndex) item {
-	if index.Sort == model.TypeSort {
-		return item{sort: model.TypeSort}
-	}
 	return n.items[index.Sort][index.Index]
 }
 
-func (n *namespace) add(e item) { n.items[e.sort] = append(n.items[e.sort], e) }
+func (n *namespace) add(e item) {
+	if e.sort == model.TypeSort && e.resource != nil {
+		t := n.plan.TypeAt(uint32(len(n.items[model.TypeSort])))
+		n.resources[t.Resource] = e.resource
+	}
+	n.items[e.sort] = append(n.items[e.sort], e)
+}
 
 func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.CallOptions) (*Instance, error) {
 	c.mu.Lock()
@@ -139,15 +151,21 @@ func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.
 	if err != nil {
 		return nil, err
 	}
-	in := &Instance{store: store, config: c.engine.config, bindings: map[any]Value{}}
+	in := &Instance{store: store, config: c.engine.config, bindings: map[any]Value{}, resourceBudget: canonical.NewResourceBudget(c.engine.config.MaxResources)}
 	for i := range in.layouts {
 		in.layouts[i] = canonical.NewBuilder(i == 1, canonical.Limits{MaxNodes: in.config.Validate.MaxNodes, MaxDepth: in.config.MaxNesting, MaxBytes: in.config.MaxBytes})
 	}
 	in.initializing = &canonical.Codec{Transfer: &canonical.Transfer{Context: contextOrBackground(ctx), MaxBytes: in.config.MaxBytes}, Layouts: in.layouts[0], MaxValues: in.config.MaxValues}
-	defer func() { in.initializing = nil; in.bindings = nil }()
+	published := false
+	defer func() {
+		in.initializing = nil
+		in.bindings = nil
+		if !published {
+			in.Close()
+		}
+	}()
 	bindings, err := in.bind(plan.Type.Imports, imports)
 	if err != nil {
-		store.Close()
 		return nil, err
 	}
 	_, err = store.WithCaller(ctx, options, func(caller *vm.Caller) error {
@@ -158,9 +176,9 @@ func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.
 		return err
 	})
 	if err != nil {
-		store.Close()
 		return nil, err
 	}
+	published = true
 	return in, nil
 }
 
@@ -259,8 +277,14 @@ func (in *Instance) instantiate(caller *vm.Caller, component *closure, args map[
 	in.instances++
 	in.depth++
 	defer func() { in.depth-- }()
-	n := &namespace{parent: component.parent, items: map[model.Sort][]item{}, exports: map[string]item{}}
+	n := &namespace{parent: component.parent, plan: component.plan, resources: map[uint64]*resourceType{}, items: map[model.Sort][]item{}, exports: map[string]item{}}
+	// The index-space plan is needed only while definitions are published.
+	defer func() { n.plan = nil }()
 	children, canonicalIndex, valuesIndex, instancesIndex := 0, 0, 0, 0
+	importTypes := map[string]*validate.Type{}
+	for _, e := range component.plan.Type.Imports {
+		importTypes[e.Name.Text] = e.Type
+	}
 	exportTypes := map[string]*validate.Type{}
 	for _, e := range component.plan.Type.Exports {
 		exportTypes[e.Name.Text] = e.Type
@@ -307,8 +331,18 @@ func (in *Instance) instantiate(caller *vm.Caller, component *closure, args map[
 				}
 			}
 			n.add(item{sort: model.CoreInstanceSort, instance: exports})
-		case 3, 7:
-			// Type indices have no executable state in this resource-free profile.
+		case 3:
+			// Core type metadata is already checked by the shared Core validator.
+		case 7:
+			e := item{sort: model.TypeSort}
+			if d.Type.Kind == model.Resource {
+				e.resource = &resourceType{identity: &canonical.ResourceType{}, owner: n, representation: d.Type.Representation}
+				if d.Type.Destructor != nil {
+					destructor := n.items[model.CoreFunctionSort][*d.Type.Destructor].core
+					e.resource.destructor = &destructor
+				}
+			}
+			n.add(e)
 		case 4:
 			child := component.plan.Children[children]
 			children++
@@ -336,6 +370,9 @@ func (in *Instance) instantiate(caller *vm.Caller, component *closure, args map[
 			if err != nil {
 				return nil, err
 			}
+			if err := in.bindResources(n, view, component.plan.Instances[instancesIndex-1].Type); err != nil {
+				return nil, err
+			}
 			n.add(view)
 		case 6:
 			a := d.Alias
@@ -344,7 +381,7 @@ func (in *Instance) instantiate(caller *vm.Caller, component *closure, args map[
 				for range a.Count {
 					at = at.parent
 				}
-				if a.Sort == model.CoreModuleSort || a.Sort == model.ComponentSort {
+				if a.Sort == model.CoreModuleSort || a.Sort == model.ComponentSort || a.Sort == model.TypeSort {
 					n.add(at.at(model.SortIndex{Sort: a.Sort, Index: a.Index}))
 				}
 			} else {
@@ -352,7 +389,7 @@ func (in *Instance) instantiate(caller *vm.Caller, component *closure, args map[
 				if a.Kind == 1 {
 					sort = model.CoreInstanceSort
 				}
-				if a.Sort != model.TypeSort && a.Sort != model.CoreTypeSort {
+				if a.Sort != model.CoreTypeSort {
 					n.add(n.items[sort][a.Instance].instance[a.Name])
 				}
 			}
@@ -380,7 +417,11 @@ func (in *Instance) instantiate(caller *vm.Caller, component *closure, args map[
 				n.add(item{sort: model.ValueSort, value: copy, valueType: f.typ.Result})
 			}
 		case 10:
-			n.add(args[d.Import.Name.Text])
+			e := args[d.Import.Name.Text]
+			if err := in.bindResources(n, e, importTypes[d.Import.Name.Text]); err != nil {
+				return nil, err
+			}
+			n.add(e)
 		case 11:
 			e := n.at(d.Export.Item)
 			e, err := in.project(e, exportTypes[d.Export.Name.Text])
