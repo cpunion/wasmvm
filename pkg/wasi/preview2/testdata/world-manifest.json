@@ -1,0 +1,38 @@
+{
+  "wasiVersion": "0.2.12",
+  "wasiArchiveSha256": "2b0e47bc02953267ad163c6c1188b65baed1292351998cb032f3dcd28d005992",
+  "guestCompilers": [
+    "clang 22.1.8 -O2 / wasi-libc 33",
+    "Rust 1.98.0 opt-level=2 panic=abort"
+  ],
+  "bindingGenerator": "wit-bindgen 0.54.0",
+  "componentProducer": "wasm-tools 1.258.0",
+  "unstableFeatures": [],
+  "sourcesSha256": {
+    "README.md": "82bed7125162111a809dc2cd01a8f57e34eac726fabbf59ad8a162623dbf28c9",
+    "c/command.c": "4f299908e9dbd3f1749286ee806a6d32b0c8bcf66a88907ae6ec11463a6d1255",
+    "notices/Rust-COPYRIGHT-library.html.gz": "e7ed68a723cac69674883877457fdf85486b437d4ed7b166d2e30957a681d09c",
+    "notices/Rust-MIT.txt": "b85dcd3e453d05982552c52b5fc9e0bdd6d23c6f8e844b984a88af32570b0cc0",
+    "notices/musl-COPYRIGHT": "dd3d670b96794146071703a75b07421203e23e4ef11b4f8c484d90c465bcd6f5",
+    "notices/wasi-libc-LICENSE": "2711a8b5a5cdfef0e639f96c1aca12ae23d7d64a02d0507f1bdf14d2b27bbc3a",
+    "notices/wasi-libc-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+    "notices/wit-bindgen-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+    "rust/Cargo.lock": "95189ad6f17a437d93ed26de3c3c0fd96cefbe3e6cc75a0960aa7fc364ea4641",
+    "rust/Cargo.toml": "4f299e072f7ec54f0739a0412f6a634f44f6421217199008bde75bc7d4528293",
+    "rust/src/lib.rs": "da5051335ae04a960b6d9ee769235a78991ae9110aa621eef3bb9efac7e442fa",
+    "wit/world.wit": "c85fcd4882d8c3c24a2b8aea4937d1c73f9d012c46a73675efaa8f51c110a325"
+  },
+  "binarySha256": {
+    "world-c-command.wasm": "1b5e6a6fbc9f94b4f13ee0bc94a4e5aa01f1d8cb83e56b186acd3a085d6a9611",
+    "world-composed-command.wasm": "5776d848c46807b42e1277c97e1ec7d776babea7ca2b35461d10d02266bd5d6a",
+    "world-full-command.wasm": "9f6f58274059a89ee4a7b29c4673fe5f9c6eca05a02dd03fed8cf827d6107f7d",
+    "world-invalid-incoming-result.wasm": "bc3ebe22bd3d0e51538ce4d9f04f3ffb58ca7a88ab90f891497988dad7df8e66",
+    "world-command-success.wasm": "6b3be0d259b655fa870c59d4dcbfb0d29c6fec4e40f90b89b492449c6c046fe1",
+    "world-command-failure.wasm": "6b10c6324aad0ed84b5ae94bce540cb35acdd5e2ad0dcf4983b08f892218bc89",
+    "world-command-trap.wasm": "7f98952efc03ffe12ef222394a17fc5334fa774319974b38fd908fa1223116ab",
+    "world-command-wrong-result.wasm": "2281a8c63cec51608bd219842549efa3db8bac0b5657eebe7f9fa497e84ef8c5",
+    "world-command-wrong-parameter.wasm": "c73a6e008553a0fee24f994f86cfbd4529a65d73200f792508bb25b003863ebb",
+    "world-command-no-result.wasm": "1d6db32cb6c33787fe109ce377046f9f4bb77ea39d7a668789e775582317277a",
+    "world-command-exit.wasm": "ecaca775e341f6bd7d73d9d1159b8fd0d472c870f7457122852603e44ab19d3a"
+  }
+}

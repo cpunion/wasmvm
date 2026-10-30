@@ -415,3 +415,16 @@ failure separately. Source-base NewHTTP API absence is not a performance score.
 Pinned LLGo can delay HTTP cancellation about one second: see
 [llgo #2953](https://github.com/xgo-dev/llgo/issues/2953). Functional outer waits
 allow eventual cancellation; they do not claim prompt cancellation parity.
+
+### Stable command worlds and independent guest compilers
+
+`BenchmarkWASICommand` executes the pinned C command and Rust-to-C composition
+with real WASI argument/random/poll/filesystem/output operations. Preparation,
+lookup, first invocation and teardown remain separate from warm command calls.
+The actual reference `command COMPONENT PREOPEN COUNT c|rust|full` uses Wasmtime
+48.0.1 WASIp2 with a bounded MemoryOutputPipe and one read-only preopen. Own code
+uses the same configured args, preopen and bounded captured output; it includes
+all unified World providers in setup. Set `WASMVM_COMMAND_BENCH_PREOPEN` to the
+same directory, use 1000-call fixed samples, and verify captured bytes outside
+the timer. Full-import reference linking is a separate diagnostic, not replaced
+by a narrowed synthetic provider. See [world assembly](../../docs/design/wasi-worlds.md).

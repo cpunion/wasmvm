@@ -88,6 +88,13 @@ func TestFunctionViewsRetainNominalAndAggregateInformation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	exported, err := in.Function("echo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := check(exported.Info()); err != nil {
+		t.Fatal("exported signature lost nominal information", err)
+	}
 	m.Close()
 	in.Close()
 	_, input := saved.Parameter(0)
@@ -98,6 +105,10 @@ func TestFunctionViewsRetainNominalAndAggregateInformation(t *testing.T) {
 }
 
 func TestEmptyAndBoundedTypeViews(t *testing.T) {
+	var missing *Function
+	if missing.Info().Result().Valid() || missing.Info().ParameterCount() != 0 {
+		t.Fatal("nil function has a signature")
+	}
 	var f FunctionInfo
 	if f.ParameterCount() != 0 || f.Result().Valid() {
 		t.Fatal(f)

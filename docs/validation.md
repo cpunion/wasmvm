@@ -3740,3 +3740,82 @@ response only 100 times before the pinned netpoll fallback tick. The typed IO
 assertion now uses blocking-read with a three-second call deadline, preserving
 both the stream failure and its HTTP error-code downcast. The original failed
 job is retained in pr61-ci-failed.log; no production or benchmark code changed.
+
+
+## Stable world assembly and independent CLI guests (2026-10-31)
+
+`NewWorld` now composes all stable 0.2.12 CLI/HTTP host providers with shared
+nominal IO, error, pollable and network domains. Configuration supplies explicit
+args, stdio, preopens and grants. Constructor rollback joins both primary and
+cleanup failures; repeated/concurrent close joins every resource owner.
+`RunCommand` validates its standard unit-result entry before invoking it and
+preserves success/failure/exit codes, traps and cancellation. `Function.Info`
+exposes immutable export signatures and nominal resources. Incoming HTTP uses
+that view to reject wrong signatures before resource publication or effects.
+
+Pinned Clang 22.1.8 / wasi-libc 33 and Rust 1.98.0 independently compile the C
+and Rust guests with wit-bindgen 0.54.0 and WASI 0.2.12 WIT. Rust calls the C
+arithmetic component after wasm-tools 1.258.0 composition; the commands exercise
+arguments, randomness, polling, preopened directory stat and verified stdout.
+Both guests execute on both own backends and Go/LLGo release, and on actual
+Wasmtime 48.0.1 WASIp2. The full stable CLI import fixture separately checks
+binding after language DCE narrows unused imports. Seven valid CLI controls and
+one incoming-handler result mutation exercise failure/exit/entry-signature
+behavior and rejection before their callback effect. Unified HTTP client and
+incoming calls also execute on both backends.
+
+The source/dependency lock, WIT, source/binary checksums and runtime notices are
+retained under testdata/wasi-preview2/guests and the fixture manifest. Producer
+reproduction validates every binary; Go also checks manifest input/output hashes.
+Local package tests, race/vet and no-cgo build pass. Component statement coverage
+is **91.09% (982/1078)**; Preview 2 is **90.34% (4890/5413)**. Final-head four-job
+CI, execution reports and coverage are required before merge. These results do
+not close complete upstream world conformance, synchronous resource value/start
+and local cm64-borrow gaps, M5 performance gates, or WASI 0.3/native async.
+
+Three serial 1000-call samples after ten warmups use one read-only preopen,
+identical args and bounded captured output. Every run verifies the exact output
+bytes. Fuel is off; quota/cancellation checks remain. Table entries are warm
+ns/command and include the command's real WASI, canonical and resource costs:
+
+| Command | Go interpreter | Go native | LLGo interpreter | LLGo native | Actual Wasmtime WASIp2 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| C | 30,602 | 40,692 | 72,257 | 126,143 | 7,362 |
+| Rust -> C composition | 42,203 | 51,006 | 85,757 | 144,367 | 7,160 |
+
+LLGo is **9.81×/17.13× slower** for C and **11.98×/20.16×** for the composed
+command. Performance remains below target. Go's native composed command
+allocates 445 objects/call; LLGo's zero allocation count is unavailable data,
+not zero allocation. Native bridging is slower than interpreter execution for
+these host-call-heavy guests. Shared transfer/dispatch and allocation costs
+remain explicit optimization work. Random algorithms and default provider
+resource/scheduling policies differ; these local samples establish no controlled
+regression guarantee. No pure arithmetic or equal random-provider claim is made.
+
+Separate phases for the composed command, in ns:
+
+| Phase | Go interpreter/native | LLGo interpreter/native | Wasmtime |
+| --- | ---: | ---: | ---: |
+| Load | 71,042 / 71,042 | 58,250 / 58,250 | 35,125 |
+| Engine | 916 / 1,041 | 3,333 / 1,459 | 85,416 |
+| Compile | 7,113,125 / 37,147,125 | 15,387,708 / 67,247,625 | 19,779,125 |
+| Provider/Store setup | 83,833 / 89,125 | 91,625 / 88,709 | 120,500 |
+| Bind/instantiate | 373,083 / 255,333 | 339,875 / 379,042 | 84,042 |
+| Lookup | 250 / 375 | 292 / 417 | 875 |
+| First call | 365,291 / 142,042 | 203,417 / 273,916 | 270,875 |
+| Owner teardown | 31,208 / 34,708 | 144,583 / 149,833 | 82,875 |
+
+Source base `b1f249e` lacks NewWorld under both compilers. Unchanged wall-clock
+base/head medians are Go 840.2 -> 835.1 / 1304 -> 1279 ns and LLGo 2671 -> 2646 /
+4028 -> 4034 ns. Raw logs, all phases, binary/source/compiler identities and
+producer failures remain in artifacts/components/world-*.
+
+The actual reference links/runs both language guests. Its complete CLI import
+consumer instead fails with no matching wasi:sockets/network@0.2.12 linker
+implementation; that diagnostic is retained without substituting a provider.
+An initial harness build used obsolete DirPerms/FilePerms names; it now uses
+48.0.1's actual FsPerms API. Initial Clang lacked a default Wasm compiler-rt
+archive; the fixed producer explicitly links its required libc without default
+runtime libraries, and component validation confirms resolved imports. Rust's
+explicit generate_all enables the pinned external WIT package bindings. These
+producer/harness failures remain distinct from own runtime execution results.

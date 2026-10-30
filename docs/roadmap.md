@@ -445,6 +445,15 @@ guest-toolchain/full-world acceptance, remaining component semantics and
 performance gates still block M5 completion. P2 pollables do not supply
 canonical async or WASI 0.3.
 
+World assembly now shares every stable provider through NewWorld, with checked
+CLI/HTTP entries and joined ownership rollback/shutdown. Independent pinned C
+and Rust commands compose through a real component import and execute across
+the own backend/compiler matrix and actual Wasmtime WASIp2. A separate consumer
+retains all stable CLI imports; this advances binding coverage after compiler
+DCE. See [world assembly](design/wasi-worlds.md). Complete upstream conformance,
+resource values/starts, local cm64 borrow conversion and performance acceptance
+remain required before M5 closes.
+
 ## M6 — WASI 0.3 native async
 
 Pin WASI **0.3.2** and its cumulative Component Model requirements. Implement canonical async lift/lower, task transitions, suspension/resumption, futures/streams, cancellation, backpressure, reentrancy and completion/error behavior. Deliver the declared CLI and HTTP service/middleware scope with explicit versioned bindings; P2 pollables and P3 async remain separate adapters.

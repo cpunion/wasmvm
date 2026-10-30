@@ -427,3 +427,17 @@ differences and performance phases. Stable interfaces and authored proxy flows
 do not complete M5: independent guest languages, full-world conformance,
 remaining component mechanisms and performance targets remain explicit gates.
 WASI 0.3 requires canonical async.
+
+## Unified world assembly and standard entries
+
+`NewWorld(WorldConfig)` composes the existing stable providers with shared
+nominal domains and explicit configuration. `RunCommand` checks the standard
+CLI unit-result export before invocation and preserves result/exit/error
+outcomes. `Function.Info` also supports checking HTTP incoming own-resource
+signatures before effects. Independent pinned C and Rust commands compose and
+execute on both backends/host compilers and actual Wasmtime WASIp2. The complete
+CLI import fixture separately checks binding after compiler DCE. See
+[world assembly](wasi-worlds.md) for ownership, validation boundaries and
+performance phases. `assembledWorlds` records integration scope separately from
+`completeWorlds`; upstream conformance, remaining component semantics and M5/M6
+performance/async gates remain open.
