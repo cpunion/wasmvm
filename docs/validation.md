@@ -3318,8 +3318,10 @@ Go 1.27.3 and LLGo `8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f`
 (`-O3 -lto=full`) pass the affected package tests. Full local Go tests, targeted
 race checks and vet pass. Preview 2 statement coverage is **91.9%**; every
 executable-package coverage gate passes when the current P2 profile is combined
-with PR #56's exact unchanged-source CI coverage for other packages. The final
-four-job CI matrix remains required before merge. Tests include readonly and
+with PR #56's exact unchanged-source CI coverage for other packages. The final four-job Go/LLGo × Linux/macOS matrix passed at source head
+`f3e54bd16881cf2fa21301a9b64de0b13e8da30e`; all 180 execution reports were
+verified before [PR #57](https://github.com/cpunion/wasmvm/pull/57) merged
+([CI](https://github.com/cpunion/wasmvm/actions/runs/41041101413)). Tests include readonly and
 cross-directory grants, absolute/parent/symlink escapes, bounded partial reads
 and writes, u64 overflow, nanosecond times, enumeration quotas/encoding, expired
 and stale resources, failed publication/rollback, independent streams, atomic
@@ -3381,8 +3383,10 @@ interfaces execute through checked nominal resources. Go 1.27.3, LLGo
 `8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f` (`-O3 -lto=full`) and race checks
 pass. Preview 2 statement coverage is **92.1%**. Every executable package retains
 its 90% gate when the current P2 profile is combined with PR #57's exact
-unchanged-source Linux CI profile for other packages. Final-head Go/LLGo ×
-Linux/macOS CI is still required before merge. Tests cover both own backends,
+unchanged-source Linux CI profile for other packages. The final Go/LLGo × Linux/macOS matrix passed at source head
+`bf7d37c4a5c7f4c57cabaeed090157f8254ee753`; all 180 execution reports were
+verified before [PR #58](https://github.com/cpunion/wasmvm/pull/58) merged
+([CI](https://github.com/cpunion/wasmvm/actions/runs/41044534178)). Tests cover both own backends,
 IPv4/IPv6/mapped literals, IDNA, actual localhost lookup, pending/ready/EOF,
 resolver error classes/panics, result/name/stream quotas, permissions, timeout,
 caller cancellation, failed publication/rollback, typed error downcasts,
