@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "primarySource": "https://github.com/WebAssembly/component-model/blob/d095e2f60ddae1f9a1e9b1e2fb547ec1114da677/design/mvp/Binary.md",
+  "producer": "project-authored value/start sections; wasm-tools 1.258.0 Core fragments",
+  "independentOracle": false,
+  "generatorSHA256": "ad3fcca54854fff42f5da87b6e3feddf6af6cc9b675bda0595641c21cbfd58cd",
+  "fixtures": {
+    "resource-value-import.wasm": {
+      "sha256": "b0e425f14a39b3619a1fc59bd2a54f597aa79d26eb4265d545e27718106c1ebe",
+      "description": "Import own<r>; export the same affine occurrence."
+    },
+    "resource-value-start.wasm": {
+      "sha256": "f58f11b696f8cf53091b99a5ad9a19e6cbc4774d0b8514cdedd54d53e5f15f49",
+      "description": "Import own<r>; start host pass(own<r>); export its result."
+    },
+    "resource-value-host-start-failure.wasm": {
+      "sha256": "f020b43a0448cb7f7e094e0ca8f754026ff1a131008e4fa2826c460f5f2bff57",
+      "description": "A later start failure reclaims the moved host resource result."
+    },
+    "resource-value-pair.wasm": {
+      "sha256": "d3322c9e6a6f764bc1982b2a2fa55cc21b04c50564cdf7a9d41689dff3a575f3",
+      "description": "Tuple own resources uses transactional duplicate detection."
+    },
+    "resource-value-empty.wasm": {
+      "sha256": "88b8403db913b4838d05610680c7bb22c449f72ace4734ccfe3f3430f02816eb",
+      "description": "Even an empty list<own<r>> is an affine standalone value."
+    },
+    "resource-value-borrow.wasm": {
+      "sha256": "e835b5b2cd73b501fb4a40e3a90503810da8ddb098cb3b140ed9d9f3147205a0",
+      "description": "Imported borrow lives through start and expires after initialization."
+    },
+    "resource-value-borrow-equality.wasm": {
+      "sha256": "ff4e6b2bdb1f0bf30768570b4b51b3246c73cd463d076b74500fc103ccdafef4",
+      "description": "Equality-bound borrows compare live nominal capabilities, not token addresses."
+    },
+    "resource-value-borrow-export.wasm": {
+      "sha256": "96a20e281ceaf733f9ca5befeea390ae0a5fd5a8c996ba4bd311a211eeb8b556",
+      "description": "Invalid: a component cannot export a borrow value."
+    },
+    "resource-value-nested.wasm": {
+      "sha256": "ac3d6c93c4e9ca16bc00b4c0e051ce26bc4adcd7dfa9ba201f0e809b85d45f4a",
+      "description": "A nested host interface exports a resource type and standalone own value."
+    },
+    "resource-value-child.wasm": {
+      "sha256": "eef08253238711ef45251953b1f9f3579eda30f3e6ce5aa7458a894b3548bf83",
+      "description": "Move own<r> through child import/export and an alias."
+    },
+    "resource-value-guest-start.wasm": {
+      "sha256": "9ee8d769ca00d051302b0e78c258f195d6b4a16b5ec49037d11ca5ba2b0256ce",
+      "description": "Start native/interpreted guest make; export own result with its live destructor."
+    },
+    "resource-value-start-failure.wasm": {
+      "sha256": "0a641f492ea68a998d29dd70bff312ceeabac492b46e1a53bee4d78df205bc88",
+      "description": "A later start failure runs the earlier unpublished resource guest destructor."
+    }
+  }
+}

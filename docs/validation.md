@@ -3848,3 +3848,78 @@ reference opens a connection per request. This is complete-request policy cost,
 not pure VM throughput. Local variance and the additional ownership guard do not
 establish performance parity or a controlled regression guarantee. Earlier raw
 command results are preserved with the before-reader suffix.
+
+## Synchronous resource values and start ownership (2026-10-31)
+
+The value extension now executes resource-bearing standalone imports/exports and
+component starts through the existing canonical resource codec and Core Caller.
+Factories run after static bindings/provider checks, can mint bound nominal
+resources and retain aggregate initialization budgets. Aliases, narrowed views,
+child components and nested host interfaces share affine value occurrences.
+Resource exports move exactly once, including empty containers; resource-free
+exports retain detached repeatable reads. Borrow imports stay pinned through
+initialization and expire before publication. Transitive borrow value exports
+are rejected according to the pinned Binary.md rule; exporting a borrow type is
+still allowed. Equality-bound borrows compare live table/type/handle identity,
+including separate tokens for the same lender.
+
+Twelve project-authored binary fixtures retain their generator and hashes:
+nine successful execution inputs, two valid inputs with deliberate later-start
+failure, and one statically invalid borrow export. The pinned producer cannot
+encode value/start text, so these are authored grammar/semantic tests, not an
+independent conformance oracle. Successful guest creation, ownership transfer,
+explicit guest destructors and failure cleanup execute on both own backends.
+Tests also cover stale/foreign capabilities, duplicate own aggregates, nested
+imports, factory failure/panic/cancellation, expired Callers, constraints,
+resource/byte/value limits, concurrent extraction and failed initialization
+cleanup with active host and guest destructors. Go and LLGo release-profile
+component suites pass; Go race/vet pass. Local statement coverage is
+`pkg/component` **91.79%** (1,085/1,182), `internal/component/validate` **91.81%**
+(1,828/1,991).
+
+Serial local phase probes use Apple M4 Max arm64, Go 1.27.3 and pinned LLGo
+`8e45ed5` with `-O3 -lto=full`; medians of three 10,000-instance samples.
+The fixture creates a real guest resource during start and explicitly drops it
+through its guest destructor. Source base `eb6551d` rejects it at Compile.
+Values below are microseconds; process startup/runner build are excluded:
+
+| Phase | Go interpreter / native | LLGo interpreter / native |
+| --- | ---: | ---: |
+| File load | 30.125 / 34.667 | 56.958 / 50.458 |
+| Engine creation | 1.541 / 1.542 | 3.416 / 3.000 |
+| Compile | 114.459 / 219.250 | 157.708 / 703.250 |
+| First Store/bind/instantiate/start | 28.041 / 30.416 | 66.500 / 78.375 |
+| First value extraction | 1.500 / 1.208 | 2.250 / 1.875 |
+| Repeated Store/bind/instantiate/start | 6.921 / 7.781 | 22.341 / 24.258 |
+| Repeated value extraction | 0.393 / 0.391 | 1.601 / 1.664 |
+| Repeated explicit drop/destructor | 0.320 / 0.721 | 0.989 / 2.562 |
+| Repeated close | 0.096 / 0.279 | 0.228 / 0.562 |
+
+The public Instantiate API combines Store creation, composition, binding and
+start; preparation is not pure guest execution. Affine extraction requires a
+new instance. Raw logs separately retain first drop/close. Actual unmodified
+Wasmtime 48.0.1 rejects the fixture with `support for component model values is
+not enabled`; no direct ratio for the experimental extension is available.
+
+The existing common `ownership.wasm` workload separately executes four public
+calls per complete make/get/pass/consume lifetime. Medians of three samples,
+10,000 own lifetimes and 100,000 reference lifetimes; nanoseconds/lifetime:
+
+| Compiler | Base interpreter / native | Head interpreter / native |
+| --- | ---: | ---: |
+| Go | 3,041 / 5,326 | 3,010 / 5,149 |
+| LLGo release | 8,939 / 14,925 | 8,961 / 14,954 |
+| Actual Wasmtime 48.0.1 component C API | 1,244.79 | 1,244.79 |
+
+This common workload shows no material local LLGo regression (about +0.2%),
+while the reference remains substantially faster. Warm timers exclude load,
+engine/compile, instance preparation, lookup, first lifetime and close. Own fuel
+is off with logical resource/cancellation checks; the reference uses its default
+Store policy. This is descriptive local evidence, not controlled performance
+acceptance. Raw per-phase samples, reference rejection, source-base outcomes,
+runner identity and common-workload logs are retained in
+`artifacts/components/resource-values-*`.
+
+Local cm64 borrows, abstract host/component bindings, complete upstream world
+conformance, compiler/interpreter performance acceptance and native async/WASI
+0.3 remain required. This increment does not complete M5/M6 or the project.

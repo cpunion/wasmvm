@@ -20,7 +20,7 @@ strings, lists/fixed lists, maps, records/tuples, variants, flags/enums and opti
 Memory32/64, all three string encodings, direct/spilled arguments/results,
 realloc and post-return use checked memory capabilities. Resource new/rep/drop
 executes through the same Core session. Own/borrow call values now use opaque capabilities and scoped transfers. Async
-execution, standalone resource values/starts and local cm64 borrows remain required;
+execution and local cm64 borrows remain required;
 literal or layout support does not establish those runtime capabilities.
 
 ## Calls and lifetime
@@ -108,8 +108,8 @@ Failure (including host panic during initialization) and instance close seal
 the tables and release their quota. Close is a
 cancellation request and does not execute implicit guest destructors; explicit
 resource.drop runs them before teardown. Own/borrow calls now publish opaque capabilities and connect host resource
-imports to flat/memory codecs. Standalone resource values/starts and the local
-cm64 borrow ABI remain rejected; these call contracts do not complete M5/M6.
+imports to flat/memory codecs. Standalone resource values and starts now use
+these same transfers. The local cm64 borrow ABI remains rejected; these call contracts do not complete M5/M6.
 
 
 ## Ownership across calls
@@ -150,8 +150,8 @@ paths. Pure host callbacks/destructors additionally share the host depth bound.
 
 The pinned MVP reference specifies u32 resources. Local cm64 borrow conversion
 is rejected before instantiation rather than truncating its representation.
-Standalone resource value imports/exports and resource-bearing component starts
-remain a separate integration task; no support is inferred from call values.
+Standalone resource values and component starts now share the ownership
+transaction, with separate authored value-extension fixtures described below.
 
 
 ## Checked host function imports
@@ -234,5 +234,41 @@ Engine or compiled component does not retire existing Store execution.
 `CoreModule.Info` returns owned metadata and rejects a closed owner.
 
 This capability does not bind host components or abstract host type imports;
-standalone resource values/starts, local cm64 borrows, async plans and complete
+local cm64 borrows, async plans and complete
 WASI worlds remain separate required work.
+
+
+## Standalone resource values and starts
+
+`Imports.ValueFactories` supplies a value with an active `Caller`, after every
+static import and `FunctionChecks`/`ValueChecks` check succeeds. A factory can
+mint `Caller.NewResource` for an imported nominal type. Its Caller expires at
+return. Supplying both a raw value and a factory for one name is a link error;
+raw resource capabilities from another Store are rejected before factory effects.
+Factories also support ordinary values and retain literal/equality constraints.
+The shared initialization codec charges aggregate value/byte budgets across
+raw imports, factories, literals and start results.
+
+Aliases, child imports/exports and projected instance views share a runtime
+value occurrence while retaining its producer's nominal scope. Component starts
+pass those values through the ordinary own/borrow call transaction and retain
+their validated results. A resource-bearing `Instance.Value` moves the exported
+occurrence exactly once, including empty resource containers; subsequent reads
+trap. Resource-free values retain detached, repeatable reads. Raw numeric fields
+never grant resource authority.
+
+An imported borrow remains pinned through synchronous initialization, including
+nested calls, then expires before publication. Its host-owned lender can be
+retained by the factory and explicitly dropped afterwards. Component exports
+cannot transitively contain borrows, as required by the pinned binary grammar;
+exporting a borrow *type* remains legal. The value extension remains experimental
+in the pinned Component Model source, independently of stable WASIp2 interfaces.
+
+A later start error, host panic, cancellation, aggregate-copy failure or failed
+final publication reclaims unpublished owned values while the Core Caller is
+still active. Host destructors receive cancellation; guest destructors run only
+while their component and context permit reentry. Explicit Store close keeps
+its existing cancellation contract and does not synthesize guest destructors.
+The implementation shares the existing resource codec and Core session rather
+than introducing another execution path. These synchronous capabilities leave
+local cm64 borrows, host abstract/component bindings and async/WASI 0.3 required.

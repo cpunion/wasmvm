@@ -465,3 +465,8 @@ func label(name string, seen map[string]bool) error {
 
 // ContainsResource reports nominal resource occurrences in this checked type.
 func (t *Type) ContainsResource() bool { return t.resource }
+
+// ResultContainsResource reports the cached traits of a function's result.
+func (t *Type) ResultContainsResource() bool {
+	return t.Result != nil && t.owner.values[t.Result].resource
+}
