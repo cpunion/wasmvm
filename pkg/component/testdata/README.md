@@ -42,3 +42,21 @@ guest effects and keeps the instance usable; the embedding error policy differs.
 parameter where the provider requires borrow. Binding rejects it through the
 host contract before execution, rather than consuming the argument at a later
 call. Contract failure before an actual Core start is tested separately.
+
+
+`bytes`/`bytes64` echo arbitrary list<u8> data through cm32/cm64 canonical
+memory, realloc and post-return reset. `bytes-host`/`bytes-host64` additionally
+round-trip through a lowered host callback. They are project-authored, generated
+and validated with wasm-tools 1.258.0 (`--features all`). Retained results must
+survive allocator reuse. Packed raw-byte storage is independent of the selected
+string encoding; it performs no UTF-8 validation. The pure `bytes` fixture is
+also executed unchanged by Wasmtime 48.0.1 C API and typed Rust API probes.
+
+
+`byte-value-imports` is the existing authored value-import grammar with a u8
+list element. `byte-value-constant-bound` adds a four-byte literal and equality
+bound. They are manually authored from the same pinned value grammar; the WAT
+files describe their intended structure. wasm-tools 1.258.0 does not support
+these value imports/value section, so its diagnostic failures are retained.
+Own Go/LLGo tests verify equivalent packed/element-wise nested bindings and
+literal bounds, owned exports and rejection of unequal bytes.

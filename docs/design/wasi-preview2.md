@@ -32,8 +32,9 @@ upstream conformance suite or two independent guest-language toolchains.
 Next interface groups are io error/poll/streams and stdio/terminals, clocks and
 random, filesystem/preopens, sockets/DNS, then the complete CLI world and
 HTTP. Reuse capability-relative filesystem and stream contracts; do not marshal
-component calls through P1 linear-memory ABIs. Byte-list transport needs a
-shared packed representation before sustained IO performance acceptance.
+component calls through P1 linear-memory ABIs. The shared Canonical ABI codec now supports packed immutable byte sequences;
+IO/random providers must use that representation and preserve declared bounds.
+Sustained IO performance acceptance remains open.
 
 ## Nonreturning exit
 

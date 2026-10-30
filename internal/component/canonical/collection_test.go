@@ -48,7 +48,7 @@ func TestPinnedCollectionMemoryOracle(t *testing.T) {
 			t.Fatal(err)
 		}
 		got, err := c.Load(tc.Type, 0)
-		if err != nil || !reflect.DeepEqual(got, tc.Value) {
+		if err != nil || !reflect.DeepEqual(expandPackedBytes(tc.Type, got), tc.Value) {
 			t.Fatal("reference lift", i, got, err)
 		}
 	}
@@ -117,7 +117,7 @@ func TestCollectionLimitsAndInvalidValues(t *testing.T) {
 	if err := c.Store(fixed, 0, value); err != nil {
 		t.Fatal(err)
 	}
-	if got, err := c.Load(fixed, 0); err != nil || !reflect.DeepEqual(got, value) {
+	if got, err := c.Load(fixed, 0); err != nil || !reflect.DeepEqual(expandPackedBytes(fixed, got), value) {
 		t.Fatal(got, err)
 	}
 	if _, err := c.LowerFlat(fixed, value); !errors.Is(err, wasm.ErrInvalid) {

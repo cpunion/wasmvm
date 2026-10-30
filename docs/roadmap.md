@@ -377,6 +377,12 @@ CLI/HTTP worlds remain open. See [WASI scope](design/wasi-preview2.md) and
 
 Implement component binary decoding/validation/composition, imports/exports, Canonical ABI lift/lower, strings/lists/records/variants, realloc/post-return, and resource own/borrow/drop with cleanup on failure. Keep component and core instance boundaries explicit. Pin WASI **0.2.12** WIT; implement the full declared CLI world and its dependencies, then separately reported sockets/HTTP interfaces. Earlier prototypes must not displace required core work.
 
+Packed immutable list/fixed-list<u8> transport now avoids one generic Value per
+byte while preserving cm32/cm64, logical element budgets, ownership and legacy
+host inputs. It is shared infrastructure for IO/random; those interfaces remain
+required. The typed Wasmtime reference remains substantially faster, so this
+change does not close the M5 performance or world-coverage gates.
+
 The complete `wasi:cli/exit@0.2.12` interface additionally provides result-based
 and byte-code exit. Shutdown cancels the shared Store, invalidates all linked
 exports and reports a typed guest outcome after bounded reclamation. Both own

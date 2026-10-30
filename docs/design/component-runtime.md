@@ -169,3 +169,36 @@ slices are exposed. Retained views keep an immutable nominal binding map after
 initialization, avoiding one expanded type copy per function. Checks consume no
 guest fuel and honor cancellation between verifiers. A host verifier, like a
 host callback, must cooperate if it performs external work.
+
+
+## Packed byte sequences
+
+`list<u8>` and `fixed-list<u8,N>` use immutable raw bytes in `Value.Text` with
+nil `Elements`. `component.ByteList([]byte)` owns a copy; `Value.ByteString()`
+reads either packed or legacy element-wise inputs. Raw bytes may contain NUL,
+invalid UTF-8 and every byte value. Reusing the existing type-directed storage
+keeps each generic Value at 64 bytes on the accepted 64-bit platforms. All
+other aggregate/resource layouts remain unchanged.
+
+Guest lifts and all owned clones produce packed byte values. Legacy element-wise
+inputs remain supported and fully checked, including rejection of values above 255; mixed
+nonempty Text and nonnil Elements are rejected. This changes the public result
+representation of byte sequences: consumers should use ByteString rather than
+assuming one Value per byte. Nested lists, fixed-lists, maps and variants use the
+same codec and lifetime rules. Reference-oracle bytes and expected values stay
+unchanged; test comparison expands packed results only at byte-sequence nodes.
+
+Bulk memory copies retain pointer-width/range checks, MaxValues logical element
+counts and nesting limits. MaxBytes charges actual scratch/output bytes rather
+than a generic Value slot per packed byte. Immutable clones charge retained
+bytes, and results never borrow guest memory. Cancellation is checked around
+bulk copies; realloc failure, invalid ranges and transfer budgets remain errors.
+The representation serves common WASI IO/random payloads, not a workload-specific
+Core execution path or a separate engine.
+
+Owned clone normalization also applies to imported values and literal bounds:
+equal bytes compare equal across packed and element-wise host inputs, including
+nested aggregates and aliases. Normalization occurs before value identity checks
+and guest initialization. Legacy conversion charges its scratch and immutable
+output bytes; packed clones charge retained bytes. Byte value fixtures exercise
+this without weakening comparison of unequal data.

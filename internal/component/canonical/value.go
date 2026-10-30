@@ -10,6 +10,7 @@ import (
 // Value is a host-owned component value. Fields and tuple/list elements retain
 // type order; variants use Case and zero or one payload in Elements. Bits uses
 // Scalar's representation, or the declared flags bitmap/enum discriminant.
+// Lists/fixed-lists of u8 may use immutable raw bytes in Text with nil Elements.
 type Value struct {
 	Bits     uint64
 	Text     string
@@ -52,6 +53,19 @@ func (c *Codec) clone(t *model.Type, v Value) (Value, error) {
 		return Value{Bits: v.Bits}, nil
 	}
 	if t.Kind == model.String {
+		if err := c.Transfer.charge(uint64(len(v.Text))); err != nil {
+			return Value{}, err
+		}
+		return Value{Text: v.Text}, nil
+	}
+	if byteSequence(t) {
+		if v.Elements != nil {
+			if err := c.Transfer.charge(2 * uint64(len(v.Elements))); err != nil {
+				return Value{}, err
+			}
+			data, err := v.ByteString()
+			return Value{Text: data}, err
+		}
 		if err := c.Transfer.charge(uint64(len(v.Text))); err != nil {
 			return Value{}, err
 		}
@@ -222,6 +236,9 @@ func (c *Codec) load(t *model.Type, at uint64, depth uint32) (Value, error) {
 }
 
 func (c *Codec) loadList(t *model.Type, at, n uint64, depth uint32) (Value, error) {
+	if t.Kind == model.U8 {
+		return c.loadBytes(at, n, depth)
+	}
 	l, err := c.Layouts.Build(t)
 	if err != nil {
 		return Value{}, err
@@ -310,6 +327,15 @@ func (c *Codec) validate(t *model.Type, v Value, depth uint32) error {
 	case model.String:
 		return c.Transfer.validateString(v.Text)
 	case model.List, model.FixedList:
+		if byteSequence(t) && v.Elements == nil {
+			if t.Kind == model.FixedList && uint64(len(v.Text)) != uint64(t.Length) {
+				return invalid("host fixed-list length")
+			}
+			return c.byteValues(uint64(len(v.Text)), depth)
+		}
+		if byteSequence(t) && v.Text != "" {
+			return invalid("mixed byte-list representations")
+		}
 		if t.Kind == model.FixedList && uint64(len(v.Elements)) != uint64(t.Length) {
 			return invalid("host fixed-list length")
 		}
@@ -413,6 +439,13 @@ func (c *Codec) store(t *model.Type, at uint64, v Value, depth uint32) error {
 			}
 		}
 	case model.List, model.Map:
+		if t.Kind == model.List && byteSequence(t) && v.Elements == nil {
+			ptr, err := c.lowerBytes(v.Text)
+			if err != nil {
+				return err
+			}
+			return c.storePair(at, ptr, uint64(len(v.Text)))
+		}
 		element := t.Element
 		if t.Kind == model.Map {
 			element = l.Entry
@@ -423,6 +456,9 @@ func (c *Codec) store(t *model.Type, at uint64, v Value, depth uint32) error {
 		}
 		return c.storePair(at, ptr, uint64(len(v.Elements)))
 	case model.FixedList:
+		if byteSequence(t) && v.Elements == nil {
+			return c.storeBytes(at, v.Text)
+		}
 		child, err := c.Layouts.Build(t.Element)
 		if err != nil {
 			return err
