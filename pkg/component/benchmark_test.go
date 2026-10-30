@@ -155,3 +155,71 @@ func BenchmarkResourceInstructions(b *testing.B) {
 		})
 	}
 }
+
+// Each lifetime crosses the public boundary four times: make/get/pass/consume.
+// Startup, export lookup and the first lifetime are outside the timed region.
+func BenchmarkOwnedResourceLifetime(b *testing.B) {
+	input, err := os.ReadFile("testdata/ownership.wasm")
+	if err != nil {
+		b.Fatal(err)
+	}
+	for _, backend := range []string{"interpreter", "native"} {
+		if backend == "native" && !native.Available {
+			continue
+		}
+		b.Run(backend, func(b *testing.B) {
+			config := DefaultConfig()
+			config.Core.Backend = backend
+			e, err := NewEngine(config)
+			if err != nil {
+				b.Fatal(err)
+			}
+			defer e.Close()
+			m, err := e.Compile(nil, input)
+			if err != nil {
+				b.Fatal(err)
+			}
+			defer m.Close()
+			in, err := m.Instantiate(nil, Imports{}, CallOptions{})
+			if err != nil {
+				b.Fatal(err)
+			}
+			defer in.Close()
+			makeResource, _ := in.Function("make")
+			get, _ := in.Function("get")
+			pass, _ := in.Function("pass")
+			consume, _ := in.Function("consume")
+			total, _ := in.Function("total")
+			n := []Value{{Bits: 1}}
+			lifetime := func() {
+				v, err := makeResource.Call(nil, n, CallOptions{})
+				if err != nil {
+					b.Fatal(err)
+				}
+				value, err := get.Call(nil, []Value{*v.Value}, CallOptions{})
+				if err != nil || value.Value.Bits != 1 {
+					b.Fatal(value, err)
+				}
+				moved, err := pass.Call(nil, []Value{*v.Value}, CallOptions{})
+				if err != nil {
+					b.Fatal(err)
+				}
+				value, err = consume.Call(nil, []Value{*moved.Value}, CallOptions{})
+				if err != nil || value.Value.Bits != 1 {
+					b.Fatal(value, err)
+				}
+			}
+			lifetime()
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				lifetime()
+			}
+			b.StopTimer()
+			value, err := total.Call(nil, nil, CallOptions{})
+			if err != nil || value.Value.Bits != uint64(uint32(b.N+1)) {
+				b.Fatal(value, err)
+			}
+		})
+	}
+}

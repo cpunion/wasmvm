@@ -15,6 +15,7 @@ type Function struct {
 	instance *Instance
 	typ      *validate.Type
 	host     HostFunction
+	scope    *namespace
 	lift     func(*vm.Caller, []Value) (*Value, error)
 }
 
@@ -28,11 +29,28 @@ func (f *Function) Call(ctx context.Context, args []Value, options vm.CallOption
 		return CallResult{}, vm.ErrReference
 	}
 	var result CallResult
-	fuel, err := f.instance.store.WithCaller(ctx, options, func(c *vm.Caller) error {
+	run := func(c *vm.Caller) error {
 		var err error
 		result.Value, err = f.call(c, args)
 		return err
-	})
+	}
+	var fuel uint64
+	var err error
+	if !f.typ.ContainsResource() {
+		fuel, err = f.instance.store.WithCaller(ctx, options, run)
+	} else {
+		fuel, err = f.instance.store.WithCallerCleanup(ctx, options, run, func(c *vm.Caller) error {
+			var failed error
+			if result.Value != nil {
+				canonical.VisitReferences(f.typ.Result, result.Value, func(ref *Resource) {
+					if err := f.instance.cleanupResource(c, ref); failed == nil {
+						failed = err
+					}
+				})
+			}
+			return failed
+		})
+	}
 	if err != nil {
 		return CallResult{}, err
 	}
@@ -42,26 +60,45 @@ func (f *Function) Call(ctx context.Context, args []Value, options vm.CallOption
 
 // Caller expires at host callback return. Reentry uses the suspended Core
 // session's cancellation, fuel and stack quotas.
-type Caller struct {
-	mu     sync.Mutex
-	active bool
-	core   *vm.Caller
+type Caller struct{ *callerState }
+
+type callerState struct {
+	mu       sync.Mutex
+	active   bool
+	core     *vm.Caller
+	instance *Instance
+	created  []*Resource
 }
 
 func (c *Caller) Context() context.Context { return c.core.Context() }
 
-func (c *Caller) Call(f *Function, args []Value) (*Value, error) {
+func (c *Caller) enter() error {
+	if c == nil || c.callerState == nil {
+		return wasm.ErrClosed
+	}
 	if !c.mu.TryLock() {
-		return nil, vm.ErrBusy
+		return vm.ErrBusy
+	}
+	if !c.active {
+		c.mu.Unlock()
+		return wasm.ErrClosed
+	}
+	if err := c.Context().Err(); err != nil {
+		c.mu.Unlock()
+		return err
+	}
+	return nil
+}
+
+func (c *Caller) Call(f *Function, args []Value) (*Value, error) {
+	if err := c.enter(); err != nil {
+		return nil, err
 	}
 	defer c.mu.Unlock()
-	if !c.active {
-		return nil, wasm.ErrClosed
-	}
 	return f.call(c.core, args)
 }
 
-func (f *Function) call(core *vm.Caller, args []Value) (*Value, error) {
+func (f *Function) call(core *vm.Caller, args []Value) (result *Value, err error) {
 	if f == nil || f.instance == nil {
 		return nil, vm.ErrReference
 	}
@@ -82,7 +119,12 @@ func (f *Function) call(core *vm.Caller, args []Value) (*Value, error) {
 	if f.lift != nil {
 		return f.lift(core, args)
 	}
-	codec := f.instance.codec(core, nil, nil)
+	if f.scope != nil && (f.scope.failed || f.scope.blocked) {
+		return nil, wasm.ErrTrap
+	}
+	codec := f.instance.codec(core, f.scope, nil)
+	complete := false
+	defer func() { err = finishResources(codec, complete, err) }()
 	owned := make([]Value, len(args))
 	for i, p := range f.typ.Parameters {
 		v, err := codec.Clone(p.Type, args[i])
@@ -91,9 +133,24 @@ func (f *Function) call(core *vm.Caller, args []Value) (*Value, error) {
 		}
 		owned[i] = v
 	}
-	caller := &Caller{core: core, active: true}
-	defer func() { caller.mu.Lock(); caller.active = false; caller.mu.Unlock() }()
-	result, err := f.host(caller, owned)
+	if codec.Resources != nil {
+		if err := codec.AcceptParameters(f.typ.Parameters, owned); err != nil {
+			return nil, err
+		}
+	}
+	caller := &Caller{callerState: &callerState{core: core, instance: f.instance, active: true}}
+	defer func() {
+		caller.mu.Lock()
+		caller.active = false
+		caller.mu.Unlock()
+		if !complete {
+			for _, ref := range caller.created {
+				f.instance.cleanupResource(core, ref)
+			}
+		}
+		caller.created = nil
+	}()
+	result, err = f.host(caller, owned)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +163,13 @@ func (f *Function) call(core *vm.Caller, args []Value) (*Value, error) {
 			return nil, err
 		}
 		result = &v
+		if codec.Resources != nil {
+			if err := codec.AcceptResult(f.typ.Result, result); err != nil {
+				return nil, err
+			}
+		}
 	}
+	complete = true
 	return result, nil
 }
 
@@ -151,7 +214,11 @@ func (in *Instance) codec(caller *vm.Caller, n *namespace, plan *validate.Canoni
 	if transfer.Memory64 {
 		index = 1
 	}
-	return &canonical.Codec{Transfer: transfer, Layouts: in.layouts[index], MaxValues: in.config.MaxValues}
+	codec := &canonical.Codec{Transfer: transfer, Layouts: in.layouts[index], MaxValues: in.config.MaxValues}
+	if n != nil && len(n.resources) != 0 {
+		codec.Resources = &resourceCodec{in: in, n: n, core: caller}
+	}
+	return codec
 }
 
 func vmValues(slots []canonical.Slot) []vm.Value {
@@ -184,6 +251,9 @@ func flatValues(values []vm.Value) ([]canonical.Slot, error) {
 }
 
 func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
+	if len(n.resources) != 0 {
+		in.resourceTable(n)
+	}
 	if plan.Definition.Op >= 2 && plan.Definition.Op <= 4 {
 		return in.resourceBuiltin(caller, n, plan)
 	}
@@ -191,7 +261,7 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 		fn := n.items[model.CoreFunctionSort][plan.Definition.Index].core
 		f := &Function{instance: in, typ: plan.Type}
 		f.lift = func(caller *vm.Caller, args []Value) (result *Value, err error) {
-			if n.failed || n.blocked {
+			if n.failed || n.blocked || n.entered {
 				return nil, wasm.ErrTrap
 			}
 			codec := in.codec(caller, n, plan)
@@ -200,12 +270,23 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 					return nil, err
 				}
 			}
+			if codec.Resources != nil {
+				if err := codec.PrepareParameters(plan.Type.Parameters, args); err != nil {
+					return nil, err
+				}
+			}
 			complete := false
 			defer func() {
-				if !complete {
+				if !complete || err != nil {
+					n.failed = true
+				}
+				err = finishResources(codec, complete, err)
+				if err != nil {
 					n.failed = true
 				}
 			}()
+			n.entered = true
+			defer func() { n.entered = false }()
 			var slots []canonical.Slot
 			if typ := plan.ABI.ParameterMemory; typ != nil {
 				layout, err := codec.Layouts.Build(typ)
@@ -269,13 +350,17 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 		if n.failed || n.blocked {
 			return nil, wasm.ErrTrap
 		}
+		codec := in.codec(caller, n, plan)
 		complete := false
 		defer func() {
-			if !complete {
+			if !complete || err != nil {
+				n.failed = true
+			}
+			err = finishResources(codec, complete, err)
+			if err != nil {
 				n.failed = true
 			}
 		}()
-		codec := in.codec(caller, n, plan)
 		var args []Value
 		if plan.ABI.ParameterMemory != nil {
 			ptr, _, _ := flat[0].Bits()

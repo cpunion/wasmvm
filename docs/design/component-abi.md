@@ -55,12 +55,12 @@ concurrent independent scopes are covered by race tests.
 
 The synchronous runtime now executes resource.new/rep/drop using these tables
 and the active Core Caller, including nominal bindings across child instances.
-These resource primitives are not yet wired into own/borrow value conversion.
-The codec returns unsupported for those conversions until the runtime supplies
-an ownership-transfer transaction and scope lifetime. Call reentry guards,
-post-return obligations, failed lift/lower cleanup and instance teardown belong
-to that runtime integration; raw resource representation integers must not
-become public forgeable ownership capabilities.
+The runtime now wires own/borrow call conversions through the same flat/memory
+codec. Opaque host capabilities, prevalidated moves, borrowed scopes, nominal
+host bindings and failure cleanup supply that ownership contract. Resource
+representation integers never become forgeable public ownership capabilities.
+Standalone resource values/starts and local cm64 borrow conversion remain
+unsupported; the pinned Python reference covers the MVP resource representation.
 
 ## Evidence and remaining integration
 

@@ -2686,3 +2686,75 @@ phase summary and toolchain pins are in `artifacts/components/resources-*`.
 Own/borrow codec transactions, opaque host capabilities, host resource/module/
 component bindings, component async and WASI 0.2/0.3 worlds remain required. This
 instruction increment does not complete M5/M6 or meet the performance target.
+
+
+## Opaque ownership calls and host resource bindings
+
+Resource instructions merged in [PR #47](https://github.com/cpunion/wasmvm/pull/47)
+at `bedd83b` after [all four semantic jobs passed](https://github.com/cpunion/wasmvm/actions/runs/40988542787).
+All 180 downloaded Core/proposal/P1/thread reports were verified at that head.
+
+Own/borrow call values now execute through the existing flat/memory codec on
+both own backends. Opaque capabilities share move state across Go aliases;
+borrowed callbacks expire, guest borrow escape traps, nominal host bindings
+respect equality and Store authority, and aggregate/spilled transfers retain
+those contracts. Host failure, panic, cancellation and unpublished input/result
+cleanup attempt host destruction and release quota. Guest destruction runs only
+while the defining component can safely be entered. Code close and reference
+collection retain a live resource's destructor. Same-component synchronous
+reentry is rejected; cross-component forwarding/local destructors remain valid,
+and pure host recursion has a shared depth limit. Copied callback capabilities
+share expiry/serialization state too.
+
+Full local Go, LLGo release component/Core API tests, race and vet checks pass.
+Coverage is canonical **93.04%**, component runtime **90.26%**, component validator
+**92.46%**, Core embedding API **93.78%**; all package gates pass. Bounded execution
+fuzzing completes **948,816** cases in ten seconds without a panic. The original
+1,024 independent layout oracle cases and 56 collection-memory cases remain
+present; the new opaque-reference tests use a separate filename.
+
+wasm-tools 1.258.0 independently validates the new fixtures. The pinned Wasmtime
+48.0.1 C API probe executes make/get/pass/consume, checks a guest destructor and
+explicit drop, then rejects a moved capability. Its negative case runs last:
+that canonical trap locks down the reference instance, while wasmvm rejects bad
+host capabilities before guest effects and preserves usability. An initial
+reference harness placed that rejection earlier and then failed with `cannot
+enter component instance`; this was harness ordering, not a successful timing
+sample. Local cm64 borrow conversion is rejected before instantiation; cm64 own
+representation preservation passes both own backends. Standalone resource
+values/starts remain unsupported.
+
+Three sequential 200 ms samples per own compiler/backend use Go 1.27.3 and
+LLGo `8e45ed5 -O3 -lto=full` on Apple M4 Max arm64. The source base is exact
+`bedd83b`, extracted with git archive and only the unchanged benchmark/fixture
+added. Both compilers reject its own/borrow feature, retained as a failed
+capability row. The successful existing resource-instruction baseline measures
+128 guest lifetimes per public call; the new ownership probe measures four
+public calls per lifetime (make/get/pass/consume). These are distinct scopes.
+
+| Probe (ns/lifetime, medians) | Go interpreter | Go native | LLGo interpreter | LLGo native | Wasmtime C API |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Guest new/rep/drop: source base -> head | 566.1 -> 572.9 | 1,363 -> 1,397 | 1,435 -> 1,434 | 3,501 -> 3,473 | 26.68 |
+| Four public ownership calls | 2,923 | 5,297 | 8,656 | 14,453 | 1,201.63 |
+
+Startup, compile, lookup and first lifetime stay outside the warm timers; every
+batch/result and final destructor checksum are checked. Fuel is disabled, own
+cancellation/logical quotas remain enabled, and the reference uses default Store
+policy. Samples are descriptive and uncalibrated; LLGo allocation counters remain
+unavailable. LLGo ownership calls remain about **7.2x/12.0x** slower than the
+reference, with no performance acceptance claim. The guest-loop/helper gap also
+remains open. Raw source-base outcomes, final phase logs, reference outputs and
+summaries are under `artifacts/components/ownership-*`.
+
+The performance investigation uses Wasmtime v48.0.1's primary
+[component trampoline implementation](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/cranelift/src/compiler/component.rs):
+new/rep use register arguments to libcalls, and drop calls compiled destructors
+from the generated trampoline. wasmvm currently uses generic host callbacks and
+numeric value marshalling. A separate Go allocation profile attributes about
+4% of allocations to resource entries, with execution frames and marshalling
+dominating. This supports optimizing the shared call boundary; it is not a
+quantitative LLGo cost breakdown and does not justify workload-specific paths.
+
+Remaining M5/M6 work includes standalone resource values/starts, local cm64
+borrow ABI, host component/Core-module binding, component async and the declared
+WASI 0.2.12/0.3.2 worlds. Passing these call fixtures does not complete them.

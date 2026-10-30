@@ -462,3 +462,6 @@ func label(name string, seen map[string]bool) error {
 	seen[key] = true
 	return nil
 }
+
+// ContainsResource reports nominal resource occurrences in this checked type.
+func (t *Type) ContainsResource() bool { return t.resource }

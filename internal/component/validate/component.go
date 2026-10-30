@@ -13,19 +13,23 @@ import (
 // definitions fail the whole check; no start function or guest allocator runs
 // during validation. The owned definition must remain immutable on success.
 type Component struct {
-	definition    *model.Binary
-	scope         *TypeScope
-	CoreModules   []*CoreModule
-	CoreInstances []*CoreInstance
-	Children      []*Component
-	Canonical     []*CanonicalFunction
-	Type          *Type
-	Instances     []*ComponentInstance
-	Values        []*ValueDefinition
-	Starts        []*Start
+	definition      *model.Binary
+	scope           *TypeScope
+	representations map[uint64]wasm.ValueType
+	CoreModules     []*CoreModule
+	CoreInstances   []*CoreInstance
+	Children        []*Component
+	Canonical       []*CanonicalFunction
+	Type            *Type
+	Instances       []*ComponentInstance
+	Values          []*ValueDefinition
+	Starts          []*Start
 }
 
 func (c *Component) Definition() *model.Binary { return c.definition }
+
+// ResourceRepresentation is nonzero only for a representation owned here.
+func (c *Component) ResourceRepresentation(id uint64) wasm.ValueType { return c.representations[id] }
 
 // TypeAt returns an immutable checked type from this component's index space.
 // Runtime composition uses it to bind static resource IDs to instance identities.
@@ -75,6 +79,7 @@ func checkComponent(definition *model.Binary, pool *TypePool, parent *componentC
 		return nil, err
 	}
 	c := &componentContext{result: &Component{definition: definition, scope: scope}, parent: parent, core: map[model.Sort][]CoreExtern{}, pointers: map[*model.Type]bool{}, localResources: map[uint64]bool{}, exportedResources: map[uint64]bool{}, representations: map[uint64]wasm.ValueType{}}
+	c.result.representations = c.representations
 	if err := pool.charge(uint64(len(definition.Definitions))); err != nil {
 		return nil, err
 	}

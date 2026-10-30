@@ -51,7 +51,7 @@ func TestCompileAndInstantiationFailureBoundaries(t *testing.T) {
 	if _, err := e.Compile(nil, fixture(t, "invalid-index")); !errors.Is(err, wasm.ErrInvalid) {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"resource-import", "module-import", "component-import"} {
+	for _, name := range []string{"module-import", "component-import"} {
 		if _, err := e.Compile(nil, fixture(t, name)); !errors.Is(err, wasm.ErrUnsupported) {
 			t.Fatal(name, err)
 		}
@@ -158,7 +158,7 @@ func TestInstanceExpansionAndHostReentryAreBounded(t *testing.T) {
 	}
 	defer in.Close()
 	run, _ = in.Function("run")
-	if _, err := run.Call(nil, nil, vm.CallOptions{}); !errors.Is(err, wasm.ErrLimit) {
+	if _, err := run.Call(nil, nil, vm.CallOptions{}); !errors.Is(err, wasm.ErrTrap) {
 		t.Fatal(err)
 	}
 }

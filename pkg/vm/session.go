@@ -2,6 +2,7 @@ package vm
 
 import (
 	"context"
+	"errors"
 
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -13,6 +14,17 @@ import (
 // Store operations that require a separate execution lease return ErrBusy;
 // use the supplied Caller for operations within the session.
 func (s *Store) WithCaller(ctx context.Context, options CallOptions, fn func(*Caller) error) (uint64, error) {
+	return s.withCaller(ctx, options, fn, nil)
+}
+
+// WithCallerCleanup runs cleanup before the Caller expires on failure, panic or
+// cancellation at the final publication check. Cleanup shares the existing
+// lease, fuel and context, and cannot publish a successful result after failure.
+func (s *Store) WithCallerCleanup(ctx context.Context, options CallOptions, fn func(*Caller) error, cleanup func(*Caller) error) (uint64, error) {
+	return s.withCaller(ctx, options, fn, cleanup)
+}
+
+func (s *Store) withCaller(ctx context.Context, options CallOptions, fn func(*Caller) error, cleanup func(*Caller) error) (fuel uint64, err error) {
 	if fn == nil {
 		return 0, ErrType
 	}
@@ -30,10 +42,20 @@ func (s *Store) WithCaller(ctx context.Context, options CallOptions, fn func(*Ca
 			v.Release()
 		}
 	}()
+	complete := false
+	defer func() {
+		if !complete && cleanup != nil {
+			if failed := cleanup(caller); failed != nil {
+				err = errors.Join(err, failed)
+			}
+		}
+		fuel = op.fuel
+	}()
 	err = fn(caller)
 	if err == nil {
 		err = op.ctx.Err()
 	}
+	complete = err == nil
 	return op.fuel, err
 }
 
