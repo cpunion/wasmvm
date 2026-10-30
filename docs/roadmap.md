@@ -416,7 +416,10 @@ standalone component resource mechanisms and async deliverables remain open.
 IO error/streams, stdio and terminal interfaces now supply all declared
 operations through checked resources, cancellable reads/backpressure, bounded
 output and explicit owner cleanup. The shared actual WASIp2 fixture covers all
-operations and error resources. Filesystem/preopens, sockets/HTTP, remaining
+operations and error resources. Filesystem/preopens now supply all 30 operations
+on Linux/Darwin, with capability-relative roots, independent stream leases,
+structured IO error downcasts, bounded snapshots and cancellable cleanup.
+The same guest executes on the actual Wasmtime WASIp2 provider. Sockets/HTTP, remaining
 component mechanisms, guest-toolchain/world conformance and performance
 acceptance remain required.
 

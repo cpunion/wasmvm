@@ -3302,3 +3302,74 @@ source-base failures, reference probes, fixture hashes and coverage are under
 `artifacts/components/io-*`. Filesystem/preopens, sockets/HTTP, complete worlds,
 remaining component mechanisms and native async/WASI 0.3 remain required;
 M5/M6 and general performance acceptance stay open.
+
+## Complete WASI filesystem interfaces (2026-10-30)
+
+The filesystem/preopens provider implements all 30 pinned WASI 0.2.12 callable
+operations on Linux/Darwin. The authored guest exercises file/stream IO,
+flags/types/stat/timestamps/hashes, links, directory iteration and explicit drops
+on both own backends; Wasmtime 48.0.1's actual WASIp2 provider executes the same
+binary. Eleven components independently reproduce/validate with wasm-tools
+1.258.0: the guest, an exact-domain embedding API view, and nine valid signature
+mutations that must fail provider binding. A host-induced revocation probe checks
+filesystem error provenance through guest stream/error operations.
+
+Go 1.27.3 and LLGo `8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f`
+(`-O3 -lto=full`) pass the affected package tests. Full local Go tests, targeted
+race checks and vet pass. Preview 2 statement coverage is **91.9%**; every
+executable-package coverage gate passes when the current P2 profile is combined
+with PR #56's exact unchanged-source CI coverage for other packages. The final
+four-job CI matrix remains required before merge. Tests include readonly and
+cross-directory grants, absolute/parent/symlink escapes, bounded partial reads
+and writes, u64 overflow, nanosecond times, enumeration quotas/encoding, expired
+and stale resources, failed publication/rollback, independent streams, atomic
+append versus positional IO, pipe readiness/backpressure, error downcasts,
+provider revocation and concurrent shutdown. APFS rejects non-UTF-8 file names
+before enumeration; that observed OS error is recorded, while Linux exercises
+the returned-name encoding rejection. An initial enum/flags result-offset guest
+assertion and initial benchmark wrong-cwd failure are retained as diagnostics.
+
+Local serial descriptive samples on Apple M4 Max (three 200 ms own samples and
+three 1,000-call reference samples) use the same component and local filesystem.
+Each warmed call opens one preopen/file, performs **128 stats**, asserts the
+16-byte size in the guest and drops both handles. The per-stat rate includes
+amortized open/drop. Guest file creation and the reference's semantic exercise
+are outside timed warm calls. Own fuel is off; cancellation, resource and
+transfer bounds remain on. Wasmtime uses SDK default WASIp2 policies/scheduling;
+C scalar-result conversion is amortized across 128 operations.
+
+| Warm scope | Go interpreter | Go native | LLGo interpreter | LLGo native | Actual Wasmtime WASIp2 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Complete stat, ns/operation | 3,896 | 4,607 | 9,658 | 11,834 | 5,583 |
+| Complete call, ns/128 stats | 498,701 | 589,744 | 1,236,235 | 1,514,727 | 714,602 |
+
+LLGo remains about **1.73× / 2.12× slower** on this full workload. Pure host
+fstat is **278 / 368 ns** (Go/LLGo), while stat-value construction is
+**176 / 309 ns**. These independent diagnostics are not additive; the full guest
+boundary/aggregate transfer dominates the observed gap, rather than host fstat
+alone. Go allocates roughly 533/534 KiB and 7,957/7,978 objects per batch across
+interpreter/native; LLGo allocation counters are unavailable. Avoid claiming a
+throughput win from the raw syscall or C embedding comparison.
+
+Separate median preparation costs (ns) are retained in
+`artifacts/components/filesystem-performance-summary.json`:
+
+| Phase | Go interpreter/native | LLGo interpreter/native | Wasmtime |
+| --- | ---: | ---: | ---: |
+| Component compilation | 954,500 / 4,310,791 | 1,675,750 / 5,990,958 | 5,960,000 |
+| Provider/Store setup | 66,666 / 74,292 | 90,917 / 100,875 | 124,000 |
+| Bind/instantiate | 340,084 / 302,292 | 306,375 / 1,500,916 | 124,000 |
+| First call | 483,000 / 647,458 | 1,000,583 / 1,368,000 | 785,000 |
+| Teardown | 12,708 / 20,125 | 103,500 / 85,250 | 200,000 |
+
+Load, engine creation and lookup are also recorded separately. Source base
+`cca230cd8417befc6f3a8e0c31c3b8cf015333be` lacks the FileSystem provider APIs;
+both compiler failures are preserved as API-baseline absence, without claiming
+that its component engine cannot compile the binary. The unchanged wall-clock
+common workload changes Go **835.7 -> 823.4 / 1,276 -> 1,270 ns**, LLGo
+**2,678 -> 2,728 / 4,049 -> 4,132 ns**. These are descriptive, uncalibrated
+samples; revision regression and competitor performance acceptance remain open.
+Aggregate canonical call/transfer allocation and LLGo overhead remain explicit
+optimization work under the current integration policy. Sockets/HTTP, complete
+worlds/toolchain acceptance, remaining component mechanisms and WASI 0.3 remain
+required.
