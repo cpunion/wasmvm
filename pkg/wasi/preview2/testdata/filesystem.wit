@@ -1,0 +1,12 @@
+package wasmvm:filesystem-tests;
+world filesystem {
+ import wasi:io/error@0.2.12;
+ import wasi:io/poll@0.2.12;
+ import wasi:io/streams@0.2.12;
+ import wasi:filesystem/types@0.2.12;
+ import wasi:filesystem/preopens@0.2.12;
+ export exercise: func() -> u32;
+ export stat-batch: func(count: u32) -> u32;
+ export driver: func() -> u32;
+ export error-probe: func() -> u32;
+}

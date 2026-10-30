@@ -301,3 +301,26 @@ the observed reference acceptance of unchecked stdio writes, rejected by own
 WIT permit checks. Initial error-probe result alignment and harness-only negative
 failures are retained separately from the corrected final probes. Local samples
 alone establish no calibrated performance acceptance.
+
+### WASI filesystem
+
+`BenchmarkFileSystemStatBatch` and `c/filesystem.c` execute the same pinned
+`filesystem.wasm`. Each call acquires one preopen, opens the same 16-byte file,
+performs 128 stats with an in-guest size assertion, and drops both descriptors.
+Rates include amortized open/drop costs. Loading, engine creation, compilation,
+provider setup, instantiation, function lookup, first call and teardown are
+reported separately. File creation/semantic fixture mutations are outside warm
+timing. Run on the same local filesystem with warmed metadata caches:
+
+```sh
+go test -run '^$' -bench '^BenchmarkFileSystemStat' -count=3 ./pkg/wasi/preview2
+"$OUTPUT/filesystem-wasmtime" pkg/wasi/preview2/testdata/filesystem.wasm "$SANDBOX" 1000
+```
+
+The C runner uses Wasmtime 48.0.1's actual WASIp2 provider, grants only its explicit
+sandbox, and executes the full shared exercise before timing. C scalar result
+conversion is amortized across the batch. Wasmtime and own provider scheduling
+and safety policies differ. `BenchmarkFileSystemStatStages` measures host fstat
+and stat-value construction independently; these diagnostic scopes are not an
+additive cost decomposition. Source base has no FileSystem API; retain that
+failure and compare the unchanged wall-clock workload on source base/head.

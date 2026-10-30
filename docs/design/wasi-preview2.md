@@ -255,3 +255,58 @@ implementation delegates check-write/write to its concrete stream backend.
 Record this observed policy difference separately from successful common
 operations. Complete worlds, filesystem, sockets/HTTP and native async remain
 required; these interfaces alone close no M5/M6 acceptance gate.
+
+## Filesystem and preopens
+
+`FileSystem` implements all 30 callable operations in
+`wasi:filesystem/{types,preopens}@0.2.12` on Linux and Darwin. It reuses
+`internal/wasi/host` directory capabilities and the same IO owner's nominal
+stream/error resources; no Preview 1 memory layouts or implicit cwd are involved.
+The exact WIT contract is checked before guest effects, including record fields,
+variant/enum/flags labels, borrowed receivers and owned result resources.
+
+Construction opens only explicitly configured preopens. Each preopen has an
+independent immutable guest name and read-only/mutable policy. Derived directory
+handles retain capability-relative roots, symlink confinement and stable object
+checks. Mutating operations and writable derived handles require directory
+mutation authority; file data operations separately enforce read/write flags.
+Absolute readlink targets are rejected; relative symlink targets convey no
+additional authority. Hard links and renames authenticate both descriptors.
+
+Descriptor and directory-entry resources have bounded provider tables and
+never-reused identities. Defaults are 1,024 descriptors, 128 directory streams,
+65,536 entries per snapshot, 4,096 path bytes and 64 KiB per positional read or
+write. Large positional requests may make bounded partial progress. Directory
+snapshots omit `.`/`..`, reject invalid UTF-8 and do not hold a directory handle
+after capture. Unknown host failures map to `io`; configured resource exhaustion
+maps to `insufficient-memory`. Offsets/sizes outside the host signed file domain
+and unrepresentable timestamps return `overflow`, without truncation or wrapping.
+The full unsigned datetime shape is validated before host timestamp conversion.
+Stat timestamps use the shared host layer's unsigned nanosecond representation;
+pre-epoch or larger host dates outside that representation report overflow.
+
+Streams have independent cursors and backing leases: dropping a descriptor does
+not invalidate an already returned stream. Regular files use positional IO;
+other objects use nonblocking IO with coherent readiness notifications and at
+most one cancellable poll waiter per stream. Atomic append temporarily enables
+kernel `O_APPEND` under the shared backing IO lock; positional writes share that
+lock. Failure to restore flags prevents subsequent writes through that backing.
+Flush completes issued writes without forcing durable sync; `sync` and
+`sync-data` explicitly synchronize writable descriptors. Advisory hints may be
+ignored; integrity flags request host `O_SYNC` for both file/data integrity.
+
+Filesystem Close revokes new operations, cancels waiters, waits for active host
+operations, then closes all remaining backing objects exactly once. Concurrent
+stream close joins its waiter/cleanup and releases its lease. The IO owner has a
+separate lifetime: close/wait for both providers, including abandoned resources;
+Store close alone does not close either owner. Filesystem-origin IO errors retain
+structured causes for `filesystem-error-code`; unrelated IO errors return none.
+
+`filesystem.wit` and its checksum manifest pin the source. The authored guest
+checks file/stream IO, flags/types/stat/timestamps/hashes, links, directory
+iteration and drops; the same binary executes with actual Wasmtime WASIp2.
+A second valid component reexports the same nominal imported interfaces for
+embedding/resource tests. Nine independently valid contract mutations must fail
+binding. The revocation probe is host induced and is not a common-provider
+reference workload. Filesystem interface support does not complete a CLI world,
+sockets/HTTP, canonical async or WASI 0.3.

@@ -2,8 +2,10 @@
 
 Status: development implementation, 2026-10-30. `pkg/vm` provides Core execution
 and interpreter/native selection; P1 and legacy threads have public adapters.
-The public component/P2/P3 packages remain placeholders. Planned paths below
-are not support claims.
+The public component package executes synchronous composition and canonical
+calls. Preview 2 supplies the versioned providers listed in its design, including
+filesystem/preopens; Preview 3 remains reserved. Planned paths below are not
+support claims.
 
 ## Directory tree
 
@@ -30,11 +32,11 @@ wasmvm/
 │   ├── README.md                  # Existing: public package overview
 │   ├── wasm/                      # Implemented: value-type identifiers, frontend errors and trap codes; values/features planned
 │   ├── vm/                        # Implemented: Engine/Store/Linker/Instance/Execution
-│   ├── component/                 # Existing doc.go: component compile/link/run API
+│   ├── component/                 # Implemented: synchronous compile/link/canonical call API
 │   └── wasi/
 │       ├── preview1/              # Implemented: P1 Process, typed ABI and capabilities
 │       ├── threads/               # Implemented: legacy spawn, thread groups and lifecycle
-│       ├── preview2/              # Existing doc.go: WASI 0.2 worlds
+│       ├── preview2/              # Implemented: versioned WASI 0.2 providers; complete worlds open
 │       └── preview3/              # Existing doc.go: WASI 0.3 worlds
 ├── internal/
 │   ├── compat/                    # Existing: shared host compiler probes
@@ -67,7 +69,7 @@ wasmvm/
 │   │   ├── model/                 # Implemented: owned binary AST and immutable resolved value graphs
 │   │   ├── decode/                # Implemented: bounded pinned component grammar
 │   │   ├── validate/              # In progress: types/lexical declarations; whole-binary linking remains
-│   │   ├── canonical/             # Implemented: value/layout/string/resource primitives; call integration remains
+│   │   ├── canonical/             # Implemented: value/layout/string/resource/call primitives
 │   │   ├── runtime/               # Planned: composition, call scopes, transfer transactions and post-return
 │   │   └── async/                 # Planned: task/future/stream state machines
 │   ├── wasi/

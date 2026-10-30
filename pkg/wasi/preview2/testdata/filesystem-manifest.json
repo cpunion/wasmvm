@@ -1,0 +1,19 @@
+{
+  "producer": "wasm-tools 1.258.0",
+  "wasiVersion": "0.2.12",
+  "wasiArchiveSha256": "2b0e47bc02953267ad163c6c1188b65baed1292351998cb032f3dcd28d005992",
+  "worldSha256": "6b243d4fc45165aa488a3d6a556d8089fac2f0e7f57c73995cc79b518ec6d644",
+  "binarySha256": {
+    "filesystem.wasm": "e3bac3f99b65927213537abc8cc6673b603fad87a8bbde2faf26d3590ca03c90",
+    "filesystem-api.wasm": "50e9375a00afa43339dcf275de8f49bc6ca194dc64a3170b5f632236a90aa199",
+    "filesystem-contract-read-width.wasm": "7886a250fc1807fe0e1103987786c3e6d514ab7073bd8a6b6ee6ec9db82ae16e",
+    "filesystem-contract-read-result.wasm": "801573183dfa2a5027baa1d84d8b647b9b2c0089095424051ca8c463e723da73",
+    "filesystem-contract-stat-field.wasm": "6c1e7c1fc76bf155a739ca97237c7ae576ade243c52892c43f4c52f34591172c",
+    "filesystem-contract-error-label.wasm": "6d7ade4177373877cf873ff2986800e98e6f5a9d5c19f79dd381ca962fa2bf18",
+    "filesystem-contract-timestamp-label.wasm": "19df1c338145ebe0fc1ed97b26c96164fe0ac1a53837228c5f86e194fe8504a2",
+    "filesystem-contract-advice-label.wasm": "5707ed8e35280eb3bafe040cb7882f63083e09fb073c9466562512e20e4dbdc4",
+    "filesystem-contract-directory-entry.wasm": "e759d2518882a333417773e58fcaf105865d3f04405b3d17617df76af4cf79b1",
+    "filesystem-contract-stream-resource.wasm": "f934f4defd52a72c46df9476f8e37bcd01ad66059d3d8630687b2971f3c75a3f",
+    "filesystem-contract-preopen-order.wasm": "ce08f0cc87c8f517c714861069a5d5cc030a60febf52a074a623e4c07c89e9ee"
+  }
+}

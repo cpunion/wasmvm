@@ -160,3 +160,26 @@ additional source. Provider creation/cleanup is independent of Store close.
 The IO owner also owns its borrowed Poller; use that same Poller when constructing
 a monotonic clock. Terminal presence is explicit, with none as the default.
 See [IO ownership and limits](design/wasi-preview2.md#io-stdio-and-terminals).
+
+## WASI filesystem
+
+Filesystem grants are explicit and share the IO provider's nominal resources:
+
+```go
+process, err := preview2.NewIO(preview2.IOConfig{})
+// Check err.
+filesystem, err := preview2.NewFileSystem(process, preview2.FileSystemConfig{
+    Preopens: []preview2.FileSystemPreopen{{
+        GuestPath: "/data", HostPath: configuredDirectory, ReadOnly: true,
+    }},
+})
+// Check err, then instantiate with filesystem.Imports().
+// Merge a configured WallClock provider if the selected world imports it.
+// On teardown: close/wait for the Instance, close both providers, and call
+// filesystem.WaitClosed(cleanupContext) and process.WaitClosed(cleanupContext).
+```
+
+Preopens are available only on Linux/Darwin. Stream cursors are independent and
+retain the open object after descriptor drop. Filesystem Close revokes streams
+and cancels their readiness waiters; IO Close separately releases stream/error
+resources. See [permissions, limits and lifecycle](design/wasi-preview2.md#filesystem-and-preopens).

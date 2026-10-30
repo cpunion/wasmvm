@@ -60,3 +60,18 @@ bodies: binding must fail. `io-errors` separately checks an embedder error facto
 owned debug snapshots, UTF-8 limits, typed causes and expired/stale capabilities.
 All ten components independently validate. Reproduction does not imply an
 upstream conformance corpus or complete CLI/HTTP world acceptance.
+
+`filesystem.wit` selects the pinned IO/filesystem interfaces. Reproduce with
+`scripts/build_wasi_filesystem_fixtures.py`; the script verifies the original
+archive and producer version, retains authored Core/printed Component WAT and
+hashes, and independently validates every binary. `exercise` executes descriptor
+and directory methods with guest assertions; `stat-batch(128)` checks stat size
+and closes every descriptor. `error-probe` requires host-induced filesystem
+revocation and validates the downcast error resource. The actual Wasmtime
+WASIp2 provider executes the common exercise and stat workload unchanged.
+
+`filesystem-api` reexports the same imported nominal resource domain for direct
+embedding tests. Nine valid WIT mutations test width, tuple/record fields,
+variant/enum labels, stream resource identity and preopen tuple order. These
+reject at binding before unreachable guest code runs. This authored corpus is
+separate from upstream/world/toolchain conformance acceptance.
