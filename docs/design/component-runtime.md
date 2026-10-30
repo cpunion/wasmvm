@@ -151,3 +151,21 @@ The pinned MVP reference specifies u32 resources. Local cm64 borrow conversion
 is rejected before instantiation rather than truncating its representation.
 Standalone resource value imports/exports and resource-bearing component starts
 remain a separate integration task; no support is inferred from call values.
+
+
+## Checked host function imports
+
+`Imports.FunctionChecks` optionally validates provider signatures before any
+Core/component start runs. Raw `Imports.Functions` still use guest-declared
+schemas; a standard interface provider supplies checks for its own contract.
+All imported resource declarations bind before checks run, including nested
+interfaces. A verifier can distinguish own/borrow and compare nominal host
+identities with `ValueType.IsResource`, rather than trusting equal numeric
+representations. Missing imports or failed checks publish no instance.
+
+`FunctionInfo` and `ValueType` are read-only views of the existing checked type
+graph. Parameter/field/case/label access is bounded; no mutable model/registry
+slices are exposed. Retained views keep an immutable nominal binding map after
+initialization, avoiding one expanded type copy per function. Checks consume no
+guest fuel and honor cancellation between verifiers. A host verifier, like a
+host callback, must cooperate if it performs external work.

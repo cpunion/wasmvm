@@ -2758,3 +2758,56 @@ quantitative LLGo cost breakdown and does not justify workload-specific paths.
 Remaining M5/M6 work includes standalone resource values/starts, local cm64
 borrow ABI, host component/Core-module binding, component async and the declared
 WASI 0.2.12/0.3.2 worlds. Passing these call fixtures does not complete them.
+
+
+## Checked WASI environment interface
+
+Opaque own/borrow calls merged in [PR #48](https://github.com/cpunion/wasmvm/pull/48)
+at `7f89e1a` after [all four semantic jobs passed](https://github.com/cpunion/wasmvm/actions/runs/40996755338).
+All 180 downloaded execution reports were verified at that exact head.
+
+The new host contract hook exposes immutable FunctionInfo/ValueType views and
+checks every import after nominal resources bind, before guest initialization.
+A valid component that substitutes own for a provider's borrow parameter is
+rejected. Failure/cancellation before an actual Core start publishes no instance
+and executes no callback. Retained views preserve nominal/aggregate information
+without exposing mutable model graphs or copying each function's type graph.
+Raw callbacks remain available under the original guest-declared schema contract.
+
+`wasi:cli/environment@0.2.12` now implements all three declared operations:
+get-environment, get-arguments and initial-cwd. Explicit UTF-8 configuration is
+copied, limited and never inherited implicitly. Repeated/mutated host results do
+not change it; duplicate environment names, empty arguments/values and Unicode
+survive Canonical ABI memory/list/tuple/option transfers. The pinned WIT/archive
+SHA256 and CLI license are retained in `testdata/wasi-preview2`. Independently
+validated wasm-tools 1.258.0 fixtures run through both own backends.
+
+Full local Go, pinned LLGo release, race and vet checks pass. Every executable
+package coverage gate passes: component runtime **90.70%**, preview2 environment
+**98.65%**, canonical **93.04%** and component validation **92.46%**. The reference
+C API probe uses Wasmtime 48.0.1's actual WASIp2 provider and explicit argv/env,
+checking all three complete return values outside its warm timer. No complete
+upstream WASI suite/world or second guest-language toolchain is claimed.
+
+Three sequential 200 ms own samples use Go 1.27.3 and LLGo `8e45ed5 -O3 -lto=full`
+on Apple M4 Max arm64. The actual environment workload lowers three argument
+strings into guest memory, counts them and resets allocation in post-return.
+Compilation, binding, export lookup and first call are excluded. Wasmtime uses
+the same binary/configuration and 100,000 warm calls per sample. Source base
+`2d195db` has no P2 provider, so it has no successful interface throughput row.
+The existing component public-call probe is a separate base/head regression check.
+
+| Median nanoseconds | Go interpreter | Go native | LLGo interpreter | LLGo native | Wasmtime C API |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Actual P2 argument-count call | 2,394 | 5,284 | 6,816 | 14,709 | 438.8 |
+| Existing public-call base -> head | 450.8 -> 450.3 | 752.0 -> 769.3 | 1,411 -> 1,433 | 2,419 -> 2,288 | — |
+
+Fuel is disabled; own cancellation/logical limits remain enabled while the
+reference uses its default Store policy. These are descriptive local samples,
+not calibrated acceptance. LLGo is about 15.5x/33.5x behind the reference on this
+workload; the target remains open. LLGo allocation counters remain unavailable.
+Raw phase logs and summaries are under `artifacts/components/environment-*`.
+
+Other CLI/HTTP interfaces, complete declared worlds, remaining component
+resource values/starts/host module bindings and async/WASI 0.3 remain required.
+This complete environment interface does not complete M5/M6.

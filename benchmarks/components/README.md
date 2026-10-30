@@ -81,3 +81,23 @@ outside its warm timer. The negative stale-handle case runs last; its canonical
 trap locks down the reference instance. Keep these four-boundary lifetime
 measurements separate from the 128-iteration guest-loop probe and pure-table
 probe. No calibrated performance or identical embedding error policy is implied.
+
+
+`BenchmarkEnvironmentArgumentCount` in `pkg/wasi/preview2` executes an actual
+WASI environment call, copies three argument strings into guest memory and
+returns their count. Compilation, binding, lookup and the first call are outside
+timing; guest post-return resets the fixture allocator on every iteration.
+`c/environment.c` uses `wasmtime_component_linker_add_wasip2` and an explicit
+`wasi_config_t`, rather than a handwritten reference callback. It additionally
+checks full arguments, environment tuples and default current directory outside
+the warm timer. Use the same pinned SDK/compile flags as the other C probes.
+
+```sh
+go test -run '^$' -bench '^BenchmarkEnvironmentArgumentCount$' -benchtime=200ms -count=3 ./pkg/wasi/preview2
+llgo test -O3 -lto=full -run '^$' -bench '^BenchmarkEnvironmentArgumentCount$' -benchtime=200ms -count=3 ./pkg/wasi/preview2
+"$OUTPUT/wasmtime-environment" pkg/wasi/preview2/testdata/environment.wasm 100000
+```
+
+All phases retain the usual unmetered/default-reference policy differences.
+The source base has no P2 provider, so it has no successful interface timing;
+the existing component PublicWarm probe is a separate regression diagnostic.

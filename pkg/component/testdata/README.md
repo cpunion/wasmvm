@@ -36,3 +36,9 @@ all four calls and guest/explicit destructors. Its stale-capability negative
 check runs after successful assertions because the reference locks down that
 instance on this canonical trap. wasmvm validates bad host capabilities before
 guest effects and keeps the instance usable; the embedding error policy differs.
+
+
+`function-check-own` is an independently valid component that declares an own
+parameter where the provider requires borrow. Binding rejects it through the
+host contract before execution, rather than consuming the argument at a later
+call. Contract failure before an actual Core start is tested separately.
