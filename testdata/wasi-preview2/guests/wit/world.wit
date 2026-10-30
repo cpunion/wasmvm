@@ -1,0 +1,15 @@
+package wasmvm:world-tests;
+
+interface arithmetic {
+  increment: func(value: u32) -> u32;
+}
+
+world c-command {
+  include wasi:cli/command@0.2.12;
+  export arithmetic;
+}
+
+world rust-command {
+  include wasi:cli/command@0.2.12;
+  import arithmetic;
+}

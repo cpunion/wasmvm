@@ -61,6 +61,19 @@ type ValueType struct {
 	resources map[uint64]*resourceType
 }
 
+// Info returns the immutable checked signature of an exported function.
+// It does not enter the Store or execute guest code.
+func (f *Function) Info() FunctionInfo {
+	if f == nil {
+		return FunctionInfo{}
+	}
+	var resources map[uint64]*resourceType
+	if f.scope != nil {
+		resources = f.scope.resources
+	}
+	return FunctionInfo{typ: f.typ, resources: resources}
+}
+
 func (f FunctionInfo) ParameterCount() int {
 	if f.typ == nil {
 		return 0

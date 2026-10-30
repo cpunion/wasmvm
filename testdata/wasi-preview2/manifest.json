@@ -251,6 +251,13 @@
   "implementedGuestExports": {
     "wasi:http/incoming-handler@0.2.12": [
       "handle"
+    ],
+    "wasi:cli/run@0.2.12": [
+      "run"
     ]
-  }
+  },
+  "assembledWorlds": [
+    "wasi:cli/command@0.2.12",
+    "wasi:http/proxy@0.2.12"
+  ]
 }

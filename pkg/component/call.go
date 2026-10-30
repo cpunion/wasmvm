@@ -259,7 +259,7 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 	}
 	if plan.Definition.Op == 0 {
 		fn := n.items[model.CoreFunctionSort][plan.Definition.Index].core
-		f := &Function{instance: in, typ: plan.Type}
+		f := &Function{instance: in, typ: plan.Type, scope: n}
 		f.lift = func(caller *vm.Caller, args []Value) (result *Value, err error) {
 			if n.failed || n.blocked || n.entered {
 				return nil, wasm.ErrTrap

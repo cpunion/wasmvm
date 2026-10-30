@@ -3740,3 +3740,111 @@ response only 100 times before the pinned netpoll fallback tick. The typed IO
 assertion now uses blocking-read with a three-second call deadline, preserving
 both the stream failure and its HTTP error-code downcast. The original failed
 job is retained in pr61-ci-failed.log; no production or benchmark code changed.
+
+
+## Stable world assembly and independent CLI guests (2026-10-31)
+
+`NewWorld` now composes all stable 0.2.12 CLI/HTTP host providers with shared
+nominal IO, error, pollable and network domains. Configuration supplies explicit
+args, stdio, preopens and grants. Constructor rollback joins both primary and
+cleanup failures; repeated/concurrent close joins every resource owner.
+`RunCommand` validates its standard unit-result entry before invoking it and
+preserves success/failure/exit codes, traps and cancellation. `Function.Info`
+exposes immutable export signatures and nominal resources. Incoming HTTP uses
+that view to reject wrong signatures before resource publication or effects.
+
+Pinned Clang 22.1.8 / wasi-libc 33 and Rust 1.98.0 independently compile the C
+and Rust guests with wit-bindgen 0.54.0 and WASI 0.2.12 WIT. Rust calls the C
+arithmetic component after wasm-tools 1.258.0 composition; the commands exercise
+arguments, randomness, polling, preopened directory stat and verified stdout.
+Both guests execute on both own backends and Go/LLGo release, and on actual
+Wasmtime 48.0.1 WASIp2. The full stable CLI import fixture separately checks
+binding after language DCE narrows unused imports. Seven valid CLI controls and
+one incoming-handler result mutation exercise failure/exit/entry-signature
+behavior and rejection before their callback effect. Unified HTTP client and
+incoming calls also execute on both backends.
+
+The source/dependency lock, WIT, source/binary checksums and runtime notices are
+retained under testdata/wasi-preview2/guests and the fixture manifest. Producer
+reproduction validates every binary; Go also checks manifest input/output hashes.
+Local package tests, race/vet and no-cgo build pass. Component statement coverage
+is **91.09% (982/1078)**; Preview 2 is **90.53% (4904/5417)**. Final-head four-job
+CI, execution reports and coverage are required before merge. These results do
+not close complete upstream world conformance, synchronous resource value/start
+and local cm64-borrow gaps, M5 performance gates, or WASI 0.3/native async.
+
+Three serial 1000-call samples after ten warmups use one read-only preopen,
+identical args and bounded captured output. Every run verifies the exact output
+bytes. Fuel is off; quota/cancellation checks remain. Table entries are warm
+ns/command and include the command's real WASI, canonical and resource costs:
+
+| Command | Go interpreter | Go native | LLGo interpreter | LLGo native | Actual Wasmtime WASIp2 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| C | 31,069 | 40,293 | 75,338 | 129,046 | 7,530 |
+| Rust -> C composition | 40,280 | 50,784 | 90,160 | 151,488 | 7,171 |
+
+LLGo is **9.81×/17.13× slower** for C and **12.57×/21.12×** for the composed
+command. Performance remains below target. Go's native composed command
+allocates 445 objects/call; LLGo's zero allocation count is unavailable data,
+not zero allocation. Native bridging is slower than interpreter execution for
+these host-call-heavy guests. Shared transfer/dispatch and allocation costs
+remain explicit optimization work. Random algorithms and default provider
+resource/scheduling policies differ; these local samples establish no controlled
+regression guarantee. No pure arithmetic or equal random-provider claim is made.
+
+Separate phases for the composed command, in ns:
+
+| Phase | Go interpreter/native | LLGo interpreter/native | Wasmtime |
+| --- | ---: | ---: | ---: |
+| Load | 47,083 / 47,083 | 56,834 / 56,834 | 30,750 |
+| Engine | 791 / 750 | 1,459 / 1,958 | 76,250 |
+| Compile | 6,607,083 / 36,163,875 | 14,784,083 / 69,123,084 | 19,269,917 |
+| Provider/Store setup | 76,000 / 82,083 | 80,417 / 101,750 | 127,375 |
+| Bind/instantiate | 248,708 / 262,833 | 333,458 / 368,959 | 84,041 |
+| Lookup | 291 / 333 | 333 / 292 | 1,083 |
+| First call | 313,208 / 172,292 | 219,792 / 312,166 | 272,709 |
+| Owner teardown | 26,625 / 29,792 | 140,666 / 142,459 | 107,500 |
+
+Source base `b1f249e` lacks NewWorld under both compilers. Unchanged wall-clock
+base/head medians are Go 824.8 -> 830.7 / 1256 -> 1275 ns and LLGo 2642 -> 2771 /
+3946 -> 4209 ns. Raw logs, all phases, binary/source/compiler identities and
+producer failures remain in artifacts/components/world-*.
+
+The actual reference links/runs both language guests. Its complete CLI import
+consumer instead fails with no matching wasi:sockets/network@0.2.12 linker
+implementation; that diagnostic is retained without substituting a provider.
+An initial harness build used obsolete DirPerms/FilePerms names; it now uses
+48.0.1's actual FsPerms API. Initial Clang lacked a default Wasm compiler-rt
+archive; the fixed producer explicitly links its required libc without default
+runtime libraries, and component validation confirms resolved imports. Rust's
+explicit generate_all enables the pinned external WIT package bindings. These
+producer/harness failures remain distinct from own runtime execution results.
+
+
+Final cleanup review reproduced a valid io.ReadCloser receiving two Close calls
+on body timeout: the timer and pump/shutdown paths raced, and the second close
+became a spurious provider cleanup error. A shared once-guarded reader now owns
+that input across all three paths. The regression fails before the fix and
+passes on timeout and explicit shutdown with Go/LLGo and race checks. Source
+cooperation for interruptible Read/Close remains the HTTP embedding contract.
+The earlier preflight at 4e457ca was canceled; the corrected final head requires
+its own complete four-job matrix. Final command samples above were rerun.
+
+The affected full HTTP workload was also rerun serially: three 20-batch samples
+of 128 checked requests, 4096 bytes per direction and trailers on a shared
+external server. Table entries are ns/request, source base 4e457ca versus the
+reader-ownership fix; default connection-policy differences remain unchanged.
+
+| Compiler/backend | Before | After | Actual Wasmtime HTTPp2 |
+| --- | ---: | ---: | ---: |
+| go/interpreter | 136,594 | 136,967 | 120,550 |
+| go/native | 176,194 | 176,650 | 120,550 |
+| llgo/interpreter | 343,274 | 346,142 | 120,550 |
+| llgo/native | 445,260 | 428,861 | 120,550 |
+
+All common-server message/trailer checks pass; counters remain in
+world-http-performance-summary.json. Own connections are pooled, while the
+reference opens a connection per request. This is complete-request policy cost,
+not pure VM throughput. Local variance and the additional ownership guard do not
+establish performance parity or a controlled regression guarantee. Earlier raw
+command results are preserved with the before-reader suffix.
