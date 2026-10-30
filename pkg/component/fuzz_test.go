@@ -11,7 +11,7 @@ import (
 )
 
 func FuzzComponentExecution(f *testing.F) {
-	for _, path := range []string{"../../internal/component/decode/testdata/composition.wasm", "testdata/strings.wasm"} {
+	for _, path := range []string{"../../internal/component/decode/testdata/composition.wasm", "testdata/strings.wasm", "testdata/resources.wasm", "testdata/resources64.wasm", "testdata/resource-generative.wasm", "testdata/resource-post-return.wasm"} {
 		bytes, err := os.ReadFile(path)
 		if err != nil {
 			f.Fatal(err)
@@ -28,6 +28,7 @@ func FuzzComponentExecution(f *testing.F) {
 		config.Store.Limits.MaxTableElements = 4096
 		config.Store.Execution.MaxFrames, config.Store.Execution.MaxSlots = 32, 4096
 		config.MaxValues, config.MaxBytes, config.MaxNesting = 1024, 1<<16, 16
+		config.MaxResources = 32
 		e, err := NewEngine(config)
 		if err != nil {
 			t.Fatal(err)

@@ -17,8 +17,9 @@ compilation or host binding, before instantiation invokes guest code.
 Canonical lift/lower shares `internal/component/canonical` for scalars,
 strings, lists/fixed lists, maps, records/tuples, variants, flags/enums and option/results.
 Memory32/64, all three string encodings, direct/spilled arguments/results,
-realloc and post-return use checked memory capabilities. Own/borrow/resource
-conversion and async execution remain required;
+realloc and post-return use checked memory capabilities. Resource new/rep/drop
+executes through the same Core session. Own/borrow value conversion and async
+execution remain required;
 literal or layout support does not establish those runtime capabilities.
 
 ## Calls and lifetime
@@ -81,3 +82,31 @@ list-of-tuples representation and preserve input order and duplicate keys.
 A map layout caches one synthetic entry tuple, preventing metadata growth on
 repeated transfers. Existing list bounds, allocator/memory capabilities and
 value/byte budgets apply to map entries; no separate execution path is added.
+
+
+## Runtime resource declarations
+
+Each concrete declaration creates a nominal runtime identity, separate from its
+compile-time resource ID. Type imports, aliases, synthesized interfaces and
+child instance exports bind checked IDs to those identities. Instantiating a
+child twice creates distinct declarations and independent handle domains;
+importing a resource and exporting it again retains its identity and authority.
+Only the defining component may create or inspect its representation, as
+already enforced by static validation. Representations preserve i32/i64 width;
+handles remain i32 indexes in the pinned 28-bit domain and are never reused.
+
+`canon resource.new`, `resource.rep` and `resource.drop` execute on those
+instance tables. Drop consumes the handle before invoking the defining Core
+destructor with the active Caller, preserving the same fuel/context/reentry
+limits. Destructor failure cannot restore ownership and locks down the affected
+component. New/drop respect canonical leave guards; rep remains available
+during post-return. `Config.MaxResources` bounds live handles across every
+component domain in the Store, rather than multiplying the quota per child.
+
+Failure (including host panic during initialization) and instance close seal
+the tables and release their quota. Close is a
+cancellation request and does not execute implicit guest destructors; explicit
+resource.drop runs them before teardown. This instruction support does not yet
+publish host resource capabilities, supply generative host imports, or wire
+own/borrow transfers through flat/memory codecs. Those transactions, borrowed
+call scopes and failure cleanup remain the next integration stage.

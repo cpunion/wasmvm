@@ -27,6 +27,10 @@ type Component struct {
 
 func (c *Component) Definition() *model.Binary { return c.definition }
 
+// TypeAt returns an immutable checked type from this component's index space.
+// Runtime composition uses it to bind static resource IDs to instance identities.
+func (c *Component) TypeAt(index uint32) *Type { return c.scope.types[index] }
+
 type CoreModule struct {
 	Definition *corevalidate.Module
 	Type       *CoreModuleType

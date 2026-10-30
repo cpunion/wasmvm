@@ -184,6 +184,9 @@ func flatValues(values []vm.Value) ([]canonical.Slot, error) {
 }
 
 func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
+	if plan.Definition.Op >= 2 && plan.Definition.Op <= 4 {
+		return in.resourceBuiltin(caller, n, plan)
+	}
 	if plan.Definition.Op == 0 {
 		fn := n.items[model.CoreFunctionSort][plan.Definition.Index].core
 		f := &Function{instance: in, typ: plan.Type}

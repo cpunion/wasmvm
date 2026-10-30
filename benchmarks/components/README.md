@@ -35,3 +35,29 @@ The CLI is used only as a separate semantic cross-check, following the
 [official WAVE invocation syntax](https://docs.wasmtime.dev/cli-options.html#running-custom-component-exports):
 `wasmtime run --invoke 'add(4, 5)' internal/component/decode/testdata/composition.wasm`
 returns `9`. CLI process timing is not a warm-call comparison.
+
+
+`BenchmarkResourceInstructions` calls the resource fixture's `churn(128)` export.
+The timer contains guest looping, resource.new/rep/drop and the Core destructor;
+compile, Store setup, lookup and first call are excluded. `ns/resource` amortizes
+one public component call across 128 complete resource lifetimes. It is not a
+pure handle-table operation measurement. Use the same fixture and batch size
+with the existing C runner's optional fourth argument:
+
+```sh
+go test -run '^$' -bench '^BenchmarkResourceInstructions$' -benchtime=200ms -count=3 ./pkg/component
+llgo test -O3 -lto=full -run '^$' -bench '^BenchmarkResourceInstructions$' -benchtime=200ms -count=3 ./pkg/component
+"$OUTPUT/wasmtime-component" pkg/component/testdata/resources.wasm 5000 128
+```
+
+Divide the reference's `warm_ns_per_call` by 128 to compare the same complete
+resource lifetime. Both probes check every batch result. The source base rejects
+resource canonical instructions and therefore has no successful throughput row.
+The existing policy differences and uncalibrated local-sample limits apply.
+
+
+`BenchmarkResourceTable` in `internal/component/canonical` isolates New + Rep +
+Drop with no guest code or destructor. Run it separately from compiler/test load.
+For a source comparison, extract the exact base and add only this unchanged
+benchmark file. Keep these pure-table results separate from complete guest
+resource lifetimes; the reference C API does not expose a comparable primitive.

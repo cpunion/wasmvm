@@ -3,23 +3,49 @@ package canonical
 import (
 	"context"
 	"sync"
+	"sync/atomic"
+
+	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
 // ResourceType is a nominal identity created for one instantiated resource
 // declaration. Two declarations with the same representation remain distinct.
 type ResourceType struct {
-	Drop     func(context.Context, uint32) error
+	Drop     func(context.Context, uint64) error
 	identity byte
 }
 
 type resourceEntry struct {
 	id     uint32
 	typeID *ResourceType
-	rep    uint32
+	rep    uint64
 	owned  bool
 	scope  *BorrowScope
 	lends  uint32
 }
+
+// ResourceBudget bounds live handles across all domains of a Store. Table IDs
+// remain local, while allocation in one component consumes the shared quota.
+type ResourceBudget struct {
+	live    atomic.Uint32
+	maximum uint32
+}
+
+func NewResourceBudget(maximum uint32) *ResourceBudget { return &ResourceBudget{maximum: maximum} }
+
+func (b *ResourceBudget) acquire() error {
+	for {
+		live := b.live.Load()
+		if live >= b.maximum {
+			return exhausted()
+		}
+		if b.live.CompareAndSwap(live, live+1) {
+			return nil
+		}
+	}
+}
+
+func (b *ResourceBudget) release(count uint32) { b.live.Add(0 - count) }
 
 // Resources is an instance's handle domain. IDs are never reused, so stale
 // handles cannot gain authority over a later resource. It is bounded by both
@@ -28,16 +54,28 @@ type Resources struct {
 	mu      sync.Mutex
 	entries map[uint32]*resourceEntry
 	next    uint32
-	maximum uint32
+	budget  *ResourceBudget
+	closed  bool
 }
 
 func NewResources(maximum uint32) *Resources {
-	return &Resources{entries: map[uint32]*resourceEntry{}, next: 1, maximum: maximum}
+	return NewResourceTable(NewResourceBudget(maximum))
+}
+
+// NewResourceTable creates an independent handle domain with a shared quota.
+func NewResourceTable(budget *ResourceBudget) *Resources {
+	return &Resources{entries: map[uint32]*resourceEntry{}, next: 1, budget: budget}
 }
 
 func (r *Resources) addLocked(e *resourceEntry) (uint32, error) {
-	if uint64(len(r.entries)) >= uint64(r.maximum) || r.next >= (1<<28) {
+	if r.closed {
+		return 0, wasm.ErrClosed
+	}
+	if r.next >= (1 << 28) {
 		return 0, exhausted()
+	}
+	if err := r.budget.acquire(); err != nil {
+		return 0, err
 	}
 	i := r.next
 	r.next++
@@ -46,7 +84,7 @@ func (r *Resources) addLocked(e *resourceEntry) (uint32, error) {
 	return i, nil
 }
 
-func (r *Resources) New(t *ResourceType, rep uint32) (uint32, error) {
+func (r *Resources) New(t *ResourceType, rep uint64) (uint32, error) {
 	if t == nil {
 		return 0, invalid("missing resource type")
 	}
@@ -56,6 +94,9 @@ func (r *Resources) New(t *ResourceType, rep uint32) (uint32, error) {
 }
 
 func (r *Resources) getLocked(t *ResourceType, id uint32) (*resourceEntry, error) {
+	if r.closed {
+		return nil, wasm.ErrClosed
+	}
 	e := r.entries[id]
 	if e == nil || t == nil || e.typeID != t {
 		return nil, scalarTrap("invalid resource handle or type")
@@ -63,7 +104,7 @@ func (r *Resources) getLocked(t *ResourceType, id uint32) (*resourceEntry, error
 	return e, nil
 }
 
-func (r *Resources) Rep(t *ResourceType, id uint32) (uint32, error) {
+func (r *Resources) Rep(t *ResourceType, id uint32) (uint64, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	e, err := r.getLocked(t, id)
@@ -75,7 +116,7 @@ func (r *Resources) Rep(t *ResourceType, id uint32) (uint32, error) {
 
 // Take consumes an own handle without running its destructor. Publication in
 // another instance is performed by the call's ownership-transfer transaction.
-func (r *Resources) Take(t *ResourceType, id uint32) (uint32, error) {
+func (r *Resources) Take(t *ResourceType, id uint32) (uint64, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	e, err := r.getLocked(t, id)
@@ -86,10 +127,21 @@ func (r *Resources) Take(t *ResourceType, id uint32) (uint32, error) {
 		return 0, scalarTrap("resource is borrowed")
 	}
 	delete(r.entries, id)
+	r.budget.release(1)
 	return e.rep, nil
 }
 
 func (r *Resources) Drop(ctx context.Context, t *ResourceType, id uint32) error {
+	var drop func(context.Context, uint64) error
+	if t != nil {
+		drop = t.Drop
+	}
+	return r.DropWith(ctx, t, id, drop)
+}
+
+// DropWith runs a destructor using the caller's existing execution session.
+// Ownership is consumed before the callback; a trap cannot resurrect it.
+func (r *Resources) DropWith(ctx context.Context, t *ResourceType, id uint32, drop func(context.Context, uint64) error) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -106,6 +158,7 @@ func (r *Resources) Drop(ctx context.Context, t *ResourceType, id uint32) error 
 		return err
 	}
 	delete(r.entries, id)
+	r.budget.release(1)
 	r.mu.Unlock()
 	if !e.owned {
 		e.scope.mu.Lock()
@@ -115,8 +168,8 @@ func (r *Resources) Drop(ctx context.Context, t *ResourceType, id uint32) error 
 	}
 	// Remove the handle before invoking user/guest code. Reentry cannot drop it
 	// twice, and destructor failures do not resurrect consumed ownership.
-	if t.Drop != nil {
-		return t.Drop(ctx, e.rep)
+	if drop != nil {
+		return drop(ctx, e.rep)
 	}
 	return nil
 }
@@ -151,7 +204,7 @@ func (s *BorrowScope) chargeLocked() error {
 	return nil
 }
 
-func (s *BorrowScope) Lift(r *Resources, t *ResourceType, id uint32) (uint32, error) {
+func (s *BorrowScope) Lift(r *Resources, t *ResourceType, id uint32) (uint64, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if err := s.chargeLocked(); err != nil {
@@ -174,7 +227,7 @@ func (s *BorrowScope) Lift(r *Resources, t *ResourceType, id uint32) (uint32, er
 // Lower publishes a borrowed representation in a foreign instance's handle
 // table. The defining instance passes its representation directly and bypasses
 // this operation, as required by the canonical ABI.
-func (s *BorrowScope) Lower(r *Resources, t *ResourceType, rep uint32) (uint32, error) {
+func (s *BorrowScope) Lower(r *Resources, t *ResourceType, rep uint64) (uint32, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if err := s.chargeLocked(); err != nil {
@@ -206,6 +259,7 @@ func (s *BorrowScope) End() error {
 		borrow.table.mu.Lock()
 		if borrow.table.entries[e.id] == e {
 			delete(borrow.table.entries, e.id)
+			borrow.table.budget.release(1)
 			escaped = true
 		}
 		borrow.table.mu.Unlock()
@@ -235,6 +289,7 @@ func (r *Resources) Drain(ctx context.Context) error {
 		}
 	}
 	entries := r.entries
+	r.budget.release(uint32(len(entries)))
 	r.entries = map[uint32]*resourceEntry{}
 	r.mu.Unlock()
 	if ctx == nil {
@@ -249,4 +304,14 @@ func (r *Resources) Drain(ctx context.Context) error {
 		}
 	}
 	return first
+}
+
+// Close invalidates the handle domain without executing guest code. Instance
+// cancellation and teardown do not synthesize resource.drop calls.
+func (r *Resources) Close() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.closed = true
+	r.budget.release(uint32(len(r.entries)))
+	r.entries = nil
 }
