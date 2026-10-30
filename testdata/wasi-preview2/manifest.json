@@ -165,6 +165,29 @@
     ],
     "wasi:sockets/tcp-create-socket@0.2.12": [
       "create-tcp-socket"
+    ],
+    "wasi:sockets/udp@0.2.12": [
+      "[method]udp-socket.start-bind",
+      "[method]udp-socket.finish-bind",
+      "[method]udp-socket.stream",
+      "[method]udp-socket.local-address",
+      "[method]udp-socket.remote-address",
+      "[method]udp-socket.address-family",
+      "[method]udp-socket.unicast-hop-limit",
+      "[method]udp-socket.set-unicast-hop-limit",
+      "[method]udp-socket.receive-buffer-size",
+      "[method]udp-socket.set-receive-buffer-size",
+      "[method]udp-socket.send-buffer-size",
+      "[method]udp-socket.set-send-buffer-size",
+      "[method]udp-socket.subscribe",
+      "[method]incoming-datagram-stream.receive",
+      "[method]incoming-datagram-stream.subscribe",
+      "[method]outgoing-datagram-stream.check-send",
+      "[method]outgoing-datagram-stream.send",
+      "[method]outgoing-datagram-stream.subscribe"
+    ],
+    "wasi:sockets/udp-create-socket@0.2.12": [
+      "create-udp-socket"
     ]
   },
   "completeWorlds": []

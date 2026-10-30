@@ -102,3 +102,13 @@ Setup/teardown stay outside warmed transfer timing. The common consumer omits
 only the unused `network-error-code` import missing in Wasmtime 48.0.1. The actual
 Rust WASIp2 provider executes it with TCP permission explicitly enabled; the C
 API cannot enable TCP and its access-denied diagnostic is retained separately.
+
+`udp.wit` imports all 19 UDP/create and datagram-stream operations. Reproduce
+with `scripts/build_wasi_udp_fixtures.py`: full/common/API consumers and eight
+valid type mutations independently validate with pinned wasm-tools 1.258.0.
+The full guest checks connected/unconnected IPv4/IPv6 sessions, options,
+readiness, zero-length packets, explicit peer addresses and resource drops.
+`setup` opens persistent endpoints; `transfer(128)` exchanges 4 KiB in each
+direction per roundtrip; `teardown` drops all owned handles. Wasmtime 48.0.1's
+actual Rust WASIp2 provider runs the identical common binary with UDP enabled;
+only its unused missing network-error-code requirement is omitted.

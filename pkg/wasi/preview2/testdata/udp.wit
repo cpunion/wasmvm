@@ -1,0 +1,15 @@
+package wasmvm:udp-tests;
+
+world udp {
+  import wasi:io/error@0.2.12;
+  import wasi:io/poll@0.2.12;
+  import wasi:sockets/network@0.2.12;
+  import wasi:sockets/instance-network@0.2.12;
+  import wasi:sockets/udp@0.2.12;
+  import wasi:sockets/udp-create-socket@0.2.12;
+
+  export exercise: func(family: u32) -> u32;
+  export setup: func(family: u32, connected: bool) -> u32;
+  export transfer: func(count: u32) -> u32;
+  export teardown: func() -> u32;
+}

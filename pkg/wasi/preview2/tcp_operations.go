@@ -86,14 +86,14 @@ func (p *TCP) execute(c *component.Caller, s *tcpSocket, name string, args []com
 			operation = tcpListenOperation
 		}
 		if s.operation != operation {
-			err = tcpCode(NetworkNotInProgress)
+			err = socketCode(NetworkNotInProgress)
 		} else {
 			s.operation = tcpNoOperation
 		}
 		hasValue = false
 	case "finish-connect":
 		if s.operation != tcpConnectOperation {
-			err = tcpCode(NetworkNotInProgress)
+			err = socketCode(NetworkNotInProgress)
 			return
 		}
 		var ready bool
@@ -102,7 +102,7 @@ func (p *TCP) execute(c *component.Caller, s *tcpSocket, name string, args []com
 			return
 		}
 		if !ready {
-			err = tcpCode(NetworkWouldBlock)
+			err = socketCode(NetworkWouldBlock)
 			return
 		}
 		var status int
@@ -121,11 +121,11 @@ func (p *TCP) execute(c *component.Caller, s *tcpSocket, name string, args []com
 	case "start-listen":
 		hasValue = false
 		if s.operation != tcpNoOperation {
-			err = tcpCode(NetworkConcurrencyConflict)
+			err = socketCode(NetworkConcurrencyConflict)
 			return
 		}
 		if s.state != tcpBound {
-			err = tcpCode(NetworkInvalidState)
+			err = socketCode(NetworkInvalidState)
 			return
 		}
 		err = unix.Listen(fd, s.backlog)
@@ -135,7 +135,7 @@ func (p *TCP) execute(c *component.Caller, s *tcpSocket, name string, args []com
 		}
 	case "accept":
 		if s.state != tcpListening || s.operation != tcpNoOperation {
-			err = tcpCode(NetworkInvalidState)
+			err = socketCode(NetworkInvalidState)
 			return
 		}
 		value, err = p.accept(c, s, fd)
@@ -145,7 +145,7 @@ func (p *TCP) execute(c *component.Caller, s *tcpSocket, name string, args []com
 			return
 		}
 		if s.state == tcpInitial || s.state == tcpConnecting || name == "remote-address" && s.state != tcpConnected {
-			err = tcpCode(NetworkInvalidState)
+			err = socketCode(NetworkInvalidState)
 			return
 		}
 		var address SocketAddress
@@ -163,14 +163,14 @@ func (p *TCP) execute(c *component.Caller, s *tcpSocket, name string, args []com
 		hasValue = false
 		n := args[1].Bits
 		if n == 0 {
-			err = tcpCode(NetworkInvalidArgument)
+			err = socketCode(NetworkInvalidArgument)
 			return
 		}
 		if n > 1<<31-1 {
 			n = 1<<31 - 1
 		}
 		if s.state != tcpInitial && s.state != tcpBound && s.state != tcpListening {
-			err = tcpCode(NetworkInvalidState)
+			err = socketCode(NetworkInvalidState)
 			return
 		}
 		if s.state == tcpListening {
@@ -182,7 +182,7 @@ func (p *TCP) execute(c *component.Caller, s *tcpSocket, name string, args []com
 	case "shutdown":
 		hasValue = false
 		if s.state != tcpConnected || !s.streams {
-			err = tcpCode(NetworkInvalidState)
+			err = socketCode(NetworkInvalidState)
 			return
 		}
 		how := unix.SHUT_RD
@@ -222,7 +222,7 @@ func (p *TCP) execute(c *component.Caller, s *tcpSocket, name string, args []com
 		}
 	default:
 		if s.state == tcpConnecting {
-			err = tcpCode(NetworkInvalidState)
+			err = socketCode(NetworkInvalidState)
 			return
 		}
 		if s.state == tcpFailed {
@@ -234,7 +234,7 @@ func (p *TCP) execute(c *component.Caller, s *tcpSocket, name string, args []com
 			input = args[1].Bits
 			hasValue = false
 		}
-		value, err = tcpOption(fd, s.family, name, input)
+		value, err = socketOption(fd, s.family, name, input)
 		if err == nil {
 			switch name {
 			case "set-keep-alive-idle-time", "set-hop-limit", "set-receive-buffer-size", "set-send-buffer-size":
@@ -249,10 +249,10 @@ func (p *TCP) execute(c *component.Caller, s *tcpSocket, name string, args []com
 }
 func (s *tcpSocket) canStart(name string) error {
 	if s.operation != tcpNoOperation {
-		return tcpCode(NetworkConcurrencyConflict)
+		return socketCode(NetworkConcurrencyConflict)
 	}
 	if name == "start-bind" && s.state != tcpInitial || name == "start-connect" && s.state != tcpInitial && s.state != tcpBound {
-		return tcpCode(NetworkInvalidState)
+		return socketCode(NetworkInvalidState)
 	}
 	return nil
 }
@@ -275,7 +275,7 @@ func (p *TCP) accept(c *component.Caller, parent *tcpSocket, fd int) (component.
 		return component.Value{}, err
 	}
 	for name, value := range parent.inherited {
-		if _, err = tcpOption(child, parent.family, name, value); err != nil {
+		if _, err = socketOption(child, parent.family, name, value); err != nil {
 			unix.Close(child)
 			return component.Value{}, err
 		}

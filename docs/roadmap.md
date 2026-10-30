@@ -427,7 +427,10 @@ lookup execution and the full-consumer failure remains recorded. TCP now impleme
 all 29 methods/creation operations on Linux/Darwin with explicit bind/connect
 grants, nonblocking polling, parent/stream ownership and bounded cleanup. The
 shared IPv4/IPv6 guest executes on both backends and the actual pinned Rust
-Wasmtime WASIp2 provider. UDP/HTTP, remaining
+Wasmtime WASIp2 provider. UDP now supplies all 19 operations with explicit
+bind/send/receive grants, datagram streams, send permits, bounded batch/packet
+processing and parent/child cleanup. The same connected/unconnected IPv4/IPv6
+guest executes on both backends and the actual reference provider. HTTP, remaining
 component mechanisms, guest-toolchain/world conformance and performance
 acceptance remain required.
 

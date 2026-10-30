@@ -1,0 +1,19 @@
+{
+  "producer": "wasm-tools 1.258.0",
+  "wasiVersion": "0.2.12",
+  "wasiArchiveSha256": "2b0e47bc02953267ad163c6c1188b65baed1292351998cb032f3dcd28d005992",
+  "worldSha256": "ec0e17d36062462008279166b236586e67176eb44df0bf5e4aaac3379efd52c8",
+  "binarySha256": {
+    "udp.wasm": "0c199e931d114f4b3e8fa77f68f9df0ef7d80a402af578fe936fcf091ff03091",
+    "udp-api.wasm": "0205180608e85a90ef501777786baf80340e45770d441005ac1278215c470399",
+    "udp-common.wasm": "07c20f73e451e034b2c72c95bb94c6ff3f385ac18a0a9a33444f3dc105998088",
+    "udp-contract-address-field.wasm": "7e19f369191b016fff50e42dfe018b3217ef8ec8c3e16f3b4150e15c6c50f283",
+    "udp-contract-stream-order.wasm": "2245ebcefad4183a799c92d0d28245d27fe55a3145610267d9e0d529a6702321",
+    "udp-contract-receive-width.wasm": "006f041af70823694856f7e934fba9616dba3109a578c10a63663d817271c549",
+    "udp-contract-send-width.wasm": "496ac746a5ea534c626f2d14a0085fd5e33c0909f2769d89aea05b1fb38aded7",
+    "udp-contract-outgoing-address.wasm": "258f2755282611276dba15a5ad9ba478464e23a6cab4a271fd7ea1f5ee3c566d",
+    "udp-contract-incoming-width.wasm": "779bdcfa6db84427a839da9c3e24ff19dbb8bfe484b73bddf3db4fafb02631e8",
+    "udp-contract-subscribe-result.wasm": "bf7bc6ecfac905f0186fbcf2dabd53a52a2d21940693efbdc62ffbcfc758f062",
+    "udp-contract-create-result.wasm": "12e7a58f2818f65df150a0bae9d5a176651b9c48a6fb9c38b210794c5308027c"
+  }
+}

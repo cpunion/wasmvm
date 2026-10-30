@@ -8,8 +8,8 @@ interfaces/operations. The original WASI license is preserved in
 
 Implemented interfaces include CLI environment/exit/stdio/terminals, random,
 wall/monotonic clocks, IO error/poll/streams, filesystem/preopens, network/IP
-lookup and TCP/create. TCP and filesystem providers currently target Linux and
-Darwin. No complete CLI/HTTP world or WASI 0.3 support is claimed. UDP/HTTP and
+lookup, TCP/create and UDP/create. TCP and filesystem providers currently target Linux and
+Darwin. No complete CLI/HTTP world or WASI 0.3 support is claimed. HTTP and
 remaining world/component mechanisms stay open in the roadmap.
 
 Runtime fixtures are project-authored Core/Component WAT assembled from the
