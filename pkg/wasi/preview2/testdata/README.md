@@ -15,3 +15,12 @@ with two independently exported child instances. The same Wasmtime provider
 verifies success, failure and explicit byte codes. The exit mismatch fixtures
 are valid components rejected during host signature checking. These cover two
 complete interfaces, not a complete world.
+
+
+`random` imports all five operations across the three pinned random interfaces.
+It exposes byte results, guest-side byte counts, scalars and the 128-bit seed;
+allocation resets through post-return. The fixture covers empty/16 KiB/64 KiB
+requests. Four independently valid mismatch fixtures must fail binding before
+execution. wasm-tools 1.258.0 reproduces/validates the binaries; the same random
+fixture executes with Wasmtime 48.0.1's actual WASIp2 C API provider. Own secure
+counter-stream tests also retain independent OpenSSL AES-256-CTR vectors.

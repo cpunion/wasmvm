@@ -156,3 +156,26 @@ first and warm call phases. Typed Rust drops owned results inside the timer;
 own calls include normal allocation/GC policy. Fuel is off, own cancellation/
 logical quotas remain enabled, and reference Stores use defaults. Preserve the
 separate profiles and unmet targets in any report.
+
+
+## WASI random provider
+
+`BenchmarkRandomBytes` executes secure generation of 16 KiB, canonical byte-list
+lowering, a guest length read and post-return allocation reset. It reports file,
+engine, compile, entropy/provider initialization, Store/binding/instantiate,
+lookup and first-call metrics separately from warm execution. Source base has no
+random provider; the existing environment benchmark supplies the independent
+base/head common-path regression check.
+
+`c/random.c` runs all five interface operations through Wasmtime 48.0.1's actual
+WASIp2 provider before timing the same secure-count export. Reference context/
+linker/provider setup and first call are reported separately. The warmed result
+is scalar, so dynamic C API per-byte result conversion does not dominate this
+reference. Own entropy-seeded AES-256 counter streams and the reference provider
+use different random algorithms/policies; preserve them when interpreting times.
+
+Build with the pinned C SDK as above and run:
+
+```sh
+"$OUTPUT/wasmtime-random" pkg/wasi/preview2/testdata/random.wasm 10000
+```
