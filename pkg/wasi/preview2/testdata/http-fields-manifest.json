@@ -1,0 +1,21 @@
+{
+  "producer": "wasm-tools 1.258.0",
+  "wasiVersion": "0.2.12",
+  "wasiArchiveSha256": "2b0e47bc02953267ad163c6c1188b65baed1292351998cb032f3dcd28d005992",
+  "worldSha256": "a997c6953fc98c36d6ebaf88c840b1332b4b5f85d7b333ec7677b91a30dc2f9c",
+  "stableTypesOperations": 51,
+  "unstableFeatures": [],
+  "scope": "HTTP field workload importing the complete stable types interface; not full HTTP world conformance",
+  "binarySha256": {
+    "http-fields.wasm": "3a7f06f8afb42a1cacb24a494923149b6f637cac6019f93a7fea3e92ab89f25f",
+    "http-fields-api.wasm": "1c7cb1abc4dcdb6675e219473e8a4cb0fb7d771b0c7385094a6e7c210854f572",
+    "http-contract-tuple-order.wasm": "4b169822e02061729c66dd5963304333f87868afef1ecd5fd074969748eaa05b",
+    "http-contract-value-width.wasm": "2e73f33b918ceb42d9991edd83430c25351c5abbbd4f7c4e3dffed71f9ee7066",
+    "http-contract-header-error.wasm": "3fae87d664a547f26c68108e5c3e558584f2521d9740bcab4222d0834d03394e",
+    "http-contract-clone-result.wasm": "2d8256cfba10de44263880c54b77477fc3c04bb854987e55939303f4ce2185b4",
+    "http-contract-lookup-result.wasm": "e5947e86a0caaf7e60701739f9837bda5eae30b9fe39b6b30314e43a1d7fa9f4",
+    "http-contract-request-option.wasm": "811f961854cf8c044c5984df64759da44f6168759e624a2e793d78b374bf102d",
+    "http-contract-request-path.wasm": "07af9edf8590fe4df2973f52a2b9feac1120a8ef6a038a580efa0b861abdd7f8",
+    "http-contract-http-error.wasm": "a37d5a5a24bfc027542307598004291997f7d7f9f2dca3ad53ca616086f9991b"
+  }
+}

@@ -3593,6 +3593,45 @@ medians change Go **886.9 -> 885.0 / 1,371 -> 1,350 ns**, LLGo **2,796 -> 2,974 
 4,251 -> 4,349 ns**. These uncontrolled local samples are descriptive; they do
 not establish performance acceptance or a regression guarantee. Raw phases,
 compiler/binary identities, producer hashes and failures are retained in
-`artifacts/components/udp-*`. Final cross-platform CI is recorded in the PR.
+`artifacts/components/udp-*`. The final-head Go/LLGo × Linux/macOS matrix passed at
+`0c6fa04cd16798f7312d24ee4929e6321bb1def2`; all 180 execution reports and
+coverage gates were verified before [PR #60](https://github.com/cpunion/wasmvm/pull/60)
+merged ([CI](https://github.com/cpunion/wasmvm/actions/runs/41070858048)).
 HTTP, complete worlds/toolchain conformance, remaining component mechanisms
 and native async/WASI 0.3 remain required; M5/M6 stay open.
+
+## HTTP resource and fixture preparation (2026-10-30)
+
+The unchanged HTTP WIT is now retained from the pinned WASI archive. Its stable
+surface comprises 51 types operations plus two handlers. The separately gated
+informational-outbound-responses extension is not enabled by these fixtures.
+No HTTP interface or complete world is added to implementedInterfaces.
+
+Private ordered field storage preserves case/bytes, case-insensitive lookup,
+immutable views, detached snapshots/clones and atomic bounded mutations. A
+bounded circular body buffer implements partial writes, backpressure,
+cancellable blocking transport reads, nonblocking ports, flush readiness,
+EOF/errors and discard-to-trailers behavior without per-port workers.
+Go/LLGo release tests, targeted Go race tests and vet pass for this preparation;
+Preview 2 coverage is **91.9%**. These helpers are not yet an HTTP provider.
+
+Ten components reproduce and independently validate with wasm-tools 1.258.0:
+a field probe importing the full stable types interface, its exact-domain API
+view and eight valid signature mutations. Both own backends compile all ten;
+this establishes type/canonical compilation, not own HTTP guest execution.
+The probe exercises all nine field operations and invalid syntax on the actual
+Wasmtime 48.0.1 Rust HTTPp2 provider. Its default send implementation remains
+enabled and unmodified, although the field probe performs no network requests.
+Pinned Rust 1.98.0 builds the reference with the retained Cargo.lock.
+
+An initial probe read the unit-result header-error payload at +4 rather than
+its byte-aligned +1 location; the resulting reference assertion failure remains
+in http-fields-reference-initial.log. The corrected binary passes. An initial
+concurrent buffer test ignored an already-ready snapshot before waiting; the
+retained timeout led to respecting the level check and testing final flush
+readiness. Raw evidence is under artifacts/components/http-*.
+
+All HTTP resource bindings, client/proxy execution, transport/TLS/timeouts,
+permission/ownership integration, full performance comparisons and world/guest
+toolchain conformance remain required before HTTP acceptance. Canonical async
+and WASI 0.3 remain separate open work.

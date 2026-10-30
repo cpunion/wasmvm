@@ -112,3 +112,16 @@ readiness, zero-length packets, explicit peer addresses and resource drops.
 direction per roundtrip; `teardown` drops all owned handles. Wasmtime 48.0.1's
 actual Rust WASIp2 provider runs the identical common binary with UDP enabled;
 only its unused missing network-error-code requirement is omitted.
+
+`http-fields` is HTTP preparation. It imports all 51 stable operations in
+wasi:http/types@0.2.12, but the guest exercises only the nine fields operations
+and an invalid-syntax result. The API view reexports the exact nominal domain;
+eight valid type mutations compile independently. Both own backends compile
+these fixtures. Own HTTP provider/world execution remains unimplemented.
+The actual Wasmtime 48.0.1 Rust HTTPp2 provider executes the probe unchanged.
+
+Reproduce ten binaries with scripts/build_wasi_http_fields_fixtures.py. The
+producer pins the original release archive and wasm-tools 1.258.0, records
+hashes and leaves unstable WIT features disabled. In particular,
+informational-outbound-responses is separate from the stable profile. These
+fixtures are not complete proxy/client or guest-toolchain conformance.
