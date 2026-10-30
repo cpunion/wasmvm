@@ -448,3 +448,13 @@ Wasmtime 48.0.1 rejects the experimental component value extension. Preserve
 those rejections instead of assigning a speed ratio. Use the existing
 `BenchmarkOwnedResourceLifetime` and unchanged C resource runner on ownership.wasm
 for the separate common-workload base/head/competitor regression comparison.
+
+
+`WASMVM_COMPONENT_BENCH_FIXTURE=testdata/type-imports.wasm` selects the equality-
+bound type fixture for the existing `BenchmarkComponentRuntime` (path relative
+to the tested `pkg/component` directory). The default stays the composition
+control. Compile timing includes compiled-owner Close; Store preparation includes
+instantiate/binding/Close. First calls stay outside public/shared-session warm
+timers. Preserve the source-base rejection and actual Wasmtime backend rejection
+for this metadata capability; use the unchanged composition input
+for the independent common-workload regression/competitor comparison.

@@ -55,6 +55,12 @@ def prepare(destination=None):
     for name, pin in values["fixtures"].items():
         if hashlib.sha256((authored / name).read_bytes()).hexdigest() != pin["sha256"]:
             raise ValueError("authored resource value fixture hash changed: " + name)
+    types = json.loads((authored / "type-imports.json").read_text())
+    for name, hashes in types["fixtures"].items():
+        for extension, want in hashes.items():
+            path = authored / (name + "." + extension)
+            if hashlib.sha256(path.read_bytes()).hexdigest() != want:
+                raise ValueError("equality-bound type fixture hash changed: " + path.name)
     scripts = manifest.get("semanticScripts", {})
     binary = sum(c["invalid"] + c["valid"] for c in scripts.values())
     text = sum(c.get("textParser", 0) for c in scripts.values())

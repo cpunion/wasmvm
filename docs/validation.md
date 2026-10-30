@@ -3923,3 +3923,62 @@ runner identity and common-workload logs are retained in
 Local cm64 borrows, abstract host/component bindings, complete upstream world
 conformance, compiler/interpreter performance acceptance and native async/WASI
 0.3 remain required. This increment does not complete M5/M6 or the project.
+
+## Equality-bound non-resource type imports (2026-10-31)
+
+Function, instance and component type imports now bind as checked equality
+metadata at root and nested host interfaces, matching existing defined-value
+bindings. They are already resolved static targets, so they do not introduce a
+host-selected runtime identity. Two broad runtime rejections are removed; no
+new type registry or alternate execution framework is added. Resource imports
+retain explicit nominal declarations and equality checks; actual host component
+imports remain rejected before effects.
+
+Three WAT/Wasm fixtures retain source/binary hashes and pass unmodified
+wasm-tools 1.258.0 parse/validation. Both own backends execute a child component's
+Core addition through imported function/instance/component type aliases and
+checked ascriptions. Nested host type exports work; a resource-capturing
+function alias preserves nominal host callback checks and borrow/drop behavior.
+Go/LLGo release suites, race and vet pass. Local `pkg/component` statement
+coverage is **91.86%** (1,084/1,180).
+
+Actual Wasmtime 48.0.1 rejects the complete fixture with `unsupported type
+export`; separate minimal inputs containing only an equality-bound function,
+instance or component type import produce the same rejection. This is a backend
+support limit, distinct from pinned wasm-tools validation. Source base
+`ccfa657` rejects the new inputs before execution too. No direct speed ratio is
+claimed for an unsupported capability.
+
+Local Apple M4 Max arm64 medians of three 1,000-operation samples; Go 1.27.3,
+LLGo `8e45ed5 -O3 -lto=full`; microseconds:
+
+| New type-import fixture phase | Go interpreter / native | LLGo interpreter / native |
+| --- | ---: | ---: |
+| Compile and compiled-owner Close | 20.911 / 32.286 | 39.322 / 64.946 |
+| Store/bind/instantiate/Close | 5.886 / 5.905 | 10.562 / 11.154 |
+| Public warm add | 0.437 / 0.695 | 1.234 / 1.932 |
+| Shared-session warm add (diagnostic) | 0.355 / 0.554 | 0.819 / 1.386 |
+
+Load/engine creation and runner build/startup are outside these timers. Each
+first call is separately recorded outside warm timers in the raw benchmark
+logs. Combined preparation includes explicit Close and is not pure binding or
+compile throughput. The shared-session diagnostic amortizes one existing Core
+session; it is not public API latency.
+
+The unchanged composition control separately compares source base/head with
+actual Wasmtime's component C API. Medians of three samples, 10,000 own calls
+and 1,000,000 reference calls; nanoseconds/public warm call:
+
+| Compiler | Base interpreter / native | Head interpreter / native |
+| --- | ---: | ---: |
+| Go | 461.6 / 777.9 | 452.8 / 796.9 |
+| LLGo release | 1,468 / 2,239 | 1,474 / 2,207 |
+| Actual Wasmtime 48.0.1 | 244.2 | 244.2 |
+
+LLGo changes approximately +0.4% / -1.4% in this local control; parity remains
+unmet. Own fuel is off with cancellation/quotas retained; reference Store policy
+is its default. These are uncalibrated observations, not controlled performance
+acceptance. Raw first/preparation/warm/control samples, source-base outcomes and
+isolated reference rejections are retained in `artifacts/components/type-imports-*`.
+Host component bindings, local cm64 borrows, complete upstream world conformance,
+performance acceptance and native async/WASI 0.3 remain open; M5/M6 are incomplete.

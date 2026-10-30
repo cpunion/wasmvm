@@ -400,8 +400,7 @@ Host Core modules now compile in the component Engine's own domain and bind
 through checked root/nested imports. The shared Core relation covers all object
 descriptors and GC subtyping; bounded per-instantiation matching and publication
 leases preserve immutable plans and concurrent Store lifetime. Host component
-bindings, abstract host types, local cm64
-borrows and the remaining async/world deliverables are still required.
+bindings and local cm64 borrows and the remaining async/world deliverables are still required.
 
 The complete wall-clock interface now supplies now/resolution with checked
 Datetime contracts, cancellable configurable sources and explicit default clock
@@ -462,10 +461,17 @@ nested interface transfers, affine resource exports and unpublished ownership
 cleanup. Resource-free value reads remain repeatable. Pinned Wasmtime 48.0.1
 rejects the experimental component value extension, so that capability has no
 direct competitor timing. The common resource-call workload remains a separate
-regression/comparison probe. This does not close local cm64 borrow, abstract host
-type/component binding, complete upstream world conformance, performance, async
+regression/comparison probe. This does not close local cm64 borrow, host
+component binding, complete upstream world conformance, performance, async
 or WASI 0.3 deliverables; M5/M6 remain open.
 
+
+Equality-bound function/instance/component type imports now bind through their
+already resolved metadata, including nested interfaces and captured resources.
+Actual typed child/Core calls execute on both own backends. Fresh nominal host
+resources retain their existing explicit binding; actual host component imports
+remain unsupported. The unchanged Wasmtime 48.0.1 component backend rejects the
+new type-export/import fixture despite successful pinned wasm-tools validation.
 
 ## M6 — WASI 0.3 native async
 

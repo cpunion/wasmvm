@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "producer": "wasm-tools 1.258.0 parse and validate",
+  "sourceRevision": "d095e2f60ddae1f9a1e9b1e2fb547ec1114da677",
+  "fixtures": {
+    "type-imports": {
+      "wat": "72a59687acef251362626dade112727ae74aea07b08d29647657c1dfead7e93f",
+      "wasm": "c4b7fb9b90994ea65ed3c4f85b5ee14c4b5480e2f0785e380976324432097145"
+    },
+    "type-imports-nested": {
+      "wat": "70a8a1f2ebeb41e2ab8a15c2efc551771c7fed44ef29baa47ea68ecd34655ecd",
+      "wasm": "b610f2a82d9c3df552aee778286ed0234cc792cf4b607a4fe8a7ead14e7dc376"
+    },
+    "type-imports-resources": {
+      "wat": "b2adca35caad0f25068e639b652440c3c99465095c172c883ada36e284afeb2e",
+      "wasm": "0f6be0740fc185fdb872427859d6a1cca68667a5a42b7bbaa4bbcee0266dba6b"
+    }
+  }
+}
