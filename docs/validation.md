@@ -3021,3 +3021,71 @@ counters are unavailable. Raw startup/warm and diagnostic logs, source-base
 failures, fixture/WIT hashes and summaries are under `artifacts/components/random-*`
 and `api-free-aes-*`. IO, clocks, filesystem, sockets, complete worlds, remaining
 component mechanisms and async/WASI 0.3 remain required; M5/M6 stay open.
+
+
+## Host Core module imports
+
+The random interfaces merged in [PR #52](https://github.com/cpunion/wasmvm/pull/52)
+at `d25fb3d` after [all four final semantic jobs passed](https://github.com/cpunion/wasmvm/actions/runs/41014302827).
+All 180 downloaded execution reports passed at that exact head. This change is
+rebased on the merged production tree; only preceding validation notes changed.
+
+`Engine.CompileCore` and root/nested `Imports.CoreModules` execute host-compiled
+modules through the selected own interpreter/native compiler. Matching shares
+the existing Core type relation and canonical registry, covering functions,
+tables, memory32/64 limits, globals, tags and GC subtype identity. Every binding
+is checked before guest starts. Tests cover missing/foreign/closed owners,
+incompatible descriptors/import requirements, trapping starts, bounded matching,
+cancellation, owner Close during binding/start, concurrent Stores, forced GC and
+retained execution after Engine/component/host-owner Close. Failed unpublished
+instances release their module leases without closing the host's owner.
+
+Full Go, affected LLGo release, race and vet pass locally. Every executable
+package clears 90% statement coverage: Core module **98.58%** (209/212), component
+validator **92.41%** (1827/1977), component **91.04%** (976/1072), VM **93.82%**
+(1017/1084). The 23 project-authored host fixtures reproduce and independently
+validate with wasm-tools 1.258.0. Named GC heap-type references inside a component
+module type trigger that producer's emission panic; the final fixture uses
+numeric indices and validates. This producer limitation is distinct from the
+runtime result.
+
+Wasmtime 48.0.1 C API executes the ordinary and rich memory64 modules and rejects
+all nine incompatible rich descriptor variants. Component compilation of the
+same valid GC module-type fixture aborts at `types_builder.rs:889` with
+`heap types are not supported yet`. This failed reference capability is retained;
+both own backends execute the GC case successfully. It contributes no successful
+reference timing row.
+
+Three sequential 200 ms own samples and three 1,000,000-call reference samples
+on Apple M4 Max arm64 use Go 1.27.3, LLGo `8e45ed5 -O3 -lto=full`, the pinned
+Wasmtime 48.0.1 C SDK, and Rust 1.98.0/locked wasmtime 48.0.1. Each warm call
+adds changing u32 arguments through the same component and external Core binary,
+checking every result. Source base `6c8a5b4` has no host Core-module API: both
+compilers reject the unchanged new probe; preserve this unsupported result.
+The existing public-call workload supplies an independent base/head regression
+comparison:
+
+| Median ns / call | Go interpreter | Go native | LLGo interpreter | LLGo native |
+| --- | ---: | ---: | ---: | ---: |
+| Host Core module head | 458.6 | 789.2 | 1,475 | 2,392 |
+| Existing public call base -> head | 461.9 -> 475.3 | 796.0 -> 785.5 | 1,462 -> 1,444 | 2,338 -> 2,315 |
+
+Same host-module workload: Wasmtime dynamic C API **270.4 ns**, typed Rust
+**96.6 ns**. The stronger typed reference remains roughly **15x/25x** faster
+than LLGo. Reusing an existing execution contract introduces no separate module
+call dispatch path; the warm gap remains in the shared call boundary, codecs,
+allocation and safety checks. This is an architectural investigation direction,
+not a measured attribution of the whole gap to any one operation. Typed call
+plans and lower allocation remain required optimization work.
+
+File load, Engine, Core/component compilation, Store/linker/binding/instantiation,
+lookup and first call have separate raw phase metrics. Own Store/binding/setup
+is one reported phase; references report Store/linker and instantiation
+separately. Process startup and runner compilation are excluded. Fuel is off;
+own cancellation/logical limits remain enabled, while reference Stores use
+default policy. Reference linkers clone Core modules before deleting original
+handles; own bound leases survive owner Close, but new bindings are then
+rejected. These embedding policies differ. Samples are local and uncalibrated;
+LLGo allocation counters remain unavailable. Raw base/head probes, references,
+fixture hashes and coverage summaries are under `artifacts/components/host-module-*`.
+No performance acceptance or complete M5/M6/world support is claimed.

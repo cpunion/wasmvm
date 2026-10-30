@@ -10,8 +10,9 @@ instances, synthesized instances, child component closures and instantiation,
 imports/exports, narrowed instance views, literal values and component starts.
 Host bindings supply callbacks and copied values through declared schemas.
 Fixed equality-bound value schemas are inferred from those declarations;
-nominal host resource types bind through `Imports.Resources`. Host components
-and host Core module imports remain unsupported. Other incomplete executable operations are rejected during
+nominal host resource types bind through `Imports.Resources`. Host Core modules
+bind through `Imports.CoreModules`; host components remain unsupported. Other
+incomplete executable operations are rejected during
 compilation or host binding, before instantiation invokes guest code.
 
 Canonical lift/lower shares `internal/component/canonical` for scalars,
@@ -202,3 +203,36 @@ nested aggregates and aliases. Normalization occurs before value identity checks
 and guest initialization. Legacy conversion charges its scratch and immutable
 output bytes; packed clones charge retained bytes. Byte value fixtures exercise
 this without weakening comparison of unequal data.
+
+
+## Host Core module imports
+
+`Engine.CompileCore` creates a `CoreModule` in the component Engine's existing
+Core domain, using its selected interpreter/native backend, feature profile and
+bounded compiler. Compilation performs no instantiation or start effects.
+Bind the module through `Imports.CoreModules`, including nested `Instances`.
+Cross-Engine, closed, missing or structurally incompatible bindings fail before
+any Core/component start. Compiling a module with the standalone `vm.Engine`
+does not confer access to the private component Engine's domain.
+
+Matching reuses the existing Core module relation: exports are covariant,
+imports contravariant. Function, table, memory, global and tag descriptors retain
+canonical recursive/GC type identity, limits, mutability and pointer widths.
+An immutable type-only module view retains no code bodies, data, initializers
+or native publications. Each instantiation forks the compiled type registry
+once, interns each actual schema once and memoizes successful type pairs.
+Work is bounded by the component validation node limit; a module with too much
+metadata fails binding even when only a small export is requested. Shared
+compiled plans and canonical definitions remain immutable across Stores.
+
+A `CoreModule` owns its compilation. Close prevents new bindings immediately;
+already acquired bindings retain one deduplicated lease per host module until
+their Instance closes or initialization fails. This includes closing the owner
+from an earlier Core start, before a later module instantiation. Instantiated
+Core objects retain their normal Store/native code leases. Closing a component
+Engine or compiled component does not retire existing Store execution.
+`CoreModule.Info` returns owned metadata and rejects a closed owner.
+
+This capability does not bind host components or abstract host type imports;
+standalone resource values/starts, local cm64 borrows, async plans and complete
+WASI worlds remain separate required work.

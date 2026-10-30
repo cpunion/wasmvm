@@ -51,7 +51,7 @@ func TestCompileAndInstantiationFailureBoundaries(t *testing.T) {
 	if _, err := e.Compile(nil, fixture(t, "invalid-index")); !errors.Is(err, wasm.ErrInvalid) {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"module-import", "component-import"} {
+	for _, name := range []string{"component-import"} {
 		if _, err := e.Compile(nil, fixture(t, name)); !errors.Is(err, wasm.ErrUnsupported) {
 			t.Fatal(name, err)
 		}

@@ -227,6 +227,21 @@ type ModuleInfo struct {
 	HasStart         bool
 }
 
+// ModuleInterface is an immutable type-only view used for checked composition.
+type ModuleInterface = module.Interface
+
+// Interface retains no code publication, bodies, data or global initializers.
+func (m *CompiledModule) Interface() (ModuleInterface, error) {
+	if m == nil {
+		return ModuleInterface{}, ErrReference
+	}
+	code, err := m.acquire(m.engine)
+	if err != nil {
+		return ModuleInterface{}, err
+	}
+	return module.SnapshotInterface(code.IR.Validated.Definition()), nil
+}
+
 func (m *CompiledModule) Info() (ModuleInfo, error) {
 	code, err := m.acquire(m.engine)
 	if err != nil {

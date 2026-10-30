@@ -85,3 +85,32 @@ until workers have joined. `group.Close()` requests cancellation;
 per-thread Store/fuel and process thread quotas are explicit in Config.
 See [thread group ownership](design/wasi-threads.md). Component/WASI 0.2/0.3
 execution remains subsequent scope.
+
+
+## Component host modules
+
+Use `pkg/component.Engine` to compile both the component and its imported Core
+modules; the component Engine owns a private Core domain. After checking each
+error, the binding sequence is:
+
+```go
+host, err := engine.CompileCore(ctx, coreBytes)
+// Check err; defer host.Close().
+compiled, err := engine.Compile(ctx, componentBytes)
+// Check err; defer compiled.Close().
+instance, err := compiled.Instantiate(ctx, component.Imports{
+    CoreModules: map[string]*component.CoreModule{"math": host},
+    Functions: map[string]component.HostFunction{
+        "mark": func(*component.Caller, []component.Value) (*component.Value, error) {
+            return nil, nil
+        },
+    },
+}, component.CallOptions{})
+// Check err; defer instance.Close().
+```
+
+Import names and signatures come from the component, including nested
+`Imports.Instances`. All bindings are checked before guest start effects.
+Closing host prevents new bindings; existing bound Instances keep their module
+until close. `host.Info()` supplies an owned Core metadata snapshot. See
+[component lifetime and matching](design/component-runtime.md#host-core-module-imports).

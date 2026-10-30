@@ -21,6 +21,7 @@ type Imports struct {
 	Instances      map[string]Imports
 	Values         map[string]Value
 	Resources      map[string]*HostResourceType
+	CoreModules    map[string]*CoreModule
 }
 
 type Instance struct {
@@ -41,15 +42,23 @@ type Instance struct {
 	hostTypes         map[*hostResourceDefinition]*resourceType
 	importResourceIDs map[uint64]*resourceType
 	functionChecks    []pendingFunctionCheck
+	engine            *Engine
+	coreBindings      *validate.CoreBindings
+	hostModules       map[*CoreModule]*coreModuleLease
 }
 
 func (in *Instance) Close() {
 	in.mu.Lock()
 	in.closed = true
+	modules := in.hostModules
+	in.hostModules = nil
 	in.mu.Unlock()
 	in.store.Close()
 	for _, table := range in.resourceTables {
 		table.Close()
+	}
+	for _, lease := range modules {
+		lease.Close()
 	}
 }
 
@@ -158,7 +167,7 @@ func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.
 	if err != nil {
 		return nil, err
 	}
-	in := &Instance{store: store, config: c.engine.config, bindings: map[any]Value{}, resourceBudget: canonical.NewResourceBudget(c.engine.config.MaxResources)}
+	in := &Instance{engine: c.engine, store: store, config: c.engine.config, bindings: map[any]Value{}, resourceBudget: canonical.NewResourceBudget(c.engine.config.MaxResources)}
 	in.hostTypes = map[*hostResourceDefinition]*resourceType{}
 	in.importResourceIDs = map[uint64]*resourceType{}
 	in.hostResources = canonical.NewResourceTable(in.resourceBudget)
@@ -173,6 +182,7 @@ func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.
 		in.bindings = nil
 		in.importResourceIDs = nil
 		in.functionChecks = nil
+		in.coreBindings = nil
 		if !published {
 			in.Close()
 		}
@@ -212,6 +222,38 @@ func (in *Instance) bind(types []validate.Extern, imports Imports) (map[string]i
 		e := item{sort: expected.Sort}
 		name := expected.Name.Text
 		switch expected.Sort {
+		case model.CoreModuleSort:
+			host := imports.CoreModules[name]
+			if host == nil {
+				return nil, fmt.Errorf("%w: missing Core module %q", vm.ErrLink, name)
+			}
+			lease := in.hostModules[host]
+			if lease == nil {
+				var err error
+				lease, err = host.acquire(in.engine)
+				if err != nil {
+					return nil, err
+				}
+				if in.hostModules == nil {
+					in.hostModules = map[*CoreModule]*coreModuleLease{}
+				}
+				in.hostModules[host] = lease
+			}
+			if in.coreBindings == nil {
+				var err error
+				in.coreBindings, err = expected.Type.CoreBindings()
+				if err != nil {
+					return nil, err
+				}
+			}
+			ok, err := in.coreBindings.Check(expected.Type, lease.schema)
+			if err != nil {
+				return nil, err
+			}
+			if !ok {
+				return nil, fmt.Errorf("%w: Core module %q", vm.ErrType, name)
+			}
+			e.module = lease.compiled
 		case model.TypeSort:
 			if expected.Type.Kind == model.Resource {
 				host := imports.Resources[name]
