@@ -1,0 +1,8 @@
+[package]
+name = "wasmvm-component-reference"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+wasmtime = { version = "=48.0.1", default-features = false, features = ["cranelift", "component-model", "runtime", "std"] }

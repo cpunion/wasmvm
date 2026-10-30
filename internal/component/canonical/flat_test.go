@@ -32,7 +32,7 @@ func TestFlatAggregatesAndVariantBitJoining(t *testing.T) {
 				t.Fatal(row.tpe.Kind, err)
 			}
 			got, err := c.LiftFlat(row.tpe, flat)
-			if err != nil || !reflect.DeepEqual(row.v, got) {
+			if err != nil || !reflect.DeepEqual(row.v, expandPackedBytes(row.tpe, got)) {
 				t.Fatal(wide, row.v, flat, got, err)
 			}
 		}

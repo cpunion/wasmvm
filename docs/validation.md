@@ -2855,3 +2855,81 @@ samples are uncalibrated, and LLGo allocation counters are unavailable. No speed
 parity or performance acceptance is claimed. Raw phases, source-base outcomes and
 summaries are under `artifacts/components/exit-*`. Other interfaces/worlds,
 component mechanisms and async/WASI 0.3 remain required; M5/M6 stay open.
+
+
+## Packed byte-sequence transport
+
+The checked environment interface merged in [PR #49](https://github.com/cpunion/wasmvm/pull/49)
+at `025e230` after [the four final semantic jobs passed](https://github.com/cpunion/wasmvm/actions/runs/41002891297).
+All 180 downloaded execution reports passed at that exact head.
+
+The shared Canonical ABI codec now lifts list/fixed-list<u8> into immutable raw
+bytes, reusing Value.Text with nil Elements. This keeps Value at 64 bytes on the
+accepted platforms, removes per-byte host object expansion and supports NUL,
+invalid UTF-8 and all byte values independently of string encoding. ByteList
+owns mutable inputs; ByteString accepts both representations. Legacy inputs
+remain checked, while byte-sequence results now use the packed representation.
+Mixed representations are invalid. Logical element/nesting/range budgets remain
+enforced; transfer budgets charge actual scratch/output/retained byte counts.
+
+Go and LLGo release execute pure and host-callback round trips under both own
+backends, cm32/cm64, empty and large sequences, allocator reuse, metering,
+invalid shapes and retained-result isolation. Cancellation around bulk copies,
+realloc/memory errors and transfer/element budgets pass. All existing 1,024 layout
+and 56 collection reference cases remain present with unchanged expected values
+and independent reference bytes. A test-only shape expansion compares packed
+results at byte-sequence nodes. Full Go, affected LLGo release, race and vet pass;
+all executable package coverage gates pass (canonical **93.22%**, component
+**90.75%**, P2 **95.88%**). wasm-tools 1.258.0 validates and reproduces all four new
+fixtures exactly. This is shared IO/random infrastructure; those interfaces and
+complete WASI worlds remain required.
+
+The 16 KiB echo probe uses the same cm32 guest, content and owned output in all
+engines. Three sequential 200 ms own samples use Go 1.27.3 and LLGo
+`8e45ed5 -O3 -lto=full` on Apple M4 Max arm64. Payload construction, file/engine/compiler,
+Store/import binding/instantiation, export lookup and first call are excluded
+from warm timers and separately reported. Every first payload byte and every
+call's length/endpoints are checked. Source base `1fc138c` receives only the
+unchanged benchmark/fixture: legacy rows execute, packed rows fail their payload
+checksum under both compilers and are retained as unsupported.
+
+Wasmtime 48.0.1 uses both the pinned prebuilt dynamic C API and a new typed Rust
+reference (`&[u8]` input, owned Vec<u8> output), built with Rust 1.98.0, Cargo
+release/locked dependencies and explicitly declared features. The default host
+nightly could not compile the dependency; this failed build and the independent
+reference profile are retained. No own compiler baseline was upgraded. Reference
+samples use 1,000 dynamic C calls and 100,000 typed calls; owned-result deletion
+is included. C API output slots are initialized/reset because v48.0.1's Rust
+replacement drops the old C value. An initial invalid-slot crash is retained as
+a harness failure and excluded from successful timings.
+
+
+| Median ns / 16 KiB call | Go interpreter | Go native | LLGo interpreter | LLGo native |
+| --- | ---: | ---: | ---: | ---: |
+| Legacy source base | 2,066,890 | 2,076,478 | 7,990,498 | 7,908,796 |
+| Legacy input at head | 1,286,829 | 1,284,435 | 4,810,880 | 5,156,176 |
+| Packed head | 5,319 | 6,102 | 10,691 | 14,910 |
+
+Wasmtime dynamic C API: **353,960 ns**; typed Rust: **469.9 ns**.
+LLGo packed transfer improves the original legacy workload by roughly
+747x/530x, but still trails the typed reference by roughly
+23x/32x. Surpassing the dynamic C API does not meet the performance target.
+
+The API effect is supported by Wasmtime's pinned primary implementation:
+[dynamic C calls](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/c-api/src/component/func.rs)
+convert the argument/result graph through dynamic Val values; its
+[typed primitive-list implementation](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/wasmtime/src/runtime/component/func/typed.rs)
+uses a checked contiguous memory window and integral copy loops eligible for
+LLVM memcpy, with owned typed list lifting. This explains an architectural cost
+difference; it is not a profile assigning all measured time to a single function.
+Own typed call plans and allocator/call-boundary costs remain optimization work.
+
+Startup/first phases are reported separately in the raw own metrics and both
+reference JSON logs. Fuel is disabled; own cancellation/logical quotas remain
+enabled and reference Stores use defaults. Results are descriptive local samples,
+not calibrated performance acceptance; LLGo allocation counters are unavailable.
+The initial overlapping head LLGo phase sample is retained and excluded in favor
+of its isolated rerun. Raw phase logs, dependency build failures, fixture hashes,
+source-base unsupported rows and final summaries are under
+`artifacts/components/packed-*`. This shared transport does not complete WASI
+IO/random, complete worlds, remaining component mechanisms or async/WASI 0.3.

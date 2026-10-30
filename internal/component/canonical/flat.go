@@ -76,6 +76,10 @@ func (c *Codec) liftFlat(t *model.Type, slots []Slot, at *int, depth uint32) (Va
 				return Value{}, err
 			}
 		}
+		if byteSequence(t) {
+			data, err := value.ByteString()
+			return Value{Text: data}, err
+		}
 		return value, nil
 	case model.Record, model.Tuple:
 		if uint64(len(t.Fields)) > c.MaxValues-c.values {
@@ -175,6 +179,9 @@ func (c *Codec) lowerFlat(t *model.Type, v Value, out []Slot, depth uint32) ([]S
 		var err error
 		if t.Kind == model.String {
 			ptr, n, err = c.Transfer.LowerString(v.Text)
+		} else if t.Kind == model.List && byteSequence(t) && v.Elements == nil {
+			n = uint64(len(v.Text))
+			ptr, err = c.lowerBytes(v.Text)
 		} else {
 			n = uint64(len(v.Elements))
 			element := t.Element
@@ -193,6 +200,12 @@ func (c *Codec) lowerFlat(t *model.Type, v Value, out []Slot, depth uint32) ([]S
 		flat := c.Layouts.address
 		return append(out, Slot{flat, ptr}, Slot{flat, n}), nil
 	case model.FixedList:
+		if byteSequence(t) && v.Elements == nil {
+			for i := 0; i < len(v.Text); i++ {
+				out = append(out, Slot{wasm.I32, uint64(v.Text[i])})
+			}
+			return out, nil
+		}
 		var err error
 		for _, value := range v.Elements {
 			out, err = c.lowerFlat(t.Element, value, out, depth+1)

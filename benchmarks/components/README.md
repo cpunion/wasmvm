@@ -124,3 +124,35 @@ Build with the pinned SDK as for `c/environment.c`, then run:
 
 Source base has no exit provider: retain that unsupported result, and use the
 existing component public-call benchmark separately for common-path regression.
+
+
+## Packed byte transfers
+
+`BenchmarkByteListTransfer` echoes 16 KiB through the same project-authored
+component. `elements` measures the legacy per-byte Value input; `packed` uses
+immutable raw bytes. Payload setup, file/engine/compiler, Store/import binding/
+instantiation, export lookup and first call stay outside the warm timer and are
+reported as separate metrics. Full first-result contents and per-call endpoints
+are checked. cm32/cm64 and host-callback variants are additional semantic tests.
+
+`c/bytes.c` measures the same binary through Wasmtime 48.0.1's dynamic C API,
+including owned-result deletion. That API expands a dynamic value per byte.
+Also run the typed Rust reference, which accepts a byte slice and returns an
+owned Vec<u8>; the C API result alone is insufficient for performance acceptance.
+The new Rust profile pins Rust 1.98.0, wasmtime 48.0.1, features and Cargo.lock;
+it does not change the own compiler baselines or the prebuilt C SDK profile.
+
+```sh
+cargo +1.98.0 build --release --locked \
+  --manifest-path benchmarks/components/rust/Cargo.toml \
+  --target-dir "$OUTPUT/wasmtime-typed"
+"$OUTPUT/wasmtime-typed/release/wasmvm-component-reference" \
+  pkg/component/testdata/bytes.wasm 100000
+"$OUTPUT/wasmtime-bytes" pkg/component/testdata/bytes.wasm 1000
+```
+
+Both references separate load, engine, compile, Store/linker, instantiate, lookup,
+first and warm call phases. Typed Rust drops owned results inside the timer;
+own calls include normal allocation/GC policy. Fuel is off, own cancellation/
+logical quotas remain enabled, and reference Stores use defaults. Preserve the
+separate profiles and unmet targets in any report.
