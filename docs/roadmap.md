@@ -402,6 +402,11 @@ leases preserve immutable plans and concurrent Store lifetime. Host component
 bindings, abstract host types, standalone resource values/starts, local cm64
 borrows and the remaining async/world deliverables are still required.
 
+The complete wall-clock interface now supplies now/resolution with checked
+Datetime contracts, cancellable configurable sources and explicit default clock
+granularity. Monotonic-clock requires the upcoming pollable resource provider;
+IO/poll/streams and the complete CLI/HTTP worlds remain required.
+
 **Exit gate:** components from at least two pinned guest toolchains compose on both backends and host compilers. Versioned WIT/world/operation coverage, encoding/ownership/reentry/error cases and resource cleanup all pass. Parsing or one sample is not complete component/P2 support.
 
 ## M6 — WASI 0.3 native async

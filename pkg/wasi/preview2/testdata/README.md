@@ -24,3 +24,11 @@ requests. Four independently valid mismatch fixtures must fail binding before
 execution. wasm-tools 1.258.0 reproduces/validates the binaries; the same random
 fixture executes with Wasmtime 48.0.1's actual WASIp2 C API provider. Own secure
 counter-stream tests also retain independent OpenSSL AES-256-CTR vectors.
+
+
+`wall-clock` imports both standard operations and exercises datetime memory
+lower/lift plus a seconds-only guest read. Six independently valid negative
+components vary result kind, field names/order/width/count and parameter count.
+All seven binaries reproduce and validate with wasm-tools 1.258.0. The same
+positive binary executes with the actual Wasmtime 48.0.1 WASIp2 provider;
+provider precision differs explicitly from the own quantized default.
