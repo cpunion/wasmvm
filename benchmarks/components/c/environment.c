@@ -1,0 +1,113 @@
+#include <wasmtime.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <stdint.h>
+#include <string.h>
+
+static uint64_t now(void) {
+  struct timespec t;
+  clock_gettime(CLOCK_MONOTONIC, &t);
+  return (uint64_t)t.tv_sec * 1000000000 + (uint64_t)t.tv_nsec;
+}
+static void check(wasmtime_error_t *e) {
+  if (!e) return;
+  wasm_byte_vec_t msg;
+  wasmtime_error_message(e, &msg);
+  fprintf(stderr, "%.*s\n", (int)msg.size, msg.data);
+  wasm_byte_vec_delete(&msg);
+  wasmtime_error_delete(e);
+  exit(1);
+}
+static wasmtime_component_val_t named(wasmtime_component_instance_t *instance, wasmtime_context_t *ctx, const char *name) {
+  wasmtime_component_export_index_t *index = wasmtime_component_instance_get_export_index(instance, ctx, NULL, name, strlen(name));
+  wasmtime_component_func_t f;
+  if (!index || !wasmtime_component_instance_get_func(instance, ctx, index, &f)) exit(10);
+  wasmtime_component_export_index_delete(index);
+  wasmtime_component_val_t result = {.kind = WASMTIME_COMPONENT_U32, .of.u32 = 0};
+  check(wasmtime_component_func_call(&f, ctx, NULL, 0, &result, 1));
+  return result;
+}
+static void string_value(wasmtime_component_val_t *value, const char *expected) {
+  size_t size = strlen(expected);
+  if (value->kind != WASMTIME_COMPONENT_STRING || value->of.string.size != size || (size && memcmp(value->of.string.data, expected, size))) exit(11);
+}
+int main(int argc, char **argv) {
+  if (argc != 3) return 2;
+  uint64_t count = strtoull(argv[2], NULL, 10), t = now();
+  if (!count) return 2;
+  FILE *file = fopen(argv[1], "rb");
+  if (!file) return 3;
+  fseek(file, 0, SEEK_END);
+  long size = ftell(file);
+  rewind(file);
+  uint8_t *bytes = malloc((size_t)size);
+  if (!bytes || fread(bytes, 1, (size_t)size, file) != (size_t)size) return 4;
+  fclose(file);
+  uint64_t load = now() - t;
+  t = now();
+  wasm_engine_t *engine = wasm_engine_new();
+  uint64_t engine_time = now() - t;
+  t = now();
+  wasmtime_component_t *component = NULL;
+  check(wasmtime_component_new(engine, bytes, (size_t)size, &component));
+  uint64_t compile = now() - t;
+  t = now();
+  wasmtime_store_t *store = wasmtime_store_new(engine, NULL, NULL);
+  wasmtime_context_t *context = wasmtime_store_context(store);
+  wasmtime_component_linker_t *linker = wasmtime_component_linker_new(engine);
+  wasi_config_t *wasi = wasi_config_new();
+  const char *argv_values[] = {"guest", "", "界🙂"};
+  const char *names[] = {"A", "B"}, *values[] = {"1=2", "second"};
+  if (!wasi_config_set_argv(wasi, 3, argv_values) || !wasi_config_set_env(wasi, 2, names, values)) return 9;
+  check(wasmtime_context_set_wasi(context, wasi));
+  check(wasmtime_component_linker_add_wasip2(linker));
+  uint64_t setup = now() - t;
+  t = now();
+  wasmtime_component_instance_t instance;
+  check(wasmtime_component_linker_instantiate(linker, context, component, &instance));
+  uint64_t instantiate = now() - t;
+  t = now();
+  const char *name = "argument-count";
+  wasmtime_component_export_index_t *index = wasmtime_component_instance_get_export_index(&instance, context, NULL, name, strlen(name));
+  wasmtime_component_func_t function;
+  if (!index || !wasmtime_component_instance_get_func(&instance, context, index, &function)) return 5;
+  uint64_t lookup = now() - t;
+  wasmtime_component_val_t result = {.kind = WASMTIME_COMPONENT_U32, .of.u32 = 0};
+  t = now();
+  check(wasmtime_component_func_call(&function, context, NULL, 0, &result, 1));
+  uint64_t first = now() - t;
+  if (result.kind != WASMTIME_COMPONENT_U32 || result.of.u32 != 3) return 6;
+  /* Check complete interface values outside the warm timer. */
+  wasmtime_component_val_t args_value = named(&instance, context, "arguments");
+  if (args_value.kind != WASMTIME_COMPONENT_LIST || args_value.of.list.size != 3) return 12;
+  for (size_t i = 0; i < 3; i++) string_value(&args_value.of.list.data[i], argv_values[i]);
+  wasmtime_component_val_delete(&args_value);
+  wasmtime_component_val_t vars_value = named(&instance, context, "variables");
+  if (vars_value.kind != WASMTIME_COMPONENT_LIST || vars_value.of.list.size != 2) return 13;
+  for (size_t i = 0; i < 2; i++) {
+    wasmtime_component_val_t *entry = &vars_value.of.list.data[i];
+    if (entry->kind != WASMTIME_COMPONENT_TUPLE || entry->of.tuple.size != 2) return 14;
+    string_value(&entry->of.tuple.data[0], names[i]); string_value(&entry->of.tuple.data[1], values[i]);
+  }
+  wasmtime_component_val_delete(&vars_value);
+  wasmtime_component_val_t cwd_value = named(&instance, context, "cwd");
+  if (cwd_value.kind != WASMTIME_COMPONENT_OPTION || cwd_value.of.option != NULL) return 15;
+  wasmtime_component_val_delete(&cwd_value);
+  uint64_t checksum = 0;
+  t = now();
+  for (uint64_t i = 0; i < count; i++) {
+    check(wasmtime_component_func_call(&function, context, NULL, 0, &result, 1));
+    if (result.kind != WASMTIME_COMPONENT_U32 || result.of.u32 != 3) return 7;
+    checksum += result.of.u32;
+  }
+  uint64_t warm = now() - t;
+  printf("{\"load_ns\":%llu,\"engine_ns\":%llu,\"compile_ns\":%llu,\"store_linker_ns\":%llu,\"instantiate_ns\":%llu,\"lookup_ns\":%llu,\"first_ns\":%llu,\"warm_ns_per_call\":%.3f,\"count\":%llu,\"checksum\":%llu}\n", (unsigned long long)load, (unsigned long long)engine_time, (unsigned long long)compile, (unsigned long long)setup, (unsigned long long)instantiate, (unsigned long long)lookup, (unsigned long long)first, (double)warm/count, (unsigned long long)count, (unsigned long long)checksum);
+  wasmtime_component_export_index_delete(index);
+  wasmtime_component_linker_delete(linker);
+  wasmtime_store_delete(store);
+  wasmtime_component_delete(component);
+  wasm_engine_delete(engine);
+  free(bytes);
+  return 0;
+}

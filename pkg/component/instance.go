@@ -16,10 +16,11 @@ import (
 type HostFunction func(*Caller, []Value) (*Value, error)
 
 type Imports struct {
-	Functions map[string]HostFunction
-	Instances map[string]Imports
-	Values    map[string]Value
-	Resources map[string]*HostResourceType
+	Functions      map[string]HostFunction
+	FunctionChecks map[string]FunctionCheck
+	Instances      map[string]Imports
+	Values         map[string]Value
+	Resources      map[string]*HostResourceType
 }
 
 type Instance struct {
@@ -39,6 +40,7 @@ type Instance struct {
 	hostResources     *canonical.Resources
 	hostTypes         map[*hostResourceDefinition]*resourceType
 	importResourceIDs map[uint64]*resourceType
+	functionChecks    []pendingFunctionCheck
 }
 
 func (in *Instance) Close() {
@@ -170,6 +172,7 @@ func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.
 		in.initializing = nil
 		in.bindings = nil
 		in.importResourceIDs = nil
+		in.functionChecks = nil
 		if !published {
 			in.Close()
 		}
@@ -177,6 +180,14 @@ func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.
 	bindings, err := in.bind(plan.Type.Imports, imports)
 	if err != nil {
 		return nil, err
+	}
+	for _, c := range in.functionChecks {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if err := c.check(FunctionInfo{typ: c.typ, resources: in.importResourceIDs}); err != nil {
+			return nil, fmt.Errorf("component function %q: %w", c.name, err)
+		}
 	}
 	_, err = store.WithCaller(ctx, options, func(caller *vm.Caller) error {
 		n, err := in.instantiate(caller, &closure{plan: plan}, bindings, cores)
@@ -225,6 +236,9 @@ func (in *Instance) bind(types []validate.Extern, imports Imports) (map[string]i
 			fn := imports.Functions[name]
 			if fn == nil {
 				return nil, fmt.Errorf("%w: missing component function %q", vm.ErrLink, name)
+			}
+			if check := imports.FunctionChecks[name]; check != nil {
+				in.functionChecks = append(in.functionChecks, pendingFunctionCheck{name: name, typ: expected.Type, check: check})
 			}
 			e.function = &Function{instance: in, typ: expected.Type, host: fn}
 		case model.InstanceSort:

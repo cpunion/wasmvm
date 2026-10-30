@@ -1,0 +1,18 @@
+{
+  "version": "0.2.12",
+  "revision": "281ba75fafcd50961ef55f9e52747afcc9b71ede",
+  "archiveUrl": "https://github.com/WebAssembly/WASI/releases/download/v0.2.12/wasi-wit-0.2.12.tar.gz",
+  "archiveSha256": "2b0e47bc02953267ad163c6c1188b65baed1292351998cb032f3dcd28d005992",
+  "files": {
+    "cli.wit": "fb6ac5d23fcaf3d231142a3c2f9bb1e9bc1fe5af6f1f329f6b1a5555ce0d3873",
+    "LICENSE.WASI.md": "df9d92b8ccd14dbe7acf4c0cd490a5431e1237bdd31ab01f8ddb901b72de33b8"
+  },
+  "implementedInterfaces": {
+    "wasi:cli/environment@0.2.12": [
+      "get-environment",
+      "get-arguments",
+      "initial-cwd"
+    ]
+  },
+  "completeWorlds": []
+}
