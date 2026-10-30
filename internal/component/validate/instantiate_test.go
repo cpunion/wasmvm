@@ -139,3 +139,49 @@ func TestCaptureTraversalChargesRepeatedEdges(t *testing.T) {
 		t.Fatal("repeated shared edges escaped traversal quota", completed, err)
 	}
 }
+
+func TestInstanceFresheningPreservesExternalCompoundNames(t *testing.T) {
+	s := scope(t)
+	define(t, s, &model.TypeDef{Kind: model.Record, Fields: []model.NamedType{{Name: "port", Type: *ref(model.U16)}}})
+	record, err := s.Declare(external("address", model.TypeSort, 0), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	define(t, s, &model.TypeDef{Kind: model.Variant, Cases: []model.TypeCase{{Name: "ipv4", Type: idx(1)}}})
+	variant, err := s.Declare(external("ip", model.TypeSort, 2), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	local, err := s.pool.abstract()
+	if err != nil {
+		t.Fatal(err)
+	}
+	template := &Type{Kind: model.Instance, owner: s.pool, Exports: []Extern{
+		{Name: model.Name{Text: "socket"}, Sort: model.TypeSort, Type: local, Fresh: true},
+		{Name: model.Name{Text: "ip"}, Sort: model.TypeSort, Type: variant},
+	}}
+	previous := uint64(0)
+	for i := 0; i < 2; i++ {
+		bound, err := s.pool.freshInstanceVisible(template, s.visibility.imports)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := s.checkVisible(bound, false, false); err != nil {
+			t.Fatal("captured nested public names were freshened", err)
+		}
+		id := bound.Exports[0].Type.Resource
+		if id == local.Resource || id == previous {
+			t.Fatal("local resource binder was not freshened", id)
+		}
+		previous = id
+	}
+	// Publishing a name still does not expose the original private binding.
+	private := s.types[0]
+	if private.Value == record.Value {
+		t.Fatal("record publication lost name isolation")
+	}
+	f := &Type{Kind: model.Function, owner: s.pool, Result: private.Value}
+	if err := s.checkVisible(f, false, false); !errors.Is(err, wasm.ErrInvalid) {
+		t.Fatal("private binding gained an external name", err)
+	}
+}

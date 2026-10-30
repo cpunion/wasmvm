@@ -6,3 +6,4 @@ publish = false
 
 [dependencies]
 wasmtime = { version = "=48.0.1", default-features = false, features = ["cranelift", "component-model", "runtime", "std"] }
+wasmtime-wasi = { version = "=48.0.1", default-features = false, features = ["p2"] }

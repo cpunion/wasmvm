@@ -51,6 +51,9 @@ func newSocketFile(ctx context.Context, family uint32, kind int) (*socketFile, e
 	if err == nil {
 		unix.CloseOnExec(fd)
 		err = unix.SetNonblock(fd, true)
+		if err == nil && family == 1 {
+			err = unix.SetsockoptInt(fd, unix.IPPROTO_IPV6, unix.IPV6_V6ONLY, 1)
+		}
 		if err != nil {
 			unix.Close(fd)
 		}

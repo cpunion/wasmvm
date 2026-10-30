@@ -89,3 +89,16 @@ from Wasmtime 48.0.1's C WASIp2 linker. `network-common` is a separately generat
 narrow consumer which omits only that unused function requirement. Both engines
 execute the identical common binary. The original complete-reference failure
 remains recorded; this subset does not establish full reference compatibility.
+
+`tcp.wit` imports the complete TCP/create interfaces and their pinned dependencies.
+`scripts/build_wasi_tcp_fixtures.py` reproduces and independently validates eleven
+components: full/API/common consumers and eight valid type mutations (address
+field/width, stream order, keepalive width, shutdown label, scalar/own results).
+The API view reexports the same nominal imports. The complete guest checks all
+29 TCP operations and exact 4 KiB transfer lengths/pattern endpoints on IPv4/IPv6.
+`setup` opens one persistent connection; `transfer(128)` performs 128 exchanges
+of 4 KiB in each direction; `teardown` shuts down and drops every owned handle.
+Setup/teardown stay outside warmed transfer timing. The common consumer omits
+only the unused `network-error-code` import missing in Wasmtime 48.0.1. The actual
+Rust WASIp2 provider executes it with TCP permission explicitly enabled; the C
+API cannot enable TCP and its access-denied diagnostic is retained separately.

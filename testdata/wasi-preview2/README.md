@@ -1,26 +1,18 @@
 # WASI 0.2.12 interface inputs
 
-`cli.wit` is copied unchanged from the verified WASI release archive recorded in
-`manifest.json`. The pinned WASI repository revision is
-`281ba75fafcd50961ef55f9e52747afcc9b71ede`; its CLI license notice is preserved
-as `LICENSE.WASI.md`. File/archive SHA256 values remain separate provenance.
+The WIT files are copied unchanged from the verified WASI release archive at
+revision `281ba75fafcd50961ef55f9e52747afcc9b71ede`. `manifest.json` pins the
+archive and individual file SHA256 values and enumerates the exact implemented
+interfaces/operations. The original WASI license is preserved in
+`LICENSE.WASI.md`.
 
-Only `wasi:cli/environment@0.2.12` is implemented in this increment, covering
-get-environment, get-arguments and initial-cwd. No complete CLI or HTTP world
-is claimed. Runtime fixtures are project-authored WAT converted and validated
-with wasm-tools 1.258.0; they are not an upstream conformance suite.
+Implemented interfaces include CLI environment/exit/stdio/terminals, random,
+wall/monotonic clocks, IO error/poll/streams, filesystem/preopens, network/IP
+lookup and TCP/create. TCP and filesystem providers currently target Linux and
+Darwin. No complete CLI/HTTP world or WASI 0.3 support is claimed. UDP/HTTP and
+remaining world/component mechanisms stay open in the roadmap.
 
-`random.wit` is copied unchanged from the same pinned release archive and uses
-the same WASI license. The manifest enumerates all five implemented interfaces
-and each operation; complete CLI/HTTP worlds and WASI 0.3 remain open.
-
-
-`clocks.wit` is copied unchanged from the same pinned release archive and license.
-The manifest records its SHA256 and only the implemented wall-clock operations;
-monotonic-clock, unstable timezone and complete worlds are not implied.
-
-
-`io.wit` is retained unchanged with its release archive checksum and WASI license.
-Only the complete poll interface is implemented from this file so far; error and
-streams remain required. The manifest also lists all four monotonic-clock
-operations, separately from wall-clock and complete-world acceptance.
+Runtime fixtures are project-authored Core/Component WAT assembled from the
+pinned WIT ABI and independently validated with wasm-tools 1.258.0. Their
+producers and hash manifests are retained with the package testdata. These
+fixtures complement, and do not replace, upstream world/toolchain conformance.

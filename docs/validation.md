@@ -3456,3 +3456,80 @@ TCP/UDP/HTTP, complete worlds/toolchains, remaining component mechanisms and
 WASI 0.3 remain required. The current integration policy permits this complete
 interface capability to advance while the measured performance deficit remains
 explicit work.
+
+## Complete WASI TCP interfaces (2026-10-30)
+
+The Linux/Darwin provider implements all 28 TCP methods and socket creation
+from pinned WASI 0.2.12. The complete guest executes IPv4/IPv6, options,
+bind/listen/connect/accept, bidirectional IO, shutdown and explicit resource
+drops on interpreter/native. Eleven components reproduce and independently
+validate with wasm-tools 1.258.0; eight valid signature mutations reject binding.
+Nested public socket-address names exposed a component validator defect:
+instance freshening now preserves captured visible compound names while still
+freshening local resource binders and rejecting private-name escape.
+
+Go 1.27.3 full package tests/coverage, targeted race tests, vet and affected LLGo
+`8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f` (`-O3 -lto=full`) tests pass.
+Every executable package passes 90% statement coverage; Preview 2 is **91.7%**,
+component validation **92.8%** with cross-package coverage, and public component
+**91.0%**. Tests include default-denied/explicit grants, callback panic/cancel,
+pending-operation conflicts, full IPv6 addresses, port/family/option rejection,
+partial IO/backpressure, connection refusal, EOF/error downcasts, stream/socket
+and pollable/socket lifetime, quotas/failed-publication rollback, inherited
+listener options, owner revocation, concurrent close and retained cleanup
+errors. An external-FD-close fault injection initially failed the ordinary
+success-only test cleanup; the helper now asserts the expected cleanup error.
+
+Wasmtime 48.0.1 cannot link the full consumer's `network-error-code`. The common
+consumer omits only that unused requirement. The C API additionally returns
+access-denied on TCP creation: address inheritance does not enable TCP, and the
+C API has no allow-TCP setter. These failures remain in `tcp-c-api-final.log`
+and `tcp-common-c-api-final.log`. The performance reference is the actual Rust
+WASIp2 provider with `inherit_network().allow_tcp(true)`, not a replacement.
+Pinned Rust 1.98.0 builds successfully; an initial root-default-nightly compiler
+failure in a Wasmtime dependency remains retained without cache patches. See
+[the C API policy](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/c-api/src/wasi.rs)
+and [WASI context defaults](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/wasi/src/ctx.rs).
+
+Local serial descriptive medians on Apple M4 Max use three samples, 100 own and
+1,000 reference batches per sample. Both run the same component's IPv4/IPv6
+semantic exercise, open a persistent IPv4 loopback session and warm ten batches
+before timing. Each guest batch makes **128 roundtrips**, 4 KiB in each
+direction, checking returned lengths and pattern endpoints. Fuel is off;
+quotas/cancellation remain enabled. Own grants cover loopback only; reference
+inherits network authority, with different default scheduling/safety policies.
+TCP_NODELAY retains the OS default in both providers.
+
+| Warm scope | Go interpreter | Go native | LLGo interpreter | LLGo native | Actual Wasmtime WASIp2 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Roundtrip, ns | 35,263 | 49,521 | 50,879 | 60,872 | 29,763 |
+| Batch of 128, ns | 4,513,642 | 6,338,672 | 6,512,492 | 7,791,602 | 3,809,643 |
+
+LLGo is **1.71× / 2.05× slower** than this reference; performance acceptance
+remains open. Go allocates approximately 7.55/7.62 MB and 21,275/22,818 objects
+per batch; LLGo's allocation counters are not valid evidence. Aggregate canonical
+transfer/resource overhead remains optimization work; these full TCP figures
+are not a pure syscall/kernel measurement and do not isolate the cost of each
+internal stage. No performance win is claimed.
+
+Startup is excluded from warm timing. Separate median phases (ns):
+
+| Phase | Go interpreter/native | LLGo interpreter/native | Wasmtime |
+| --- | ---: | ---: | ---: |
+| Component compilation | 892,375 / 3,860,708 | 1,586,459 / 7,454,583 | 11,252,042 |
+| Provider/Store setup | 24,666 / 29,041 | 33,250 / 33,041 | 80,958 |
+| Bind/instantiate | 419,709 / 186,583 | 290,334 / 319,875 | 96,958 |
+| Connection session setup | 127,125 / 164,750 | 217,125 / 272,667 | 112,667 |
+| First 128 roundtrips | 4,862,959 / 6,641,917 | 6,945,709 / 7,965,792 | 4,212,250 |
+| Session shutdown/drop | 33,875 / 41,916 | 204,416 / 222,709 | 39,500 |
+| Owner teardown | 16,834 / 28,167 | 84,084 / 82,667 | 169,041 |
+
+Load, engine creation and lookup phases, compiler/binary/fixture identities and
+raw samples are retained under `artifacts/components/tcp-*`, including
+`tcp-performance-summary.json`. Source base `409b859` lacks NewTCP under both
+compilers; preserve that API absence separately from engine execution support.
+The unchanged wall-clock workload changes Go **856.6 -> 851.2 / 1,325 -> 1,324
+ns**, LLGo **2,658 -> 2,652 / 4,030 -> 4,021 ns**. These uncontrolled samples do
+not establish a regression guarantee. UDP/HTTP, complete worlds/toolchain
+conformance, remaining component mechanisms and native async/WASI 0.3 remain
+required; M5/M6 stay open. Final cross-platform CI is recorded in the PR.

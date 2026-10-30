@@ -423,7 +423,11 @@ The same guest executes on the actual Wasmtime WASIp2 provider. Network/error,
 instance-network and IP lookup now implement all five operations with explicit
 permission, IDNA, bounded cancellable resolvers and child pollables. Wasmtime
 48.0.1 lacks network-error-code; a narrow common consumer preserves comparable
-lookup execution and the full-consumer failure remains recorded. TCP/UDP/HTTP, remaining
+lookup execution and the full-consumer failure remains recorded. TCP now implements
+all 29 methods/creation operations on Linux/Darwin with explicit bind/connect
+grants, nonblocking polling, parent/stream ownership and bounded cleanup. The
+shared IPv4/IPv6 guest executes on both backends and the actual pinned Rust
+Wasmtime WASIp2 provider. UDP/HTTP, remaining
 component mechanisms, guest-toolchain/world conformance and performance
 acceptance remain required.
 

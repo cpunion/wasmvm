@@ -132,6 +132,39 @@
       "resolve-addresses",
       "[method]resolve-address-stream.resolve-next-address",
       "[method]resolve-address-stream.subscribe"
+    ],
+    "wasi:sockets/tcp@0.2.12": [
+      "[method]tcp-socket.start-bind",
+      "[method]tcp-socket.finish-bind",
+      "[method]tcp-socket.start-connect",
+      "[method]tcp-socket.finish-connect",
+      "[method]tcp-socket.start-listen",
+      "[method]tcp-socket.finish-listen",
+      "[method]tcp-socket.accept",
+      "[method]tcp-socket.local-address",
+      "[method]tcp-socket.remote-address",
+      "[method]tcp-socket.is-listening",
+      "[method]tcp-socket.address-family",
+      "[method]tcp-socket.set-listen-backlog-size",
+      "[method]tcp-socket.keep-alive-enabled",
+      "[method]tcp-socket.set-keep-alive-enabled",
+      "[method]tcp-socket.keep-alive-idle-time",
+      "[method]tcp-socket.set-keep-alive-idle-time",
+      "[method]tcp-socket.keep-alive-interval",
+      "[method]tcp-socket.set-keep-alive-interval",
+      "[method]tcp-socket.keep-alive-count",
+      "[method]tcp-socket.set-keep-alive-count",
+      "[method]tcp-socket.hop-limit",
+      "[method]tcp-socket.set-hop-limit",
+      "[method]tcp-socket.receive-buffer-size",
+      "[method]tcp-socket.set-receive-buffer-size",
+      "[method]tcp-socket.send-buffer-size",
+      "[method]tcp-socket.set-send-buffer-size",
+      "[method]tcp-socket.subscribe",
+      "[method]tcp-socket.shutdown"
+    ],
+    "wasi:sockets/tcp-create-socket@0.2.12": [
+      "create-tcp-socket"
     ]
   },
   "completeWorlds": []
