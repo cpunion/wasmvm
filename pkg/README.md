@@ -9,7 +9,7 @@
 | `component` | Synchronous composition/calls, own/borrow resources, checked host Core modules |
 | `wasi/preview1` | WASI Preview 1 |
 | `wasi/threads` | Separate, optional legacy wasi-threads support |
-| `wasi/preview2` | Versioned environment, exit, random, wall/monotonic clocks and poll providers |
+| `wasi/preview2` | Versioned environment, exit, random, clocks, IO, stdio and terminal providers |
 | `wasi/preview3` | Reserved for WASI 0.3 native async |
 
 See [packages.md](../docs/design/packages.md) for the complete layout and dependency direction, and [README](../README.md) for the current implementation status.

@@ -1,7 +1,8 @@
 # Versioned WASI 0.2 host interfaces
 
 The implemented interfaces are `wasi:cli/environment@0.2.12` and
-`wasi:cli/exit@0.2.12`, plus all three `wasi:random` interfaces and `wasi:clocks/wall-clock` at 0.2.12, using the
+`wasi:cli/exit@0.2.12`, plus all three `wasi:random` interfaces, stable clocks, IO, stdio and terminals
+at 0.2.12, using the
 pinned release WIT and license in `testdata/wasi-preview2`. All operations execute
 through `pkg/component` and the own Core interpreter/native compiler. The
 environment operations are get-environment, get-arguments and initial-cwd.
@@ -29,9 +30,8 @@ runs with Wasmtime 48.0.1's actual WASIp2 C API provider, with explicit argv/env
 and no inherited host state. This is a targeted interface check, not a complete
 upstream conformance suite or two independent guest-language toolchains.
 
-Next interface groups are io error/poll/streams and stdio/terminals, clocks and
-filesystem/preopens, sockets/DNS, then the complete CLI world and
-HTTP. Reuse capability-relative filesystem and stream contracts; do not marshal
+Remaining interface groups are filesystem/preopens, sockets/DNS and HTTP,
+followed by complete declared worlds and their guest-toolchain acceptance. Reuse capability-relative filesystem and stream contracts; do not marshal
 component calls through P1 linear-memory ABIs. The shared Canonical ABI codec now supports packed immutable byte sequences;
 IO/random providers must use that representation and preserve declared bounds.
 Sustained IO performance acceptance remains open.
@@ -182,3 +182,76 @@ blocks before asserting completed readiness, then verifies duplicate indices,
 huge deadlines and explicit drops. This scheduling policy differs from own
 immediate readiness, and remains visible in performance interpretation. IO error,
 streams/stdio, filesystem, sockets/HTTP and complete worlds are still required.
+
+
+## IO, stdio and terminals
+
+`NewIO(IOConfig)` implements error, streams, stdin/stdout/stderr and all five
+terminal interfaces at 0.2.12. It includes the shared poll interface. All 22
+callable operations and resource declarations have signature/nominal checks;
+wrong byte widths, result payloads, error cases and borrowed/owned identities
+fail binding before guest effects. `IO.Poller()` is borrowed for a compatible
+monotonic clock; IO closure also closes that pollable domain.
+
+Zero configuration supplies EOF input and discarded output. Configured sources
+transfer to a successfully constructed owner. Standard getters mint independent
+Store capabilities while the provider pins the configured source. NewInput and
+NewOutput accept additional owned sources in active callbacks. Rejected closed
+owners retain no source ownership; accepted creation closes the source if
+publication fails. Numeric representations, foreign types/Stores and expired
+callers cannot mint or inspect capabilities. Stream IDs never recycle.
+
+A source implements prompt thread-safe input Read or output Write/Flush and a
+coherent readiness snapshot. IO errors count as ready. Output Write must not
+retain supplied bytes. Pending source Flush must signal completion before
+reporting ready again. Close is idempotent and unblocks operations. BytesInput
+owns a byte snapshot; OutputBuffer is a bounded host-drained sink with change
+notifications and detached Drain results. Neither inherits process stdio.
+
+Reads return available bytes, an empty success while unavailable, or a typed
+stream-error; blocking operations wait with Store/call/provider cancellation.
+Requested u64 lengths are capped at MaxReadBytes (default 64 KiB), as WIT permits
+short reads/skips. Partial data precedes a deferred error. Closed input rejects
+even zero-length requests; open zero-length input does not wait. Splice reports
+the stream that actually failed and preserves the order of check/read/write.
+
+Output check-write grants a one-use permit. Unchecked or over-permit write and
+write-zeroes trap before queue allocation. A pending flush advertises zero
+capacity. Nonblocking writes copy into a bounded queue (default 64 KiB per
+stream), with one active worker per output record. Blocking write-and-flush
+uses the same prompt source directly when no older output is queued, preserving
+ordering and cancellation without a mandatory goroutine handoff. Blocking
+payloads above 4,096 bytes trap. Flush completion, backpressure and partial writes
+observe coherent notifications. Worker exceptions become stream failures.
+
+The first permanent operation failure returns last-operation-failed with a
+nominal error capability; subsequent calls return closed. To-debug-string
+returns a bounded valid UTF-8 snapshot (default 4 KiB), replacing invalid or
+truncated encoding with ASCII markers. Debug text is human information, never
+parsed as an error ABI. The host cause remains available through IOErrors
+Describe for typed adapters. Explicit drops release messages and ownership.
+IOErrors has its own bounded domain (default 1,024 errors).
+
+The provider bounds stream records at 1,024 by default, including retiring
+worker records. Dropping a stream with live child pollables traps; drop children
+first. Drop cancels/joins output work and may discard unflushed data, as WIT
+permits. IO.Close requests domain cancellation and stops pending polls; WaitClosed
+joins active creation/calls, workers and source cleanup, and reports cleanup
+errors. It must run outside callbacks. Store close invalidates guest handles and
+cancels calls; the explicit provider remains the owner of abandoned resources
+until IO.Close. Source cooperation remains part of the host callback contract.
+
+Terminal flags are explicit configuration for each stdio endpoint. Defaults
+return none, matching virtual non-terminal sources; enabled endpoints mint opaque
+marker capabilities with the shared terminal-input/output declarations. These
+markers grant no filesystem or extra console authority.
+
+The pinned actual Wasmtime WASIp2 provider executes the same generated component,
+including all stream operations, stdio, terminal-none and IO-error resource
+creation/debug/drop. Own tests additionally exercise terminal-some and strict
+write permits. The reference stdio backend accepts an initial unchecked write;
+own code enforces the WIT precondition. The pinned generic reference host
+implementation delegates check-write/write to its concrete stream backend.
+Record this observed policy difference separately from successful common
+operations. Complete worlds, filesystem, sockets/HTTP and native async remain
+required; these interfaces alone close no M5/M6 acceptance gate.

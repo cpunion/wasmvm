@@ -3219,3 +3219,86 @@ Raw original/final samples, failed reference probe, pinned reference source,
 fixture hashes and coverage summaries are under `artifacts/components/poll-*`.
 IO error/streams/stdio, remaining component resource/host/async mechanisms,
 complete CLI/HTTP worlds and WASI 0.3 remain required; M5/M6 stay open.
+
+
+## Complete WASI IO, stdio and terminal interfaces
+
+Poll/monotonic-clock merged in [PR #55](https://github.com/cpunion/wasmvm/pull/55)
+at `f1187c8` after [all four final jobs passed](https://github.com/cpunion/wasmvm/actions/runs/41026397758).
+All 180 downloaded execution reports passed. This increment implements every
+operation in error/streams, stdin/stdout/stderr and the five terminal interfaces
+at 0.2.12: 22 callable operations plus their resource declarations/implicit drops.
+It shares the existing poll and Core execution contracts.
+
+The complete generated WIT/component exercises all 15 stream operations,
+stdio getters, exact data/counts, EOF and drops. A failure probe creates a real
+last-operation-failed resource, reads its debug string, drops it and verifies
+subsequent closed state. Own and actual Wasmtime 48.0.1 WASIp2 execute these
+same binaries. Virtual terminals return none in the common fixture; own tests
+also enable all three explicit terminal capabilities. Additional own tests cover
+ready/blocked partial IO, queue/backpressure, flush state/permits, Store/provider
+cancellation, parent/child ownership, expired/foreign capabilities, source quotas,
+failed publication, source panic, cleanup errors and bounded UTF-8 snapshots.
+
+Eight independently valid WIT mutations reject wrong provider contracts before
+guest effects. All ten authored components reproduce and validate with
+wasm-tools 1.258.0 using the verified unchanged WASI archive. The selected world,
+generated Core WAT/component and checksum manifest are retained, with
+`scripts/build_wasi_io_fixtures.py` as the pinned reproducer. An initial error
+probe used the void-result payload offset for a u64-result assertion; both
+engines trapped. The corrected probe uses the independently checked alignment;
+the original failures remain as diagnostics. Full affected Go/LLGo release,
+both own backends, race and vet pass locally. P2 statement coverage is **90.98%**
+(1180/1297), and every executable package's coverage gate passes.
+
+The reference rejects over-permit writes, blocking payloads above 4,096 bytes
+and dropping parents with live child pollables. Its stdio backend accepts an
+initial write without check-write; own code enforces the WIT precondition. The
+pinned [generic IO host](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/wasi-io/src/impls.rs)
+delegates check/write to the concrete stream backend. Preserve this observed
+policy difference and the original harness-only endpoint-check failure separately;
+it does not explain the common blocking-write benchmark by itself.
+
+Three sequential 200 ms own samples on Apple M4 Max arm64 use Go 1.27.3 and LLGo
+`8e45ed5 -O3 -lto=full`. Each warmed guest call performs 128 complete blocking
+4 KiB write-and-flush operations through stdout, with explicit getter/drop and
+checked sink byte totals/endpoints. Three 1,000-call reference samples use the
+pinned actual Wasmtime 48.0.1 WASIp2 C provider and identical checks/batch. Scalar
+C API result overhead is amortized. Source base `62e9d5d` lacks the new IO APIs:
+both compilers reject the unchanged benchmark, retained as unsupported. The
+unchanged wall-clock call is a separate common-path regression baseline:
+
+| Median ns | Go interpreter | Go native | LLGo interpreter | LLGo native |
+| --- | ---: | ---: | ---: | ---: |
+| Complete 4 KiB write/flush | 2,895.3 | 3,482.2 | 6,388.3 | 8,434.1 |
+| Existing wall-clock call base -> head | 854 -> 860.9 | 1,318 -> 1,335 | 2,777 -> 2,773 | 4,131 -> 4,221 |
+
+Actual Wasmtime WASIp2: **7,987.3 ns / write**, 1,022,376 ns / 128-write call,
+**512.8 MB/s**. Own LLGo interpreter/native achieve **641.2 / 485.6 MB/s** in
+this virtual checked-sink workload: interpreter is about 20% faster; native
+remains about 6% slower. Local data alone is not calibrated performance acceptance
+or proof of general filesystem/network throughput.
+
+| Independent 4 KiB diagnostic (ns) | Go | LLGo release |
+| --- | ---: | ---: |
+| Checked sink only | 5.76 | 49.78 |
+| Blocking backend | 385.8 | 1,069 |
+| Queued backend | 926.1 | 24,960 |
+
+These are separate scopes, not an additive time profile. The sink counts logical
+bytes and validates endpoints; its byte rate is not a physical memory-bandwidth
+measurement. Blocking operations can use the prompt source directly when no
+older output is queued, avoiding mandatory worker handoff; nonblocking writes
+retain a bounded queued worker. The LLGo scheduling/allocation cost visible in
+the queued diagnostic makes that distinction material. Shared canonical/native
+call-boundary work and queued LLGo costs remain optimization targets.
+
+File/Engine/compiler, provider setup, Store/binding/instantiation, lookup and
+first-call phases are outside warm timing and reported separately. Fuel is off,
+own cancellation/quotas remain enabled, and reference Stores use defaults with
+different buffering/scheduling internals. No real OS IO occurs in these sink
+samples. LLGo allocation counters remain unavailable. Raw phases, diagnostics,
+source-base failures, reference probes, fixture hashes and coverage are under
+`artifacts/components/io-*`. Filesystem/preopens, sockets/HTTP, complete worlds,
+remaining component mechanisms and native async/WASI 0.3 remain required;
+M5/M6 and general performance acceptance stay open.

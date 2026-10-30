@@ -1,0 +1,22 @@
+package wasmvm:io-tests;
+world io {
+ import wasi:io/error@0.2.12;
+ import wasi:io/poll@0.2.12;
+ import wasi:io/streams@0.2.12;
+ import wasi:cli/stdin@0.2.12;
+ import wasi:cli/stdout@0.2.12;
+ import wasi:cli/stderr@0.2.12;
+ import wasi:cli/terminal-input@0.2.12;
+ import wasi:cli/terminal-output@0.2.12;
+ import wasi:cli/terminal-stdin@0.2.12;
+ import wasi:cli/terminal-stdout@0.2.12;
+ import wasi:cli/terminal-stderr@0.2.12;
+ export terminal-probe: func() -> u32;
+ export write-unchecked: func() -> u32;
+ export write-overpermit: func() -> u32;
+ export blocking-too-large: func() -> u32;
+ export parent-drop: func() -> u32;
+ export exercise: func() -> u32;
+ export error-probe: func() -> u32;
+ export write-batch: func(count: u32) -> u32;
+}
