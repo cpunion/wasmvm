@@ -16,3 +16,8 @@ Runtime fixtures are project-authored Core/Component WAT assembled from the
 pinned WIT ABI and independently validated with wasm-tools 1.258.0. Their
 producers and hash manifests are retained with the package testdata. These
 fixtures complement, and do not replace, upstream world/toolchain conformance.
+
+`http.wit` is retained unchanged for the next implementation increment. HTTP
+bindings, transport and complete proxy/client worlds remain unimplemented;
+its presence and preparation fixtures do not advertise interface support.
+The informational-outbound-responses WIT feature remains separately unstable.

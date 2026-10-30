@@ -1,8 +1,8 @@
 # Versioned WASI 0.2 host interfaces
 
 The implemented interfaces are `wasi:cli/environment@0.2.12` and
-`wasi:cli/exit@0.2.12`, plus all three `wasi:random` interfaces, stable clocks, IO, stdio and terminals
-at 0.2.12, using the
+`wasi:cli/exit@0.2.12`, plus all three `wasi:random` interfaces, stable clocks,
+IO, stdio, terminals, filesystem/preopens, sockets/DNS and stable HTTP at 0.2.12, using the
 pinned release WIT and license in `testdata/wasi-preview2`. All operations execute
 through `pkg/component` and the own Core interpreter/native compiler. The
 environment operations are get-environment, get-arguments and initial-cwd.
@@ -30,8 +30,8 @@ runs with Wasmtime 48.0.1's actual WASIp2 C API provider, with explicit argv/env
 and no inherited host state. This is a targeted interface check, not a complete
 upstream conformance suite or two independent guest-language toolchains.
 
-Remaining interface groups are filesystem/preopens, sockets/DNS and HTTP,
-followed by complete declared worlds and their guest-toolchain acceptance. Reuse capability-relative filesystem and stream contracts; do not marshal
+Remaining gates include complete declared worlds and their independent
+guest-toolchain acceptance. Reuse capability-relative filesystem and stream contracts; do not marshal
 component calls through P1 linear-memory ABIs. The shared Canonical ABI codec now supports packed immutable byte sequences;
 IO/random providers must use that representation and preserve declared bounds.
 Sustained IO performance acceptance remains open.
@@ -412,3 +412,18 @@ lifecycle, limits, errors and validation scopes. The complete IPv4/IPv6 guest
 executes on both backends and the actual pinned Wasmtime Rust WASIp2 provider.
 HTTP, complete worlds, remaining component mechanisms and native async remain
 required.
+
+## HTTP client and incoming handler
+
+`HTTP` supplies all 51 stable types operations and the outgoing handler on
+Linux/Darwin, with `CallIncoming`/`HTTPHandler` executing the standard guest
+incoming handler. It shares the Network/IO resource domains, separate URL and
+resolved-connect grants, bounded streaming and joined cancellation/cleanup.
+The authored proxy consumer, HTTP/HTTPS clients and concurrent incoming handler
+execute on both own backends with Go/LLGo. Actual pinned Wasmtime HTTPp2 also
+executes the common HTTP client and incoming guest without replacement hooks.
+See [HTTP design and embedding](wasi-http.md) for limits, ownership, reference
+differences and performance phases. Stable interfaces and authored proxy flows
+do not complete M5: independent guest languages, full-world conformance,
+remaining component mechanisms and performance targets remain explicit gates.
+WASI 0.3 requires canonical async.

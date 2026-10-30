@@ -10,7 +10,8 @@
     "clocks.wit": "6ed8aa65bb8cbe224a0b2cbac9fc1b3bd25bdb17eda5ae0d23c983ed31c447cc",
     "io.wit": "96e206d00076fa0480df32c5bcf255a3fa4862805ac2f6b8537a781cce54f433",
     "filesystem.wit": "e675f261017bf9b4fa7df5b9701023fe0249ede71021ac1bf978748e62edcda8",
-    "sockets.wit": "ee3ceecb32afc258db3cf64fd8a8d7efde350db3ae55047e59908e445afc1ed9"
+    "sockets.wit": "ee3ceecb32afc258db3cf64fd8a8d7efde350db3ae55047e59908e445afc1ed9",
+    "http.wit": "4bbd58f509700a6637385611f183c5bd5984d81feef85e29dfdc05ebd283045a"
   },
   "implementedInterfaces": {
     "wasi:cli/environment@0.2.12": [
@@ -188,7 +189,68 @@
     ],
     "wasi:sockets/udp-create-socket@0.2.12": [
       "create-udp-socket"
+    ],
+    "wasi:http/types@0.2.12": [
+      "[constructor]fields",
+      "[static]fields.from-list",
+      "[method]fields.get",
+      "[method]fields.has",
+      "[method]fields.set",
+      "[method]fields.delete",
+      "[method]fields.append",
+      "[method]fields.entries",
+      "[method]fields.clone",
+      "[method]incoming-request.method",
+      "[method]incoming-request.path-with-query",
+      "[method]incoming-request.scheme",
+      "[method]incoming-request.authority",
+      "[method]incoming-request.headers",
+      "[method]incoming-request.consume",
+      "[constructor]outgoing-request",
+      "[method]outgoing-request.body",
+      "[method]outgoing-request.method",
+      "[method]outgoing-request.set-method",
+      "[method]outgoing-request.path-with-query",
+      "[method]outgoing-request.set-path-with-query",
+      "[method]outgoing-request.scheme",
+      "[method]outgoing-request.set-scheme",
+      "[method]outgoing-request.authority",
+      "[method]outgoing-request.set-authority",
+      "[method]outgoing-request.headers",
+      "[constructor]request-options",
+      "[method]request-options.connect-timeout",
+      "[method]request-options.set-connect-timeout",
+      "[method]request-options.first-byte-timeout",
+      "[method]request-options.set-first-byte-timeout",
+      "[method]request-options.between-bytes-timeout",
+      "[method]request-options.set-between-bytes-timeout",
+      "[static]response-outparam.set",
+      "[method]incoming-response.status",
+      "[method]incoming-response.headers",
+      "[method]incoming-response.consume",
+      "[method]incoming-body.stream",
+      "[static]incoming-body.finish",
+      "[method]future-trailers.subscribe",
+      "[method]future-trailers.get",
+      "[constructor]outgoing-response",
+      "[method]outgoing-response.status-code",
+      "[method]outgoing-response.set-status-code",
+      "[method]outgoing-response.headers",
+      "[method]outgoing-response.body",
+      "[method]outgoing-body.write",
+      "[static]outgoing-body.finish",
+      "[method]future-incoming-response.subscribe",
+      "[method]future-incoming-response.get",
+      "http-error-code"
+    ],
+    "wasi:http/outgoing-handler@0.2.12": [
+      "handle"
     ]
   },
-  "completeWorlds": []
+  "completeWorlds": [],
+  "implementedGuestExports": {
+    "wasi:http/incoming-handler@0.2.12": [
+      "handle"
+    ]
+  }
 }

@@ -1,0 +1,7 @@
+package wasmvm:http-tests;
+
+world http {
+  include wasi:http/proxy@0.2.12;
+  export probe: func(authority: string, secure: bool) -> u32;
+  export request-batch: func(authority: string, count: u32) -> u32;
+}

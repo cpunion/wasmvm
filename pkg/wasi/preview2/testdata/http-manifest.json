@@ -1,0 +1,12 @@
+{
+  "producer": "wasm-tools 1.258.0",
+  "wasiVersion": "0.2.12",
+  "wasiArchiveSha256": "2b0e47bc02953267ad163c6c1188b65baed1292351998cb032f3dcd28d005992",
+  "worldSha256": "fef1b275531b77e53fb35255369cf951eefa0523356f083050313b1febf96935",
+  "stableHTTPOperations": 53,
+  "unstableFeatures": [],
+  "binarySha256": {
+    "http.wasm": "c8a6eaa27dcacb94fdcad66c23ed9b8ab44ef6e7fa666358e59bff34bda8c652",
+    "http-api.wasm": "8ab9a60817a1aa0f1dc16bad93b2828a3681b2c47397811f0027be81d812e461"
+  }
+}

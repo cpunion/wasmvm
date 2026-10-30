@@ -386,3 +386,32 @@ The actual Wasmtime 48.0.1 Rust WASIp2 provider uses explicit
 Build with pinned `cargo +1.98.0 ... --bin udp`; invoke `udp COMPONENT COUNT`.
 No replacement reference provider is installed. Preserve source-base NewUDP
 API absence separately from the unchanged wall-clock probe.
+
+### WASI HTTP fields, body and full requests
+
+`BenchmarkHTTPFields` exercises the nine ordered-fields operations and invalid
+syntax, `BenchmarkHTTPBodyTransfer` produces/finishes a 4096-byte body without
+networking, and `BenchmarkHTTPRequests` runs full POST/response/trailer flows.
+Each call checks 128 lifetimes after ten warmup batches. Both backends use the
+same guest and Canonical ABI/resource/safety paths. Load, engine, compilation,
+provider setup, Store binding/instantiation, lookup, first batch and teardown
+are separate metrics. Fuel is off; quotas/cancellation and loopback grants remain.
+
+Build `http_server.go` as a standalone Go executable and use one external server
+for all host compilers and references. Its authority-file argument publishes the
+loopback endpoint; set `WASMVM_HTTP_BENCH_AUTHORITY` from that file. `/stats`
+reports accepted connections, checked requests and invalid body/trailer messages.
+Build the actual pinned provider with `cargo +1.98.0 build --release
+--manifest-path benchmarks/components/rust/Cargo.toml --bin http_fields --bin http
+--bin http_proxy`. Invoke `http_fields COMPONENT COUNT [body]`, `http COMPONENT
+AUTHORITY COUNT`, and `http_proxy COMPONENT` respectively. No replacement sender
+or provider is installed. See [HTTP design](../../docs/design/wasi-http.md).
+
+The default reference sender creates a new TCP connection per request while own
+transports reuse them. Full-request numbers include that policy difference;
+pure field/body measurements are separate. The common guest declares request
+trailers explicitly; preserve the earlier valid undeclared-trailer reference
+failure separately. Source-base NewHTTP API absence is not a performance score.
+Pinned LLGo can delay HTTP cancellation about one second: see
+[llgo #2953](https://github.com/xgo-dev/llgo/issues/2953). Functional outer waits
+allow eventual cancellation; they do not claim prompt cancellation parity.
