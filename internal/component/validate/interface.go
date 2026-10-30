@@ -134,7 +134,11 @@ func (s *TypeScope) Declare(d *model.Import, exporting bool) (*Type, error) {
 		return nil, err
 	}
 	if d.Type.Sort == model.InstanceSort {
-		t, err = s.pool.freshInstance(t)
+		known := s.visibility.imports
+		if exporting {
+			known = s.visibility.exports
+		}
+		t, err = s.pool.freshInstanceVisible(t, known)
 		if err != nil {
 			return nil, err
 		}

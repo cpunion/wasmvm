@@ -352,4 +352,51 @@ resolution lifetimes. No stub/reference implementation is substituted. See the
 [reference source](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/wasi/src/p2/ip_name_lookup.rs)
 and [host lookup policy](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/wasi/src/sockets/ip_name_lookup.rs).
 This is P2 polling over asynchronous host work, not canonical async or WASI 0.3.
-TCP/UDP, HTTP and complete worlds remain required.
+UDP, HTTP and complete worlds remain required.
+
+## TCP sockets
+
+On Linux/Darwin, `TCP` implements all 28 methods in `wasi:sockets/tcp@0.2.12`
+and `create-tcp-socket` in `tcp-create-socket`. Construct it with an explicit
+`Network` backed by the IO owner. `Imports` includes these dependent interfaces
+and a stable monotonic-clock provider sharing the same pollable domain. Neither
+socket creation nor a network handle grants bind/connect permission: nil policy
+callbacks deny both. Callbacks receive the complete address (including IPv6
+flow-info/scope-id), run outside provider/socket locks, may run concurrently,
+and must observe cancellation. Accepted connections inherit listener authority.
+
+The provider supports IPv4 and IPv6-only sockets, nonblocking start/finish
+bind/connect/listen, accept, local/remote addresses, all keepalive/hop/buffer
+options, backlog changes, polling, independent IO streams and directional,
+idempotent shutdown. Zero option values reject where WIT requires; oversized
+values clamp to the documented OS-supported range. Keepalive durations round
+up to seconds and clamp to 32,767 seconds; count clamps to 127. Buffer getters
+return the actual OS value. Successful listener settings for keepalive idle,
+hop limit and buffers are applied explicitly on accepted sockets. Flush means
+kernel acceptance, without adding a delivery acknowledgement. TCP_NODELAY
+retains its OS default in both own and reference providers.
+
+The default live-socket limit is 128, including active creation reservations.
+Input/output and pollable quotas come from the shared IO owner. Streams and
+pollables lease their parent socket: dropping a socket before its children
+traps and preserves cleanup until the last child drops. Failed publication
+rolls back all partially created resources. Syscall/poll leases prevent FD
+reuse until cancellation joins active work; stream IO handles partial transfers,
+backpressure and EOF without a mandatory worker handoff. Typed network causes
+survive IO error downcasts. Readiness uses at most one waiter per direction.
+
+Close revokes permission, cancels waiters and closes every socket; WaitClosed
+joins active calls, physical closes and already detached cleanup, retaining the
+first close error. Closing the parent Network also closes TCP. Close/wait for
+IO separately to reclaim its streams/errors/pollables. Store close alone does
+not synthesize owner close. Embedders must not close provider-owned OS FDs.
+
+The complete consumer executes IPv4/IPv6 guest assertions and all 29 operations
+on both own backends. Eight independently valid WIT contract mutations must
+fail binding; an exact-domain API view covers lifecycle/error paths. The common
+consumer omits only the unused `network-error-code` import missing in the pinned
+Wasmtime provider. Actual TCP reference execution uses Wasmtime 48.0.1's Rust
+WASIp2 provider with explicit `inherit_network().allow_tcp(true)`. Its C API
+exposes address inheritance but no `allow_tcp` setter; the retained C probe
+returns access-denied even for the common consumer. No replacement network
+provider is used. UDP/HTTP, complete worlds and canonical async remain required.

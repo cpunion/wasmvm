@@ -1,0 +1,19 @@
+{
+  "producer": "wasm-tools 1.258.0",
+  "wasiVersion": "0.2.12",
+  "wasiArchiveSha256": "2b0e47bc02953267ad163c6c1188b65baed1292351998cb032f3dcd28d005992",
+  "worldSha256": "37633d2aa1e0ac53fc23f7cbf974026873c1f1686af70247cdd8d47f1d9c3f44",
+  "binarySha256": {
+    "tcp.wasm": "6d6e3ba4153a6b97e74ec3eefcffb8fb2783eb6d9a4edfbd36d50dd59693db79",
+    "tcp-api.wasm": "896fd4bd107907834a6519db7a58cc8920782fb5587bfa8d8978773edc469abf",
+    "tcp-common.wasm": "11144952a5c95f313b9b8572711e0373f0e7576dd63c3a3272ecf456d8573ad2",
+    "tcp-contract-address-field.wasm": "59bcd10180b0b3cc3a45b72169da3d41e93bc99f9c9ed38b65a141fc1a77ef3d",
+    "tcp-contract-address-width.wasm": "90d3829d67786bab755b004b3e28d3bc740e3c83f8b19b36271bc7fb70c0b01a",
+    "tcp-contract-stream-order.wasm": "bb3a2092ac9fb9afab823d59252ca92a34affb8a68aaf3d10ec66be201a9bdd9",
+    "tcp-contract-keep-count.wasm": "93ef9312c46743ce0638a807a4869571241ac1573e583f03ed64f492349eb5e6",
+    "tcp-contract-shutdown-label.wasm": "b5098f5f4570b56ca50ffa5ead486de9aade2a3356442a28f6f865145a690adc",
+    "tcp-contract-family-result.wasm": "9680d3d765a7c98247d81f7e4cdb5e3a803011249c205e384456974328f90a1a",
+    "tcp-contract-subscribe-result.wasm": "3887fd51b56e97609300598c9521470085a0b176ec03326ba522f17020c39be5",
+    "tcp-contract-create-result.wasm": "dc17f775a6e0e6ea3e56db58e25df8534e171ae524d02223f9b237d11b8a16b0"
+  }
+}

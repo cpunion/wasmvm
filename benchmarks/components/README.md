@@ -344,3 +344,29 @@ that unused requirement and has the same authored guest workload; both engines
 run the exact common binary. No replacement implementation is installed in the
 reference linker. Source base lacks NewNetwork; the unchanged wall-clock probe
 supplies an independent own source-base/head comparison.
+
+### WASI TCP persistent transfer
+
+`BenchmarkTCPRoundtripBatch` and the Rust `tcp` binary execute the identical
+`tcp-common.wasm` on actual providers. Before timing, both run the complete
+IPv4/IPv6 semantic exercise. A separate session opens a loopback IPv4 connection;
+each timed guest call makes 128 roundtrips, transferring 4 KiB each direction
+and checking lengths/pattern endpoints. Ten batches warm the persistent session.
+Socket options, connection creation, bind/accept, guest shutdown and drops stay
+outside the measured transfer loop. Load, engine, compilation, provider/Store
+setup, bind/instantiate, lookup, session setup, first batch, session shutdown
+and owner teardown are reported separately. Fuel is off; own quotas and
+cancellation remain enabled. These local serial samples are descriptive.
+
+Build the reference with `cargo +1.98.0 build --release --manifest-path
+benchmarks/components/rust/Cargo.toml --bin tcp`, then invoke `tcp COMPONENT COUNT`.
+Wasmtime 48.0.1's actual Rust WASIp2 provider uses
+`inherit_network().allow_tcp(true)`; own callbacks authorize loopback only.
+Other default scheduling/safety policies differ. Keep TCP_NODELAY at the OS
+default in both. The full consumer's missing `network-error-code` and the C API
+common consumer's TCP access-denied are separate retained failures: the pinned
+C API has no TCP-enable setter. `c/tcp.c` is that diagnostic probe, not a valid
+TCP performance reference. The normal Rust build uses pinned stable 1.98.0;
+an initial default-nightly dependency compile failure is retained without
+patching the shared dependency cache. Source base lacks NewTCP; preserve that
+API-baseline failure and compare the unchanged wall-clock workload separately.

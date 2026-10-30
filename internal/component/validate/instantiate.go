@@ -93,7 +93,11 @@ func (p *TypePool) captures(root *Type, cutoff uint64) ([]uint64, error) {
 // import/export declaration. Repeated uses of the same instance type therefore
 // receive distinct resources; equality aliases within each use stay equal.
 // Component instantiation's import substitution is a separate linking step.
-func (p *TypePool) freshInstance(t *Type) (*Type, error) {
+func (p *TypePool) freshInstance(t *Type) (*Type, error) { return p.freshInstanceVisible(t, nil) }
+
+// External names captured by an interface are stable. Only local export
+// binders and their dependent shapes are freshened for each declaration.
+func (p *TypePool) freshInstanceVisible(t *Type, known map[nameable]bool) (*Type, error) {
 	bindings := map[uint64]*Type{}
 	symbols := map[*valueBinding]*valueBinding{}
 	visited := map[*Type]bool{}
@@ -130,7 +134,18 @@ func (p *TypePool) freshInstance(t *Type) (*Type, error) {
 	if err := collect(t); err != nil {
 		return nil, err
 	}
-	c := substitution{pool: p, bindings: bindings, symbols: symbols, types: map[*Type]*Type{}, values: map[*model.Type]*model.Type{}, cloneAll: true}
+	c := substitution{pool: p, bindings: bindings, symbols: symbols, types: map[*Type]*Type{}, values: map[*model.Type]*model.Type{}, cloneAll: true, typeBindings: map[*Type]*Type{}, valueBindings: map[*model.Type]*model.Type{}}
+	if err := p.charge(uint64(len(known))); err != nil {
+		return nil, err
+	}
+	for key := range known {
+		if key.resource != nil {
+			c.typeBindings[key.resource] = key.resource
+		}
+		if key.value != nil {
+			c.valueBindings[key.value] = key.value
+		}
+	}
 	return c.typ(t)
 }
 
