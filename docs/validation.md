@@ -2534,3 +2534,62 @@ and repeat script are retained in `artifacts/components/values-benchmark/`.
 Component async validation, composition execution, canonical calls/ownership
 and versioned WASI 0.2/0.3 worlds remain required. This static increment does
 not complete M5 or M6.
+
+
+## Synchronous component execution
+
+Literal values and start plans merged in [PR #44](https://github.com/cpunion/wasmvm/pull/44)
+at `7a5f5a8` after [all four Go/LLGo jobs passed](https://github.com/cpunion/wasmvm/actions/runs/40966221064).
+All 180 Core/proposal/P1/thread execution reports were downloaded and verified.
+
+The next increment executes ordered Core/component composition and synchronous
+canonical calls on the existing interpreter/native compiler. Real execution
+covers host callbacks, three string encodings, memory64, spilled parameters and
+results, post-return, starts, values, outer closures and narrowed instance views.
+Limits cover pure component expansion and host-only reentry as well as Core
+execution. Errors, traps, cancellation and callback lifetime are tested.
+[Runtime scope](design/component-runtime.md) lists unsupported capabilities;
+resources, remaining async and WASI 0.2/0.3 worlds are not complete.
+
+Local full Go tests and the exact per-package coverage gate pass. Coverage is
+90.34% for `pkg/component`, 93.64% for `pkg/vm`, 94.30% for canonical primitives
+and 92.45% for component validation. Go race checks and LLGo release-profile
+component/Core API tests pass, including both own backends. Bounded execution
+fuzzing completed 304,374 executions without failure. These are package tests
+and robustness counts, not complete independent Component Model conformance.
+
+The component numeric composition also returns `9` under Wasmtime 48.0.1.
+Separate embedded measurements use its checksum-pinned C API SDK (SHA256
+`9e3c636ed487a41026ff76388c5fa6f3a48ea0968408d033ed4b5e8082c20d69`).
+Five local arm64 samples use Go 1.27.3 and LLGo `8e45ed5 -O3 -lto=full`.
+The same two-u32 `add` component and checked changing arguments isolate tiny
+call latency; this does not measure sustained instruction throughput.
+
+| Phase (median microseconds) | Go interpreter | Go native | LLGo interpreter | LLGo native | Wasmtime C API |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Owned compile, excluding Engine setup | 13.033 | 25.239 | 59.277 | 172.641 | 986.000 |
+| Store setup + instantiate + close | 3.167 | 3.484 | 12.795 | 15.193 | 28.000 (close excluded) |
+| Public warm call | 0.436 | 0.751 | 2.643 | 4.610 | 0.346 |
+| Shared Core session diagnostic | 0.334 | 0.562 | 2.499 | 4.155 | — |
+
+Own instantiation includes cleanup; the reference's setup/instantiate phases
+exclude deletion and export lookup. First call, lookup, Engine setup and file
+load are retained separately in raw logs. Process startup and binary build are
+outside the warm timers. The source baseline has no component execution API,
+so it has no successful warm row. Allocation counters under LLGo remain
+unavailable. Fuel is disabled in these descriptive samples; cancellation and
+logical safety policies still differ, and calibrated acceptance remains open.
+
+LLGo tiny-call latency is about 7.6×/13.3× Wasmtime for interpreter/native and
+has not reached the target. A three-instruction call emphasizes API/adapter,
+allocation and Core handoff costs; these results do not establish slower
+compiled instruction throughput. Sharing the Core session removes only part
+of the overhead. Keep this gap visible while execution coverage advances under
+the owner capability-first decision; do not claim a performance pass.
+
+The initial reference harness crashed with an uninitialized output value.
+Explicitly initializing its output struct makes the probe succeed; the failed
+source and debugger output are retained, not counted as timing results.
+Raw logs, SDK provenance and phase summaries are under
+`artifacts/components/runtime-benchmark/`; the independent C probe and Go/LLGo
+commands are documented in [the phase probes](../benchmarks/components/README.md).

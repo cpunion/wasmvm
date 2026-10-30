@@ -23,6 +23,17 @@ type valueBinding struct {
 	literal *canonical.Value
 }
 
+// ValueKey is an opaque compilation-local equality symbol. LiteralValue, when
+// present, supplies its precise immutable contents. Consumers must copy those
+// contents before handing mutable aggregates to host code.
+func (t *Type) ValueKey() any { return t.valueBinding }
+func (t *Type) LiteralValue() (canonical.Value, bool) {
+	if t.valueBinding == nil || t.valueBinding.literal == nil {
+		return canonical.Value{}, false
+	}
+	return *t.valueBinding.literal, true
+}
+
 func (s *TypeScope) valueType(ref model.TypeRef) (*Type, error) {
 	v, err := s.Value(ref)
 	if err != nil {
