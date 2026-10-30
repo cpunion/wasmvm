@@ -15,6 +15,7 @@ type Value struct {
 	Text     string
 	Elements []Value
 	Case     uint32
+	Resource *Reference
 }
 
 // Codec belongs to one synchronous call. All type graphs/layouts are immutable;
@@ -24,6 +25,7 @@ type Codec struct {
 	Layouts   *Builder
 	MaxValues uint64
 	values    uint64
+	Resources ResourceCodec
 }
 
 // Validate checks a host value before calls or transfers cause guest effects.
@@ -40,6 +42,12 @@ func (c *Codec) Clone(t *model.Type, v Value) (Value, error) {
 }
 
 func (c *Codec) clone(t *model.Type, v Value) (Value, error) {
+	if t.Kind == model.Own || t.Kind == model.Borrow {
+		if err := c.Transfer.charge(128); err != nil {
+			return Value{}, err
+		}
+		return Value{Resource: v.Resource}, nil
+	}
 	if scalarKind(t.Kind) || t.Kind == model.Flags || t.Kind == model.Enum {
 		return Value{Bits: v.Bits}, nil
 	}
@@ -130,6 +138,20 @@ func (c *Codec) load(t *model.Type, at uint64, depth uint32) (Value, error) {
 		return Value{Bits: s.Bits}, err
 	}
 	switch t.Kind {
+	case model.Own, model.Borrow:
+		r, err := c.resource()
+		if err != nil {
+			return Value{}, err
+		}
+		id, err := c.loadInt(at, 4)
+		if err != nil {
+			return Value{}, err
+		}
+		if err := c.Transfer.charge(128); err != nil {
+			return Value{}, err
+		}
+		return r.Lift(t, uint32(id))
+
 	case model.String:
 		s, err := c.Transfer.LoadString(at)
 		return Value{Text: s}, err
@@ -278,6 +300,13 @@ func (c *Codec) validate(t *model.Type, v Value, depth uint32) error {
 		return err
 	}
 	switch t.Kind {
+	case model.Own, model.Borrow:
+		r, err := c.resource()
+		if err != nil {
+			return err
+		}
+		return r.Validate(t, v)
+
 	case model.String:
 		return c.Transfer.validateString(v.Text)
 	case model.List, model.FixedList:
@@ -364,6 +393,17 @@ func (c *Codec) store(t *model.Type, at uint64, v Value, depth uint32) error {
 		return StoreScalar(c.Transfer.Memory, at, Scalar{t.Kind, v.Bits})
 	}
 	switch t.Kind {
+	case model.Own, model.Borrow:
+		r, err := c.resource()
+		if err != nil {
+			return err
+		}
+		id, err := r.Lower(t, v)
+		if err != nil {
+			return err
+		}
+		return c.storeInt(at, 4, uint64(id))
+
 	case model.String:
 		return c.Transfer.StoreString(at, v.Text)
 	case model.Record, model.Tuple:

@@ -11,7 +11,7 @@ import (
 )
 
 func FuzzComponentExecution(f *testing.F) {
-	for _, path := range []string{"../../internal/component/decode/testdata/composition.wasm", "testdata/strings.wasm", "testdata/resources.wasm", "testdata/resources64.wasm", "testdata/resource-generative.wasm", "testdata/resource-post-return.wasm"} {
+	for _, path := range []string{"../../internal/component/decode/testdata/composition.wasm", "testdata/strings.wasm", "testdata/resources.wasm", "testdata/resources64.wasm", "testdata/resource-generative.wasm", "testdata/resource-post-return.wasm", "testdata/ownership.wasm", "testdata/ownership-composition.wasm", "testdata/ownership64.wasm"} {
 		bytes, err := os.ReadFile(path)
 		if err != nil {
 			f.Fatal(err)

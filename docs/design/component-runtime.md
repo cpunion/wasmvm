@@ -10,16 +10,16 @@ instances, synthesized instances, child component closures and instantiation,
 imports/exports, narrowed instance views, literal values and component starts.
 Host bindings supply callbacks and copied values through declared schemas.
 Fixed equality-bound value schemas are inferred from those declarations;
-generative host resource types, host components and host Core module imports
-remain unsupported. Other incomplete executable operations are rejected during
+nominal host resource types bind through `Imports.Resources`. Host components
+and host Core module imports remain unsupported. Other incomplete executable operations are rejected during
 compilation or host binding, before instantiation invokes guest code.
 
 Canonical lift/lower shares `internal/component/canonical` for scalars,
 strings, lists/fixed lists, maps, records/tuples, variants, flags/enums and option/results.
 Memory32/64, all three string encodings, direct/spilled arguments/results,
 realloc and post-return use checked memory capabilities. Resource new/rep/drop
-executes through the same Core session. Own/borrow value conversion and async
-execution remain required;
+executes through the same Core session. Own/borrow call values now use opaque capabilities and scoped transfers. Async
+execution, standalone resource values/starts and local cm64 borrows remain required;
 literal or layout support does not establish those runtime capabilities.
 
 ## Calls and lifetime
@@ -50,8 +50,8 @@ Engine close prevents new compilation/Store creation. Compiled close prevents
 new instantiation while existing instances retain Core code leases. Instance
 close requests cancellation; `WaitClosed` observes final reclamation after
 active callbacks leave. Successful synchronous results are copied before
-post-return runs. There is no claim of resource-transfer transactions or async
-cleanup until those capabilities are implemented.
+post-return runs. Resource transfers use per-call ownership cleanup and borrowed lifetimes; async
+cleanup remains unimplemented.
 
 ## Embedding and evidence
 
@@ -106,7 +106,48 @@ component domain in the Store, rather than multiplying the quota per child.
 Failure (including host panic during initialization) and instance close seal
 the tables and release their quota. Close is a
 cancellation request and does not execute implicit guest destructors; explicit
-resource.drop runs them before teardown. This instruction support does not yet
-publish host resource capabilities, supply generative host imports, or wire
-own/borrow transfers through flat/memory codecs. Those transactions, borrowed
-call scopes and failure cleanup remain the next integration stage.
+resource.drop runs them before teardown. Own/borrow calls now publish opaque capabilities and connect host resource
+imports to flat/memory codecs. Standalone resource values/starts and the local
+cm64 borrow ABI remain rejected; these call contracts do not complete M5/M6.
+
+
+## Ownership across calls
+
+`Value.Resource` carries an opaque `Resource`; numeric Bits and zero tokens do
+not grant ownership. Copies of a token share one move state. Passing own moves
+that capability, invalidating every old alias; borrow pins its lender and expires
+at call return. Aggregate values use the same codec, including maps, fixed lists,
+variants and spilled arguments/results. Duplicate own arguments are rejected
+before guest allocation. Foreign borrowed handles must be explicitly dropped by
+the guest before normal return; escape invalidates them and traps the component.
+
+A host resource declaration is created by `NewHostResourceType(destructor)` and
+bound by name through `Imports.Resources`, including nested interfaces. Copies
+share the same immutable nominal declaration. Equality-bound imports must bind
+the same declaration, checked before guest effects. Each Store retains its own
+runtime binding; capabilities cannot cross Stores. `Instance.NewResource` and
+`Caller.NewResource` mint host ownership for a bound type. `ResourceRep` checks
+the host declaration and capability before exposing its u32 representation.
+Guest-defined resource representations remain opaque to the host. CM64 own
+values preserve their full representation through transfer and destruction.
+
+Drop host ownership with `Instance.DropResource` or callback-scoped
+`Caller.DropResource`. Destructors consume ownership before user/guest code and
+share the active Core session, fuel and reentry limits. Failed provisional
+transfers and callback-created resources run their host destructors even during
+cancellation. Guest destructors run only while their implementation can safely
+be entered; failed/canceled guest state is not reentered. Cleanup invalidates
+unpublished ownership and releases quota even when a destructor fails or panics,
+preserving the primary failure. Ordinary published ownership must be explicitly
+dropped or transferred. Store close seals tables without synthesizing guest drops.
+
+`vm.Store.WithCallerCleanup` handles final publication failure before the Caller
+expires, retaining one operation lease and fuel/context. Synchronous component
+entry is exclusive: a suspended component cannot be reentered through a host
+callback. Cross-component calls and local Core destructors retain their intended
+paths. Pure host callbacks/destructors additionally share the host depth bound.
+
+The pinned MVP reference specifies u32 resources. Local cm64 borrow conversion
+is rejected before instantiation rather than truncating its representation.
+Standalone resource value imports/exports and resource-bearing component starts
+remain a separate integration task; no support is inferred from call values.

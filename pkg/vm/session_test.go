@@ -8,6 +8,69 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
+func TestSessionFailureCleanupUsesActiveLease(t *testing.T) {
+	withBackends(t, func(t *testing.T, newEngine func() *Engine) {
+		_, s, _ := setupWithEngine(t, newEngine)
+		memory, _ := s.NewMemory(MemoryType{Min: 1})
+		for _, mode := range []string{"success", "error", "cancel", "panic"} {
+			ctx, cancel := context.WithCancel(context.Background())
+			var expired *Caller
+			cleaned := 0
+			var caught any
+			var err error
+			func() {
+				defer func() { caught = recover() }()
+				_, err = s.WithCallerCleanup(ctx, CallOptions{}, func(c *Caller) error {
+					expired = c
+					switch mode {
+					case "panic":
+						panic("session panic")
+					case "cancel":
+						cancel()
+					case "error":
+						return ErrType
+					}
+					return nil
+				}, func(c *Caller) error {
+					cleaned++
+					if _, err := s.WithCaller(nil, CallOptions{}, func(*Caller) error { return nil }); !errors.Is(err, ErrBusy) {
+						t.Fatal("cleanup lost the operation lease", err)
+					}
+					err := c.WriteExternalMemory(memory, 0, []byte{7})
+					if mode == "cancel" {
+						if !errors.Is(err, context.Canceled) {
+							t.Fatal(err)
+						}
+					} else if err != nil {
+						t.Fatal("Caller expired before cleanup", err)
+					}
+					return ErrLink
+				})
+			}()
+			cancel()
+			if mode == "success" {
+				if cleaned != 0 || err != nil || caught != nil {
+					t.Fatal(cleaned, err, caught)
+				}
+			} else if cleaned != 1 {
+				t.Fatal(mode, cleaned)
+			}
+			if mode == "panic" && caught != "session panic" {
+				t.Fatal(caught)
+			}
+			if mode == "error" && (!errors.Is(err, ErrType) || !errors.Is(err, ErrLink)) {
+				t.Fatal("cleanup replaced the primary error", err)
+			}
+			if mode == "cancel" && (!errors.Is(err, context.Canceled) || !errors.Is(err, ErrLink)) {
+				t.Fatal(err)
+			}
+			if err := expired.WriteExternalMemory(memory, 0, nil); !errors.Is(err, wasm.ErrClosed) {
+				t.Fatal(err)
+			}
+		}
+	})
+}
+
 func TestSessionSharesFuelAcrossCallsAndInstantiation(t *testing.T) {
 	withBackends(t, func(t *testing.T, newEngine func() *Engine) {
 		e, s, l := setupWithEngine(t, newEngine)

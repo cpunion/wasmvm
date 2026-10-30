@@ -366,8 +366,10 @@ pinned producer does not generate their text syntax, so authored tests are
 reported separately. A synchronous execution profile now compiles Core modules, composes child
 components and executes canonical calls, starts and copied values through both
 own backends. Map/fixed-list ABI conversions and resource.new/rep/drop now
-execute through the same runtime. Own/borrow transfer, host nominal resource
-binding, remaining async plans and WASI worlds remain open. See [runtime scope](design/component-runtime.md). See
+execute through the same runtime. Own/borrow calls and host nominal resource
+bindings now execute with opaque capabilities, scoped borrows and failure
+cleanup. Standalone resource values/starts, local cm64 borrows, remaining async
+plans and WASI worlds remain open. See [runtime scope](design/component-runtime.md). See
 [the current ABI and frontend boundary](design/component-abi.md).
 
 Implement component binary decoding/validation/composition, imports/exports, Canonical ABI lift/lower, strings/lists/records/variants, realloc/post-return, and resource own/borrow/drop with cleanup on failure. Keep component and core instance boundaries explicit. Pin WASI **0.2.12** WIT; implement the full declared CLI world and its dependencies, then separately reported sockets/HTTP interfaces. Earlier prototypes must not displace required core work.

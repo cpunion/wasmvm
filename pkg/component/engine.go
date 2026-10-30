@@ -160,8 +160,11 @@ func preflight(p *validate.Component, root bool) error {
 			return nil
 		}
 		seen[t] = true
+		if t.Kind == model.Borrow && p.ResourceRepresentation(t.ResourceID) == wasm.I64 {
+			return unsupported("cm64 defining-instance borrow conversion")
+		}
 		switch t.Kind {
-		case model.Own, model.Borrow, model.Future, model.Stream, model.ErrorContext:
+		case model.Future, model.Stream, model.ErrorContext:
 			return unsupported("value conversion")
 		}
 		for _, fields := range [][]model.Field{t.Fields, t.Cases} {
@@ -175,6 +178,11 @@ func preflight(p *validate.Component, root bool) error {
 			return err
 		}
 		return value(t.Element)
+	}
+	for _, start := range p.Starts {
+		if start.Type.ContainsResource() {
+			return unsupported("resource-bearing component start")
+		}
 	}
 	for _, f := range p.Canonical {
 		if f.Definition.Op > 4 || f.Async {
@@ -208,6 +216,9 @@ func preflight(p *validate.Component, root bool) error {
 			return value(e.Type.Result)
 		}
 		if e.Sort == model.ValueSort {
+			if e.Type.ContainsResource() {
+				return unsupported("standalone resource value binding")
+			}
 			return value(e.Type.Value)
 		}
 		if e.Sort == model.TypeSort && e.Type.Value != nil {
@@ -233,7 +244,7 @@ func preflight(p *validate.Component, root bool) error {
 	}
 	if root {
 		for _, im := range p.Type.Imports {
-			if im.Sort == model.TypeSort && im.Type.Value == nil || im.Sort == model.ComponentSort || im.Sort == model.CoreModuleSort {
+			if im.Sort == model.TypeSort && im.Type.Value == nil && im.Type.Kind != model.Resource || im.Sort == model.ComponentSort || im.Sort == model.CoreModuleSort {
 				return unsupported("host type/component/Core module binding")
 			}
 		}

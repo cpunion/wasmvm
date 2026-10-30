@@ -23,3 +23,16 @@ handle exports are intentional test plumbing, not host ownership capabilities.
 Wasmtime 48.0.1 executes the 32-bit probes. With
 `-W component-model-memory64=y`, the 64-bit probe currently triggers a Cranelift
 I64/I32 assertion; retain that failure separately from successful own execution.
+
+
+Ownership fixtures additionally cover guest/host declarations, nominal equality,
+opaque moves and aliases, borrowed callback expiry/escape, cross-component
+forwarding, list/map/option/variant/fixed-list/record transfers with spilled ABI,
+failed input/result cleanup, host panic/cancellation, suspended component entry
+and pure host depth limits. `ownership64` preserves cm64 own representations;
+`ownership64-borrow` is a validated fixture intentionally rejected by the current
+runtime profile. The Wasmtime C API reference executes `ownership`, including
+all four calls and guest/explicit destructors. Its stale-capability negative
+check runs after successful assertions because the reference locks down that
+instance on this canonical trap. wasmvm validates bad host capabilities before
+guest effects and keeps the instance usable; the embedding error policy differs.

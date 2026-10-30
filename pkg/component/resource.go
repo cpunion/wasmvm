@@ -13,6 +13,8 @@ import (
 // resourceType belongs to one runtime declaration, independent of the static
 // ID that each importing, aliasing or instantiating scope uses to name it.
 type resourceType struct {
+	instance       *Instance
+	host           *hostResourceDefinition
 	identity       *canonical.ResourceType
 	owner          *namespace
 	representation wasm.ValueType
@@ -22,6 +24,9 @@ type resourceType struct {
 func (in *Instance) bindResources(n *namespace, e item, t *validate.Type) error {
 	if err := in.charge(1); err != nil {
 		return err
+	}
+	if e.function != nil && e.function.host != nil && e.function.scope == nil {
+		e.function.scope = n
 	}
 	if e.sort == model.TypeSort && t.Kind == model.Resource {
 		if e.resource == nil || n.resources[t.Resource] != nil && n.resources[t.Resource] != e.resource {
@@ -44,10 +49,7 @@ func (in *Instance) resourceBuiltin(caller *vm.Caller, n *namespace, plan *valid
 	if rt == nil {
 		return vm.ErrType
 	}
-	if n.handles == nil {
-		n.handles = canonical.NewResourceTable(in.resourceBudget)
-		in.resourceTables = append(in.resourceTables, n.handles)
-	}
+	in.resourceTable(n)
 	fn, err := caller.NewFunction(plan.Signature, func(c *vm.Caller, args []vm.Value) ([]vm.Value, error) {
 		if n.failed || n.blocked && plan.Definition.Op != 4 {
 			return nil, wasm.ErrTrap
@@ -62,23 +64,7 @@ func (in *Instance) resourceBuiltin(caller *vm.Caller, n *namespace, plan *valid
 			}
 			return []vm.Value{vm.I32(id)}, nil
 		case 3:
-			err := n.handles.DropWith(c.Context(), rt.identity, uint32(bits), func(_ context.Context, rep uint64) error {
-				if rt.destructor == nil {
-					return nil
-				}
-				if rt.owner.failed || rt.owner.blocked {
-					return wasm.ErrTrap
-				}
-				complete := false
-				defer func() {
-					if !complete {
-						rt.owner.failed = true
-					}
-				}()
-				_, err := c.Call(*rt.destructor, vmValues([]canonical.Slot{{Type: rt.representation, Bits: rep}}))
-				complete = err == nil
-				return err
-			})
+			err := n.handles.DropWith(c.Context(), rt.identity, uint32(bits), func(_ context.Context, rep uint64) error { return rt.destroy(c, rep, n) })
 			return nil, err
 		default:
 			rep, err := n.handles.Rep(rt.identity, uint32(bits))
@@ -91,5 +77,37 @@ func (in *Instance) resourceBuiltin(caller *vm.Caller, n *namespace, plan *valid
 	if err == nil {
 		n.add(item{sort: model.CoreFunctionSort, core: fn})
 	}
+	return err
+}
+
+func (in *Instance) resourceTable(n *namespace) {
+	if n.handles == nil {
+		n.handles = canonical.NewResourceTable(in.resourceBudget)
+		in.resourceTables = append(in.resourceTables, n.handles)
+	}
+}
+
+func (rt *resourceType) destroy(c *vm.Caller, rep uint64, from *namespace) error {
+	if rt.host != nil {
+		return rt.destroyHost(c, rep)
+	}
+	if rt.destructor == nil {
+		return nil
+	}
+	if rt.owner.failed || rt.owner.blocked || rt.owner.entered && rt.owner != from {
+		return wasm.ErrTrap
+	}
+	if rt.owner != from {
+		rt.owner.entered = true
+		defer func() { rt.owner.entered = false }()
+	}
+	complete := false
+	defer func() {
+		if !complete {
+			rt.owner.failed = true
+		}
+	}()
+	_, err := c.Call(*rt.destructor, vmValues([]canonical.Slot{{Type: rt.representation, Bits: rep}}))
+	complete = err == nil
 	return err
 }

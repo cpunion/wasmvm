@@ -61,3 +61,23 @@ Drop with no guest code or destructor. Run it separately from compiler/test load
 For a source comparison, extract the exact base and add only this unchanged
 benchmark file. Keep these pure-table results separate from complete guest
 resource lifetimes; the reference C API does not expose a comparable primitive.
+
+
+`BenchmarkOwnedResourceLifetime` measures four public calls per lifetime:
+make, get(borrow), pass(own), consume(own). Export lookup, startup and the first
+lifetime stay outside timing. Each result and the final destructor checksum are
+checked. `benchmarks/components/c/resources.c` uses the pinned Wasmtime C API
+and the same binary/four-call sequence, with opaque resource wrappers and dynamic
+move checks. Compile it with the same SDK arguments as the scalar C probe:
+
+```sh
+go test -run '^$' -bench '^BenchmarkOwnedResourceLifetime$' -benchtime=200ms -count=3 ./pkg/component
+llgo test -O3 -lto=full -run '^$' -bench '^BenchmarkOwnedResourceLifetime$' -benchtime=200ms -count=3 ./pkg/component
+"$OUTPUT/wasmtime-resources" pkg/component/testdata/ownership.wasm 100000
+```
+
+The reference also checks borrowing, moved-handle rejection and explicit drop
+outside its warm timer. The negative stale-handle case runs last; its canonical
+trap locks down the reference instance. Keep these four-boundary lifetime
+measurements separate from the 128-iteration guest-loop probe and pure-table
+probe. No calibrated performance or identical embedding error policy is implied.

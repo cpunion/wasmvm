@@ -19,22 +19,26 @@ type Imports struct {
 	Functions map[string]HostFunction
 	Instances map[string]Imports
 	Values    map[string]Value
+	Resources map[string]*HostResourceType
 }
 
 type Instance struct {
-	mu               sync.Mutex
-	closed           bool
-	store            *vm.Store
-	config           Config
-	exports          map[string]item
-	layouts          [2]*canonical.Builder
-	initializing     *canonical.Codec
-	instances, depth uint32
-	callDepth        uint32
-	work             uint64
-	bindings         map[any]Value
-	resourceTables   []*canonical.Resources
-	resourceBudget   *canonical.ResourceBudget
+	mu                sync.Mutex
+	closed            bool
+	store             *vm.Store
+	config            Config
+	exports           map[string]item
+	layouts           [2]*canonical.Builder
+	initializing      *canonical.Codec
+	instances, depth  uint32
+	callDepth         uint32
+	work              uint64
+	bindings          map[any]Value
+	resourceTables    []*canonical.Resources
+	resourceBudget    *canonical.ResourceBudget
+	hostResources     *canonical.Resources
+	hostTypes         map[*hostResourceDefinition]*resourceType
+	importResourceIDs map[uint64]*resourceType
 }
 
 func (in *Instance) Close() {
@@ -122,6 +126,7 @@ type namespace struct {
 	exports   map[string]item
 	failed    bool
 	blocked   bool
+	entered   bool
 }
 
 func (n *namespace) at(index model.SortIndex) item {
@@ -152,6 +157,10 @@ func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.
 		return nil, err
 	}
 	in := &Instance{store: store, config: c.engine.config, bindings: map[any]Value{}, resourceBudget: canonical.NewResourceBudget(c.engine.config.MaxResources)}
+	in.hostTypes = map[*hostResourceDefinition]*resourceType{}
+	in.importResourceIDs = map[uint64]*resourceType{}
+	in.hostResources = canonical.NewResourceTable(in.resourceBudget)
+	in.resourceTables = append(in.resourceTables, in.hostResources)
 	for i := range in.layouts {
 		in.layouts[i] = canonical.NewBuilder(i == 1, canonical.Limits{MaxNodes: in.config.Validate.MaxNodes, MaxDepth: in.config.MaxNesting, MaxBytes: in.config.MaxBytes})
 	}
@@ -160,6 +169,7 @@ func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.
 	defer func() {
 		in.initializing = nil
 		in.bindings = nil
+		in.importResourceIDs = nil
 		if !published {
 			in.Close()
 		}
@@ -192,12 +202,25 @@ func (in *Instance) bind(types []validate.Extern, imports Imports) (map[string]i
 		name := expected.Name.Text
 		switch expected.Sort {
 		case model.TypeSort:
-			// A fixed equality-bound value schema is supplied by this typed
-			// host binding. Generative resource/interface types need a runtime
-			// identity contract and are rejected in this execution profile.
-			if expected.Type.Value == nil {
+			if expected.Type.Kind == model.Resource {
+				host := imports.Resources[name]
+				if host == nil || host.definition == nil {
+					return nil, vm.ErrLink
+				}
+				rt := in.hostTypes[host.definition]
+				if rt == nil {
+					rt = &resourceType{instance: in, identity: host.definition.identity, representation: wasm.I32, host: host.definition}
+					in.hostTypes[host.definition] = rt
+				}
+				if prior := in.importResourceIDs[expected.Type.Resource]; prior != nil && prior != rt {
+					return nil, vm.ErrType
+				}
+				in.importResourceIDs[expected.Type.Resource] = rt
+				e.resource = rt
+			} else if expected.Type.Value == nil {
 				return nil, unsupported("host nominal type binding")
 			}
+
 		case model.FunctionSort:
 			fn := imports.Functions[name]
 			if fn == nil {
@@ -336,7 +359,7 @@ func (in *Instance) instantiate(caller *vm.Caller, component *closure, args map[
 		case 7:
 			e := item{sort: model.TypeSort}
 			if d.Type.Kind == model.Resource {
-				e.resource = &resourceType{identity: &canonical.ResourceType{}, owner: n, representation: d.Type.Representation}
+				e.resource = &resourceType{instance: in, identity: &canonical.ResourceType{}, owner: n, representation: d.Type.Representation}
 				if d.Type.Destructor != nil {
 					destructor := n.items[model.CoreFunctionSort][*d.Type.Destructor].core
 					e.resource.destructor = &destructor
