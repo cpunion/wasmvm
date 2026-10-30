@@ -419,7 +419,11 @@ output and explicit owner cleanup. The shared actual WASIp2 fixture covers all
 operations and error resources. Filesystem/preopens now supply all 30 operations
 on Linux/Darwin, with capability-relative roots, independent stream leases,
 structured IO error downcasts, bounded snapshots and cancellable cleanup.
-The same guest executes on the actual Wasmtime WASIp2 provider. Sockets/HTTP, remaining
+The same guest executes on the actual Wasmtime WASIp2 provider. Network/error,
+instance-network and IP lookup now implement all five operations with explicit
+permission, IDNA, bounded cancellable resolvers and child pollables. Wasmtime
+48.0.1 lacks network-error-code; a narrow common consumer preserves comparable
+lookup execution and the full-consumer failure remains recorded. TCP/UDP/HTTP, remaining
 component mechanisms, guest-toolchain/world conformance and performance
 acceptance remain required.
 

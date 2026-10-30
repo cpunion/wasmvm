@@ -1,0 +1,17 @@
+{
+  "producer": "wasm-tools 1.258.0",
+  "wasiVersion": "0.2.12",
+  "wasiArchiveSha256": "2b0e47bc02953267ad163c6c1188b65baed1292351998cb032f3dcd28d005992",
+  "worldSha256": "474c728d75cfde939106be6f83e22bf904b86a818f7d802b57b07a7c953fb2a4",
+  "binarySha256": {
+    "network.wasm": "4f51a1e1ff878f244402ce5862b625fab295c5f7a863027964b3ed9acf7eb4cb",
+    "network-api.wasm": "be02db2c53dd3839288311646a57b31c78dd82d8ef4b961992fb49fc6916950e",
+    "network-contract-error-label.wasm": "d83b47529102c3f5d6275b1c580b89de0d86d37ad313e56245ac45539eeaed60",
+    "network-contract-ip-label.wasm": "0f6b44a6a39fdbaedb2a6fdee469298b68304c2c78bc179a9da3bebecf78e799",
+    "network-contract-ip-width.wasm": "174a3387cf0439e0b83c6184e0e904f23898e32dd6ee5187635fe79383be10a3",
+    "network-contract-lookup-name.wasm": "e6fc5a25f22940b241bb5a3bfab2768f1fd79ca263775f8c614f9ce4bcab2aaf",
+    "network-contract-subscribe-result.wasm": "25a3a101d0c8976c8c23d56b9c12b504bf5a649ab01e174d77fe70db74b73c47",
+    "network-contract-network-result.wasm": "77710e22ba442f5fed29c26a5dba8a42387b525e8b339f015a9272384d6d0954",
+    "network-common.wasm": "3cabd9db7389ed2160ab5cb0154ced0c0fb9ab22105b06d333f6d714e033be6a"
+  }
+}

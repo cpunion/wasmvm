@@ -324,3 +324,23 @@ and safety policies differ. `BenchmarkFileSystemStatStages` measures host fstat
 and stat-value construction independently; these diagnostic scopes are not an
 additive cost decomposition. Source base has no FileSystem API; retain that
 failure and compare the unchanged wall-clock workload on source base/head.
+
+### WASI IP literal resolution
+
+`BenchmarkNetworkLiteralBatch` and `c/network.c` execute the same
+`network-common.wasm`. Each call obtains a network handle, then performs 128
+literal lookup lifetimes: resolve, subscribe/block/check-ready, next address,
+next EOF, drop pollable and drop stream. The guest checks `127.0.0.1`; the shared
+semantic exercise also checks `::1`. This measures provider/resource/canonical
+costs without DNS server latency or network packets. Load, engine, compile,
+provider/Store setup, bind, lookup, first call and teardown are separate metrics.
+Pure parse and IP-value construction diagnostics are separate, nonadditive
+scopes. Fuel is off; own quotas/cancellation remain enabled. Reference defaults
+and scheduling differ, with name lookup explicitly enabled in both providers.
+
+Wasmtime 48.0.1 fails to bind the full pinned consumer because its C WASIp2 linker
+lacks `network-error-code`. Retain that failure. The common consumer omits only
+that unused requirement and has the same authored guest workload; both engines
+run the exact common binary. No replacement implementation is installed in the
+reference linker. Source base lacks NewNetwork; the unchanged wall-clock probe
+supplies an independent own source-base/head comparison.

@@ -75,3 +75,17 @@ embedding tests. Nine valid WIT mutations test width, tuple/record fields,
 variant/enum labels, stream resource identity and preopen tuple order. These
 reject at binding before unreachable guest code runs. This authored corpus is
 separate from upstream/world/toolchain conformance acceptance.
+
+`network.wit` imports the complete pinned network, instance-network and IP name
+lookup interfaces. Its authored guest checks IPv4/IPv6, readiness, EOF and child
+resource drops; `lookup-batch(128)` repeats complete literal lookup lifetimes.
+The API view reexports the same imported nominal resource types. Six valid
+signature mutations must fail binding before guest execution. Resolver/error
+provenance, IDNA, cancellation and quotas additionally have embedding tests.
+
+`scripts/build_wasi_network_fixtures.py` reproduces and independently validates
+all nine binaries. The normal consumer retains `network-error-code`, missing
+from Wasmtime 48.0.1's C WASIp2 linker. `network-common` is a separately generated
+narrow consumer which omits only that unused function requirement. Both engines
+execute the identical common binary. The original complete-reference failure
+remains recorded; this subset does not establish full reference compatibility.
