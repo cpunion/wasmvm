@@ -2811,3 +2811,47 @@ Raw phase logs and summaries are under `artifacts/components/environment-*`.
 Other CLI/HTTP interfaces, complete declared worlds, remaining component
 resource values/starts/host module bindings and async/WASI 0.3 remain required.
 This complete environment interface does not complete M5/M6.
+
+
+## WASI exit and linked-instance shutdown
+
+The complete `wasi:cli/exit@0.2.12` interface implements both `exit(result)` and
+`exit-with-code(u8)`. Both own backends check status 0/1/42/255, typed host errors,
+nonreturning Core execution, invalid schema/input, cancellation and closure of
+held exports in both linked child instances. An exit in a Core start returns a
+typed code with no published instance. `Caller.CloseInstance` shares the existing
+callback lifetime/serialization guard; expired/copied/canceled callers cannot
+acquire extra shutdown authority. Host callback outcomes survive shutdown's
+cancellation. Final Store reclamation occurs before the public exit call returns.
+
+Full Go, affected-package LLGo release, race and vet checks pass. The full
+cross-package coverage profile passes every package gate: component **90.74%**,
+preview2 **95.88%**. New start-exit cases additionally pass both compilers.
+wasm-tools 1.258.0 independently validates the project-authored fixtures; the
+pinned WIT/license remain unchanged. Wasmtime 48.0.1's actual WASIp2 C API provider
+executes the same exit binary and confirms all four statuses.
+
+Three sequential local samples use Go 1.27.3 and LLGo `8e45ed5 -O3 -lto=full` on
+Apple M4 Max arm64. Every exit consumes a fresh instance. Own samples use batches
+of 256 prebound instances, excluding preparation/compile/lookup and checking all
+exit results outside the timer. Wasmtime uses 10,000 exits per sample, with those
+phases and final verification/destruction reported separately. Source base
+`025e230` has no exit provider: both compilers reject the unchanged exit benchmark
+for missing APIs, retained as unsupported rather than a throughput result.
+
+| Median nanoseconds | Go interpreter | Go native | LLGo interpreter | LLGo native | Wasmtime C API |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Exit call (own includes Store closure) | 1,652 | 2,851 | 3,142 | 33,096 | 427.5 |
+| Reference verification + explicit Store destruction | — | — | — | — | 457.5 |
+| Existing public-call base -> head | 451.7 -> 448.2 | 775.5 -> 769.4 | 1444 -> 1575 | 2366 -> 2362 | — |
+
+This is a one-shot exit lifetime, not recurring warm throughput. Fuel is disabled;
+own cancellation/logical quotas remain enabled while the reference uses default
+Store policy. The timed policies differ: own shutdown cancels and reclaims its
+Store as the call unwinds, while the C API host explicitly destroys the reference
+Store later. Keep both reference rows visible. The LLGo native gap remains open
+and is not attributed to a specific cleanup/call stage without a profile. Local
+samples are uncalibrated, and LLGo allocation counters are unavailable. No speed
+parity or performance acceptance is claimed. Raw phases, source-base outcomes and
+summaries are under `artifacts/components/exit-*`. Other interfaces/worlds,
+component mechanisms and async/WASI 0.3 remain required; M5/M6 stay open.

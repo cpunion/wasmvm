@@ -377,6 +377,12 @@ CLI/HTTP worlds remain open. See [WASI scope](design/wasi-preview2.md) and
 
 Implement component binary decoding/validation/composition, imports/exports, Canonical ABI lift/lower, strings/lists/records/variants, realloc/post-return, and resource own/borrow/drop with cleanup on failure. Keep component and core instance boundaries explicit. Pin WASI **0.2.12** WIT; implement the full declared CLI world and its dependencies, then separately reported sockets/HTTP interfaces. Earlier prototypes must not displace required core work.
 
+The complete `wasi:cli/exit@0.2.12` interface additionally provides result-based
+and byte-code exit. Shutdown cancels the shared Store, invalidates all linked
+exports and reports a typed guest outcome after bounded reclamation. Both own
+backends and the actual Wasmtime WASIp2 provider execute the same binary. The
+complete CLI/HTTP worlds and other M5 deliverables remain open.
+
 **Exit gate:** components from at least two pinned guest toolchains compose on both backends and host compilers. Versioned WIT/world/operation coverage, encoding/ownership/reentry/error cases and resource cleanup all pass. Parsing or one sample is not complete component/P2 support.
 
 ## M6 — WASI 0.3 native async

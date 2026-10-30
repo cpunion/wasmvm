@@ -413,3 +413,14 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 	n.add(item{sort: model.CoreFunctionSort, core: core})
 	return nil
 }
+
+// CloseInstance requests cancellation of this component and all linked
+// namespaces in its Store. It is nonblocking, including from a callback.
+func (c *Caller) CloseInstance() error {
+	if err := c.enter(); err != nil {
+		return err
+	}
+	defer c.mu.Unlock()
+	c.instance.Close()
+	return nil
+}
