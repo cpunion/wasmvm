@@ -160,7 +160,7 @@ func preflight(p *validate.Component, root bool) error {
 		}
 		seen[t] = true
 		switch t.Kind {
-		case model.Own, model.Borrow, model.Future, model.Stream, model.ErrorContext, model.Map, model.FixedList:
+		case model.Own, model.Borrow, model.Future, model.Stream, model.ErrorContext:
 			return unsupported("value conversion")
 		}
 		for _, fields := range [][]model.Field{t.Fields, t.Cases} {
@@ -169,6 +169,9 @@ func preflight(p *validate.Component, root bool) error {
 					return err
 				}
 			}
+		}
+		if err := value(t.Key); err != nil {
+			return err
 		}
 		return value(t.Element)
 	}

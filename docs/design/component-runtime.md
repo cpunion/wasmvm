@@ -15,10 +15,10 @@ remain unsupported. Other incomplete executable operations are rejected during
 compilation or host binding, before instantiation invokes guest code.
 
 Canonical lift/lower shares `internal/component/canonical` for scalars,
-strings, lists, records/tuples, variants, flags/enums and option/results.
+strings, lists/fixed lists, maps, records/tuples, variants, flags/enums and option/results.
 Memory32/64, all three string encodings, direct/spilled arguments/results,
 realloc and post-return use checked memory capabilities. Own/borrow/resource
-conversion, map/fixed-list ABI conversion and async execution remain required;
+conversion and async execution remain required;
 literal or layout support does not establish those runtime capabilities.
 
 ## Calls and lifetime
@@ -70,3 +70,14 @@ encode their text syntax. See [validation evidence](../validation.md) and the
 [phase probes](../../benchmarks/components/README.md). Tiny-call LLGo latency
 remains behind Wasmtime and does not meet the performance target. M5/M6 and
 WASI 0.2/0.3 worlds remain open.
+
+
+## Collections
+
+Fixed lists use their declared element count and inline layout; flat conversion
+repeats the element shape only within the existing flat-slot bound. Larger
+values use the same function-level spill contracts. Maps use the specified
+list-of-tuples representation and preserve input order and duplicate keys.
+A map layout caches one synthetic entry tuple, preventing metadata growth on
+repeated transfers. Existing list bounds, allocator/memory capabilities and
+value/byte budgets apply to map entries; no separate execution path is added.

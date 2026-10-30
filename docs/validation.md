@@ -2593,3 +2593,39 @@ source and debugger output are retained, not counted as timing results.
 Raw logs, SDK provenance and phase summaries are under
 `artifacts/components/runtime-benchmark/`; the independent C probe and Go/LLGo
 commands are documented in [the phase probes](../benchmarks/components/README.md).
+
+
+## Map and fixed-list ABI transfers
+
+Synchronous component execution merged in [PR #45](https://github.com/cpunion/wasmvm/pull/45)
+at `3091da1` after [all four semantic jobs passed](https://github.com/cpunion/wasmvm/actions/runs/40981892654).
+All 180 existing execution reports were downloaded and verified.
+
+The next collection increment executes fixed-list memory/flat conversions and
+map transfers through the existing list/tuple representation. The entry schema
+is cached per map layout; repeated calls cannot grow metadata by recreating it.
+Maps preserve duplicate keys and order. Flat-slot limits, guest ranges, host
+allocation budgets, aggregate values and nesting remain enforced.
+
+Real component fixtures cover map and fixed-list callbacks through both own
+Core backends, including direct parameters and spilled parameters/results.
+wasm-tools 1.258.0 independently validates these generated binary fixtures.
+The unchanged pinned Python Canonical ABI reference additionally supplies 56
+independent memory byte cases for maps/fixed lists, with both pointer widths;
+Store output and Load input are checked separately. These cases are distinct
+from the existing 1,024 layout cases.
+Local full Go tests, LLGo component tests and race checks pass. Statement
+coverage is 93.89% for canonical primitives, 90.20% for `pkg/component` and
+92.45% for component validation; all existing package gates remain green.
+
+The `BenchmarkCollectionConversion` probe excludes layout construction, process
+startup, compilation and instantiation. It measures lower+lift conversion with
+one reused layout and reset scratch memory. Five 300 ms local arm64 samples use
+Go 1.27.3 and LLGo `8e45ed5 -O3 -lto=full`. The exact source base `3091da1`
+returns unsupported for both conversions, preserved as a failed capability row.
+Median lower+lift times are Go map/fixed-list **869.3/509.0 ns**, LLGo **1,584.0/948.5 ns**. No successful base throughput or pure-conversion competitor parity is claimed;
+Wasmtime's complete function-call timing is not substituted for this phase.
+The synchronous runtime's tiny-call competitor gap remains open.
+
+Resource own/borrow transfer, generative host resource bindings, component/Core
+module host binding and component async/WASI 0.2/0.3 worlds remain required.

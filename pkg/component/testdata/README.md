@@ -12,4 +12,4 @@ intent; these binaries are authored tests, not independent conformance oracles.
 
 The fixtures cover three string encodings, memory32/64, host calls,
 post-return, spilled parameters/results, type ascription, outer closures,
-value equality/moves, void/float calls, bounded instance expansion and traps.
+value equality/moves, void/float calls, map/fixed-list calls, bounded instance expansion and traps.
