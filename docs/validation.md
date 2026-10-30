@@ -3089,3 +3089,59 @@ rejected. These embedding policies differ. Samples are local and uncalibrated;
 LLGo allocation counters remain unavailable. Raw base/head probes, references,
 fixture hashes and coverage summaries are under `artifacts/components/host-module-*`.
 No performance acceptance or complete M5/M6/world support is claimed.
+
+
+## Complete WASI wall clock interface
+
+Host Core module imports merged in [PR #53](https://github.com/cpunion/wasmvm/pull/53)
+at `43db0bc` after [all four final-head jobs passed](https://github.com/cpunion/wasmvm/actions/runs/41020858224).
+All 180 downloaded execution reports passed. This provider is rebased on that
+production tree; only preceding validation notes and package comments changed.
+
+Both `wasi:clocks/wall-clock@0.2.12` operations execute through the same component
+and selected own Core backend. Exact record field/type/order and zero-parameter
+contracts reject all six independently valid mismatch fixtures at binding.
+Go/LLGo tests cover zero epoch, nanosecond limits, full u64 seconds, retained
+record ownership, configured source errors, invalid resolution, incomplete
+configuration and cancellation/Store close during host work. Default reads
+expose microsecond ticks with matching declared resolution; this is not a claim
+about native OS precision or monotonicity. Callback providers may expose their
+own valid clock contracts. The pinned release clocks WIT, hash and license are
+retained; all seven authored binaries reproduce and validate with wasm-tools
+1.258.0. Wasmtime 48.0.1's actual WASIp2 provider executes the same positive binary
+and validates both operations before timing.
+
+Affected Go/LLGo release, race and vet pass; P2 statement coverage is **95.79%**
+(205/214), with every unchanged executable package's prior gate retained. These
+checks are targeted interface tests, not complete clocks/CLI/HTTP worlds or a
+replacement for upstream conformance and two guest-language toolchains.
+
+Three sequential 200 ms own samples on Apple M4 Max arm64 use Go 1.27.3 and LLGo
+`8e45ed5 -O3 -lto=full`. Three 100,000-call actual WASIp2 C samples use the pinned
+Wasmtime 48.0.1 SDK. Each warmed operation reads datetime, lowers it to guest
+memory and returns its seconds field. File/Engine/compiler, provider setup,
+Store/binding/instantiation, lookup and first phases are outside warm timing.
+Reference context/linker/provider and instantiate phases remain separate.
+Source base `54c4e13` lacks the new clock API: both compilers reject the unchanged
+probe, retained as unsupported. Common-path environment data is separate:
+
+| Median ns / call | Go interpreter | Go native | LLGo interpreter | LLGo native |
+| --- | ---: | ---: | ---: | ---: |
+| Wall-clock now/guest seconds | 870.5 | 1,350 | 2,773 | 4,163 |
+| Existing environment base -> head | 2,484 -> 2,512 | 5,393 -> 5,402 | 6,807 -> 6,916 | 14,348 -> 14,253 |
+
+Actual Wasmtime WASIp2: **323.0 ns**. LLGo remains roughly **8.6x/12.9x** behind
+this reference. Separate clock/provider diagnostic medians are Go **30.1/56.1 ns**
+and LLGo **54.8/95.5 ns**. This isolates a cheap clock source from the larger
+component-call workload; the independent scopes are not an additive profile
+and do not assign the remaining gap to one function. The common canonical/call
+boundary remains optimization work.
+
+Fuel is disabled, own cancellation/logical quotas remain enabled and reference
+Stores use default policies. Clock precision differs as documented; the warm
+result is scalar, avoiding per-byte/per-field dynamic result expansion. These
+local samples are uncalibrated; LLGo allocation counters remain unavailable.
+Raw phase/diagnostic logs, reference JSON, source-base API failures, fixture/WIT
+hashes and coverage are under `artifacts/components/wall-clock-*`. IO/poll,
+monotonic subscriptions, streams, complete worlds and remaining component/async
+mechanisms remain required. No M5/M6 or performance acceptance is claimed.

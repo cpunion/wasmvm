@@ -214,3 +214,27 @@ own cancellation/logical limits remain enabled and reference Stores use default
 policy. Wasmtime's GC component-module declaration abort is a capability failure,
 not a throughput sample. Typed Rust is the stronger call-boundary reference;
 local samples alone do not establish performance acceptance.
+
+
+## WASI wall clock
+
+`BenchmarkWallClockNow` reads the standard datetime through canonical lowering,
+loads seconds in guest Core code, and returns u64. File/Engine/compiler,
+provider initialization, Store/binding/instantiation, lookup and first call are
+reported separately. `BenchmarkWallClockRead` isolates the default clock read
+and provider record/allocation; these scopes are diagnostic and not additive.
+The unchanged environment benchmark supplies the source base/head common path.
+
+Build `c/wall_clock.c` against the pinned C SDK and run:
+
+```sh
+"$OUTPUT/wasmtime-wall-clock" pkg/wasi/preview2/testdata/wall-clock.wasm 100000
+```
+
+The actual Wasmtime 48.0.1 WASIp2 provider verifies both full datetime records
+outside the warm timer, then times the same scalar-result guest export. No
+per-field dynamic C result graph dominates this warm reference. Both sources
+measure realtime, but own default ticks are explicitly quantized to microseconds;
+reference clock precision/default Store policies differ. Fuel is disabled and
+own cancellation/logical quotas remain enabled. Local timings and source-base
+unsupported APIs do not establish calibrated performance acceptance.

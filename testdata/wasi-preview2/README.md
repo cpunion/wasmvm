@@ -13,3 +13,8 @@ with wasm-tools 1.258.0; they are not an upstream conformance suite.
 `random.wit` is copied unchanged from the same pinned release archive and uses
 the same WASI license. The manifest enumerates all five implemented interfaces
 and each operation; complete CLI/HTTP worlds and WASI 0.3 remain open.
+
+
+`clocks.wit` is copied unchanged from the same pinned release archive and license.
+The manifest records its SHA256 and only the implemented wall-clock operations;
+monotonic-clock, unstable timezone and complete worlds are not implied.

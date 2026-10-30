@@ -1,7 +1,7 @@
 # Versioned WASI 0.2 host interfaces
 
 The implemented interfaces are `wasi:cli/environment@0.2.12` and
-`wasi:cli/exit@0.2.12`, plus all three `wasi:random` interfaces at 0.2.12, using the
+`wasi:cli/exit@0.2.12`, plus all three `wasi:random` interfaces and `wasi:clocks/wall-clock` at 0.2.12, using the
 pinned release WIT and license in `testdata/wasi-preview2`. All operations execute
 through `pkg/component` and the own Core interpreter/native compiler. The
 environment operations are get-environment, get-arguments and initial-cwd.
@@ -97,3 +97,33 @@ Wasmtime's actual WASIp2 provider. Performance compares a real 16 KiB generation
 and canonical lowering/count/post-return workload, excluding initialization from
 the warmed call. The declaration of a complete interface is not a full CLI/HTTP
 world, upstream conformance suite or performance acceptance claim.
+
+
+## Wall clock
+
+`NewWallClock(WallClockConfig)` supplies both operations in
+`wasi:clocks/wall-clock@0.2.12`: now and resolution. Both imports require exactly
+a record with fields seconds:u64 and nanoseconds:u32, in that order, and no
+parameters. The shared signature checker rejects wrong names/order/widths and
+counts before guest starts. Numeric type exports use the existing structural
+host binding; the provider creates no new nominal resource identity.
+
+Datetime retains unsigned seconds independently of signed nanosecond duration
+limits. Host callbacks must return normalized nanoseconds below one billion;
+resolution must be nonzero. Zero epoch is valid for now. Invalid host values or
+source errors trap the call. Returned records are owned snapshots.
+
+A zero configuration selects the host realtime clock with explicit microsecond
+granularity: reads are quantized to microseconds and resolution returns 1,000 ns.
+This is the provider's exposed clock, not a claim about the OS clock's native
+precision. It uses separate Unix seconds/nanoseconds and avoids UnixNano's
+signed range. No timezone or monotonic guarantee is implied. An embedder may
+supply both cancellable callbacks for another resolution, virtual time or
+restricted clock capability. Supplying only one callback is rejected. Callbacks
+can run concurrently in separate Stores and must honor context cancellation;
+results are checked again after return. Store close cancels active reads.
+
+All operations execute through both own backends/compilers and the same binary
+using Wasmtime 48.0.1's actual WASIp2 provider. The complete clocks package still
+requires monotonic-clock with pollable subscriptions. IO/poll, streams, remaining
+world dependencies and async/WASI 0.3 remain separate required work.
