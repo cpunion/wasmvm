@@ -16,6 +16,7 @@ type relation struct {
 	seenTypes  map[typeComparison]bool
 	seenValues map[valueComparison]bool
 	generation uint64
+	symbols    map[*valueBinding]*valueBinding
 }
 type typeComparison struct {
 	a, b       *Type
@@ -27,7 +28,7 @@ type valueComparison struct {
 }
 
 func (p *TypePool) relation() *relation {
-	return &relation{pool: p, bindings: map[uint64]*Type{}, types: map[*Type]*Type{}, values: map[*model.Type]*model.Type{}, seenTypes: map[typeComparison]bool{}, seenValues: map[valueComparison]bool{}}
+	return &relation{pool: p, bindings: map[uint64]*Type{}, types: map[*Type]*Type{}, values: map[*model.Type]*model.Type{}, symbols: map[*valueBinding]*valueBinding{}, seenTypes: map[typeComparison]bool{}, seenValues: map[valueComparison]bool{}}
 }
 
 func (r *relation) id(id uint64) (uint64, error) {
@@ -76,6 +77,29 @@ func (r *relation) external(actual, expected Extern) (bool, error) {
 	}
 	var ok bool
 	var err error
+	if expected.Sort == model.ValueSort {
+		ok, err = r.value(actual.Type.Value, expected.Type.Value)
+		if err != nil || !ok {
+			return ok, err
+		}
+		rewrite := r.rewrite()
+		a, err := rewrite.symbol(actual.Type.valueBinding)
+		if err != nil {
+			return false, err
+		}
+		b, err := rewrite.symbol(expected.Type.valueBinding)
+		if err != nil {
+			return false, err
+		}
+		if expected.Fresh && b == expected.Type.valueBinding {
+			if a != b {
+				r.symbols[b] = a
+				r.generation++
+			}
+			return true, nil
+		}
+		return r.pool.sameValue(a, b)
+	}
 	if expected.Sort == model.TypeSort && expected.Fresh {
 		ok, err = r.bind(actual.Type, expected.Type)
 	} else {
@@ -258,5 +282,5 @@ func (r *relation) coreModule(actual, expected *CoreModuleType) (bool, error) {
 }
 
 func (r *relation) rewrite() *substitution {
-	return &substitution{pool: r.pool, bindings: r.bindings, typeBindings: r.types, valueBindings: r.values, types: map[*Type]*Type{}, values: map[*model.Type]*model.Type{}, cloneAll: true}
+	return &substitution{pool: r.pool, bindings: r.bindings, symbols: r.symbols, typeBindings: r.types, valueBindings: r.values, types: map[*Type]*Type{}, values: map[*model.Type]*model.Type{}, cloneAll: true}
 }

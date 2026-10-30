@@ -8,8 +8,9 @@ The ordered component checker now validates embedded Core modules and their
 instances, all five Core external sorts, aliases, imports/exports and synchronous
 canonical function/resource declarations. Component instances support instantiation
 and synthesized exports, binder-aware interface subtyping and export ascription.
-It shares Core import matching with the runtime. Value/start definitions and
-most async canonical declarations still return unsupported. This is not a
+It shares Core import matching with the runtime. Value definitions, value imports/exports/equality bounds and start signatures
+are checked with linear consumption obligations. Most async canonical
+declarations still return unsupported. This is not a
 complete binary component validator or runtime.
 
 Each lexical scope starts with empty component and Core type index spaces.
@@ -76,3 +77,38 @@ for the pinned version-suffix producer limitation. A few async builtins have
 static signature/index plans to cover the complete `indicies` script; these
 plans do not execute async work. Component execution, canonical calls and WASI
 worlds remain separate deliverables.
+
+
+## Values and start plans
+
+Value literals use the pinned component binary grammar, independently of the
+Canonical ABI memory format. The bounded literal decoder checks scalar widths,
+canonical NaNs, Unicode, discriminants, aggregates, fixed lists and maps.
+Maps preserve ordered entries and duplicate keys. Every branch of the declared
+type must admit a literal constructor: even an absent option cannot conceal
+an own/borrow/future/stream/error-context handle. Output allocations, traversal,
+input lengths and nesting are bounded before expanding vectors or strings.
+Literal values feed the same host-owned `canonical.Value` representation used
+by the ABI codec; the checker does not implement a second runtime value format.
+
+Each value occurrence has a linear obligation. Imports, literals, start results
+and instance values begin unconsumed. Export, instantiation and start consume
+them once; an unused value rejects the component. Value aliases move an
+obligation, instance aliases share nested obligations, and publication never
+resets consumed state. Synthesized and instantiated interfaces create distinct
+destination obligations while preserving equality constraints. Shared interface
+types cannot duplicate a runtime value or cause unbounded graph expansion.
+
+Value equality bounds retain a precise constant or abstract value symbol.
+Type-bounded declarations introduce binders, linking substitutes them, and
+repeated instance declarations freshen abstract exports. Precise constants
+compare typed contents under the work budget. Explicit type ascription hides
+the exact constant/import; unannotated exports preserve it. Start plans check
+function/value indices, parameter types and result arity and append result
+values without invoking a host function or guest code.
+
+wasm-tools 1.258.0 cannot produce the value-definition text syntax. Authored
+binary fixtures and lifecycle tests therefore remain distinct from independent
+reference conformance. These static plans do not execute a start function,
+canonical call or WASI world. Complete remaining async validation and runtime
+integration remain required.

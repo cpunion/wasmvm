@@ -39,6 +39,7 @@ type Type struct {
 	depth            uint32
 	minimumResource  uint64
 	definingScope    *TypeScope
+	valueBinding     *valueBinding
 }
 
 type traits struct {

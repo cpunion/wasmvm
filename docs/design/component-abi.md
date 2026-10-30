@@ -81,8 +81,9 @@ The complete pinned binary script adds 132 grammar commands: 80 malformed
 rejections and 52 decoded definitions. Sixteen of those definitions require
 later semantic rejection. This is not a claim that they passed validation.
 
-Next integration completes value/start validation and executes the validated
-Core/component composition plans, canonical function lift/lower and post-return,
+Value/start definitions now have bounded static plans and a literal decoder
+that produces the same canonical value representation. Next integration
+executes the validated Core/component composition plans, canonical function lift/lower and post-return,
 then resource transactions and declared WASI 0.2.12 worlds. Async
 function/task/future/stream support and WASI 0.3.2 follow separately. No component
 or WASI support is inferred from passing only these value primitives.

@@ -2477,3 +2477,60 @@ and the base overlay are retained under
 go test -run '^$' -bench 'Benchmark(CanonicalModule|ComponentComposition)Validation' -benchtime=300ms -count=5 ./internal/component/validate
 llgo test -O3 -lto=full -run '^$' -bench 'Benchmark(CanonicalModule|ComponentComposition)Validation' -benchtime=300ms -count=5 ./internal/component/validate
 ```
+
+
+## Literal values, linear consumption and start definitions
+
+Component instances and binder-aware interface subtyping merged in
+[PR #43](https://github.com/cpunion/wasmvm/pull/43) at `a472af5`, after
+[all four Go/LLGo Linux/macOS jobs passed](https://github.com/cpunion/wasmvm/actions/runs/40963539368).
+All 180 execution reports were downloaded and verified.
+
+The next increment decodes type-directed component literal values into the
+existing canonical value representation, checks value imports/exports/equality
+bounds and validates component start arguments/results. Unknown values use
+abstract symbols; exact constants retain typed contents unless an explicit
+ascription hides them. Resource-bearing or async-handle literal types are
+rejected transitively, including unselected branches. Value obligations follow
+moves and nested instance aliases and reject reuse or unconsumed values.
+Nothing in these plans invokes a guest or host function.
+
+The original 13 generated semantic scripts remain green. The pinned
+wasm-tools 1.258.0 producer rejects value-definition text, so the new value/start
+binary is authored from the pinned grammar and explicitly is not an independent
+oracle. Authored tests cover all literal constructors, truncation, Unicode,
+scalar width/NaN encoding, type/arity mismatch, equality-bound arguments,
+ascription, nested instance moves and shared compilation/allocation limits.
+Both host compilers run the same tests. Local full Go coverage passes every
+existing per-package gate: binary 100.00%, canonical 94.50%, component decoder
+94.26% and component validator 92.43%. Component/binary race checks pass.
+Literal and whole-component fuzz runs complete without failure (199,178 and
+837,726 executions respectively); these are robustness counts, not conformance.
+
+Scoped measurements use Go 1.27.3 and LLGo `8e45ed5 -O3 -lto=full` on local
+arm64. Five 300 ms samples alternate base/head order with no concurrent local
+builds or tests. The earlier contended samples are retained separately. Base
+is `a472af5` with the identical harness overlaid, and values below are medians
+in microseconds per operation; no guest execution is timed.
+
+| Fixture and phase | Go base → head | LLGo base → head |
+| --- | --- | --- |
+| Canonical math: validation after decode | 3.357 → 3.385 (+0.8%) | 6.503 → 6.539 (+0.6%) |
+| Canonical math: owned decode + validation | 5.081 → 4.989 | 9.089 → 9.044 |
+| Child composition: validation after decode | 5.571 → 5.800 (+4.1%) | 10.084 → 10.347 (+2.6%) |
+| Child composition: owned decode + validation | 8.108 → 8.330 (+2.7%) | 14.572 → 14.852 (+1.9%) |
+| Value/start: validation after decode | Unsupported → 2.197 | Unsupported → 3.711 |
+| Value/start: owned decode + validation | Unsupported → 3.024 | Unsupported → 5.050 |
+
+The small composition overhead from new value obligations remains a tracked
+local optimization. Test-binary build diagnostics are separate: Go base/head
+0.455/0.709 s, LLGo 19.527/22.121 s, with differing caches. Process startup is
+outside the benchmark timer; LLGo allocation counters are unavailable.
+Competitor warm value/start validation remains unmeasured because the pinned
+reference producer lacks this feature. Existing-phase competitor comparison
+and calibrated performance acceptance remain open. Raw logs, source overlay
+and repeat script are retained in `artifacts/components/values-benchmark/`.
+
+Component async validation, composition execution, canonical calls/ownership
+and versioned WASI 0.2/0.3 worlds remain required. This static increment does
+not complete M5 or M6.

@@ -21,6 +21,8 @@ type Component struct {
 	Canonical     []*CanonicalFunction
 	Type          *Type
 	Instances     []*ComponentInstance
+	Values        []*ValueDefinition
+	Starts        []*Start
 }
 
 func (c *Component) Definition() *model.Binary { return c.definition }
@@ -45,6 +47,10 @@ type componentContext struct {
 	localResources    map[uint64]bool
 	exportedResources map[uint64]bool
 	representations   map[uint64]wasm.ValueType
+	linear            map[model.Sort][]*linear
+	obligations       []*linear
+	containsValues    map[*Type]bool
+	localValues       map[*valueBinding]bool
 }
 
 func Check(definition *model.Binary, limits Limits) (*Component, error) {
@@ -71,6 +77,11 @@ func checkComponent(definition *model.Binary, pool *TypePool, parent *componentC
 	for _, d := range definition.Definitions {
 		if err := c.definition(d); err != nil {
 			return nil, fmt.Errorf("component definition at byte %#x: %w", d.Offset, err)
+		}
+	}
+	for _, l := range c.obligations {
+		if !l.used {
+			return nil, invalid("value was not consumed")
 		}
 	}
 	c.result.Type = &Type{Kind: model.Component, Imports: scope.imports.ordered, Exports: scope.exports.ordered, owner: pool, depth: 1}
@@ -119,6 +130,8 @@ func (c *componentContext) definition(d model.Definition) error {
 		return err
 	case 8:
 		return c.canonical(d.Canonical)
+	case 9:
+		return c.start(d.Start)
 	case 10:
 		t, err := s.Declare(d.Import, false)
 		if err != nil {
@@ -127,8 +140,11 @@ func (c *componentContext) definition(d model.Definition) error {
 		if d.Import.Type.Sort == model.CoreModuleSort {
 			c.modules = append(c.modules, t.CoreModule)
 		}
+		return c.addLinear(d.Import.Type.Sort, t, nil)
 	case 11:
 		return c.export(d.Export)
+	case 12:
+		return c.value(d.Value)
 	default:
 		return fmt.Errorf("%w: component definition kind %d", wasm.ErrUnsupported, d.Kind)
 	}
@@ -193,6 +209,19 @@ func (c *componentContext) alias(a *model.Alias) error {
 			} else {
 				s.items[a.Sort] = append(s.items[a.Sort], e.Type)
 			}
+			if a.Sort == model.ValueSort || a.Sort == model.InstanceSort {
+				var l *linear
+				if parent := c.linear[model.InstanceSort][a.Instance]; parent != nil {
+					l = parent.children[a.Name]
+				}
+				if a.Sort == model.ValueSort {
+					if err := c.useLinear(l); err != nil {
+						return err
+					}
+					l = nil
+				}
+				return c.addLinear(a.Sort, e.Type, l)
+			}
 			return nil
 		}
 		return invalid("component instance export alias name")
@@ -252,7 +281,7 @@ func (c *componentContext) export(e *model.Export) error {
 			return invalid("export Core module index")
 		}
 		t = &Type{Kind: 0x50, CoreModule: c.modules[e.Item.Index], owner: s.pool, depth: 1}
-	case model.FunctionSort, model.InstanceSort, model.ComponentSort:
+	case model.FunctionSort, model.InstanceSort, model.ComponentSort, model.ValueSort:
 		items := s.items[e.Item.Sort]
 		if uint64(e.Item.Index) >= uint64(len(items)) {
 			return invalid("component export index")
@@ -270,7 +299,12 @@ func (c *componentContext) export(e *model.Export) error {
 			return invalid("component export type sort")
 		}
 		r := s.pool.relation()
-		ok, err := r.typ(t, expected)
+		var ok bool
+		if e.Item.Sort == model.ValueSort {
+			ok, err = r.external(Extern{Sort: model.ValueSort, Type: t}, Extern{Sort: model.ValueSort, Type: expected, Fresh: e.Type.Bound == 1})
+		} else {
+			ok, err = r.typ(t, expected)
+		}
 		if err != nil {
 			return err
 		}
@@ -301,8 +335,21 @@ func (c *componentContext) export(e *model.Export) error {
 				return err
 			}
 		}
+		if e.Item.Sort == model.ValueSort && e.Type.Bound == 1 {
+			// Ascription hides a precise constant/import behind a new binder.
+			copy := *t
+			copy.valueBinding = &valueBinding{}
+			t = &copy
+			if c.localValues == nil {
+				c.localValues = map[*valueBinding]bool{}
+			}
+			c.localValues[t.valueBinding] = true
+		}
 	}
 	if err := s.checkVisible(t, true, e.Item.Sort == model.TypeSort); err != nil {
+		return err
+	}
+	if err := c.use(e.Item); err != nil {
 		return err
 	}
 	if e.Item.Sort == model.TypeSort {
@@ -337,6 +384,9 @@ func (c *componentContext) export(e *model.Export) error {
 		c.modules = append(c.modules, t.CoreModule)
 	} else {
 		s.items[e.Item.Sort] = append(s.items[e.Item.Sort], t)
+		if e.Item.Sort == model.ValueSort || e.Item.Sort == model.InstanceSort {
+			return c.addLinear(e.Item.Sort, t, c.linear[e.Item.Sort][e.Item.Index])
+		}
 	}
 	return nil
 }
