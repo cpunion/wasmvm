@@ -310,3 +310,46 @@ embedding/resource tests. Nine independently valid contract mutations must fail
 binding. The revocation probe is host induced and is not a common-provider
 reference workload. Filesystem interface support does not complete a CLI world,
 sockets/HTTP, canonical async or WASI 0.3.
+
+## Network capabilities and IP name lookup
+
+`Network` supplies all five callable operations in
+`wasi:sockets/{network,instance-network,ip-name-lookup}@0.2.12`. It shares the
+explicit IO owner's nominal error and pollable domains. A network handle grants
+only configured name lookup; TCP/UDP socket authority is not implied. Name
+lookup is denied by default. An explicit grant uses a private Go resolver with
+`PreferGo` or an embedder-supplied, cancellable resolver callback. No resolver is
+called for literal IPv4/IPv6 addresses. Bracketed IPv6 is accepted, scoped IPv6 is
+rejected by this unscoped IP value interface, and named queries use pinned
+`x/net/idna` lookup normalization. DNS results normalize mapped IPv4 and remove
+duplicates; explicitly supplied IPv6 literals preserve their family.
+
+Resolution returns a nominal address-stream resource immediately. Pending
+`resolve-next-address` returns `would-block`; subscribe returns a child pollable
+which becomes ready on success or failure. Completion returns each address,
+then persistent none; resolver failures retain their structured error code.
+Default bounds are 128 address streams, 256 addresses per result, 1,024 input
+name bytes and a 30-second timeout. Excess results fail without scanning an
+unbounded result slice. Resolver panics become permanent resolver failure.
+
+Each unresolved stream owns a cancellable worker. Dropping it cancels and joins
+that worker; dropping before child pollables traps and preserves cleanup until
+the children are released. Failed resource/pollable publication rolls back its
+reservation. Provider Close rejects new operations, cancels every query, and
+WaitClosed joins active creations and provider workers. Resolver callbacks must
+observe cancellation and return immutable address data. Closing the IO owner
+separately reclaims pollable/error resources. A Store has its own lifetime and
+does not implicitly close either provider. `network-error-code` downcasts only
+original typed NetworkError causes; unrelated IO errors return none.
+
+The complete WIT consumer, a view reexporting the exact same imported nominal
+domain and six independently valid type mutations exercise the full own
+interface. Wasmtime 48.0.1's C WASIp2 linker lacks `network-error-code`, so the full
+consumer fails there with a missing-function link error. A separately retained
+consumer narrows the unused import requirement by omitting only that function;
+both engines run identical bytes for IPv4/IPv6 semantics and warmed literal
+resolution lifetimes. No stub/reference implementation is substituted. See the
+[reference source](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/wasi/src/p2/ip_name_lookup.rs)
+and [host lookup policy](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/wasi/src/sockets/ip_name_lookup.rs).
+This is P2 polling over asynchronous host work, not canonical async or WASI 0.3.
+TCP/UDP, HTTP and complete worlds remain required.

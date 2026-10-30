@@ -4,7 +4,7 @@ Status: development implementation, 2026-10-30. `pkg/vm` provides Core execution
 and interpreter/native selection; P1 and legacy threads have public adapters.
 The public component package executes synchronous composition and canonical
 calls. Preview 2 supplies the versioned providers listed in its design, including
-filesystem/preopens; Preview 3 remains reserved. Planned paths below are not
+filesystem/preopens and IP name lookup; Preview 3 remains reserved. Planned paths below are not
 support claims.
 
 ## Directory tree

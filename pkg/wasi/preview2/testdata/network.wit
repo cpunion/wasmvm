@@ -1,0 +1,10 @@
+package wasmvm:network-tests;
+world network {
+ import wasi:io/error@0.2.12;
+ import wasi:io/poll@0.2.12;
+ import wasi:sockets/network@0.2.12;
+ import wasi:sockets/instance-network@0.2.12;
+ import wasi:sockets/ip-name-lookup@0.2.12;
+ export exercise: func() -> u32;
+ export lookup-batch: func(count: u32) -> u32;
+}

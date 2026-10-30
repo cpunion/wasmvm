@@ -9,7 +9,8 @@
     "random.wit": "48578c40213d5cab6650980905fa146a0be8c39c4433ee5e7e00637b87dbe08f",
     "clocks.wit": "6ed8aa65bb8cbe224a0b2cbac9fc1b3bd25bdb17eda5ae0d23c983ed31c447cc",
     "io.wit": "96e206d00076fa0480df32c5bcf255a3fa4862805ac2f6b8537a781cce54f433",
-    "filesystem.wit": "e675f261017bf9b4fa7df5b9701023fe0249ede71021ac1bf978748e62edcda8"
+    "filesystem.wit": "e675f261017bf9b4fa7df5b9701023fe0249ede71021ac1bf978748e62edcda8",
+    "sockets.wit": "ee3ceecb32afc258db3cf64fd8a8d7efde350db3ae55047e59908e445afc1ed9"
   },
   "implementedInterfaces": {
     "wasi:cli/environment@0.2.12": [
@@ -120,6 +121,17 @@
     ],
     "wasi:filesystem/preopens@0.2.12": [
       "get-directories"
+    ],
+    "wasi:sockets/network@0.2.12": [
+      "network-error-code"
+    ],
+    "wasi:sockets/instance-network@0.2.12": [
+      "instance-network"
+    ],
+    "wasi:sockets/ip-name-lookup@0.2.12": [
+      "resolve-addresses",
+      "[method]resolve-address-stream.resolve-next-address",
+      "[method]resolve-address-stream.subscribe"
     ]
   },
   "completeWorlds": []

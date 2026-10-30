@@ -3373,3 +3373,82 @@ Aggregate canonical call/transfer allocation and LLGo overhead remain explicit
 optimization work under the current integration policy. Sockets/HTTP, complete
 worlds/toolchain acceptance, remaining component mechanisms and WASI 0.3 remain
 required.
+
+## Network capabilities and IP name lookup (2026-10-30)
+
+All five operations in the pinned network, instance-network and IP name lookup
+interfaces execute through checked nominal resources. Go 1.27.3, LLGo
+`8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f` (`-O3 -lto=full`) and race checks
+pass. Preview 2 statement coverage is **92.1%**. Every executable package retains
+its 90% gate when the current P2 profile is combined with PR #57's exact
+unchanged-source Linux CI profile for other packages. Final-head Go/LLGo ×
+Linux/macOS CI is still required before merge. Tests cover both own backends,
+IPv4/IPv6/mapped literals, IDNA, actual localhost lookup, pending/ready/EOF,
+resolver error classes/panics, result/name/stream quotas, permissions, timeout,
+caller cancellation, failed publication/rollback, typed error downcasts,
+expired Callers, child pollables, provider revocation and concurrent shutdown.
+The IDNA dependency is pinned to `x/net v0.61.0` / `x/text v0.43.0`; no engine is
+used as the implementation. Literal lookups allocate no DNS timer or worker;
+named queries use a private `PreferGo` resolver or an authorized callback.
+
+Nine components independently reproduce/validate with wasm-tools 1.258.0.
+**Wasmtime 48.0.1's C WASIp2 linker cannot bind the full consumer:**
+`network-error-code` has no matching function implementation. The original
+failure is retained in `network-reference-initial.log`. The standard WIT
+contains the operation; the benchmark does not install a stub or replacement
+provider. A separately retained narrow consumer omits only the unused function
+requirement. Both engines execute that exact common binary, including IPv4 and
+IPv6 guest assertions. Six valid contract mutations reject binding on the own
+provider; the complete own API and error provenance are tested separately.
+
+Local serial samples on Apple M4 Max (three 200 ms own samples and three
+1,000-call reference samples) measure **128 complete literal lookup lifetimes**
+per guest call: resolve, subscribe/block/check-ready, next address, next EOF,
+drop pollable and drop stream, with one network handle per batch. This is not
+DNS wire/server latency or DNS throughput. No network packet is sent by this
+workload. Fuel is off; own quotas/cancellation remain enabled. Both providers
+explicitly grant lookup; their default scheduling/safety policies differ. C
+scalar result conversion is amortized across 128 lifetimes.
+
+| Warm scope | Go interpreter | Go native | LLGo interpreter | LLGo native | Actual Wasmtime WASIp2 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Complete lifetime, ns | 8,153 | 10,457 | 24,525 | 32,137 | 990 |
+| Complete call, ns/128 lifetimes | 1,043,544 | 1,338,516 | 3,139,139 | 4,113,542 | 126,721 |
+
+The LLGo gap is **24.8× / 32.5×** on this workload. Pure parse is
+**10.75 / 14.67 ns** (Go/LLGo), IP-value construction **47.05 / 72.46 ns**.
+These independent diagnostic scopes are not additive; the large full-lifetime
+gap points to canonical/resource call overhead and requires further profiling
+and optimization. Go allocates about 1.625 MB and 31,022/31,031 objects per batch;
+LLGo allocation counters are unavailable. A separate sampled Go allocation
+profile attributes 17.18% of objects to Instance.codec, 14.88% to NewReference
+and 10.16% to NewBorrowScope (42.22% together); Function.call adds 9.59%.
+This identifies shared allocation mechanisms to investigate, not LLGo allocation
+counts. The short Darwin CPU profile is dominated by runtime wait/scheduling
+frames and is not used to attribute LLGo costs. Neither the raw parse nor this
+narrow consumer establishes full networking performance acceptance.
+
+Separate median preparation costs (ns) are retained in
+`artifacts/components/network-performance-summary.json`:
+
+| Phase | Go interpreter/native | LLGo interpreter/native | Wasmtime |
+| --- | ---: | ---: | ---: |
+| Component compilation | 344,708 / 1,028,250 | 551,041 / 1,676,541 | 1,983,000 |
+| Provider/Store setup | 12,500 / 14,334 | 15,708 / 15,042 | 84,000 |
+| Bind/instantiate | 50,250 / 62,125 | 91,834 / 102,958 | 90,000 |
+| First call | 924,125 / 1,534,500 | 2,592,291 / 3,427,125 | 151,000 |
+| Teardown | 10,791 / 17,792 | 83,250 / 90,875 | 148,000 |
+
+Load, engine creation and lookup are separate metrics as well. The initial
+DefaultResolver run is retained separately from the final private Go resolver
+policy. Source base `f3e54bd16881cf2fa21301a9b64de0b13e8da30e` lacks NewNetwork;
+both expected compiler failures are retained as API-baseline absence. Existing
+filesystem benchmark binaries with identical production source supply the
+common source-base control. Wall-clock warm medians change Go
+**858.5 -> 860.4 / 1,322 -> 1,330 ns**, LLGo
+**2,729 -> 2,811 / 4,098 -> 4,050 ns**. Samples are descriptive and uncalibrated;
+revision regression and competitor performance acceptance remain open.
+TCP/UDP/HTTP, complete worlds/toolchains, remaining component mechanisms and
+WASI 0.3 remain required. The current integration policy permits this complete
+interface capability to advance while the measured performance deficit remains
+explicit work.

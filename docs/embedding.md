@@ -183,3 +183,20 @@ Preopens are available only on Linux/Darwin. Stream cursors are independent and
 retain the open object after descriptor drop. Filesystem Close revokes streams
 and cancels their readiness waiters; IO Close separately releases stream/error
 resources. See [permissions, limits and lifecycle](design/wasi-preview2.md#filesystem-and-preopens).
+
+## WASI IP name lookup
+
+```go
+network, err := preview2.NewNetwork(process, preview2.NetworkConfig{
+    AllowNameLookup: true,
+})
+// Check err, then use network.Imports(). Name lookup is denied by default.
+// Close/wait for the Instance; close both network and process, then wait for
+// network.WaitClosed(cleanupContext) and process.WaitClosed(cleanupContext).
+```
+
+The default resolver uses Go DNS/host configuration only after this explicit
+grant. Supply `Resolve` to control name service policy and results; callbacks
+must honor context cancellation. Resolution streams and their child pollables
+have checked nominal identity and bounded ownership. TCP/UDP socket access is
+still separate. See [network ownership and limits](design/wasi-preview2.md#network-capabilities-and-ip-name-lookup).
