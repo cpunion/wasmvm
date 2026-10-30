@@ -1,0 +1,11 @@
+(component
+ (core type $t (module (type (func (param i32 i32) (result i32))) (export "add" (func (type 0)))))
+ (import "math" (core module $m (type $t)))
+ (import "mark" (func $mark))
+ (core func $mark (canon lower (func $mark)))
+ (core module $start (import "env" "mark" (func $mark)) (start $start) (func $start call $mark))
+ (core instance $env (export "mark" (func $mark)))
+ (core instance $start (instantiate $start (with "env" (instance $env))))
+ (core instance $m (instantiate $m))
+ (alias core export $m "add" (core func $add))
+ (func (export "add") (param "a" u32) (param "b" u32) (result u32) (canon lift (core func $add))))

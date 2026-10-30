@@ -60,3 +60,19 @@ files describe their intended structure. wasm-tools 1.258.0 does not support
 these value imports/value section, so its diagnostic failures are retained.
 Own Go/LLGo tests verify equivalent packed/element-wise nested bindings and
 literal bounds, owned exports and rejection of unequal bytes.
+
+
+`host-module*` components import host-compiled Core modules at root and nested
+instance boundaries. `host-core-*` modules cover all five descriptor categories,
+memory64 and limit variance, mutable globals, function/tag signatures, imported
+functions, extra/missing requirements, trapping starts and binding work limits.
+`host-module-gc`/`host-core-gc` add canonical GC identity, a nonnullable subtype
+export satisfying a nullable parent declaration, and forced-GC lifetime tests.
+Numeric heap-type indices in the component module type avoid a wasm-tools
+1.258.0 named-index emission panic; all 23 final host binaries reproduce from
+WAT and independently validate with that producer's `--features all`.
+
+Wasmtime 48.0.1 executes the ordinary/memory64 fixtures and rejects all nine
+incompatible descriptor variants. Its component compiler aborts on the GC
+module declaration with `heap types are not supported yet`; this is retained
+as a reference capability failure, separate from successful own execution.

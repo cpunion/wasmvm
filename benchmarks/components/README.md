@@ -179,3 +179,38 @@ Build with the pinned C SDK as above and run:
 ```sh
 "$OUTPUT/wasmtime-random" pkg/wasi/preview2/testdata/random.wasm 10000
 ```
+
+
+## Host Core module imports
+
+`BenchmarkHostCoreModule` compiles an external Core module, binds it by name,
+and calls the component's add export with changing arguments. File loading,
+Engine creation, Core/component compilation, Store/binding/instantiation,
+lookup and first call are reported separately from warmed calls. The source
+base lacks CompileCore/CoreModules; preserve its unsupported compilation result
+and use the unchanged PublicWarm probe for a common-path base/head comparison.
+
+Build `c/host_module.c` against the pinned Wasmtime 48.0.1 SDK. It accepts
+`COMPONENT CORE EXPORT COUNT`, checks the first result and every warmed result,
+and reports all phases separately. `add` binds math and checks an earlier start;
+`apply` binds the rich memory64 module. The typed Rust counterpart uses the
+same binaries and pinned Cargo.lock/toolchain:
+
+```sh
+cargo +1.98.0 build --release --locked --bin host_module \
+  --manifest-path benchmarks/components/rust/Cargo.toml \
+  --target-dir "$OUTPUT/wasmtime-typed"
+"$OUTPUT/wasmtime-typed/release/host_module" \
+  pkg/component/testdata/host-module.wasm \
+  pkg/component/testdata/host-core-math.wasm 1000000
+"$OUTPUT/wasmtime-host-module" pkg/component/testdata/host-module.wasm \
+  pkg/component/testdata/host-core-math.wasm add 1000000
+```
+
+Both references drop the original Core module handle before instantiation; the
+linker retains its cloned module. Own binding retains a code lease and rejects
+new bindings after owner Close. These lifecycle APIs differ. Fuel is disabled;
+own cancellation/logical limits remain enabled and reference Stores use default
+policy. Wasmtime's GC component-module declaration abort is a capability failure,
+not a throughput sample. Typed Rust is the stronger call-boundary reference;
+local samples alone do not establish performance acceptance.

@@ -47,42 +47,10 @@ func (p *TypePool) coreModule(m *module.Module) (*CoreModule, error) {
 	if err != nil {
 		return nil, err
 	}
-	ids, ok := p.registry.InternModule(m, p.limits.MaxNodes)
+	shape, ok := module.SnapshotInterface(m).Intern(&p.registry, p.limits.MaxNodes)
 	if !ok {
 		return nil, limit("embedded canonical Core types")
 	}
-	typ := &CoreModuleType{}
-	spaces := [5][]module.Import{}
-	normalize := func(t module.Import) module.Import {
-		if t.Kind == 0 || t.Kind == 4 {
-			t.Type = ids[t.Type]
-		}
-		t.Table.Element = module.ResolveType(t.Table.Element, ids)
-		t.Global.Value = module.ResolveType(t.Global.Value, ids)
-		return t
-	}
-	for _, im := range m.Imports {
-		desc := normalize(im)
-		typ.Imports = append(typ.Imports, CoreExtern{Module: im.Module, Name: im.Name, Descriptor: desc})
-		spaces[im.Kind] = append(spaces[im.Kind], desc)
-	}
-	for _, f := range m.Functions {
-		spaces[0] = append(spaces[0], normalize(module.Import{Kind: 0, Type: f.Type}))
-	}
-	for _, t := range m.Tables {
-		spaces[1] = append(spaces[1], normalize(module.Import{Kind: 1, Table: t}))
-	}
-	for _, t := range m.Memories {
-		spaces[2] = append(spaces[2], module.Import{Kind: 2, Memory: t})
-	}
-	for _, g := range m.Globals {
-		spaces[3] = append(spaces[3], normalize(module.Import{Kind: 3, Global: g.Type}))
-	}
-	for _, t := range m.Tags {
-		spaces[4] = append(spaces[4], normalize(module.Import{Kind: 4, Type: t}))
-	}
-	for _, e := range m.Exports {
-		typ.Exports = append(typ.Exports, CoreExtern{Name: e.Name, Descriptor: spaces[e.Kind][e.Index]})
-	}
+	typ := coreShape(shape)
 	return &CoreModule{Definition: checked, Type: typ}, nil
 }

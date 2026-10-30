@@ -395,6 +395,13 @@ bounded packed-byte transfer and cancellation. Both own backends and the actual
 Wasmtime WASIp2 provider execute the same fixture. IO, clocks, filesystem,
 sockets, complete CLI/HTTP worlds and the other M5 deliverables remain required.
 
+Host Core modules now compile in the component Engine's own domain and bind
+through checked root/nested imports. The shared Core relation covers all object
+descriptors and GC subtyping; bounded per-instantiation matching and publication
+leases preserve immutable plans and concurrent Store lifetime. Host component
+bindings, abstract host types, standalone resource values/starts, local cm64
+borrows and the remaining async/world deliverables are still required.
+
 **Exit gate:** components from at least two pinned guest toolchains compose on both backends and host compilers. Versioned WIT/world/operation coverage, encoding/ownership/reentry/error cases and resource cleanup all pass. Parsing or one sample is not complete component/P2 support.
 
 ## M6 — WASI 0.3 native async
