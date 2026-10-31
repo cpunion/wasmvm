@@ -513,3 +513,28 @@ original feature profile. `BenchmarkOwnedResourceLifetime` remains the common
 source-base/head/reference control for the shared opaque-reference/handle paths.
 Unsupported base/new operations have no direct speed ratio. Local measurements
 and reference limitations do not establish M6/performance acceptance.
+
+
+### Run-to-completion async lift probe
+
+Build `benchmarks/components/async_lift.go` with Go and pinned LLGo
+`8e45ed5 -O3 -lto=full`. Invoke `async_lift COMPONENT BACKEND CALLS YIELDS ENTRY`
+using `pkg/component/testdata/async-lift.wasm`, 3000 calls, 128 yields and entry
+`run`, `stackful` or `direct`. `run` performs 129 callback invocations per call;
+`stackful` uses task.return and one thread.yield; `direct` keeps a synchronous
+Core ABI for an async component function type. They exercise different guest
+bodies, so their difference is not an isolated task.return cost.
+
+Build the actual reference with `cargo +1.98.0 build --locked --release
+--features async-lift --manifest-path benchmarks/components/rust/Cargo.toml
+--bin async_lift`. Its arguments are `COMPONENT CALLS YIELDS ENTRY`. Use the same
+bytes/counts and verify results. Separate load, executor creation, engine,
+compile, Store/instantiate, lookup, first call, warm calls and close; process
+startup is excluded. Report warm calls as complete calls or explicitly amortize
+by the callback count. Keep ordinary resource lifetimes as a base/head control.
+
+Generate/check all fourteen authored fixtures with
+`python3 scripts/build_async_lift_fixtures.py` and their pinned manifest. The
+actual Wasmtime CLI comparison retains its i64-context compiler rejection and
+cm64 high-pointer task.return mismatch. These are explicit reference boundaries,
+not passed oracle assertions. See [the measurements](../../docs/validation.md#run-to-completion-async-lifts-2026-10-31).
