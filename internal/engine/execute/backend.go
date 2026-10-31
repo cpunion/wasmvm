@@ -6,6 +6,7 @@ import (
 
 	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/internal/engine/value"
+	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
 // Quiesce releases guest frames and the invocation context, retaining bounded
@@ -15,6 +16,17 @@ func (e *Execution) Quiesce() {
 	e.Abort(nil)
 	e.context = context.Background()
 	e.status = Done
+}
+
+// SetLimits redistributes a session's logical frame/slot budget between parked
+// executions. The driver calls it only while this execution is not running.
+func (e *Execution) SetLimits(limits Limits) error {
+	used := e.Footprint()
+	if used.MaxFrames > limits.MaxFrames || used.MaxSlots > limits.MaxSlots {
+		return wasm.ErrLimit
+	}
+	e.config.Limits = limits
+	return nil
 }
 
 // Rebind changes per-invocation policy only after all frames have left. Native

@@ -6,6 +6,14 @@ Implement functional stages in dependency order. Local performance follow-ups ma
 
 ## Current integration decision
 
+On 2026-10-31 the owner directed capability-first development through the full
+remaining scope, followed by performance optimization. Continue functional work
+across merged increments; retain the final Go/LLGo semantic matrix, coverage and
+necessary regression checks. Defer optimization and broad competitive benchmark
+campaigns until capabilities are complete. Keep existing measured regressions
+and performance gates open. One active PR and prompt validated merges remain
+the integration policy.
+
 On 2026-10-29 the owner authorized merging the accumulated Core 2.0 work and
 then clarified that local optimization must not block completing capabilities.
 PRs #26, #27 and #28 have merged with their recorded semantic evidence and

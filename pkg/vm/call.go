@@ -200,27 +200,35 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 	}
 	op.depth++
 	defer func() { op.depth-- }()
-	limits := op.store.config.Execution
-	for _, frame := range op.frames {
-		used := frame.Footprint()
-		limits.MaxFrames -= used.MaxFrames
-		limits.MaxSlots -= used.MaxSlots
+	limits, err := op.executionLimits(nil)
+	if err != nil {
+		return nil, err
 	}
-	w, err := op.acquireWorkspace(limits)
+	w, err := op.acquireWorkspace(op.store.config.Execution)
 	if err != nil {
 		return nil, err
 	}
 	e := w.execution
+	if err := e.SetLimits(limits); err != nil {
+		op.releaseWorkspace(w)
+		return nil, err
+	}
 	op.frames = append(op.frames, e)
 	defer func() {
-		op.frames[len(op.frames)-1] = nil
-		op.frames = op.frames[:len(op.frames)-1]
+		op.removeFrame(e)
 		op.releaseWorkspace(w)
 	}()
 	if err := e.Start(ref, args); err != nil {
 		return nil, err
 	}
 	for {
+		limits, err := op.executionLimits(e)
+		if err != nil {
+			return nil, err
+		}
+		if err := e.SetLimits(limits); err != nil {
+			return nil, err
+		}
 		status := e.Run()
 		op.fuel = e.Fuel()
 		switch status {
@@ -270,21 +278,23 @@ func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]valu
 			v.Release()
 		}
 	}()
-	results, err := request.Function.Host.(HostFunction)(caller, args)
+	var results []Value
+	var errResult error
+	if host, ok := request.Function.Host.(SuspendableHostFunction); ok {
+		var step HostResult
+		step, errResult = host(caller, args)
+		if step.Pending != nil && errResult == nil {
+			errResult = wasm.ErrTrap
+		}
+		results = step.Values
+	} else {
+		results, errResult = request.Function.Host.(HostFunction)(caller, args)
+	}
+	err = errResult
 	panicked = false
 
 	if err != nil {
-		var ex *Exception
-		if errors.As(err, &ex) && ex != nil {
-			s.mu.Lock()
-			raw, e := s.rawLocked(ex.reference, wasm.ExnRef.NonNull())
-			s.mu.Unlock()
-			if e != nil {
-				return nil, e
-			}
-			return nil, &state.Exception{Owner: s.state, Ref: raw.Lo}
-		}
-		return nil, err
+		return nil, op.hostError(err)
 	}
 	caller.mu.Lock()
 	caller.active = false
@@ -292,4 +302,19 @@ func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]valu
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.decodeValuesLocked(results, request.Function.Signature.Results)
+}
+
+func (op *operation) hostError(err error) error {
+	s := op.store
+	var ex *Exception
+	if errors.As(err, &ex) && ex != nil {
+		s.mu.Lock()
+		raw, e := s.rawLocked(ex.reference, wasm.ExnRef.NonNull())
+		s.mu.Unlock()
+		if e != nil {
+			return e
+		}
+		return &state.Exception{Owner: s.state, Ref: raw.Lo}
+	}
+	return err
 }
