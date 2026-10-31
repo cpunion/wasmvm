@@ -4315,3 +4315,86 @@ Reproduction: [async probe instructions](../benchmarks/components/README.md).
 Raw `async-lift-phase-*`, `async-lift-common-*`, reference outcomes, binary hashes,
 toolchain metadata and the initial regression diagnostic remain under
 `artifacts/components/async-lift-*`.
+
+
+## Eager async canonical lower (2026-10-31)
+
+Implementation `43211d2`, source base `7491e45`: async lower uses four flat
+argument slots and indirect results, shares the ordinary call bridge and returns
+RETURNED (2) after admitted run-to-completion callees finish. It covers sibling
+component calls, synchronous and stackful lift ABIs, mixed numeric slots,
+spilled arguments, strings and nominal own/borrow transfers. Pending subtasks,
+waitable producers, cooperative cancellation, backpressure, futures/streams and
+WASI 0.3.2 worlds remain required; M6 is open.
+
+The shared lower transaction now adopts returned ownership before validating
+result memory. A direct source-base reproduction of the synchronous ABI traps
+but drops zero unpublished results; the candidate traps and drops exactly one.
+Host effects precede a result-pointer failure; malformed spilled arguments fail
+before host effects. Tests also cover panic, cancellation, bad result shapes,
+expired loans and complete shared-quota reclamation on both own backends.
+
+Twelve authored fixtures pin Component Model `d095e2f` and wasm-tools 1.258.0.
+Nine independently validate; three precise cm64 async-lower producer rejections
+are retained because the producer expects i32 result pointers instead of i64.
+The owned cm64 cases follow the pinned optional memory64 rule and are not
+independent conformance evidence. Actual Wasmtime 48.0.1 matches 20 component
+and string invocations and independently rejects those three cm64 signatures.
+Full Go, affected fixed-LLGo release tests, race/vet and cgo-free builds pass.
+Coverage: canonical 94.28%, validator 92.74%, component 92.72%; all 29 executable
+packages remain >=90%. This is not full async/world conformance acceptance.
+
+Local Apple M4 Max arm64: Go 1.27.3; LLGo `8e45ed5 -O3 -lto=full` from the clean
+pinned checkout; LLVM 22.1.8; Rust 1.98.0; actual Wasmtime 48.0.1. Source base and
+head use identical toolchains and flags. Three serial samples alternate runtime
+and revision order. Each new probe runs 3,000 public calls, each containing 128
+checked cross-component async lowers, after first call and ten warmups. The
+source base rejects async lower before guest execution, so it has no new-feature
+timing. Process/runtime initialization before main remains excluded.
+
+Warm **ns per complete 128-lower call**, and explicitly amortized **ns/lower**:
+
+| Runtime | Warm call | Amortized lower |
+| --- | ---: | ---: |
+| go-interpreter | 109,356 | 854.35 |
+| go-native | 186,177 | 1,454.51 |
+| llgo-interpreter | 348,113 | 2,719.64 |
+| llgo-native | 613,483 | 4,792.84 |
+| wasmtime-48.0.1 | 139,401 | 1,089.07 |
+
+Amortized timing includes the guest loop/checks, canonical ABI transfers, the
+callee, task.return and VM/host transitions. It is not a pure opcode cost.
+Preparation, first batch and close remain separate, **ns**:
+
+| Runtime | Load | Executor | Engine | Compile | Store + instantiate | Lookup | First | Close |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| go-interpreter | 42,750 | 0 | 1,750 | 217,542 | 33,875 | 250 | 144,500 | 3,208 |
+| go-native | 44,584 | 0 | 1,625 | 346,334 | 59,250 | 417 | 232,292 | 6,959 |
+| llgo-interpreter | 47,375 | 0 | 3,083 | 513,250 | 78,083 | 375 | 233,875 | 3,209 |
+| llgo-native | 61,084 | 0 | 2,750 | 826,292 | 73,167 | 416 | 776,250 | 11,583 |
+| wasmtime-48.0.1 | 30,334 | 14,667 | 87,791 | 1,959,958 | 39,459 | 2,542 | 208,708 | 17,632,750 |
+
+The separate executor field measures reference Tokio construction; Go runtime
+initialization is outside this helper. Fuel is off; owned quotas and context
+cancellation remain enabled, while the reference uses its finite-fixture
+defaults. These local rows are not matched-policy/all-target acceptance. The
+reference close cost is retained rather than folded into steady-state timing.
+
+The ordinary four-call resource lifetime is a common base/head control: 100,000
+complete lifetimes/sample, with preparation/lookup/first excluded. Medians,
+**ns/lifetime**, base -> head:
+
+| Compiler | Interpreter | Native |
+| --- | ---: | ---: |
+| go | 3,093 -> 2,933 | 5,869 -> 5,486 |
+| llgo | 9,023 -> 8,723 | 15,163 -> 14,646 |
+
+Actual Wasmtime C API reference: **1,191.84 ns/lifetime**. Local control medians
+do not establish a controlled improvement. LLGo's absolute competitor deficits
+and earlier milestone performance gates remain open. The probe reuses the async
+lift helper with its new `churn` entry; no separate benchmark runtime is added.
+
+Raw `async-lower-phase-*`, `async-lower-common-*`, toolchain/binary hashes,
+source-base capability/rollback reproductions and reference outcomes remain in
+`artifacts/components/async-lower-*`. Reproduce with the
+[component probe instructions](../benchmarks/components/README.md).

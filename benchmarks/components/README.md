@@ -538,3 +538,23 @@ Generate/check all fourteen authored fixtures with
 actual Wasmtime CLI comparison retains its i64-context compiler rejection and
 cm64 high-pointer task.return mismatch. These are explicit reference boundaries,
 not passed oracle assertions. See [the measurements](../../docs/validation.md#run-to-completion-async-lifts-2026-10-31).
+
+
+### Eager async lower probe
+
+The existing async lift helper also accepts `churn`: use
+`async_lift pkg/component/testdata/async-lower.wasm BACKEND 3000 128 churn`
+for Go/LLGo and `async_lift COMPONENT 3000 128 churn` for the actual pinned Rust
+reference. Build with the same toolchains/flags as above. Each outer call checks
+128 sibling-component async lower/lift invocations and result buffers.
+`callbacks_per_call` is zero; the 128 lowers are distinct from callback turns.
+Report complete calls and explicitly amortized lower costs; keep load, executor,
+engine, compile, Store/instantiate, lookup, first, warm and close separate.
+
+`python3 scripts/build_async_lower_fixtures.py` generates twelve pinned fixtures
+using the existing conforming realloc fragment. Nine independently validate;
+three retain exact cm64 async result-pointer producer rejections. Record these
+failures explicitly. Source-base async lower is unsupported; use the ordinary
+resource lifetime for the shared base/head control and retain the separate
+synchronous unpublished-result cleanup reproduction. See
+[measurements and scope](../../docs/validation.md#eager-async-canonical-lower-2026-10-31).
