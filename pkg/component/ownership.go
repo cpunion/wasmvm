@@ -19,6 +19,7 @@ type resourceCodec struct {
 	n       *namespace
 	scope   *canonical.BorrowScope
 	created []*Resource
+	escaped []*Resource
 	seen    map[any]model.Kind
 	borrows uint32
 	lowered []ownedHandle
@@ -198,42 +199,41 @@ func (r *resourceCodec) Accept(t *model.Type, v Value, commit bool) (Value, erro
 }
 
 func (r *resourceCodec) Finish(err error) error {
-	if r.scope != nil {
-		if ended := r.scope.End(); err == nil {
+	scope, created, lowered, escaped := r.scope, r.created, r.lowered, r.escaped
+	r.scope, r.created, r.lowered, r.escaped, r.seen = nil, nil, nil, nil, nil
+	guard := cleanupGuard{}
+	if scope != nil {
+		if ended := scope.End(); err == nil {
 			err = ended
 		}
 	}
 	if err != nil {
-		for _, ref := range r.created {
-			r.in.cleanupResource(r.core, ref)
+		for _, ref := range created {
+			guard.run(func() { r.in.cleanupResource(r.core, ref) })
 		}
-		for _, h := range r.lowered {
-			if h.end != nil {
-				if h.end.table() == h.table && h.end.id == h.id {
-					h.end.abort()
+		for _, h := range lowered {
+			guard.run(func() {
+				if h.end != nil {
+					if h.end.table() == h.table && h.end.id == h.id {
+						h.end.abort()
+					}
+					return
 				}
-				continue
-			}
-			if h.rt == nil {
-				h.table.DropErrorContext(h.id)
-				continue
-			}
-			if rep, failed := h.table.Take(h.rt.identity, h.id); failed == nil {
-				r.in.cleanupRepresentation(r.core, h.rt, rep)
-			}
+				if h.rt == nil {
+					h.table.DropErrorContext(h.id)
+					return
+				}
+				if rep, failed := h.table.Take(h.rt.identity, h.id); failed == nil {
+					r.in.cleanupRepresentation(r.core, h.rt, rep)
+				}
+			})
+		}
+	} else {
+		for _, ref := range escaped {
+			r.in.publishReference(ref)
 		}
 	}
-	if err == nil {
-		for _, ref := range r.created {
-			table, _, _, owner, _, failed := canonical.ReferenceInfo(ref)
-			if end, ok := owner.(*asyncEnd); failed == nil && ok && table == r.in.hostResources && end.n == nil {
-				end.unlink()
-			}
-		}
-	}
-	r.created = nil
-	r.lowered = nil
-	r.seen = nil
+	guard.finish()
 	return err
 }
 
@@ -313,8 +313,8 @@ func (in *Instance) cleanupResource(core *vm.Caller, ref *Resource) (err error) 
 		return nil
 	}
 	if end, ok := owner.(*asyncEnd); ok && end.in == in {
+		defer canonical.InvalidateReference(ref)
 		end.abort()
-		canonical.InvalidateReference(ref)
 		return nil
 	}
 	rt, ok := owner.(*resourceType)
@@ -346,3 +346,7 @@ func (in *Instance) cleanupRepresentation(core *vm.Caller, rt *resourceType, rep
 	}
 	return nil
 }
+
+// Only accepted host parameters can escape through a successful imported effect.
+// Results remain unpublished until the caller's canonical handoff succeeds.
+func (r *resourceCodec) ParametersAccepted() { r.escaped = append(r.escaped, r.created...) }

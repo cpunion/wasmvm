@@ -59,7 +59,11 @@ func (in *Instance) asyncValueBuiltin(caller *vm.Caller, n *namespace, p *valida
 				return vm.HostResult{}, wasm.ErrTrap
 			}
 			e.state = endCancelling
-			if !e.waitable.pending {
+			if e.sourceJob != nil {
+				if err := e.sourceJob.requestCancel(c); err != nil {
+					return vm.HostResult{}, err
+				}
+			} else if !e.waitable.pending {
 				e.notify(0)
 			}
 		} else {
@@ -122,6 +126,11 @@ func forwardEnds(c *vm.Caller, src, dst *asyncEnd) error {
 		writer, reader := src.other, dst.other
 		writer.other, reader.other = reader, writer
 		src.other, dst.other = nil, nil
+		if writer.source != nil && reader.buffer != nil && reader.sourceJob == nil {
+			if err := writer.in.startSourceRead(c, reader, writer, reader.buffer); err != nil {
+				return err
+			}
+		}
 		if writer.buffer != nil && reader.buffer != nil {
 			smaller := reader
 			if reader.buffer.remain() > writer.buffer.remain() {

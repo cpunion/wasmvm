@@ -105,15 +105,25 @@ func (h *hostCall) finish(core *vm.Caller, complete bool, err error) error {
 	if h.completion != nil {
 		h.completion.close()
 	}
-	if !complete {
-		for _, r := range h.created {
-			h.function.instance.cleanupResource(core, r)
-		}
-	}
+
+	created := h.created
 	h.created = nil
 	h.args = nil
+	guard := cleanupGuard{}
+	if !complete {
+		for _, ref := range created {
+			guard.run(func() { h.function.instance.cleanupResource(core, ref) })
+		}
+	} else {
+		for _, ref := range created {
+			h.function.instance.publishReference(ref)
+		}
+	}
 	bindResourceCaller(h.codec, core)
-	return finishResources(h.codec, complete, err)
+	guard.run(func() { err = finishResources(h.codec, complete, err) })
+	guard.finish()
+	return err
+
 }
 
 func (h *hostCall) limit() {
@@ -131,4 +141,10 @@ func (h *hostCall) account() {
 	in.heldValues += v - h.values
 	in.heldBytes += b - h.bytes
 	h.values, h.bytes = v, b
+}
+
+func (h *hostCall) finishDeferred(core *vm.Caller, complete *bool, err *error) {
+	guard := cleanupGuard{panicked: recover()}
+	guard.run(func() { *err = h.finish(core, *complete, *err) })
+	guard.finish()
 }

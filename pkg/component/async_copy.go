@@ -1,6 +1,7 @@
 package component
 
 import (
+	"github.com/cpunion/wasmvm/internal/component/canonical"
 	"github.com/cpunion/wasmvm/internal/component/model"
 	"github.com/cpunion/wasmvm/internal/component/validate"
 	"github.com/cpunion/wasmvm/pkg/vm"
@@ -14,6 +15,9 @@ type guestBuffer struct {
 	in               *Instance
 	n                *namespace
 	plan             *validate.CanonicalFunction
+	scope            *namespace
+	batch            *model.Type
+	data             Value
 	typ              *model.Type
 	ptr, stride      uint64
 	length, progress uint32
@@ -48,15 +52,23 @@ func copyGuestBuffers(c *vm.Caller, src, dst *guestBuffer, count uint32) (err er
 		return nil
 	}
 	read := src.in.codec(c, src.n, src.plan)
-	write := dst.in.codec(c, dst.n, dst.plan)
 	complete := false
-	defer func() { err = finishResources(write, complete, err); err = finishResources(read, complete, err) }()
+	var write *canonical.Codec
+	defer func() {
+		guard := cleanupGuard{panicked: recover()}
+		if write != nil {
+			guard.run(func() { err = finishResources(write, complete, err) })
+		}
+		guard.run(func() { err = finishResources(read, complete, err) })
+		guard.finish()
+	}()
 
 	values, err := read.LoadBuffer(src.typ, src.ptr, uint64(count))
 	if err != nil {
 		return err
 	}
-	if err := write.StoreBuffer(dst.typ, dst.ptr, values); err != nil {
+	write, err = dst.store(c, values)
+	if err != nil {
 		return err
 	}
 	src.ptr += uint64(count) * src.stride
@@ -66,4 +78,22 @@ func copyGuestBuffers(c *vm.Caller, src, dst *guestBuffer, count uint32) (err er
 
 	complete = true
 	return nil
+}
+
+func (b *guestBuffer) store(c *vm.Caller, values Value) (*canonical.Codec, error) {
+	n, plan := b.n, b.plan
+	if n == nil {
+		n = b.scope
+	}
+	codec := b.in.codec(c, n, plan)
+	var err error
+	if b.n != nil {
+		err = codec.StoreBuffer(b.typ, b.ptr, values)
+	} else {
+		b.data, err = codec.Clone(b.batch, values)
+		if err == nil {
+			err = codec.AcceptResult(b.batch, &b.data)
+		}
+	}
+	return codec, err
 }

@@ -23,23 +23,32 @@ func (t *componentTask) resumeHost(c *vm.Caller) error {
 	if err := c.Context().Err(); err != nil {
 		return err
 	}
+
 	if !t.started {
-		args, err := t.args(c)
-		if err != nil {
-			return err
+		h := t.host
+		if h == nil {
+			args, err := t.args(c)
+			if err != nil {
+				return err
+			}
+			t.args = nil
+			h, err = t.hostFunction.hostCall(c, args)
+			t.host = h
+			if err != nil {
+				return err
+			}
 		}
-		t.args = nil
 		t.started = true
-		h, err := t.hostFunction.hostCall(c, args)
-		t.host = h
-		if err != nil {
-			return err
-		}
 		h.ctx, h.cancel = context.WithCancel(c.Context())
+		if t.work != nil {
+			t.work.control.bind(h.cancel)
+		}
+
 		p, err := h.start(c)
 		if err != nil {
 			return err
 		}
+		t.syncCancellation()
 		if p == nil {
 			return vm.ErrType
 		}
@@ -60,9 +69,12 @@ func (t *componentTask) resumeHost(c *vm.Caller) error {
 		if !t.cancelRequested {
 			return vm.ErrType
 		}
-		h.finish(c, false, nil)
 		t.task.resolved = true
-		return t.resolve(c, nil, true)
+		if err := t.resolve(c, nil, true); err != nil {
+			return err
+		}
+		h.finish(c, false, nil)
+		return nil
 	}
 	value, err := h.invoke(c, resolve)
 	if err != nil {
@@ -72,9 +84,9 @@ func (t *componentTask) resumeHost(c *vm.Caller) error {
 	if err != nil {
 		return err
 	}
-	if err := h.finish(c, true, nil); err != nil {
+	t.task.result, t.task.resolved = value, true
+	if err := t.resolve(c, value, false); err != nil {
 		return err
 	}
-	t.task.result, t.task.resolved = value, true
-	return t.resolve(c, value, false)
+	return h.finish(c, true, nil)
 }

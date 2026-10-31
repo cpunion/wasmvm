@@ -222,3 +222,32 @@ its Context is safe to retain and receives cooperative cancellation. Call
 Cancelled to acknowledge cancellation without returning a value. Each completion
 belongs to one invocation and may publish once. Immediate async implementations
 may continue to use `Imports.AsyncFunctions`; a name cannot bind both APIs.
+
+
+### Host futures, streams and background work
+
+Use `caller.NewSource(endpointType, component.AsyncSource{Read: read, Close: close})`
+to return a typed future/stream from an import. Read receives a fresh Caller and
+a maximum count; return `NewReadCompletion()` and resolve it from external work.
+Its resolver returns `ReadResult` with typed Values, packed Bytes or a unit Count.
+Set Closed for EOF. A future supplies exactly one element. Retain only the
+starter's Context, immutable data and completion, never its Caller.
+
+`caller.ReadAsync(resource, limit)` consumes a bounded batch and drives other
+component tasks. Outside a callback use `instance.ReadAsync(ctx, resource,
+limit, options)`. Drop the readable capability with DropAsync when finished.
+To consume a guest result before its producer exits, use
+`function.CallWithResult(ctx, args, options, consume)` and read inside consume.
+Its Caller expires on return; the call subsequently drains remaining tasks.
+
+Use `caller.Schedule(component.AsyncWork{Owned: refs, Start: start, Done: done,
+Cancel: signal})` when host consumption must progress independently of a result
+future being read. Owned capabilities move immediately. Start returns a void
+HostCompletion; Done receives a fresh Caller and the cancellation outcome.
+NewCancellation creates an optional one-job signal safe to cancel from another
+goroutine. WithCaller supplies a scoped embedding session for scheduling work.
+
+Close callbacks must be nonblocking and must not enter or wait for the VM. They
+run once on EOF/drop/failure/shutdown; cancellation contexts terminate workers.
+Close the Instance and wait for WaitClosed before releasing external backing
+storage. Unpublished payloads and scheduled ownership are reclaimed on failure.

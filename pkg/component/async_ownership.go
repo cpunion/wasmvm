@@ -93,3 +93,10 @@ func (r *resourceCodec) acceptAsync(t *model.Type, v Value, commit bool) (Value,
 	r.created = append(r.created, ref)
 	return Value{Resource: ref}, nil
 }
+
+func (in *Instance) publishReference(ref *Resource) {
+	table, _, _, owner, _, err := canonical.ReferenceInfo(ref)
+	if end, ok := owner.(*asyncEnd); err == nil && ok && table == in.hostResources && end.n == nil {
+		end.unlink()
+	}
+}

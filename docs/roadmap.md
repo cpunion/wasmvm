@@ -562,6 +562,15 @@ are recorded separately from the independently validated fixtures. Host I/O
 stream production/consumption, WASI 0.3.2 worlds and complete M6 acceptance remain
 required; the guest/transport increment does not close those gates.
 
+Host async I/O now uses typed lazy sources, bounded host reads and scheduled
+work within the same component scheduler. A result-consumer API can drain a
+returned stream before its producer exits. Ownership transactions, cooperative
+cancellation, pending payload/task limits, exactly-once source closure and cleanup
+after callback/destructor panic have execution tests on both backends. WASI
+0.3.2 interface/world bindings, remaining reentry/cm64 contracts and full
+world/toolchain acceptance are still required. This host substrate does not
+complete M6 or its deferred performance gate.
+
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 
 ## M7 — Further optimization and experimental features

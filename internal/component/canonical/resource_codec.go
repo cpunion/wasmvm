@@ -33,6 +33,9 @@ func (c *Codec) AcceptParameters(types []model.Field, values []Value) error {
 			return err
 		}
 	}
+	if resources, ok := c.Resources.(interface{ ParametersAccepted() }); ok {
+		resources.ParametersAccepted()
+	}
 	return nil
 }
 

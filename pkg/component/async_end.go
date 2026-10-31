@@ -27,6 +27,8 @@ type asyncEnd struct {
 	state          uint8
 	other          *asyncEnd
 	buffer         *guestBuffer
+	source         *sourceState
+	sourceJob      *componentTask
 	waitable       waitable
 	progress       uint32
 	group          *taskScheduler
@@ -84,6 +86,11 @@ func (e *asyncEnd) detach() {
 	e.unlink()
 	if e.other != nil {
 		other := e.other
+		if other.source != nil {
+			other.closeSource()
+			e.buffer = nil
+			return
+		}
 		other.other = nil
 		e.other = nil
 		if other.state != endDone && !other.waitable.pending {
@@ -93,8 +100,12 @@ func (e *asyncEnd) detach() {
 	e.buffer = nil
 }
 func (e *asyncEnd) abort() {
+	if e.source != nil {
+		e.closeSource()
+		return
+	}
+	defer e.table().RemoveOpaque(e.id)
 	e.detach()
-	e.table().RemoveOpaque(e.id)
 }
 func (in *Instance) waitable(n *namespace, id uint32) (*waitable, error) {
 	if n.handles == nil {
@@ -137,17 +148,24 @@ func (in *Instance) end(n *namespace, id uint32, t *model.Type, read bool) (*asy
 	return e, nil
 }
 func (in *Instance) newEnds(n *namespace, t *model.Type) (*asyncEnd, *asyncEnd, error) {
-	in.resourceTable(n)
-	r := &asyncEnd{in: in, typ: t, scope: n, n: n, read: true, state: endIdle}
-	w := &asyncEnd{in: in, typ: t, scope: n, n: n, state: endIdle}
+	return in.allocateEnds(n, n, t)
+}
+func (in *Instance) allocateEnds(n, scope *namespace, t *model.Type) (*asyncEnd, *asyncEnd, error) {
+	table := in.hostResources
+	if n != nil {
+		in.resourceTable(n)
+		table = n.handles
+	}
+	r := &asyncEnd{in: in, typ: t, scope: scope, n: n, read: true, state: endIdle}
+	w := &asyncEnd{in: in, typ: t, scope: scope, n: n, state: endIdle}
 	r.other, w.other = w, r
 	r.waitable.producer = r
 	w.waitable.producer = w
 	for _, e := range []*asyncEnd{r, w} {
-		id, err := n.handles.AddOpaque(e)
+		id, err := table.AddOpaque(e)
 		if err != nil {
 			if r.id != 0 {
-				n.handles.RemoveOpaque(r.id)
+				table.RemoveOpaque(r.id)
 			}
 			return nil, nil, err
 		}
@@ -175,6 +193,9 @@ func (e *asyncEnd) copy(c *vm.Caller, b *guestBuffer) error {
 	}
 	if other.buffer == nil {
 		e.buffer = b
+		if e.read && other.source != nil {
+			return e.in.startSourceRead(c, e, other, b)
+		}
 		return nil
 	}
 	ob := other.buffer

@@ -40,6 +40,8 @@ type Imports struct {
 type Instance struct {
 	mu                    sync.Mutex
 	closed                bool
+	shutdown              chan struct{}
+	sources               map[*sourceState]struct{}
 	store                 *vm.Store
 	config                Config
 	exports               map[string]item
@@ -49,6 +51,7 @@ type Instance struct {
 	callDepth             uint32
 	tasks                 *taskScheduler
 	heldValues, heldBytes uint64
+	bufferTypes           map[*model.Type]*model.Type
 	work                  uint64
 	bindings              map[any]Value
 	resourceTables        []*canonical.Resources
@@ -68,13 +71,26 @@ type Instance struct {
 
 func (in *Instance) Close() {
 	in.mu.Lock()
+	if in.closed {
+		in.mu.Unlock()
+		return
+	}
 	in.closed = true
+	sources := in.sources
+	in.sources = nil
 	modules := in.hostModules
 	in.hostModules = nil
 	components := in.components
 	in.components = nil
 	in.mu.Unlock()
+	defer close(in.shutdown)
 	in.store.Close()
+	var panicked any
+	for source := range sources {
+		if p := source.close(); p != nil && panicked == nil {
+			panicked = p
+		}
+	}
 	for _, table := range in.resourceTables {
 		table.Close()
 	}
@@ -84,9 +100,20 @@ func (in *Instance) Close() {
 	for _, lease := range components {
 		lease.Close()
 	}
+	if panicked != nil {
+		panic(panicked)
+	}
 }
 
-func (in *Instance) WaitClosed(ctx context.Context) error { return in.store.WaitClosed(ctx) }
+func (in *Instance) WaitClosed(ctx context.Context) error {
+	ctx = contextOrBackground(ctx)
+	select {
+	case <-in.shutdown:
+		return in.store.WaitClosed(ctx)
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
 
 func (in *Instance) Function(path ...string) (*Function, error) {
 	in.mu.Lock()
@@ -239,7 +266,7 @@ func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.
 		lease.Close()
 		return nil, err
 	}
-	in := &Instance{engine: c.engine, store: store, config: c.engine.config, bindings: map[any]Value{}, resourceBudget: canonical.NewResourceBudgetWithErrors(c.engine.config.MaxResources, c.engine.config.MaxBytes)}
+	in := &Instance{engine: c.engine, store: store, shutdown: make(chan struct{}), config: c.engine.config, bindings: map[any]Value{}, resourceBudget: canonical.NewResourceBudgetWithErrors(c.engine.config.MaxResources, c.engine.config.MaxBytes)}
 	in.components = map[*Compiled]*componentLease{c: lease}
 	in.hostTypes = map[*hostResourceDefinition]*resourceType{}
 	in.importResourceIDs = map[uint64]*resourceType{}
