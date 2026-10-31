@@ -444,7 +444,7 @@ func (in *Instance) bind(types []validate.Extern, imports Imports) (map[string]i
 			if !ok && factory == nil {
 				return nil, fmt.Errorf("%w: missing component value %q", vm.ErrLink, name)
 			}
-			e.value = &boundValue{typ: expected.Type.Value, expected: expected.Type, resource: expected.Type.ContainsResource(), factory: factory, check: imports.ValueChecks[name]}
+			e.value = &boundValue{typ: expected.Type.Value, expected: expected.Type, resource: expected.Type.ContainsAffine(), factory: factory, check: imports.ValueChecks[name]}
 			in.initialValues = append(in.initialValues, e.value)
 			if factory != nil || e.value.resource {
 				// Resource authority can only be checked after all nominal imports
@@ -654,7 +654,7 @@ func (in *Instance) instantiate(caller *vm.Caller, component *closure, args map[
 				return nil, err
 			}
 			if v != nil {
-				bound := &boundValue{typ: f.typ.Result, scope: f.scope, value: *v, resource: f.typ.ResultContainsResource(), validated: true}
+				bound := &boundValue{typ: f.typ.Result, scope: f.scope, value: *v, resource: f.typ.ResultContainsAffine(), validated: true}
 				// Track the returned capability before a bounded aggregate copy can
 				// fail; unpublished ownership must still be reclaimed.
 				in.initialValues = append(in.initialValues, bound)

@@ -80,13 +80,20 @@ func (c *equality) charge() bool {
 }
 
 func (c *equality) value(a, b *model.Type) (bool, error) {
-	if a == b {
+	if a == nil || b == nil {
+		return a == b, nil
+	}
+	if a == b && c.resources == nil {
 		return true, nil
 	}
-	if a == nil || b == nil || a.Kind != b.Kind || a.Length != b.Length || len(a.Fields) != len(b.Fields) || len(a.Cases) != len(b.Cases) || len(a.Labels) != len(b.Labels) {
+	if a.Kind != b.Kind || a.Length != b.Length || len(a.Fields) != len(b.Fields) || len(a.Cases) != len(b.Cases) || len(a.Labels) != len(b.Labels) {
 		return false, nil
 	}
-	if a.ResourceID != b.ResourceID && (c.resources == nil || !c.resources(a.ResourceID, b.ResourceID)) {
+	if (a.ResourceID != 0 || b.ResourceID != 0) && c.resources != nil {
+		if !c.resources(a.ResourceID, b.ResourceID) {
+			return false, nil
+		}
+	} else if a.ResourceID != b.ResourceID {
 		return false, nil
 	}
 	k := pair{a, b}

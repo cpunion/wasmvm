@@ -49,7 +49,7 @@ func (c *Codec) Clone(t *model.Type, v Value) (Value, error) {
 }
 
 func (c *Codec) clone(t *model.Type, v Value) (Value, error) {
-	if t.Kind == model.Own || t.Kind == model.Borrow || t.Kind == model.ErrorContext {
+	if t.Kind == model.Own || t.Kind == model.Borrow || t.Kind == model.ErrorContext || t.Kind == model.Future || t.Kind == model.Stream {
 		amount := uint64(128)
 		if t.Kind == model.ErrorContext {
 			message, _ := ErrorContextMessage(v)
@@ -166,7 +166,7 @@ func (c *Codec) load(t *model.Type, at uint64, depth uint32) (Value, error) {
 		return Value{Bits: s.Bits}, err
 	}
 	switch t.Kind {
-	case model.Own, model.Borrow, model.ErrorContext:
+	case model.Own, model.Borrow, model.ErrorContext, model.Future, model.Stream:
 		r, err := c.resource()
 		if err != nil {
 			return Value{}, err
@@ -334,7 +334,7 @@ func (c *Codec) validate(t *model.Type, v Value, depth uint32) error {
 	case model.ErrorContext:
 		_, err := ErrorContextMessage(v)
 		return err
-	case model.Own, model.Borrow:
+	case model.Own, model.Borrow, model.Future, model.Stream:
 		r, err := c.resource()
 		if err != nil {
 			return err
@@ -436,7 +436,7 @@ func (c *Codec) store(t *model.Type, at uint64, v Value, depth uint32) error {
 		return StoreScalar(c.Transfer.Memory, at, Scalar{t.Kind, v.Bits})
 	}
 	switch t.Kind {
-	case model.Own, model.Borrow, model.ErrorContext:
+	case model.Own, model.Borrow, model.ErrorContext, model.Future, model.Stream:
 		r, err := c.resource()
 		if err != nil {
 			return err

@@ -40,7 +40,7 @@ func (f *Function) Call(ctx context.Context, args []Value, options vm.CallOption
 	}
 	var fuel uint64
 	var err error
-	if !f.typ.ContainsResource() {
+	if !f.typ.ContainsAffine() {
 		fuel, err = f.instance.store.WithCaller(ctx, options, run)
 	} else {
 		fuel, err = f.instance.store.WithCallerCleanup(ctx, options, run, func(c *vm.Caller) error {
@@ -230,6 +230,9 @@ func flatValues(values []vm.Value) ([]canonical.Slot, error) {
 }
 
 func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
+	if plan.Definition.Op >= 0x0e && plan.Definition.Op <= 0x1b || plan.Definition.Op == 0x2e || plan.Definition.Op == 0x2f {
+		return in.asyncValueBuiltin(caller, n, plan)
+	}
 	if plan.Definition.Op == 0x24 || plan.Definition.Op == 0x25 {
 		return in.backpressureBuiltin(caller, n, plan)
 	}
@@ -239,7 +242,7 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 	if plan.Definition.Op >= 9 && plan.Definition.Op <= 0x0c {
 		return in.taskBuiltin(caller, n, plan)
 	}
-	if len(n.resources) != 0 || plan.Type != nil && plan.Type.ContainsErrorContext() || plan.Definition.Op >= 0x1c && plan.Definition.Op <= 0x1e || plan.Definition.Op == 1 && plan.Async {
+	if len(n.resources) != 0 || plan.Type != nil && (plan.Type.ContainsErrorContext() || plan.Type.ContainsAsyncValue()) || plan.Definition.Op >= 0x1c && plan.Definition.Op <= 0x1e || plan.Definition.Op == 1 && plan.Async {
 		in.resourceTable(n)
 	}
 	if plan.Definition.Op >= 0x1c && plan.Definition.Op <= 0x1e {

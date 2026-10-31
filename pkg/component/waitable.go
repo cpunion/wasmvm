@@ -214,13 +214,13 @@ func (in *Instance) waitableBuiltin(caller *vm.Caller, n *namespace, plan *valid
 			result, err := in.eventMemory(c, n, plan, s, ptr)
 			return result.Values, err
 		}
-		s, err := in.subtask(n, id)
-		if err != nil {
-			return nil, err
-		}
-		switch op {
-		case 0x23:
-			if s.waitable.syncWaiter {
+
+		if op == 0x23 {
+			w, err := in.waitable(n, id)
+			if err != nil {
+				return nil, err
+			}
+			if w.syncWaiter {
 				return nil, wasm.ErrTrap
 			}
 			var set *waitableSet
@@ -231,8 +231,14 @@ func (in *Instance) waitableBuiltin(caller *vm.Caller, n *namespace, plan *valid
 					return nil, err
 				}
 			}
-			s.waitable.join(set)
+			w.join(set)
 			return nil, nil
+		}
+		s, err := in.subtask(n, id)
+		if err != nil {
+			return nil, err
+		}
+		switch op {
 		case 0x0d:
 			if !s.delivered || s.waitable.syncWaiter {
 				return nil, wasm.ErrTrap

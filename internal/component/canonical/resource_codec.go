@@ -61,7 +61,7 @@ func walkResources(t *model.Type, v *Value, visit func(*model.Type, *Value) erro
 	if t == nil {
 		return nil
 	}
-	if t.Kind == model.Own || t.Kind == model.Borrow {
+	if t.Kind == model.Own || t.Kind == model.Borrow || t.Kind == model.Future || t.Kind == model.Stream {
 		return visit(t, v)
 	}
 	switch t.Kind {

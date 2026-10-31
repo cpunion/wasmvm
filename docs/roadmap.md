@@ -551,6 +551,17 @@ uses its release profile. Futures/streams, WASI 0.3.2 worlds and their complete
 acceptance remain required. Performance optimization and broad comparisons are
 deferred until functional coverage is complete.
 
+Future/stream guest protocols now implement canonical creation, synchronous and
+asynchronous copies, cancellation, peer closure, forwarding and waitable event
+delivery through the same task/handle/codec layers. Readable endpoints move
+between components and host calls with affine ownership, full-width memory64
+bounds and dynamic generative resource identity. Unit/byte streams, zero-length
+readiness, copied strings, synchronous suspension and imported effects have
+execution tests on both backends. Producer limitations for forward and memory64
+are recorded separately from the independently validated fixtures. Host I/O
+stream production/consumption, WASI 0.3.2 worlds and complete M6 acceptance remain
+required; the guest/transport increment does not close those gates.
+
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 
 ## M7 — Further optimization and experimental features

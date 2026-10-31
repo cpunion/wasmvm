@@ -36,6 +36,7 @@ type componentTask struct {
 type taskScheduler struct {
 	head, tail *componentTask
 	live       uint32
+	ends       *asyncEnd
 	subtasks   *componentSubtask
 	sets       *waitableSet
 	wake       chan struct{}
@@ -443,6 +444,14 @@ func (in *Instance) finishTasks(c *vm.Caller, failed *error, complete *bool) {
 	}
 	for in.tasks.head != nil {
 		in.tasks.head.finish(c, wasm.ErrTrap)
+	}
+	for in.tasks.ends != nil {
+		e := in.tasks.ends
+		if *failed != nil {
+			e.abort()
+		} else {
+			e.unlink()
+		}
 	}
 	if *failed != nil {
 		for in.tasks.subtasks != nil {

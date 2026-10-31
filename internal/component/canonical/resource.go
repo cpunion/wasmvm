@@ -65,6 +65,7 @@ func (b *ResourceBudget) release(count uint32) { b.live.Add(0 - count) }
 // live entries and the pinned ABI's 28-bit handle space.
 type Resources struct {
 	mu         sync.Mutex
+	order      uint64
 	entries    map[uint32]*resourceEntry
 	next       uint32
 	budget     *ResourceBudget
@@ -77,8 +78,10 @@ func NewResources(maximum uint32) *Resources {
 }
 
 // NewResourceTable creates an independent handle domain with a shared quota.
+var resourceTableOrder atomic.Uint64
+
 func NewResourceTable(budget *ResourceBudget) *Resources {
-	return &Resources{entries: map[uint32]*resourceEntry{}, next: 1, budget: budget}
+	return &Resources{order: resourceTableOrder.Add(1), entries: map[uint32]*resourceEntry{}, next: 1, budget: budget}
 }
 
 func (r *Resources) addLocked(e *resourceEntry) (uint32, error) {

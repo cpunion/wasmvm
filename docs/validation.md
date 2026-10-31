@@ -4539,3 +4539,32 @@ Go/LLGo/platform matrix. Performance campaigns are deferred by the owner decisio
 benchmark dispatch and the `run-benchmarks` PR label retain explicit opt-in
 measurement. Futures/streams, WASI 0.3 worlds, complete world conformance and
 performance acceptance remain open.
+
+## Future/stream guest protocols and affine transport — 2026-10-31
+
+Sixteen hashed owned fixtures cover readable/writable directions, cancellation,
+peer closure, future completion precedence, forwarding, unit/packed-byte streams,
+zero-length readiness, memory64, cross-component strings, synchronous suspension,
+exported endpoint moves/drops and generative nominal resource identity. Go race
+and pinned LLGo release-profile tests execute the same guests on both own
+backends. Opposite-direction handle-table move tests also check lock ordering,
+authority and quota preservation. Successful imported ownership effects survive
+consumer failure, and failed transfers restore handle availability.
+
+Twelve fixtures are independently parsed/validated by wasm-tools 1.258.0. Two
+forward binaries patch only a signature-equivalent placeholder canonical entry,
+using the pinned component binary grammar, because the producer lacks forward.
+Two full-width memory64 copy fixtures parse but are rejected by its incorrectly
+i32 canonical copy signatures. `future-streams.json` records every input hash,
+the generator and both actual producer rejections. These four cases are owned
+execution evidence, not independent producer passes.
+
+Actual Wasmtime 48.0.1 matches twelve common executions (scalar/byte/unit
+copies, maximum unit count and zero-length readiness); it rejects both forward
+and memory64 fixture groups. Raw outcomes and failures are retained in
+`artifacts/components/future-stream-reference-check.json`. Custom host import
+round trips, generative binding and string composition execute in the owned
+engines but are not claimed as reference-provider conformance. Host I/O endpoint
+production/consumption, WASI 0.3 worlds and complete M6 acceptance remain open.
+No performance comparison or optimization gate is claimed during capability
+completion.
