@@ -54,13 +54,14 @@ func (s *componentSubtask) event(c *vm.Caller) ([3]uint32, error) {
 func (s *componentSubtask) abort(c *vm.Caller) {
 	s.unlink()
 	s.waitable.join(nil)
-	if s.codec != nil {
-		bindResourceCaller(s.codec, c)
-		finishResources(s.codec, false, wasm.ErrTrap)
-		s.codec = nil
-	}
 	if s.id != 0 {
-		s.n.handles.RemoveOpaque(s.id)
+		defer s.n.handles.RemoveOpaque(s.id)
+	}
+	codec := s.codec
+	s.codec = nil
+	if codec != nil {
+		bindResourceCaller(codec, c)
+		finishResources(codec, false, wasm.ErrTrap)
 	}
 }
 

@@ -540,3 +540,43 @@ independent producer validation. Wasmtime 48.0.1 matches twelve common guest
 contracts and rejects the same four extension fixtures. Host stream production
 and consumption APIs, WASI 0.3 worlds and complete M6 acceptance remain required;
 transporting an endpoint through a host callback does not implement host I/O.
+
+
+## Host async I/O and scheduled work
+
+`Caller.NewSource`/`Instance.NewSource` create a typed future or stream from an
+`AsyncSource`. Reads start lazily after the current guest turn parks; each read
+returns a one-shot `ReadCompletion`. External workers publish a resolver which
+runs with a fresh Caller in the serialized Store. Typed element batches, packed
+bytes and counting-only unit streams share the canonical transfer transaction.
+Futures produce exactly one element; empty non-final positive-capacity stream
+reads are invalid. No Caller or guest execution stack escapes to a worker.
+
+`Instance.ReadAsync` and `Caller.ReadAsync` drive one bounded host-side read in
+the existing scheduler. `Function.CallWithResult` transfers an async result to
+a scoped consumer as soon as task.return resolves it, permitting consumption
+while the guest producer is still parked. It then drains background tasks.
+Ordinary Call retains its existing completion behavior. `Instance.WithCaller`
+provides the same scoped lease for embedding work without a guest entry.
+
+`Caller.Schedule` moves explicit owned capabilities to an `AsyncWork` job, starts
+it after the current turn, and invokes completion with a fresh Caller. Jobs use
+the existing task, completion, cancellation and aggregate value/byte budgets;
+there is no second executor. A one-job goroutine-safe `Cancellation` may be
+requested before scheduling. Scheduled consumption starts independently of a
+returned future being read, which is required for streaming output protocols.
+Borrowed, duplicate, foreign and stale capabilities are rejected before moving.
+
+Source Close is nonblocking, must not enter/wait for the VM, and runs once on
+EOF, drop, failure or instance shutdown. Shutdown cancels workers before closure;
+WaitClosed includes idle-source teardown. Cleanup releases all independent
+resources even if a close callback panics, preserving the original execution
+panic. Successful imported ownership effects remain committed after later
+consumer failure; unpublished results and failed copies are reclaimed. The
+canonical parameter-acceptance boundary publishes only accepted parameters,
+not newly created result resources. Destination transactions stay live through
+source closure so a failing close cannot leak owned payloads.
+
+These APIs enable versioned WASI 0.3 providers but do not themselves implement
+those interfaces or complete world/toolchain conformance. Performance acceptance
+remains open under capability-first development.

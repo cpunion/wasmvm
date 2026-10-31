@@ -34,7 +34,7 @@ func (in *Instance) dropAsync(ref *Resource) error {
 	if got, err := table.Opaque(id); err != nil || got != e {
 		return wasm.ErrTrap
 	}
+	defer canonical.InvalidateReference(ref)
 	e.abort()
-	canonical.InvalidateReference(ref)
 	return nil
 }

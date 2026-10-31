@@ -1,0 +1,39 @@
+{
+  "componentModelCommit": "d095e2f60ddae1f9a1e9b1e2fb547ec1114da677",
+  "producer": "wasm-tools 1.258.0",
+  "generatorSHA256": "6678a18783950c3d77dd483a53944064b4dc71c4da3cf068727bca9ddef81ce6",
+  "sha256": {
+    "host-source-future-u32": {
+      "wat": "e269b250fb1831258133b1c7edb95a271f10484f44b0a91a942cba804f984587",
+      "wasm": "844fb6ee622bea74e299ec0fc3b80fb4b78c1b764e2b526bf7a08dedcacd343e"
+    },
+    "host-source-stream-u32": {
+      "wat": "7bcaf6018f468363b49ef33e125ed4ec220745e6fecfc7023b96e2912c2b3096",
+      "wasm": "f9903fb38dd1f3dc1603c3893ee5a9ce0d186e30b756580a39b22711446620b5"
+    },
+    "host-source-stream-u8": {
+      "wat": "c98a4b8ddbb6e2e03acc89157d471238c724ea2f67f387279faef0a46cb8f661",
+      "wasm": "dcb3199b38bbc60d7ce1a71bff8727b2ea8cf5860e2c0aaf76b6dbf4c893470a"
+    },
+    "host-source-future-string": {
+      "wat": "c4c84d27091df0668cb6c38c98d9d6338f540fddc205cb14cdd3ed391a747654",
+      "wasm": "10cdce626b0ea06bea77f50beb2f57c54d033aadb47284af7b17f0dea50ea4fb"
+    },
+    "host-source-stream-unit": {
+      "wat": "b51a2d9ac977c25c7e952e0858be68aef77abcd874607a57a0cbebb770b1125a",
+      "wasm": "d93e15d83d41c56ac2e0668c467dc27d16f263033a82044b4d9776dfd118f0df"
+    },
+    "host-result-future": {
+      "wat": "2f88a8025f970331fe8f25cd0e1c38016f7d263ef6a47bbc5d0dfd506384b4f6",
+      "wasm": "b4595a4a8fcdf67fb82d55e6c4d30a658f310123404cf2824a9c7c68afb65da4"
+    },
+    "host-result-stream": {
+      "wat": "ba0df30cc4a1f927bb707ee8816cb9ed2704b2053d7c6683d986791075158f96",
+      "wasm": "91b7cb21d83893664e07947af9a1b270b13e88ddf4dd5654d4c461105508b4b8"
+    },
+    "host-source-future-owned": {
+      "wat": "232d0ca1b620302a91fec0306926c4692e062b03454e7639cd7df5980facfd14",
+      "wasm": "e9fd93ed98a727b24ea6954a846d36326349b12c4a6249693c843857aa170734"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 package component
 
 import (
+	"context"
 	"errors"
 	"github.com/cpunion/wasmvm/internal/component/canonical"
 	"github.com/cpunion/wasmvm/internal/component/model"
@@ -27,6 +28,7 @@ type componentTask struct {
 	core                             *vm.Continuation
 	hostFunction                     *Function
 	host                             *hostCall
+	work                             *workState
 	started, running, exited         bool
 	cancelRequested, cancelDelivered bool
 	waitingEnter                     bool
@@ -118,6 +120,9 @@ func (t *componentTask) ready() bool {
 	if t.needsExclusive() && t.n.exclusive != nil && t.n.exclusive != t {
 		return false
 	}
+	if t.work != nil && t.work.control.requested.Load() && !t.cancelRequested {
+		return true
+	}
 	if t.host != nil {
 		return t.host.completion != nil && t.host.completion.ready()
 	}
@@ -157,11 +162,9 @@ func (t *componentTask) finish(c *vm.Caller, failed error) error {
 		return failed
 	}
 	t.leaveWait()
-	if t.pendingCleanup != nil {
-		t.pendingCleanup()
-		t.pendingCleanup = nil
-	}
 	t.releaseExclusive()
+	pending := t.pendingCleanup
+	t.pendingCleanup = nil
 	if t.waitingEnter {
 		t.n.waitingEnter--
 		t.waitingEnter = false
@@ -180,30 +183,46 @@ func (t *componentTask) finish(c *vm.Caller, failed error) error {
 	}
 	s.live--
 	t.previous, t.next, t.args, t.onResolve = nil, nil, nil, nil
-	if t.core != nil {
-		c.Abort(t.core)
-		t.core = nil
-	}
+	core, host, returned, parameters := t.core, t.host, t.task.returned, t.task.parameters
+	t.core, t.host, t.task.returned, t.task.parameters = nil, nil, nil, nil
 	if failed != nil && t.started && t.task.plan != nil {
 		t.n.failed = true
 	}
-	if t.host != nil {
-		failed = t.host.finish(c, failed == nil, failed)
+	if host != nil && host.cancel != nil {
+		host.cancel()
 	}
-	if t.task.returned != nil {
-		bindResourceCaller(t.task.returned, c)
-		failed = finishResources(t.task.returned, failed == nil, failed)
+	guard := cleanupGuard{}
+	if core != nil {
+		guard.run(func() { c.Abort(core) })
 	}
-	if t.task.parameters != nil {
-		bindResourceCaller(t.task.parameters, c)
-		failed = finishResources(t.task.parameters, failed == nil, failed)
+	if pending != nil {
+		guard.run(pending)
 	}
-	t.task.parameters, t.task.returned = nil, nil
+	if host != nil {
+		guard.run(func() { failed = host.finish(c, failed == nil, failed) })
+	}
+	for _, codec := range []*canonical.Codec{returned, parameters} {
+		if codec != nil {
+			guard.run(func() { bindResourceCaller(codec, c); failed = finishResources(codec, failed == nil, failed) })
+		}
+	}
+	if (failed != nil || guard.panicked != nil) && t.started && t.task.plan != nil {
+		t.n.failed = true
+	}
+	if t.work != nil {
+		state := t.work
+		t.work = nil
+		guard.run(func() { state.finish(c, t.in) })
+	}
+	guard.finish()
 	return failed
 }
 
 func (t *componentTask) requestCancel(c *vm.Caller) error {
 	t.cancelRequested = true
+	if !t.started {
+		return t.resume(c)
+	}
 	if t.host != nil {
 		t.host.cancel()
 		if t.host.completion != nil && t.host.completion.ready() {
@@ -218,15 +237,21 @@ func (t *componentTask) requestCancel(c *vm.Caller) error {
 }
 
 func (t *componentTask) resume(c *vm.Caller) (err error) {
+	t.syncCancellation()
 	t.running = true
 	previous, entered := t.n.task, t.n.entered
 	t.n.task, t.n.entered = &t.task, true
 	complete := false
 	defer func() {
+		panicked := recover()
 		t.running = false
 		t.n.task, t.n.entered = previous, entered
 		if !complete {
-			err = t.finish(c, errors.Join(wasm.ErrTrap, err))
+			guard := cleanupGuard{panicked: panicked}
+			guard.run(func() { err = t.finish(c, errors.Join(wasm.ErrTrap, err)) })
+			guard.finish()
+		} else if panicked != nil {
+			panic(panicked)
 		}
 	}()
 	if !t.started {
@@ -414,7 +439,13 @@ func (in *Instance) stepTasks(c *vm.Caller) (bool, error) {
 	return false, nil
 }
 func (in *Instance) awaitTasks(c *vm.Caller, ready func() bool) error {
+	return in.awaitTasksContext(c, c.Context(), ready)
+}
+func (in *Instance) awaitTasksContext(c *vm.Caller, ctx context.Context, ready func() bool) error {
 	for !ready() {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		if err := c.Context().Err(); err != nil {
 			return err
 		}
@@ -424,6 +455,8 @@ func (in *Instance) awaitTasks(c *vm.Caller, ready func() bool) error {
 		}
 		if !progress {
 			select {
+			case <-ctx.Done():
+				return ctx.Err()
 			case <-c.Context().Done():
 				return c.Context().Err()
 			case <-in.scheduler().wake:
@@ -433,38 +466,46 @@ func (in *Instance) awaitTasks(c *vm.Caller, ready func() bool) error {
 	return nil
 }
 func (in *Instance) finishTasks(c *vm.Caller, failed *error, complete *bool) {
+	guard := cleanupGuard{panicked: recover()}
 	if in.tasks == nil {
+		guard.finish()
 		return
 	}
-	if !*complete && *failed == nil {
+	if (!*complete || guard.panicked != nil) && *failed == nil {
 		*failed = wasm.ErrTrap
 	}
 	if *failed == nil {
-		*failed = in.awaitTasks(c, func() bool { return in.tasks.live == 0 })
+		guard.run(func() { *failed = in.awaitTasks(c, func() bool { return in.tasks.live == 0 }) })
+	}
+	if guard.panicked != nil && *failed == nil {
+		*failed = wasm.ErrTrap
 	}
 	for in.tasks.head != nil {
-		in.tasks.head.finish(c, wasm.ErrTrap)
+		task := in.tasks.head
+		guard.run(func() { task.finish(c, wasm.ErrTrap) })
 	}
 	for in.tasks.ends != nil {
-		e := in.tasks.ends
+		end := in.tasks.ends
 		if *failed != nil {
-			e.abort()
+			guard.run(end.abort)
 		} else {
-			e.unlink()
+			end.unlink()
 		}
 	}
 	if *failed != nil {
 		for in.tasks.subtasks != nil {
-			in.tasks.subtasks.abort(c)
+			sub := in.tasks.subtasks
+			guard.run(func() { sub.abort(c) })
 		}
 		for in.tasks.sets != nil {
-			s := in.tasks.sets
-			for s.head != nil {
-				s.head.join(nil)
+			set := in.tasks.sets
+			for set.head != nil {
+				set.head.join(nil)
 			}
-			s.unlink()
-			s.n.handles.RemoveOpaque(s.id)
+			set.unlink()
+			set.n.handles.RemoveOpaque(set.id)
 		}
 	}
 	in.tasks = nil
+	guard.finish()
 }

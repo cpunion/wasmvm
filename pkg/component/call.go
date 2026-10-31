@@ -19,6 +19,7 @@ type Function struct {
 	scope     *namespace
 	lift      func(*vm.Caller, []Value) (*Value, error)
 	start     func(*vm.Caller, taskArguments, taskResolution) (*componentTask, error)
+	plan      *validate.CanonicalFunction
 }
 
 type CallResult struct {
@@ -109,6 +110,34 @@ func (c *Caller) Call(f *Function, args []Value) (*Value, error) {
 }
 
 func (f *Function) call(core *vm.Caller, args []Value) (result *Value, err error) {
+	leave, err := f.enterCall(core, args)
+	if err != nil {
+		return nil, err
+	}
+	defer leave()
+
+	if f.lift != nil {
+		return f.lift(core, args)
+	}
+	if f.scope != nil && (f.scope.failed || f.scope.blocked) {
+		return nil, wasm.ErrTrap
+	}
+	h, err := f.hostCall(core, args)
+	if err != nil {
+		return nil, err
+	}
+	complete := false
+	defer h.finishDeferred(core, &complete, &err)
+	result, err = h.invoke(core, func(c *Caller) (*Value, error) { return f.host(c, h.args) })
+	if err != nil {
+		return nil, err
+	}
+	result, err = h.accept(result)
+	complete = err == nil
+	return result, err
+}
+
+func (f *Function) enterCall(core *vm.Caller, args []Value) (func(), error) {
 	if f == nil || f.instance == nil {
 		return nil, vm.ErrReference
 	}
@@ -125,26 +154,7 @@ func (f *Function) call(core *vm.Caller, args []Value) (result *Value, err error
 		return nil, wasm.ErrLimit
 	}
 	f.instance.callDepth++
-	defer func() { f.instance.callDepth-- }()
-	if f.lift != nil {
-		return f.lift(core, args)
-	}
-	if f.scope != nil && (f.scope.failed || f.scope.blocked) {
-		return nil, wasm.ErrTrap
-	}
-	h, err := f.hostCall(core, args)
-	if err != nil {
-		return nil, err
-	}
-	complete := false
-	defer func() { err = h.finish(core, complete, err) }()
-	result, err = h.invoke(core, func(c *Caller) (*Value, error) { return f.host(c, h.args) })
-	if err != nil {
-		return nil, err
-	}
-	result, err = h.accept(result)
-	complete = err == nil
-	return result, err
+	return func() { f.instance.callDepth-- }, nil
 }
 
 type memory struct {
@@ -253,7 +263,7 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 	}
 	if plan.Definition.Op == 0 {
 		fn := n.items[model.CoreFunctionSort][plan.Definition.Index].core
-		f := &Function{instance: in, typ: plan.Type, scope: n}
+		f := &Function{instance: in, typ: plan.Type, scope: n, plan: plan}
 		if plan.Type.Kind == model.AsyncFunction {
 			f.start = func(c *vm.Caller, args taskArguments, resolve taskResolution) (*componentTask, error) {
 				return in.startTask(c, n, plan, fn, args, resolve)
@@ -278,28 +288,22 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 				}
 			}
 			complete := false
-			defer func() {
-				if !complete || err != nil {
-					n.failed = true
-				}
-				err = finishResources(codec, complete, err)
-				if err != nil {
-					n.failed = true
-				}
-			}()
+			defer cleanupCanonical(n, codec, &complete, &err)
 			if n.taskOps || plan.Async {
 				previous := n.task
 				task := &callTask{plan: plan, parameters: codec, entered: n.entered}
 				n.task = task
 				defer func() {
-					if !complete || err != nil {
+					guard := cleanupGuard{panicked: recover()}
+					n.task = previous
+					n.entered = task.entered
+					if !complete || err != nil || guard.panicked != nil {
 						n.failed = true
 					}
 					if task.returned != nil {
-						err = finishResources(task.returned, complete, err)
+						guard.run(func() { err = finishResources(task.returned, complete, err) })
 					}
-					n.task = previous
-					n.entered = task.entered
+					guard.finish()
 				}()
 			}
 			n.entered = true
@@ -372,15 +376,7 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 		}
 		codec := in.codec(caller, n, plan)
 		complete := false
-		defer func() {
-			if !complete || err != nil {
-				n.failed = true
-			}
-			err = finishResources(codec, complete, err)
-			if err != nil {
-				n.failed = true
-			}
-		}()
+		defer cleanupCanonical(n, codec, &complete, &err)
 		args, err := liftArguments(codec, plan, flat)
 		if err != nil {
 			return nil, err
@@ -448,17 +444,7 @@ func lowerParameters(codec *canonical.Codec, plan *validate.CanonicalFunction, a
 
 func (in *Instance) asyncLift(f *Function, plan *validate.CanonicalFunction) func(*vm.Caller, []Value) (*Value, error) {
 	return func(c *vm.Caller, args []Value) (*Value, error) {
-		n := f.scope
-		if n != nil && (n.failed || n.blocked) {
-			return nil, wasm.ErrTrap
-		}
-		codec := in.codec(c, n, plan)
-		for i, p := range f.typ.Parameters {
-			if err := codec.Validate(p.Type, args[i]); err != nil {
-				return nil, err
-			}
-		}
-		t, err := f.start(c, func(*vm.Caller) ([]Value, error) { return args, nil }, nil)
+		t, err := in.beginAsyncCall(c, f, plan, args)
 		if err != nil {
 			return nil, err
 		}
@@ -467,4 +453,18 @@ func (in *Instance) asyncLift(f *Function, plan *validate.CanonicalFunction) fun
 		}
 		return t.task.result, nil
 	}
+}
+
+func (in *Instance) beginAsyncCall(c *vm.Caller, f *Function, plan *validate.CanonicalFunction, args []Value) (*componentTask, error) {
+	n := f.scope
+	if n != nil && (n.failed || n.blocked) {
+		return nil, wasm.ErrTrap
+	}
+	codec := in.codec(c, n, plan)
+	for i, p := range f.typ.Parameters {
+		if err := codec.Validate(p.Type, args[i]); err != nil {
+			return nil, err
+		}
+	}
+	return f.start(c, func(*vm.Caller) ([]Value, error) { return args, nil }, nil)
 }
