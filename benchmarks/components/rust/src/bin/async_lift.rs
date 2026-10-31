@@ -6,8 +6,8 @@ use wasmtime::{
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = env::args().collect();
-    if args.len() != 5 {
-        return Err("usage: async_lift COMPONENT CALLS BATCH ENTRY".into());
+    if args.len() != 5 && args.len() != 6 {
+        return Err("usage: async_lift COMPONENT CALLS BATCH ENTRY [GUEST_CALLBACKS]".into());
     }
     let count: u32 = args[2].parse()?;
     let batch: u32 = args[3].parse()?;
@@ -20,6 +20,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "direct" => (batch + 42, 0),
         "churn" => (batch, 0),
         _ => return Err("unknown entry".into()),
+    };
+    let callbacks: u32 = if args.len() == 6 {
+        args[5].parse()?
+    } else {
+        callbacks
     };
     let start = Instant::now();
     let bytes = fs::read(&args[1])?;
