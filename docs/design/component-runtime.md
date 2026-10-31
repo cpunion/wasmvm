@@ -11,7 +11,8 @@ imports/exports, narrowed instance views, literal values and component starts.
 Host bindings supply callbacks and copied values through declared schemas.
 Fixed equality-bound value schemas are inferred from those declarations;
 nominal host resource types bind through `Imports.Resources`. Host Core modules
-bind through `Imports.CoreModules`; host components remain unsupported. Other
+bind through `Imports.CoreModules`. Non-resource type imports use their checked
+equality targets without runtime identities; host components remain unsupported. Other
 incomplete executable operations are rejected during
 compilation or host binding, before instantiation invokes guest code.
 
@@ -233,9 +234,8 @@ Core objects retain their normal Store/native code leases. Closing a component
 Engine or compiled component does not retire existing Store execution.
 `CoreModule.Info` returns owned metadata and rejects a closed owner.
 
-This capability does not bind host components or abstract host type imports;
-local cm64 borrows, async plans and complete
-WASI worlds remain separate required work.
+This capability does not bind host components. Local cm64 borrows, async plans
+and complete upstream world conformance remain separate required work.
 
 
 ## Standalone resource values and starts
@@ -271,4 +271,22 @@ while their component and context permit reentry. Explicit Store close keeps
 its existing cancellation contract and does not synthesize guest destructors.
 The implementation shares the existing resource codec and Core session rather
 than introducing another execution path. These synchronous capabilities leave
-local cm64 borrows, host abstract/component bindings and async/WASI 0.3 required.
+local cm64 borrows, host component bindings and async/WASI 0.3 required.
+
+
+## Equality-bound type imports
+
+An imported non-resource type is an equality alias to a type that static
+validation has already resolved. Function, instance and component type imports
+now use the same metadata binding as existing value types, at root and nested
+host interfaces. They carry no runtime object to allocate or independently
+choose; accepting the declaration preserves its exact equality target. This is
+separate from an actual component import, which still requires a complete host
+component/code-lease binding contract and remains rejected before execution.
+
+Functions and instance/component ascriptions can reference imported aliases.
+They retain lexical captures and nominal resource IDs. Fresh abstract resources
+still require `Imports.Resources` bindings, and equality-bound resource imports
+still require the same host declaration. Provider `FunctionChecks` see the
+resolved function shape and its actual nominal resource bindings before effects.
+No new type registry or alternate call path is introduced.

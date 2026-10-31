@@ -339,8 +339,6 @@ func (in *Instance) bind(types []validate.Extern, imports Imports) (map[string]i
 				}
 				in.importResourceIDs[expected.Type.Resource] = rt
 				e.resource = rt
-			} else if expected.Type.Value == nil {
-				return nil, unsupported("host nominal type binding")
 			}
 
 		case model.FunctionSort:

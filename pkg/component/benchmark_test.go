@@ -10,7 +10,11 @@ import (
 )
 
 func BenchmarkComponentRuntime(b *testing.B) {
-	input, err := os.ReadFile("../../internal/component/decode/testdata/composition.wasm")
+	path := os.Getenv("WASMVM_COMPONENT_BENCH_FIXTURE")
+	if path == "" {
+		path = "../../internal/component/decode/testdata/composition.wasm"
+	}
+	input, err := os.ReadFile(path)
 	if err != nil {
 		b.Fatal(err)
 	}

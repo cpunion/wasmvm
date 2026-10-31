@@ -246,8 +246,8 @@ func preflight(p *validate.Component, root bool) error {
 	}
 	if root {
 		for _, im := range p.Type.Imports {
-			if im.Sort == model.TypeSort && im.Type.Value == nil && im.Type.Kind != model.Resource || im.Sort == model.ComponentSort {
-				return unsupported("host type/component binding")
+			if im.Sort == model.ComponentSort {
+				return unsupported("host component binding")
 			}
 		}
 	}
