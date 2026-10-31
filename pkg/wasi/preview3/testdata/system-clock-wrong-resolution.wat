@@ -1,0 +1,16 @@
+(component
+ (type $instant (record (field "seconds" s64) (field "nanoseconds" u32))) (export $instant-public "instant-type" (type $instant))
+ (import "wasi:clocks/system-clock@0.3.2" (instance $clock
+  (type $i (record (field "seconds" s64) (field "nanoseconds" u32))) (export "instant" (type $public (eq $i)))
+  (export "now" (func (result $public))) (export "get-resolution" (func (result s64)))))
+ (alias export $clock "now" (func $now)) (alias export $clock "get-resolution" (func $resolution))
+ (core module $memory (memory (export "memory") 1)) (core instance $memory (instantiate $memory))
+ (alias core export $memory "memory" (core memory $mem))
+ (core func $now (canon lower (func $now) (memory $mem))) (core func $resolution (canon lower (func $resolution)))
+ (core instance $env (export "now" (func $now)) (export "resolution" (func $resolution)))
+ (core module $m (import "env" "now" (func $now (param i32))) (import "env" "resolution" (func $resolution (result i64)))
+  (func (export "instant") (result i32) i32.const 32 call $now i32.const 32)
+  (func (export "resolution") (result i64) call $resolution))
+ (core instance $m (instantiate $m (with "env" (instance $env))))
+ (func (export "instant") (result $instant-public) (canon lift (core func $m "instant") (memory $mem)))
+ (func (export "resolution") (result u64) (canon lift (core func $m "resolution"))))

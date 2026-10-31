@@ -155,6 +155,7 @@ jobs:
             --require github.com/cpunion/wasmvm/internal/platform/native \
             --require github.com/cpunion/wasmvm/internal/wasi/host \
             --require github.com/cpunion/wasmvm/pkg/wasi/preview1 \
+            --require github.com/cpunion/wasmvm/pkg/wasi/preview3 \
             --require github.com/cpunion/wasmvm/pkg/wasi/threads \
             --require github.com/cpunion/wasmvm/pkg/component \
             --require github.com/cpunion/wasmvm/pkg/wasm \

@@ -251,3 +251,15 @@ Close callbacks must be nonblocking and must not enter or wait for the VM. They
 run once on EOF/drop/failure/shutdown; cancellation contexts terminate workers.
 Close the Instance and wait for WaitClosed before releasing external backing
 storage. Unpublished payloads and scheduled ownership are reclaimed on failure.
+
+
+### WASI 0.3 providers
+
+`pkg/wasi/preview3` supplies versioned Environment, Random, SystemClock,
+MonotonicClock and IO providers. Bind each provider's Imports explicitly. P3 IO
+reuses the prompt InputSource/OutputSource capability contracts, exposes native
+streams/futures and owns accepted sources; it never inherits ambient stdio.
+Close/wait for bound Instances, then Close and WaitClosed the IO/monotonic owners.
+Use preview3.RunCommand for the checked async command export. Complete P3
+filesystem/socket/HTTP worlds remain in development; see [provider scope and
+lifecycle](design/wasi-preview3.md).

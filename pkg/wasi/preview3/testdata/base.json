@@ -1,0 +1,96 @@
+{
+  "wasiVersion": "0.3.2",
+  "witArchiveSHA256": "2e918e047c6ad251a44b4d1141359495a27219058fd7090f8b8142f6bc0ec311",
+  "producer": "wasm-tools 1.258.0",
+  "generatorSHA256": "310ee2b89eab6cb32f5ce5e5c94be20f3bc57f0434fadcae41534d872ed80d51",
+  "inputs": {
+    "pkg/wasi/preview2/testdata/environment.wat": "b617ef73919ddc35109d0a7b5ad5589bfea90229b45876e71c79c3954287e8f2",
+    "pkg/wasi/preview2/testdata/random.wat": "39604f4b4ad14dd0cb7907bf957da97323cebfec8472dbd1c184545dd36207a3",
+    "pkg/wasi/preview2/testdata/exit.wat": "fec6bd4b829362f298473ae00a4066ab2e1b65577e43b18fc004b0ff1c5f8597",
+    "pkg/wasi/preview2/testdata/wrong-arguments.wat": "b3c03b7bfa7d1f6ff95960e100aa8c2b4afe86b7de8b1cc1458fb1f6d133925d",
+    "pkg/wasi/preview2/testdata/random-wrong-seed.wat": "f59a93bf3b7311ff0ea2fa41dc46dbf55dd5c33e3f129a513d9d689d23a6f19e",
+    "pkg/wasi/preview2/testdata/exit-wrong-code.wat": "06a9f2d07800787a2d5d03560a1e34887be70936c336c05262f6220231fef92d"
+  },
+  "sha256": {
+    "environment": {
+      "wat": "655c0760c4973c175ae58b4b9d3c89fee3a30e17c0dbc5c4b5d2bec2cbe9ede0",
+      "wasm": "bc73dce156333a11168590d011fe6b1832ec7a8ab0cebee62d80b0c9e119ae29"
+    },
+    "random": {
+      "wat": "2994501e6224f1f277eabc83b442bab14db1659066512c9cd3b744c16dafd296",
+      "wasm": "746448fca5d6611ad417a307713864dd2bf8fc2867357a77330d04155e7a4fad"
+    },
+    "exit": {
+      "wat": "a907c4ae9b08ce1f5620bd404d8eaf52ea32bd9c20a0f313f3ecfe0ff14944d9",
+      "wasm": "c99229a51a8a4e8d3587d9c4c958bbef02f3604c1a06c7ae8f166e39304517f2"
+    },
+    "wrong-arguments": {
+      "wat": "a7ad6c7f70b13b354014a4569f6ce7ac998e2d7cafd0e1cd140e4a62a34fb8a7",
+      "wasm": "e5a0e9a64a16a4ecd84afd1056f6b3cbdd7023293c5ac789a36b9da934c4ef0e"
+    },
+    "random-wrong-seed": {
+      "wat": "b53aa51118e99cb64236eb8646d69990f1c59765a1f9524be8eca9aef283554a",
+      "wasm": "4f8e82d270c540e7a92526d964578f8454866e310b8cc77320114b0b0598a42f"
+    },
+    "exit-wrong-code": {
+      "wat": "da2257d3ef5a04fbbbd56b39957503503709f7bc63f96d183a99093cd176612d",
+      "wasm": "0f09d383252e661d3d6c5fb428e3d909f2f74a9996c34f13a9a3f0a7ed65e652"
+    },
+    "system-clock": {
+      "wat": "e34a00d11a68fa6709cc9586dcf1b6763a28273f764ed84ff49128da374c9a2c",
+      "wasm": "77d5c514b30711274fcdcaa94b59aa7b83e7345ab222d2d896fb6748f09d4fbc"
+    },
+    "monotonic-clock": {
+      "wat": "ee23fd7abf25b942146df4e0cd363717076fb348ed7adbf762cdff266244ba14",
+      "wasm": "bbe7ed04ca6fbe15d57996d56c121e40912abb6deb87eec25c5a7b1b39354632"
+    },
+    "system-clock-wrong-sign": {
+      "wat": "02a5fc192169f0ad0817a3afcba9482f74a350836e2175edae24eafd6ac90e22",
+      "wasm": "f80be925b43bb38949b484bce0fbff1605a498cc674673fdec439ad6412ab39b"
+    },
+    "system-clock-wrong-resolution": {
+      "wat": "c710efdf153450d8bbc29e8f3cf1a22f6592d2f5e9e413658fa40241de7a196b",
+      "wasm": "d40df47b9d9d1a4fb546d2d84e1ba179d1fc0d847cc40281dc13b3aaf2ff3e71"
+    },
+    "monotonic-clock-wrong-async": {
+      "wat": "9df3065aa85386fceccd474c9417eddf5442e0810c8f63a46ac91bebdd881c6d",
+      "wasm": "628a92dc7c4f978053c7855b3375daacdf55c7de0be83139bbea30f89551a294"
+    },
+    "monotonic-clock-wrong-now": {
+      "wat": "7de1e68cbc346bb1522d32fb49b6d681d610c5c33eb26ca54077f391f2028c71",
+      "wasm": "68dd390147d50dc2ec223363718d0f46510d021e882695be22dc32b4bc226918"
+    },
+    "monotonic-clock-wrong-wait": {
+      "wat": "3639790a1b9ef85a659f0569e6110c8a1e0c1ddc1b7392904aea68179114d1d8",
+      "wasm": "fb2082ab8e3d8021ab7ec15f05a9c4f1f77ae672ff6eb1e588a6411be60e7c65"
+    },
+    "command-success": {
+      "wat": "413180b5713d46a9517cc3b972c8d827c41a63ac91583fdaa104013d58b22c4d",
+      "wasm": "60f162cdbdcff0dbd88d7ed4e0c212f1dcbb428bb8c24c7119d37a9da51fade3"
+    },
+    "command-failure": {
+      "wat": "315a8a2f8dcbe6ea4821103cac0c1daa4d73e017af5d4c8eb36be99bf1fdbc22",
+      "wasm": "574d42c2f81269fdf4c91fb4e5792b1ff2d58aa219570eb016a0abc3ebaa7f57"
+    },
+    "command-trap": {
+      "wat": "e9d8c70c0d158447b3fac5ae9a45c5d3ec6e5b66c341979141477aea0b5b0692",
+      "wasm": "c480ce4812e84e4411f6083e3839b0f66a06eeea702d6d0bce9a6e3deeddba0d"
+    },
+    "command-sync": {
+      "wat": "e72f5471f41c24467bd50a0355b19220ec5162154efc210d90d3ec9f80e37e47",
+      "wasm": "6e23d3358198c0b4be8840d01ab4c825f56454faa89acc94dd57e449bf64e260"
+    },
+    "command-parameter": {
+      "wat": "9a47aa8a35cc016f604016614c577c9a6b489455a2df67918a8f54cf7148e271",
+      "wasm": "63c647cb727c38e67cc4c325c7f4198e02cffe2ed72f5700b49c1948ad3e3b5a"
+    },
+    "command-payload": {
+      "wat": "8e71062caa714900118e7e2e05595e09d80f572df90ac8ce1c508cefdf8259a3",
+      "wasm": "36a7640cad379c1d51eaf37749784a2b25bf86d3c67ee7e9b140d6b297967539"
+    },
+    "command-exit": {
+      "wat": "01d0eb05658f0309d237abfbda1a218fdf247d9ee2f942d3c9b17659c4a53d58",
+      "wasm": "1d6b9bb55afcb6147342e794aed014554a22f747df133c2c6dd4ef2c5053fdf7"
+    }
+  }
+}

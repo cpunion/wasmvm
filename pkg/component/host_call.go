@@ -48,7 +48,7 @@ func (f *Function) hostCall(core *vm.Caller, args []Value) (h *hostCall, err err
 	return h, nil
 }
 func (h *hostCall) caller(core *vm.Caller) *Caller {
-	return &Caller{callerState: &callerState{active: true, core: core, instance: h.function.instance}}
+	return &Caller{callerState: &callerState{active: true, core: core, instance: h.function.instance, function: h.function}}
 }
 func (h *hostCall) expire(c *Caller) {
 	c.mu.Lock()

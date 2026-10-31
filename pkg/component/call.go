@@ -72,8 +72,18 @@ type callerState struct {
 	active   bool
 	core     *vm.Caller
 	instance *Instance
+	function *Function
 	created  []*Resource
 	ctx      context.Context
+}
+
+// FunctionInfo returns this callback's immutable, instance-bound signature.
+// The view may be retained; it does not extend the Caller's execution lifetime.
+func (c *Caller) FunctionInfo() FunctionInfo {
+	if c == nil || c.callerState == nil {
+		return FunctionInfo{}
+	}
+	return c.function.Info()
 }
 
 func (c *Caller) Context() context.Context {

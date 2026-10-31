@@ -4590,3 +4590,30 @@ Local Go race and pinned LLGo release-profile tests exercise these contracts.
 The host embedding fixtures require custom providers and are not claimed as
 Wasmtime provider conformance. No new performance result is claimed; WASI 0.3.2
 interfaces/worlds, remaining reentry/cm64 contracts and full acceptance stay open.
+
+
+## WASI 0.3.2 base, clocks and native stdio — 2026-11-01
+
+Twenty base/clock/command and eleven stream/terminal fixtures independently parse
+and validate with wasm-tools 1.258.0. The generators and source/binary hashes are
+retained in preview3/testdata/base.json and io.json; base provenance additionally
+pins the WIT archive and reused owned input sources. Exact P3 names and changed
+contracts execute through both owned backends under Go race and pinned LLGo
+release-profile tests.
+
+Coverage includes immutable environment, random zero/short/scalar/seed operations,
+signed system times, async relative/absolute waits, overflow/cancellation/provider
+close, cross-Store quotas, stdio read/drop/EOF/error and output partial progress,
+backpressure/final flush/error/future-drop. Publication limits release operation
+reservations; pending instance/provider shutdown terminates workers. Nominal
+terminal resources, malformed signatures and async command success/failure/exit/
+trap/rejection execute as distinct outcomes. The new executable P3 package remains
+subject to the same 90% per-package gate. No full CLI/HTTP world, independent guest
+toolchain, reference-provider or performance acceptance is claimed by this subset.
+
+Actual Wasmtime 48.0.1 CLI with its native WASI 0.3 providers matches seven
+common executions: command success/failure, stdin EOF, stdout/stderr bytes,
+monotonic wait and signed system-clock record. The retained local artifact
+preview3-reference-check.json records the binary/fixture hashes, feature flags
+and raw results. This is independent provider evidence for those cases, not
+complete world conformance or a timing comparison.

@@ -1,0 +1,51 @@
+{
+  "wasiVersion": "0.3.2",
+  "producer": "wasm-tools 1.258.0",
+  "generatorSHA256": "102cc80ffe89db827498c66b9c3b8ab084a797fac259b4f542623870d7abd18b",
+  "sha256": {
+    "stdin": {
+      "wat": "b5610fd9faafd1eecddb2ae56843b68d69c053c47f47e8e64e9785217a142fd1",
+      "wasm": "c7d4751165ffea71fe908785d1c24ade301bab1986239e65742131ed33f7fd14"
+    },
+    "stdout": {
+      "wat": "fe68a346f985eadf2bdb585d081a7edf3cb867f6a4b3c85b93f599e682dfe846",
+      "wasm": "125c065827b2d2ded6d948868f8e9214d0b4ba76373693634283dd6b291776c4"
+    },
+    "stderr": {
+      "wat": "64716bab04d6cbcd8540f51197ead2c035e385626ccde940fd67ff161c088ec7",
+      "wasm": "8e571f74da3dd28e71246504d5b92977f3eece9bd5b2047e99b2ba80ade718e1"
+    },
+    "stdout-wrong-result": {
+      "wat": "62f9c9a0adc8516614f9b7f91307e405c1856671216603e669b37f94878fc64c",
+      "wasm": "190952c491c3114ab6b9834b0f1a254ded6247a29bec700ce92a377a3812c08d"
+    },
+    "terminal-stdin": {
+      "wat": "0627a854ce8f626a8ea9355ff9ec354f8af006454071b3fe4007ecd51af988f8",
+      "wasm": "141c78d10c5f69bacf33d04ac78bfe2ce2de4658891ba07072e107695587eb5e"
+    },
+    "terminal-stdout": {
+      "wat": "3815369f7aaa3f56bfe5b96057b8647ddcef07ca89b4c38fe920f45c19d708e1",
+      "wasm": "4da51f9a36dd23918a79a59b9633860bf4aeb8e2104d545cc5d56cd9ae8f8229"
+    },
+    "terminal-stderr": {
+      "wat": "4f54637641191c7641dde4e4c7f28d1f0a1ae8ee382ef35b39f6bb73336aff75",
+      "wasm": "9d8cb216f797bb24ec5054b29fba71f2aa1a7d3940310b5ced89434e79a86c44"
+    },
+    "stdin-wrong-stream": {
+      "wat": "81df34b6593fb9d0c17c3a342e37093cfdd81e1b2fee3f04d2c1f495212db351",
+      "wasm": "7f31021e370f8e8947c22c96977b163a8fd465f015c2a24fa37550373da7b63c"
+    },
+    "stdin-zero-read": {
+      "wat": "b06aab2a1794ecc29fe020e2b10878de95b188a77ccc5240c169d8309d304de4",
+      "wasm": "4d0ab838ff44114b42c918dd6644b7d30011155fd232c198f060c646bd344f77"
+    },
+    "stdout-wrong-future": {
+      "wat": "606e890042811f7fc7468890eb3f7c43ec2f6d24cee7b3fd7ae23065e78ed648",
+      "wasm": "5413807795dc7c28c36f30f08dabf3d98aa80d9d075b622fca074471cc7ffd85"
+    },
+    "stdout-wrong-direction": {
+      "wat": "f671f08fc21323a7067ce4bc6a1c71f1a2e48b1ac4eb79ad7d56913a4117a72f",
+      "wasm": "62f5049bcab3bfc01221854484a89f20ed35d0a83399a017968806b8d7ee0c75"
+    }
+  }
+}
