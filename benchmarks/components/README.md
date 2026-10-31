@@ -558,3 +558,22 @@ failures explicitly. Source-base async lower is unsupported; use the ordinary
 resource lifetime for the shared base/head control and retain the separate
 synchronous unpublished-result cleanup reproduction. See
 [measurements and scope](../../docs/validation.md#eager-async-canonical-lower-2026-10-31).
+
+### Pending callback lifetimes
+
+`pkg/component/testdata/pending-subtasks.wasm` runs real callback suspensions and
+waitable delivery. Build the existing `async_lift.go` and Rust `async_lift` probes
+from the measured checkout. Use `COMPONENT BACKEND 3000 128 churn 128` for the
+owned probe and `COMPONENT 3000 128 churn 128` for the reference; the optional
+last argument declares the fixture's logical guest callback count per outer
+call. One iteration includes the complete pending lower/set/event/drop
+lifetime. Retain load/executor/engine/compile/Store+instantiate/lookup/first/warm/close
+separately, with process startup excluded.
+
+The Rust probe enables the pinned reference's more-async-builtins and threading
+grammar flags as well as async/stackful/concurrency support. No component threads
+are executed. Compare source base/head using `async-lift.wasm` with `1000 128 run`
+and `BenchmarkOwnedResourceLifetime -test.benchtime=100000x`; the source base
+rejects the new builtin profile, so its unsupported throughput is not timed.
+See [validation](../../docs/validation.md#pending-callback-subtasks-2026-10-31) for
+phase data, regressions, memory64 reference disagreements and policy limits.
