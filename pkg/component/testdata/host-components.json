@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "producer": "wasm-tools 1.258.0 parse and validate; explicitly marked authored value/start extensions",
+  "sourceRevision": "d095e2f60ddae1f9a1e9b1e2fb547ec1114da677",
+  "generatorSHA256": "cb82c1d750375a1983408eb74bd5bb3bca42b53d918c8e8ac048eb43741bcf08",
+  "helperSHA256": "ad3fcca54854fff42f5da87b6e3feddf6af6cc9b675bda0595641c21cbfd58cd",
+  "fixtures": {
+    "host-component-core.wasm": {
+      "source": "host-component-core.wat",
+      "producerValidated": true
+    },
+    "host-component-delegate.wasm": {
+      "source": "host-component-delegate.wat",
+      "producerValidated": true
+    },
+    "host-component-guest.wasm": {
+      "source": "host-component-guest.wat",
+      "producerValidated": true
+    },
+    "host-component-host-alias.wasm": {
+      "source": "host-component-host-alias.wat",
+      "producerValidated": true
+    },
+    "host-component-observed.wasm": {
+      "source": "host-component-observed.wat",
+      "producerValidated": true
+    },
+    "host-component-ops.wasm": {
+      "source": "host-component-ops.wat",
+      "producerValidated": true
+    },
+    "host-components-before.wasm": {
+      "source": "host-components-before.wat",
+      "producerValidated": true
+    },
+    "host-components-cache.wasm": {
+      "source": "host-components-cache.wat",
+      "producerValidated": true
+    },
+    "host-components-core.wasm": {
+      "source": "host-components-core.wat",
+      "producerValidated": true
+    },
+    "host-components-delegate.wasm": {
+      "source": "host-components-delegate.wat",
+      "producerValidated": true
+    },
+    "host-components-nested.wasm": {
+      "source": "host-components-nested.wat",
+      "producerValidated": true
+    },
+    "host-components-resources.wasm": {
+      "source": "host-components-resources.wat",
+      "producerValidated": true
+    },
+    "host-components-values-base.wasm": {
+      "source": "host-components-values-base.wat",
+      "producerValidated": true
+    },
+    "host-components.wasm": {
+      "source": "host-components.wat",
+      "producerValidated": true
+    },
+    "host-components-values.wasm": {
+      "source": "host-components-values-base.wat",
+      "textGenerated": false,
+      "producerValidated": true,
+      "validationFeatures": [
+        "cm-values"
+      ],
+      "authored": "Append start(make)->value and affine output export from pinned Binary.md."
+    },
+    "host-components-start-failure.wasm": {
+      "source": "host-components-values-base.wat",
+      "textGenerated": false,
+      "producerValidated": true,
+      "validationFeatures": [
+        "cm-values"
+      ],
+      "authored": "Append the value start, then a real Core start whose host call fails."
+    }
+  },
+  "sha256": {
+    "host-component-core.wasm": "5f06fdf63741f483cf2287fb86ff9b0a9b7207eca993b8c89c9529b23ef8d5ca",
+    "host-component-core.wat": "b7d2e3b64419681e7a0bce2e1907257105dc838e19138adccd2ec684174343eb",
+    "host-component-delegate.wasm": "1a8879832e1b4c4b2431c43572eabe8dd9a484e345f19e9d79cf05f45718bf90",
+    "host-component-delegate.wat": "572867f7940a498da8f1699cbf1aff08ab97bc898148abb822d197ddab1604bb",
+    "host-component-guest.wasm": "e03961a33567cb9ee5b2e691dcb219668165396f52034d29d09d09e9f447d08d",
+    "host-component-guest.wat": "01e053d0322e9ff2a112799a326443e592e854ae9a422cd3876b3c24d0ee6280",
+    "host-component-host-alias.wasm": "8acfbf0f2d8d7e64cc2ae4534fd5d2ffae4a8ee3fe9e758459c30fc0e2cf1680",
+    "host-component-host-alias.wat": "d2d678c716f7b927892fe9438e4ae3c1f813903ab0e6e9c8f4afef03245263da",
+    "host-component-observed.wasm": "39f9fd14a0159a7c9a3c4c7b95f3a2468596d98c3adfbf8f5fdea4a0f063ea3e",
+    "host-component-observed.wat": "d53375d36c1f2079838c4b70b6829c0891f53712a9fb861d38f23f68b3c1682d",
+    "host-component-ops.wasm": "1e8d3d135fbc2044bd84af5e7a5008c6dd97fb72e8e4b2fd7023ecb83a9a41f2",
+    "host-component-ops.wat": "889a878b9d5b7736bf813856034f754fd208f777fd754ab520860c5dcfa2c8a3",
+    "host-components-before.wasm": "3bf77319de5dd4707e1e49b8818dadead195588ec6e167a92f7333a634bd567e",
+    "host-components-before.wat": "9593d15a6a1ecff35b898a501bbd5f02a1d8b176292d36fe438f5472beaa40bc",
+    "host-components-cache.wasm": "c545131c9af2938a8ea9364ccbbc21235c742893c9276b0ff065bbc07759ae49",
+    "host-components-cache.wat": "5a1c28b052f3a1d16de2fdefcfc87d04e123fdb4646e33b49d3cc161088cfc98",
+    "host-components-core.wasm": "3a76fdddae0288f0ecb17f946f26da19b5683e24422b2d086fa10c5c9f1f5b65",
+    "host-components-core.wat": "1f872f4f53f6ec6ba30a2b792708de3e7ea90d509b4889c618e3b43f6d444040",
+    "host-components-delegate.wasm": "aa4f01f790fb61e88204105a011b2a661e8c9847ebddddfd6419a7678359c942",
+    "host-components-delegate.wat": "304d931b4f497a069dafe5e7dfc2915b181f4b1934241abf6caaa0a940762f7c",
+    "host-components-nested.wasm": "d7a3adeb1fe37e143938c905148e62c79ed2117e58b0791fa79ad95bc7226328",
+    "host-components-nested.wat": "846d673a42bdcf11aef902fc3746b1b705107cfe5b00f441f94c7cae903cd98d",
+    "host-components-resources.wasm": "8c074e005d59b65bb4d4c4fb630342cdcf13f7deac1bea5442b96f3c6717efc6",
+    "host-components-resources.wat": "2cee2e30f9b056d1b527120faec4c94ade5d158452253b6ba775a654ae66b85d",
+    "host-components-values-base.wasm": "f157d9fe7ba160fb85b4e4a4be29623c1224752b5519f50b72c893a3e1ecae6d",
+    "host-components-values-base.wat": "8cc48225c413ea3a8a012e3b42e8a36d7aff66ee3191de41124f53dc06b86f63",
+    "host-components.wasm": "0f5c059411899c4aa73a67dc0ae10e8f99e54912b670b153efd3408cb108cdb8",
+    "host-components.wat": "f2079e15591c7bfa1080e3cafad20a81655903747b211027a63f1a7303ed0dab",
+    "host-components-values.wasm": "c7bce044e11404552eef816c13cf3a21ea299c029b2f1dc041eecb8eafa1d121",
+    "host-components-start-failure.wasm": "2f1b366037a60ee7098498548d9557026555d877133727224dcfa7a2327345dc"
+  }
+}

@@ -1,0 +1,33 @@
+(component
+  ;; Numeric heap references avoid the pinned module-type name resolver.
+  (core type $private (struct (field i64)))
+  (core type $private2 (array (mut i64)))
+  (core type $ops-type (module
+    (type $node (struct (field i32)))
+    (type $make (func (result (ref $node))))
+    (type $add (func (param i32 i32) (result i32)))
+    (type $tag (func (param i32)))
+    (export "refs" (table 1 (ref null 0)))
+    (export "last" (global (mut (ref null 0))))
+    (export "event" (tag (type $tag)))
+    (export "make" (func (type $make)))
+    (export "add" (func (type $add)))))
+  (type $code-type (component
+    (core type $ops (module
+      (type $node (struct (field i32)))
+      (type $make (func (result (ref $node))))
+      (type $add (func (param i32 i32) (result i32)))
+    (type $tag (func (param i32)))
+      (export "refs" (table 1 (ref null 0)))
+    (export "last" (global (mut (ref null 0))))
+    (export "event" (tag (type $tag)))
+    (export "make" (func (type $make)))
+      (export "add" (func (type $add)))))
+    (import "ops" (core module (type $ops)))
+    (type $add (func (param "a" u32) (param "b" u32) (result u32)))
+    (export "add" (func (type $add)))))
+  (import "ops" (core module $ops (type $ops-type)))
+  (import "code" (component $code (type $code-type)))
+  (instance $api (instantiate $code (with "ops" (core module $ops))))
+  (alias export $api "add" (func $add))
+  (export "add" (func $add)))

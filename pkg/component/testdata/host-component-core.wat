@@ -1,0 +1,27 @@
+(component
+  ;; Numeric heap references avoid the pinned module-type name resolver.
+  (core type $private (func (param f64)))
+  (core type $ops (module
+    (type $node (struct (field i32)))
+    (type $make (func (result (ref $node))))
+    (type $add (func (param i32 i32) (result i32)))
+    (type $tag (func (param i32)))
+    (export "refs" (table 1 (ref null 0)))
+    (export "last" (global (mut (ref null 0))))
+    (export "event" (tag (type $tag)))
+    (export "make" (func (type $make)))
+    (export "add" (func (type $add)))))
+  (import "ops" (core module $ops (type $ops)))
+  (core instance $ops (instantiate $ops))
+  (alias core export $ops "make" (core func $make))
+  (alias core export $ops "add" (core func $add))
+  (core module $glue
+    (type $node (struct (field i32)))
+    (import "env" "make" (func $make (result (ref $node))))
+    (import "env" "add" (func $add (param i32 i32) (result i32)))
+    (func (export "add") (param i32 i32) (result i32)
+      call $make struct.get $node 0 local.get 0 i32.add local.get 1 call $add))
+  (core instance $env (export "make" (func $make)) (export "add" (func $add)))
+  (core instance $glue (instantiate $glue (with "env" (instance $env))))
+  (alias core export $glue "add" (core func $glue-add))
+  (func (export "add") (param "a" u32) (param "b" u32) (result u32) (canon lift (core func $glue-add))))
