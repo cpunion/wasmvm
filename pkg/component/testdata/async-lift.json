@@ -1,7 +1,7 @@
 {
   "componentModelCommit": "d095e2f60ddae1f9a1e9b1e2fb547ec1114da677",
   "producer": "wasm-tools 1.258.0",
-  "generatorSHA256": "23b39c2ea0b7ab37e7fbe68a0a176cbf6163671ff627faefe8d41cd1be76d5a5",
+  "generatorSHA256": "40e6f5a7fac65691cd83a159c6e2e177b152cbfb3c622c01b11d9976a80f6da2",
   "resourceSourceSHA256": "28c8ced0888793ff48d0995edaeaa77a29bd2bec425128e3da563a806eb9695a",
   "sha256": {
     "async-lift": {
@@ -25,8 +25,8 @@
       "wasm": "69a19b44767ac552b24b0d01b069e5a52c0c4c3708ef249c9d3949adaba1f26c"
     },
     "async-tls": {
-      "wat": "f4d78308d3f2cb3f8f4a7f9cc7949b5e4185a07b4cae5e1e867e1df7bb7844ad",
-      "wasm": "3e8d37db88fc72ad2c15b3d32e3682dde8b7524b472869e0c9ee9fb8175ab694"
+      "wat": "0a7acf1b853dea5507159b9f78c6c7bf8c9d8de96c9b1fa2369bf04caddba0d9",
+      "wasm": "1add0591376d047580dde2f10a910f3245cc1b96722f455b900360a3fe74133f"
     },
     "async-cli": {
       "wat": "2d722a4053ed7d5e1f4ad539e42c141d981284b73977ac8016e8a311a0269483",
@@ -41,20 +41,20 @@
       "wasm": "95f9653ba426ec1dd868afb622d1ec97659bd786d74edd227346b47749de7a8e"
     },
     "async-values": {
-      "wat": "13ff280a0dd53a805d723f3577d84a7d42c6f10b02d1751302fc719919f32883",
-      "wasm": "07e5cc2f875f1dc65ed47b216ca50d01f1b03fbfe6a5e65ea06e493723c125af"
+      "wat": "aa739ea832bb3e151392511e19b88aa36ab35d53636f878835d1533c53ddd544",
+      "wasm": "6b0d60871228c08e8bd24ffc745ab66c8bb29a19f15b9b6621d57ede60bd7a59"
     },
     "async-values-utf16": {
-      "wat": "f256859dfe2fcfe8ec5d99bcf5bc9163c3944dac715dba183444405702561cbd",
-      "wasm": "05841ee33744702db6a69725508bdcd6a54f46b8510576ea440a2fdcce7903a9"
+      "wat": "c9a1829f55013bc6636786e08d70829d7b5287fcfc0f80669d03969b83f94991",
+      "wasm": "754b3f85eb5e762a72bb5ac69b91599600f50201a970167b9c7bd60a00d4816e"
     },
     "async-values-compact": {
-      "wat": "af4679cbb11301454667fbf2668763464ed7d7ac96140bccb36a033e1a5e02db",
-      "wasm": "e260b24a9f07b1b7e081831e13cbaefd700bea6f54ec6f31fc73a8a7e91e1f90"
+      "wat": "ba75cde1ec1081c5bee53d8809f26ad535697f0e566b1dd55f8bb52f254097ec",
+      "wasm": "4c885e210473755cafebf73d9e06d0213b37e9614eff52dc078f829fa4da4c28"
     },
     "async-values64": {
-      "wat": "8d2d7e1f1638e69006c7b8e0288bcd370845c66995f3884504bdcafb4b425a8e",
-      "wasm": "b7c3893599f184344413d18119af3c93cfaf4b0faff2340850fec395ae5f95b0"
+      "wat": "498f43ab2e2a8c01ec72fba33af42d102e5708672ef9a541bc0da552c337fabe",
+      "wasm": "11bbd8e767f110d4edf1534c7528c6f6d6f5f65bc91e9a9979aedc84b67e40ff"
     },
     "async-resources": {
       "wat": "b376c56b450cbfb0dec50ce92cd1e84f4a16543f56d57d7ef0dfdbc334c1b8c6",

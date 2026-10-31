@@ -75,8 +75,9 @@ for encoding in ['utf16', 'latin1+utf16']:
     fixtures['async-values-' + ('utf16' if encoding == 'utf16' else 'compact')] = text
 text = base.replace('(memory (export "memory") 1)', '(memory (export "memory") i64 1)').replace('(memory (export "other") 1)', '(memory (export "other") i64 1)').replace('(memory 1)', '(memory i64 1)')
 text = text.replace('(data (i32.const 0)', '(data (i64.const 0)').replace('(global $bump (mut i32) (i32.const 1024))', '(global $bump (mut i64) (i64.const 1024))')
-text = text.replace('(param i32 i32 i32) (param $size i32) (result i32) (local $p i32)', '(param i64 i64 i64) (param $size i64) (result i64) (local $p i64)')
+text = text.replace('(param $old i32) (param $old-size i32) (param $alignment i32) (param $size i32) (result i32) (local $p i32)', '(param $old i64) (param $old-size i64) (param $alignment i64) (param $size i64) (result i64) (local $p i64)')
 text = text.replace('local.get $size i32.add i32.const 7 i32.add i32.const -8 i32.and', 'local.get $size i64.add i64.const 7 i64.add i64.const -8 i64.and')
+text = text.replace('local.get $old-size local.get $size i32.lt_u', 'local.get $old-size local.get $size i64.lt_u')
 for name in ['ret', 'ret-other', 'ret-encoding']:
     text = text.replace(f'(func ${name} (param i32 i32))', f'(func ${name} (param i64 i64))')
 text = text.replace('(func $ret-wide (param i32))', '(func $ret-wide (param i64))').replace('(export "echo") (param i32 i32)', '(export "echo") (param i64 i64)').replace('(export "spill") (param i32)', '(export "spill") (param i64)')

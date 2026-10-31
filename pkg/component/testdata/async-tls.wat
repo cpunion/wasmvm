@@ -8,9 +8,11 @@
   (import "ctx" "set" (func $set (param i32)))
   (memory (export "memory") 1)
   (global $bump (mut i32) (i32.const 1024))
-  (func (export "realloc") (param i32 i32 i32) (param $size i32) (result i32) (local $p i32)
+  (func (export "realloc") (param $old i32) (param $old-size i32) (param $alignment i32) (param $size i32) (result i32) (local $p i32)
    call $get if unreachable end i32.const 99 call $set
-   global.get $bump local.tee $p local.get $size i32.add global.set $bump local.get $p))
+   global.get $bump local.tee $p local.get $size i32.add i32.const 7 i32.add i32.const -8 i32.and global.set $bump
+   local.get $p local.get $old local.get $old-size local.get $size local.get $old-size local.get $size i32.lt_u select memory.copy
+   local.get $p))
  (core instance $memory (instantiate $memory (with "ctx" (instance $ctx))))
  (alias core export $memory "memory" (core memory $mem))
  (alias core export $memory "realloc" (core func $realloc))

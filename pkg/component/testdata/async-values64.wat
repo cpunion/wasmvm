@@ -8,8 +8,10 @@
   (memory (export "other") i64 1)
   (data (i64.const 0) "diagnostic-\ce\bb")
   (global $bump (mut i64) (i64.const 1024))
-  (func (export "realloc") (param i64 i64 i64) (param $size i64) (result i64) (local $p i64)
-   global.get $bump local.tee $p local.get $size i64.add i64.const 7 i64.add i64.const -8 i64.and global.set $bump local.get $p))
+  (func (export "realloc") (param $old i64) (param $old-size i64) (param $alignment i64) (param $size i64) (result i64) (local $p i64)
+   global.get $bump local.tee $p local.get $size i64.add i64.const 7 i64.add i64.const -8 i64.and global.set $bump
+   local.get $p local.get $old local.get $old-size local.get $size local.get $old-size local.get $size i64.lt_u select memory.copy
+   local.get $p))
  (core instance $memory (instantiate $memory))
  (alias core export $memory "memory" (core memory $mem))
  (alias core export $memory "memory" (core memory $alias))
