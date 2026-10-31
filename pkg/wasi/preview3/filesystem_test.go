@@ -270,11 +270,17 @@ func (a fileAPI) fail(name, label string, args ...component.Value) {
 }
 func (a fileAPI) failedStream(pair *component.Value, label string) {
 	a.t.Helper()
-	r, err := a.in.ReadAsync(nil, pair.Elements[0].Resource, 1, component.CallOptions{})
-	if err != nil || !r.Closed {
-		a.t.Fatal(r, err)
+	// Valid entries can precede the failure in filesystem-dependent order.
+	for {
+		r, err := a.in.ReadAsync(nil, pair.Elements[0].Resource, 1, component.CallOptions{})
+		if err != nil {
+			a.t.Fatal(r, err)
+		}
+		if r.Closed {
+			break
+		}
 	}
-	r, err = a.in.ReadAsync(nil, pair.Elements[1].Resource, 1, component.CallOptions{})
+	r, err := a.in.ReadAsync(nil, pair.Elements[1].Resource, 1, component.CallOptions{})
 	if err != nil || len(r.Values) != 1 || r.Values[0].Case != 1 || r.Values[0].Elements[0].Case != fileErrorCases[label] {
 		a.t.Fatal(label, r, err)
 	}
@@ -582,17 +588,6 @@ func TestFileSystemDirectoryModesAndInvalidNames(t *testing.T) {
 		t.Fatal(err)
 	}
 	pair := api.call("read-directory", dir)
-	// Directory enumeration order differs by filesystem. Consume every preceding
-	// valid batch before observing the malformed entry and its completion error.
-	for {
-		r, err := in.ReadAsync(nil, pair.Elements[0].Resource, 2, component.CallOptions{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if r.Closed {
-			break
-		}
-	}
 	api.failedStream(pair, "illegal-byte-sequence")
 	api.drop(dir)
 }
