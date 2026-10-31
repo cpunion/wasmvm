@@ -200,3 +200,25 @@ grant. Supply `Resolve` to control name service policy and results; callbacks
 must honor context cancellation. Resolution streams and their child pollables
 have checked nominal identity and bounded ownership. TCP/UDP socket access is
 still separate. See [network ownership and limits](design/wasi-preview2.md#network-capabilities-and-ip-name-lookup).
+
+### Suspended host calls
+
+Inside one `Store.WithCaller` session, register a `SuspendableHostFunction`,
+start a guest with `Caller.Start`, and drive its `Continuation` with `Caller.Poll`.
+An incomplete poll preserves explicit guest frames; it does not preserve the
+callback's Caller or host stack. `HostSuspension.Ready` must be nonblocking and
+must not enter the VM. Its Resume receives a new Caller. All continuations share
+session fuel/frame/slot bounds, and `StoreConfig.MaxContinuations` bounds their
+count. Abort releases a parked continuation without executing guest code;
+session exit aborts abandoned continuations. Ordinary blocking Call rejects a
+host suspension. The component scheduler uses this API for native async.
+
+For component host imports that complete later, use `Imports.AsyncCompletions`.
+An `AsyncHostFunction` returns a `component.NewHostCompletion()` and may pass its
+Resolve method to external work. Resolve accepts a resolver function which will
+run in the Store session with a fresh component Caller. Create resources and
+perform guest reentry in that resolver. The starter Caller expires immediately;
+its Context is safe to retain and receives cooperative cancellation. Call
+Cancelled to acknowledge cancellation without returning a value. Each completion
+belongs to one invocation and may publish once. Immediate async implementations
+may continue to use `Imports.AsyncFunctions`; a name cannot bind both APIs.

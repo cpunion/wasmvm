@@ -541,6 +541,16 @@ event pointers use full-width bounds checks. Synchronous suspension is rejected;
 stackful suspension, async host completion, explicit backpressure, futures/streams
 and WASI 0.3.2 worlds remain required. M6 and performance acceptance stay open.
 
+The suspended-task increment adds shared Core continuations, stackful async
+suspension, synchronous lower/wait/cancel, explicit backpressure and delayed host
+completion. Guest turns retain explicit interpreter/native frames within shared
+fuel/stack quotas. Host resolvers receive fresh Callers and aggregate retained
+value/byte budgets; cancellation, panic and shutdown reclaim unpublished state.
+Both own backends execute the same producer-validated fixtures and pinned LLGo
+uses its release profile. Futures/streams, WASI 0.3.2 worlds and their complete
+acceptance remain required. Performance optimization and broad comparisons are
+deferred until functional coverage is complete.
+
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 
 ## M7 — Further optimization and experimental features

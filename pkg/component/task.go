@@ -18,7 +18,7 @@ type callTask struct {
 	resolved   bool
 	entered    bool
 	storage    [2]uint64
-	callback   *callbackTask
+	runtime    *componentTask
 }
 
 func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
@@ -27,6 +27,9 @@ func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.
 		// Core start functions run in an initialization thread, before any
 		// exported canonical call creates its own task and zeroed storage.
 		n.task = &callTask{}
+	}
+	if plan.Definition.Op == 0x0c {
+		return in.yieldBuiltin(caller, n, plan)
 	}
 	fn, err := caller.NewFunction(plan.Signature, func(c *vm.Caller, args []vm.Value) ([]vm.Value, error) {
 		task := n.task
@@ -96,10 +99,29 @@ func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.
 			return nil, err
 		}
 		task.resolved = true
-		if task.callback != nil {
-			return nil, task.callback.resolve(c, task.result, false)
+		if task.runtime != nil {
+			return nil, task.runtime.resolve(c, task.result, false)
 		}
 		return nil, nil
+	})
+	if err == nil {
+		n.add(item{sort: model.CoreFunctionSort, core: fn})
+	}
+	return err
+}
+
+func (in *Instance) yieldBuiltin(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
+	fn, err := caller.NewSuspendableFunction(plan.Signature, func(c *vm.Caller, _ []vm.Value) (vm.HostResult, error) {
+		if n.failed || n.blocked || n.task == nil {
+			return vm.HostResult{}, wasm.ErrTrap
+		}
+		t := n.task.runtime
+		if t == nil {
+			return vm.HostResult{Values: []vm.Value{vm.I32(0)}}, nil
+		}
+		return vm.HostResult{Pending: &vm.HostSuspension{Ready: func() bool { return true }, Resume: func(*vm.Caller) (vm.HostResult, error) {
+			return vm.HostResult{Values: []vm.Value{vm.I32(0)}}, nil
+		}}}, nil
 	})
 	if err == nil {
 		n.add(item{sort: model.CoreFunctionSort, core: fn})

@@ -158,6 +158,12 @@ func (in *Instance) subtask(n *namespace, id uint32) (*componentSubtask, error) 
 func (in *Instance) waitableBuiltin(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
 	in.resourceTable(n)
 	n.taskOps = true
+	if plan.Definition.Op == 0x20 {
+		return in.waitableWait(caller, n, plan)
+	}
+	if plan.Definition.Op == 6 {
+		return in.subtaskCancel(caller, n, plan)
+	}
 	fn, err := caller.NewFunction(plan.Signature, func(c *vm.Caller, args []vm.Value) ([]vm.Value, error) {
 		if n.failed || n.blocked {
 			return nil, wasm.ErrTrap
@@ -165,14 +171,14 @@ func (in *Instance) waitableBuiltin(caller *vm.Caller, n *namespace, plan *valid
 		op := plan.Definition.Op
 		if op == 5 {
 			t := n.task
-			if t == nil || t.callback == nil || t.resolved || !t.callback.cancelDelivered {
+			if t == nil || t.plan == nil || !t.plan.Async || t.runtime == nil || t.resolved || !t.runtime.cancelDelivered {
 				return nil, wasm.ErrTrap
 			}
 			if err := returnBorrows(t.parameters); err != nil {
 				return nil, err
 			}
 			t.resolved = true
-			return nil, t.callback.resolve(c, nil, true)
+			return nil, t.runtime.resolve(c, nil, true)
 		}
 		if op == 0x1f {
 			s := &waitableSet{n: n}
@@ -192,7 +198,7 @@ func (in *Instance) waitableBuiltin(caller *vm.Caller, n *namespace, plan *valid
 		}
 		bits, _, _ := args[0].Bits()
 		id := uint32(bits)
-		if op == 0x20 || op == 0x21 || op == 0x22 {
+		if op == 0x21 || op == 0x22 {
 			s, err := in.waitableSet(n, id)
 			if err != nil {
 				return nil, err
@@ -204,33 +210,9 @@ func (in *Instance) waitableBuiltin(caller *vm.Caller, n *namespace, plan *valid
 				s.unlink()
 				return nil, n.handles.RemoveOpaque(id)
 			}
-			if op == 0x20 {
-				if s.ready == nil && n.task != nil && n.task.plan != nil && n.task.plan.Type.Kind != model.AsyncFunction {
-					return nil, wasm.ErrTrap
-				}
-				s.waiters++
-				err = in.awaitTasks(c, func() bool { return s.ready != nil })
-				s.waiters--
-				if err != nil {
-					return nil, err
-				}
-			}
-			event, err := s.poll(c)
-			if err != nil {
-				return nil, err
-			}
 			ptr, _, _ := args[1].Bits()
-			if ptr&3 != 0 {
-				return nil, wasm.ErrTrap
-			}
-			var bytes [8]byte
-			binary.LittleEndian.PutUint32(bytes[:4], event[1])
-			binary.LittleEndian.PutUint32(bytes[4:], event[2])
-			err = c.WriteExternalMemory(n.items[model.CoreMemorySort][*plan.Memory].core, ptr, bytes[:])
-			if err != nil {
-				return nil, err
-			}
-			return []vm.Value{vm.I32(event[0])}, nil
+			result, err := in.eventMemory(c, n, plan, s, ptr)
+			return result.Values, err
 		}
 		s, err := in.subtask(n, id)
 		if err != nil {
@@ -258,36 +240,110 @@ func (in *Instance) waitableBuiltin(caller *vm.Caller, n *namespace, plan *valid
 			s.waitable.join(nil)
 			return nil, n.handles.RemoveOpaque(id)
 		default:
-			if s.delivered || s.cancellationRequested || s.waitable.set != nil {
-				return nil, wasm.ErrTrap
-			}
-			if s.state < 2 {
-				s.cancellationRequested, s.waitable.syncWaiter = true, true
-				defer func() { s.waitable.syncWaiter = false }()
-				s.task.cancelRequested = true
-				if s.task.ready() {
-					if err := s.task.resume(c); err != nil {
-						return nil, err
-					}
-				}
-				if !plan.Async {
-					if s.state < 2 && n.task != nil && n.task.plan != nil && n.task.plan.Type.Kind != model.AsyncFunction {
-						return nil, wasm.ErrTrap
-					}
-					if err := in.awaitTasks(c, func() bool { return s.state >= 2 }); err != nil {
-						return nil, err
-					}
-				}
-				if s.state < 2 {
-					return []vm.Value{vm.I32(^uint32(0))}, nil
-				}
-			}
-			_, err := s.waitable.poll(c)
-			if err != nil {
-				return nil, err
-			}
-			return []vm.Value{vm.I32(s.state)}, nil
+			return nil, wasm.ErrTrap
 		}
+	})
+	if err == nil {
+		n.add(item{sort: model.CoreFunctionSort, core: fn})
+	}
+	return err
+}
+
+func (in *Instance) eventMemory(c *vm.Caller, n *namespace, plan *validate.CanonicalFunction, s *waitableSet, ptr uint64) (vm.HostResult, error) {
+	event, err := s.poll(c)
+	if err != nil {
+		return vm.HostResult{}, err
+	}
+	if ptr&3 != 0 {
+		return vm.HostResult{}, wasm.ErrTrap
+	}
+	var bytes [8]byte
+	binary.LittleEndian.PutUint32(bytes[:4], event[1])
+	binary.LittleEndian.PutUint32(bytes[4:], event[2])
+	if err := c.WriteExternalMemory(n.items[model.CoreMemorySort][*plan.Memory].core, ptr, bytes[:]); err != nil {
+		return vm.HostResult{}, err
+	}
+	return vm.HostResult{Values: []vm.Value{vm.I32(event[0])}}, nil
+}
+
+func (in *Instance) waitableWait(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
+	fn, err := caller.NewSuspendableFunction(plan.Signature, func(c *vm.Caller, args []vm.Value) (vm.HostResult, error) {
+		if n.failed || n.blocked {
+			return vm.HostResult{}, wasm.ErrTrap
+		}
+		id, _, _ := args[0].Bits()
+		ptr, _, _ := args[1].Bits()
+		s, err := in.waitableSet(n, uint32(id))
+		if err != nil {
+			return vm.HostResult{}, err
+		}
+		if s.ready != nil {
+			return in.eventMemory(c, n, plan, s, ptr)
+		}
+		if n.task == nil || n.task.runtime == nil || n.task.plan == nil || n.task.plan.Type.Kind != model.AsyncFunction {
+			return vm.HostResult{}, wasm.ErrTrap
+		}
+		t := n.task.runtime
+		t.waiting = s
+		s.waiters++
+		return vm.HostResult{Pending: &vm.HostSuspension{Ready: func() bool { return s.ready != nil }, Resume: func(current *vm.Caller) (vm.HostResult, error) {
+			t.leaveWait()
+			return in.eventMemory(current, n, plan, s, ptr)
+		}}}, nil
+	})
+	if err == nil {
+		n.add(item{sort: model.CoreFunctionSort, core: fn})
+	}
+	return err
+}
+
+func (in *Instance) subtaskCancel(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
+	fn, err := caller.NewSuspendableFunction(plan.Signature, func(c *vm.Caller, args []vm.Value) (result vm.HostResult, err error) {
+		if n.failed || n.blocked {
+			return result, wasm.ErrTrap
+		}
+		id, _, _ := args[0].Bits()
+		s, err := in.subtask(n, uint32(id))
+		if err != nil {
+			return result, err
+		}
+		if s.delivered || s.cancellationRequested || s.waitable.set != nil {
+			return result, wasm.ErrTrap
+		}
+		finish := func(current *vm.Caller) (vm.HostResult, error) {
+			_, err := s.waitable.poll(current)
+			if err != nil {
+				return vm.HostResult{}, err
+			}
+			return vm.HostResult{Values: []vm.Value{vm.I32(s.state)}}, nil
+		}
+		if s.state >= 2 {
+			return finish(c)
+		}
+		s.cancellationRequested, s.waitable.syncWaiter = true, true
+		if err := s.task.requestCancel(c); err != nil {
+			s.waitable.syncWaiter = false
+			return result, err
+		}
+		if s.state >= 2 {
+			s.waitable.syncWaiter = false
+			return finish(c)
+		}
+		if plan.Async {
+			s.waitable.syncWaiter = false
+			return vm.HostResult{Values: []vm.Value{vm.I32(^uint32(0))}}, nil
+		}
+		if n.task == nil || n.task.runtime == nil || n.task.plan.Type.Kind != model.AsyncFunction {
+			s.waitable.syncWaiter = false
+			return result, wasm.ErrTrap
+		}
+		parent := n.task.runtime
+		parent.pendingCleanup = func() { s.waitable.syncWaiter = false }
+		return vm.HostResult{Pending: &vm.HostSuspension{Ready: func() bool { return s.state >= 2 }, Resume: func(current *vm.Caller) (vm.HostResult, error) {
+			parent.pendingCleanup = nil
+			s.waitable.syncWaiter = false
+			return finish(current)
+		}}}, nil
 	})
 	if err == nil {
 		n.add(item{sort: model.CoreFunctionSort, core: fn})

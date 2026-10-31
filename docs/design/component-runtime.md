@@ -53,8 +53,7 @@ Engine close prevents new compilation/Store creation. Compiled close prevents
 new instantiation while existing instances retain Core code leases. Instance
 close requests cancellation; `WaitClosed` observes final reclamation after
 active callbacks leave. Successful synchronous results are copied before
-post-return runs. Resource transfers use per-call ownership cleanup and borrowed lifetimes; async
-cleanup remains unimplemented.
+post-return runs. Resource transfers use per-call ownership cleanup and borrowed lifetimes; pending async transactions rebind cleanup to the current Store-session Caller.
 
 ## Embedding and evidence
 
@@ -462,3 +461,45 @@ rejected. Existing run-to-completion stackful callees retain the shared bridge;
 arbitrary stackful suspension, asynchronous host completion, explicit
 backpressure, futures/streams and WASI 0.3 worlds remain unsupported. This is a
 callback execution profile, not complete native async or M6 acceptance.
+
+
+## Suspended Core calls and asynchronous host completion
+
+All admitted async function types now use one component task scheduler. Callback
+and stackful lifts, synchronous lifts of async types, and synchronous/async
+lowers share explicit `vm.Continuation` frames. Each Core turn uses Start/Poll;
+synchronous lower, wait and cancellation may park at host boundaries. No runtime
+goroutine or retained host stack represents guest execution. A separate
+`StoreConfig.MaxContinuations` bounds suspended Core calls, including host roots;
+all peers share frame/slot quotas, roots, fuel and cancellation. Logical quotas
+are recomputed before each turn and host boundary; native physical storage stays
+within the Store ceiling. Session exit aborts remaining continuations.
+
+Explicit backpressure uses the pinned 16-bit counter and lazy arguments. A
+STARTING subtask reads neither spilled parameters nor result pointers before
+entry. Before-entry cancellation consumes no arguments. Exclusive ownership is
+held while synchronous lifts/callback bodies execute, then released at callback
+YIELD/WAIT/EXIT; stackful async tasks may interleave at suspension points.
+`thread.yield` returns zero and does not deliver task cancellation. Cancellation
+of a started stackful task is cooperative and may resolve normally. Synchronous
+non-async tasks still cannot suspend across a component boundary.
+
+`Imports.AsyncCompletions` binds `AsyncHostFunction` separately from immediate
+`AsyncFunctions`; binding both under one name is rejected. The starter returns a
+one-shot `HostCompletion` and may retain its immutable argument snapshot and
+Context, but its Caller expires. External work calls Resolve with a resolver or
+Cancelled to acknowledge a requested cancellation. The resolver executes in the
+serialized Store session with a fresh Caller for resource creation and reentry.
+The starter Context receives cooperative cancellation; the resolver uses the
+root invocation Context, allowing a normal result after a cancellation request.
+Already-ready completions are valid and repeated publication/rebinding fails.
+Wakeups are coalesced and observed without spinning or a lost pre-bind signal.
+
+Immediate and delayed host functions share one canonical ownership transaction.
+All parked host arguments/results reserve aggregate instance value/byte budgets;
+cancellation, trap, panic and close release reservations and unpublished
+resources. Cancellation acknowledgement consumes moved ownership and releases
+borrows without producing a result. A failed consumer does not disable the
+independent host provider. Futures/streams, WASI 0.3 worlds and complete M6
+acceptance remain open. Performance optimization is deferred under the current
+owner direction.

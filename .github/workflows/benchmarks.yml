@@ -2,6 +2,7 @@ name: Runtime benchmarks
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   workflow_dispatch:
     inputs:
       suite:
@@ -26,7 +27,8 @@ concurrency:
 
 jobs:
   benchmark:
-    if: ${{ inputs.suite != 'native-simd' }}
+    # Capability completion takes priority; measurements are opt-in until then.
+    if: ${{ inputs.suite != 'native-simd' && (github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks')) }}
     name: Base, head, and competitors / linux-amd64
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -139,6 +141,7 @@ jobs:
           retention-days: 30
 
   native_arm64:
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks') }}
     name: Native feature and competitors / ${{ matrix.platform.name }}
     runs-on: ${{ matrix.platform.runner }}
     strategy:
@@ -211,7 +214,7 @@ jobs:
   comment:
     name: Report benchmark comparison on PR
     needs: [benchmark, native_arm64]
-    if: ${{ always() && !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ always() && !cancelled() && (needs.benchmark.result != 'skipped' || needs.native_arm64.result != 'skipped') && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:

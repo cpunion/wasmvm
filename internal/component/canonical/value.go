@@ -31,6 +31,10 @@ type Codec struct {
 	Resources ResourceCodec
 }
 
+// Usage reports charged value visits and copied/retained bytes for aggregate
+// reservations while asynchronous values remain live.
+func (c *Codec) Usage() (uint64, uint64) { return c.values, c.Transfer.used }
+
 // Validate checks a host value before calls or transfers cause guest effects.
 func (c *Codec) Validate(t *model.Type, v Value) error { return c.validate(t, v, 0) }
 
