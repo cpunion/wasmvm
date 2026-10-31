@@ -76,7 +76,7 @@ func (in *Instance) resourceBuiltin(caller *vm.Caller, n *namespace, plan *valid
 			}
 			return []vm.Value{vm.I32(id)}, nil
 		case 3:
-			err := n.handles.DropWith(c.Context(), rt.identity, uint32(bits), func(_ context.Context, rep uint64) error { return rt.destroy(c, rep, n) })
+			err := n.handles.DropWith(c.Context(), rt.identity, uint32(bits), func(_ context.Context, rep uint64) error { return rt.destroy(c, rep) })
 			return nil, err
 		default:
 			rep, err := n.handles.Rep(rt.identity, uint32(bits))
@@ -99,20 +99,21 @@ func (in *Instance) resourceTable(n *namespace) {
 	}
 }
 
-func (rt *resourceType) destroy(c *vm.Caller, rep uint64, from *namespace) error {
+func (rt *resourceType) destroy(c *vm.Caller, rep uint64) error {
 	if rt.host != nil {
 		return rt.destroyHost(c, rep)
 	}
 	if rt.destructor == nil {
 		return nil
 	}
-	if rt.owner.failed || rt.owner.blocked || rt.owner.entered && rt.owner != from {
+	if rt.owner.failed || rt.owner.blocked {
 		return wasm.ErrTrap
 	}
-	if rt.owner != from {
-		rt.owner.entered = true
-		defer func() { rt.owner.entered = false }()
-	}
+	// Destructors are synchronous canonical calls, including same-instance drops.
+	previous, entered := rt.owner.task, rt.owner.entered
+	rt.owner.task, rt.owner.entered = &callTask{plan: &syncDestructorPlan}, true
+	defer func() { rt.owner.task, rt.owner.entered = previous, entered }()
+
 	complete := false
 	defer func() {
 		if !complete {
@@ -123,3 +124,5 @@ func (rt *resourceType) destroy(c *vm.Caller, rep uint64, from *namespace) error
 	complete = err == nil
 	return err
 }
+
+var syncDestructorPlan = validate.CanonicalFunction{Type: &validate.Type{Kind: model.Function}}

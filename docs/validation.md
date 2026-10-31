@@ -4617,3 +4617,22 @@ monotonic wait and signed system-clock record. The retained local artifact
 preview3-reference-check.json records the binary/fixture hashes, feature flags
 and raw results. This is independent provider evidence for those cases, not
 complete world conformance or a timing comparison.
+
+## Synchronous LIFO reentry and destructor tasks — 2026-11-01
+
+The owned runtime executes ordinary sync reentry while an outer async callback
+holds exclusive ownership and explicit backpressure. Context slots start fresh
+and outer task/entered/exclusive/storage state is restored after nested calls.
+Guest destructors use fresh synchronous tasks for both local drops and host drops
+while the defining guest is active. Borrowing, reentry/fuel limits, post-return
+leave guards and the inability of sync calls to block remain checked.
+
+Three owned fixtures independently parse/validate with wasm-tools 1.258.0; their
+source, binary and generator hashes are pinned in sync-reentry.json. Go race and
+pinned LLGo tests execute both owned backends, including fully guest-composed
+indirect call cycles, recursion quotas, nested traps, denied waits, cancellation
+and original-panic preservation. Wasmtime 48.0.1 rejects both composed variants
+with cannot-enter-component traps and process exit 134; raw commands, fixture
+hashes and diagnostics are retained in sync-reentry-reference-check.json. These
+reference failures are recorded separately from own execution and do not close
+full conformance or performance acceptance.

@@ -283,7 +283,7 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 			return nil
 		}
 		f.lift = func(caller *vm.Caller, args []Value) (result *Value, err error) {
-			if n.failed || n.blocked || n.entered && (!plan.Async || plan.Callback != nil) {
+			if n.failed || n.blocked {
 				return nil, wasm.ErrTrap
 			}
 			codec := in.codec(caller, n, plan)
@@ -299,25 +299,21 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 			}
 			complete := false
 			defer cleanupCanonical(n, codec, &complete, &err)
-			if n.taskOps || plan.Async {
-				previous := n.task
-				task := &callTask{plan: plan, parameters: codec, entered: n.entered}
-				n.task = task
-				defer func() {
-					guard := cleanupGuard{panicked: recover()}
-					n.task = previous
-					n.entered = task.entered
-					if !complete || err != nil || guard.panicked != nil {
-						n.failed = true
-					}
-					if task.returned != nil {
-						guard.run(func() { err = finishResources(task.returned, complete, err) })
-					}
-					guard.finish()
-				}()
-			}
-			n.entered = true
-			defer func() { n.entered = false }()
+			previous, entered := n.task, n.entered
+			task := &callTask{plan: plan, parameters: codec}
+			n.task, n.entered = task, true
+			defer func() {
+				guard := cleanupGuard{panicked: recover()}
+				n.task, n.entered = previous, entered
+				if !complete || err != nil || guard.panicked != nil {
+					n.failed = true
+				}
+				if task.returned != nil {
+					guard.run(func() { err = finishResources(task.returned, complete, err) })
+				}
+				guard.finish()
+			}()
+
 			slots, err := lowerParameters(codec, plan, args)
 			if err != nil {
 				return nil, err

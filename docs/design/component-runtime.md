@@ -580,3 +580,29 @@ source closure so a failing close cannot leak owned payloads.
 These APIs enable versioned WASI 0.3 providers but do not themselves implement
 those interfaces or complete world/toolchain conformance. Performance acceptance
 remains open under capability-first development.
+
+
+## Synchronous LIFO reentry
+
+The pinned Canonical ABI permits non-async function types to reenter in LIFO
+order while ignoring explicit/implicit async backpressure. Every synchronous
+canonical lift saves and restores its caller's task and entered state, installs
+fresh context storage and retains the shared Store's fuel/reentry/frame quotas.
+It does not borrow an outer async task's right to block. Realloc/post-return
+leave guards, invalid ownership and failed-instance guards remain enforced.
+
+Guest resource destructors are synchronous calls with fresh task state, even
+for same-instance drops. They may reenter an entered defining instance, with
+normal quotas and deterministic state restoration. Cleanup may invoke an eligible
+defining destructor during another active call. A nested trap, panic or
+cancellation restores the outer task before its own unwind/cleanup.
+
+Three producer-validated fixtures cover host callbacks, explicit/implicit
+backpressure, nested task storage, local/host-triggered guest destruction,
+fully guest-composed indirect reentry, denied sync blocking and failure cleanup.
+Go race and pinned LLGo execute both owned backends. Wasmtime 48.0.1 rejects the
+two composed fixtures with `cannot enter component instance` and exits 134.
+Its adapter generator unconditionally rejects same/ancestor/descendant adapters;
+these are retained reference failures, not independent semantic passes. The
+pinned ABI's Task.enter_implicit_thread and destructor rules remain the owned
+implementation contract; complete cross-runtime acceptance stays open.
