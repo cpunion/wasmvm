@@ -44,6 +44,7 @@ type Instance struct {
 	initializing      *canonical.Codec
 	instances, depth  uint32
 	callDepth         uint32
+	tasks             *taskScheduler
 	work              uint64
 	bindings          map[any]Value
 	resourceTables    []*canonical.Resources
@@ -285,6 +286,7 @@ func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.
 		in.initializing.Resources = &resourceCodec{in: in, n: importsScope, core: caller}
 		complete := false
 		defer func() { err = finishResources(in.initializing, complete, err) }()
+		defer in.finishTasks(caller, &err, &complete)
 		if err := in.initializeValues(caller, importsScope); err != nil {
 			return err
 		}

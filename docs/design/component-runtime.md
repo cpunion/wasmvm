@@ -435,3 +435,30 @@ Independent fixtures retain three precise producer rejections: pinned wasm-tools
 still gives cm64 async lower an i32 result-pointer parameter instead of i64.
 Those fixtures follow the pinned optional memory64 rule and are not independent
 producer conformance evidence. Full native async and WASI 0.3 remain open.
+
+### Pending callback tasks and waitables
+
+Async lower of a callback-lifted function may now return a real `STARTING` or
+`STARTED` subtask handle. Callback EXIT/YIELD/WAIT turns use the existing Core
+session, explicit VM frames and canonical codecs. No Go goroutine, second
+interpreter or retained Caller supplies a continuation. Every resumed turn
+receives a live session capability; pending result lowering rebinds memory and
+resource cleanup to that capability. `Config.MaxTasks` bounds live callback
+tasks independently of the shared `MaxResources` handle quota.
+
+Waitable sets, subtasks, resources and error contexts share one tagged,
+non-reusing 28-bit handle domain. Intrusive membership and ready queues provide
+constant-time join, notification and poll. Progress is coalesced until delivery;
+borrow lenders remain pinned until the resolve event is delivered. Both sync
+and async subtask cancellation enforce single requests, exclusive waiters,
+cooperative TASK_CANCELLED delivery, `task.cancel`, and explicit subtask drop.
+Cancellation before entry does not read arguments or transfer ownership.
+
+The blocking embedding call drains its callback continuations within the same
+Store lease. Session failure, panic, cancellation and close reclaim pending
+transactions and newly allocated async handles. A guest with no ready producer
+waits for context cancellation without spinning. Synchronous task suspension is
+rejected. Existing run-to-completion stackful callees retain the shared bridge;
+arbitrary stackful suspension, asynchronous host completion, explicit
+backpressure, futures/streams and WASI 0.3 worlds remain unsupported. This is a
+callback execution profile, not complete native async or M6 acceptance.

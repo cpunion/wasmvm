@@ -32,6 +32,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     config
         .wasm_component_model_async(true)
         .wasm_component_model_async_stackful(true)
+        .wasm_component_model_more_async_builtins(true)
+        .wasm_component_model_threading(true)
         .concurrency_support(true);
     let engine = Engine::new(&config)?;
     let engine_ns = start.elapsed().as_nanos();

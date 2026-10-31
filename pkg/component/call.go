@@ -17,6 +17,7 @@ type Function struct {
 	host     HostFunction
 	scope    *namespace
 	lift     func(*vm.Caller, []Value) (*Value, error)
+	start    func(*vm.Caller, taskArguments, taskResolution) (*callbackTask, error)
 }
 
 type CallResult struct {
@@ -29,9 +30,11 @@ func (f *Function) Call(ctx context.Context, args []Value, options vm.CallOption
 		return CallResult{}, vm.ErrReference
 	}
 	var result CallResult
-	run := func(c *vm.Caller) error {
-		var err error
+	run := func(c *vm.Caller) (err error) {
+		complete := false
+		defer f.instance.finishTasks(c, &err, &complete)
 		result.Value, err = f.call(c, args)
+		complete = true
 		return err
 	}
 	var fuel uint64
@@ -256,10 +259,13 @@ func flatValues(values []vm.Value) ([]canonical.Slot, error) {
 }
 
 func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
+	if plan.Definition.Op == 5 || plan.Definition.Op == 6 || plan.Definition.Op == 0x0d || plan.Definition.Op >= 0x1f && plan.Definition.Op <= 0x23 {
+		return in.waitableBuiltin(caller, n, plan)
+	}
 	if plan.Definition.Op >= 9 && plan.Definition.Op <= 0x0c {
 		return in.taskBuiltin(caller, n, plan)
 	}
-	if len(n.resources) != 0 || plan.Type != nil && plan.Type.ContainsErrorContext() || plan.Definition.Op >= 0x1c && plan.Definition.Op <= 0x1e {
+	if len(n.resources) != 0 || plan.Type != nil && plan.Type.ContainsErrorContext() || plan.Definition.Op >= 0x1c && plan.Definition.Op <= 0x1e || plan.Definition.Op == 1 && plan.Async {
 		in.resourceTable(n)
 	}
 	if plan.Definition.Op >= 0x1c && plan.Definition.Op <= 0x1e {
@@ -271,6 +277,32 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 	if plan.Definition.Op == 0 {
 		fn := n.items[model.CoreFunctionSort][plan.Definition.Index].core
 		f := &Function{instance: in, typ: plan.Type, scope: n}
+		if plan.Async && plan.Callback != nil {
+			f.start = func(c *vm.Caller, args taskArguments, resolve taskResolution) (*callbackTask, error) {
+				return in.startCallback(c, n, plan, fn, args, resolve)
+			}
+			f.lift = func(c *vm.Caller, args []Value) (*Value, error) {
+				if n.failed || n.blocked {
+					return nil, wasm.ErrTrap
+				}
+				codec := in.codec(c, n, plan)
+				for i, p := range plan.Type.Parameters {
+					if err := codec.Validate(p.Type, args[i]); err != nil {
+						return nil, err
+					}
+				}
+				t, err := f.start(c, func(*vm.Caller) ([]Value, error) { return args, nil }, nil)
+				if err != nil {
+					return nil, err
+				}
+				if err := in.awaitTasks(c, func() bool { return t.exited }); err != nil {
+					return nil, err
+				}
+				return t.task.result, nil
+			}
+			n.add(item{sort: model.FunctionSort, function: f})
+			return nil
+		}
 		f.lift = func(caller *vm.Caller, args []Value) (result *Value, err error) {
 			if n.failed || n.blocked || n.entered && (!plan.Async || plan.Callback != nil) {
 				return nil, wasm.ErrTrap
@@ -313,37 +345,20 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 			}
 			n.entered = true
 			defer func() { n.entered = false }()
-			var slots []canonical.Slot
-			if typ := plan.ABI.ParameterMemory; typ != nil {
-				layout, err := codec.Layouts.Build(typ)
-				if err != nil {
-					return nil, err
-				}
-				ptr, err := codec.Transfer.Realloc(0, 0, layout.Align, layout.Size)
-				if err != nil {
-					return nil, err
-				}
-				if err := codec.Store(typ, ptr, Value{Elements: args}); err != nil {
-					return nil, err
-				}
-				slots = []canonical.Slot{{Type: plan.Signature.Params[0], Bits: ptr}}
-			} else {
-				for i, p := range plan.Type.Parameters {
-					flat, err := codec.LowerFlat(p.Type, args[i])
-					if err != nil {
-						return nil, err
-					}
-					slots = append(slots, flat...)
-				}
+			slots, err := lowerParameters(codec, plan, args)
+			if err != nil {
+				return nil, err
 			}
 			called, err := caller.Call(fn, vmValues(slots))
 			if err != nil {
 				return nil, err
 			}
 			if plan.Async {
-				result, err = in.asyncLift(caller, n, plan, called.Values)
-				complete = err == nil
-				return result, err
+				if !n.task.resolved {
+					return nil, wasm.ErrTrap
+				}
+				complete = true
+				return n.task.result, nil
 			}
 			if plan.Type.Result != nil {
 				var value Value
@@ -384,6 +399,9 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 		if n.failed || n.blocked {
 			return nil, wasm.ErrTrap
 		}
+		if plan.Async && callee.start != nil {
+			return in.pendingLower(caller, n, plan, flat, callee)
+		}
 		codec := in.codec(caller, n, plan)
 		complete := false
 		defer func() {
@@ -395,55 +413,17 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 				n.failed = true
 			}
 		}()
-		var args []Value
-		if plan.ABI.ParameterMemory != nil {
-			ptr, _, _ := flat[0].Bits()
-			v, err := codec.Load(plan.ABI.ParameterMemory, ptr)
-			if err != nil {
-				return nil, err
-			}
-			args = v.Elements
-		} else {
-			slots, err := flatValues(flat)
-			if err != nil {
-				return nil, err
-			}
-			for _, p := range plan.Type.Parameters {
-				layout, err := codec.Layouts.Build(p.Type)
-				if err != nil {
-					return nil, err
-				}
-				v, err := codec.LiftFlat(p.Type, slots[:layout.FlatCount])
-				if err != nil {
-					return nil, err
-				}
-				args = append(args, v)
-				slots = slots[layout.FlatCount:]
-			}
+		args, err := liftArguments(codec, plan, flat)
+		if err != nil {
+			return nil, err
 		}
 		v, err := callee.call(caller, args)
 		if err != nil {
 			return nil, err
 		}
-		if v != nil {
-			// Adopt returned ownership before memory validation or lowering can
-			// fail. The existing transaction then reclaims unpublished values.
-			if codec.Resources != nil {
-				if err := codec.AcceptResult(plan.Type.Result, v); err != nil {
-					return nil, err
-				}
-			}
-			if plan.ABI.ResultMemory != nil {
-				ptr, _, _ := flat[len(flat)-1].Bits()
-				err = codec.Store(plan.Type.Result, ptr, *v)
-			} else {
-				var slots []canonical.Slot
-				slots, err = codec.LowerFlat(plan.Type.Result, *v)
-				result = vmValues(slots)
-			}
-			if err != nil {
-				return nil, err
-			}
+		result, err = lowerResult(codec, plan, flat, v)
+		if err != nil {
+			return nil, err
 		}
 		complete = true
 		if plan.Async {
@@ -469,4 +449,31 @@ func (c *Caller) CloseInstance() error {
 	defer c.mu.Unlock()
 	c.instance.Close()
 	return nil
+}
+
+func lowerParameters(codec *canonical.Codec, plan *validate.CanonicalFunction, args []Value) ([]canonical.Slot, error) {
+	var slots []canonical.Slot
+	if typ := plan.ABI.ParameterMemory; typ != nil {
+		layout, err := codec.Layouts.Build(typ)
+		if err != nil {
+			return nil, err
+		}
+		ptr, err := codec.Transfer.Realloc(0, 0, layout.Align, layout.Size)
+		if err != nil {
+			return nil, err
+		}
+		if err := codec.Store(typ, ptr, Value{Elements: args}); err != nil {
+			return nil, err
+		}
+		slots = []canonical.Slot{{Type: plan.Signature.Params[0], Bits: ptr}}
+	} else {
+		for i, p := range plan.Type.Parameters {
+			flat, err := codec.LowerFlat(p.Type, args[i])
+			if err != nil {
+				return nil, err
+			}
+			slots = append(slots, flat...)
+		}
+	}
+	return slots, nil
 }

@@ -23,6 +23,7 @@ type resourceEntry struct {
 	scope        *BorrowScope
 	lends        uint32
 	errorContext *errorContext
+	opaque       any
 }
 
 // ResourceBudget bounds live handles across all domains of a Store. Table IDs
@@ -321,7 +322,7 @@ func (r *Resources) Drain(ctx context.Context) error {
 	}
 	var first error
 	for _, e := range entries {
-		if e.typeID.Drop != nil {
+		if e.typeID != nil && e.typeID.Drop != nil {
 			if err := e.typeID.Drop(ctx, e.rep); err != nil && first == nil {
 				first = err
 			}
