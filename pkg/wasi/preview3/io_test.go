@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
@@ -534,4 +535,72 @@ func TestOutputRequiresTypedResultFuture(t *testing.T) {
 			t.Fatal(name, err)
 		}
 	}
+}
+
+// Model an OS read winning the race with cancellation: the child context is
+// cancelled, but the completed system call has already consumed one byte.
+type progressOnCancelInput struct{ started atomic.Bool }
+
+func (s *progressOnCancelInput) Read(ctx context.Context, out []byte) (int, error) {
+	s.started.Store(true)
+	<-ctx.Done()
+	out[0] = 'x'
+	return 1, nil
+}
+func (*progressOnCancelInput) Readiness() (bool, <-chan struct{}) { return true, nil }
+func (*progressOnCancelInput) Close() error                       { return nil }
+func TestInputCancellationPreservesConsumedBytes(t *testing.T) {
+	backends(t, func(t *testing.T, backend string) {
+		source := &progressOnCancelInput{}
+		p, err := NewIO(IOConfig{Stdin: source})
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer closeIO(t, p)
+		imports := p.Imports()
+		var input *component.Function
+		var future component.Value
+		imports.Functions = map[string]component.HostFunction{
+			"make": func(c *component.Caller, _ []component.Value) (*component.Value, error) {
+				v, err := c.Call(input, nil)
+				if err != nil {
+					return nil, err
+				}
+				future = v.Elements[1]
+				return &v.Elements[0], nil
+			},
+			"started": func(*component.Caller, []component.Value) (*component.Value, error) {
+				v := &component.Value{}
+				if source.started.Load() {
+					v.Bits = 1
+				}
+				return v, nil
+			},
+		}
+		in := instantiate(t, compileFixture(t, backend, "stdin-cancel-progress"), imports)
+		input, err = in.Function("input")
+		if err != nil {
+			t.Fatal(err)
+		}
+		run, _ := in.Function("run")
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		v, err := run.Call(ctx, []component.Value{{Bits: 3}}, component.CallOptions{})
+		if err != nil || v.Value == nil || v.Value.Bits != 'x' {
+			t.Fatal("lost consumed byte", v, err)
+		}
+		r, err := in.ReadAsync(ctx, future.Resource, 1, component.CallOptions{})
+		if err != nil || len(r.Values) != 1 || r.Values[0].Case != 0 {
+			t.Fatal(r, err)
+		}
+		if _, err := in.DropAsync(ctx, future.Resource, component.CallOptions{}); err != nil {
+			t.Fatal(err)
+		}
+		p.mu.Lock()
+		remaining := len(p.operations)
+		p.mu.Unlock()
+		if remaining != 0 {
+			t.Fatal("cancel retained input operation", remaining)
+		}
+	})
 }

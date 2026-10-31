@@ -102,7 +102,7 @@ func (p *IO) Close() {
 	p.mu.Unlock()
 	for _, op := range ops {
 		op.stop()
-		op.finish(3)
+		op.finish(op.closeCode)
 	}
 	go func() {
 		for _, close := range []func() error{p.config.Stdin.Close, p.config.Stdout.Close, p.config.Stderr.Close} {
@@ -158,6 +158,9 @@ func (p *IO) worker(fn func()) error {
 	return nil
 }
 func (p *IO) operation() (*ioOperation, error) {
+	return p.operationFor(cliError, cliCompletionValue, 3)
+}
+func (p *IO) operationFor(code func(error) uint32, encode func(uint32) component.Value, closedCode uint32) (*ioOperation, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.closed {
@@ -167,16 +170,25 @@ func (p *IO) operation() (*ioOperation, error) {
 		return nil, wasm.ErrLimit
 	}
 	ctx, cancel := context.WithCancel(p.ctx)
-	op := &ioOperation{owner: p, ctx: ctx, cancel: cancel, cell: resultCell{done: make(chan struct{})}}
+	op := &ioOperation{owner: p, ctx: ctx, cancel: cancel, code: code, closeCode: closedCode, cell: resultCell{done: make(chan struct{}), encode: encode}}
 	p.operations[op] = struct{}{}
 	return op, nil
 }
+func cliCompletionValue(code uint32) component.Value {
+	value := component.Value{}
+	if code != 0 {
+		value.Case = 1
+		value.Elements = []component.Value{{Bits: uint64(code - 1)}}
+	}
+	return value
+}
 
 type resultCell struct {
-	mu    sync.Mutex
-	done  chan struct{}
-	value uint32
-	ready bool
+	mu     sync.Mutex
+	done   chan struct{}
+	value  uint32
+	ready  bool
+	encode func(uint32) component.Value
 }
 
 func (s *resultCell) set(code uint32) {
@@ -203,11 +215,7 @@ func (s *resultCell) source(p *IO, close func()) component.AsyncSource {
 			code := s.value
 			s.mu.Unlock()
 			completion.Resolve(func(*component.Caller) (component.ReadResult, error) {
-				value := component.Value{}
-				if code != 0 {
-					value.Case = 1
-					value.Elements = []component.Value{{Bits: uint64(code - 1)}}
-				}
+				value := s.encode(code)
 				return component.ReadResult{Values: []component.Value{value}, Closed: true}, nil
 			})
 		}); err != nil {
@@ -225,6 +233,9 @@ type ioOperation struct {
 	cell              resultCell
 	stopped, finished bool
 	control           *component.Cancellation
+	code              func(error) uint32
+	closeCode         uint32
+	release           func()
 }
 
 func (op *ioOperation) stop() {
@@ -244,12 +255,27 @@ func (op *ioOperation) finish(code uint32) {
 		return
 	}
 	op.finished = true
+	release := op.release
+	op.release = nil
 	op.mu.Unlock()
 	op.cell.set(code)
 	op.cancel()
 	op.owner.mu.Lock()
 	delete(op.owner.operations, op)
 	op.owner.mu.Unlock()
+	if release != nil {
+		release()
+	}
+}
+func (op *ioOperation) setRelease(fn func()) {
+	op.mu.Lock()
+	if op.finished {
+		op.mu.Unlock()
+		fn()
+		return
+	}
+	op.release = fn
+	op.mu.Unlock()
 }
 func (op *ioOperation) nextControl() *component.Cancellation {
 	c := component.NewCancellation()
@@ -294,6 +320,11 @@ func (p *IO) input(c *component.Caller) (*component.Value, error) {
 	if err != nil {
 		return nil, err
 	}
+	_, streamType := c.FunctionInfo().Result().Field(0)
+	_, futureType := c.FunctionInfo().Result().Field(1)
+	return p.inputWithOperation(c, op, p.config.Stdin, streamType, futureType)
+}
+func (p *IO) inputWithOperation(c *component.Caller, op *ioOperation, source InputSource, streamType, futureType component.ValueType) (*component.Value, error) {
 	accepted := false
 	defer func() {
 		if !accepted {
@@ -301,8 +332,6 @@ func (p *IO) input(c *component.Caller) (*component.Value, error) {
 			op.finish(1)
 		}
 	}()
-	_, streamType := c.FunctionInfo().Result().Field(0)
-	_, futureType := c.FunctionInfo().Result().Field(1)
 	stream, err := c.NewSource(streamType, component.AsyncSource{Close: func() { op.stop(); op.finish(0) }, Read: func(c *component.Caller, limit uint32) (*component.ReadCompletion, error) {
 		completion := component.NewReadCompletion()
 		callCtx := c.Context()
@@ -318,13 +347,13 @@ func (p *IO) input(c *component.Caller) (*component.Value, error) {
 					readErr = io.ErrUnexpectedEOF
 					data = nil
 				}
-				if callCtx.Err() != nil {
+				if callCtx.Err() != nil && len(data) == 0 && (readErr == nil || errors.Is(readErr, context.Canceled) || errors.Is(readErr, context.DeadlineExceeded)) {
 					completion.Cancelled()
 					return
 				}
 				closed := readErr != nil
 				if closed {
-					op.finish(cliError(readErr))
+					op.finish(op.code(readErr))
 				}
 				result := component.ReadResult{Bytes: string(data), Closed: closed}
 				completion.Resolve(func(*component.Caller) (component.ReadResult, error) { return result, nil })
@@ -337,7 +366,7 @@ func (p *IO) input(c *component.Caller) (*component.Value, error) {
 				if readErr = ctx.Err(); readErr != nil {
 					return
 				}
-				n, failed := p.config.Stdin.Read(ctx, buf)
+				n, failed := source.Read(ctx, buf)
 				if n < 0 || n > len(buf) {
 					readErr = io.ErrNoProgress
 					return
@@ -351,7 +380,7 @@ func (p *IO) input(c *component.Caller) (*component.Value, error) {
 					return
 				}
 				if errors.Is(failed, ErrWouldBlock) {
-					if readErr = waitReady(ctx, p.config.Stdin); readErr == nil {
+					if readErr = waitReady(ctx, source); readErr == nil {
 						continue
 					}
 					return
@@ -433,7 +462,7 @@ func (op *ioOperation) schedule(c *component.Caller, ref *component.Resource, so
 		owned = refs[0]
 		batch, err := c.ReadAsync(owned, op.owner.config.MaxWriteBytes)
 		if err != nil {
-			op.finish(cliError(err))
+			op.finish(op.code(err))
 			if c.Context().Err() != nil {
 				p := component.NewHostCompletion()
 				p.Cancelled()
@@ -452,7 +481,7 @@ func (op *ioOperation) schedule(c *component.Caller, ref *component.Resource, so
 				pending.Resolve(func(*component.Caller) (*component.Value, error) { return nil, nil })
 			}
 		}); err != nil {
-			op.finish(cliError(err))
+			op.finish(op.code(err))
 			return nil, err
 		}
 		return pending, nil
@@ -462,11 +491,11 @@ func (op *ioOperation) schedule(c *component.Caller, ref *component.Resource, so
 			return nil
 		}
 		if eof || failure != nil {
-			op.finish(cliError(failure))
+			op.finish(op.code(failure))
 			return nil
 		}
 		if err := op.schedule(c, owned, source); err != nil {
-			op.finish(cliError(err))
+			op.finish(op.code(err))
 			return err
 		}
 		return nil
@@ -477,6 +506,9 @@ func (p *IO) output(c *component.Caller, args []component.Value, source OutputSo
 	if err != nil {
 		return nil, err
 	}
+	return p.outputWithOperation(c, args, source, op)
+}
+func (p *IO) outputWithOperation(c *component.Caller, args []component.Value, source OutputSource, op *ioOperation) (*component.Value, error) {
 	accepted := false
 	defer func() {
 		if !accepted {

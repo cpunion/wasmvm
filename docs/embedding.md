@@ -260,9 +260,16 @@ MonotonicClock and IO providers. Bind each provider's Imports explicitly. P3 IO
 reuses the prompt InputSource/OutputSource capability contracts, exposes native
 streams/futures and owns accepted sources; it never inherits ambient stdio.
 Close/wait for bound Instances, then Close and WaitClosed the IO/monotonic owners.
-Use preview3.RunCommand for the checked async command export. Complete P3
-filesystem/socket/HTTP worlds remain in development; see [provider scope and
-lifecycle](design/wasi-preview3.md).
+Use preview3.RunCommand for the checked async command export.
+
+On Linux/Darwin, NewFileSystem(ioOwner, FileSystemConfig{Preopens: grants}) adds
+all versioned types/preopens operations. FileSystemPreopen explicitly supplies
+GuestPath, HostPath and optional ReadOnly. Streams keep descriptor leases through
+EOF/drop; directory streams use independent cursors. MaxDescriptors bounds both
+handles and physical objects, while worker/path/entry/batch limits bound work.
+Close/wait for bound Instances, then Close/WaitClosed FileSystem before IO. No
+ambient filesystem is granted. P3 socket/HTTP bindings and complete worlds remain
+in development; see [provider scope and lifecycle](design/wasi-preview3.md).
 
 
 Use component.NewHostCompletionWithCleanup when external work may create an
