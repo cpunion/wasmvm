@@ -11,6 +11,13 @@ func Equal(a, b *Type, maxNodes uint32) (bool, error) {
 	return c.typ(a, b)
 }
 
+// EqualValue compares resolved schemas. A nonnil resources predicate resolves
+// distinct static resource IDs to their instantiated nominal identities.
+func EqualValue(a, b *model.Type, maxNodes uint32, resources func(uint64, uint64) bool) (bool, error) {
+	c := equality{remaining: maxNodes, visited: map[pair]bool{}, resources: resources}
+	return c.value(a, b)
+}
+
 func (p *TypePool) equal(a, b *Type) (bool, error) {
 	budget := p.limits.MaxNodes - p.nodes
 	c := equality{remaining: budget, visited: map[pair]bool{}}
@@ -61,6 +68,7 @@ type pair struct{ a, b *model.Type }
 type equality struct {
 	remaining uint32
 	visited   map[pair]bool
+	resources func(uint64, uint64) bool
 }
 
 func (c *equality) charge() bool {
@@ -75,7 +83,10 @@ func (c *equality) value(a, b *model.Type) (bool, error) {
 	if a == b {
 		return true, nil
 	}
-	if a == nil || b == nil || a.Kind != b.Kind || a.Length != b.Length || a.ResourceID != b.ResourceID || len(a.Fields) != len(b.Fields) || len(a.Cases) != len(b.Cases) || len(a.Labels) != len(b.Labels) {
+	if a == nil || b == nil || a.Kind != b.Kind || a.Length != b.Length || len(a.Fields) != len(b.Fields) || len(a.Cases) != len(b.Cases) || len(a.Labels) != len(b.Labels) {
+		return false, nil
+	}
+	if a.ResourceID != b.ResourceID && (c.resources == nil || !c.resources(a.ResourceID, b.ResourceID)) {
 		return false, nil
 	}
 	k := pair{a, b}

@@ -290,6 +290,17 @@ func (s *BorrowScope) End() error {
 	return nil
 }
 
+// CheckReturned checks the task.return boundary without releasing its lenders.
+// Guest code must drop foreign borrowed handles before publishing a result.
+func (s *BorrowScope) CheckReturned() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.ended || len(s.borrows) != 0 {
+		return scalarTrap("task returned with outstanding borrows")
+	}
+	return nil
+}
+
 // Drain destroys remaining owned handles after all call scopes have ended.
 // The component lifecycle serializes Drain with calls and creation. It invokes
 // every destructor even if one fails and returns the first error.

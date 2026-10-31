@@ -4226,3 +4226,92 @@ producer/reference rejections and support probes are retained under
 `artifacts/components/error-context-*`. Future/stream/task scheduling, complete
 WASI 0.3.2 worlds, local cm64 borrows and earlier conformance/performance gates
 remain required. M5/M6 and the overall project are incomplete.
+
+
+## Run-to-completion async lifts (2026-10-31)
+
+Implementation `d2427c8`, source base `88e1c4e`: async function types, synchronous
+lift/lower of those types, stackful task.return and stackless callback EXIT/YIELD
+execute on both own backends. The same Store session, value codecs and handle
+budgets remain shared. TLS is isolated across initialization, realloc, nested
+tasks and calls; borrow validation precedes task.return and post-return effects.
+Explicit async host bindings and synchronous WASI 0.2 export checks preserve
+versioned interface contracts. Async lower/subtasks, suspended waitables,
+cooperative task cancellation, futures/streams and WASI 0.3.2 worlds remain open.
+
+Fourteen authored fixtures independently validate with wasm-tools 1.258.0 against
+the grammar pinned at Component Model `d095e2f`. This includes cm32/cm64, all
+three string encodings, direct/17-slot indirect transfers, memory aliases,
+instantiated resource aliases, ownership, borrow release and failure cleanup.
+Guest realloc preserves old bytes during reference UTF-16 transcoding. Full Go
+and affected pinned LLGo release tests pass, with race/vet and cgo-free builds.
+Coverage: canonical 94.26%, validator 92.69%, component 92.62%; all 29 executable
+packages remain at least 90%. Coverage is not complete async conformance.
+
+Actual Wasmtime 48.0.1 matches 30 independently invoked positive/trapping outcomes.
+Two precise reference boundaries are retained: its compiler rejects i64 context
+with `unsupported context.get type: I64`; its cm64 high-pointer task.return reads
+`diagnostic-λ` from offset zero for pointer 4294967296 instead of trapping. Both
+own backends reject that out-of-bounds pointer. These two outcomes are not
+counted as passed reference conformance. Complete upstream async/world coverage
+remains required.
+
+Local Apple M4 Max arm64 diagnostic: Go 1.27.3; LLGo `8e45ed5` rebuilt from its
+clean pinned checkout with `-O3 -lto=full`; LLVM 22.1.8; Rust 1.98.0 and actual
+Wasmtime 48.0.1. An unrelated moving development LLGo checkout was detected and
+excluded before final verification. Source base/head use the same fixed binary
+and flags. Three serial samples alternate runtime/revision order. Each new
+probe performs 3,000 calls after first-call and ten warmups; argument 128 yields
+129 callback invocations per callback task. First-call and all preparation
+phases are outside warmed timing. Process/runtime initialization before main is
+excluded; Wasmtime's separately built Tokio executor is timed explicitly.
+
+Warm **ns per complete public call**:
+
+| Runtime | Callback (129 turns) | Stackful | Synchronous Core ABI |
+| --- | ---: | ---: | ---: |
+| go-interpreter | 46,790 | 912 | 542 |
+| go-native | 117,940 | 2,109 | 1,294 |
+| llgo-interpreter | 175,644 | 3,684 | 2,384 |
+| llgo-native | 437,724 | 7,279 | 4,497 |
+| wasmtime-48.0.1 | 40,736 | 1,080 | 716 |
+
+The amortized callback figures include task entry/return, the guest loop,
+context get/set, VM/host boundaries and callback dispatch. They are not pure
+opcode or scheduler costs. LLGo callback interpreter/native figures are 1,361.6 / 3,393.2 ns per turn, versus 315.8 ns for the reference.
+
+Callback probe preparation/first/close phases, **ns**:
+
+| Runtime | Load | Executor | Engine | Compile | Store + instantiate | Lookup | First | Close |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| go-interpreter | 34,542 | 0 | 1,750 | 220,708 | 30,292 | 209 | 58,583 | 2,500 |
+| go-native | 35,375 | 0 | 1,375 | 601,000 | 34,583 | 334 | 139,750 | 4,750 |
+| llgo-interpreter | 62,667 | 0 | 2,625 | 704,583 | 96,083 | 375 | 107,625 | 2,667 |
+| llgo-native | 56,125 | 0 | 3,083 | 1,602,750 | 73,833 | 417 | 293,416 | 9,375 |
+| wasmtime-48.0.1 | 23,958 | 13,542 | 84,833 | 2,091,916 | 22,292 | 3,083 | 78,791 | 65,792 |
+
+A zero executor field means no separately constructed host executor. The owned
+probe keeps logical quotas and context cancellation enabled, with fuel off;
+Wasmtime uses its ordinary finite-fixture defaults with concurrency enabled.
+This is a local diagnostic, not matched-policy/all-target acceptance. The source
+base rejects task.return before guest execution; it has no new-feature timing.
+
+The common four-call owned resource lifetime uses 100,000 complete lifetimes per
+sample, with startup/lookup/first excluded. Base -> head medians, **ns/lifetime**:
+
+| Compiler | Interpreter | Native |
+| --- | ---: | ---: |
+| go | 2,870 -> 2,882 | 5,165 -> 5,213 |
+| llgo | 8,630 -> 8,725 | 14,576 -> 14,491 |
+
+Actual pinned Wasmtime C API reference: **1,207.32 ns/lifetime**. An initial
+LLGo control regression of 15–17% was removed by retaining the ordinary
+synchronous deferred exit and saving nested state inside the existing task.
+Final local control differences are small; no confidence-bound acceptance is
+claimed. LLGo's absolute competitor deficits and M1–M6 performance gates remain
+open. New task mechanisms do not close native async/WASI 0.3 functionality.
+
+Reproduction: [async probe instructions](../benchmarks/components/README.md).
+Raw `async-lift-phase-*`, `async-lift-common-*`, reference outcomes, binary hashes,
+toolchain metadata and the initial regression diagnostic remain under
+`artifacts/components/async-lift-*`.

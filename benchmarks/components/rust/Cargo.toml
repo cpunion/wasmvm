@@ -17,8 +17,14 @@ tokio = { version = "=1.54.1", features = ["rt-multi-thread"] }
 
 [features]
 error-context = ["wasmtime/component-model-async"]
+async-lift = ["wasmtime/component-model-async"]
 
 [[bin]]
 name = "error_context"
 path = "src/bin/error_context.rs"
 required-features = ["error-context"]
+
+[[bin]]
+name = "async_lift"
+path = "src/bin/async_lift.rs"
+required-features = ["async-lift"]

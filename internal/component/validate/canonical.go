@@ -17,6 +17,7 @@ type CanonicalFunction struct {
 	ABI                         canonical.FunctionLayout
 	Encoding                    canonical.Encoding
 	Memory, Realloc, PostReturn *uint32
+	Callback                    *uint32
 	Memory64                    bool
 	Signature                   module.FuncType
 	Async                       bool
@@ -32,6 +33,9 @@ func (c *componentContext) canonical(def *model.Canonical) error {
 	}
 	if def.Op >= 2 && def.Op <= 4 {
 		return c.resourceBuiltin(def)
+	}
+	if def.Op >= 9 && def.Op <= 0x0c {
+		return c.taskBuiltin(def)
 	}
 	if def.Op == 0x0e || def.Op == 0x15 || def.Op == 0x20 || def.Op == 0x21 || def.Op == 0x27 {
 		return c.asyncBuiltin(def)
@@ -56,9 +60,6 @@ func (c *componentContext) canonical(def *model.Canonical) error {
 	if err != nil {
 		return err
 	}
-	if t.Kind == model.AsyncFunction {
-		return fmt.Errorf("%w: asynchronous canonical signature", wasm.ErrUnsupported)
-	}
 	info := &CanonicalFunction{Definition: def, Type: t}
 	_, err = c.canonicalOptions(info)
 	if err != nil {
@@ -67,13 +68,13 @@ func (c *componentContext) canonical(def *model.Canonical) error {
 	if !lifting && info.PostReturn != nil {
 		return invalid("post-return is only valid for lift")
 	}
-	b := p.layouts32
-	if info.Memory64 {
-		b = p.layouts
-	} else if b == nil {
-		b = canonical.NewBuilder(false, canonical.Limits{MaxNodes: p.limits.MaxNodes, MaxDepth: p.limits.MaxDepth, MaxBytes: math.MaxUint64})
-		p.layouts32 = b
+	if info.Async && (t.Kind != model.AsyncFunction || info.PostReturn != nil) || info.Callback != nil && (!info.Async || !lifting) {
+		return invalid("asynchronous canonical options")
 	}
+	if info.Async && !lifting {
+		return fmt.Errorf("%w: asynchronous canonical lower", wasm.ErrUnsupported)
+	}
+	b := c.canonicalLayouts(info.Memory64)
 	if err := p.charge(uint64(len(t.Parameters))); err != nil {
 		return err
 	}
@@ -91,9 +92,27 @@ func (c *componentContext) canonical(def *model.Canonical) error {
 	if err != nil {
 		return err
 	}
-	info.ABI, err = b.Function(params, t.Result, lifting)
+	result := t.Result
+	if info.Async {
+		result = nil
+	}
+	info.ABI, err = b.Function(params, result, lifting)
 	if err != nil {
 		return err
+	}
+	if info.Async {
+		if t.Result != nil {
+			returned, err := b.Function([]*model.Type{t.Result}, nil, false)
+			if err != nil {
+				return err
+			}
+			if returned.ParameterMemory != nil {
+				info.ABI.ResultMemory = t.Result
+			}
+		}
+		if info.Callback != nil {
+			info.ABI.Results = []wasm.ValueType{wasm.I32}
+		}
 	}
 	if (parameterPointers || resultPointers || info.ABI.ParameterMemory != nil || info.ABI.ResultMemory != nil) && info.Memory == nil {
 		return invalid("canonical memory is required")
@@ -127,6 +146,17 @@ func (c *componentContext) canonical(def *model.Canonical) error {
 	}
 	c.result.Canonical = append(c.result.Canonical, info)
 	return nil
+}
+
+func (c *componentContext) canonicalLayouts(memory64 bool) *canonical.Builder {
+	p := c.result.scope.pool
+	if memory64 {
+		return p.layouts
+	}
+	if p.layouts32 == nil {
+		p.layouts32 = canonical.NewBuilder(false, canonical.Limits{MaxNodes: p.limits.MaxNodes, MaxDepth: p.limits.MaxDepth, MaxBytes: math.MaxUint64})
+	}
+	return p.layouts32
 }
 
 // These operations have static plans only. Their task/handle/thread execution
@@ -300,8 +330,17 @@ func (c *componentContext) canonicalOptions(info *CanonicalFunction) (wasm.Value
 			} else {
 				info.PostReturn = &index
 			}
-		case 6, 7:
-			return 0, fmt.Errorf("%w: asynchronous canonical option", wasm.ErrUnsupported)
+		case 6:
+			info.Async = true
+		case 7:
+			if uint64(index) >= uint64(len(c.functions)) {
+				return 0, invalid("canonical callback index")
+			}
+			f := c.functions[index]
+			if !slices.Equal(f.Params, []wasm.ValueType{wasm.I32, wasm.I32, wasm.I32}) || !slices.Equal(f.Results, []wasm.ValueType{wasm.I32}) {
+				return 0, invalid("canonical callback signature")
+			}
+			info.Callback = &index
 		}
 	}
 	if info.Realloc != nil && info.Memory == nil {

@@ -1,0 +1,58 @@
+(component
+ (type $wide (tuple u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32))
+ (export "wide-data" (type $wide))
+ (type $wide-again (tuple u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32))
+ (export "wide-again" (type $wide-again))
+ (core module $memory
+  (memory (export "memory") 1)
+  (memory (export "other") 1)
+  (data (i32.const 0) "diagnostic-\ce\bb")
+  (global $bump (mut i32) (i32.const 1024))
+  (func (export "realloc") (param $old i32) (param $old-size i32) (param $alignment i32) (param $size i32) (result i32) (local $p i32)
+   global.get $bump local.tee $p local.get $size i32.add i32.const 7 i32.add i32.const -8 i32.and global.set $bump
+   local.get $p local.get $old local.get $old-size local.get $size local.get $old-size local.get $size i32.lt_u select memory.copy
+   local.get $p))
+ (core instance $memory (instantiate $memory))
+ (alias core export $memory "memory" (core memory $mem))
+ (alias core export $memory "memory" (core memory $alias))
+ (alias core export $memory "other" (core memory $other))
+ (alias core export $memory "realloc" (core func $realloc))
+ (core func $ret (canon task.return (result string) (memory $alias) string-encoding=latin1+utf16))
+ (core func $ret-wide (canon task.return (result 1) (memory $mem) string-encoding=latin1+utf16))
+ (core func $ret-number (canon task.return (result u32) (memory $mem) string-encoding=latin1+utf16))
+ (core func $ret-empty (canon task.return))
+ (core func $ret-other (canon task.return (result string) (memory $other) string-encoding=latin1+utf16))
+ (core func $ret-encoding (canon task.return (result string) (memory $mem) string-encoding=utf16))
+ (core module $guest
+  (import "env" "memory" (memory 1))
+  (import "env" "ret" (func $ret (param i32 i32)))
+  (import "env" "ret-wide" (func $ret-wide (param i32)))
+  (import "env" "ret-number" (func $ret-number (param i32)))
+  (import "env" "ret-empty" (func $ret-empty))
+  (import "env" "ret-other" (func $ret-other (param i32 i32)))
+  (import "env" "ret-encoding" (func $ret-encoding (param i32 i32)))
+  (func (export "echo") (param i32 i32)
+   local.get 0 local.get 1 call $ret
+   local.get 0 i32.const 0 i32.store8)
+  (func (export "wide") (local $n i32)
+   loop $fill
+    local.get $n i32.const 4 i32.mul i32.const 64 i32.add local.get $n i32.const 1 i32.add i32.store
+    local.get $n i32.const 1 i32.add local.tee $n i32.const 17 i32.lt_u br_if $fill
+   end
+   i32.const 64 call $ret-wide)
+  (func (export "spill") (param i32) local.get 0 i32.load offset=64 call $ret-number)
+  (func (export "empty") call $ret-empty)
+  (func (export "bad-pointer") i32.const 65535 i32.const 13 call $ret)
+  (func (export "bad-memory") i32.const 0 i32.const 13 call $ret-other)
+  (func (export "bad-encoding") i32.const 0 i32.const 13 call $ret-encoding))
+ (core instance $env (export "memory" (memory $mem)) (export "ret" (func $ret))
+  (export "ret-wide" (func $ret-wide)) (export "ret-number" (func $ret-number))
+  (export "ret-empty" (func $ret-empty)) (export "ret-other" (func $ret-other)) (export "ret-encoding" (func $ret-encoding)))
+ (core instance $guest (instantiate $guest (with "env" (instance $env))))
+ (func (export "echo") async (param "text" string) (result string) (canon lift (core func $guest "echo") (memory $mem) string-encoding=latin1+utf16 (realloc $realloc) async))
+ (func (export "wide") async (result 3) (canon lift (core func $guest "wide") (memory $mem) string-encoding=latin1+utf16 async))
+ (func (export "spill") async (param "value" 1) (result u32) (canon lift (core func $guest "spill") (memory $mem) string-encoding=latin1+utf16 (realloc $realloc) async))
+ (func (export "empty") async (canon lift (core func $guest "empty") async))
+ (func (export "bad-pointer") async (result string) (canon lift (core func $guest "bad-pointer") (memory $mem) string-encoding=latin1+utf16 async))
+ (func (export "bad-memory") async (result string) (canon lift (core func $guest "bad-memory") (memory $mem) string-encoding=latin1+utf16 async))
+ (func (export "bad-encoding") async (result string) (canon lift (core func $guest "bad-encoding") (memory $mem) string-encoding=latin1+utf16 async)))

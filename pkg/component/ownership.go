@@ -262,6 +262,21 @@ func finishResources(codec *canonical.Codec, complete bool, err error) error {
 	return codec.Finish(err)
 }
 
+func returnBorrows(codec *canonical.Codec) error {
+	r, ok := codec.Resources.(*resourceCodec)
+	if !ok || r.scope == nil {
+		return nil
+	}
+	if err := r.scope.CheckReturned(); err != nil {
+		return err
+	}
+	if err := r.scope.End(); err != nil {
+		return err
+	}
+	r.scope = nil
+	return nil
+}
+
 // Cleanup always consumes unpublished ownership. Host destructors still get a
 // cancellation context; failed/canceled guest code is never reentered.
 func (in *Instance) cleanupResource(core *vm.Caller, ref *Resource) (err error) {

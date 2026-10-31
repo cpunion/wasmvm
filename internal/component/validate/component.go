@@ -46,6 +46,7 @@ type CoreInstance struct {
 }
 
 type componentContext struct {
+	contextType       wasm.ValueType
 	result            *Component
 	parent            *componentContext
 	core              map[model.Sort][]CoreExtern

@@ -1,6 +1,6 @@
 # Development Plan and Acceptance Gates
 
-Plan date: **2026-10-26**. M0 candidate evaluation and benchmark infrastructure are complete through PRs [#1](https://github.com/cpunion/wasmvm/pull/1), [#2](https://github.com/cpunion/wasmvm/pull/2), and [#3](https://github.com/cpunion/wasmvm/pull/3). The owner has selected a [project-owned core](design/own-core.md). **M1 acceptance remains open; M2 executes the complete Core 2.0 profile but has unmet performance gates; M3–M5 are in progress; M6–M7 are not implemented.** This plan prioritizes complete core execution and compilation before WASI integration. Design approval does not close an implementation or performance gate.
+Plan date: **2026-10-26**. M0 candidate evaluation and benchmark infrastructure are complete through PRs [#1](https://github.com/cpunion/wasmvm/pull/1), [#2](https://github.com/cpunion/wasmvm/pull/2), and [#3](https://github.com/cpunion/wasmvm/pull/3). The owner has selected a [project-owned core](design/own-core.md). **M1 acceptance remains open; M2 executes the complete Core 2.0 profile but has unmet performance gates; M3–M6 are in progress; M7 is not implemented.** This plan prioritizes complete core execution and compilation before WASI integration. Design approval does not close an implementation or performance gate.
 
 Implement functional stages in dependency order. Local performance follow-ups may continue alongside later capabilities under the current integration decision. Independent work within a stage can proceed in parallel after agreeing on shared contracts. Small implementation PRs may merge while the stage remains in progress; every required deliverable, supported-platform result, and exit gate must pass before that stage is complete. Do not replace full profiles with convenient instruction subsets or quietly move failing requirements to a later stage.
 
@@ -504,6 +504,17 @@ executes the common lifecycle; producer/reference cm64, cross-component and
 value-extension limitations remain explicit. Native tasks, futures/streams,
 cancellation/backpressure scheduling and WASI 0.3.2 worlds are still required;
 this does not complete M6 or its performance gate.
+
+The next increment supports async function types with synchronous lift/lower and
+run-to-completion async canonical lifts, including stackful task.return and
+stackless callback EXIT/YIELD. Both use the existing Core session and shared
+flat/memory/resource codecs. Thread context is isolated across initialization,
+realloc, nested tasks and calls. Borrow returns and unpublished results are
+checked at their actual task boundaries. Explicit AsyncFunctions bindings and
+standard-world export checks preserve synchronous WASI 0.2 contracts. Waitable
+sets, suspended producers, async lower/subtasks, cooperative cancellation,
+futures/streams and WASI 0.3.2 worlds remain required. This is a bounded execution
+profile, not full native async or M6 acceptance.
 
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 

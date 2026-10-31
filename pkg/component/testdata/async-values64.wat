@@ -1,0 +1,58 @@
+(component
+ (type $wide (tuple u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32))
+ (export "wide-data" (type $wide))
+ (type $wide-again (tuple u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32))
+ (export "wide-again" (type $wide-again))
+ (core module $memory
+  (memory (export "memory") i64 1)
+  (memory (export "other") i64 1)
+  (data (i64.const 0) "diagnostic-\ce\bb")
+  (global $bump (mut i64) (i64.const 1024))
+  (func (export "realloc") (param $old i64) (param $old-size i64) (param $alignment i64) (param $size i64) (result i64) (local $p i64)
+   global.get $bump local.tee $p local.get $size i64.add i64.const 7 i64.add i64.const -8 i64.and global.set $bump
+   local.get $p local.get $old local.get $old-size local.get $size local.get $old-size local.get $size i64.lt_u select memory.copy
+   local.get $p))
+ (core instance $memory (instantiate $memory))
+ (alias core export $memory "memory" (core memory $mem))
+ (alias core export $memory "memory" (core memory $alias))
+ (alias core export $memory "other" (core memory $other))
+ (alias core export $memory "realloc" (core func $realloc))
+ (core func $ret (canon task.return (result string) (memory $alias)))
+ (core func $ret-wide (canon task.return (result 1) (memory $mem)))
+ (core func $ret-number (canon task.return (result u32) (memory $mem)))
+ (core func $ret-empty (canon task.return))
+ (core func $ret-other (canon task.return (result string) (memory $other)))
+ (core func $ret-encoding (canon task.return (result string) (memory $mem) string-encoding=utf16))
+ (core module $guest
+  (import "env" "memory" (memory i64 1))
+  (import "env" "ret" (func $ret (param i64 i64)))
+  (import "env" "ret-wide" (func $ret-wide (param i64)))
+  (import "env" "ret-number" (func $ret-number (param i32)))
+  (import "env" "ret-empty" (func $ret-empty))
+  (import "env" "ret-other" (func $ret-other (param i64 i64)))
+  (import "env" "ret-encoding" (func $ret-encoding (param i64 i64)))
+  (func (export "echo") (param i64 i64)
+   local.get 0 local.get 1 call $ret
+   local.get 0 i32.const 0 i32.store8)
+  (func (export "wide") (local $n i32)
+   loop $fill
+    local.get $n i64.extend_i32_u i64.const 4 i64.mul i64.const 64 i64.add local.get $n i32.const 1 i32.add i32.store
+    local.get $n i32.const 1 i32.add local.tee $n i32.const 17 i32.lt_u br_if $fill
+   end
+   i64.const 64 call $ret-wide)
+  (func (export "spill") (param i64) local.get 0 i32.load offset=64 call $ret-number)
+  (func (export "empty") call $ret-empty)
+  (func (export "bad-pointer") i64.const 4294967296 i64.const 13 call $ret)
+  (func (export "bad-memory") i64.const 0 i64.const 13 call $ret-other)
+  (func (export "bad-encoding") i64.const 0 i64.const 13 call $ret-encoding))
+ (core instance $env (export "memory" (memory $mem)) (export "ret" (func $ret))
+  (export "ret-wide" (func $ret-wide)) (export "ret-number" (func $ret-number))
+  (export "ret-empty" (func $ret-empty)) (export "ret-other" (func $ret-other)) (export "ret-encoding" (func $ret-encoding)))
+ (core instance $guest (instantiate $guest (with "env" (instance $env))))
+ (func (export "echo") async (param "text" string) (result string) (canon lift (core func $guest "echo") (memory $mem) (realloc $realloc) async))
+ (func (export "wide") async (result 3) (canon lift (core func $guest "wide") (memory $mem) async))
+ (func (export "spill") async (param "value" 1) (result u32) (canon lift (core func $guest "spill") (memory $mem) (realloc $realloc) async))
+ (func (export "empty") async (canon lift (core func $guest "empty") async))
+ (func (export "bad-pointer") async (result string) (canon lift (core func $guest "bad-pointer") (memory $mem) async))
+ (func (export "bad-memory") async (result string) (canon lift (core func $guest "bad-memory") (memory $mem) async))
+ (func (export "bad-encoding") async (result string) (canon lift (core func $guest "bad-encoding") (memory $mem) async)))
