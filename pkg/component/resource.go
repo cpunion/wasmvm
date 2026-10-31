@@ -25,12 +25,18 @@ func (in *Instance) bindResources(n *namespace, e item, t *validate.Type) error 
 	if err := in.charge(1); err != nil {
 		return err
 	}
+	if t.ContainsAsyncValue() {
+		in.resourceTable(n)
+	}
 	if e.function != nil && (e.function.host != nil || e.function.asyncHost != nil) && e.function.scope == nil {
 		// Imported host functions belong to their provider, independently of
 		// the importing component's canonical failure/leave state. They share
 		// its resolved nominal bindings, not its guest execution guards.
 		if n.host == nil {
 			n.host = &namespace{resources: n.resources}
+		}
+		if t.ContainsAsyncValue() {
+			in.resourceTable(n.host)
 		}
 		e.function.scope = n.host
 	}

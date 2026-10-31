@@ -503,3 +503,40 @@ borrows without producing a result. A failed consumer does not disable the
 independent host provider. Futures/streams, WASI 0.3 worlds and complete M6
 acceptance remain open. Performance optimization is deferred under the current
 owner direction.
+
+## Future/stream guest protocols and affine transport
+
+Future and stream readable/writable ends use one state machine in the existing
+bounded, tagged handle domain. Canonical new/read/write/cancel/drop/forward
+operations enforce direction, element type, copy state and waitable membership.
+Synchronous copies park the same Core continuations as synchronous lower/wait;
+async copies return BLOCKED and report progress through the shared waitable
+queue. Delivery returns buffer ownership and applies the specified precedence:
+stream peer-drop overrides cancellation/completion, while a completed future
+preserves its value even after peer-drop. Zero-length stream readiness and unit
+streams keep their separate counting semantics without allocating one host Value
+per event. Guest memory ranges are checked eagerly, with full-width memory64
+pointers, lengths and stream results.
+
+Parked buffers retain immutable canonical options and memory capabilities, not
+Callers. Copying snapshots all source values before writing any destination,
+using shared list/string/resource codecs and bounded scratch. Nested strings
+use the receiving component's memory/allocator/encoding. Readable ends move
+through flat/memory values and host calls as affine opaque capabilities; writes
+stay local. Same-budget table moves do not transiently consume another live
+handle. Runtime nominal comparisons inspect both instances' resource bindings,
+even when generative instances share a static schema. `Instance.DropAsync` and
+`Caller.DropAsync` consume host-owned readable endpoints and notify the peer.
+Failed calls reclaim unpublished endpoints/copies; successful imported ownership
+effects survive a later consumer trap.
+
+Pinned wasm-tools 1.258.0 independently validates the ordinary guest protocols,
+string composition, synchronous suspension, unit/byte streams and exports. It
+lacks forward syntax/opcodes, so two forward binaries contain an explicitly
+authored canonical entry from the pinned binary grammar. The same producer also
+rejects memory64 copies after assigning them i32 pointers; two full-width owned
+fixtures retain those recorded rejections. Neither group is counted as
+independent producer validation. Wasmtime 48.0.1 matches twelve common guest
+contracts and rejects the same four extension fixtures. Host stream production
+and consumption APIs, WASI 0.3 worlds and complete M6 acceptance remain required;
+transporting an endpoint through a host callback does not implement host I/O.

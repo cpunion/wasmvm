@@ -174,10 +174,6 @@ func preflight(p *validate.Component) error {
 		if t.Kind == model.Borrow && p.ResourceRepresentation(t.ResourceID) == wasm.I64 {
 			return unsupported("cm64 defining-instance borrow conversion")
 		}
-		switch t.Kind {
-		case model.Future, model.Stream:
-			return unsupported("value conversion")
-		}
 		for _, fields := range [][]model.Field{t.Fields, t.Cases} {
 			for _, f := range fields {
 				if err := value(f.Type); err != nil {
@@ -202,7 +198,7 @@ func preflight(p *validate.Component) error {
 	}
 	for _, f := range p.Canonical {
 		op := f.Definition.Op
-		if op > 6 && (op < 9 || op > 0x0d) && (op < 0x1c || op > 0x25) {
+		if op > 6 && (op < 9 || op > 0x1b) && (op < 0x1c || op > 0x25) && op != 0x2e && op != 0x2f {
 			return unsupported("resource or async canonical operation")
 		}
 		if f.Type == nil {

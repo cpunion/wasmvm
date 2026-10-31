@@ -28,6 +28,7 @@ type ownedHandle struct {
 	table *canonical.Resources
 	rt    *resourceType
 	id    uint32
+	end   *asyncEnd
 }
 
 func (r *resourceCodec) declaration(t *model.Type) (*resourceType, error) {
@@ -72,11 +73,18 @@ func (r *resourceCodec) inspect(t *model.Type, v Value) (*resourceType, *canonic
 }
 
 func (r *resourceCodec) Validate(t *model.Type, v Value) error {
+	if asyncValueType(t) {
+		_, err := r.asyncReference(t, v)
+		return err
+	}
 	_, _, _, err := r.inspect(t, v)
 	return err
 }
 
 func (r *resourceCodec) Lift(t *model.Type, id uint32) (Value, error) {
+	if asyncValueType(t) {
+		return r.liftAsync(t, id)
+	}
 	if t.Kind == model.ErrorContext {
 		return r.n.handles.ErrorContext(id)
 	}
@@ -105,6 +113,9 @@ func (r *resourceCodec) Lift(t *model.Type, id uint32) (Value, error) {
 }
 
 func (r *resourceCodec) Lower(t *model.Type, v Value) (uint32, error) {
+	if asyncValueType(t) {
+		return r.lowerAsync(t, v)
+	}
 	if t.Kind == model.ErrorContext {
 		id, err := r.n.handles.AddErrorContext(v)
 		if err == nil {
@@ -133,12 +144,15 @@ func (r *resourceCodec) Lower(t *model.Type, v Value) (uint32, error) {
 	canonical.InvalidateReference(v.Resource)
 	id, err = r.n.handles.New(rt.identity, rep)
 	if err == nil {
-		r.lowered = append(r.lowered, ownedHandle{r.n.handles, rt, id})
+		r.lowered = append(r.lowered, ownedHandle{table: r.n.handles, rt: rt, id: id})
 	}
 	return id, err
 }
 
 func (r *resourceCodec) Accept(t *model.Type, v Value, commit bool) (Value, error) {
+	if asyncValueType(t) {
+		return r.acceptAsync(t, v, commit)
+	}
 	rt, table, id, err := r.inspect(t, v)
 	if err != nil {
 		return Value{}, err
@@ -194,12 +208,26 @@ func (r *resourceCodec) Finish(err error) error {
 			r.in.cleanupResource(r.core, ref)
 		}
 		for _, h := range r.lowered {
+			if h.end != nil {
+				if h.end.table() == h.table && h.end.id == h.id {
+					h.end.abort()
+				}
+				continue
+			}
 			if h.rt == nil {
 				h.table.DropErrorContext(h.id)
 				continue
 			}
 			if rep, failed := h.table.Take(h.rt.identity, h.id); failed == nil {
 				r.in.cleanupRepresentation(r.core, h.rt, rep)
+			}
+		}
+	}
+	if err == nil {
+		for _, ref := range r.created {
+			table, _, _, owner, _, failed := canonical.ReferenceInfo(ref)
+			if end, ok := owner.(*asyncEnd); failed == nil && ok && table == r.in.hostResources && end.n == nil {
+				end.unlink()
 			}
 		}
 	}
@@ -282,6 +310,11 @@ func returnBorrows(codec *canonical.Codec) error {
 func (in *Instance) cleanupResource(core *vm.Caller, ref *Resource) (err error) {
 	table, identity, id, owner, borrow, err := canonical.ReferenceInfo(ref)
 	if err != nil || borrow || table != in.hostResources {
+		return nil
+	}
+	if end, ok := owner.(*asyncEnd); ok && end.in == in {
+		end.abort()
+		canonical.InvalidateReference(ref)
 		return nil
 	}
 	rt, ok := owner.(*resourceType)

@@ -37,6 +37,7 @@ type Type struct {
 	borrow           bool
 	resource         bool
 	errorContext     bool
+	asyncValue       bool
 	depth            uint32
 	minimumResource  uint64
 	definingScope    *TypeScope
@@ -44,10 +45,10 @@ type Type struct {
 }
 
 type traits struct {
-	borrow, resource, errorContext bool
-	depth                          uint32
-	minimumResource                uint64
-	resourceName                   *Type
+	borrow, resource, errorContext, asyncValue bool
+	depth                                      uint32
+	minimumResource                            uint64
+	resourceName                               *Type
 }
 
 // TypePool bounds total metadata across lexical scopes. It caches primitive
@@ -265,7 +266,7 @@ func (s *TypeScope) resolve(def *model.TypeDef) (*Type, error) {
 	if err := s.pool.charge(1); err != nil {
 		return nil, err
 	}
-	t := &Type{Kind: def.Kind, owner: s.pool, depth: 1, errorContext: def.Kind == model.ErrorContext}
+	t := &Type{Kind: def.Kind, owner: s.pool, depth: 1, errorContext: def.Kind == model.ErrorContext, asyncValue: def.Kind == model.Future || def.Kind == model.Stream}
 	v := &model.Type{Kind: def.Kind}
 	var err error
 	var resourceName *Type
@@ -274,6 +275,7 @@ func (s *TypeScope) resolve(def *model.TypeDef) (*Type, error) {
 			info := s.pool.values[child]
 			t.borrow, t.resource = t.borrow || info.borrow, t.resource || info.resource
 			t.errorContext = t.errorContext || info.errorContext
+			t.asyncValue = t.asyncValue || info.asyncValue
 			t.depth = max(t.depth, info.depth+1)
 			t.minimumResource = minimum(t.minimumResource, info.minimumResource)
 		}
@@ -409,7 +411,7 @@ func (s *TypeScope) resolve(def *model.TypeDef) (*Type, error) {
 			return nil, invalid("value type is at least 2^28 bytes in the memory64 ABI")
 		}
 		t.Value = v
-		s.pool.values[v] = traits{borrow: t.borrow, resource: t.resource, errorContext: t.errorContext, depth: t.depth, minimumResource: t.minimumResource, resourceName: resourceName}
+		s.pool.values[v] = traits{borrow: t.borrow, resource: t.resource, errorContext: t.errorContext, asyncValue: t.asyncValue, depth: t.depth, minimumResource: t.minimumResource, resourceName: resourceName}
 	}
 	return t, nil
 }
@@ -475,3 +477,12 @@ func (t *Type) ResultContainsResource() bool {
 
 // ContainsErrorContext reports cached diagnostic handle occurrences.
 func (t *Type) ContainsErrorContext() bool { return t.errorContext }
+
+// ContainsAsyncValue reports cached future/stream occurrences.
+func (t *Type) ContainsAsyncValue() bool { return t.asyncValue }
+
+// ContainsAffine includes resources and readable future/stream capabilities.
+func (t *Type) ContainsAffine() bool { return t.resource || t.asyncValue }
+func (t *Type) ResultContainsAffine() bool {
+	return t.Result != nil && (t.owner.values[t.Result].resource || t.owner.values[t.Result].asyncValue)
+}

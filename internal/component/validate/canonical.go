@@ -31,13 +31,16 @@ func (c *componentContext) canonical(def *model.Canonical) error {
 	if err := p.charge(1 + uint64(len(def.Options))); err != nil {
 		return err
 	}
+	if def.Op >= 0x0e && def.Op <= 0x1b || def.Op == 0x2e || def.Op == 0x2f {
+		return c.asyncValueBuiltin(def)
+	}
 	if def.Op >= 2 && def.Op <= 4 {
 		return c.resourceBuiltin(def)
 	}
 	if def.Op >= 9 && def.Op <= 0x0c {
 		return c.taskBuiltin(def)
 	}
-	if def.Op == 5 || def.Op == 6 || def.Op == 0x0d || def.Op == 0x1f || def.Op >= 0x20 && def.Op <= 0x25 || def.Op == 0x0e || def.Op == 0x15 || def.Op == 0x27 {
+	if def.Op == 5 || def.Op == 6 || def.Op == 0x0d || def.Op == 0x1f || def.Op >= 0x20 && def.Op <= 0x25 || def.Op == 0x27 {
 		return c.asyncBuiltin(def)
 	}
 	if def.Op >= 0x1c && def.Op <= 0x1e {
@@ -176,20 +179,7 @@ func (c *componentContext) asyncBuiltin(def *model.Canonical) error {
 		f.Results = []wasm.ValueType{wasm.I32}
 	case 0x23:
 		f.Params = []wasm.ValueType{wasm.I32, wasm.I32}
-	case 0x0e, 0x15:
-		t, err := s.At(def.Index)
-		if err != nil {
-			return err
-		}
-		kind := model.Stream
-		if def.Op == 0x15 {
-			kind = model.Future
-		}
-		if t.Kind != kind {
-			return invalid("stream/future constructor type")
-		}
-		info.Type = t
-		f.Results = []wasm.ValueType{wasm.I64}
+
 	case 0x20, 0x21:
 		e, err := c.coreAt(model.SortIndex{Sort: model.CoreMemorySort, Index: def.Index})
 		if err != nil {

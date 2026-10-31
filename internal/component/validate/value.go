@@ -40,7 +40,7 @@ func (s *TypeScope) valueType(ref model.TypeRef) (*Type, error) {
 		return nil, err
 	}
 	info := s.pool.values[v]
-	return &Type{Kind: v.Kind, Value: v, owner: s.pool, depth: info.depth, borrow: info.borrow, resource: info.resource, minimumResource: info.minimumResource, valueBinding: &valueBinding{}}, nil
+	return &Type{Kind: v.Kind, Value: v, owner: s.pool, depth: info.depth, borrow: info.borrow, resource: info.resource, asyncValue: info.asyncValue, minimumResource: info.minimumResource, valueBinding: &valueBinding{}}, nil
 }
 
 func (c *componentContext) value(def *model.ValueDefinition) error {
@@ -114,7 +114,7 @@ func (c *componentContext) start(def *model.Start) error {
 	if f.Result != nil {
 		s := c.result.scope
 		info := s.pool.values[f.Result]
-		t := &Type{Kind: f.Result.Kind, Value: f.Result, owner: s.pool, depth: info.depth, resource: info.resource, minimumResource: info.minimumResource, valueBinding: &valueBinding{}}
+		t := &Type{Kind: f.Result.Kind, Value: f.Result, owner: s.pool, depth: info.depth, resource: info.resource, asyncValue: info.asyncValue, minimumResource: info.minimumResource, valueBinding: &valueBinding{}}
 		if c.localValues == nil {
 			c.localValues = map[*valueBinding]bool{}
 		}

@@ -1,0 +1,79 @@
+{
+  "componentModelCommit": "d095e2f60ddae1f9a1e9b1e2fb547ec1114da677",
+  "producer": "wasm-tools 1.258.0",
+  "authoredForward": [
+    "async-stream-edges",
+    "async-future-edges"
+  ],
+  "producerRejections": {
+    "async-stream-memory64": "error: type mismatch for export `read` of module instantiation argument `env`\nexpected: (func (param i32 i64 i64) (result i64))\nfound:    (func (param i32 i32 i32) (result i32)) (at offset 0x2a2)",
+    "async-future-memory64": "error: type mismatch for export `read` of module instantiation argument `env`\nexpected: (func (param i32 i64) (result i32))\nfound:    (func (param i32 i32) (result i32)) (at offset 0x295)"
+  },
+  "generatorSHA256": "356fcbd3d512f121476c2ebaf1fdd467ef25b7567dce80067f8fd8fdb225dfb0",
+  "sha256": {
+    "async-stream-protocol": {
+      "wat": "cd041eaca4d37d4a71bfce130bf240db02538d339d22647e4f53f6117cb9881d",
+      "wasm": "c19fd989d1a1ff59b71de545169d4c5aaf0ab4b39d81d1ec6654112eced7296e"
+    },
+    "async-future-protocol": {
+      "wat": "7fad2c49f008edfcf23ac9f8e9fac8610b6af91dce8eb07436740386c484a079",
+      "wasm": "63a5e3ee4684ae5ab5e0dfcfa1eecbe16b78c56360c42e8ea0ffc31d73b67637"
+    },
+    "async-stream-strings": {
+      "wat": "c985bc55e14665f47be6b139080a87bc658866963243845254dfd524069f5332",
+      "wasm": "7abda81e29c77715cf2a284e93be0302e152f16464af59de22571361f43b63d5"
+    },
+    "async-future-strings": {
+      "wat": "3da05a255bb9f1ec01053b35ac9361a541f1aab64d3108c741be7225221e8616",
+      "wasm": "8d7414be2d01a927c20239badb298721bfe9a431a43d6cc213773929a41dfa31"
+    },
+    "async-stream-edges": {
+      "wat": "e99e859425213b7d80e53f76ad50b316781e4b7d7947d024dc2ee18a317e2609",
+      "wasm": "c294d5ab36442a45c4cb776469b73c6d31bf2d880dbf3c2c642c8556944aea43"
+    },
+    "async-future-edges": {
+      "wat": "28cab8731915e92c27ce1beecb36ee8238ed154b557acc5672724c41e43d1c74",
+      "wasm": "2e2c54d6558782b69156584946f19cfabab5e347bb773df8d6a59967415fd14b"
+    },
+    "async-stream-unit": {
+      "wat": "8f6461e80069e1168a3d303fe472b0ba577bc1ff9747aef3b735f54641295a4b",
+      "wasm": "7e62911ef25040cae61761e4b57dcb82eaa206fbd49095041cb3a7cb5eb97bb9"
+    },
+    "async-stream-memory64": {
+      "wat": "147ec0b2bf64f02e988215b947502b7c4c62976c7c22e4adadddbf0ccf6eb866",
+      "wasm": "3c14fade06aef6699b1917c6c4e41e7abef4784177c37377e8dc69e79cde06fd"
+    },
+    "async-future-memory64": {
+      "wat": "d43437b4812927f2745c5f4c1a885c591a019dbf5e266c58155dda08b4cc6575",
+      "wasm": "9b1144cbfcb524b1d898c40f604feedea4e7b7e970519394dd51134fa29f2149"
+    },
+    "async-stream-zero": {
+      "wat": "22c4e22f8c91e34db3ec2545f074d91771815fdd7fcdb45a84c910111d87f12a",
+      "wasm": "25c03b3ac18bc38427308a41654d29d66feb3c0ec411337f8eaf47fd300eeeee"
+    },
+    "async-stream-exports": {
+      "wat": "a52538ce50d218974ae0e0566397aba609938967688bf389964de98c999f0973",
+      "wasm": "d512ff6fd46e59ca28f7eda5f4a0c69d22265dee26717a789e729d342fbded61"
+    },
+    "async-future-exports": {
+      "wat": "21a95def5e490645938e18df0eaeecd345890da0a15062045da3faa4fdf5e8a8",
+      "wasm": "357c34ccbcd946feb7a3db1ab9ffab2e9802020f28dfec7250117b94bc7f3a23"
+    },
+    "async-future-generative": {
+      "wat": "1c15e2aef6dcbdba79b8ab20479009fba29a5940f127c377c76d1aeac386c35e",
+      "wasm": "d3e8887c557de04c6ea36b25130cef38f6cfbc1133bae85e78b098697485a1f9"
+    },
+    "async-stream-bytes": {
+      "wat": "53625674f664202ec5f22761daac149860d9ced3aa4c1cd9327d88f9ff9a8e4f",
+      "wasm": "1de3cef4e76dc1ad536e1ff3bd4564678e3000b37aa34fa584f9ca6a4fe9633b"
+    },
+    "async-stream-sync-copy": {
+      "wat": "c6beca3e50a32551242f17de57369af0e20b6bde1e66f4bdc2efd383dc0587af",
+      "wasm": "757a592dd5492139c0879ab9bc0043e5982093484ea9516de0195ccb0ed411dc"
+    },
+    "async-future-sync-copy": {
+      "wat": "126477757190e8f6305e687e8841b3acea27efd5b9e2bfd076d83b8cc3ad28e1",
+      "wasm": "c38460e7423eac4600f86050410d2cc6a9485aab24db49fbdb7aafb5e388eb36"
+    }
+  }
+}
