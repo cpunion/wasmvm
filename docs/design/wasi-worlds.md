@@ -48,8 +48,8 @@ signatures. A valid incoming-handler result mutation must reject before its
 observable callback. HTTP client/incoming tests also use the unified imports.
 
 These results advance CLI/world integration and independent guest toolchains.
-Complete upstream world conformance, remaining synchronous component resource
-values/starts, local cm64 borrows and M5 performance gates remain open. Native
+Complete upstream world conformance, local cm64 borrows and M5 performance
+gates remain open. Native
 async, futures/streams and WASI 0.3 require separate M6 implementation.
 
 ## Performance boundaries
@@ -71,3 +71,49 @@ failure separately from successful language guests. Set
 fixed 1000-call samples serially. World API absence on the source base is recorded
 separately from unchanged wall-clock base/head samples. Performance acceptance
 requires its own evidence and is not inferred from successful command execution.
+
+## Stable version compatibility and upstream standard libraries
+
+Host instance imports and public Function/Value paths use exact names first.
+If an exact versioned interface is absent, the shared name resolver consults
+stable SemVer tracks: nonzero major versions share that major; 0.x versions
+with nonzero minor share that minor. Prereleases and 0.0.x have no alternate
+track. The greatest numeric version wins; equal versions differing only in build
+metadata use lexical name order for deterministic selection. Version syntax
+shares the existing validator parser. Plain names and exact provider contracts
+retain their usual behavior, including failure when an exact provider has the
+wrong shape. No operation/resource signature or nominal identity check is bypassed.
+
+Import fallback scans charge the existing aggregate instantiation budget before
+parsing host keys. Export maps are already immutable and bounded by validation;
+repeated lookups do not consume a Store-lifetime metadata quota. Exact lookup is
+a small shared wrapper, with version parsing/scanning in the fallback helper.
+
+Fourteen unmodified Wasmtime 48.0.1 test programs now compile directly with
+Rust 1.98.0's wasm32-wasip2 target. Their standard libraries import WASI 0.2.9 and
+export CLI run 0.2.0; the World remains a checked WASI 0.2.12 provider. Before
+this change, every available guest failed to link at the first 0.2.9 interface.
+Tests now execute arguments/environment, stdio, clocks/sleep, exit/panic, file
+read/seek/append and sync on both own backends and host compilers. Expected exit
+failure and guest traps remain distinct outcomes. Sources, license, toolchain
+archive pins, stripped component hashes and the rebuilding script are retained
+in [the upstream fixture inventory](../../testdata/wasi-preview2/upstream-wasmtime).
+
+The append guest also exposed a provider bug: requesting the mutation capability
+incorrectly forced O_DIRECTORY even when open-flags did not require a directory.
+Only open-flags now enforces that object-kind constraint. Ordinary files clear
+the directory-only capability from returned flags. Parent mutation grants,
+explicit directory constraints and read-only checks remain enforced.
+
+This bounded upstream CLI subset supplements operation suites and two-language
+composition. It does not establish full upstream world conformance, cm64 local
+borrow execution, performance acceptance, native async or WASI 0.3 support.
+
+A sustained common-command probe additionally found an ownership error in the
+project-authored C guest: wit-bindgen's list free helper frees strings/storage,
+but does not drop contained owned descriptors. The guest now explicitly drops
+every returned preopen descriptor. Repeated C/Rust commands pass with a two-
+descriptor provider quota; the old C fixture fails that same regression. The
+regenerated C and Rust-to-C components are supplied unchanged to source base,
+candidate and reference during comparison. The original 10,000-call quota
+failure remains diagnostic evidence; provider limits were not raised to hide it.

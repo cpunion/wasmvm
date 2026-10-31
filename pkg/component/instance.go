@@ -88,7 +88,7 @@ func (in *Instance) Function(path ...string) (*Function, error) {
 	}
 	exports := in.exports
 	for i, name := range path {
-		e, ok := exports[name]
+		e, ok, _ := lookupName(exports, name, nil)
 		if !ok {
 			return nil, vm.ErrLink
 		}
@@ -109,7 +109,7 @@ func (in *Instance) Value(ctx context.Context, path ...string) (Value, error) {
 	_, err := in.store.WithCallerCleanup(ctx, vm.CallOptions{}, func(c *vm.Caller) error {
 		exports := in.exports
 		for i, name := range path {
-			e, ok := exports[name]
+			e, ok, _ := lookupName(exports, name, nil)
 			if !ok {
 				return vm.ErrLink
 			}
@@ -395,11 +395,13 @@ func (in *Instance) bind(types []validate.Extern, imports Imports) (map[string]i
 			}
 			e.function = &Function{instance: in, typ: expected.Type, host: fn}
 		case model.InstanceSort:
-			args, ok := imports.Instances[name]
+			args, ok, err := lookupName(imports.Instances, name, in.charge)
+			if err != nil {
+				return nil, err
+			}
 			if !ok {
 				return nil, fmt.Errorf("%w: missing component instance %q", vm.ErrLink, name)
 			}
-			var err error
 			e.instance, err = in.bind(expected.Type.Exports, args)
 			if err != nil {
 				return nil, err

@@ -4064,3 +4064,99 @@ observations, not controlled acceptance. The reference remains substantially
 faster; compiler/interpreter and Canonical ABI performance targets stay open.
 Local cm64 borrows, complete upstream world conformance and native async/WASI 0.3
 remain required. This increment does not complete M5/M6 or the project.
+
+## Upstream WASI standard-library interoperability (2026-10-31)
+
+Fourteen unmodified Wasmtime 48.0.1 test programs, pinned at
+`7bac2c2775808aaec5d4aa5627a5e447b51102cf`, compile with Rust 1.98.0's
+wasm32-wasip2 target (edition 2024, `-O -C panic=abort`). The producer strips
+custom sections and independently validates every component with wasm-tools
+1.258.0. Source/license, toolchain archive and output hashes are retained in
+`upstream-manifest.json`; rebuilding does not alter any upstream guest body.
+
+The standard libraries import WASI 0.2.9 and export CLI run 0.2.0. Source base
+`a8aef41` fails at the first 0.2.9 host instance. Stable interface lookup now
+connects these guests to the existing checked 0.2.12 World: exact names win,
+otherwise the greatest stable compatible version wins. Prerelease/0.0.x
+fallback is excluded; numeric ordering and build-metadata ties are deterministic.
+Import scans spend the aggregate binding budget. Existing contracts, nominal
+resources, failure cleanup and plain-name behavior remain enforced.
+
+The actual append program also found descriptor mutation permissions being
+confused with the open-flags directory constraint. Ordinary writable files now
+open correctly, while explicit directory constraints/read-only grants remain
+checked. A separate sustained probe found the project-authored C control guest
+not dropping descriptors inside a freed list. It now explicitly drops them;
+three repeated C/Rust commands pass with a two-descriptor provider quota, where
+the original C fixture fails. The original 10,000-call quota failure is preserved.
+No provider limit was raised. Corrected identical guest bytes are supplied to
+both source revisions and the reference.
+
+All fourteen upstream programs execute with expected outcomes on both own
+backends under Go/LLGo release, and on the actual unmodified Wasmtime WASIp2
+provider. This includes empty/Unicode args, absent argv0, environment, stdio,
+clocks/sleep, normal/nonzero exit, panic, file reads, seek-preserving append and
+sync. Nonzero exit and panic remain explicit outcomes. The independent typed
+reference accepts empty args as well as the CLI-tested programs.
+
+Full Go tests, final relevant Go/LLGo suites, race/vet and corpus/provenance checks
+pass. Local full-production coverage: component **92.00%** (1,162/1,263), validator
+**92.33%** (2,009/2,176), P2 **90.51%** (4,905/5,419); all executable packages
+remain >=90%. These are package statement metrics, not specification coverage.
+
+Apple M4 Max arm64; LLGo `8e45ed5 -O3 -lto=full`, Go 1.27.3. Three serial samples
+per first-call workload, fuel off with own logical quotas/cancellation retained;
+reference default Store policy. Commands are one-shot and may exit or trap.
+Build/process startup is outside the timers. Microseconds:
+
+### Rust standard-library arguments
+
+| Runtime | Load | Engine | Compile | Provider / provider+Store (ref) | Store/bind/instantiate / instantiate (ref) | Lookup + signature | First call | Close |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| go-interpreter | 63.042 | 0.750 | 14,465.959 | 100.834 | 352.584 | 1.333 | 90.833 | 38.917 |
+| go-native | 69.166 | 0.792 | 75,546.541 | 115.834 | 293.875 | 1.292 | 99.208 | 36.334 |
+| llgo-interpreter | 132.666 | 1.166 | 31,894.041 | 163.708 | 613.708 | 1.666 | 133.250 | 332.250 |
+| llgo-native | 81.958 | 0.833 | 146,145.125 | 183.375 | 487.500 | 1.708 | 177.875 | 328.500 |
+| wasmtime | 47.000 | 90.334 | 40,493.500 | 143.041 | 90.750 | 0.875 | 36.375 | 128.000 |
+
+### Rust standard-library file append
+
+| Runtime | Load | Engine | Compile | Provider / provider+Store (ref) | Store/bind/instantiate / instantiate (ref) | Lookup + signature | First call | Close |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| go-interpreter | 65.958 | 2.958 | 17,710.625 | 109.959 | 387.667 | 1.292 | 353.292 | 28.583 |
+| go-native | 61.208 | 1.584 | 92,235.542 | 124.000 | 354.416 | 1.541 | 415.750 | 33.625 |
+| llgo-interpreter | 83.041 | 1.541 | 35,476.542 | 161.334 | 3,104.250 | 2.750 | 775.083 | 274.875 |
+| llgo-native | 72.459 | 0.791 | 162,914.875 | 165.916 | 560.666 | 1.500 | 653.333 | 299.625 |
+| wasmtime | 42.750 | 85.542 | 47,971.083 | 151.916 | 86.459 | 0.917 | 598.500 | 151.167 |
+
+Own binding includes Store creation; the reference provider setup includes its
+Store and linker. First invocation excludes lookup and preparation; it includes
+real standard-library/provider work, not only guest arithmetic. No warmed
+throughput ratio is inferred from these first-call numbers.
+
+Common corrected C/Rust command controls use three alternating base/head samples,
+10,000 warmed calls each. Preparation, lookup, first call and teardown are outside
+warm timers. Final test-binary relink medians, microseconds per command:
+
+| Command | Go base -> head interpreter / native | LLGo base -> head interpreter / native | Actual Wasmtime 48.0.1 |
+| --- | ---: | ---: | ---: |
+| C | 31.492 -> 31.017 / 41.484 -> 40.965 | 119.917 -> 98.951 / 187.499 -> 164.761 | 24.108 |
+| Rust-to-C | 39.808 -> 40.072 / 50.673 -> 51.275 | 156.932 -> 124.715 / 294.352 -> 202.511 | 19.225 |
+
+Earlier diagnostic medians are retained separately: LLGo C 72.255/128.292 ->
+71.414/128.574 us, Rust-to-C 87.507/148.635 -> 88.034/146.161 us; reference
+7.905/7.203 us. Final relinking and active host background indexing accompanied
+large run-to-run variance, including the independent reference. There is no
+causal optimization claim or controlled acceptance from these local timings.
+The reference remains substantially faster; performance gates remain open.
+
+Reproduce own one-shot phases with `benchmarks/components/upstream.go` and the
+actual typed reference with `benchmarks/components/rust/src/bin/upstream.rs`.
+`BenchmarkWASICommand` and the existing `command` reference reproduce common
+controls with the same corrected fixture bytes. Raw final samples, phase JSON,
+earlier diagnostic medians and explicit failures remain under
+`artifacts/components/upstream-*`.
+
+This is a bounded upstream CLI subset. Full upstream/world conformance, local
+cm64 borrow conversion, performance acceptance and native async/WASI 0.3 still
+remain required. M5/M6 and the project are incomplete.

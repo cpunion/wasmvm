@@ -33,6 +33,9 @@ bool exports_wasi_cli_run_run(void) {
       wasi_filesystem_types_borrow_descriptor(dirs.ptr[0].f0), &stat, &error) &&
       stat.type == WASI_FILESYSTEM_TYPES_DESCRIPTOR_TYPE_DIRECTORY;
   }
+  for (size_t i = 0; i < dirs.len; ++i) {
+    wasi_filesystem_types_descriptor_drop_own(dirs.ptr[i].f0);
+  }
   wasi_filesystem_preopens_list_tuple2_own_descriptor_string_free(&dirs);
   if (!ok) return false;
 

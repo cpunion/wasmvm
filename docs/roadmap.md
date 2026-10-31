@@ -484,6 +484,14 @@ state independently of a failed consumer. Local cm64 borrow conversion, complete
 upstream world conformance and performance acceptance still keep M5 open; native
 async/WASI 0.3 remain M6 work.
 
+The upstream standard-library integration increment executes fourteen unchanged
+Wasmtime 48.0.1 Rust command tests with their original expected inputs/outcomes.
+Stable interface-version lookup connects the guest's WASI 0.2.9 imports and CLI
+0.2.0 export to checked 0.2.12 providers. A real append regression separates
+mutation permissions from directory-kind constraints. Both own backends execute
+these commands; full upstream/world and performance gates remain open. This is
+additional M5 coverage, not completion of M5/M6 or native async/WASI 0.3.
+
 ## M6 — WASI 0.3 native async
 
 Pin WASI **0.3.2** and its cumulative Component Model requirements. Implement canonical async lift/lower, task transitions, suspension/resumption, futures/streams, cancellation, backpressure, reentrancy and completion/error behavior. Deliver the declared CLI and HTTP service/middleware scope with explicit versioned bindings; P2 pollables and P3 async remain separate adapters.

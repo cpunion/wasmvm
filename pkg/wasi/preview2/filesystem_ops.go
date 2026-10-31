@@ -40,7 +40,7 @@ func (p *FileSystem) open(c *component.Caller, parent fsDescriptor, pathFlags ui
 	if openFlags&1 != 0 {
 		mode |= unix.O_CREAT
 	}
-	if openFlags&2 != 0 || flags&fsMutate != 0 {
+	if openFlags&2 != 0 {
 		mode |= unix.O_DIRECTORY
 	}
 	if openFlags&4 != 0 {
@@ -58,6 +58,9 @@ func (p *FileSystem) open(c *component.Caller, parent fsDescriptor, pathFlags ui
 	file, child, err := directory.Open(path, mode, 0600)
 	if err != nil {
 		return component.Value{}, err
+	}
+	if child == nil {
+		flags &^= fsMutate
 	}
 	b := &fsBacking{owner: p, file: file, directory: child, refs: 1}
 	p.mu.Lock()

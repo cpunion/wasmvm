@@ -475,3 +475,20 @@ The unchanged composition benchmark and HTTP fields lifetime benchmark provide
 separate common-workload base/head/reference controls, including the host
 provider guard change. Actual Wasmtime 48.0.1 rejects root component imports;
 retain that result rather than inventing a direct speed ratio.
+
+The upstream CLI probes run one-shot standard-library commands, including exit
+and panic. They report load, engine, compilation, provider/Store preparation,
+binding/instantiation, lookup/signature checks, first invocation and close
+separately. They do not report a warmed instruction-throughput ratio from a
+whole process. Own fuel is off with logical quotas/cancellation; the actual
+Wasmtime WASIp2 provider uses its default Store policy. Use the same fresh
+preopen/input/args for each invocation; the file-append guest changes its file.
+
+```sh
+go run benchmarks/components/upstream.go COMPONENT interpreter PREOPEN GUEST_ARGS
+cargo +1.98.0 run --locked --release --manifest-path benchmarks/components/rust/Cargo.toml --bin upstream -- COMPONENT PREOPEN GUEST_ARGS
+```
+
+The source base rejects older interface names before guest execution. Preserve
+that boundary separately from performance. `BenchmarkWASICommand` and the
+existing `command` reference supply common C/Rust command baseline controls.
