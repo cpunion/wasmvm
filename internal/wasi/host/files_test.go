@@ -382,3 +382,74 @@ func TestUnsignedTimestampDomain(t *testing.T) {
 		}
 	}
 }
+
+func TestSignedFilesystemInstants(t *testing.T) {
+	root := t.TempDir()
+	d, err := OpenDirectory(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer d.Close()
+	f, child, err := d.Open("file", unix.O_CREAT|unix.O_RDWR, 0600)
+	if err != nil || child != nil {
+		t.Fatal(child, err)
+	}
+	defer f.Close()
+	at, mt := Instant{-2, 7}, Instant{1<<32 + 5, 9}
+	if err := SetInstants(f, at, mt, 5); err != nil {
+		t.Fatal(err)
+	}
+	st, err := Fstat(f)
+	if err != nil || st.Instants[0] != at || st.Instants[1] != mt || !st.TimeOverflow {
+		t.Fatal("signed stat narrowed or legacy overflow changed", st, err)
+	}
+	if err := d.Symlink("file", "link"); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.SetInstants("link", false, at, mt, 5); err != nil {
+		t.Fatal(err)
+	}
+	st, err = d.Stat("link", false)
+	if err != nil || st.Instants[0] != at || st.Instants[1] != mt {
+		t.Fatal("symlink timestamps", st, err)
+	}
+	mt = Instant{3, 11}
+	if err := d.SetInstants("link", true, at, mt, 4); err != nil {
+		t.Fatal(err)
+	}
+	st, err = Fstat(f)
+	if err != nil || st.Instants[1] != mt {
+		t.Fatal("follow timestamps", st, err)
+	}
+	if err := SetInstants(f, Instant{}, Instant{}, 0); err != nil {
+		t.Fatal(err)
+	}
+	if err := SetInstants(f, Instant{}, Instant{}, 10); err != nil {
+		t.Fatal(err)
+	}
+	for _, call := range []func() error{
+		func() error { return SetInstants(f, Instant{Nanoseconds: 1e9}, Instant{}, 1) },
+		func() error { return SetInstants(f, Instant{}, Instant{}, 16) },
+		func() error { return d.SetInstants("file", false, Instant{}, Instant{}, 16) },
+		func() error { return d.SetInstants("missing/child", false, at, mt, 5) },
+		func() error { return d.SetInstants("missing", true, at, mt, 5) },
+		func() error { return d.SetInstants("\x00", true, at, mt, 5) },
+	} {
+		if err := call(); err == nil {
+			t.Fatal("invalid timestamp operation accepted")
+		}
+	}
+	for _, follow := range []bool{false, true} {
+		if err := d.SetInstants("../outside", follow, at, mt, 5); !errors.Is(err, ErrOutside) {
+			t.Fatal("timestamp capability escaped", err)
+		}
+	}
+	ts, err := instantSpecs(Instant{Seconds: -1 << 63}, Instant{Seconds: 1<<63 - 1, Nanoseconds: 999999999}, 5)
+	if err != nil || ts[0].Sec != -1<<63 || ts[1].Sec != 1<<63-1 || ts[1].Nsec != 999999999 {
+		t.Fatal("full signed range", ts, err)
+	}
+	f.Close()
+	if err := SetInstants(f, at, mt, 5); err == nil {
+		t.Fatal("closed descriptor accepted")
+	}
+}

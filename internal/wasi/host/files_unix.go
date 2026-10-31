@@ -341,10 +341,67 @@ func timestamps(at, mt uint64, flags uint32) []unix.Timespec {
 	return ts
 }
 
+// Instant preserves signed POSIX seconds without nanosecond-duration overflow.
+type Instant struct {
+	Seconds     int64
+	Nanoseconds uint32
+}
+
+func FromTimestamp(nanos uint64) Instant {
+	return Instant{Seconds: int64(nanos / 1_000_000_000), Nanoseconds: uint32(nanos % 1_000_000_000)}
+}
+func signedTimes(at, mt, ct unix.Timespec) [3]Instant {
+	return [3]Instant{{int64(at.Sec), uint32(at.Nsec)}, {int64(mt.Sec), uint32(mt.Nsec)}, {int64(ct.Sec), uint32(ct.Nsec)}}
+}
+func instantSpecs(at, mt Instant, flags uint32) ([]unix.Timespec, error) {
+	if flags&^15 != 0 {
+		return nil, unix.EINVAL
+	}
+	ts := []unix.Timespec{{Nsec: utimeOmit}, {Nsec: utimeOmit}}
+	for i, v := range []Instant{at, mt} {
+		if flags&(1<<uint(i*2)) != 0 {
+			if v.Nanoseconds >= 1_000_000_000 {
+				return nil, unix.EINVAL
+			}
+			ts[i] = unix.Timespec{Sec: v.Seconds, Nsec: int64(v.Nanoseconds)}
+		}
+		if flags&(2<<uint(i*2)) != 0 {
+			ts[i] = unix.Timespec{Nsec: utimeNow}
+		}
+	}
+	return ts, nil
+}
+
+// SetInstants applies full-width timestamps relative to this directory capability.
+func (d *Directory) SetInstants(name string, follow bool, at, mt Instant, flags uint32) error {
+	ts, err := instantSpecs(at, mt, flags)
+	if err != nil {
+		return err
+	}
+	if follow || strings.HasSuffix(name, "/") {
+		if err := checkPath(name); err != nil {
+			return err
+		}
+		f, err := d.pathHandle(name)
+		if err != nil {
+			return pathError(err)
+		}
+		defer f.Close()
+		return SetInstants(f, at, mt, flags)
+	}
+	p, leaf, _, err := d.parent(name)
+	if err != nil {
+		return err
+	}
+	defer p.Close()
+	return unix.UtimesNanoAt(Descriptor(p.File), leaf, ts, unix.AT_SYMLINK_NOFOLLOW)
+}
+
 type Stat struct {
 	Dev, Inode, Nlink, Size, Atime, Mtime, Ctime uint64
 	Mode                                         uint32
 	TimeOverflow                                 bool
+	Instants                                     [3]Instant
 }
 
 func Fstat(f *os.File) (Stat, error) {

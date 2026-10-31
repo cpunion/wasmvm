@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/cpunion/wasmvm/internal/component/canonical"
 	"github.com/cpunion/wasmvm/pkg/vm"
+	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
 // Both immediate and delayed host functions share argument/result ownership.
@@ -102,14 +103,21 @@ func (h *hostCall) finish(core *vm.Caller, complete bool, err error) error {
 	if h.cancel != nil {
 		h.cancel()
 	}
-	if h.completion != nil {
-		h.completion.close()
-	}
 
 	created := h.created
 	h.created = nil
 	h.args = nil
 	guard := cleanupGuard{}
+	if h.completion != nil {
+		guard.run(h.completion.close)
+	}
+	if guard.panicked != nil {
+		complete = false
+		if err == nil {
+			err = wasm.ErrTrap
+		}
+	}
+
 	if !complete {
 		for _, ref := range created {
 			guard.run(func() { h.function.instance.cleanupResource(core, ref) })

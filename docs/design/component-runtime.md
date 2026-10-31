@@ -606,3 +606,16 @@ Its adapter generator unconditionally rejects same/ancestor/descendant adapters;
 these are retained reference failures, not independent semantic passes. The
 pinned ABI's Task.enter_implicit_thread and destructor rules remain the owned
 implementation contract; complete cross-runtime acceptance stays open.
+
+## External completion result cleanup
+
+NewHostCompletionWithCleanup installs one nonblocking, VM-independent cleanup
+callback. After the starter returns an accepted completion, the runtime invokes
+cleanup exactly once on success, error, cancellation or abandonment. The creator
+retains responsibility if startup fails before acceptance. The callback runs
+outside the completion mutex and may release an unconsumed external file/socket
+result. External producers must synchronize result publication with this cleanup;
+results produced after abandonment must be released immediately. Host argument,
+result and quota cleanup continues even if this callback panics, preserving any
+original execution panic. This closes the lifetime gap between external resource
+creation and fresh-Caller publication.

@@ -263,3 +263,12 @@ Close/wait for bound Instances, then Close and WaitClosed the IO/monotonic owner
 Use preview3.RunCommand for the checked async command export. Complete P3
 filesystem/socket/HTTP worlds remain in development; see [provider scope and
 lifecycle](design/wasi-preview3.md).
+
+
+Use component.NewHostCompletionWithCleanup when external work may create an
+owned result before a resolver can publish it. Cleanup runs once after acceptance,
+including abandonment before resolution. It must be nonblocking, must not enter
+the VM, and must synchronize with the external producer. Keep an independent
+result lease until fresh-Caller publication succeeds; release late results when
+the invocation has already closed. Startup failure before acceptance remains the
+creator's responsibility.

@@ -50,7 +50,7 @@ func (d *Directory) pathHandle(name string) (*os.File, error) {
 }
 func convertStat(s unix.Stat_t) Stat {
 	at, mt, ct, bad := statTimes(s.Atim, s.Mtim, s.Ctim)
-	return Stat{Dev: uint64(s.Dev), Inode: uint64(s.Ino), Nlink: uint64(s.Nlink), Size: uint64(s.Size), Atime: at, Mtime: mt, Ctime: ct, Mode: uint32(s.Mode), TimeOverflow: bad}
+	return Stat{Dev: uint64(s.Dev), Inode: uint64(s.Ino), Nlink: uint64(s.Nlink), Size: uint64(s.Size), Atime: at, Mtime: mt, Ctime: ct, Mode: uint32(s.Mode), TimeOverflow: bad, Instants: signedTimes(s.Atim, s.Mtim, s.Ctim)}
 }
 func SetTimes(f *os.File, at, mt uint64, flags uint32) error {
 	return unix.UtimesNanoAt(Descriptor(f), "", timestamps(at, mt, flags), unix.AT_EMPTY_PATH)
@@ -63,3 +63,11 @@ func pendingBytes(fd int) (int, error) { return unix.IoctlGetInt(fd, unix.TIOCIN
 
 const utimeOmit = unix.UTIME_OMIT
 const utimeNow = unix.UTIME_NOW
+
+func SetInstants(f *os.File, at, mt Instant, flags uint32) error {
+	ts, err := instantSpecs(at, mt, flags)
+	if err != nil {
+		return err
+	}
+	return unix.UtimesNanoAt(Descriptor(f), "", ts, unix.AT_EMPTY_PATH)
+}

@@ -4636,3 +4636,20 @@ with cannot-enter-component traps and process exit 134; raw commands, fixture
 hashes and diagnostics are retained in sync-reentry-reference-check.json. These
 reference failures are recorded separately from own execution and do not close
 full conformance or performance acceptance.
+
+
+## External result cleanup and signed filesystem time — 2026-11-01
+
+Host completion cleanup executes once through success, resolver error/panic,
+cleanup panic and abandoned waits, outside its mutex. Both owned backends test
+publication closure, original panic propagation and restoration of held task,
+value and byte budgets under Go race and pinned LLGo.
+
+The shared host filesystem layer now retains signed seconds/nanoseconds alongside
+the existing unsigned P1/P2 timestamp representation. New SetInstants operations
+preserve negative times, full signed seconds and capability-relative symlink
+follow/no-follow behavior. Actual filesystem tests cover negative and post-2106
+values, normalization, current/no-change requests, invalid fields/flags, missing
+paths, directory escape and closed descriptors. Existing P1/P2 behavior continues
+to report unsigned overflow instead of wrapping. These primitives prepare P3
+filesystem bindings; they do not implement the P3 filesystem interface themselves.
