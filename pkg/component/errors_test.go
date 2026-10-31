@@ -154,7 +154,7 @@ func TestInstanceExpansionAndHostReentryAreBounded(t *testing.T) {
 	}
 	defer in.Close()
 	run, _ = in.Function("run")
-	if _, err := run.Call(nil, nil, vm.CallOptions{}); !errors.Is(err, wasm.ErrTrap) {
+	if _, err := run.Call(nil, nil, vm.CallOptions{}); !errors.Is(err, wasm.ErrLimit) {
 		t.Fatal(err)
 	}
 }

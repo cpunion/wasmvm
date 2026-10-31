@@ -19,9 +19,18 @@ type HostCompletion struct {
 	bound   bool
 	resolve func(*Caller) (*Value, error)
 	wake    chan<- struct{}
+	cleanup func()
 }
 
 func NewHostCompletion() *HostCompletion { return &HostCompletion{} }
+
+// NewHostCompletionWithCleanup releases external, unpublished results after the
+// invocation finishes or is abandoned. Cleanup runs once after an accepted
+// completion, outside its mutex, and must be nonblocking and must not enter the
+// VM. The starter retains cleanup responsibility if it fails before acceptance.
+func NewHostCompletionWithCleanup(cleanup func()) *HostCompletion {
+	return &HostCompletion{cleanup: cleanup}
+}
 func (p *HostCompletion) Resolve(fn func(*Caller) (*Value, error)) error {
 	if p == nil || fn == nil {
 		return vm.ErrType
@@ -88,6 +97,11 @@ func (p *HostCompletion) take() (func(*Caller) (*Value, error), bool, error) {
 }
 func (p *HostCompletion) close() {
 	p.mu.Lock()
-	defer p.mu.Unlock()
+	cleanup := p.cleanup
+	p.cleanup = nil
 	p.resolve, p.state, p.wake = nil, 3, nil
+	p.mu.Unlock()
+	if cleanup != nil {
+		cleanup()
+	}
 }

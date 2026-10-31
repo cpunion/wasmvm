@@ -265,7 +265,7 @@ func (in *Instance) dropResource(c *vm.Caller, ref *Resource) error {
 	}
 	return table.DropWith(c.Context(), identity, id, func(_ context.Context, rep uint64) error {
 		canonical.InvalidateReference(ref)
-		return rt.destroy(c, rep, nil)
+		return rt.destroy(c, rep)
 	})
 }
 
@@ -341,8 +341,8 @@ func (in *Instance) cleanupRepresentation(core *vm.Caller, rt *resourceType, rep
 	if rt.host != nil {
 		return rt.destroyHost(core, rep)
 	}
-	if core.Context().Err() == nil && !rt.owner.failed && !rt.owner.blocked && !rt.owner.entered {
-		return rt.destroy(core, rep, nil)
+	if core.Context().Err() == nil && !rt.owner.failed && !rt.owner.blocked {
+		return rt.destroy(core, rep)
 	}
 	return nil
 }

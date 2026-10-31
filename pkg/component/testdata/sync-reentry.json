@@ -1,0 +1,19 @@
+{
+  "componentModelCommit": "d095e2f60ddae1f9a1e9b1e2fb547ec1114da677",
+  "producer": "wasm-tools 1.258.0",
+  "generatorSHA256": "cbb8276fa05d7ff6173f89f201b3fa1c90a3a3e20a720c4e48f85b83bbdff1fc",
+  "sha256": {
+    "sync-reentry": {
+      "wat": "b6f19a151117f18df68c2c5d89fd283d37adbd49238a2573f876477d66f6c26f",
+      "wasm": "81669c1d3df01e642bf7fdd432c2a21a93ffbd527973c504af12ef439234a7a1"
+    },
+    "sync-reentry-composed": {
+      "wat": "f7a67d6ad119ec5694acb5611b935addcf98b915125945815a6d8a5575b0d7c0",
+      "wasm": "effefdd740916d3b1d68705d98e4c2516883908d77c483f927768f7b5f75001f"
+    },
+    "sync-reentry-destructor": {
+      "wat": "03f2c8ea420e6c24ff519e52614086c25280a50e3e649364a0c4cb18c2ac60c1",
+      "wasm": "aa3bcc9c7042ebd3b147ee3598ca698a57490b8ff867fa57ef5a3809eeafe7ef"
+    }
+  }
+}

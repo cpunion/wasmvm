@@ -582,6 +582,14 @@ Filesystem, sockets and HTTP P3 bindings, complete CLI/HTTP worlds, full guest
 producer/conformance evidence and remaining reentry/cm64 contracts remain open.
 See [the P3 provider design](design/wasi-preview3.md).
 
+Synchronous LIFO reentry and fresh destructor tasks now follow the pinned ABI:
+non-async calls bypass async backpressure without inheriting permission to block,
+and nested success/failure restores the outer task. Three validated fixtures and
+Go/LLGo backend tests cover task storage, ownership, quota/cancellation and
+composed guest calls. Recorded Wasmtime adapter rejection remains a reference
+discrepancy. Local cm64 borrows, P3 filesystem/sockets/HTTP/worlds and full
+conformance/performance acceptance remain required.
+
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 
 ## M7 — Further optimization and experimental features

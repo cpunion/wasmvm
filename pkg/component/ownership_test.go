@@ -317,7 +317,7 @@ func TestOwnedCM64Representation(t *testing.T) {
 	}
 }
 
-func TestResourceCallerSerializesAndRejectsComponentReentry(t *testing.T) {
+func TestResourceCallerSerializesAndAllowsLIFOReentry(t *testing.T) {
 	var zero Caller
 	if _, err := zero.NewResource(nil, 0); !errors.Is(err, wasm.ErrClosed) {
 		t.Fatal(err)
@@ -344,12 +344,21 @@ func TestResourceCallerSerializesAndRejectsComponentReentry(t *testing.T) {
 	var blocked Value
 	var get *Function
 	var escaped *Caller
+	reentered := false
 	in, err := m.Instantiate(nil, Imports{Resources: map[string]*HostResourceType{"r": typ}, Functions: map[string]HostFunction{
 		"get": func(c *Caller, args []Value) (*Value, error) {
-			escaped = c
-			if _, err := c.Call(get, args); !errors.Is(err, wasm.ErrTrap) {
-				t.Fatal("entered a suspended component", err)
+			if reentered {
+				rep, err := c.ResourceRep(typ, args[0].Resource)
+				return &Value{Bits: uint64(rep)}, err
 			}
+			escaped = c
+			reentered = true
+			value, err := c.Call(get, args)
+			reentered = false
+			if err != nil || value.Bits != 42 {
+				t.Fatal("synchronous LIFO reentry", value, err)
+			}
+
 			done := make(chan error, 1)
 			go func() { done <- c.DropResource(blocked.Resource) }()
 			<-started
