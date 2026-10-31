@@ -363,6 +363,9 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 				result = &value
 			}
 			if plan.PostReturn != nil {
+				if err := returnBorrows(codec); err != nil {
+					return nil, err
+				}
 				n.blocked = true
 				_, err = caller.Call(n.items[model.CoreFunctionSort][*plan.PostReturn].core, called.Values)
 				n.blocked = false

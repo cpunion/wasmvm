@@ -13,8 +13,8 @@
       "wasm": "a11b447692c885ac4c1c895065465e5f68fcde305135c673657b4093994acc99"
     },
     "async-host": {
-      "wat": "067d18b8ada3275d1ecebf058105cd644e5ff02af065f8a51236d18a2bdf0e63",
-      "wasm": "dd984cb168112f1f0612029dce5f7ebab6e49bcfa81aa1be14a16696e1a5f8cf"
+      "wat": "2e5cbb6365180d156c71613e933831bbce8c8a87e170ce82cce6e738b311c57e",
+      "wasm": "5839141e490bcaf6fa7a9cab4fd0dde08f8797c7845340882d8869bf5a20e47b"
     },
     "async-reentry": {
       "wat": "ae8e48eb565e781e16f5a1431abcccee660e41d844632c4a7627d9b5e8db8a0b",

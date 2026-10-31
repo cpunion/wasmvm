@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/cpunion/wasmvm/internal/component/canonical"
+	"github.com/cpunion/wasmvm/internal/component/model"
 	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -95,6 +96,31 @@ func TestAsyncHostContractsAndBorrowReturn(t *testing.T) {
 			}
 			if _, err := fresh.DropResource(nil, owned.Resource, CallOptions{}); err != nil || drops != 2 {
 				t.Fatal("lender not released", drops, err)
+			}
+			direct := asyncInstance(t, backend, "async-host", imports)
+			directValue, err := direct.NewResource(nil, typ, 10)
+			if err != nil {
+				t.Fatal(err)
+			}
+			f, _ = direct.Function("escaped-direct")
+			if _, err := f.Call(nil, []Value{directValue}, CallOptions{}); !errors.Is(err, wasm.ErrTrap) {
+				t.Fatal(err)
+			}
+			cores := f.scope.items[model.CoreInstanceSort]
+			counter := cores[len(cores)-1].instance["counter"].core
+			_, err = direct.store.WithCaller(nil, CallOptions{}, func(c *vm.Caller) error {
+				v, err := c.Call(counter, nil)
+				if err != nil {
+					return err
+				}
+				bits, _, _ := v.Values[0].Bits()
+				if bits != 0 {
+					t.Fatal("post-return ran before rejecting borrowed handles", bits)
+				}
+				return nil
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 			afterImports := imports
 			var original Value

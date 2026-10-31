@@ -91,13 +91,8 @@ func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.
 			}
 			task.result = &value
 		}
-		if r, ok := task.parameters.Resources.(*resourceCodec); ok && r.scope != nil {
-			if err := r.scope.CheckReturned(); err != nil {
-				return nil, err
-			}
-			if err := r.scope.End(); err != nil {
-				return nil, err
-			}
+		if err := returnBorrows(task.parameters); err != nil {
+			return nil, err
 		}
 		task.resolved = true
 		return nil, nil
