@@ -11,6 +11,8 @@ import (
 // type order; variants use Case and zero or one payload in Elements. Bits uses
 // Scalar's representation, or the declared flags bitmap/enum discriminant.
 // Lists/fixed-lists of u8 may use immutable raw bytes in Text with nil Elements.
+// Resource holds opaque resource or error-context references; their validated
+// type determines affine ownership versus immutable diagnostic sharing.
 type Value struct {
 	Bits     uint64
 	Text     string
@@ -43,9 +45,17 @@ func (c *Codec) Clone(t *model.Type, v Value) (Value, error) {
 }
 
 func (c *Codec) clone(t *model.Type, v Value) (Value, error) {
-	if t.Kind == model.Own || t.Kind == model.Borrow {
-		if err := c.Transfer.charge(128); err != nil {
+	if t.Kind == model.Own || t.Kind == model.Borrow || t.Kind == model.ErrorContext {
+		amount := uint64(128)
+		if t.Kind == model.ErrorContext {
+			message, _ := ErrorContextMessage(v)
+			amount += uint64(len(message))
+		}
+		if err := c.Transfer.charge(amount); err != nil {
 			return Value{}, err
+		}
+		if t.Kind == model.ErrorContext {
+			return snapshotErrorContext(v), nil
 		}
 		return Value{Resource: v.Resource}, nil
 	}
@@ -152,7 +162,7 @@ func (c *Codec) load(t *model.Type, at uint64, depth uint32) (Value, error) {
 		return Value{Bits: s.Bits}, err
 	}
 	switch t.Kind {
-	case model.Own, model.Borrow:
+	case model.Own, model.Borrow, model.ErrorContext:
 		r, err := c.resource()
 		if err != nil {
 			return Value{}, err
@@ -317,6 +327,9 @@ func (c *Codec) validate(t *model.Type, v Value, depth uint32) error {
 		return err
 	}
 	switch t.Kind {
+	case model.ErrorContext:
+		_, err := ErrorContextMessage(v)
+		return err
 	case model.Own, model.Borrow:
 		r, err := c.resource()
 		if err != nil {
@@ -419,7 +432,7 @@ func (c *Codec) store(t *model.Type, at uint64, v Value, depth uint32) error {
 		return StoreScalar(c.Transfer.Memory, at, Scalar{t.Kind, v.Bits})
 	}
 	switch t.Kind {
-	case model.Own, model.Borrow:
+	case model.Own, model.Borrow, model.ErrorContext:
 		r, err := c.resource()
 		if err != nil {
 			return err

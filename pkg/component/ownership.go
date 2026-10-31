@@ -77,6 +77,9 @@ func (r *resourceCodec) Validate(t *model.Type, v Value) error {
 }
 
 func (r *resourceCodec) Lift(t *model.Type, id uint32) (Value, error) {
+	if t.Kind == model.ErrorContext {
+		return r.n.handles.ErrorContext(id)
+	}
 	rt, err := r.declaration(t)
 	if err != nil {
 		return Value{}, err
@@ -102,6 +105,13 @@ func (r *resourceCodec) Lift(t *model.Type, id uint32) (Value, error) {
 }
 
 func (r *resourceCodec) Lower(t *model.Type, v Value) (uint32, error) {
+	if t.Kind == model.ErrorContext {
+		id, err := r.n.handles.AddErrorContext(v)
+		if err == nil {
+			r.lowered = append(r.lowered, ownedHandle{table: r.n.handles, id: id})
+		}
+		return id, err
+	}
 	rt, table, id, err := r.inspect(t, v)
 	if err != nil {
 		return 0, err
@@ -184,6 +194,10 @@ func (r *resourceCodec) Finish(err error) error {
 			r.in.cleanupResource(r.core, ref)
 		}
 		for _, h := range r.lowered {
+			if h.rt == nil {
+				h.table.DropErrorContext(h.id)
+				continue
+			}
 			if rep, failed := h.table.Take(h.rt.identity, h.id); failed == nil {
 				r.in.cleanupRepresentation(r.core, h.rt, rep)
 			}

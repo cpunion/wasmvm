@@ -215,7 +215,7 @@ func (in *Instance) codec(caller *vm.Caller, n *namespace, plan *validate.Canoni
 		index = 1
 	}
 	codec := &canonical.Codec{Transfer: transfer, Layouts: in.layouts[index], MaxValues: in.config.MaxValues}
-	if n != nil && len(n.resources) != 0 {
+	if n != nil && (len(n.resources) != 0 || n.handles != nil) {
 		codec.Resources = &resourceCodec{in: in, n: n, core: caller}
 	}
 	return codec
@@ -251,8 +251,11 @@ func flatValues(values []vm.Value) ([]canonical.Slot, error) {
 }
 
 func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
-	if len(n.resources) != 0 {
+	if len(n.resources) != 0 || plan.Type != nil && plan.Type.ContainsErrorContext() || plan.Definition.Op >= 0x1c && plan.Definition.Op <= 0x1e {
 		in.resourceTable(n)
+	}
+	if plan.Definition.Op >= 0x1c && plan.Definition.Op <= 0x1e {
+		return in.errorContextBuiltin(caller, n, plan)
 	}
 	if plan.Definition.Op >= 2 && plan.Definition.Op <= 4 {
 		return in.resourceBuiltin(caller, n, plan)

@@ -496,6 +496,15 @@ additional M5 coverage, not completion of M5/M6 or native async/WASI 0.3.
 
 Pin WASI **0.3.2** and its cumulative Component Model requirements. Implement canonical async lift/lower, task transitions, suspension/resumption, futures/streams, cancellation, backpressure, reentrancy and completion/error behavior. Deliver the declared CLI and HTTP service/middleware scope with explicit versioned bindings; P2 pollables and P3 async remain separate adapters.
 
+The first M6 increment executes error-context creation/debug/drop and copyable
+host/guest values through the existing synchronous ABI. Tagged shared handles,
+unique-message/live-handle quotas, carrier snapshots, cross-component transfers
+and failure cleanup execute on both backends and Go/LLGo. Actual Wasmtime 48.0.1
+executes the common lifecycle; producer/reference cm64, cross-component and
+value-extension limitations remain explicit. Native tasks, futures/streams,
+cancellation/backpressure scheduling and WASI 0.3.2 worlds are still required;
+this does not complete M6 or its performance gate.
+
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 
 ## M7 — Further optimization and experimental features

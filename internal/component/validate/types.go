@@ -36,6 +36,7 @@ type Type struct {
 	owner            *TypePool
 	borrow           bool
 	resource         bool
+	errorContext     bool
 	depth            uint32
 	minimumResource  uint64
 	definingScope    *TypeScope
@@ -43,10 +44,10 @@ type Type struct {
 }
 
 type traits struct {
-	borrow, resource bool
-	depth            uint32
-	minimumResource  uint64
-	resourceName     *Type
+	borrow, resource, errorContext bool
+	depth                          uint32
+	minimumResource                uint64
+	resourceName                   *Type
 }
 
 // TypePool bounds total metadata across lexical scopes. It caches primitive
@@ -264,7 +265,7 @@ func (s *TypeScope) resolve(def *model.TypeDef) (*Type, error) {
 	if err := s.pool.charge(1); err != nil {
 		return nil, err
 	}
-	t := &Type{Kind: def.Kind, owner: s.pool, depth: 1}
+	t := &Type{Kind: def.Kind, owner: s.pool, depth: 1, errorContext: def.Kind == model.ErrorContext}
 	v := &model.Type{Kind: def.Kind}
 	var err error
 	var resourceName *Type
@@ -272,6 +273,7 @@ func (s *TypeScope) resolve(def *model.TypeDef) (*Type, error) {
 		if child != nil {
 			info := s.pool.values[child]
 			t.borrow, t.resource = t.borrow || info.borrow, t.resource || info.resource
+			t.errorContext = t.errorContext || info.errorContext
 			t.depth = max(t.depth, info.depth+1)
 			t.minimumResource = minimum(t.minimumResource, info.minimumResource)
 		}
@@ -407,7 +409,7 @@ func (s *TypeScope) resolve(def *model.TypeDef) (*Type, error) {
 			return nil, invalid("value type is at least 2^28 bytes in the memory64 ABI")
 		}
 		t.Value = v
-		s.pool.values[v] = traits{borrow: t.borrow, resource: t.resource, depth: t.depth, minimumResource: t.minimumResource, resourceName: resourceName}
+		s.pool.values[v] = traits{borrow: t.borrow, resource: t.resource, errorContext: t.errorContext, depth: t.depth, minimumResource: t.minimumResource, resourceName: resourceName}
 	}
 	return t, nil
 }
@@ -470,3 +472,6 @@ func (t *Type) ContainsResource() bool { return t.resource }
 func (t *Type) ResultContainsResource() bool {
 	return t.Result != nil && t.owner.values[t.Result].resource
 }
+
+// ContainsErrorContext reports cached diagnostic handle occurrences.
+func (t *Type) ContainsErrorContext() bool { return t.errorContext }

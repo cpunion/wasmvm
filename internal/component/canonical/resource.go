@@ -16,22 +16,34 @@ type ResourceType struct {
 }
 
 type resourceEntry struct {
-	id     uint32
-	typeID *ResourceType
-	rep    uint64
-	owned  bool
-	scope  *BorrowScope
-	lends  uint32
+	id           uint32
+	typeID       *ResourceType
+	rep          uint64
+	owned        bool
+	scope        *BorrowScope
+	lends        uint32
+	errorContext *errorContext
 }
 
 // ResourceBudget bounds live handles across all domains of a Store. Table IDs
 // remain local, while allocation in one component consumes the shared quota.
 type ResourceBudget struct {
-	live    atomic.Uint32
-	maximum uint32
+	live                   atomic.Uint32
+	maximum                uint32
+	errorMu                sync.Mutex
+	errorLimit, errorBytes uint64
+	errors                 map[*errorContext]uint32
 }
 
-func NewResourceBudget(maximum uint32) *ResourceBudget { return &ResourceBudget{maximum: maximum} }
+func NewResourceBudget(maximum uint32) *ResourceBudget {
+	return NewResourceBudgetWithErrors(maximum, ^uint64(0))
+}
+
+// NewResourceBudgetWithErrors additionally bounds unique error-message bytes
+// retained by guest handles across all namespaces in a Store.
+func NewResourceBudgetWithErrors(maximum uint32, bytes uint64) *ResourceBudget {
+	return &ResourceBudget{maximum: maximum, errorLimit: bytes}
+}
 
 func (b *ResourceBudget) acquire() error {
 	for {
@@ -51,11 +63,12 @@ func (b *ResourceBudget) release(count uint32) { b.live.Add(0 - count) }
 // handles cannot gain authority over a later resource. It is bounded by both
 // live entries and the pinned ABI's 28-bit handle space.
 type Resources struct {
-	mu      sync.Mutex
-	entries map[uint32]*resourceEntry
-	next    uint32
-	budget  *ResourceBudget
-	closed  bool
+	mu         sync.Mutex
+	entries    map[uint32]*resourceEntry
+	next       uint32
+	budget     *ResourceBudget
+	closed     bool
+	errorCount uint32
 }
 
 func NewResources(maximum uint32) *Resources {
@@ -312,6 +325,14 @@ func (r *Resources) Close() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.closed = true
+	if r.errorCount != 0 {
+		for _, e := range r.entries {
+			if e.errorContext != nil {
+				r.budget.releaseError(e.errorContext)
+			}
+		}
+		r.errorCount = 0
+	}
 	r.budget.release(uint32(len(r.entries)))
 	r.entries = nil
 }
