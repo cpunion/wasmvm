@@ -1,0 +1,71 @@
+{
+  "componentModelCommit": "d095e2f60ddae1f9a1e9b1e2fb547ec1114da677",
+  "producer": "wasm-tools 1.258.0",
+  "generatorSHA256": "ce859f5a9cd7de48fa08e299e9a132e31acd8f9381323c8b2849bf43c8919323",
+  "memorySourceSHA256": "aa739ea832bb3e151392511e19b88aa36ab35d53636f878835d1533c53ddd544",
+  "sha256": {
+    "async-lower": {
+      "wat": "1f354b295a6723ad43bd50c9f0d03c9f73ecc7b7abc0783929158390df298e32",
+      "wasm": "4b9fb6c35322a401c3e4e2e2e4afd78235c298f1e74c0df3c2edde955319074c",
+      "producerValidated": true
+    },
+    "async-lower64": {
+      "wat": "47401ccab465b72684d893a1eab3c49083c57b0a28956a59a157a33eac2a09a5",
+      "wasm": "c7a07777343478d5a73d77ac8fa759820c2d9a5300bc7f127f23af7d34ee5719",
+      "producerValidated": false,
+      "producerRejection": "error: type mismatch for export `add` of module instantiation argument `env`\nexpected: (func (param i32 i64) (result i32))\nfound:    (func (param i32 i32) (result i32)) (at offset 0x23a)"
+    },
+    "async-lower-sync-callee": {
+      "wat": "885bf91eedc0ae447c45c9a7ac7b94e949358221606c91723be931cc588de1ba",
+      "wasm": "77f68eef0cb841ca4073c5027dde70d51d33bfb2521bc75990ca670e5bfd0afb",
+      "producerValidated": true
+    },
+    "async-lower-arity": {
+      "wat": "8ad43ea6e90509d759efa32194dae15412b36c9b2f3e9d38b4c780debd525151",
+      "wasm": "c7ac71694c88537c5292c0bfdb2752bf6ad8406958bc37704c8f18230c63bebd",
+      "producerValidated": true
+    },
+    "async-lower-strings": {
+      "wat": "3c5026f91d39347585d9643ab16b0411a2454f10be1fd9b21c029b3c3b8952d7",
+      "wasm": "0bc7ceb1c063190edac4a02a3e3af1eb03c0652e295a2a5aee33a99921a5daf5",
+      "producerValidated": true
+    },
+    "async-lower-strings-utf16": {
+      "wat": "14b8011ae65fce565efc95e26f9b681dcbaae40547bbe5d9fdba7eb30d6580a8",
+      "wasm": "91fb7727a448fc7e8495295298cbbc33e96716f3010c27e7f6ddaf81c3daa626",
+      "producerValidated": true
+    },
+    "async-lower-strings-compact": {
+      "wat": "ec2960d1cf5a174cae2062fdebc3474f6856485ca4e5e36dd8297ca8e754bb61",
+      "wasm": "38d93210ea053a2167116ffc711013b28a2e4851227739ab5e098f9d01863492",
+      "producerValidated": true
+    },
+    "async-lower-resources": {
+      "wat": "138e6d7c61a4def782d3cf27f495c456eb7b6ff0d2d943b2d6f0d45dddad80e2",
+      "wasm": "6f535ffb10f4fb6f7bc457d4847a8c9335e9496f632bd0727436cab156a5a3a4",
+      "producerValidated": true
+    },
+    "async-lower-resource-sync": {
+      "wat": "09d0d884ec3af42b54f07c4e1f68f1b8cc3fd6f3a21de83058a08c4ff5212ec6",
+      "wasm": "f99a59e665b29359ff21392b4d9912ea6b0ea11496284ee3a4fd9495d2f00ac1",
+      "producerValidated": true
+    },
+    "async-lower-strings64": {
+      "wat": "0f3a6dcde2b2ba300ddf99692dd7fc8e49c7c9cb1e4089f2f0314d5f854f2a20",
+      "wasm": "8dcbd6c10f76d8d89a63ff40f1900c3f963cb8e2bfe7fe74f8daee62e88582ff",
+      "producerValidated": false,
+      "producerRejection": "error: type mismatch for export `echo` of module instantiation argument `env`\nexpected: (func (param i64 i64 i64) (result i32))\nfound:    (func (param i64 i64 i32) (result i32)) (at offset 0x3d3)"
+    },
+    "async-lower-resources64": {
+      "wat": "6eed31fac55b82bd9a06edb30274f1cc6f8b2b3f65c0c8ec6ae29a8900f3fd33",
+      "wasm": "c6834ed23981f3408da17d6fa8b16512036dcdf6c2462285ad74acbeb3e79241",
+      "producerValidated": false,
+      "producerRejection": "error: type mismatch for export `make` of module instantiation argument `env`\nexpected: (func (param i32 i64) (result i32))\nfound:    (func (param i32 i32) (result i32)) (at offset 0x1da)"
+    },
+    "async-lower-resource-sync64": {
+      "wat": "b95461d194af5547d2b8266cd40db74b262d84605c8ff38cc3aa3b9e9eb80bab",
+      "wasm": "293ff064720b1128ccae6750129bc239d9eb3141d4567c544d69eb6daf9e41c1",
+      "producerValidated": true
+    }
+  }
+}

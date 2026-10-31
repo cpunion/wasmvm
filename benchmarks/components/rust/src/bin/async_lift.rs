@@ -7,7 +7,7 @@ use wasmtime::{
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = env::args().collect();
     if args.len() != 5 {
-        return Err("usage: async_lift COMPONENT CALLS YIELDS ENTRY".into());
+        return Err("usage: async_lift COMPONENT CALLS BATCH ENTRY".into());
     }
     let count: u32 = args[2].parse()?;
     let batch: u32 = args[3].parse()?;
@@ -18,6 +18,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "run" => (42, batch + 1),
         "stackful" => (batch + 42, 1),
         "direct" => (batch + 42, 0),
+        "churn" => (batch, 0),
         _ => return Err("unknown entry".into()),
     };
     let start = Instant::now();

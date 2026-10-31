@@ -249,15 +249,29 @@ func (c *Codec) lowerFlat(t *model.Type, v Value, out []Slot, depth uint32) ([]S
 	return nil, wasm.ErrUnsupported
 }
 
-// FunctionLayout implements the synchronous ABI's asymmetric spill convention:
-// lifted functions return an indirect result pointer; lowered host functions
-// receive that pointer as the last parameter and return no Core results.
+// FunctionLayout describes argument/result flattening and memory spills. Sync
+// lifts return an indirect result pointer; lowers receive it as a parameter.
+// Async lowers receive every result indirectly and return a subtask state.
 type FunctionLayout struct {
 	Params, Results               []wasm.ValueType
 	ParameterMemory, ResultMemory *model.Type
 }
 
 func (b *Builder) Function(params []*model.Type, result *model.Type, lifting bool) (FunctionLayout, error) {
+	return b.function(params, result, lifting, MaxFlatParams, MaxFlatResults)
+}
+
+// AsyncLower keeps at most four argument slots and always receives a result
+// pointer when a result is present. Its Core result is the subtask state.
+func (b *Builder) AsyncLower(params []*model.Type, result *model.Type) (FunctionLayout, error) {
+	out, err := b.function(params, result, false, MaxFlatAsyncParams, 0)
+	if err == nil {
+		out.Results = []wasm.ValueType{wasm.I32}
+	}
+	return out, err
+}
+
+func (b *Builder) function(params []*model.Type, result *model.Type, lifting bool, maxParams, maxResults uint64) (FunctionLayout, error) {
 	var out FunctionLayout
 	if uint64(len(params)) > uint64(b.limits.MaxNodes-b.nodes) {
 		return out, exhausted()
@@ -273,12 +287,12 @@ func (b *Builder) Function(params []*model.Type, result *model.Type, lifting boo
 			return out, exhausted()
 		}
 		count += l.FlatCount
-		if count <= MaxFlatParams {
+		if count <= maxParams {
 			out.Params = append(out.Params, l.Flat...)
 		}
 		fields = append(fields, model.Field{Type: t})
 	}
-	if count > MaxFlatParams {
+	if count > maxParams {
 		out.Params = []wasm.ValueType{b.address}
 		out.ParameterMemory = &model.Type{Kind: model.Tuple, Fields: fields}
 		if _, err := b.Build(out.ParameterMemory); err != nil {
@@ -290,7 +304,7 @@ func (b *Builder) Function(params []*model.Type, result *model.Type, lifting boo
 		if err != nil {
 			return out, err
 		}
-		if l.FlatCount <= MaxFlatResults {
+		if l.FlatCount <= maxResults {
 			out.Results = append(out.Results, l.Flat...)
 		} else {
 			out.ResultMemory = result

@@ -1,5 +1,5 @@
 // Package component executes component composition and run-to-completion async
-// canonical lifts through the owned Core interpreter or native compiler. Capabilities
+// canonical calls through the owned Core interpreter or native compiler. Capabilities
 // without complete execution contracts are rejected before guest code runs.
 package component
 
@@ -201,7 +201,7 @@ func preflight(p *validate.Component) error {
 	}
 	for _, f := range p.Canonical {
 		op := f.Definition.Op
-		if op > 4 && (op < 9 || op > 0x0c) && (op < 0x1c || op > 0x1e) || f.Async && op != 0 {
+		if op > 4 && (op < 9 || op > 0x0c) && (op < 0x1c || op > 0x1e) || f.Async && op > 1 {
 			return unsupported("resource or async canonical operation")
 		}
 		if f.Type == nil {

@@ -516,6 +516,15 @@ sets, suspended producers, async lower/subtasks, cooperative cancellation,
 futures/streams and WASI 0.3.2 worlds remain required. This is a bounded execution
 profile, not full native async or M6 acceptance.
 
+Eager async lower now shares the synchronous bridge and codec transaction,
+using four flat argument slots and a caller-provided result buffer. Admitted
+run-to-completion callees return RETURNED directly without a pending subtask.
+Synchronous result-memory failure cleanup is fixed in the same ownership path.
+Memory64 async result-pointer producer rejections remain explicit. Pending
+subtasks, suspended producers, waitable sets, backpressure, cooperative
+cancellation, futures/streams and WASI 0.3.2 worlds remain required; this increment
+does not complete native async or M6.
+
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 
 ## M7 — Further optimization and experimental features

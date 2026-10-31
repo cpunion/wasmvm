@@ -411,3 +411,27 @@ callback lifetime. FunctionInfo.Async exposes the declared type independently
 of the Core ABI. Stable WASI 0.2 command and incoming-HTTP exports must remain
 synchronous; their provider imports cannot silently acquire async signatures.
 This profile does not provide suspended native async calls or WASI 0.3 worlds.
+
+## Eager async canonical lower
+
+Async lower now uses the same call bridge as synchronous lower, with the pinned
+four-flat-slot argument threshold and an indirect result pointer for every
+nonempty result. The common layout builder selects these bounds; compound
+arguments, strings, memory32/memory64 and nominal resources use the same codecs.
+Async function types may use either admitted lift ABI. Every admitted callee
+runs to completion; an async lower returns RETURNED (2) without allocating a
+subtask handle. The existing policy may immediately resume a ready yielding
+callee. This is the eager-resolution path, not pending-subtask scheduling.
+Waitable producers, async host suspension, subtask operations, backpressure,
+cooperative cancellation and future/stream values remain rejected explicitly.
+
+Lowered results enter the existing ownership transaction before result-memory
+checks. A bad result pointer therefore consumes and drops unpublished ownership
+once, including the synchronous ABI. Bad spilled arguments fail before host
+effects; result-memory failures happen after the callee's effects, as specified.
+Loans are returned before resuming guest code; panic, cancellation, invalid
+shapes and partial transfer use the shared cleanup queue and logical budgets.
+Independent fixtures retain three precise producer rejections: pinned wasm-tools
+still gives cm64 async lower an i32 result-pointer parameter instead of i64.
+Those fixtures follow the pinned optional memory64 rule and are not independent
+producer conformance evidence. Full native async and WASI 0.3 remain open.
