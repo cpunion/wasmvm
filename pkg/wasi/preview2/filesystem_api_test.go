@@ -82,6 +82,14 @@ func TestFileSystemAPIAndBoundaries(t *testing.T) {
 			a := fsAPI{t, fsInstance(t, p, backend, "filesystem-api")}
 			root := a.root()
 			file := a.open(root, "data", 1, fsRead|fsWrite)
+			// A mutation capability is not the open-flags directory constraint.
+			// Language adapters may request it before knowing the object kind.
+			writable := a.open(root, "data", 0, fsWrite|fsMutate)
+			if flags := a.ok("get-flags", writable); flags.Bits&fsMutate != 0 {
+				t.Fatal("regular file advertised directory mutation", flags)
+			}
+			a.fail("open-at", FSNotDirectory, root, component.Value{}, component.Value{Text: "data"}, component.Value{Bits: 2}, component.Value{Bits: fsRead})
+			a.drop(writable)
 			n := a.ok("write", file, component.ByteList([]byte("abcdef")), component.Value{})
 			if n.Bits != 3 {
 				t.Fatal(n)

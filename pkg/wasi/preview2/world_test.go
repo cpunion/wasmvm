@@ -30,7 +30,7 @@ func TestWorldIndependentLanguageCommands(t *testing.T) {
 				w, err := NewWorld(WorldConfig{
 					Environment: EnvironmentConfig{Args: []string{"wasmvm", "world"}},
 					IO:          IOConfig{Stdout: out},
-					FileSystem:  FileSystemConfig{Preopens: []FileSystemPreopen{{GuestPath: "/data", HostPath: t.TempDir()}}},
+					FileSystem:  FileSystemConfig{MaxDescriptors: 2, Preopens: []FileSystemPreopen{{GuestPath: "/data", HostPath: t.TempDir()}}},
 				})
 				if err != nil {
 					t.Fatal(err)
@@ -58,11 +58,13 @@ func TestWorldIndependentLanguageCommands(t *testing.T) {
 					t.Fatal(err)
 				}
 				defer in.Close()
-				if code, err := RunCommand(nil, in, component.CallOptions{Metered: true, Fuel: 10000000}); err != nil || code != 0 {
-					t.Fatal(code, err)
+				for range 3 {
+					if code, err := RunCommand(nil, in, component.CallOptions{Metered: true, Fuel: 10000000}); err != nil || code != 0 {
+						t.Fatal(code, err)
+					}
 				}
-				if got := string(out.Drain()); got != guest.output {
-					t.Fatalf("output %q; want %q", got, guest.output)
+				if got := out.Drain(); !bytes.Equal(got, bytes.Repeat([]byte(guest.output), 3)) {
+					t.Fatalf("output %q; want three complete commands", got)
 				}
 			})
 		}

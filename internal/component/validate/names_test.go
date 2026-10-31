@@ -179,3 +179,23 @@ func TestPropertySignatures(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCompatibleNameTracks(t *testing.T) {
+	for _, row := range []struct {
+		name, key string
+		version   [3]uint64
+	}{
+		{"wasi:cli/run@0.2.9", "wasi:cli/run@0.2", [3]uint64{0, 2, 9}},
+		{"test:pkg/api@12.34.56+build.7", "test:pkg/api@12", [3]uint64{12, 34, 56}},
+		{"test:pkg/api@0.0.1", "", [3]uint64{0, 0, 1}},
+		{"plain", "", [3]uint64{}}, {"@1.2.3", "", [3]uint64{}},
+		{"test:pkg/api@1.2", "", [3]uint64{}},
+		{"test:pkg/api@0.2.0-rc.1", "", [3]uint64{}},
+		{"test:pkg/api@0.2.0+bad..build", "", [3]uint64{}},
+	} {
+		key, version := CompatibleName(row.name)
+		if key != row.key || version != row.version {
+			t.Fatal(row.name, key, version)
+		}
+	}
+}

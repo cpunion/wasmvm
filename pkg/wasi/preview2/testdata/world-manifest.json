@@ -10,7 +10,7 @@
   "unstableFeatures": [],
   "sourcesSha256": {
     "README.md": "82bed7125162111a809dc2cd01a8f57e34eac726fabbf59ad8a162623dbf28c9",
-    "c/command.c": "4f299908e9dbd3f1749286ee806a6d32b0c8bcf66a88907ae6ec11463a6d1255",
+    "c/command.c": "6b5536f5e5e2cc764817bf0bfd9472377c0a3061d7d15c43dafa98dc99e84577",
     "notices/Rust-COPYRIGHT-library.html.gz": "e7ed68a723cac69674883877457fdf85486b437d4ed7b166d2e30957a681d09c",
     "notices/Rust-MIT.txt": "b85dcd3e453d05982552c52b5fc9e0bdd6d23c6f8e844b984a88af32570b0cc0",
     "notices/musl-COPYRIGHT": "dd3d670b96794146071703a75b07421203e23e4ef11b4f8c484d90c465bcd6f5",
@@ -23,8 +23,8 @@
     "wit/world.wit": "c85fcd4882d8c3c24a2b8aea4937d1c73f9d012c46a73675efaa8f51c110a325"
   },
   "binarySha256": {
-    "world-c-command.wasm": "1b5e6a6fbc9f94b4f13ee0bc94a4e5aa01f1d8cb83e56b186acd3a085d6a9611",
-    "world-composed-command.wasm": "5776d848c46807b42e1277c97e1ec7d776babea7ca2b35461d10d02266bd5d6a",
+    "world-c-command.wasm": "c0f77b9fcde2732a3e5f4f50e0b2fd9faf5fe0a8108b02414ddf05f772f9b927",
+    "world-composed-command.wasm": "dc4d6c4e46eed4df2134bda777ce7e66260519960d12ef4a07c444e6fed8dfb2",
     "world-full-command.wasm": "9f6f58274059a89ee4a7b29c4673fe5f9c6eca05a02dd03fed8cf827d6107f7d",
     "world-invalid-incoming-result.wasm": "bc3ebe22bd3d0e51538ce4d9f04f3ffb58ca7a88ab90f891497988dad7df8e66",
     "world-command-success.wasm": "6b3be0d259b655fa870c59d4dcbfb0d29c6fec4e40f90b89b492449c6c046fe1",

@@ -277,3 +277,28 @@ func semver(version string) (string, error) {
 	}
 	return core, nil
 }
+
+// CompatibleName returns the stable semantic-version track of a host binding
+// or exported interface. Exact names take precedence at lookup. Prereleases
+// and 0.0.x versions have no alternate track; build metadata has no precedence.
+// Validation's version parser remains the authority for accepted SemVer syntax.
+func CompatibleName(name string) (string, [3]uint64) {
+	var numbers [3]uint64
+	base, version, ok := strings.Cut(name, "@")
+	if !ok || base == "" {
+		return "", numbers
+	}
+	track, err := semver(version)
+	core, _, _ := strings.Cut(version, "+")
+	if err != nil || strings.Contains(core, "-") {
+		return "", numbers
+	}
+	parts := strings.Split(core, ".")
+	for i := range numbers {
+		numbers[i], _ = strconv.ParseUint(parts[i], 10, 64)
+	}
+	if numbers[0] == 0 && numbers[1] == 0 {
+		return "", numbers
+	}
+	return base + "@" + track, numbers
+}
