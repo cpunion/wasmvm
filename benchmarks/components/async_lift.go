@@ -13,7 +13,7 @@ import (
 
 func main() {
 	if len(os.Args) != 6 {
-		panic("usage: async_lift COMPONENT BACKEND CALLS YIELDS ENTRY")
+		panic("usage: async_lift COMPONENT BACKEND CALLS BATCH ENTRY")
 	}
 	count, err := strconv.ParseUint(os.Args[3], 10, 32)
 	must(err)
@@ -48,6 +48,9 @@ func main() {
 	lookup := time.Since(start)
 	args := []component.Value{{Bits: batch}}
 	expected := batch + 42
+	if os.Args[5] == "churn" {
+		expected = batch
+	}
 	callbacks := uint64(0)
 	if os.Args[5] == "run" {
 		expected = 42

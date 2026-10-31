@@ -71,9 +71,6 @@ func (c *componentContext) canonical(def *model.Canonical) error {
 	if info.Async && (t.Kind != model.AsyncFunction || info.PostReturn != nil) || info.Callback != nil && (!info.Async || !lifting) {
 		return invalid("asynchronous canonical options")
 	}
-	if info.Async && !lifting {
-		return fmt.Errorf("%w: asynchronous canonical lower", wasm.ErrUnsupported)
-	}
 	b := c.canonicalLayouts(info.Memory64)
 	if err := p.charge(uint64(len(t.Parameters))); err != nil {
 		return err
@@ -93,14 +90,18 @@ func (c *componentContext) canonical(def *model.Canonical) error {
 		return err
 	}
 	result := t.Result
-	if info.Async {
+	if info.Async && lifting {
 		result = nil
 	}
-	info.ABI, err = b.Function(params, result, lifting)
+	if info.Async && !lifting {
+		info.ABI, err = b.AsyncLower(params, result)
+	} else {
+		info.ABI, err = b.Function(params, result, lifting)
+	}
 	if err != nil {
 		return err
 	}
-	if info.Async {
+	if info.Async && lifting {
 		if t.Result != nil {
 			returned, err := b.Function([]*model.Type{t.Result}, nil, false)
 			if err != nil {

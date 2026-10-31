@@ -426,6 +426,13 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 			return nil, err
 		}
 		if v != nil {
+			// Adopt returned ownership before memory validation or lowering can
+			// fail. The existing transaction then reclaims unpublished values.
+			if codec.Resources != nil {
+				if err := codec.AcceptResult(plan.Type.Result, v); err != nil {
+					return nil, err
+				}
+			}
 			if plan.ABI.ResultMemory != nil {
 				ptr, _, _ := flat[len(flat)-1].Bits()
 				err = codec.Store(plan.Type.Result, ptr, *v)
@@ -439,6 +446,11 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 			}
 		}
 		complete = true
+		if plan.Async {
+			// Every admitted callee runs to completion in the current profile.
+			// Eager resolution returns RETURNED without allocating a subtask.
+			result = []vm.Value{vm.I32(2)}
+		}
 		return result, nil
 	})
 	if err != nil {

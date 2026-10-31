@@ -11,7 +11,7 @@ import (
 )
 
 // MAX_FLAT_PARAMS and MAX_FLAT_RESULTS belong to the pinned synchronous ABI.
-const MaxFlatParams, MaxFlatResults = 16, 1
+const MaxFlatParams, MaxFlatResults, MaxFlatAsyncParams = 16, 1, 4
 
 type Limits struct {
 	MaxNodes uint32
