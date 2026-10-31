@@ -4688,3 +4688,18 @@ preview3-fs-api-reference-rejection.json and is not counted as a pass.
 Sockets, HTTP, complete P3 worlds, independent guest toolchains, remaining cm64
 contracts and complete M5/M6 acceptance stay open. Optimization and broad timing
 campaigns remain deferred by the owner's functional-completion priority.
+
+
+Final CI on the initial filesystem head caught a Linux-only test assumption
+about directory enumeration order; the test now drains valid batches before
+checking the invalid-name future. An intermittent output backpressure failure
+exposed cancellation arriving between the scheduler's initial snapshot and a
+producer acknowledgement. The host completion dispatcher now synchronizes the
+cancellation signal after taking that acknowledgement; unsolicited acknowledgements
+remain invalid. A deterministic dispatch-boundary regression fails before this
+fix and passes after it. Local repetition (2,000 Go race backpressure runs and
+25 LLGo whole-P3 runs) is diagnostic evidence, separate from that regression.
+Rejected file writes now drop an unresolved input stream immediately and publish
+the typed failure future; no producer read is needed to discover a permission
+error. Final local race coverage is 90.31% P3 and 90.54% component; the updated
+four-job head must pass before merge.

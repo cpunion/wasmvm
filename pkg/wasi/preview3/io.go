@@ -506,9 +506,9 @@ func (p *IO) output(c *component.Caller, args []component.Value, source OutputSo
 	if err != nil {
 		return nil, err
 	}
-	return p.outputWithOperation(c, args, source, op)
+	return p.outputWithOperation(c, args, source, op, nil)
 }
-func (p *IO) outputWithOperation(c *component.Caller, args []component.Value, source OutputSource, op *ioOperation) (*component.Value, error) {
+func (p *IO) outputWithOperation(c *component.Caller, args []component.Value, source OutputSource, op *ioOperation, initialFailure error) (*component.Value, error) {
 	accepted := false
 	defer func() {
 		if !accepted {
@@ -520,7 +520,12 @@ func (p *IO) outputWithOperation(c *component.Caller, args []component.Value, so
 	if err != nil {
 		return nil, err
 	}
-	if err := op.schedule(c, args[0].Resource, source); err != nil {
+	if initialFailure != nil {
+		if err := c.DropAsync(args[0].Resource); err != nil {
+			return nil, err
+		}
+		op.finish(op.code(initialFailure))
+	} else if err := op.schedule(c, args[0].Resource, source); err != nil {
 		return nil, err
 	}
 	accepted = true

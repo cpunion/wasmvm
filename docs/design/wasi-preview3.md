@@ -98,7 +98,9 @@ shutdown; WaitClosed joins workers and physical descriptor cleanup. Close and
 wait for bound Instances, then the filesystem provider, then its IO owner.
 
 Read cancellation preserves bytes already consumed by an external operation;
-empty cancellation acknowledges without inventing progress. Result futures report
+empty cancellation acknowledges without inventing progress. Rejected output
+operations drop their input immediately and resolve their error future without
+waiting for a producer. Result futures report
 typed filesystem errors independently of stream EOF. Provider closure cancels
 FIFO readiness and restores operation/object reservations.
 

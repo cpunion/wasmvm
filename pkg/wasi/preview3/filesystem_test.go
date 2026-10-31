@@ -582,6 +582,17 @@ func TestFileSystemDirectoryModesAndInvalidNames(t *testing.T) {
 		t.Fatal(err)
 	}
 	pair := api.call("read-directory", dir)
+	// Directory enumeration order differs by filesystem. Consume every preceding
+	// valid batch before observing the malformed entry and its completion error.
+	for {
+		r, err := in.ReadAsync(nil, pair.Elements[0].Resource, 2, component.CallOptions{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if r.Closed {
+			break
+		}
+	}
 	api.failedStream(pair, "illegal-byte-sequence")
 	api.drop(dir)
 }
@@ -1011,6 +1022,40 @@ func TestFileSystemWorkerAdmissionAndPublicationRollback(t *testing.T) {
 		if !errors.Is(err, wasm.ErrLimit) {
 			t.Fatal("worker quota", err)
 		}
+		api.drop(dir)
+	})
+}
+
+func TestFileSystemRejectedWriteDoesNotWaitForProducer(t *testing.T) {
+	backends(t, func(t *testing.T, backend string) {
+		p, _, root := fileOwner(t, FileSystemConfig{})
+		if err := os.WriteFile(filepath.Join(root, "data.txt"), nil, 0600); err != nil {
+			t.Fatal(err)
+		}
+		in := instantiate(t, compileFixture(t, backend, "filesystem-api"), p.Imports())
+		api := fileAPI{t, in}
+		dir := api.root()
+		file := api.open(dir, "data.txt", 0, fsRead)
+		fn, _ := in.Function("fs", "[method]descriptor.write-via-stream")
+		_, typ := fn.Info().Parameter(1)
+		reads, closed := 0, 0
+		source, err := in.NewSource(nil, typ, component.AsyncSource{Read: func(*component.Caller, uint32) (*component.ReadCompletion, error) {
+			reads++
+			return component.NewReadCompletion(), nil
+		}, Close: func() { closed++ }})
+		if err != nil {
+			t.Fatal(err)
+		}
+		future := api.call("write-via-stream", file, source, component.Value{})
+		result, err := in.ReadAsync(nil, future.Resource, 1, component.CallOptions{})
+		if err != nil || len(result.Values) != 1 || result.Values[0].Case != 1 || result.Values[0].Elements[0].Case != fileErrorCases["not-permitted"] {
+			t.Fatal(result, err)
+		}
+		if reads != 0 || closed != 1 {
+			t.Fatal("rejected output waited for input", reads, closed)
+		}
+		in.DropAsync(nil, future.Resource, component.CallOptions{})
+		api.drop(file)
 		api.drop(dir)
 	})
 }

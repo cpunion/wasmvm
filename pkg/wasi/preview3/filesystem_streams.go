@@ -99,7 +99,7 @@ func (p *FileSystem) stream(c *component.Caller, name string, args []component.V
 		_, futureType := c.FunctionInfo().Result().Field(1)
 		return p.io.inputWithOperation(c, op, s, streamType, futureType)
 	}
-	return p.io.outputWithOperation(c, []component.Value{args[1]}, s, op)
+	return p.io.outputWithOperation(c, []component.Value{args[1]}, s, op, s.failure)
 }
 func (s *fileStream) notifyLocked() { close(s.changed); s.changed = make(chan struct{}) }
 func (s *fileStream) Close() error {
