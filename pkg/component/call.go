@@ -298,7 +298,7 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 			}()
 			if n.taskOps || plan.Async {
 				previous := n.task
-				task := &callTask{plan: plan, parameters: codec}
+				task := &callTask{plan: plan, parameters: codec, entered: n.entered}
 				n.task = task
 				defer func() {
 					if !complete || err != nil {
@@ -308,11 +308,11 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 						err = finishResources(task.returned, complete, err)
 					}
 					n.task = previous
+					n.entered = task.entered
 				}()
 			}
-			entered := n.entered
 			n.entered = true
-			defer func() { n.entered = entered }()
+			defer func() { n.entered = false }()
 			var slots []canonical.Slot
 			if typ := plan.ABI.ParameterMemory; typ != nil {
 				layout, err := codec.Layouts.Build(typ)

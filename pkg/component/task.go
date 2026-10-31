@@ -16,6 +16,7 @@ type callTask struct {
 	returned   *canonical.Codec
 	result     *Value
 	resolved   bool
+	entered    bool
 	storage    [2]uint64
 }
 
