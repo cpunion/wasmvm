@@ -473,6 +473,17 @@ resources retain their existing explicit binding; actual host component imports
 remain unsupported. The unchanged Wasmtime 48.0.1 component backend rejects the
 new type-export/import fixture despite successful pinned wasm-tools validation.
 
+Host component roots now bind at root/nested interfaces through same-Engine
+compilation leases and the existing component executor. One bounded immutable
+schema importer shares ordinary component/Core subtype relations, preserves
+resource/value identity and remaps recursive Core/GC types. Tests execute
+component arguments, repeated generative instances, Core-module parameters,
+values/starts, explicit and failed-initialization destructors, cancellation,
+limits and concurrent owner close. Imported host functions retain their provider
+state independently of a failed consumer. Local cm64 borrow conversion, complete
+upstream world conformance and performance acceptance still keep M5 open; native
+async/WASI 0.3 remain M6 work.
+
 ## M6 — WASI 0.3 native async
 
 Pin WASI **0.3.2** and its cumulative Component Model requirements. Implement canonical async lift/lower, task transitions, suspension/resumption, futures/streams, cancellation, backpressure, reentrancy and completion/error behavior. Deliver the declared CLI and HTTP service/middleware scope with explicit versioned bindings; P2 pollables and P3 async remain separate adapters.

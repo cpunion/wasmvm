@@ -458,3 +458,20 @@ instantiate/binding/Close. First calls stay outside public/shared-session warm
 timers. Preserve the source-base rejection and actual Wasmtime backend rejection
 for this metadata capability; use the unchanged composition input
 for the independent common-workload regression/competitor comparison.
+
+
+`host_components.go` measures a compiled guest imported by a separate consumer:
+
+```sh
+go run benchmarks/components/host_components.go pkg/component/testdata/host-components.wasm pkg/component/testdata/host-component-guest.wasm interpreter 10000
+llgo run -O3 -lto=full benchmarks/components/host_components.go pkg/component/testdata/host-components.wasm pkg/component/testdata/host-component-guest.wasm native 10000
+```
+
+Load, Engine creation, each compilation, first/repeated Store+schema binding+
+instantiation, lookup, first call, public warm calls and close have independent
+timers. Matching/composition remain part of preparation. Runner build/process
+startup are excluded. The public add invokes actual imported guest Core code.
+The unchanged composition benchmark and HTTP fields lifetime benchmark provide
+separate common-workload base/head/reference controls, including the host
+provider guard change. Actual Wasmtime 48.0.1 rejects root component imports;
+retain that result rather than inventing a direct speed ratio.

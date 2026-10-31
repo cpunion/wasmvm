@@ -26,7 +26,13 @@ func (in *Instance) bindResources(n *namespace, e item, t *validate.Type) error 
 		return err
 	}
 	if e.function != nil && e.function.host != nil && e.function.scope == nil {
-		e.function.scope = n
+		// Imported host functions belong to their provider, independently of
+		// the importing component's canonical failure/leave state. They share
+		// its resolved nominal bindings, not its guest execution guards.
+		if n.host == nil {
+			n.host = &namespace{resources: n.resources}
+		}
+		e.function.scope = n.host
 	}
 	if e.sort == model.TypeSort && t.Kind == model.Resource {
 		if e.resource == nil || n.resources[t.Resource] != nil && n.resources[t.Resource] != e.resource {

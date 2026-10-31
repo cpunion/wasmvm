@@ -3982,3 +3982,85 @@ acceptance. Raw first/preparation/warm/control samples, source-base outcomes and
 isolated reference rejections are retained in `artifacts/components/type-imports-*`.
 Host component bindings, local cm64 borrows, complete upstream world conformance,
 performance acceptance and native async/WASI 0.3 remain open; M5/M6 are incomplete.
+
+## Host component imports and provider boundaries (2026-10-31)
+
+`Imports.Components` now binds independently compiled roots in the same Engine,
+including nested host interfaces and component arguments. The existing executor
+uses each closure's correct embedded Core map. One bounded schema registry
+reuses ordinary subtype/binder relations, remaps source resource/value symbols
+and imports canonical recursive Core/GC groups without mutating compiled pools.
+Compilation leases preserve in-flight bindings and execution after owner Close;
+new bindings reject closed/foreign/zero owners. Root compilation uses the same
+lease rule. Failure, cancellation, panic, instance limits and concurrent close
+release leases and unpublished ownership.
+
+A failing regression exposed imported host functions sharing the consumer's
+canonical failure guard. A healthy imported component's destructor could not
+call its provider after the consumer trapped. Provider namespaces now share
+resolved nominal bindings while retaining independent execution guards. The
+regression fails on both own backends before the change and passes afterwards;
+a direct re-exported host alias remains callable after its consumer traps.
+Canonical guest entry/leave/realloc/post-return/reentry guards remain intact.
+
+Sixteen fixtures retain source/binary/generator hashes. Fourteen are ordinary
+pinned wasm-tools 1.258.0 parse/validation outputs. Two append authored value/start
+sections to producer fragments and additionally pass independent binary
+validation with `wasm-tools validate --features cm-values`. These are not an
+independent runtime oracle. Tests execute repeated generative resources,
+narrowed views, nested/delegated component arguments, Core-module parameters
+whose recursive/GC identities differ between pools, table/global/tag descriptors,
+real struct allocation/access, standalone owned values and explicit/failed-start
+destructors. They also cover equality/literal constraints, schema budgets,
+owner close during binding, cancellation, panic, rollback, concurrent Stores,
+forced collection and code lifetime.
+
+Full local Go package tests and the relevant LLGo release suites pass. Race/vet
+and pinned corpus checks pass. Full local darwin/arm64 coverage is component
+**91.90%** (1,135/1,235), validator **92.28%** (1,995/2,162), Core module metadata
+**98.06%** (253/258); every executable package exceeds 90%.
+
+Actual unmodified Wasmtime 48.0.1 rejects the consumer before instantiation with
+`root-level component imports are not supported`. Its pinned inliner contains
+that explicit boundary. Source base `297e30e` also rejects host component imports.
+No direct ratio is assigned to an unsupported operation. Local phase and
+common-workload measurements follow below; raw results remain in
+`artifacts/components/host-components-*`.
+
+Apple M4 Max arm64 phase medians, three serial 10,000-operation samples;
+Go 1.27.3, LLGo `8e45ed5 -O3 -lto=full`; microseconds:
+
+| Imported-component phase | Go interpreter / native | LLGo interpreter / native |
+| --- | ---: | ---: |
+| Load consumer and guest | 69.709 / 67.791 | 92.667 / 84.625 |
+| Engine creation | 1.667 / 1.709 | 3.417 / 3.084 |
+| Guest compilation | 96.292 / 166.417 | 96.458 / 213.917 |
+| Consumer compilation | 38.000 / 76.917 | 59.917 / 487.000 |
+| First Store/bind/instantiate | 59.000 / 47.459 | 360.166 / 65.042 |
+| Repeated Store/bind/instantiate | 10.856 / 11.591 | 34.373 / 34.861 |
+| First public add | 19.166 / 27.250 | 12.750 / 33.875 |
+| Public warm add | 0.451 / 0.863 | 1.872 / 2.955 |
+| Repeated instance Close | 0.180 / 0.231 | 0.568 / 0.724 |
+
+Lookup and final Close remain separate in raw JSON. Binding includes schema
+matching and composition; it is not pure guest execution. Build/process startup
+is outside these timers. Initial 10,000-call controls showed large variance and
+are preserved as diagnostics. Longer alternating base/head controls use three
+100,000-call add samples and three 1,000-batch HTTP fields samples (128 complete
+lifetimes/batch). Nanoseconds per call/lifetime:
+
+| Common workload | Go base -> head interpreter / native | LLGo base -> head interpreter / native | Actual Wasmtime 48.0.1 |
+| --- | ---: | ---: | ---: |
+| Public composition add | 470.4 -> 480.9 / 837.7 -> 801.2 | 1,436 -> 1,456 / 2,320 -> 2,328 | 248.7 |
+| Actual HTTP fields lifetime | 24,367 -> 24,876 / 34,467 -> 35,229 | 59,890 -> 56,038 / 105,291 -> 106,202 | 2,629.3 |
+
+The add reference uses the actual component C API; HTTP uses the unmodified
+Wasmtime WASIp2 HTTP provider with its typed Rust API. Reference samples use
+1,000,000 add calls and 1,000 HTTP batches. Warm timers exclude preparation,
+lookup, first call and Close. Own fuel is off with logical cancellation/resource
+checks; the reference uses its default Store policy. Long local LLGo controls
+change about +1.4%/+0.3% for add and -6.4%/+0.9% for fields. These are noisy local
+observations, not controlled acceptance. The reference remains substantially
+faster; compiler/interpreter and Canonical ABI performance targets stay open.
+Local cm64 borrows, complete upstream world conformance and native async/WASI 0.3
+remain required. This increment does not complete M5/M6 or the project.

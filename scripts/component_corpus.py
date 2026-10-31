@@ -61,6 +61,14 @@ def prepare(destination=None):
             path = authored / (name + "." + extension)
             if hashlib.sha256(path.read_bytes()).hexdigest() != want:
                 raise ValueError("equality-bound type fixture hash changed: " + path.name)
+    host = json.loads((authored / "host-components.json").read_text())
+    for source, key in [("build_host_component_fixtures.py", "generatorSHA256"),
+                        ("build_resource_value_fixtures.py", "helperSHA256")]:
+        if hashlib.sha256((ROOT / "scripts" / source).read_bytes()).hexdigest() != host[key]:
+            raise ValueError("host component generator hash changed: " + source)
+    for name, want in host["sha256"].items():
+        if hashlib.sha256((authored / name).read_bytes()).hexdigest() != want:
+            raise ValueError("host component fixture hash changed: " + name)
     scripts = manifest.get("semanticScripts", {})
     binary = sum(c["invalid"] + c["valid"] for c in scripts.values())
     text = sum(c.get("textParser", 0) for c in scripts.values())

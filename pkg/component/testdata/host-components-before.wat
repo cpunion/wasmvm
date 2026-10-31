@@ -1,0 +1,23 @@
+(component
+  (import "before" (func $before))
+  (type $code (component
+    (type $f (func (param "a" u32) (param "b" u32) (result u32)))
+    (export "add" (func (type $f)))))
+  (import "code" (component $code (type $code)))
+  (instance $left (instantiate $code))
+  (instance $right (instantiate $code))
+  (alias export $left "add" (func $left))
+  (alias export $right "add" (func $right))
+  (core func $left (canon lower (func $left)))
+  (core func $right (canon lower (func $right)))
+  (core module $glue
+    (import "env" "left" (func $left (param i32 i32) (result i32)))
+    (import "env" "right" (func $right (param i32 i32) (result i32)))
+    (func (export "twice") (param i32 i32) (result i32)
+      local.get 0 local.get 1 call $left i32.const 1 call $right))
+  (core instance $env (export "left" (func $left)) (export "right" (func $right)))
+  (core instance $glue (instantiate $glue (with "env" (instance $env))))
+  (alias core export $glue "twice" (core func $twice))
+  (func (export "twice") (param "a" u32) (param "b" u32) (result u32) (canon lift (core func $twice)))
+  (export "add" (func $left))
+  (export "api" (instance $left)))

@@ -1,0 +1,18 @@
+(component
+  (type $code (component
+    (export "r" (type $r (sub resource)))
+    (type $make (func (param "rep" u32) (result (own $r))))
+    (type $get (func (param "self" (borrow $r)) (result u32)))
+    (type $pass (func (param "value" (own $r)) (result (own $r))))
+    (type $consume (func (param "value" (own $r)) (result u32)))
+    (type $total (func (result u32)))
+    (export "make" (func (type $make)))
+    (export "get" (func (type $get)))
+    (export "pass" (func (type $pass)))
+    (export "consume" (func (type $consume)))
+    (export "total" (func (type $total)))))
+  (import "code" (component $code (type $code)))
+  (instance $left (instantiate $code))
+  (instance $right (instantiate $code))
+  (export "left" (instance $left))
+  (export "right" (instance $right)))

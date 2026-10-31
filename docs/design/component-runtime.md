@@ -12,7 +12,8 @@ Host bindings supply callbacks and copied values through declared schemas.
 Fixed equality-bound value schemas are inferred from those declarations;
 nominal host resource types bind through `Imports.Resources`. Host Core modules
 bind through `Imports.CoreModules`. Non-resource type imports use their checked
-equality targets without runtime identities; host components remain unsupported. Other
+equality targets without runtime identities. Host components bind through
+`Imports.Components` with same-Engine code leases. Other
 incomplete executable operations are rejected during
 compilation or host binding, before instantiation invokes guest code.
 
@@ -234,8 +235,8 @@ Core objects retain their normal Store/native code leases. Closing a component
 Engine or compiled component does not retire existing Store execution.
 `CoreModule.Info` returns owned metadata and rejects a closed owner.
 
-This capability does not bind host components. Local cm64 borrows, async plans
-and complete upstream world conformance remain separate required work.
+Host component bindings use the same code domain. Local cm64 borrows, async
+plans and complete upstream world conformance remain separate required work.
 
 
 ## Standalone resource values and starts
@@ -271,7 +272,7 @@ while their component and context permit reentry. Explicit Store close keeps
 its existing cancellation contract and does not synthesize guest destructors.
 The implementation shares the existing resource codec and Core session rather
 than introducing another execution path. These synchronous capabilities leave
-local cm64 borrows, host component bindings and async/WASI 0.3 required.
+local cm64 borrows and async/WASI 0.3 required.
 
 
 ## Equality-bound type imports
@@ -281,8 +282,8 @@ validation has already resolved. Function, instance and component type imports
 now use the same metadata binding as existing value types, at root and nested
 host interfaces. They carry no runtime object to allocate or independently
 choose; accepting the declaration preserves its exact equality target. This is
-separate from an actual component import, which still requires a complete host
-component/code-lease binding contract and remains rejected before execution.
+separate from an actual component import, whose code and matching contract are
+provided by `Imports.Components` as described below.
 
 Functions and instance/component ascriptions can reference imported aliases.
 They retain lexical captures and nominal resource IDs. Fresh abstract resources
@@ -290,3 +291,33 @@ still require `Imports.Resources` bindings, and equality-bound resource imports
 still require the same host declaration. Provider `FunctionChecks` see the
 resolved function shape and its actual nominal resource bindings before effects.
 No new type registry or alternate call path is introduced.
+
+## Host component bindings
+
+`Imports.Components` binds independently compiled components from the same
+Engine, at root or nested host interfaces. The normal component interpreter
+instantiates their original plans and embedded Core code in the consumer Store.
+Local nested closures retain their parent's Core map; imported roots retain
+their own. Component arguments, narrowed exports, values/starts and nominal
+resource transfers use the existing composition and canonical paths.
+
+Each binding acquires a compilation lease. `Compiled.Close` prevents new
+bindings, while bindings already acquired can finish initialization and keep
+executing. Root instantiation uses the same lease rule. Failure, cancellation,
+panic and Instance close release all compilation/Core leases; code retirement
+still respects active Store publication. Compiled objects must not be copied.
+
+The matcher copies immutable schemas into one bounded binding registry and
+reuses the ordinary subtype/binder relations. Independent source resource IDs,
+value equality symbols and canonical Core identities are remapped; source pools
+remain unchanged under concurrent binding. Recursive Core groups, GC reference
+fields/supertypes and all import/export descriptors retain their meaning.
+Repeated bindings share leases and successful schema checks within an operation.
+No fallback engine or duplicate execution framework is introduced.
+
+Imported host functions have a provider namespace sharing resolved nominal
+bindings. Consumer failure/leave guards belong to the consumer, so a healthy
+imported component can still invoke its host provider during failure cleanup.
+Guest realloc/post-return/reentry guards remain on canonical entry/leave paths.
+This also preserves the identity of a re-exported host function after a
+consumer's canonical trap. Global Store shutdown still invalidates all calls.

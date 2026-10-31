@@ -28,6 +28,7 @@ type Imports struct {
 	ValueChecks    map[string]func(ValueType) error
 	Resources      map[string]*HostResourceType
 	CoreModules    map[string]*CoreModule
+	Components     map[string]*Compiled
 }
 
 type Instance struct {
@@ -53,6 +54,8 @@ type Instance struct {
 	engine            *Engine
 	coreBindings      *validate.CoreBindings
 	hostModules       map[*CoreModule]*coreModuleLease
+	components        map[*Compiled]*componentLease
+	componentBindings *validate.ComponentBindings
 }
 
 func (in *Instance) Close() {
@@ -60,12 +63,17 @@ func (in *Instance) Close() {
 	in.closed = true
 	modules := in.hostModules
 	in.hostModules = nil
+	components := in.components
+	in.components = nil
 	in.mu.Unlock()
 	in.store.Close()
 	for _, table := range in.resourceTables {
 		table.Close()
 	}
 	for _, lease := range modules {
+		lease.Close()
+	}
+	for _, lease := range components {
 		lease.Close()
 	}
 }
@@ -172,12 +180,14 @@ type item struct {
 type closure struct {
 	plan   *validate.Component
 	parent *namespace
+	cores  map[*module.Module]*vm.CompiledModule
 }
 
 type namespace struct {
 	parent    *namespace
 	plan      *validate.Component
 	resources map[uint64]*resourceType
+	host      *namespace
 	handles   *canonical.Resources
 	items     map[model.Sort][]item
 	exports   map[string]item
@@ -199,21 +209,25 @@ func (n *namespace) add(e item) {
 }
 
 func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.CallOptions) (*Instance, error) {
-	c.mu.Lock()
-	plan, cores := c.plan, c.cores
-	c.mu.Unlock()
-	if plan == nil {
-		return nil, wasm.ErrClosed
+	if c == nil {
+		return nil, vm.ErrReference
 	}
 	ctx = contextOrBackground(ctx)
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	store, err := c.engine.core.NewStore(c.engine.config.Store)
+	lease, err := c.acquire(c.engine)
 	if err != nil {
 		return nil, err
 	}
+	plan, cores := lease.plan, lease.cores
+	store, err := c.engine.core.NewStore(c.engine.config.Store)
+	if err != nil {
+		lease.Close()
+		return nil, err
+	}
 	in := &Instance{engine: c.engine, store: store, config: c.engine.config, bindings: map[any]Value{}, resourceBudget: canonical.NewResourceBudget(c.engine.config.MaxResources)}
+	in.components = map[*Compiled]*componentLease{c: lease}
 	in.hostTypes = map[*hostResourceDefinition]*resourceType{}
 	in.importResourceIDs = map[uint64]*resourceType{}
 	in.hostResources = canonical.NewResourceTable(in.resourceBudget)
@@ -234,6 +248,7 @@ func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.
 		in.initialValues = nil
 		in.initialCreated = nil
 		in.coreBindings = nil
+		in.componentBindings = nil
 		if !published {
 			in.Close()
 		}
@@ -268,7 +283,7 @@ func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.
 		if err := in.initializeValues(caller, importsScope); err != nil {
 			return err
 		}
-		n, err := in.instantiate(caller, &closure{plan: plan}, bindings, cores)
+		n, err := in.instantiate(caller, &closure{plan: plan, cores: cores}, bindings, cores)
 		if err == nil {
 			in.exports = n.exports
 		}
@@ -291,6 +306,35 @@ func (in *Instance) bind(types []validate.Extern, imports Imports) (map[string]i
 		e := item{sort: expected.Sort}
 		name := expected.Name.Text
 		switch expected.Sort {
+		case model.ComponentSort:
+			host := imports.Components[name]
+			if host == nil {
+				return nil, fmt.Errorf("%w: missing component %q", vm.ErrLink, name)
+			}
+			lease := in.components[host]
+			if lease == nil {
+				var err error
+				lease, err = host.acquire(in.engine)
+				if err != nil {
+					return nil, err
+				}
+				in.components[host] = lease
+			}
+			if in.componentBindings == nil {
+				var err error
+				in.componentBindings, err = expected.Type.ComponentBindings()
+				if err != nil {
+					return nil, err
+				}
+			}
+			ok, err := in.componentBindings.Check(expected.Type, lease.plan.Type)
+			if err != nil {
+				return nil, err
+			}
+			if !ok {
+				return nil, fmt.Errorf("%w: component %q", vm.ErrType, name)
+			}
+			e.component = &closure{plan: lease.plan, cores: lease.cores}
 		case model.CoreModuleSort:
 			host := imports.CoreModules[name]
 			if host == nil {
@@ -434,6 +478,9 @@ func (in *Instance) charge(n uint64) error {
 }
 
 func (in *Instance) instantiate(caller *vm.Caller, component *closure, args map[string]item, cores map[*module.Module]*vm.CompiledModule) (*namespace, error) {
+	if component.cores != nil {
+		cores = component.cores
+	}
 	if in.instances >= in.config.Store.Limits.MaxInstances || in.depth >= in.config.MaxNesting {
 		return nil, wasm.ErrLimit
 	}
@@ -512,7 +559,7 @@ func (in *Instance) instantiate(caller *vm.Caller, component *closure, args map[
 		case 4:
 			child := component.plan.Children[children]
 			children++
-			n.add(item{sort: model.ComponentSort, component: &closure{plan: child, parent: n}})
+			n.add(item{sort: model.ComponentSort, component: &closure{plan: child, parent: n, cores: cores}})
 		case 5:
 			exports := map[string]item{}
 			if d.Instance.Instantiate {

@@ -76,21 +76,30 @@ func (e *Engine) check(ctx context.Context) error {
 	return nil
 }
 
+// Compiled owns a validated component and its code. It must not be copied.
+// Close rejects new bindings; existing bindings retain their code leases.
 type Compiled struct {
 	mu     sync.Mutex
 	engine *Engine
+	closed bool
+	refs   uint64
 	plan   *validate.Component
 	cores  map[*module.Module]*vm.CompiledModule
 }
 
 func (c *Compiled) Close() {
+	if c == nil {
+		return
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.plan = nil
-	for _, core := range c.cores {
-		core.Close()
+	if c.closed {
+		return
 	}
-	c.cores = nil
+	c.closed = true
+	if c.refs != 0 {
+		c.releaseLocked()
+	}
 }
 
 func (e *Engine) Compile(ctx context.Context, input []byte) (*Compiled, error) {
@@ -106,10 +115,10 @@ func (e *Engine) Compile(ctx context.Context, input []byte) (*Compiled, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := preflight(plan, true); err != nil {
+	if err := preflight(plan); err != nil {
 		return nil, err
 	}
-	compiled := &Compiled{engine: e, plan: plan, cores: map[*module.Module]*vm.CompiledModule{}}
+	compiled := &Compiled{engine: e, plan: plan, refs: 1, cores: map[*module.Module]*vm.CompiledModule{}}
 	var compile func(*validate.Component) error
 	compile = func(p *validate.Component) error {
 		for _, d := range p.Definition().Definitions {
@@ -152,7 +161,7 @@ func contextOrBackground(ctx context.Context) context.Context {
 	return ctx
 }
 
-func preflight(p *validate.Component, root bool) error {
+func preflight(p *validate.Component) error {
 	seen := map[*model.Type]bool{}
 	var value func(*model.Type) error
 	value = func(t *model.Type) error {
@@ -244,15 +253,8 @@ func preflight(p *validate.Component, root bool) error {
 			}
 		}
 	}
-	if root {
-		for _, im := range p.Type.Imports {
-			if im.Sort == model.ComponentSort {
-				return unsupported("host component binding")
-			}
-		}
-	}
 	for _, child := range p.Children {
-		if err := preflight(child, false); err != nil {
+		if err := preflight(child); err != nil {
 			return err
 		}
 	}
