@@ -97,7 +97,7 @@ func (p *FileSystem) stream(c *component.Caller, name string, args []component.V
 	if s.input {
 		_, streamType := c.FunctionInfo().Result().Field(0)
 		_, futureType := c.FunctionInfo().Result().Field(1)
-		return p.io.inputWithOperation(c, op, s, streamType, futureType)
+		return p.io.inputWithOperation(c, op, s, streamType, futureType, s.failure)
 	}
 	return p.io.outputWithOperation(c, []component.Value{args[1]}, s, op, s.failure)
 }

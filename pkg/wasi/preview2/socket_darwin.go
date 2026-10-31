@@ -2,9 +2,9 @@
 
 package preview2
 
-import "golang.org/x/sys/unix"
+import "github.com/cpunion/wasmvm/internal/wasi/host"
 
-func socketLength4(address *unix.RawSockaddrInet4) { address.Len = unix.SizeofSockaddrInet4 }
-func socketLength6(address *unix.RawSockaddrInet6) { address.Len = unix.SizeofSockaddrInet6 }
+var socketLength4 = host.SocketLength4
+var socketLength6 = host.SocketLength6
 
-const tcpKeepIdle = unix.TCP_KEEPALIVE
+const tcpKeepIdle = host.TCPKeepIdle

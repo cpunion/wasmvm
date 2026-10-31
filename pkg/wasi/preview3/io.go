@@ -322,9 +322,9 @@ func (p *IO) input(c *component.Caller) (*component.Value, error) {
 	}
 	_, streamType := c.FunctionInfo().Result().Field(0)
 	_, futureType := c.FunctionInfo().Result().Field(1)
-	return p.inputWithOperation(c, op, p.config.Stdin, streamType, futureType)
+	return p.inputWithOperation(c, op, p.config.Stdin, streamType, futureType, nil)
 }
-func (p *IO) inputWithOperation(c *component.Caller, op *ioOperation, source InputSource, streamType, futureType component.ValueType) (*component.Value, error) {
+func (p *IO) inputWithOperation(c *component.Caller, op *ioOperation, source InputSource, streamType, futureType component.ValueType, initialFailure error) (*component.Value, error) {
 	accepted := false
 	defer func() {
 		if !accepted {
@@ -406,6 +406,9 @@ func (p *IO) inputWithOperation(c *component.Caller, op *ioOperation, source Inp
 		return nil, err
 	}
 	accepted = true
+	if initialFailure != nil {
+		op.finish(op.code(initialFailure))
+	}
 	return &component.Value{Elements: []component.Value{stream, future}}, nil
 }
 func (p *IO) write(ctx context.Context, source OutputSource, data []byte, flush bool) (err error) {
