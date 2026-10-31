@@ -1,5 +1,5 @@
-// Package component compiles and executes synchronous component composition
-// through the project-owned Core interpreter or native compiler. Capabilities
+// Package component executes component composition and run-to-completion async
+// canonical lifts through the owned Core interpreter or native compiler. Capabilities
 // without complete execution contracts are rejected before guest code runs.
 package component
 
@@ -200,7 +200,8 @@ func preflight(p *validate.Component) error {
 		}
 	}
 	for _, f := range p.Canonical {
-		if f.Definition.Op > 4 && (f.Definition.Op < 0x1c || f.Definition.Op > 0x1e) || f.Async {
+		op := f.Definition.Op
+		if op > 4 && (op < 9 || op > 0x0c) && (op < 0x1c || op > 0x1e) || f.Async && op != 0 {
 			return unsupported("resource or async canonical operation")
 		}
 		if f.Type == nil {
@@ -223,9 +224,6 @@ func preflight(p *validate.Component) error {
 		}
 		interfaces[e.Type] = true
 		if e.Sort == model.FunctionSort {
-			if e.Type.Kind == model.AsyncFunction {
-				return unsupported("async function")
-			}
 			for _, p := range e.Type.Parameters {
 				if err := value(p.Type); err != nil {
 					return err

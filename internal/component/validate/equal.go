@@ -11,6 +11,12 @@ func Equal(a, b *Type, maxNodes uint32) (bool, error) {
 	return c.typ(a, b)
 }
 
+// EqualValue compares resolved value schemas in the same nominal index domain.
+func EqualValue(a, b *model.Type, maxNodes uint32) (bool, error) {
+	c := equality{remaining: maxNodes, visited: map[pair]bool{}}
+	return c.value(a, b)
+}
+
 func (p *TypePool) equal(a, b *Type) (bool, error) {
 	budget := p.limits.MaxNodes - p.nodes
 	c := equality{remaining: budget, visited: map[pair]bool{}}

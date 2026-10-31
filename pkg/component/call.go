@@ -195,6 +195,11 @@ func (in *Instance) codec(caller *vm.Caller, n *namespace, plan *validate.Canoni
 		if plan.Realloc != nil {
 			fn := n.items[model.CoreFunctionSort][*plan.Realloc].core
 			transfer.Realloc = func(old, size, alignment, next uint64) (uint64, error) {
+				previous := n.task
+				if n.taskOps {
+					n.task = &callTask{}
+				}
+				defer func() { n.task = previous }()
 				n.blocked = true
 				defer func() { n.blocked = false }()
 				kind := wasm.I32
@@ -251,6 +256,9 @@ func flatValues(values []vm.Value) ([]canonical.Slot, error) {
 }
 
 func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
+	if plan.Definition.Op >= 9 && plan.Definition.Op <= 0x0c {
+		return in.taskBuiltin(caller, n, plan)
+	}
 	if len(n.resources) != 0 || plan.Type != nil && plan.Type.ContainsErrorContext() || plan.Definition.Op >= 0x1c && plan.Definition.Op <= 0x1e {
 		in.resourceTable(n)
 	}
@@ -264,7 +272,7 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 		fn := n.items[model.CoreFunctionSort][plan.Definition.Index].core
 		f := &Function{instance: in, typ: plan.Type, scope: n}
 		f.lift = func(caller *vm.Caller, args []Value) (result *Value, err error) {
-			if n.failed || n.blocked || n.entered {
+			if n.failed || n.blocked || n.entered && (!plan.Async || plan.Callback != nil) {
 				return nil, wasm.ErrTrap
 			}
 			codec := in.codec(caller, n, plan)
@@ -288,8 +296,23 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 					n.failed = true
 				}
 			}()
+			if n.taskOps || plan.Async {
+				previous := n.task
+				task := &callTask{plan: plan, parameters: codec}
+				n.task = task
+				defer func() {
+					if !complete || err != nil {
+						n.failed = true
+					}
+					if task.returned != nil {
+						err = finishResources(task.returned, complete, err)
+					}
+					n.task = previous
+				}()
+			}
+			entered := n.entered
 			n.entered = true
-			defer func() { n.entered = false }()
+			defer func() { n.entered = entered }()
 			var slots []canonical.Slot
 			if typ := plan.ABI.ParameterMemory; typ != nil {
 				layout, err := codec.Layouts.Build(typ)
@@ -316,6 +339,11 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 			called, err := caller.Call(fn, vmValues(slots))
 			if err != nil {
 				return nil, err
+			}
+			if plan.Async {
+				result, err = in.asyncLift(caller, n, plan, called.Values)
+				complete = err == nil
+				return result, err
 			}
 			if plan.Type.Result != nil {
 				var value Value

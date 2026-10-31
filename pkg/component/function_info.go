@@ -56,6 +56,9 @@ type FunctionInfo struct {
 	resources map[uint64]*resourceType
 }
 
+// Async reports the component function type, independently of its Core ABI.
+func (f FunctionInfo) Async() bool { return f.typ != nil && f.typ.Kind == model.AsyncFunction }
+
 type ValueType struct {
 	typ       *model.Type
 	resources map[uint64]*resourceType

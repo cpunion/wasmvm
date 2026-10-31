@@ -164,7 +164,7 @@ func RunCommand(ctx context.Context, in *component.Instance, options component.C
 	}
 	info := function.Info()
 	result := info.Result()
-	if info.ParameterCount() != 0 || result.Kind() != component.KindResult || result.CaseCount() != 2 {
+	if info.Async() || info.ParameterCount() != 0 || result.Kind() != component.KindResult || result.CaseCount() != 2 {
 		return 0, vm.ErrType
 	}
 	for i := 0; i < 2; i++ {

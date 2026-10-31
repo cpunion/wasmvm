@@ -1,4 +1,4 @@
-# Synchronous component execution
+# Component execution
 
 `pkg/component` owns the embedding API and executes ordered plans from the
 component validator. It compiles embedded Core binaries with `pkg/vm.Engine`;
@@ -373,3 +373,41 @@ syntax rejection. These two fixtures are not independent conformance evidence.
 Actual Wasmtime 48.0.1 executes the common guest creation/drop lifecycle and
 rejects the forbidden post-return leave. Its cross-component sample traps and
 its cm64 sample is rejected; those boundaries remain recorded, not passed.
+
+## Run-to-completion async canonical lifts
+
+The next execution profile admits async component function types, ordinary
+synchronous lift/lower of those types, and canonical async lifts. An async
+function type describes the component call contract; the async canonical option
+selects its Core ABI. The stackful ABI returns through task.return and has no
+Core results. The stackless ABI returns a packed EXIT/YIELD code and repeatedly
+calls the checked callback with the NONE event. Packed high bits are ignored for
+EXIT/YIELD. There are no accepted waitable-set producers in this profile, so
+WAIT cannot identify a valid set. Async lower, waitable sets, subtask operations,
+cooperative cancellation and future/stream values remain rejected explicitly.
+
+Function.Call runs this profile to completion within the existing Store lease,
+fuel, cancellation and reentry limits. Each implicit thread has two zeroed TLS
+slots (i32 or the uniform cm64 i64 width). Initialization and canonical realloc
+use independent storage; realloc restores its caller's task even on failure.
+Stackful nested calls save and restore the parent task without another execution
+driver or an unbounded goroutine per callback. YIELD may immediately select the
+current ready thread, as permitted by the pinned nondeterministic ABI. The host
+may cancel the entire call through its context; that aborts execution rather
+than synthesizing a guest TASK_CANCELLED event.
+
+Task.return checks the active task, result schema, encoding and actual memory
+instance identity. It uses the existing 16-slot parameter convention to lift
+direct or indirect results, including cm32/cm64 strings and nominal ownership.
+Foreign borrows must be dropped before result publication, and lenders are
+released at task.return. Missing/duplicate returns and invalid callback codes
+trap. Later traps, host errors, panic or cancellation poison the affected
+namespace and reclaim unpublished results through the original live Core
+session. Failed guest owners are not reentered for cleanup.
+
+Imports.AsyncFunctions explicitly binds async host function types; Functions
+continues to bind synchronous types. Both use HostFunction and its existing
+callback lifetime. FunctionInfo.Async exposes the declared type independently
+of the Core ABI. Stable WASI 0.2 command and incoming-HTTP exports must remain
+synchronous; their provider imports cannot silently acquire async signatures.
+This profile does not provide suspended native async calls or WASI 0.3 worlds.

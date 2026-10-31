@@ -143,7 +143,7 @@ func (p *HTTP) CallIncoming(ctx context.Context, in *component.Instance, request
 	info := function.Info()
 	_, requestType := info.Parameter(0)
 	_, outparamType := info.Parameter(1)
-	if info.ParameterCount() != 2 || info.Result().Valid() || requestType.Kind() != component.KindOwn || outparamType.Kind() != component.KindOwn || !requestType.IsResource(p.types[httpIncomingRequest]) || !outparamType.IsResource(p.types[httpResponseOutparam]) {
+	if info.Async() || info.ParameterCount() != 2 || info.Result().Valid() || requestType.Kind() != component.KindOwn || outparamType.Kind() != component.KindOwn || !requestType.IsResource(p.types[httpIncomingRequest]) || !outparamType.IsResource(p.types[httpResponseOutparam]) {
 		return nil, vm.ErrType
 	}
 	fields, err := p.fieldsFromHeader(request.Header)

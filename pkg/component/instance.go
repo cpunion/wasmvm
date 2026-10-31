@@ -20,7 +20,10 @@ type HostFunction func(*Caller, []Value) (*Value, error)
 type ValueFactory func(*Caller) (Value, error)
 
 type Imports struct {
-	Functions      map[string]HostFunction
+	Functions map[string]HostFunction
+	// AsyncFunctions explicitly binds async component function types. Ordinary
+	// Functions keep synchronous contracts, including stable WASI 0.2 imports.
+	AsyncFunctions map[string]HostFunction
 	FunctionChecks map[string]FunctionCheck
 	Instances      map[string]Imports
 	Values         map[string]Value
@@ -184,6 +187,8 @@ type closure struct {
 }
 
 type namespace struct {
+	task      *callTask
+	taskOps   bool
 	parent    *namespace
 	plan      *validate.Component
 	resources map[uint64]*resourceType
@@ -387,6 +392,9 @@ func (in *Instance) bind(types []validate.Extern, imports Imports) (map[string]i
 
 		case model.FunctionSort:
 			fn := imports.Functions[name]
+			if expected.Type.Kind == model.AsyncFunction {
+				fn = imports.AsyncFunctions[name]
+			}
 			if fn == nil {
 				return nil, fmt.Errorf("%w: missing component function %q", vm.ErrLink, name)
 			}
@@ -494,7 +502,7 @@ func (in *Instance) instantiate(caller *vm.Caller, component *closure, args map[
 	defer func() { in.depth-- }()
 	n := &namespace{parent: component.parent, plan: component.plan, resources: map[uint64]*resourceType{}, items: map[model.Sort][]item{}, exports: map[string]item{}}
 	// The index-space plan is needed only while definitions are published.
-	defer func() { n.plan = nil }()
+	defer func() { n.plan, n.task = nil, nil }()
 	children, canonicalIndex, valuesIndex, instancesIndex := 0, 0, 0, 0
 	importTypes := map[string]*validate.Type{}
 	for _, e := range component.plan.Type.Imports {
