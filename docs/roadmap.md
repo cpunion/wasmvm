@@ -571,6 +571,17 @@ after callback/destructor panic have execution tests on both backends. WASI
 world/toolchain acceptance are still required. This host substrate does not
 complete M6 or its deferred performance gate.
 
+The versioned P3 provider increment supplies 17 base/CLI/clock/random interfaces
+(22 imported operations), native stream stdin/stdout/stderr, nominal terminal
+resources and async command-export invocation. Explicit adapters implement the
+changed operation names, signed system-clock seconds, duration resolution,
+random short reads and async timer waits. Scheduled output consumption progresses
+before its returned completion future is read. Source/provider shutdown, bounded
+cross-Store operations/workers and publication-failure cleanup are tested.
+Filesystem, sockets and HTTP P3 bindings, complete CLI/HTTP worlds, full guest
+producer/conformance evidence and remaining reentry/cm64 contracts remain open.
+See [the P3 provider design](design/wasi-preview3.md).
+
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 
 ## M7 — Further optimization and experimental features

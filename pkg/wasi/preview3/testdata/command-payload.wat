@@ -1,0 +1,1 @@
+(component  (core module $m (memory (export "memory") 1) (func (export "run")  (result i32) i32.const 32)) (core instance $m (instantiate $m )) (alias core export $m "memory" (core memory $mem)) (func $run async  (result (result (error u8))) (canon lift (core func $m "run") (memory $mem))) (instance $run (export "run" (func $run))) (export "wasi:cli/run@0.3.2" (instance $run)))

@@ -1,0 +1,20 @@
+(component
+ (import "wasi:clocks/monotonic-clock@0.3.2" (instance $clock
+  (export "now" (func (result u64))) (export "get-resolution" (func (result u64)))
+  (export "wait-for" (func async (param "how-long" u64))) (export "wait-until" (func (param "when" u64)))))
+ (alias export $clock "now" (func $now)) (alias export $clock "get-resolution" (func $resolution))
+ (alias export $clock "wait-for" (func $wait-for)) (alias export $clock "wait-until" (func $wait-until))
+ (core func $now (canon lower (func $now))) (core func $resolution (canon lower (func $resolution)))
+ (core func $wait-for (canon lower (func $wait-for))) (core func $wait-until (canon lower (func $wait-until)))
+ (core instance $env (export "now" (func $now)) (export "resolution" (func $resolution)) (export "wait-for" (func $wait-for)) (export "wait-until" (func $wait-until)))
+ (core module $m
+  (import "env" "now" (func $now (result i64))) (import "env" "resolution" (func $resolution (result i64)))
+  (import "env" "wait-for" (func $wait-for (param i64))) (import "env" "wait-until" (func $wait-until (param i64)))
+  (func (export "now") (result i64) call $now) (func (export "resolution") (result i64) call $resolution)
+  (func (export "wait-for") (param i64) (result i64) local.get 0 call $wait-for call $now)
+  (func (export "wait-until") (param i64) (result i64) local.get 0 call $wait-until call $now))
+ (core instance $m (instantiate $m (with "env" (instance $env))))
+ (func (export "now") (result u64) (canon lift (core func $m "now")))
+ (func (export "resolution") (result u64) (canon lift (core func $m "resolution")))
+ (func (export "wait-for") async (param "duration" u64) (result u64) (canon lift (core func $m "wait-for")))
+ (func (export "wait-until") async (param "mark" u64) (result u64) (canon lift (core func $m "wait-until"))))
