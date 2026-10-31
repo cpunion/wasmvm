@@ -20,6 +20,7 @@ M6 or complete-world conformance.
 | clocks/monotonic-clock | now, get-resolution, async wait-for, async wait-until |
 | clocks/system-clock | now, get-resolution |
 | random/random, random/insecure, random/insecure-seed | all five operations |
+| filesystem/types, filesystem/preopens | all 26 operations: 21 async metadata/path methods, four native-stream methods, get-directories |
 
 All names bind under `@0.3.2`. Pure environment/exit/entropy backends share the
 existing P2 implementation through explicit operation selection and signature
@@ -69,8 +70,45 @@ payload-free result. Normal failure maps to status 1; explicit exit preserves it
 status. Traps and cancellation remain errors. This invocation helper does not
 synthesize a complete command world.
 
+Filesystem binds the complete pinned types/preopens interfaces on Linux and
+Darwin. NewFileSystem takes the IO operation owner and explicit preopens; no
+ambient directories are inherited. Descriptor resources have generative Store
+identity and provider-wide, nonreused representations. Capability-relative host
+operations enforce granted roots and read-only rights. Streams retain independent
+leases after the originating descriptor is dropped. Directory streams open
+independent cursors and emit bounded batches of typed entries.
+
+P3 filesystem error-code and descriptor-type are variants, including
+other(option<string>); they are not P2 enums. There is no public would-block error.
+Detailed errors travel in completion futures; the pinned canonical ABI reports
+stream progress/status without an error-context closure operand, despite older
+closure wording in the WIT comments. File I/O retries readiness internally, including nonseekable FIFO partial reads
+and writes. Signed timestamps preserve negative seconds. Offsets and lengths
+check signed host limits before system calls. Append serializes flag changes with
+other writes on the same open object and restores its original flags.
+
+MaxDescriptors bounds published handles and separately bounds physical backing
+objects, including preopens, cursors, pending opens and queued closes. Worker,
+path, entry and batch limits are explicit. A bounded reclaimer closes descriptors
+outside VM callbacks; admission waits for pending reclamation with cancellation.
+Async completions retain a separate result lease until publication or abandonment,
+and reclaim late results. MaxWorkers reservations are released before signaling
+completion while join accounting remains live. Close revokes streams and starts
+shutdown; WaitClosed joins workers and physical descriptor cleanup. Close and
+wait for bound Instances, then the filesystem provider, then its IO owner.
+
+Read cancellation preserves bytes already consumed by an external operation;
+empty cancellation acknowledges without inventing progress. Result futures report
+typed filesystem errors independently of stream EOF. Provider closure cancels
+FIFO readiness and restores operation/object reservations.
+
 Current owned fixtures independently parse/validate with wasm-tools 1.258.0 and
 execute on both backends under Go/LLGo. They are ABI/provider integration tests,
-not complete upstream world conformance. Filesystem, sockets, HTTP, complete world
+not complete upstream world conformance. Sockets, HTTP, complete world
 assembly and independent guest-toolchain fixtures remain required. Performance
 campaigns are deferred until capability coverage is complete.
+
+Actual Wasmtime 48.0.1 matches the async Core guest's successful open/stat size
+and missing-file error variant. The API-only fixture reexports imported functions;
+Wasmtime rejects that adapter feature, recorded separately from the two executed
+reference cases. These checks do not establish full world/toolchain acceptance.

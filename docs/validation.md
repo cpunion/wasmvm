@@ -4653,3 +4653,38 @@ values, normalization, current/no-change requests, invalid fields/flags, missing
 paths, directory escape and closed descriptors. Existing P1/P2 behavior continues
 to report unsigned overflow instead of wrapping. These primitives prepare P3
 filesystem bindings; they do not implement the P3 filesystem interface themselves.
+
+
+## WASI 0.3.2 filesystem and cancellation progress — 2026-11-01
+
+The complete filesystem/types and preopens callable surface binds 26 operations:
+21 asynchronous metadata/path methods, four native-stream methods and preopens.
+Generated contracts come from the SHA-pinned WIT archive, including P3 variants,
+nominal descriptors, async signatures and signed timestamps. Five independently
+parsed/validated fixtures retain generator/source/binary provenance.
+
+Both owned backends execute actual async Core open/stat/drop, including missing
+files. Provider tests cover all metadata/path methods, file read/write/append,
+independent directory cursors, flags and capabilities, negative/full-width time,
+invalid paths/types, read-only grants, descriptor/worker/entry/batch quotas,
+publication rollback, late results and quota restoration. FIFO cases cover
+readiness, partial writes larger than pipe capacity, stream leases after descriptor
+drop, instance/provider cancellation and shutdown. A held host FD lease verifies
+that VM drops queue bounded cleanup without blocking, and admission waiting for
+physical reclamation observes cancellation. A canonical cancellation guest checks
+that an external read's consumed byte survives cancellation and is reported in
+the progress word rather than discarded.
+
+Local Go race tests pass with 90.42% P3 package statement coverage (1378/1524).
+The full Go run measures all 30 executable packages at or above 90%; P3 reaches
+90.62% (1381/1524) with shared-package execution included. Pinned LLGo
+release-profile tests execute the same provider/guest cases; the final
+matrix remains required before integration. Actual Wasmtime 48.0.1 matches two
+common guest executions (size 3 and no-entry variant 19). Raw commands, binary and
+fixture hashes are retained in preview3-fs-reference-check.json. Its rejection of
+the API-only fixture's imported-function reexports is separately retained in
+preview3-fs-api-reference-rejection.json and is not counted as a pass.
+
+Sockets, HTTP, complete P3 worlds, independent guest toolchains, remaining cm64
+contracts and complete M5/M6 acceptance stay open. Optimization and broad timing
+campaigns remain deferred by the owner's functional-completion priority.
