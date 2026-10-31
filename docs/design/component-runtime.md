@@ -321,3 +321,55 @@ imported component can still invoke its host provider during failure cleanup.
 Guest realloc/post-return/reentry guards remain on canonical entry/leave paths.
 This also preserves the identity of a re-exported host function after a
 consumer's canonical trap. Global Store shutdown still invalidates all calls.
+
+## Error contexts
+
+The pinned Component Model's `error-context` diagnostic type now executes
+synchronously on both own backends. `canon error-context.new`,
+`canon error-context.debug-message` and `canon error-context.drop` share the
+ordinary canonical option/signature checker, string conversion and executor.
+UTF-8, UTF-16, compact latin1/UTF-16 and memory32/memory64 use the existing ABI
+layouts. Flat, spilled/aggregate and cross-component values carry diagnostics
+without consuming the original occurrence. This does not implement native task,
+future, stream or WASI 0.3 world execution.
+
+```go
+value, err := component.NewErrorContext("request failed")
+// Pass value through an error-context parameter, result or standalone value.
+message, err := component.ErrorContextMessage(value)
+```
+
+Diagnostics are immutable and copyable, independently of a Store lifetime.
+The existing `Value.Resource` opaque-reference slot carries either a nominal
+own/borrow capability or an error context, as determined by its checked value
+type. `Value` does not grow another union field. Host reference carriers are
+snapshotted at clone/lift boundaries; assigning a different carrier in host code
+cannot change a guest's retained message or corrupt quota accounting.
+`Instance.DropResource` remains an affine-resource operation; guest error-context
+drop removes one diagnostic handle and leaves other copies valid.
+
+One tagged handle table prevents resource/context index confusion and rejects
+stale or foreign-kind handles. Error contexts share the Store's live resource
+quota. `Config.MaxBytes` also caps unique diagnostic-message bytes retained by
+guest handles across all namespaces. Repeated handles for one diagnostic share
+that byte charge; independent diagnostics consume separate charges. Failed
+lowering transactions use the existing rollback queue. Drops and Store close
+release retained charges; ordinary resource-only table close stays constant-time.
+
+Default guest creation retains a well-formed message. Setting
+`DiscardErrorContextMessages` creates an empty message without lifting or
+checking the proposed input range, as permitted by the pinned ABI's discard
+policy. Existing messages remain stable when copied/lowered. Diagnostic text
+must not determine program behavior. Debug-message output checks the complete
+aligned return region before entering realloc. Realloc/post-return retain the
+may-leave guard, including for context drop; traps poison the affected guest
+entry while host diagnostic values remain readable.
+
+The fixed producer independently validates seven ordinary fixtures. Its cm64
+error-context builtin signature remains i32, contrary to the pinned optional
+memory64 rule; that rejection is explicit. A standalone-value fixture follows
+the project's pinned value-extension grammar and retains the producer's older
+syntax rejection. These two fixtures are not independent conformance evidence.
+Actual Wasmtime 48.0.1 executes the common guest creation/drop lifecycle and
+rejects the forbidden post-return leave. Its cross-component sample traps and
+its cm64 sample is rejected; those boundaries remain recorded, not passed.

@@ -23,14 +23,15 @@ type DecodeLimits = decode.Limits
 type ValidationLimits = validate.Limits
 
 type Config struct {
-	Core         vm.EngineConfig
-	Store        vm.StoreConfig
-	Decode       DecodeLimits
-	Validate     ValidationLimits
-	MaxValues    uint64
-	MaxBytes     uint64
-	MaxNesting   uint32
-	MaxResources uint32
+	Core                        vm.EngineConfig
+	Store                       vm.StoreConfig
+	Decode                      DecodeLimits
+	Validate                    ValidationLimits
+	MaxValues                   uint64
+	MaxBytes                    uint64
+	MaxNesting                  uint32
+	MaxResources                uint32
+	DiscardErrorContextMessages bool
 }
 
 func DefaultConfig() Config {
@@ -173,7 +174,7 @@ func preflight(p *validate.Component) error {
 			return unsupported("cm64 defining-instance borrow conversion")
 		}
 		switch t.Kind {
-		case model.Future, model.Stream, model.ErrorContext:
+		case model.Future, model.Stream:
 			return unsupported("value conversion")
 		}
 		for _, fields := range [][]model.Field{t.Fields, t.Cases} {
@@ -199,8 +200,11 @@ func preflight(p *validate.Component) error {
 		}
 	}
 	for _, f := range p.Canonical {
-		if f.Definition.Op > 4 || f.Async {
+		if f.Definition.Op > 4 && (f.Definition.Op < 0x1c || f.Definition.Op > 0x1e) || f.Async {
 			return unsupported("resource or async canonical operation")
+		}
+		if f.Type == nil {
+			continue
 		}
 		for _, param := range f.Type.Parameters {
 			if err := value(param.Type); err != nil {

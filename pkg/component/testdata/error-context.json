@@ -1,0 +1,55 @@
+{
+  "componentModelCommit": "d095e2f60ddae1f9a1e9b1e2fb547ec1114da677",
+  "producer": "wasm-tools 1.258.0",
+  "generatorSHA256": "356ea3c407620328289a82d184f43499b0c519f65ce32b3f8b80c676d95ec483",
+  "helperSHA256": "ad3fcca54854fff42f5da87b6e3feddf6af6cc9b675bda0595641c21cbfd58cd",
+  "sha256": {
+    "error-context": {
+      "wat": "083d55e409bb7625004b84616d8fc9c06787bbf8d792e774c0a507bfd0804f29",
+      "wasm": "82063490d6794beb993f6a0fa17c6ede40bad34cd5c0822b52d34a157606f01c",
+      "producerValidated": true
+    },
+    "error-context-utf16": {
+      "wat": "28c586419549c18fb460d91b409e52f37d2375f2eee2af813c8eca20205264ec",
+      "wasm": "02861662c257122e83be53b1cd9e6c82d0ad10304b401432b3caee9d28c82081",
+      "producerValidated": true
+    },
+    "error-context-compact": {
+      "wat": "fa1582746a9f38a7f362a0189720153c64dbc22c48b3b3a4dfa5b7f444c0a3a0",
+      "wasm": "ce0500af7d80196cc42fbc3457b7b26ac4ff439b4ae7c77fd13ca9124d7a3a7d",
+      "producerValidated": true
+    },
+    "error-context64": {
+      "wat": "a0cc9422524de047d665160916c2b0b5b171b1b62edf94c497c089d4915f45b1",
+      "wasm": "f7936b4ef2f0a0f92683e73f57e650194601a2d25c397383fc9e6ef46de4b603",
+      "producerValidated": false,
+      "producerRejection": "error: type mismatch for export `new` of module instantiation argument `env`\nexpected: (func (param i64 i64) (result i32))\nfound:    (func (param i32 i32) (result i32)) (at offset 0x2ea)"
+    },
+    "error-context-post-return": {
+      "wat": "e0f398aa15a257ebdc5837a4f6ae7959e2d6b0fa66f2366a3fde9e8ef634f827",
+      "wasm": "c4bbab8fabfbd1ee60f62e1b643b43a2aa64c597b6d4ec679e4225069e541fdc",
+      "producerValidated": true
+    },
+    "error-context-components": {
+      "wat": "4b7f5fe1c91d6183dc876a7d298358ce79b5b04fdb7013f0d651c00096a1a91c",
+      "wasm": "d750f7cdef6d6b4f45b722d9a5d9d6dc9c437d15fdb8b6473e7e10886ef123d0",
+      "producerValidated": true
+    },
+    "error-context-host": {
+      "wat": "6e8fe097f64b445f3627926d98b9bb197604a8f09ebc573e1194848394ab02be",
+      "wasm": "2bc6107bc5f09e3209642ee1f94133e0eb1d0912b333f973e372ffe67526a929",
+      "producerValidated": true
+    },
+    "error-context-cross": {
+      "wat": "b3acd98d576e1e7ff1ce27aacb7eb49e27857b4ece5a3023dfccc743754e7a08",
+      "wasm": "4897efb0a017f0b65332123b4ac79a5da1fa8628cb5f6d8172f90b9f0d972aaa",
+      "producerValidated": true
+    },
+    "error-context-values": {
+      "wasm": "9c633849a37465717ae911d6a9119df0eff5d1bc641e72ddf5c68d51331189ab",
+      "producerValidated": false,
+      "textGenerated": false,
+      "producerRejection": "error: unknown type 1: type index out of bounds (at offset 0xb)"
+    }
+  }
+}

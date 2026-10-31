@@ -1,0 +1,108 @@
+(component
+ (component $library
+
+  (core module $memory
+    (memory (export "memory") 1)
+    (data (i32.const 0) "context-\ce\bb")
+    (global $bump (mut i32) (i32.const 1024))
+    (global $calls (mut i32) (i32.const 0))
+    (func (export "realloc") (param i32 i32 i32) (param $size i32) (result i32)
+      (local $ptr i32)
+      global.get $calls i32.const 1 i32.add global.set $calls
+      global.get $bump local.tee $ptr local.get $size i32.add i32.const 7 i32.add i32.const -8 i32.and global.set $bump
+      local.get $ptr)
+    (func (export "allocations") (result i32) global.get $calls))
+  (core instance $memory (instantiate $memory))
+  (alias core export $memory "memory" (core memory $mem))
+  (alias core export $memory "realloc" (core func $realloc))
+  (alias core export $memory "allocations" (core func $allocations))
+  (core func $new (canon error-context.new (memory $mem)))
+  (core func $message (canon error-context.debug-message (memory $mem) (realloc $realloc)))
+  (core func $drop (canon error-context.drop))
+  (core instance $env
+    (export "new" (func $new)) (export "message" (func $message))
+    (export "drop" (func $drop)) (export "memory" (memory $mem)))
+  (core module $guest
+    (import "env" "new" (func $new (param i32 i32) (result i32)))
+    (import "env" "message" (func $message (param i32 i32)))
+    (import "env" "drop" (func $drop (param i32)))
+    (import "env" "memory" (memory 1))
+    (global $pending (mut i32) (i32.const 0))
+    (func $release (export "release")
+      global.get $pending if global.get $pending call $drop i32.const 0 global.set $pending end)
+    (func (export "make") (param i32 i32) (result i32) (local $id i32)
+      call $release local.get 0 local.get 1 call $new local.tee $id global.set $pending local.get $id)
+    (func (export "echo") (param i32) (result i32) call $release local.get 0 global.set $pending local.get 0)
+    (func (export "post") (param i32) local.get 0 call $drop)
+    (func (export "inspect") (param i32) (result i32)
+      call $release local.get 0 i32.const 32 call $message local.get 0 call $drop i32.const 32)
+    (func (export "record") (param i32 i32) (result i32)
+      call $release local.get 0 global.set $pending i32.const 64 local.get 0 i32.store i32.const 68 local.get 1 i32.store i32.const 64)
+    (func (export "post-record") (param i32) local.get 0 i32.load call $drop)
+    (func (export "churn") (param $n i32) (result i32)
+      (local $i i32) (local $id i32)
+      block $end loop $loop
+        local.get $i local.get $n i32.ge_u br_if $end
+        i32.const 0 i32.const 10 call $new local.set $id
+        local.get $id call $drop
+        local.get $i i32.const 1 i32.add local.set $i br $loop
+      end end local.get $i))
+  (core instance $guest (instantiate $guest (with "env" (instance $env))))
+  (alias core export $guest "release" (core func $release))
+  (alias core export $guest "make" (core func $make))
+  (alias core export $guest "echo" (core func $echo))
+  (alias core export $guest "post" (core func $post))
+  (alias core export $guest "inspect" (core func $inspect))
+  (alias core export $guest "record" (core func $record))
+  (alias core export $guest "post-record" (core func $post-record))
+  (alias core export $guest "churn" (core func $churn))
+  (type $record (record (field "context" error-context) (field "number" u32)))
+  (export "entry" (type $record))
+  (func (export "make") (param "message" string) (result error-context) (canon lift (core func $make) (memory $mem) (realloc $realloc) ))
+  (func (export "echo") (param "context" error-context) (result error-context) (canon lift (core func $echo) ))
+  (func (export "inspect") (param "context" error-context) (result string) (canon lift (core func $inspect) (memory $mem)))
+  (func (export "record") (param "value" 1) (result 1) (canon lift (core func $record) (memory $mem) ))
+  (func (export "release") (canon lift (core func $release)))
+  (func (export "raw-new") (param "ptr" u32) (param "len" u32) (result u32) (canon lift (core func $new)))
+  (func (export "raw-message") (param "id" u32) (param "ptr" u32) (canon lift (core func $message)))
+  (func (export "raw-drop") (param "id" u32) (canon lift (core func $drop)))
+  (func (export "allocations") (result u32) (canon lift (core func $allocations)))
+  (func (export "churn") (param "n" u32) (result u32) (canon lift (core func $churn))))
+
+ (instance $api (instantiate $library))
+ (alias export $api "make" (func $make))
+ (alias export $api "echo" (func $echo))
+ (alias export $api "inspect" (func $inspect))
+ (core module $memory
+  (memory (export "memory") 1)
+  (data (i32.const 0) "context-\ce\bb")
+  (global $next (mut i32) (i32.const 1024))
+  (func (export "realloc") (param i32 i32 i32) (param $n i32) (result i32) (local $p i32)
+   global.get $next local.tee $p local.get $n i32.add global.set $next local.get $p))
+ (core instance $memory (instantiate $memory))
+ (alias core export $memory "memory" (core memory $mem))
+ (alias core export $memory "realloc" (core func $realloc))
+ (core func $make (canon lower (func $make) (memory $mem)))
+ (core func $echo (canon lower (func $echo)))
+ (core func $inspect (canon lower (func $inspect) (memory $mem) (realloc $realloc)))
+ (core func $drop (canon error-context.drop))
+ (core instance $env (export "make" (func $make)) (export "echo" (func $echo))
+  (export "inspect" (func $inspect)) (export "drop" (func $drop)) (export "memory" (memory $mem)))
+ (core module $guest
+  (import "env" "make" (func $make (param i32 i32) (result i32)))
+  (import "env" "echo" (func $echo (param i32) (result i32)))
+  (import "env" "inspect" (func $inspect (param i32 i32)))
+  (import "env" "drop" (func $drop (param i32)))
+  (import "env" "memory" (memory 1))
+  (func (export "run") (param $n i32) (result i32) (local $i i32) (local $a i32) (local $b i32)
+   block $end loop $next
+    local.get $i local.get $n i32.ge_u br_if $end
+    i32.const 0 i32.const 10 call $make local.set $a
+    local.get $a call $echo local.set $b local.get $a call $drop
+    local.get $b i32.const 32 call $inspect local.get $b call $drop
+    i32.const 36 i32.load i32.const 10 i32.ne if unreachable end
+    local.get $i i32.const 1 i32.add local.set $i br $next
+   end end local.get $i))
+ (core instance $guest (instantiate $guest (with "env" (instance $env))))
+ (alias core export $guest "run" (core func $run))
+ (func (export "run") (param "n" u32) (result u32) (canon lift (core func $run))))

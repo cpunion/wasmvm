@@ -14,3 +14,11 @@ bytes = "=1.12.1"
 hyper = { version = "=1.12.0", default-features = false }
 http-body-util = "=0.1.5"
 tokio = { version = "=1.54.1", features = ["rt-multi-thread"] }
+
+[features]
+error-context = ["wasmtime/component-model-async"]
+
+[[bin]]
+name = "error_context"
+path = "src/bin/error_context.rs"
+required-features = ["error-context"]

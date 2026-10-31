@@ -6,9 +6,13 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
-// Reference is an opaque host resource capability. Copies share one state;
-// moving any copy invalidates every alias of that capability.
-type Reference struct{ state *referenceState }
+// Reference is an opaque value reference. Resource capabilities share one
+// affine state; moving any alias invalidates all copies. Error contexts instead
+// carry immutable, copyable diagnostics. Value retains one reference slot.
+type Reference struct {
+	state        *referenceState
+	errorContext *errorContext
+}
 
 type referenceState struct {
 	mu     sync.Mutex

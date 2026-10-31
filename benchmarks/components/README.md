@@ -492,3 +492,24 @@ cargo +1.98.0 run --locked --release --manifest-path benchmarks/components/rust/
 The source base rejects older interface names before guest execution. Preserve
 that boundary separately from performance. `BenchmarkWASICommand` and the
 existing `command` reference supply common C/Rust command baseline controls.
+
+Error-context lifecycle probes use the same guest bytes and captured UTF-8
+message on both own backends and actual Wasmtime 48.0.1. Each timed batch performs
+128 guest new/drop lifetimes. Warm timers exclude preparation, lookup and first
+invocation; this includes the guest loop and canonical callbacks, not only a
+host table primitive. Load, engine, compile, Store/instantiate, lookup, first and
+Close are independently reported. Own fuel is off with logical quotas and
+cancellation; the reference uses default Store policy. Discard policy is not
+silently substituted for message capture.
+
+```sh
+go run benchmarks/components/error_context.go pkg/component/testdata/error-context.wasm interpreter 3000 128
+cargo +1.98.0 run --locked --release --features error-context --manifest-path benchmarks/components/rust/Cargo.toml --bin error_context -- pkg/component/testdata/error-context.wasm 3000 128
+```
+
+The optional reference feature enables Wasmtime's pinned concurrent runtime
+needed by error-context builtins; existing P2 reference binaries keep their
+original feature profile. `BenchmarkOwnedResourceLifetime` remains the common
+source-base/head/reference control for the shared opaque-reference/handle paths.
+Unsupported base/new operations have no direct speed ratio. Local measurements
+and reference limitations do not establish M6/performance acceptance.

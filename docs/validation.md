@@ -4160,3 +4160,69 @@ earlier diagnostic medians and explicit failures remain under
 This is a bounded upstream CLI subset. Full upstream/world conformance, local
 cm64 borrow conversion, performance acceptance and native async/WASI 0.3 still
 remain required. M5/M6 and the project are incomplete.
+
+## Error-context execution (2026-10-31)
+
+The owned compiler/runtime executes all three pinned diagnostic builtins and
+copyable error-context values through existing flat/memory aggregate codecs,
+synchronous host callbacks, imported components and standalone value bindings.
+Both own backends execute Unicode encodings and optional memory64, typed handle
+rejection, byte/live-handle quotas, post-return may-leave rejection, cancellation,
+host panic and rollback. A mutable host reference carrier cannot mutate the
+retained diagnostic object. Shared table/budget tests include concurrent
+namespaces and unique-message accounting. No external engine fallback is used.
+
+Nine pinned fixtures retain source/output/generator/helper SHA-256. Seven pass
+independent wasm-tools 1.258.0 validation. The producer emits an i32 builtin for
+cm64 despite the pinned memory64 signature, and its value-import syntax differs
+from the project's pinned extension; both exact rejections are preserved. Those
+two fixtures execute on the own runtime but are not an independent oracle.
+Actual unmodified Wasmtime 48.0.1 executes guest new/drop with message capture
+and the forbidden post-return case traps. The cross-component sample traps
+with cannot-enter and the cm64 sample is rejected; neither is reported passing.
+Source base `af798f4` rejects the new canonical operations before execution.
+
+Full Go tests and relevant Go/LLGo release suites, race and vet pass. Local full
+production coverage: canonical **94.24%** (1,341/1,423), component validator
+**92.43%** (2,040/2,207), component runtime **92.20%** (1,206/1,308). Every
+executable package remains >=90%. Package statement coverage is not specification
+coverage. These results advance the first M6 primitive, not task/world completion.
+
+Apple M4 Max arm64, Go 1.27.3 and LLGo `8e45ed5 -O3 -lto=full`; three serial
+samples, 3,000 warmed calls with 128 complete context lifetimes per call. Both
+implementations capture the same UTF-8 input, with no discard substitution.
+Own logical quotas/cancellation remain enabled and fuel is off; reference Store
+policy is default. Microseconds except the last column (nanoseconds/lifetime):
+
+| Runtime | Load | Engine | Compile | Store + instantiate | Lookup | First call | Close | Warm context |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| go-interpreter | 41.417 | 1.584 | 239.625 | 41.084 | 0.375 | 74.167 | 3.125 | 426.908 |
+| go-native | 44.000 | 1.417 | 668.875 | 42.000 | 0.416 | 109.167 | 16.542 | 644.180 |
+| llgo-interpreter | 50.750 | 2.959 | 580.292 | 88.084 | 0.417 | 119.375 | 3.125 | 1435.063 |
+| llgo-native | 55.667 | 2.958 | 1,622.583 | 90.125 | 0.458 | 233.917 | 14.833 | 2376.130 |
+| wasmtime-48.0.1 | 42.208 | 91.583 | 2,049.666 | 54.917 | 2.833 | 16.166 | 63.667 | 66.134 |
+
+First call is one batch. Build/process startup, lookup, preparation and Close are
+outside warm execution. Guest instructions, public batch entry and the two
+canonical callbacks remain in each complete lifecycle; no pure-dispatch or
+whole-process efficiency ratio is inferred. The optional Rust reference enables
+the pinned concurrent-runtime feature required by error-context, independently
+of earlier P2 reference profiles.
+
+The common unchanged own/borrow control runs 100,000 four-call lifetimes per
+sample, three alternating source base/head samples. Startup, lookup and first
+lifetime are outside warm timers. Nanoseconds per complete lifetime:
+
+| Host | Interpreter base -> head | Native base -> head | Actual Wasmtime C API |
+| --- | ---: | ---: | ---: |
+| go | 2,882 -> 2,935 | 5,239 -> 5,214 | 1,194.52 |
+| llgo | 8,628 -> 8,824 | 14,649 -> 14,721 | 1,194.52 |
+
+Local LLGo common controls change about +2.3%/+0.5%. The reference is much
+faster for the new lifecycle as well as the common path. These uncalibrated
+observations are not parity or optimization acceptance; compiler/interpreter
+and canonical callback performance remain explicit open work. Raw samples,
+producer/reference rejections and support probes are retained under
+`artifacts/components/error-context-*`. Future/stream/task scheduling, complete
+WASI 0.3.2 worlds, local cm64 borrows and earlier conformance/performance gates
+remain required. M5/M6 and the overall project are incomplete.

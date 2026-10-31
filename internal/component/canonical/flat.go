@@ -36,7 +36,7 @@ func (c *Codec) liftFlat(t *model.Type, slots []Slot, at *int, depth uint32) (Va
 		return Value{Bits: v.Bits}, err
 	}
 	switch t.Kind {
-	case model.Own, model.Borrow:
+	case model.Own, model.Borrow, model.ErrorContext:
 		r, err := c.resource()
 		if err != nil {
 			return Value{}, err
@@ -163,7 +163,7 @@ func (c *Codec) lowerFlat(t *model.Type, v Value, out []Slot, depth uint32) ([]S
 		return append(out, slot), err
 	}
 	switch t.Kind {
-	case model.Own, model.Borrow:
+	case model.Own, model.Borrow, model.ErrorContext:
 		r, err := c.resource()
 		if err != nil {
 			return nil, err

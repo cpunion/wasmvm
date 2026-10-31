@@ -226,7 +226,7 @@ func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.
 		lease.Close()
 		return nil, err
 	}
-	in := &Instance{engine: c.engine, store: store, config: c.engine.config, bindings: map[any]Value{}, resourceBudget: canonical.NewResourceBudget(c.engine.config.MaxResources)}
+	in := &Instance{engine: c.engine, store: store, config: c.engine.config, bindings: map[any]Value{}, resourceBudget: canonical.NewResourceBudgetWithErrors(c.engine.config.MaxResources, c.engine.config.MaxBytes)}
 	in.components = map[*Compiled]*componentLease{c: lease}
 	in.hostTypes = map[*hostResourceDefinition]*resourceType{}
 	in.importResourceIDs = map[uint64]*resourceType{}
@@ -463,7 +463,7 @@ func equalValue(a, b Value) bool {
 }
 
 func equalResource(a, b *Resource) bool {
-	if a == b {
+	if a == b || canonical.SameErrorContext(a, b) {
 		return true
 	}
 	at, ai, ax, _, _, ae := canonical.ReferenceInfo(a)

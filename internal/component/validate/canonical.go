@@ -36,6 +36,9 @@ func (c *componentContext) canonical(def *model.Canonical) error {
 	if def.Op == 0x0e || def.Op == 0x15 || def.Op == 0x20 || def.Op == 0x21 || def.Op == 0x27 {
 		return c.asyncBuiltin(def)
 	}
+	if def.Op >= 0x1c && def.Op <= 0x1e {
+		return c.errorContextBuiltin(def)
+	}
 	if def.Op > 1 {
 		return fmt.Errorf("%w: canonical operation %#x", wasm.ErrUnsupported, def.Op)
 	}
@@ -57,64 +60,19 @@ func (c *componentContext) canonical(def *model.Canonical) error {
 		return fmt.Errorf("%w: asynchronous canonical signature", wasm.ErrUnsupported)
 	}
 	info := &CanonicalFunction{Definition: def, Type: t}
-	seen := byte(0)
-	for _, o := range def.Options {
-		kind := o.Kind
-		if kind <= 2 {
-			kind = 0
-		}
-		if kind > 7 {
-			return invalid("unknown canonical option")
-		}
-		if seen&(1<<kind) != 0 {
-			return invalid("duplicate canonical option")
-		}
-		seen |= 1 << kind
-		index := o.Index
-		switch o.Kind {
-		case 0, 1, 2:
-			info.Encoding = canonical.Encoding(o.Kind)
-		case 3:
-			memory, err := c.coreAt(model.SortIndex{Sort: model.CoreMemorySort, Index: index})
-			if err != nil {
-				return err
-			}
-			if memory.Descriptor.Memory.Shared {
-				return invalid("canonical memory is shared")
-			}
-			info.Memory, info.Memory64 = &index, memory.Descriptor.Memory.Index64
-		case 4, 5:
-			if _, err := c.coreAt(model.SortIndex{Sort: model.CoreFunctionSort, Index: index}); err != nil {
-				return err
-			}
-			if o.Kind == 4 {
-				info.Realloc = &index
-			} else {
-				info.PostReturn = &index
-			}
-		case 6, 7:
-			return fmt.Errorf("%w: asynchronous canonical option", wasm.ErrUnsupported)
-		}
-	}
-	if info.Realloc != nil && info.Memory == nil {
-		return invalid("canonical realloc requires memory")
+	_, err = c.canonicalOptions(info)
+	if err != nil {
+		return err
 	}
 	if !lifting && info.PostReturn != nil {
 		return invalid("post-return is only valid for lift")
 	}
-	address := wasm.I32
 	b := p.layouts32
 	if info.Memory64 {
-		address, b = wasm.I64, p.layouts
+		b = p.layouts
 	} else if b == nil {
 		b = canonical.NewBuilder(false, canonical.Limits{MaxNodes: p.limits.MaxNodes, MaxDepth: p.limits.MaxDepth, MaxBytes: math.MaxUint64})
 		p.layouts32 = b
-	}
-	if info.Realloc != nil {
-		f := c.functions[*info.Realloc]
-		if !slices.Equal(f.Params, []wasm.ValueType{address, address, address, address}) || !slices.Equal(f.Results, []wasm.ValueType{address}) {
-			return invalid("canonical realloc signature")
-		}
 	}
 	if err := p.charge(uint64(len(t.Parameters))); err != nil {
 		return err
@@ -302,5 +260,95 @@ func (c *componentContext) resourceBuiltin(def *model.Canonical) error {
 		return err
 	}
 	c.result.Canonical = append(c.result.Canonical, &CanonicalFunction{Definition: def, Type: t, Signature: f})
+	return nil
+}
+
+func (c *componentContext) canonicalOptions(info *CanonicalFunction) (wasm.ValueType, error) {
+	def := info.Definition
+	seen := byte(0)
+	for _, o := range def.Options {
+		kind := o.Kind
+		if kind <= 2 {
+			kind = 0
+		}
+		if kind > 7 {
+			return 0, invalid("unknown canonical option")
+		}
+		if seen&(1<<kind) != 0 {
+			return 0, invalid("duplicate canonical option")
+		}
+		seen |= 1 << kind
+		index := o.Index
+		switch o.Kind {
+		case 0, 1, 2:
+			info.Encoding = canonical.Encoding(o.Kind)
+		case 3:
+			memory, err := c.coreAt(model.SortIndex{Sort: model.CoreMemorySort, Index: index})
+			if err != nil {
+				return 0, err
+			}
+			if memory.Descriptor.Memory.Shared {
+				return 0, invalid("canonical memory is shared")
+			}
+			info.Memory, info.Memory64 = &index, memory.Descriptor.Memory.Index64
+		case 4, 5:
+			if _, err := c.coreAt(model.SortIndex{Sort: model.CoreFunctionSort, Index: index}); err != nil {
+				return 0, err
+			}
+			if o.Kind == 4 {
+				info.Realloc = &index
+			} else {
+				info.PostReturn = &index
+			}
+		case 6, 7:
+			return 0, fmt.Errorf("%w: asynchronous canonical option", wasm.ErrUnsupported)
+		}
+	}
+	if info.Realloc != nil && info.Memory == nil {
+		return 0, invalid("canonical realloc requires memory")
+	}
+
+	address := wasm.I32
+	if info.Memory64 {
+		address = wasm.I64
+	}
+	if info.Realloc != nil {
+		f := c.functions[*info.Realloc]
+		if !slices.Equal(f.Params, []wasm.ValueType{address, address, address, address}) || !slices.Equal(f.Results, []wasm.ValueType{address}) {
+			return 0, invalid("canonical realloc signature")
+		}
+	}
+
+	return address, nil
+}
+
+func (c *componentContext) errorContextBuiltin(def *model.Canonical) error {
+	info := &CanonicalFunction{Definition: def}
+	f := module.FuncType{Params: []wasm.ValueType{wasm.I32}}
+	if def.Op != 0x1e {
+		for _, o := range def.Options {
+			if o.Kind > 4 {
+				return invalid("error-context canonical option")
+			}
+		}
+		address, err := c.canonicalOptions(info)
+		if err != nil {
+			return err
+		}
+		if info.Memory == nil || def.Op == 0x1d && info.Realloc == nil {
+			return invalid("error-context requires memory/realloc")
+		}
+		if def.Op == 0x1c {
+			f.Params = []wasm.ValueType{address, address}
+			f.Results = []wasm.ValueType{wasm.I32}
+		} else {
+			f.Params = []wasm.ValueType{wasm.I32, address}
+		}
+	}
+	info.Signature = f
+	if err := c.addSignature(f); err != nil {
+		return err
+	}
+	c.result.Canonical = append(c.result.Canonical, info)
 	return nil
 }
