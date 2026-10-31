@@ -4398,3 +4398,106 @@ Raw `async-lower-phase-*`, `async-lower-common-*`, toolchain/binary hashes,
 source-base capability/rollback reproductions and reference outcomes remain in
 `artifacts/components/async-lower-*`. Reproduce with the
 [component probe instructions](../benchmarks/components/README.md).
+
+## Pending callback subtasks (2026-10-31)
+
+Source base `1de979f84f6e7009814ef19debdb593791eea301`; runtime implementation
+`3d8156fff070459cf93a4a81ccaead25b62d13f6`; measurement/helper commit
+`c2f6a5b8340c915591aeb93c3b0f623930c16761`. Later evidence-only edits do not
+change the runtime or measured helpers.
+
+Callback-lifted functions now suspend after YIELD/WAIT, return real async-lower
+subtasks and resume through the existing Core session. Waitable membership and
+ready queues share the tagged resource handle domain. Cooperative cancellation,
+resolve delivery, explicit drop, borrow lifetimes, task/handle limits and failed
+session cleanup execute on both owned backends. No goroutine or duplicate VM
+provides the continuation. `Config.MaxTasks` defaults to 1,024.
+
+Eleven fixtures independently validate with wasm-tools 1.258.0 against Component
+Model `d095e2f60ddae1f9a1e9b1e2fb547ec1114da677`. They cover three pending
+sibling calls, set migration, callback WAIT, immediate/deferred/returning
+cancellation, three string encodings, resource handoff and rollback, and memory64
+event payloads. Negative paths include wrong handle kinds, early/duplicate drop,
+joined cancellation, invalid event/result pointers, synchronous suspension,
+panic, host errors, cancellation and close. A task-entry contract test verifies
+that cancellation under implicit backpressure never reads argument memory.
+
+Full local Go execution and affected pinned LLGo execution pass, along with race,
+vet and `CGO_ENABLED=0` builds. All 29 executable packages meet 90% statement
+coverage; final-head CI is audited separately in the PR. These are coverage and
+execution results for the declared profile, not full async conformance.
+
+Actual Wasmtime 48.0.1 records 47 guest outcomes: 45 satisfy the common contracts;
+two expose a memory64 disagreement. Both owned backends reject an event pointer
+of `0x1_0000_0000` into a one-page memory. The reference returns NONE for both
+`poll(4294967296)` and a guest-internal i64 constant, while rejecting ordinary
+out-of-range/unaligned pointers. The constant reproduction avoids CLI argument
+conversion. These disagreements remain failures of reference equivalence.
+Async cancellation may return BLOCKED before resolving instead of resolving
+eagerly; the probes retain the allowed scheduling alternatives.
+
+### Local phase and throughput evidence
+
+Apple M4 Max arm64; Go 1.27.3; clean LLGo
+`8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f -O3 -lto=full`; Rust 1.98.0;
+Wasmtime 48.0.1. Three serial samples alternate runtime and base/head order.
+Each sample checks 3,000 calls of 128 complete pending lifetimes, excluding the
+first call and ten warmups. Each lifetime includes the guest loop/checks, one
+callback, canonical conversion, handle/set creation/join/wait/drop, result
+publication and VM/host transitions. It is not a pure opcode or isolated lower
+cost. The helper explicitly records 128 logical guest callbacks per outer call.
+
+| Runtime | ns/128-lifetime call | Amortized ns/complete lifetime |
+| --- | ---: | ---: |
+| go-interpreter | 309,263.89 | 2,416.12 |
+| go-native | 609,991.49 | 4,765.56 |
+| llgo-interpreter | 1,206,751.97 | 9,427.75 |
+| llgo-native | 2,233,168.76 | 17,446.63 |
+| wasmtime-48.0.1 | 244,634.76 | 1,911.21 |
+
+All other phases are separate (**ns**, medians); process startup is excluded.
+
+| Runtime | Load | Executor | Engine | Compile | Store+instantiate | Lookup | First | Close |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| go-interpreter | 37,209 | 0 | 2,334 | 399,084 | 70,459 | 417 | 360,291 | 3,084 |
+| go-native | 33,667 | 0 | 2,333 | 1,397,416 | 70,542 | 333 | 1,025,500 | 7,958 |
+| llgo-interpreter | 59,375 | 0 | 3,333 | 871,084 | 106,333 | 458 | 1,299,584 | 2,833 |
+| llgo-native | 56,209 | 0 | 3,000 | 3,480,625 | 117,167 | 417 | 2,202,084 | 7,791 |
+| wasmtime-48.0.1 | 28,000 | 14,042 | 107,792 | 4,044,583 | 38,416 | 3,292 | 320,500 | 108,125 |
+
+Existing callback control: 1,000 calls/sample, each performing 129 callbacks
+without pending subtask/set management (**ns/call**, interpreter/native).
+
+| Compiler | Source base | Head | Observed change |
+| --- | ---: | ---: | ---: |
+| go | 46,075.50 / 115,619.54 | 48,396.38 / 116,776.54 | +5.04% / +1.00% |
+| llgo | 176,525.71 / 440,016.08 | 197,512.75 / 469,558.12 | +11.89% / +6.71% |
+
+The actual reference control is 39,908.29 ns/call.
+
+Common resource control: 100,000 four-call lifetimes/sample (**ns/lifetime**,
+interpreter/native).
+
+| Compiler | Source base | Head |
+| --- | ---: | ---: |
+| go | 2,837 / 5,081 | 2,892 / 5,041 |
+| llgo | 8,531 / 14,506 | 9,009 / 14,796 |
+
+The source base rejects the required async builtin profile before guest
+execution; no unsupported base throughput is invented. Reference flags enable
+async, stackful async, more async builtins, threading grammar and concurrency;
+the workload does not execute component threads. Owned logical quotas and
+cancellation stay on with fuel off; reference defaults differ. Uncontrolled
+local medians do not establish confidence intervals, matched-policy or all-target
+acceptance. LLGo competitor deficits and observed callback/resource regressions
+remain open.
+
+Raw local evidence is retained in `artifacts/components/pending-{toolchain,performance}.json`,
+`pending-phase-*.json`, `pending-control-*.json`, `pending-common-*.log`,
+`pending-reference-check.json`, `pending-base-unsupported.log`, and the local
+Go/LLGo/coverage/race logs. Compiler, fixture, helper, lockfile and binary hashes
+are retained. The PR contains the concise comparison and final CI audit.
+
+Arbitrary stackful suspension, async host completion, explicit backpressure,
+futures/streams and WASI 0.3.2 worlds remain required. This increment does not
+complete M6 or its performance gate.

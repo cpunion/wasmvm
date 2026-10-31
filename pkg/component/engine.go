@@ -31,13 +31,14 @@ type Config struct {
 	MaxBytes                    uint64
 	MaxNesting                  uint32
 	MaxResources                uint32
+	MaxTasks                    uint32
 	DiscardErrorContextMessages bool
 }
 
 func DefaultConfig() Config {
 	core := vm.DefaultEngineConfig()
 	core.Profile, core.Features = "core3", wasm.SupportedFeatures
-	return Config{Core: core, Store: vm.DefaultStoreConfig(), Decode: decode.DefaultLimits(), Validate: validate.DefaultLimits(), MaxValues: 1 << 20, MaxBytes: 64 << 20, MaxNesting: 128, MaxResources: 1 << 16}
+	return Config{Core: core, Store: vm.DefaultStoreConfig(), Decode: decode.DefaultLimits(), Validate: validate.DefaultLimits(), MaxValues: 1 << 20, MaxBytes: 64 << 20, MaxNesting: 128, MaxResources: 1 << 16, MaxTasks: 1024}
 }
 
 type Engine struct {
@@ -48,7 +49,7 @@ type Engine struct {
 }
 
 func NewEngine(config Config) (*Engine, error) {
-	if config.MaxValues == 0 || config.MaxBytes == 0 || config.MaxNesting == 0 || config.MaxResources == 0 {
+	if config.MaxValues == 0 || config.MaxBytes == 0 || config.MaxNesting == 0 || config.MaxResources == 0 || config.MaxTasks == 0 {
 		return nil, wasm.ErrLimit
 	}
 	core, err := vm.NewEngineWithConfig(config.Core)
@@ -201,7 +202,7 @@ func preflight(p *validate.Component) error {
 	}
 	for _, f := range p.Canonical {
 		op := f.Definition.Op
-		if op > 4 && (op < 9 || op > 0x0c) && (op < 0x1c || op > 0x1e) || f.Async && op > 1 {
+		if op > 6 && (op < 9 || op > 0x0d) && (op < 0x1c || op > 0x23) {
 			return unsupported("resource or async canonical operation")
 		}
 		if f.Type == nil {

@@ -37,7 +37,7 @@ func (c *componentContext) canonical(def *model.Canonical) error {
 	if def.Op >= 9 && def.Op <= 0x0c {
 		return c.taskBuiltin(def)
 	}
-	if def.Op == 0x0e || def.Op == 0x15 || def.Op == 0x20 || def.Op == 0x21 || def.Op == 0x27 {
+	if def.Op == 5 || def.Op == 6 || def.Op == 0x0d || def.Op == 0x1f || def.Op >= 0x20 && def.Op <= 0x23 || def.Op == 0x0e || def.Op == 0x15 || def.Op == 0x27 {
 		return c.asyncBuiltin(def)
 	}
 	if def.Op >= 0x1c && def.Op <= 0x1e {
@@ -167,6 +167,15 @@ func (c *componentContext) asyncBuiltin(def *model.Canonical) error {
 	f := module.FuncType{}
 	s := c.result.scope
 	switch def.Op {
+	case 6:
+		info.Async = def.Flag != 0
+		f.Params, f.Results = []wasm.ValueType{wasm.I32}, []wasm.ValueType{wasm.I32}
+	case 0x0d, 0x22:
+		f.Params = []wasm.ValueType{wasm.I32}
+	case 0x1f:
+		f.Results = []wasm.ValueType{wasm.I32}
+	case 0x23:
+		f.Params = []wasm.ValueType{wasm.I32, wasm.I32}
 	case 0x0e, 0x15:
 		t, err := s.At(def.Index)
 		if err != nil {

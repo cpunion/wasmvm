@@ -6,8 +6,8 @@ use wasmtime::{
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = env::args().collect();
-    if args.len() != 5 {
-        return Err("usage: async_lift COMPONENT CALLS BATCH ENTRY".into());
+    if args.len() != 5 && args.len() != 6 {
+        return Err("usage: async_lift COMPONENT CALLS BATCH ENTRY [GUEST_CALLBACKS]".into());
     }
     let count: u32 = args[2].parse()?;
     let batch: u32 = args[3].parse()?;
@@ -21,6 +21,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "churn" => (batch, 0),
         _ => return Err("unknown entry".into()),
     };
+    let callbacks: u32 = if args.len() == 6 {
+        args[5].parse()?
+    } else {
+        callbacks
+    };
     let start = Instant::now();
     let bytes = fs::read(&args[1])?;
     let load = start.elapsed().as_nanos();
@@ -32,6 +37,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     config
         .wasm_component_model_async(true)
         .wasm_component_model_async_stackful(true)
+        .wasm_component_model_more_async_builtins(true)
+        .wasm_component_model_threading(true)
         .concurrency_support(true);
     let engine = Engine::new(&config)?;
     let engine_ns = start.elapsed().as_nanos();

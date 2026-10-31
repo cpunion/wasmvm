@@ -18,6 +18,7 @@ type callTask struct {
 	resolved   bool
 	entered    bool
 	storage    [2]uint64
+	callback   *callbackTask
 }
 
 func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
@@ -95,40 +96,13 @@ func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.
 			return nil, err
 		}
 		task.resolved = true
+		if task.callback != nil {
+			return nil, task.callback.resolve(c, task.result, false)
+		}
 		return nil, nil
 	})
 	if err == nil {
 		n.add(item{sort: model.CoreFunctionSort, core: fn})
 	}
 	return err
-}
-
-func (in *Instance) asyncLift(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, results []vm.Value) (*Value, error) {
-	if plan.Callback != nil {
-		callback := n.items[model.CoreFunctionSort][*plan.Callback].core
-		for {
-			packed, _, _ := results[0].Bits()
-			switch packed & 0xf {
-			case 0:
-				goto exited
-			case 1:
-				// There are no suspended producers in this execution profile.
-				// The current thread is ready and may be selected immediately.
-			default:
-				// WAIT requires a valid waitable-set handle; that producer
-				// capability is rejected by preflight in this profile.
-				return nil, wasm.ErrTrap
-			}
-			called, err := caller.Call(callback, []vm.Value{vm.I32(0), vm.I32(0), vm.I32(0)})
-			if err != nil {
-				return nil, err
-			}
-			results = called.Values
-		}
-	}
-exited:
-	if !n.task.resolved {
-		return nil, wasm.ErrTrap
-	}
-	return n.task.result, nil
 }

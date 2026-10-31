@@ -1,0 +1,55 @@
+(component
+ (component $server
+  (core func $ret (canon task.return))
+  (core instance $env (export "ret" (func $ret)))
+  (core module $code (import "env" "ret" (func $ret))
+   (func (export "start") (param i32) (result i32) i32.const 1)
+   (func (export "callback") (param i32 i32 i32) (result i32) call $ret i32.const 0))
+  (core instance $code (instantiate $code (with "env" (instance $env))))
+  (alias core export $code "callback" (core func $callback))
+  (func (export "add") async (param "n" u32) (canon lift (core func $code "start") async (callback $callback))))
+ (instance $server (instantiate $server)) (alias export $server "add" (func $add))
+ (component $client
+  (import "add" (func $add async (param "n" u32)))
+  (core module $memory (memory (export "memory") i64 1)) (core instance $memory (instantiate $memory))
+  (alias core export $memory "memory" (core memory $mem))
+  (core func $add (canon lower (func $add) async))
+  (core func $new (canon waitable-set.new))
+ (core func $wait (canon waitable-set.wait (memory $mem)))
+ (core func $poll (canon waitable-set.poll (memory $mem)))
+ (core func $drop (canon waitable-set.drop))
+ (core func $join (canon waitable.join))
+ (core func $subdrop (canon subtask.drop))
+ (core func $cancel (canon subtask.cancel))
+ (core func $cancel-async (canon subtask.cancel async))
+ (core instance $env (export "memory" (memory $mem)) (export "add" (func $add)) (export "new" (func $new)) (export "wait" (func $wait)) (export "poll" (func $poll)) (export "drop" (func $drop)) (export "join" (func $join)) (export "subdrop" (func $subdrop)) (export "cancel" (func $cancel)) (export "cancel-async" (func $cancel-async)))
+  (core module $code
+   (import "env" "memory" (memory i64 1))
+ (import "env" "add" (func $add (param i32) (result i32)))
+ (import "env" "new" (func $new (result i32)))
+ (import "env" "wait" (func $wait (param i32 i64) (result i32)))
+ (import "env" "poll" (func $poll (param i32 i64) (result i32)))
+ (import "env" "drop" (func $drop (param i32)))
+ (import "env" "join" (func $join (param i32 i32)))
+ (import "env" "subdrop" (func $subdrop (param i32)))
+ (import "env" "cancel" (func $cancel (param i32) (result i32)))
+ (import "env" "cancel-async" (func $cancel-async (param i32) (result i32)))
+   (func (export "churn") (param $n i32) (result i32) (local $i i32) (local $sub i32) (local $set i32)
+    block $done loop $loop local.get $i local.get $n i32.ge_u br_if $done
+     local.get $i call $add i32.const 4 i32.shr_u local.set $sub call $new local.set $set
+     local.get $sub local.get $set call $join
+     local.get $set i64.const 64 call $wait i32.const 1 i32.ne if unreachable end
+     i64.const 68 i32.load i32.const 2 i32.ne if unreachable end
+     local.get $sub call $subdrop local.get $set call $drop
+     local.get $i i32.const 1 i32.add local.set $i br $loop end end local.get $i)
+   (func (export "high") (result i32) (local $set i32) call $new local.tee $set i64.const 4294967296 call $poll)
+   (func (export "poll") (param $ptr i64) (result i32) (local $set i32) (local $event i32)
+    call $new local.tee $set local.get $ptr call $poll local.set $event local.get $set call $drop local.get $event))
+  (core instance $code (instantiate $code (with "env" (instance $env))))
+  (func (export "churn") async (param "n" u32) (result u32) (canon lift (core func $code "churn")))
+  (func (export "high") (result u32) (canon lift (core func $code "high")))
+  (func (export "poll") (param "ptr" u64) (result u32) (canon lift (core func $code "poll"))))
+ (instance $client (instantiate $client (with "add" (func $add))))
+ (alias export $client "churn" (func $churn)) (export "churn" (func $churn))
+ (alias export $client "high" (func $high)) (export "high" (func $high))
+ (alias export $client "poll" (func $poll)) (export "poll" (func $poll)))

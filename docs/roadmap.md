@@ -525,6 +525,14 @@ subtasks, suspended producers, waitable sets, backpressure, cooperative
 cancellation, futures/streams and WASI 0.3.2 worlds remain required; this increment
 does not complete native async or M6.
 
+Pending callback tasks now execute real async-lower handles, callback WAIT and
+waitable-set wait/poll, typed handle guards, event coalescing and cooperative
+subtask/task cancellation. Task and handle quotas bound continuation state;
+failed sessions reclaim unpublished resources and new async handles. Memory64
+event pointers use full-width bounds checks. Synchronous suspension is rejected;
+stackful suspension, async host completion, explicit backpressure, futures/streams
+and WASI 0.3.2 worlds remain required. M6 and performance acceptance stay open.
+
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 
 ## M7 — Further optimization and experimental features

@@ -12,8 +12,8 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 6 {
-		panic("usage: async_lift COMPONENT BACKEND CALLS BATCH ENTRY")
+	if len(os.Args) != 6 && len(os.Args) != 7 {
+		panic("usage: async_lift COMPONENT BACKEND CALLS BATCH ENTRY [GUEST_CALLBACKS]")
 	}
 	count, err := strconv.ParseUint(os.Args[3], 10, 32)
 	must(err)
@@ -58,6 +58,10 @@ func main() {
 	}
 	if os.Args[5] == "stackful" {
 		callbacks = 1
+	}
+	if len(os.Args) == 7 {
+		callbacks, err = strconv.ParseUint(os.Args[6], 10, 32)
+		must(err)
 	}
 	call := func() {
 		v, err := f.Call(ctx, args, component.CallOptions{})
