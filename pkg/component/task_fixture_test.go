@@ -26,7 +26,7 @@ func TestAsyncLiftFixtureProvenance(t *testing.T) {
 	if err := json.Unmarshal(data, &pins); err != nil {
 		t.Fatal(err)
 	}
-	if pins.Commit != "d095e2f60ddae1f9a1e9b1e2fb547ec1114da677" || pins.Producer != "wasm-tools 1.258.0" || len(pins.Fixtures) != 13 {
+	if pins.Commit != "d095e2f60ddae1f9a1e9b1e2fb547ec1114da677" || pins.Producer != "wasm-tools 1.258.0" || len(pins.Fixtures) != 14 {
 		t.Fatal("wrong provenance")
 	}
 	check := func(path, want string) {

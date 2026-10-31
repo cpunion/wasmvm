@@ -204,3 +204,30 @@ func TestAsyncOwnedResults(t *testing.T) {
 		table.Close()
 	}
 }
+
+func TestAsyncResultUsesInstantiatedResourceIdentity(t *testing.T) {
+	for _, backend := range []string{"interpreter", "native"} {
+		if backend == "native" && !native.Available {
+			continue
+		}
+		for _, same := range []bool{false, true} {
+			a, b := NewHostResourceType(nil), NewHostResourceType(nil)
+			if same {
+				b = a
+			}
+			in := asyncInstance(t, backend, "async-alias", Imports{Resources: map[string]*HostResourceType{"a": a, "b": b}, Functions: map[string]HostFunction{"create": func(c *Caller, _ []Value) (*Value, error) { v, err := c.NewResource(b, 42); return &v, err }}})
+			f, _ := in.Function("make")
+			v, err := f.Call(nil, nil, CallOptions{})
+			if same {
+				if err != nil || v.Value.Resource == nil {
+					t.Fatal(v, err)
+				}
+				if _, err := in.DropResource(nil, v.Value.Resource, CallOptions{}); err != nil {
+					t.Fatal(err)
+				}
+			} else if !errors.Is(err, wasm.ErrTrap) {
+				t.Fatal("distinct nominal results matched", err)
+			}
+		}
+	}
+}

@@ -1,7 +1,7 @@
 {
   "componentModelCommit": "d095e2f60ddae1f9a1e9b1e2fb547ec1114da677",
   "producer": "wasm-tools 1.258.0",
-  "generatorSHA256": "33cb7bfdc83e0819f8c60c52a473445a8ecd11144ee6138321bd7da337b3b94a",
+  "generatorSHA256": "23b39c2ea0b7ab37e7fbe68a0a176cbf6163671ff627faefe8d41cd1be76d5a5",
   "resourceSourceSHA256": "28c8ced0888793ff48d0995edaeaa77a29bd2bec425128e3da563a806eb9695a",
   "sha256": {
     "async-lift": {
@@ -35,6 +35,10 @@
     "async-http": {
       "wat": "b15d394ef0d45bf495980bdf02e5a190732b198024f1d69292dfd475ccbe820f",
       "wasm": "bdf73f8b68176da70589636cdb3170c6ca906224f0181d002ec9e161e712d569"
+    },
+    "async-alias": {
+      "wat": "ef56e207f9e384638e9f6c6d920df930d2a183b4a8ad9decf9173e6f64bea731",
+      "wasm": "95f9653ba426ec1dd868afb622d1ec97659bd786d74edd227346b47749de7a8e"
     },
     "async-values": {
       "wat": "13ff280a0dd53a805d723f3577d84a7d42c6f10b02d1751302fc719919f32883",
