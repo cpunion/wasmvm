@@ -10,10 +10,11 @@ import (
 
 type componentSubtask struct {
 	waitable              waitable
-	task                  *callbackTask
+	task                  *componentTask
 	n                     *namespace
 	codec                 *canonical.Codec
 	id, state             uint32
+	values                []vm.Value
 	delivered             bool
 	cancellationRequested bool
 	group                 *taskScheduler
@@ -58,10 +59,12 @@ func (s *componentSubtask) abort(c *vm.Caller) {
 		finishResources(s.codec, false, wasm.ErrTrap)
 		s.codec = nil
 	}
-	s.n.handles.RemoveOpaque(s.id)
+	if s.id != 0 {
+		s.n.handles.RemoveOpaque(s.id)
+	}
 }
 
-func (in *Instance) pendingLower(c *vm.Caller, n *namespace, plan *validate.CanonicalFunction, flat []vm.Value, callee *Function) (result []vm.Value, err error) {
+func (in *Instance) lowerTask(c *vm.Caller, n *namespace, plan *validate.CanonicalFunction, flat []vm.Value, callee *Function) (result vm.HostResult, err error) {
 	s := &componentSubtask{n: n}
 	s.waitable.producer = s
 	complete := false
@@ -93,11 +96,11 @@ func (in *Instance) pendingLower(c *vm.Caller, n *namespace, plan *validate.Cano
 				s.state = 4
 			}
 		} else {
-			// Result lowering is a new turn: the original lower's Caller may
-			// have expired. Keep its ownership transaction and bind live access.
 			s.codec.Transfer = in.codec(current, n, plan).Transfer
 			bindResourceCaller(s.codec, current)
-			if _, err := lowerResult(s.codec, plan, flat, value); err != nil {
+			var err error
+			s.values, err = lowerResult(s.codec, plan, flat, value)
+			if err != nil {
 				return err
 			}
 			s.state = 2
@@ -108,32 +111,49 @@ func (in *Instance) pendingLower(c *vm.Caller, n *namespace, plan *validate.Cano
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 	s.task = t
-	if s.state >= 2 {
-		if _, err := s.event(c); err != nil {
-			return nil, err
+	finish := func(current *vm.Caller) (vm.HostResult, error) {
+		_, err := s.event(current)
+		if err != nil {
+			n.failed = true
+			return vm.HostResult{}, err
 		}
-		complete = true
-		return []vm.Value{vm.I32(2)}, nil
+		values := s.values
+		if plan.Async {
+			values = []vm.Value{vm.I32(2)}
+		}
+		return vm.HostResult{Values: values}, nil
+	}
+	if s.state >= 2 {
+		result, err = finish(c)
+		complete = err == nil
+		return result, err
 	}
 	if n.task != nil && n.task.plan != nil && n.task.plan.Type.Kind != model.AsyncFunction {
-		return nil, wasm.ErrTrap
+		return result, wasm.ErrTrap
 	}
-	in.resourceTable(n)
-	s.id, err = n.handles.AddOpaque(s)
-	if err != nil {
-		return nil, err
+	if plan.Async {
+		in.resourceTable(n)
+		s.id, err = n.handles.AddOpaque(s)
+		if err != nil {
+			return result, err
+		}
+	} else if n.task == nil || n.task.runtime == nil {
+		return result, wasm.ErrTrap
 	}
-	s.group = in.tasks
+	s.group = in.scheduler()
 	s.next = s.group.subtasks
 	if s.next != nil {
 		s.next.previous = s
 	}
 	s.group.subtasks = s
 	complete = true
-	return []vm.Value{vm.I32(s.state | s.id<<4)}, nil
+	if plan.Async {
+		return vm.HostResult{Values: []vm.Value{vm.I32(s.state | s.id<<4)}}, nil
+	}
+	return vm.HostResult{Pending: &vm.HostSuspension{Ready: func() bool { return s.state >= 2 }, Resume: finish}}, nil
 }
 
 func liftArguments(codec *canonical.Codec, plan *validate.CanonicalFunction, flat []vm.Value) ([]Value, error) {

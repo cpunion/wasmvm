@@ -24,42 +24,46 @@ type Imports struct {
 	// AsyncFunctions explicitly binds async component function types. Ordinary
 	// Functions keep synchronous contracts, including stable WASI 0.2 imports.
 	AsyncFunctions map[string]HostFunction
-	FunctionChecks map[string]FunctionCheck
-	Instances      map[string]Imports
-	Values         map[string]Value
-	ValueFactories map[string]ValueFactory
-	ValueChecks    map[string]func(ValueType) error
-	Resources      map[string]*HostResourceType
-	CoreModules    map[string]*CoreModule
-	Components     map[string]*Compiled
+	// AsyncCompletions binds suspending host implementations of async types.
+	// Bind each name in exactly one of AsyncFunctions and AsyncCompletions.
+	AsyncCompletions map[string]AsyncHostFunction
+	FunctionChecks   map[string]FunctionCheck
+	Instances        map[string]Imports
+	Values           map[string]Value
+	ValueFactories   map[string]ValueFactory
+	ValueChecks      map[string]func(ValueType) error
+	Resources        map[string]*HostResourceType
+	CoreModules      map[string]*CoreModule
+	Components       map[string]*Compiled
 }
 
 type Instance struct {
-	mu                sync.Mutex
-	closed            bool
-	store             *vm.Store
-	config            Config
-	exports           map[string]item
-	layouts           [2]*canonical.Builder
-	initializing      *canonical.Codec
-	instances, depth  uint32
-	callDepth         uint32
-	tasks             *taskScheduler
-	work              uint64
-	bindings          map[any]Value
-	resourceTables    []*canonical.Resources
-	resourceBudget    *canonical.ResourceBudget
-	hostResources     *canonical.Resources
-	hostTypes         map[*hostResourceDefinition]*resourceType
-	importResourceIDs map[uint64]*resourceType
-	functionChecks    []pendingFunctionCheck
-	initialValues     []*boundValue
-	initialCreated    []*Resource
-	engine            *Engine
-	coreBindings      *validate.CoreBindings
-	hostModules       map[*CoreModule]*coreModuleLease
-	components        map[*Compiled]*componentLease
-	componentBindings *validate.ComponentBindings
+	mu                    sync.Mutex
+	closed                bool
+	store                 *vm.Store
+	config                Config
+	exports               map[string]item
+	layouts               [2]*canonical.Builder
+	initializing          *canonical.Codec
+	instances, depth      uint32
+	callDepth             uint32
+	tasks                 *taskScheduler
+	heldValues, heldBytes uint64
+	work                  uint64
+	bindings              map[any]Value
+	resourceTables        []*canonical.Resources
+	resourceBudget        *canonical.ResourceBudget
+	hostResources         *canonical.Resources
+	hostTypes             map[*hostResourceDefinition]*resourceType
+	importResourceIDs     map[uint64]*resourceType
+	functionChecks        []pendingFunctionCheck
+	initialValues         []*boundValue
+	initialCreated        []*Resource
+	engine                *Engine
+	coreBindings          *validate.CoreBindings
+	hostModules           map[*CoreModule]*coreModuleLease
+	components            map[*Compiled]*componentLease
+	componentBindings     *validate.ComponentBindings
 }
 
 func (in *Instance) Close() {
@@ -188,18 +192,21 @@ type closure struct {
 }
 
 type namespace struct {
-	task      *callTask
-	taskOps   bool
-	parent    *namespace
-	plan      *validate.Component
-	resources map[uint64]*resourceType
-	host      *namespace
-	handles   *canonical.Resources
-	items     map[model.Sort][]item
-	exports   map[string]item
-	failed    bool
-	blocked   bool
-	entered   bool
+	task         *callTask
+	taskOps      bool
+	parent       *namespace
+	plan         *validate.Component
+	resources    map[uint64]*resourceType
+	host         *namespace
+	handles      *canonical.Resources
+	items        map[model.Sort][]item
+	exports      map[string]item
+	failed       bool
+	blocked      bool
+	entered      bool
+	exclusive    *componentTask
+	backpressure uint32
+	waitingEnter uint32
 }
 
 func (n *namespace) at(index model.SortIndex) item {
@@ -394,16 +401,28 @@ func (in *Instance) bind(types []validate.Extern, imports Imports) (map[string]i
 
 		case model.FunctionSort:
 			fn := imports.Functions[name]
+			var async AsyncHostFunction
 			if expected.Type.Kind == model.AsyncFunction {
 				fn = imports.AsyncFunctions[name]
+				async = imports.AsyncCompletions[name]
 			}
-			if fn == nil {
+			if fn == nil && async == nil {
 				return nil, fmt.Errorf("%w: missing component function %q", vm.ErrLink, name)
+			}
+			if fn != nil && async != nil {
+				return nil, vm.ErrType
 			}
 			if check := imports.FunctionChecks[name]; check != nil {
 				in.functionChecks = append(in.functionChecks, pendingFunctionCheck{name: name, typ: expected.Type, check: check})
 			}
-			e.function = &Function{instance: in, typ: expected.Type, host: fn}
+			e.function = &Function{instance: in, typ: expected.Type, host: fn, asyncHost: async}
+			if async != nil {
+				f := e.function
+				f.start = func(c *vm.Caller, args taskArguments, resolve taskResolution) (*componentTask, error) {
+					return in.startHostTask(c, f, args, resolve)
+				}
+				f.lift = in.asyncLift(f, nil)
+			}
 		case model.InstanceSort:
 			args, ok, err := lookupName(imports.Instances, name, in.charge)
 			if err != nil {

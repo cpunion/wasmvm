@@ -12,12 +12,13 @@ import (
 )
 
 type Function struct {
-	instance *Instance
-	typ      *validate.Type
-	host     HostFunction
-	scope    *namespace
-	lift     func(*vm.Caller, []Value) (*Value, error)
-	start    func(*vm.Caller, taskArguments, taskResolution) (*callbackTask, error)
+	instance  *Instance
+	typ       *validate.Type
+	host      HostFunction
+	asyncHost AsyncHostFunction
+	scope     *namespace
+	lift      func(*vm.Caller, []Value) (*Value, error)
+	start     func(*vm.Caller, taskArguments, taskResolution) (*componentTask, error)
 }
 
 type CallResult struct {
@@ -71,9 +72,15 @@ type callerState struct {
 	core     *vm.Caller
 	instance *Instance
 	created  []*Resource
+	ctx      context.Context
 }
 
-func (c *Caller) Context() context.Context { return c.core.Context() }
+func (c *Caller) Context() context.Context {
+	if c.ctx != nil {
+		return c.ctx
+	}
+	return c.core.Context()
+}
 
 func (c *Caller) enter() error {
 	if c == nil || c.callerState == nil {
@@ -125,55 +132,19 @@ func (f *Function) call(core *vm.Caller, args []Value) (result *Value, err error
 	if f.scope != nil && (f.scope.failed || f.scope.blocked) {
 		return nil, wasm.ErrTrap
 	}
-	codec := f.instance.codec(core, f.scope, nil)
-	complete := false
-	defer func() { err = finishResources(codec, complete, err) }()
-	owned := make([]Value, len(args))
-	for i, p := range f.typ.Parameters {
-		v, err := codec.Clone(p.Type, args[i])
-		if err != nil {
-			return nil, err
-		}
-		owned[i] = v
-	}
-	if codec.Resources != nil {
-		if err := codec.AcceptParameters(f.typ.Parameters, owned); err != nil {
-			return nil, err
-		}
-	}
-	caller := &Caller{callerState: &callerState{core: core, instance: f.instance, active: true}}
-	defer func() {
-		caller.mu.Lock()
-		caller.active = false
-		caller.mu.Unlock()
-		if !complete {
-			for _, ref := range caller.created {
-				f.instance.cleanupResource(core, ref)
-			}
-		}
-		caller.created = nil
-	}()
-	result, err = f.host(caller, owned)
+	h, err := f.hostCall(core, args)
 	if err != nil {
 		return nil, err
 	}
-	if (result == nil) != (f.typ.Result == nil) {
-		return nil, vm.ErrType
+	complete := false
+	defer func() { err = h.finish(core, complete, err) }()
+	result, err = h.invoke(core, func(c *Caller) (*Value, error) { return f.host(c, h.args) })
+	if err != nil {
+		return nil, err
 	}
-	if result != nil {
-		v, err := codec.Clone(f.typ.Result, *result)
-		if err != nil {
-			return nil, err
-		}
-		result = &v
-		if codec.Resources != nil {
-			if err := codec.AcceptResult(f.typ.Result, result); err != nil {
-				return nil, err
-			}
-		}
-	}
-	complete = true
-	return result, nil
+	result, err = h.accept(result)
+	complete = err == nil
+	return result, err
 }
 
 type memory struct {
@@ -259,6 +230,9 @@ func flatValues(values []vm.Value) ([]canonical.Slot, error) {
 }
 
 func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
+	if plan.Definition.Op == 0x24 || plan.Definition.Op == 0x25 {
+		return in.backpressureBuiltin(caller, n, plan)
+	}
 	if plan.Definition.Op == 5 || plan.Definition.Op == 6 || plan.Definition.Op == 0x0d || plan.Definition.Op >= 0x1f && plan.Definition.Op <= 0x23 {
 		return in.waitableBuiltin(caller, n, plan)
 	}
@@ -277,29 +251,11 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 	if plan.Definition.Op == 0 {
 		fn := n.items[model.CoreFunctionSort][plan.Definition.Index].core
 		f := &Function{instance: in, typ: plan.Type, scope: n}
-		if plan.Async && plan.Callback != nil {
-			f.start = func(c *vm.Caller, args taskArguments, resolve taskResolution) (*callbackTask, error) {
-				return in.startCallback(c, n, plan, fn, args, resolve)
+		if plan.Type.Kind == model.AsyncFunction {
+			f.start = func(c *vm.Caller, args taskArguments, resolve taskResolution) (*componentTask, error) {
+				return in.startTask(c, n, plan, fn, args, resolve)
 			}
-			f.lift = func(c *vm.Caller, args []Value) (*Value, error) {
-				if n.failed || n.blocked {
-					return nil, wasm.ErrTrap
-				}
-				codec := in.codec(c, n, plan)
-				for i, p := range plan.Type.Parameters {
-					if err := codec.Validate(p.Type, args[i]); err != nil {
-						return nil, err
-					}
-				}
-				t, err := f.start(c, func(*vm.Caller) ([]Value, error) { return args, nil }, nil)
-				if err != nil {
-					return nil, err
-				}
-				if err := in.awaitTasks(c, func() bool { return t.exited }); err != nil {
-					return nil, err
-				}
-				return t.task.result, nil
-			}
+			f.lift = in.asyncLift(f, plan)
 			n.add(item{sort: model.FunctionSort, function: f})
 			return nil
 		}
@@ -395,12 +351,21 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 		return nil
 	}
 	callee := n.items[model.FunctionSort][plan.Definition.Index].function
+	if callee.start != nil {
+		core, err := caller.NewSuspendableFunction(plan.Signature, func(c *vm.Caller, flat []vm.Value) (vm.HostResult, error) {
+			if n.failed || n.blocked {
+				return vm.HostResult{}, wasm.ErrTrap
+			}
+			return in.lowerTask(c, n, plan, flat, callee)
+		})
+		if err == nil {
+			n.add(item{sort: model.CoreFunctionSort, core: core})
+		}
+		return err
+	}
 	core, err := caller.NewFunction(plan.Signature, func(caller *vm.Caller, flat []vm.Value) (result []vm.Value, err error) {
 		if n.failed || n.blocked {
 			return nil, wasm.ErrTrap
-		}
-		if plan.Async && callee.start != nil {
-			return in.pendingLower(caller, n, plan, flat, callee)
 		}
 		codec := in.codec(caller, n, plan)
 		complete := false
@@ -476,4 +441,27 @@ func lowerParameters(codec *canonical.Codec, plan *validate.CanonicalFunction, a
 		}
 	}
 	return slots, nil
+}
+
+func (in *Instance) asyncLift(f *Function, plan *validate.CanonicalFunction) func(*vm.Caller, []Value) (*Value, error) {
+	return func(c *vm.Caller, args []Value) (*Value, error) {
+		n := f.scope
+		if n != nil && (n.failed || n.blocked) {
+			return nil, wasm.ErrTrap
+		}
+		codec := in.codec(c, n, plan)
+		for i, p := range f.typ.Parameters {
+			if err := codec.Validate(p.Type, args[i]); err != nil {
+				return nil, err
+			}
+		}
+		t, err := f.start(c, func(*vm.Caller) ([]Value, error) { return args, nil }, nil)
+		if err != nil {
+			return nil, err
+		}
+		if err := in.awaitTasks(c, func() bool { return t.exited }); err != nil {
+			return nil, err
+		}
+		return t.task.result, nil
+	}
 }

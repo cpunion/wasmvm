@@ -6,6 +6,14 @@ Implement functional stages in dependency order. Local performance follow-ups ma
 
 ## Current integration decision
 
+On 2026-10-31 the owner directed capability-first development through the full
+remaining scope, followed by performance optimization. Continue functional work
+across merged increments; retain the final Go/LLGo semantic matrix, coverage and
+necessary regression checks. Defer optimization and broad competitive benchmark
+campaigns until capabilities are complete. Keep existing measured regressions
+and performance gates open. One active PR and prompt validated merges remain
+the integration policy.
+
 On 2026-10-29 the owner authorized merging the accumulated Core 2.0 work and
 then clarified that local optimization must not block completing capabilities.
 PRs #26, #27 and #28 have merged with their recorded semantic evidence and
@@ -532,6 +540,16 @@ failed sessions reclaim unpublished resources and new async handles. Memory64
 event pointers use full-width bounds checks. Synchronous suspension is rejected;
 stackful suspension, async host completion, explicit backpressure, futures/streams
 and WASI 0.3.2 worlds remain required. M6 and performance acceptance stay open.
+
+The suspended-task increment adds shared Core continuations, stackful async
+suspension, synchronous lower/wait/cancel, explicit backpressure and delayed host
+completion. Guest turns retain explicit interpreter/native frames within shared
+fuel/stack quotas. Host resolvers receive fresh Callers and aggregate retained
+value/byte budgets; cancellation, panic and shutdown reclaim unpublished state.
+Both own backends execute the same producer-validated fixtures and pinned LLGo
+uses its release profile. Futures/streams, WASI 0.3.2 worlds and their complete
+acceptance remain required. Performance optimization and broad comparisons are
+deferred until functional coverage is complete.
 
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 

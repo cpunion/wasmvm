@@ -26,11 +26,12 @@ type StoreConfig struct {
 	Limits                                  StoreLimits
 	Execution                               ExecutionLimits
 	MaxExternRefs, MaxHostRoots, MaxReentry uint32
+	MaxContinuations                        uint32
 	CollectEveryAllocation                  bool
 }
 
 func DefaultStoreConfig() StoreConfig {
-	return StoreConfig{Limits: state.DefaultLimits(), Execution: execute.DefaultLimits(), MaxExternRefs: 1 << 20, MaxHostRoots: 1 << 20, MaxReentry: 32}
+	return StoreConfig{Limits: state.DefaultLimits(), Execution: execute.DefaultLimits(), MaxExternRefs: 1 << 20, MaxHostRoots: 1 << 20, MaxReentry: 32, MaxContinuations: 1024}
 }
 
 type CallOptions struct {
@@ -56,15 +57,16 @@ type Store struct {
 	workspace     *callWorkspace
 }
 type operation struct {
-	store   *Store
-	ctx     context.Context
-	cancel  context.CancelFunc
-	options CallOptions
-	fuel    uint64
-	frames  []*execute.Execution
-	pending []*state.Instance
-	depth   uint32
-	collect bool
+	store         *Store
+	ctx           context.Context
+	cancel        context.CancelFunc
+	options       CallOptions
+	fuel          uint64
+	frames        []*execute.Execution
+	pending       []*state.Instance
+	depth         uint32
+	collect       bool
+	continuations map[*Continuation]struct{}
 }
 
 func (e *Engine) NewStore(config StoreConfig) (*Store, error) {
@@ -105,6 +107,11 @@ func (s *Store) begin(ctx context.Context, options CallOptions) (*operation, err
 func (op *operation) finish() {
 	s := op.store
 	op.cancel()
+	for call := range op.continuations {
+		call.mu.Lock()
+		call.abort()
+		call.mu.Unlock()
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.active = nil

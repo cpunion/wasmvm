@@ -45,6 +45,10 @@ func (s *Store) newFunction(signature FunctionType, callback HostFunction, refer
 	if callback == nil {
 		return Extern{}, ErrType
 	}
+	return s.newHostFunction(signature, callback, referenceType...)
+}
+
+func (s *Store) newHostFunction(signature FunctionType, callback any, referenceType ...wasm.ValueType) (Extern, error) {
 	for _, ts := range [][]wasm.ValueType{signature.Params, signature.Results} {
 		for _, typ := range ts {
 			if err := s.referenceFeature(typ); err != nil {

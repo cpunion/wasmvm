@@ -37,7 +37,7 @@ func (c *componentContext) canonical(def *model.Canonical) error {
 	if def.Op >= 9 && def.Op <= 0x0c {
 		return c.taskBuiltin(def)
 	}
-	if def.Op == 5 || def.Op == 6 || def.Op == 0x0d || def.Op == 0x1f || def.Op >= 0x20 && def.Op <= 0x23 || def.Op == 0x0e || def.Op == 0x15 || def.Op == 0x27 {
+	if def.Op == 5 || def.Op == 6 || def.Op == 0x0d || def.Op == 0x1f || def.Op >= 0x20 && def.Op <= 0x25 || def.Op == 0x0e || def.Op == 0x15 || def.Op == 0x27 {
 		return c.asyncBuiltin(def)
 	}
 	if def.Op >= 0x1c && def.Op <= 0x1e {
