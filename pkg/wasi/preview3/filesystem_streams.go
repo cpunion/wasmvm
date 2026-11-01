@@ -45,7 +45,9 @@ func (p *FileSystem) stream(c *component.Caller, name string, args []component.V
 	s := &fileStream{owner: p, descriptor: d, op: op, ctx: ctx, cancel: cancel, changed: make(chan struct{}), input: name == "read-via-stream" || name == "read-directory", append: name == "append-via-stream"}
 	if name == "read-via-stream" {
 		s.offset = args[1].Bits
-		if d.flags&fsRead == 0 {
+		if d.object.directory != nil {
+			s.failure = fileError("is-directory")
+		} else if d.flags&fsRead == 0 {
 			s.failure = fileError("not-permitted")
 		}
 	}

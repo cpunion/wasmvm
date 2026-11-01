@@ -185,17 +185,22 @@ func (m *MonotonicClock) wait(c *component.Caller, when uint64, relative bool) (
 	if err := m.check(c.Context()); err != nil {
 		return nil, err
 	}
+	now, err := m.now()
+	if err != nil {
+		return nil, err
+	}
 	never := false
 	if relative {
-		now, err := m.now()
-		if err != nil {
-			return nil, err
-		}
 		if when > ^uint64(0)-now {
 			never = true
 		} else {
 			when += now
 		}
+	}
+	if !never && when <= now {
+		ready := component.NewHostCompletion()
+		ready.Resolve(func(*component.Caller) (*component.Value, error) { return nil, nil })
+		return ready, nil
 	}
 	if err := m.begin(); err != nil {
 		return nil, err

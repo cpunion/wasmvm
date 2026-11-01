@@ -24,6 +24,17 @@ type HTTPFields struct {
 }
 type HTTPHeaderError uint32
 
+// DefaultHTTPForbiddenHeaders keeps transport/proxy controls outside guest
+// fields. Providers may add restrictions to their own immutable snapshot.
+func DefaultHTTPForbiddenHeaders() map[string]bool {
+	return map[string]bool{
+		"connection": true, "keep-alive": true, "proxy-authenticate": true,
+		"proxy-authorization": true, "proxy-connection": true,
+		"transfer-encoding": true, "upgrade": true, "host": true,
+		"http2-settings": true,
+	}
+}
+
 const (
 	HTTPHeaderSyntax HTTPHeaderError = iota
 	HTTPHeaderForbidden

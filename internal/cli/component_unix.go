@@ -59,7 +59,13 @@ func runComponentWASI(ctx context.Context, core vm.EngineConfig, options vm.Call
 	defer func() {
 		for _, s := range sources {
 			if s != nil {
-				s.Close()
+				if err := s.Close(); err != nil && code == 0 {
+					code = failure(stderr, err)
+				}
+			}
+		}
+		for _, s := range sources {
+			if s != nil {
 				s.waiters.Wait()
 			}
 		}
@@ -73,33 +79,50 @@ func runComponentWASI(ctx context.Context, core vm.EngineConfig, options vm.Call
 		sources[i] = newCommandSource(stream, i == 0)
 	}
 	environment := preview2.EnvironmentConfig{Args: append([]string{filepath.Base(args.argv0)}, args.args...), Env: env}
-	var world commandWorld
-	var run func(context.Context, *component.Instance, component.CallOptions) (uint32, error)
-	if args.preview == 2 {
-		cfg := preview2.WorldConfig{Environment: environment, IO: preview2.IOConfig{Stdin: sources[0], Stdout: sources[1], Stderr: sources[2]}}
-		for _, grant := range grants {
-			cfg.FileSystem.Preopens = append(cfg.FileSystem.Preopens, preview2.FileSystemPreopen{GuestPath: grant.GuestPath, HostPath: grant.HostPath, ReadOnly: grant.ReadOnly})
+	// Rust's current P3 consumers can retain P2 standard-library imports. Both
+	// versions use the same explicit grants and borrow the CLI-owned descriptors.
+	// Their nominal resource domains and selected command entry remain separate.
+	var worlds []commandWorld
+	defer func() {
+		for i := len(worlds) - 1; i >= 0; i-- {
+			worlds[i].Close()
 		}
-		world, err = preview2.NewWorld(cfg)
-		run = preview2.RunCommand
-	} else {
-		cfg := preview3.WorldConfig{Environment: environment, IO: preview3.IOConfig{Stdin: sources[0], Stdout: sources[1], Stderr: sources[2]}}
-		for _, grant := range grants {
-			cfg.FileSystem.Preopens = append(cfg.FileSystem.Preopens, preview3.FileSystemPreopen{GuestPath: grant.GuestPath, HostPath: grant.HostPath, ReadOnly: grant.ReadOnly})
+		for i := len(worlds) - 1; i >= 0; i-- {
+			if err := worlds[i].WaitClosed(nil); err != nil && code == 0 {
+				code = failure(stderr, err)
+			}
 		}
-		world, err = preview3.NewWorld(cfg)
-		run = preview3.RunCommand
+	}()
+	borrowed := [3]commandBorrowedSource{{sources[0]}, {sources[1]}, {sources[2]}}
+	cfg2 := preview2.WorldConfig{Environment: environment, IO: preview2.IOConfig{Stdin: borrowed[0], Stdout: borrowed[1], Stderr: borrowed[2]}}
+	for _, grant := range grants {
+		cfg2.FileSystem.Preopens = append(cfg2.FileSystem.Preopens, preview2.FileSystemPreopen{GuestPath: grant.GuestPath, HostPath: grant.HostPath, ReadOnly: grant.ReadOnly})
 	}
+	w2, err := preview2.NewWorld(cfg2)
 	if err != nil {
 		return failure(stderr, err)
 	}
-	defer func() {
-		world.Close()
-		if err := world.WaitClosed(nil); err != nil && code == 0 {
-			code = failure(stderr, err)
+	worlds = append(worlds, w2)
+	run := preview2.RunCommand
+	if args.preview == 3 {
+		cfg3 := preview3.WorldConfig{Environment: environment, IO: preview3.IOConfig{Stdin: borrowed[0], Stdout: borrowed[1], Stderr: borrowed[2]}}
+		for _, grant := range grants {
+			cfg3.FileSystem.Preopens = append(cfg3.FileSystem.Preopens, preview3.FileSystemPreopen{GuestPath: grant.GuestPath, HostPath: grant.HostPath, ReadOnly: grant.ReadOnly})
 		}
-	}()
-	in, err := compiled.Instantiate(ctx, world.Imports(), options)
+		w3, err := preview3.NewWorld(cfg3)
+		if err != nil {
+			return failure(stderr, err)
+		}
+		worlds = append(worlds, w3)
+		run = preview3.RunCommand
+	}
+	imports := component.Imports{Instances: map[string]component.Imports{}}
+	for _, world := range worlds {
+		for name, instance := range world.Imports().Instances {
+			imports.Instances[name] = instance
+		}
+	}
+	in, err := compiled.Instantiate(ctx, imports, options)
 	if err != nil {
 		return failure(stderr, err)
 	}
@@ -113,6 +136,12 @@ func runComponentWASI(ctx context.Context, core vm.EngineConfig, options vm.Call
 	}
 	return int(result)
 }
+
+// Providers own this logical source; the command owns the underlying source
+// until every version's provider has closed and joined its workers.
+type commandBorrowedSource struct{ *commandSource }
+
+func (commandBorrowedSource) Close() error { return nil }
 
 // commandSource adapts existing nonblocking CLI descriptors to the shared P2/P3
 // prompt-source contract. At most one external readiness waiter runs per stream.

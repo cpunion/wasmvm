@@ -573,6 +573,25 @@ requested before scheduling. Scheduled consumption starts independently of a
 returned future being read, which is required for streaming output protocols.
 Borrowed, duplicate, foreign and stale capabilities are rejected before moving.
 
+Sources and work can explicitly opt into `Prompt` readiness. Their starters
+return without waiting; their Callers reject guest reentry and blocking reads.
+Already ready prompt work retires at bounded scheduling admission points,
+without running guest continuations or waiting for external work. Ordinary work
+retains its deferred-start contract. This allows ready socket reads to complete
+on the first poll and releases closed stream endpoints before repeated
+allocation exhausts a small handle budget. It does not add another executor.
+
+`Caller.AwaitSourceRead` forwards readable capabilities through an AsyncSource
+using the same pending-read transaction and completion protocol. WASI byte pumps
+separate endpoint reads from external writes so independent directions cannot
+retain nested host callback stacks while waiting for one another.
+`Caller.AwaitReadChecked` optionally validates a byte batch before acknowledging
+its writer. Rejection closes the reader, returns the unconsumed bytes to the
+writer and delivers the validation error to the consumer. HTTP uses this to
+reject a write exceeding its declared body length and preserve the actual size.
+Host read buffers accumulate all chunks copied before event delivery, retaining
+their aggregate canonical quotas and resource ownership.
+
 Source Close is nonblocking, must not enter/wait for the VM, and runs once on
 EOF, drop, failure or instance shutdown. Shutdown cancels workers before closure;
 WaitClosed includes idle-source teardown. Cleanup releases all independent

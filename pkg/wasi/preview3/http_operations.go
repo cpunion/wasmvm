@@ -5,6 +5,7 @@ package preview3
 import (
 	"errors"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/cpunion/wasmvm/internal/wasi/host"
@@ -190,7 +191,7 @@ func (p *HTTP) execute(c *component.Caller, key string, args []component.Value) 
 		scheme := httpParseScheme(args[1])
 		if scheme != nil {
 			parsed, failed := url.Parse(*scheme + ":")
-			if failed != nil || parsed.Scheme == "" || parsed.Scheme != *scheme {
+			if failed != nil || parsed.Scheme == "" || !strings.EqualFold(parsed.Scheme, *scheme) {
 				v.Case = 1
 			}
 		}
@@ -205,6 +206,10 @@ func (p *HTTP) execute(c *component.Caller, key string, args []component.Value) 
 			parsed, failed := url.Parse("http://" + *authority)
 			if failed != nil || parsed.Host == "" || parsed.Path != "" || parsed.RawQuery != "" || parsed.Fragment != "" {
 				v.Case = 1
+			} else if port := parsed.Port(); port != "" {
+				if _, failed := strconv.ParseUint(port, 10, 16); failed != nil {
+					v.Case = 1
+				}
 			}
 		}
 		if v.Case == 0 {

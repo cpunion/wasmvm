@@ -18,6 +18,9 @@ and macOS arm64. No backend silently substitutes a competitor.
 - **WASI 3:** native async tasks, futures/streams, cancellation, backpressure,
   reentry, host async I/O and all stable WASI 0.3.2 CLI/service/middleware interfaces.
   Independent C/Rust commands and composed Rust HTTP guests execute on both backends.
+  A pinned corpus adds 60 unchanged upstream P3 consumers with mixed P2/P3
+  imports, plus composed services and streaming/trailer/compression scenarios;
+  see its [exact scope](testdata/wasi-preview3/upstream/README.md).
 - **Embedding/CLI:** bounded Engine/Store lifetimes, explicit capabilities,
   reference roots, cancellation and joined cleanup; Core validate/inspect/typed
   calls and WASI 1/2/3 commands. See [embedding](docs/embedding.md) and [CLI](docs/cli.md).

@@ -118,6 +118,52 @@ func socketsOwner(t *testing.T, config SocketsConfig) (*Sockets, *IO) {
 	return p, process
 }
 func socketsAllow(context.Context, SocketAddress) error { return nil }
+
+func TestSocketShutdownDrainsDescriptorLeases(t *testing.T) {
+	p, _ := socketsOwner(t, SocketsConfig{})
+	s, err := p.create(0, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.acquire(); err != nil {
+		t.Fatal(err)
+	}
+	started, release := make(chan struct{}), make(chan struct{})
+	defer func() {
+		select {
+		case <-release:
+		default:
+			close(release)
+		}
+	}()
+	p.jobs <- func() { close(started); <-release; s.release() }
+	<-started
+	p.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	ticker := time.NewTicker(time.Millisecond)
+	defer ticker.Stop()
+	for {
+		p.mu.Lock()
+		stopping := p.stopping
+		p.mu.Unlock()
+		if stopping {
+			break
+		}
+		select {
+		case <-ctx.Done():
+			t.Fatal("socket shutdown did not reach the reaper", ctx.Err())
+		case <-ticker.C:
+		}
+	}
+	if _, err := unix.FcntlInt(uintptr(s.fd), unix.F_GETFD, 0); err != nil {
+		t.Fatal("descriptor closed while a half-close job retained its lease", err)
+	}
+	close(release)
+	if err := p.WaitClosed(ctx); err != nil {
+		t.Fatal(err)
+	}
+}
 func loopAddress(family uint64, port uint16) component.Value {
 	ip := netip.MustParseAddr("127.0.0.1")
 	if family == 1 {

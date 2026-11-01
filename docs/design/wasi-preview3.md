@@ -254,3 +254,44 @@ HTTP binaries with the same output/status/body. These checks advance declared
 world and producer coverage; local cm64 borrows, exhaustive upstream conformance
 and performance acceptance remain open. Optional timezone and component-threading
 extensions are separate profiles.
+
+## Unchanged upstream consumers and interoperability
+
+The pinned Wasmtime 48.0.1 inventory adds 60 unchanged stable P3 consumers,
+built with Rust 1.98.0 and wit-bindgen 0.60.0, plus an independently validated
+composed chain service. They exercise all declared provider families on both
+owned backends. One expected handle-limit failure and an observed guest-wait
+cancellation remain distinct from normal successes. Seven additional HTTP
+scenarios per backend cover trailers, host forwarding, compression and chained
+guest calls. See the [inventory and host adaptations](../../testdata/wasi-preview3/upstream/README.md).
+
+The resulting fixes preserve protocol ownership and readiness:
+
+- Dropping a completion future does not cancel its separately owned output
+  stream. Prompt socket reads and bounded prompt-work retirement support first
+  polls, cancellation, full-duplex streams and sequential resource reuse.
+- Socket methods implement listening state and pre-listen backlog changes.
+  IPv6 sockets use an explicit hop limit of 64 on both P2 and P3, avoiding the
+  kernel's negative route-default sentinel in an unsigned WASI value. Literal
+  DNS results preserve bracketed IPv6 and mapped address families.
+- Last socket leases close descriptors before subsequent binds/sends. Shutdown
+  drains half-close jobs before forced closure so queued work cannot touch a
+  reused descriptor.
+- Expired or zero-duration waits are immediately ready. Filesystem capability
+  denial is `not-permitted`, distinct from an actual read-only filesystem.
+  Directory-read errors resolve before any stream read is attempted.
+- P2/P3 HTTP providers use a fresh default forbidden-header policy plus explicit
+  custom restrictions. Host HTTP map names normalize to lowercase; directly
+  constructed WIT fields retain their original case/order. Scheme comparison
+  accepts valid mixed case, and authority ports remain within 16 bits.
+- HTTP read/write phases cooperate without nested blocking reads. Oversized
+  batches are rejected before writer acknowledgement; body-size errors retain
+  actual byte counts and survive transport cancellation.
+
+The CLI supplies P2 standard-library imports alongside P3 imports for mixed
+components. Both versions borrow the same command-owned stdio descriptors and
+explicit grants; their nominal resource domains remain independent. Selecting
+P3 still invokes the P3 command export.
+
+This advances independent consumer and interaction coverage. It does not claim
+exhaustive upstream WASI conformance or close the deferred performance gates.

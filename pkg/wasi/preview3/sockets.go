@@ -54,6 +54,7 @@ type netSocket struct {
 	owner                              *Sockets
 	fd                                 int
 	family                             uint32
+	backlog                            int
 	udp                                bool
 	state                              uint8  // 0 unbound, 1 bound, 2 connecting, 3 connected, 4 listening, 5 failed
 	refs                               uint32 // guarded by owner.mu
@@ -172,7 +173,7 @@ func (p *Sockets) create(family uint32, udp bool) (*netSocket, error) {
 		unix.CloseOnExec(fd)
 		err = unix.SetNonblock(fd, true)
 		if err == nil && family == 1 {
-			err = unix.SetsockoptInt(fd, unix.IPPROTO_IPV6, unix.IPV6_V6ONLY, 1)
+			err = host.ConfigureIPv6Socket(fd)
 		}
 		if err != nil {
 			unix.Close(fd)
@@ -217,7 +218,12 @@ func (s *netSocket) close() {
 	}
 	s.closed = true
 	p.mu.Unlock()
-	p.jobs <- func() { unix.Close(s.fd); p.mu.Lock(); delete(p.objects, s); p.mu.Unlock() }
+	// The last lease must release the binding before a subsequent guest bind
+	// or send. These nonblocking sockets never enable positive SO_LINGER.
+	_ = unix.Close(s.fd)
+	p.mu.Lock()
+	delete(p.objects, s)
+	p.mu.Unlock()
 }
 func (p *Sockets) reap() {
 	defer close(p.reaped)
@@ -308,6 +314,13 @@ func (p *Sockets) Close() {
 	}
 	go func() {
 		p.workers.Wait()
+		// Half-close jobs retain their socket leases. Drain them before forced
+		// shutdown closes remaining guest handles, preventing descriptor reuse.
+		p.mu.Lock()
+		p.stopping = true
+		p.mu.Unlock()
+		p.jobs <- nil
+		<-p.reaped
 		p.mu.Lock()
 		objects := make([]*netSocket, 0, len(p.objects))
 		for s := range p.objects {
@@ -317,11 +330,6 @@ func (p *Sockets) Close() {
 		for _, s := range objects {
 			s.close()
 		}
-		p.mu.Lock()
-		p.stopping = true
-		p.mu.Unlock()
-		p.jobs <- nil
-		<-p.reaped
 		close(p.done)
 	}()
 }

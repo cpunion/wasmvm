@@ -18,7 +18,10 @@ The declared M1–M6 functional implementations now cover the full owned Core
 profiles/backends, GC/Core Threads, P1/legacy threads, component/Canonical ABI,
 stable P2/P3 providers and their command/service/middleware embedding paths.
 The final increments add local i64 borrows, updated empty-buffer semantics and
-P2/P3 CLI commands. They still require their final target CI and merged evidence.
+P2/P3 CLI commands. Those increments have merged after their final target CI.
+An expanded inventory adds 60 unchanged upstream P3 consumers and fixes actual
+readiness, stream ownership, resource retirement, socket closure, HTTP forwarding
+and body-size failures. Its final target CI and merged evidence remain required.
 Expanded WASI world conformance and all applicable performance acceptance remain
 open. Optional M7 proposals are outside this implemented scope.
 
@@ -676,6 +679,18 @@ through a public instantiation receipt. Actual C/Rust commands, stdin, exit/trap
 pipe cancellation and stdio flag restoration are covered on both backends. This
 adds the command entry to the implemented embedding APIs; final target CI and
 the stage's full conformance/performance gates remain separate.
+
+The pinned Wasmtime 48.0.1 consumer inventory now preserves all 61 P3 sources
+and executes all 60 stable programs with unchanged guest assertions. The sole
+excluded program requires draft TLS. Expected resource exhaustion and guest-wait
+cancellation are classified explicitly. Additional HTTP trailer/compression/
+composition tests and mixed-import CLI commands exercise the same providers.
+Actual failures corrected output-future ownership, prompt readiness and bounded
+retirement, accumulated host batches, socket close ordering, error codes and
+HTTP body-length rejection. The [corpus record](../testdata/wasi-preview3/upstream/README.md)
+documents hermetic host adaptations; it does not equate selected consumers with
+complete WASI conformance. Final-head CI, exhaustive acceptance review and the
+deferred performance gates remain open.
 
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 

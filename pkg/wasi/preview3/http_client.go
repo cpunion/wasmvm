@@ -4,6 +4,7 @@ package preview3
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"sync"
@@ -210,7 +211,16 @@ func (p *HTTP) send(handler bool) component.AsyncHostFunction {
 				}
 			}
 			if failed != nil {
+				// A local body rejection can cancel the transport before its
+				// generic network error arrives. Preserve the known cause.
+				body.mu.Lock()
+				local := body.failure
+				body.mu.Unlock()
 				failure = httpTransportError(failed, "HTTP-protocol-error")
+				var size *httpError
+				if errors.As(local, &size) && (httpErrorNames[size.value.Case] == "HTTP-request-body-size" || httpErrorNames[size.value.Case] == "HTTP-response-body-size") {
+					failure = size
+				}
 				return
 			}
 			if response == nil || response.StatusCode < 100 || response.StatusCode > 999 {

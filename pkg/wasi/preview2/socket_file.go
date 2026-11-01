@@ -8,6 +8,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/cpunion/wasmvm/internal/wasi/host"
 	"golang.org/x/sys/unix"
 )
 
@@ -52,7 +53,7 @@ func newSocketFile(ctx context.Context, family uint32, kind int) (*socketFile, e
 		unix.CloseOnExec(fd)
 		err = unix.SetNonblock(fd, true)
 		if err == nil && family == 1 {
-			err = unix.SetsockoptInt(fd, unix.IPPROTO_IPV6, unix.IPV6_V6ONLY, 1)
+			err = host.ConfigureIPv6Socket(fd)
 		}
 		if err != nil {
 			unix.Close(fd)

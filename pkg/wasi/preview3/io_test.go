@@ -62,8 +62,7 @@ func TestNativeStdioStreamsAndTerminalOwnership(t *testing.T) {
 				want := uint64(0)
 				data := "abcdef"
 				if mode == 1 {
-					want = 1
-					data = ""
+					want = 1 << 4 // The completion future does not own the data stream.
 				}
 				if mode == 2 {
 					data = ""
@@ -216,12 +215,12 @@ func TestOutputBackpressureAndInstanceCancellation(t *testing.T) {
 }
 
 type deferredInput struct {
-	mu                 sync.Mutex
-	ready, closed      bool
-	changed            chan struct{}
-	data               []byte
-	failure            error
-	panicRead, invalid bool
+	mu                             sync.Mutex
+	ready, closed                  bool
+	changed                        chan struct{}
+	data                           []byte
+	failure                        error
+	panicRead, panicReady, invalid bool
 }
 
 func (s *deferredInput) Read(ctx context.Context, out []byte) (int, error) {
@@ -252,6 +251,9 @@ func (s *deferredInput) Read(ctx context.Context, out []byte) (int, error) {
 func (s *deferredInput) Readiness() (bool, <-chan struct{}) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.panicReady {
+		panic("input readiness")
+	}
 	return s.ready || s.closed, s.changed
 }
 func (s *deferredInput) Close() error {
@@ -267,7 +269,7 @@ func (s *deferredInput) Close() error {
 func TestInputReadinessErrorsAndProviderShutdown(t *testing.T) {
 	backends(t, func(t *testing.T, backend string) {
 		m := compileFixture(t, backend, "stdin")
-		for _, mode := range []string{"ready", "error", "panic", "invalid", "no-progress", "close"} {
+		for _, mode := range []string{"ready", "error", "panic", "readiness-panic", "invalid", "no-progress", "close"} {
 			source := &deferredInput{changed: make(chan struct{}), failure: io.EOF}
 			want := uint64(0)
 			switch mode {
@@ -281,6 +283,9 @@ func TestInputReadinessErrorsAndProviderShutdown(t *testing.T) {
 			case "panic":
 				source.ready = true
 				source.panicRead = true
+				want = 1 << 24
+			case "readiness-panic":
+				source.panicReady = true
 				want = 1 << 24
 			case "invalid":
 				source.ready = true

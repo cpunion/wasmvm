@@ -56,6 +56,9 @@ func (c *Caller) ReadAsyncContext(ctx context.Context, ref *Resource, limit uint
 		return ReadResult{}, err
 	}
 	defer c.mu.Unlock()
+	if c.prompt {
+		return ReadResult{}, vm.ErrType
+	}
 	operationContext := ctx
 	if ctx == nil {
 		ctx = c.Context()

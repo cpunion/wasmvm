@@ -4950,3 +4950,44 @@ binary hashes. Existing C/Rust producer provenance is reused unchanged. Final
 target CI remains required; no performance measurement or acceptance is inferred
 from these execution tests. Logs are under
 `artifacts/components/component-forward-probe/component-cli-*`.
+
+## Unchanged upstream native WASI consumers
+
+Wasmtime 48.0.1 revision `7bac2c2775808aaec5d4aa5627a5e447b51102cf`
+contains 61 P3 programs. All 60 stable consumers now build without changing
+their source or assertions, using Rust 1.98.0, `wasm32-wasip2`, wit-bindgen
+0.60.0 and wasm-tools 1.262.0. The sole draft TLS source remains retained and
+explicitly excluded. The archive includes 941 hashed assets, original Cargo
+locks/support/WIT/harnesses, licenses and notices for 101 dependencies. A second
+binary composes the original chain middleware with the original echo service.
+
+Both owned backends execute 58 normal successes, an expected 100-handle quota
+failure for retained clock tasks, and cancellation after observing a guest's
+indefinite clock wait. Seven additional scenarios per backend cover HTTP body/
+trailer forwarding, host forwarding, compression and guest composition. Four
+actual mixed-import consumers also run through the CLI with each backend.
+The [corpus record](../testdata/wasi-preview3/upstream/README.md) specifies
+loopback/DNS/server adaptations, an explicit header-test client interceptor and
+the malformed response used for invalid-version testing. No failed stable
+program is skipped or counted as success.
+
+The initial runs exposed stream-future lifetime errors, accumulated host-batch
+overwrites, deferred readiness, premature quota exhaustion, physical socket-close
+races, missing socket methods, IPv6 sentinels, filesystem capability errors and
+HTTP forwarding/body-length failures. These were fixed in the shared component
+and versioned providers. The unchanged TCP stream program now completes its
+2 MiB cancellation/duplex transfer and lifetime/shutdown assertions. The 200-stream
+program succeeds with the original 100-handle bound; retained-task exhaustion
+still requires `wasm.ErrLimit`. HTTP rejects an oversized byte batch before
+writer acknowledgement and retains actual body sizes across transport cancellation.
+
+Local affected-package Go race and pinned LLGo `-O3 -lto=full` suites pass.
+Further shutdown/readiness changes have targeted race regressions, including a
+descriptor held by a queued half-close job. The latest measured package coverage
+is component 91.2%, P2 90.2%, P3 90.8% and CLI 97.8%; shared host coverage is
+93.77% when measured across its provider consumers. Vet, 19 Python tests and
+offline corpus hash/provenance verification pass. Final integrated-head target
+CI and review remain required. No performance acceptance is inferred.
+
+Raw local logs and original failing probes are retained under
+`artifacts/components/upstream-worlds-probe`.

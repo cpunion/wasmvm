@@ -8,6 +8,15 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// ConfigureIPv6Socket fixes the resource's initial hop limit instead of exposing
+// the kernel's negative "inherit the route default" sentinel as a WASI u8.
+func ConfigureIPv6Socket(fd int) error {
+	if err := unix.SetsockoptInt(fd, unix.IPPROTO_IPV6, unix.IPV6_V6ONLY, 1); err != nil {
+		return err
+	}
+	return unix.SetsockoptInt(fd, unix.IPPROTO_IPV6, unix.IPV6_UNICAST_HOPS, 64)
+}
+
 func SocketOption(fd int, family uint32, name string, value uint64) (uint64, error) {
 	set := strings.HasPrefix(name, "set-")
 	name = strings.TrimPrefix(name, "set-")
