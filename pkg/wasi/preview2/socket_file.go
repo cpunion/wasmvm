@@ -22,7 +22,7 @@ type socketFile struct {
 	ctx      context.Context
 	cancel   context.CancelFunc
 	closed   bool
-	active   sync.WaitGroup
+	active   uint64
 	done     chan struct{}
 	closeErr error
 }
@@ -76,10 +76,26 @@ func (s *socketFile) begin(ctx context.Context) (int, error) {
 	if s.closed || s.ctx.Err() != nil {
 		return 0, os.ErrClosed
 	}
-	s.active.Add(1)
+	if s.active == ^uint64(0) {
+		return 0, socketCode(NetworkOutOfMemory)
+	}
+	s.active++
 	return s.fd, nil
 }
-func (s *socketFile) end() { s.active.Done() }
+func (s *socketFile) end() {
+	s.mu.Lock()
+	if s.active == 0 {
+		s.mu.Unlock()
+		panic("socket lease underflow")
+	}
+	s.active--
+	closeNow := s.closed && s.active == 0
+	s.mu.Unlock()
+	if closeNow {
+		s.finishClose()
+	}
+}
+func (s *socketFile) finishClose() { s.closeErr = s.file.Close(); close(s.done) }
 func (s *socketFile) Close() {
 	if s == nil || s.done == nil {
 		return
@@ -91,8 +107,11 @@ func (s *socketFile) Close() {
 	}
 	s.closed = true
 	s.cancel()
+	closeNow := s.active == 0
 	s.mu.Unlock()
-	go func() { s.active.Wait(); s.closeErr = s.file.Close(); close(s.done) }()
+	if closeNow {
+		s.finishClose()
+	}
 }
 func (s *socketFile) WaitClosed(ctx context.Context) error {
 	if s == nil || s.done == nil {

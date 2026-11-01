@@ -3,6 +3,7 @@ package preview2
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/cpunion/wasmvm/pkg/component"
@@ -82,6 +83,8 @@ type ioStream struct {
 	children                           uint32
 	dropped, closed, running, flushing bool
 	checked                            bool
+	stopping                           bool
+	onDrain                            func()
 	queue                              []byte
 	permit                             uint64
 	failure                            error
@@ -277,7 +280,7 @@ func (p *IO) drop(id uint32) error {
 	if r.children != 0 {
 		r.mu.Unlock()
 		p.mu.Unlock()
-		return wasm.ErrTrap
+		return fmt.Errorf("%w: IO stream %d has live pollables", wasm.ErrTrap, id)
 	}
 	r.closed = true
 	r.cancel()

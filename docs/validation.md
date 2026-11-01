@@ -4996,3 +4996,76 @@ unchanged assertions remain required for both backends and host compilers.
 
 Raw local logs and original failing probes are retained under
 `artifacts/components/upstream-worlds-probe`.
+
+PR [#83](https://github.com/cpunion/wasmvm/pull/83) merged as `2570a98` after
+final head `39c232c` passed all four Go/LLGo target jobs in
+[CI 41281029131](https://github.com/cpunion/wasmvm/actions/runs/41281029131).
+All nine downloaded ZIP digests, exact-head metadata, 180 execution reports and
+30 package coverage thresholds were audited. No review findings remained.
+Final coverage was CLI 97.76%, shared host 92.35%, component 92.13%, P2 90.26%
+and P3 90.82%. This closes that increment's integration gate, not performance
+or exhaustive conformance acceptance.
+
+## Complete upstream P2 consumer inventory
+
+The [P2 corpus record](../testdata/wasi-preview2/upstream/README.md) inventories
+95 original programs at the same source/toolchain pins: 92 stable consumers
+execute on both owned backends; two draft-interface binaries and the draft TLS
+source are retained with explicit exclusions. A thin 206-asset archive reuses
+the pinned original sources, Cargo.lock and notices from the P3 corpus.
+Additional cases cover every P2/P3 header-append mode, HTTP duplex forwarding,
+hash fanout and field-map cloning. The reactor exercises its actual exports,
+including an owned WASI stream and a filesystem record.
+
+A separate 160 KiB/4 KiB-buffer stress variant has an explicit sample-executor
+patch: retire old pollables before repolling their futures. The original
+consumer's large-body diagnostic sometimes traps on a stream with a retained
+pollable; that failure remains recorded. Wasmtime 48.0.1 passed all 140 ordinary/
+paced reference requests, so this is not reported as a reproduced Wasmtime
+failure. The patched fixture has separate patch/source/binary hashes, is not
+an unchanged-conformance result, and preserves all runtime lifetime checks.
+
+Original failures exposed TCP state-error precedence, premature/deferred socket
+closure, IO-view ownership, lost queued bytes at shutdown, stale pre-connect UDP
+datagrams, absent creation-denial configuration, file access/capability errors,
+stdio OS error mapping, empty-poll classification, and HTTP body-length/URI
+validation. Resource equality imports now reuse an already bound nominal type;
+an unrelated explicit type remains rejected. Socket shutdown drains the accepted
+output prefix through the existing worker, revokes new permits immediately,
+and retains deterministic cleanup after failure/drop. Files opened without WRITE
+retain their effective read-only mode. Body-size validation rejects an oversized
+batch before accepting it and preserves the actual size in the typed error.
+
+The harness supplies hermetic grants and the reference clock/server inputs.
+Intentional traps, quota failures, incomplete responses and cancellation after
+an observed guest wait are asserted separately. Wasmtime-specific hostcall-fuel
+policy and optional config/keyvalue/TLS drafts are not claimed as implemented
+WASI requirements. Final-head Go/LLGo target CI, coverage and review remain
+required. Performance optimization and comparison campaigns remain deferred.
+
+Local diagnostics and original failing results are retained under
+`artifacts/components/wasi-p2-worlds-probe`.
+
+The first Linux Go CI completed the full semantic/coverage suite but its race
+pass timed out the unchanged LLGo threaded guest's native/all case at 60 seconds.
+Concurrent repeated upstream P2/P3 inventories took 218/255 seconds in that
+diagnostic pass. The race scope now follows the existing complete Core/P1
+inventory policy: keep all producer programs in the four-target semantic matrix,
+while running unit, lifecycle, actual threaded-guest and streaming-interaction
+tests under race detection. No guest assertion or deadline was relaxed. The
+original failing job log remains retained; final-head CI is still required.
+
+The subsequent LLGo Linux run passed P2 but exposed a P3 FIFO completion race:
+dropping a data stream could publish `interrupted` instead of its successful
+close result. Separate stop/finish calls canceled the external read before
+claiming the terminal result. IO operations now claim and publish one terminal
+outcome before canceling producers or releasing their source. The same compact
+operation path handles stdio, filesystem and sockets. An earlier genuine failure
+still wins; repeated close remains idempotent. A deterministic regression forces
+the cancellation receipt to arrive during stop, and the existing FIFO/provider/
+instance-close cases run repeatedly with Go race detection and pinned LLGo.
+No expected outcome or resource-lifetime check was relaxed.
+IO, filesystem and socket owners likewise revoke their stream operations before
+broadcasting parent cancellation. A separate owner-close regression forces the
+external cancellation receipt to arrive before Close resumes; completion codes
+and one-time reclamation remain deterministic.

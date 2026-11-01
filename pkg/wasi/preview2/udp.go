@@ -19,6 +19,8 @@ const UDPCreateInterface = "wasi:sockets/udp-create-socket@0.2.12"
 // Callbacks run without provider/resource locks, may run concurrently and must
 // observe cancellation. MaxDatagrams bounds each send permit and receive scan.
 type UDPConfig struct {
+	// DenyCreate rejects socket allocation independently of operation grants.
+	DenyCreate                           bool
 	MaxSockets, MaxStreams, MaxDatagrams uint32
 	AllowBind, AllowSend, AllowReceive   func(context.Context, SocketAddress) error
 }
@@ -216,6 +218,9 @@ func (p *UDP) publish(c *component.Caller, e *udpEntry) (component.Value, error)
 	return v, nil
 }
 func (p *UDP) create(c *component.Caller, family uint32) (component.Value, error) {
+	if p.config.DenyCreate {
+		return component.Value{}, socketCode(NetworkAccessDenied)
+	}
 	p.mu.Lock()
 	if p.closed || p.ctx.Err() != nil {
 		p.mu.Unlock()

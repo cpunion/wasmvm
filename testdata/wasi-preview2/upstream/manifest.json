@@ -1,0 +1,714 @@
+{
+  "upstream": "https://github.com/bytecodealliance/wasmtime",
+  "version": "48.0.1",
+  "revision": "7bac2c2775808aaec5d4aa5627a5e447b51102cf",
+  "sourceArchiveSHA256": "25fe25e2b1494cf8d3f1f74d112a59fca98fee97fec978207ae140525d075761",
+  "sourceArchiveURL": "https://github.com/bytecodealliance/wasmtime/archive/7bac2c2775808aaec5d4aa5627a5e447b51102cf.tar.gz",
+  "rust": "1.98.0",
+  "target": "wasm32-wasip2",
+  "bindings": "wit-bindgen 0.60.0",
+  "producer": "wasm-tools 1.262.0 (e22db44da 2026-10-13)",
+  "producerExecutableSHA256": "4a5b127f48340fbd453708283d190f9b1dbbe5820571eae5cbae0a205a095a00",
+  "generatorSHA256": "672c40b05f20abd813ed824826656a9383aa8296d8836aba4e863b1f07100c32",
+  "sharedArchiveSHA256": "79fa3bdc26602afe689651e84c458e94167dcf214bcf8f2fd21e7bf1f82e3edb",
+  "sharedGeneratorSHA256": "3384cc095bf38c7fb50a49d2b0977706583bc833f0f3e763e2a4e77e04c54d20",
+  "inventory": [
+    "p2_adapter_badfd",
+    "p2_api_proxy",
+    "p2_api_proxy_forward_request",
+    "p2_api_proxy_streaming",
+    "p2_api_reactor",
+    "p2_api_read_only",
+    "p2_api_time",
+    "p2_cli_args",
+    "p2_cli_argv0",
+    "p2_cli_default_clocks",
+    "p2_cli_directory_list",
+    "p2_cli_env",
+    "p2_cli_exit_default",
+    "p2_cli_exit_failure",
+    "p2_cli_exit_panic",
+    "p2_cli_exit_success",
+    "p2_cli_exit_with_code",
+    "p2_cli_export_cabi_realloc",
+    "p2_cli_file_append",
+    "p2_cli_file_dir_sync",
+    "p2_cli_file_read",
+    "p2_cli_hello_stdout",
+    "p2_cli_hostcall_fuel",
+    "p2_cli_http_headers",
+    "p2_cli_initial_cwd",
+    "p2_cli_invoke_async",
+    "p2_cli_large_env",
+    "p2_cli_many_resources",
+    "p2_cli_max_resources",
+    "p2_cli_much_stdout",
+    "p2_cli_multiple_preopens",
+    "p2_cli_no_ip_name_lookup",
+    "p2_cli_no_tcp",
+    "p2_cli_no_udp",
+    "p2_cli_serve_authority_and_scheme",
+    "p2_cli_serve_config",
+    "p2_cli_serve_echo_env",
+    "p2_cli_serve_hello_world",
+    "p2_cli_serve_keyvalue",
+    "p2_cli_serve_return_before_set",
+    "p2_cli_serve_sleep",
+    "p2_cli_serve_trap_before_set",
+    "p2_cli_serve_with_print",
+    "p2_cli_sleep",
+    "p2_cli_sleep_forever",
+    "p2_cli_splice_stdin",
+    "p2_cli_stdin",
+    "p2_cli_stdin_eisdir",
+    "p2_cli_stdin_empty",
+    "p2_cli_stdio_write_flushes",
+    "p2_cli_stdout_epipe",
+    "p2_clocks_zero_wait",
+    "p2_file_hardlink_across_perms",
+    "p2_file_read_write",
+    "p2_file_rename_across_perms",
+    "p2_file_stream_not_permitted",
+    "p2_file_truncation_readonly",
+    "p2_http_outbound_request_content_length",
+    "p2_http_outbound_request_get",
+    "p2_http_outbound_request_invalid_dnsname",
+    "p2_http_outbound_request_invalid_header",
+    "p2_http_outbound_request_invalid_port",
+    "p2_http_outbound_request_invalid_version",
+    "p2_http_outbound_request_large_post",
+    "p2_http_outbound_request_missing_path_and_query",
+    "p2_http_outbound_request_post",
+    "p2_http_outbound_request_put",
+    "p2_http_outbound_request_response_build",
+    "p2_http_outbound_request_timeout",
+    "p2_http_outbound_request_unknown_method",
+    "p2_http_outbound_request_unsupported_scheme",
+    "p2_ip_name_lookup",
+    "p2_pollable_correct",
+    "p2_pollable_traps",
+    "p2_random",
+    "p2_sleep",
+    "p2_stream_pollable_correct",
+    "p2_stream_pollable_traps",
+    "p2_tcp_bind",
+    "p2_tcp_busy_poll",
+    "p2_tcp_connect",
+    "p2_tcp_listen",
+    "p2_tcp_sample_application",
+    "p2_tcp_sockopts",
+    "p2_tcp_states",
+    "p2_tcp_streams",
+    "p2_tls_sample_application",
+    "p2_udp_bind",
+    "p2_udp_connect",
+    "p2_udp_sample_application",
+    "p2_udp_send_to_closed_receiver",
+    "p2_udp_send_too_much",
+    "p2_udp_sockopts",
+    "p2_udp_states",
+    "p2_udp_stream"
+  ],
+  "excluded": {
+    "p2_tls_sample_application": "Draft wasi:tls is outside the stable WASI profile.",
+    "p2_cli_serve_config": "wasi:config/store@0.2.0-rc.1 is outside the declared worlds.",
+    "p2_cli_serve_keyvalue": "wasi:keyvalue/store@0.2.0-draft is outside the declared worlds."
+  },
+  "cases": {
+    "p2_adapter_badfd": {
+      "sourceSHA256": "e9efede450bd1dd55c8e4c8402190991f9348b7eacc3b27aa26af753fa895329",
+      "binarySHA256": "e66099cd2d40ab45c4dbef90b3ad90f140edbf5a29970eb12b8a96a4b4a2c7b1"
+    },
+    "p2_api_proxy": {
+      "sourceSHA256": "eff61b848d0a09a4d09b7fcc5458c8d0c591ab5f8deba65aa1d203ffad306771",
+      "binarySHA256": "2ff018476fd10537ff23a38052a079aa6a0afa8acc473ee8fcf92b8836391674"
+    },
+    "p2_api_proxy_forward_request": {
+      "sourceSHA256": "aaef05c96d2cd3617532945ffafb45b319f44614b350f5392ab7cf437e6704fe",
+      "binarySHA256": "2eeaf8cf3eb836d34d800e66ba94d83455f6d68f8d86a092eaa7c4b142be9b50"
+    },
+    "p2_api_proxy_streaming": {
+      "sourceSHA256": "ce6bd5482198a142d4a1694966abb55dcd090534176b8c0d5ef9456480f8fa84",
+      "binarySHA256": "d123fc4260e47df6cf1e1cf505174694441b3d66b124426d258d0c495b791064"
+    },
+    "p2_api_reactor": {
+      "sourceSHA256": "a40b62e2c334b97111bc70f46989d465b8ee1a06240f85cede6def47ec9315c7",
+      "binarySHA256": "0f2efc1717edf2a07753e2752ec3be24643705ea1503639b3404864fd911940c"
+    },
+    "p2_api_read_only": {
+      "sourceSHA256": "29d54f02250d009f0c0606247d4ba84f9cf22eedfe991b3bb1aedf2453269a20",
+      "binarySHA256": "6e766a21bd7cc2392c1aa14c0e07a3d7f8ae45fed20123396d1a213f6449bdb5"
+    },
+    "p2_api_time": {
+      "sourceSHA256": "c24947b4e19dcc5171722313c92b95f252053f77bc41e7dbd4876f15407c94ef",
+      "binarySHA256": "6674a5720a7c21bda230a1f0758584e2558456e4cd3fa469d0d0e77526fa96e9"
+    },
+    "p2_cli_args": {
+      "sourceSHA256": "9d0832ddd71075c7e4075c81859adf7366262211e5088bc577f654e7e9150bc5",
+      "binarySHA256": "f9deb0e865b708aab4739acdb763f60665b476929d3f5188868ab73a4056f2d3"
+    },
+    "p2_cli_argv0": {
+      "sourceSHA256": "511fec409f0bbd43dc372a13eea714fef549a5a1a9b5fdc4778f0517c431280d",
+      "binarySHA256": "1de829dcf583983d3402cd4fb6c624cf96bdbb298c7ca85f88b665f852787069"
+    },
+    "p2_cli_default_clocks": {
+      "sourceSHA256": "d21ab3588118062412541324ccebc170ba9f09ff895c4dff0a2d8190391912dc",
+      "binarySHA256": "a2721ad09d06cd651f5424daf29c545b702bb4663fd3a81fdf2450fee72f5127"
+    },
+    "p2_cli_directory_list": {
+      "sourceSHA256": "954f42aae19834ac63e50ec65434446b02fe9baecf4ced7bbab4d3d1f1970f85",
+      "binarySHA256": "12ae2a9b8ff2164afaa95e03f7306c03944c0c6e871302dff3004ab51dc37ee9"
+    },
+    "p2_cli_env": {
+      "sourceSHA256": "9b426274805d7b82825ba347f77e00ed05ce55c3e5a10e10faf7053a94f71f43",
+      "binarySHA256": "20965f651e6ca910f6590d2d7e7529795ba6ebe71d1c5787013a47c9a9aabb16"
+    },
+    "p2_cli_exit_default": {
+      "sourceSHA256": "536e506bb90914c243a12b397b9a998f85ae2cbd9ba02dfd03a9e155ca5ca0f4",
+      "binarySHA256": "94de0d226ea9cac8d24d53671078db86efe2ebe705104bb2f66872ebd21a7bef"
+    },
+    "p2_cli_exit_failure": {
+      "sourceSHA256": "f749a1858958f78e9a6134ab2ebf03b344499e78ecf90081e56423d63483f2db",
+      "binarySHA256": "fff15017358f749487b624fcf12f543b089cb7e5b6c05044677df21399de5daa"
+    },
+    "p2_cli_exit_panic": {
+      "sourceSHA256": "ae19cf7dc323e5686761bff81c9a655eb85ccced48edddc715de0217a387ca30",
+      "binarySHA256": "8fa462e5d82d0b093f68a72f9421e2928adcae4b9de003caa99f50a2ed5710dd"
+    },
+    "p2_cli_exit_success": {
+      "sourceSHA256": "41270a37f947d0d06af78ead71774a028a84086077f5c4bf0c9d7314a56d68c7",
+      "binarySHA256": "be130a9e5f0f8b74e8d2cbac74d0199468ebb2ced29841d7b0f364dc00b135db"
+    },
+    "p2_cli_exit_with_code": {
+      "sourceSHA256": "159135887cc5dc7defdb19876bb19323823b65296562eb22845d32a40f571f65",
+      "binarySHA256": "502175f4d6c5fa6fe103920bc20cc275a2f3252c3c1ec3b1debab1791122bb63"
+    },
+    "p2_cli_export_cabi_realloc": {
+      "sourceSHA256": "31e21451581b4ac88b770b6188de6cb564a91c29d3fc851d823198e2d3b4eec9",
+      "binarySHA256": "faa240bc098acdcc7640d0f10ef8369003c4bb7715a0773946ad2db3f8957376"
+    },
+    "p2_cli_file_append": {
+      "sourceSHA256": "5426b86f3a52e3dcd6a5d0208b1fdaf7eb12064420f572067ba9c6ca206a6c8a",
+      "binarySHA256": "aee8da2649fb9aae281770687811a9d8abf8bf22982572c41c46be3258c73978"
+    },
+    "p2_cli_file_dir_sync": {
+      "sourceSHA256": "e7db83ee05e773ecdb9379f3817891757af8e518e539bad8070fd6f6ee6f8ad1",
+      "binarySHA256": "451372d53e23097e43339dd6468c14397dfee57dcbc72009d2921c328f4c4e95"
+    },
+    "p2_cli_file_read": {
+      "sourceSHA256": "7e616546bb30eb5e5445007058f6d9def0144f44131ee7949a259b0a4a4ec3b1",
+      "binarySHA256": "35aee7b81939b5ad49d93ee0d3c4bf804bcffb68000c7416538a655e8a29234d"
+    },
+    "p2_cli_hello_stdout": {
+      "sourceSHA256": "513a911e51ceb74392b9c0c5d9521a8b09591d24a464d27c43d6c58cc7e64162",
+      "binarySHA256": "7e7996aca3b3bb331e134a56ee9286b6360d6d099eed81b20268c1ee1a5c945c"
+    },
+    "p2_cli_hostcall_fuel": {
+      "sourceSHA256": "be96f4db5a5ba13e95c3b628bce48c547bd2ed6b838ef9b12f6bde3c73e08147",
+      "binarySHA256": "8e76a92056d00b57dbf40764f2d3c34e18d9cf7e92426001946077cff9f21aac"
+    },
+    "p2_cli_http_headers": {
+      "sourceSHA256": "7663151b40ce42c0221995f9d7f89c91857e3d518a5e021a83de04517868653b",
+      "binarySHA256": "5f644282831e8b44ac35a6aaa3a4fa5de7adeadf0647a23cf0a08f308253d1b0"
+    },
+    "p2_cli_initial_cwd": {
+      "sourceSHA256": "e0a1f023a474f16fcb2db895c4bf208d825b54bd0ca9a9153723a99b8a3ca438",
+      "binarySHA256": "be9388f29437a38b69e492c777e1182fcb9cfaadc87152f4857ccd04557e06e1"
+    },
+    "p2_cli_invoke_async": {
+      "sourceSHA256": "3d22482b6fbf0b2222bece83bd21bbe14bf8b005fc6f178ada2aab1b7026addb",
+      "binarySHA256": "d74efaae5c7ad2c192b4a1f579429ee892a1c76967a75944fac62f39dc4eada7"
+    },
+    "p2_cli_large_env": {
+      "sourceSHA256": "8b3708ba9c5bd88ef7376612e9eddd1582671ed64d0bead48087bf21ae41510c",
+      "binarySHA256": "7b196187ae08a65ff953df8681ce59ce493ce42f3911381d6e36d1174d5ba229"
+    },
+    "p2_cli_many_resources": {
+      "sourceSHA256": "b787523bc0b3a0f21d7e000c1cb60b6d51cd944b81ad6b866431fa86bedb11e9",
+      "binarySHA256": "d951d0ffb706da6b4e9aab91f99d0f47ae1163d6b858c7efa8384fb71221a369"
+    },
+    "p2_cli_max_resources": {
+      "sourceSHA256": "24a77991de4e9fec6862dbb6a6ac0908bdaef5b628a1ca88038154203cf871a5",
+      "binarySHA256": "dd7c3a3084a20268cda1cb532d16fbeb882a74ea1d31890fa072465f149febdb"
+    },
+    "p2_cli_much_stdout": {
+      "sourceSHA256": "6afa41c20a3e2ba8153dd11899b50bd75d113d946815b9d825695ecab1d9f3d4",
+      "binarySHA256": "53021508333378277f6cba16af84e99f061b1afb6fd95605b3d29a8bbb97dafa"
+    },
+    "p2_cli_multiple_preopens": {
+      "sourceSHA256": "20c01b480db06f0158a69ca08cf2940075cb7f5a88722df21c69abab8a7fb38b",
+      "binarySHA256": "56e58bee80b8a6d676e54c4e39775a51671c5acb73d53e2b6a608ed011fc8ca6"
+    },
+    "p2_cli_no_ip_name_lookup": {
+      "sourceSHA256": "b28a886dc376e5da4159bf82697dbb8ac5268a4aaabcbe51eed2df92a8e3cde8",
+      "binarySHA256": "8838fcd083044f817606851718777fef3bf6be6ec7f6cc8979b5e4f04a95b2ad"
+    },
+    "p2_cli_no_tcp": {
+      "sourceSHA256": "c1ecaedf489cd8c4a82b1d17e349629005980b91651e5f4937f93c59cb336bc1",
+      "binarySHA256": "3bcad88fc555de63d5c2c1621da999740ae88beb1c4e3f91487f8c7a843555da"
+    },
+    "p2_cli_no_udp": {
+      "sourceSHA256": "34d0d9e4d5e678829257b7ff6586a4bdbf58e6b9f5bfb9a00cb3461ab8836cc1",
+      "binarySHA256": "6ae282195205bd48b2118f17d9e94205b2085bac27055c300b9de6964ca53088"
+    },
+    "p2_cli_serve_authority_and_scheme": {
+      "sourceSHA256": "1096a03c72854ed4d45bf8b951ce2698824067a468aa07da965327ce852120e9",
+      "binarySHA256": "00d6133ce779e40deadb04cc910848b3ddc9458e3e164d1b1869ac916bb43bb7"
+    },
+    "p2_cli_serve_echo_env": {
+      "sourceSHA256": "5ecfc92ffe129fbec55b9fe866f25bbc6407fb8a59633a92cb3a33bdbefac2eb",
+      "binarySHA256": "e0647ce254b7024303161e4e7a6feac7fd0749c91ba5c423df8e768dc963ab7d"
+    },
+    "p2_cli_serve_hello_world": {
+      "sourceSHA256": "2fe8eac90cd496af4b43977752d1aeae4dce64254c863622b347f8f207aaae45",
+      "binarySHA256": "efcfb72c9319f8f346e6f3fb1a05fda2d6ce027f60f568ebe3a46227fe49e87b"
+    },
+    "p2_cli_serve_return_before_set": {
+      "sourceSHA256": "12f4d8fb6d74bb923c2a98212580099e5b6972d78e751452841360d7fe9996d4",
+      "binarySHA256": "ed6f053970f902afdb3323e2057cb147448ba947dd8a369b9e36ce7e20dc7bc2"
+    },
+    "p2_cli_serve_sleep": {
+      "sourceSHA256": "4840b0287d6fb13b452a79ffbf287d9e8726475820228561c81c3dc2b6ee146b",
+      "binarySHA256": "f70c7969884dd980dccbb54f94013e9f2fac42f88a826c0e83c29f1ac426df38"
+    },
+    "p2_cli_serve_trap_before_set": {
+      "sourceSHA256": "78c2edaeaa8d0b30baaf773a44b2c1212b88474607c1eb01d38d1f844c49090a",
+      "binarySHA256": "2925d9fefb1649046cd13aa8cc23d2e0559195e68c8ce7369db25937ff73d13d"
+    },
+    "p2_cli_serve_with_print": {
+      "sourceSHA256": "7b4dde32cf35915b4c5951b7bd066a3c8202fd65756f9a91b987d93bc347432c",
+      "binarySHA256": "1e29e8812f20f56e68e709dcfa377541a09cf010b0c36c78bd2e9f93adaa1269"
+    },
+    "p2_cli_sleep": {
+      "sourceSHA256": "bca8cd923e5b8ccaa39835d29b6bf0cf39efb1073584ecdb7377d5cb09fbe737",
+      "binarySHA256": "540e5cb70f4aecd48e0cdb501c9b00beeb0961bb21e3f1aacc3e11a7eb969113"
+    },
+    "p2_cli_sleep_forever": {
+      "sourceSHA256": "43d147afb69854dbb00bdf593b783e50c6726627e6eb88ce6c26fd21f52be98f",
+      "binarySHA256": "fb605e4ea0b93fcd616ae985e8b47d11840785260e017563ab343b7118add705"
+    },
+    "p2_cli_splice_stdin": {
+      "sourceSHA256": "4be23aa0d375695b06b1932faebc2add44f4e72d513da95efdac28002988fbf5",
+      "binarySHA256": "2fe84d0604298f25393d8436244118e1120c88ec7783561e4b59998e0100c9d5"
+    },
+    "p2_cli_stdin": {
+      "sourceSHA256": "fdee337881563b6c8b8ba78e26e4878a6eeea42ada90d8452aeff2799d6eb96f",
+      "binarySHA256": "f40ccfbcf48b656169135e1380d902ce2f5f60cbaed85a8a784be57b23bb03f3"
+    },
+    "p2_cli_stdin_eisdir": {
+      "sourceSHA256": "39230988305f15235017dc89f35f1d0a228be4793a07e0f9d5c552e4408097fb",
+      "binarySHA256": "ede1e10950b4826ee1598a081fd5800bae7cd05c64535e8c64e6de2ba9f56f71"
+    },
+    "p2_cli_stdin_empty": {
+      "sourceSHA256": "48d91fbd31a86f1ef02db5af0b1001fd9f994579105c89ee3730b105d310ea40",
+      "binarySHA256": "417c00422363090b4bca15a299d34f021d9657c6957db20db40bd55fbe05083f"
+    },
+    "p2_cli_stdio_write_flushes": {
+      "sourceSHA256": "dfc40093c0ea2bddc9180ac0c5a13e6f33a704e8e5364694f92c5e5d5996a7e1",
+      "binarySHA256": "6729736b52183a3e8776566317ba3ea5482c8ba5599e2356542561e6a8607155"
+    },
+    "p2_cli_stdout_epipe": {
+      "sourceSHA256": "ef7e208c63db86708502215619cd6476313045bbe7bd7eeb3f2f0f619d566756",
+      "binarySHA256": "86f3aa987dbf64184a57e43ed6c2698972d123b9c67a5f80d265fae61b6d021b"
+    },
+    "p2_clocks_zero_wait": {
+      "sourceSHA256": "6dfbaa7db5c4b06ce19b59fdd22e343a7ca3546875436b3ecca6c842b8fc41be",
+      "binarySHA256": "03a09902af50161f9423f5434d4a926f9ff6c1806c11141bb7e836d075e5d515"
+    },
+    "p2_file_hardlink_across_perms": {
+      "sourceSHA256": "70841baf0f30ebc3aac8377be627ff526bc2a46a90c376869aa4c2fee9062292",
+      "binarySHA256": "45378c3a6aeb8ee2e11b7b77d76df8ca30925d4959ff95c27996475193c5e33d"
+    },
+    "p2_file_read_write": {
+      "sourceSHA256": "2c0eecd0ea0a1e285cf04ec93fddbd56e19d52539ffd0d15556b7d131769a69e",
+      "binarySHA256": "62b271a9ca9b09201d8440cfdef86fb4ee3c2ab2022fdb271fb400583a5cd243"
+    },
+    "p2_file_rename_across_perms": {
+      "sourceSHA256": "f278f84141c4070b404be1d8d63181bd4c2457fb553f85a74daeb69d8209fac2",
+      "binarySHA256": "5b14461c288a13ef30c0805e3362f88e23b5b61eb3c075064406400351f3a62c"
+    },
+    "p2_file_stream_not_permitted": {
+      "sourceSHA256": "e8c958defe8a578858828e53f1df913aee1ed64a1763d0abcf1ca4e9004d4bb4",
+      "binarySHA256": "80968c770595c45364f5531af4c37757f4928ff0bbffc308b6fd2666d53a5ac3"
+    },
+    "p2_file_truncation_readonly": {
+      "sourceSHA256": "afca1be4856656648b7248919bc674a5622a70aa9a1a9425d347c183b495922b",
+      "binarySHA256": "0c71da86a10258fb476e85369bcd1ed74614e6718a1b98c2a2c8f6a2d1b60df1"
+    },
+    "p2_http_outbound_request_content_length": {
+      "sourceSHA256": "4cec21866f9e5f65687dd1698b1abaf0d9bcc93bccc69181950afded5ae56933",
+      "binarySHA256": "7e7c3d60e393bc82fa35012548acccdbefc083a669b6def4ee5aaf6e7d838362"
+    },
+    "p2_http_outbound_request_get": {
+      "sourceSHA256": "59e6427784172a30f8ed2ba49707864b6cfc582d6188fc8f1bcff44575c9256b",
+      "binarySHA256": "27291282857152c066469e6e8bcb6bcd7afad0f4dc6dc267d8a73edb90ebafa7"
+    },
+    "p2_http_outbound_request_invalid_dnsname": {
+      "sourceSHA256": "7b609fb6ed2f9cc68d14ee98aaa7570203a92dbd30b1f771e219276c717aa061",
+      "binarySHA256": "8a1e92b1d31d1a69b5d9f716e81ec2f280f1e2ad3d27f8f40e27ef12473fa893"
+    },
+    "p2_http_outbound_request_invalid_header": {
+      "sourceSHA256": "134da4ed7f193b7eb0660a349b9724e60956a8cfec6b7cbbf5693ece4ca96eec",
+      "binarySHA256": "4b0807d092cb3942b73ddce0a707778983a91659e07ced666e2786f9ed9c62b5"
+    },
+    "p2_http_outbound_request_invalid_port": {
+      "sourceSHA256": "648cf4287e6a99bd4ef3b8e1efce41dc86ca913cfdf034961f7b97f8c837261c",
+      "binarySHA256": "6149ff3f10e54d2c9f18d17eb4eea281cceabe67a9a4df5a8bfc31b3ec94a7ff"
+    },
+    "p2_http_outbound_request_invalid_version": {
+      "sourceSHA256": "39650f28ca6295106c5734e982902c377505632c3553722954eafc2522d5d301",
+      "binarySHA256": "7ff19ae9f7fc47ca33b350f3f5c3762f242429d08f53baa9ed1747ca52cbc18b"
+    },
+    "p2_http_outbound_request_large_post": {
+      "sourceSHA256": "dab46a60d836990604a8dd9f3ebf8238a45ce049df38a33e29ecd29b1da74f22",
+      "binarySHA256": "f23db9d55dfc7426184a5f91cbf80bcdcb235c6020a99aa0b3a1a0ba8cb82f8e"
+    },
+    "p2_http_outbound_request_missing_path_and_query": {
+      "sourceSHA256": "3df2739901664970495ba7a4ee0b6f7f0a34b4fac088fcfd5a34458c8fc443ad",
+      "binarySHA256": "d8e4af47b40de30bf756ccbece7802fd91c794a937ae472ea4a2a5cd05eedec9"
+    },
+    "p2_http_outbound_request_post": {
+      "sourceSHA256": "b54cc21a4ec9a9d5cb94eb870b8f7292e76c9e9313e71579f89b9ec4febc35c0",
+      "binarySHA256": "77b6a9cf20537f6aece526f739fe1d02c3b5c8e423bfa8404d787a9d068659b7"
+    },
+    "p2_http_outbound_request_put": {
+      "sourceSHA256": "97a287385d51c7953387ec694664599a5ea1ac0c143390ed123698c33f4c0d41",
+      "binarySHA256": "6daf677bc95613300cabce011e27928afe3cecb45038500cc7b5b94e50f813c0"
+    },
+    "p2_http_outbound_request_response_build": {
+      "sourceSHA256": "b4474eb5735ca22c41b2c64c1d7a13bbaefb2ce9ea1d6a39c623a20201f2c780",
+      "binarySHA256": "2117ea1cd17fd81d02c8eb41f9c94e6f34ce219e951087e85bed0ea2db8bb3f6"
+    },
+    "p2_http_outbound_request_timeout": {
+      "sourceSHA256": "5b3aeaa2100ab51cadd10c4b6ab30aaa1fd8f123037be1709f63f04503162941",
+      "binarySHA256": "6ed65c561f38aaf9ebb575fcdc204d21915d05217e926d1aa383dfdf5da83265"
+    },
+    "p2_http_outbound_request_unknown_method": {
+      "sourceSHA256": "ef783159ce2dafe92433b59f60c85e5da35d64d556834fbefa1ad727e48feeac",
+      "binarySHA256": "b19cba35ddc3da464adedade68d66f660015e7367e0b81ce2c40367fc963ad19"
+    },
+    "p2_http_outbound_request_unsupported_scheme": {
+      "sourceSHA256": "dbb3b76adcecf91fb1c8bd17e4254f1514075f1f303bbd2949f65b10a49929fd",
+      "binarySHA256": "9d9e97901e2fedea49812cf66ff11b937b22584962a1e8fd794b93c88a64cad0"
+    },
+    "p2_ip_name_lookup": {
+      "sourceSHA256": "839a7914f5f46616a450f47dad04eb387c78f35641b206daf7861220410c294e",
+      "binarySHA256": "15b7cb54b56e759f2608f993b463b663fec7f26afbf3c1b726a521c664ac9ec0"
+    },
+    "p2_pollable_correct": {
+      "sourceSHA256": "1c1c9ad197a9da8bdfa4ae2a59314b3a563abfe64290f9a5b6f54737fea2511e",
+      "binarySHA256": "41ca568eef6bef013171a709021b66d2f46891507f845570885c67e675847ab1"
+    },
+    "p2_pollable_traps": {
+      "sourceSHA256": "267a8dfd0658c54b2cb2d055a97038aad078f4a6fdcfcffbc99498397caf7954",
+      "binarySHA256": "e220d352715f6c7d6cf343945be61cef283710b04bf6ce25c52325a2e70eec5c"
+    },
+    "p2_random": {
+      "sourceSHA256": "b23fa977da021e19c373c809676a34f6e84ee6bbfbd699aad6cb49296360afc1",
+      "binarySHA256": "40ca505d1718c32c11e504f9d59b0a9f5191d15906afff1a8683467bdbc98ed2"
+    },
+    "p2_sleep": {
+      "sourceSHA256": "5d9995899b0aff109998e40993ddca7eeb0b2ac21b85a4716193a5293cf127aa",
+      "binarySHA256": "5ae274d815bba8585762b35e6b8ff77c8a60b8b3ebf7d3580f64460210d3a7df"
+    },
+    "p2_stream_pollable_correct": {
+      "sourceSHA256": "bee21071d98a987741feecac745a9e0d7fa949ffd1eb0dfaef46e6c041b325a0",
+      "binarySHA256": "ac83f086bae594a91cd80b7c876d9d1fd66c4f495a5244df772871ea75b9eff5"
+    },
+    "p2_stream_pollable_traps": {
+      "sourceSHA256": "97180ceefda52a5fa1de9cbbc4fc4669f46e7899b72185ccb82d16850196b998",
+      "binarySHA256": "8316c7443be98d359ed4574e408e7f2e6b1c7044503da4c0b8454a371f7d572f"
+    },
+    "p2_tcp_bind": {
+      "sourceSHA256": "695b05e43967c7f61cc8816814d32839ee4216f6039487cb4838a200187f9e9b",
+      "binarySHA256": "7bbdce659dd985e1f2e033811cdd271d321e9a14d0498e26d4ccfea8c821e3a7"
+    },
+    "p2_tcp_busy_poll": {
+      "sourceSHA256": "136d5c3235ddd034e77d35ef56ed25f39459cb8cceeb2ecc9488c805c827eabf",
+      "binarySHA256": "513c43b92cf6d7b95acbd24022dec5aff5aa4f186cd5c5586e15caa495965feb"
+    },
+    "p2_tcp_connect": {
+      "sourceSHA256": "bbd0d57236dcc5e1144a5c59bfe68fc851bfedabdc55ea6ed86f7164ac89ba0d",
+      "binarySHA256": "a994e47d4ec64a42e7a767d0d38133efaa8a54fc5c75af4c7b0f4a83d3ecfd8f"
+    },
+    "p2_tcp_listen": {
+      "sourceSHA256": "54f6ba7c0ad0f3eeb2c5a177bb5bafbef7e0325c6d28c1b6386a5346571e121f",
+      "binarySHA256": "823bf05d791135aff8068f094523a3be9400ea28f291e7f57c4347e615f1fa0f"
+    },
+    "p2_tcp_sample_application": {
+      "sourceSHA256": "4b8551c845c58dc63bbe50dcce0abe2db7a77420a8a6dc442d88c1c1b748c9eb",
+      "binarySHA256": "1712fa010fbdc7bcba7a5258f9b34d83309356b5424dd408a031b32076e5bc3a"
+    },
+    "p2_tcp_sockopts": {
+      "sourceSHA256": "bba06bdecb129db591956300e72dc1f34578f726bde7aa59c7ea83271f22c655",
+      "binarySHA256": "68a102d8a96e516f1752effa52903765db1f429bcbf722a2a980cb4492987c79"
+    },
+    "p2_tcp_states": {
+      "sourceSHA256": "24bde86344c470b2fef3823a1b6fd1b650d43633e0b0f2021c025f2448f7a292",
+      "binarySHA256": "258e3ad27702b678a33a28e5ab6c0940e25fe9e1b319192707b0e6848898c80d"
+    },
+    "p2_tcp_streams": {
+      "sourceSHA256": "82f388e2909704c898bf186ef8c23d02187877b5ce8dd2b9c085175e70a284e9",
+      "binarySHA256": "0242a397f61c35c3b6cbfeefe10e0dd0cf8a1bb4ccc3d22dc9b9ff80a0bba547"
+    },
+    "p2_udp_bind": {
+      "sourceSHA256": "68ba64e9eac2d2c83fa4cc72de39f93f04170ffc8d9503b8b53d6feda11f5760",
+      "binarySHA256": "2398f86d3d7a2628596468a63f67aaf5b36351b8e9ecd9707e12fb35e56e7275"
+    },
+    "p2_udp_connect": {
+      "sourceSHA256": "47f114ed57516e0e04f87ece0353bf74a27909ea0a50a6e63a493a30534f4174",
+      "binarySHA256": "3428648a37d6416b0bf76875738ec27e5d4958bb4fb084d70d51ba5e83431fdf"
+    },
+    "p2_udp_sample_application": {
+      "sourceSHA256": "1bec3f108b4fd24d1be9ca3bc6247dc4b89c5fb374f916c2f71bd98b8a47c246",
+      "binarySHA256": "1e140f4ca68db07b6ea46de88bce8c7b043c833089d2656ef4dbb0227d0e6ace"
+    },
+    "p2_udp_send_to_closed_receiver": {
+      "sourceSHA256": "c757966779179d4f4d65bd48c66645dbed96077462439fcd72660986a555b302",
+      "binarySHA256": "43151f652bfc45e7d251d5757e49a04a5bb4069a24206e8280791375dba11844"
+    },
+    "p2_udp_send_too_much": {
+      "sourceSHA256": "8a332daeec844e1cdebc307f97146c0329a726f64ae0da3bfea1177ff82bebe2",
+      "binarySHA256": "bd339cc499bd71d4f41fc31b1a945d68c3bb42d3d0d477f1517574bfa76cc632"
+    },
+    "p2_udp_sockopts": {
+      "sourceSHA256": "bbdae8b2d9236f417c89f8e27bd948f31fd18e5186c82cf0642b7743db01dfd4",
+      "binarySHA256": "1717da74cb2856c9c6757cb5bd7c8312bf9c07d9dc90e8362adf8ea983591021"
+    },
+    "p2_udp_states": {
+      "sourceSHA256": "65e8526129306431747834c3e312a6ab9376ea63b1e4f95b861297a73574c4ea",
+      "binarySHA256": "04bcf358de0d1140378a87e8be6a33fb7c44522e0ed88259c26c1b0b7cfd6c0d"
+    },
+    "p2_udp_stream": {
+      "sourceSHA256": "8c1865afad18c0ff6ec5fcb80f75b0c775230988d6c1ca564c644ded20627532",
+      "binarySHA256": "2c795ab8e062fc9a549d406651131918a6eb036cc9898500fb3b542da7be5c14"
+    }
+  },
+  "retainedDraftCases": {
+    "p2_cli_serve_config": {
+      "sourceSHA256": "1c85eb82a5da76fb71e5a1e071f5fe2be9a9c329f8f2384256f9c1970e709b92",
+      "binarySHA256": "a7fb93ea44fb03cd938d6ebf12a5ef68748e704261729b6ff9bc42065a4e156d"
+    },
+    "p2_cli_serve_keyvalue": {
+      "sourceSHA256": "ee918f443e9c69ea88680062f18b0b989fd8cc8b6f8404434bf2149e4002a11d",
+      "binarySHA256": "e3723195f8ce254beac9d80c95ff9162632b44e0f9d102eef92581430e8c9577"
+    }
+  },
+  "variants": {
+    "p2_api_proxy_streaming-executor-lifetimes": {
+      "original": "p2_api_proxy_streaming",
+      "patchSHA256": "145906e014773dad361488be018894990144e46ce7b09a32ec4e1b5097a80d33",
+      "repairedSourceSHA256": "11b85a9eac81d6310c0ef48b4e0737166ebe30e30387171ac3ae43f6305a4171",
+      "binarySHA256": "1ea50291b1316e526a230631f5f49bf31b42740e491b98168e196ca41740e2e3"
+    }
+  },
+  "archiveSHA256": "7523d7d5951788b042fc92c6758025b6c531addae992b620dca321017ca38734",
+  "sha256": {
+    "components/p2_adapter_badfd.wasm": "e66099cd2d40ab45c4dbef90b3ad90f140edbf5a29970eb12b8a96a4b4a2c7b1",
+    "components/p2_adapter_badfd.wit": "5ed0381c062d22f099056f008ef24a00eeb167ee66c531e9eac85cb2f7c6eb6b",
+    "components/p2_api_proxy.wasm": "2ff018476fd10537ff23a38052a079aa6a0afa8acc473ee8fcf92b8836391674",
+    "components/p2_api_proxy.wit": "e7b0d711ac5aef87c6f3926e3ef4f19174158eaa48b6d6b7d3f917c0e4de5bc9",
+    "components/p2_api_proxy_forward_request.wasm": "2eeaf8cf3eb836d34d800e66ba94d83455f6d68f8d86a092eaa7c4b142be9b50",
+    "components/p2_api_proxy_forward_request.wit": "21716fa40da8c4bc92823bb7f9c9b4bbc82fb5e061fd584f6e3c65f62c1e0d6a",
+    "components/p2_api_proxy_streaming-executor-lifetimes.wasm": "1ea50291b1316e526a230631f5f49bf31b42740e491b98168e196ca41740e2e3",
+    "components/p2_api_proxy_streaming-executor-lifetimes.wit": "0ced962d0544b969bab4f64c54b924b9472a0eff20a96c440f68293c1fe6e433",
+    "components/p2_api_proxy_streaming.wasm": "d123fc4260e47df6cf1e1cf505174694441b3d66b124426d258d0c495b791064",
+    "components/p2_api_proxy_streaming.wit": "d27b185aaccdcdd1fb30fefdac5a69fb21ab77e4af1be9303c9900ba5515f513",
+    "components/p2_api_reactor.wasm": "0f2efc1717edf2a07753e2752ec3be24643705ea1503639b3404864fd911940c",
+    "components/p2_api_reactor.wit": "44198843989a06557f540eb52d48c3323a8c3fad0604c25c958136ae6a75e955",
+    "components/p2_api_read_only.wasm": "6e766a21bd7cc2392c1aa14c0e07a3d7f8ae45fed20123396d1a213f6449bdb5",
+    "components/p2_api_read_only.wit": "13fa782c58f371316bc650addcead751c0a9420dfe386c232a0d3c3c8aa6b1e8",
+    "components/p2_api_time.wasm": "6674a5720a7c21bda230a1f0758584e2558456e4cd3fa469d0d0e77526fa96e9",
+    "components/p2_api_time.wit": "926c699a9c94c42f7fbe8ee809c2340061c4fa8e91e930232098bbdaec031b37",
+    "components/p2_cli_args.wasm": "f9deb0e865b708aab4739acdb763f60665b476929d3f5188868ab73a4056f2d3",
+    "components/p2_cli_args.wit": "7850e4c2d827bf0f3f5328cdff8c5244e748a88aa029cae1c7a5e0b4dbf3ac1b",
+    "components/p2_cli_argv0.wasm": "1de829dcf583983d3402cd4fb6c624cf96bdbb298c7ca85f88b665f852787069",
+    "components/p2_cli_argv0.wit": "7850e4c2d827bf0f3f5328cdff8c5244e748a88aa029cae1c7a5e0b4dbf3ac1b",
+    "components/p2_cli_default_clocks.wasm": "a2721ad09d06cd651f5424daf29c545b702bb4663fd3a81fdf2450fee72f5127",
+    "components/p2_cli_default_clocks.wit": "926c699a9c94c42f7fbe8ee809c2340061c4fa8e91e930232098bbdaec031b37",
+    "components/p2_cli_directory_list.wasm": "12ae2a9b8ff2164afaa95e03f7306c03944c0c6e871302dff3004ab51dc37ee9",
+    "components/p2_cli_directory_list.wit": "e971fb843f007d46ab5ae813d199e4dd9040d6f3c4d7371073dc403baa0e6d33",
+    "components/p2_cli_env.wasm": "20965f651e6ca910f6590d2d7e7529795ba6ebe71d1c5787013a47c9a9aabb16",
+    "components/p2_cli_env.wit": "e8dfc43aba644d967dec9e3cb4256cef18b78fee2a0643855a0bab4154be8179",
+    "components/p2_cli_exit_default.wasm": "94de0d226ea9cac8d24d53671078db86efe2ebe705104bb2f66872ebd21a7bef",
+    "components/p2_cli_exit_default.wit": "719db3a763455303a8e0ba232e4ceed82032a73d002b332cd2184b350a9e311d",
+    "components/p2_cli_exit_failure.wasm": "fff15017358f749487b624fcf12f543b089cb7e5b6c05044677df21399de5daa",
+    "components/p2_cli_exit_failure.wit": "719db3a763455303a8e0ba232e4ceed82032a73d002b332cd2184b350a9e311d",
+    "components/p2_cli_exit_panic.wasm": "8fa462e5d82d0b093f68a72f9421e2928adcae4b9de003caa99f50a2ed5710dd",
+    "components/p2_cli_exit_panic.wit": "719db3a763455303a8e0ba232e4ceed82032a73d002b332cd2184b350a9e311d",
+    "components/p2_cli_exit_success.wasm": "be130a9e5f0f8b74e8d2cbac74d0199468ebb2ced29841d7b0f364dc00b135db",
+    "components/p2_cli_exit_success.wit": "719db3a763455303a8e0ba232e4ceed82032a73d002b332cd2184b350a9e311d",
+    "components/p2_cli_exit_with_code.wasm": "502175f4d6c5fa6fe103920bc20cc275a2f3252c3c1ec3b1debab1791122bb63",
+    "components/p2_cli_exit_with_code.wit": "ee1a31ff1dd2fc20f5f74f17a0453a6c41bf5813dad311e2727d578b32c9fa80",
+    "components/p2_cli_export_cabi_realloc.wasm": "faa240bc098acdcc7640d0f10ef8369003c4bb7715a0773946ad2db3f8957376",
+    "components/p2_cli_export_cabi_realloc.wit": "719db3a763455303a8e0ba232e4ceed82032a73d002b332cd2184b350a9e311d",
+    "components/p2_cli_file_append.wasm": "aee8da2649fb9aae281770687811a9d8abf8bf22982572c41c46be3258c73978",
+    "components/p2_cli_file_append.wit": "78eade9249d829291b0fa19cecef2a49ff835f70309d85774f1c8e07cdce1377",
+    "components/p2_cli_file_dir_sync.wasm": "451372d53e23097e43339dd6468c14397dfee57dcbc72009d2921c328f4c4e95",
+    "components/p2_cli_file_dir_sync.wit": "866f5335a870c67dd787ef82955df577d5d10bb62d554445f94c37b772aa0a2c",
+    "components/p2_cli_file_read.wasm": "35aee7b81939b5ad49d93ee0d3c4bf804bcffb68000c7416538a655e8a29234d",
+    "components/p2_cli_file_read.wit": "570a79adf06f01d4e8a4fbf873da9b93ec5aef135567ecb75aa31a4a9581f8ce",
+    "components/p2_cli_hello_stdout.wasm": "7e7996aca3b3bb331e134a56ee9286b6360d6d099eed81b20268c1ee1a5c945c",
+    "components/p2_cli_hello_stdout.wit": "719db3a763455303a8e0ba232e4ceed82032a73d002b332cd2184b350a9e311d",
+    "components/p2_cli_hostcall_fuel.wasm": "8e76a92056d00b57dbf40764f2d3c34e18d9cf7e92426001946077cff9f21aac",
+    "components/p2_cli_hostcall_fuel.wit": "75a59e397ed14e1c340d9dc455df7799835977efcb610f0ff5bd6e4f6f6ae848",
+    "components/p2_cli_http_headers.wasm": "5f644282831e8b44ac35a6aaa3a4fa5de7adeadf0647a23cf0a08f308253d1b0",
+    "components/p2_cli_http_headers.wit": "12a91e729089bd982d698718d426737dc297c70081e9020a9df64d94eff57869",
+    "components/p2_cli_initial_cwd.wasm": "be9388f29437a38b69e492c777e1182fcb9cfaadc87152f4857ccd04557e06e1",
+    "components/p2_cli_initial_cwd.wit": "00daf54c63d727f7d71b4813b11c385407acc274a023e4e182b83373f88d1078",
+    "components/p2_cli_invoke_async.wasm": "d74efaae5c7ad2c192b4a1f579429ee892a1c76967a75944fac62f39dc4eada7",
+    "components/p2_cli_invoke_async.wit": "d03b9652ad38317622052b4c1ec97ef13b98e2ab097fd13a585fd3a8c1ce385b",
+    "components/p2_cli_large_env.wasm": "7b196187ae08a65ff953df8681ce59ce493ce42f3911381d6e36d1174d5ba229",
+    "components/p2_cli_large_env.wit": "719db3a763455303a8e0ba232e4ceed82032a73d002b332cd2184b350a9e311d",
+    "components/p2_cli_many_resources.wasm": "d951d0ffb706da6b4e9aab91f99d0f47ae1163d6b858c7efa8384fb71221a369",
+    "components/p2_cli_many_resources.wit": "e0b94251134a7f1cc15d21d47fa8eff7c08ec183e336edb93356f83eb305bd90",
+    "components/p2_cli_max_resources.wasm": "dd7c3a3084a20268cda1cb532d16fbeb882a74ea1d31890fa072465f149febdb",
+    "components/p2_cli_max_resources.wit": "719db3a763455303a8e0ba232e4ceed82032a73d002b332cd2184b350a9e311d",
+    "components/p2_cli_much_stdout.wasm": "53021508333378277f6cba16af84e99f061b1afb6fd95605b3d29a8bbb97dafa",
+    "components/p2_cli_much_stdout.wit": "4abc1b81b08419e4ccc9dfec45ec262f68506fd577e00f7d49fd8bf67c6e1ed0",
+    "components/p2_cli_multiple_preopens.wasm": "56e58bee80b8a6d676e54c4e39775a51671c5acb73d53e2b6a608ed011fc8ca6",
+    "components/p2_cli_multiple_preopens.wit": "6abb4fb35ca4363b4e04c26f3cf6fc5c3425668c086a3aea8974e8d5d2bf10e4",
+    "components/p2_cli_no_ip_name_lookup.wasm": "8838fcd083044f817606851718777fef3bf6be6ec7f6cc8979b5e4f04a95b2ad",
+    "components/p2_cli_no_ip_name_lookup.wit": "988bb48970241af54d34e00602357457f716f05229222a9a75f151cf2c17aaac",
+    "components/p2_cli_no_tcp.wasm": "3bcad88fc555de63d5c2c1621da999740ae88beb1c4e3f91487f8c7a843555da",
+    "components/p2_cli_no_tcp.wit": "109b1a2341d179dd69e9b490c48c704ea0558d70eae92cdcbcf3b5fc0cfdf800",
+    "components/p2_cli_no_udp.wasm": "6ae282195205bd48b2118f17d9e94205b2085bac27055c300b9de6964ca53088",
+    "components/p2_cli_no_udp.wit": "47a0cc42b428ef3f775b93f0372288bac9e192aafad1fab4654f1627d8fe776e",
+    "components/p2_cli_serve_authority_and_scheme.wasm": "00d6133ce779e40deadb04cc910848b3ddc9458e3e164d1b1869ac916bb43bb7",
+    "components/p2_cli_serve_authority_and_scheme.wit": "ab2e667809693f97cec084aef5914cf518ba55823a73fc9fcc2d212404d36194",
+    "components/p2_cli_serve_config.wasm": "a7fb93ea44fb03cd938d6ebf12a5ef68748e704261729b6ff9bc42065a4e156d",
+    "components/p2_cli_serve_config.wit": "fce852ca2971dba208d904e7aa718516e20fb34571ec183045ffd8ff20ac69a3",
+    "components/p2_cli_serve_echo_env.wasm": "e0647ce254b7024303161e4e7a6feac7fd0749c91ba5c423df8e768dc963ab7d",
+    "components/p2_cli_serve_echo_env.wit": "070090c5375f04bb8977c666ed5706e806dd15d85354e28245139628b21532a9",
+    "components/p2_cli_serve_hello_world.wasm": "efcfb72c9319f8f346e6f3fb1a05fda2d6ce027f60f568ebe3a46227fe49e87b",
+    "components/p2_cli_serve_hello_world.wit": "016d655a639843e919736df820c1147a2374609415f7a6b863349c672e4295d4",
+    "components/p2_cli_serve_keyvalue.wasm": "e3723195f8ce254beac9d80c95ff9162632b44e0f9d102eef92581430e8c9577",
+    "components/p2_cli_serve_keyvalue.wit": "73b38bc8d6d2493639ebc0a3ce28a4a28b97204df208536ee07d67352b4e93b0",
+    "components/p2_cli_serve_return_before_set.wasm": "ed6f053970f902afdb3323e2057cb147448ba947dd8a369b9e36ce7e20dc7bc2",
+    "components/p2_cli_serve_return_before_set.wit": "f9982acb1238bade51a21dfe32123cee0d3f6aff9001087c62291fe121890ab7",
+    "components/p2_cli_serve_sleep.wasm": "f70c7969884dd980dccbb54f94013e9f2fac42f88a826c0e83c29f1ac426df38",
+    "components/p2_cli_serve_sleep.wit": "b3bf484f3d002bf85f1075423ec8ac288b8396977c5cdccf4735a552820fa808",
+    "components/p2_cli_serve_trap_before_set.wasm": "2925d9fefb1649046cd13aa8cc23d2e0559195e68c8ce7369db25937ff73d13d",
+    "components/p2_cli_serve_trap_before_set.wit": "27638835271c2c198c56a8ac7bf9fb5f8ceeab08944da8a046279b99f79ae44e",
+    "components/p2_cli_serve_with_print.wasm": "1e29e8812f20f56e68e709dcfa377541a09cf010b0c36c78bd2e9f93adaa1269",
+    "components/p2_cli_serve_with_print.wit": "9f68bc86e826b3a1c21c89298dc6914eb047c39570da0bee35032181940dfa25",
+    "components/p2_cli_sleep.wasm": "540e5cb70f4aecd48e0cdb501c9b00beeb0961bb21e3f1aacc3e11a7eb969113",
+    "components/p2_cli_sleep.wit": "ffb70c18bd0caf9c85bb36e9474c155abfe223a5a99f890a27237caa6091ecac",
+    "components/p2_cli_sleep_forever.wasm": "fb605e4ea0b93fcd616ae985e8b47d11840785260e017563ab343b7118add705",
+    "components/p2_cli_sleep_forever.wit": "ffb70c18bd0caf9c85bb36e9474c155abfe223a5a99f890a27237caa6091ecac",
+    "components/p2_cli_splice_stdin.wasm": "2fe84d0604298f25393d8436244118e1120c88ec7783561e4b59998e0100c9d5",
+    "components/p2_cli_splice_stdin.wit": "c9b1c40614e10adab631b9f2f3a11a938def028e70922e0568fa714350d56f1e",
+    "components/p2_cli_stdin.wasm": "f40ccfbcf48b656169135e1380d902ce2f5f60cbaed85a8a784be57b23bb03f3",
+    "components/p2_cli_stdin.wit": "0ff6b52c5eb91d67c62b38cb3b5ff56d8e18b90f129bf2e04e6c0f42da1f2156",
+    "components/p2_cli_stdin_eisdir.wasm": "ede1e10950b4826ee1598a081fd5800bae7cd05c64535e8c64e6de2ba9f56f71",
+    "components/p2_cli_stdin_eisdir.wit": "e0829058919e5506bc1d946a4019ed1a6a4f0fcfdbbe5255f5a47edbc26710e6",
+    "components/p2_cli_stdin_empty.wasm": "417c00422363090b4bca15a299d34f021d9657c6957db20db40bd55fbe05083f",
+    "components/p2_cli_stdin_empty.wit": "b7adb7d14e2fbfad710ba5e4a47e4f0d72d3fddffc414f30372e52dcce023003",
+    "components/p2_cli_stdio_write_flushes.wasm": "6729736b52183a3e8776566317ba3ea5482c8ba5599e2356542561e6a8607155",
+    "components/p2_cli_stdio_write_flushes.wit": "0ff6b52c5eb91d67c62b38cb3b5ff56d8e18b90f129bf2e04e6c0f42da1f2156",
+    "components/p2_cli_stdout_epipe.wasm": "86f3aa987dbf64184a57e43ed6c2698972d123b9c67a5f80d265fae61b6d021b",
+    "components/p2_cli_stdout_epipe.wit": "cd6c4205719b49c9044068803748138adb559532861466c2d161702e773864d1",
+    "components/p2_clocks_zero_wait.wasm": "03a09902af50161f9423f5434d4a926f9ff6c1806c11141bb7e836d075e5d515",
+    "components/p2_clocks_zero_wait.wit": "4277eccfbdc256ef0e9d3a71a0c092122c5ffb9463ee64d9beafcc6bd851f5d7",
+    "components/p2_file_hardlink_across_perms.wasm": "45378c3a6aeb8ee2e11b7b77d76df8ca30925d4959ff95c27996475193c5e33d",
+    "components/p2_file_hardlink_across_perms.wit": "fff8abc05b8b1efaae9fd244c8c14f81ccfb113aeb820ed993c0eae83f1f7204",
+    "components/p2_file_read_write.wasm": "62b271a9ca9b09201d8440cfdef86fb4ee3c2ab2022fdb271fb400583a5cd243",
+    "components/p2_file_read_write.wit": "f4995dd0172fba582d1fcf13153a16ef964e2c11c9532bc08fb777872ffde6ca",
+    "components/p2_file_rename_across_perms.wasm": "5b14461c288a13ef30c0805e3362f88e23b5b61eb3c075064406400351f3a62c",
+    "components/p2_file_rename_across_perms.wit": "8854a5a11a69b45041142ecd7b5ba499c67f30468d267cc1aca92645551593fa",
+    "components/p2_file_stream_not_permitted.wasm": "80968c770595c45364f5531af4c37757f4928ff0bbffc308b6fd2666d53a5ac3",
+    "components/p2_file_stream_not_permitted.wit": "28f3d9fa101e594f4f2581a6c632064e363251a67ae03657dd9a77f1193a5859",
+    "components/p2_file_truncation_readonly.wasm": "0c71da86a10258fb476e85369bcd1ed74614e6718a1b98c2a2c8f6a2d1b60df1",
+    "components/p2_file_truncation_readonly.wit": "cd3965dc609a768b7be22281fe4faa6d34bac4617da914271f3770cb3f4755c5",
+    "components/p2_http_outbound_request_content_length.wasm": "7e7c3d60e393bc82fa35012548acccdbefc083a669b6def4ee5aaf6e7d838362",
+    "components/p2_http_outbound_request_content_length.wit": "b8fcf341a5d78a5c79d981e12e784b394b8eac0a3f14ab505d1a23869e0d26be",
+    "components/p2_http_outbound_request_get.wasm": "27291282857152c066469e6e8bcb6bcd7afad0f4dc6dc267d8a73edb90ebafa7",
+    "components/p2_http_outbound_request_get.wit": "61c09c178f305f444e43bf16129f4163401a620323541c43e494ae7ae0dd9864",
+    "components/p2_http_outbound_request_invalid_dnsname.wasm": "8a1e92b1d31d1a69b5d9f716e81ec2f280f1e2ad3d27f8f40e27ef12473fa893",
+    "components/p2_http_outbound_request_invalid_dnsname.wit": "61c09c178f305f444e43bf16129f4163401a620323541c43e494ae7ae0dd9864",
+    "components/p2_http_outbound_request_invalid_header.wasm": "4b0807d092cb3942b73ddce0a707778983a91659e07ced666e2786f9ed9c62b5",
+    "components/p2_http_outbound_request_invalid_header.wit": "b0efc439a5f067b309f3b9e4996ef894bf1de6786ee40f07dc1b0db0af54323f",
+    "components/p2_http_outbound_request_invalid_port.wasm": "6149ff3f10e54d2c9f18d17eb4eea281cceabe67a9a4df5a8bfc31b3ec94a7ff",
+    "components/p2_http_outbound_request_invalid_port.wit": "61c09c178f305f444e43bf16129f4163401a620323541c43e494ae7ae0dd9864",
+    "components/p2_http_outbound_request_invalid_version.wasm": "7ff19ae9f7fc47ca33b350f3f5c3762f242429d08f53baa9ed1747ca52cbc18b",
+    "components/p2_http_outbound_request_invalid_version.wit": "61c09c178f305f444e43bf16129f4163401a620323541c43e494ae7ae0dd9864",
+    "components/p2_http_outbound_request_large_post.wasm": "f23db9d55dfc7426184a5f91cbf80bcdcb235c6020a99aa0b3a1a0ba8cb82f8e",
+    "components/p2_http_outbound_request_large_post.wit": "61c09c178f305f444e43bf16129f4163401a620323541c43e494ae7ae0dd9864",
+    "components/p2_http_outbound_request_missing_path_and_query.wasm": "d8e4af47b40de30bf756ccbece7802fd91c794a937ae472ea4a2a5cd05eedec9",
+    "components/p2_http_outbound_request_missing_path_and_query.wit": "02fa3e318069908f7456bedbc9cd26b7dc9c0720e95ec8f2892836a877224399",
+    "components/p2_http_outbound_request_post.wasm": "77b6a9cf20537f6aece526f739fe1d02c3b5c8e423bfa8404d787a9d068659b7",
+    "components/p2_http_outbound_request_post.wit": "61c09c178f305f444e43bf16129f4163401a620323541c43e494ae7ae0dd9864",
+    "components/p2_http_outbound_request_put.wasm": "6daf677bc95613300cabce011e27928afe3cecb45038500cc7b5b94e50f813c0",
+    "components/p2_http_outbound_request_put.wit": "61c09c178f305f444e43bf16129f4163401a620323541c43e494ae7ae0dd9864",
+    "components/p2_http_outbound_request_response_build.wasm": "2117ea1cd17fd81d02c8eb41f9c94e6f34ce219e951087e85bed0ea2db8bb3f6",
+    "components/p2_http_outbound_request_response_build.wit": "190501a64d8b1cdf2f61ddb63defed8a0fbfb237ff5a9fade45a4ced182d844a",
+    "components/p2_http_outbound_request_timeout.wasm": "6ed65c561f38aaf9ebb575fcdc204d21915d05217e926d1aa383dfdf5da83265",
+    "components/p2_http_outbound_request_timeout.wit": "61c09c178f305f444e43bf16129f4163401a620323541c43e494ae7ae0dd9864",
+    "components/p2_http_outbound_request_unknown_method.wasm": "b19cba35ddc3da464adedade68d66f660015e7367e0b81ce2c40367fc963ad19",
+    "components/p2_http_outbound_request_unknown_method.wit": "61c09c178f305f444e43bf16129f4163401a620323541c43e494ae7ae0dd9864",
+    "components/p2_http_outbound_request_unsupported_scheme.wasm": "9d9e97901e2fedea49812cf66ff11b937b22584962a1e8fd794b93c88a64cad0",
+    "components/p2_http_outbound_request_unsupported_scheme.wit": "61c09c178f305f444e43bf16129f4163401a620323541c43e494ae7ae0dd9864",
+    "components/p2_ip_name_lookup.wasm": "15b7cb54b56e759f2608f993b463b663fec7f26afbf3c1b726a521c664ac9ec0",
+    "components/p2_ip_name_lookup.wit": "988bb48970241af54d34e00602357457f716f05229222a9a75f151cf2c17aaac",
+    "components/p2_pollable_correct.wasm": "41ca568eef6bef013171a709021b66d2f46891507f845570885c67e675847ab1",
+    "components/p2_pollable_correct.wit": "d85f871bcdef33c68e47d4157b9b8792ccd8d050a6fa1651d8d16d3868526708",
+    "components/p2_pollable_traps.wasm": "e220d352715f6c7d6cf343945be61cef283710b04bf6ce25c52325a2e70eec5c",
+    "components/p2_pollable_traps.wit": "e0b94251134a7f1cc15d21d47fa8eff7c08ec183e336edb93356f83eb305bd90",
+    "components/p2_random.wasm": "40ca505d1718c32c11e504f9d59b0a9f5191d15906afff1a8683467bdbc98ed2",
+    "components/p2_random.wit": "dc91f11222dc87d1976dcded8997918bf625baf8ba316c2c0f80c8ecc37eca91",
+    "components/p2_sleep.wasm": "5ae274d815bba8585762b35e6b8ff77c8a60b8b3ebf7d3580f64460210d3a7df",
+    "components/p2_sleep.wit": "4382a9ce9eed887db06b69b1e307269d5322774bc0958ae381bf5a2dd8760775",
+    "components/p2_stream_pollable_correct.wasm": "ac83f086bae594a91cd80b7c876d9d1fd66c4f495a5244df772871ea75b9eff5",
+    "components/p2_stream_pollable_correct.wit": "0b5c95c8be64f1df3681ff125c8de59bb29e502e0f6166d33c93c649b0fcfe01",
+    "components/p2_stream_pollable_traps.wasm": "8316c7443be98d359ed4574e408e7f2e6b1c7044503da4c0b8454a371f7d572f",
+    "components/p2_stream_pollable_traps.wit": "d85f871bcdef33c68e47d4157b9b8792ccd8d050a6fa1651d8d16d3868526708",
+    "components/p2_tcp_bind.wasm": "7bbdce659dd985e1f2e033811cdd271d321e9a14d0498e26d4ccfea8c821e3a7",
+    "components/p2_tcp_bind.wit": "70cfaff7a456e5709f9e6651872632c2350da302fa4afb19e17ff3131d713758",
+    "components/p2_tcp_busy_poll.wasm": "513c43b92cf6d7b95acbd24022dec5aff5aa4f186cd5c5586e15caa495965feb",
+    "components/p2_tcp_busy_poll.wit": "3d34792d195911701ff9bcede0ffe57c1319b4d018875b0bf339a4f97212fa95",
+    "components/p2_tcp_connect.wasm": "a994e47d4ec64a42e7a767d0d38133efaa8a54fc5c75af4c7b0f4a83d3ecfd8f",
+    "components/p2_tcp_connect.wit": "f68c31abb4b080bfb0210ed3d7d0e9f7eadecd9f164b1e537338c2dc68044600",
+    "components/p2_tcp_listen.wasm": "823bf05d791135aff8068f094523a3be9400ea28f291e7f57c4347e615f1fa0f",
+    "components/p2_tcp_listen.wit": "f8cb4f09f13645680d1167c7324adab9d2bfa2e65f0a0d7eacd00677d0cd9d40",
+    "components/p2_tcp_sample_application.wasm": "1712fa010fbdc7bcba7a5258f9b34d83309356b5424dd408a031b32076e5bc3a",
+    "components/p2_tcp_sample_application.wit": "c9b49c4014a8689b030ddffca3c125bb7d9bbdea743a19e1a26dcd149eab34be",
+    "components/p2_tcp_sockopts.wasm": "68a102d8a96e516f1752effa52903765db1f429bcbf722a2a980cb4492987c79",
+    "components/p2_tcp_sockopts.wit": "621a2a2468d4e10c297c624357214f1b13992dabd07d14155f39820a951b15f7",
+    "components/p2_tcp_states.wasm": "258e3ad27702b678a33a28e5ab6c0940e25fe9e1b319192707b0e6848898c80d",
+    "components/p2_tcp_states.wit": "da1ecaa4bbd744a5444636fd11b60b1ab616c3f8270e8f5521982cbab66a09b0",
+    "components/p2_tcp_streams.wasm": "0242a397f61c35c3b6cbfeefe10e0dd0cf8a1bb4ccc3d22dc9b9ff80a0bba547",
+    "components/p2_tcp_streams.wit": "70b47ed9cc40a6bc764892cf38cbda7b7dbaa7880df5bc9cc2736c13269b2b33",
+    "components/p2_udp_bind.wasm": "2398f86d3d7a2628596468a63f67aaf5b36351b8e9ecd9707e12fb35e56e7275",
+    "components/p2_udp_bind.wit": "5ac1f6b5e54a4fdfe0d10c30b07ee6da2a3fb5c01c9bcdf0508016b43ae56201",
+    "components/p2_udp_connect.wasm": "3428648a37d6416b0bf76875738ec27e5d4958bb4fb084d70d51ba5e83431fdf",
+    "components/p2_udp_connect.wit": "e1fc8d8d969b65773d4e9bbf69febd1372ee5601acf20b74e9d17ae957bcef46",
+    "components/p2_udp_sample_application.wasm": "1e140f4ca68db07b6ea46de88bce8c7b043c833089d2656ef4dbb0227d0e6ace",
+    "components/p2_udp_sample_application.wit": "6944d3717b0fa2e61de3dc23ab0868d63bbe56c479b829397f4617853db4fe14",
+    "components/p2_udp_send_to_closed_receiver.wasm": "43151f652bfc45e7d251d5757e49a04a5bb4069a24206e8280791375dba11844",
+    "components/p2_udp_send_to_closed_receiver.wit": "52896c263f8e466e97ce1e56a8a984c7607c5984296c19eb4696a4c67b61f1bc",
+    "components/p2_udp_send_too_much.wasm": "bd339cc499bd71d4f41fc31b1a945d68c3bb42d3d0d477f1517574bfa76cc632",
+    "components/p2_udp_send_too_much.wit": "f1fb8db33dbd1f83946cfafd775f1be0d358c60e4c5da4d8b2d3eb679c37f20d",
+    "components/p2_udp_sockopts.wasm": "1717da74cb2856c9c6757cb5bd7c8312bf9c07d9dc90e8362adf8ea983591021",
+    "components/p2_udp_sockopts.wit": "20478bafe37218783e896be6770bf0091759128ca60d4ec1d65ef981449fa87d",
+    "components/p2_udp_states.wasm": "04bcf358de0d1140378a87e8be6a33fb7c44522e0ed88259c26c1b0b7cfd6c0d",
+    "components/p2_udp_states.wit": "c28a3b0ea7d70cfc1aff832bc64b009ae55445ace977937b5a14290dd316a773",
+    "components/p2_udp_stream.wasm": "2c795ab8e062fc9a549d406651131918a6eb036cc9898500fb3b542da7be5c14",
+    "components/p2_udp_stream.wit": "06b87d7789bbb1fcf82760d42686877d253ee2a8f89126c168f00557a0ede743",
+    "patches/p2-streaming-executor.patch": "145906e014773dad361488be018894990144e46ce7b09a32ec4e1b5097a80d33",
+    "source/crates/wasi-http/tests/all/p2.rs": "cf71c02a38274a97987e5e0fffed6a922fc4d62d0b360a8a4bc2011fc3532c79",
+    "source/crates/wasi-http/tests/all/p2/async_.rs": "717af736d10196524a4c66ad7a0c6c185b979e5bd1f887cef1110d1d313356f8",
+    "source/crates/wasi-http/tests/all/p2/sync.rs": "4d749e5c44ee4f02ac40b3c7538a13e2425cab386846c1855bcea46261d95f42",
+    "source/crates/wasi/src/p2/wit/deps/cli.wit": "fb6ac5d23fcaf3d231142a3c2f9bb1e9bc1fe5af6f1f329f6b1a5555ce0d3873",
+    "source/crates/wasi/src/p2/wit/deps/clocks.wit": "6ed8aa65bb8cbe224a0b2cbac9fc1b3bd25bdb17eda5ae0d23c983ed31c447cc",
+    "source/crates/wasi/src/p2/wit/deps/filesystem.wit": "e675f261017bf9b4fa7df5b9701023fe0249ede71021ac1bf978748e62edcda8",
+    "source/crates/wasi/src/p2/wit/deps/io.wit": "96e206d00076fa0480df32c5bcf255a3fa4862805ac2f6b8537a781cce54f433",
+    "source/crates/wasi/src/p2/wit/deps/random.wit": "48578c40213d5cab6650980905fa146a0be8c39c4433ee5e7e00637b87dbe08f",
+    "source/crates/wasi/src/p2/wit/deps/sockets.wit": "ad38dbf3b0bbdf34c0f2b608edcbfee04d71b443a63faff1f5e0053c3f84b377",
+    "source/crates/wasi/src/p2/wit/test.wit": "38536b26a1366c6964c8eca935f42dda275ca774f0e8fe8255a4d76c647de6b7",
+    "source/crates/wasi/src/p2/wit/world.wit": "f50f457d7f5f3a5b881baa43c07b9ec642cefeef45546469c143213baf415920",
+    "source/crates/wasi/tests/all/p2/api.rs": "6762e37613d29ea37728d09645a0c4f367f2467bd96dad0383e7bb7903e0f0de",
+    "source/crates/wasi/tests/all/p2/async_.rs": "63c2aa515d87e5a77278a496f04b9d9cb56fd160cf6cae18c688303f7f0209ec",
+    "source/crates/wasi/tests/all/p2/mod.rs": "b672e4a17e257ef747862338369af2501f44d73c0419d8820798f30159b96ca8",
+    "source/crates/wasi/tests/all/p2/sync.rs": "23244ac7a1fc4b5c780bed0ba2e9223cc037b900cff2ff2afbc85fd585bab14c"
+  }
+}

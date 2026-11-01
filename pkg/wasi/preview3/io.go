@@ -94,16 +94,15 @@ func (p *IO) Close() {
 		return
 	}
 	p.closed = true
-	p.cancel()
 	ops := make([]*ioOperation, 0, len(p.operations))
 	for op := range p.operations {
 		ops = append(ops, op)
 	}
 	p.mu.Unlock()
 	for _, op := range ops {
-		op.stop()
-		op.finish(op.closeCode)
+		op.stop(op.closeCode)
 	}
+	p.cancel()
 	go func() {
 		for _, close := range []func() error{p.config.Stdin.Close, p.config.Stdout.Close, p.config.Stderr.Close} {
 			err := closeSource(close)
@@ -238,28 +237,37 @@ type ioOperation struct {
 	release           func()
 }
 
-func (op *ioOperation) stop() {
+func (op *ioOperation) stop(code uint32)   { op.complete(code, true) }
+func (op *ioOperation) finish(code uint32) { op.complete(code, false) }
+
+// Claim and publish the terminal result before cancellation can wake an
+// external reader. Its cancellation receipt must not replace the close intent.
+func (op *ioOperation) complete(code uint32, stopped bool) {
 	op.mu.Lock()
-	op.stopped = true
-	control := op.control
-	op.cancel()
-	op.mu.Unlock()
-	if control != nil {
-		control.Cancel()
+	var control *component.Cancellation
+	if stopped {
+		op.stopped = true
+		control = op.control
 	}
-}
-func (op *ioOperation) finish(code uint32) {
-	op.mu.Lock()
 	if op.finished {
 		op.mu.Unlock()
+		if stopped {
+			op.cancel()
+		}
+		if control != nil {
+			control.Cancel()
+		}
 		return
 	}
 	op.finished = true
 	release := op.release
 	op.release = nil
-	op.mu.Unlock()
 	op.cell.set(code)
+	op.mu.Unlock()
 	op.cancel()
+	if control != nil {
+		control.Cancel()
+	}
 	op.owner.mu.Lock()
 	delete(op.owner.operations, op)
 	op.owner.mu.Unlock()
@@ -333,14 +341,13 @@ func (p *IO) inputWithOperation(c *component.Caller, op *ioOperation, source Inp
 	accepted := false
 	defer func() {
 		if !accepted {
-			op.stop()
-			op.finish(1)
+			op.stop(1)
 		}
 	}()
 	_, prompt := source.(interface {
 		readImmediate(context.Context, []byte) (int, error)
 	})
-	stream, err := c.NewSource(streamType, component.AsyncSource{Prompt: prompt, Close: func() { op.stop(); op.finish(0) }, Read: func(c *component.Caller, limit uint32) (*component.ReadCompletion, error) {
+	stream, err := c.NewSource(streamType, component.AsyncSource{Prompt: prompt, Close: func() { op.stop(0) }, Read: func(c *component.Caller, limit uint32) (*component.ReadCompletion, error) {
 		completion := component.NewReadCompletion()
 		callCtx := c.Context()
 		ctx, cancel := context.WithCancel(callCtx)
@@ -563,8 +570,7 @@ func (p *IO) outputWithOperation(c *component.Caller, args []component.Value, so
 	accepted := false
 	defer func() {
 		if !accepted {
-			op.stop()
-			op.finish(1)
+			op.stop(1)
 		}
 	}()
 	future, err := c.NewSource(c.FunctionInfo().Result(), op.cell.source(p, nil))

@@ -18,6 +18,7 @@ type tcpSource struct {
 	socket        *tcpSocket
 	poll          *socketPoll
 	input, closed bool
+	stream        *ioStream
 }
 
 func tcpStreamError(err error) error {
@@ -120,16 +121,7 @@ func (s *tcpSource) Close() error {
 	// earlier through the socket's explicit shutdown method.
 	s.closeOnce.Do(func() {
 		s.shutdown()
-		fd, err := s.socket.file.begin(context.Background())
-		if err == nil {
-			how := unix.SHUT_WR
-			if s.input {
-				how = unix.SHUT_RD
-			}
-			unix.Shutdown(fd, how)
-			s.socket.file.end()
-		}
-		s.socket.owner.release(s.socket)
+		s.socket.owner.releaseChild(s.socket, true)
 	})
 	return nil
 }
@@ -137,11 +129,11 @@ func (p *TCP) streams(c *component.Caller, s *tcpSocket) (component.Value, error
 	if s.streams {
 		return component.Value{}, socketCode(NetworkInvalidState)
 	}
-	if err := p.child(s); err != nil {
+	if err := p.addChild(s, true); err != nil {
 		return component.Value{}, err
 	}
 	input := &tcpSource{socket: s, poll: s.read, input: true}
-	if err := p.child(s); err != nil {
+	if err := p.addChild(s, true); err != nil {
 		input.Close()
 		return component.Value{}, err
 	}
@@ -155,6 +147,12 @@ func (p *TCP) streams(c *component.Caller, s *tcpSocket) (component.Value, error
 	out, err := p.network.io.NewOutput(c, output)
 	if err != nil {
 		output.Close()
+		c.DropResource(in.Resource)
+		return component.Value{}, err
+	}
+	output.stream, err = p.network.io.record(c, out.Resource, false)
+	if err != nil {
+		c.DropResource(out.Resource)
 		c.DropResource(in.Resource)
 		return component.Value{}, err
 	}

@@ -365,6 +365,13 @@ func (p *HTTP) finishBody(c *component.Caller, args []component.Value) (componen
 		}
 	}
 	body := entry.body
+	body.mu.Lock()
+	failure := body.failure
+	body.mu.Unlock()
+	var sizeFailure *httpError
+	if errors.As(failure, &sizeFailure) && sizeFailure.value.Case == httpErr(body.errorName).value.Case {
+		return httpErrorResult(failure), nil
+	}
 	body.buffer.mu.Lock()
 	written := body.buffer.written
 	body.buffer.mu.Unlock()

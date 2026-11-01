@@ -31,6 +31,11 @@ func (p *FileSystem) open(c *component.Caller, parent fsDescriptor, pathFlags ui
 		}
 	}
 	mode := unix.O_RDONLY
+	// A descriptor without WRITE opens read-only, including when no access
+	// flags were supplied. Preserve that effective mode for later operations.
+	if flags&fsWrite == 0 {
+		flags |= fsRead
+	}
 	if flags&fsWrite != 0 {
 		mode = unix.O_WRONLY
 		if flags&fsRead != 0 {

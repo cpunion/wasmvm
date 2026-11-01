@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"io"
+	"syscall"
 
 	"github.com/cpunion/wasmvm/pkg/component"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
 func normalizeStreamError(err error) error {
-	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrClosedPipe) {
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrClosedPipe) || errors.Is(err, syscall.EPIPE) {
 		return io.ErrClosedPipe
 	}
 	return err

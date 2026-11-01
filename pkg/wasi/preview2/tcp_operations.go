@@ -23,14 +23,14 @@ func (p *TCP) execute(c *component.Caller, s *tcpSocket, name string, args []com
 		if err != nil {
 			return
 		}
-		err = s.checkAddress(address, name == "start-connect")
-		if err != nil {
-			return
-		}
-		// Validate state before calling embedder policy, then recheck it afterwards.
+		// State errors take precedence over addresses unusable in that state.
 		s.mu.Lock()
 		err = s.canStart(name)
 		s.mu.Unlock()
+		if err != nil {
+			return
+		}
+		err = s.checkAddress(address, name == "start-connect")
 		if err != nil {
 			return
 		}
@@ -185,40 +185,40 @@ func (p *TCP) execute(c *component.Caller, s *tcpSocket, name string, args []com
 			err = socketCode(NetworkInvalidState)
 			return
 		}
-		how := unix.SHUT_RD
-		if args[1].Bits == 1 {
-			how = unix.SHUT_WR
-		} else if args[1].Bits == 2 {
-			how = unix.SHUT_RDWR
-		}
-		s.input.mu.Lock()
-		readClosed := s.input.closed
-		s.input.mu.Unlock()
-		s.output.mu.Lock()
-		writeClosed := s.output.closed
-		s.output.mu.Unlock()
-		needRead := args[1].Bits != 1 && !readClosed
-		needWrite := args[1].Bits != 0 && !writeClosed
-		if needRead || needWrite {
-			how = unix.SHUT_RDWR
-			if !needRead {
-				how = unix.SHUT_WR
-			}
-			if !needWrite {
-				how = unix.SHUT_RD
-			}
-			err = unix.Shutdown(fd, how)
+		if args[1].Bits != 1 && !s.readShutdown {
+			err = unix.Shutdown(fd, unix.SHUT_RD)
 			if err == unix.ENOTCONN {
 				err = nil
 			}
+			if err != nil {
+				return
+			}
+			s.readShutdown = true
+			s.input.shutdown()
 		}
-		if err == nil {
-			if args[1].Bits != 1 {
-				s.input.shutdown()
+		if args[1].Bits != 0 && !s.writeShutdown {
+			s.output.mu.Lock()
+			closed := s.output.closed
+			s.output.mu.Unlock()
+			if closed {
+				err = unix.Shutdown(fd, unix.SHUT_WR)
+				if err == unix.ENOTCONN {
+					err = nil
+				}
+				if err != nil {
+					return
+				}
+			} else {
+				s.output.stream.stopWrites(func() {
+					fd, failed := s.file.begin(context.Background())
+					if failed == nil {
+						_ = unix.Shutdown(fd, unix.SHUT_WR)
+						s.file.end()
+					}
+					s.output.shutdown()
+				})
 			}
-			if args[1].Bits != 0 {
-				s.output.shutdown()
-			}
+			s.writeShutdown = true
 		}
 	default:
 		if s.state == tcpConnecting {

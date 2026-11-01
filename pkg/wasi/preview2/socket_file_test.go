@@ -104,3 +104,31 @@ func TestSocketFileInvalidAndCancelled(t *testing.T) {
 		t.Fatal(code)
 	}
 }
+
+func TestSocketFileImmediateCloseAndLeaseOverflow(t *testing.T) {
+	file, err := newSocketFile(nil, 0, unix.SOCK_STREAM)
+	if err != nil {
+		t.Fatal(err)
+	}
+	file.mu.Lock()
+	file.active = ^uint64(0)
+	file.mu.Unlock()
+	if _, err := file.begin(context.Background()); networkError(err) != NetworkOutOfMemory {
+		t.Fatal(err)
+	}
+	file.mu.Lock()
+	file.active = 0
+	file.mu.Unlock()
+	file.Close()
+	select {
+	case <-file.done:
+	default:
+		t.Fatal("idle socket closure was deferred")
+	}
+	if _, err := file.file.Stat(); !errors.Is(err, os.ErrClosed) {
+		t.Fatal("descriptor was not physically closed", err)
+	}
+	if err := file.WaitClosed(nil); err != nil {
+		t.Fatal(err)
+	}
+}
