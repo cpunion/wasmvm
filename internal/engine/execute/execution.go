@@ -312,15 +312,11 @@ frames:
 			if in.Op>>16 == 0xfb {
 				var err error
 				if n := state.GCAccessArity(in.Op); n != 0 {
-					args := code.Args[in.Extra : in.Extra+in.Count]
-					var b, c value.Value
-					if n > 1 {
-						b = values[int(args[1])]
-					}
+					// Slot lowering already supplies the first two operands.
 					if n > 2 {
-						c = values[int(args[2])]
+						c = values[int(code.Args[in.Extra+2])]
 					}
-					result, err = e.store.GCAccess(instance, im, values[int(args[0])], b, c)
+					result, err = e.store.GCAccess(instance, im, a, b, c)
 				} else {
 					if int(in.Count) > cap(e.gcArgs) {
 						e.gcArgs = make([]value.Value, in.Count)
