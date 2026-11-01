@@ -295,6 +295,12 @@ async boundaries. See the [full audit](docs/research/performance-2026-11-01.md),
 [all 68 Core cases](docs/research/performance-2026-11-01-core.md) and
 [raw evidence](docs/research/evidence/performance-2026-11-01.json).
 
+The [2026-11-02 GC follow-up](docs/research/performance-gc-2026-11-02.md) measures
+direct native field access against merged PR #87. LLGo struct access improves
+from 1303 to **4.75 ns/iteration** and indirect access from 3376 to **15.26**;
+Wasmtime measures 1.70 and 3.10 on the same run. Allocation and interpreter
+deficits remain open. This targeted update does not replace the dated full audit.
+
 Benchmark CI is opt-in through the `run-benchmarks` PR label or
 [workflow dispatch](https://github.com/cpunion/wasmvm/actions/workflows/benchmarks.yml).
 It compares exact base/head sources and pinned competitors and posts results

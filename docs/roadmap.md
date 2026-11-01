@@ -18,13 +18,14 @@ Go/LLGo execution and CLI/API support. Complete these capabilities before
 returning to performance optimization; existing performance deficits stay open.
 
 Implementation update: Compact Import Section and Wide Arithmetic merged in
-PR #86 after all four exact-head target jobs passed. Custom Page Sizes,
-non-JS Custom Descriptors and Stack Switching are implemented on the PR #87
-integration branch. Their complete affected binary inventories pass locally
-under Go and LLGo in the interpreter and both native tiers. Stack Switching
-also forces guest collection throughout its official corpus. Final combined
-four-target CI, coverage, artifact and review checks remain required before
-these three extensions are accepted and merged. The README now serves as the
+PR #86. Custom Page Sizes, non-JS Custom Descriptors and Stack Switching merged
+in PR #87 after all 17 required final-head checks passed. The artifact audit
+verified 240 execution reports across Go/LLGo, Linux amd64/macOS arm64, the
+interpreter and both native tiers; every executable package exceeded 90%
+coverage. Stack Switching forces collection throughout its official corpus.
+All five required extension implementations are integrated. Phase 3 snapshot
+support remains experimental. Work now targets the recorded performance gaps;
+functional conformance does not close performance acceptance. The README serves as the
 project entry point with source-package/release status, usage and dated
 competitor comparisons; no versioned release is claimed.
 

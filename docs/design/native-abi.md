@@ -137,7 +137,7 @@ Entries using indirect expansion, direct globals or table/reference operations
 use `Payload[2]`
 for an execution-owned native word array: function handles in module order,
 followed by `(length, native base)` per table, then one pointer per global
-index. Numeric cells follow these descriptors; only globals used by the current
+index. Value cells follow these descriptors; only globals used by the current
 function need cells. Imported aliases share a cell by canonical Global identity.
 The common frame machine retains the referenced instance and tables. Every
 host/helper handoff refreshes table pointers, and instance changes replace
@@ -148,15 +148,27 @@ exit before changing them; every resume reloads the cache. Table elements always
 remain live loads. A missing view installs zero cached lengths and uses the
 checked call path. Partial or exhausted register capacity retains explicit loads.
 
-Both native tiers directly load/store i32/i64/f32/f64/v128 cells. Missing views
+Both native tiers directly load/store i32/i64/f32/f64/v128 and reference-handle cells. Missing views
 are rejected before any guest instruction, including cold continuations. The
 driver snapshots canonical Go globals before each Run and flushes cells after
 every native exit, before servicing traps, fuel, cancellation, helpers or calls.
 Poll/Move resumes retain the current cells. Every host/helper handoff rebinds on
 the next Run, so host mutation and same/cross-instance reentry observe ordered
-writes. Functions without numeric globals never flush stale bindings. Suspension
-and close clear cached Go roots. Reference globals keep the existing helper/root
-protocol; this view does not provide shared-memory atomic globals or WasmGC.
+writes. Functions without bound globals never flush stale bindings. Suspension
+and close clear cached Go roots. Reference writes are flushed before every root
+traversal; guest GC runs only while native execution is idle. This view does not
+provide shared-memory atomic globals.
+
+After any multi-memory pairs, a final `(slot count, native base)` pair describes
+the Store-owned GC handle view. Each 32-byte slot contains the complete handle,
+payload address, array length and a reserved zero word. Generated field accesses
+check the index and complete identity before dereferencing a payload; null and
+array-bounds traps preserve their original source offsets. The typed collector
+shares the payload bytes with portable helpers and traces numeric handles.
+Arena compaction/growth updates all live slot addresses; slot-view growth
+preserves identities. Both happen at serialized safepoints, and every native
+reentry refreshes the pair. See [direct GC access](core-compiler.md#direct-gc-field-access)
+for storage bounds and relocation ownership.
 
 Both native tiers directly implement table.get/table.set and ref.func using this
 view. Table indices are zero-extended i32 values, compared with the current
