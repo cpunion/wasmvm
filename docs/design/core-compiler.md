@@ -82,6 +82,15 @@ exposes the same canonical implementations to LLGo's package optimizer; it is
 not a separate semantic evaluator. Trapping and FP operations keep the generic
 evaluator. Source/fuel/trap identities and all polls remain unchanged.
 
+Ordinary GC access consumes the predecoded scalar operands and shares a
+nonallocating typed heap helper. Allocating and bulk/cast operations use normal
+methods rather than constructing unrelated local callbacks. A temporary root
+collector is installed only when no embedding Store visitor exists. Slow
+operands borrow cleared per-execution scratch, retaining at most 64 values
+(1 KiB); larger validated tuples remain transient. Constructor roots are
+restored on errors and collector panics. Fuel, source PCs and poll boundaries
+are unchanged. See the [GC interpreter comparison](../research/performance-gc-interpreter-2026-11-02.md).
+
 The LLGo release profile uses `-O3 -lto=full` for engine/CLI builds, the native
 probe and semantic CI. Source comparisons apply identical flags to base/head.
 Default `-Os` diagnostics retain observed regressions; an inlined helper or a

@@ -323,6 +323,12 @@ LLGo improves from 582.3 to 60.2 ns/object versus Wasmtime's 60.17; Go reaches
 43.5. These are process-mean diagnostics, with raw latency distributions retained.
 Interpreter, shared-memory and full-portfolio performance acceptance remain open.
 
+The [GC interpreter follow-up](docs/research/performance-gc-interpreter-2026-11-02.md)
+reduces LLGo i31, struct and indirect access from 552/591/1,200 to
+62/78/129 ns/iteration; WasmEdge measures 45/55/95. Linked allocation including
+all GC pauses improves from 588 to 171 ns/object versus WasmEdge's 104.
+These targeted workstation results retain the remaining interpreter deficit.
+
 Benchmark CI is opt-in through the `run-benchmarks` PR label or
 [workflow dispatch](https://github.com/cpunion/wasmvm/actions/workflows/benchmarks.yml).
 It compares exact base/head sources and pinned competitors and posts results

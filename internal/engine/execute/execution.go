@@ -59,6 +59,7 @@ type Execution struct {
 	values       []value.Value
 	result       []value.Value
 	tailArgs     []value.Value
+	gcArgs       []value.Value // Synchronous scratch; cleared after each checked operation.
 	pending      *HostCall
 	pendingDest  []slots.Slot
 	status       Status
@@ -147,6 +148,19 @@ func (e *Execution) push(fn *state.Function, dest []slots.Slot) error {
 	e.frames = append(e.frames, frame{function: fn, base: base, dest: dest})
 	return nil
 }
+
+// Large valid tuples remain transient; idle executions retain at most 1 KiB.
+const maxCachedGCArgs = 64
+
+func (e *Execution) clearGCArgs() {
+	clear(e.gcArgs)
+	if cap(e.gcArgs) > maxCachedGCArgs {
+		e.gcArgs = nil
+	} else {
+		e.gcArgs = e.gcArgs[:0]
+	}
+}
+
 func (e *Execution) fail(err error) Status {
 	e.err, e.status = err, Failed
 	clear(e.frames)
@@ -159,6 +173,7 @@ func (e *Execution) fail(err error) Status {
 	e.pendingDest = nil
 	clear(e.tailArgs)
 	e.tailArgs = e.tailArgs[:0]
+	e.clearGCArgs()
 	return Failed
 }
 
@@ -307,21 +322,28 @@ frames:
 				continue
 			}
 			if in.Op>>16 == 0xfb {
-				var local [5]value.Value
-				operands := local[:0]
-				if int(in.Count) > cap(operands) {
-					operands = make([]value.Value, 0, in.Count)
-				}
-				for _, slot := range code.Args[in.Extra : in.Extra+in.Count] {
-					operands = append(operands, values[int(slot)])
-				}
 				var err error
-				if e.store.HeapSafepoint != nil {
-					// Embedding Stores already retain all active executions. Avoid
-					// constructing an escaping visitor that their collector ignores.
-					result, err = e.store.GC(e.context, instance, im, operands)
+				if n := state.GCAccessArity(in.Op); n != 0 {
+					// Slot lowering already supplies the first two operands.
+					if n > 2 {
+						c = values[int(code.Args[in.Extra+2])]
+					}
+					result, err = e.store.GCAccess(instance, im, a, b, c)
 				} else {
-					result, err = e.store.GC(e.context, instance, im, operands, e.RetainedValues)
+					if int(in.Count) > cap(e.gcArgs) {
+						e.gcArgs = make([]value.Value, in.Count)
+					}
+					e.gcArgs = e.gcArgs[:in.Count]
+					operands := e.gcArgs
+					for i, slot := range code.Args[in.Extra : in.Extra+in.Count] {
+						operands[i] = values[int(slot)]
+					}
+					if e.store.HeapSafepoint != nil {
+						result, err = e.store.GC(e.context, instance, im, operands)
+					} else {
+						result, err = e.store.GC(e.context, instance, im, operands, e.RetainedValues)
+					}
+					e.clearGCArgs()
 				}
 				if err != nil {
 					var t *wasm.Trap
