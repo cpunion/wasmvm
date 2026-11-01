@@ -4,6 +4,8 @@ package memory
 import (
 	"encoding/binary"
 	"math"
+	"sync/atomic"
+	"unsafe"
 
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/value"
@@ -23,6 +25,7 @@ type Memory struct {
 	refs        uint64
 	reservation uint64
 	maximum     uint64
+	sharedSize  *uint64
 }
 
 // New applies the host page quota independently of the module declaration.
@@ -74,11 +77,25 @@ func newMemory(declared module.Limits, quota uint32, offheap bool) (*Memory, err
 	m := &Memory{declared: declared, maximum: maximum}
 	if offheap {
 		var err error
-		m.owner, err = native.NewMemory(uint64(declared.Min)*pageSize, uint64(maximum)*pageSize)
+		if declared.Shared {
+			m.owner, err = native.NewSharedMemory(declared.Min*pageSize, maximum*pageSize)
+		} else {
+			m.owner, err = native.NewMemory(declared.Min*pageSize, maximum*pageSize)
+		}
 		if err != nil {
 			return nil, err
 		}
-		m.bytes, err = m.owner.Buffer()
+		if declared.Shared {
+			var base, size unsafe.Pointer
+			var capacity uint64
+			base, size, capacity, err = m.owner.SharedView()
+			if err == nil {
+				m.bytes = unsafe.Slice((*byte)(base), int(capacity))
+				m.sharedSize = (*uint64)(size)
+			}
+		} else {
+			m.bytes, err = m.owner.Buffer()
+		}
 		if err != nil {
 			m.owner.Close()
 			return nil, err
@@ -88,7 +105,13 @@ func newMemory(declared module.Limits, quota uint32, offheap bool) (*Memory, err
 	}
 	return m, nil
 }
-func (m *Memory) pages() uint64         { return uint64(len(m.bytes)) / m.declared.PageBytes() }
+func (m *Memory) size() uint64 {
+	if m.sharedSize != nil {
+		return atomic.LoadUint64(m.sharedSize)
+	}
+	return uint64(len(m.bytes))
+}
+func (m *Memory) pages() uint64         { return m.size() / m.declared.PageBytes() }
 func (m *Memory) Limits() module.Limits { return m.declared }
 
 // QuotaPages rounds a memory's guest pages up to host 64-KiB quota units.
@@ -108,6 +131,7 @@ func QuotaPages(declared module.Limits, pages uint64) uint64 {
 // It is idempotent and prevents subsequent growth of a retired memory object.
 func (m *Memory) release() {
 	m.bytes = nil
+	m.sharedSize = nil
 	m.maximum = 0
 	if m.owner != nil {
 		m.owner.Close()
@@ -126,7 +150,9 @@ func (m *Memory) grow(delta uint64) (uint64, bool) {
 		if err := m.owner.Grow(next * m.declared.PageBytes()); err != nil {
 			return old, false
 		}
-		m.bytes, _ = m.owner.Buffer()
+		if m.sharedSize == nil {
+			m.bytes, _ = m.owner.Buffer()
+		}
 		return old, true
 	}
 	grown := make([]byte, int(next*m.declared.PageBytes()))
@@ -136,7 +162,7 @@ func (m *Memory) grow(delta uint64) (uint64, bool) {
 }
 func fits(size, offset, count uint64) bool { return offset <= size && count <= size-offset }
 func (m *Memory) rangeBytes(offset, count uint64) bool {
-	return fits(uint64(len(m.bytes)), offset, count)
+	return fits(m.size(), offset, count)
 }
 
 // Read/Write copy across the host boundary without exposing a growth-sensitive
