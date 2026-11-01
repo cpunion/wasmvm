@@ -1,6 +1,7 @@
 package preview2
 
 import (
+	"github.com/cpunion/wasmvm/internal/wasi/host"
 	"net/netip"
 
 	"github.com/cpunion/wasmvm/pkg/component"
@@ -8,10 +9,7 @@ import (
 
 // SocketAddress preserves the complete WIT address, including IPv6 flow/scope.
 // Address has no textual zone; ScopeID is the explicit numeric interface scope.
-type SocketAddress struct {
-	Address           netip.AddrPort
-	FlowInfo, ScopeID uint32
-}
+type SocketAddress = host.SocketAddress
 
 func socketAddressError() error { return &NetworkError{Code: NetworkInvalidArgument} }
 func socketAddressShape() *interfaceShape {

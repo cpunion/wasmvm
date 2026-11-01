@@ -599,6 +599,14 @@ cases match Wasmtime; API reexport rejection remains recorded separately.
 Sockets, HTTP, complete worlds, independent guest-toolchain/conformance evidence
 and local cm64 borrows remain functional acceptance work.
 
+The socket provider now binds all 41 P3 socket/name-lookup operations, including
+TCP connection/accept streams, native byte streams and half-close, UDP datagrams
+and association/disconnect, complete options and async IDNA lookup. Shared host
+syscalls preserve P2 behavior. Physical object/worker limits, publication rollback,
+late-result leases, cancellation and suspended shutdown are tested. HTTP, complete
+worlds, independent language toolchains and remaining cm64/conformance contracts
+remain functional acceptance work; optimization remains deferred.
+
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 
 ## M7 — Further optimization and experimental features

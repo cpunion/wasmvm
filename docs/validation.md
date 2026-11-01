@@ -4703,3 +4703,35 @@ Rejected file writes now drop an unresolved input stream immediately and publish
 the typed failure future; no producer read is needed to discover a permission
 error. Final local race coverage is 90.31% P3 and 90.54% component; the updated
 four-job head must pass before merge.
+
+
+## WASI 0.3.2 sockets and async name lookup — 2026-11-01
+
+The provider binds all 40 socket operations and async resolve-addresses against
+generated, exact WIT contracts. Four wasm-tools 1.258.0 validated fixtures retain
+source/binary/generator/schema hashes. TCP and UDP tests execute both IP families,
+connect/accept, independent accepted resources, address/option operations, native
+send/receive, one-shot rejection, partial I/O, FIN and stream ownership after
+socket drop. Datagram association, disconnect, empty messages and peer policies
+are covered. DNS tests cover IDNA, literals, deduplication, normalization, empty
+and failed results, name/address quotas, cancellation and provider shutdown.
+
+Worker and physical-object limits include pending accepts and unpublished results.
+Actual FD tests exercise late completion cleanup, accepted-resource publication
+failure and nonblocking deferred closes. Readiness tests cover coherent waiters,
+backpressure, worker admission and instance/provider shutdown while suspended.
+Rejected input streams now complete their failure future without needing a read;
+invalid duplicate TCP receive streams preserve the original connection direction.
+Shared host socket syscalls/options preserve P2 contracts, including full IPv6
+flow/scope fields and confirmed Darwin UDP disassociation after ambiguous errno.
+
+Local Go race tests pass with 90.32% P3 package coverage (2258/2500 statements).
+The full Go run keeps all 30 executable packages above 90% (P3 90.28%,
+component 90.87%, shared host 92.40%, P2 90.38%). Pinned LLGo release-profile
+tests execute providers and both owned backends.
+Actual Wasmtime 48.0.1 sends the same abc datagram with explicit authority; without
+it the guest's bind-success assertion traps. Commands, raw results, network bytes,
+fixture and binary hashes are retained in preview3-sockets-reference-check.json.
+This is scoped provider/guest evidence, not complete CLI/HTTP world or performance
+acceptance. HTTP, complete worlds, independent guest languages and remaining cm64
+contracts are required before full functional acceptance.

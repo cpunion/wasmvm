@@ -1,0 +1,24 @@
+{
+  "wasiVersion": "0.3.2",
+  "witArchiveSHA256": "2e918e047c6ad251a44b4d1141359495a27219058fd7090f8b8142f6bc0ec311",
+  "producer": "wasm-tools 1.258.0",
+  "generatorSHA256": "18d529f40a6e6e0331eb94be27a9afbea0df1bcf508256f331cd770f1e376343",
+  "sha256": {
+    "sockets-api": {
+      "wat": "44cd1e998e160db4639682313a7b82f812c102405dd4509ce1d8dfb3030b8d6c",
+      "wasm": "0a9870f67afd65bfe51b7f1816e3748bb66817d41501be7e3a084ef3e5bb3bdf"
+    },
+    "sockets-guest": {
+      "wat": "5023b32d946200f0418bc75c13933bbdfc46c7bcf05203ebcf32b36890b05f41",
+      "wasm": "c41fbe242d002f8173fc905ce9c365d299c070f74207fa55792fb7693a1b3e0f"
+    },
+    "sockets-wrong-error": {
+      "wat": "af1f9afd16af93a34e3e8fe78ef537c3b78510a0134699fab1a6e180aa8f3785",
+      "wasm": "4234c38e57fe6d1e433222f4dbc6ad4454812bbad31e85ae2f53e32bd6e2e7e6"
+    },
+    "sockets-wrong-async": {
+      "wat": "42b0e71dc1f374fe9a23df3c7ba7142c505729a7c049ec5f10f5f14ae226ca44",
+      "wasm": "c3357d8d9cddfcec9d2e77ced429a4f4e61882c87778b1b7988c65e9540e52e2"
+    }
+  }
+}

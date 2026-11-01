@@ -21,6 +21,7 @@ M6 or complete-world conformance.
 | clocks/system-clock | now, get-resolution |
 | random/random, random/insecure, random/insecure-seed | all five operations |
 | filesystem/types, filesystem/preopens | all 26 operations: 21 async metadata/path methods, four native-stream methods, get-directories |
+| sockets/types, sockets/ip-name-lookup | all 41 operations: TCP, UDP, socket options and async name lookup |
 
 All names bind under `@0.3.2`. Pure environment/exit/entropy backends share the
 existing P2 implementation through explicit operation selection and signature
@@ -106,7 +107,7 @@ FIFO readiness and restores operation/object reservations.
 
 Current owned fixtures independently parse/validate with wasm-tools 1.258.0 and
 execute on both backends under Go/LLGo. They are ABI/provider integration tests,
-not complete upstream world conformance. Sockets, HTTP, complete world
+not complete upstream world conformance. HTTP, complete world
 assembly and independent guest-toolchain fixtures remain required. Performance
 campaigns are deferred until capability coverage is complete.
 
@@ -114,3 +115,50 @@ Actual Wasmtime 48.0.1 matches the async Core guest's successful open/stat size
 and missing-file error variant. The API-only fixture reexports imported functions;
 Wasmtime rejects that adapter feature, recorded separately from the two executed
 reference cases. These checks do not establish full world/toolchain acceptance.
+
+
+## Socket providers
+
+NewSockets(ioOwner, SocketsConfig) binds P3 types and ip-name-lookup directly;
+P3 has no P2 network/pollable/IO resource interfaces. TCP create/bind/listen,
+async connect, one-shot send/receive and all options implement the versioned
+contracts. Listen produces a native stream of independently owned sockets;
+send/receive use the shared byte-stream and result-future kernel. Streams retain
+the OS socket after its original handle is dropped. Normal send completion
+half-closes the write direction; dropping receive half-closes its read direction.
+Rejected duplicate streams do not shut down the original operation. Invalid
+input operations publish their error future without waiting for stream reads.
+
+UDP implements explicit/implicit bind, repeatable association, disconnect,
+individual async datagrams, addresses/family and options. Empty datagrams stay
+messages, and receives retain sender addresses. Connected sends accept absent or
+matching destinations. Maximal datagrams, address families, mapped IPv6,
+multicast/unspecified remote addresses and port zero are checked. The shared
+host syscall/address/option layer preserves IPv6 flow and numeric scope for both
+P2 and P3. Darwin disconnect's ambiguous errno is accepted only after a peer
+query confirms that the association is gone.
+
+Authority is explicit. Nil AllowBind/AllowConnect/AllowSend/AllowReceive deny
+those operations. TCP connections inherit the grant used for connect or the
+listener; UDP send and receive check peer policy per datagram. Callbacks run
+without provider locks, observe cancellation and may run concurrently. Policy
+panic denies access. No host network or DNS authority is inherited by default.
+Literal lookup parses locally; enabled external lookup normalizes IDNA, removes
+invalid/zoned results, unmapped IPv4 duplicates and empty results. Resolver
+callbacks are bounded by name/address/work limits and a timeout.
+
+MaxSockets bounds published capabilities and physical objects separately,
+including unpublished accepted sockets and deferred closes. A bounded cleanup
+queue retains FD leases through half-close and closes outside VM callbacks.
+MaxWorkers bounds async datagram/connect/DNS/readiness work; IO limits also bound
+stream operations and batches. Native batch completion cleanup releases accepted
+FDs after publication, cancellation or abandonment, including late returns.
+Close cancels pending operations; WaitClosed joins socket work and physical
+cleanup. Close/wait for Instances, then Sockets, then its IO owner.
+
+Four socket fixtures independently validate with wasm-tools 1.258.0. A real Core
+async guest sends a datagram; actual Wasmtime 48.0.1 sends the same bytes with
+explicit network authority and traps at the guest's denial assertion without it.
+API, ownership, limits, cancellation, readiness, FIN, DNS and both IP families
+execute on both owned backends under Go/LLGo. Full world/toolchain and HTTP
+acceptance remain open.

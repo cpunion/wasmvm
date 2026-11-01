@@ -1,0 +1,7 @@
+{
+  "wasiVersion": "0.3.2",
+  "witArchiveSHA256": "2e918e047c6ad251a44b4d1141359495a27219058fd7090f8b8142f6bc0ec311",
+  "producer": "wasm-tools 1.258.0",
+  "generatorSHA256": "916ccd7a9eecbe2f8ae971c840f4793c0607be4d29b6d8febc2454ffb3f29ada",
+  "schemaSHA256": "f20a97dcde4f78473668c6f08bbaec3b1019994455afe2ba03f2756bce07fcb1"
+}

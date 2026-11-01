@@ -268,8 +268,16 @@ GuestPath, HostPath and optional ReadOnly. Streams keep descriptor leases throug
 EOF/drop; directory streams use independent cursors. MaxDescriptors bounds both
 handles and physical objects, while worker/path/entry/batch limits bound work.
 Close/wait for bound Instances, then Close/WaitClosed FileSystem before IO. No
-ambient filesystem is granted. P3 socket/HTTP bindings and complete worlds remain
-in development; see [provider scope and lifecycle](design/wasi-preview3.md).
+ambient filesystem is granted.
+
+NewSockets(ioOwner, SocketsConfig) adds the complete P3 socket/name-lookup surface.
+Grant bind/connect and UDP peer send/receive explicitly with policy callbacks;
+nil callbacks deny. Enable external DNS separately or supply a cancellable
+resolver. TCP listen yields independently owned socket resources; send and receive
+use native streams/futures and support half-close. Socket/worker/name/address
+limits and the IO owner's stream/batch limits apply across bound Stores. Close
+and wait for Instances, then Sockets, then IO. HTTP bindings and complete worlds
+remain in development; see [provider scope and lifecycle](design/wasi-preview3.md).
 
 
 Use component.NewHostCompletionWithCleanup when external work may create an
@@ -279,3 +287,9 @@ the VM, and must synchronize with the external producer. Keep an independent
 result lease until fresh-Caller publication succeeds; release late results when
 the invocation has already closed. Startup failure before acceptance remains the
 creator's responsibility.
+
+
+Use component.NewReadCompletionWithCleanup when a source read can obtain external
+owned objects before its resolver publishes a batch. Cleanup follows the same
+nonblocking, exactly-once contract as HostCompletion, including late cancellation
+and abandonment; keep independent object leases until publication completes.

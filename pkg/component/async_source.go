@@ -39,6 +39,13 @@ type ReadCompletion struct {
 }
 
 func NewReadCompletion() *ReadCompletion { return &ReadCompletion{completion: NewHostCompletion()} }
+
+// NewReadCompletionWithCleanup releases external batch leases after completion,
+// cancellation or abandonment, under the HostCompletion cleanup contract.
+func NewReadCompletionWithCleanup(cleanup func()) *ReadCompletion {
+	return &ReadCompletion{completion: NewHostCompletionWithCleanup(cleanup)}
+}
+
 func (r *ReadCompletion) Resolve(fn func(*Caller) (ReadResult, error)) error {
 	if r == nil || r.completion == nil || fn == nil {
 		return vm.ErrType

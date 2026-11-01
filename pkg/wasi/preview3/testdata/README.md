@@ -19,3 +19,11 @@ Malformed flags/time variants test binding rejection. The cancellation guest
 checks canonical progress reporting when an OS read wins a cancellation race.
 Wasmtime 48.0.1 executes the two open/stat guest cases; its rejection of imported
 function reexports in the API fixture is separate reference evidence.
+
+The socket schema/fixture generators verify the same pinned WIT archive and
+produce four independently validated fixtures. sockets.json and
+sockets-schema.json pin generators, schemas, WAT and binaries. sockets-guest
+contains a real Core async UDP producer; sockets-api exposes all 41 operations
+for provider tests. The two negative fixtures alter the error variant and async
+connect signature. Explicit-authority Wasmtime datagram execution and the denied
+guest assertion are recorded separately from API-only embedding tests.
