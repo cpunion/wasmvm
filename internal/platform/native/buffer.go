@@ -4,8 +4,9 @@ import "unsafe"
 
 // Buffer exposes pointer-free storage to the trusted, serialized Store runtime.
 // The view must not reach embedding callers, outlive the owner, or be accessed
-// while native code executes. Grow invalidates all previous views. This is an
-// internal ownership contract, not a public guest-memory borrow API.
+// while native code executes. Private growth invalidates previous views; shared
+// stable addresses use SharedView instead. This is an internal ownership
+// contract, not a public guest-memory borrow API.
 func (m *Memory) Buffer() ([]byte, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
