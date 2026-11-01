@@ -12,7 +12,7 @@ import (
 // objects contain typed handles; neither native code nor the collector stores
 // Go pointers in integer-valued guest frames.
 func (s *Store) GC(ctx context.Context, in *Instance, ins *module.Instr, args []value.Value, roots ...func(func(wasm.ValueType, value.Value))) (value.Value, error) {
-	if s.HeapSafepoint == nil && (ins.Op&0xffff <= 1 || ins.Op&0xffff >= 6 && ins.Op&0xffff <= 10) {
+	if s.HeapSafepoint == nil && (ins.Op&0xffff <= 1 || ins.Op&0xffff >= 6 && ins.Op&0xffff <= 10 || ins.Op&0xffff == 32 || ins.Op&0xffff == 33) {
 		s.HeapSafepoint = func() {
 			var xs []ReferenceValue
 			if len(roots) != 0 {
@@ -57,8 +57,10 @@ func (s *Store) GC(ctx context.Context, in *Instance, ins *module.Instr, args []
 		fs := s.registry.Types[typ(ins.A)].Definition.Fields
 		for i, a := range args {
 			ft := wasm.I32
-			if op == 0 && i < len(fs) {
+			if (op == 0 || op == 32) && i < len(fs) {
 				ft = fs[i].Unpacked()
+			} else if (op == 32 || op == 33) && i == len(args)-1 {
+				ft = wasm.AnyRef
 			} else if op == 6 && i == 0 || op == 8 {
 				ft = fs[0].Unpacked()
 			}
@@ -76,14 +78,22 @@ func (s *Store) GC(ctx context.Context, in *Instance, ins *module.Instr, args []
 		return o, nil
 	}
 	switch op {
-	case 0, 1:
+	case 0, 1, 32, 33:
 		fs := s.registry.Types[typ(ins.A)].Definition.Fields
+		var descriptor uint64
+		if op >= 32 {
+			descriptor = args[len(args)-1].Lo
+			if descriptor == 0 {
+				return result, trap(wasm.TrapNullReference)
+			}
+		}
 		o, err := allocate(uint32(len(fs)))
 		if err != nil {
 			return result, err
 		}
-		if op == 0 {
-			for i, a := range args {
+		o.Descriptor = descriptor
+		if op == 0 || op == 32 {
+			for i, a := range args[:len(fs)] {
 				o.set(uint32(i), pack(a, fs[i]))
 			}
 		}
@@ -291,6 +301,21 @@ func (s *Store) GC(ctx context.Context, in *Instance, ins *module.Instr, args []
 		if op == 29 {
 			result.Lo = uint64(uint32(int32(uint32(result.Lo)<<1) >> 1))
 		}
+	case 34:
+		o, err := object(args[0].Lo)
+		if err != nil {
+			return result, err
+		}
+		result.Lo = o.Descriptor
+	case 35, 36:
+		matched, err := s.DescriptorEqual(args[0].Lo, args[1].Lo, ins.ReferenceType())
+		if err != nil {
+			return result, trap(wasm.TrapNullReference)
+		}
+		if !matched {
+			return result, trap(wasm.TrapCastFailure)
+		}
+		result = args[0]
 	default:
 		return result, wasm.ErrInvalid
 	}

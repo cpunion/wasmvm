@@ -395,7 +395,7 @@ func (s *Store) matches(ex Extern, im module.Import, in *Instance) bool {
 	switch im.Kind {
 	case 0:
 		f, ok := s.Function(ex.Function)
-		return ok && module.ExternSubtype(&s.registry, module.Import{Kind: 0, Type: f.TypeID}, module.Import{Kind: 0, Type: in.Types[im.Type]})
+		return ok && module.ExternSubtype(&s.registry, module.Import{Kind: 0, Type: f.TypeID, Exact: true}, module.Import{Kind: 0, Type: in.Types[im.Type], Exact: im.Exact})
 	case 1:
 		if ex.Table == nil || ex.Table.Owner != s {
 			return false
@@ -487,11 +487,17 @@ func constant(in *Instance, expr module.Expr, scratch []value.Value) value.Value
 			count := 1
 			resultType := wasm.I31Ref.NonNull()
 			switch op {
-			case 0:
+			case 0, 32:
 				count = len(in.Owner.registry.Types[in.Types[x.A]].Definition.Fields)
+				if op == 32 {
+					count++
+				}
 				resultType = canonicalType(in.Compiled.IR.Validated.Definition().Reference(x.A, false), in.Types)
-			case 1:
+			case 1, 33:
 				count = 0
+				if op == 33 {
+					count = 1
+				}
 				resultType = canonicalType(in.Compiled.IR.Validated.Definition().Reference(x.A, false), in.Types)
 			case 6:
 				count = 2

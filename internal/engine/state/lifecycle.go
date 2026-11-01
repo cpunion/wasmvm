@@ -154,6 +154,9 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 				continue
 			}
 			d := s.registry.Types[o.Type].Definition
+			if o.Descriptor != 0 {
+				visit(wasm.AnyRef, value.Value{Lo: o.Descriptor})
+			}
 			if d.Kind == module.ArrayKind {
 				if d.Fields[0].Value.IsReference() {
 					for i := uint32(0); i < o.Length; i++ {

@@ -41,6 +41,7 @@ type context struct {
 	tags            []module.FuncType
 	funcs           []module.FuncType
 	funcTypeIndices []uint32
+	funcExact       []bool
 	typeLabels      []uint32
 	registry        module.TypeRegistry
 	lexicalTypes    bool
@@ -85,10 +86,14 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 	c.registry.Types = nil
 	c.registry.Keys = nil
 	for _, im := range m.Imports {
+		if im.Exact && (im.Kind != 0 || features&wasm.CustomDescriptors == 0) {
+			c.fail("invalid or disabled exact import")
+		}
 		switch im.Kind {
 		case 0:
 			c.funcs = append(c.funcs, c.typ(im.Type))
 			c.funcTypeIndices = append(c.funcTypeIndices, im.Type)
+			c.funcExact = append(c.funcExact, im.Exact)
 		case 1:
 			c.tables = append(c.tables, im.Table)
 		case 2:
@@ -106,6 +111,7 @@ func CheckWithFeatures(m *module.Module, limits Limits, features wasm.Features) 
 	for _, f := range m.Functions {
 		c.funcs = append(c.funcs, c.typ(f.Type))
 		c.funcTypeIndices = append(c.funcTypeIndices, f.Type)
+		c.funcExact = append(c.funcExact, true)
 	}
 	for _, t := range m.Tags {
 		c.tags = append(c.tags, c.tagType(t))
@@ -360,7 +366,7 @@ func (c *context) constant(expr module.Expr, want wasm.ValueType) {
 			}
 			stack = stack[:len(stack)-1]
 			continue
-		case 0xfb0000, 0xfb0001, 0xfb0006, 0xfb0007, 0xfb0008, 0xfb001a, 0xfb001b, 0xfb001c:
+		case 0xfb0000, 0xfb0001, 0xfb0006, 0xfb0007, 0xfb0008, 0xfb001a, 0xfb001b, 0xfb001c, 0xfb0020, 0xfb0021:
 			v := checker{context: c, stack: stack, control: []frame{{}}}
 			v.gc(*in)
 			stack = v.stack

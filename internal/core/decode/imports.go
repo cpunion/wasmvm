@@ -43,6 +43,11 @@ func (d *decoder) importType(kind byte) module.Import {
 	switch kind {
 	case 0:
 		im.Type = d.u32()
+	case 0x20:
+		if d.features&wasm.CustomDescriptors == 0 {
+			d.fail("exact function imports are disabled")
+		}
+		im.Kind, im.Exact, im.Type = 0, true, d.u32()
 	case 1:
 		im.Table = d.table()
 	case 2:

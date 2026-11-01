@@ -3,8 +3,42 @@ package wasm_test
 import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 	"math"
+	"strings"
 	"testing"
 )
+
+func TestExactReferenceLatticeAndFormatting(t *testing.T) {
+	h := new(wasm.TypeHierarchy)
+	h.Add(0)
+	h.Add(1)
+	for _, family := range []wasm.ValueType{wasm.FuncRef, wasm.StructRef, wasm.ArrayRef} {
+		base := wasm.IndexedReference(family, 1, false).WithTypeIndex(1, true)
+		child := wasm.IndexedReference(family, 2, false).WithTypeIndex(2, true)
+		for _, row := range []struct {
+			a, b wasm.ValueType
+			want bool
+		}{
+			{base.WithExact(true), base, true},
+			{base, base.WithExact(true), false},
+			{child.WithExact(true), base, true},
+			{child.WithExact(true), base.WithExact(true), false},
+			{child, base.WithExact(true), false},
+			{child.WithExact(true), child.WithExact(true).WithNull(), true},
+			{child.WithExact(true).WithNull(), child.WithExact(true), false},
+		} {
+			if got := h.ReferenceSubtype(row.a, row.b, nil); got != row.want {
+				t.Fatal(row.a, row.b, got, row.want)
+			}
+		}
+		exact := base.WithExact(true)
+		if !exact.Valid() || exact.Storage() != base.Storage() || exact.WithExact(false) != base || !strings.Contains(exact.String(), "(exact canonical[1])") || !strings.Contains(exact.WithNull().String(), "ref null") {
+			t.Fatal("exact metadata", exact)
+		}
+	}
+	if wasm.AnyRef.WithExact(true).Valid() {
+		t.Fatal("exact abstract reference")
+	}
+}
 
 func TestTypedReferenceDomainsAndNullability(t *testing.T) {
 	for _, index := range []uint32{0, 1, 1 << 16, math.MaxUint32} {

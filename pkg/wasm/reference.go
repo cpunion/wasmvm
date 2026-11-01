@@ -5,6 +5,7 @@ const (
 	referenceIndexed   ValueType = 1 << 9
 	referenceNullable  ValueType = 1 << 10
 	referenceCanonical ValueType = 1 << 11
+	referenceExact     ValueType = 1 << 12
 )
 
 // FunctionReference constructs a reference to a module-local function type.
@@ -30,11 +31,11 @@ func (t ValueType) referenceEncoding() bool {
 		return false
 	}
 	flags := t & 0xff00
-	if flags&referenceExtended == 0 || flags & ^(referenceExtended|referenceIndexed|referenceNullable|referenceCanonical) != 0 {
+	if flags&referenceExtended == 0 || flags & ^(referenceExtended|referenceIndexed|referenceNullable|referenceCanonical|referenceExact) != 0 {
 		return false
 	}
 	if flags&referenceIndexed == 0 {
-		return t>>16 == 0 && flags&referenceCanonical == 0 && flags&referenceNullable == 0
+		return t>>16 == 0 && flags&(referenceCanonical|referenceNullable|referenceExact) == 0
 	}
 	return byte(t) == byte(FuncRef) || byte(t) == byte(StructRef) || byte(t) == byte(ArrayRef)
 }
@@ -68,6 +69,13 @@ func (t ValueType) Storage() ValueType {
 	return t
 }
 func (t ValueType) Canonical() bool { return t&referenceCanonical != 0 }
+func (t ValueType) Exact() bool     { return t&referenceExact != 0 }
+func (t ValueType) WithExact(exact bool) ValueType {
+	if exact {
+		return t | referenceExact
+	}
+	return t &^ referenceExact
+}
 func (t ValueType) TypeIndex() (uint32, bool) {
 	return uint32(t >> 16), t.IsReference() && t&referenceIndexed != 0
 }
@@ -167,9 +175,9 @@ func referenceSubtype(actual, expected ValueType, labels []uint32, nominal func(
 			a, e = labels[a], labels[e]
 		}
 		if a == e {
-			return true
+			return !expected.Exact() || actual.Exact()
 		}
-		if nominal != nil {
+		if nominal != nil && !expected.Exact() {
 			return nominal(a, e)
 		}
 		return false

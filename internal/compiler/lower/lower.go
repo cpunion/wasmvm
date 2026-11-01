@@ -245,7 +245,12 @@ func (l *lowerer) visit(pc int, in module.Instr, inputs, outputs []wasm.ValueTyp
 		// The callee return schema is verified, but creates no local SSA results.
 		l.f.Sources[pc].Outputs = append([]wasm.ValueType(nil), l.f.Signature.Results...)
 		l.terminate(ir.Terminator{Kind: ir.TailCall, Source: source, Args: l.copyValues(l.suffix(len(inputs)))})
-	case op == 0xfb0018 || op == 0xfb0019:
+	case op == 0xfb0018 || op == 0xfb0019 || op == 0xfb0025 || op == 0xfb0026:
+		var desc ir.Value
+		if op >= 0xfb0025 {
+			desc = l.stack[len(l.stack)-1]
+			l.stack = l.stack[:len(l.stack)-1]
+		}
 		ref := l.stack[len(l.stack)-1]
 		l.stack = l.stack[:len(l.stack)-1]
 		label := l.frames[len(l.frames)-1-int(in.A)].label
@@ -254,7 +259,7 @@ func (l *lowerer) visit(pc int, in module.Instr, inputs, outputs []wasm.ValueTyp
 			diff = diff.NonNull()
 		}
 		fall := diff
-		if op == 0xfb0019 {
+		if op == 0xfb0019 || op == 0xfb0026 {
 			fall = in.Types[1]
 		}
 		cont := l.newBlock([]wasm.ValueType{fall})
@@ -263,10 +268,14 @@ func (l *lowerer) visit(pc int, in module.Instr, inputs, outputs []wasm.ValueTyp
 		branch := l.edge(label)
 		l.stack = l.stack[:len(l.stack)-1]
 		edges := []ir.Edge{branch, {Target: cont, Args: []ir.Value{ref}}}
-		if op == 0xfb0019 {
+		if op == 0xfb0019 || op == 0xfb0026 {
 			edges[0], edges[1] = edges[1], edges[0]
 		}
-		l.terminate(ir.Terminator{Kind: ir.IfCast, Source: source, Args: []ir.Value{ref}, Edges: edges})
+		args := []ir.Value{ref}
+		if op >= 0xfb0025 {
+			args = append(args, desc)
+		}
+		l.terminate(ir.Terminator{Kind: ir.IfCast, Source: source, Args: args, Edges: edges})
 		l.current = int(cont)
 		l.stack = append(l.stack, l.f.Blocks[cont].Params...)
 

@@ -16,6 +16,10 @@ These are also available to embedded core modules in components.
 the default 65536-byte pages. Guest page counts follow that memory's type, while
 Store `MaxMemoryPages` and usage counters retain 64-KiB host quota units,
 rounding up per memory. Shared maximum reservations use those same quota units.
+`wasm.CustomDescriptors` with GC (or `Profile: "core3"`) enables the pinned
+experimental Core descriptor and exact-reference extensions. JavaScript
+prototype integration is excluded. `ValueType.Exact` and `WithExact` retain
+exactness alongside nullability and canonical type identity.
 
 Typical order:
 

@@ -12,7 +12,7 @@ and macOS arm64. No backend silently substitutes a competitor.
   Both backends implement SIMD, WasmGC, final EH, typed references, tail calls,
   memory64/table64, multi-memory and separate shared-memory atomics/wait/notify.
   Explicit extension switches add Compact Import Section, Wide Arithmetic and
-  Custom Page Sizes;
+  Custom Page Sizes and experimental non-JS Custom Descriptors;
   see their [snapshot and test scope](docs/design/core-extensions.md).
 - **WASI 1:** all 46 declared imports, the complete 72-program upstream inventory,
   legacy wasi-threads' 15-program inventory, and actual Go/LLGo guest integration.
@@ -35,8 +35,8 @@ component-threading commands are retained separately. See the
 
 **Acceptance remains open:** expanded WASI world conformance and controlled
 performance gates. Functional implementation, selected-corpus execution and
-milestone acceptance are distinct. Non-JavaScript Custom Descriptors and Stack
-Switching are mandatory pending extensions; other M7
+milestone acceptance are distinct. Stack Switching is a mandatory pending
+extension; other M7
 proposals remain optional.
 Current evidence and limitations are in the [plan](docs/roadmap.md) and
 [verification record](docs/validation.md). Separate evaluation modules retain

@@ -26,6 +26,8 @@ supported platform adapter; no backend fallback is performed.
 `--compact-imports`, `--wide-arithmetic` and `--custom-page-sizes` independently enable the pinned
 [core extensions](design/core-extensions.md). Both default to disabled, even
 with `--profile core3`, and apply to validate, inspect and run.
+`--custom-descriptors` enables the experimental pinned non-JS descriptor and
+exact-reference extension together with its GC prerequisite.
 
 ## WASI Preview 1
 

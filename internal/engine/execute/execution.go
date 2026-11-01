@@ -342,8 +342,21 @@ frames:
 					continue frames
 				}
 				index := uint32(0)
-				if kind == ir.IfCast && !e.store.TestReference(a.Lo, module.ResolveType(im.Types[1], instance.Types)) {
-					index = 1
+				if kind == ir.IfCast {
+					target := module.ResolveType(im.Types[1], instance.Types)
+					matched := false
+					if im.Op == 0xfb0025 || im.Op == 0xfb0026 {
+						var err error
+						matched, err = e.store.DescriptorEqual(a.Lo, b.Lo, target)
+						if err != nil {
+							return e.fail(&wasm.Trap{Code: wasm.TrapNullReference, Offset: im.Offset, Function: fn.Index})
+						}
+					} else {
+						matched = e.store.TestReference(a.Lo, target)
+					}
+					if !matched {
+						index = 1
+					}
 				} else if kind == ir.IfNull && a.Lo != 0 {
 					index = 1
 				} else if kind == ir.If && uint32(a.Lo) == 0 {

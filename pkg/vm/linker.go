@@ -106,7 +106,7 @@ func (ex Extern) Reference() (Value, error) {
 		if !ok {
 			return Value{}, ErrReference
 		}
-		typ = wasm.CanonicalFunctionReference(f.TypeID, false)
+		typ = wasm.CanonicalFunctionReference(f.TypeID, false).WithExact(s.engine.config.Features&wasm.CustomDescriptors != 0)
 	}
 	return s.rootLocked(typ, rawReference(ex.external.Function))
 }

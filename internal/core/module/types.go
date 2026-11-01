@@ -26,6 +26,8 @@ type TypeDef struct {
 	Open   bool
 	Supers []uint32
 	Fields []FieldType
+	// Optional indices use index+1 so every u32 index is representable.
+	Descriptor, Describes uint64
 }
 type TypeGroup struct{ Start, Count uint32 }
 
@@ -128,6 +130,13 @@ func (r *TypeRegistry) InternGroup(m *Module, start, count uint32, ids []uint32,
 	for i := start; i < start+count; i++ {
 		d := m.TypeDef(i)
 		word(uint64(d.Kind))
+		for _, use := range []uint64{d.Descriptor, d.Describes} {
+			if use == 0 {
+				word(0)
+			} else {
+				word(index(uint32(use-1)) + 1)
+			}
+		}
 		if d.Open {
 			word(1)
 		} else {
@@ -173,6 +182,12 @@ func (r *TypeRegistry) InternGroup(m *Module, start, count uint32, ids []uint32,
 	}
 	for i := start; i < start+count; i++ {
 		d := m.TypeDef(i)
+		if d.Descriptor != 0 {
+			d.Descriptor = uint64(ids[d.Descriptor-1]) + 1
+		}
+		if d.Describes != 0 {
+			d.Describes = uint64(ids[d.Describes-1]) + 1
+		}
 		d.Supers = append([]uint32(nil), d.Supers...)
 		for j, s := range d.Supers {
 			d.Supers[j] = ids[s]

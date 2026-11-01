@@ -1,5 +1,22 @@
 # Verification Record
 
+## 2026-11-01: Non-JavaScript Custom Descriptors
+
+Experimental Phase 3 snapshot `a791af285f3876fb0bc6df89c218ff912347cf46`
+implements the complete affected Core corpus: 11 scripts, 684 commands, 597
+binary assertions and 16 separately classified malformed-text assertions.
+Go 1.27.3 and pinned LLGo `8e45ed5` (`-O3 -lto=full`) passed this corpus in
+interpreter and both native tiers on darwin/arm64. Forced-collection integration
+tests passed for hidden descriptor edges, cyclic reclamation, host payloads,
+exception and host-callback boundaries, and independent object/byte quotas.
+The unchanged archived GC corpus also passed on both host compilers.
+
+The complete Go internal/public suite passed with all 30 executable packages
+above 90% statement coverage (minimum 90.66%). Final-head four-job semantic CI
+remains required before merge. JavaScript prototype behavior is excluded;
+Stack Switching remains mandatory pending work. Performance acceptance stays
+open.
+
 ## 2026-11-01: Custom Page Sizes
 
 Snapshot `61c873a1860acad2772539164f284cc5110f1b1b` adds all four affected

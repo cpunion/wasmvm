@@ -38,6 +38,9 @@ func (t ValueType) String() string {
 			if t.Canonical() {
 				heap = fmt.Sprintf("canonical[%d]", index)
 			}
+			if t.Exact() {
+				heap = "(exact " + heap + ")"
+			}
 		}
 		if t.Nullable() {
 			return "(ref null " + heap + ")"

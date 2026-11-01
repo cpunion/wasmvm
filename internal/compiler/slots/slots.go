@@ -292,6 +292,9 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 		if len(term.Args) > 0 {
 			in.A = out.ValueSlots[term.Args[0]]
 		}
+		if term.Kind == ir.IfCast && len(term.Args) > 1 {
+			in.B = out.ValueSlots[term.Args[1]]
+		}
 		if term.Kind == ir.TailCall || term.Kind == ir.Throw {
 			in.Op = f.Sources[term.Source].Wasm.Op
 			in.A = NoSlot

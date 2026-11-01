@@ -1,0 +1,1 @@
+(type (struct (field (exact 0)))) 

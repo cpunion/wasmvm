@@ -91,6 +91,7 @@ type GlobalType struct {
 type Import struct {
 	Module, Name string
 	Kind         byte
+	Exact        bool
 	Type         uint32
 	Table        TableType
 	Memory       Limits

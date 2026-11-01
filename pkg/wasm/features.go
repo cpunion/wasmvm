@@ -32,6 +32,8 @@ const (
 	WideArithmetic
 	// CustomPageSizes enables static 1-byte and 64-KiB memory page sizes.
 	CustomPageSizes
+	// CustomDescriptors enables exact references and Core custom descriptors.
+	CustomDescriptors
 )
 
 // Core3Features selects the full pinned Core 3.0 binary profile on both backends.
@@ -39,4 +41,4 @@ const (
 const Core3Features = ExtendedConst | TailCall | MultiMemory | RelaxedSIMD | Memory64 | FunctionReferences | GC | ExceptionHandling | Core3Rules
 
 // SupportedFeatures includes all accepted core feature flags.
-const SupportedFeatures = Core3Features | Threads | CompactImports | WideArithmetic | CustomPageSizes
+const SupportedFeatures = Core3Features | Threads | CompactImports | WideArithmetic | CustomPageSizes | CustomDescriptors

@@ -61,6 +61,10 @@ func TestCustomPageSizesProposal(t *testing.T) {
 	runProposal(t, proposalCorpus{"custom-page-sizes", "61c873a1860acad2772539164f284cc5110f1b1b", wasm.Core3Features | wasm.Threads | wasm.CustomPageSizes, []string{"custom-page-sizes-invalid", "custom-page-sizes", "memory_max", "memory_max_i64"}, 56, 80, 53, 4})
 }
 
+func TestCustomDescriptorsProposal(t *testing.T) {
+	runProposal(t, proposalCorpus{"custom-descriptors", "a791af285f3876fb0bc6df89c218ff912347cf46", wasm.Core3Features | wasm.CustomDescriptors, []string{"array_new_exact", "binary-descriptors", "br_on_cast_desc_eq", "br_on_cast_desc_eq_fail", "descriptors", "exact-casts", "exact-func-import", "exact", "ref_cast_desc_eq", "ref_get_desc", "struct_new_desc"}, 267, 684, 597, 16})
+}
+
 func runProposal(t *testing.T, corpus proposalCorpus) {
 	root := filepath.Join("../../../testdata", corpus.name)
 	raw, err := os.ReadFile(filepath.Join(root, "manifest.json"))

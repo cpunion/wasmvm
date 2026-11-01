@@ -46,6 +46,25 @@ func (c *context) checkTypeGroup(g module.TypeGroup, maximum uint32) {
 			}
 		}
 		d := m.TypeDef(i)
+		for side, use := range []uint64{d.Descriptor, d.Describes} {
+			if use == 0 {
+				continue
+			}
+			if c.features&wasm.CustomDescriptors == 0 || d.Kind != module.StructKind || use-1 < uint64(g.Start) || use-1 >= end {
+				c.fail("descriptor relationship outside its recursive group")
+			}
+			other := m.TypeDef(uint32(use - 1))
+			reciprocal := other.Describes
+			if side == 1 {
+				reciprocal = other.Descriptor
+				if use-1 >= uint64(i) {
+					c.fail("forward described type")
+				}
+			}
+			if other.Kind != module.StructKind || reciprocal != uint64(i)+1 || other.Open != d.Open {
+				c.fail("descriptor pairing or finality mismatch")
+			}
+		}
 		if len(d.Supers) > 1 {
 			c.fail("multiple supertypes")
 		}
@@ -103,6 +122,15 @@ func (c *context) structuralSubtype(child, parent uint32) {
 	a, b := c.m.TypeDef(child), c.m.TypeDef(parent)
 	if a.Kind != b.Kind {
 		c.fail("supertype kind mismatch")
+	}
+	for i, use := range []uint64{a.Descriptor, a.Describes} {
+		parentUse := b.Descriptor
+		if i == 1 {
+			parentUse = b.Describes
+		}
+		if (use == 0) != (parentUse == 0) || use != 0 && !c.matches(c.m.Reference(uint32(use-1), false), c.m.Reference(uint32(parentUse-1), false)) {
+			c.fail("descriptor subtype square mismatch")
+		}
 	}
 	if a.Kind == module.FunctionKind {
 		f, g := c.m.Types[child], c.m.Types[parent]

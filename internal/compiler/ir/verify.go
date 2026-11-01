@@ -196,8 +196,15 @@ func (budget *VerifyBudget) Verify(f *Function) (err error) {
 				fail("branch targets/source")
 			}
 		case IfCast:
-			if len(t.Args) != 1 || !valueType(t.Args[0]).IsReference() || len(t.Edges) != 2 || (op != 0xfb0018 && op != 0xfb0019) || len(s.Wasm.Types) != 2 {
+			arity := 1
+			if op == 0xfb0025 || op == 0xfb0026 {
+				arity = 2
+			}
+			if len(t.Args) != arity || !valueType(t.Args[0]).IsReference() || len(t.Edges) != 2 || (op != 0xfb0018 && op != 0xfb0019 && op != 0xfb0025 && op != 0xfb0026) || len(s.Wasm.Types) != 2 {
 				fail("cast branch source/arity")
+			}
+			if arity == 2 && !valueType(t.Args[1]).IsReference() {
+				fail("descriptor branch operand")
 			}
 		case IfNull:
 			if len(t.Args) != 1 || !valueType(t.Args[0]).IsReference() || len(t.Edges) != 2 || (op != 0xd5 && op != 0xd6) {

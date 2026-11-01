@@ -38,6 +38,9 @@ func (f Fragment) Extern(t module.Import) (err error) {
 		c.fail("missing lexical Core external types")
 	}
 	c.registry, c.lexicalBound = *f.Registry, uint32(len(f.IDs))
+	if t.Exact && (t.Kind != 0 || f.Features&wasm.CustomDescriptors == 0) {
+		c.fail("invalid or disabled exact Core external type")
+	}
 	switch t.Kind {
 	case 0, 4:
 		c.typ(t.Type)

@@ -17,6 +17,7 @@ func TestCoreExtensionsCLI(t *testing.T) {
 		{"wide-arithmetic/wide-arithmetic/script.0.wasm", "--wide-arithmetic", "i64.mul_wide_u", wasm.WideArithmetic, []string{"i64:2", "i64:3"}},
 		{"compact-import-section/imports-compact/script.15.wasm", "--compact-imports", "", wasm.CompactImports, nil},
 		{"custom-page-sizes/custom-page-sizes/script.0.wasm", "--custom-page-sizes", "", wasm.CustomPageSizes, nil},
+		{"custom-descriptors/exact/script.0.wasm", "--custom-descriptors", "", wasm.CustomDescriptors | wasm.GC, nil},
 	} {
 		data, err := os.ReadFile(filepath.Join("../../testdata", row.path))
 		if err != nil {

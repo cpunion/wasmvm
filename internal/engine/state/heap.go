@@ -20,6 +20,7 @@ type ReferenceValue struct {
 }
 type heapObject struct {
 	Type          uint32
+	Descriptor    uint64
 	Tag           *Tag
 	Data          []byte
 	Layout        *heapLayout
@@ -50,6 +51,9 @@ func (s *Store) allocateObject(typ uint32, length uint32) (uint64, error) {
 		payload = uint64(length) * uint64(layout.stride)
 	}
 	bytes := payload + 64
+	if s.registry.Types[typ].Definition.Descriptor != 0 {
+		bytes += 8
+	}
 	if s.HeapSafepoint != nil && (s.CollectEveryAllocation || s.usage.HeapObjects >= uint64(s.limits.MaxHeapObjects) || bytes > s.limits.MaxHeapBytes-s.usage.HeapBytes || s.usage.HeapBytes >= s.heapThreshold) {
 		s.HeapSafepoint()
 	}
@@ -157,7 +161,23 @@ func (s *Store) TestReference(ref uint64, expected wasm.ValueType) bool {
 	default:
 		return false
 	}
+	if _, indexed := actual.TypeIndex(); indexed {
+		actual = actual.WithExact(true)
+	}
 	return s.registry.Subtype(actual, expected)
+}
+
+// DescriptorEqual implements the common descriptor-cast predicate. A null
+// descriptor traps even if the tested reference is null or has another kind.
+func (s *Store) DescriptorEqual(ref, descriptor uint64, target wasm.ValueType) (bool, error) {
+	if descriptor == 0 {
+		return false, &wasm.Trap{Code: wasm.TrapNullReference}
+	}
+	if ref == 0 {
+		return target.Nullable(), nil
+	}
+	obj, ok := s.heapObject(ref)
+	return ok && obj.Descriptor == descriptor, nil
 }
 func (s *Store) IsLiveReference(ref uint64) bool {
 	if ref&heapTag != 0 {

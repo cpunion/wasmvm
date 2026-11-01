@@ -355,6 +355,9 @@ func completeCore2(t *testing.T, tier int) {
 	}
 }
 func trapMatches(code wasm.TrapCode, text string) bool {
+	if code == wasm.TrapNullReference && text == "null descriptor reference" || code == wasm.TrapCastFailure && text == "descriptor cast failure" {
+		return true
+	}
 	if code.String() == text {
 		return true
 	}
@@ -413,6 +416,9 @@ func specUint(t *testing.T, s string) uint64 {
 	return v
 }
 func parseSpec(t *testing.T, v specValue) value.Value {
+	if v.Type == "nullref" || v.Type == "nullfuncref" || v.Type == "nullexternref" || v.Type == "nullexnref" || v.Type == "refnull" {
+		return value.Value{}
+	}
 	t.Helper()
 	if v.Type == "externref" || v.Type == "funcref" || v.Type == "exnref" || v.Type == "anyref" {
 		var s string

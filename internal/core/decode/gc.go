@@ -40,6 +40,14 @@ func (d *decoder) typeGroup(m *module.Module) {
 			def.Supers = d.indexes()
 			b = d.byte()
 		}
+		if b == 0x4c && d.features&wasm.CustomDescriptors != 0 {
+			def.Describes = uint64(d.u32()) + 1
+			b = d.byte()
+		}
+		if b == 0x4d && d.features&wasm.CustomDescriptors != 0 {
+			def.Descriptor = uint64(d.u32()) + 1
+			b = d.byte()
+		}
 		def.Kind = b
 		var f module.FuncType
 		switch b {
@@ -70,7 +78,7 @@ func resolveTypeReferencesFrom(m *module.Module, start int) {
 	// after all member shapes have been decoded. This never expands a recursion.
 	resolve := func(t wasm.ValueType) wasm.ValueType {
 		if i, ok := t.TypeIndex(); ok {
-			return m.Reference(i, t.Nullable())
+			return m.Reference(i, t.Nullable()).WithExact(t.Exact())
 		}
 		return t
 	}
@@ -112,6 +120,12 @@ func (d *decoder) gcInstruction(in *module.Instr) {
 	sub := d.u32()
 	in.Op = 0xfb0000 | sub
 	switch {
+	case sub >= 32 && sub <= 38 && d.features&wasm.CustomDescriptors == 0:
+		d.fail("custom descriptor instructions are disabled")
+	case sub >= 32 && sub <= 34:
+		in.A = d.u32()
+	case sub == 35 || sub == 36:
+		in.Bits = uint64(d.heapReference(sub == 36))
 	case sub == 0 || sub == 1 || sub == 6 || sub == 7 || sub >= 11 && sub <= 14 || sub == 16:
 		in.A = d.u32()
 	case sub >= 2 && sub <= 5 || sub >= 8 && sub <= 10 || sub >= 17 && sub <= 19:
@@ -122,7 +136,7 @@ func (d *decoder) gcInstruction(in *module.Instr) {
 	case sub >= 20 && sub <= 23:
 		t := d.heapReference(sub == 21 || sub == 23)
 		in.Bits = uint64(t)
-	case sub == 24 || sub == 25:
+	case sub == 24 || sub == 25 || sub == 37 || sub == 38:
 		flags := d.byte()
 		if flags > 3 {
 			d.fail("invalid cast branch flags")

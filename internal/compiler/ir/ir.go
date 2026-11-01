@@ -126,7 +126,7 @@ func EffectsOf(op uint32) Effects {
 	case op>>16 == 0xfb:
 		sub := op & 0xffff
 		switch sub {
-		case 0, 1, 6, 7, 8:
+		case 0, 1, 6, 7, 8, 32, 33:
 			return WriteHeap | MayAllocate | MayTrap
 		case 9, 10:
 			return ReadSegment | WriteHeap | MayAllocate | MayTrap
@@ -136,7 +136,7 @@ func EffectsOf(op uint32) Effects {
 			return ReadHeap | WriteHeap | MayTrap
 		case 18, 19:
 			return ReadSegment | WriteHeap | MayTrap
-		case 2, 3, 4, 11, 12, 13, 15, 20, 21, 22, 23, 24, 25:
+		case 2, 3, 4, 11, 12, 13, 15, 20, 21, 22, 23, 24, 25, 34, 35, 36, 37, 38:
 			return ReadHeap | MayTrap
 		case 29, 30:
 			return MayTrap

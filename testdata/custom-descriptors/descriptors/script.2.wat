@@ -1,0 +1,1 @@
+(rec   (type $a (descriptor $b) (descriptor $b) (struct))   (type $b (describes $a) (struct)) ) 

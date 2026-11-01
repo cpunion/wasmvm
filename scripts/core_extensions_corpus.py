@@ -12,6 +12,15 @@ from core2_corpus import digest, extract, fetch, inventory
 ROOT = Path(__file__).resolve().parent.parent
 PRODUCER = "wasm-tools 1.262.0 (e22db44da 2026-10-13)"
 PROPOSALS = {
+    "custom-descriptors": {
+        "revision": "a791af285f3876fb0bc6df89c218ff912347cf46",
+        "size": 15066255,
+        "sha256": "d68f475e24f0542ea4c8167044767aa5258c67dc7088590d5549d622a8635ea5",
+        "scripts": ["custom-descriptors/" + name + ".wast" for name in
+                    ["array_new_exact", "binary-descriptors", "br_on_cast_desc_eq",
+                     "br_on_cast_desc_eq_fail", "descriptors", "exact-casts",
+                     "exact-func-import", "exact", "ref_cast_desc_eq", "ref_get_desc", "struct_new_desc"]],
+    },
     "custom-page-sizes": {
         "revision": "61c873a1860acad2772539164f284cc5110f1b1b",
         "size": 15035559,

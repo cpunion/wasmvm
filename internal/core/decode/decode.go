@@ -296,6 +296,11 @@ func (d *decoder) heapReference(nullable bool) wasm.ValueType {
 	h := must(d.r.S33())
 	var t wasm.ValueType
 	switch h {
+	case -30:
+		if d.features&wasm.CustomDescriptors == 0 {
+			d.fail("exact references are disabled")
+		}
+		return d.definition.Reference(d.u32(), nullable).WithExact(true)
 	case -16:
 		t = wasm.FuncRef
 	case -17:

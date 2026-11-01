@@ -1,7 +1,7 @@
 # Explicit core extensions
 
 These switches extend Core 3.0; selecting `core3` does not enable them.
-Both extensions below run through the owned decoder, validator, typed IR,
+The extensions below run through the owned decoder, validator, typed IR,
 slot code and interpreter/native backends, without a reference-engine fallback.
 
 | Extension | API feature | CLI option | Specification snapshot |
@@ -9,6 +9,7 @@ slot code and interpreter/native backends, without a reference-engine fallback.
 | Compact Import Section | `wasm.CompactImports` | `--compact-imports` | [`0624de8`](https://github.com/WebAssembly/compact-import-section/tree/0624de829e2663da799e708444dec80337a3fe54) |
 | Wide Arithmetic | `wasm.WideArithmetic` | `--wide-arithmetic` | [`024d4ce`](https://github.com/WebAssembly/wide-arithmetic/tree/024d4ce1b28cee7fd006d9c5175e3b7ece52b429) |
 | Custom Page Sizes | `wasm.CustomPageSizes` | `--custom-page-sizes` | [`61c873a`](https://github.com/WebAssembly/custom-page-sizes/tree/61c873a1860acad2772539164f284cc5110f1b1b) |
+| Custom Descriptors (non-JS, experimental Phase 3) | `wasm.CustomDescriptors` with GC | `--custom-descriptors` | [`a791af2`](https://github.com/WebAssembly/custom-descriptors/tree/a791af285f3876fb0bc6df89c218ff912347cf46) |
 
 Compact imports decode both `0x7f` groups with individual external types and
 `0x7e` groups with one shared external type. The abstract module keeps its
@@ -75,9 +76,40 @@ them (`--proposal custom-page-sizes` selects a single corpus). An owned
 version, additionally exercises mixed private/shared, i32/i64 memories, byte
 boundary traps, zeroing, atomics, cross-Store leases, quotas and cleanup.
 
-The owner also requires the non-JavaScript parts of Custom Descriptors and
-Stack Switching. Those remain pending until each pinned
-snapshot passes both backends and the Go/LLGo matrix. Phase 3 snapshots remain
+Custom Descriptors implements the pinned Core definitions and exact reference
+types, including exact function imports (`0x20`), descriptor allocation,
+descriptor retrieval, descriptor-equality casts and both branch variants.
+The CLI enables its GC prerequisite; embedding callers select GC or `core3`
+alongside `wasm.CustomDescriptors`. Its Phase 3 status remains experimental.
+JS prototypes and JavaScript embedding APIs are outside this implementation.
+
+Descriptor/describes clauses are reciprocal members of one recursive group,
+with matching finality and a checked subtype square. Described types precede
+their descriptor types, preventing cycles in descriptor chains. Canonical
+recursive keys include both clauses and exactness. Exact types accept the
+same concrete type, excluding proper subtypes; ordinary types retain declared
+subtyping. Defined functions have exact `ref.func` types, while ordinary
+imports remain inexact unless explicitly imported exactly. Linking checks
+concrete canonical identity for exact imports, and component module interfaces
+preserve the distinction.
+
+Guest objects keep their descriptor as a typed-handle edge. The collector
+traces that hidden edge, including descriptor/object cycles and meta-descriptor
+chains, without retaining Go pointers in guest frames. The edge consumes eight
+additional charged heap bytes. Constructor operands stay rooted during forced
+collection; null descriptors trap before allocation. Normal casts compare
+concrete types, while descriptor-equality casts compare descriptor identity.
+Both backends use the existing shared checked GC and control-flow operations.
+
+All 11 affected Core scripts are pinned in `testdata/custom-descriptors`:
+684 commands, 597 binary assertions and 16 separately classified malformed
+text assertions. The owned `pkg/vm/testdata/custom-descriptors.wat` fixture,
+produced by the same pinned wasm-tools, also tests forced collection during
+construction and exception/host boundaries, host payload reachability,
+descriptor cycles, exact hidden-edge accounting and object/byte quota failures.
+
+Stack Switching remains mandatory pending implementation and the pinned
+both-backend Go/LLGo matrix. Phase 3 snapshots remain
 explicit experimental gates rather than claims of final standardization.
 Performance acceptance remains open; this extension work does not erase the
 November 1 performance audit or claim new parity results.
