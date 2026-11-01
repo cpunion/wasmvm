@@ -16,7 +16,13 @@ type nativeHeap struct {
 	data           []byte
 	views          []uint64
 	used           uint64
-	objects        []*heapObject
+	objects        []nativeHeapAllocation
+}
+
+// Keep relocation metadata out of portable heap objects and their size class.
+type nativeHeapAllocation struct {
+	object         *heapObject
+	offset, handle uint64
 }
 
 func (s *Store) prepareHeapViews(count uint64) error {
@@ -66,9 +72,10 @@ func (s *Store) allocateNativePayload(size uint64) ([]byte, uint64, error) {
 		if err != nil {
 			return nil, 0, err
 		}
-		for _, o := range h.objects {
-			o.Data = h.data[o.nativeOffset : o.nativeOffset+uint64(len(o.Data))]
-			s.publishHeapObject(o)
+		for _, a := range h.objects {
+			o := a.object
+			o.Data = h.data[a.offset : a.offset+uint64(len(o.Data))]
+			s.publishHeapObject(a.handle, o)
 		}
 	}
 	offset := h.used
@@ -82,29 +89,30 @@ func (s *Store) compactNativeHeap() {
 	h := s.nativeHeap
 	kept := h.objects[:0]
 	var used uint64
-	for _, o := range h.objects {
+	for _, a := range h.objects {
+		o := a.object
 		if o.Data == nil {
 			continue
 		}
 		size := uint64(len(o.Data))
 		copy(h.data[used:used+size], o.Data)
-		o.Data, o.nativeOffset = h.data[used:used+size], used
+		o.Data, a.offset = h.data[used:used+size], used
 		used += size
-		kept = append(kept, o)
-		s.publishHeapObject(o)
+		kept = append(kept, a)
+		s.publishHeapObject(a.handle, o)
 	}
 	clear(h.objects[len(kept):])
 	h.objects, h.used = kept, used
 }
 
-func (s *Store) publishHeapObject(o *heapObject) {
-	at := int(uint32(o.nativeHandle)) * 4
+func (s *Store) publishHeapObject(ref uint64, o *heapObject) {
+	at := int(uint32(ref)) * 4
 	var address uint64
 	if len(o.Data) != 0 {
 		address = uint64(uintptr(unsafe.Pointer(unsafe.SliceData(o.Data))))
 	}
 	views := s.nativeHeap.views
-	views[at], views[at+1], views[at+2] = o.nativeHandle, address, uint64(o.Length)
+	views[at], views[at+1], views[at+2] = ref, address, uint64(o.Length)
 }
 
 // NativeHeapView borrows the handle view until the next serialized safepoint.

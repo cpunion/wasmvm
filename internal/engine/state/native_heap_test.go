@@ -27,6 +27,7 @@ func TestNativeHeapRelocationCollectionAndGenerations(t *testing.T) {
 	}
 	var roots []ReferenceValue
 	var objects []*heapObject
+	var handles []uint64
 	for i := range 150 {
 		ref, err := s.allocateObject(ids[0], uint32(47+i))
 		if err != nil {
@@ -36,6 +37,7 @@ func TestNativeHeapRelocationCollectionAndGenerations(t *testing.T) {
 		o.set(0, value.Value{Lo: uint64(i)})
 		o.set(o.Length-1, value.Value{Lo: uint64(i + 1)})
 		objects = append(objects, o)
+		handles = append(handles, ref)
 		if i%3 != 0 {
 			roots = append(roots, ReferenceValue{Type: wasm.AnyRef, Value: value.Value{Lo: ref}})
 		}
@@ -45,19 +47,20 @@ func TestNativeHeapRelocationCollectionAndGenerations(t *testing.T) {
 	s.CollectReferences(roots, nil, nil)
 	var used uint64
 	for i, o := range objects {
-		at := int(uint32(o.nativeHandle)) * 4
+		ref := handles[i]
+		at := int(uint32(ref)) * 4
 		if i%3 == 0 {
-			if o.Data != nil || s.nativeHeap.views[at] != 0 || s.IsLiveReference(o.nativeHandle) {
+			if o.Data != nil || s.nativeHeap.views[at] != 0 || s.IsLiveReference(ref) {
 				t.Fatal("unreachable slot retained", i)
 			}
 			continue
 		}
-		if o.nativeOffset != used || o.get(0).Lo != uint64(i) || o.get(o.Length-1).Lo != uint64(i+1) {
-			t.Fatal("relocation corrupted payload", i, o.nativeOffset, used)
+		if unsafe.SliceData(o.Data) != &s.nativeHeap.data[used] || o.get(0).Lo != uint64(i) || o.get(o.Length-1).Lo != uint64(i+1) {
+			t.Fatal("relocation corrupted payload", i, used)
 		}
 		used += uint64(len(o.Data))
 		address := uint64(uintptr(unsafe.Pointer(unsafe.SliceData(o.Data))))
-		if s.nativeHeap.views[at] != o.nativeHandle || s.nativeHeap.views[at+1] != address || s.nativeHeap.views[at+2] != uint64(o.Length) {
+		if s.nativeHeap.views[at] != ref || s.nativeHeap.views[at+1] != address || s.nativeHeap.views[at+2] != uint64(o.Length) {
 			t.Fatal("native view not refreshed", i)
 		}
 	}

@@ -29,8 +29,6 @@ type heapObject struct {
 	Length        uint32
 	Bytes, Serial uint64
 	Mark          bool
-	nativeOffset  uint64
-	nativeHandle  uint64
 }
 type heapSlot struct {
 	Object     *heapObject
@@ -102,13 +100,13 @@ func (s *Store) allocateObject(typ uint32, length uint32, extra ...uint64) (uint
 	}
 	s.heapSerial++
 	ref := heapTag | uint64(s.heap[index].Generation)<<32 | uint64(index)
-	o := &heapObject{Type: typ, Data: data, Layout: layout, Length: length, Bytes: bytes, Serial: s.heapSerial, nativeOffset: offset, nativeHandle: ref}
+	o := &heapObject{Type: typ, Data: data, Layout: layout, Length: length, Bytes: bytes, Serial: s.heapSerial}
 	s.heap[index].Object = o
 	if s.nativeHeap != nil {
 		if payload != 0 {
-			s.nativeHeap.objects = append(s.nativeHeap.objects, o)
+			s.nativeHeap.objects = append(s.nativeHeap.objects, nativeHeapAllocation{o, offset, ref})
 		}
-		s.publishHeapObject(o)
+		s.publishHeapObject(ref, o)
 	}
 	s.usage.HeapObjects++
 	s.usage.HeapBytes += bytes
