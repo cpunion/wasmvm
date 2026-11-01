@@ -311,6 +311,12 @@ The [bulk-fill follow-up](docs/research/performance-bulk-2026-11-02.md) reduces 
 the LLGo interpreter and from 3,261 to 1,208 under LLGo native. Wasmtime measures
 155; native runtime-helper transitions and competitive acceptance remain open.
 
+The [direct native bulk comparison](docs/research/performance-native-bulk-2026-11-02.md)
+removes those private fill/copy helper transitions. With 100,000 iterations,
+LLGo measures 142.6 ns/iteration versus Wasmtime's 146.9 and a separate native
+C/libc loop's 146.2. These shared-host results do not establish controlled
+superiority or full-portfolio acceptance.
+
 Benchmark CI is opt-in through the `run-benchmarks` PR label or
 [workflow dispatch](https://github.com/cpunion/wasmvm/actions/workflows/benchmarks.yml).
 It compares exact base/head sources and pinned competitors and posts results

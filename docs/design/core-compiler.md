@@ -293,6 +293,15 @@ buffers may coexist transiently during copying and until host collection, so
 the page quota bounds logical memory rather than process RSS. Store-wide memory
 accounting and scheduling of chunked bulk operations remain runtime work.
 
+Ordinary native entries lower private single-memory `memory.fill`/`memory.copy`
+directly on both targets, including i64 addresses/counts. Complete checked ranges
+precede all writes. arm64 uses paired vector accesses with exact tails; amd64
+uses REP strings and restores direction/context/frame state on every exit.
+Overlapping copies retain direction, and at-most-4096-byte chunks poll the
+existing cancellation word before writing. Precise, shared and multi-memory
+operations retain their runtime helpers. The existing state/root/lease contracts
+and code-size limits apply without another native ABI or execution framework.
+
 ## Implemented Core 2.0 execution
 
 `internal/engine/state` owns typed imports, canonical signature identities,

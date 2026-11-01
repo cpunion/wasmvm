@@ -21,6 +21,7 @@ type functionEmitter struct {
 	unmetered                                                    bool
 	x86Features                                                  X86Features
 	usesMemory                                                   bool
+	nativeBulk                                                   bool
 	memoryViews                                                  bool
 	memoryFunctions, memoryTables, memoryGlobals, memoryBindings uint32
 	memoryMinimum                                                uint64
