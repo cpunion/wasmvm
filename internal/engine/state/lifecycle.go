@@ -57,7 +57,7 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 	mark := func(in *Instance) {
 		if in != nil && in.Owner == s && !in.disposed && !marked[in] {
 			marked[in] = true
-			queue = append(queue, in)
+			queue = appendValue(queue, in)
 		}
 	}
 	markFunction := func(ref uint64) {
@@ -76,7 +76,7 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 		if v.Lo&heapTag != 0 {
 			if o, ok := s.heapObject(v.Lo); ok && !o.Mark {
 				o.Mark = true
-				objects = append(objects, o)
+				objects = appendValue(objects, o)
 			}
 		} else if v.Lo&i31Tag != 0 {
 		} else if v.Lo&externalTag != 0 {
@@ -194,7 +194,7 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 	kept := s.instances[:0]
 	for _, in := range s.instances {
 		if marked[in] {
-			kept = append(kept, in)
+			kept = appendValue(kept, in)
 		} else {
 			s.dispose(in)
 		}
@@ -246,7 +246,7 @@ func (s *Store) sweepObjects() {
 			t.Signature = module.FuncType{}
 			t.TypeID = 0
 		} else {
-			tags = append(tags, t)
+			tags = appendValue(tags, t)
 		}
 	}
 	clear(s.tags[len(tags):])
@@ -261,7 +261,7 @@ func (s *Store) sweepObjects() {
 			t.Owner = nil
 			t.OwnerInstance = nil
 		} else {
-			tables = append(tables, t)
+			tables = appendValue(tables, t)
 		}
 	}
 	clear(s.tables[len(tables):])
@@ -279,7 +279,7 @@ func (s *Store) sweepObjects() {
 			m.Owner = nil
 			m.OwnerInstance = nil
 		} else {
-			memories = append(memories, m)
+			memories = appendValue(memories, m)
 		}
 	}
 	clear(s.memories[len(memories):])
@@ -292,7 +292,7 @@ func (s *Store) sweepObjects() {
 			g.Owner = nil
 			g.OwnerInstance = nil
 		} else {
-			globals = append(globals, g)
+			globals = appendValue(globals, g)
 		}
 	}
 	clear(s.globals[len(globals):])

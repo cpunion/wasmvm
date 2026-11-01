@@ -53,7 +53,7 @@ func (s *Store) PrepareNativeAllocations() (uint64, error) {
 	refs := words[nativeabi.HeapAllocationHeaderBytes/8:]
 	count := min(uint64(nativeabi.HeapAllocationBatch), uint64(s.limits.MaxHeapObjects)-s.usage.HeapObjects, math.MaxUint64-s.heapSerial)
 	if len(s.heap) == 0 {
-		s.heap = append(s.heap, heapSlot{})
+		s.heap = appendValue(s.heap, heapSlot{})
 	}
 	for h.pendingCount < count {
 		index := uint32(len(s.heap))
@@ -64,7 +64,7 @@ func (s *Store) PrepareNativeAllocations() (uint64, error) {
 			if uint64(len(s.heap)) > uint64(s.limits.MaxHeapObjects) {
 				break
 			}
-			s.heap = append(s.heap, heapSlot{Generation: 1})
+			s.heap = appendValue(s.heap, heapSlot{Generation: 1})
 		}
 		refs[h.pendingCount] = heapTag | uint64(s.heap[index].Generation)<<32 | uint64(index)
 		h.pendingCount++
@@ -150,7 +150,7 @@ func (s *Store) FinishNativeAllocations(types []uint32) error {
 		*o = heapObject{Type: identities[i], Layout: layout, Length: uint32(len(layout.widths)), Bytes: layout.size + 64, Serial: s.heapSerial}
 		if layout.size != 0 {
 			o.Data = h.data[offset : offset+layout.size]
-			h.objects = append(h.objects, nativeHeapAllocation{o, offset, ref})
+			h.objects = appendValue(h.objects, nativeHeapAllocation{o, offset, ref})
 		}
 		s.heap[uint32(ref)].Object = o
 		s.publishHeapObject(ref, o)
@@ -175,7 +175,7 @@ func (s *Store) releaseNativeReservations(committed uint64) {
 		if int(index)*4+4 <= len(h.views) {
 			clear(h.views[int(index)*4 : int(index)*4+4])
 		}
-		s.heapFree = append(s.heapFree, index)
+		s.heapFree = appendValue(s.heapFree, index)
 	}
 	h.pendingCount = 0
 	clear(h.allocationWords)

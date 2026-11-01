@@ -102,7 +102,7 @@ func (s *Store) reserveNativePayload(size uint64) error {
 
 func (s *Store) compactNativeHeap() {
 	h := s.nativeHeap
-	kept := h.objects[:0]
+	kept := 0
 	var used uint64
 	for _, a := range h.objects {
 		o := a.object
@@ -116,11 +116,12 @@ func (s *Store) compactNativeHeap() {
 		copy(h.data[used:used+size], o.Data)
 		o.Data, a.offset = h.data[used:used+size], used
 		used += size
-		kept = append(kept, a)
+		h.objects[kept] = a
+		kept++
 		s.publishHeapObject(a.handle, o)
 	}
-	clear(h.objects[len(kept):])
-	h.objects, h.used = kept, used
+	clear(h.objects[kept:])
+	h.objects, h.used = h.objects[:kept], used
 }
 
 func (s *Store) publishHeapObject(ref uint64, o *heapObject) {
