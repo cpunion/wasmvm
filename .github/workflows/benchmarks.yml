@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       suite:
-        description: Benchmark scope (PR families or full sustained runs)
+        description: Benchmark scope (PR families, sustained gates, or diagnostic survey)
         type: choice
-        options: [pr, full, native-simd]
+        options: [pr, full, native-simd, survey]
         default: full
       baseline:
         description: Baseline commit or ref in this repository
@@ -29,7 +29,7 @@ jobs:
   benchmark:
     # Capability completion takes priority; measurements are opt-in until then.
     if: ${{ inputs.suite != 'native-simd' && (github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks')) }}
-    name: Base, head, and competitors / linux-amd64
+    name: Runtime performance / linux-amd64
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -99,6 +99,7 @@ jobs:
             --output-dir "$GITHUB_WORKSPACE/benchmark-results/cli"
 
       - name: Measure direct API phases and warmed execution
+        if: env.BENCHMARK_SUITE != 'survey'
         shell: bash
         env:
           WASMVM_LLGO_REVISION: 8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f
@@ -110,6 +111,19 @@ jobs:
             --head-sha "$(git -C head rev-parse HEAD)" \
             --tools-dir "$RUNNER_TEMP/wasm-runtime-tools" \
             --output-dir "$GITHUB_WORKSPACE/benchmark-results/phases"
+
+      - name: Survey the complete Core portfolio and GC / Threads
+        if: env.BENCHMARK_SUITE == 'survey'
+        env:
+          WASMVM_LLGO_REVISION: 8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f
+        run: |
+          python3 head/benchmarks/survey.py \
+            --output "$GITHUB_WORKSPACE/benchmark-results/phases" \
+            --wasmtime-sdk "$RUNNER_TEMP/wasm-runtime-tools/wasmtime-c-api/wasmtime-v48.0.1-x86_64-linux-c-api" \
+            --wasmer-sdk "$RUNNER_TEMP/wasm-runtime-tools/wasmer" \
+            --wasmedge-sdk "$RUNNER_TEMP/wasm-runtime-tools/wasmedge"
+          python3 head/benchmarks/survey_modern.py \
+            --core-output "$GITHUB_WORKSPACE/benchmark-results/phases"
 
       - name: Publish job summary
         if: always()
@@ -141,7 +155,7 @@ jobs:
           retention-days: 30
 
   native_arm64:
-    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks') }}
+    if: ${{ inputs.suite != 'survey' && (github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks')) }}
     name: Native feature and competitors / ${{ matrix.platform.name }}
     runs-on: ${{ matrix.platform.runner }}
     strategy:

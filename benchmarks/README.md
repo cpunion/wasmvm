@@ -1,5 +1,11 @@
 # Runtime performance comparisons
 
+The [2026-11-01 owned-engine audit](../docs/research/performance-2026-11-01.md)
+measures the complete existing Core portfolio, modern GC/Threads and selected
+P1/component/P2/async boundaries. Dispatch Runtime benchmarks with `suite=survey`
+for the opt-in Core/modern matrix on Linux amd64. It reuses the existing pinned
+tool setup and artifact; it is descriptive and does not close performance gates.
+
 The benchmark job records two distinct metrics: **direct embedding API phases and warmed execution**, and **CLI end-to-end latency**. Execution efficiency is assessed with the direct API measurements. The CLI series retains application startup, validation/compilation, instantiation, guest work, output, and shutdown in its measured interval; its totals are not pure execution times.
 
 The [embedding protocol](embedded/README.md) defines the phase boundaries, pure parameterized fixtures, clock and empty-call controls, and comparison limits. Phase results appear first in the PR comment, with complete phase tables and raw samples. No CLI or control median is subtracted to infer guest time.

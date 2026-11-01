@@ -1,5 +1,10 @@
 # WebAssembly and WASI Standards and Proposal Survey
 
+**Current implementation audit:** see [2026-11-01 status](status-2026-11-01.md)
+for the refreshed complete proposal register, per-proposal wasmvm support,
+competitor qualifications and executed Core/WASI evidence. The original survey
+below preserves the initial planning context.
+
 Research date: **2026-10-26 (Asia/Shanghai)**. This document records primary sources inspected on that date. It does not treat an old roadmap as evidence that a release has shipped, or proposal maturity as evidence of an engine's default support. Priorities and implementation approaches below are this project's design judgments.
 
 The [initial specification and conformance input pins](spec-inputs.md) record
