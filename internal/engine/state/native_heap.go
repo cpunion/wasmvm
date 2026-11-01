@@ -54,7 +54,10 @@ func (s *Store) allocateNativePayload(size uint64) ([]byte, uint64, error) {
 	if size == 0 {
 		return nil, 0, nil
 	}
-	if size > uint64(len(h.data))-h.used {
+	// Rollbacks can repeatedly reuse handles without triggering tracing. Bound
+	// tombstone retention independently of a previously large arena capacity;
+	// the live/dead ratio keeps compaction amortized for nearly full heaps.
+	if size > uint64(len(h.data))-h.used || uint64(len(h.objects)) >= 2*s.usage.HeapObjects+64 {
 		s.compactNativeHeap()
 	}
 	if size > uint64(len(h.data))-h.used {

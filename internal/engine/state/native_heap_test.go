@@ -114,7 +114,7 @@ func TestNativeHeapExactQuotasAndHandleRetirement(t *testing.T) {
 		t.Fatal("unallocated heap")
 	}
 	var previous uint64
-	for range 8 {
+	for range 150 {
 		ref, err := s.allocateObject(ids[0], 1)
 		if err != nil || ref == previous || previous != 0 && s.IsLiveReference(previous) {
 			t.Fatal(ref, previous, err)
@@ -130,6 +130,9 @@ func TestNativeHeapExactQuotasAndHandleRetirement(t *testing.T) {
 		s.releaseObject(uint32(ref))
 		previous = ref
 	}
+	if len(s.nativeHeap.objects) > 64 {
+		t.Fatal("retired allocation metadata accumulated")
+	}
 	if _, err := s.allocateObject(ids[0], 2); !errors.Is(err, wasm.ErrLimit) {
 		t.Fatal("payload quota", err)
 	}
@@ -144,5 +147,24 @@ func TestNativeHeapExactQuotasAndHandleRetirement(t *testing.T) {
 	defer plain.Close()
 	if count, address := plain.NativeHeapView(); count != 0 || address != 0 {
 		t.Fatal("portable heap exposed a host address")
+	}
+	// A large historical payload must not allow small failed instances to keep
+	// an arena-capacity-sized list of retired host objects alive.
+	limits.MaxHeapBytes = 1 << 20
+	large := NewNative(limits)
+	defer large.Close()
+	ids, _ = large.registry.InternModule(m, limits.MaxTypes)
+	if _, err := large.allocateObject(ids[0], 1<<18); err != nil {
+		t.Fatal(err)
+	}
+	large.rollbackHeap(0)
+	for range 150 {
+		if _, err := large.allocateObject(ids[0], 1); err != nil {
+			t.Fatal(err)
+		}
+		large.rollbackHeap(0)
+	}
+	if len(large.nativeHeap.objects) > 64 || large.Usage().HeapObjects != 0 {
+		t.Fatal("large arena retained failed allocations", len(large.nativeHeap.objects))
 	}
 }
