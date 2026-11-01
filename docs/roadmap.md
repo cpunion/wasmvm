@@ -14,6 +14,21 @@ campaigns until capabilities are complete. Keep existing measured regressions
 and performance gates open. One active PR and prompt validated merges remain
 the integration policy.
 
+The declared M1–M6 functional implementations now cover the full owned Core
+profiles/backends, GC/Core Threads, P1/legacy threads, component/Canonical ABI,
+stable P2/P3 providers and their command/service/middleware embedding paths.
+The final increments add local i64 borrows, updated empty-buffer semantics and
+P2/P3 CLI commands. They still require their final target CI and merged evidence.
+Expanded WASI world conformance and all applicable performance acceptance remain
+open. Optional M7 proposals are outside this implemented scope.
+
+Functional closeout proceeds through the remaining final-head semantic checks,
+coverage/review/artifact audit and declared-world conformance review. Only then
+resume phase-separated performance comparisons and optimization. The historical
+increment notes below preserve requirements that were open at each increment;
+they are not a second list of unimplemented providers. No milestone is marked
+complete merely because its implementation exists.
+
 On 2026-10-29 the owner authorized merging the accumulated Core 2.0 work and
 then clarified that local optimization must not block completing capabilities.
 PRs #26, #27 and #28 have merged with their recorded semantic evidence and
@@ -653,6 +668,14 @@ alignment and point bounds; original upstream sources are retained with two
 explicit address corrections. The current independent producer still rejects
 the corrected local i64 signatures. Full WASI acceptance and the deferred
 performance gates remain open; this reference limitation is not a semantic pass.
+
+The CLI now invokes standard P2/P3 command components with `--wasi-preview 2|3`,
+sharing the existing World providers, explicit capabilities and bounded stdio
+readiness. Initialization and invocation retain one total metered fuel budget
+through a public instantiation receipt. Actual C/Rust commands, stdin, exit/trap,
+pipe cancellation and stdio flag restoration are covered on both backends. This
+adds the command entry to the implemented embedding APIs; final target CI and
+the stage's full conformance/performance gates remain separate.
 
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 

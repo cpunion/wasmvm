@@ -12,3 +12,7 @@ import (
 func runWASI(_ context.Context, _ *vm.Engine, _ *vm.Store, _ *vm.CompiledModule, _ vm.CallOptions, _ wasiOptions, _ io.Writer, stderr io.Writer) int {
 	return failure(stderr, wasm.ErrUnsupported)
 }
+
+func runComponentWASI(_ context.Context, _ vm.EngineConfig, _ vm.CallOptions, _ wasiOptions, _ io.Writer, stderr io.Writer) int {
+	return failure(stderr, wasm.ErrUnsupported)
+}
