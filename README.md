@@ -306,6 +306,11 @@ uses separately declared million-iteration loops: LLGo struct access reaches
 1.31 ns/iteration versus Wasmtime's 1.04, and indirect access reaches 4.55 versus
 2.53. Allocation, interpreter and full-portfolio performance acceptance remain open.
 
+The [bulk-fill follow-up](docs/research/performance-bulk-2026-11-02.md) reduces the
+8-KiB fill plus overlapping-copy workload from 2,638 to 431 ns/iteration under
+the LLGo interpreter and from 3,261 to 1,208 under LLGo native. Wasmtime measures
+155; native runtime-helper transitions and competitive acceptance remain open.
+
 Benchmark CI is opt-in through the `run-benchmarks` PR label or
 [workflow dispatch](https://github.com/cpunion/wasmvm/actions/workflows/benchmarks.yml).
 It compares exact base/head sources and pinned competitors and posts results
