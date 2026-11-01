@@ -10,7 +10,7 @@ import (
 type ResourceCodec interface {
 	Validate(*model.Type, Value) error
 	Lift(*model.Type, uint32) (Value, error)
-	Lower(*model.Type, Value) (uint32, error)
+	Lower(*model.Type, Value) (uint64, error)
 	Accept(*model.Type, Value, bool) (Value, error)
 	Finish(error) error
 }

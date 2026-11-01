@@ -3,11 +3,12 @@
   "sourceArchiveSHA256": "dbd68be264dbe55110ed489377aa84281dada28c1da416d31f86b5623e69d2d2",
   "producer": "wasm-tools 1.258.0",
   "sourceScripts": 75,
-  "archiveSHA256": "4ae9ed7a1348bc1602bbba0df6ceb6f0f9600dd9a0eba8512502f3ca73e6029a",
-  "generatorSHA256": "c94a25addcc47e9cb1798503cbddca66033dab36d58b622d1ba4db643625cc77",
+  "archiveSHA256": "840651db58aa15961dcb9ee722d3b3eb74549d638a723bc277f6277b9d92e9e3",
+  "generatorSHA256": "048e13b511b3d373df20f68b6d2d305855e140c07cd21be3a62e5be4325db3a1",
   "sha256": {
     "LICENSE": "4d3653542be17c85050541db12115b467dacc543c0c6bba8a5a4ed2ffba52cc1",
     "LICENSE-APACHE": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+    "corrected/async/zero-length.wast": "c856518ce42aad34ef8c8ff230b0407b0d1296aaf688ff7d5d66407d1dda38c8",
     "runtime/async/async-calls-sync/script.0.wasm": "8dd6fb56ec2dd87f294df3fb5351c628da201f828b0040ea156a442481f401a4",
     "runtime/async/async-calls-sync/script.json": "b20a1791f2cebe7b3750601f36dd021c2e74e08623e98245b418b5612d2b4115",
     "runtime/async/big-interleaving-test/script.0.wasm": "5fc9ac7b626ab6e33f0664f36d90d329e5c4968a57733222e06fed56ce98c56d",
@@ -136,9 +137,9 @@
     "runtime/async/validate-task-return/script.json": "d4b988bba07d60535060a8796eedc5d75d6222f1dad6e0289e2ce9b9e36dc9e1",
     "runtime/async/wait-during-callback/script.0.wasm": "22da061ea6696a82dbada6475c9adf36ccbd4e42f47d63991d089a50bcbb24cb",
     "runtime/async/wait-during-callback/script.json": "0ae0b2b15c2189644b0b3497b8698e3f7932e8ee5412519fb45b8ec6bfedd5da",
-    "runtime/async/zero-length/script.0.wasm": "8115cb8403226343ac02395b3d7564dd8881d62765533735e78d0d5eb2343fa8",
+    "runtime/async/zero-length/script.0.wasm": "90845de2c837baca1f9816db75586cc94d0311e8bbfdda61886843e896aa66df",
     "runtime/async/zero-length/script.1.wasm": "6a7f110fc161b28e171054584b77a393dbc934e226e9b0454cd918f42ef6a527",
-    "runtime/async/zero-length/script.json": "0878d2ef7bc2bbe06b3cc9d07516df461ae6725926c51ddf7a2756cb0885d734",
+    "runtime/async/zero-length/script.json": "aad1191cb84255cb979ad1d7e9e79b439ef4dc9fd02551af81ca07cb850af09e",
     "runtime/linking/link-time-virtualization/script.0.wasm": "b67df28accd188b2f0d7cae027b8c674f5abc1a42aa48582917adc65b963ff95",
     "runtime/linking/link-time-virtualization/script.json": "505af2b981867e08c1a0443271e602a785f48f30e7fb7f89fca828ab7f3096bb",
     "runtime/linking/shared-everything-dynamic-linking/script.0.wasm": "014800bb00dad65db060d2f9ab9dd56871847a757aeb262c89dec2dd2ade6020",
@@ -3992,6 +3993,14 @@
       "token": "stream.forward",
       "diagnostic": "error: unexpected token, expected one of: `lift`, `lower`, `resource.new`, `resource.drop`, `resource.rep`, `thread.spawn-ref`, `thread.spawn-indirect`, `thread.available_parallelism`, `backpressure.inc`, `backpressure.dec`, `task.return`, `task.cancel`, `context.get`, `context.set`, `subtask.drop`, `subtask.cancel`, `stream.new`, `stream.read`, `stream.write`, `stream.cancel-read`, `stream.cancel-write`, `stream.drop-readable`, `stream.drop-writable`, `future.new`, `future.read`, `future.write`, `future.cancel-read`, `future.cancel-write`, `future.drop-readable`, `future.drop-writable`, `error-context.new`, `error-context.debug-message`, `error-context.drop`, `waitable-set.new`, `waitable-set.wait`, `waitable-set.poll`, `waitable-set.drop`, `waitable.join`, `thread.index`, `thread.new-indirect`, `thread.resume-later`, `thread.suspend`, `thread.yield`, `thread.suspend-then-resume`, `thread.yield-then-resume`, `thread.suspend-then-promote`, `thread.yield-then-promote`\n     --> source/values/post-return.wast:40:12\n      |\n   40 |     (canon stream.forward $ST (core func $stream.forward))\n      |            ^\n",
       "replacementProducer": "wasm-tools 1.262.0 (e22db44da 2026-10-13)"
+    }
+  },
+  "semanticCorrections": {
+    "async/zero-length": {
+      "revision": "36b9b95824b7747d20b762623422439267036b22",
+      "original": "source/async/zero-length.wast",
+      "adapted": "corrected/async/zero-length.wast",
+      "reason": "Use the memory endpoint for two typed zero-length buffers; preserve every command and expected outcome."
     }
   },
   "additionalProducer": {

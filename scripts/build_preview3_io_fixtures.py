@@ -104,7 +104,7 @@ for i,terminal in enumerate(['stdin','stdout','stderr']):
  (core instance $m (instantiate $m (with "env" (instance $env))))
  (func (export "run") (result u32) (canon lift (core func $m "run"))))'''
 fixtures['stdin-wrong-stream']=fixtures['stdin'].replace('(type $s (stream u8))','(type $s (stream u16))',1)
-fixtures['stdin-zero-read']=fixtures['stdin'].replace('local.get $drop i32.eqz if','local.get $s i32.const -1 i32.const 0 call $read i32.const 15 i32.and i32.eqz if else unreachable end local.get $drop i32.eqz if',1)
+fixtures['stdin-zero-read']=fixtures['stdin'].replace('local.get $drop i32.eqz if','local.get $s i32.const 65536 i32.const 0 call $read i32.const 15 i32.and i32.eqz if else unreachable end local.get $drop i32.eqz if',1)
 fixtures['stdout-wrong-future']=fixtures['stdout'].replace('(type $f (future (result (error $err))))','(type $f (future u32))',1)
 fixtures['stdout-wrong-direction']=fixtures['stdout'].replace('(type $f (future (result (error $err))))','(type $f (stream u32))',1)
 pins={}

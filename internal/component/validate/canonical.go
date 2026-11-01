@@ -75,6 +75,9 @@ func (c *componentContext) canonical(def *model.Canonical) error {
 		return invalid("asynchronous canonical options")
 	}
 	b := c.canonicalLayouts(info.Memory64)
+	if lifting && c.result.Has64BitResources() {
+		b = c.canonicalLowerLayouts(info.Memory64)
+	}
 	if err := p.charge(uint64(len(t.Parameters))); err != nil {
 		return err
 	}
@@ -161,6 +164,18 @@ func (c *componentContext) canonicalLayouts(memory64 bool) *canonical.Builder {
 		p.layouts32 = canonical.NewBuilder(false, canonical.Limits{MaxNodes: p.limits.MaxNodes, MaxDepth: p.limits.MaxDepth, MaxBytes: math.MaxUint64})
 	}
 	return p.layouts32
+}
+
+func (c *componentContext) canonicalLowerLayouts(memory64 bool) *canonical.Builder {
+	index := 0
+	if memory64 {
+		index = 1
+	}
+	if c.lowerLayouts[index] == nil {
+		p := c.result.scope.pool
+		c.lowerLayouts[index] = canonical.NewLoweringBuilder(memory64, canonical.Limits{MaxNodes: p.limits.MaxNodes, MaxDepth: p.limits.MaxDepth, MaxBytes: math.MaxUint64}, c.result.ResourceRepresentation)
+	}
+	return c.lowerLayouts[index]
 }
 
 // These operations have static plans only. Their task/handle/thread execution

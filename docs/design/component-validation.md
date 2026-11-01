@@ -9,9 +9,10 @@ instances, all five Core external sorts, aliases, imports/exports and synchronou
 canonical function/resource declarations. Component instances support instantiation
 and synthesized exports, binder-aware interface subtyping and export ascription.
 It shares Core import matching with the runtime. Value definitions, value imports/exports/equality bounds and start signatures
-are checked with linear consumption obligations. Most async canonical
-declarations still return unsupported. This is not a
-complete binary component validator or runtime.
+are checked with linear consumption obligations. Async declarations include
+task/waitable operations, lift/lower, futures/streams and error contexts. Optional
+component threading remains a separate profile. Runtime execution and full
+acceptance are tracked separately from static validation.
 
 Each lexical scope starts with empty component and Core type index spaces.
 Equality aliases preserve identity, while resource bounds introduce fresh
@@ -29,7 +30,8 @@ resource sorts, nonempty aggregate types, flag counts, label syntax/strong
 uniqueness, map keys, fixed-list lengths, Core representation/destructor
 signatures and transitive borrow restrictions. Function results and async
 elements cannot contain borrows. Every value type must occupy less than
-2^28 bytes under the memory64 Canonical ABI. Layouts for future/stream/error
+2^28 bytes under the worst-case Canonical ABI, including potentially i64 abstract
+resource borrows and memory64 pointers. Layouts for future/stream/error
 context handles and fixed lists/maps do not imply conversion or async support.
 
 Core type groups and external descriptors use the existing Core validator and

@@ -64,11 +64,15 @@ func TestFutureStreamGuestProtocol(t *testing.T) {
 				t.Fatal("unit stream", v, err)
 			}
 
-			zero := asyncInstance(t, backend, "async-stream-zero", Imports{})
-			zf, _ := zero.Function("zero")
 			for _, mode := range []uint64{0, 1, 2, 3} {
+				zero := asyncInstance(t, backend, "async-stream-zero", Imports{})
+				zf, _ := zero.Function("zero")
 				v, err := zf.Call(nil, []Value{{Bits: mode}}, CallOptions{})
-				if err != nil || v.Value == nil || v.Value.Bits != 0 {
+				if mode < 3 {
+					if !errors.Is(err, wasm.ErrTrap) {
+						t.Fatal("invalid typed zero-length pointer", mode, err)
+					}
+				} else if err != nil || v.Value == nil || v.Value.Bits != 0 {
 					t.Fatal("zero readiness", mode, v, err)
 				}
 			}

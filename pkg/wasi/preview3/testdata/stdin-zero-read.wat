@@ -21,7 +21,7 @@
   (import "env" "drop-future" (func $drop-future (param i32)))
   (func (export "run") (param $drop i32) (result i32) (local $s i32) (local $f i32) (local $sum i32) (local $status i32)
    i32.const 0 call $input i32.const 0 i32.load local.set $s i32.const 4 i32.load local.set $f
-   local.get $s i32.const -1 i32.const 0 call $read i32.const 15 i32.and i32.eqz if else unreachable end local.get $drop i32.eqz if
+   local.get $s i32.const 65536 i32.const 0 call $read i32.const 15 i32.and i32.eqz if else unreachable end local.get $drop i32.eqz if
     loop $next
      local.get $s i32.const 32 i32.const 1 call $read local.tee $status i32.const 4 i32.shr_u
      if local.get $sum i32.const 32 i32.load8_u i32.add local.set $sum end

@@ -21,9 +21,11 @@ Canonical lift/lower shares `internal/component/canonical` for scalars,
 strings, lists/fixed lists, maps, records/tuples, variants, flags/enums and option/results.
 Memory32/64, all three string encodings, direct/spilled arguments/results,
 realloc and post-return use checked memory capabilities. Resource new/rep/drop
-executes through the same Core session. Own/borrow call values now use opaque capabilities and scoped transfers. Async
-execution and local cm64 borrows remain required;
-literal or layout support does not establish those runtime capabilities.
+executes through the same Core session. Own/borrow call values use opaque
+capabilities and scoped transfers, including local i64 representations. Async
+calls, task/waitable transitions, futures/streams and host async I/O share the
+same executor. Later sections retain implementation and reference boundaries
+from individual increments; complete acceptance is tracked in the roadmap.
 
 ## Calls and lifetime
 
@@ -151,8 +153,10 @@ entry is exclusive: a suspended component cannot be reentered through a host
 callback. Cross-component calls and local Core destructors retain their intended
 paths. Pure host callbacks/destructors additionally share the host depth bound.
 
-The pinned MVP reference specifies u32 resources. Local cm64 borrow conversion
-is rejected before instantiation rather than truncating its representation.
+The pinned MVP layout reference specifies u32 resources. The separately pinned
+October 30 correction now supplies direction-aware local i64 borrows, including
+aggregate layouts, indirect calls and suspended/canceled tasks; see
+[the ABI contract](component-abi.md#direction-aware-cm64-borrows).
 Standalone resource values and component starts now share the ownership
 transaction, with separate authored value-extension fixtures described below.
 

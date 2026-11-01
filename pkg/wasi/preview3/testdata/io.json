@@ -1,7 +1,7 @@
 {
   "wasiVersion": "0.3.2",
   "producer": "wasm-tools 1.258.0",
-  "generatorSHA256": "102cc80ffe89db827498c66b9c3b8ab084a797fac259b4f542623870d7abd18b",
+  "generatorSHA256": "32bbd7a6decd5b7336e32cfc1028c1f115dc9da6173d34a2f94444604bd4daeb",
   "sha256": {
     "stdin": {
       "wat": "b5610fd9faafd1eecddb2ae56843b68d69c053c47f47e8e64e9785217a142fd1",
@@ -36,8 +36,8 @@
       "wasm": "7f31021e370f8e8947c22c96977b163a8fd465f015c2a24fa37550373da7b63c"
     },
     "stdin-zero-read": {
-      "wat": "b06aab2a1794ecc29fe020e2b10878de95b188a77ccc5240c169d8309d304de4",
-      "wasm": "4d0ab838ff44114b42c918dd6644b7d30011155fd232c198f060c646bd344f77"
+      "wat": "40fc52286a3241a0f4ff431743372106efed1a0f6fd9b7da1fdb437adc693986",
+      "wasm": "4713db22027c99225cd93b09ed13a310b58db642dcca501f5b2c9256e2b4eb39"
     },
     "stdout-wrong-future": {
       "wat": "606e890042811f7fc7468890eb3f7c43ec2f6d24cee7b3fd7ae23065e78ed648",

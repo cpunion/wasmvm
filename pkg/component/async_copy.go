@@ -29,7 +29,7 @@ func (in *Instance) guestBuffer(c *vm.Caller, n *namespace, p *validate.Canonica
 		return nil, wasm.ErrTrap
 	}
 	b := &guestBuffer{in: in, n: n, plan: p, typ: p.Type.Value.Element, ptr: ptr, length: uint32(length)}
-	if b.typ != nil && length > 0 {
+	if b.typ != nil {
 		codec := in.codec(c, n, p)
 		l, err := codec.Layouts.Build(b.typ)
 		if err != nil {

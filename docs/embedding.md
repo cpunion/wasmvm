@@ -335,3 +335,10 @@ service; `preview3.RunCommand` invokes a command. Close/join bound instances,
 then `world.Close()` and `world.WaitClosed(ctx)`. Later constructor failure
 closes/joins accepted IO sources; pre-IO validation failure leaves them untouched.
 World creation grants no ambient args, environment, filesystem or network.
+
+Guest-defined i64 resource representations also support local borrow calls.
+Pass the opaque Value returned by an own-resource result as the borrow argument;
+the runtime supplies the full i64 representation only to its defining component.
+Foreign components receive i32 handles, including with memory64. Borrowed resources
+remain live through suspension and cannot be moved/dropped until completion or
+cancellation cleanup. No additional host configuration is required.

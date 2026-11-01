@@ -1,0 +1,47 @@
+{
+  "componentModelCorrection": "fed10b0b823b82553dd8363f16a640816f5eac65",
+  "producer": "wasm-tools 1.258.0 parse",
+  "generatorSHA256": "017207d1792c08cb3baea2daf2d20fd61f547abfe48cb27fd8952a98efa9d4cb",
+  "specManifestSHA256": "981cd93e816e92dbed41a91ebdfbb152db04bf3659b30f1446cb9a1d1334501b",
+  "sourceSHA256": {
+    "ownership64-borrow.wat": "bf3b5a618472620584f6c5265f7f3b553ad9bcb50f3ac8b7e2221fbecbf8452d"
+  },
+  "fixtures": {
+    "cm64-borrow-local32": {
+      "wat": "b48a8a65fb8c1c5de6db6fcd45eab0c55fc197e70e769c8e77a3e4fafca3b55c",
+      "wasm": "cc42a260a0b9f4e72a6c7bcd26e65aeac8f1afae5fd40e786939d9b56da04314"
+    },
+    "cm64-borrow-composed32": {
+      "wat": "b89801b007427663c0b8474e1a10ead089146dd1813b011e74b5876dc3065f1f",
+      "wasm": "fe836ca32bf90a2ca8e9cd62a5bd00b9f61cae61b3b525e22c3f3bab2746e525"
+    },
+    "cm64-borrow-bad-align32": {
+      "wat": "f092e986fff90f6cdf8548da721a50e54987ff014b03ed0322a96d2b52287830",
+      "wasm": "5d578d054247b249ed25e2b5d9f78446503cf00c12b1cabe89be67fb2c2023c4"
+    },
+    "cm64-borrow-bad-range32": {
+      "wat": "625db137d496dbb768d2178a8461c32a8a3898f25de2f565c6502ae008f92a4a",
+      "wasm": "d59e80650431db19a2c9af8d14cba562abbb5a285ef5e893e1ecffc6f73da814"
+    },
+    "cm64-borrow-local64": {
+      "wat": "28afb5450106df4d1b24d2c1dc40d1ffa374f9b3d69680ad49c26229cd3ac355",
+      "wasm": "5fc50b8118737e83959f716c29bd23e030fbe66dfe0ad2ff04456599ac019ec3"
+    },
+    "cm64-borrow-composed64": {
+      "wat": "fc473e079d678fcae4f04bd69d42fc828e788adf9d5b2fc8fbd7d941e89a48c9",
+      "wasm": "b1d9f61025d50d6fcd35b360958317aa0c836d892cb46a8cfde505bba226962c"
+    },
+    "cm64-borrow-bad-align64": {
+      "wat": "6fe5500c72c20e1f7b5f3341f615ddd3dc1c637ee2d9083c6044d8e2d2522fff",
+      "wasm": "30d0a8c0359dbf7f763b7436cebffd82dd37b1379192fc55f328cd9c0802f9d1"
+    },
+    "cm64-borrow-bad-range64": {
+      "wat": "9340963a3d2b26081be1240678e626c52c03bba5d3b39884095d420cd0e9ab02",
+      "wasm": "f72e02966e0761d48d042bcb902c3f5745bd267aef5ccde175445aeacdccfb3c"
+    },
+    "cm64-borrow-direct": {
+      "wat": "b0dad48b2597c6742a8dfbf731131ab17beb54c398b8154741c7e5c420365212",
+      "wasm": "a0e13469c945c514e5988f55b83113b9356a8870afefda59fc742180be16a30c"
+    }
+  }
+}

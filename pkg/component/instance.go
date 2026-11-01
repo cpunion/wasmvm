@@ -222,21 +222,23 @@ type closure struct {
 }
 
 type namespace struct {
-	task         *callTask
-	taskOps      bool
-	parent       *namespace
-	plan         *validate.Component
-	resources    map[uint64]*resourceType
-	host         *namespace
-	handles      *canonical.Resources
-	items        map[model.Sort][]item
-	exports      map[string]item
-	failed       bool
-	blocked      bool
-	entered      bool
-	exclusive    *componentTask
-	backpressure uint32
-	waitingEnter uint32
+	lowerLayouts  [2]*canonical.Builder
+	wideResources bool
+	task          *callTask
+	taskOps       bool
+	parent        *namespace
+	plan          *validate.Component
+	resources     map[uint64]*resourceType
+	host          *namespace
+	handles       *canonical.Resources
+	items         map[model.Sort][]item
+	exports       map[string]item
+	failed        bool
+	blocked       bool
+	entered       bool
+	exclusive     *componentTask
+	backpressure  uint32
+	waitingEnter  uint32
 }
 
 func (n *namespace) at(index model.SortIndex) item {
@@ -245,10 +247,18 @@ func (n *namespace) at(index model.SortIndex) item {
 
 func (n *namespace) add(e item) {
 	if e.sort == model.TypeSort && e.resource != nil {
+		n.wideResources = n.wideResources || e.resource.owner == n && e.resource.representation == wasm.I64
 		t := n.plan.TypeAt(uint32(len(n.items[model.TypeSort])))
 		n.resources[t.Resource] = e.resource
 	}
 	n.items[e.sort] = append(n.items[e.sort], e)
+}
+
+func (n *namespace) borrowRepresentation(id uint64) wasm.ValueType {
+	if rt := n.resources[id]; rt != nil && rt.owner == n {
+		return rt.representation
+	}
+	return 0
 }
 
 func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.CallOptions) (*Instance, error) {

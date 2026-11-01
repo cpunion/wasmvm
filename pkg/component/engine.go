@@ -10,7 +10,6 @@ import (
 
 	"github.com/cpunion/wasmvm/internal/component/canonical"
 	"github.com/cpunion/wasmvm/internal/component/decode"
-	"github.com/cpunion/wasmvm/internal/component/model"
 	"github.com/cpunion/wasmvm/internal/component/validate"
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/pkg/vm"
@@ -164,92 +163,10 @@ func contextOrBackground(ctx context.Context) context.Context {
 }
 
 func preflight(p *validate.Component) error {
-	seen := map[*model.Type]bool{}
-	var value func(*model.Type) error
-	value = func(t *model.Type) error {
-		if t == nil || seen[t] {
-			return nil
-		}
-		seen[t] = true
-		if t.Kind == model.Borrow && p.ResourceRepresentation(t.ResourceID) == wasm.I64 {
-			return unsupported("cm64 defining-instance borrow conversion")
-		}
-		for _, fields := range [][]model.Field{t.Fields, t.Cases} {
-			for _, f := range fields {
-				if err := value(f.Type); err != nil {
-					return err
-				}
-			}
-		}
-		if err := value(t.Key); err != nil {
-			return err
-		}
-		return value(t.Element)
-	}
-	for _, start := range p.Starts {
-		for _, param := range start.Type.Parameters {
-			if err := value(param.Type); err != nil {
-				return err
-			}
-		}
-		if err := value(start.Type.Result); err != nil {
-			return err
-		}
-	}
 	for _, f := range p.Canonical {
 		op := f.Definition.Op
 		if op > 6 && (op < 9 || op > 0x1b) && (op < 0x1c || op > 0x25) && op != 0x2e && op != 0x2f {
 			return unsupported("resource or async canonical operation")
-		}
-		if f.Type == nil {
-			continue
-		}
-		for _, param := range f.Type.Parameters {
-			if err := value(param.Type); err != nil {
-				return err
-			}
-		}
-		if err := value(f.Type.Result); err != nil {
-			return err
-		}
-	}
-	interfaces := map[*validate.Type]bool{}
-	var external func(validate.Extern) error
-	external = func(e validate.Extern) error {
-		if interfaces[e.Type] {
-			return nil
-		}
-		interfaces[e.Type] = true
-		if e.Sort == model.FunctionSort {
-			for _, p := range e.Type.Parameters {
-				if err := value(p.Type); err != nil {
-					return err
-				}
-			}
-			return value(e.Type.Result)
-		}
-		if e.Sort == model.ValueSort {
-			return value(e.Type.Value)
-		}
-		if e.Sort == model.TypeSort && e.Type.Value != nil {
-			return value(e.Type.Value)
-		}
-		if e.Sort == model.InstanceSort || e.Sort == model.ComponentSort {
-			for _, group := range [][]validate.Extern{e.Type.Imports, e.Type.Exports} {
-				for _, child := range group {
-					if err := external(child); err != nil {
-						return err
-					}
-				}
-			}
-		}
-		return nil
-	}
-	for _, group := range [][]validate.Extern{p.Type.Imports, p.Type.Exports} {
-		for _, e := range group {
-			if err := external(e); err != nil {
-				return err
-			}
 		}
 	}
 	for _, child := range p.Children {

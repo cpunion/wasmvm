@@ -55,19 +55,28 @@ type traits struct {
 // values and layouts, so repeated aliases never expand shared value graphs.
 // A pool belongs to one component compilation and is not concurrent mutable.
 type TypePool struct {
-	limits     Limits
-	nodes      uint32
-	resources  uint64
-	values     map[*model.Type]traits
-	primitives map[model.Kind]*Type
-	layouts    *canonical.Builder
-	layouts32  *canonical.Builder
-	registry   module.TypeRegistry
+	limits          Limits
+	nodes           uint32
+	resources       uint64
+	values          map[*model.Type]traits
+	primitives      map[model.Kind]*Type
+	layouts         *canonical.Builder
+	layouts32       *canonical.Builder
+	worstLayouts    *canonical.Builder
+	representations map[uint64]wasm.ValueType
+	registry        module.TypeRegistry
 }
 
 func NewTypePool(limits Limits) *TypePool {
-	return &TypePool{limits: limits, values: map[*model.Type]traits{}, primitives: map[model.Kind]*Type{},
+	p := &TypePool{limits: limits, values: map[*model.Type]traits{}, primitives: map[model.Kind]*Type{}, representations: map[uint64]wasm.ValueType{},
 		layouts: canonical.NewBuilder(true, canonical.Limits{MaxNodes: limits.MaxNodes, MaxDepth: limits.MaxDepth, MaxBytes: math.MaxUint64})}
+	p.worstLayouts = canonical.NewLoweringBuilder(true, canonical.Limits{MaxNodes: limits.MaxNodes, MaxDepth: limits.MaxDepth, MaxBytes: math.MaxUint64}, func(id uint64) wasm.ValueType {
+		if p.representations[id] == wasm.I32 {
+			return wasm.I32
+		}
+		return wasm.I64
+	})
+	return p
 }
 
 // TypeScope is an ordered type index space. Component boundaries are distinct
@@ -248,6 +257,7 @@ func (s *TypeScope) Define(def *model.TypeDef, functions []module.FuncType) (*Ty
 			return nil, err
 		}
 		t.Representation = def.Representation
+		s.pool.representations[t.Resource] = def.Representation
 		t.definingScope = s
 		if def.Destructor != nil {
 			index := *def.Destructor
@@ -403,7 +413,7 @@ func (s *TypeScope) resolve(def *model.TypeDef) (*Type, error) {
 		return nil, limit("type nesting")
 	}
 	if v != nil {
-		layout, err := s.pool.layouts.Build(v)
+		layout, err := s.pool.worstLayouts.Build(v)
 		if err != nil {
 			return nil, err
 		}

@@ -22,6 +22,13 @@ LIMITATIONS = {'async/big-interleaving-test': 'stream.forward', 'async/forward':
                'values/post-return': 'stream.forward', 'validation/version-suffix': 'version-suffix'}
 ADDITIONAL_PRODUCER = 'wasm-tools 1.262.0 (e22db44da 2026-10-13)'
 PRODUCER_SHA = '4a5b127f48340fbd453708283d190f9b1dbbe5820571eae5cbae0a205a095a00'
+ZERO_BOUNDS_CORRECTION = '36b9b95824b7747d20b762623422439267036b22'
+
+
+def correct_zero_length(source):
+    # Preserve readiness assertions while adopting the October 30 pointer rule.
+    assert source.count('(i32.const 0xdeadbeef)') == 2
+    return source.replace('(i32.const 0xdeadbeef)', '(i32.const 0x10000)')
 
 
 def select_commands(directory, commands, producer='wasm-tools'):
@@ -73,11 +80,20 @@ def regenerate(source, destination, additional):
         extract(source, work, select)
         sources = sorted((work/'source').rglob('*.wast'))
         assert len(sources) == 75
-        scripts, resolved = {}, {}
+        scripts, resolved, corrections = {}, {}, {}
         for source_file in sources:
             name = source_file.relative_to(work/'source').with_suffix('').as_posix()
             if name.startswith(('validation/', 'binary/')) and name not in LIMITATIONS:
                 continue  # Complete grammar/type scripts already have a separate corpus.
+            if name == 'async/zero-length':
+                original = source_file
+                source_file = work/'corrected/async/zero-length.wast'
+                source_file.parent.mkdir(parents=True)
+                source_file.write_text(correct_zero_length(original.read_text()))
+                corrections[name] = {'revision': ZERO_BOUNDS_CORRECTION,
+                    'original': original.relative_to(work).as_posix(),
+                    'adapted': source_file.relative_to(work).as_posix(),
+                    'reason': 'Use the memory endpoint for two typed zero-length buffers; preserve every command and expected outcome.'}
             directory = work/'runtime'/name
             directory.mkdir(parents=True)
             result = subprocess.run(['wasm-tools', 'json-from-wast', source_file,
@@ -119,6 +135,7 @@ def regenerate(source, destination, additional):
             'archiveSHA256': hashlib.sha256(data).hexdigest(),
             'generatorSHA256': digest(Path(__file__)), 'sha256': hashes,
             'scripts': scripts, 'producerLimitations': {}, 'resolvedProducerLimitations': resolved,
+            'semanticCorrections': corrections,
             'additionalProducer': {'version': ADDITIONAL_PRODUCER, 'binarySHA256': PRODUCER_SHA,
                 'archiveSHA256': '801b237643cc0f4ab27ebd1745e7863e23bf194a038bc6ca8ce5618212e43669',
                 'url': 'https://github.com/bytecodealliance/wasm-tools/releases/download/v1.262.0/wasm-tools-1.262.0-aarch64-macos.tar.gz'},
@@ -143,6 +160,11 @@ def prepare(destination=None):
             assert member.isfile() and hashlib.sha256(archive.extractfile(member).read()).hexdigest() == expected[member.name]
         archive.extractall(destination, filter='data')
     assert inventory(destination) == expected
+    corrections = manifest['semanticCorrections']
+    assert set(corrections) == {'async/zero-length'}
+    correction = corrections['async/zero-length']
+    assert correction['revision'] == ZERO_BOUNDS_CORRECTION
+    assert (destination/correction['adapted']).read_text() == correct_zero_length((destination/correction['original']).read_text())
     selected = deferred = 0
     for name, row in manifest['scripts'].items():
         commands = json.loads((destination/'runtime'/name/'script.json').read_text())['commands']

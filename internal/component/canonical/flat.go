@@ -168,11 +168,15 @@ func (c *Codec) lowerFlat(t *model.Type, v Value, out []Slot, depth uint32) ([]S
 		if err != nil {
 			return nil, err
 		}
-		id, err := r.Lower(t, v)
+		bits, err := r.Lower(t, v)
 		if err != nil {
 			return nil, err
 		}
-		return append(out, Slot{Type: wasm.I32, Bits: uint64(id)}), nil
+		layout, err := c.Layouts.Build(t)
+		if err != nil {
+			return nil, err
+		}
+		return append(out, Slot{Type: layout.Flat[0], Bits: bits}), nil
 
 	case model.String, model.List, model.Map:
 		var ptr, n uint64

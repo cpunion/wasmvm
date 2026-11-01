@@ -26,11 +26,11 @@ func TestLoweredRollbackRetainsReusedGuestSlot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := n.handles.Take(typ, guestID); err != nil {
+	if _, err := n.handles.Take(typ, uint32(guestID)); err != nil {
 		t.Fatal(err)
 	}
 	replacement, err := n.handles.New(typ, 99)
-	if err != nil || replacement != guestID {
+	if err != nil || uint64(replacement) != guestID {
 		t.Fatal(replacement, err)
 	}
 	if err := codec.Finish(wasm.ErrTrap); !errors.Is(err, wasm.ErrTrap) {

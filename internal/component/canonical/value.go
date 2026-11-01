@@ -441,11 +441,11 @@ func (c *Codec) store(t *model.Type, at uint64, v Value, depth uint32) error {
 		if err != nil {
 			return err
 		}
-		id, err := r.Lower(t, v)
+		bits, err := r.Lower(t, v)
 		if err != nil {
 			return err
 		}
-		return c.storeInt(at, 4, uint64(id))
+		return c.storeInt(at, l.Size, bits)
 
 	case model.String:
 		return c.Transfer.StoreString(at, v.Text)

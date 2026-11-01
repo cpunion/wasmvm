@@ -214,7 +214,14 @@ func (in *Instance) codec(caller *vm.Caller, n *namespace, plan *validate.Canoni
 	if transfer.Memory64 {
 		index = 1
 	}
-	codec := &canonical.Codec{Transfer: transfer, Layouts: in.layouts[index], MaxValues: in.config.MaxValues}
+	layouts := in.layouts[index]
+	if plan != nil && plan.Definition.Op == 0 && n.wideResources {
+		if n.lowerLayouts[index] == nil {
+			n.lowerLayouts[index] = canonical.NewLoweringBuilder(transfer.Memory64, canonical.Limits{MaxNodes: in.config.Validate.MaxNodes, MaxDepth: in.config.MaxNesting, MaxBytes: in.config.MaxBytes}, n.borrowRepresentation)
+		}
+		layouts = n.lowerLayouts[index]
+	}
+	codec := &canonical.Codec{Transfer: transfer, Layouts: layouts, MaxValues: in.config.MaxValues}
 	if n != nil && (len(n.resources) != 0 || n.handles != nil) {
 		codec.Resources = &resourceCodec{in: in, n: n, core: caller}
 	}
