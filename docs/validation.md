@@ -4925,6 +4925,8 @@ reference limitation remains recorded. Final-head target CI, full WASI
 acceptance and deferred performance gates remain open. Local logs and the
 coverage profile are under `artifacts/components/component-forward-probe/cm64-*`.
 
+PR #81 merged after [final-head CI](https://github.com/cpunion/wasmvm/actions/runs/41270830198) passed all four Go/LLGo target jobs. All nine artifact digests and 180 execution reports are verified, with all 30 executable packages above 90% coverage. Final Linux canonical/validator/component coverage is 94.06%/91.95%/92.22%. No unresolved review threads remain.
+
 ## P2/P3 command CLI and shared initialization fuel
 
 `--wasi-preview 2|3` executes the standard command exports using the existing
