@@ -46,6 +46,7 @@ type CompiledFunction struct {
 	NativeHeap                    uint32
 	HeapCaches                    uint32
 	ForwardedHeap                 uint32
+	NativeBulk                    uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -153,11 +154,15 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	a := assembler{arch: arch, labels: map[int]int{}, bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true, compactBranches: arch == "arm64"}
 	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered, memoryMinimum: uint64(config.MemoryMinimumPages) * pageSize, memoryPageSizes: config.MemoryPageSizes}
 	e.x86Features = config.X86Features
+	e.nativeBulk = unmetered && config.MemoryCount == 1 && (len(config.SharedMemories) == 0 || !config.SharedMemories[0])
 	pcs := make([]int, len(f.Code))
 	for i := range pcs {
 		pcs[i] = a.label()
 	}
 	for _, in := range f.Code {
+		if e.bulkMemoryOpcode(in) {
+			e.usesMemory = true
+		}
 		if isMemoryAccess(in.Op) || in.Op == 0x3f || in.Op == 0x40 {
 			e.usesMemory = true
 			index := f.Sources[in.Source].Wasm.Memory
@@ -383,6 +388,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			}
 		case e.heapInstruction(in):
 			out.NativeHeap++
+		case e.bulkMemoryOpcode(in):
+			e.bulkMemory(in, uint32(pc))
+			out.NativeBulk++
 		case op == 0x40:
 			out.MemoryGrows++
 			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
