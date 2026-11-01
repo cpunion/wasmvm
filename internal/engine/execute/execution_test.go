@@ -18,7 +18,11 @@ import (
 
 func instance(t *testing.T, s *state.Store, m *module.Module, resolve state.Resolver) *state.Instance {
 	t.Helper()
-	v, err := validate.Check(m, validate.DefaultLimits())
+	return instanceWithFeatures(t, s, m, resolve, 0)
+}
+func instanceWithFeatures(t *testing.T, s *state.Store, m *module.Module, resolve state.Resolver, features wasm.Features) *state.Instance {
+	t.Helper()
+	v, err := validate.CheckWithFeatures(m, validate.DefaultLimits(), features)
 	if err != nil {
 		t.Fatal(err)
 	}

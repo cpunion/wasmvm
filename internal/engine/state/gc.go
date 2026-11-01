@@ -81,7 +81,7 @@ func (s *Store) gcSlow(ctx context.Context, in *Instance, ins *module.Instr, arg
 				ft = fs[0].Unpacked()
 			}
 			if ft.IsReference() {
-				s.temporary = append(s.temporary, ReferenceValue{ft, a})
+				s.temporary = appendValue(s.temporary, ReferenceValue{ft, a})
 			}
 		}
 		defer func() { clear(s.temporary[mark:]); s.temporary = s.temporary[:mark] }()

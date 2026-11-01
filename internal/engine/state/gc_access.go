@@ -20,7 +20,8 @@ func GCAccessArity(op uint32) int {
 }
 
 // GCAccess shares the typed heap and complete handle checks.
-// Separate them from allocating callbacks so both host compilers can keep
+// The instruction must have been validated and classified by GCAccessArity.
+// Separate access from allocating callbacks so both host compilers can keep
 // ordinary interpreter access free of closure construction and safepoints.
 func (s *Store) GCAccess(in *Instance, ins *module.Instr, a, b, c value.Value) (value.Value, error) {
 	op := ins.Op & 0xffff

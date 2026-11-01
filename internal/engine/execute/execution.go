@@ -59,6 +59,7 @@ type Execution struct {
 	values       []value.Value
 	result       []value.Value
 	tailArgs     []value.Value
+	gcArgs       []value.Value // Synchronous scratch; cleared after each checked operation.
 	pending      *HostCall
 	pendingDest  []slots.Slot
 	status       Status
@@ -159,6 +160,8 @@ func (e *Execution) fail(err error) Status {
 	e.pendingDest = nil
 	clear(e.tailArgs)
 	e.tailArgs = e.tailArgs[:0]
+	clear(e.gcArgs[:cap(e.gcArgs)])
+	e.gcArgs = e.gcArgs[:0]
 	return Failed
 }
 
@@ -319,13 +322,10 @@ frames:
 					}
 					result, err = e.store.GCAccess(instance, im, values[int(args[0])], b, c)
 				} else {
-					var local [5]value.Value
-					var operands []value.Value
-					if int(in.Count) <= len(local) {
-						operands = local[:in.Count]
-					} else {
-						operands = make([]value.Value, in.Count)
+					if int(in.Count) > cap(e.gcArgs) {
+						e.gcArgs = make([]value.Value, in.Count)
 					}
+					operands := e.gcArgs[:in.Count]
 					for i, slot := range code.Args[in.Extra : in.Extra+in.Count] {
 						operands[i] = values[int(slot)]
 					}
@@ -334,6 +334,8 @@ frames:
 					} else {
 						result, err = e.store.GC(e.context, instance, im, operands, e.RetainedValues)
 					}
+					clear(operands)
+					e.gcArgs = operands[:0]
 				}
 				if err != nil {
 					var t *wasm.Trap
