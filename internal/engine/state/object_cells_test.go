@@ -22,9 +22,9 @@ func TestObjectMetadataReusesGenerationsAcrossPagesAndRelocation(t *testing.T) {
 		}
 		t.Cleanup(s.Close)
 		m := &module.Module{Types: []module.FuncType{{}}, TypeDefs: []module.TypeDef{{Kind: module.ArrayKind, Fields: []module.FieldType{{Value: wasm.I32}}}}}
-		types, err := s.registry.InternModule(m, limits.MaxTypes)
-		if err != nil {
-			t.Fatal(err)
+		types, ok := s.registry.InternModule(m, limits.MaxTypes)
+		if !ok {
+			t.Fatal("type registry quota")
 		}
 		var handles []uint64
 		var objects []*heapObject
