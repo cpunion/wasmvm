@@ -26,7 +26,10 @@ type ReadResult struct {
 // Close runs once after EOF, failure, reader drop or instance close. It must
 // be nonblocking and must not enter or wait for the VM.
 type AsyncSource struct {
-	Read func(*Caller, uint32) (*ReadCompletion, error)
+	// Prompt permits an immediate readiness probe. Read must return promptly,
+	// and its Caller rejects guest reentry and blocking endpoint reads.
+	Prompt bool
+	Read   func(*Caller, uint32) (*ReadCompletion, error)
 	// Owned capabilities move on successful construction. ReadOwned receives
 	// their moved references; source closure reclaims them in the Store session.
 	Owned     []*Resource
@@ -60,15 +63,18 @@ func (r *ReadCompletion) Resolve(fn func(*Caller) (ReadResult, error)) error {
 		if err != nil {
 			return nil, err
 		}
-		r.result = value
-		if r.unit {
-			return &Value{Bits: uint64(value.Count)}, nil
-		}
-		if value.Values != nil && value.Bytes != "" {
-			return nil, vm.ErrType
-		}
-		return &Value{Elements: value.Values, Text: value.Bytes}, nil
+		return r.encode(value)
 	})
+}
+func (r *ReadCompletion) encode(value ReadResult) (*Value, error) {
+	r.result = value
+	if r.unit {
+		return &Value{Bits: uint64(value.Count)}, nil
+	}
+	if value.Values != nil && value.Bytes != "" {
+		return nil, vm.ErrType
+	}
+	return &Value{Elements: value.Values, Text: value.Bytes}, nil
 }
 func (r *ReadCompletion) Cancelled() error {
 	if r == nil || r.completion == nil {
@@ -297,7 +303,13 @@ func (in *Instance) startSourceRead(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 			if !unit && count != 0 {
 				output, err = b.store(current, *value)
 				if err != nil {
-					return err
+					if !r.rejectCopy(err) {
+						return err
+					}
+					r.sourceJob = nil
+					t.pendingCleanup = nil
+					complete = true
+					return nil
 				}
 			}
 			b.progress += uint32(count)
@@ -310,6 +322,14 @@ func (in *Instance) startSourceRead(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 		t.pendingCleanup = nil
 		complete = true
 		return nil
+	}
+	if w.source.source.Prompt {
+		t.host, err = f.hostCall(c, nil)
+		if err != nil {
+			return t.finish(c, err)
+		}
+		t.host.prompt = true
+		return t.resume(c)
 	}
 	return nil
 }

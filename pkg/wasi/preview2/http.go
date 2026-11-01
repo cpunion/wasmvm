@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cpunion/wasmvm/internal/wasi/host"
 	"github.com/cpunion/wasmvm/pkg/component"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -148,7 +149,7 @@ func NewHTTP(network *Network, config HTTPConfig) (*HTTP, error) {
 	}
 	ctx, cancel := context.WithCancel(network.ctx)
 	p := &HTTP{network: network, config: config, clock: clock, ctx: ctx, cancel: cancel, next: 1, entries: map[uint32]*httpEntry{}, bodies: map[*httpBody]bool{}, done: make(chan struct{})}
-	p.fields = httpFieldLimits{Count: config.MaxHeaderFields, Bytes: uint64(config.MaxHeaderBytes), Forbidden: map[string]bool{}}
+	p.fields = httpFieldLimits{Count: config.MaxHeaderFields, Bytes: uint64(config.MaxHeaderBytes), Forbidden: host.DefaultHTTPForbiddenHeaders()}
 	for _, name := range config.ForbiddenHeaders {
 		if !httpToken(name) {
 			cancel()

@@ -7,6 +7,7 @@ from pathlib import Path
 import tarfile
 
 from component_runtime_corpus import prepare as prepare_runtime
+from wasi_upstream_corpus import prepare as prepare_wasi_upstream
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -78,6 +79,7 @@ def prepare(destination=None):
           f"({binary} binary commands; {text} separate text-parser assertions), "
           "and 1,024 canonical layout cases")
     prepare_runtime()
+    prepare_wasi_upstream()
     return manifest
 
 

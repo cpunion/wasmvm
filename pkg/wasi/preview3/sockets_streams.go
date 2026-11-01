@@ -113,6 +113,11 @@ func (s *netStream) begin(ctx context.Context) error {
 	return nil
 }
 func (s *netStream) end() { s.socket.release(); s.owner.end() }
+
+// readImmediate is safe inside a readiness probe: sockets are nonblocking.
+func (s *netStream) readImmediate(ctx context.Context, data []byte) (int, error) {
+	return s.Read(ctx, data)
+}
 func (s *netStream) Read(ctx context.Context, data []byte) (int, error) {
 	if err := s.begin(ctx); err != nil {
 		return 0, err
@@ -278,7 +283,11 @@ func (p *Sockets) listen(c *component.Caller, s *netSocket) (*component.Value, e
 		}
 	}
 	if err == nil {
-		err = unix.Listen(s.fd, 128)
+		backlog := s.backlog
+		if backlog == 0 {
+			backlog = 128
+		}
+		err = unix.Listen(s.fd, backlog)
 	}
 	if err == nil {
 		s.state = 4

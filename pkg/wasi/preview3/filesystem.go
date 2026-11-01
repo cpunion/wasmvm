@@ -428,7 +428,7 @@ func (d fileDescriptor) directory(mutate bool) (*host.Directory, error) {
 		return nil, fileError("not-directory")
 	}
 	if mutate && d.flags&fsMutate == 0 {
-		return nil, fileError("read-only")
+		return nil, fileError("not-permitted")
 	}
 	return d.object.directory, nil
 }

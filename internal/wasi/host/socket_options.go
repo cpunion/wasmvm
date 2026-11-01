@@ -3,10 +3,20 @@
 package host
 
 import (
+	"runtime"
 	"strings"
 
 	"golang.org/x/sys/unix"
 )
+
+// ConfigureIPv6Socket fixes the resource's initial hop limit instead of exposing
+// the kernel's negative "inherit the route default" sentinel as a WASI u8.
+func ConfigureIPv6Socket(fd int) error {
+	if err := unix.SetsockoptInt(fd, unix.IPPROTO_IPV6, unix.IPV6_V6ONLY, 1); err != nil {
+		return err
+	}
+	return unix.SetsockoptInt(fd, unix.IPPROTO_IPV6, unix.IPV6_UNICAST_HOPS, 64)
+}
 
 func SocketOption(fd int, family uint32, name string, value uint64) (uint64, error) {
 	set := strings.HasPrefix(name, "set-")
@@ -59,6 +69,11 @@ func SocketOption(fd int, family uint32, name string, value uint64) (uint64, err
 		if result != 0 {
 			result = 1
 		}
+	}
+	// Linux includes its bookkeeping allowance in SO_RCVBUF/SO_SNDBUF;
+	// WASI reports the usable size in the same units as its setter.
+	if runtime.GOOS == "linux" && (option == unix.SO_RCVBUF || option == unix.SO_SNDBUF) {
+		result /= 2
 	}
 	return uint64(result) * multiplier, nil
 }

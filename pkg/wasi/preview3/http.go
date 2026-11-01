@@ -109,7 +109,7 @@ func NewHTTP(network *Sockets, config HTTPConfig) (*HTTP, error) {
 	}
 	ctx, cancel := context.WithCancel(network.ctx)
 	p := &HTTP{network: network, config: config, ctx: ctx, cancel: cancel, done: make(chan struct{}), next: 1, types: map[string]*component.HostResourceType{}, entries: map[uint32]*httpEntry{}, bodies: map[*httpBody]struct{}{}, cleanup: make(chan func(), config.MaxMessages+1), cleanupDone: make(chan struct{}), transports: map[httpTimeouts]*http.Transport{}}
-	p.fields = host.HTTPFieldLimits{Count: config.MaxHeaderFields, Bytes: uint64(config.MaxHeaderBytes), Forbidden: map[string]bool{}}
+	p.fields = host.HTTPFieldLimits{Count: config.MaxHeaderFields, Bytes: uint64(config.MaxHeaderBytes), Forbidden: host.DefaultHTTPForbiddenHeaders()}
 	for _, name := range config.ForbiddenHeaders {
 		if !host.HTTPToken(name) {
 			cancel()

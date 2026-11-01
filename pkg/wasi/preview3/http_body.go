@@ -420,21 +420,19 @@ func (b *httpBody) byteSource(c *component.Caller, t component.ValueType) (compo
 	if original != nil {
 		source.Owned = []*component.Resource{original}
 		source.ReadOwned = func(c *component.Caller, refs []*component.Resource, limit uint32) (*component.ReadCompletion, error) {
-			r, err := c.ReadAsyncContext(b.ctx, refs[0], limit)
-			completion := component.NewReadCompletion()
-			if err != nil {
-				if c.Context().Err() != nil {
-					completion.Cancelled()
-					return completion, nil
+			return c.AwaitSourceRead(b.ctx, refs[0], limit, func(c *component.Caller, r component.ReadResult, err error) (component.ReadResult, error) {
+				if err != nil {
+					if c.Context().Err() != nil {
+						return component.ReadResult{}, err
+					}
+					b.end(httpErr("connection-terminated"))
+					r = component.ReadResult{Closed: true}
 				}
-				b.end(httpErr("connection-terminated"))
-				r = component.ReadResult{Closed: true}
-			}
-			if r.Closed {
-				b.end(nil)
-			}
-			completion.Resolve(func(*component.Caller) (component.ReadResult, error) { return r, nil })
-			return completion, nil
+				if r.Closed {
+					b.end(nil)
+				}
+				return r, nil
+			})
 		}
 	} else {
 		source.Read = func(c *component.Caller, limit uint32) (*component.ReadCompletion, error) {
@@ -643,7 +641,7 @@ func (b *httpBody) readExternal(data []byte) (n int, err error) {
 			b.received += uint64(n)
 		}
 		if b.expected != nil && (b.received > *b.expected || err == io.EOF && b.received != *b.expected) {
-			err = httpErr(b.sizeFailure)
+			err = httpSizeError(b.sizeFailure, b.received)
 		}
 		if n == 0 && err == nil {
 			err = io.ErrNoProgress

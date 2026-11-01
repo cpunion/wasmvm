@@ -1,6 +1,7 @@
 package component
 
 import (
+	"errors"
 	"github.com/cpunion/wasmvm/internal/component/canonical"
 	"github.com/cpunion/wasmvm/internal/component/model"
 	"github.com/cpunion/wasmvm/internal/component/validate"
@@ -209,6 +210,13 @@ func (e *asyncEnd) copy(c *vm.Caller, b *guestBuffer) error {
 			src, dst = ob, b
 		}
 		if err := copyGuestBuffers(c, src, dst, count); err != nil {
+			reader := e
+			if !reader.read {
+				reader = other
+			}
+			if reader.rejectCopy(err) {
+				return nil
+			}
 			return err
 		}
 		e.notify(b.progress)
@@ -232,4 +240,14 @@ func (e *asyncEnd) table() *canonical.Resources {
 		return e.in.hostResources
 	}
 	return e.n.handles
+}
+
+func (e *asyncEnd) rejectCopy(err error) bool {
+	var rejected *bufferRejection
+	if !errors.As(err, &rejected) {
+		return false
+	}
+	e.detach()
+	e.notify(0)
+	return true
 }

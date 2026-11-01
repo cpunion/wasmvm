@@ -89,6 +89,31 @@ func TestComponentCommandStdin(t *testing.T) {
 	}
 }
 
+func TestComponentMixedPreviewImports(t *testing.T) {
+	root := os.Getenv("WASMVM_WASI_UPSTREAM_CORPUS")
+	if root == "" {
+		root = "../../artifacts/components/wasi-upstream"
+	}
+	input := filepath.Join(t.TempDir(), "input")
+	if err := os.WriteFile(input, []byte("hello!"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, backend := range []string{"interpreter", "native"} {
+		for _, fixture := range []struct{ name, output string }{
+			{"p3_cli_hello_stdout", "hello, world\n"},
+			{"p3_cli_hello_stdout_post_return", "hello, world\nhello again, after return\n"},
+			{"p3_cli_read_stdin", ""}, {"p3_cli_stdout_flush", "READY"},
+		} {
+			// Rust's wasip2 standard library imports P2 alongside native P3
+			// bindings and exports both entry points. Select the P3 entry.
+			code, out, diag := invoke(t, nil, "run", "--wasi-preview", "3", "--backend", backend, "--fuel", "100000000", "--stdin", input, filepath.Join(root, "components", fixture.name+".wasm"))
+			if code != 0 || out != fixture.output || diag != "" {
+				t.Fatal(backend, fixture.name, code, out, diag)
+			}
+		}
+	}
+}
+
 func TestComponentCommandInvalidConfiguration(t *testing.T) {
 	path := "testdata/component-init-p3.wasm"
 	for _, args := range [][]string{

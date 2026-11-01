@@ -18,6 +18,7 @@ type hostCall struct {
 	cancel        context.CancelFunc
 	completion    *HostCompletion
 	closed        bool
+	prompt        bool
 	values, bytes uint64
 }
 
@@ -50,7 +51,7 @@ func (f *Function) hostCall(core *vm.Caller, args []Value) (h *hostCall, err err
 	return h, nil
 }
 func (h *hostCall) caller(core *vm.Caller) *Caller {
-	return &Caller{callerState: &callerState{active: true, core: core, instance: h.function.instance, function: h.function}}
+	return &Caller{callerState: &callerState{active: true, prompt: h.prompt, core: core, instance: h.function.instance, function: h.function}}
 }
 func (h *hostCall) expire(c *Caller) {
 	c.mu.Lock()

@@ -70,10 +70,29 @@ func (p *Sockets) execute(ctx context.Context, s *netSocket, name string, args [
 	if name == "get-address-family" {
 		return &component.Value{Bits: uint64(s.family)}, nil
 	}
+	if name == "get-is-listening" {
+		value := &component.Value{}
+		if s.state == 4 {
+			value.Bits = 1
+		}
+		return value, nil
+	}
 	if s.state == 5 || s.state == 2 {
 		return nil, netError("invalid-state")
 	}
 	switch name {
+	case "set-listen-backlog-size":
+		if args[1].Bits == 0 {
+			return nil, netError("invalid-argument")
+		}
+		backlog := int(min(args[1].Bits, uint64(1<<31-1)))
+		if s.state == 4 {
+			if err := unix.Listen(s.fd, backlog); err != nil {
+				return nil, err
+			}
+		}
+		s.backlog = backlog
+		return nil, nil
 	case "get-local-address", "get-remote-address":
 		if s.state == 0 || name == "get-remote-address" && s.state != 3 {
 			return nil, netError("invalid-state")

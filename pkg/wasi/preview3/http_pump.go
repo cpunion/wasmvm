@@ -103,62 +103,80 @@ func (b *httpBody) pump(c *component.Caller, trailer http.Header, expected *uint
 	}
 	return pump, nil
 }
+func (p *httpPump) fail(err error) {
+	if err == nil {
+		err = httpErr("connection-terminated")
+	}
+	p.finished = true
+	p.body.dispose(nil, err)
+	p.writer.CloseWithError(err)
+}
 func (p *httpPump) schedule(c *component.Caller, refs []*component.Resource, hasBody bool, cleanup func()) error {
 	var next []*component.Resource
-	var eof bool
+	var batch component.ReadResult
 	var failure error
 	transferred := false
 	return c.Schedule(component.AsyncWork{Owned: refs, Start: func(c *component.Caller, owned []*component.Resource) (*component.HostCompletion, error) {
 		next = owned
-		var batch component.ReadResult
-		var err error
-		if hasBody {
-			limit := min(p.body.owner.network.io.config.MaxWriteBytes, p.body.owner.config.BodyBufferBytes)
-			batch, err = c.ReadAsyncContext(p.body.ctx, owned[0], limit)
-		} else {
+		if !hasBody {
 			batch.Closed = true
-		}
-		completion := component.NewHostCompletion()
-		completeFailure := func(err error) (*component.HostCompletion, error) {
-			failure = err
-			p.body.dispose(nil, err)
-			p.writer.CloseWithError(err)
-			if c.Context().Err() != nil {
-				completion.Cancelled()
-			} else {
-				completion.Resolve(func(*component.Caller) (*component.Value, error) { return nil, nil })
-			}
+			completion := component.NewHostCompletion()
+			completion.Resolve(func(*component.Caller) (*component.Value, error) { return nil, nil })
 			return completion, nil
 		}
-		if err != nil {
-			return completeFailure(httpTransportError(err, "connection-terminated"))
+		limit := min(p.body.owner.network.io.config.MaxWriteBytes, p.body.owner.config.BodyBufferBytes)
+		return c.AwaitReadChecked(p.body.ctx, owned[0], limit, func(batch component.ReadResult) error {
+			if uint64(len(batch.Bytes)) > ^uint64(0)-p.written {
+				return httpErr(p.body.sizeFailure)
+			}
+			size := p.written + uint64(len(batch.Bytes))
+			if p.expected != nil && size > *p.expected {
+				return httpSizeError(p.body.sizeFailure, size)
+			}
+			return nil
+		}, func(_ *component.Caller, result component.ReadResult, err error) (*component.Value, error) {
+			batch, failure = result, err
+			return nil, nil
+		})
+	}, Done: func(c *component.Caller, cancelled bool) error {
+		if cancelled || failure != nil {
+			p.fail(httpTransportError(failure, "connection-terminated"))
+			return nil
 		}
 		if uint64(len(batch.Bytes)) > ^uint64(0)-p.written {
-			return completeFailure(httpErr(p.body.sizeFailure))
+			p.fail(httpErr(p.body.sizeFailure))
+			return nil
 		}
 		p.written += uint64(len(batch.Bytes))
 		if p.expected != nil && (p.written > *p.expected || batch.Closed && p.written != *p.expected) {
-			return completeFailure(httpErr(p.body.sizeFailure))
+			p.fail(httpSizeError(p.body.sizeFailure, p.written))
+			return nil
 		}
-		eof = batch.Closed
-		if eof {
-			p.body.end(nil)
-			if err := p.body.waitTrailers(c); err != nil {
-				return completeFailure(err)
-			}
-			p.body.mu.Lock()
-			p.fields = p.body.trailersValue
-			err = p.body.failure
-			p.body.mu.Unlock()
-			if err != nil {
-				return completeFailure(err)
-			}
+		if err := p.scheduleWrite(c, next, hasBody, batch, cleanup); err != nil {
+			return err
 		}
+		transferred = true
+		return nil
+	}, Cleanup: func() {
+		if !transferred {
+			cleanup()
+		}
+	}})
+}
+func (p *httpPump) scheduleWrite(c *component.Caller, refs []*component.Resource, hasBody bool, batch component.ReadResult, cleanup func()) error {
+	var next []*component.Resource
+	var failure error
+	transferred := false
+	return c.Schedule(component.AsyncWork{Owned: refs, Start: func(c *component.Caller, owned []*component.Resource) (*component.HostCompletion, error) {
+		next = owned
+		completion := component.NewHostCompletion()
 		ctx := c.Context()
 		if err := p.body.owner.worker(func() {
 			defer func() {
 				if recover() != nil {
 					failure = httpErr("internal-error")
+				}
+				if failure != nil {
 					p.writer.CloseWithError(failure)
 					p.body.dispose(nil, failure)
 				}
@@ -171,21 +189,40 @@ func (p *httpPump) schedule(c *component.Caller, refs []*component.Resource, has
 			if len(batch.Bytes) != 0 {
 				_, failure = p.writer.Write([]byte(batch.Bytes))
 			}
-			if failure == nil && eof {
-				failure = p.writer.Close()
+			if failure == nil && batch.Closed {
+				p.body.end(nil)
+				p.body.mu.Lock()
+				done := p.body.trailerDone
+				p.body.mu.Unlock()
+				if done != nil {
+					select {
+					case <-done:
+					case <-p.body.ctx.Done():
+						failure = p.body.ctx.Err()
+					case <-ctx.Done():
+						failure = ctx.Err()
+					}
+				}
+				p.body.mu.Lock()
+				p.fields = p.body.trailersValue
+				if failure == nil {
+					failure = p.body.failure
+				}
+				p.body.mu.Unlock()
+				if failure == nil {
+					failure = p.writer.Close()
+				}
 			}
 		}); err != nil {
-			return completeFailure(err)
+			return nil, err
 		}
 		return completion, nil
 	}, Done: func(c *component.Caller, cancelled bool) error {
 		if cancelled || failure != nil {
-			p.finished = true
-			p.body.dispose(nil, httpErr("connection-terminated"))
-			p.writer.CloseWithError(httpErr("connection-terminated"))
+			p.fail(httpErr("connection-terminated"))
 			return nil
 		}
-		if eof {
+		if batch.Closed {
 			p.finished = true
 			return nil
 		}
@@ -221,7 +258,7 @@ func (p *httpExternalPump) Read(data []byte) (int, error) {
 		p.seen += uint64(n)
 	}
 	if p.expected != nil && (p.seen > *p.expected || err == io.EOF && p.seen != *p.expected) {
-		err = httpErr(p.body.sizeFailure)
+		err = httpSizeError(p.body.sizeFailure, p.seen)
 	}
 	if err == io.EOF {
 		p.body.mu.Lock()

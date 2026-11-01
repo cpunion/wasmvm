@@ -70,6 +70,7 @@ type Caller struct{ *callerState }
 type callerState struct {
 	mu       sync.Mutex
 	active   bool
+	prompt   bool
 	core     *vm.Caller
 	instance *Instance
 	function *Function
@@ -117,6 +118,9 @@ func (c *Caller) Call(f *Function, args []Value) (*Value, error) {
 		return nil, err
 	}
 	defer c.mu.Unlock()
+	if c.prompt {
+		return nil, vm.ErrType
+	}
 	return f.call(c.core, args)
 }
 

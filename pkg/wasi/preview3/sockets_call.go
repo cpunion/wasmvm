@@ -64,7 +64,7 @@ func (p *Sockets) syncMethod(key string) component.HostFunction {
 			return p.tcpStream(c, s, name, args)
 		}
 		value, err := p.execute(c.Context(), s, name, args)
-		if name == "get-address-family" {
+		if name == "get-address-family" || name == "get-is-listening" {
 			return value, err
 		}
 		return netResult(value, err), nil
@@ -163,12 +163,16 @@ func (p *Sockets) lookup(c *component.Caller, args []component.Value) (*componen
 			err = netError("invalid-argument")
 			return
 		}
-		if ip, failed := netip.ParseAddr(name); failed == nil {
+		literal := name
+		if strings.HasPrefix(literal, "[") && strings.HasSuffix(literal, "]") {
+			literal = literal[1 : len(literal)-1]
+		}
+		if ip, failed := netip.ParseAddr(literal); failed == nil {
 			if ip.Zone() != "" {
 				err = netError("invalid-argument")
 				return
 			}
-			addresses = []netip.Addr{ip.Unmap()}
+			addresses = []netip.Addr{ip}
 			return
 		}
 		if !p.config.AllowNameLookup {

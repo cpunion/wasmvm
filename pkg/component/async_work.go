@@ -66,6 +66,9 @@ func (s *Cancellation) release() { s.mu.Lock(); s.cancel = nil; s.wake = nil; s.
 // Owned capabilities move at scheduling and are discarded when work finishes
 // unless Start/Done moved or dropped them. Borrowed capabilities are rejected.
 type AsyncWork struct {
+	// Prompt starts without waiting for a guest yield. Start and Done must return
+	// promptly; their Callers reject guest reentry and blocking endpoint reads.
+	Prompt bool
 	Owned  []*Resource
 	Start  func(*Caller, []*Resource) (*HostCompletion, error)
 	Done   func(*Caller, bool) error
@@ -75,6 +78,7 @@ type AsyncWork struct {
 	Cleanup func()
 }
 type workState struct {
+	prompt        bool
 	control       *Cancellation
 	refs          []*Resource
 	values, bytes uint64
@@ -112,6 +116,9 @@ func (c *Caller) Schedule(work AsyncWork) error {
 	}
 	defer c.mu.Unlock()
 	in := c.instance
+	if err := in.drainPromptWork(c.core); err != nil {
+		return err
+	}
 	if work.Start == nil {
 		return vm.ErrType
 	}
@@ -137,7 +144,7 @@ func (c *Caller) Schedule(work AsyncWork) error {
 	if err != nil {
 		return err
 	}
-	state := &workState{control: work.Cancel}
+	state := &workState{control: work.Cancel, prompt: work.Prompt}
 	if state.control == nil {
 		state.control = NewCancellation()
 	}
@@ -163,6 +170,7 @@ func (c *Caller) Schedule(work AsyncWork) error {
 		t.finish(c.core, err)
 		return err
 	}
+	t.host.prompt = work.Prompt
 	f.asyncHost = func(caller *Caller, _ []Value) (*HostCompletion, error) {
 		return work.Start(caller, append([]*Resource(nil), state.refs...))
 	}
@@ -174,6 +182,36 @@ func (c *Caller) Schedule(work AsyncWork) error {
 		return err
 	}
 	state.cleanup = work.Cleanup
+	if work.Prompt {
+		return t.resume(c.core)
+	}
+	return nil
+}
+
+// Retire ready prompt host work before admitting more work. The bounded sweep
+// never starts ordinary deferred work, waits for I/O, or resumes a guest task.
+func (in *Instance) drainPromptWork(c *vm.Caller) error {
+	if in.drainingPrompt || in.tasks == nil {
+		return nil
+	}
+	in.drainingPrompt = true
+	defer func() { in.drainingPrompt = false }()
+	limit := in.tasks.live
+	for range limit {
+		var ready *componentTask
+		for t := in.tasks.head; t != nil; t = t.next {
+			if t.work != nil && t.work.prompt && t.started && t.ready() {
+				ready = t
+				break
+			}
+		}
+		if ready == nil {
+			break
+		}
+		if err := ready.resume(c); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 func (t *componentTask) syncCancellation() {

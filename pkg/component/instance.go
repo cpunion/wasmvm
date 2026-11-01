@@ -45,6 +45,7 @@ type Instance struct {
 	sources               map[*sourceState]struct{}
 	sourceCleanup         *sourceState
 	drainingSources       bool
+	drainingPrompt        bool
 	taskWake              chan struct{}
 	store                 *vm.Store
 	config                Config

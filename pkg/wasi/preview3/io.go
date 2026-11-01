@@ -288,7 +288,12 @@ func (op *ioOperation) nextControl() *component.Cancellation {
 	}
 	return c
 }
-func waitReady(ctx context.Context, source preview2.PollSource) error {
+func waitReady(ctx context.Context, source preview2.PollSource) (err error) {
+	defer func() {
+		if recover() != nil {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
 	ready, changed := source.Readiness()
 	if ready {
 		return ctx.Err()
@@ -332,64 +337,78 @@ func (p *IO) inputWithOperation(c *component.Caller, op *ioOperation, source Inp
 			op.finish(1)
 		}
 	}()
-	stream, err := c.NewSource(streamType, component.AsyncSource{Close: func() { op.stop(); op.finish(0) }, Read: func(c *component.Caller, limit uint32) (*component.ReadCompletion, error) {
+	_, prompt := source.(interface {
+		readImmediate(context.Context, []byte) (int, error)
+	})
+	stream, err := c.NewSource(streamType, component.AsyncSource{Prompt: prompt, Close: func() { op.stop(); op.finish(0) }, Read: func(c *component.Caller, limit uint32) (*component.ReadCompletion, error) {
 		completion := component.NewReadCompletion()
 		callCtx := c.Context()
 		ctx, cancel := context.WithCancel(callCtx)
 		stop := context.AfterFunc(op.ctx, cancel)
-		if err := p.worker(func() {
-			defer cancel()
-			defer stop()
-			var data []byte
-			var readErr error
+		read := func() (data []byte, err error) {
 			defer func() {
 				if recover() != nil {
-					readErr = io.ErrUnexpectedEOF
 					data = nil
+					err = io.ErrUnexpectedEOF
 				}
-				if callCtx.Err() != nil && len(data) == 0 && (readErr == nil || errors.Is(readErr, context.Canceled) || errors.Is(readErr, context.DeadlineExceeded)) {
-					completion.Cancelled()
-					return
-				}
-				closed := readErr != nil
-				if closed {
-					op.finish(op.code(readErr))
-				}
-				result := component.ReadResult{Bytes: string(data), Closed: closed}
-				completion.Resolve(func(*component.Caller) (component.ReadResult, error) { return result, nil })
 			}()
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
 			if limit == 0 {
-				return
+				ready, _ := source.Readiness()
+				if !ready {
+					return nil, ErrWouldBlock
+				}
+				return nil, nil
 			}
 			buf := make([]byte, min(limit, p.config.MaxReadBytes))
-			for {
-				if readErr = ctx.Err(); readErr != nil {
-					return
-				}
-				n, failed := source.Read(ctx, buf)
-				if n < 0 || n > len(buf) {
-					readErr = io.ErrNoProgress
-					return
-				}
-				if n > 0 {
-					data = buf[:n]
-					readErr = failed
-					if errors.Is(failed, ErrWouldBlock) {
-						readErr = nil
-					}
-					return
-				}
-				if errors.Is(failed, ErrWouldBlock) {
-					if readErr = waitReady(ctx, source); readErr == nil {
-						continue
-					}
-					return
-				}
-				if failed == nil {
-					failed = io.ErrNoProgress
-				}
-				readErr = failed
+			n, err := source.Read(ctx, buf)
+			if n < 0 || n > len(buf) {
+				return nil, io.ErrNoProgress
+			}
+			if n == 0 && err == nil {
+				err = io.ErrNoProgress
+			}
+			if n > 0 && errors.Is(err, ErrWouldBlock) {
+				err = nil
+			}
+			return buf[:n], err
+		}
+		resolve := func(data []byte, err error) {
+			defer cancel()
+			defer stop()
+			if callCtx.Err() != nil && len(data) == 0 && (err == nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)) {
+				completion.Cancelled()
 				return
+			}
+			closed := err != nil
+			if closed {
+				op.finish(op.code(err))
+			}
+			result := component.ReadResult{Bytes: string(data), Closed: closed}
+			completion.Resolve(func(*component.Caller) (component.ReadResult, error) { return result, nil })
+		}
+		var data []byte
+		readErr := ErrWouldBlock
+		if prompt {
+			data, readErr = read()
+		}
+		if len(data) != 0 || !errors.Is(readErr, ErrWouldBlock) {
+			resolve(data, readErr)
+			return completion, nil
+		}
+		if err := p.worker(func() {
+			for {
+				data, err := read()
+				if len(data) != 0 || !errors.Is(err, ErrWouldBlock) {
+					resolve(data, err)
+					return
+				}
+				if err := waitReady(ctx, source); err != nil {
+					resolve(nil, err)
+					return
+				}
 			}
 		}); err != nil {
 			stop()
@@ -457,27 +476,56 @@ func (p *IO) write(ctx context.Context, source OutputSource, data []byte, flush 
 	}
 	return nil
 }
+
+// Reads and external writes use separate scheduler turns. A pending read must
+// not retain a host callback stack while a sibling stream needs to make progress.
 func (op *ioOperation) schedule(c *component.Caller, ref *component.Resource, source OutputSource) error {
-	var eof bool
+	var batch component.ReadResult
+	var failure error
+	var owned *component.Resource
+	return c.Schedule(component.AsyncWork{Prompt: true, Owned: []*component.Resource{ref}, Cancel: op.nextControl(), Start: func(c *component.Caller, refs []*component.Resource) (*component.HostCompletion, error) {
+		owned = refs[0]
+		return c.AwaitRead(op.ctx, owned, op.owner.config.MaxWriteBytes, func(_ *component.Caller, result component.ReadResult, err error) (*component.Value, error) {
+			batch, failure = result, err
+			return nil, nil
+		})
+	}, Done: func(c *component.Caller, cancelled bool) error {
+		if cancelled || op.ctx.Err() != nil {
+			op.finish(0)
+			return nil
+		}
+		if failure != nil {
+			op.finish(op.code(failure))
+			return nil
+		}
+		if batch.Closed {
+			if err := c.DropAsync(owned); err != nil {
+				return err
+			}
+			owned = nil
+		}
+		if err := op.scheduleWrite(c, owned, source, batch); err != nil {
+			op.finish(op.code(err))
+			return err
+		}
+		return nil
+	}})
+}
+func (op *ioOperation) scheduleWrite(c *component.Caller, ref *component.Resource, source OutputSource, batch component.ReadResult) error {
 	var owned *component.Resource
 	var failure error
-	return c.Schedule(component.AsyncWork{Owned: []*component.Resource{ref}, Cancel: op.nextControl(), Start: func(c *component.Caller, refs []*component.Resource) (*component.HostCompletion, error) {
-		owned = refs[0]
-		batch, err := c.ReadAsync(owned, op.owner.config.MaxWriteBytes)
-		if err != nil {
-			op.finish(op.code(err))
-			if c.Context().Err() != nil {
-				p := component.NewHostCompletion()
-				p.Cancelled()
-				return p, nil
-			}
-			return nil, err
+	var refs []*component.Resource
+	if ref != nil {
+		refs = []*component.Resource{ref}
+	}
+	return c.Schedule(component.AsyncWork{Owned: refs, Cancel: op.nextControl(), Start: func(c *component.Caller, refs []*component.Resource) (*component.HostCompletion, error) {
+		if len(refs) != 0 {
+			owned = refs[0]
 		}
-		eof = batch.Closed
 		pending := component.NewHostCompletion()
 		ctx := c.Context()
 		if err := op.owner.worker(func() {
-			failure = op.owner.write(ctx, source, []byte(batch.Bytes), eof)
+			failure = op.owner.write(ctx, source, []byte(batch.Bytes), batch.Closed)
 			if ctx.Err() != nil {
 				pending.Cancelled()
 			} else {
@@ -493,7 +541,7 @@ func (op *ioOperation) schedule(c *component.Caller, ref *component.Resource, so
 			op.finish(0)
 			return nil
 		}
-		if eof || failure != nil {
+		if batch.Closed || failure != nil {
 			op.finish(op.code(failure))
 			return nil
 		}
@@ -519,7 +567,7 @@ func (p *IO) outputWithOperation(c *component.Caller, args []component.Value, so
 			op.finish(1)
 		}
 	}()
-	future, err := c.NewSource(c.FunctionInfo().Result(), op.cell.source(p, func() { op.stop(); op.finish(0) }))
+	future, err := c.NewSource(c.FunctionInfo().Result(), op.cell.source(p, nil))
 	if err != nil {
 		return nil, err
 	}
