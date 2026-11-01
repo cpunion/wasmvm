@@ -100,6 +100,7 @@ func (p *HTTP) CallIncoming(ctx context.Context, in *component.Instance, request
 	}
 	body.mu.Lock()
 	body.reader = reader
+	body.networkStop = context.AfterFunc(callCtx, func() { body.dispose(nil, callCtx.Err()) })
 	body.readTimeout = p.config.Timeout
 	body.sizeFailure = "HTTP-request-body-size"
 	body.trailerSnapshot = func() (*host.HTTPFields, error) {
@@ -152,12 +153,12 @@ func (p *HTTP) CallIncoming(ctx context.Context, in *component.Instance, request
 		defer close(callDone)
 		defer func() {
 			if recover() != nil {
+				body.dispose(nil, httpErr("internal-error"))
 				reply.set(nil, httpErr("internal-error"))
 				cancel()
 			}
 		}()
 		defer p.releaseRequest()
-		defer body.dispose(nil, httpErr("connection-terminated"))
 		_, failed := function.CallWithResult(callCtx, []component.Value{input}, options, func(c *component.Caller, v *component.Value) error {
 			if v == nil {
 				return vm.ErrType
@@ -191,12 +192,13 @@ func (p *HTTP) CallIncoming(ctx context.Context, in *component.Instance, request
 				return failed
 			}
 			message.body.handled()
-			response.Body = &httpCallBody{ReadCloser: stream, done: callDone, release: message.body.release, cancel: cancel, stop: stop}
+			response.Body = &httpCallBody{ReadCloser: stream, done: callDone, interrupt: context.AfterFunc(callCtx, func() { message.body.dispose(nil, callCtx.Err()) }), release: message.body.release, cancel: cancel, stop: stop}
 			owned = false
 			reply.set(response, nil)
 			return nil
 		})
 		if failed != nil {
+			body.dispose(nil, failed)
 			reply.set(nil, failed)
 			cancel()
 		} else {
@@ -229,16 +231,25 @@ func (p *HTTP) CallIncoming(ctx context.Context, in *component.Instance, request
 
 type httpCallBody struct {
 	io.ReadCloser
-	once    sync.Once
-	release func()
-	cancel  context.CancelFunc
-	stop    func() bool
-	done    <-chan struct{}
-	eof     atomic.Bool
+	once      sync.Once
+	release   func()
+	cancel    context.CancelFunc
+	stop      func() bool
+	done      <-chan struct{}
+	eof       atomic.Bool
+	interrupt func() bool
 }
 
 func (b *httpCallBody) discard() (err error) {
-	b.once.Do(func() { err = b.ReadCloser.Close(); b.release(); b.stop(); b.cancel() })
+	b.once.Do(func() {
+		if b.interrupt != nil {
+			b.interrupt()
+		}
+		err = b.ReadCloser.Close()
+		b.release()
+		b.stop()
+		b.cancel()
+	})
 	return err
 }
 

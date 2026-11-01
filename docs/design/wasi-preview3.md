@@ -218,3 +218,8 @@ guest and an early-result server guest with a suspended byte producer. Wasmtime
 trailers, length/progress errors, early replies, quotas, cancellation and shutdown.
 These checks do not close complete-world, independent language-toolchain, cm64
 or full conformance acceptance. Optimization remains deferred.
+
+Forwarding a request transfers its body lease beyond handler completion. Normal
+guest exit does not revoke that escaped input. Call-context cancellation still
+interrupts both incoming and forwarded response readers after guest execution
+has finished. Their EOF/drop paths release the leases independently.

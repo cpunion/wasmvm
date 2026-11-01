@@ -491,3 +491,75 @@ func TestHTTPDuplexHandlerKeepsUploadAfterHeaders(t *testing.T) {
 		a.dropAsync(tx)
 	})
 }
+
+func TestHTTPIncomingForwardedBodyOutlivesHandler(t *testing.T) {
+	backends(t, func(t *testing.T, backend string) {
+		p := httpOwner(t, HTTPConfig{Handler: func(_ context.Context, r *http.Request) (*http.Response, error) {
+			return &http.Response{StatusCode: 200, Body: r.Body, ContentLength: -1}, nil
+		}})
+		in := instantiate(t, compileFixture(t, backend, "http-handler-api"), p.Imports())
+		input := io.NopCloser(strings.NewReader("forwarded"))
+		request := httptest.NewRequest("POST", "http://localhost/", input)
+		request.ContentLength = -1
+		response, err := p.CallIncoming(nil, in, request, component.CallOptions{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer response.Body.Close()
+		<-response.Body.(*httpCallBody).done
+		p.mu.Lock()
+		var source *httpBody
+		for body := range p.bodies {
+			body.mu.Lock()
+			same := body.reader == input
+			body.mu.Unlock()
+			if same {
+				source = body
+				break
+			}
+		}
+		p.mu.Unlock()
+		if source == nil {
+			t.Fatal("forwarded input lost its owner")
+		}
+		source.mu.Lock()
+		revoked := source.closed
+		source.mu.Unlock()
+		if revoked {
+			t.Fatal("forwarded input revoked before the response reader finished")
+		}
+		data, err := io.ReadAll(response.Body)
+		if err != nil || string(data) != "forwarded" {
+			t.Fatal(string(data), err)
+		}
+	})
+}
+
+func TestHTTPIncomingContextCancelsForwardedResponseAfterGuestExit(t *testing.T) {
+	backends(t, func(t *testing.T, backend string) {
+		reader := newHTTPBlockedReader()
+		p := httpOwner(t, HTTPConfig{Handler: func(_ context.Context, _ *http.Request) (*http.Response, error) {
+			return &http.Response{StatusCode: 200, Body: reader, ContentLength: -1}, nil
+		}})
+		in := instantiate(t, compileFixture(t, backend, "http-handler-api"), p.Imports())
+		ctx, cancel := context.WithCancel(context.Background())
+		response, err := p.CallIncoming(ctx, in, httptest.NewRequest("GET", "http://localhost/", nil), component.CallOptions{})
+		if err != nil {
+			cancel()
+			t.Fatal(err)
+		}
+		defer response.Body.Close()
+		<-response.Body.(*httpCallBody).done
+		cancel()
+		done := make(chan error, 1)
+		go func() { _, err := io.ReadAll(response.Body); done <- err }()
+		select {
+		case err := <-done:
+			if err == nil {
+				t.Fatal("cancelled response read succeeded")
+			}
+		case <-time.After(time.Second):
+			t.Fatal("forwarded response ignored parent cancellation")
+		}
+	})
+}

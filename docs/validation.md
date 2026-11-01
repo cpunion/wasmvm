@@ -4775,3 +4775,9 @@ unbounded buffering. Go's HTTP/2 receiver drops unannounced names, so HTTP/2 is
 not advertised as an outbound transport capability. Complete world assembly,
 independent P3 language producers, cm64 local borrows and full conformance remain
 open. M6 and deferred performance acceptance are not marked complete.
+
+A later forwarding regression failed on both backends before the fix: an input
+still owned by a response reader was revoked at handler exit. Normal completion
+now respects the moved lease, while parent cancellation interrupts input/output
+after guest exit. Go race and pinned LLGo regressions pass; current P3 coverage
+is 90.58%. Final-head CI remains the merge gate.
