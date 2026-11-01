@@ -356,7 +356,11 @@ func (e *functionEmitter) selectMemory(index uint32) {
 	if e.a.arch == "arm64" {
 		base, length = 16, 17
 	}
-	e.contextLoad(2, nativeabi.RuntimeDataOffset)
+	_, cachedLength := e.runtimeRegisters[offset]
+	_, cachedBase := e.runtimeRegisters[offset+8]
+	if !cachedLength || !cachedBase {
+		e.contextLoad(2, nativeabi.RuntimeDataOffset)
+	}
 	e.runtimeLoad(0, offset)
 	if e.nativeThreads && uint64(index) < uint64(len(e.sharedMemories)) && e.sharedMemories[index] {
 		if e.a.arch == "arm64" {

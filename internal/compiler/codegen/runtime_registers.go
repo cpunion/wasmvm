@@ -11,6 +11,16 @@ func (e *functionEmitter) runtimePriorities(config Config, frequencies []uint64)
 	weights := map[uint32]uint64{}
 	for pc, in := range e.f.Code {
 		w := frequency(frequencies, pc)
+		if e.memoryViews && (isMemoryAccess(in.Op) || in.Op == 0x3f || in.Op>>16 == 0xfe && (in.Op&0xffff <= 2 || in.Op&0xffff >= 0x10)) {
+			index := e.f.Sources[in.Source].Wasm.Memory
+			if in.Op == 0x3f {
+				index = e.f.Sources[in.Source].Wasm.A
+			}
+			if offset, ok := nativeabi.MemoryPairOffset(config.FunctionCount, config.TableCount, uint32(len(config.Globals)), e.memoryBindings, index); ok {
+				weights[offset] += 2 * w
+				weights[offset+8] += w
+			}
+		}
 		if _, ok := e.heapAccesses[in.Source]; ok && in.Op>>16 == 0xfb {
 			weights[e.heapPair] += 2 * w
 			weights[e.heapPair+8] += 2 * w
