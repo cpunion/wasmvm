@@ -300,6 +300,46 @@ func TestNativeHeapCacheRechecksChangedReferences(t *testing.T) {
 	}
 }
 
+func TestNativeHeapForwardingDoesNotCrossAControlExit(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	f, config := heapFixture(module.FieldType{Value: wasm.I32}, false, false)
+	config.Unmetered = true
+	ret := f.Code[len(f.Code)-1]
+	// Source positions can be shared with a preceding operation. Opcode and
+	// control flow must still determine effects, including unreachable code.
+	ret.Source, ret.A, ret.B = 1, 0, 2
+	f.Code = []slots.Instruction{ret, f.Code[2], f.Code[1], f.Code[len(f.Code)-1]}
+	compiled, lease, ctx := configuredContext(t, f, config)
+	if compiled.ForwardedHeap != 0 {
+		t.Fatal("control exit was classified as a store")
+	}
+	storage, err := native.NewMemory(256, 256)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer storage.Close()
+	buffer, _ := storage.Buffer()
+	address := uint64(uintptr(unsafe.Pointer(unsafe.SliceData(buffer))))
+	words := unsafe.Slice((*uint64)(unsafe.Pointer(unsafe.SliceData(buffer))), len(buffer)/8)
+	ref := uint64(0x8000000100000001)
+	words[0], words[1], words[6], words[7], words[8] = 2, address+16, ref, address+128, 3
+	binary.LittleEndian.PutUint32(buffer[137:], 11)
+	writeSlot(t, ctx, 16, 0, value.Value{Lo: ref})
+	writeSlot(t, ctx, 16, 2, value.Value{Lo: 777})
+	writeSlot(t, ctx, 16, 4, value.Value{Lo: 41})
+	s := native.State{Used: 16, Depth: 1, Budget: 64}
+	s.Payload[2] = address
+	ctx.SetState(s)
+	if exit, err := ctx.Enter(lease, 0); exit != native.Return || err != nil {
+		t.Fatal(exit, err)
+	}
+	if readSlot(t, ctx, 16, 4).Lo != 41 || binary.LittleEndian.Uint32(buffer[137:]) != 11 {
+		t.Fatal("unreachable memory effects executed")
+	}
+}
+
 func TestNativeHeapCheckedFallbackAndOffsetLimits(t *testing.T) {
 	for _, kind := range []string{"missing", "struct-kind", "struct-field", "array-kind", "array-field", "width", "pair"} {
 		f, config := heapFixture(module.FieldType{Value: wasm.I32}, kind == "array-kind" || kind == "array-field", false)

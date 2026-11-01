@@ -10,6 +10,9 @@ func (e *functionEmitter) forwardHeapStoreLoad(start int) (int, bool) {
 		return 0, false
 	}
 	store := e.f.Code[start]
+	if store.Op>>16 != 0xfb || store.Op != e.f.Sources[store.Source].Wasm.Op {
+		return 0, false
+	}
 	a, ok := e.heapAccesses[store.Source]
 	if !ok || !a.store {
 		return 0, false
@@ -21,7 +24,7 @@ func (e *functionEmitter) forwardHeapStoreLoad(start int) (int, bool) {
 			continue
 		}
 		b, ok := e.heapAccesses[in.Source]
-		if !ok || b.store || b.length || in.Op>>16 != 0xfb || b.cacheClass != a.cacheClass || b.array != a.array || b.offset != a.offset || b.width != a.width || in.A != store.A || a.array && in.B != store.B {
+		if !ok || b.store || b.length || in.Op>>16 != 0xfb || in.Op != e.f.Sources[in.Source].Wasm.Op || b.cacheClass != a.cacheClass || b.array != a.array || b.offset != a.offset || b.width != a.width || in.A != store.A || a.array && in.B != store.B {
 			return 0, false
 		}
 		value := store.B

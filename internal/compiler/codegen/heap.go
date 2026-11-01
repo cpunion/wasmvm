@@ -119,6 +119,9 @@ func (e *functionEmitter) prepareHeapAccesses(config Config) {
 }
 
 func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
+	if in.Op>>16 != 0xfb || in.Op != e.f.Sources[in.Source].Wasm.Op {
+		return false
+	}
 	a, ok := e.heapAccesses[in.Source]
 	if !ok {
 		return false
