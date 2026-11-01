@@ -12,6 +12,17 @@ import (
 // objects contain typed handles; neither native code nor the collector stores
 // Go pointers in integer-valued guest frames.
 func (s *Store) GC(ctx context.Context, in *Instance, ins *module.Instr, args []value.Value, roots ...func(func(wasm.ValueType, value.Value))) (value.Value, error) {
+	switch ins.Op & 0xffff {
+	case 2, 3, 4, 5, 11, 12, 13, 14, 15, 28, 29, 30, 34:
+		return s.gcAccess(in, ins, args)
+	default:
+		return s.gcSlow(ctx, in, ins, args, roots...)
+	}
+}
+
+// Allocation and bulk/cast operations keep their existing safepoint contract.
+// Ordinary access never constructs the allocation/root callbacks below.
+func (s *Store) gcSlow(ctx context.Context, in *Instance, ins *module.Instr, args []value.Value, roots ...func(func(wasm.ValueType, value.Value))) (value.Value, error) {
 	if s.HeapSafepoint == nil && (ins.Op&0xffff <= 1 || ins.Op&0xffff >= 6 && ins.Op&0xffff <= 10 || ins.Op&0xffff == 32 || ins.Op&0xffff == 33) {
 		s.HeapSafepoint = func() {
 			var xs []ReferenceValue
@@ -97,20 +108,6 @@ func (s *Store) GC(ctx context.Context, in *Instance, ins *module.Instr, args []
 				o.set(uint32(i), pack(a, fs[i]))
 			}
 		}
-	case 2, 3, 4, 5:
-		o, err := object(args[0].Lo)
-		if err != nil {
-			return result, err
-		}
-		f := s.registry.Types[typ(ins.A)].Definition.Fields[ins.B]
-		if op == 5 {
-			o.set(ins.B, pack(args[1], f))
-		} else {
-			result = o.get(ins.B)
-			if op == 3 {
-				result.Lo = uint64(uint32(int32(uint32(result.Lo)<<(32-f.Packed)) >> (32 - f.Packed)))
-			}
-		}
 	case 6, 7, 8:
 		n := ins.B
 		if op == 6 {
@@ -173,30 +170,6 @@ func (s *Store) GC(ctx context.Context, in *Instance, ins *module.Instr, args []
 				o.set(uint32(i), value.Value{Lo: data[int(start)+i]})
 			}
 		}
-	case 11, 12, 13, 14:
-		o, err := object(args[0].Lo)
-		if err != nil {
-			return result, err
-		}
-		i := uint32(args[1].Lo)
-		if uint64(i) >= uint64(o.Length) {
-			return result, trap(wasm.TrapArrayBounds)
-		}
-		f := field(ins.A)
-		if op == 14 {
-			o.set(i, pack(args[2], f))
-		} else {
-			result = o.get(i)
-			if op == 12 {
-				result.Lo = uint64(uint32(int32(uint32(result.Lo)<<(32-f.Packed)) >> (32 - f.Packed)))
-			}
-		}
-	case 15:
-		o, err := object(args[0].Lo)
-		if err != nil {
-			return result, err
-		}
-		result.Lo = uint64(o.Length)
 	case 16:
 		o, err := object(args[0].Lo)
 		if err != nil {
@@ -291,22 +264,6 @@ func (s *Store) GC(ctx context.Context, in *Instance, ins *module.Instr, args []
 		result.Lo = Internalize(args[0].Lo)
 	case 27:
 		result.Lo = Externalize(args[0].Lo)
-	case 28:
-		result.Lo = I31(args[0].Lo)
-	case 29, 30:
-		if args[0].Lo == 0 {
-			return result, trap(wasm.TrapNullReference)
-		}
-		result.Lo = args[0].Lo & 0x7fffffff
-		if op == 29 {
-			result.Lo = uint64(uint32(int32(uint32(result.Lo)<<1) >> 1))
-		}
-	case 34:
-		o, err := object(args[0].Lo)
-		if err != nil {
-			return result, err
-		}
-		result.Lo = o.Descriptor
 	case 35, 36:
 		matched, err := s.DescriptorEqual(args[0].Lo, args[1].Lo, ins.ReferenceType())
 		if err != nil {
