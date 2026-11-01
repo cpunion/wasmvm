@@ -1,0 +1,79 @@
+{
+  "source": "https://github.com/WebAssembly/compact-import-section",
+  "revision": "0624de829e2663da799e708444dec80337a3fe54",
+  "sourceArchive": {
+    "url": "https://codeload.github.com/WebAssembly/compact-import-section/tar.gz/0624de829e2663da799e708444dec80337a3fe54",
+    "size": 15032531,
+    "sha256": "807aa7ef0dda6e5b33aa8e5fdcc6f628d15d341c35c63426878e1b3fb0a21406"
+  },
+  "producer": "wasm-tools 1.262.0 (e22db44da 2026-10-13)",
+  "producerBinarySHA256": "4a5b127f48340fbd453708283d190f9b1dbbe5820571eae5cbae0a205a095a00",
+  "arguments": [
+    "json-from-wast",
+    "--wasm-dir"
+  ],
+  "scripts": {
+    "binary-compact-imports": {
+      "commands": 18,
+      "binaryAssertions": 9,
+      "textAssertions": 0
+    },
+    "imports-compact": {
+      "commands": 52,
+      "binaryAssertions": 23,
+      "textAssertions": 3
+    }
+  },
+  "sha256": {
+    "LICENSE.tests": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+    "binary-compact-imports/script.0.wasm": "7498a3623a54e48420ad09cc5366fd1700ba3621b3562264ab3b7dd801c8ab1c",
+    "binary-compact-imports/script.1.wasm": "2f814bdb658f3035735a44f4dfeb0f894b4b93d4a82689f1a8dfc2c344557bfa",
+    "binary-compact-imports/script.10.wasm": "7fc43e885bb22d2cd299c7fbcf868c9d8307c40103c8ce3ec38e6e1f2067156d",
+    "binary-compact-imports/script.11.wasm": "0b4843a08bdb34676a138015901525eb2e8660ae233bfb1168eaac94d6e39265",
+    "binary-compact-imports/script.12.wasm": "003740d6a0dc636f6dbd06228cf7b42030830882ded7ef7f735c137de3ce7b34",
+    "binary-compact-imports/script.2.wasm": "0d6ad090dcf1c18dca8de4eb7a106403158597913da37ee30c58134ca5076048",
+    "binary-compact-imports/script.3.wasm": "7f481fe461785e60929a94344c9a2c4138c357bb7c6d413695f8a95658f5e32f",
+    "binary-compact-imports/script.4.wasm": "a5d4cbacc5637fd05088a562108327cde20614146259a86940fc1a5c9e27fe01",
+    "binary-compact-imports/script.5.wasm": "dcae896886d01ac7c3adc48059ecd65680eb70dd14bd3871679074dc1342ea4b",
+    "binary-compact-imports/script.6.wasm": "28354fc5a5dceab1c9e5761bb0a8e5692050795549735d05166c334a96458ced",
+    "binary-compact-imports/script.7.wasm": "f7e9564a95ec4b685c7f7d23e9c8b154820b8d714cbb99876d5eaab8abba0f04",
+    "binary-compact-imports/script.8.wasm": "4e2b0608bf078f1457bfbd96380d1c114cf752a696722bfd18f6dc682be69a53",
+    "binary-compact-imports/script.9.wasm": "abc7c94edd58755cb5ed30e00a4fb6396b373713dce993a7ae44a8fe6e518624",
+    "binary-compact-imports/script.json": "1fa0a821498833e83ee04d68258f953a7188fd83d448a1f06086bd80b5cf0aba",
+    "imports-compact/script.0.wasm": "8fd954f596677b6568c2512034cb7d56aa6bce07886583fe17877f3586671eb8",
+    "imports-compact/script.1.wasm": "d87fc29f6a38ca2b05e42fafbc45cce6731346e4c20a4ae33ed5b747114bd764",
+    "imports-compact/script.10.wasm": "0a0716d74b59fba92ceae988328005b83b31dafea0a9d6de4298d38ff3e35ca1",
+    "imports-compact/script.11.wasm": "64051a442a4ed3ab5e352cd8a7879eef2456b87bdbc4f596263f3bb99bd53e94",
+    "imports-compact/script.12.wasm": "41ed5f9d68d20e0b07d106e8d943f8b9aa06c3ed23ab89c31b96778978916377",
+    "imports-compact/script.13.wasm": "63a45cc4a184e6e2b085845d80db9e5ec79e96999e2ba9f02625a09989e3d4b9",
+    "imports-compact/script.14.wasm": "3095ef0cc0cf59d5994e7a74b21a304ae27ba50528ae8afcfb8201c27dab7945",
+    "imports-compact/script.15.wasm": "605b1f4cdf03102e1b8713af4523bc39d511c398c350d98b643941a236ff732b",
+    "imports-compact/script.16.wat": "91a9f32cc49756a420643fecaacc84ee6561bbcb1a9d68dd9323d4cc322a65c5",
+    "imports-compact/script.17.wat": "87d58e5eaa6d42eef51502634ffc491c5328fbbb40233a8b6b68bf99ea3a6963",
+    "imports-compact/script.18.wat": "312e13324c05ecbf8fe5b5968f3815a1fe1ef76c140853a7b664dfbfe4701def",
+    "imports-compact/script.19.wasm": "ffb98d61b52de1453f1a83587cf3ffbf0523d57b5fe6b0329189be5ae80c3592",
+    "imports-compact/script.2.wasm": "497c6bb7f6f8d54aa2d96a8d8212a8bf198b5458f98bb2a2c015c4e7c5fce9df",
+    "imports-compact/script.20.wasm": "c8ee57702aadbcbf4e5185376e60a3d575abddf60a8aa242a949d75c458e736c",
+    "imports-compact/script.21.wasm": "1b986dbd5a13d3e7ae7906e1e1d763bbcc05fe77728c6a685055c38c66bdb28d",
+    "imports-compact/script.22.wasm": "d2da5729032ca810a6d1691b1e37809498b6049ae7645f42ffe0218bd70320f8",
+    "imports-compact/script.23.wasm": "f2d269afe197b13415ee84b41c141c76c197a3908758fa3b15754611aee1bedb",
+    "imports-compact/script.24.wasm": "6dbcf90f44f3e83ff0868475498cea13592ed1d684afaa4959c3ebdc1b1dc1df",
+    "imports-compact/script.25.wasm": "4cc9718fdeabd9a642c074ac20b554e9861fcf07a4c7179cb81fe721da1c1649",
+    "imports-compact/script.26.wasm": "0e258112f2950222e685b0224d4e72619781d9cecdc81eb5f50976dd1d63b44a",
+    "imports-compact/script.27.wasm": "c09043aa92aab6866ac09b2566645bab8aa2b2152ffb86e7ac1bef7388e36521",
+    "imports-compact/script.28.wasm": "9f99d68e81aa1ef8aed3f3faf6c19bf1744089d346783f234d4a578bf376374f",
+    "imports-compact/script.29.wasm": "7bd250415fd9e9d9a5fd058f34785f93841e6e2520771e7c257ec6d7930cb296",
+    "imports-compact/script.3.wasm": "a9710974a72b25273456214a8bd6fbc49c2c4419f856347d39f854c2f39349c9",
+    "imports-compact/script.30.wasm": "2f814bdb658f3035735a44f4dfeb0f894b4b93d4a82689f1a8dfc2c344557bfa",
+    "imports-compact/script.31.wasm": "cbeffded030d96c66c72f6bb41541b56d646b49a92cfad1863ac9d98f26f9a94",
+    "imports-compact/script.4.wasm": "1505a8dbbe9a74e48cad527c943ff381cfe5a1064ce8d002fcc1075bab8031eb",
+    "imports-compact/script.5.wasm": "e06c43bd0b74abda7fb93d7d57068d44717738ba9531e355f7bf7bdd9d358bbe",
+    "imports-compact/script.6.wasm": "7d89800faaa8eff9db2445fdae506b8701da9fa33d09867ed75d313e2f1500ae",
+    "imports-compact/script.7.wasm": "ed126d0876f71db12066c6681ef423c638468728822101579511119df89255f7",
+    "imports-compact/script.8.wasm": "b606da988992d855da46069e10cc76c0ee52f25ab0909e2f5e97475d2d44d774",
+    "imports-compact/script.9.wasm": "b4b8593922c9af3c65b64cfdd0e92eeab0e2978000c1c4597148683fc7986a00",
+    "imports-compact/script.json": "7dabf054e2e1eabe1a275d550adf00d2479bbb1b20f19f6c247bd95f6bc1537a",
+    "source/compact-import-section/binary-compact-imports.wast": "452ac0abf630264abffebf7a7542acacd918e597b5a89d73c41859e8229e0a1a",
+    "source/compact-import-section/imports-compact.wast": "d21f2ce838ba1c377b6de07b5f58eb55b3e3acc96f301416fd31094203f05e86"
+  }
+}

@@ -26,6 +26,10 @@ const (
 	Core3Rules
 	// Threads enables shared linear memory and all Core Threads atomics.
 	Threads
+	// CompactImports enables both grouped import-section encodings.
+	CompactImports
+	// WideArithmetic enables the four 128-bit arithmetic instructions.
+	WideArithmetic
 )
 
 // Core3Features selects the full pinned Core 3.0 binary profile on both backends.
@@ -33,4 +37,4 @@ const (
 const Core3Features = ExtendedConst | TailCall | MultiMemory | RelaxedSIMD | Memory64 | FunctionReferences | GC | ExceptionHandling | Core3Rules
 
 // SupportedFeatures includes all accepted core feature flags.
-const SupportedFeatures = Core3Features | Threads
+const SupportedFeatures = Core3Features | Threads | CompactImports | WideArithmetic

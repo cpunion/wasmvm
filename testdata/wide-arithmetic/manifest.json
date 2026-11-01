@@ -1,0 +1,37 @@
+{
+  "source": "https://github.com/WebAssembly/wide-arithmetic",
+  "revision": "024d4ce1b28cee7fd006d9c5175e3b7ece52b429",
+  "sourceArchive": {
+    "url": "https://codeload.github.com/WebAssembly/wide-arithmetic/tar.gz/024d4ce1b28cee7fd006d9c5175e3b7ece52b429",
+    "size": 15040481,
+    "sha256": "7547bb29d8b3d8d395f2c67be85dc12c88404c14629eb4005f1ff17da8050820"
+  },
+  "producer": "wasm-tools 1.262.0 (e22db44da 2026-10-13)",
+  "producerBinarySHA256": "4a5b127f48340fbd453708283d190f9b1dbbe5820571eae5cbae0a205a095a00",
+  "arguments": [
+    "json-from-wast",
+    "--wasm-dir"
+  ],
+  "scripts": {
+    "wide-arithmetic": {
+      "commands": 109,
+      "binaryAssertions": 107,
+      "textAssertions": 0
+    }
+  },
+  "sha256": {
+    "LICENSE.tests": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+    "source/wide-arithmetic.wast": "9a3353e12e1fb78e8a7e30b7c5b356bfc897c093b83cbfc6a544660b88adcdc1",
+    "wide-arithmetic/script.0.wasm": "02acb7f07aeaa196d44c8da381dbddc3551cb7fd0a1e4de7b21e051bf044813c",
+    "wide-arithmetic/script.1.wasm": "100eeaaedd883515f11e7c174b9e274b2e932199511277a77fda49f626a1d821",
+    "wide-arithmetic/script.2.wasm": "80480687a5c52b6c7fc11bec2ce3920f213d679a342ec3045db28b902cc15377",
+    "wide-arithmetic/script.3.wasm": "e4cbbcec9bce8027d467a1ac12b92a12f2625314f7597064b0c47eebb1830864",
+    "wide-arithmetic/script.4.wasm": "5afe24f8f4e489c65fb390eae32e7716a09bb0e066f81ee2f6707538bc0bb790",
+    "wide-arithmetic/script.5.wasm": "80ca0915b8350b61d27fa3571212d00976024d70d7167be59c5889cdecfc9cc0",
+    "wide-arithmetic/script.6.wasm": "fa23876edf4b7e97b019829a13df1dd28cdab2d520293f45e2f875f15109ac7c",
+    "wide-arithmetic/script.7.wasm": "bb4bc2f27e1dda3f98156188d3401437fea8751ced6a5eb48445974bb78237c4",
+    "wide-arithmetic/script.8.wasm": "f0d9b42aa1c27c6dbb33f59aa07ffe9042575c0b0a2c925ed1802869dec1f3ca",
+    "wide-arithmetic/script.9.wasm": "76b0a531355d2dee45848d191fc2cceefd05a5588926d95953ae43c62634f245",
+    "wide-arithmetic/script.json": "643d8b89dede09a716c33951c4ad2d0c4ed9d24b8e2b0c6a875550bb2811504a"
+  }
+}

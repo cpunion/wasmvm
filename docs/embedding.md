@@ -9,6 +9,10 @@ parallel. Select `EngineConfig.Backend` (`interpreter` or `native`) explicitly.
 `Profile: "core3"` enables the complete final core profile. Core Threads remains
 an independent feature bit. Native execution has no interpreter fallback.
 
+Set `EngineConfig.Features |= wasm.CompactImports | wasm.WideArithmetic` to
+enable the separately pinned [core extensions](design/core-extensions.md).
+These are also available to embedded core modules in components.
+
 Typical order:
 
 1. Create an Engine and compile bytes.

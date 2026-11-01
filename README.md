@@ -11,6 +11,8 @@ and macOS arm64. No backend silently substitutes a competitor.
   61,395 in 259 Core 3.0 scripts; text-parser cases are classified separately.
   Both backends implement SIMD, WasmGC, final EH, typed references, tail calls,
   memory64/table64, multi-memory and separate shared-memory atomics/wait/notify.
+  Explicit extension switches add Compact Import Section and Wide Arithmetic;
+  see their [snapshot and test scope](docs/design/core-extensions.md).
 - **WASI 1:** all 46 declared imports, the complete 72-program upstream inventory,
   legacy wasi-threads' 15-program inventory, and actual Go/LLGo guest integration.
 - **Components/WASI 2:** composition, values, resources, Canonical ABI, host module/
@@ -32,7 +34,9 @@ component-threading commands are retained separately. See the
 
 **Acceptance remains open:** expanded WASI world conformance and controlled
 performance gates. Functional implementation, selected-corpus execution and
-milestone acceptance are distinct. Optional M7 proposals are not implemented.
+milestone acceptance are distinct. Custom Page Sizes, non-JavaScript Custom
+Descriptors and Stack Switching are mandatory pending extensions; other M7
+proposals remain optional.
 Current evidence and limitations are in the [plan](docs/roadmap.md) and
 [verification record](docs/validation.md). Separate evaluation modules retain
 competitor engines as independent references.
@@ -58,6 +62,7 @@ The latest [standards audit](docs/research/status-2026-11-01.md) and [performanc
 | [Own-core decision](docs/design/own-core.md) | Selected implementation ownership, reference-engine role and acceptance boundaries |
 | [Core compiler](docs/design/core-compiler.md) | Typed IR, interpreter dispatch, optimization, native code generation and semantic preservation |
 | [Core Threads](docs/design/core-threads.md) | Shared memory, synchronization, wait/notify, quotas and ownership |
+| [Explicit core extensions](docs/design/core-extensions.md) | Compact imports, wide arithmetic, snapshot pins and remaining mandatory extensions |
 | [Native ABI](docs/design/native-abi.md) | Go/LLGo bridge, guest frames, roots, continuations and executable-code lifecycle |
 | [Performance contract](docs/design/performance-contract.md) | Subsystem measurements, own base/head comparisons and required performance targets |
 | [Performance comparison](docs/research/performance.md) | Matched startup/small/sustained CLI workloads, raw samples, and measurement limits |

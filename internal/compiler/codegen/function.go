@@ -338,6 +338,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			}
 		case nativeVectorOpcode(op):
 			e.vectorInstruction(in)
+		case module.IsWideArithmetic(op):
+			e.wideArithmetic(in)
 		case plainOpcode(op):
 			e.plain(in, false)
 		case (op == 0x23 || op == 0x24) && e.globalInstruction(in, config):
@@ -500,13 +502,27 @@ func checkFunction(f *slots.Function) error {
 				return wasm.ErrInvalid
 			}
 		}
-		if in.Op == 8 || in.Op == 10 || in.Op >= 0x10 && in.Op <= 0x15 || in.Op>>16 == 0xfb {
+		if in.Op == 8 || in.Op == 10 || in.Op >= 0x10 && in.Op <= 0x15 || in.Op>>16 == 0xfb || module.IsWideArithmetic(in.Op) {
 			outputs := 0
-			if in.Op == 0x10 || in.Op == 0x11 || in.Op == 0x14 || in.Op>>16 == 0xfb {
+			if in.Op == 0x10 || in.Op == 0x11 || in.Op == 0x14 || in.Op>>16 == 0xfb || module.IsWideArithmetic(in.Op) {
 				outputs = len(f.Sources[in.Source].Outputs)
 			}
 			if uint64(in.Extra)+uint64(in.Count)+uint64(outputs) > uint64(len(f.Args)) {
 				return wasm.ErrInvalid
+			}
+			if module.IsWideArithmetic(in.Op) {
+				count := uint32(2)
+				if in.Op <= 0xfc0014 {
+					count = 4
+				}
+				if in.Count != count || outputs != 2 || f.Args[in.Extra+count] == f.Args[in.Extra+count+1] {
+					return wasm.ErrInvalid
+				}
+				for _, slot := range f.Args[in.Extra : in.Extra+count+2] {
+					if f.Slots[slot] != wasm.I64 {
+						return wasm.ErrInvalid
+					}
+				}
 			}
 		}
 	}

@@ -77,21 +77,7 @@ func (f Fragment) ValueType() (result wasm.ValueType, nodes uint64, err error) {
 
 func (f Fragment) ExternType() (result module.Import, nodes uint64, err error) {
 	nodes, err = f.read(func(d *decoder) {
-		result.Kind = d.byte()
-		switch result.Kind {
-		case 0:
-			result.Type = d.u32()
-		case 1:
-			result.Table = d.table()
-		case 2:
-			result.Memory = d.bounds(true)
-		case 3:
-			result.Global = d.globalType()
-		case 4:
-			result.Type = d.tagType()
-		default:
-			d.fail("unknown Core external type")
-		}
+		result = d.importType(d.byte())
 	})
 	return
 }

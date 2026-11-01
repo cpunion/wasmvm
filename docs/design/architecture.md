@@ -65,6 +65,7 @@ FeatureSet is an explicit, immutable configuration whose enabled features includ
 - `core2`: the complete Core 2.0 feature set as a testing target; support remains itemized until the full matrix passes.
 - `core3`: Core 3.0, including GC, typed references, tail calls, standard EH, Memory64/Table64, multi-memory, and relaxed SIMD.
 - `threads`: a separate Core Threads switch; enabling core3 does not imply thread support.
+- `compact-imports` and `wide-arithmetic`: separately gated core extensions; see [snapshot contracts](core-extensions.md).
 - `llgo-wasip1`: records the exact guest compiler and flags; requires the emitted features, including P1, shared memory, atomics, wasi-threads, standard EH, and SIMD.
 - `component-p2` / `component-p3`: separate manifests for component encoding, Canonical ABI, and WASI WIT versions.
 

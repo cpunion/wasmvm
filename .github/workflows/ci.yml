@@ -79,6 +79,7 @@ jobs:
         run: |
           python3 scripts/core2_corpus.py
           python3 scripts/core3_corpus.py
+          python3 scripts/core_extensions_corpus.py
           python3 scripts/preview1_corpus.py
           python3 scripts/wasi_threads_corpus.py
           python3 scripts/component_corpus.py
