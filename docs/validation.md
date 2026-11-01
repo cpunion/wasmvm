@@ -1,5 +1,16 @@
 # Verification Record
 
+## PR #86 final matrix
+
+Compact Import Section and Wide Arithmetic merged after final head
+`04ba6920605b36850fca1b854ee2fc447b27f466` passed all four semantic jobs in
+[run 41305636984](https://github.com/cpunion/wasmvm/actions/runs/41305636984).
+All nine artifact digests and 204 successful execution reports were verified.
+Both new proposal manifests and assertion counts matched in all 12
+compiler/platform/tier combinations; all 30 executable package coverage
+thresholds passed (minimum 90.66%). No review findings or threads remained.
+This does not close performance acceptance or the other extension requirements.
+
 ## 2026-11-01: Non-JavaScript Custom Descriptors
 
 Experimental Phase 3 snapshot `a791af285f3876fb0bc6df89c218ff912347cf46`
