@@ -344,22 +344,22 @@ func (m *Memory) load(op uint32, address, offset uint64, lane byte, previous val
 			if sub%2 == 1 {
 				x = sign(x, width)
 			}
-			setLane(&r, width*2, i, x)
+			r = withLane(r, width*2, i, x)
 		}
 	case sub >= 7 && sub <= 10:
 		x := m.readAccess(b, n)
 		for i := uint(0); i < 16/n; i++ {
-			setLane(&r, n, i, x)
+			r = withLane(r, n, i, x)
 		}
 	case sub >= 84 && sub <= 87:
 		r = previous
-		setLane(&r, n, uint(lane), m.readAccess(b, n))
+		r = withLane(r, n, uint(lane), m.readAccess(b, n))
 	case sub == 92 || sub == 93:
 		r.Lo = m.readAccess(b, n)
 	}
 	return r, wasm.NoTrap
 }
-func setLane(v *value.Value, size, index uint, x uint64) {
+func withLane(v value.Value, size, index uint, x uint64) value.Value {
 	shift := index * size * 8
 	mask := ^uint64(0) >> (64 - size*8)
 	x &= mask
@@ -369,6 +369,7 @@ func setLane(v *value.Value, size, index uint, x uint64) {
 	} else {
 		v.Lo = v.Lo&^(mask<<shift) | x<<shift
 	}
+	return v
 }
 
 // Store implements every scalar and fixed-SIMD store. An invalid range causes
