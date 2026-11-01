@@ -276,8 +276,8 @@ nil callbacks deny. Enable external DNS separately or supply a cancellable
 resolver. TCP listen yields independently owned socket resources; send and receive
 use native streams/futures and support half-close. Socket/worker/name/address
 limits and the IO owner's stream/batch limits apply across bound Stores. Close
-and wait for Instances, then Sockets, then IO. HTTP bindings and complete worlds
-remain in development; see [provider scope and lifecycle](design/wasi-preview3.md).
+and wait for Instances, then Sockets, then IO. HTTP uses the same Sockets/IO owners.
+See [provider scope and lifecycle](design/wasi-preview3.md).
 
 
 Use component.NewHostCompletionWithCleanup when external work may create an
@@ -293,3 +293,45 @@ Use component.NewReadCompletionWithCleanup when a source read can obtain externa
 owned objects before its resolver publishes a batch. Cleanup follows the same
 nonblocking, exactly-once contract as HostCompletion, including late cancellation
 and abandonment; keep independent object leases until publication completes.
+
+
+Use `preview3.NewHTTP(sockets, HTTPConfig)` for the pinned 0.3.2 types, client
+and handler imports. Grant URL requests and resolved connections independently;
+nil grants deny. `Handler` explicitly supplies an upstream Go handler without
+inheriting network authority. Headers/options are immutable after message
+construction. Body streams and trailer/transmission futures retain bounded
+ownership separately from message handles. Closing a transmission future alone
+does not cancel a live message. Outbound HTTP/1.1 supports late trailer names
+without buffering the complete body, including over TLS.
+
+`HTTP.CallIncoming` invokes the async guest handler. Read and close the returned
+response Body; Close also joins the invocation. `preview3.HTTPHandler` accepts a
+factory supplying a fresh instance and request-scoped providers, and streams the
+response while the guest continues producing it. Factory cleanup closes/joins
+these owners and the instance. Close HTTP before Sockets and IO.
+
+`component.AsyncSource.Owned` moves readable/resource capabilities into a source;
+`ReadOwned` receives their current references. EOF/drop/failure/shutdown reclaims
+remaining ownership inside the serialized Store. `NewOwnedSource` also returns
+the moved references for a private ownership anchor. Moving one onward invalidates
+the anchor's copy. `AsyncSource.Cancel` is a one-source cancellation signal and
+closes its writer through the same scheduler. `AsyncWork.Cleanup` runs once after
+accepted work, including abandonment before Start, without entering the VM.
+
+Use `Caller.AwaitRead` in an asynchronous starter when sibling tasks must progress
+independently. Return its HostCompletion; the consumer receives a fresh Caller
+and owns its payload. Keep the endpoint alive with scheduled ownership until
+completion. An operation context can cancel this read without cancelling its
+parent session. `ReadAsyncContext` provides the synchronous embedding form;
+it drives the scheduler while waiting and must not substitute for independent
+continuations in mutually dependent operations.
+
+
+For the complete pinned P3 CLI/service/middleware worlds on Linux/Darwin, use
+`preview3.NewWorld(preview3.WorldConfig{...})` and pass `world.Imports()` to
+component instantiation. The config embeds the existing explicit provider
+configs, with one shared IO domain. `world.HTTP().CallIncoming` invokes a guest
+service; `preview3.RunCommand` invokes a command. Close/join bound instances,
+then `world.Close()` and `world.WaitClosed(ctx)`. Later constructor failure
+closes/joins accepted IO sources; pre-IO validation failure leaves them untouched.
+World creation grants no ambient args, environment, filesystem or network.

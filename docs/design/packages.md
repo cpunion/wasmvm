@@ -1,11 +1,13 @@
 # Package and Directory Design
 
-Status: development implementation, 2026-10-30. `pkg/vm` provides Core execution
+Status: development implementation, 2026-11-01. `pkg/vm` provides Core execution
 and interpreter/native selection; P1 and legacy threads have public adapters.
-The public component package executes synchronous composition and canonical
-calls. Preview 2 supplies the versioned providers listed in its design, including
-filesystem/preopens and IP name lookup; Preview 3 remains reserved. Planned paths below are not
-support claims.
+The public component package executes synchronous/native async composition and
+canonical calls through shared continuations and endpoint ownership. Preview 2 supplies the versioned providers listed in its design, including
+filesystem/preopens and IP name lookup. Preview 3 supplies native async
+base/CLI/clocks, filesystem, sockets/DNS and HTTP providers. Complete world
+assembly, independent P3 guest toolchains and remaining cm64 acceptance stay open.
+The tree retains planned design slots; they are not support claims.
 
 ## Directory tree
 
@@ -32,12 +34,12 @@ wasmvm/
 │   ├── README.md                  # Existing: public package overview
 │   ├── wasm/                      # Implemented: value-type identifiers, frontend errors and trap codes; values/features planned
 │   ├── vm/                        # Implemented: Engine/Store/Linker/Instance/Execution
-│   ├── component/                 # Implemented: synchronous compile/link/canonical call API
+│   ├── component/                 # Implemented: sync/async linking, canonical calls and endpoint ownership
 │   └── wasi/
 │       ├── preview1/              # Implemented: P1 Process, typed ABI and capabilities
 │       ├── threads/               # Implemented: legacy spawn, thread groups and lifecycle
 │       ├── preview2/              # Implemented: versioned WASI 0.2 providers; complete worlds open
-│       └── preview3/              # Existing doc.go: WASI 0.3 worlds
+│       └── preview3/              # Implemented: P3 providers; full world acceptance remains
 ├── internal/
 │   ├── compat/                    # Existing: shared host compiler probes
 │   ├── binary/                    # Implemented: bounded reader, LEB128, float bits, UTF-8 names
@@ -70,13 +72,13 @@ wasmvm/
 │   │   ├── decode/                # Implemented: bounded pinned component grammar
 │   │   ├── validate/              # In progress: types/lexical declarations; whole-binary linking remains
 │   │   ├── canonical/             # Implemented: value/layout/string/resource/call primitives
-│   │   ├── runtime/               # Planned: composition, call scopes, transfer transactions and post-return
-│   │   └── async/                 # Planned: task/future/stream state machines
+│   │   ├── runtime/               # Runtime currently implemented in pkg/component; optional future extraction
+│   │   └── async/                 # Async state machines currently implemented in pkg/component
 │   ├── wasi/
 │   │   ├── host/                  # Implemented: stable directory handles and descriptor I/O
 │   │   ├── threads/               # Planned: instance-per-thread ABI
 │   │   ├── preview2/              # Planned: P2 bindings
-│   │   └── preview3/              # Planned: P3 bindings
+│   │   └── preview3/              # Public P3 adapters live in pkg/wasi/preview3
 │   ├── platform/
 │   │   └── native/                # Implemented: C ABI bridge, W^X, native memory and ownership
 │   └── spectest/                 # Planned: WAST assertions, fixture loader

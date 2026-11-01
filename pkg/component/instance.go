@@ -42,6 +42,9 @@ type Instance struct {
 	closed                bool
 	shutdown              chan struct{}
 	sources               map[*sourceState]struct{}
+	sourceCleanup         *sourceState
+	drainingSources       bool
+	taskWake              chan struct{}
 	store                 *vm.Store
 	config                Config
 	exports               map[string]item
@@ -83,7 +86,7 @@ func (in *Instance) Close() {
 	components := in.components
 	in.components = nil
 	in.mu.Unlock()
-	defer close(in.shutdown)
+	defer func() { go func() { defer close(in.shutdown); in.store.WaitClosed(nil); in.flushSourceCleanup(nil) }() }()
 	in.store.Close()
 	var panicked any
 	for source := range sources {

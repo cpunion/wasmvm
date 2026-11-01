@@ -4,3 +4,5 @@
 benchmarks/results/*.json linguist-generated=true
 experiments/*/results/*.json linguist-generated=true
 *.wasm binary
+# Preserve verbatim third-party license bytes, including trailing blank lines.
+testdata/wasi-preview3/guests/notices/** -whitespace

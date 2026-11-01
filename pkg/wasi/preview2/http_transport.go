@@ -181,7 +181,7 @@ func (p *HTTP) fieldsFromHeader(header http.Header) (*httpFields, error) {
 			return nil, wasm.ErrLimit
 		}
 		for _, value := range header[key] {
-			fields = append(fields, httpField{key, value})
+			fields = append(fields, httpField{Name: key, Value: value})
 		}
 	}
 	return newHTTPFields(p.fields, fields, true)
@@ -189,14 +189,14 @@ func (p *HTTP) fieldsFromHeader(header http.Header) (*httpFields, error) {
 func httpHeader(fields *httpFields) http.Header {
 	out := http.Header{}
 	if fields != nil {
-		for _, field := range fields.entries() {
-			out.Add(field.name, field.value)
+		for _, field := range fields.Entries() {
+			out.Add(field.Name, field.Value)
 		}
 	}
 	return out
 }
 func httpContentLength(fields *httpFields) (*uint64, error) {
-	values := fields.values("content-length")
+	values := fields.Values("content-length")
 	var result *uint64
 	for _, value := range values {
 		n, err := strconv.ParseUint(value, 10, 63)

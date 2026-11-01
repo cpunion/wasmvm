@@ -27,3 +27,13 @@ contains a real Core async UDP producer; sockets-api exposes all 41 operations
 for provider tests. The two negative fixtures alter the error variant and async
 connect signature. Explicit-authority Wasmtime datagram execution and the denied
 guest assertion are recorded separately from API-only embedding tests.
+
+HTTP fixtures use `scripts/build_preview3_http_fixtures.py` and the pinned
+`http-schema.json`/`http.json` provenance. The API fixture covers all 37 operations;
+malformed async/header-error contracts are rejected during binding. The outgoing
+Core guest sets an explicit URI and uses native trailer/transmission futures.
+The server guest returns its response before producing bounded byte batches,
+then observes trailer/transmission completion. Both real guests also execute in
+Wasmtime 48.0.1. `http-handler-api` exercises an explicitly supplied upstream
+handler. These six fixtures are integration evidence, not full independent
+language-toolchain or upstream world conformance.

@@ -94,7 +94,7 @@ func (in *Instance) resourceBuiltin(caller *vm.Caller, n *namespace, plan *valid
 
 func (in *Instance) resourceTable(n *namespace) {
 	if n.handles == nil {
-		n.handles = canonical.NewResourceTable(in.resourceBudget)
+		n.handles = canonical.NewGuestResourceTable(in.resourceBudget)
 		in.resourceTables = append(in.resourceTables, n.handles)
 	}
 }

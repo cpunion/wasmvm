@@ -3,6 +3,7 @@ package component
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/cpunion/wasmvm/internal/component/canonical"
 	"github.com/cpunion/wasmvm/internal/component/model"
 	"github.com/cpunion/wasmvm/internal/component/validate"
@@ -49,7 +50,10 @@ func (in *Instance) scheduler() *taskScheduler {
 		in.tasks = &taskScheduler{}
 	}
 	if in.tasks.wake == nil {
-		in.tasks.wake = make(chan struct{}, 1)
+		if in.taskWake == nil {
+			in.taskWake = make(chan struct{}, 1)
+		}
+		in.tasks.wake = in.taskWake
 	}
 	return in.tasks
 }
@@ -418,6 +422,9 @@ func liftResult(codec *canonical.Codec, plan *validate.CanonicalFunction, values
 }
 
 func (in *Instance) stepTasks(c *vm.Caller) (bool, error) {
+	if err := in.flushSourceCleanup(c); err != nil {
+		return false, err
+	}
 	if in.tasks == nil {
 		return false, nil
 	}
@@ -441,6 +448,21 @@ func (in *Instance) stepTasks(c *vm.Caller) (bool, error) {
 func (in *Instance) awaitTasks(c *vm.Caller, ready func() bool) error {
 	return in.awaitTasksContext(c, c.Context(), ready)
 }
+
+func (in *Instance) externalProgressPossible() bool {
+	if in.tasks == nil || in.tasks.head == nil {
+		return true
+	}
+	for t := in.tasks.head; t != nil; t = t.next {
+		// Host completions include asynchronous sources and scheduled IO. Their
+		// producers may wake the scheduler independently of guest execution.
+		if t.hostFunction != nil {
+			return true
+		}
+	}
+	return false
+}
+
 func (in *Instance) awaitTasksContext(c *vm.Caller, ctx context.Context, ready func() bool) error {
 	for !ready() {
 		if err := ctx.Err(); err != nil {
@@ -454,6 +476,12 @@ func (in *Instance) awaitTasksContext(c *vm.Caller, ctx context.Context, ready f
 			return err
 		}
 		if !progress {
+			if ready() {
+				continue
+			}
+			if !in.externalProgressPossible() {
+				return fmt.Errorf("%w: component deadlock: no runnable task or external producer", wasm.ErrTrap)
+			}
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -468,6 +496,11 @@ func (in *Instance) awaitTasksContext(c *vm.Caller, ctx context.Context, ready f
 func (in *Instance) finishTasks(c *vm.Caller, failed *error, complete *bool) {
 	guard := cleanupGuard{panicked: recover()}
 	if in.tasks == nil {
+		guard.run(func() {
+			if err := in.flushSourceCleanup(c); *failed == nil {
+				*failed = err
+			}
+		})
 		guard.finish()
 		return
 	}
@@ -507,5 +540,10 @@ func (in *Instance) finishTasks(c *vm.Caller, failed *error, complete *bool) {
 		}
 	}
 	in.tasks = nil
+	guard.run(func() {
+		if err := in.flushSourceCleanup(c); *failed == nil {
+			*failed = err
+		}
+	})
 	guard.finish()
 }

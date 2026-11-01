@@ -305,8 +305,8 @@ func (r *httpBodyReader) Read(out []byte) (int, error) {
 		fields := r.body.trailers
 		r.body.mu.Unlock()
 		if fields != nil {
-			for _, field := range fields.entries() {
-				r.trailers.Add(field.name, field.value)
+			for _, field := range fields.Entries() {
+				r.trailers.Add(field.Name, field.Value)
 			}
 		}
 		r.trailers = nil

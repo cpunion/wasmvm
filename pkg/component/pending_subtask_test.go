@@ -73,29 +73,14 @@ func TestPendingSubtaskExecution(t *testing.T) {
 					t.Fatal(v, err)
 				}
 			}
-			for _, close := range []bool{false, true} {
+			{
 				deadlock := asyncInstance(t, backend, "pending-deadlock", Imports{})
 				f, _ := deadlock.Function("run")
-				duration := 20 * time.Millisecond
-				if close {
-					duration = 2 * time.Second
-				}
-				ctx, cancel := context.WithTimeout(context.Background(), duration)
-				var timer *time.Timer
-				if close {
-					timer = time.AfterFunc(20*time.Millisecond, deadlock.Close)
-				}
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				_, err := f.Call(ctx, []Value{{}}, CallOptions{})
-				if timer != nil {
-					timer.Stop()
-				}
 				cancel()
-				if close {
-					if !errors.Is(err, wasm.ErrClosed) && !errors.Is(err, context.Canceled) {
-						t.Fatal(err)
-					}
-				} else if !errors.Is(err, context.DeadlineExceeded) {
-					t.Fatal(err)
+				if !errors.Is(err, wasm.ErrTrap) {
+					t.Fatal("internal deadlock must trap without waiting for cancellation", err)
 				}
 				if deadlock.tasks != nil {
 					t.Fatal("deadlock retained continuation")

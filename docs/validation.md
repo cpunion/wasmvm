@@ -4735,3 +4735,119 @@ fixture and binary hashes are retained in preview3-sockets-reference-check.json.
 This is scoped provider/guest evidence, not complete CLI/HTTP world or performance
 acceptance. HTTP, complete worlds, independent guest languages and remaining cm64
 contracts are required before full functional acceptance.
+
+## WASI 0.3.2 HTTP providers and async ownership (2026-11-01)
+
+The HTTP increment implements the pinned types/client/handler surface: 37
+operations, native body/trailer/transmission endpoints, message/options ownership,
+explicit URL and resolved-connect grants, TLS, bounded streaming, provider limits
+and client/server embedding. Go race tests execute both owned backends, including
+an early-return server producer, independent trailer errors, full duplex, normal
+EOF followed by instance reuse, cancellation, late publication and physical-close
+quotas. Canonical resource/task exhaustion rolls back partially created bodies.
+Shared P2/P3 header storage preserves P2 semantics.
+
+The component substrate adds source-owned capabilities, source cancellation,
+independent read contexts, nonblocking read completions and accepted-work cleanup.
+Sibling read cancellation, starter rollback, ownership movement, destructor panic,
+idle close and cancellation after joined shutdown have regression tests.
+
+Local validation uses Go 1.27.3 and LLGo
+`8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f` with `-O3 -lto=full` on macOS arm64.
+The full Go suite passes; final affected P2/P3 tests replace their earlier coverage
+in the aggregate profile. All 30 executable packages exceed 90%: P3 90.50%,
+component 91.01%, shared host 93.56%, P2 90.20%. Full affected component/P2/P3/host
+LLGo execution and final HTTP duplex tests pass. Vet and formatting checks pass.
+The final four-job PR matrix is still required before merging this increment.
+
+Six fixtures pin the WASI archive, schema generator, fixture generator and binary
+hashes. wasm-tools 1.258.0 independently validates each binary. Actual Wasmtime
+48.0.1 executes the outgoing Core guest: explicit HTTP scheme/path/authority
+produce GET `/` and status 204. Its HTTP server executes the same streaming
+server guest and returns status 200 with `hello`. Binary SHA-256 is
+`62c9c9644d690f3615c842e6bfa977588c4eac905622508507821fadce385681`.
+Native stream write COMPLETED/progress handling is checked by this independent
+execution. A None scheme/path is an implementation-selected default; the common
+reference case sets them explicitly.
+
+Outbound HTTP uses HTTP/1.1, including TLS, to preserve late trailer names without
+unbounded buffering. Go's HTTP/2 receiver drops unannounced names, so HTTP/2 is
+not advertised as an outbound transport capability. Complete world assembly,
+independent P3 language producers, cm64 local borrows and full conformance remain
+open. M6 and deferred performance acceptance are not marked complete.
+
+A later forwarding regression failed on both backends before the fix: an input
+still owned by a response reader was revoked at handler exit. Normal completion
+now respects the moved lease, while parent cancellation interrupts input/output
+after guest exit. Go race and pinned LLGo regressions pass; current P3 coverage
+is 90.58%. Final-head CI remains the merge gate.
+
+
+## WASI 0.3.2 world assembly and native language components
+
+`preview3.NewWorld` assembles all 24 stable versioned interfaces with one IO
+owner and explicit capability configuration. Construction rollback preserves
+source ownership; reverse-order close/join and separately owned instances are
+tested. Eight validated fixtures pin full stable CLI/service/middleware import
+surfaces and real language-generated native-async components.
+
+Go 1.27.3 race tests and LLGo `8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f`
+with `-O3 -lto=full` execute C/Rust commands, a Rust HTTP service, a forwarding
+middleware and their composed service through interpreter/native. Commands
+exercise arguments, random, clock wait, filesystem stat and stream/future stdout
+three times per instance. HTTP tests reuse instances, return before producer
+completion, transfer byte/trailer endpoints across component boundaries and
+retain forwarded bodies beyond handler exit. Three-byte batches force partial
+progress. The full-import dummy service/middleware binaries prove binding only.
+Go vet passes; the complete affected P3 package has 90.67% statement coverage
+(3,905/4,307), measured separately from upstream conformance.
+
+The identical C/Rust command bytes run under Wasmtime 48.0.1 with matching stdout;
+its HTTP server runs both standalone and composed Rust services with status 201
+and the matching echoed body. Reference executable SHA-256 is
+`62c9c9644d690f3615c842e6bfa977588c4eac905622508507821fadce385681`.
+Fixture provenance includes the WASI 0.3.2 archive, wasm-tools 1.258.0,
+wit-bindgen 0.54.0, clang 22.1.8/wasi-libc 33, Rust 1.98.0, Cargo locks,
+dependency licenses and source/generator/binary hashes. Guest builds are offline;
+ordinary semantic CI executes committed bytes without installing these producers.
+Final-head four-job CI remains the merge gate. Local cm64 borrow conversion,
+exhaustive upstream conformance and deferred performance acceptance remain open.
+
+
+## Selected upstream component runtime corpus
+
+All 75 original pinned scripts and notices are retained. wasm-tools 1.258.0
+converts 71 scripts; 57 belong to runtime groups. The declared non-threading
+profile executes 759 commands from 48 script views per backend: 458 guest
+invocations, 258 successful instantiations, two initialization traps, eight invalid
+rejections and 33 definitions. 167 commands belong to optional component threading;
+four source scripts have explicit producer syntax limitations. The manifest
+retains exact indices, dependency classification, diagnostics and checksums.
+The grammar/type corpus remains separately measured. These are selected-profile
+results, not complete component or WASI conformance.
+
+The unmodified official tests initially failed on both owned backends. Fixes
+restore canonical LIFO guest handle reuse across tagged kinds, protect rollback
+with publication generations, admit pending async-ABI lowers in sync functions,
+allow task.return to omit unneeded result memory and trap internal deadlocks.
+Independent Wasmtime runs confirm cross-ABI and cancellation results. Its deadlock
+case also waits until externally stopped, recorded as a reference limitation.
+The explainer's unconditional memory equality differs from its cross-ABI test and
+Wasmtime's rule; supplied memory identity and encoding checks remain enforced.
+
+A separate HTTP CI failure reproduced locally under LLGo: parent cancellation
+could wake a trailer reader before the provider published its failure. A
+regression forcing that interval failed under both backends. Publishing the
+failure before local cancellation and checking parent cancellation at trailer
+resolution prevents false success. Final-head CI is required after integration.
+
+
+The integrated local head passes Go 1.27.3 race execution of affected canonical,
+component and P2/P3 packages; pinned LLGo release execution of canonical,
+component and P3 passes, with unchanged P2 release execution retained. Vet passes.
+All 30 executable packages remain above 90%: unchanged packages retain the
+previous Go/Linux CI profile and affected packages are measured again on the
+integrated head. Current canonical/component/P2/P3 coverage is
+93.96%/91.88%/90.20%/90.67%. The final four-job CI matrix must independently pass
+before merge. Generation-aware rollback and a round-trip endpoint publication
+are covered alongside the deterministic parent-cancellation regression.

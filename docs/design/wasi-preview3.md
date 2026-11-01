@@ -4,8 +4,8 @@ The scope is pinned to the WASI 0.3.2 WIT archive with SHA-256
 `2e918e047c6ad251a44b4d1141359495a27219058fd7090f8b8142f6bc0ec311`.
 The stable CLI command/imports and HTTP service/middleware worlds remain the
 required complete outcome. Optional timezone and component threading are separate
-profiles. Current providers implement the following subset; this does not close
-M6 or complete-world conformance.
+profiles. The providers cover the stable interfaces below and assemble their declared
+worlds. Full upstream conformance and M6 acceptance remain open.
 
 | Interfaces | Implemented operations |
 | --- | --- |
@@ -22,6 +22,7 @@ M6 or complete-world conformance.
 | random/random, random/insecure, random/insecure-seed | all five operations |
 | filesystem/types, filesystem/preopens | all 26 operations: 21 async metadata/path methods, four native-stream methods, get-directories |
 | sockets/types, sockets/ip-name-lookup | all 41 operations: TCP, UDP, socket options and async name lookup |
+| http/types, http/client, http/handler | all 37 operations, native bodies/trailers/transmission and async dispatch |
 
 All names bind under `@0.3.2`. Pure environment/exit/entropy backends share the
 existing P2 implementation through explicit operation selection and signature
@@ -162,3 +163,94 @@ explicit network authority and traps at the guest's denial assertion without it.
 API, ownership, limits, cancellation, readiness, FIN, DNS and both IP families
 execute on both owned backends under Go/LLGo. Full world/toolchain and HTTP
 acceptance remain open.
+
+
+## HTTP providers
+
+`NewHTTP(sockets, HTTPConfig)` binds the pinned types (35 operations), async
+client.send and async handler.handle. Fields and nominal request/response/options
+resources implement the P3 variants and ownership rules, including immutable
+header views, independent clones, request-option children and consuming body
+accessors. Pure header storage is shared with P2; wire bindings remain versioned.
+
+A message owns optional native byte contents and an original trailers future.
+An affine source anchor retains these endpoints until send/consume/drop. Body,
+trailers, handling-result and transmission futures have independent leases.
+Closing a transmission future does not cancel the message. A scheduled trailer
+observer consumes its future without retaining a callback stack; an early error
+interrupts pending body I/O. Trailer results resolve only after body closure.
+Dropping or failing either consumer propagates typed failure and reclaims the
+remaining endpoints. The canonical stream status and detailed HTTP error future
+remain separate contracts.
+
+Client requests require separate URL and resolved-connection grants. External
+DNS uses the explicit socket resolver policy. No proxy, credentials, filesystem,
+network or environment authority is inherited. Callback panic denies/fails the
+operation. TLS trust configuration is cloned. Connect/first-byte/between-bytes
+timeouts, declared content length, headers, worker/request/message/resource
+limits and nonreused representation IDs bound work across Stores.
+
+The outbound wire profile is HTTP/1.1, including HTTPS. P3 trailer names may only
+become available at body EOF. Announcing them before sending would require
+buffering the complete body; Go's HTTP/2 server discards unannounced trailers.
+The provider therefore uses HTTP/1.1 chunked transfer and validates declared
+length independently. Broader outbound wire-protocol support remains explicit
+future work, not a silent loss of trailers. The server-facing HTTPHandler uses
+the embedding server's standard HTTP protocol support.
+
+Guest byte batches enter a zero-buffer pipe through the existing scheduler;
+network goroutines never enter guest code. Physical message readers are closed
+by a bounded reclaimer. Operation completion retains a separate late-result
+lease through publication or abandonment. Provider Close revokes endpoints;
+WaitClosed joins admitted work and physical cleanup. Close/wait instances and
+HTTP, then Sockets, then IO before releasing external storage.
+
+`CallIncoming` checks the async guest handler and transfers its response as soon
+as the result is available. The invocation keeps driving guest producers while
+the external consumer reads. Response Body.Close cancels and joins the invocation.
+`HTTPHandler` gives each request its own Store/owners through an explicit factory.
+A failed invocation requires discarding that request-scoped instance.
+
+Six fixtures are generated from the pinned WIT graph and independently validated
+by wasm-tools 1.258.0. They include malformed contracts, a real outgoing Core
+guest and an early-result server guest with a suspended byte producer. Wasmtime
+48.0.1 executes the outgoing request (204) and serves the streaming guest (200,
+`hello`). API/provider tests cover both owned backends, Go/LLGo, TLS, DNS, late
+trailers, length/progress errors, early replies, quotas, cancellation and shutdown.
+These checks do not close complete-world, independent language-toolchain, cm64
+or full conformance acceptance. Optimization remains deferred.
+
+Forwarding a request transfers its body lease beyond handler completion. Normal
+guest exit does not revoke that escaped input. Call-context cancellation still
+interrupts both incoming and forwarded response readers after guest execution
+has finished. Their EOF/drop paths release the leases independently.
+
+## Complete world assembly and language producers
+
+On Linux/Darwin, `NewWorld(WorldConfig)` combines all 24 stable interfaces in one
+IO ownership domain for CLI command and HTTP service/middleware components.
+Configuration grants environment, preopens, stdio, entropy/clocks and network
+capabilities explicitly. Defaults inherit no process configuration or network
+access. `Imports` returns fresh maps; `IO` and `HTTP` expose the shared owners.
+Construction validates non-owning configuration first. IO sources transfer only
+when NewIO succeeds; later failure closes/joins accepted owners. Close requests
+shutdown in reverse dependency order and WaitClosed joins it. Bound component
+instances remain separately owned and must be closed/joined first.
+
+Eight pinned fixtures include independently compiled C and Rust commands, a
+Rust async HTTP service and middleware, their composed service, and full stable
+CLI/service/middleware import surfaces. C uses sync bindings over native async
+WIT plus stream/future waitables. Rust uses native async imports/exports and a
+spawned producer that completes bytes and trailers after returning the response.
+The middleware transfers a request body whose lease can outlive its invocation.
+Tests force three-byte batches and reuse each instance. The composed guest
+transfers resources and native async endpoints across two component boundaries.
+The full-import dummy service/middleware fixtures prove binding only; actual
+execution is recorded separately. Sources, Cargo locks, licenses and generator/
+binary hashes are retained under testdata/wasi-preview3/guests and world-manifest.
+
+Wasmtime 48.0.1 independently runs both command binaries and serves both Rust
+HTTP binaries with the same output/status/body. These checks advance declared
+world and producer coverage; local cm64 borrows, exhaustive upstream conformance
+and performance acceptance remain open. Optional timezone and component-threading
+extensions are separate profiles.

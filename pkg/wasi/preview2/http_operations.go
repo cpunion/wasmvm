@@ -50,7 +50,7 @@ func (p *HTTP) execute(c *component.Caller, name string, args []component.Value)
 			if failed != nil {
 				return nil, failed
 			}
-			fields = append(fields, httpField{pair.Elements[0].Text, text})
+			fields = append(fields, httpField{Name: pair.Elements[0].Text, Value: text})
 		}
 		var data *httpFields
 		data, err = newHTTPFields(p.fields, fields, false)
@@ -74,9 +74,7 @@ func (p *HTTP) execute(c *component.Caller, name string, args []component.Value)
 		if err != nil {
 			return nil, err
 		}
-		fields.fields.mu.Lock()
-		fields.fields.immutable = true
-		fields.fields.mu.Unlock()
+		fields.fields.Freeze()
 		var body *httpBody
 		body, err = p.newBody(true)
 		if err != nil {
@@ -173,24 +171,24 @@ func (p *HTTP) fieldMethod(c *component.Caller, entry *httpEntry, name string, a
 	switch name {
 	case "get":
 		var values []component.Value
-		for _, s := range fields.values(args[0].Text) {
+		for _, s := range fields.Values(args[0].Text) {
 			values = append(values, component.Value{Text: s})
 		}
 		return component.Value{Elements: values}, nil
 	case "has":
 		v := component.Value{}
-		if fields.has(args[0].Text) {
+		if fields.Has(args[0].Text) {
 			v.Bits = 1
 		}
 		return v, nil
 	case "entries":
 		var values []component.Value
-		for _, field := range fields.entries() {
-			values = append(values, component.Value{Elements: []component.Value{{Text: field.name}, {Text: field.value}}})
+		for _, field := range fields.Entries() {
+			values = append(values, component.Value{Elements: []component.Value{{Text: field.Name}, {Text: field.Value}}})
 		}
 		return component.Value{Elements: values}, nil
 	case "clone":
-		return p.publish(c, &httpEntry{kind: httpFieldsKind, fields: fields.clone()})
+		return p.publish(c, &httpEntry{kind: httpFieldsKind, fields: fields.Clone()})
 	}
 	var values []string
 	switch name {
@@ -212,7 +210,7 @@ func (p *HTTP) fieldMethod(c *component.Caller, entry *httpEntry, name string, a
 		}
 		values = []string{s}
 	}
-	err := fields.mutate(args[0].Text, values, name == "append")
+	err := fields.Mutate(args[0].Text, values, name == "append")
 	var header httpHeaderError
 	if errors.As(err, &header) {
 		return httpHeaderFailure(header), nil
@@ -357,8 +355,8 @@ func (p *HTTP) finishBody(c *component.Caller, args []component.Value) (componen
 			return component.Value{}, failed
 		}
 		trailers = fields.fields
-		for _, field := range trailers.entries() {
-			switch httpLower(field.name) {
+		for _, field := range trailers.Entries() {
+			switch httpLower(field.Name) {
 			case "host", "content-length", "transfer-encoding", "trailer":
 				failure := httpErr("HTTP-protocol-error")
 				entry.body.finish(failure, nil)
@@ -425,7 +423,7 @@ func (p *HTTP) futureGet(c *component.Caller, e *httpEntry) (component.Value, er
 		result = httpErrorResult(b.failure)
 	} else {
 		var value component.Value
-		if b.trailers != nil && len(b.trailers.entries()) != 0 {
+		if b.trailers != nil && len(b.trailers.Entries()) != 0 {
 			fields, err := p.publish(c, &httpEntry{kind: httpFieldsKind, parent: e, fields: b.trailers})
 			if err != nil {
 				return component.Value{}, err

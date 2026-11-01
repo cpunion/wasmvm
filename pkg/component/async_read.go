@@ -2,6 +2,7 @@ package component
 
 import (
 	"context"
+	"errors"
 	"github.com/cpunion/wasmvm/internal/component/canonical"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -45,13 +46,35 @@ func (in *Instance) ReadAsync(ctx context.Context, ref *Resource, limit uint32, 
 	return result, nil
 }
 func (c *Caller) ReadAsync(ref *Resource, limit uint32) (ReadResult, error) {
+	return c.ReadAsyncContext(nil, ref, limit)
+}
+
+// ReadAsyncContext adds a cancellable operation context without extending the
+// callback lifetime. A nil context uses the callback context.
+func (c *Caller) ReadAsyncContext(ctx context.Context, ref *Resource, limit uint32) (ReadResult, error) {
 	if err := c.enter(); err != nil {
 		return ReadResult{}, err
 	}
 	defer c.mu.Unlock()
-	result, b, err := c.instance.readAsync(c.core, ref, limit, c.Context())
+	operationContext := ctx
+	if ctx == nil {
+		ctx = c.Context()
+	} else {
+		joint, cancel := context.WithCancel(c.Context())
+		stop := context.AfterFunc(ctx, cancel)
+		defer cancel()
+		defer stop()
+		if ctx.Err() != nil {
+			cancel()
+		}
+		ctx = joint
+	}
+	result, b, err := c.instance.readAsync(c.core, ref, limit, ctx)
 	if err == nil {
-		err = c.Context().Err()
+		err = ctx.Err()
+	}
+	if errors.Is(err, context.Canceled) && operationContext != nil && c.Context().Err() == nil && operationContext.Err() != nil {
+		err = operationContext.Err()
 	}
 	if b != nil {
 		canonical.VisitReferences(b.batch, &b.data, func(ref *Resource) {

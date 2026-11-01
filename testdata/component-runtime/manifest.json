@@ -1,0 +1,3322 @@
+{
+  "revision": "d095e2f60ddae1f9a1e9b1e2fb547ec1114da677",
+  "sourceArchiveSHA256": "dbd68be264dbe55110ed489377aa84281dada28c1da416d31f86b5623e69d2d2",
+  "producer": "wasm-tools 1.258.0",
+  "sourceScripts": 75,
+  "archiveSHA256": "2f32277186bfc3bf37e221f924e65958aa10481c47259812f0b2aca2323f9e0e",
+  "generatorSHA256": "de16ccfc9ed85da45d650801f93c12907505a21284d1508ee9b2038eb6be0a76",
+  "sha256": {
+    "LICENSE": "4d3653542be17c85050541db12115b467dacc543c0c6bba8a5a4ed2ffba52cc1",
+    "LICENSE-APACHE": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+    "runtime/async/async-calls-sync/script.0.wasm": "8dd6fb56ec2dd87f294df3fb5351c628da201f828b0040ea156a442481f401a4",
+    "runtime/async/async-calls-sync/script.json": "b20a1791f2cebe7b3750601f36dd021c2e74e08623e98245b418b5612d2b4115",
+    "runtime/async/builtin-trap-poisons-instance/script.0.wasm": "c4924fd605aea6b3e9c7e6c1d21efb22c6b4cf1b67ec45e91ec5d7502a887b11",
+    "runtime/async/builtin-trap-poisons-instance/script.1.wasm": "1416e92906f01aa40b15682e2c5c53b5371f0eac4c264de2f712078edcaae991",
+    "runtime/async/builtin-trap-poisons-instance/script.json": "64e05ac565d9da005351cad7b858d510d1cd57ee32a723483651b96b3492d8db",
+    "runtime/async/cancel-and-exclusive-lock/script.0.wasm": "c6770a37bde0bcd16f8c7124bdb8631d54b3596355d0a1bf44d2dcb2e493b23c",
+    "runtime/async/cancel-and-exclusive-lock/script.json": "cea07e814cc1ab845ab8352443d1a9c42bf3fd4db37c6c4eb47fd19308039c94",
+    "runtime/async/cancel-delivery/script.0.wasm": "afa0f1c7ac3376ce5d7c7525ab341eaec477dc74910aeedad3e0f334fa983487",
+    "runtime/async/cancel-delivery/script.1.wasm": "7cd4db2014868c4ba9d841f983536810dcc742a983470208daa042d2cac91e76",
+    "runtime/async/cancel-delivery/script.json": "98eaced742c524f17333a26d510ec6f8e8974d38dd6c4f1bd126934d0a48f9f9",
+    "runtime/async/cancel-not-delivered/script.0.wasm": "17b2d1e690dbc314a543c053d37b3faa39e31e006400e40cd9f8c4cf448006e4",
+    "runtime/async/cancel-not-delivered/script.json": "7692ff96877f9ac99f1672b5a2136030cef1506bd6e2137084da8b9eef6b99c7",
+    "runtime/async/cancel-resumed-callback-switch/script.0.wasm": "9b5e63ba6def6385a9cf7330ed140d6403d7389c2bf374762df035257b83e39a",
+    "runtime/async/cancel-resumed-callback-switch/script.1.wasm": "2e72ccb014ced015966e5df3d3564b0422d90ab8c85dbc29b2ade77065fa4776",
+    "runtime/async/cancel-resumed-callback-switch/script.json": "e7f33057056d3c7a9456c4ae82733db0a5d6357bcc3a5922f04afa91e16348e3",
+    "runtime/async/cancel-stream/script.0.wasm": "2955865c3662894c0ac5f202ec0b738d560c51f48eb7f72427f6906f8de71de0",
+    "runtime/async/cancel-stream/script.1.wasm": "bb0887586442b9f824dd9997af735a37ee1f36593e94cb6b09d09f14d205e0be",
+    "runtime/async/cancel-stream/script.json": "4067c4b2239c4893bee4fd88fc7e7d116f79b3934d6c64a1b8e93f2066183c3a",
+    "runtime/async/cancel-subtask/script.0.wasm": "58878d82cfab2bf67959d8f4ce8ece6a9f545c70515c7eef3116d668ea0d0659",
+    "runtime/async/cancel-subtask/script.1.wasm": "cd2647110c3a375f01bca17457b8282de61db4669dea466fa3ae96f07a798ea3",
+    "runtime/async/cancel-subtask/script.json": "8165afd5f2eb9d6f50ff5bb1f5a33051f29309d5211eaf865fea2a8721b5484c",
+    "runtime/async/cancel-targeted-resume/script.0.wasm": "a127f6b81be9f116ffdbb49fde9e0b94c13a4db24d07d5f9a76dc85c503073c3",
+    "runtime/async/cancel-targeted-resume/script.1.wasm": "fc3305426f76c24b6cc0f519e42f14a60380fdbcf6673324dba8f7a8916633dd",
+    "runtime/async/cancel-targeted-resume/script.2.wasm": "2ad02e1056a1a13e729429eec99e467870c46fe4a0048fa9c0e0f099499d0f81",
+    "runtime/async/cancel-targeted-resume/script.3.wasm": "fbed340fdf8e4650df9be6363a19f0a374c6692cac76b630d108f5a9ea748c54",
+    "runtime/async/cancel-targeted-resume/script.4.wasm": "0da8eb159ccc748f524a79dbf5bb860648850e53c303f62cc36f30fa47a3efc7",
+    "runtime/async/cancel-targeted-resume/script.json": "8e7e04bc331f962ff300b0114865ad582bcbf99e43631075f7d180c2ddb7dfe1",
+    "runtime/async/closed-stream/script.0.wasm": "314b45d537d4740e58f7519dc361ed7f70e25b601cdb4667bea357ee8622404c",
+    "runtime/async/closed-stream/script.json": "c621a199cf2605320a4898524e0f44d3e9f840b7df939a37eb24e2a548f6a82d",
+    "runtime/async/cross-abi-calls/script.0.wasm": "5426c2bda0374ec37dc5ab8faa525543c443c087acf6bde7f6b028f9ded8a3b9",
+    "runtime/async/cross-abi-calls/script.json": "c62970fc11b1fe37d93ceff782d6a4bddcfc0d42bd5d9be45738763d2c29073d",
+    "runtime/async/cross-task-future/script.0.wasm": "8131bbf2b3f60f0cd14b6bf02761bec6bb978640a148551d8844cf03b0cb4528",
+    "runtime/async/cross-task-future/script.json": "f05f58c7e0f5ce7a8297282799931865bfee56303385f2e7ae489cbdba769281",
+    "runtime/async/deadlock/script.0.wasm": "933e1866a5e63d9cf2d0637c0d867612293463851e0832d921503e877c65c7e8",
+    "runtime/async/deadlock/script.json": "49b3e35b2db304126a365851761de5f31889c6f681abf8242908db8755bca13a",
+    "runtime/async/dont-block-start/script.0.wasm": "5aa3d70adba71a67eb95525712e0ba251bf5f8641378d70402d48f493e19890a",
+    "runtime/async/dont-block-start/script.1.wasm": "c04b2ad64e6f80b33d403b02409799b7c3840f0984dde40b1811e931f58d3c49",
+    "runtime/async/dont-block-start/script.json": "dd602acff0d97c2e51db792dcc669a9e4878d1d2cdc3013c3e620a1d0aff2a83",
+    "runtime/async/drop-cross-task-borrow/script.0.wasm": "e0eeac89cfce8ba5fef2444fcfa72239f65cee36d149a4fb970f3d095f3f46fa",
+    "runtime/async/drop-cross-task-borrow/script.json": "0d9c7fa7a5014dbd6f589eb82d1d2aa2c503d0dbccbb432a2a590d3ddffc8910",
+    "runtime/async/drop-stream/script.0.wasm": "909d973d2a618a7dc56a50a739aa3e1d60fb4ddff60140e7ad2ac58f6eca19ed",
+    "runtime/async/drop-stream/script.json": "0de7ef2e9fd0f36e31f30876c69e8955e2281c20773b1b8d2b8e8f110c1db832",
+    "runtime/async/drop-subtask/script.0.wasm": "c26272c01d10cc7a8c4612f35db95d39b5c54a286d5feaec81769c36cca36e4d",
+    "runtime/async/drop-subtask/script.json": "35eb467a3f3d985d6bdf9392c008c259114c86a7583b0d46d8e72a3b779bf1a3",
+    "runtime/async/drop-waitable-set/script.0.wasm": "5974e9ca75cd5acde4786d4214be41ea06971926285285f5cb72e61f7a5b720b",
+    "runtime/async/drop-waitable-set/script.json": "2918c5dbdca6d956c810fd4664f7bdb6a4b54f64d9867cf4f40760675b5fb06a",
+    "runtime/async/during-sync-call-exclusive-resume/script.0.wasm": "ecb5ef5a77a2b77f606ec8b8cbc73f74efbc58c79c7a7153b2e82309ad005df4",
+    "runtime/async/during-sync-call-exclusive-resume/script.1.wasm": "ec87b09306c6b9b534307af95fb46e3e4da43dab474310c73c97d175adf3dc48",
+    "runtime/async/during-sync-call-exclusive-resume/script.json": "63651e5c46d5754d3395deacae83d0ad10d715eaf18c1eb01cab3af7acadae5c",
+    "runtime/async/during-sync-call-may-block-if-other-ready-threads/script.0.wasm": "cc0d9c82081119e4020c6abd2a499441e2ac8dfa8ebb13300ec28ed40be8e1df",
+    "runtime/async/during-sync-call-may-block-if-other-ready-threads/script.1.wasm": "7fd557124a89b2ce289495a2842a808028473e9849cc880af71129ba562554c3",
+    "runtime/async/during-sync-call-may-block-if-other-ready-threads/script.json": "d4fc4a3da7192a09128af4280a031566e90fc31a62ec4437813ce4db25f8cecb",
+    "runtime/async/during-sync-call-no-sibling-resume/script.0.wasm": "aea6b1f86248a278ad23e2a5ef1a6f6ee27db7003ab1048c874b7bc46dd4f0ae",
+    "runtime/async/during-sync-call-no-sibling-resume/script.1.wasm": "42cc0adbbd2ef2501b3020dafd6c39f6bc5e50bd2414b9854a39ec5c43ac4464",
+    "runtime/async/during-sync-call-no-sibling-resume/script.json": "aabf16308eed88fa7f9ec5ebd70e651bb5ff3e745cd823e76b9dc548ebdc2dd4",
+    "runtime/async/during-sync-scheduling-candidates/script.0.wasm": "3a713049dc7a38e3cd8583ec07804a0cdc981b17ebc21a2b9a27aea39cc1e2da",
+    "runtime/async/during-sync-scheduling-candidates/script.1.wasm": "1cdb5211625c5e72f71a3fb097670d63a1479e1dad43385b8983965eae54e1cb",
+    "runtime/async/during-sync-scheduling-candidates/script.2.wasm": "1da5a7dea4f6064864234990b1aa371fc622a349f3d2c666b1557f4de1383737",
+    "runtime/async/during-sync-scheduling-candidates/script.3.wasm": "6ee154e486880d1681cadb5a4e4ac08326926b8047b2dc9821302619665f46f5",
+    "runtime/async/during-sync-scheduling-candidates/script.4.wasm": "069bb05fc189dcecaf0b29d2c7ccbe93feaf70ff258dd98910060093626ec86c",
+    "runtime/async/during-sync-scheduling-candidates/script.5.wasm": "d22be3a52a43cab0df13500b4a025600db29c96093552662daaae81b86651463",
+    "runtime/async/during-sync-scheduling-candidates/script.json": "432e1d6a0e2c68694865530d7461642a9e90e53ab96833dff086029fb6e57b28",
+    "runtime/async/empty-wait/script.0.wasm": "bb30bc2f79447e64cdb0c3a195b55f0ee0212d9847776c2e0b981cd30471d5df",
+    "runtime/async/empty-wait/script.json": "d4eff53eedb240a6084c4ad29f301aacb89c310e1840aca3014d383fb283a569",
+    "runtime/async/future-completion-order/script.0.wasm": "7ee7b9256af5a6269fd893fa1455d654d2dc9d35840f3c53fd96495d8711469f",
+    "runtime/async/future-completion-order/script.json": "9e00a3ee920f794238b9c6fe711b04273a5d16820f1bf224842776f13f4ad8cc",
+    "runtime/async/futures-must-write/script.0.wasm": "481a61760d19c1ac615e2e91a902ab4dfbb67a27c50bf19a8df940235d2f3b79",
+    "runtime/async/futures-must-write/script.1.wasm": "e3ce2351e15547c11974b0e2ce353316173e0e1dae5d106be0c852dd3b3f4123",
+    "runtime/async/futures-must-write/script.json": "87fb169f11135b2ffbf20b63a020429c33a4dc5be851457ec85cad799418d9f0",
+    "runtime/async/idle-drop/script.0.wasm": "5e5b2e97ef33ecdefbacde903426857fdcb92395bce48024a72de4852cf24004",
+    "runtime/async/idle-drop/script.1.wasm": "b72abe6b9347eee35c97ca288b824cbc881869ccfc98d22b3757eb63a984de9b",
+    "runtime/async/idle-drop/script.json": "6246ce6f178b53e5efd364ad4647ba5abe10b880c02fe757ff887b4a54e76f18",
+    "runtime/async/partial-stream-copies/script.0.wasm": "31107dc6cc3632162d7c495d0de4794a7e85e8e4f1147060716ce976aa1aeb50",
+    "runtime/async/partial-stream-copies/script.1.wasm": "0cc4254419e387606b88c81e4e1d8c8fe4757f84767356783dfdf7f72133a9a2",
+    "runtime/async/partial-stream-copies/script.json": "2746e34688e2ca288ab2f292995932b55e39cdc86dd01b57ff8689e8650cb77e",
+    "runtime/async/passing-resources/script.0.wasm": "61e9eac56fdb6b81dacaaf4b5cf55962afd31fee8a0141fbab7ff322e3782fd0",
+    "runtime/async/passing-resources/script.json": "ba3933da474adaa67c458976d9806e6148cf9b141561a5f2836d89054e095fa4",
+    "runtime/async/reentrance/script.0.wasm": "ab58990c90edd5b7d27783854265af312cd0d58d286eb85af50b46c48a760e61",
+    "runtime/async/reentrance/script.1.wasm": "78d4acbd25aa831122aa0dc3d136ab03978311b554f246342b66a19419fe79d8",
+    "runtime/async/reentrance/script.10.wasm": "ace79720b48f987ff3edc707754ca80abd3dea21227964f9b92ee6431c3f8189",
+    "runtime/async/reentrance/script.11.wasm": "234e85bdd94d11df639d77f8f29941ee0646f52bf6f689427691df221c727301",
+    "runtime/async/reentrance/script.2.wasm": "e5badfdc02cb4f1529206d7a2743fd141ccbed9119efa2b06159fc6c6ea24bdf",
+    "runtime/async/reentrance/script.3.wasm": "18d0dedf14fee045b5d2bc00b6af23b76a81ba09b36cf33f9f421f9b681b61b2",
+    "runtime/async/reentrance/script.4.wasm": "120e6933019bc29a51a70821c52103f88209b9875f8441a4c01a07426019672b",
+    "runtime/async/reentrance/script.5.wasm": "b82a40f6b1f6c4dcc5aadd0ffd1a98663640f48d8dcbe185d6336d66546c8fee",
+    "runtime/async/reentrance/script.6.wasm": "be6e806bfb32c17a1ba827dcce660f5ee75ab9abd8077296f2a079d16e6c2f87",
+    "runtime/async/reentrance/script.7.wasm": "c5468657ec256090a74c01c3e5f2866a130808f67c0f07b728fadc28dfd415b9",
+    "runtime/async/reentrance/script.8.wasm": "c6ae6de4484bf1f84add8016e9e09b451c78a1744246dbd7a10cc4aba832a6cb",
+    "runtime/async/reentrance/script.9.wasm": "134018369027c44d37c1640fd461b58f62a31c58a344d77cfa33656233acf8b6",
+    "runtime/async/reentrance/script.json": "b5fafacedfbe61084f2967709dab32e0ce0f76e5edb1863ce685d46ff6c2c7f3",
+    "runtime/async/same-component-stream-future/script.0.wasm": "43310ad311b94883a0f00d049fc32640e7f67cd7d0c8678b0cbb8996ec171789",
+    "runtime/async/same-component-stream-future/script.json": "68a786d859fae8d068742718d2e8287b8becf01707503b7f55e225946581bed4",
+    "runtime/async/self-switch-traps/script.0.wasm": "0e5fc905cdfb2c2877d360dabfba8f355b468cd0907b6f8ff6ce122511ecea66",
+    "runtime/async/self-switch-traps/script.json": "9afd268899de0a8e5c4798117087e26fcadec6650225f09213b35ff5864ab527",
+    "runtime/async/switch-to-ready-callback/script.0.wasm": "98a310b7e67838dd79ac8d132cf7c9166cc0e74db59540f60d156ace354fb02a",
+    "runtime/async/switch-to-ready-callback/script.json": "dce3cbd70a1c1b5d51b0bf89ecb1e4df2f86f2ea3c0ea9431249245cb2a89051",
+    "runtime/async/sync-barges-in/script.0.wasm": "44ff088b2b9875ec602d6d29816275efa05e17dfcb1c51cca8afbe424fb1138b",
+    "runtime/async/sync-barges-in/script.json": "72fe7f499b19267e5a0bb0b18fa2698a378371aa4e17ec0e7f97a2f6011791b0",
+    "runtime/async/sync-streams/script.0.wasm": "b8c9769becaf9aab0d89460c9c2e6fa559ece766ce812efc49b1eb13cc9cd555",
+    "runtime/async/sync-streams/script.json": "354f0fc0c6a165e1303356d691f2f7f516f392700913593c9788c6946103a88d",
+    "runtime/async/trap-if-block-and-sync/script.0.wasm": "032d6c76029c698b266012c946cb0cf2647288b6add3469301645c23429bc6e0",
+    "runtime/async/trap-if-block-and-sync/script.json": "002f4951088fad1cb7689f0d70ea2e16987afcb79788a1df6ddc7269516e24b0",
+    "runtime/async/trap-if-done/script.0.wasm": "4ed62292484ac4088d114833d4c4ee6e504a5b6a5399a6560087282f13c56b55",
+    "runtime/async/trap-if-done/script.json": "9c208eefe3cedbca744fc9b80b4dff46df040f1eac7473dff7e4e288ea5f501d",
+    "runtime/async/trap-if-sync-and-waitable-set/script.0.wasm": "8290edb9f113ce1aad823aa2699051a95d816227d844c5768c0d7f7a1eb0535e",
+    "runtime/async/trap-if-sync-and-waitable-set/script.json": "ef23f1ca5428e7b48804fb0c867b8b880e20d15945f1c99eb0cc235417bb66b1",
+    "runtime/async/trap-if-transfer-in-waitable-set/script.0.wasm": "4eecd6ed3d6bb35a970427b0f69276e4a743db0ab7e3c2dc4034bdc486b8a329",
+    "runtime/async/trap-if-transfer-in-waitable-set/script.json": "11b06d1d3df8201d732d813ed1a3f798565dfa814be4927e9073251183bae565",
+    "runtime/async/validate-no-async-abi-for-sync-type/script.0.wasm": "98c2537217dd65f80d186508e2538088d0f701e63945c8f6121369de4583b884",
+    "runtime/async/validate-no-async-abi-for-sync-type/script.1.wasm": "80003634e2dcc91b37d67ca86688459fbada3529c56c4ee05c5b5660d2fcc96f",
+    "runtime/async/validate-no-async-abi-for-sync-type/script.2.wasm": "98bac7f5a87597ba3dba2c0cb1a485aca57a2db55c69aeace9060a13e267f937",
+    "runtime/async/validate-no-async-abi-for-sync-type/script.json": "7966e5ec506c3baee42ada4e4c3f3962c8fae46fb2a0377d74c23ea52b5c770b",
+    "runtime/async/validate-no-stream-char/script.0.wasm": "2e905365fd5556d2e65f415b800d8feb9fe962d3620f64370e455a1157059e03",
+    "runtime/async/validate-no-stream-char/script.json": "115c878d0894816b9cd0c6c193e17ba155e229abb928d0a40fd0c557b92418d8",
+    "runtime/async/validate-task-return/script.0.wasm": "abcb1b6084ee0b814274948f94441a925e2a71ebb0852647243419d800d1f253",
+    "runtime/async/validate-task-return/script.1.wasm": "301407d118dc55bd63a1cb8a3be0da95b58e73354f78bf6e914726b46fb14825",
+    "runtime/async/validate-task-return/script.2.wasm": "4b3268e2f53795dc937e7005232d99b989bc19696d0237de5a2b668557959284",
+    "runtime/async/validate-task-return/script.json": "d4b988bba07d60535060a8796eedc5d75d6222f1dad6e0289e2ce9b9e36dc9e1",
+    "runtime/async/wait-during-callback/script.0.wasm": "22da061ea6696a82dbada6475c9adf36ccbd4e42f47d63991d089a50bcbb24cb",
+    "runtime/async/wait-during-callback/script.json": "0ae0b2b15c2189644b0b3497b8698e3f7932e8ee5412519fb45b8ec6bfedd5da",
+    "runtime/async/zero-length/script.0.wasm": "8115cb8403226343ac02395b3d7564dd8881d62765533735e78d0d5eb2343fa8",
+    "runtime/async/zero-length/script.1.wasm": "6a7f110fc161b28e171054584b77a393dbc934e226e9b0454cd918f42ef6a527",
+    "runtime/async/zero-length/script.json": "0878d2ef7bc2bbe06b3cc9d07516df461ae6725926c51ddf7a2756cb0885d734",
+    "runtime/linking/link-time-virtualization/script.0.wasm": "b67df28accd188b2f0d7cae027b8c674f5abc1a42aa48582917adc65b963ff95",
+    "runtime/linking/link-time-virtualization/script.json": "505af2b981867e08c1a0443271e602a785f48f30e7fb7f89fca828ab7f3096bb",
+    "runtime/linking/shared-everything-dynamic-linking/script.0.wasm": "014800bb00dad65db060d2f9ab9dd56871847a757aeb262c89dec2dd2ade6020",
+    "runtime/linking/shared-everything-dynamic-linking/script.1.wasm": "3e0c4850c402d7f933244197e226c06597931e6c96592d737434dd5049a46994",
+    "runtime/linking/shared-everything-dynamic-linking/script.json": "3721d8513bd3975464ffc1158dd4b031a13359a792e11bb6ba3f2d6f21456a17",
+    "runtime/linking/tags/script.0.wasm": "474012d749cbc0bed08627d6fda5bfe91877ff97e39c7f8a03a413fbb43d3e05",
+    "runtime/linking/tags/script.1.wasm": "a9d91089cd49c656b720da13e59ebed5c397a9bcccbe8f716822cc4459f8a320",
+    "runtime/linking/tags/script.2.wasm": "ba90a50719eee41ffe2c242ad63060968a57c29486419129e382f8862fb391a4",
+    "runtime/linking/tags/script.3.wasm": "0a3996864d7fd230a9389aa90890e9cf79917d9211f295ee49fc0c7a89dd1ace",
+    "runtime/linking/tags/script.4.wasm": "780bf6e243fa0c8993f1eba1f6107159d646e5d9321cdb49b7da9d68fd9394f7",
+    "runtime/linking/tags/script.5.wasm": "e08073b45e58358f1a3c5964bcdfac3705d94aa74a8f7173052d502de15006ee",
+    "runtime/linking/tags/script.json": "1db0dd0327878f6532183fbf190e2b96738d30352667649d28ec7be2354c2ab7",
+    "runtime/linking/unit/script.0.wasm": "b6b68f42140bf084d30b025e35007524c37e38ebe5a4b26daaecfcd4f1839f28",
+    "runtime/linking/unit/script.1.wasm": "6a6d3f82f6062f066421135944a1e37fd10a6293e02d1e57c7189cea4f52633a",
+    "runtime/linking/unit/script.10.wasm": "9c9bc2ec12816adc8bddd51fc2c39d086481ebe6af362e3dde624b6cf9c8f8c9",
+    "runtime/linking/unit/script.11.wasm": "6340f41c54a69661d213a1dba715f6b55f75cc1374367354a5a4588b6d4dec4f",
+    "runtime/linking/unit/script.12.wasm": "e9563b26929ad5472cfe8b21bc5a71adf5bf9758205f3b92d99917ab2f12f5d4",
+    "runtime/linking/unit/script.13.wasm": "1ad1e114d54a07afe533f57d92a378eadef881f001bbe02d4fd68b5efe069416",
+    "runtime/linking/unit/script.14.wasm": "fd4088cf94452f739dbe67d2a9ea86c1d5878fac7336c36f2883dc6cbb5646f0",
+    "runtime/linking/unit/script.15.wasm": "772e4d1126010911b9ae43aad44eee2d8f09ffc6f117475ecea6b8eb5849a69d",
+    "runtime/linking/unit/script.16.wasm": "9273b77ed03778322818fa9dd8f7d952ac93a65f5780d7755c2989d5517646f2",
+    "runtime/linking/unit/script.17.wasm": "8974a24bb7708d5bea098d7c00f1b71c1766f289837a186c57d1cf92fe09fdc0",
+    "runtime/linking/unit/script.18.wasm": "1cffc3b73ea154380c8e8376d768fed083447c527f70cd54905c215c8f2e11ba",
+    "runtime/linking/unit/script.19.wasm": "dc87a6df3b8d7fea81a750b102711b1ee426b823e33d40404e0958a0a3cd68ee",
+    "runtime/linking/unit/script.2.wasm": "c85b9ca5621100e734dfb89e8c049a50cd0619c1e8f74154476d76686c2ac5c9",
+    "runtime/linking/unit/script.20.wasm": "59ad60a86f55599385dd11c54a20bdcfe0a9a31b0a293ee23b6b4188cb0f33c5",
+    "runtime/linking/unit/script.21.wasm": "110bd94b3802b0374802f954f6373f6971ad23e116650d18efb0f53fbffaaf9e",
+    "runtime/linking/unit/script.22.wasm": "7078507aa749fce73a1d82da49adca8986efa0b93f0bfb6a85a04e9bacc01045",
+    "runtime/linking/unit/script.23.wasm": "88dd39198f84ec62bab59276a679808602f9d254340081bfff0107c7554aec9c",
+    "runtime/linking/unit/script.24.wasm": "9d06f8e70789d77b259b85aa0752bc5b37df16730d85f81c1b25242e52a0e023",
+    "runtime/linking/unit/script.25.wasm": "257060e2080ed6b57f418eccf7de4b318775a358ed5b4f61ddd494a3908695a9",
+    "runtime/linking/unit/script.26.wasm": "0454556497e45f4d3e025f12495063b11b429c735ecb424b2db903528f1aafdd",
+    "runtime/linking/unit/script.27.wasm": "3e82bb428b22aa14cfb26ab76f86f9b2c9f0e978b9e1af712a1d31f970fb7268",
+    "runtime/linking/unit/script.28.wasm": "516aa27cbb0f44dbe1d80aa8c84e3f6cab85561ab40adbb1a035e4ef97cfc312",
+    "runtime/linking/unit/script.29.wasm": "badba03b9cf8ec12eebbe533a0dc5d18a18884202ef94f4eb21b00398baa7154",
+    "runtime/linking/unit/script.3.wasm": "8c5f81d044046c91c8fe19b99e0ebf8289405eff1b893f4363bca463f4c511c9",
+    "runtime/linking/unit/script.30.wasm": "1d7adc48e756d26387f4823e40a1d491e55bd701d82df0a28c036808dee47f27",
+    "runtime/linking/unit/script.31.wasm": "66eadf8480171b23c4fc2387d576bf81ca80b264858e5b677585c987bc315c6f",
+    "runtime/linking/unit/script.32.wasm": "9c95a937b939cc43e16d42daa45dfdc1bc3c24eb00f9259a34bdac7b84aec3bd",
+    "runtime/linking/unit/script.33.wasm": "307b525719c22de5fa97554506ae528d8caeca55735d9c37a83fe7de101b1a9f",
+    "runtime/linking/unit/script.34.wasm": "91d0e3cbd345b95db60c9acd8bfee31a809e33f2485876b143a8f99772ec6df4",
+    "runtime/linking/unit/script.35.wasm": "7ca257904b1d8f40911b6421a09a415daab52f1f65f6855dc591c7f1711f710c",
+    "runtime/linking/unit/script.36.wasm": "1ecbdbe3dd4ee17cbaa3daab1115c15f11345eb1adc294c449b0daad0bb02a5d",
+    "runtime/linking/unit/script.37.wasm": "3839d050013dff856f7753770c666f15d59ff152660829c3314035f4d08d52b0",
+    "runtime/linking/unit/script.38.wasm": "cafadec83bf05d604cc74edcb88d7393c42c48bc17c0c5e3d24314af00d7061b",
+    "runtime/linking/unit/script.39.wasm": "e458c02b9020c4d519f02e0d24c7cc38ebb9302c97d88892c123a98ec9d8001c",
+    "runtime/linking/unit/script.4.wasm": "6ba899e7f084b3235ef8c8d81b4f30f5687637f699f11e7a754c639b3ff0114b",
+    "runtime/linking/unit/script.40.wasm": "bbea91444c59e545a2cbf21079500286b3e5aead4997445baac12912119d5ed9",
+    "runtime/linking/unit/script.41.wasm": "759b9aefb678ed5d00fb1e7d26e6a4749e2e0d9b4e5043b0b9679a2912481bfb",
+    "runtime/linking/unit/script.42.wasm": "cb49654b9477b230d9fe3eb09e85e00eda6179d5e0ec1d95147e98e0a0bc2f9f",
+    "runtime/linking/unit/script.43.wasm": "9ac56c79acebc0ce520e258b3bdd9cc6ccc35de3c0880c1d7b678ede4b227d9c",
+    "runtime/linking/unit/script.44.wasm": "6d5d01d6241458ccdea4628e1a3514292bc0ba31eb62535c3d8cd39190ecf06c",
+    "runtime/linking/unit/script.45.wasm": "19ca5a91610380d3dd86ecf16749c98ddb40cef3db951c42904f846679af823d",
+    "runtime/linking/unit/script.46.wasm": "009dcc45bd74c377fb84da1fbe5dbda5ba28c1e74a1e7125c7bc42b63cfae924",
+    "runtime/linking/unit/script.47.wasm": "885e2383c35f39441255f61abc4a275eecf148589c25566fd3ccf5919987e7ce",
+    "runtime/linking/unit/script.48.wasm": "a43a7dd239f94c1c8a027423333005371eb754db16d8d845b687331be0a12da3",
+    "runtime/linking/unit/script.49.wasm": "1bb06b2677656575a47d050a7b3cc856b6c2c52eb5af86811f25d58b77317cad",
+    "runtime/linking/unit/script.5.wasm": "1f6e633cb4b24a2e46f9f32afa48ff333fd21c111967c02a629f87a4dfd407eb",
+    "runtime/linking/unit/script.50.wasm": "a0478a7ef1888ff205c3dcaffd469a84c7935440db5a60dcdfda6b143e811e7d",
+    "runtime/linking/unit/script.51.wasm": "8cff2b5dfcf9e2449ec2507d40c43db8b107aaecf96e59e779d6af0f4cd76fc7",
+    "runtime/linking/unit/script.52.wasm": "310047278b4dfe1d43d76353726bbcafc8f89151aa249ff621aff6183d399250",
+    "runtime/linking/unit/script.53.wasm": "a2a03fdd10a869854f767c4ce1c8a78bbce73c054a5bd8bb839e9b1a3ce305b2",
+    "runtime/linking/unit/script.54.wasm": "05857d1a1b3d5227a19ddc03f4532693f1f4468a3e45a7a48eb544478f6da45b",
+    "runtime/linking/unit/script.55.wasm": "8260bd0da076d6cb13f6f8bd15739a1fde947d8f00a2f224014c20c15c5ca9a0",
+    "runtime/linking/unit/script.56.wasm": "9e98eecc06e71c446d4961bb4469beef2d0d87f41a2c296429457427cfd91010",
+    "runtime/linking/unit/script.57.wasm": "2117cbc6d7cc760524f2945b0dd832e10ea1fbc17b555d67c2527b7ab91dbbaf",
+    "runtime/linking/unit/script.6.wasm": "fc34435a9c41480236246ab68d240ca96b9c6c578c706f69551631a172aefbd9",
+    "runtime/linking/unit/script.7.wasm": "dc9005a777526a56b797e2fe613dc22b9bd648abbe609203e1d6d793ec84d67f",
+    "runtime/linking/unit/script.8.wasm": "d95e61a5d5803ecd19f14ae4eb9a256496c3030268e09047f2c0050dbbeb0ae6",
+    "runtime/linking/unit/script.9.wasm": "1adf7ac2af189539e7b76b4a29d7819355cf566441ae398838c2c73601a3e879",
+    "runtime/linking/unit/script.json": "207842b98c9b5b0b5a9cdf4ff54fea82a5b6dd82f522809e0300b29cdd64edc7",
+    "runtime/resources/borrows/script.0.wasm": "99b23a776c0d8c114f76980d72878d13bac32f6380fd176d59b601b0f23b155f",
+    "runtime/resources/borrows/script.json": "861493ec54f4eb05b5038d0c105328a687592467bab60b2073def5324c6b0ca9",
+    "runtime/resources/handle-table/script.0.wasm": "a717371ec9bd90d455c2b070bb4d46b9e4b6c34607955894277a85f9a7a456d3",
+    "runtime/resources/handle-table/script.1.wasm": "e9f6d7d05c19dbc8643a66f981f6a7fcce05407b02908a12c4b289c8148f3ae3",
+    "runtime/resources/handle-table/script.2.wasm": "8a3cc81ea5869eb278e81b9ca70d8b0fd01ffa41bdd071585903bb8873b2ba0e",
+    "runtime/resources/handle-table/script.3.wasm": "e00f9d5fb95b2044fa9d7c3e6510569694a1221d4c08db5cfa51823ea9eb9b93",
+    "runtime/resources/handle-table/script.4.wasm": "5bf131e3f80299bf271f2c24a54c4f45dc0c786c63865211709d91d54935459a",
+    "runtime/resources/handle-table/script.5.wasm": "2643897319b236cd5f50f799348aecb072220da21ff0688cf560559c204ba39a",
+    "runtime/resources/handle-table/script.json": "f002a62cd1ea211767f08b3f68a4ea52b10e632e2b9ba9bf0061964b6c3dbb22",
+    "runtime/resources/multiple-resources/script.0.wasm": "3bc63e78ae89e427921b7d0668dd9edbadee7b4c264df77408f14f9e7f9a3cc9",
+    "runtime/resources/multiple-resources/script.json": "3af6787a5de6812ffc5ca68ca5a597b07e1e13cc5aeaec6af9d0f1f5dd81fac4",
+    "runtime/values/alignment/script.0.wasm": "db023fe87e3db8f4f8b11b32a7430bef0f8406733b021454e6653cee35ade32b",
+    "runtime/values/alignment/script.1.wasm": "62bd4af7bf67b75b02c2ef8a0fafc8654cba1e546a74d9b0e499f2d799d5be39",
+    "runtime/values/alignment/script.2.wasm": "5b1e8b15ac70ec3f7a2ff777fba28b221e1e08a83a5bf13aae2630ce5f3edfa6",
+    "runtime/values/alignment/script.3.wasm": "5fa8fb263b40a533382c333f11b986b9cf613c06547bea2b834736c12ae7ceab",
+    "runtime/values/alignment/script.4.wasm": "0cadae790442f4a3257a5fc2f456aedd196d8febefc6093115b1a5e5f6ef1050",
+    "runtime/values/alignment/script.5.wasm": "bead1bd6edde5154519c37b89bcbac1f8ec6dfd3b8cd3676de08e81c3122a7a6",
+    "runtime/values/alignment/script.6.wasm": "85a62cd386f38d162dde702ec9f90e3ae5993aafd058a3e514a55fe896efdfa7",
+    "runtime/values/alignment/script.json": "a493ab072ff1d1e33c5ab37677a53b577ad87fb73a3392623f969ebf0cd9929f",
+    "runtime/values/concat/script.0.wasm": "56953ca5a8bd56d9c68d72e8ab940d637d782229c3279306dafe8fd743fb08f0",
+    "runtime/values/concat/script.1.wasm": "1bd26b03dea2b887e5c5cbc7b4d5028ffea06619e0d5cc05fee0d0e9e76988e4",
+    "runtime/values/concat/script.json": "37de25d7324d9eddd2bfc4b4a319a8a291db83d7f3bcb46d38a0290ec5424981",
+    "runtime/values/numerics/script.0.wasm": "314bd7d50a5d7ae24bedea370f499d57d9ec74aa3f90cf42729e7eae4738f171",
+    "runtime/values/numerics/script.1.wasm": "bd014e3559192bdb37d2d9af7b66d7d700621eeced8c8e6ef11be2914a52d0db",
+    "runtime/values/numerics/script.2.wasm": "8fd44e8b56f8955ac09342761a19846416becc17f186851e75d0a45cff366677",
+    "runtime/values/numerics/script.3.wasm": "4e51533832980099833a59aa81e352f054d8c77280eb32bc6ef050a8298c5f51",
+    "runtime/values/numerics/script.4.wasm": "13f056b355b390894eeada30ea83689f0b05773fe213ee767de585bc5285c8b1",
+    "runtime/values/numerics/script.5.wasm": "505228e3dd7cd4a87dae4bfd5c1e65b7357b5a959ab89252b4e4c0139a2e6ed4",
+    "runtime/values/numerics/script.6.wasm": "d3e18751f86b390428645e794520be4e64f9f73ae9ddb20f3421fb26b1461f89",
+    "runtime/values/numerics/script.json": "d7382974d8ef800b649e0b3c43f02b6012dc47a0982d3b88e762f33e1bd696a5",
+    "runtime/values/realloc/script.0.wasm": "28e4f17530b5d3428007045232616c52bf6eba2d052430d49535b62f1b4f8197",
+    "runtime/values/realloc/script.1.wasm": "c56dbfbda7a4ca1b697236b47c7d3ff9c3acfc011442d1f71413bfb145a25a0a",
+    "runtime/values/realloc/script.2.wasm": "5cc01391b6a7c839ee1dea9e517e0b80771cc403c802daa67db66f8320eada02",
+    "runtime/values/realloc/script.3.wasm": "b6d94da0679c260aa01af3b84d0b2f676689b2aeb292500f5de01985515cb7be",
+    "runtime/values/realloc/script.4.wasm": "abd840096aaa28139c664fd19c0b20728b186f664e3e1056f9f049ebef1f6102",
+    "runtime/values/realloc/script.json": "0211c8f20326a1b81e7ea739dd078a06acea9e2730d7ca276a02e6362cfc92d1",
+    "runtime/values/strings/script.0.wasm": "43260f717d7a7bfa11f6a5e4ec895d96246928f11f99d875b8481d3538bff892",
+    "runtime/values/strings/script.1.wasm": "de3941a7ec9dabaafc7e2cdb16fe51983e7087d19964f4e81117a3d99d5d885c",
+    "runtime/values/strings/script.2.wasm": "ecd7cc42fa07c72c479ed2cc84ed016c03d704cfaaa32c8321f10a29c10b8913",
+    "runtime/values/strings/script.3.wasm": "0685e740ccd11de90aa1ccd7dbd899014be4b90cad4432c7b8b0833f8e9c2c4c",
+    "runtime/values/strings/script.4.wasm": "d734c869f9bcea2165e58a68335587155a92c509cd97b03aedd9569ad07c86bf",
+    "runtime/values/strings/script.5.wasm": "1f8a3c6734d5099fdcc558bba58788dcb00e90c0dcbc450546881a4dcfc21131",
+    "runtime/values/strings/script.6.wasm": "ef10f53296515c338b324ad29c2b116fca850cc2dab6779e00e43c7c6ccecdef",
+    "runtime/values/strings/script.7.wasm": "6256f6c7abbb090edb15062069cd8149fa77fcaff5ab0e9a0fbbef20a3f53869",
+    "runtime/values/strings/script.json": "3b18a42e0515ddcbb3d41261fc3943fdd1244bafa96301336f3b86d6896865da",
+    "runtime/values/transcode/script.0.wasm": "d64a81d26e6449069cd7aeb8df8448900d4dfbdd7370f81a5355343d57ef98ae",
+    "runtime/values/transcode/script.1.wasm": "749ea2738b43b01f456703ff15687b10aca3766023f0fc9b77a0f96ec04afd30",
+    "runtime/values/transcode/script.2.wasm": "b632349671aaf019258ffd646dd230ff009b45242a86b725092a19bf7a90e3c4",
+    "runtime/values/transcode/script.3.wasm": "d4831957e6661105559a151c8b88a8145b4af1f41cd4492a58924cfa21818b93",
+    "runtime/values/transcode/script.4.wasm": "d9e443c14216a11238ff6762c6836174913d3fecbf33ed22b9b4a0f5e6d5d6be",
+    "runtime/values/transcode/script.json": "dc0ba4d63cdbbe3d4c1f1fc483344352342f5078496b2804e8d727f31541ac41",
+    "runtime/values/variants/script.0.wasm": "f724db22b4b965c433a8e4adeb8e5c3a71ec54478c67dee0a8a43f77a57732ca",
+    "runtime/values/variants/script.1.wasm": "ef7f4df44067cc62ee9244b88a513fbf0905bc10a3ef05a0a7faae633a190f23",
+    "runtime/values/variants/script.json": "27245a91d87edc51c5508f3d831c8ec6dbbdf977bd2ef354e4a9ebe63baa5ccc",
+    "source/async/async-calls-sync.wast": "bacf1fab5f97e7dfcceca89c19a6b84bf4d89ebaedb69ccb448928f9af0fc879",
+    "source/async/big-interleaving-test.wast": "94d776825d50d7b74505653caf4e6428a0ea4650813bcb42ab171f846c9fbb81",
+    "source/async/builtin-trap-poisons-instance.wast": "d513bcff29bb9ca0356f31806cfaed2b15ad3ac1593c1fa1eb913fd1010c0c77",
+    "source/async/cancel-and-exclusive-lock.wast": "a6bef2fe693216c65239ba9bfde3eb2636280282cefef58808a8c58d98be9f27",
+    "source/async/cancel-delivery.wast": "e4ae0061ad2ce2bfe95e05fa31d8bac3d367725701a9df061f423c4d418194cc",
+    "source/async/cancel-not-delivered.wast": "746524e3306b0f218f9816949d0449d20a160f76f04856bf708f447a6eb56774",
+    "source/async/cancel-resumed-callback-switch.wast": "35112c3305f0fc553648567d406d95da2e0c6affc7cef52bfc83f496632b984d",
+    "source/async/cancel-stream.wast": "bd3bb6babaebf6f03e41e6eb7cb30c5dafa2adc276dc1356e2f2c5d4743fbebf",
+    "source/async/cancel-subtask.wast": "b72065c29f656e56c0f12e589ec1300005a9ae48061a945cdaca0bf21f1c4497",
+    "source/async/cancel-targeted-resume.wast": "8cfa1d2e0782b06c0072a789a4dd29f81090e251198df28292e70b8b577b944e",
+    "source/async/closed-stream.wast": "5fddd95e1f7920f6a453e4f72bd4abc9d8a1615f8937f33ae06e0df31ca4d2a0",
+    "source/async/cross-abi-calls.wast": "32a9b35490c7f3ca8191ddd9d812810d9d0b70d67b50b97e10f75a72bfd8b85e",
+    "source/async/cross-task-future.wast": "d962876ba33012ce0ff068a0d056b2d8b27f5a86749fc410ca1051bd26a50a14",
+    "source/async/deadlock.wast": "9bdd951733f5219bba0b3e226a15d85429f054d67faa6d784c42b50588213e19",
+    "source/async/dont-block-start.wast": "69fd1debc9898c4bdf71f9a2bbc3f9994d1f3ef143ebbf4df6eacbdc47affc9d",
+    "source/async/drop-cross-task-borrow.wast": "1e8f60537f6f0a6f78a693de01b8175181c1e15fbd8a78be27a3764576d1e1e3",
+    "source/async/drop-stream.wast": "ff226f805c84cd6a3e445905a312a7abd94e7439359c1e912ce055d774a386ad",
+    "source/async/drop-subtask.wast": "2b41e426796f0b49b25ce8ce8ae5bb1ed1b1d9279e59d2d0bdc1dadaf0f67b97",
+    "source/async/drop-waitable-set.wast": "8c4deb26d062ab421c99d8c178e59916473bc0e3016efea6b68779b0338ee59f",
+    "source/async/during-sync-call-exclusive-resume.wast": "2276977b966fe04706758ef9d95b9194bc11dde8c96d2f74c59ba93ec1f37aa0",
+    "source/async/during-sync-call-may-block-if-other-ready-threads.wast": "d949b721f1890b1f6e67f14ad1edb548e8357d3b336b793d1135e95ad91f982a",
+    "source/async/during-sync-call-no-sibling-resume.wast": "0c64d9224cb25a94cda2840c650f2317d633a93ceb5e60658a8e2fbec19d3dcb",
+    "source/async/during-sync-scheduling-candidates.wast": "282a97133650c6e1be560f40be6e721bd93ae90b477e78f608b2828b2a776810",
+    "source/async/empty-wait.wast": "cadb124978a329d9fa2912d109901ad862357d7969f072325069511646b892c9",
+    "source/async/forward.wast": "c9c8557a21e64fea87680f1a72b5cc1220cff6de6d0c3037dafaf8c05e7bfbfc",
+    "source/async/future-completion-order.wast": "a4312e5a4e2fb354f9b213c6623a30f4913c4008779f36e021e3000f8b4972c0",
+    "source/async/futures-must-write.wast": "f9574e013de0db6da1ce2fbbb295526da87f51bc5214c60354ce61700b18f5c3",
+    "source/async/idle-drop.wast": "96ba6a39c7556e4678013f3b5066363decb5cbf9abbcea4cabfcce30b6b68c11",
+    "source/async/partial-stream-copies.wast": "74bdc4f5f643c3e7c8449d676133f19fa396003c53d52dac88986bc1938a395f",
+    "source/async/passing-resources.wast": "5fcee86ff0e2581af82095e56ed6661a651f80f6c6060a428f00ec7911bddf23",
+    "source/async/reentrance.wast": "4683f1edbbbf5f095a6ec2dd529a876d1a62113a7d8f68369f41334cca5dd173",
+    "source/async/same-component-stream-future.wast": "2623dc2abe9b6a438d66c9c01ac92e59655121ccf04f5e230af9839cc7b023fa",
+    "source/async/self-switch-traps.wast": "eb4a4a38963ee151f085abad80459fbdc86bd8ec3cdcfc23fe95882be4aede84",
+    "source/async/switch-to-ready-callback.wast": "5eef918faedae04b9ffdd8698f649bb41f8fb58637fe7e1423b354616718509a",
+    "source/async/sync-barges-in.wast": "11c3e1046c8b01259fd2e6b1057677d9add26701857fdbb5e4d304f57eb94509",
+    "source/async/sync-streams.wast": "bcf37448f4495e986adbd17915060ed6b7cce7e5c0fa11b8c3a4cce2b08919e1",
+    "source/async/trap-if-block-and-sync.wast": "0f53f570bbb8e8d8c6d47cb0ad71ce702d691cae945c56b4c4fcb0c779945c4d",
+    "source/async/trap-if-done.wast": "fdafc2fc7f90698f6a4cc5e5fca67a247963f964787879d9deb645d95e878a82",
+    "source/async/trap-if-sync-and-waitable-set.wast": "c86d28eb001b4aecabab9a054e0d3b9a275d3c08ef982d7c85d389dde9cbd399",
+    "source/async/trap-if-transfer-in-waitable-set.wast": "71cb99c7f7b6dd6533bc3fc744392f495c78814eae27e7d72ee9431c8e299460",
+    "source/async/validate-no-async-abi-for-sync-type.wast": "ac454e9b7685b2b22b29be1f3b8b5d4c5d38e3378ebe1b49a88d0bdad0ebb55b",
+    "source/async/validate-no-stream-char.wast": "5767951700e4e823da091bc82bdaa3cf99ded92b279b0ddd0352dddf4c545bec",
+    "source/async/validate-task-return.wast": "9f998564a78c1bf67249ffa7e7b876629d987238bf4cb82fccdeb1954ce6857a",
+    "source/async/wait-during-callback.wast": "8231ba4aac41de37aed764c6fff78b610b05d1fbfcf7c0da3ccc01cc8d926079",
+    "source/async/zero-length.wast": "aecbf367aa80cc35393d2545129ab7b20793a6f47c06a404a1a4fa6f0719009a",
+    "source/binary/binary.wast": "e0f97903d3a31cc02b95d071b8d751521cbf4a43a0d51eaa34290b2139690ae9",
+    "source/linking/link-time-virtualization.wast": "c8ea5dc01e1c9254b98f0d6a33e39909acb93222689a7a2a332c6fefb91a423b",
+    "source/linking/shared-everything-dynamic-linking.wast": "7687ec4f1af476d0f7fdc97aa7c0bcf8841e6f9272b83b9133b1be891eb52a65",
+    "source/linking/tags.wast": "0677e8cacb1d844a14392d3d3c7d733e0d43a8ee7c87d698724b0623a6c504dc",
+    "source/linking/unit.wast": "85857ebf6775c91900eeaa9671be319eae5320feb05f1c8e2935a4abf48d9932",
+    "source/resources/borrows.wast": "a9cc6feec6c0123eb5151379612f42b5a7f4b061253e36921064a3b072b19a84",
+    "source/resources/handle-table.wast": "c55cda21386773137431b7b9019989f468e0ae42504aa60f45a707dfc4ad38b5",
+    "source/resources/multiple-resources.wast": "e9e326df8a048b6843210e9eebe1cf2499a9d481a810ef04cc7a84b83b4f48b5",
+    "source/validation/abi.wast": "ddb7668968f75fb7da5af6d68eda5239efe2bc1275983494edb4db93226b136e",
+    "source/validation/annotated-names.wast": "b6ba437337ef9c5d8980bcdc06c8c1d6dd963db100cc1c66c2f5d56e7afe837d",
+    "source/validation/attributes.wast": "bf1704cc8c1f76827da3061299efe59112480040f192eedf3bfd3cf50076019e",
+    "source/validation/core-modules.wast": "1bba3744a9b37a65a268b5a3aa6fc0e72185fa817691c52e55c91a421f9c99e8",
+    "source/validation/defined-types.wast": "7a2dd64a6a5fa69b60a514829d6bd6d7a75b141e4becc5302efaa43954c26da9",
+    "source/validation/extern-names.wast": "c19cbb9de838794a9ac5a0c4d3b4067670c8d0568a5bf70fe541f4d3365bf778",
+    "source/validation/external-visibility.wast": "1772a7430188141bf7649c5c1ee610ece48dca626ca032d09dabd60352d095b3",
+    "source/validation/indicies.wast": "b4f4dd20c97b66d70b2969b154e46c2c3921ada82a496e9b18e052d88c85583f",
+    "source/validation/instantiation.wast": "25d0b94eefa2ddcc1bd1f7cc820803b24ca21f6ddd52ff7d77ac3fc262c92e81",
+    "source/validation/kebab.wast": "3207c4f658fe341c736b4f0c9af169ad0c871ca40ebfd68ff29af6ae6896da46",
+    "source/validation/max-value-size.wast": "5b84dcde756ee6c89171c353102158d6e439524fbb0e30d9ef4fec3755a3b633",
+    "source/validation/outer-alias.wast": "7bf76946c7707d9e0135cfa449c59e282277e3491aad9dcfcaec964c52fbf58d",
+    "source/validation/resources.wast": "c40cc57fae33dd10ba81b8c82d44c0599da0f5053dc90a2d95854822c176fa09",
+    "source/validation/version-suffix.wast": "3ee0181901eddc99d8308a07d5615a4477b24afaa673e3d7800f6578fb467fc9",
+    "source/values/alignment.wast": "0caf9c9534e474d93d6452bef0bbfe16729ee8083fa4d8968b39e6b4e5100c70",
+    "source/values/concat.wast": "dc169311743fd4d3b25db1320957ec39ed63cc559a65d38e28987e5262126e23",
+    "source/values/numerics.wast": "990040c362068e2c9d461439fc323af95878bcea283b43a10d67639015faf7b9",
+    "source/values/post-return.wast": "ced399ff5cefa703f9e07f62405bdb810e7e6ea5d53a3bf9344f7ec6b3dc69e9",
+    "source/values/realloc.wast": "a6792f029779d12ede89c90443ea9b5d5071089b501f843f3fa4c0fbdef0735d",
+    "source/values/strings.wast": "a70c90a0ede0e2364040da75f4c2c0e56c2d34fdac746a11b6347fdbac60283c",
+    "source/values/transcode.wast": "4cb545c7816ceb106f5962a1dcf9ed4ad50112b9aff2fdbd785d6c7e53b1a4cb",
+    "source/values/variants.wast": "ad4b1b2f915c549b90c3d30e059fd15d21034a5b1cae0b7c16b8b83bf361bd96"
+  },
+  "scripts": {
+    "async/async-calls-sync": {
+      "selectedCommands": [
+        0,
+        1,
+        2
+      ],
+      "deferredCommands": {},
+      "commands": 3,
+      "selectedCounts": {
+        "assert_return": 2,
+        "module": 1
+      }
+    },
+    "async/builtin-trap-poisons-instance": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "deferredCommands": {},
+      "commands": 8,
+      "selectedCounts": {
+        "assert_trap": 4,
+        "module_definition": 2,
+        "module_instance": 2
+      }
+    },
+    "async/cancel-and-exclusive-lock": {
+      "selectedCommands": [
+        0,
+        1
+      ],
+      "deferredCommands": {},
+      "commands": 2,
+      "selectedCounts": {
+        "assert_return": 1,
+        "module": 1
+      }
+    },
+    "async/cancel-delivery": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "deferredCommands": {},
+      "commands": 4,
+      "selectedCounts": {
+        "assert_return": 2,
+        "module": 2
+      }
+    },
+    "async/cancel-not-delivered": {
+      "selectedCommands": [
+        0,
+        1
+      ],
+      "deferredCommands": {},
+      "commands": 2,
+      "selectedCounts": {
+        "assert_trap": 1,
+        "module": 1
+      }
+    },
+    "async/cancel-resumed-callback-switch": {
+      "selectedCommands": [],
+      "deferredCommands": {
+        "0": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend-then-resume"
+          ]
+        },
+        "1": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend-then-resume"
+          ]
+        },
+        "2": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend-then-resume"
+          ]
+        },
+        "3": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend-then-resume"
+          ]
+        }
+      },
+      "commands": 4,
+      "selectedCounts": {}
+    },
+    "async/cancel-stream": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "deferredCommands": {},
+      "commands": 15,
+      "selectedCounts": {
+        "assert_return": 7,
+        "module": 1,
+        "module_definition": 1,
+        "module_instance": 6
+      }
+    },
+    "async/cancel-subtask": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "deferredCommands": {},
+      "commands": 4,
+      "selectedCounts": {
+        "assert_return": 2,
+        "module": 2
+      }
+    },
+    "async/cancel-targeted-resume": {
+      "selectedCommands": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "deferredCommands": {
+        "0": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "resume-later"
+          ]
+        },
+        "1": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "resume-later"
+          ]
+        },
+        "8": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "resume-later"
+          ]
+        },
+        "9": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "resume-later"
+          ]
+        }
+      },
+      "commands": 10,
+      "selectedCounts": {
+        "assert_return": 3,
+        "module": 3
+      }
+    },
+    "async/closed-stream": {
+      "selectedCommands": [
+        0,
+        1,
+        2
+      ],
+      "deferredCommands": {},
+      "commands": 3,
+      "selectedCounts": {
+        "action": 1,
+        "module_definition": 1,
+        "module_instance": 1
+      }
+    },
+    "async/cross-abi-calls": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48
+      ],
+      "deferredCommands": {},
+      "commands": 49,
+      "selectedCounts": {
+        "assert_return": 24,
+        "module_definition": 1,
+        "module_instance": 24
+      }
+    },
+    "async/cross-task-future": {
+      "selectedCommands": [
+        0,
+        1
+      ],
+      "deferredCommands": {},
+      "commands": 2,
+      "selectedCounts": {
+        "assert_return": 1,
+        "module": 1
+      }
+    },
+    "async/deadlock": {
+      "selectedCommands": [
+        0,
+        1
+      ],
+      "deferredCommands": {},
+      "commands": 2,
+      "selectedCounts": {
+        "assert_trap": 1,
+        "module": 1
+      }
+    },
+    "async/dont-block-start": {
+      "selectedCommands": [
+        0,
+        1
+      ],
+      "deferredCommands": {},
+      "commands": 2,
+      "selectedCounts": {
+        "assert_uninstantiable": 2
+      }
+    },
+    "async/drop-cross-task-borrow": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "deferredCommands": {},
+      "commands": 7,
+      "selectedCounts": {
+        "assert_return": 2,
+        "assert_trap": 1,
+        "module_definition": 1,
+        "module_instance": 3
+      }
+    },
+    "async/drop-stream": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "deferredCommands": {},
+      "commands": 5,
+      "selectedCounts": {
+        "assert_trap": 2,
+        "module_definition": 1,
+        "module_instance": 2
+      }
+    },
+    "async/drop-subtask": {
+      "selectedCommands": [
+        0,
+        1,
+        2
+      ],
+      "deferredCommands": {},
+      "commands": 3,
+      "selectedCounts": {
+        "assert_return": 1,
+        "assert_trap": 1,
+        "module": 1
+      }
+    },
+    "async/drop-waitable-set": {
+      "selectedCommands": [
+        0,
+        1
+      ],
+      "deferredCommands": {},
+      "commands": 2,
+      "selectedCounts": {
+        "assert_trap": 1,
+        "module": 1
+      }
+    },
+    "async/during-sync-call-exclusive-resume": {
+      "selectedCommands": [],
+      "deferredCommands": {
+        "0": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "resume-later",
+            "suspend"
+          ]
+        },
+        "1": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "resume-later",
+            "suspend"
+          ]
+        },
+        "2": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "resume-later",
+            "suspend"
+          ]
+        },
+        "3": {
+          "profile": "component-threading",
+          "builtins": [
+            "suspend"
+          ]
+        },
+        "4": {
+          "profile": "component-threading",
+          "builtins": [
+            "suspend"
+          ]
+        },
+        "5": {
+          "profile": "component-threading",
+          "builtins": [
+            "suspend"
+          ]
+        }
+      },
+      "commands": 6,
+      "selectedCounts": {}
+    },
+    "async/during-sync-call-may-block-if-other-ready-threads": {
+      "selectedCommands": [],
+      "deferredCommands": {
+        "0": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend-then-resume"
+          ]
+        },
+        "1": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend-then-resume"
+          ]
+        },
+        "2": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend-then-resume"
+          ]
+        },
+        "3": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend-then-resume"
+          ]
+        },
+        "4": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend-then-resume"
+          ]
+        },
+        "5": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend-then-resume"
+          ]
+        },
+        "6": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend"
+          ]
+        },
+        "7": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend"
+          ]
+        },
+        "8": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend"
+          ]
+        }
+      },
+      "commands": 9,
+      "selectedCounts": {}
+    },
+    "async/during-sync-call-no-sibling-resume": {
+      "selectedCommands": [],
+      "deferredCommands": {
+        "0": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-resume"
+          ]
+        },
+        "1": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-resume"
+          ]
+        },
+        "2": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-resume"
+          ]
+        },
+        "3": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "resume-later",
+            "suspend"
+          ]
+        },
+        "4": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "resume-later",
+            "suspend"
+          ]
+        },
+        "5": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "resume-later",
+            "suspend"
+          ]
+        }
+      },
+      "commands": 6,
+      "selectedCounts": {}
+    },
+    "async/during-sync-scheduling-candidates": {
+      "selectedCommands": [],
+      "deferredCommands": {
+        "0": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "resume-later",
+            "yield-then-promote"
+          ]
+        },
+        "1": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "resume-later",
+            "yield-then-promote"
+          ]
+        },
+        "2": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "resume-later",
+            "yield-then-promote"
+          ]
+        },
+        "3": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "yield-then-promote"
+          ]
+        },
+        "4": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "yield-then-promote"
+          ]
+        },
+        "5": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "yield-then-promote"
+          ]
+        },
+        "6": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "yield-then-promote"
+          ]
+        },
+        "7": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "yield-then-promote"
+          ]
+        },
+        "8": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "yield-then-promote"
+          ]
+        },
+        "9": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "yield-then-promote"
+          ]
+        },
+        "10": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "yield-then-promote"
+          ]
+        },
+        "11": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "yield-then-promote"
+          ]
+        },
+        "12": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "yield-then-promote"
+          ]
+        },
+        "13": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "resume-later",
+            "suspend",
+            "yield-then-promote"
+          ]
+        },
+        "14": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "resume-later",
+            "suspend",
+            "yield-then-promote"
+          ]
+        },
+        "15": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "resume-later",
+            "suspend",
+            "yield-then-promote"
+          ]
+        },
+        "16": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "resume-later",
+            "suspend",
+            "yield-then-promote"
+          ]
+        },
+        "17": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "resume-later",
+            "suspend",
+            "yield-then-promote"
+          ]
+        },
+        "18": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "resume-later",
+            "suspend",
+            "yield-then-promote"
+          ]
+        },
+        "19": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "resume-later",
+            "suspend",
+            "yield-then-promote"
+          ]
+        },
+        "20": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "resume-later",
+            "suspend",
+            "yield-then-promote"
+          ]
+        },
+        "21": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "resume-later",
+            "suspend",
+            "yield-then-promote"
+          ]
+        },
+        "22": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "resume-later",
+            "suspend",
+            "yield-then-promote"
+          ]
+        },
+        "23": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "resume-later",
+            "suspend",
+            "yield-then-promote"
+          ]
+        },
+        "24": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "resume-later",
+            "suspend",
+            "yield-then-promote"
+          ]
+        },
+        "25": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "resume-later",
+            "suspend",
+            "yield-then-promote"
+          ]
+        },
+        "26": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "resume-later",
+            "suspend",
+            "yield-then-promote"
+          ]
+        },
+        "27": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "resume-later",
+            "yield-then-promote"
+          ]
+        },
+        "28": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "resume-later",
+            "yield-then-promote"
+          ]
+        },
+        "29": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "resume-later",
+            "yield-then-promote"
+          ]
+        },
+        "30": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "resume-later",
+            "yield-then-promote"
+          ]
+        }
+      },
+      "commands": 31,
+      "selectedCounts": {}
+    },
+    "async/empty-wait": {
+      "selectedCommands": [
+        0,
+        1
+      ],
+      "deferredCommands": {},
+      "commands": 2,
+      "selectedCounts": {
+        "assert_return": 1,
+        "module": 1
+      }
+    },
+    "async/future-completion-order": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "deferredCommands": {},
+      "commands": 5,
+      "selectedCounts": {
+        "assert_return": 2,
+        "module_definition": 1,
+        "module_instance": 2
+      }
+    },
+    "async/futures-must-write": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "deferredCommands": {},
+      "commands": 14,
+      "selectedCounts": {
+        "assert_return": 5,
+        "assert_trap": 2,
+        "module": 1,
+        "module_definition": 1,
+        "module_instance": 5
+      }
+    },
+    "async/idle-drop": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37
+      ],
+      "deferredCommands": {},
+      "commands": 38,
+      "selectedCounts": {
+        "assert_return": 14,
+        "assert_trap": 4,
+        "module_definition": 2,
+        "module_instance": 18
+      }
+    },
+    "async/partial-stream-copies": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "deferredCommands": {},
+      "commands": 9,
+      "selectedCounts": {
+        "assert_return": 4,
+        "module": 1,
+        "module_definition": 1,
+        "module_instance": 3
+      }
+    },
+    "async/passing-resources": {
+      "selectedCommands": [
+        0,
+        1,
+        2
+      ],
+      "deferredCommands": {},
+      "commands": 3,
+      "selectedCounts": {
+        "assert_return": 1,
+        "assert_trap": 1,
+        "module": 1
+      }
+    },
+    "async/reentrance": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        23,
+        24
+      ],
+      "deferredCommands": {
+        "19": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-resume"
+          ]
+        },
+        "20": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-resume"
+          ]
+        },
+        "21": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "22": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        }
+      },
+      "commands": 25,
+      "selectedCounts": {
+        "assert_return": 9,
+        "assert_trap": 2,
+        "module": 10
+      }
+    },
+    "async/same-component-stream-future": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "deferredCommands": {},
+      "commands": 9,
+      "selectedCounts": {
+        "assert_return": 2,
+        "assert_trap": 2,
+        "module_definition": 1,
+        "module_instance": 4
+      }
+    },
+    "async/self-switch-traps": {
+      "selectedCommands": [],
+      "deferredCommands": {
+        "0": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "1": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "2": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "3": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "4": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "5": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "6": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "7": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "8": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        }
+      },
+      "commands": 9,
+      "selectedCounts": {}
+    },
+    "async/switch-to-ready-callback": {
+      "selectedCommands": [],
+      "deferredCommands": {
+        "0": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "1": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "2": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "3": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "4": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "5": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "6": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "7": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "8": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "9": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "10": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "11": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "12": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "13": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "14": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "15": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "16": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        }
+      },
+      "commands": 17,
+      "selectedCounts": {}
+    },
+    "async/sync-barges-in": {
+      "selectedCommands": [
+        0,
+        1,
+        2
+      ],
+      "deferredCommands": {},
+      "commands": 3,
+      "selectedCounts": {
+        "assert_return": 1,
+        "module_definition": 1,
+        "module_instance": 1
+      }
+    },
+    "async/sync-streams": {
+      "selectedCommands": [
+        0,
+        1
+      ],
+      "deferredCommands": {},
+      "commands": 2,
+      "selectedCounts": {
+        "assert_return": 1,
+        "module": 1
+      }
+    },
+    "async/trap-if-block-and-sync": {
+      "selectedCommands": [],
+      "deferredCommands": {
+        "0": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "1": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "2": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "3": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "4": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "5": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "6": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "7": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "8": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "9": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "10": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "11": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "12": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "13": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "14": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "15": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "16": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "17": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "18": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "19": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "20": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "21": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "22": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "23": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "24": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "25": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "26": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "27": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "28": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "29": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "30": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "31": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "32": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "33": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "34": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "35": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "36": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "37": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "38": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "39": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "40": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "41": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "42": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "43": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "44": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "45": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "46": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        },
+        "47": {
+          "profile": "component-threading",
+          "builtins": [
+            "index",
+            "new-indirect",
+            "resume-later",
+            "suspend",
+            "suspend-then-promote",
+            "suspend-then-resume",
+            "yield-then-promote",
+            "yield-then-resume"
+          ]
+        }
+      },
+      "commands": 48,
+      "selectedCounts": {}
+    },
+    "async/trap-if-done": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30
+      ],
+      "deferredCommands": {},
+      "commands": 31,
+      "selectedCounts": {
+        "assert_trap": 15,
+        "module_definition": 1,
+        "module_instance": 15
+      }
+    },
+    "async/trap-if-sync-and-waitable-set": {
+      "selectedCommands": [],
+      "deferredCommands": {
+        "0": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "1": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "2": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "3": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "4": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "5": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "6": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "7": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "8": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "9": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "10": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "11": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "12": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "13": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "14": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "15": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "16": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "17": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "18": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "19": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "20": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "21": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "22": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "23": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "24": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "25": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "26": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "27": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        },
+        "28": {
+          "profile": "component-threading",
+          "builtins": [
+            "new-indirect",
+            "yield-then-resume"
+          ]
+        }
+      },
+      "commands": 29,
+      "selectedCounts": {}
+    },
+    "async/trap-if-transfer-in-waitable-set": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "deferredCommands": {},
+      "commands": 5,
+      "selectedCounts": {
+        "assert_trap": 2,
+        "module_definition": 1,
+        "module_instance": 2
+      }
+    },
+    "async/validate-no-async-abi-for-sync-type": {
+      "selectedCommands": [
+        0,
+        1,
+        2
+      ],
+      "deferredCommands": {},
+      "commands": 3,
+      "selectedCounts": {
+        "assert_invalid": 3
+      }
+    },
+    "async/validate-no-stream-char": {
+      "selectedCommands": [
+        0
+      ],
+      "deferredCommands": {},
+      "commands": 1,
+      "selectedCounts": {
+        "assert_invalid": 1
+      }
+    },
+    "async/validate-task-return": {
+      "selectedCommands": [
+        0,
+        1,
+        2
+      ],
+      "deferredCommands": {},
+      "commands": 3,
+      "selectedCounts": {
+        "assert_invalid": 2,
+        "module": 1
+      }
+    },
+    "async/wait-during-callback": {
+      "selectedCommands": [
+        0,
+        1
+      ],
+      "deferredCommands": {},
+      "commands": 2,
+      "selectedCounts": {
+        "assert_return": 1,
+        "module": 1
+      }
+    },
+    "async/zero-length": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26
+      ],
+      "deferredCommands": {},
+      "commands": 27,
+      "selectedCounts": {
+        "assert_return": 13,
+        "module": 1,
+        "module_definition": 1,
+        "module_instance": 12
+      }
+    },
+    "linking/link-time-virtualization": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "deferredCommands": {},
+      "commands": 8,
+      "selectedCounts": {
+        "assert_return": 7,
+        "module": 1
+      }
+    },
+    "linking/shared-everything-dynamic-linking": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "deferredCommands": {},
+      "commands": 14,
+      "selectedCounts": {
+        "assert_return": 12,
+        "module": 2
+      }
+    },
+    "linking/tags": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "deferredCommands": {},
+      "commands": 12,
+      "selectedCounts": {
+        "assert_invalid": 2,
+        "assert_return": 6,
+        "module": 4
+      }
+    },
+    "linking/unit": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237
+      ],
+      "deferredCommands": {},
+      "commands": 238,
+      "selectedCounts": {
+        "assert_return": 180,
+        "module": 58
+      }
+    },
+    "resources/borrows": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "deferredCommands": {},
+      "commands": 5,
+      "selectedCounts": {
+        "assert_return": 1,
+        "assert_trap": 1,
+        "module_definition": 1,
+        "module_instance": 2
+      }
+    },
+    "resources/handle-table": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28
+      ],
+      "deferredCommands": {},
+      "commands": 29,
+      "selectedCounts": {
+        "assert_return": 3,
+        "assert_trap": 11,
+        "module": 4,
+        "module_definition": 2,
+        "module_instance": 9
+      }
+    },
+    "resources/multiple-resources": {
+      "selectedCommands": [
+        0,
+        1
+      ],
+      "deferredCommands": {},
+      "commands": 2,
+      "selectedCounts": {
+        "assert_return": 1,
+        "module": 1
+      }
+    },
+    "values/alignment": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ],
+      "deferredCommands": {},
+      "commands": 25,
+      "selectedCounts": {
+        "assert_trap": 9,
+        "module_definition": 7,
+        "module_instance": 9
+      }
+    },
+    "values/concat": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45
+      ],
+      "deferredCommands": {},
+      "commands": 46,
+      "selectedCounts": {
+        "assert_return": 44,
+        "module": 2
+      }
+    },
+    "values/numerics": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25
+      ],
+      "deferredCommands": {},
+      "commands": 26,
+      "selectedCounts": {
+        "assert_return": 13,
+        "assert_trap": 3,
+        "module": 6,
+        "module_definition": 1,
+        "module_instance": 3
+      }
+    },
+    "values/realloc": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "deferredCommands": {},
+      "commands": 16,
+      "selectedCounts": {
+        "assert_return": 1,
+        "assert_trap": 5,
+        "module": 1,
+        "module_definition": 4,
+        "module_instance": 5
+      }
+    },
+    "values/strings": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "deferredCommands": {},
+      "commands": 17,
+      "selectedCounts": {
+        "assert_return": 5,
+        "assert_trap": 4,
+        "module": 8
+      }
+    },
+    "values/transcode": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "deferredCommands": {},
+      "commands": 10,
+      "selectedCounts": {
+        "assert_return": 5,
+        "module": 5
+      }
+    },
+    "values/variants": {
+      "selectedCommands": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "deferredCommands": {},
+      "commands": 14,
+      "selectedCounts": {
+        "assert_return": 4,
+        "assert_trap": 4,
+        "module": 1,
+        "module_definition": 1,
+        "module_instance": 4
+      }
+    }
+  },
+  "producerLimitations": {
+    "async/big-interleaving-test": {
+      "unconverted": true,
+      "token": "stream.forward",
+      "diagnostic": "error: unexpected token, expected one of: `lift`, `lower`, `resource.new`, `resource.drop`, `resource.rep`, `thread.spawn-ref`, `thread.spawn-indirect`, `thread.available_parallelism`, `backpressure.inc`, `backpressure.dec`, `task.return`, `task.cancel`, `context.get`, `context.set`, `subtask.drop`, `subtask.cancel`, `stream.new`, `stream.read`, `stream.write`, `stream.cancel-read`, `stream.cancel-write`, `stream.drop-readable`, `stream.drop-writable`, `future.new`, `future.read`, `future.write`, `future.cancel-read`, `future.cancel-write`, `future.drop-readable`, `future.drop-writable`, `error-context.new`, `error-context.debug-message`, `error-context.drop`, `waitable-set.new`, `waitable-set.wait`, `waitable-set.poll`, `waitable-set.drop`, `waitable.join`, `thread.index`, `thread.new-indirect`, `thread.resume-later`, `thread.suspend`, `thread.yield`, `thread.suspend-then-resume`, `thread.yield-then-resume`, `thread.suspend-then-promote`, `thread.yield-then-promote`\n     --> source/async/big-interleaving-test.wast:371:12\n      |\n  371 |     (canon stream.forward $ST (core func $stream.forward))\n      |            ^\n"
+    },
+    "async/forward": {
+      "unconverted": true,
+      "token": "stream.forward",
+      "diagnostic": "error: unexpected token, expected one of: `lift`, `lower`, `resource.new`, `resource.drop`, `resource.rep`, `thread.spawn-ref`, `thread.spawn-indirect`, `thread.available_parallelism`, `backpressure.inc`, `backpressure.dec`, `task.return`, `task.cancel`, `context.get`, `context.set`, `subtask.drop`, `subtask.cancel`, `stream.new`, `stream.read`, `stream.write`, `stream.cancel-read`, `stream.cancel-write`, `stream.drop-readable`, `stream.drop-writable`, `future.new`, `future.read`, `future.write`, `future.cancel-read`, `future.cancel-write`, `future.drop-readable`, `future.drop-writable`, `error-context.new`, `error-context.debug-message`, `error-context.drop`, `waitable-set.new`, `waitable-set.wait`, `waitable-set.poll`, `waitable-set.drop`, `waitable.join`, `thread.index`, `thread.new-indirect`, `thread.resume-later`, `thread.suspend`, `thread.yield`, `thread.suspend-then-resume`, `thread.yield-then-resume`, `thread.suspend-then-promote`, `thread.yield-then-promote`\n     --> source/async/forward.wast:842:10\n      |\n  842 |   (canon stream.forward $ST (core func $stream.forward))\n      |          ^\n"
+    },
+    "validation/version-suffix": {
+      "unconverted": true,
+      "token": "version-suffix",
+      "diagnostic": "error: unexpected token, expected one of: `core`, `func`, `component`, `instance`, `value`, `type`\n     --> source/validation/version-suffix.wast:3:22\n      |\n    3 |   (import \"a:b/c@1\" (version-suffix \".2.3\") (instance))                  ;; 1.2.3\n      |                      ^\n"
+    },
+    "values/post-return": {
+      "unconverted": true,
+      "token": "stream.forward",
+      "diagnostic": "error: unexpected token, expected one of: `lift`, `lower`, `resource.new`, `resource.drop`, `resource.rep`, `thread.spawn-ref`, `thread.spawn-indirect`, `thread.available_parallelism`, `backpressure.inc`, `backpressure.dec`, `task.return`, `task.cancel`, `context.get`, `context.set`, `subtask.drop`, `subtask.cancel`, `stream.new`, `stream.read`, `stream.write`, `stream.cancel-read`, `stream.cancel-write`, `stream.drop-readable`, `stream.drop-writable`, `future.new`, `future.read`, `future.write`, `future.cancel-read`, `future.cancel-write`, `future.drop-readable`, `future.drop-writable`, `error-context.new`, `error-context.debug-message`, `error-context.drop`, `waitable-set.new`, `waitable-set.wait`, `waitable-set.poll`, `waitable-set.drop`, `waitable.join`, `thread.index`, `thread.new-indirect`, `thread.resume-later`, `thread.suspend`, `thread.yield`, `thread.suspend-then-resume`, `thread.yield-then-resume`, `thread.suspend-then-promote`, `thread.yield-then-promote`\n     --> source/values/post-return.wast:40:12\n      |\n   40 |     (canon stream.forward $ST (core func $stream.forward))\n      |            ^\n"
+    }
+  },
+  "separateValidationCorpus": "../component-binary/manifest.json"
+}

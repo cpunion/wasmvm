@@ -70,11 +70,15 @@ type AsyncWork struct {
 	Start  func(*Caller, []*Resource) (*HostCompletion, error)
 	Done   func(*Caller, bool) error
 	Cancel *Cancellation
+	// Cleanup runs once after accepted work finishes or is abandoned, including
+	// before Start. It must be nonblocking and must not enter the VM.
+	Cleanup func()
 }
 type workState struct {
 	control       *Cancellation
 	refs          []*Resource
 	values, bytes uint64
+	cleanup       func()
 }
 
 func (in *Instance) checkOwned(ref *Resource) error {
@@ -169,6 +173,7 @@ func (c *Caller) Schedule(work AsyncWork) error {
 		_, err := t.host.invoke(core, func(fresh *Caller) (*Value, error) { return nil, work.Done(fresh, cancelled) })
 		return err
 	}
+	state.cleanup = work.Cleanup
 	return nil
 }
 func (t *componentTask) syncCancellation() {
@@ -191,6 +196,11 @@ func (s *workState) finish(c *vm.Caller, in *Instance) {
 	guard := cleanupGuard{}
 	for _, ref := range refs {
 		guard.run(func() { in.cleanupResource(c, ref) })
+	}
+	cleanup := s.cleanup
+	s.cleanup = nil
+	if cleanup != nil {
+		guard.run(cleanup)
 	}
 	guard.finish()
 }

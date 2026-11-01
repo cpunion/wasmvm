@@ -26,8 +26,13 @@ type ReadResult struct {
 // Close runs once after EOF, failure, reader drop or instance close. It must
 // be nonblocking and must not enter or wait for the VM.
 type AsyncSource struct {
-	Read  func(*Caller, uint32) (*ReadCompletion, error)
-	Close func()
+	Read func(*Caller, uint32) (*ReadCompletion, error)
+	// Owned capabilities move on successful construction. ReadOwned receives
+	// their moved references; source closure reclaims them in the Store session.
+	Owned     []*Resource
+	Cancel    *Cancellation
+	ReadOwned func(*Caller, []*Resource, uint32) (*ReadCompletion, error)
+	Close     func()
 }
 
 // ReadCompletion shares the one-shot, thread-safe HostCompletion protocol.
@@ -73,7 +78,7 @@ func (r *ReadCompletion) Cancelled() error {
 }
 
 func (in *Instance) newSource(t ValueType, source AsyncSource) (Value, error) {
-	if !t.Valid() || !asyncValueType(t.typ) || source.Read == nil {
+	if !t.Valid() || !asyncValueType(t.typ) || (source.Read == nil) == (source.ReadOwned == nil) {
 		return Value{}, vm.ErrType
 	}
 	for _, rt := range t.resources {
@@ -84,37 +89,105 @@ func (in *Instance) newSource(t ValueType, source AsyncSource) (Value, error) {
 	if _, err := in.layouts[0].Build(t.typ); err != nil {
 		return Value{}, err
 	}
+	owned := append([]*Resource(nil), source.Owned...)
+	n := uint64(len(owned))
+	bytes := n * 128
+	if n > uint64(in.config.MaxResources) || n > in.config.MaxValues-in.heldValues || bytes > in.config.MaxBytes-in.heldBytes {
+		return Value{}, wasm.ErrLimit
+	}
+	seen := map[any]bool{}
+	for _, ref := range owned {
+		if err := in.checkOwned(ref); err != nil {
+			return Value{}, err
+		}
+		key := canonical.ReferenceKey(ref)
+		if seen[key] {
+			return Value{}, vm.ErrType
+		}
+		seen[key] = true
+	}
+	source.Owned = nil
 	scope := &namespace{resources: t.resources, handles: in.hostResources}
 	r, w, err := in.allocateEnds(nil, scope, t.typ)
 	if err != nil {
 		return Value{}, err
 	}
-	state := &sourceState{source: source}
+	state := &sourceState{source: source, in: in, values: n, bytes: bytes, writer: w, hasOwned: n != 0}
+	if source.Cancel != nil {
+		if err := source.Cancel.attach(in.scheduler().wake); err != nil {
+			r.abort()
+			w.abort()
+			return Value{}, err
+		}
+		state.controlAccepted = true
+	}
 	in.mu.Lock()
 	if in.closed {
 		in.mu.Unlock()
+		if state.controlAccepted {
+			source.Cancel.release()
+		}
 		r.abort()
 		w.abort()
 		return Value{}, wasm.ErrClosed
 	}
 	w.source = state
+	in.heldValues += n
+	in.heldBytes += bytes
+	for _, ref := range owned {
+		moved, err := canonical.MoveReference(ref)
+		if err != nil {
+			in.mu.Unlock()
+			r.abort()
+			w.abort()
+			return Value{}, err
+		}
+		state.owned = append(state.owned, moved)
+	}
 	if in.sources == nil {
 		in.sources = map[*sourceState]struct{}{}
 	}
 	in.sources[state] = struct{}{}
 	in.mu.Unlock()
+	if state.controlAccepted {
+		source.Cancel.mu.Lock()
+		requested := false
+		if !state.closed.Load() {
+			source.Cancel.cancel = func() { state.queue(true) }
+			requested = source.Cancel.requested.Load()
+		}
+		source.Cancel.mu.Unlock()
+		if requested {
+			state.queue(true)
+		}
+	}
+
 	return Value{Resource: canonical.NewReference(in.hostResources, nil, r.id, r, nil)}, nil
 }
 func (c *Caller) NewSource(t ValueType, source AsyncSource) (Value, error) {
+	v, _, err := c.NewOwnedSource(t, source)
+	return v, err
+}
+
+// NewOwnedSource also returns the source's moved capabilities for a provider
+// that needs a private ownership anchor. Moving a returned reference onward
+// removes it from the source's eventual cleanup. Use only in this Store.
+func (c *Caller) NewOwnedSource(t ValueType, source AsyncSource) (v Value, owned []*Resource, err error) {
 	if err := c.enter(); err != nil {
-		return Value{}, err
+		return Value{}, nil, err
 	}
 	defer c.mu.Unlock()
-	v, err := c.instance.newSource(t, source)
-	if err == nil {
-		c.created = append(c.created, v.Resource)
+	defer c.instance.finishSourceCleanup(c.core, &err)
+	v, err = c.instance.newSource(t, source)
+	if err != nil {
+		return v, nil, err
 	}
-	return v, err
+	c.created = append(c.created, v.Resource)
+	end, err := c.instance.readable(v.Resource)
+	if err != nil {
+		return Value{}, nil, err
+	}
+	return v, append([]*Resource(nil), end.other.source.owned...), nil
 }
 func (in *Instance) NewSource(ctx context.Context, t ValueType, source AsyncSource) (v Value, err error) {
 	_, err = in.store.WithCallerCleanup(ctx, CallOptions{}, func(c *vm.Caller) (err error) {
@@ -141,8 +214,11 @@ func (w *asyncEnd) closeSource() {
 	w.state = endDone
 	w.buffer = nil
 	if r := w.other; r != nil {
-		if r.sourceJob != nil && r.sourceJob.host != nil && r.sourceJob.host.cancel != nil {
-			r.sourceJob.host.cancel()
+		if job := r.sourceJob; job != nil {
+			job.cancelRequested = true
+			if job.host != nil && job.host.cancel != nil {
+				job.host.cancel()
+			}
 		}
 		r.other, w.other = nil, nil
 		if r.state != endDone && !r.waitable.pending {
@@ -257,24 +333,71 @@ func (in *Instance) bufferType(element *model.Type) (*model.Type, error) {
 }
 
 type sourceState struct {
-	source AsyncSource
-	once   sync.Once
-	closed atomic.Bool
+	in                  *Instance
+	owned               []*Resource
+	values, bytes       uint64
+	cleanupNext         *sourceState
+	writer              *asyncEnd
+	queued, closeWriter bool
+	controlAccepted     bool
+	hasOwned            bool
+	source              AsyncSource
+	once                sync.Once
+	closed              atomic.Bool
 }
 
 func (s *sourceState) start(c *Caller, limit uint32) (*ReadCompletion, error) {
 	if s.closed.Load() {
 		return nil, wasm.ErrClosed
 	}
+	if s.source.ReadOwned != nil {
+		return s.source.ReadOwned(c, append([]*Resource(nil), s.owned...), limit)
+	}
 	return s.source.Read(c, limit)
 }
 func (s *sourceState) close() (panicked any) {
 	s.once.Do(func() {
 		s.closed.Store(true)
-		defer func() { panicked = recover() }()
+		if s.controlAccepted {
+			s.source.Cancel.release()
+		}
+		defer func() {
+			panicked = recover()
+			if s.hasOwned {
+				s.queue(false)
+			}
+		}()
 		if s.source.Close != nil {
 			s.source.Close()
 		}
 	})
 	return panicked
+}
+
+func (s *sourceState) queue(closeWriter bool) {
+	s.in.mu.Lock()
+	if closeWriter && s.closed.Load() {
+		s.in.mu.Unlock()
+		return
+	}
+	if closeWriter {
+		s.closeWriter = true
+	}
+	if !s.queued {
+		s.queued = true
+		s.cleanupNext = s.in.sourceCleanup
+		s.in.sourceCleanup = s
+	}
+	s.in.mu.Unlock()
+	if s.source.Cancel != nil {
+		s.source.Cancel.mu.Lock()
+		wake := s.source.Cancel.wake
+		s.source.Cancel.mu.Unlock()
+		if wake != nil {
+			select {
+			case wake <- struct{}{}:
+			default:
+			}
+		}
+	}
 }
