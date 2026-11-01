@@ -20,8 +20,9 @@ type heapAccess struct {
 
 type heapCache struct{ key, address byte }
 
-// Cache only within one native entry. No allocation, host call, reclamation or
-// moving collection can occur during that interval. Full handle equality is
+// Cache only within one native entry. No host call, reclamation or relocation
+// can occur during that interval; bounded bump allocations preserve addresses.
+// Full handle equality is
 // checked on every hit; each miss uses the ordinary null/index/generation
 // checks. Entry resets prevent a moved address surviving a safepoint.
 func (e *functionEmitter) prepareHeapCaches() {

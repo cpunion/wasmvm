@@ -7,6 +7,7 @@ import (
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
+	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
@@ -50,6 +51,8 @@ type functionEmitter struct {
 	heapAccesses                                                 map[uint32]heapAccess
 	heapPair                                                     uint32
 	heapCaches                                                   map[uint64]heapCache
+	allocationTypes                                              []module.TypeDef
+	hasAllocations                                               bool
 }
 
 type memoryFallback struct{ label, pc int }

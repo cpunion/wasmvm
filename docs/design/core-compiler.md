@@ -278,6 +278,19 @@ operations and growth continue through explicit owned helpers. See the
 This removes the basic table/reference helper transitions, without accepting
 general call, register-allocation or whole-profile performance.
 
+## Implemented native struct allocation
+
+Ordinary native entries may initialize fixed-layout struct objects in batches
+of at most 64 reserved handles. All capacity/quota guards precede writes;
+field initialization precedes the output and cursor commit. The existing driver
+publishes every completed batch into the shared typed collector on every exit,
+including trap/cancel/error paths, before helpers or host reentry. No payload
+relocation, reclamation or live-handle reuse occurs inside an entry. Precise
+fuel, forced GC, descriptors and unsupported shapes retain complete helpers.
+The private view contains only numeric IDs and owned native addresses; the
+stable entry record ABI is unchanged. See the
+[allocation evidence](../research/performance-native-allocation-2026-11-02.md).
+
 ## Implemented private memory primitives
 
 `internal/engine/memory` enforces Core 2.0 page limits, independent host quotas,

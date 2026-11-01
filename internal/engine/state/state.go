@@ -62,6 +62,8 @@ type Store struct {
 	globals                   []*Global
 	registry                  module.TypeRegistry
 	heap                      []heapSlot
+	heapObjects               [][]heapObject
+	markObjects               []*heapObject
 	nativeHeap                *nativeHeap
 	heapLayouts               map[uint32]*heapLayout
 	heapFree                  []uint32

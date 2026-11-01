@@ -316,7 +316,13 @@ frames:
 					operands = append(operands, values[int(slot)])
 				}
 				var err error
-				result, err = e.store.GC(e.context, instance, im, operands, e.RetainedValues)
+				if e.store.HeapSafepoint != nil {
+					// Embedding Stores already retain all active executions. Avoid
+					// constructing an escaping visitor that their collector ignores.
+					result, err = e.store.GC(e.context, instance, im, operands)
+				} else {
+					result, err = e.store.GC(e.context, instance, im, operands, e.RetainedValues)
+				}
 				if err != nil {
 					var t *wasm.Trap
 					if errors.As(err, &t) {

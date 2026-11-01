@@ -26,9 +26,13 @@ func TestGCGlobalsPublishBeforeCollectionAndHostReentry(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer m.Close()
-		for _, options := range []CallOptions{{}, {Fuel: 2000}} {
+		for _, scenario := range []struct {
+			options CallOptions
+			forced  bool
+		}{{CallOptions{}, true}, {CallOptions{Fuel: 2000}, true}, {CallOptions{}, false}, {CallOptions{Fuel: 2000}, false}} {
+			options := scenario.options
 			sc := DefaultStoreConfig()
-			sc.CollectEveryAllocation = true
+			sc.CollectEveryAllocation = scenario.forced
 			sc.Limits.MaxHeapObjects, sc.Limits.MaxHeapBytes = 8, 1024
 			s, err := e.NewStore(sc)
 			if err != nil {

@@ -33,7 +33,7 @@ func globalCell(f *slots.Function, in slots.Instruction, config Config) (uint32,
 
 func (e *functionEmitter) prepareRuntimeData(config Config) ([]uint32, bool) {
 	seen := map[uint32]bool{}
-	needed := e.memoryViews || len(e.heapAccesses) != 0
+	needed := e.memoryViews || len(e.heapAccesses) != 0 || e.hasAllocations
 	for _, in := range e.f.Code {
 		if _, _, ok := globalCell(e.f, in, config); ok {
 			seen[e.f.Sources[in.Source].Wasm.A] = true
@@ -48,10 +48,10 @@ func (e *functionEmitter) prepareRuntimeData(config Config) ([]uint32, bool) {
 		indices = append(indices, index)
 	}
 	sort.Slice(indices, func(i, j int) bool { return indices[i] < indices[j] })
-	if len(e.heapAccesses) != 0 {
+	if len(e.heapAccesses) != 0 || e.hasAllocations {
 		var ok bool
 		e.heapPair, ok = nativeabi.HeapPairOffset(config.FunctionCount, config.TableCount, uint32(len(config.Globals)), uint32(len(indices)), config.MemoryCount)
-		if !ok {
+		if !ok || e.hasAllocations && e.heapPair > 1<<31-17 {
 			panic(&wasm.Error{Kind: wasm.ErrLimit, Detail: "native heap view offset"})
 		}
 	}

@@ -47,6 +47,7 @@ type CompiledFunction struct {
 	HeapCaches                    uint32
 	ForwardedHeap                 uint32
 	NativeBulk                    uint32
+	NativeAllocations             uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -95,6 +96,8 @@ type Config struct {
 	Globals []module.GlobalType
 	// HeapTypes contains the validated module-local aggregate definitions.
 	HeapTypes []module.TypeDef
+	// NativeAllocations requires the driver's prepare/finish batch protocol.
+	NativeAllocations bool
 }
 
 func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
@@ -179,6 +182,15 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	e.header(uint64(len(f.Slots))*16, len(pcs))
 	e.prepareHeapAccesses(config)
+	if config.NativeAllocations && unmetered {
+		e.allocationTypes = config.HeapTypes
+		for _, in := range f.Code {
+			if _, ok := e.heapAllocationType(in); ok {
+				e.hasAllocations = true
+				break
+			}
+		}
+	}
 	globalIndices, usesRuntimeData := e.prepareRuntimeData(config)
 	e.memoryFunctions, e.memoryTables, e.memoryGlobals, e.memoryBindings = config.FunctionCount, config.TableCount, uint32(len(config.Globals)), uint32(len(globalIndices))
 	if e.usesMemory && !e.memoryViews {
@@ -388,6 +400,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			}
 		case e.heapInstruction(in):
 			out.NativeHeap++
+		case e.heapAllocation(in, uint32(pc)):
+			out.NativeAllocations++
+			out.Helpers++ // The checked slow allocation remains an explicit exit.
 		case e.bulkMemoryOpcode(in):
 			e.bulkMemory(in, uint32(pc))
 			out.NativeBulk++
