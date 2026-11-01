@@ -3,6 +3,7 @@
 package host
 
 import (
+	"runtime"
 	"strings"
 
 	"golang.org/x/sys/unix"
@@ -68,6 +69,11 @@ func SocketOption(fd int, family uint32, name string, value uint64) (uint64, err
 		if result != 0 {
 			result = 1
 		}
+	}
+	// Linux includes its bookkeeping allowance in SO_RCVBUF/SO_SNDBUF;
+	// WASI reports the usable size in the same units as its setter.
+	if runtime.GOOS == "linux" && (option == unix.SO_RCVBUF || option == unix.SO_SNDBUF) {
+		result /= 2
 	}
 	return uint64(result) * multiplier, nil
 }

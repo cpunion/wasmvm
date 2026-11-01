@@ -272,7 +272,9 @@ The resulting fixes preserve protocol ownership and readiness:
   polls, cancellation, full-duplex streams and sequential resource reuse.
 - Socket methods implement listening state and pre-listen backlog changes.
   IPv6 sockets use an explicit hop limit of 64 on both P2 and P3, avoiding the
-  kernel's negative route-default sentinel in an unsigned WASI value. Literal
+  kernel's negative route-default sentinel in an unsigned WASI value. Linux
+  buffer-size getters remove the kernel's doubled bookkeeping allowance so
+  reads use the same units as setters. Literal
   DNS results preserve bracketed IPv6 and mapped address families.
 - Last socket leases close descriptors before subsequent binds/sends. Shutdown
   drains half-close jobs before forced closure so queued work cannot touch a

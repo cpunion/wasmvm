@@ -4989,5 +4989,10 @@ is component 91.2%, P2 90.2%, P3 90.8% and CLI 97.8%; shared host coverage is
 offline corpus hash/provenance verification pass. Final integrated-head target
 CI and review remain required. No performance acceptance is inferred.
 
+The first target CI passed Go on macOS but exposed doubled Linux socket-buffer
+readback in both TCP and UDP upstream programs. The common getter now reports
+usable bytes in setter units, matching the pinned reference normalization. The
+unchanged assertions remain required for both backends and host compilers.
+
 Raw local logs and original failing probes are retained under
 `artifacts/components/upstream-worlds-probe`.
