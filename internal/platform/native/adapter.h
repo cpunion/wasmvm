@@ -23,12 +23,12 @@ void wasmvm_unpublish(void *code, size_t size);
 void *wasmvm_allocate(size_t size);
 void wasmvm_deallocate(void *p);
 struct wasmvm_atomic_result { uint64_t value, retry; };
-struct wasmvm_atomic_result wasmvm_atomic_access(void *address, uint32_t width, uint32_t operation,
+struct wasmvm_atomic_result wasmvm_atomic_access(uintptr_t address, uint32_t width, uint32_t operation,
                               uint64_t a, uint64_t b);
-uint64_t wasmvm_shared_load(const void *address, uint32_t width);
-void wasmvm_shared_store(void *address, uint32_t width, uint64_t value);
+uint64_t wasmvm_shared_load(uintptr_t address, uint32_t width);
+void wasmvm_shared_store(uintptr_t address, uint32_t width, uint64_t value);
 void wasmvm_shared_transfer(void *destination, const void *source, size_t size, uint32_t mode);
-void wasmvm_shared_fill(void *destination, size_t size, uint8_t byte);
+void wasmvm_shared_fill(uintptr_t destination, size_t size, uint8_t byte);
 void wasmvm_shared_fence(void);
 void wasmvm_cancel(struct wasmvm_record *ctx);
 uint32_t wasmvm_enter(const void *entry, struct wasmvm_record *ctx);

@@ -32,21 +32,25 @@ func publish(code []byte) unsafe.Pointer {
 func unpublish(p unsafe.Pointer, n uint64) { C.wasmvm_unpublish(p, C.size_t(n)) }
 func allocate(n uint64) unsafe.Pointer     { return C.wasmvm_allocate(C.size_t(n)) }
 func deallocate(p unsafe.Pointer)          { C.wasmvm_deallocate(p) }
+
+// Guest addresses below always refer to retained native allocations. Numeric
+// C parameters avoid generated pointer-check closures; host-buffer transfers
+// keep pointer parameters and their Go liveness/pinning checks.
 func atomicAccess(p unsafe.Pointer, width, operation uint32, a, b uint64) (uint64, bool) {
-	result := C.wasmvm_atomic_access(p, C.uint32_t(width), C.uint32_t(operation), C.uint64_t(a), C.uint64_t(b))
+	result := C.wasmvm_atomic_access(C.uintptr_t(uintptr(p)), C.uint32_t(width), C.uint32_t(operation), C.uint64_t(a), C.uint64_t(b))
 	return uint64(result.value), result.retry != 0
 }
 func sharedLoad(p unsafe.Pointer, width uint32) uint64 {
-	return uint64(C.wasmvm_shared_load(p, C.uint32_t(width)))
+	return uint64(C.wasmvm_shared_load(C.uintptr_t(uintptr(p)), C.uint32_t(width)))
 }
 func sharedStore(p unsafe.Pointer, width uint32, value uint64) {
-	C.wasmvm_shared_store(p, C.uint32_t(width), C.uint64_t(value))
+	C.wasmvm_shared_store(C.uintptr_t(uintptr(p)), C.uint32_t(width), C.uint64_t(value))
 }
 func sharedTransfer(dst, src unsafe.Pointer, size uint64, mode uint32) {
 	C.wasmvm_shared_transfer(dst, src, C.size_t(size), C.uint32_t(mode))
 }
 func sharedFill(dst unsafe.Pointer, size uint64, byte byte) {
-	C.wasmvm_shared_fill(dst, C.size_t(size), C.uint8_t(byte))
+	C.wasmvm_shared_fill(C.uintptr_t(uintptr(dst)), C.size_t(size), C.uint8_t(byte))
 }
 func sharedFence()            { C.wasmvm_shared_fence() }
 func cancel(p unsafe.Pointer) { C.wasmvm_cancel((*C.struct_wasmvm_record)(p)) }

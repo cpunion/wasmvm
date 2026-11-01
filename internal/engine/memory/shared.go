@@ -93,6 +93,9 @@ func (m *Memory) Pages() uint64 {
 	if m.domain == nil || m.sharedSize != nil {
 		return m.pages()
 	}
+	return m.pagesLocked()
+}
+func (m *Memory) pagesLocked() uint64 {
 	m.domain.mu.Lock()
 	defer m.domain.mu.Unlock()
 	return m.pages()
@@ -112,6 +115,9 @@ func (m *Memory) Range(at, n uint64) bool {
 	if m.domain == nil || m.sharedSize != nil {
 		return m.rangeBytes(at, n)
 	}
+	return m.rangeLocked(at, n)
+}
+func (m *Memory) rangeLocked(at, n uint64) bool {
 	m.domain.mu.Lock()
 	defer m.domain.mu.Unlock()
 	return m.rangeBytes(at, n)
@@ -120,6 +126,9 @@ func (m *Memory) Read(at uint64, p []byte) bool {
 	if m.domain == nil || m.sharedSize != nil {
 		return m.readBytes(at, p)
 	}
+	return m.readLocked(at, p)
+}
+func (m *Memory) readLocked(at uint64, p []byte) bool {
 	m.domain.mu.Lock()
 	defer m.domain.mu.Unlock()
 	return m.readBytes(at, p)
@@ -128,6 +137,9 @@ func (m *Memory) Write(at uint64, p []byte) bool {
 	if m.domain == nil || m.sharedSize != nil {
 		return m.writeBytes(at, p)
 	}
+	return m.writeLocked(at, p)
+}
+func (m *Memory) writeLocked(at uint64, p []byte) bool {
 	m.domain.mu.Lock()
 	defer m.domain.mu.Unlock()
 	return m.writeBytes(at, p)
@@ -136,6 +148,9 @@ func (m *Memory) Fill(at uint64, b byte, n uint64) bool {
 	if m.domain == nil || m.sharedSize != nil {
 		return m.fill(at, b, n)
 	}
+	return m.fillLocked(at, b, n)
+}
+func (m *Memory) fillLocked(at uint64, b byte, n uint64) bool {
 	m.domain.mu.Lock()
 	defer m.domain.mu.Unlock()
 	return m.fill(at, b, n)
@@ -144,6 +159,9 @@ func (m *Memory) Init(dst, src, n uint64, p []byte) bool {
 	if m.domain == nil || m.sharedSize != nil {
 		return m.initBytes(dst, src, n, p)
 	}
+	return m.initLocked(dst, src, n, p)
+}
+func (m *Memory) initLocked(dst, src, n uint64, p []byte) bool {
 	m.domain.mu.Lock()
 	defer m.domain.mu.Unlock()
 	return m.initBytes(dst, src, n, p)
@@ -167,6 +185,9 @@ func (m *Memory) Load(op uint32, address, offset uint64, lane byte, previous val
 	if m.domain == nil || m.sharedSize != nil {
 		return m.load(op, address, offset, lane, previous)
 	}
+	return m.loadLocked(op, address, offset, lane, previous)
+}
+func (m *Memory) loadLocked(op uint32, address, offset uint64, lane byte, previous value.Value) (value.Value, wasm.TrapCode) {
 	m.domain.mu.Lock()
 	defer m.domain.mu.Unlock()
 	return m.load(op, address, offset, lane, previous)
@@ -175,6 +196,9 @@ func (m *Memory) Store(op uint32, address, offset uint64, lane byte, v value.Val
 	if m.domain == nil || m.sharedSize != nil {
 		return m.store(op, address, offset, lane, v)
 	}
+	return m.storeLocked(op, address, offset, lane, v)
+}
+func (m *Memory) storeLocked(op uint32, address, offset uint64, lane byte, v value.Value) wasm.TrapCode {
 	m.domain.mu.Lock()
 	defer m.domain.mu.Unlock()
 	return m.store(op, address, offset, lane, v)

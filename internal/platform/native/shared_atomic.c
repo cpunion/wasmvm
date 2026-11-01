@@ -139,8 +139,9 @@ static struct wasmvm_atomic_result machine_compare_exchange(void *address, uint3
 #error unsupported shared-memory target
 #endif
 
-struct wasmvm_atomic_result wasmvm_atomic_access(void *address, uint32_t width,
+struct wasmvm_atomic_result wasmvm_atomic_access(uintptr_t raw_address, uint32_t width,
                                                 uint32_t operation, uint64_t a, uint64_t b) {
+    void *address = (void *)raw_address;
     if (operation == 0) return (struct wasmvm_atomic_result){machine_load(address, width, 1), 0};
     if (operation == 1) {
 #if defined(__x86_64__)
@@ -180,7 +181,8 @@ struct wasmvm_atomic_result wasmvm_atomic_access(void *address, uint32_t width,
 
 /* Nonatomic Wasm/host transfers allow byte tearing. Use relaxed atomics in C
  * so concurrent JIT/atomic access never races an ordinary C memory operation. */
-uint64_t wasmvm_shared_load(const void *address, uint32_t width) {
+uint64_t wasmvm_shared_load(uintptr_t raw_address, uint32_t width) {
+    const void *address = (const void *)raw_address;
     if (((uintptr_t)address & (width - 1)) == 0) {
         return machine_load(address, width, 0);
     }
@@ -190,7 +192,8 @@ uint64_t wasmvm_shared_load(const void *address, uint32_t width) {
     return value;
 }
 
-void wasmvm_shared_store(void *address, uint32_t width, uint64_t value) {
+void wasmvm_shared_store(uintptr_t raw_address, uint32_t width, uint64_t value) {
+    void *address = (void *)raw_address;
     if (((uintptr_t)address & (width - 1)) == 0) {
         machine_store(address, width, value);
         return;
@@ -200,13 +203,13 @@ void wasmvm_shared_store(void *address, uint32_t width, uint64_t value) {
 }
 
 static uint64_t transfer_read(const uint8_t *p, uint32_t width, uint32_t mode) {
-    if (mode & 2) return wasmvm_shared_load(p, width);
+    if (mode & 2) return wasmvm_shared_load((uintptr_t)p, width);
     uint64_t value = 0;
     memcpy(&value, p, width);
     return value;
 }
 static void transfer_write(uint8_t *p, uint32_t width, uint64_t value, uint32_t mode) {
-    if (mode & 1) wasmvm_shared_store(p, width, value);
+    if (mode & 1) wasmvm_shared_store((uintptr_t)p, width, value);
     else memcpy(p, &value, width);
 }
 
@@ -236,20 +239,20 @@ void wasmvm_shared_transfer(void *destination, const void *source, size_t size, 
     }
 }
 
-void wasmvm_shared_fill(void *destination, size_t size, uint8_t byte) {
-    uint8_t *dst = destination;
+void wasmvm_shared_fill(uintptr_t destination, size_t size, uint8_t byte) {
+    uint8_t *dst = (void *)destination;
     while (size && ((uintptr_t)dst & 7)) {
-        wasmvm_shared_store(dst++, 1, byte);
+        wasmvm_shared_store((uintptr_t)dst++, 1, byte);
         --size;
     }
     uint64_t word = (uint64_t)byte * UINT64_C(0x0101010101010101);
     while (size >= 8) {
-        wasmvm_shared_store(dst, 8, word);
+        wasmvm_shared_store((uintptr_t)dst, 8, word);
         dst += 8;
         size -= 8;
     }
     while (size) {
-        wasmvm_shared_store(dst++, 1, byte);
+        wasmvm_shared_store((uintptr_t)dst++, 1, byte);
         --size;
     }
 }
