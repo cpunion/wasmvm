@@ -34,6 +34,10 @@ func TestIntegerRegisterInventoryExcludesReservedAndImmutableRegisters(t *testin
 		if got := e.spareCallerRegisters(); !reflect.DeepEqual(got, []byte{7, 8}) {
 			t.Fatal("overlapping caller register classes", memory, got)
 		}
+		e.heapCaches = map[uint64]heapCache{0: {7, 8}}
+		if got := e.integerRegisterPool(); !reflect.DeepEqual(got, want[:len(want)-2]) || len(e.spareCallerRegisters()) != 0 {
+			t.Fatal("heap cache overlaps mutable or inline-leaf registers", got)
+		}
 	}
 }
 

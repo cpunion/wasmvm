@@ -36,6 +36,9 @@ func (e *functionEmitter) integerRegisterPool() []byte {
 	for _, r := range e.runtimeRegisters {
 		used[r] = true
 	}
+	for _, cache := range e.heapCaches {
+		used[cache.key], used[cache.address] = true, true
+	}
 	free := pool[:0]
 	for _, r := range pool {
 		if !used[r] {
@@ -55,6 +58,9 @@ func (e *functionEmitter) spareCallerRegisters() []byte {
 	}
 	for _, r := range e.runtimeRegisters {
 		used[r] = true
+	}
+	for _, cache := range e.heapCaches {
+		used[cache.key], used[cache.address] = true, true
 	}
 	var free []byte
 	for r := byte(1); r <= 8; r++ {

@@ -44,6 +44,7 @@ type CompiledFunction struct {
 	FusedVectors                  uint32
 	AliasedVectorReads            uint32
 	NativeHeap                    uint32
+	HeapCaches                    uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -183,6 +184,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		e.prepareVectorConstants()
 		e.prepareConstants()
 		e.prepareRuntimeRegisters()
+		e.prepareHeapCaches()
 		e.contextLoad(0, nativeabi.PayloadOffset+24)
 		e.test(true)
 		e.branch(e.bad, "ne")
@@ -190,6 +192,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	a.dispatch(pcs)
 	out = &CompiledFunction{Function: originalFunction, Offsets: make([]uint32, len(pcs)), UsesMemory: e.usesMemory, GlobalIndices: globalIndices, UsesRuntimeData: usesRuntimeData}
+	out.HeapCaches = uint32(len(e.heapCaches))
 	for _, in := range f.Code {
 		if nativeVectorOpcode(in.Op) || nativeVectorMemoryOpcode(in.Op) {
 			out.NativeVectors++

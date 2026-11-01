@@ -3,6 +3,7 @@ package codegen
 import (
 	"math"
 	"math/bits"
+	"sort"
 
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -14,6 +15,55 @@ type heapAccess struct {
 	offset                       uint32
 	width                        uint32
 	array, length, store, signed bool
+	cacheClass                   uint64
+}
+
+type heapCache struct{ key, address byte }
+
+// Cache only within one native entry. No allocation, host call, reclamation or
+// moving collection can occur during that interval. Full handle equality is
+// checked on every hit; each miss uses the ordinary null/index/generation
+// checks. Entry resets prevent a moved address surviving a safepoint.
+func (e *functionEmitter) prepareHeapCaches() {
+	if !e.unmetered || e.a.arch != "arm64" || len(e.heapAccesses) == 0 {
+		return
+	}
+	free := e.spareCallerRegisters()
+	if len(free) < 2 {
+		return
+	}
+	weights := map[uint64]uint64{}
+	frequencies := instructionFrequencies(e.f)
+	for pc, in := range e.f.Code {
+		if access, ok := e.heapAccesses[in.Source]; ok && in.Op>>16 == 0xfb {
+			weights[access.cacheClass] += frequency(frequencies, pc)
+		}
+	}
+	var classes []uint64
+	for class, weight := range weights {
+		if weight >= 2 {
+			classes = append(classes, class)
+		}
+	}
+	sort.Slice(classes, func(i, j int) bool {
+		if weights[classes[i]] != weights[classes[j]] {
+			return weights[classes[i]] > weights[classes[j]]
+		}
+		return classes[i] < classes[j]
+	})
+	for _, class := range classes[:min(2, len(classes))] {
+		if len(free) < 2 {
+			break
+		}
+		if e.heapCaches == nil {
+			e.heapCaches = map[uint64]heapCache{}
+		}
+		e.heapCaches[class] = heapCache{free[0], free[1]}
+		// A non-null reference cannot match this initial key. The address is
+		// written only after all miss checks succeed, before installing a key.
+		e.a.aconst(uint32(free[0]), 0, false)
+		free = free[2:]
+	}
 }
 
 func (e *functionEmitter) prepareHeapAccesses(config Config) {
@@ -27,8 +77,10 @@ func (e *functionEmitter) prepareHeapAccesses(config Config) {
 			continue
 		}
 		a := heapAccess{array: op >= 0xfb000b, length: op == 0xfb000f, store: op == 0xfb0005 || op == 0xfb000e, signed: op == 0xfb0003 || op == 0xfb000c}
+		a.cacheClass = math.MaxUint64 // array.len has no concrete type immediate.
 		if !a.length {
 			src := e.f.Sources[in.Source].Wasm
+			a.cacheClass = uint64(src.A)
 			if uint64(src.A) >= uint64(len(config.HeapTypes)) {
 				continue
 			}
@@ -72,6 +124,16 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 		return false
 	}
 	e.slotLoad(in.A, 0, false, true)
+	cache, cached := e.heapCaches[a.cacheClass]
+	ready := 0
+	if cached {
+		ready = e.a.label()
+		// Null must miss even when an entry's cache key is initially zero.
+		// CCMP sets Z only for a non-null, complete matching handle.
+		e.test(true)
+		e.a.word(0xfa401120 | uint32(cache.key)<<16) // ccmp x9,key,#0,ne
+		e.branch(ready, "eq")
+	}
 	e.test(true)
 	e.branch(e.trapExit(wasm.TrapNullReference, e.f.Sources[in.Source].Wasm.Offset), "eq")
 	// Validate the complete generation/tag word before loading a payload.
@@ -101,6 +163,22 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 	e.pointerLoad(1, 2, 0)
 	e.compare(true)
 	e.branch(e.bad, "ne")
+	if !a.array {
+		e.pointerLoad(2, 2, 8)
+	}
+	if cached {
+		e.registerMove(cache.address, 11, true)
+		e.registerMove(cache.key, 9, true)
+		e.a.mark(ready)
+	}
+	base := e.operandRegister(2)
+	if cached {
+		if !a.array && a.offset == 0 {
+			base = cache.address
+		} else {
+			e.registerMove(11, cache.address, true)
+		}
+	}
 	if a.length {
 		e.pointerLoad(0, 2, 16)
 		e.heapResult(in.Dst)
@@ -122,7 +200,6 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 			e.a.word(0x8b09016b | shift<<10) // add x11,x11,x9,lsl #stride
 		}
 	} else {
-		e.pointerLoad(2, 2, 8)
 		if a.offset != 0 {
 			if e.a.arch == "amd64" {
 				e.a.bytes(0x48, 0x81, 0xc2)
@@ -158,11 +235,11 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 			}
 			e.a.bytes(0x0f, op, (reg&7)<<3|2) // movdqu xmm,[rdx] / [rdx],xmm
 		} else {
-			op := uint32(0x3dc00160)
+			op := uint32(0x3dc00000)
 			if a.store {
-				op = 0x3d800160
+				op = 0x3d800000
 			}
-			e.a.word(op | uint32(reg)) // ldr/str q,[x11]
+			e.a.word(op | uint32(base)<<5 | uint32(reg))
 		}
 		if !a.store {
 			e.vectorStore(slot, reg)
@@ -173,9 +250,9 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 			operand = e.f.Args[in.Extra+2]
 		}
 		e.slotLoad(operand, 0, false, true)
-		e.heapStore(a.width)
+		e.heapStore(a.width, base)
 	} else {
-		e.heapLoad(a.width, a.signed)
+		e.heapLoad(a.width, a.signed, base)
 		e.heapResult(in.Dst)
 	}
 	return true
@@ -189,7 +266,7 @@ func (e *functionEmitter) heapResult(dst slots.Slot) {
 	}
 }
 
-func (e *functionEmitter) heapLoad(width uint32, signed bool) {
+func (e *functionEmitter) heapLoad(width uint32, signed bool, base byte) {
 	if e.a.arch == "amd64" {
 		if width >= 8 {
 			e.a.bytes(0x48, 0x8b, 0x02)
@@ -206,7 +283,7 @@ func (e *functionEmitter) heapLoad(width uint32, signed bool) {
 			e.a.bytes(0x0f, op, 0x02)
 		}
 	} else {
-		op := uint32(0x39400169) | uint32(bits.TrailingZeros32(width))<<30
+		op := uint32(0x39400009) | uint32(base)<<5 | uint32(bits.TrailingZeros32(width))<<30
 		if signed && width < 4 {
 			op |= 1 << 23
 		}
@@ -214,7 +291,7 @@ func (e *functionEmitter) heapLoad(width uint32, signed bool) {
 	}
 }
 
-func (e *functionEmitter) heapStore(width uint32) {
+func (e *functionEmitter) heapStore(width uint32, base byte) {
 	if e.a.arch == "amd64" {
 		if width == 2 {
 			e.a.bytes(0x66)
@@ -227,6 +304,6 @@ func (e *functionEmitter) heapStore(width uint32) {
 		}
 		e.a.bytes(op, 0x02)
 	} else {
-		e.a.word(0x39000169 | uint32(bits.TrailingZeros32(width))<<30)
+		e.a.word(0x39000009 | uint32(base)<<5 | uint32(bits.TrailingZeros32(width))<<30)
 	}
 }
