@@ -11,8 +11,8 @@ Base `ea6dfc419cf64e12b8efc71e862981b1860144d3` is merged PR #87.
 Head `66a931144fb61974f2702b82780043362d00b634` contains this optimization.
 Both engine revisions were independently archived and hashed. Only phase-runner
 instrumentation enables `wasm.SupportedFeatures` and sets provenance; no engine
-implementation files are overlaid. Subsequent documentation changes do not
-change these measured engine sources.
+implementation files are overlaid. Subsequent documentation/test-only changes
+do not change the measured engine implementation.
 
 The host is an Apple M4 Max, macOS arm64, Go 1.27.3 and LLGo
 `8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f`, `-O3 -lto=full`.
