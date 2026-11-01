@@ -11,6 +11,10 @@ func (e *functionEmitter) runtimePriorities(config Config, frequencies []uint64)
 	weights := map[uint32]uint64{}
 	for pc, in := range e.f.Code {
 		w := frequency(frequencies, pc)
+		if _, ok := e.heapAccesses[in.Source]; ok && in.Op>>16 == 0xfb {
+			weights[e.heapPair] += 2 * w
+			weights[e.heapPair+8] += 2 * w
+		}
 		if offset, _, ok := globalCell(e.f, in, config); ok {
 			weights[offset] += 2 * w
 		}

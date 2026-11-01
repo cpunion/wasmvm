@@ -48,6 +48,7 @@ type functionEmitter struct {
 	loopBackedges                                                map[int]loopBackedge
 	heapAccesses                                                 map[uint32]heapAccess
 	heapPair                                                     uint32
+	heapCaches                                                   map[uint64]heapCache
 }
 
 type memoryFallback struct{ label, pc int }

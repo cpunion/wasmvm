@@ -82,6 +82,12 @@ func TestNativeHeapFieldsEveryWidthAndContinuation(t *testing.T) {
 						if err != nil || c.Helpers != 0 || c.NativeHeap != uint32(len(f.Code)-1) || !c.UsesRuntimeData {
 							t.Fatal(arch, field, array, signed, c, err)
 						}
+						if (c.HeapCaches != 0) != (unmetered && arch == "arm64") {
+							t.Fatal("heap cache policy", arch, unmetered, c.HeapCaches)
+						}
+						if (c.ForwardedHeap == 1) != unmetered {
+							t.Fatal("heap forwarding policy", arch, unmetered, c.ForwardedHeap)
+						}
 					}
 					if !native.Available {
 						continue
@@ -186,6 +192,151 @@ func TestNativeHeapFieldsEveryWidthAndContinuation(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestNativeHeapForwardingPreservesReusedSlotBits(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	const raw = uint64(0xffffbeef00008081)
+	for _, tc := range []struct {
+		field  module.FieldType
+		signed bool
+		want   value.Value
+	}{
+		{module.FieldType{Value: wasm.I32, Packed: 8}, false, value.Value{Lo: 0x81}},
+		{module.FieldType{Value: wasm.I32, Packed: 8}, true, value.Value{Lo: 0xffffff81}},
+		{module.FieldType{Value: wasm.I32, Packed: 16}, false, value.Value{Lo: 0x8081}},
+		{module.FieldType{Value: wasm.I32, Packed: 16}, true, value.Value{Lo: 0xffff8081}},
+		{module.FieldType{Value: wasm.I32}, false, value.Value{Lo: 0x8081}},
+		{module.FieldType{Value: wasm.F32}, false, value.Value{Lo: 0x8081}},
+		{module.FieldType{Value: wasm.I64}, false, value.Value{Lo: raw}},
+		{module.FieldType{Value: wasm.F64}, false, value.Value{Lo: raw}},
+		{module.FieldType{Value: wasm.AnyRef}, false, value.Value{Lo: raw}},
+		{module.FieldType{Value: wasm.V128}, false, value.Value{Lo: raw, Hi: 0x87654321}},
+	} {
+		f, config := heapFixture(tc.field, false, tc.signed)
+		config.Unmetered = true
+		config.HeapTypes[0].Fields = config.HeapTypes[0].Fields[2:]
+		for i := range f.Sources {
+			f.Sources[i].Wasm.B = 0
+		}
+		f.Code[2].Dst, f.Args[len(f.Args)-1] = 2, 2
+		compiled, lease, ctx := configuredContext(t, f, config)
+		if compiled.ForwardedHeap != 1 {
+			t.Fatal("store/load was not forwarded")
+		}
+		storage, err := native.NewMemory(256, 256)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer storage.Close()
+		buffer, _ := storage.Buffer()
+		address := uint64(uintptr(unsafe.Pointer(unsafe.SliceData(buffer))))
+		words := unsafe.Slice((*uint64)(unsafe.Pointer(unsafe.SliceData(buffer))), len(buffer)/8)
+		ref := uint64(0x8000000100000001)
+		words[0], words[1], words[6], words[7], words[8] = 2, address+16, ref, address+128, 1
+		input := value.Value{Lo: raw}
+		if tc.field.Value == wasm.V128 {
+			input.Hi = tc.want.Hi
+		}
+		writeSlot(t, ctx, 16, 0, value.Value{Lo: ref})
+		writeSlot(t, ctx, 16, 2, input)
+		s := native.State{Used: 16, Depth: 1, Budget: 64}
+		s.Payload[2] = address
+		ctx.SetState(s)
+		if exit, err := ctx.Enter(lease, 0); err != nil || exit != native.Return {
+			t.Fatal(exit, err)
+		}
+		if got := readSlot(t, ctx, 16, 2); got != tc.want {
+			t.Fatal("reused field value lost bits", tc.field, tc.signed, got, tc.want)
+		}
+	}
+}
+
+func TestNativeHeapCacheRechecksChangedReferences(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	f, config := heapFixture(module.FieldType{Value: wasm.I32}, false, false)
+	config.Unmetered = true
+	config.HeapTypes[0].Fields = config.HeapTypes[0].Fields[2:]
+	for i := range f.Sources {
+		f.Sources[i].Wasm.B = 0
+	}
+	f.Slots = append(f.Slots, wasm.AnyRef)
+	f.LocalCount++
+	source := uint32(len(f.Sources))
+	f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: 0x20, A: 6}})
+	move := slots.Instruction{Op: 0x20, Source: source, Dst: 0, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot}
+	f.Code = append(f.Code[:1:1], append([]slots.Instruction{move}, f.Code[1:]...)...)
+	_, lease, ctx := configuredContext(t, f, config)
+	storage, err := native.NewMemory(256, 256)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer storage.Close()
+	buffer, _ := storage.Buffer()
+	address := uint64(uintptr(unsafe.Pointer(unsafe.SliceData(buffer))))
+	words := unsafe.Slice((*uint64)(unsafe.Pointer(unsafe.SliceData(buffer))), len(buffer)/8)
+	words[0], words[1] = 3, address+16
+	first, second := uint64(0x8000000100000001), uint64(0x8000000100000002)
+	words[6], words[7], words[8] = first, address+128, 3
+	words[10], words[11], words[12] = second, address+192, 3
+	binary.LittleEndian.PutUint32(buffer[128:], 11)
+	binary.LittleEndian.PutUint32(buffer[192:], 22)
+	for i, v := range []value.Value{{Lo: first}, {}, {Lo: 777}, {}, {}, {}, {Lo: second}} {
+		writeSlot(t, ctx, 16, slots.Slot(i), v)
+	}
+	s := native.State{Used: 16, Depth: 1, Budget: 64}
+	s.Payload[2] = address
+	ctx.SetState(s)
+	if exit, err := ctx.Enter(lease, 0); exit != native.Return || err != nil {
+		t.Fatal(exit, err)
+	}
+	if readSlot(t, ctx, 16, 3).Lo != 11 || readSlot(t, ctx, 16, 4).Lo != 777 || binary.LittleEndian.Uint32(buffer[128:]) != 11 || binary.LittleEndian.Uint32(buffer[192:]) != 777 {
+		t.Fatal("changed handle reused a former object's payload")
+	}
+}
+
+func TestNativeHeapForwardingDoesNotCrossAControlExit(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	f, config := heapFixture(module.FieldType{Value: wasm.I32}, false, false)
+	config.Unmetered = true
+	ret := f.Code[len(f.Code)-1]
+	// Source positions can be shared with a preceding operation. Opcode and
+	// control flow must still determine effects, including unreachable code.
+	ret.Source, ret.A, ret.B = 1, 0, 2
+	f.Code = []slots.Instruction{ret, f.Code[2], f.Code[1], f.Code[len(f.Code)-1]}
+	compiled, lease, ctx := configuredContext(t, f, config)
+	if compiled.ForwardedHeap != 0 {
+		t.Fatal("control exit was classified as a store")
+	}
+	storage, err := native.NewMemory(256, 256)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer storage.Close()
+	buffer, _ := storage.Buffer()
+	address := uint64(uintptr(unsafe.Pointer(unsafe.SliceData(buffer))))
+	words := unsafe.Slice((*uint64)(unsafe.Pointer(unsafe.SliceData(buffer))), len(buffer)/8)
+	ref := uint64(0x8000000100000001)
+	words[0], words[1], words[6], words[7], words[8] = 2, address+16, ref, address+128, 3
+	binary.LittleEndian.PutUint32(buffer[137:], 11)
+	writeSlot(t, ctx, 16, 0, value.Value{Lo: ref})
+	writeSlot(t, ctx, 16, 2, value.Value{Lo: 777})
+	writeSlot(t, ctx, 16, 4, value.Value{Lo: 41})
+	s := native.State{Used: 16, Depth: 1, Budget: 64}
+	s.Payload[2] = address
+	ctx.SetState(s)
+	if exit, err := ctx.Enter(lease, 0); exit != native.Return || err != nil {
+		t.Fatal(exit, err)
+	}
+	if readSlot(t, ctx, 16, 4).Lo != 41 || binary.LittleEndian.Uint32(buffer[137:]) != 11 {
+		t.Fatal("unreachable memory effects executed")
 	}
 }
 

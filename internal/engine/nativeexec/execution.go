@@ -157,20 +157,14 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 		if err := e.ctx.Err(); err != nil {
 			return 0, s.Fuel, err
 		}
-		if err := e.native.SetState(s); err != nil {
-			return 0, s.Fuel, err
-		}
-		exit, err := e.native.Enter(module.code, entry)
+		next, exit, err := e.native.Run(module.code, entry, s)
 		if len(entries.globals) != 0 {
 			e.flushRuntimeGlobals()
 		}
 		if err != nil {
 			return 0, s.Fuel, err
 		}
-		s, err = e.native.State()
-		if err != nil {
-			return 0, fuel, err
-		}
+		s = next
 		switch exit {
 		case native.Poll:
 			s.Budget = 64

@@ -249,6 +249,12 @@ independently of arena high-water capacity. Store close frees both native
 allocations after execution drains. See the [GC comparison](../research/performance-gc-2026-11-02.md)
 for measured gains and remaining deficits.
 
+The [heap-traffic follow-up](../research/performance-gc-followup-2026-11-02.md)
+adds entry-local checked-address caches on arm64 and bounded store/read
+forwarding on both emitters. Cache keys reset at every entry and remain separate
+from guest register homes. Forwarding preserves all original cold PCs and
+checks, packed/vector bits, poll intervals and precise-tier behavior.
+
 ## Direct tables and function references
 
 Both emitters lower table.get/table.set and ref.func in precise and unmetered
