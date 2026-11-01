@@ -587,8 +587,17 @@ non-async calls bypass async backpressure without inheriting permission to block
 and nested success/failure restores the outer task. Three validated fixtures and
 Go/LLGo backend tests cover task storage, ownership, quota/cancellation and
 composed guest calls. Recorded Wasmtime adapter rejection remains a reference
-discrepancy. Local cm64 borrows, P3 filesystem/sockets/HTTP/worlds and full
+discrepancy. Local cm64 borrows, P3 sockets/HTTP/worlds and full
 conformance/performance acceptance remain required.
+
+The filesystem provider now implements all 26 operations in the pinned P3
+filesystem interfaces, including native file/directory streams and all async
+metadata/path methods. Explicit capability roots, signed timestamps, P3 variants,
+nonseekable readiness/partial progress, cancellation, publication rollback and
+bounded deferred FD cleanup have actual execution tests. Two common Core guest
+cases match Wasmtime; API reexport rejection remains recorded separately.
+Sockets, HTTP, complete worlds, independent guest-toolchain/conformance evidence
+and local cm64 borrows remain functional acceptance work.
 
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 
@@ -604,6 +613,11 @@ Every supported capability needs pinned scope, positive/negative/limit/lifecycle
 
 Before each PR, run targeted tests and appropriate shared checks; report exact coverage and unsupported paths. Submit a contribution PR, resolve review findings, and merge only after the **final head** passes required checks. Performance-sensitive PRs need the benchmark evidence described in the performance contract; hosted timing noise cannot be relabeled a pass on a controlled performance gate. PRs may advance an incomplete stage, but only the complete acceptance record closes it.
 
-The implementation priority is competitive native code generation for the complete Core 2.0 profile. Every feature-development PR retains affected-workload comparisons and targets parity or better against pinned competitors; under the current integration decision, local optimization may follow semantic integration; architecture/performance work accompanies functionality from the start. Keep shared compiler stages and runtime contracts compact and extensible. The platform boundary and fixed entry-frame emitter are in progress. Existing measurement evidence is retained; additional benchmark infrastructure is deferred while core functionality advances. M1 performance evidence and M2 backend acceptance remain explicit open gates.
+Under the current owner direction, complete remaining functional capabilities
+before optimizing performance. Retain the full Go/LLGo semantic matrix, per-package
+coverage and necessary regression checks. Defer broad competitive timing campaigns
+until capability coverage is complete; existing deficits and M1/M2 performance
+acceptance remain open. Correct, bounded execution and compact shared runtime
+contracts remain integration requirements.
 
 Before production release, select a project license, define public API compatibility, resolve isolation/lifecycle failures, review parser/validator/compiler/memory/filesystem boundaries, and publish actual supported platforms. A stage completion is not a security-audit claim or permission to publish a release.

@@ -66,6 +66,12 @@ func (t *componentTask) resumeHost(c *vm.Caller) error {
 		return err
 	}
 	if cancelled {
+		// Cancellation can arrive after resume's initial snapshot but before the
+		// producer publishes this acknowledgement. Synchronize after the handoff.
+		t.syncCancellation()
+		if err := c.Context().Err(); err != nil {
+			return err
+		}
 		if !t.cancelRequested {
 			return vm.ErrType
 		}

@@ -194,3 +194,49 @@ func TestScheduleValidationAndFailureCleanup(t *testing.T) {
 		}
 	}
 }
+
+func TestScheduledCancellationAcknowledgementAfterResumeSnapshot(t *testing.T) {
+	for _, requested := range []bool{false, true} {
+		in, _ := sourceType(t, "interpreter", "host-source-stream-u8")
+		signal := NewCancellation()
+		pending := NewHostCompletion()
+		done := false
+		_, err := in.WithCaller(nil, CallOptions{}, func(c *Caller) error {
+			if err := c.Schedule(AsyncWork{Cancel: signal, Start: func(*Caller, []*Resource) (*HostCompletion, error) { return pending, nil }, Done: func(_ *Caller, cancelled bool) error { done = cancelled; return nil }}); err != nil {
+				return err
+			}
+			task := in.tasks.tail
+			if err := task.resume(c.core); err != nil {
+				return err
+			}
+			// Recreate the dispatch boundary after resume has checked cancellation.
+			// The signal and producer acknowledgement arrive before completion.take.
+			if requested {
+				signal.Cancel()
+			}
+			if task.cancelRequested {
+				t.Fatal("cancel snapshot already refreshed")
+			}
+			if err := pending.Cancelled(); err != nil {
+				return err
+			}
+			err := task.resumeHost(c.core)
+			if !requested {
+				if !errors.Is(err, vm.ErrType) {
+					t.Fatal("unsolicited acknowledgement", err)
+				}
+				return task.finish(c.core, nil)
+			}
+			if err != nil {
+				return err
+			}
+			return task.finish(c.core, nil)
+		})
+		if err != nil || done != requested {
+			t.Fatal(requested, done, err)
+		}
+		if in.tasks != nil || in.heldValues != 0 || in.heldBytes != 0 {
+			t.Fatal("late cancellation retained work")
+		}
+	}
+}
