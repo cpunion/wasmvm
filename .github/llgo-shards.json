@@ -1,0 +1,32 @@
+[
+  {
+    "name": "core",
+    "packages": "./internal/binary ./internal/compat ./internal/core/constant ./internal/core/decode ./internal/core/module ./internal/core/validate ./internal/compiler/ir ./internal/compiler/lower ./internal/compiler/slots ./internal/engine/execute ./pkg/wasm",
+    "inputs": "core2 core3 core_extensions",
+    "cli": false
+  },
+  {
+    "name": "vm",
+    "packages": "./internal/compiler/codegen ./internal/compiler/nativeabi ./internal/engine/memory ./internal/engine/nativeexec ./internal/engine/numeric ./internal/engine/simd ./internal/engine/state ./internal/platform/native ./internal/wasi/host ./pkg/vm",
+    "inputs": "core2",
+    "cli": false
+  },
+  {
+    "name": "component",
+    "packages": "./internal/bench/phase ./internal/component/canonical ./internal/component/decode ./internal/component/validate ./pkg/component",
+    "inputs": "component",
+    "cli": true
+  },
+  {
+    "name": "http",
+    "packages": "./internal/cli ./pkg/wasi/preview1 ./pkg/wasi/preview2",
+    "inputs": "core2 core3 core_extensions preview1 wasi_threads component",
+    "cli": false
+  },
+  {
+    "name": "async",
+    "packages": "./pkg/wasi/preview3 ./pkg/wasi/threads",
+    "inputs": "wasi_threads component",
+    "cli": false
+  }
+]

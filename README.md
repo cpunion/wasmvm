@@ -40,7 +40,8 @@ CI runs Go and LLGo on both targets. Shared Go checks include race detection,
 native pointer ownership, fuzz smoke checks and a **90% statement-coverage gate
 for each executable package**. The coverage badge states this policy, not an
 aggregate measurement. The CI badge tracks PR runs; merging requires the final
-PR head to pass all four semantic jobs. See the [validation record](docs/validation.md).
+PR head to pass every semantic shard on all four compiler/platform combinations,
+plus the shared race/quality checks. See the [validation record](docs/validation.md).
 
 ## Install and run
 
@@ -214,7 +215,7 @@ affected inventories are in [explicit core extensions](docs/design/core-extensio
 
 The three Phase 3 implementations execute their full affected binary inventories
 under Go and LLGo in the interpreter and both native tiers. The final-head CI
-matrix verifies integration on both target platforms before merge.
+matrix verifies every shard on both target platforms before merge.
 Their pinned snapshots are experimental and disabled by default. Core Threads,
 legacy wasi-threads, component async, Core Stack Switching and shared-everything
 threads are distinct contracts. Shared-everything threads is not implemented.
@@ -309,6 +310,11 @@ python3 scripts/core_extensions_corpus.py
 go test -count=1 -timeout=10m ./...
 llgo test -O3 -lto=full -count=1 -timeout=10m ./...
 ```
+
+CI distributes all 31 test packages once across five LLGo shards per platform,
+retaining `-O3 -lto=full`, and separates Go semantics, race and quality work. It
+caches compiler-specific package objects and records LLGo build traces; the
+target is 5–10 minutes per job, subject to measured final-run acceptance.
 
 Some upstream inventories are fetched and hash-verified by their corpus scripts;
 follow [ci.yml](.github/workflows/ci.yml) to reproduce the complete matrix.

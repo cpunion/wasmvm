@@ -211,28 +211,30 @@ func (p *HTTP) CallIncoming(ctx context.Context, in *component.Instance, request
 	}()
 	select {
 	case <-reply.done:
-		if reply.failure != nil {
-			stop()
-			cancel()
-			return nil, reply.failure
-		}
-		if reader, ok := reply.response.Body.(*httpBodyReader); ok {
-			reader.ctx = callCtx
-		}
-		reply.response.Body = &httpCallBody{ReadCloser: reply.response.Body, cancel: cancel, stop: stop}
-		handedOff = true
-		return reply.response, nil
 	case <-callCtx.Done():
-		return nil, callCtx.Err()
-	case <-ctx.Done():
-		stop()
-		cancel()
-		return nil, ctx.Err()
 	case <-p.ctx.Done():
-		stop()
-		cancel()
+	}
+	// Cancellation may retire the outparam and publish an incomplete response
+	// at the same time. Check the terminal contexts after either notification
+	// so the selected ready channel cannot change the cancellation outcome.
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if p.ctx.Err() != nil {
 		return nil, wasm.ErrClosed
 	}
+	if err := callCtx.Err(); err != nil {
+		return nil, err
+	}
+	if reply.failure != nil {
+		return nil, reply.failure
+	}
+	if reader, ok := reply.response.Body.(*httpBodyReader); ok {
+		reader.ctx = callCtx
+	}
+	reply.response.Body = &httpCallBody{ReadCloser: reply.response.Body, cancel: cancel, stop: stop}
+	handedOff = true
+	return reply.response, nil
 }
 
 // HTTPInstanceFactory supplies a fresh Store and request-scoped owners. Cleanup

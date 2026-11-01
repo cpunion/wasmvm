@@ -5191,3 +5191,30 @@ response: both backends retain the 200 headers, report HTTP-response-incomplete,
 and expose the resource-limit cause. Go race and pinned LLGo pass this case.
 The next exact-head CI must expose and resolve the original double-echo cause
 before merge; this change alone is not reported as its fix.
+
+
+## HTTP cancellation precedence and bounded CI jobs
+
+Head `76da6d6` passed Go on both targets and LLGo/Linux. LLGo/macOS passed the
+core extension corpora but failed the unchanged P2 sleep service cancellation
+case: dropping the response outparam raced the canceled call and returned
+HTTP-response-incomplete. CallIncoming now checks terminal contexts after
+either completion/cancellation notification, preserving caller cancellation,
+provider closure and request timeout before interpreting response retirement.
+The existing observed-wait assertion is unchanged. It passes 40 Go race and
+20 pinned LLGo repetitions across both backends.
+
+The owner requested CI optimization in this same PR, aiming for 5–10 minutes
+per job. A local unchanged-head LLGo trace spans 149.92 seconds at parallelism
+16. Its 31 link stages sum to 1,073.97 seconds and test stages to 227.91 seconds;
+these sums overlap and are not CPU or wall-time totals. The largest individual
+links are P2 (84.61 s), P3 (83.31 s) and CLI (64.75 s), confirming that removing
+test assertions would not address the main compilation/linking work.
+
+The new five-group plan assigns all 31 packages once on each LLGo platform,
+retains the pinned release profile, prepares only needed inputs, restores the
+independent LLGo package cache, streams JSON events and preserves build traces.
+Go semantics, race and quality/fuzz jobs are independent. The plan validator and
+its missing/duplicate/unknown-package regression checks pass, along with the
+22 script tests. Workflow syntax, final semantic/coverage evidence and actual
+per-job timings must be checked before merge; no unmeasured speedup is claimed.

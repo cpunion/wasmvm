@@ -1,6 +1,41 @@
 # Go / LLGo Compatibility and CI Design
 
-Verification date: 2026-10-26. This document distinguishes source constraints, observed tool behavior, and future VM acceptance requirements. Passing the probes does not mean Wasm has been implemented.
+Initial design date: 2026-10-26. The historical research below is retained with
+its original evidence; the current implementation/CI contract is recorded here.
+
+## Current implementation and CI (2026-11-01)
+
+The owned Core 2/3 interpreter and native compiler execute on Linux amd64 and
+macOS arm64 with Go 1.27.3 and LLGo `8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f`.
+LLGo semantics and CLI retain `-O3 -lto=full`. The root module declares Go 1.26;
+older-toolchain assumptions in the initial survey are historical.
+
+The workflow runs complete Go semantics on both platforms. LLGo uses five
+package groups per platform: core, VM/codegen, component, HTTP/P1/CLI tests, and
+P3/legacy threads. The checked [plan](../../.github/llgo-shards.json) assigns all
+31 test packages exactly once; [validation](../../scripts/ci_shards.py) rejects
+missing, duplicate or unlisted packages before the matrix starts. Each shard
+prepares only its required pinned corpora. The complete source/assertion scope
+is unchanged; the logical matrix remains both compilers on both platforms.
+
+Go race and pure-Go quality/fuzz work run once in separate Linux jobs. Coverage
+still measures all executable packages together and enforces 90% per package.
+Every shard and these shared checks must pass on the final PR head. No test
+assertion, reference-lifetime check or compiler profile is weakened.
+
+Go build caches and LLGo package caches are separate. LLGo caches are keyed by
+platform, Go version, exact LLGo revision, release profile, shard and commit;
+the compiler still checks content fingerprints. Cached packages do not cache
+test results: `-count=1` executes the full assigned tests on each head. Native
+links remain freshly produced. JSON test events expose failures promptly;
+per-shard `-debug-trace` evidence separates package, entry-object, link and test
+work. The target is 5–10 minutes per job, with a 12-minute LLGo/semantic ceiling
+and 10-minute race/quality ceiling. Actual final-run timings determine whether
+this target is achieved. Shard evidence retains all 240 execution reports over
+the four logical compiler/platform combinations.
+
+The following sections describe the original baseline and planned evolution;
+current status is in the [README](../../README.md) and [validation record](../validation.md).
 
 ## Two separate compatibility targets
 
