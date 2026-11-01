@@ -4840,3 +4840,14 @@ could wake a trailer reader before the provider published its failure. A
 regression forcing that interval failed under both backends. Publishing the
 failure before local cancellation and checking parent cancellation at trailer
 resolution prevents false success. Final-head CI is required after integration.
+
+
+The integrated local head passes Go 1.27.3 race execution of affected canonical,
+component and P2/P3 packages; pinned LLGo release execution of canonical,
+component and P3 passes, with unchanged P2 release execution retained. Vet passes.
+All 30 executable packages remain above 90%: unchanged packages retain the
+previous Go/Linux CI profile and affected packages are measured again on the
+integrated head. Current canonical/component/P2/P3 coverage is
+93.96%/91.88%/90.20%/90.67%. The final four-job CI matrix must independently pass
+before merge. Generation-aware rollback and a round-trip endpoint publication
+are covered alongside the deterministic parent-cancellation regression.
