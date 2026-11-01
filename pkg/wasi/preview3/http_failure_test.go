@@ -229,44 +229,53 @@ func TestHTTPLateResponseAndRequestLimit(t *testing.T) {
 
 func TestHTTPAwaitingTrailersDuringProviderClose(t *testing.T) {
 	backends(t, func(t *testing.T, backend string) {
-		p := httpOwner(t, HTTPConfig{})
-		a := httpAPI{t, instantiate(t, compileFixture(t, backend, "http-api"), p.Imports())}
-		message, tx := a.message("response", "pending", httpOK(component.Value{}), component.Value{})
-		f := a.function("types", "[static]response.consume-body")
-		_, typ := f.Info().Parameter(1)
-		pair := a.call("[static]response.consume-body", message, a.source(typ, component.Value{}))
-		closed := make(chan struct{})
-		go func() {
-			defer close(closed)
-			deadline := time.NewTimer(time.Second)
-			defer deadline.Stop()
-			tick := time.NewTicker(time.Millisecond)
-			defer tick.Stop()
-			for {
-				p.network.io.mu.Lock()
-				waiting := p.network.io.activeWorkers != 0
-				p.network.io.mu.Unlock()
-				if waiting {
-					p.Close()
-					return
+		for _, mode := range []string{"provider-close", "parent-cancel"} {
+			t.Run(mode, func(t *testing.T) {
+				p := httpOwner(t, HTTPConfig{})
+				stop := p.Close
+				if mode == "parent-cancel" {
+					stop = p.cancel
 				}
-				select {
-				case <-tick.C:
-				case <-deadline.C:
-					p.Close()
-					return
+				a := httpAPI{t, instantiate(t, compileFixture(t, backend, "http-api"), p.Imports())}
+				message, tx := a.message("response", "pending", httpOK(component.Value{}), component.Value{})
+				f := a.function("types", "[static]response.consume-body")
+				_, typ := f.Info().Parameter(1)
+				pair := a.call("[static]response.consume-body", message, a.source(typ, component.Value{}))
+				closed := make(chan struct{})
+				go func() {
+					defer close(closed)
+					deadline := time.NewTimer(time.Second)
+					defer deadline.Stop()
+					tick := time.NewTicker(time.Millisecond)
+					defer tick.Stop()
+					for {
+						p.network.io.mu.Lock()
+						waiting := p.network.io.activeWorkers != 0
+						p.network.io.mu.Unlock()
+						if waiting {
+							stop()
+							return
+						}
+						select {
+						case <-tick.C:
+						case <-deadline.C:
+							stop()
+							return
+						}
+					}
+				}()
+				r := a.read(pair.Elements[1], 1)
+				if len(r.Values) != 1 {
+					t.Fatal(r)
 				}
-			}
-		}()
-		r := a.read(pair.Elements[1], 1)
-		if len(r.Values) != 1 {
-			t.Fatal(r)
+				p.Close()
+				httpCheckError(t, r.Values[0], "connection-terminated")
+				<-closed
+				a.dropAsync(pair.Elements[0])
+				a.dropAsync(pair.Elements[1])
+				a.dropAsync(tx)
+			})
 		}
-		httpCheckError(t, r.Values[0], "connection-terminated")
-		<-closed
-		a.dropAsync(pair.Elements[0])
-		a.dropAsync(pair.Elements[1])
-		a.dropAsync(tx)
 	})
 }
 func TestHTTPEmptyResponseReadinessAndPendingTransmission(t *testing.T) {

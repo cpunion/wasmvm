@@ -234,8 +234,8 @@ func (b *httpBody) dispose(c *component.Caller, err error) {
 	controls := append([]*component.Cancellation(nil), b.controls...)
 	b.mu.Unlock()
 	if first {
-		b.cancel()
 		b.end(err)
+		b.cancel()
 		if cancel != nil {
 			cancel()
 		}
@@ -557,6 +557,11 @@ func (b *httpBody) trailerSource(c *component.Caller, t component.ValueType) (co
 		}
 		b.mu.Lock()
 		failure, fields := b.failure, b.trailersValue
+		// A parent context can cancel before the provider's close callback
+		// publishes the body failure. Cancellation cannot become a success.
+		if failure == nil && b.ctx.Err() != nil {
+			failure = httpErr("connection-terminated")
+		}
 		b.mu.Unlock()
 		var value component.Value
 		if failure != nil {
