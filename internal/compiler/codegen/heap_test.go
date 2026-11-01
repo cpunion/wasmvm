@@ -1,0 +1,218 @@
+package codegen
+
+import (
+	"encoding/binary"
+	"errors"
+	"runtime"
+	"testing"
+	"unsafe"
+
+	"github.com/cpunion/wasmvm/internal/compiler/ir"
+	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
+	"github.com/cpunion/wasmvm/internal/compiler/slots"
+	"github.com/cpunion/wasmvm/internal/core/module"
+	"github.com/cpunion/wasmvm/internal/engine/value"
+	"github.com/cpunion/wasmvm/internal/platform/native"
+	"github.com/cpunion/wasmvm/pkg/wasm"
+)
+
+func heapFixture(field module.FieldType, array, signed bool) (*slots.Function, Config) {
+	typ := field.Unpacked().Storage()
+	f := &slots.Function{Slots: []wasm.ValueType{wasm.AnyRef, wasm.I32, typ, typ, typ, wasm.I32}, LocalCount: 6,
+		Signature: module.FuncType{Params: []wasm.ValueType{wasm.AnyRef, wasm.I32, typ}, Results: []wasm.ValueType{typ}}}
+	t := module.TypeDef{Kind: module.StructKind, Fields: []module.FieldType{{Value: wasm.I32, Packed: 8}, {Value: wasm.I64}, field}}
+	get, set, index := uint32(0xfb0002), uint32(0xfb0005), uint32(2)
+	if array {
+		t.Kind, t.Fields = module.ArrayKind, []module.FieldType{field}
+		get, set, index = 0xfb000b, 0xfb000e, 0
+	}
+	if field.Packed != 0 {
+		get += 2
+		if signed {
+			get--
+		}
+	}
+	for pc, op := range []uint32{get, set, get} {
+		f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: op, B: index, Offset: uint64(100 + pc)}})
+		in := slots.Instruction{Op: op, Source: uint32(pc), A: 0, B: 1, C: slots.NoSlot, Dst: slots.NoSlot}
+		if op == set {
+			if !array {
+				in.B = 2
+			}
+		} else {
+			in.Dst = 3
+			if pc == 2 {
+				in.Dst = 4
+			}
+		}
+		in.Extra = uint32(len(f.Args))
+		f.Args = append(f.Args, 0)
+		if array {
+			f.Args = append(f.Args, 1)
+		}
+		if op == set {
+			f.Args = append(f.Args, 2)
+		}
+		in.Count = uint32(len(f.Args)) - in.Extra
+		f.Code = append(f.Code, in)
+	}
+	if array {
+		f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: 0xfb000f, Offset: 103}})
+		f.Code = append(f.Code, slots.Instruction{Op: 0xfb000f, Source: 3, A: 0, B: slots.NoSlot, C: slots.NoSlot, Dst: 5, Extra: 0, Count: 1})
+	}
+	f.Sources = append(f.Sources, ir.Source{})
+	f.Code = append(f.Code, slots.Instruction{Op: slots.ControlBase + uint32(ir.Return), Source: uint32(len(f.Sources) - 1),
+		A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot, Dst: slots.NoSlot, Extra: uint32(len(f.Args)), Count: 1})
+	f.Args = append(f.Args, 4)
+	return f, Config{HeapTypes: []module.TypeDef{t}}
+}
+
+func TestNativeHeapFieldsEveryWidthAndContinuation(t *testing.T) {
+	fields := []module.FieldType{{Value: wasm.I32, Packed: 8}, {Value: wasm.I32, Packed: 16},
+		{Value: wasm.I32}, {Value: wasm.I64}, {Value: wasm.F32}, {Value: wasm.F64}, {Value: wasm.AnyRef}, {Value: wasm.V128}}
+	for _, field := range fields {
+		for _, array := range []bool{false, true} {
+			for _, signed := range []bool{false, true} {
+				for _, unmetered := range []bool{false, true} {
+					f, config := heapFixture(field, array, signed)
+					config.Unmetered = unmetered
+					config.FunctionCount, config.TableCount, config.MemoryCount = 3, 3000, 2
+					for _, arch := range []string{"amd64", "arm64"} {
+						c, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), config)
+						if err != nil || c.Helpers != 0 || c.NativeHeap != uint32(len(f.Code)-1) || !c.UsesRuntimeData {
+							t.Fatal(arch, field, array, signed, c, err)
+						}
+					}
+					if !native.Available {
+						continue
+					}
+					_, lease, ctx := configuredContext(t, f, config)
+					pair, _ := nativeabi.HeapPairOffset(3, 3000, 0, 0, 2)
+					storage, err := native.NewMemory(uint64(pair)+256, uint64(pair)+256)
+					if err != nil {
+						t.Fatal(err)
+					}
+					defer storage.Close()
+					buffer, _ := storage.Buffer()
+					address := uint64(uintptr(unsafe.Pointer(unsafe.SliceData(buffer))))
+					words := unsafe.Slice((*uint64)(unsafe.Pointer(unsafe.SliceData(buffer))), len(buffer)/8)
+					words[pair/8], words[pair/8+1] = 2, address+uint64(pair)+16
+					view := words[pair/8+6:]
+					ref := uint64(0x8000000100000001)
+					view[0], view[1], view[2] = ref, address+uint64(pair)+128, 2
+					width, offset := field.HeapBytes(), 9
+					if array {
+						offset = width
+					}
+					cell := buffer[int(pair)+128+offset:]
+					mask := func(v value.Value) value.Value {
+						if width < 8 {
+							v.Lo &= (uint64(1) << (width * 8)) - 1
+						}
+						if width != 16 {
+							v.Hi = 0
+						}
+						return v
+					}
+					unpack := func(v value.Value) value.Value {
+						if signed && field.Packed != 0 {
+							v.Lo = uint64(uint32(int32(uint32(v.Lo)<<(32-field.Packed)) >> (32 - field.Packed)))
+						}
+						return v
+					}
+					for pc := range f.Code {
+						initial := mask(value.Value{Lo: 0x89abcdef87658081, Hi: 0x123456789abcdef0})
+						argument := mask(value.Value{Lo: 0xfedcba987654def0, Hi: 0xf0e1d2c3b4a59687})
+						binary.LittleEndian.PutUint64(cell, initial.Lo)
+						binary.LittleEndian.PutUint64(cell[8:], initial.Hi)
+						want := []value.Value{{Lo: ref}, {Lo: 0x100000001}, argument, {}, {}, {}}
+						// i32 indices truncate even on cold continuations.
+						for i, v := range want {
+							writeSlot(t, ctx, 16, slots.Slot(i), v)
+						}
+						if pc == 0 {
+							want[3] = unpack(initial)
+							if array {
+								want[1].Lo = 0x100000001
+							}
+						}
+						if pc <= 1 {
+							initial = argument
+						}
+						if pc <= 2 {
+							want[4] = unpack(initial)
+						}
+						if array && pc <= 3 {
+							want[5].Lo = 2
+						}
+						s := native.State{Used: 16, Depth: 1, Continuation: uint64(pc), Budget: 64}
+						s.Payload[2] = address
+						ctx.SetState(s)
+						if exit, err := ctx.Enter(lease, 0); err != nil || exit != native.Return {
+							t.Fatal(field, array, signed, unmetered, pc, exit, err)
+						}
+						for i, v := range want {
+							if got := readSlot(t, ctx, 16, slots.Slot(i)); got != v {
+								t.Fatal("heap cold frame", field, array, signed, unmetered, pc, i, got, v)
+							}
+						}
+						if got := mask(value.Value{Lo: binary.LittleEndian.Uint64(cell), Hi: binary.LittleEndian.Uint64(cell[8:])}); got != initial {
+							t.Fatal("heap store lost bits")
+						}
+					}
+					for _, bad := range []struct {
+						ref, index uint64
+						exit       native.Exit
+						trap       wasm.TrapCode
+					}{{0, 0, native.Trap, wasm.TrapNullReference}, {ref + 1, 0, native.BadState, 0},
+						{ref + 1<<32, 0, native.BadState, 0}, {ref &^ (1 << 63), 0, native.BadState, 0},
+						{ref, 2, native.Trap, wasm.TrapArrayBounds}, {ref, 0xffffffff, native.Trap, wasm.TrapArrayBounds}} {
+						if !array && bad.trap == wasm.TrapArrayBounds {
+							continue
+						}
+						writeSlot(t, ctx, 16, 0, value.Value{Lo: bad.ref})
+						writeSlot(t, ctx, 16, 1, value.Value{Lo: bad.index})
+						s := native.State{Used: 16, Depth: 1, Budget: 64}
+						s.Payload[2] = address
+						ctx.SetState(s)
+						if exit, err := ctx.Enter(lease, 0); err != nil || exit != bad.exit {
+							t.Fatal("unchecked handle/index", bad, exit, err)
+						}
+						state, _ := ctx.State()
+						if bad.trap != 0 && (state.Payload[0] != uint64(bad.trap) || state.Source != 100) {
+							t.Fatal("heap trap source", bad, state)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestNativeHeapCheckedFallbackAndOffsetLimits(t *testing.T) {
+	for _, kind := range []string{"missing", "struct-kind", "struct-field", "array-kind", "array-field", "width", "pair"} {
+		f, config := heapFixture(module.FieldType{Value: wasm.I32}, kind == "array-kind" || kind == "array-field", false)
+		switch kind {
+		case "missing":
+			config.HeapTypes = nil
+		case "struct-kind", "array-kind":
+			config.HeapTypes[0].Kind = module.FunctionKind
+		case "struct-field":
+			f.Sources[0].Wasm.B = 99
+		case "array-field":
+			config.HeapTypes[0].Fields = nil
+		case "width":
+			config.HeapTypes[0].Fields[2].Value = 0
+		case "pair":
+			config.FunctionCount = ^uint32(0)
+		}
+		c, err := CompileFunctionWithConfig(runtime.GOARCH, f, DefaultLimits(), config)
+		if kind == "pair" {
+			if !errors.Is(err, wasm.ErrLimit) {
+				t.Fatal(kind, err)
+			}
+		} else if err != nil || c.Helpers == 0 {
+			t.Fatal(kind, c, err)
+		}
+	}
+}

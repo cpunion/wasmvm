@@ -43,7 +43,7 @@ func globalFixture(typ wasm.ValueType) *slots.Function {
 }
 
 func TestDirectGlobalsTypesAliasesAndEveryContinuation(t *testing.T) {
-	for _, typ := range []wasm.ValueType{wasm.I32, wasm.I64, wasm.F32, wasm.F64, wasm.V128} {
+	for _, typ := range []wasm.ValueType{wasm.I32, wasm.I64, wasm.F32, wasm.F64, wasm.V128, wasm.FuncRef, wasm.ExternRef, wasm.AnyRef, wasm.ExnRef, wasm.ContRef} {
 		for _, unmetered := range []bool{false, true} {
 			for _, tables := range []uint32{0, 3000} {
 				f := globalFixture(typ)
@@ -130,7 +130,7 @@ func TestDirectGlobalsTypesAliasesAndEveryContinuation(t *testing.T) {
 }
 
 func TestDirectGlobalsRetainCheckedFallbacks(t *testing.T) {
-	for _, kind := range []string{"missing", "index", "immutable", "reference", "unknown", "type", "no-slot", "offset"} {
+	for _, kind := range []string{"missing", "index", "immutable", "unknown", "type", "no-slot", "offset"} {
 		f := globalFixture(wasm.I32)
 		config := Config{Globals: []module.GlobalType{{Value: wasm.I32, Mutable: true}, {Value: wasm.I32, Mutable: true}}}
 		switch kind {
@@ -140,8 +140,6 @@ func TestDirectGlobalsRetainCheckedFallbacks(t *testing.T) {
 			f.Sources[0].Wasm.A = 100
 		case "immutable":
 			config.Globals[0].Mutable = false
-		case "reference":
-			config.Globals[0].Value = wasm.ExternRef
 		case "unknown":
 			config.Globals[0].Value = 0
 		case "type":

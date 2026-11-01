@@ -62,6 +62,7 @@ type Store struct {
 	globals                   []*Global
 	registry                  module.TypeRegistry
 	heap                      []heapSlot
+	nativeHeap                *nativeHeap
 	heapLayouts               map[uint32]*heapLayout
 	heapFree                  []uint32
 	heapSerial, heapThreshold uint64
@@ -78,8 +79,12 @@ func New(limits Limits) *Store {
 	return s
 }
 
-// NewNative selects off-heap memories and tables for native execution.
-func NewNative(limits Limits) *Store { s := New(limits); s.nativeMemory = true; return s }
+// NewNative selects owned off-heap memories, tables and guest heap payloads.
+func NewNative(limits Limits) *Store {
+	s := New(limits)
+	s.nativeMemory, s.nativeHeap = true, &nativeHeap{}
+	return s
+}
 func (s *Store) RetainedModules(visit func(*slots.Module)) {
 	for _, in := range s.instances {
 		visit(in.Compiled)

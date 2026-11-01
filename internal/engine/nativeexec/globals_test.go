@@ -50,7 +50,7 @@ func TestRuntimeGlobalBindingAliasesRefreshAndCleanup(t *testing.T) {
 	if _, err := e.bindRuntimeData(in); err != nil || len(e.runtimeGlobals) != 0 {
 		t.Fatal("stale global bindings", err)
 	}
-	for _, bad := range [][]*state.Global{{nil}, {{Type: module.GlobalType{Value: wasm.ExternRef}}}} {
+	for _, bad := range [][]*state.Global{{nil}, {{Type: module.GlobalType{Value: 0}}}} {
 		in := &state.Instance{Globals: bad}
 		if _, err := e.bindRuntimeGlobals(in, fn.Code, []uint32{0}); !errors.Is(err, wasm.ErrInvalid) {
 			t.Fatal(err)

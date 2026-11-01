@@ -29,6 +29,18 @@ func MemoryPairOffset(functions, tables, globals, bindings, index uint32) (uint3
 	return uint32(offset), offset <= math.MaxInt32-8
 }
 
+// HeapPairOffset appends the heap slot count/base after existing runtime views.
+// A slot is four words: complete handle, data address, element count, reserved.
+// Views and payloads may relocate only while the serialized executor is idle.
+const HeapSlotBytes = 32
+
+func HeapPairOffset(functions, tables, globals, bindings, memories uint32) (uint32, bool) {
+	if memories <= 1 {
+		memories = 0
+	}
+	return MemoryPairOffset(functions, tables, globals, bindings, memories)
+}
+
 type Exit uint32
 
 const (

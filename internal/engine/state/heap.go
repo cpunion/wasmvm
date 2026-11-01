@@ -29,6 +29,8 @@ type heapObject struct {
 	Length        uint32
 	Bytes, Serial uint64
 	Mark          bool
+	nativeOffset  uint64
+	nativeHandle  uint64
 }
 type heapSlot struct {
 	Object     *heapObject
@@ -68,29 +70,52 @@ func (s *Store) allocateObject(typ uint32, length uint32, extra ...uint64) (uint
 	if s.usage.HeapObjects >= uint64(s.limits.MaxHeapObjects) || bytes > s.limits.MaxHeapBytes-s.usage.HeapBytes || payload > uint64(math.MaxInt) || s.heapSerial == math.MaxUint64 {
 		return 0, limit("guest heap")
 	}
+	// Select a handle before reserving payload storage so limit failures cannot
+	// consume arena space. Commit the free list only after allocations succeed.
+	index := uint32(max(1, len(s.heap)))
+	if len(s.heapFree) != 0 {
+		index = s.heapFree[len(s.heapFree)-1]
+	} else if uint64(len(s.heap)) > math.MaxUint32 || uint64(index) > uint64(s.limits.MaxHeapObjects) {
+		return 0, limit("guest heap handles")
+	}
+	var data []byte
+	var offset uint64
+	if s.nativeHeap != nil {
+		if err := s.prepareHeapViews(uint64(index) + 1); err != nil {
+			return 0, err
+		}
+		data, offset, err = s.allocateNativePayload(payload)
+		if err != nil {
+			return 0, err
+		}
+	} else {
+		data = make([]byte, int(payload))
+	}
 	if len(s.heap) == 0 {
 		s.heap = append(s.heap, heapSlot{})
 	}
-	var index uint32
 	if len(s.heapFree) != 0 {
 		n := len(s.heapFree) - 1
-		index = s.heapFree[n]
 		s.heapFree = s.heapFree[:n]
 	} else {
-		if uint64(len(s.heap)) > math.MaxUint32 || uint64(len(s.heap)-1) >= uint64(s.limits.MaxHeapObjects) {
-			return 0, limit("guest heap handles")
-		}
-		index = uint32(len(s.heap))
 		s.heap = append(s.heap, heapSlot{Generation: 1})
 	}
 	s.heapSerial++
-	s.heap[index].Object = &heapObject{Type: typ, Data: make([]byte, int(payload)), Layout: layout, Length: length, Bytes: bytes, Serial: s.heapSerial}
+	ref := heapTag | uint64(s.heap[index].Generation)<<32 | uint64(index)
+	o := &heapObject{Type: typ, Data: data, Layout: layout, Length: length, Bytes: bytes, Serial: s.heapSerial, nativeOffset: offset, nativeHandle: ref}
+	s.heap[index].Object = o
+	if s.nativeHeap != nil {
+		if payload != 0 {
+			s.nativeHeap.objects = append(s.nativeHeap.objects, o)
+		}
+		s.publishHeapObject(o)
+	}
 	s.usage.HeapObjects++
 	s.usage.HeapBytes += bytes
 	if s.heapThreshold == 0 {
 		s.heapThreshold = 1 << 20
 	}
-	return heapTag | uint64(s.heap[index].Generation)<<32 | uint64(index), nil
+	return ref, nil
 }
 func (s *Store) releaseObject(index uint32) {
 	slot := &s.heap[index]
@@ -100,6 +125,9 @@ func (s *Store) releaseObject(index uint32) {
 	}
 	s.usage.HeapObjects--
 	s.usage.HeapBytes -= obj.Bytes
+	if s.nativeHeap != nil {
+		clear(s.nativeHeap.views[int(index)*4 : int(index)*4+4])
+	}
 	obj.Data = nil
 	obj.Layout = nil
 	obj.Continuation = nil

@@ -121,8 +121,8 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 			bounded := limits
 			bounded.MaxCodeBytes = min(limits.MaxCodeBytes, uint64(math.MaxUint32)) - uint64(len(code))
 			config := codegen.Config{Unmetered: tier != 1, MemoryMinimumPages: minimum, X86Features: features,
-				MemoryPageSizes: pageSizes,
-				FunctionCount:   importedFunctions + uint32(len(m.Functions)), TableCount: tables, MemoryCount: memories, SharedMemories: shared, Globals: globals}
+				MemoryPageSizes: pageSizes, HeapTypes: definition.TypeDefs,
+				FunctionCount: importedFunctions + uint32(len(m.Functions)), TableCount: tables, MemoryCount: memories, SharedMemories: shared, Globals: globals}
 			if tier == 2 {
 				config.DirectCallees = callees
 				config.IndirectCallees = indirect
