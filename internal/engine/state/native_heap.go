@@ -12,11 +12,15 @@ import (
 // republish every moved address before reentry. Guest references remain stable
 // generation-checked handles; neither payloads nor views contain Go pointers.
 type nativeHeap struct {
-	payload, slots *native.Memory
-	data           []byte
-	views          []uint64
-	used           uint64
-	objects        []nativeHeapAllocation
+	payload, slots                      *native.Memory
+	data                                []byte
+	views                               []uint64
+	used                                uint64
+	objects                             []nativeHeapAllocation
+	allocation                          *native.Memory
+	allocationWords                     []uint64
+	pendingCount                        uint64
+	allocationBatches, allocatedObjects uint64
 }
 
 // Keep relocation metadata out of portable heap objects and their size class.
@@ -54,6 +58,18 @@ func (s *Store) allocateNativePayload(size uint64) ([]byte, uint64, error) {
 	if size == 0 {
 		return nil, 0, nil
 	}
+	if err := s.reserveNativePayload(size); err != nil {
+		return nil, 0, err
+	}
+	offset := h.used
+	h.used += size
+	data := h.data[offset:h.used]
+	clear(data)
+	return data, offset, nil
+}
+
+func (s *Store) reserveNativePayload(size uint64) error {
+	h := s.nativeHeap
 	// Rollbacks can repeatedly reuse handles without triggering tracing. Bound
 	// tombstone retention independently of a previously large arena capacity;
 	// the live/dead ratio keeps compaction amortized for nearly full heaps.
@@ -69,11 +85,11 @@ func (s *Store) allocateNativePayload(size uint64) ([]byte, uint64, error) {
 			err = h.payload.Grow(capacity)
 		}
 		if err != nil {
-			return nil, 0, err
+			return err
 		}
 		h.data, err = h.payload.Buffer()
 		if err != nil {
-			return nil, 0, err
+			return err
 		}
 		for _, a := range h.objects {
 			o := a.object
@@ -81,11 +97,7 @@ func (s *Store) allocateNativePayload(size uint64) ([]byte, uint64, error) {
 			s.publishHeapObject(a.handle, o)
 		}
 	}
-	offset := h.used
-	h.used += size
-	data := h.data[offset:h.used]
-	clear(data)
-	return data, offset, nil
+	return nil
 }
 
 func (s *Store) compactNativeHeap() {
@@ -118,7 +130,7 @@ func (s *Store) publishHeapObject(ref uint64, o *heapObject) {
 		address = uint64(uintptr(unsafe.Pointer(unsafe.SliceData(o.Data))))
 	}
 	views := s.nativeHeap.views
-	views[at], views[at+1], views[at+2] = ref, address, uint64(o.Length)
+	views[at], views[at+1], views[at+2], views[at+3] = ref, address, uint64(o.Length), 0
 }
 
 // NativeHeapView borrows the handle view until the next serialized safepoint.
@@ -131,6 +143,9 @@ func (s *Store) NativeHeapView() (count, address uint64) {
 }
 
 func (h *nativeHeap) close() {
+	if h.allocation != nil {
+		h.allocation.Close()
+	}
 	if h.payload != nil {
 		h.payload.Close()
 	}

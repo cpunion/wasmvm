@@ -40,7 +40,7 @@ func (e *Execution) bindRuntimeGlobals(in *state.Instance, f *slots.Function, in
 		words += uint64(len(in.Memories)) * 2
 	}
 	heapBase := words
-	words += 2
+	words += 3
 	if words > uint64(^uint(0)>>1)/8 {
 		return 0, wasm.ErrLimit
 	}
@@ -142,6 +142,7 @@ func (e *Execution) bindRuntimeGlobals(in *state.Instance, f *slots.Function, in
 	} else {
 		e.runtimeWords[heapBase], e.runtimeWords[heapBase+1] = 0, 0
 	}
+	e.runtimeWords[heapBase+2] = e.allocationView
 	return address, nil
 }
 

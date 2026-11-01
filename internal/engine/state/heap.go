@@ -42,8 +42,8 @@ const heapObjectsPerPage = 64
 
 func (s *Store) objectCell(index uint32) *heapObject {
 	page := uint64(index) / heapObjectsPerPage
-	if page == uint64(len(s.heapObjects)) {
-		remaining := uint64(s.limits.MaxHeapObjects) + 1 - page*heapObjectsPerPage
+	for page >= uint64(len(s.heapObjects)) {
+		remaining := uint64(s.limits.MaxHeapObjects) + 1 - uint64(len(s.heapObjects))*heapObjectsPerPage
 		s.heapObjects = append(s.heapObjects, make([]heapObject, int(min(heapObjectsPerPage, remaining))))
 	}
 	return &s.heapObjects[page][uint64(index)%heapObjectsPerPage]

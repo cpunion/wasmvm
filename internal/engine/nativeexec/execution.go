@@ -24,6 +24,7 @@ type Execution struct {
 	values          []value.Value
 	runtimeData     *native.Memory
 	runtimeWords    []uint64
+	allocationView  uint64
 	runtimeInstance *state.Instance
 	runtimeFunction *slots.Function
 	runtimeGlobals  []globalBinding
@@ -136,6 +137,16 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 		return 0, fuel, err
 	}
 	entry := entries.ordinary
+	e.allocationView = 0
+	if !e.metered && entries.nativeAllocations {
+		var err error
+		e.allocationView, err = fn.Instance.Owner.PrepareNativeAllocations()
+		if err != nil {
+			return 0, fuel, err
+		}
+		// Covers cancellation/binding errors before the adapter was entered.
+		defer fn.Instance.Owner.FinishNativeAllocations(fn.Instance.Types)
+	}
 	needsData := entries.directRuntimeData
 	s := native.State{Used: uint64(base) * 16, Depth: uint64(depth), Function: uint64(fn.Index), Continuation: uint64(pc), Fuel: fuel, Budget: 64}
 	if e.metered {
@@ -158,6 +169,11 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 			return 0, s.Fuel, err
 		}
 		next, exit, err := e.native.Run(module.code, entry, s)
+		if e.allocationView != 0 {
+			if finishErr := fn.Instance.Owner.FinishNativeAllocations(fn.Instance.Types); finishErr != nil {
+				return 0, next.Fuel, finishErr
+			}
+		}
 		if len(entries.globals) != 0 {
 			e.flushRuntimeGlobals()
 		}
