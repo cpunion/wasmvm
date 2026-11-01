@@ -301,6 +301,11 @@ from 1303 to **4.75 ns/iteration** and indirect access from 3376 to **15.26**;
 Wasmtime measures 1.70 and 3.10 on the same run. Allocation and interpreter
 deficits remain open. This targeted update does not replace the dated full audit.
 
+A [further heap-traffic comparison](docs/research/performance-gc-followup-2026-11-02.md)
+uses separately declared million-iteration loops: LLGo struct access reaches
+1.31 ns/iteration versus Wasmtime's 1.04, and indirect access reaches 4.55 versus
+2.53. Allocation, interpreter and full-portfolio performance acceptance remain open.
+
 Benchmark CI is opt-in through the `run-benchmarks` PR label or
 [workflow dispatch](https://github.com/cpunion/wasmvm/actions/workflows/benchmarks.yml).
 It compares exact base/head sources and pinned competitors and posts results
