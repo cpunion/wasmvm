@@ -8,6 +8,7 @@ slot code and interpreter/native backends, without a reference-engine fallback.
 | --- | --- | --- | --- |
 | Compact Import Section | `wasm.CompactImports` | `--compact-imports` | [`0624de8`](https://github.com/WebAssembly/compact-import-section/tree/0624de829e2663da799e708444dec80337a3fe54) |
 | Wide Arithmetic | `wasm.WideArithmetic` | `--wide-arithmetic` | [`024d4ce`](https://github.com/WebAssembly/wide-arithmetic/tree/024d4ce1b28cee7fd006d9c5175e3b7ece52b429) |
+| Custom Page Sizes | `wasm.CustomPageSizes` | `--custom-page-sizes` | [`61c873a`](https://github.com/WebAssembly/custom-page-sizes/tree/61c873a1860acad2772539164f284cc5110f1b1b) |
 
 Compact imports decode both `0x7f` groups with individual external types and
 `0x7e` groups with one shared external type. The abstract module keeps its
@@ -46,8 +47,36 @@ per tier against arbitrary-precision arithmetic, exercise carry/borrow across
 large native frame offsets, overlapping input/output slots, fuel exhaustion,
 disabled features, wrong operand types and resource quotas.
 
-The owner also requires Custom Page Sizes, the non-JavaScript parts of Custom
-Descriptors and Stack Switching. Those remain pending until each pinned
+Custom Page Sizes permits exactly 1-byte and 64-KiB pages, independently for
+each memory. `MemoryType.PageSize == 0` preserves the 64-KiB default; an explicit
+nonzero value requires the feature gate. Binary exponent values below 64 are
+decoded without overflow; validation then rejects unsupported sizes.
+Memory imports require equal effective page sizes; explicit 65536 matches the
+default. Guest `memory.size` and `memory.grow` count that memory's pages, while
+addresses and bulk-memory lengths remain byte counts. The 1-byte i32 memory
+limit is 2^32-1 pages; the i64 limit is 2^64-1. The default limits remain 2^16
+and 2^48 pages respectively. Counts are checked before byte multiplication.
+
+Host `MaxMemoryPages` and memory usage counters continue to count 64-KiB quota
+units, rounding up each memory's byte length. Shared maxima reserve the same
+units independently in every importing Store. Private growth consumes only the
+additional quota units; growth within an already charged unit remains possible
+when the Store is at its quota. Failed instantiation, Store close and shared
+lease retirement reclaim the corresponding rounded units. Guest pages reported
+by `Extern.MemoryPages` retain their memory-specific sizes. Native byte views,
+bounds guards and static `memory.size` lowering use each indexed memory's size;
+the compiler never derives byte bounds using an unconditional 64-KiB multiplier.
+
+All four affected Custom Page Sizes scripts are pinned in
+`testdata/custom-page-sizes`: 80 commands, 53 binary assertions and 4 separately
+classified malformed-text assertions. The same generator verifies/regenerates
+them (`--proposal custom-page-sizes` selects a single corpus). An owned
+`pkg/vm/testdata/custom-pages.wat` fixture, produced by the same pinned wasm-tools
+version, additionally exercises mixed private/shared, i32/i64 memories, byte
+boundary traps, zeroing, atomics, cross-Store leases, quotas and cleanup.
+
+The owner also requires the non-JavaScript parts of Custom Descriptors and
+Stack Switching. Those remain pending until each pinned
 snapshot passes both backends and the Go/LLGo matrix. Phase 3 snapshots remain
 explicit experimental gates rather than claims of final standardization.
 Performance acceptance remains open; this extension work does not erase the

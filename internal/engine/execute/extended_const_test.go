@@ -57,6 +57,10 @@ func TestWideArithmeticProposal(t *testing.T) {
 	runProposal(t, proposalCorpus{"wide-arithmetic", "024d4ce1b28cee7fd006d9c5175e3b7ece52b429", wasm.Core3Features | wasm.WideArithmetic, []string{"wide-arithmetic"}, 13, 109, 107, 0})
 }
 
+func TestCustomPageSizesProposal(t *testing.T) {
+	runProposal(t, proposalCorpus{"custom-page-sizes", "61c873a1860acad2772539164f284cc5110f1b1b", wasm.Core3Features | wasm.Threads | wasm.CustomPageSizes, []string{"custom-page-sizes-invalid", "custom-page-sizes", "memory_max", "memory_max_i64"}, 56, 80, 53, 4})
+}
+
 func runProposal(t *testing.T, corpus proposalCorpus) {
 	root := filepath.Join("../../../testdata", corpus.name)
 	raw, err := os.ReadFile(filepath.Join(root, "manifest.json"))

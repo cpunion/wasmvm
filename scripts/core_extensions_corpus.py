@@ -12,6 +12,14 @@ from core2_corpus import digest, extract, fetch, inventory
 ROOT = Path(__file__).resolve().parent.parent
 PRODUCER = "wasm-tools 1.262.0 (e22db44da 2026-10-13)"
 PROPOSALS = {
+    "custom-page-sizes": {
+        "revision": "61c873a1860acad2772539164f284cc5110f1b1b",
+        "size": 15035559,
+        "sha256": "79512780fbb76606fb5caed84f7811705f9467a7153be0d438b4feadc76fae2e",
+        "scripts": ["custom-page-sizes/custom-page-sizes-invalid.wast",
+                    "custom-page-sizes/custom-page-sizes.wast",
+                    "custom-page-sizes/memory_max.wast", "custom-page-sizes/memory_max_i64.wast"],
+    },
     "compact-import-section": {
         "revision": "0624de829e2663da799e708444dec80337a3fe54",
         "size": 15032531,
@@ -95,9 +103,12 @@ def main():
     parser.add_argument("--generate", action="store_true")
     parser.add_argument("--producer", default="wasm-tools")
     parser.add_argument("--cache", type=Path, default=ROOT / "artifacts/core-extensions/cache")
+    parser.add_argument("--proposal", choices=PROPOSALS)
     args = parser.parse_args()
     producer = shutil.which(args.producer) if args.generate else None
     for name in PROPOSALS:
+        if args.proposal and name != args.proposal:
+            continue
         if args.generate:
             if not producer:
                 raise ValueError("pinned producer is required for regeneration")

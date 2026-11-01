@@ -60,18 +60,17 @@ func (f Fragment) Extern(t module.Import) (err error) {
 }
 
 func (c *context) memoryType(t module.Limits) {
+	if t.PageSize != 0 && c.features&wasm.CustomPageSizes == 0 || t.PageBytes() != 1 && t.PageBytes() != 65536 {
+		c.fail("invalid or disabled custom memory page size")
+	}
 	if t.Shared && (c.features&wasm.Threads == 0 || !t.HasMax) {
 		c.fail("shared memory requires Threads and a maximum")
 	}
-	maximum := uint64(65536)
-	if t.Index64 {
-		maximum = 1 << 48
-	}
-	c.bounds(t, maximum)
+	c.bounds(t, t.MemoryPageLimit())
 }
 
 func (c *context) tableType(t module.TableType) {
-	if t.Limits.Shared {
+	if t.Limits.Shared || t.Limits.PageSize != 0 {
 		c.fail("shared tables are not Core Threads")
 	}
 	c.valueType(t.Element, len(c.m.Types))

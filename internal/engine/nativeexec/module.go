@@ -48,6 +48,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 	var importedFunctions uint32
 	var tables, memories uint32
 	var shared []bool
+	var pageSizes []uint64
 	var globals []module.GlobalType
 	for _, im := range definition.Imports {
 		if im.Kind == 0 {
@@ -55,6 +56,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 		}
 		if im.Kind == 2 {
 			shared = append(shared, im.Memory.Shared)
+			pageSizes = append(pageSizes, im.Memory.PageBytes())
 			memories++
 			if memories == 1 && !im.Memory.Index64 {
 				minimum = uint32(im.Memory.Min)
@@ -69,6 +71,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 	}
 	for _, m := range definition.Memories {
 		shared = append(shared, m.Shared)
+		pageSizes = append(pageSizes, m.PageBytes())
 	}
 	tables += uint32(len(definition.Tables))
 	memories += uint32(len(definition.Memories))
@@ -118,7 +121,8 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 			bounded := limits
 			bounded.MaxCodeBytes = min(limits.MaxCodeBytes, uint64(math.MaxUint32)) - uint64(len(code))
 			config := codegen.Config{Unmetered: tier != 1, MemoryMinimumPages: minimum, X86Features: features,
-				FunctionCount: importedFunctions + uint32(len(m.Functions)), TableCount: tables, MemoryCount: memories, SharedMemories: shared, Globals: globals}
+				MemoryPageSizes: pageSizes,
+				FunctionCount:   importedFunctions + uint32(len(m.Functions)), TableCount: tables, MemoryCount: memories, SharedMemories: shared, Globals: globals}
 			if tier == 2 {
 				config.DirectCallees = callees
 				config.IndirectCallees = indirect

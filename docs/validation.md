@@ -1,5 +1,24 @@
 # Verification Record
 
+## 2026-11-01: Custom Page Sizes
+
+Snapshot `61c873a1860acad2772539164f284cc5110f1b1b` adds all four affected
+scripts: 80 commands, 53 binary assertions and 4 separately classified malformed
+text cases. Go 1.27.3 and pinned LLGo `8e45ed5` (`-O3 -lto=full`) passed this
+inventory in interpreter and both native tiers on darwin/arm64. Additional
+Go/LLGo tests passed for mixed private/shared i32/i64 memories, per-index native
+size calculations, byte bounds, growth/zeroing, atomics, page-size import
+mismatches, host byte quotas, overflow, shared leases and joined cleanup.
+The native configuration tests also cover a 65,537-page byte-sized minimum
+and reject inconsistent static page-size inventories on both target ISAs.
+
+The full Go internal/public suite passed with all 30 executable packages over
+90% statement coverage, followed by the additional encoding/configuration
+checks. Project-source vet and pinned corpus verification passed. Final-head
+Go/LLGo Linux amd64 and macOS arm64 CI is required before merge; this local
+record does not substitute for that matrix. Custom Descriptors and Stack
+Switching remain mandatory pending work, and performance acceptance stays open.
+
 ## 2026-11-01: Compact imports and wide arithmetic
 
 The explicit extension implementation pins Compact Import Section at

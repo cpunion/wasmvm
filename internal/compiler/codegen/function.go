@@ -72,7 +72,9 @@ func CompileUnmeteredFunction(arch string, f *slots.Function, limits Limits) (*C
 type Config struct {
 	Unmetered          bool
 	MemoryMinimumPages uint32
-	X86Features        X86Features
+	// MemoryPageSizes follows memory index order; nil means default 64-KiB pages.
+	MemoryPageSizes []uint64
+	X86Features     X86Features
 	// DirectCallees contains only immutable definitions in the same module.
 	// An expanded entry requires one additional logical frame and InlineSlots
 	// remaining slots. The runtime must select an ordinary entry otherwise.
@@ -95,7 +97,19 @@ func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, co
 
 func compileFunction(arch string, f *slots.Function, limits Limits, config Config) (out *CompiledFunction, err error) {
 	unmetered := config.Unmetered
-	if config.MemoryMinimumPages > 65536 {
+	pageSize := uint64(65536)
+	if len(config.MemoryPageSizes) != 0 {
+		if len(config.MemoryPageSizes) != max(1, int(config.MemoryCount)) {
+			return nil, wasm.ErrInvalid
+		}
+		for _, size := range config.MemoryPageSizes {
+			if size != 1 && size != 65536 {
+				return nil, wasm.ErrInvalid
+			}
+		}
+		pageSize = config.MemoryPageSizes[0]
+	}
+	if pageSize == 65536 && config.MemoryMinimumPages > 65536 {
 		return nil, wasm.ErrInvalid
 	}
 	if config.X86Features&^x86KnownFeatures != 0 || arch != "amd64" && config.X86Features != 0 {
@@ -132,7 +146,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		return nil, err
 	}
 	a := assembler{arch: arch, labels: map[int]int{}, bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true, compactBranches: arch == "arm64"}
-	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered, memoryMinimum: uint64(config.MemoryMinimumPages) * 65536}
+	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered, memoryMinimum: uint64(config.MemoryMinimumPages) * pageSize, memoryPageSizes: config.MemoryPageSizes}
 	e.x86Features = config.X86Features
 	pcs := make([]int, len(f.Code))
 	for i := range pcs {

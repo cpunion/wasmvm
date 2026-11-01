@@ -12,6 +12,10 @@ an independent feature bit. Native execution has no interpreter fallback.
 Set `EngineConfig.Features |= wasm.CompactImports | wasm.WideArithmetic` to
 enable the separately pinned [core extensions](design/core-extensions.md).
 These are also available to embedded core modules in components.
+`wasm.CustomPageSizes` additionally allows `MemoryType.PageSize: 1`; zero uses
+the default 65536-byte pages. Guest page counts follow that memory's type, while
+Store `MaxMemoryPages` and usage counters retain 64-KiB host quota units,
+rounding up per memory. Shared maximum reservations use those same quota units.
 
 Typical order:
 

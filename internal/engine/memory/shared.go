@@ -46,7 +46,7 @@ func NewShared(declared module.Limits, quota uint32, domain *Domain) (*Memory, e
 	if err != nil {
 		return nil, err
 	}
-	m.domain, m.refs, m.reservation = domain, 1, m.maximum
+	m.domain, m.refs, m.reservation = domain, 1, QuotaPages(declared, m.maximum)
 	return m, nil
 }
 func (m *Memory) Shared() bool             { return m.domain != nil }

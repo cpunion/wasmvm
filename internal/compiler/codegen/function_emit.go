@@ -24,6 +24,7 @@ type functionEmitter struct {
 	memoryViews                                                  bool
 	memoryFunctions, memoryTables, memoryGlobals, memoryBindings uint32
 	memoryMinimum                                                uint64
+	memoryPageSizes                                              []uint64
 	regionLimit                                                  int
 	regionEnd                                                    int
 	provenPCs                                                    map[int]bool

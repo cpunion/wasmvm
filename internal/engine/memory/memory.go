@@ -51,10 +51,11 @@ func (m *Memory) Native() *native.Memory {
 	return m.owner
 }
 func newMemory(declared module.Limits, quota uint32, offheap bool) (*Memory, error) {
-	limit := uint64(MaxPages)
-	if declared.Index64 {
-		limit = MaxPages64
+	pageSize := declared.PageBytes()
+	if pageSize != 1 && pageSize != PageSize {
+		return nil, &wasm.Error{Kind: wasm.ErrInvalid, Detail: "memory page size"}
 	}
+	limit := declared.MemoryPageLimit()
 	if declared.Min > limit || declared.HasMax && (declared.Max > limit || declared.Min > declared.Max) {
 		return nil, &wasm.Error{Kind: wasm.ErrInvalid, Detail: "memory limits"}
 	}
@@ -62,10 +63,8 @@ func newMemory(declared module.Limits, quota uint32, offheap bool) (*Memory, err
 	if declared.HasMax {
 		maximum = declared.Max
 	}
-	if uint64(quota) < maximum {
-		maximum = uint64(quota)
-	}
-	hostMax := uint64(math.MaxInt) / PageSize
+	maximum = min(maximum, uint64(quota)*(PageSize/pageSize))
+	hostMax := uint64(math.MaxInt) / pageSize
 	if uint64(maximum) > hostMax {
 		maximum = hostMax
 	}
@@ -75,7 +74,7 @@ func newMemory(declared module.Limits, quota uint32, offheap bool) (*Memory, err
 	m := &Memory{declared: declared, maximum: maximum}
 	if offheap {
 		var err error
-		m.owner, err = native.NewMemory(uint64(declared.Min)*PageSize, uint64(maximum)*PageSize)
+		m.owner, err = native.NewMemory(uint64(declared.Min)*pageSize, uint64(maximum)*pageSize)
 		if err != nil {
 			return nil, err
 		}
@@ -85,12 +84,25 @@ func newMemory(declared module.Limits, quota uint32, offheap bool) (*Memory, err
 			return nil, err
 		}
 	} else {
-		m.bytes = make([]byte, int(uint64(declared.Min)*PageSize))
+		m.bytes = make([]byte, int(uint64(declared.Min)*pageSize))
 	}
 	return m, nil
 }
-func (m *Memory) pages() uint64         { return uint64(len(m.bytes)) / PageSize }
+func (m *Memory) pages() uint64         { return uint64(len(m.bytes)) / m.declared.PageBytes() }
 func (m *Memory) Limits() module.Limits { return m.declared }
+
+// QuotaPages rounds a memory's guest pages up to host 64-KiB quota units.
+// It avoids multiplying untrusted counts, including memory64's full range.
+func QuotaPages(declared module.Limits, pages uint64) uint64 {
+	if declared.PageBytes() != 1 {
+		return pages
+	}
+	q := pages / PageSize
+	if pages%PageSize != 0 {
+		q++
+	}
+	return q
+}
 
 // Release discards backing storage after its Store has excluded all users.
 // It is idempotent and prevents subsequent growth of a retired memory object.
@@ -111,13 +123,13 @@ func (m *Memory) grow(delta uint64) (uint64, bool) {
 		return old, true
 	}
 	if m.owner != nil {
-		if err := m.owner.Grow(next * PageSize); err != nil {
+		if err := m.owner.Grow(next * m.declared.PageBytes()); err != nil {
 			return old, false
 		}
 		m.bytes, _ = m.owner.Buffer()
 		return old, true
 	}
-	grown := make([]byte, int(next*PageSize))
+	grown := make([]byte, int(next*m.declared.PageBytes()))
 	copy(grown, m.bytes)
 	m.bytes = grown
 	return old, true

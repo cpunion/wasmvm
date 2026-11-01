@@ -23,6 +23,8 @@ import (
 var ErrLink = errors.New("WebAssembly link error")
 var ErrReference = errors.New("foreign or stale WebAssembly reference")
 
+// Memory page quotas use 64-KiB host units, rounded up per memory, independently
+// of each guest memory's declared page size.
 type Limits struct {
 	MaxTypes                                                                 uint32
 	MaxHeapObjects                                                           uint32
@@ -91,7 +93,7 @@ func (s *Store) Usage() Usage {
 	u.ReservedSharedMemoryPages = s.reservedShared
 	for _, m := range s.memories {
 		if m.Shared() {
-			u.SharedMemoryPages += m.Pages()
+			u.SharedMemoryPages += memory.QuotaPages(m.Limits(), m.Pages())
 		}
 	}
 	u.MemoryPages += u.SharedMemoryPages
@@ -193,7 +195,7 @@ func (s *Store) NewMemory(t module.Limits) (Extern, error) {
 	if s.usage.Memories >= uint64(s.limits.MaxMemories) {
 		return Extern{}, limit("memories")
 	}
-	if uint64(t.Min) > uint64(s.limits.MaxMemoryPages)-s.usage.MemoryPages-s.reservedShared {
+	if memory.QuotaPages(t, t.Min) > uint64(s.limits.MaxMemoryPages)-s.usage.MemoryPages-s.reservedShared {
 		return Extern{}, limit("Store memory pages")
 	}
 	allocate := memory.New
@@ -213,7 +215,7 @@ func (s *Store) NewMemory(t module.Limits) (Extern, error) {
 	if t.Shared {
 		s.reservedShared += m.ReservationPages()
 	} else {
-		s.usage.MemoryPages += uint64(t.Min)
+		s.usage.MemoryPages += memory.QuotaPages(t, t.Min)
 	}
 	s.usage.Memories++
 	owned := &Memory{Owner: s, Memory: m}
@@ -228,12 +230,16 @@ func (s *Store) GrowMemory(m *Memory, delta uint64) (uint64, bool) {
 		return m.Grow(delta)
 	}
 	old := m.Pages()
-	if uint64(delta) > uint64(s.limits.MaxMemoryPages)-s.usage.MemoryPages-s.reservedShared {
+	if delta > ^uint64(0)-old {
+		return old, false
+	}
+	increment := memory.QuotaPages(m.Limits(), old+delta) - memory.QuotaPages(m.Limits(), old)
+	if increment > uint64(s.limits.MaxMemoryPages)-s.usage.MemoryPages-s.reservedShared {
 		return old, false
 	}
 	_, ok := m.Grow(delta)
 	if ok {
-		s.usage.MemoryPages += uint64(delta)
+		s.usage.MemoryPages += increment
 	}
 	return old, ok
 }
@@ -256,7 +262,7 @@ func (s *Store) NewTable(t module.TableType, initial ...uint64) (Extern, error) 
 	if s.closed {
 		return Extern{}, wasm.ErrClosed
 	}
-	if t.Limits.Shared || !t.Element.IsReference() || !s.validType(t.Element) || len(initial) > 1 || len(initial) == 0 && !t.Element.Defaultable() || t.Limits.HasMax && t.Limits.Min > t.Limits.Max || !t.Limits.Index64 && (t.Limits.Min > math.MaxUint32 || t.Limits.HasMax && t.Limits.Max > math.MaxUint32) {
+	if t.Limits.PageSize != 0 || t.Limits.Shared || !t.Element.IsReference() || !s.validType(t.Element) || len(initial) > 1 || len(initial) == 0 && !t.Element.Defaultable() || t.Limits.HasMax && t.Limits.Min > t.Limits.Max || !t.Limits.Index64 && (t.Limits.Min > math.MaxUint32 || t.Limits.HasMax && t.Limits.Max > math.MaxUint32) {
 		return Extern{}, fmt.Errorf("%w: table type", wasm.ErrInvalid)
 	}
 	if s.usage.Tables >= uint64(s.limits.MaxTables) {

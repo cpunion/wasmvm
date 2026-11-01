@@ -10,6 +10,9 @@ func (s *Store) NewMemory(typ MemoryType) (Extern, error) {
 		return Extern{}, err
 	}
 	defer op.finish()
+	if typ.PageSize != 0 && s.engine.config.Features&wasm.CustomPageSizes == 0 {
+		return Extern{}, wasm.ErrUnsupported
+	}
 	if typ.Shared && s.engine.config.Features&wasm.Threads == 0 {
 		return Extern{}, wasm.ErrUnsupported
 	}

@@ -1,0 +1,95 @@
+{
+  "source": "https://github.com/WebAssembly/custom-page-sizes",
+  "revision": "61c873a1860acad2772539164f284cc5110f1b1b",
+  "sourceArchive": {
+    "url": "https://codeload.github.com/WebAssembly/custom-page-sizes/tar.gz/61c873a1860acad2772539164f284cc5110f1b1b",
+    "size": 15035559,
+    "sha256": "79512780fbb76606fb5caed84f7811705f9467a7153be0d438b4feadc76fae2e"
+  },
+  "producer": "wasm-tools 1.262.0 (e22db44da 2026-10-13)",
+  "producerBinarySHA256": "4a5b127f48340fbd453708283d190f9b1dbbe5820571eae5cbae0a205a095a00",
+  "arguments": [
+    "json-from-wast",
+    "--wasm-dir"
+  ],
+  "scripts": {
+    "custom-page-sizes-invalid": {
+      "commands": 23,
+      "binaryAssertions": 19,
+      "textAssertions": 2
+    },
+    "custom-page-sizes": {
+      "commands": 45,
+      "binaryAssertions": 31,
+      "textAssertions": 1
+    },
+    "memory_max": {
+      "commands": 6,
+      "binaryAssertions": 2,
+      "textAssertions": 0
+    },
+    "memory_max_i64": {
+      "commands": 6,
+      "binaryAssertions": 1,
+      "textAssertions": 1
+    }
+  },
+  "sha256": {
+    "LICENSE.tests": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+    "custom-page-sizes/script.0.wasm": "2f808c8e62dadde90e4a8467e2d20a22e44e605197ce4013dd499ccc645925ff",
+    "custom-page-sizes/script.1.wasm": "3996554b9b2612b2a33990ba127aa1722beb6a686b5907642a076e3463f8d95c",
+    "custom-page-sizes/script.10.wat": "59fe50dc01207e88b770db356275c9b2c611396aa35dc001546cffd6194fe04e",
+    "custom-page-sizes/script.11.wasm": "d2a8fe7fc8357d125ea7a7b1ee9737434ee02c5398d629d5317557573074ccfc",
+    "custom-page-sizes/script.12.wasm": "a5e859517d19e6fb0ada6061194484ec7f1c3ab1b09ebc638961f97283424818",
+    "custom-page-sizes/script.2.wasm": "4e8159c7bf2a573e390985740c44544af122d8d0f049131d61fc6d670bd96981",
+    "custom-page-sizes/script.3.wasm": "da744f2808af505f7153f02972119a55d7e9b5bfc8ba2cb3d5097a15bde70e31",
+    "custom-page-sizes/script.4.wasm": "6e3a9e458ab9d1ad929604a6c889c748f0d2fd60a50d013c9b99d150682d751e",
+    "custom-page-sizes/script.5.wasm": "f4f5a80fa82726875ed81d2e9c6b89ada28ebdadb28d9915c481ac056bcad807",
+    "custom-page-sizes/script.6.wasm": "67f902368931213ceccac35f1eb486f0495e72c421c82198aab540c9c824f74a",
+    "custom-page-sizes/script.7.wasm": "839c974e03739392a86480e5a507a93c20940bcbd908b286e63aba31db3541bb",
+    "custom-page-sizes/script.8.wasm": "d3561a5e8aa1393d7dea2f550c985f2f09541af7a031b3b075979656e60af6ed",
+    "custom-page-sizes/script.9.wasm": "27a8053d4eb39116da36091546ff0d96b21acd6f64acd0b5c41b29d9c649252a",
+    "custom-page-sizes/script.json": "605ca06cad6a9f1bed13b05cc0cc0d297a9a4f6ac756f7cd6f20d0522ff3df9d",
+    "custom-page-sizes-invalid/script.0.wat": "1e99564aecb8042a89ab10c4a67834520d2714de58b540522fc48b6b59dadcff",
+    "custom-page-sizes-invalid/script.1.wat": "cb61ce1f248323f8473cabd30f7591ac4ee13fdffc4b10000ae961a03765cfbc",
+    "custom-page-sizes-invalid/script.10.wasm": "9181e4bb0234127e44ce18ce15b0ebd4d9ff1c7c94ab3b6bb739e15df71aafc3",
+    "custom-page-sizes-invalid/script.11.wasm": "16b1261ad2d566d860934234c22ae18e55773afb67c3ea4e2f0e93f6e1c7b083",
+    "custom-page-sizes-invalid/script.12.wasm": "01b1af507c925800a3c5a2abf1285a16be80417e155da2820d9fa676a4a985cd",
+    "custom-page-sizes-invalid/script.13.wasm": "1760884e09c3d8d640f6362066ee0bd508d33892d448483ed9b95287f9934f87",
+    "custom-page-sizes-invalid/script.14.wasm": "28b35a25f9c539d7fa706fcd16026f7e6a46fabf37ebdb14e9f7bd87ca10d80e",
+    "custom-page-sizes-invalid/script.15.wasm": "c4e3d7d16093543a5020a66371f763088d2c3f1b8cfdd4a60428808d61448fc5",
+    "custom-page-sizes-invalid/script.16.wasm": "a702c849696a30e24707eb8cd2ebe7452284b1730d9d3d2ac78445240b5477d0",
+    "custom-page-sizes-invalid/script.17.wasm": "0e69d633c8b6cd521be5952173841da796b4b29364dc084d5c8e378a94c045f8",
+    "custom-page-sizes-invalid/script.18.wasm": "ae75661a3b20c68d0c0bab98a712c7d422e056bb7d4eea159792ae7881ab348e",
+    "custom-page-sizes-invalid/script.19.wasm": "839c974e03739392a86480e5a507a93c20940bcbd908b286e63aba31db3541bb",
+    "custom-page-sizes-invalid/script.2.wasm": "33fa61a1821abfe23dfc1af22a2bf59be8bef13e9b506da333884ca6ae60009b",
+    "custom-page-sizes-invalid/script.20.wasm": "b91266ff92ad1f04e63d4545d82d6e4943a595289106d7530340a31a694fcb21",
+    "custom-page-sizes-invalid/script.21.wasm": "89a77b0ef0faa6add82c49d2b91bcf9113f8ab47f7b366d1f111bad9a2fe346b",
+    "custom-page-sizes-invalid/script.3.wasm": "29899fe5e8b4f829095c55e8456bddf8b020b9deb4ca94455deef98d0db61e4e",
+    "custom-page-sizes-invalid/script.4.wasm": "36d6a2fe7428351934fa14cc984aeb408fb6680450ea58fe1124410e2e1d64cc",
+    "custom-page-sizes-invalid/script.5.wasm": "0dba5580eee8feba08eb3d43c3fc51146e4eac47bf70cb715ba8e937965349a6",
+    "custom-page-sizes-invalid/script.6.wasm": "72b66f9a046eb2ebeca45fdce12670eba6a2fa1eb692c9c09f5bacb5d0f48410",
+    "custom-page-sizes-invalid/script.7.wasm": "e151fbf1a23aeb93d4c9dc07116b60530435abb1d03bbabf21006fd04e910479",
+    "custom-page-sizes-invalid/script.8.wasm": "0e6b8c63beecd15bbeb1270fb80aa3a61cc2d1855c07cc42df951d65b00b54ae",
+    "custom-page-sizes-invalid/script.9.wasm": "60057d453391d2bb71c43de4abbdb9c015da452c1fa330c0f43c55d209f34baf",
+    "custom-page-sizes-invalid/script.json": "8a3826c1e1c628c6af3e6727becb839934365d9c6a98c4854b4ad1243478d3dc",
+    "memory_max/script.0.wasm": "6e143d12dc35f53c3ae616a7acd06cbf0ecfdbffbe8a6f66d7443ec8b0fd0960",
+    "memory_max/script.1.wasm": "f9d1b3376516cd430637f47fbdaa411169756ed0b9cdec7b54533647ea446d5d",
+    "memory_max/script.2.wasm": "55bd07c874c41b28dad6def8ee866b5e33fc9b956680a1b5c1b574729fff577c",
+    "memory_max/script.3.wasm": "f7028bc076533906f3e0867fc42f53468471f4fe821c7e2b2d3e7813bb548e86",
+    "memory_max/script.4.wasm": "23d911d570b06c16c74e4388ea329e42b9d6ffb8f336ef5570c3a8b559b0f8c1",
+    "memory_max/script.5.wasm": "aca809e98d7cba3bc0feb0f9dd34f4ffd7daf01d35379dc23bef0c51e0945da5",
+    "memory_max/script.json": "07f74cb611da8caa654d7b20a4a611230e8d36bafe2625d409cad4dd85321a5d",
+    "memory_max_i64/script.0.wasm": "abcc55973450e2b02fc81c4ca3f97be2483076825dc201a02b5d4d5674f7a736",
+    "memory_max_i64/script.1.wasm": "a7f0b4b3797778fe6a8df6180c32f6a9034dbef6f3bec326af2e817995e3da42",
+    "memory_max_i64/script.2.wasm": "4aec19b89aca7b9911f233e0fc24fc076f15b364495e3688d94fc3617854a244",
+    "memory_max_i64/script.3.wasm": "145f68d4db5e435a739ec296b8d6a050050e4214d40170d40ce67249ef37571b",
+    "memory_max_i64/script.4.wat": "7ad2a096b67c2474e978bc698cf2554a7920bf8daa5c91638d7150020f0a0bb3",
+    "memory_max_i64/script.5.wasm": "6b1e72064d5dfeeabdd0666e1684ed20b779661ea2bac6e895ceba4820ee907a",
+    "memory_max_i64/script.json": "c39faf56651a1288f238c59f6a6647f133be9c3b04383d2b31fd11806f706d08",
+    "source/custom-page-sizes/custom-page-sizes-invalid.wast": "5db7bf24c58b0d5429fa3979ec2a6a901c6751bd3eaa679c4fd1b5dab1af6810",
+    "source/custom-page-sizes/custom-page-sizes.wast": "32f1b58bb5bd785d3edd6b85f0bbcbe08d0294accf22c239ab9c411fb8d2362c",
+    "source/custom-page-sizes/memory_max.wast": "70f40fb5e13b0e5f10ab60fba56decf802367fcda72e654a09855cb3243d93b9",
+    "source/custom-page-sizes/memory_max_i64.wast": "f58373dd893fced0dfdfb9e43f2e7b02244c93c471585715b3164a596eb7d308"
+  }
+}

@@ -23,7 +23,7 @@ memory and atomics; it does not supply a thread-creation ABI. Standalone feature
 flags retain their archived proposal behavior. Native execution requires a
 supported platform adapter; no backend fallback is performed.
 
-`--compact-imports` and `--wide-arithmetic` independently enable the pinned
+`--compact-imports`, `--wide-arithmetic` and `--custom-page-sizes` independently enable the pinned
 [core extensions](design/core-extensions.md). Both default to disabled, even
 with `--profile core3`, and apply to validate, inspect and run.
 

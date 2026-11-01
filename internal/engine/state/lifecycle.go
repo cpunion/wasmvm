@@ -2,6 +2,7 @@ package state
 
 import (
 	"github.com/cpunion/wasmvm/internal/core/module"
+	"github.com/cpunion/wasmvm/internal/engine/memory"
 	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -263,7 +264,7 @@ func (s *Store) sweepObjects() {
 			if m.Shared() {
 				s.reservedShared -= m.ReservationPages()
 			} else {
-				s.usage.MemoryPages -= uint64(m.Pages())
+				s.usage.MemoryPages -= memory.QuotaPages(m.Limits(), m.Pages())
 			}
 			m.Release()
 			m.Owner = nil

@@ -339,16 +339,24 @@ func (d *decoder) bounds(sharedAllowed bool) module.Limits {
 	flag := d.byte()
 	wide := flag&4 != 0 && d.features&wasm.Memory64 != 0
 	shared := flag&2 != 0 && sharedAllowed && d.features&wasm.Threads != 0
-	if flag&^byte(7) != 0 || flag&4 != 0 && !wide || flag&2 != 0 && !shared {
+	custom := flag&8 != 0 && sharedAllowed && d.features&wasm.CustomPageSizes != 0
+	if flag&^byte(15) != 0 || flag&8 != 0 && !custom || flag&4 != 0 && !wide || flag&2 != 0 && !shared {
 		d.fail("unknown limits flag")
 	}
 	read := func() uint64 { return uint64(d.u32()) }
-	if wide || d.features&wasm.Core3Rules != 0 {
+	if wide || custom || d.features&wasm.Core3Rules != 0 {
 		read = func() uint64 { return must(d.r.U64()) }
 	}
 	l := module.Limits{Min: read(), HasMax: flag&1 != 0, Index64: wide, Shared: shared}
 	if l.HasMax {
 		l.Max = read()
+	}
+	if custom {
+		exponent := d.u32()
+		if exponent >= 64 {
+			d.fail("memory page-size exponent is too large")
+		}
+		l.PageSize = uint64(1) << exponent
 	}
 	return l
 }
