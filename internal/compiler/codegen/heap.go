@@ -76,8 +76,10 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 	e.branch(e.trapExit(wasm.TrapNullReference, e.f.Sources[in.Source].Wasm.Offset), "eq")
 	// Validate the complete generation/tag word before loading a payload.
 	// A stale or forged internal frame is a bad state, never a host address.
-	e.contextLoad(2, nativeabi.RuntimeDataOffset)
-	e.pointerLoad(1, 2, e.heapPair)
+	if _, cached := e.runtimeRegisters[e.heapPair]; !cached {
+		e.contextLoad(2, nativeabi.RuntimeDataOffset)
+	}
+	e.runtimeLoad(1, e.heapPair)
 	e.registerMove(e.operandRegister(2), e.operandRegister(0), false)
 	if e.a.arch == "amd64" {
 		e.a.bytes(0x48, 0x39, 0xca) // cmp rdx, rcx
@@ -85,8 +87,12 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 		e.a.word(0xeb0a017f) // cmp x11, x10
 	}
 	e.branch(e.bad, "hs")
-	e.contextLoad(1, nativeabi.RuntimeDataOffset)
-	e.pointerLoad(1, 1, e.heapPair+8)
+	if base, cached := e.runtimeRegisters[e.heapPair+8]; cached {
+		e.registerMove(e.operandRegister(1), base, true)
+	} else {
+		e.contextLoad(1, nativeabi.RuntimeDataOffset)
+		e.pointerLoad(1, 1, e.heapPair+8)
+	}
 	if e.a.arch == "amd64" {
 		e.a.bytes(0x48, 0xc1, 0xe2, 5, 0x48, 0x01, 0xca) // shl rdx,5; add rdx,rcx
 	} else {
