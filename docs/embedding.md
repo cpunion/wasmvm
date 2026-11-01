@@ -276,8 +276,8 @@ nil callbacks deny. Enable external DNS separately or supply a cancellable
 resolver. TCP listen yields independently owned socket resources; send and receive
 use native streams/futures and support half-close. Socket/worker/name/address
 limits and the IO owner's stream/batch limits apply across bound Stores. Close
-and wait for Instances, then Sockets, then IO. HTTP uses the same Sockets/IO owners. Complete worlds
-remain in development; see [provider scope and lifecycle](design/wasi-preview3.md).
+and wait for Instances, then Sockets, then IO. HTTP uses the same Sockets/IO owners.
+See [provider scope and lifecycle](design/wasi-preview3.md).
 
 
 Use component.NewHostCompletionWithCleanup when external work may create an
@@ -325,3 +325,13 @@ completion. An operation context can cancel this read without cancelling its
 parent session. `ReadAsyncContext` provides the synchronous embedding form;
 it drives the scheduler while waiting and must not substitute for independent
 continuations in mutually dependent operations.
+
+
+For the complete pinned P3 CLI/service/middleware worlds on Linux/Darwin, use
+`preview3.NewWorld(preview3.WorldConfig{...})` and pass `world.Imports()` to
+component instantiation. The config embeds the existing explicit provider
+configs, with one shared IO domain. `world.HTTP().CallIncoming` invokes a guest
+service; `preview3.RunCommand` invokes a command. Close/join bound instances,
+then `world.Close()` and `world.WaitClosed(ctx)`. Later constructor failure
+closes/joins accepted IO sources; pre-IO validation failure leaves them untouched.
+World creation grants no ambient args, environment, filesystem or network.

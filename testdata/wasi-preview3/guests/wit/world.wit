@@ -1,0 +1,8 @@
+package wasmvm:preview3-world-tests;
+
+world rust-command { include wasi:cli/command@0.3.2; }
+world c-command { include wasi:cli/command@0.3.2; }
+
+world rust-http { include wasi:http/service@0.3.2; }
+
+world rust-middleware { include wasi:http/middleware@0.3.2; }

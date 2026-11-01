@@ -4,8 +4,8 @@ The scope is pinned to the WASI 0.3.2 WIT archive with SHA-256
 `2e918e047c6ad251a44b4d1141359495a27219058fd7090f8b8142f6bc0ec311`.
 The stable CLI command/imports and HTTP service/middleware worlds remain the
 required complete outcome. Optional timezone and component threading are separate
-profiles. Current providers implement the following subset; this does not close
-M6 or complete-world conformance.
+profiles. The providers cover the stable interfaces below and assemble their declared
+worlds. Full upstream conformance and M6 acceptance remain open.
 
 | Interfaces | Implemented operations |
 | --- | --- |
@@ -22,6 +22,7 @@ M6 or complete-world conformance.
 | random/random, random/insecure, random/insecure-seed | all five operations |
 | filesystem/types, filesystem/preopens | all 26 operations: 21 async metadata/path methods, four native-stream methods, get-directories |
 | sockets/types, sockets/ip-name-lookup | all 41 operations: TCP, UDP, socket options and async name lookup |
+| http/types, http/client, http/handler | all 37 operations, native bodies/trailers/transmission and async dispatch |
 
 All names bind under `@0.3.2`. Pure environment/exit/entropy backends share the
 existing P2 implementation through explicit operation selection and signature
@@ -223,3 +224,33 @@ Forwarding a request transfers its body lease beyond handler completion. Normal
 guest exit does not revoke that escaped input. Call-context cancellation still
 interrupts both incoming and forwarded response readers after guest execution
 has finished. Their EOF/drop paths release the leases independently.
+
+## Complete world assembly and language producers
+
+On Linux/Darwin, `NewWorld(WorldConfig)` combines all 24 stable interfaces in one
+IO ownership domain for CLI command and HTTP service/middleware components.
+Configuration grants environment, preopens, stdio, entropy/clocks and network
+capabilities explicitly. Defaults inherit no process configuration or network
+access. `Imports` returns fresh maps; `IO` and `HTTP` expose the shared owners.
+Construction validates non-owning configuration first. IO sources transfer only
+when NewIO succeeds; later failure closes/joins accepted owners. Close requests
+shutdown in reverse dependency order and WaitClosed joins it. Bound component
+instances remain separately owned and must be closed/joined first.
+
+Eight pinned fixtures include independently compiled C and Rust commands, a
+Rust async HTTP service and middleware, their composed service, and full stable
+CLI/service/middleware import surfaces. C uses sync bindings over native async
+WIT plus stream/future waitables. Rust uses native async imports/exports and a
+spawned producer that completes bytes and trailers after returning the response.
+The middleware transfers a request body whose lease can outlive its invocation.
+Tests force three-byte batches and reuse each instance. The composed guest
+transfers resources and native async endpoints across two component boundaries.
+The full-import dummy service/middleware fixtures prove binding only; actual
+execution is recorded separately. Sources, Cargo locks, licenses and generator/
+binary hashes are retained under testdata/wasi-preview3/guests and world-manifest.
+
+Wasmtime 48.0.1 independently runs both command binaries and serves both Rust
+HTTP binaries with the same output/status/body. These checks advance declared
+world and producer coverage; local cm64 borrows, exhaustive upstream conformance
+and performance acceptance remain open. Optional timezone and component-threading
+extensions are separate profiles.

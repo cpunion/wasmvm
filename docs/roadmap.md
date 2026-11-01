@@ -615,9 +615,17 @@ nonblocking endpoint-read completion prevents sibling body/trailer waits from
 retaining a host callback stack. Six independently validated fixtures include
 actual outgoing and streaming-server Core guests, also executed by Wasmtime
 48.0.1. The outbound wire profile uses HTTP/1.1 for late trailer names; HTTPS
-is supported. Complete CLI/proxy world assembly, independent language toolchains,
-cm64 local borrows and full conformance remain functional work. M6 and deferred
-performance acceptance stay open.
+is supported.
+
+The unified World now assembles all 24 stable interfaces for the CLI command and
+HTTP service/middleware worlds. Independently compiled C/Rust native-async
+commands, Rust service/middleware and their composed service execute with bounded
+batches and instance reuse on both owned backends. Full stable import fixtures
+retain operations otherwise removed by compiler DCE. Wasmtime independently
+executes both commands and both service binaries. Constructor rollback and
+reverse-order close/join preserve explicit capability ownership. Local cm64
+borrows, exhaustive upstream conformance and deferred performance acceptance
+still keep M6 open.
 
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 

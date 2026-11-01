@@ -10,6 +10,6 @@
 | `wasi/preview1` | WASI Preview 1 |
 | `wasi/threads` | Separate, optional legacy wasi-threads support |
 | `wasi/preview2` | Versioned CLI/HTTP providers, native sockets and explicit capability owners |
-| `wasi/preview3` | Native async base/stdio/clocks, filesystem, sockets/DNS and HTTP providers |
+| `wasi/preview3` | Native async providers and unified CLI/service/middleware worlds |
 
 See [packages.md](../docs/design/packages.md) for the complete layout and dependency direction, and [README](../README.md) for the current implementation status.

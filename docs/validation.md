@@ -4781,3 +4781,34 @@ still owned by a response reader was revoked at handler exit. Normal completion
 now respects the moved lease, while parent cancellation interrupts input/output
 after guest exit. Go race and pinned LLGo regressions pass; current P3 coverage
 is 90.58%. Final-head CI remains the merge gate.
+
+
+## WASI 0.3.2 world assembly and native language components
+
+`preview3.NewWorld` assembles all 24 stable versioned interfaces with one IO
+owner and explicit capability configuration. Construction rollback preserves
+source ownership; reverse-order close/join and separately owned instances are
+tested. Eight validated fixtures pin full stable CLI/service/middleware import
+surfaces and real language-generated native-async components.
+
+Go 1.27.3 race tests and LLGo `8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f`
+with `-O3 -lto=full` execute C/Rust commands, a Rust HTTP service, a forwarding
+middleware and their composed service through interpreter/native. Commands
+exercise arguments, random, clock wait, filesystem stat and stream/future stdout
+three times per instance. HTTP tests reuse instances, return before producer
+completion, transfer byte/trailer endpoints across component boundaries and
+retain forwarded bodies beyond handler exit. Three-byte batches force partial
+progress. The full-import dummy service/middleware binaries prove binding only.
+Go vet passes; the complete affected P3 package has 90.67% statement coverage
+(3,905/4,307), measured separately from upstream conformance.
+
+The identical C/Rust command bytes run under Wasmtime 48.0.1 with matching stdout;
+its HTTP server runs both standalone and composed Rust services with status 201
+and the matching echoed body. Reference executable SHA-256 is
+`62c9c9644d690f3615c842e6bfa977588c4eac905622508507821fadce385681`.
+Fixture provenance includes the WASI 0.3.2 archive, wasm-tools 1.258.0,
+wit-bindgen 0.54.0, clang 22.1.8/wasi-libc 33, Rust 1.98.0, Cargo locks,
+dependency licenses and source/generator/binary hashes. Guest builds are offline;
+ordinary semantic CI executes committed bytes without installing these producers.
+Final-head four-job CI remains the merge gate. Local cm64 borrow conversion,
+exhaustive upstream conformance and deferred performance acceptance remain open.
