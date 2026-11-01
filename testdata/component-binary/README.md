@@ -30,6 +30,7 @@ component validation inventory and does not imply component execution.
 
 The pinned producer cannot convert `test/validation/version-suffix.wast`:
 wasm-tools 1.258.0 rejects `(version-suffix ".2.3")` on its first import.
-The original source is retained, and the manifest records this producer
-limitation. It is an untested official script, not a validation pass or a
-silently skipped engine feature. Authored version-attribute tests are separate.
+The original source and this older producer limitation remain recorded. The
+[runtime corpus](../component-runtime/README.md) now converts this script with
+separately pinned wasm-tools 1.262.0 and checks all 41 official commands. The
+older grammar/type corpus remains unchanged; authored version tests are separate.

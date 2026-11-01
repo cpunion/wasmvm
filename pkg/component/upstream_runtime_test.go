@@ -195,7 +195,10 @@ func upstreamEqualValue(a, b Value) bool {
 }
 
 func TestUpstreamComponentRuntime(t *testing.T) {
-	root := "../../artifacts/components/runtime-corpus/runtime"
+	root := os.Getenv("WASMVM_COMPONENT_CORPUS")
+	if root == "" {
+		root = "../../artifacts/components/runtime-corpus/runtime"
+	}
 	manifestData, err := os.ReadFile("../../testdata/component-runtime/manifest.json")
 	if err != nil {
 		t.Fatal(err)
@@ -210,7 +213,7 @@ func TestUpstreamComponentRuntime(t *testing.T) {
 	if err := json.Unmarshal(manifestData, &manifest); err != nil {
 		t.Fatal(err)
 	}
-	if len(manifest.Scripts) != 57 {
+	if len(manifest.Scripts) != 61 {
 		t.Fatal("changed runtime inventory", len(manifest.Scripts))
 	}
 	var names []string
@@ -277,9 +280,11 @@ func TestUpstreamComponentRuntime(t *testing.T) {
 						}
 						in, err := compiled.Instantiate(nil, Imports{}, CallOptions{})
 						if command.Type == "assert_uninstantiable" {
-							if err == nil {
+							if in != nil {
 								in.Close()
-								t.Fatal(where, "expected initialization trap")
+							}
+							if !errors.Is(err, wasm.ErrTrap) {
+								t.Fatal(where, "expected initialization trap", err)
 							}
 							continue
 						}

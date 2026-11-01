@@ -369,8 +369,11 @@ func (c *componentContext) export(e *model.Export) error {
 			return err
 		}
 	} else if e.Item.Sort == model.InstanceSort {
+		// Exporting a concrete instance exposes its existing type bindings.
+		// Unlike a type declaration, this does not introduce fresh aliases;
+		// later exported functions can name the types in that instance.
 		var err error
-		t, err = s.publish(t, true)
+		t, err = s.publishConcreteInstance(t)
 		if err != nil {
 			return err
 		}

@@ -635,6 +635,15 @@ return-memory options and internal deadlock detection. The manifest retains
 without counting them as passes. Complete upstream acceptance, local cm64 borrows
 and deferred performance gates remain open.
 
+A separately pinned 1.262.0 fixture producer resolves all four conversion
+limitations without changing the earlier producer's bytes. All 75 original
+scripts now convert. The selected profile executes 962 commands (555 guest
+invocations) across 52 views; 228 commands require optional component threading.
+Official forwarding, large async interleavings and version-suffix controls pass.
+Concrete-instance export visibility now preserves named bindings and immutable
+import types. Experimental cm64 local borrows and full WASI/performance
+acceptance remain open.
+
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 
 ## M7 — Further optimization and experimental features

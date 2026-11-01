@@ -654,3 +654,21 @@ string encoding remains checked. This matches the official cross-ABI runtime
 script and Wasmtime 48.0.1. The pinned explainer's unconditional LiftOptions.equal
 wording is stricter than that test/implementation; this discrepancy is retained
 rather than weakening checks on memory-bearing results.
+
+
+## Complete source conversion and concrete instance type visibility
+
+The four previous producer limitations now convert with independently pinned
+wasm-tools 1.262.0. All earlier 1.258.0 corpus files retain their exact hashes.
+The selected inventory grows to 962 commands, including 555 guest invocations,
+across 52 script views. 228 commands require optional component threading; the
+new post-return script contains both declared-profile and threading cases.
+No producer limitation remains for the 75 original source scripts.
+
+The official large async interleaving fixture exposed a concrete-instance export
+bug. Exported instance values expose their existing named type bindings so later
+functions can reference them. They do not create the fresh aliases introduced by
+explicit type declarations. Only instance containers are copied: exporter binder
+bookkeeping must not mutate the immutable imported interface. The earlier full
+grammar/type controls, including private-name rejection and re-exported resource
+binders, remain required regression evidence.
