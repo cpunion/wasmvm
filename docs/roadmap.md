@@ -654,6 +654,14 @@ explicit address corrections. The current independent producer still rejects
 the corrected local i64 signatures. Full WASI acceptance and the deferred
 performance gates remain open; this reference limitation is not a semantic pass.
 
+The CLI now invokes standard P2/P3 command components with `--wasi-preview 2|3`,
+sharing the existing World providers, explicit capabilities and bounded stdio
+readiness. Initialization and invocation retain one total metered fuel budget
+through a public instantiation receipt. Actual C/Rust commands, stdin, exit/trap,
+pipe cancellation and stdio flag restoration are covered on both backends. This
+adds the command entry to the implemented embedding APIs; final target CI and
+the stage's full conformance/performance gates remain separate.
+
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 
 ## M7 — Further optimization and experimental features

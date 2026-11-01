@@ -38,6 +38,7 @@ Run also accepts:
   --export name          Exported function (required for core run; _start for WASI)
   --fuel count           Shared instruction budget, including the start function
   --wasi                 Install WASI Preview 1; arguments become guest argv
+  --wasi-preview n       Run a WASI 1, 2 or 3 command (2/3 use component worlds)
   --wasi-threads         Install P1 and legacy wasi.thread-spawn (enables Core Threads)
   --max-threads n        Total process threads, including main (default 256)
   --env key=value        Explicit guest environment entry; may be repeated
@@ -58,7 +59,7 @@ func (s *stringList) Set(value string) error { *s = append(*s, value); return ni
 
 type wasiOptions struct {
 	threads                    bool
-	maxThreads                 uint
+	maxThreads, preview        uint
 	env, dirs, readOnlyDirs    stringList
 	stdinFile, argv0, exported string
 	args                       []string
@@ -101,6 +102,7 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		flags.StringVar(&exported, "export", "", "")
 		flags.StringVar(&fuel, "fuel", "", "")
 		flags.BoolVar(&wasiMode, "wasi", false, "")
+		flags.UintVar(&wasiConfig.preview, "wasi-preview", 0, "")
 		flags.BoolVar(&wasiConfig.threads, "wasi-threads", false, "")
 		flags.UintVar(&wasiConfig.maxThreads, "max-threads", uint(wasithreads.DefaultMaxThreads), "")
 		flags.Var(&wasiConfig.env, "env", "")
@@ -116,6 +118,18 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	positional := flags.Args()
+	profileExplicit, previewExplicit := false, false
+	flags.Visit(func(f *flag.Flag) {
+		profileExplicit = profileExplicit || f.Name == "profile"
+		previewExplicit = previewExplicit || f.Name == "wasi-preview"
+	})
+	if previewExplicit && (wasiConfig.preview == 0 || wasiConfig.preview > 3) || wasiConfig.preview > 1 && (wasiConfig.threads || exported != "") {
+		fmt.Fprintln(stderr, "--wasi-preview requires 1, 2 or 3; component commands use their standard run export without --wasi-threads")
+		return 2
+	}
+	if wasiConfig.preview != 0 {
+		wasiMode = true
+	}
 	if wasiConfig.threads {
 		wasiMode = true
 		if wasiConfig.maxThreads == 0 || wasiConfig.maxThreads >= 1<<29 || exported != "" && exported != "_start" {
@@ -126,14 +140,17 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "--max-threads requires --wasi-threads")
 		return 2
 	}
-	if wasiMode && exported == "" {
+	if wasiMode && wasiConfig.preview == 0 {
+		wasiConfig.preview = 1
+	}
+	if wasiMode && wasiConfig.preview == 1 && exported == "" {
 		exported = "_start"
 	}
 	if !wasiMode && (len(wasiConfig.env)+len(wasiConfig.dirs)+len(wasiConfig.readOnlyDirs) != 0 || wasiConfig.stdinFile != "") {
-		fmt.Fprintln(stderr, "WASI capability flags require --wasi")
+		fmt.Fprintln(stderr, "WASI capability flags require --wasi, --wasi-preview or --wasi-threads")
 		return 2
 	}
-	if len(positional) == 0 || command != "run" && len(positional) != 1 || command == "run" && exported == "" || *timeout < 0 {
+	if len(positional) == 0 || command != "run" && len(positional) != 1 || command == "run" && exported == "" && wasiConfig.preview < 2 || *timeout < 0 {
 		fmt.Fprint(stderr, usage)
 		return 2
 	}
@@ -168,6 +185,12 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		defer cancel()
 	}
 	config := vm.DefaultEngineConfig()
+	if wasiConfig.preview > 1 {
+		// Component commands default to the cumulative Core 3.0 profile.
+		if !profileExplicit {
+			*profile = "core3"
+		}
+	}
 	config.Backend = *backend
 	config.Native.MaxCodeBytes = *codeBytes
 	config.Profile = *profile
@@ -200,6 +223,10 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 	if *memory64 {
 		config.Features |= wasm.Memory64
+	}
+	if wasiConfig.preview > 1 {
+		wasiConfig.argv0, wasiConfig.args = positional[0], positional[1:]
+		return runComponentWASI(ctx, config, options, wasiConfig, stdout, stderr)
 	}
 	engine, err := vm.NewEngineWithConfig(config)
 	if err != nil {

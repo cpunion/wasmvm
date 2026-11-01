@@ -1,0 +1,21 @@
+{
+  "producer": "wasm-tools 1.258.0",
+  "generatorSHA256": "df5fefa43cef60add2cfe06ef917056bf3546cce98f42868aa90cdd3dc2ca05c",
+  "sourcesSHA256": {
+    "pkg/wasi/preview3/testdata/stdin.wat": "b5610fd9faafd1eecddb2ae56843b68d69c053c47f47e8e64e9785217a142fd1"
+  },
+  "fixtures": {
+    "component-init-p2": {
+      "wat": "0ecff4d7901a070f75e76abd8e4193393ace401669d42ec924d092586a0e9559",
+      "wasm": "c89955dfc9710cead5226399737324a60cc626d91d7cd0ce6fdffd54c22e0f30"
+    },
+    "component-init-p3": {
+      "wat": "945c3cb42269236e40448db156ee60f079fd772e3e157451b39f6025cba36e03",
+      "wasm": "c0c67cd010713cd38cb08d3e1da1f07668de6b52080824d6b472faa0e5eb4e62"
+    },
+    "component-stdin-p3": {
+      "wat": "7027c9f97e0a733c3ef2fb69b8d686a87b8f68eaf6f045763eaeba3cb16a8714",
+      "wasm": "0b155df486fabd10f5f37871675d3b218ec0ea49872905e8172772e16665d57e"
+    }
+  }
+}

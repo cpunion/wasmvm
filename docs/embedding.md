@@ -342,3 +342,8 @@ the runtime supplies the full i64 representation only to its defining component.
 Foreign components receive i32 handles, including with memory64. Borrowed resources
 remain live through suspension and cannot be moved/dropped until completion or
 cancellation cleanup. No additional host configuration is required.
+
+`component.Instance.StartFuelRemaining()` returns the immutable instantiation
+fuel receipt. When initialization and the next invocation share a metered
+budget, use that receipt as the next CallOptions.Fuel. Later calls leave the
+receipt unchanged. Every call still has an explicit caller-supplied budget.

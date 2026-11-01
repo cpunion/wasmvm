@@ -40,6 +40,7 @@ type Imports struct {
 type Instance struct {
 	mu                    sync.Mutex
 	closed                bool
+	startFuelRemaining    uint64
 	shutdown              chan struct{}
 	sources               map[*sourceState]struct{}
 	sourceCleanup         *sourceState
@@ -71,6 +72,10 @@ type Instance struct {
 	components            map[*Compiled]*componentLease
 	componentBindings     *validate.ComponentBindings
 }
+
+// StartFuelRemaining is the immutable fuel receipt for successful instantiation.
+// Pass it to the next call when initialization and invocation share one budget.
+func (in *Instance) StartFuelRemaining() uint64 { return in.startFuelRemaining }
 
 func (in *Instance) Close() {
 	in.mu.Lock()
@@ -328,7 +333,7 @@ func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.
 			}
 		}
 	}
-	_, err = store.WithCallerCleanup(ctx, options, func(caller *vm.Caller) (err error) {
+	in.startFuelRemaining, err = store.WithCallerCleanup(ctx, options, func(caller *vm.Caller) (err error) {
 		importsScope := &namespace{resources: in.importResourceIDs}
 		in.initializing.Resources = &resourceCodec{in: in, n: importsScope, core: caller}
 		complete := false

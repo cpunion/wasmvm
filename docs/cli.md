@@ -70,3 +70,34 @@ for each thread including initialization; the timeout covers the entire
 process. Exit/trap/cancellation stops and joins all workers. See
 [the lifecycle contract](design/wasi-threads.md). Components/WASI 0.2/0.3
 remain separate capabilities.
+
+## WASI component commands
+
+`--wasi-preview 2` runs the standard synchronous WASI 0.2 command entry;
+`--wasi-preview 3` runs the native-async WASI 0.3 entry. The providers use pinned
+WASI 0.2.12/0.3.2 interfaces and checked stable version compatibility. Both owned
+backends execute the same components. The default embedded Core profile is
+Core 3.0; an explicit `--profile` still selects its declared feature scope.
+
+```sh
+wasmvm run --wasi-preview 2 --dir /data=/srv/data command-p2.wasm argument
+wasmvm run --wasi-preview 3 --backend native --fuel 10000000 \
+  --read-only-dir /data=/srv/data --stdin input.txt command-p3.wasm argument
+```
+
+The module basename is argv0. Arguments, environment, writable/read-only preopens
+and stdin use the existing CLI options. Environment/directories/network are not
+inherited; network operations are denied by default. Stdout/stderr stream directly
+with bounded backpressure and cancellation. Borrowed stdio flags are restored
+after the instance, providers and readiness workers close/join.
+
+The command uses its standard `wasi:cli/run` export; `--export` and
+`--wasi-threads` do not apply to component commands. Success/failure results map
+to 0/1, explicit exit preserves the guest code, and traps/cancellation report an
+error. Fuel includes component initialization and invocation in one total
+budget; timeout also includes compilation and host I/O. `--wasi-preview 1`
+selects the existing P1 mode; `--wasi` remains its shorthand.
+
+For explicit HTTP/socket authorities, custom component exports or service/
+middleware hosting, use the [embedding API](embedding.md) and versioned World
+configuration. The command adds no second provider or execution framework.

@@ -4924,3 +4924,27 @@ wasm-tools 1.262.0 still rejects the new local i64 borrow signature with
 reference limitation remains recorded. Final-head target CI, full WASI
 acceptance and deferred performance gates remain open. Local logs and the
 coverage profile are under `artifacts/components/component-forward-probe/cm64-*`.
+
+## P2/P3 command CLI and shared initialization fuel
+
+`--wasi-preview 2|3` executes the standard command exports using the existing
+versioned World providers. Shared argument/preopen validation and P1 descriptor
+ownership avoid another provider implementation. The stdio adapter uses prompt
+nonblocking reads/writes and at most one external readiness waiter per stream.
+Close revokes sources and joins waiters before restoring borrowed stdio flags.
+
+The public component instantiation receipt preserves fuel spent by Core starts,
+component starts and their cleanup. A three-instruction initializer followed by
+a two-instruction command fails with four total units and succeeds with five;
+subsequent calls cannot mutate the receipt. Both owned backends execute actual
+pinned C/Rust P2/P3 commands, file/pipe stdin, normal failure, exit, trap and
+cancellation through the CLI. Invalid modes, schemas, grants and resource limits
+remain distinct failures. Go race passes; CLI/component coverage is
+98.06%/91.62%. Pinned LLGo release tests and vet pass. A cgo-disabled Go binary
+also executes the actual Rust P3 command with explicit read-only preopens.
+
+Three independently parsed/validated owned fixtures retain generator/source/
+binary hashes. Existing C/Rust producer provenance is reused unchanged. Final
+target CI remains required; no performance measurement or acceptance is inferred
+from these execution tests. Logs are under
+`artifacts/components/component-forward-probe/component-cli-*`.

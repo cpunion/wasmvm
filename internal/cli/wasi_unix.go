@@ -116,25 +116,35 @@ func cliStreams(stdinPath string, stdout, stderr io.Writer) (*cliStdio, error) {
 	}
 	return scope, nil
 }
-func runWASI(ctx context.Context, engine *vm.Engine, store *vm.Store, module *vm.CompiledModule, options vm.CallOptions, args wasiOptions, stdout, stderr io.Writer) int {
-	config := preview1.DefaultConfig()
-	config.Args = append([]string{filepath.Base(args.argv0)}, args.args...)
+func cliCapabilities(args wasiOptions) ([]string, []preview1.Preopen, error) {
+	var env []string
+	var preopens []preview1.Preopen
 	for _, env := range args.env {
 		if strings.IndexByte(env, '=') < 1 {
-			fmt.Fprintln(stderr, "--env requires key=value")
-			return 2
+			return nil, nil, fmt.Errorf("--env requires key=value")
 		}
-		config.Env = append(config.Env, env)
 	}
+	env = append(env, args.env...)
 	for kind, dirs := range []stringList{args.dirs, args.readOnlyDirs} {
 		for _, dir := range dirs {
 			guest, hostPath, ok := strings.Cut(dir, "=")
 			if !ok || guest == "" || hostPath == "" {
-				fmt.Fprintln(stderr, "directory capability requires guest=host")
-				return 2
+				return nil, nil, fmt.Errorf("directory capability requires guest=host")
 			}
-			config.Preopens = append(config.Preopens, preview1.Preopen{GuestPath: guest, HostPath: hostPath, ReadOnly: kind == 1})
+			preopens = append(preopens, preview1.Preopen{GuestPath: guest, HostPath: hostPath, ReadOnly: kind == 1})
 		}
+	}
+	return env, preopens, nil
+}
+
+func runWASI(ctx context.Context, engine *vm.Engine, store *vm.Store, module *vm.CompiledModule, options vm.CallOptions, args wasiOptions, stdout, stderr io.Writer) int {
+	config := preview1.DefaultConfig()
+	config.Args = append([]string{filepath.Base(args.argv0)}, args.args...)
+	var err error
+	config.Env, config.Preopens, err = cliCapabilities(args)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
 	}
 	streams, err := cliStreams(args.stdinFile, stdout, stderr)
 	if err != nil {
