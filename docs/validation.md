@@ -5229,3 +5229,13 @@ tests from HTTP to component, and moves two small core packages into VM. The
 31-package inventory and full release profile are unchanged. Compatible shard
 caches provide a fallback for the standalone CLI. Final timings remain to be
 measured; the initial result is not presented as a completed ten-minute gate.
+
+
+The rebalanced head `df94fbd` passed all 17 required jobs and both standalone
+LLGo CLI checks. Go semantics took 2.35/3.03 minutes, quality 2.20 and race 5.45.
+LLGo CLI took 4.82/6.62 minutes; semantic groups ranged from 4.38 to 10.60.
+Only Linux component remained above ten minutes. Its trace shows the phase
+harness test link consuming 174.12 seconds, alongside CLI (296.40), component
+(222.30) and validator (192.29) links. The phase harness has only core/VM
+dependencies, so moving it to the lighter core group needs no additional
+corpora and reduces this imbalance without adding jobs or changing tests.
