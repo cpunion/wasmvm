@@ -343,6 +343,7 @@ func (s *Store) Close() {
 		s.releaseObject(uint32(i))
 	}
 	s.heap = nil
+	s.heapObjects = nil
 	if s.nativeHeap != nil {
 		s.nativeHeap.close()
 	}

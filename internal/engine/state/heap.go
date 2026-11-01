@@ -35,6 +35,20 @@ type heapSlot struct {
 	Generation uint32
 }
 
+// Handle-indexed pages keep object addresses stable without allocating a host
+// object for every guest allocation. Pages are lazy and bounded by the handle
+// quota; a recycled generation reuses its cleared metadata cell.
+const heapObjectsPerPage = 64
+
+func (s *Store) objectCell(index uint32) *heapObject {
+	page := uint64(index) / heapObjectsPerPage
+	if page == uint64(len(s.heapObjects)) {
+		remaining := uint64(s.limits.MaxHeapObjects) + 1 - page*heapObjectsPerPage
+		s.heapObjects = append(s.heapObjects, make([]heapObject, int(min(heapObjectsPerPage, remaining))))
+	}
+	return &s.heapObjects[page][uint64(index)%heapObjectsPerPage]
+}
+
 func (s *Store) heapObject(ref uint64) (*heapObject, bool) {
 	index := uint32(ref)
 	if ref&heapTag == 0 || index == 0 || uint64(index) >= uint64(len(s.heap)) {
@@ -100,7 +114,8 @@ func (s *Store) allocateObject(typ uint32, length uint32, extra ...uint64) (uint
 	}
 	s.heapSerial++
 	ref := heapTag | uint64(s.heap[index].Generation)<<32 | uint64(index)
-	o := &heapObject{Type: typ, Data: data, Layout: layout, Length: length, Bytes: bytes, Serial: s.heapSerial}
+	o := s.objectCell(index)
+	*o = heapObject{Type: typ, Data: data, Layout: layout, Length: length, Bytes: bytes, Serial: s.heapSerial}
 	s.heap[index].Object = o
 	if s.nativeHeap != nil {
 		if payload != 0 {
@@ -126,9 +141,7 @@ func (s *Store) releaseObject(index uint32) {
 	if s.nativeHeap != nil {
 		clear(s.nativeHeap.views[int(index)*4 : int(index)*4+4])
 	}
-	obj.Data = nil
-	obj.Layout = nil
-	obj.Continuation = nil
+	*obj = heapObject{}
 	slot.Object = nil
 	if slot.Generation < 0x7fffffff {
 		slot.Generation++

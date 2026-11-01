@@ -94,7 +94,10 @@ func (s *Store) compactNativeHeap() {
 	var used uint64
 	for _, a := range h.objects {
 		o := a.object
-		if o.Data == nil {
+		// A metadata cell can have been reused by a newer generation while
+		// this old relocation record is still a tombstone.
+		live, ok := s.heapObject(a.handle)
+		if !ok || live != o || o.Data == nil {
 			continue
 		}
 		size := uint64(len(o.Data))
