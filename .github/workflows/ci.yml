@@ -105,7 +105,9 @@ jobs:
 
       - name: Check Go data races
         if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
-        run: go test -race -count=1 -timeout=10m -skip 'TestCompleteCore[23]|Test.*(Proposal|Spec)$|TestP1Conformance$|TestOfficialGoGuest$' ./...
+        # Full producer inventories already execute in the Go/LLGo matrix.
+        # Retain race coverage of unit/lifecycle, threaded guests and streaming interactions.
+        run: go test -race -count=1 -timeout=10m -skip 'TestCompleteCore[23]|Test.*(Proposal|Spec)$|TestP1Conformance$|TestOfficialGoGuest$|TestUpstream(P2WorldConsumers|WASIConsumers)$' ./...
 
       - name: Check native pointer ownership
         if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'

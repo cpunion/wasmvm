@@ -5045,3 +5045,12 @@ required. Performance optimization and comparison campaigns remain deferred.
 
 Local diagnostics and original failing results are retained under
 `artifacts/components/wasi-p2-worlds-probe`.
+
+The first Linux Go CI completed the full semantic/coverage suite but its race
+pass timed out the unchanged LLGo threaded guest's native/all case at 60 seconds.
+Concurrent repeated upstream P2/P3 inventories took 218/255 seconds in that
+diagnostic pass. The race scope now follows the existing complete Core/P1
+inventory policy: keep all producer programs in the four-target semantic matrix,
+while running unit, lifecycle, actual threaded-guest and streaming-interaction
+tests under race detection. No guest assertion or deadline was relaxed. The
+original failing job log remains retained; final-head CI is still required.
