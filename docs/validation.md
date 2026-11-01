@@ -1,5 +1,25 @@
 # Verification Record
 
+## 2026-11-01: Compact imports and wide arithmetic
+
+The explicit extension implementation pins Compact Import Section at
+`0624de829e2663da799e708444dec80337a3fe54` and Wide Arithmetic at
+`024d4ce1b28cee7fd006d9c5175e3b7ece52b429`. The complete affected upstream
+inventories execute 32 and 107 binary assertions respectively in interpreter,
+unmetered native and metered native tiers. Three malformed text assertions
+remain separately classified. Go 1.27.3 and LLGo
+`8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f` (`-O3 -lto=full`) passed those
+tests on darwin/arm64. Both compilers also passed the randomized arithmetic,
+feature/type/quota checks and complete codegen/slot packages, including native
+overlapping result slots, large frame offsets and fuel checks.
+
+The full Go internal/public package suite passed with all 30 executable
+packages above 90% statement coverage (minimum 90.73%). Vet on project source,
+fixture verification and actionlint passed. The final PR matrix must still
+validate Go/LLGo on Linux amd64 and macOS arm64 before merge. Custom Page Sizes,
+non-JavaScript Custom Descriptors and Stack Switching remain required pending
+work, not completed by this increment. Performance acceptance stays open.
+
 Date: 2026-10-26. The initial sections record the design scaffold's host compiler checks. The M0 section records subsequent candidate execution. No production VM API or full Wasm/WASI conformance is claimed.
 
 ## Local results

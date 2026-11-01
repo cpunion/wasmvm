@@ -5,6 +5,7 @@ package execute
 import (
 	"context"
 	"errors"
+	"math/bits"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -255,6 +256,37 @@ frames:
 			}
 			var result value.Value
 			trap := wasm.NoTrap
+			if module.IsWideArithmetic(in.Op) {
+				args := code.Args[in.Extra : in.Extra+in.Count+2]
+				left, right := values[args[0]].Lo, values[args[1]].Lo
+				var lo, hi uint64
+				switch in.Op {
+				case 0xfc0013, 0xfc0014:
+					otherLo, otherHi := values[args[2]].Lo, values[args[3]].Lo
+					var carry uint64
+					if in.Op == 0xfc0013 {
+						lo, carry = bits.Add64(left, otherLo, 0)
+						hi, _ = bits.Add64(right, otherHi, carry)
+					} else {
+						lo, carry = bits.Sub64(left, otherLo, 0)
+						hi, _ = bits.Sub64(right, otherHi, carry)
+					}
+				default:
+					hi, lo = bits.Mul64(left, right)
+					if in.Op == 0xfc0015 {
+						if int64(left) < 0 {
+							hi -= right
+						}
+						if int64(right) < 0 {
+							hi -= left
+						}
+					}
+				}
+				values[args[in.Count]], values[args[in.Count+1]] = value.Value{Lo: lo}, value.Value{Lo: hi}
+				pc++
+				f.pc = pc
+				continue
+			}
 			if in.Op>>16 == 0xfb {
 				var local [5]value.Value
 				operands := local[:0]

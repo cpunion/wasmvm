@@ -1,0 +1,1 @@
+(import "test" (item "foo") (item "bar") (func $foo)) 

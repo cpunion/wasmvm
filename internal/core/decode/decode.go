@@ -118,25 +118,7 @@ func (d *decoder) module() *module.Module {
 		case 1:
 			d.typeSection(m)
 		case 2:
-			m.Imports = make([]module.Import, d.count())
-			for i := range m.Imports {
-				im := &m.Imports[i]
-				im.Module, im.Name, im.Kind = d.name(), d.name(), d.byte()
-				switch im.Kind {
-				case 0:
-					im.Type = d.u32()
-				case 1:
-					im.Table = d.table()
-				case 2:
-					im.Memory = d.bounds(true)
-				case 3:
-					im.Global = d.globalType()
-				case 4:
-					im.Type = d.tagType()
-				default:
-					d.fail("unknown import kind")
-				}
-			}
+			d.importSection(m)
 		case 3:
 			m.Functions = make([]module.Function, d.count())
 			for i := range m.Functions {

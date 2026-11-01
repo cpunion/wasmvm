@@ -29,9 +29,10 @@ type Instruction struct {
 }
 
 // Calls store input slots followed by output slots in Args[Extra:], with Count
-// inputs and Source.Outputs outputs. Tail calls store only inputs, with no
-// local result slots. Returns store Count slots at Extra.
-// Other operations have at most three inline operands and one inline result.
+// inputs and Source.Outputs outputs, as do GC and wide arithmetic instructions.
+// Tail calls store only inputs, with no local result slots. Returns store Count
+// slots at Extra. Other operations have at most three inline operands and one
+// inline result.
 // Branches address Count edges starting at Extra; A is the condition/index.
 // Every instruction retains its original source and fuel boundary.
 type Edge struct{ PC, Start, Count uint32 }
@@ -238,7 +239,7 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 			// SSA locations remain stable after release. Integer operands, local
 			// copies and equal literals can alias; suspended call tuples cannot.
 			in := Instruction{Op: src.Wasm.Op, Source: op.Source, Dst: NoSlot, A: NoSlot, B: NoSlot, C: NoSlot}
-			if in.Op == 0x10 || in.Op == 0x11 || in.Op == 0x14 || in.Op>>16 == 0xfb {
+			if in.Op == 0x10 || in.Op == 0x11 || in.Op == 0x14 || in.Op>>16 == 0xfb || module.IsWideArithmetic(in.Op) {
 				in.Extra = uint32(len(out.Args))
 				if in.Op>>16 == 0xfb && len(op.Args) > 0 {
 					in.A = out.ValueSlots[op.Args[0]]

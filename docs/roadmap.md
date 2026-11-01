@@ -6,6 +6,17 @@ Implement functional stages in dependency order. Local performance follow-ups ma
 
 ## Current integration decision
 
+On 2026-11-01 the owner expanded mandatory capability scope to non-JavaScript
+proposals whose designs are substantially settled, including the applicable
+Phase 3-4 proposals: Compact Import Section, Wide Arithmetic, Custom Page Sizes,
+the Core part of Custom Descriptors, and Stack Switching. Core Threads is
+already implemented. These five extensions are required functional work rather
+than optional M7 items. Pin proposal snapshots and gate them separately from
+Core 3.0; Phase 3 does not mean final standardization. Implement both execution
+backends, full affected upstream inventories, bounds/lifecycle/interactions,
+Go/LLGo execution and CLI/API support. Complete these capabilities before
+returning to performance optimization; existing performance deficits stay open.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and

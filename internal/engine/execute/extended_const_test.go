@@ -49,6 +49,14 @@ func TestGCProposal(t *testing.T) {
 	runProposal(t, proposalCorpus{"gc", "756060f5816c7e2159f4817fbdee76cf52f9c923", wasm.Core3Features, []string{"br_table", "array", "array_copy", "array_fill", "array_init_data", "array_init_elem", "array_new_data", "array_new_elem", "binary-gc", "br_on_cast", "br_on_cast_fail", "extern", "i31", "ref_cast", "ref_eq", "ref_test", "struct", "type-subtyping-invalid", "type-subtyping", "ref_null", "type-canon", "type-equivalence", "type-rec"}, 272, 964, 802, 1})
 }
 
+func TestCompactImportsProposal(t *testing.T) {
+	runProposal(t, proposalCorpus{"compact-import-section", "0624de829e2663da799e708444dec80337a3fe54", wasm.Core3Features | wasm.CompactImports, []string{"binary-compact-imports", "imports-compact"}, 50, 70, 32, 3})
+}
+
+func TestWideArithmeticProposal(t *testing.T) {
+	runProposal(t, proposalCorpus{"wide-arithmetic", "024d4ce1b28cee7fd006d9c5175e3b7ece52b429", wasm.Core3Features | wasm.WideArithmetic, []string{"wide-arithmetic"}, 13, 109, 107, 0})
+}
+
 func runProposal(t *testing.T, corpus proposalCorpus) {
 	root := filepath.Join("../../../testdata", corpus.name)
 	raw, err := os.ReadFile(filepath.Join(root, "manifest.json"))

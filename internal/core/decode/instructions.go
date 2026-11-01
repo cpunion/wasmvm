@@ -123,6 +123,7 @@ func (d *decoder) expr() module.Expr {
 				in.A, in.B = d.u32(), d.u32()
 			case sub >= 13 && sub <= 17:
 				in.A = d.u32()
+			case sub >= 19 && sub <= 22 && d.features&wasm.WideArithmetic != 0:
 			default:
 				d.failAt(in.Offset, "unknown miscellaneous opcode")
 			}

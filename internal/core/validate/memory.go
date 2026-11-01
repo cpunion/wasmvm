@@ -31,6 +31,19 @@ func (v *checker) threeI32() { v.pop(wasm.I32); v.pop(wasm.I32); v.pop(wasm.I32)
 func (v *checker) misc(in module.Instr) {
 	sub := in.Op & 0xffff
 	switch {
+	case sub >= 19 && sub <= 22:
+		if v.features&wasm.WideArithmetic == 0 {
+			v.fail("wide arithmetic is disabled")
+		}
+		count := 2
+		if sub <= 20 {
+			count = 4
+		}
+		for i := 0; i < count; i++ {
+			v.pop(wasm.I64)
+		}
+		v.push(wasm.I64)
+		v.push(wasm.I64)
 	case sub < 8:
 		input, output := wasm.F32, wasm.I32
 		if sub&2 != 0 {
