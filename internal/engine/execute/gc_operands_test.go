@@ -25,7 +25,8 @@ func TestGCOperandWorkspaceCollectionFailureAndReuse(t *testing.T) {
 			{Kind: module.FunctionKind},
 		},
 	}
-	for _, count := range []uint32{1, 9} {
+	counts := []uint32{1, 9, maxCachedGCArgs + 1}
+	for _, count := range counts {
 		body := module.Expr{}
 		for i := uint32(0); i < count; i++ {
 			body = append(body, module.Instr{Op: 0x41, Bits: uint64(i + 100)})
@@ -47,18 +48,18 @@ func TestGCOperandWorkspaceCollectionFailureAndReuse(t *testing.T) {
 			}
 		}
 	}
-	for _, index := range []int{0, 1, 0, 1} {
+	for _, index := range []int{0, 1, 2, 0, 1} {
 		if err := e.Start(in.Functions[index], nil); err != nil || e.Run() != Done {
 			t.Fatal(err, e.Err())
 		}
-		want := uint64(1)
-		if index == 1 {
-			want = 9
-		}
+		want := uint64(counts[index])
 		if e.Results()[0].Lo != want {
 			t.Fatal(e.Results(), want)
 		}
 		checkScratch()
+		if index == 2 && e.gcArgs != nil {
+			t.Fatal("large operand buffer retained")
+		}
 	}
 	if cap(e.gcArgs) != 9 || s.Usage().HeapObjects != 1 {
 		t.Fatal("scratch growth or forced collection", cap(e.gcArgs), s.Usage())
@@ -66,7 +67,7 @@ func TestGCOperandWorkspaceCollectionFailureAndReuse(t *testing.T) {
 	// Exhaust the heap without a collector, then restore the same workspace.
 	s.HeapSafepoint = func() {}
 	for i := 0; i < 2; i++ {
-		if err := e.Start(in.Functions[1], nil); err != nil {
+		if err := e.Start(in.Functions[1+i], nil); err != nil {
 			t.Fatal(err)
 		}
 		status := e.Run()

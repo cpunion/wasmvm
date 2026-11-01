@@ -148,6 +148,19 @@ func (e *Execution) push(fn *state.Function, dest []slots.Slot) error {
 	e.frames = append(e.frames, frame{function: fn, base: base, dest: dest})
 	return nil
 }
+
+// Large valid tuples remain transient; idle executions retain at most 1 KiB.
+const maxCachedGCArgs = 64
+
+func (e *Execution) clearGCArgs() {
+	clear(e.gcArgs)
+	if cap(e.gcArgs) > maxCachedGCArgs {
+		e.gcArgs = nil
+	} else {
+		e.gcArgs = e.gcArgs[:0]
+	}
+}
+
 func (e *Execution) fail(err error) Status {
 	e.err, e.status = err, Failed
 	clear(e.frames)
@@ -160,8 +173,7 @@ func (e *Execution) fail(err error) Status {
 	e.pendingDest = nil
 	clear(e.tailArgs)
 	e.tailArgs = e.tailArgs[:0]
-	clear(e.gcArgs[:cap(e.gcArgs)])
-	e.gcArgs = e.gcArgs[:0]
+	e.clearGCArgs()
 	return Failed
 }
 
@@ -321,7 +333,8 @@ frames:
 					if int(in.Count) > cap(e.gcArgs) {
 						e.gcArgs = make([]value.Value, in.Count)
 					}
-					operands := e.gcArgs[:in.Count]
+					e.gcArgs = e.gcArgs[:in.Count]
+					operands := e.gcArgs
 					for i, slot := range code.Args[in.Extra : in.Extra+in.Count] {
 						operands[i] = values[int(slot)]
 					}
@@ -330,8 +343,7 @@ frames:
 					} else {
 						result, err = e.store.GC(e.context, instance, im, operands, e.RetainedValues)
 					}
-					clear(operands)
-					e.gcArgs = operands[:0]
+					e.clearGCArgs()
 				}
 				if err != nil {
 					var t *wasm.Trap
