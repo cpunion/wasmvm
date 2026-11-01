@@ -16,11 +16,14 @@ func ExternSubtype(registry *TypeRegistry, actual, expected Import) bool {
 	}
 	switch actual.Kind {
 	case 0:
+		if expected.Exact {
+			return actual.Exact && actual.Type == expected.Type
+		}
 		return registry.FunctionSubtype(actual.Type, expected.Type)
 	case 1:
 		return actual.Table.Element == expected.Table.Element && LimitsSubtype(actual.Table.Limits, expected.Table.Limits)
 	case 2:
-		return LimitsSubtype(actual.Memory, expected.Memory)
+		return actual.Memory.PageBytes() == expected.Memory.PageBytes() && LimitsSubtype(actual.Memory, expected.Memory)
 	case 3:
 		return actual.Global.Mutable == expected.Global.Mutable && (actual.Global.Value == expected.Global.Value ||
 			!expected.Global.Mutable && registry.Subtype(actual.Global.Value, expected.Global.Value))

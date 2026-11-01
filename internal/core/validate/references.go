@@ -6,6 +6,12 @@ func (c *context) valueType(t wasm.ValueType, bound int) {
 	if !t.Valid() {
 		c.fail("invalid value type")
 	}
+	if t.Exact() && c.features&wasm.CustomDescriptors == 0 {
+		c.fail("exact references are disabled")
+	}
+	if t.IsContinuationReference() && c.features&wasm.StackSwitching == 0 {
+		c.fail("continuation references are disabled")
+	}
 	if t.IsGCReference() && c.features&wasm.GC == 0 {
 		c.fail("GC reference types are disabled")
 	}
@@ -43,7 +49,7 @@ func (c *context) functionReference(index uint32) wasm.ValueType {
 	if c.features&(wasm.FunctionReferences|wasm.GC) == 0 {
 		return wasm.FuncRef
 	}
-	return wasm.FunctionReference(c.funcTypeIndices[index], false)
+	return wasm.FunctionReference(c.funcTypeIndices[index], false).WithExact(c.features&wasm.CustomDescriptors != 0 && c.funcExact[index])
 }
 
 func (v *checker) resetInitializers(mark int) {

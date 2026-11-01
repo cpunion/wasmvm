@@ -12,6 +12,24 @@ an independent feature bit. Native execution has no interpreter fallback.
 Set `EngineConfig.Features |= wasm.CompactImports | wasm.WideArithmetic` to
 enable the separately pinned [core extensions](design/core-extensions.md).
 These are also available to embedded core modules in components.
+`wasm.CustomPageSizes` additionally allows `MemoryType.PageSize: 1`; zero uses
+the default 65536-byte pages. Guest page counts follow that memory's type, while
+Store `MaxMemoryPages` and usage counters retain 64-KiB host quota units,
+rounding up per memory. Shared maximum reservations use those same quota units.
+`wasm.CustomDescriptors` with GC (or `Profile: "core3"`) enables the pinned
+experimental Core descriptor and exact-reference extensions. JavaScript
+prototype integration is excluded. `ValueType.Exact` and `WithExact` retain
+exactness alongside nullability and canonical type identity.
+
+`wasm.StackSwitching` with GC, typed function references and exception handling
+(or `Profile: "core3"`) enables experimental typed guest continuations and
+control tags. Captured guest frames and references consume Store heap quotas;
+restoration also checks active frame/slot limits. Handles are one-shot, and
+host callbacks do not expose or capture Go/C stacks. An unhandled control tag
+returns `*vm.Suspension`, matching `wasm.ErrSuspension`. `Payload` returns the
+tag and owned argument Values; release those Values and the signal explicitly.
+This terminal host-boundary signal is distinct from an exception, trap or
+component async continuation. See the [extension contract](design/core-extensions.md).
 
 Typical order:
 

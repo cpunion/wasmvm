@@ -279,7 +279,7 @@ func (c *componentContext) addSignature(signature module.FuncType) error {
 	if !p.registry.InternGroup(m, 0, 1, ids, p.limits.MaxNodes) {
 		return limit("canonical function types")
 	}
-	return c.addCore(CoreExtern{Descriptor: module.Import{Kind: 0, Type: ids[0]}})
+	return c.addCore(CoreExtern{Descriptor: module.Import{Kind: 0, Type: ids[0], Exact: true}})
 }
 
 func (c *componentContext) resourceBuiltin(def *model.Canonical) error {

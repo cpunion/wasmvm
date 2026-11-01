@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"errors"
 	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -24,12 +25,17 @@ func (s *Store) NewTag(signature FunctionType, referenceType ...wasm.ValueType) 
 	if s.engine.config.Features&wasm.ExceptionHandling == 0 {
 		return Extern{}, wasm.ErrUnsupported
 	}
-	for _, t := range append(append([]wasm.ValueType(nil), signature.Params...), referenceType...) {
+	types := append(append([]wasm.ValueType(nil), signature.Params...), signature.Results...)
+	for _, t := range append(types, referenceType...) {
 		if err := s.referenceFeature(t); err != nil {
 			return Extern{}, err
 		}
 	}
-	ex, err := s.state.NewTag(signature, referenceType...)
+	create := s.state.NewTag
+	if s.engine.config.Features&wasm.StackSwitching != 0 {
+		create = s.state.NewControlTag
+	}
+	ex, err := create(signature, referenceType...)
 	if err != nil {
 		return Extern{}, err
 	}
@@ -45,7 +51,7 @@ func (ex Extern) TagType() (FunctionType, error) {
 	if t == nil || t.Owner != ex.store.state {
 		return FunctionType{}, ErrReference
 	}
-	return FunctionType{Params: append([]wasm.ValueType(nil), t.Signature.Params...)}, nil
+	return FunctionType{Params: append([]wasm.ValueType(nil), t.Signature.Params...), Results: append([]wasm.ValueType(nil), t.Signature.Results...)}, nil
 }
 
 // SameTag compares Store-local tag identities, including re-exported imports.
@@ -143,7 +149,22 @@ func (e *Exception) Payload() (Extern, []Value, error) {
 	values, err := s.encodeValuesLocked(args, tag.Signature.Params)
 	return Extern{store: s, external: state.Extern{Owner: s.state, Kind: 4, Tag: tag}}, values, err
 }
-func (op *operation) exceptionError(err error) error {
+func (op *operation) guestError(err error) error {
+	var suspension *state.Suspension
+	if errors.As(err, &suspension) && suspension.Owner == op.store.state {
+		s := op.store
+		payload, e := s.state.NewSuspensionPayload(suspension.Tag, suspension.Args)
+		if e != nil {
+			return e
+		}
+		s.mu.Lock()
+		v, e := s.rootLocked(wasm.ExnRef.NonNull(), rawReference(payload.Ref))
+		s.mu.Unlock()
+		if e != nil {
+			return e
+		}
+		return &Suspension{payload: &Exception{reference: v}, switching: suspension.Switch}
+	}
 	if ex, ok := op.store.state.ExceptionError(err); ok {
 		s := op.store
 		s.mu.Lock()

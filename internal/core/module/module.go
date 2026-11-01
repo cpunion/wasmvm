@@ -33,6 +33,30 @@ type Limits struct {
 	HasMax   bool
 	Index64  bool
 	Shared   bool
+	// PageSize is memory-only; zero preserves the default 64-KiB page size.
+	PageSize uint64
+}
+
+func (l Limits) PageBytes() uint64 {
+	if l.PageSize == 0 {
+		return 65536
+	}
+	return l.PageSize
+}
+
+// MemoryPageLimit is the representable page count within the address space.
+// The caller validates the page size (1 or 65536) before using this bound.
+func (l Limits) MemoryPageLimit() uint64 {
+	if l.Index64 {
+		if l.PageBytes() == 1 {
+			return ^uint64(0)
+		}
+		return 1 << 48
+	}
+	if l.PageBytes() == 1 {
+		return uint64(^uint32(0))
+	}
+	return 65536
 }
 
 func (l Limits) AddressType() wasm.ValueType {
@@ -67,6 +91,7 @@ type GlobalType struct {
 type Import struct {
 	Module, Name string
 	Kind         byte
+	Exact        bool
 	Type         uint32
 	Table        TableType
 	Memory       Limits
@@ -147,6 +172,7 @@ type Instr struct {
 	Labels           []uint32
 	Types            []wasm.ValueType
 	Catches          []Catch
+	On               []Catch // Kind 0 resumes at Label; Kind 1 handles switch.
 }
 
 func (in *Instr) MemoryOffset() uint64 { return uint64(in.B) | uint64(in.MemoryOffsetHigh)<<32 }

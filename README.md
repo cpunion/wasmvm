@@ -1,107 +1,345 @@
 # wasmvm
 
-A WebAssembly virtual machine written in Go, designed to build and run with both Go and LLGo.
+[![CI](https://github.com/cpunion/wasmvm/actions/workflows/ci.yml/badge.svg?event=pull_request)](https://github.com/cpunion/wasmvm/actions/workflows/ci.yml)
+[![Go module](https://img.shields.io/badge/Go_module-source_only-blue)](pkg/README.md)
+[![API](https://img.shields.io/badge/API-experimental-orange)](docs/embedding.md)
+[![Release](https://img.shields.io/badge/release-not_yet_published-lightgrey)](https://github.com/cpunion/wasmvm/releases)
+[![Coverage gate](https://img.shields.io/badge/coverage_gate-%E2%89%A590%25_per_package-blue)](scripts/check_coverage.py)
 
-The declared functional implementation covers Core 2.0/3.0, Core Threads,
-components and WASI 1/2/3 through the project-owned interpreter and amd64/arm64
-native compiler. Go and pinned LLGo run the same semantic tests on Linux amd64
-and macOS arm64. No backend silently substitutes a competitor.
+A WebAssembly runtime written in Go, with its own portable interpreter and
+amd64/arm64 native compiler. The same source builds and executes with Go and
+LLGo. It supports Core 2.0/3.0, WasmGC, Core Threads, the Component Model, and
+versioned WASI Preview 1/2/3 providers.
 
-- **Core:** all 51,139 binary assertions in 148 pinned Core 2.0 scripts and
-  61,395 in 259 Core 3.0 scripts; text-parser cases are classified separately.
-  Both backends implement SIMD, WasmGC, final EH, typed references, tail calls,
-  memory64/table64, multi-memory and separate shared-memory atomics/wait/notify.
-  Explicit extension switches add Compact Import Section and Wide Arithmetic;
-  see their [snapshot and test scope](docs/design/core-extensions.md).
-- **WASI 1:** all 46 declared imports, the complete 72-program upstream inventory,
-  legacy wasi-threads' 15-program inventory, and actual Go/LLGo guest integration.
-- **Components/WASI 2:** composition, values, resources, Canonical ABI, host module/
-  component bindings, local i64 borrows and declared WASI 0.2.12 CLI/HTTP providers.
-- **WASI 3:** native async tasks, futures/streams, cancellation, backpressure,
-  reentry, host async I/O and all stable WASI 0.3.2 CLI/service/middleware interfaces.
-  Independent C/Rust commands and composed Rust HTTP guests execute on both backends.
-  A pinned corpus adds 60 unchanged upstream P3 consumers with mixed P2/P3
-  imports, plus composed services and streaming/trailer/compression scenarios;
-  see its [exact scope](testdata/wasi-preview3/upstream/README.md).
-- **Embedding/CLI:** bounded Engine/Store lifetimes, explicit capabilities,
-  reference roots, cancellation and joined cleanup; Core validate/inspect/typed
-  calls and WASI 1/2/3 commands. See [embedding](docs/embedding.md) and [CLI](docs/cli.md).
+wasmvm owns decoding, validation, compilation, execution, guest GC and host
+integration. Competing runtimes are independent test and benchmark references;
+execution never silently switches to one of them.
 
-All 75 pinned Component Model sources convert. The declared runtime profile
-executes 962 selected commands, including 555 guest invocations; 228 optional
-component-threading commands are retained separately. See the
-[exact inventory](testdata/component-runtime/README.md).
+## Project status
 
-**Acceptance remains open:** expanded WASI world conformance and controlled
-performance gates. Functional implementation, selected-corpus execution and
-milestone acceptance are distinct. Custom Page Sizes, non-JavaScript Custom
-Descriptors and Stack Switching are mandatory pending extensions; other M7
-proposals remain optional.
-Current evidence and limitations are in the [plan](docs/roadmap.md) and
-[verification record](docs/validation.md). Separate evaluation modules retain
-competitor engines as independent references.
+**Experimental; no tagged release or stable API commitment yet.** The module
+path is `github.com/cpunion/wasmvm`; public packages are available from source.
+As of 2026-11-01, the Go proxy lists no tagged versions and pkg.go.dev has not
+indexed `pkg/vm`. The package badge describes source availability rather than
+a published package. Pin a commit when depending on the module.
 
-## Goals
+The declared Core and WASI implementations are present, with the conformance
+boundaries below. Expanded WASI world conformance and performance acceptance
+remain open. Separately gated experimental snapshots cover the settled non-JS
+Phase 3–4 extensions; [PR #87](https://github.com/cpunion/wasmvm/pull/87) records
+their integration and final CI evidence.
 
-- Build a project-owned Go decoder, validator, fast portable interpreter and native compiler, with complete Core 2.0 first and Core 3.0 next, including WasmGC, final exception handling, SIMD, Memory64 and Table64.
-- Implement Core Threads shared linear memory, atomics, and wait/notify, with a separate legacy `wasi-threads` adapter for existing LLGo guests.
-- Support WASI Preview 1, Component Model-based WASI 0.2, and WASI 0.3 with native async as separate, versioned targets.
-- Run the same source and semantic tests under `go test` and `llgo test`. Building the host VM with LLGo and executing LLGo-produced Wasm guests are separate acceptance targets.
+| Execution target | Go | LLGo | Status |
+| --- | --- | --- | --- |
+| Portable interpreter | Yes; `CGO_ENABLED=0` supported | Yes | Same semantic tests |
+| Linux amd64 native | Yes; C compiler/cgo required | Yes; pinned release profile | CI target |
+| macOS arm64 native | Yes; C compiler/cgo required | Yes; pinned release profile | CI target |
+| Other native OS/architecture combinations | Not validated | Not validated | No native support claim |
 
-The latest [standards audit](docs/research/status-2026-11-01.md) and [performance audit](docs/research/performance-2026-11-01.md) are dated **2026-11-01**. WASI 0.3 has shipped, GC is part of Core 3.0, and Core Threads remains distinct from Shared-Everything Threads and shared GC objects. The original October 26 survey and reuse assessment remain historical context. Functional coverage does not imply performance parity: GC, shared-memory and host/component paths still have substantial deficits.
+CI runs Go and LLGo on both targets. Shared Go checks include race detection,
+native pointer ownership, fuzz smoke checks and a **90% statement-coverage gate
+for each executable package**. The coverage badge states this policy, not an
+aggregate measurement. The CI badge tracks PR runs; merging requires the final
+PR head to pass every semantic shard on all four compiler/platform combinations,
+plus the shared race/quality checks. See the [validation record](docs/validation.md).
 
-## Documentation
+## Install and run
 
-| Document | Contents |
-| --- | --- |
-| [Current standards and support](docs/research/status-2026-11-01.md) | Every registered proposal, accepted-feature support, competitors and exact test evidence |
-| [Current performance gaps](docs/research/performance-2026-11-01.md) | Complete Core portfolio, GC/Threads, P1/P2/async, separate phases and raw evidence |
-| [Standards and proposals](docs/research/standards.md) | Proposal stages, Core/WASI versions, official sources, and conflicting or outdated material |
-| [Existing implementations](docs/research/implementations.md) | Runtime capability matrix and Wago/wazero reuse assessment |
-| [Wazero evaluation](docs/research/wazero-evaluation.md) | Actual feature and compiler results, known gaps, and reproducible experiments |
-| [Own-core decision](docs/design/own-core.md) | Selected implementation ownership, reference-engine role and acceptance boundaries |
-| [Core compiler](docs/design/core-compiler.md) | Typed IR, interpreter dispatch, optimization, native code generation and semantic preservation |
-| [Core Threads](docs/design/core-threads.md) | Shared memory, synchronization, wait/notify, quotas and ownership |
-| [Explicit core extensions](docs/design/core-extensions.md) | Compact imports, wide arithmetic, snapshot pins and remaining mandatory extensions |
-| [Native ABI](docs/design/native-abi.md) | Go/LLGo bridge, guest frames, roots, continuations and executable-code lifecycle |
-| [Performance contract](docs/design/performance-contract.md) | Subsystem measurements, own base/head comparisons and required performance targets |
-| [Performance comparison](docs/research/performance.md) | Matched startup/small/sustained CLI workloads, raw samples, and measurement limits |
-| [Architecture](docs/design/architecture.md) | Execution, types, GC, threads, WASI, isolation, and draft embedding API |
-| [Package layout](docs/design/packages.md) | Public `pkg` APIs, internal layers, dependency direction, and implementation order |
-| [Go/LLGo and CI](docs/design/llgo-ci.md) | Compiler constraints, pinned toolchains, and host-versus-guest testing |
-| [Development plan](docs/roadmap.md) | Milestones, work packages, dependencies, deliverables, acceptance gates, and initial backlog |
-| [Validation record](docs/validation.md) | Actual local and CI results, with their scope and limitations |
-| [Core 2.0 input inventory](testdata/core2/README.md) | Complete pinned scripts, binary/text assertion counts, producer hashes and regeneration |
-
-The owner selected a **project-owned core** after M0. Wazero and other engines remain independent semantic/performance references. Native compilation is a required early milestone. The interpreter and compiler logic remain usable without cgo; standard-Go native execution initially uses a small C ABI bridge. See the [decision](docs/design/own-core.md) and [historical reuse assessment](docs/design/reuse-decision.md).
-
-## Development phases
-
-| Phase | Outcome | Status |
-| --- | --- | --- |
-| Design baseline | Research, architecture, package contracts and compiler probes | Complete; own-core design now replaces reuse-first direction |
-| M0 | Candidate evaluation and reproducible comparison infrastructure | Complete through PRs #1–#3 |
-| M1 | Complete Core 2.0 interpreter, validation, resource limits, API and core CLI | In progress: complete binary corpus and embedding API implemented; own-engine measurement and final acceptance remain |
-| M2 | Fast interpreter and complete Core 2.0 native compiler for amd64/arm64 | In progress: complete native semantic corpus; call/helper optimization and performance acceptance remain |
-| M3 | Full Core 3.0 and separate Core Threads on both backends | Full Core 3.0 and Core Threads implemented and tested on both target platforms; performance acceptance remains |
-| M4 | P1, legacy wasi-threads and pinned Go/LLGo guest integration | P1 and legacy threads/Go/LLGo guests implemented; performance acceptance open |
-| M5 | Component Model and WASI 0.2 by declared world/interface | Composition, Canonical ABI including local i64 borrows, host bindings and declared CLI/HTTP providers implemented; expanded world conformance and performance acceptance remain |
-| M6 | WASI 0.3 native async and cumulative component features | Native async, host I/O, all stable 0.3.2 providers, declared worlds and independent C/Rust guests implemented; expanded conformance and performance acceptance remain |
-| M7 | Further optimization and separately gated experimental proposals | Deferred |
-
-The current owner direction is to complete remaining capabilities before performance optimization. Follow the [full plan](docs/roadmap.md), keeping semantic validation and performance acceptance distinct. A small instruction subset or passing microbenchmark does not complete a stage. Benchmark jobs remain available by workflow dispatch or the `run-benchmarks` PR label; they compare exact wasmvm base/head sources and independent candidate engines. Broad measurements are deferred during capability completion. The design's performance budgets are requirements to validate, not measured achievements.
-
-## Local validation
+The module requires Go **1.26 or newer**; CI uses **Go 1.27.3**. Build from source:
 
 ```sh
-python3 scripts/core2_corpus.py
-go test -count=1 ./...
-llgo test -O3 -lto=full -count=1 ./...
-# Equivalent entry points that select the host compiler:
-./scripts/check.sh go
-./scripts/check.sh llgo
+git clone https://github.com/cpunion/wasmvm.git
+cd wasmvm
+go build -o wasmvm ./cmd/wasmvm
+./wasmvm --help
 ```
 
-The root tests cover full module/instruction decoding and typing, source ownership, section ordering, resource limits, all pinned binary inputs, LEB128 width/sign/padding rules, UTF-8 names, host numeric bit patterns, reference reachability, goroutines, locks, atomics, condition variables, and cancellation. CI runs both compilers on Linux amd64 and macOS arm64, checks each executable core package's statement coverage against 90%, and fuzzes binary primitives and full module decoding and validation with Go. The [wazero evaluator](experiments/wazero/README.md) is a separate module with 13 pinned capability fixtures, negative-path tests, shared-memory concurrency checks, and a bounded cancellation observation. Its owned-code coverage is measured separately from engine conformance. Expected rejection of an unsupported fixture is an assessment result, not feature support.
+The default backend is the interpreter; the default Core profile is Core 2.0.
+For a portable build, use `CGO_ENABLED=0 go build -o wasmvm ./cmd/wasmvm`.
+Go native execution requires cgo and a system C compiler on a supported target.
+For LLGo, use the [pinned toolchain](docs/design/llgo-ci.md) and
+`llgo build -O3 -lto=full -o wasmvm ./cmd/wasmvm`.
 
-Module path: `github.com/cpunion/wasmvm`. A project license has not yet been selected. No third-party implementation code is imported at this stage. The generated Core 2.0 tests retain their upstream Apache-2.0 notices; see [input provenance](testdata/core2/README.md#provenance-and-notices).
+These examples use a checked-in fixture and run from the repository root.
+All options precede the module path:
+
+```sh
+./wasmvm validate benchmarks/embedded/fixtures/call-control.wasm
+./wasmvm inspect --profile core3 benchmarks/embedded/fixtures/call-control.wasm
+./wasmvm run --export run benchmarks/embedded/fixtures/call-control.wasm i32:42 i32:1
+./wasmvm run --backend native --export run \
+  benchmarks/embedded/fixtures/call-control.wasm i32:42 i32:1
+```
+
+Core calls accept typed arguments and produce JSON with exact numeric results.
+Use `--profile core3` for Core 3.0, `--fuel` for deterministic execution limits,
+and `--timeout` for cancellation. Input is binary `.wasm`; convert WAT using
+external tooling such as `wasm-tools parse input.wat -o input.wasm`.
+
+Run WASI commands with explicit environment and filesystem access:
+
+```sh
+# Preview 1: _start entry; following values are guest arguments.
+./wasmvm run --wasi --env MODE=test --dir /work=/tmp/work program.wasm argument
+
+# Component commands: standard wasi:cli/run entry.
+./wasmvm run --wasi-preview 2 command-p2.wasm argument
+./wasmvm run --wasi-preview 3 --backend native --timeout 10s command-p3.wasm
+
+# Legacy wasi-threads is a separate P1 thread-spawn adapter.
+./wasmvm run --wasi-threads --profile core3 --backend native threaded.wasm
+```
+
+Environment, directories and networking are not inherited. Network operations
+require explicit embedding capabilities. Large Go/LLGo guests can require a
+larger `--native-code-bytes` quota. See the [CLI guide](docs/cli.md) for limits,
+stdin, preopens, exits and component command options.
+
+## Go packages and embedding
+
+All packages belong to the same untagged module and have experimental APIs.
+Import paths use the prefix `github.com/cpunion/wasmvm/`.
+
+| Package | Available capability | Publication status |
+| --- | --- | --- |
+| [`pkg/wasm`](pkg/wasm) | Value types, features, errors and traps | Source only; experimental |
+| [`pkg/vm`](pkg/vm) | Engine/Store, compilation, linking, typed calls and references | Source only; experimental |
+| [`pkg/component`](pkg/component) | Components, Canonical ABI, resources, native async, futures/streams | Source only; experimental |
+| [`pkg/wasi/preview1`](pkg/wasi/preview1) | P1 processes, streams and host capabilities | Source only; experimental |
+| [`pkg/wasi/threads`](pkg/wasi/threads) | Legacy P1 thread-spawn groups | Source only; experimental |
+| [`pkg/wasi/preview2`](pkg/wasi/preview2) | Versioned 0.2 CLI/HTTP providers and worlds | Source only; experimental |
+| [`pkg/wasi/preview3`](pkg/wasi/preview3) | Versioned 0.3 async CLI/service/middleware providers | Source only; experimental |
+
+For example, run this Go program from the repository root:
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/cpunion/wasmvm/pkg/vm"
+)
+
+func main() {
+	must := func(err error) {
+		if err != nil {
+			panic(err)
+		}
+	}
+	binary, err := os.ReadFile("benchmarks/embedded/fixtures/call-control.wasm")
+	must(err)
+	engine := vm.NewEngine()
+	defer engine.Close()
+	module, err := engine.Compile(nil, binary)
+	must(err)
+	defer module.Close()
+	store, err := engine.NewStore(vm.DefaultStoreConfig())
+	must(err)
+	defer store.Close()
+	instance, err := vm.NewLinker(store).Instantiate(nil, module, vm.CallOptions{})
+	must(err)
+	run, err := instance.Export("run")
+	must(err)
+	result, err := run.Call(nil, []vm.Value{vm.I32(42), vm.I32(1)}, vm.CallOptions{})
+	must(err)
+	bits, _, err := result.Values[0].Bits()
+	must(err)
+	fmt.Println(bits) // 42
+}
+```
+
+To select native/Core 3 execution, start with `vm.DefaultEngineConfig()`, set
+`Backend = "native"` / `Profile = "core3"`, and call `vm.NewEngineWithConfig`.
+Stores bound guest frames, slots, memory, tables, heap objects and roots.
+References require explicit root/release ownership. See [embedding](docs/embedding.md),
+[executable examples](pkg/vm/example_test.go) and [package architecture](docs/design/packages.md).
+
+## Standards and proposal support
+
+Snapshot: **2026-11-01**. The tables describe binary and Go embedding contracts.
+JS/browser APIs are outside this runtime. Proposal maturity and implementation
+status are separate: an implemented Phase 3 snapshot remains experimental.
+
+### Finished Core proposals
+
+All implemented binary features execute through both owned backends. Core 2.0
+is the default; Core 3.0 rows require `--profile core3` or individual feature bits.
+
+| Proposal / feature | Profile | Support |
+| --- | --- | --- |
+| MVP | Core 1 / 2 | Implemented |
+| Import/export of mutable globals | Core 1 / 2 | Implemented |
+| Non-trapping float-to-int conversions | Core 2 | Implemented |
+| Sign-extension operators | Core 2 | Implemented |
+| Multi-value | Core 2 | Implemented |
+| Reference types | Core 2 | Implemented |
+| Bulk memory operations | Core 2 | Implemented |
+| Fixed-width SIMD | Core 2 | Implemented; 236 operations |
+| Tail calls | Core 3 | Implemented |
+| Extended constant expressions | Core 3 | Implemented |
+| Typed function references | Core 3 | Implemented |
+| Garbage collection | Core 3 | Implemented; typed objects, tracing, roots and quotas |
+| Multiple memories | Core 3 | Implemented |
+| Relaxed SIMD | Core 3 | Implemented; all 20 operations |
+| Final exception handling | Core 3 | Implemented; `try_table` / `exnref` |
+| Memory64, including table64 | Core 3 | Implemented |
+| Branch hinting | Core 3 | Accepted and ignored; no hint-driven optimization |
+| Custom annotations in WAT | Text tooling | External producer; no owned WAT parser |
+| JS BigInt / i64 integration | JS API | Outside scope |
+| JS string builtins | JS API | Outside scope |
+
+The complete pinned Core 2.0 suite has **51,139 binary assertions / 148 scripts**;
+Core 3.0 has **61,395 / 259**. Text-parser assertions are separately classified.
+Each inventory runs in the interpreter and both native tiers, under both host
+compilers on both CI platforms. Counts identify pinned suites, rather than
+certifying arbitrary future specification changes.
+
+### Active Phase 3–5 proposals
+
+These gates are independent of `--profile core3`. Pins, contracts and complete
+affected inventories are in [explicit core extensions](docs/design/core-extensions.md).
+
+| Proposal | Phase | Support / CLI gate |
+| --- | ---: | --- |
+| Threads | 4 | Implemented; `--threads`, 67 atomics, shared memory, wait/notify |
+| Compact Import Section | 4 | Implemented; `--compact-imports`, both grouped encodings |
+| Wide Arithmetic | 4 | Implemented; `--wide-arithmetic`, four i64/128-bit operations |
+| Custom Page Sizes | 3 | Implemented experimental snapshot; `--custom-page-sizes`, 1-byte and 64-KiB pages |
+| Custom Descriptors and JS Interop | 3 | Implemented experimental non-JS snapshot; `--custom-descriptors`, non-JS descriptors and exact references |
+| Stack Switching | 3 | Implemented experimental snapshot; `--stack-switching`, typed one-shot guest continuations |
+| JS Promise Integration | 5 | Outside scope; JS embedding |
+| Web Content Security Policy | 5 | Outside scope; browser embedding |
+| ESM Integration | 3 | Outside scope; JS embedding |
+
+The three Phase 3 implementations execute their full affected binary inventories
+under Go and LLGo in the interpreter and both native tiers. The final-head CI
+matrix verifies every shard on both target platforms before merge.
+Their pinned snapshots are experimental and disabled by default. Core Threads,
+legacy wasi-threads, component async, Core Stack Switching and shared-everything
+threads are distinct contracts. Shared-everything threads is not implemented.
+The [full proposal audit](docs/research/status-2026-11-01.md) lists every Phase
+1–2 and inactive entry at its historical engine snapshot; use this table for
+subsequent extension progress. Rounding variants, FP16, acquire-release atomics,
+stringref and other early proposals have no implementation claim. Maturity
+comes from the [official proposal register](https://github.com/WebAssembly/proposals/tree/df6a2aca1cd9d779eb4f2f3e19dae8277f336015).
+
+### Components and WASI
+
+P1/P2/P3 mean Preview 1/2/3, not WASI semantic versions 1/2/3. Providers pin
+WASI **0.2.12** and **0.3.2**; there is no WASI 1.0 release claim.
+
+| Capability | Implemented scope | Evidence and remaining boundary |
+| --- | --- | --- |
+| Component Model | Composition, values/resources, Canonical ABI, local i64 borrows, host bindings, sync/async | All 75 pinned sources convert; declared runtime profile executes 962 commands / 555 guest invocations. Optional component threading is separate. |
+| WASI Preview 1 | All 46 declared imports; explicit process capabilities | Complete 72-program upstream inventory; actual Go/LLGo guests |
+| Legacy wasi-threads | P1 thread-spawn ABI, separate Stores, shared memory, joined cleanup | Complete 15-program inventory and LLGo pthread integration |
+| WASI Preview 2 | Stable 0.2.12 CLI/HTTP providers, filesystem, clocks, random, I/O, sockets and HTTP | 92 unchanged stable upstream consumers plus separately identified interactions; expanded world conformance remains open |
+| WASI Preview 3 | Stable 0.3.2 CLI/service/middleware providers, native async, futures/streams, cancellation and backpressure | 60 unchanged upstream consumers, C/Rust guests and composed HTTP scenarios; expanded world conformance remains open |
+
+Component Model maturity is separate from released WASI interface versions.
+See [component inputs](testdata/component-runtime/README.md),
+[P2 inventory](testdata/wasi-preview2/upstream/README.md),
+[P3 inventory](testdata/wasi-preview3/upstream/README.md) and
+[world contracts](docs/design/wasi-worlds.md) for exclusions and provenance.
+
+## Comparison with other runtimes
+
+This is a dated, version-specific summary, not fresh certification of every
+backend. The [capability audit](docs/research/status-2026-11-01.md#competitors-accepted-core-features)
+records primary sources, feature flags and ambiguous entries.
+
+| Runtime / audited version | Implementation and execution | Capability comparison |
+| --- | --- | --- |
+| **wasmvm** | Go/LLGo; owned interpreter and amd64/arm64 compiler | Declared Core 2/3, GC/Threads, components and P1/P2/P3; experimental, no release, performance acceptance open |
+| [wazero 1.12.0](https://github.com/wazero/wazero/tree/v1.12.0) | Go; interpreter and native compiler | Go embedding and P1; experimental modern features, without declared GC/multi-memory/memory64/P2/P3 parity |
+| [Wasmtime 48.0.1](https://github.com/bytecodealliance/wasmtime/tree/v48.0.1) | Rust; Cranelift in this audit | Broad Core/GC/Threads and component/WASI reference; experimental features are individually gated |
+| [Wasmer 7.3.0](https://github.com/wasmerio/wasmer/tree/v7.3.0) | Rust; Cranelift in this audit | Core 2 and selected modern features; no declared GC feature; WASIX is a separate ABI |
+| [WasmEdge 0.17.1](https://github.com/WasmEdge/WasmEdge/tree/0.17.1) | C++; interpreter and AOT | Broad Core/GC features; only its interpreter was timed; no equivalent P2/P3 coverage claim here |
+| [Wago 90f2b57](https://github.com/wago-org/wago/tree/90f2b57dafa7f8c3cc7e3aca38b91148f15e1d1e) | Go; beta runtime | Reports Core 3, optional Threads, compact imports and wide arithmetic; no fresh performance measurement here |
+
+### Measured performance
+
+**Performance parity is not achieved.** The 2026-11-01 audit measures engine
+`4ad69c2` on Apple M4 Max, macOS arm64, Go 1.27.3 and LLGo `8e45ed5` with
+`-O3 -lto=full`. It includes 68 Core fixtures, nine configurations, three fresh
+processes per pair and seven warm samples. These are diagnostic workstation
+results, not controlled release benchmarks or measurements of the new extensions.
+
+Representative warm medians, **ns per source iteration; lower is better**.
+All columns below use native execution:
+
+| Workload | wasmvm / Go | wasmvm / LLGo | wazero | Wasmtime | Wasmer |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Integer loop | 1.545 | 1.551 | 1.589 | 1.534 | 1.549 |
+| Function calls | 0.949 | 0.852 | 1.499 | 0.927 | 0.820 |
+| Memory loop | 0.512 | 0.507 | 0.831 | 0.470 | 0.520 |
+| SIMD shuffle | 2.312 | 2.346 | 1.654 | 1.800 | 1.900 |
+| 8-KiB fill + overlapping copy | 2,597 | 3,388 | 184.58 | 155.00 | 159.00 |
+| GC mutable struct access | 288.57 | 1,342 | Unsupported | 1.600 | Unsupported |
+| Shared-memory access | 251.09 | 870.67 | 2.179 | 1.500 | 1.800 |
+| P1 argument-size host call | 454.32 | 1,808 | 22.33 | 51.70 | 41.40 |
+
+Scalar native loops are competitive in these cases; bulk memory, guest GC,
+shared memory and host/component boundaries have large gaps. Across measured
+families, LLGo interpreter time is **1.27–3.13x** WasmEdge interpreter time and
+**0.81–1.68x** wazero interpreter time. Family averages do not establish parity
+for every case; tiny near-parity differences are not statistically calibrated.
+
+Startup, load, validate/compile, instantiate, first call, warm calls and cleanup
+are measured separately. Startup is excluded from warm rows; no empty-call
+median is subtracted. Component/P2/async paths use Wasmtime as their reference
+and retain substantial deficits in resources, canonical transfer, HTTP and
+async boundaries. See the [full audit](docs/research/performance-2026-11-01.md),
+[all 68 Core cases](docs/research/performance-2026-11-01-core.md) and
+[raw evidence](docs/research/evidence/performance-2026-11-01.json).
+
+Benchmark CI is opt-in through the `run-benchmarks` PR label or
+[workflow dispatch](https://github.com/cpunion/wasmvm/actions/workflows/benchmarks.yml).
+It compares exact base/head sources and pinned competitors and posts results
+to the PR. See [benchmark commands and methodology](benchmarks/README.md).
+
+## Development
+
+```sh
+# Verify checked-in core extension inputs without network access.
+python3 scripts/core_extensions_corpus.py
+
+# Execute package tests with each supported compiler.
+go test -count=1 -timeout=10m ./...
+llgo test -O3 -lto=full -count=1 -timeout=10m ./...
+```
+
+CI distributes all 31 test packages once across five LLGo shards per platform,
+retaining `-O3 -lto=full`, with a separate CLI build, and separates Go semantics, race and quality work. It
+caches compiler-specific package objects and records LLGo build traces; the
+target is 5–10 minutes per job, subject to measured final-run acceptance.
+
+Some upstream inventories are fetched and hash-verified by their corpus scripts;
+follow [ci.yml](.github/workflows/ci.yml) to reproduce the complete matrix.
+A selected-corpus pass, a functional implementation and milestone acceptance
+remain distinct.
+
+The development order is: close functional conformance and integration gates;
+complete declared-world conformance closeout; optimize interpreter, native
+helper/GC/shared-memory paths and host boundaries using phase-separated
+comparisons; then satisfy performance and release gates. The
+[roadmap](docs/roadmap.md) retains all deliverables and open gates.
+
+| Documentation | Purpose |
+| --- | --- |
+| [Embedding](docs/embedding.md) / [CLI](docs/cli.md) | Lifetimes, capabilities and usage |
+| [Architecture](docs/design/architecture.md) / [packages](docs/design/packages.md) | Runtime contracts and dependency direction |
+| [Core compiler](docs/design/core-compiler.md) / [native ABI](docs/design/native-abi.md) | IR, slots, code generation, roots and resumption |
+| [Core extensions](docs/design/core-extensions.md) | Feature gates, proposal pins and inventories |
+| [Standards audit](docs/research/status-2026-11-01.md) / [performance audit](docs/research/performance-2026-11-01.md) | Dated evidence and comparisons |
+| [Go/LLGo CI](docs/design/llgo-ci.md) / [validation](docs/validation.md) | Toolchain pins and observed results |
+| [Development plan](docs/roadmap.md) | Remaining work and acceptance gates |
+
+## License and provenance
+
+A license for project-owned source has not yet been selected. Test inputs retain
+their upstream licenses, notices and immutable manifests; those notices do not
+license the rest of the project. See each inventory, including the
+[Core 2 provenance](testdata/core2/README.md#provenance-and-notices).

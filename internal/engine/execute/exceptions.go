@@ -42,6 +42,7 @@ func (e *Execution) raise(ex *state.Exception) bool {
 				f.pc, f.suspended = c.PC, false
 				clear(e.frames[fi+1:])
 				e.frames = e.frames[:fi+1]
+				e.trimPrompts(fi + 1)
 				e.values = e.values[:f.base+len(code.Slots)]
 				return true
 			}

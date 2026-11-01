@@ -1,5 +1,52 @@
 # Verification Record
 
+## PR #86 final matrix
+
+Compact Import Section and Wide Arithmetic merged after final head
+`04ba6920605b36850fca1b854ee2fc447b27f466` passed all four semantic jobs in
+[run 41305636984](https://github.com/cpunion/wasmvm/actions/runs/41305636984).
+All nine artifact digests and 204 successful execution reports were verified.
+Both new proposal manifests and assertion counts matched in all 12
+compiler/platform/tier combinations; all 30 executable package coverage
+thresholds passed (minimum 90.66%). No review findings or threads remained.
+This does not close performance acceptance or the other extension requirements.
+
+## 2026-11-01: Non-JavaScript Custom Descriptors
+
+Experimental Phase 3 snapshot `a791af285f3876fb0bc6df89c218ff912347cf46`
+implements the complete affected Core corpus: 11 scripts, 684 commands, 597
+binary assertions and 16 separately classified malformed-text assertions.
+Go 1.27.3 and pinned LLGo `8e45ed5` (`-O3 -lto=full`) passed this corpus in
+interpreter and both native tiers on darwin/arm64. Forced-collection integration
+tests passed for hidden descriptor edges, cyclic reclamation, host payloads,
+exception and host-callback boundaries, and independent object/byte quotas.
+The unchanged archived GC corpus also passed on both host compilers.
+
+The complete Go internal/public suite passed with all 30 executable packages
+above 90% statement coverage (minimum 90.66%). Final-head four-job semantic CI
+remains required before merge. JavaScript prototype behavior is excluded;
+Stack Switching remains mandatory pending work. Performance acceptance stays
+open.
+
+## 2026-11-01: Custom Page Sizes
+
+Snapshot `61c873a1860acad2772539164f284cc5110f1b1b` adds all four affected
+scripts: 80 commands, 53 binary assertions and 4 separately classified malformed
+text cases. Go 1.27.3 and pinned LLGo `8e45ed5` (`-O3 -lto=full`) passed this
+inventory in interpreter and both native tiers on darwin/arm64. Additional
+Go/LLGo tests passed for mixed private/shared i32/i64 memories, per-index native
+size calculations, byte bounds, growth/zeroing, atomics, page-size import
+mismatches, host byte quotas, overflow, shared leases and joined cleanup.
+The native configuration tests also cover a 65,537-page byte-sized minimum
+and reject inconsistent static page-size inventories on both target ISAs.
+
+The full Go internal/public suite passed with all 30 executable packages over
+90% statement coverage, followed by the additional encoding/configuration
+checks. Project-source vet and pinned corpus verification passed. Final-head
+Go/LLGo Linux amd64 and macOS arm64 CI is required before merge; this local
+record does not substitute for that matrix. Custom Descriptors and Stack
+Switching remain mandatory pending work, and performance acceptance stays open.
+
 ## 2026-11-01: Compact imports and wide arithmetic
 
 The explicit extension implementation pins Compact Import Section at
@@ -5089,3 +5136,106 @@ IO, filesystem and socket owners likewise revoke their stream operations before
 broadcasting parent cancellation. A separate owner-close regression forces the
 external cancellation receipt to arrive before Close resumes; completion codes
 and one-time reclamation remain deterministic.
+
+## Phase 3 core extension integration and project README
+
+The PR #87 integration branch adds Core Stack Switching at proposal snapshot
+`d9fbe345495d15af623b981440d6aaacd5ad015c`, independently gated from Core 3.0.
+All four complete affected upstream scripts convert to 162 commands and 112
+binary assertions with pinned wasm-tools 1.262.0. The interpreter and both
+native tiers execute the complete inventory under Go 1.27.3 and LLGo
+`8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f` (`-O3 -lto=full`), including
+`assert_suspension`. The runner forces guest collection at every allocation;
+this forced mode also passes under both host compilers.
+
+Owned integration tests exercise multi-frame suspension/restoration, retained
+host references after their original roots release, parameter binding for
+both guest and host functions, invalid injection without consumption, consumed
+handles, exported control-tag identity, distinct terminal suspension payloads,
+result-bearing tag/exception boundaries, feature gates, exact-reference
+interaction, cancellation, frame/heap quotas and reclamation. Go race detection
+passes the Stack Switching integration. The full local Go package suite and
+vet pass; all 30 measured executable packages exceed 90% statement coverage
+(minimum 90.73% in that local profile).
+
+The earlier PR #87 head `d9f5c84` passed Go/macOS and LLGo/Linux. LLGo/macOS
+failed while downloading an existing Core input archive because DNS resolution
+failed. Go/Linux passed the full semantic and coverage suite, then its race
+pass reported HTTP-response-incomplete after receiving all 13 double-echo body
+bytes in both backends. Local macOS reproduction attempts pass: three complete
+interaction repetitions and eight focused repetitions at each of GOMAXPROCS
+1/2/4. This remains an observed integration failure until diagnosed and the
+combined final head passes; it is not counted as a successful matrix.
+
+The rewritten English README now reports package source availability,
+experimental API status, the absence of tags/releases and pkg.go.dev indexing,
+the actual PR CI workflow and per-package coverage policy. Its checked-in Core
+CLI examples execute under both interpreter/native; the extracted Go embedding
+example prints 42 under Go and LLGo. Relative file links are checked. The
+competitor section reuses the dated November 1 evidence and explicitly retains
+performance deficits, unsupported competitor features and phase boundaries.
+No package version, project license, release or new speed result is invented.
+
+The combined head `bedc3ac` again passed Go/macOS and the full Go/Linux semantic
+and coverage step, but Linux race repeated the 13-byte double-echo incomplete
+response. A local Linux amd64 container subsequently passed both the complete
+P2 package and the same full cross-package race scope; a paced server and 72
+focused macOS race repetitions also passed. These results do not resolve the
+CI failure. Temporary diagnostic output and pacing were removed.
+
+HTTP response publication previously discarded a later guest failure, replacing
+it with an unqualified incomplete-body error. The existing typed HTTP error now
+retains that original cause while preserving its WASI error-code value. A
+regression uses the owned HTTP consumer with fuel exhausted after setting its
+response: both backends retain the 200 headers, report HTTP-response-incomplete,
+and expose the resource-limit cause. Go race and pinned LLGo pass this case.
+The next exact-head CI must expose and resolve the original double-echo cause
+before merge; this change alone is not reported as its fix.
+
+
+## HTTP cancellation precedence and bounded CI jobs
+
+Head `76da6d6` passed Go on both targets and LLGo/Linux. LLGo/macOS passed the
+core extension corpora but failed the unchanged P2 sleep service cancellation
+case: dropping the response outparam raced the canceled call and returned
+HTTP-response-incomplete. CallIncoming now checks terminal contexts after
+either completion/cancellation notification, preserving caller cancellation,
+provider closure and request timeout before interpreting response retirement.
+The existing observed-wait assertion is unchanged. It passes 40 Go race and
+20 pinned LLGo repetitions across both backends.
+
+The owner requested CI optimization in this same PR, aiming for 5–10 minutes
+per job. A local unchanged-head LLGo trace spans 149.92 seconds at parallelism
+16. Its 31 link stages sum to 1,073.97 seconds and test stages to 227.91 seconds;
+these sums overlap and are not CPU or wall-time totals. The largest individual
+links are P2 (84.61 s), P3 (83.31 s) and CLI (64.75 s), confirming that removing
+test assertions would not address the main compilation/linking work.
+
+The new five-group plan assigns all 31 packages once on each LLGo platform,
+retains the pinned release profile, prepares only needed inputs, restores the
+independent LLGo package cache, streams JSON events and preserves build traces.
+Go semantics, race and quality/fuzz jobs are independent. The plan validator and
+its missing/duplicate/unknown-package regression checks pass, along with the
+22 script tests. Workflow syntax, final semantic/coverage evidence and actual
+per-job timings must be checked before merge; no unmeasured speedup is claimed.
+
+
+The first sharded head `565e352` passed all 15 required jobs. Go semantics took
+3.00/3.35 minutes, quality 2.98 and race 5.55. LLGo ranged from 5.88 to 11.28
+minutes, versus the preceding 26.38-minute failed macOS job and successful
+33.38-minute Linux job. Three shards exceeded ten minutes (10.10, 10.68 and
+11.28), so the next layout moves CLI compilation into its own jobs, shifts CLI
+tests from HTTP to component, and moves two small core packages into VM. The
+31-package inventory and full release profile are unchanged. Compatible shard
+caches provide a fallback for the standalone CLI. Final timings remain to be
+measured; the initial result is not presented as a completed ten-minute gate.
+
+
+The rebalanced head `df94fbd` passed all 17 required jobs and both standalone
+LLGo CLI checks. Go semantics took 2.35/3.03 minutes, quality 2.20 and race 5.45.
+LLGo CLI took 4.82/6.62 minutes; semantic groups ranged from 4.38 to 10.60.
+Only Linux component remained above ten minutes. Its trace shows the phase
+harness test link consuming 174.12 seconds, alongside CLI (296.40), component
+(222.30) and validator (192.29) links. The phase harness has only core/VM
+dependencies, so moving it to the lighter core group needs no additional
+corpora and reduces this imbalance without adding jobs or changing tests.

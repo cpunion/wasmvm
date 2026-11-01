@@ -84,6 +84,7 @@ func (i Interface) Intern(registry *TypeRegistry, maximum uint32) (InterfaceShap
 			switch ex.Kind {
 			case 0:
 				e.Type = d.functions[x]
+				e.Exact = true
 			case 1:
 				e.Table = d.tables[x]
 			case 2:

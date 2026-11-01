@@ -10,6 +10,9 @@ func (s *Store) NewMemory(typ MemoryType) (Extern, error) {
 		return Extern{}, err
 	}
 	defer op.finish()
+	if typ.PageSize != 0 && s.engine.config.Features&wasm.CustomPageSizes == 0 {
+		return Extern{}, wasm.ErrUnsupported
+	}
 	if typ.Shared && s.engine.config.Features&wasm.Threads == 0 {
 		return Extern{}, wasm.ErrUnsupported
 	}
@@ -214,6 +217,12 @@ func (ex Extern) GlobalSet(v Value) error {
 }
 
 func (s *Store) referenceFeature(typ wasm.ValueType) error {
+	if typ.IsContinuationReference() && s.engine.config.Features&wasm.StackSwitching == 0 {
+		return wasm.ErrUnsupported
+	}
+	if typ.Exact() && s.engine.config.Features&wasm.CustomDescriptors == 0 {
+		return wasm.ErrUnsupported
+	}
 	if typ.IsExceptionReference() {
 		if s.engine.config.Features&wasm.ExceptionHandling == 0 {
 			return wasm.ErrUnsupported

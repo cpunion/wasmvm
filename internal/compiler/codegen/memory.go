@@ -47,11 +47,17 @@ func (e *functionEmitter) memoryAt(in slots.Instruction, proven bool, offset uin
 		e.boundsElided++
 	}
 	if in.Op == 0x3f {
-		if e.a.arch == "arm64" {
+		index := e.f.Sources[in.Source].Wasm.A
+		oneByte := len(e.memoryPageSizes) != 0 && e.memoryPageSizes[index] == 1
+		if oneByte && e.a.arch == "arm64" {
+			e.registerMove(9, 17, true)
+		} else if e.a.arch == "arm64" {
 			e.a.word(0xd350fe29) // lsr x9, x17, #16
 		} else {
 			e.registerMove(0, 11, true)
-			e.a.bytes(0x48, 0xc1, 0xe8, 16)
+			if !oneByte {
+				e.a.bytes(0x48, 0xc1, 0xe8, 16)
+			}
 		}
 		e.slotStore(in.Dst, 0, false)
 		if !e.unmetered {

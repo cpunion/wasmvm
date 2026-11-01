@@ -19,6 +19,7 @@ import (
 
 	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/component"
+	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
 func TestHTTPResponseTransportErrorPreservesPhase(t *testing.T) {
@@ -131,6 +132,31 @@ func TestHTTPIncomingGuestBothBackends(t *testing.T) {
 				t.Fatal(len(data), response.Trailer, err)
 			}
 			response.Body.Close()
+		})
+	}
+}
+
+func TestHTTPIncomingFailureAfterResponsePublication(t *testing.T) {
+	for _, backend := range []string{"interpreter", "native"} {
+		if backend == "native" && !native.Available {
+			continue
+		}
+		t.Run(backend, func(t *testing.T) {
+			p, _, _ := httpOwner(t, HTTPConfig{})
+			in := httpInstance(t, p, backend, "http")
+			request := httptest.NewRequest("POST", "http://localhost/echo", bytes.NewReader(httpPattern()))
+			// The owned handler exhausts this shared fuel budget after setting
+			// its response, before completing its outgoing body.
+			response, err := p.CallIncoming(nil, in, request, component.CallOptions{Metered: true, Fuel: 270})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer response.Body.Close()
+			_, err = io.ReadAll(response.Body)
+			var failure *httpError
+			if response.StatusCode != 200 || !errors.As(err, &failure) || failure.value.Case != httpErr("HTTP-response-incomplete").value.Case || !errors.Is(err, wasm.ErrLimit) {
+				t.Fatal("lost guest failure after response publication", response.StatusCode, err)
+			}
 		})
 	}
 }

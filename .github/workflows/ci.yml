@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       evaluate_references:
-        description: Run unchanged candidate compatibility evaluations
+        description: Run independent candidate compatibility evaluations
         type: boolean
         default: false
 
@@ -18,122 +18,68 @@ concurrency:
 
 env:
   GO_VERSION: '1.27.3'
-  # LLGo compatibility contributions, including math bitcasts in PR #2936; not a release.
   LLGO_REVISION: 8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f
 
 jobs:
-  test:
-    name: ${{ matrix.compiler }} / ${{ matrix.platform.name }}
+  plan:
+    name: Verify semantic shard coverage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - id: plan
+        run: python3 scripts/ci_shards.py --github-output "$GITHUB_OUTPUT"
+
+  go:
+    name: go / ${{ matrix.platform.name }}
     runs-on: ${{ matrix.platform.runner }}
-    timeout-minutes: 60
+    timeout-minutes: 12
     strategy:
       fail-fast: false
       matrix:
-        compiler: [go, llgo]
         platform:
           - {name: linux-amd64, runner: ubuntu-24.04}
           - {name: macos-arm64, runner: macos-15}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Set up Go
-        if: matrix.compiler == 'go'
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: false
-
-      - name: Set up LLGo
-        if: matrix.compiler == 'llgo'
-        id: llgo
-        uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
-        with:
-          llgo-version: ${{ env.LLGO_REVISION }}
-          install-method: source
-          go-version: ${{ env.GO_VERSION }}
-          llvm-version: '22'
-          # Candidate engines are pinned in separate evaluation modules.
           cache: true
-
-      - name: Record and verify toolchains
-        shell: bash
-        env:
-          COMPILER: ${{ matrix.compiler }}
-          ACTUAL_LLGO_REVISION: ${{ steps.llgo.outputs.llgo-revision }}
+      - name: Verify toolchain and prepare pinned inputs
         run: |
           go version
-          if [[ "$COMPILER" == llgo ]]; then
-            test "$ACTUAL_LLGO_REVISION" = "$LLGO_REVISION"
-            llgo version
-            llgo env LLGO_ROOT GOROOT
-          fi
-
-      - name: Format and vet
-        if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
-        shell: bash
-        run: |
-          test -z "$(gofmt -l .)"
-          go vet ./...
-
-      - name: Verify complete pinned core inputs
-        run: |
-          python3 scripts/core2_corpus.py
-          python3 scripts/core3_corpus.py
-          python3 scripts/core_extensions_corpus.py
-          python3 scripts/preview1_corpus.py
-          python3 scripts/wasi_threads_corpus.py
-          python3 scripts/component_corpus.py
-
-      - name: Run the same package tests
-        shell: bash
+          for corpus in core2 core3 core_extensions preview1 wasi_threads component; do
+            python3 "scripts/${corpus}_corpus.py"
+          done
+      - name: Execute complete Go semantics
         env:
-          COMPILER: ${{ matrix.compiler }}
           PLATFORM: ${{ matrix.platform.name }}
           WASMVM_CONFORMANCE_REPORT: ${{ github.workspace }}/artifacts/conformance/core2.json
         run: |
-          if [[ "$COMPILER" == go ]]; then
-            CGO_ENABLED=0 go build ./...
-            CGO_ENABLED=0 go test -count=1 ./internal/platform/native ./internal/engine/nativeexec
-            if [[ "$PLATFORM" == linux-amd64 ]]; then
-              mkdir -p artifacts/core
-              CGO_ENABLED=1 go test -count=1 -timeout=10m -coverpkg=./internal/...,./pkg/... -coverprofile=artifacts/core/coverage.out ./internal/... ./pkg/...
-            else
-              CGO_ENABLED=1 go test -count=1 -timeout=10m ./...
-            fi
+          CGO_ENABLED=0 go build ./...
+          CGO_ENABLED=0 go test -count=1 ./internal/platform/native ./internal/engine/nativeexec
+          if [[ "$PLATFORM" == linux-amd64 ]]; then
+            mkdir -p artifacts/core
+            CGO_ENABLED=1 go test -count=1 -timeout=8m -coverpkg=./internal/...,./pkg/... -coverprofile=artifacts/core/coverage.out ./internal/... ./pkg/...
           else
-            llgo test -O3 -lto=full -count=1 -timeout=10m ./...
+            CGO_ENABLED=1 go test -count=1 -timeout=8m ./...
           fi
-
-      - name: Check Go data races
-        if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
-        # Full producer inventories already execute in the Go/LLGo matrix.
-        # Retain race coverage of unit/lifecycle, threaded guests and streaming interactions.
-        run: go test -race -count=1 -timeout=10m -skip 'TestCompleteCore[23]|Test.*(Proposal|Spec)$|TestP1Conformance$|TestOfficialGoGuest$|TestUpstream(P2WorldConsumers|WASIConsumers)$' ./...
-
       - name: Check native pointer ownership
-        if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
+        if: matrix.platform.name == 'linux-amd64'
         run: GOEXPERIMENT=cgocheck2 go test -count=1 ./internal/platform/native ./internal/engine/nativeexec ./pkg/vm
-
-      - name: Build and execute the core CLI
-        shell: bash
-        env:
-          COMPILER: ${{ matrix.compiler }}
+      - name: Build and execute the Go CLI
         run: |
           mkdir -p artifacts/cli
-          if [[ "$COMPILER" == go ]]; then
-            CGO_ENABLED=0 go build -o artifacts/cli/wasmvm ./cmd/wasmvm
-            native_support=unavailable
-          else
-            llgo build -O3 -lto=full -o artifacts/cli/wasmvm ./cmd/wasmvm
-            native_support=available
-          fi
-          python3 scripts/cli_smoke.py artifacts/cli/wasmvm --native "$native_support"
+          CGO_ENABLED=0 go build -o artifacts/cli/wasmvm ./cmd/wasmvm
+          python3 scripts/cli_smoke.py artifacts/cli/wasmvm --native unavailable
 
       - name: Enforce per-package core coverage
-        if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
+        if: matrix.platform.name == 'linux-amd64'
         shell: bash
         run: |
-          python3 -m unittest discover -s scripts -p 'test_*.py'
           python3 scripts/check_coverage.py artifacts/core/coverage.out --minimum 90 \
             --require github.com/cpunion/wasmvm/internal/binary \
             --require github.com/cpunion/wasmvm/internal/bench/phase \
@@ -164,8 +110,195 @@ jobs:
             --require github.com/cpunion/wasmvm/pkg/wasm \
             --require github.com/cpunion/wasmvm/pkg/vm
 
+      - name: Preserve core coverage
+        if: always() && matrix.platform.name == 'linux-amd64'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: core-coverage-${{ matrix.platform.name }}
+          path: artifacts/core/
+          if-no-files-found: error
+      - name: Preserve actual own-core conformance
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: core2-execution-go-${{ matrix.platform.name }}
+          path: |
+            artifacts/conformance/core2.json*
+            artifacts/conformance/core3-*.json
+            artifacts/conformance/proposals/*.json
+            artifacts/conformance/wasi/*.json
+          if-no-files-found: error
+      - name: Preserve corpus provenance
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: core2-inputs-go-${{ matrix.platform.name }}
+          path: |
+            artifacts/core2/evidence.json
+            artifacts/core3/evidence.json
+          if-no-files-found: error
+
+  llgo:
+    name: llgo / ${{ matrix.platform.name }} / ${{ matrix.shard.name }}
+    needs: plan
+    env:
+      LLGO_CACHE_GROUP: ${{ matrix.shard.name }}
+    runs-on: ${{ matrix.platform.runner }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - {name: linux-amd64, runner: ubuntu-24.04}
+          - {name: macos-arm64, runner: macos-15}
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up pinned LLGo
+        id: llgo
+        uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
+        with:
+          llgo-version: ${{ env.LLGO_REVISION }}
+          install-method: source
+          go-version: ${{ env.GO_VERSION }}
+          llvm-version: '22'
+          cache: true
+      - name: Verify toolchain and locate its package cache
+        id: cache-path
+        env:
+          ACTUAL_LLGO_REVISION: ${{ steps.llgo.outputs.llgo-revision }}
+        run: |
+          test "$ACTUAL_LLGO_REVISION" = "$LLGO_REVISION"
+          go version
+          llgo version
+          printf 'path=%s\n' "$(llgo env LLGO_PKG_CACHE_DIR)" >> "$GITHUB_OUTPUT"
+      - name: Restore LLGo package objects
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ steps.cache-path.outputs.path }}
+          key: llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-${{ env.LLGO_CACHE_GROUP }}-${{ github.sha }}
+          restore-keys: |
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-${{ env.LLGO_CACHE_GROUP }}-
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-component-
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-
+      - name: Prepare this shard's pinned inputs
+        env:
+          CORPORA: ${{ matrix.shard.inputs }}
+        run: |
+          read -ra corpora <<< "$CORPORA"
+          for corpus in "${corpora[@]}"; do
+            python3 "scripts/${corpus}_corpus.py"
+          done
+      - name: Execute LLGo semantic shard
+        env:
+          TEST_PACKAGES: ${{ matrix.shard.packages }}
+          SHARD: ${{ matrix.shard.name }}
+          WASMVM_CONFORMANCE_REPORT: ${{ github.workspace }}/artifacts/conformance/core2.json
+        run: |
+          mkdir -p artifacts/ci
+          read -ra packages <<< "$TEST_PACKAGES"
+          llgo test -O3 -lto=full -json -debug-trace "artifacts/ci/llgo-${SHARD}.json" -count=1 -timeout=8m "${packages[@]}"
+      - name: Preserve shard execution and timing evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: llgo-evidence-${{ matrix.platform.name }}-${{ matrix.shard.name }}
+          path: |
+            artifacts/conformance/
+            artifacts/ci/
+          if-no-files-found: error
+      - name: Preserve core input provenance
+        if: always() && matrix.shard.name == 'core'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: core2-inputs-llgo-${{ matrix.platform.name }}
+          path: |
+            artifacts/core2/evidence.json
+            artifacts/core3/evidence.json
+          if-no-files-found: error
+
+  llgo-cli:
+    name: llgo CLI / ${{ matrix.platform.name }}
+    runs-on: ${{ matrix.platform.runner }}
+    timeout-minutes: 10
+    env:
+      LLGO_CACHE_GROUP: cli
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - {name: linux-amd64, runner: ubuntu-24.04}
+          - {name: macos-arm64, runner: macos-15}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up pinned LLGo
+        id: llgo
+        uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
+        with:
+          llgo-version: ${{ env.LLGO_REVISION }}
+          install-method: source
+          go-version: ${{ env.GO_VERSION }}
+          llvm-version: '22'
+          cache: true
+      - name: Verify toolchain and locate its package cache
+        id: cache-path
+        env:
+          ACTUAL_LLGO_REVISION: ${{ steps.llgo.outputs.llgo-revision }}
+        run: |
+          test "$ACTUAL_LLGO_REVISION" = "$LLGO_REVISION"
+          go version
+          llgo version
+          printf 'path=%s\n' "$(llgo env LLGO_PKG_CACHE_DIR)" >> "$GITHUB_OUTPUT"
+      - name: Restore LLGo package objects
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ steps.cache-path.outputs.path }}
+          key: llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-${{ env.LLGO_CACHE_GROUP }}-${{ github.sha }}
+          restore-keys: |
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-${{ env.LLGO_CACHE_GROUP }}-
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-component-
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-
+      - name: Build and execute the LLGo CLI
+        run: |
+          mkdir -p artifacts/cli
+          llgo build -O3 -lto=full -o artifacts/cli/wasmvm ./cmd/wasmvm
+          python3 scripts/cli_smoke.py artifacts/cli/wasmvm --native available
+
+  race:
+    name: Go race / linux-amd64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Prepare race/lifecycle inputs
+        run: |
+          for corpus in core2 core3 core_extensions preview1 wasi_threads component; do
+            python3 "scripts/${corpus}_corpus.py"
+          done
+      - name: Execute unchanged race scope
+        run: go test -race -count=1 -timeout=8m -skip 'TestCompleteCore[23]|Test.*(Proposal|Spec)$|TestP1Conformance$|TestOfficialGoGuest$|TestUpstream(P2WorldConsumers|WASIConsumers)$' ./...
+
+  quality:
+    name: Go quality / linux-amd64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Format, vet and check CI/benchmark tooling
+        run: |
+          test -z "$(gofmt -l .)"
+          go vet ./...
+          python3 -m unittest discover -s scripts -p 'test_*.py'
+          python3 -m unittest discover -s benchmarks -p 'test_*.py'
       - name: Fuzz bounded binary inputs
-        if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
         run: |
           go test -run '^$' -fuzz '^FuzzReader$' -fuzztime=10s -parallel=2 ./internal/binary
           go test -run '^$' -fuzz '^FuzzDecode$' -fuzztime=10s -parallel=2 ./internal/core/decode
@@ -177,61 +310,21 @@ jobs:
           go test -run '^$' -fuzz '^FuzzMemoryRanges$' -fuzztime=10s -parallel=2 ./internal/engine/memory
           go test -run '^$' -fuzz '^FuzzExecution$' -fuzztime=10s -parallel=2 ./internal/engine/execute
 
-      - name: Evaluate unchanged wazero and measure harness coverage
-        if: github.event_name == 'workflow_dispatch' && inputs.evaluate_references && matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
-        shell: bash
-        run: |
-          go -C experiments/wazero vet ./...
+  references:
+    name: Optional reference compatibility
+    if: github.event_name == 'workflow_dispatch' && inputs.evaluate_references
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
+        with:
+          llgo-version: ${{ env.LLGO_REVISION }}
+          go-version: ${{ env.GO_VERSION }}
+          install-method: source
+          llvm-version: '22'
+          cache: true
+      - run: |
           experiments/wazero/scripts/run.sh go upstream -race
-          go -C experiments/wazero tool cover -func="$GITHUB_WORKSPACE/artifacts/wazero/go-upstream/coverage.out" | tee artifacts/wazero/go-upstream/coverage-summary.txt
-          awk '/^total:/ { found=1; sub(/%$/, "", $3); if ($3+0 < 90) exit 1 } END { if (!found) exit 2 }' artifacts/wazero/go-upstream/coverage-summary.txt
-
-      - name: Check the alternate candidate's Go smoke probes
-        if: github.event_name == 'workflow_dispatch' && inputs.evaluate_references && matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
-        run: go -C experiments/wago test -count=1 -timeout=2m ./...
-
-      - name: Run unchanged wazero with the fixed LLGo runtime
-        if: github.event_name == 'workflow_dispatch' && inputs.evaluate_references && matrix.compiler == 'llgo'
-        run: experiments/wazero/scripts/run.sh llgo upstream
-
-      - name: Check benchmark fixtures and harness
-        if: matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
-        run: python3 -m unittest discover -s benchmarks -p 'test_*.py'
-
-      - name: Preserve evaluation evidence
-        if: always() && github.event_name == 'workflow_dispatch' && inputs.evaluate_references && (matrix.compiler == 'llgo' || matrix.platform.name == 'linux-amd64')
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: wazero-evaluation-${{ matrix.compiler }}-${{ matrix.platform.name }}
-          path: artifacts/wazero/
-          if-no-files-found: error
-
-      - name: Preserve core coverage
-        if: always() && matrix.compiler == 'go' && matrix.platform.name == 'linux-amd64'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: core-coverage-${{ matrix.platform.name }}
-          path: artifacts/core/
-          if-no-files-found: error
-
-      - name: Preserve actual own-core conformance
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: core2-execution-${{ matrix.compiler }}-${{ matrix.platform.name }}
-          path: |
-            artifacts/conformance/core2.json*
-            artifacts/conformance/core3-*.json
-            artifacts/conformance/proposals/*.json
-            artifacts/conformance/wasi/*.json
-          if-no-files-found: error
-
-      - name: Preserve corpus provenance
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: core2-inputs-${{ matrix.compiler }}-${{ matrix.platform.name }}
-          path: |
-            artifacts/core2/evidence.json
-            artifacts/core3/evidence.json
-          if-no-files-found: error
+          experiments/wazero/scripts/run.sh llgo upstream
+          go -C experiments/wago test -count=1 -timeout=2m ./...

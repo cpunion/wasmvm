@@ -31,6 +31,15 @@ func (s *Store) NewTag(t module.FuncType, referenceType ...wasm.ValueType) (Exte
 	if len(t.Results) != 0 {
 		return Extern{}, wasm.ErrInvalid
 	}
+	return s.NewControlTag(t, referenceType...)
+}
+
+// NewControlTag additionally permits typed suspension results. Exception
+// creation still requires a result-free tag.
+func (s *Store) NewControlTag(t module.FuncType, referenceType ...wasm.ValueType) (Extern, error) {
+	if s.closed {
+		return Extern{}, wasm.ErrClosed
+	}
 	if s.usage.Tags >= uint64(s.limits.MaxTags) {
 		return Extern{}, limit("tags")
 	}
@@ -51,6 +60,25 @@ func (s *Store) newTag(t module.FuncType, id uint32, owner *Instance) (Extern, e
 	return Extern{Owner: s, Kind: 4, Tag: tag}, nil
 }
 func (s *Store) NewException(tag *Tag, args []value.Value, roots ...func(func(wasm.ValueType, value.Value))) (*Exception, error) {
+	if s.closed {
+		return nil, wasm.ErrClosed
+	}
+	if tag == nil || tag.Owner != s {
+		return nil, ErrReference
+	}
+	if len(tag.Signature.Results) != 0 || len(args) != len(tag.Signature.Params) {
+		return nil, wasm.ErrInvalid
+	}
+	return s.newTaggedPayload(tag, args, roots...)
+}
+
+// NewSuspensionPayload retains a terminal effect's tag and arguments. The
+// embedding keeps this private; a result-bearing control tag cannot be thrown.
+func (s *Store) NewSuspensionPayload(tag *Tag, args []value.Value) (*Exception, error) {
+	return s.newTaggedPayload(tag, args)
+}
+
+func (s *Store) newTaggedPayload(tag *Tag, args []value.Value, roots ...func(func(wasm.ValueType, value.Value))) (*Exception, error) {
 	if s.closed {
 		return nil, wasm.ErrClosed
 	}

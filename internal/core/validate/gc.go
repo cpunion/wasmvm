@@ -22,6 +22,9 @@ func (c *context) field(index, field uint32) module.FieldType {
 	return d.Fields[field]
 }
 func (c *context) refTop(t wasm.ValueType) wasm.ValueType {
+	if t.IsContinuationReference() {
+		return wasm.ContRef
+	}
 	if t.IsExceptionReference() {
 		return wasm.ExnRef
 	}
@@ -38,7 +41,24 @@ func (v *checker) gc(in module.Instr) {
 		v.fail("GC is disabled")
 	}
 	op := in.Op & 0xffff
+	if op >= 32 && v.features&wasm.CustomDescriptors == 0 {
+		v.fail("custom descriptors are disabled")
+	}
 	ref := func(i uint32) wasm.ValueType { return v.m.Reference(i, true) }
+	allocated := func(i uint32) wasm.ValueType {
+		return ref(i).NonNull().WithExact(v.features&wasm.CustomDescriptors != 0)
+	}
+	descriptor := func(t wasm.ValueType) wasm.ValueType {
+		i, ok := t.TypeIndex()
+		if !ok {
+			v.fail("defined type required for descriptor cast")
+		}
+		d := v.composite(i, module.StructKind)
+		if d.Descriptor == 0 {
+			v.fail("type has no descriptor")
+		}
+		return ref(uint32(d.Descriptor - 1)).WithExact(t.Exact())
+	}
 	defaultable := func(f module.FieldType) {
 		if !f.Unpacked().Defaultable() {
 			v.fail("nondefaultable field")
@@ -60,9 +80,16 @@ func (v *checker) gc(in module.Instr) {
 		}
 	}
 	switch op {
-	case 0, 1:
-		fs := v.composite(in.A, module.StructKind).Fields
-		if op == 0 {
+	case 0, 1, 32, 33:
+		d := v.composite(in.A, module.StructKind)
+		if (d.Descriptor != 0) != (op >= 32) {
+			v.fail("struct allocation descriptor mismatch")
+		}
+		if op >= 32 {
+			v.pop(descriptor(ref(in.A).WithExact(true)))
+		}
+		fs := d.Fields
+		if op == 0 || op == 32 {
 			for i := len(fs) - 1; i >= 0; i-- {
 				v.pop(fs[i].Unpacked())
 			}
@@ -71,7 +98,7 @@ func (v *checker) gc(in module.Instr) {
 				defaultable(f)
 			}
 		}
-		v.push(ref(in.A).NonNull())
+		v.push(allocated(in.A))
 	case 2, 3, 4:
 		f := v.field(in.A, in.B)
 		packed(f, op != 2)
@@ -90,7 +117,7 @@ func (v *checker) gc(in module.Instr) {
 		} else {
 			defaultable(f)
 		}
-		v.push(ref(in.A).NonNull())
+		v.push(allocated(in.A))
 	case 8:
 		f := v.array(in.A)
 		if uint64(in.B) > uint64(v.limits.MaxStack) {
@@ -99,7 +126,7 @@ func (v *checker) gc(in module.Instr) {
 		for range in.B {
 			v.pop(f.Unpacked())
 		}
-		v.push(ref(in.A).NonNull())
+		v.push(allocated(in.A))
 	case 9, 10:
 		f := v.array(in.A)
 		if op == 9 {
@@ -116,7 +143,7 @@ func (v *checker) gc(in module.Instr) {
 		}
 		v.pop(wasm.I32)
 		v.pop(wasm.I32)
-		v.push(ref(in.A).NonNull())
+		v.push(allocated(in.A))
 	case 11, 12, 13:
 		f := v.array(in.A)
 		packed(f, op != 11)
@@ -169,11 +196,17 @@ func (v *checker) gc(in module.Instr) {
 		v.pop(wasm.I32)
 		v.pop(wasm.I32)
 		v.pop(ref(in.A))
-	case 20, 21, 22, 23:
+	case 20, 21, 22, 23, 35, 36:
 		t := in.ReferenceType()
 		v.valueType(t, len(v.m.Types))
+		if t.IsContinuationReference() {
+			v.fail("continuation references are not castable")
+		}
 		if !t.IsReference() {
 			v.fail("cast reference type")
+		}
+		if op >= 35 {
+			v.pop(descriptor(t))
 		}
 		v.pop(v.refTop(t))
 		if op <= 21 {
@@ -181,14 +214,21 @@ func (v *checker) gc(in module.Instr) {
 		} else {
 			v.push(t)
 		}
-	case 24, 25:
+	case 24, 25, 37, 38:
 		if len(in.Types) != 2 {
 			v.fail("cast branch reference types")
 		}
 		a, b := in.Types[0], in.Types[1]
+		if b.IsContinuationReference() {
+			v.fail("continuation references are not castable")
+		}
 		v.valueType(a, len(v.m.Types))
 		v.valueType(b, len(v.m.Types))
-		if !a.IsReference() || !b.IsReference() || !v.matches(b, a) {
+		compatible := v.matches(b, a)
+		if v.features&wasm.CustomDescriptors != 0 {
+			compatible = v.refTop(a) == v.refTop(b)
+		}
+		if !a.IsReference() || !b.IsReference() || !compatible {
 			v.fail("cast branch type mismatch")
 		}
 		diff := a
@@ -196,17 +236,24 @@ func (v *checker) gc(in module.Instr) {
 			diff = diff.NonNull()
 		}
 		branch, fall := b, diff
-		if op == 25 {
+		if op == 25 || op == 38 {
 			branch, fall = diff, b
 		}
 		ts := v.label(in.A)
 		if len(ts) == 0 || !v.matches(branch, ts[len(ts)-1]) {
 			v.fail("cast branch label type")
 		}
+		if op >= 37 {
+			v.pop(descriptor(b))
+		}
 		v.pop(a)
 		v.pops(ts[:len(ts)-1])
 		v.push(ts[:len(ts)-1]...)
 		v.push(fall)
+	case 34:
+		t := v.pop(ref(in.A))
+		exact := v.matches(t, ref(in.A).WithExact(true))
+		v.push(descriptor(ref(in.A).WithExact(exact)).NonNull())
 	case 26, 27:
 		a, b := wasm.ExternRef, wasm.AnyRef
 		if op == 27 {

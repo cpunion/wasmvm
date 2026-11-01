@@ -2,6 +2,7 @@ package state
 
 import (
 	"github.com/cpunion/wasmvm/internal/core/module"
+	"github.com/cpunion/wasmvm/internal/engine/memory"
 	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -153,6 +154,12 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 				continue
 			}
 			d := s.registry.Types[o.Type].Definition
+			if o.Continuation != nil {
+				o.Continuation.Visit(visit, mark)
+			}
+			if o.Descriptor != 0 {
+				visit(wasm.AnyRef, value.Value{Lo: o.Descriptor})
+			}
 			if d.Kind == module.ArrayKind {
 				if d.Fields[0].Value.IsReference() {
 					for i := uint32(0); i < o.Length; i++ {
@@ -263,7 +270,7 @@ func (s *Store) sweepObjects() {
 			if m.Shared() {
 				s.reservedShared -= m.ReservationPages()
 			} else {
-				s.usage.MemoryPages -= uint64(m.Pages())
+				s.usage.MemoryPages -= memory.QuotaPages(m.Limits(), m.Pages())
 			}
 			m.Release()
 			m.Owner = nil

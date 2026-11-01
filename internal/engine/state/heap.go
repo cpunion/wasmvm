@@ -1,6 +1,7 @@
 package state
 
 import (
+	"github.com/cpunion/wasmvm/internal/core/module"
 	"math"
 
 	"github.com/cpunion/wasmvm/internal/engine/value"
@@ -20,6 +21,8 @@ type ReferenceValue struct {
 }
 type heapObject struct {
 	Type          uint32
+	Descriptor    uint64
+	Continuation  ContinuationBody
 	Tag           *Tag
 	Data          []byte
 	Layout        *heapLayout
@@ -40,7 +43,7 @@ func (s *Store) heapObject(ref uint64) (*heapObject, bool) {
 	slot := &s.heap[index]
 	return slot.Object, slot.Object != nil && slot.Generation == uint32(ref>>32)&0x7fffffff
 }
-func (s *Store) allocateObject(typ uint32, length uint32) (uint64, error) {
+func (s *Store) allocateObject(typ uint32, length uint32, extra ...uint64) (uint64, error) {
 	layout, err := s.layout(typ)
 	if err != nil {
 		return 0, err
@@ -50,6 +53,15 @@ func (s *Store) allocateObject(typ uint32, length uint32) (uint64, error) {
 		payload = uint64(length) * uint64(layout.stride)
 	}
 	bytes := payload + 64
+	if len(extra) != 0 {
+		if extra[0] > math.MaxUint64-bytes {
+			return 0, limit("guest continuation bytes")
+		}
+		bytes += extra[0]
+	}
+	if s.registry.Types[typ].Definition.Descriptor != 0 {
+		bytes += 8
+	}
 	if s.HeapSafepoint != nil && (s.CollectEveryAllocation || s.usage.HeapObjects >= uint64(s.limits.MaxHeapObjects) || bytes > s.limits.MaxHeapBytes-s.usage.HeapBytes || s.usage.HeapBytes >= s.heapThreshold) {
 		s.HeapSafepoint()
 	}
@@ -90,6 +102,7 @@ func (s *Store) releaseObject(index uint32) {
 	s.usage.HeapBytes -= obj.Bytes
 	obj.Data = nil
 	obj.Layout = nil
+	obj.Continuation = nil
 	slot.Object = nil
 	if slot.Generation < 0x7fffffff {
 		slot.Generation++
@@ -146,6 +159,8 @@ func (s *Store) TestReference(ref uint64, expected wasm.ValueType) bool {
 		family := wasm.StructRef
 		if d.Kind == 0x5e {
 			family = wasm.ArrayRef
+		} else if d.Kind == module.ContinuationKind {
+			family = wasm.ContRef
 		}
 		actual = wasm.IndexedReference(family, o.Type, false).WithTypeIndex(o.Type, true)
 	case expected.IsExceptionReference():
@@ -157,7 +172,23 @@ func (s *Store) TestReference(ref uint64, expected wasm.ValueType) bool {
 	default:
 		return false
 	}
+	if _, indexed := actual.TypeIndex(); indexed {
+		actual = actual.WithExact(true)
+	}
 	return s.registry.Subtype(actual, expected)
+}
+
+// DescriptorEqual implements the common descriptor-cast predicate. A null
+// descriptor traps even if the tested reference is null or has another kind.
+func (s *Store) DescriptorEqual(ref, descriptor uint64, target wasm.ValueType) (bool, error) {
+	if descriptor == 0 {
+		return false, &wasm.Trap{Code: wasm.TrapNullReference}
+	}
+	if ref == 0 {
+		return target.Nullable(), nil
+	}
+	obj, ok := s.heapObject(ref)
+	return ok && obj.Descriptor == descriptor, nil
 }
 func (s *Store) IsLiveReference(ref uint64) bool {
 	if ref&heapTag != 0 {

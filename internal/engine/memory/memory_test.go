@@ -21,6 +21,9 @@ func TestLimitsGrowthAndHostAccess(t *testing.T) {
 		{module.Limits{Min: 2, Max: 1, HasMax: true}, 2, wasm.ErrInvalid},
 		{module.Limits{Max: MaxPages + 1, HasMax: true}, MaxPages, wasm.ErrInvalid},
 		{module.Limits{Min: 1}, 0, wasm.ErrLimit},
+		{module.Limits{PageSize: 2}, 2, wasm.ErrInvalid},
+		{module.Limits{PageSize: 1, Min: 65537}, 1, wasm.ErrLimit},
+		{module.Limits{PageSize: 1, Min: 1 << 32}, 1, wasm.ErrInvalid},
 	} {
 		if got, err := New(tc.limits, tc.quota); got != nil || !errors.Is(err, tc.kind) {
 			t.Fatal(got, err)

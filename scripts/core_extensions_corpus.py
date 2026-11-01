@@ -12,6 +12,30 @@ from core2_corpus import digest, extract, fetch, inventory
 ROOT = Path(__file__).resolve().parent.parent
 PRODUCER = "wasm-tools 1.262.0 (e22db44da 2026-10-13)"
 PROPOSALS = {
+    "stack-switching": {
+        "revision": "d9fbe345495d15af623b981440d6aaacd5ad015c",
+        "size": 15115309,
+        "sha256": "7fe7edd5af71bb1633363f7d5bf933cf0c59ce52b7c13e92c468f414178070ac",
+        "scripts": ["stack-switching/" + name + ".wast" for name in
+                    ["cont", "resume_throw", "validation", "validation_gc"]],
+    },
+    "custom-descriptors": {
+        "revision": "a791af285f3876fb0bc6df89c218ff912347cf46",
+        "size": 15066255,
+        "sha256": "d68f475e24f0542ea4c8167044767aa5258c67dc7088590d5549d622a8635ea5",
+        "scripts": ["custom-descriptors/" + name + ".wast" for name in
+                    ["array_new_exact", "binary-descriptors", "br_on_cast_desc_eq",
+                     "br_on_cast_desc_eq_fail", "descriptors", "exact-casts",
+                     "exact-func-import", "exact", "ref_cast_desc_eq", "ref_get_desc", "struct_new_desc"]],
+    },
+    "custom-page-sizes": {
+        "revision": "61c873a1860acad2772539164f284cc5110f1b1b",
+        "size": 15035559,
+        "sha256": "79512780fbb76606fb5caed84f7811705f9467a7153be0d438b4feadc76fae2e",
+        "scripts": ["custom-page-sizes/custom-page-sizes-invalid.wast",
+                    "custom-page-sizes/custom-page-sizes.wast",
+                    "custom-page-sizes/memory_max.wast", "custom-page-sizes/memory_max_i64.wast"],
+    },
     "compact-import-section": {
         "revision": "0624de829e2663da799e708444dec80337a3fe54",
         "size": 15032531,
@@ -95,9 +119,12 @@ def main():
     parser.add_argument("--generate", action="store_true")
     parser.add_argument("--producer", default="wasm-tools")
     parser.add_argument("--cache", type=Path, default=ROOT / "artifacts/core-extensions/cache")
+    parser.add_argument("--proposal", choices=PROPOSALS)
     args = parser.parse_args()
     producer = shutil.which(args.producer) if args.generate else None
     for name in PROPOSALS:
+        if args.proposal and name != args.proposal:
+            continue
         if args.generate:
             if not producer:
                 raise ValueError("pinned producer is required for regeneration")

@@ -72,7 +72,9 @@ func CompileUnmeteredFunction(arch string, f *slots.Function, limits Limits) (*C
 type Config struct {
 	Unmetered          bool
 	MemoryMinimumPages uint32
-	X86Features        X86Features
+	// MemoryPageSizes follows memory index order; nil means default 64-KiB pages.
+	MemoryPageSizes []uint64
+	X86Features     X86Features
 	// DirectCallees contains only immutable definitions in the same module.
 	// An expanded entry requires one additional logical frame and InlineSlots
 	// remaining slots. The runtime must select an ordinary entry otherwise.
@@ -95,7 +97,19 @@ func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, co
 
 func compileFunction(arch string, f *slots.Function, limits Limits, config Config) (out *CompiledFunction, err error) {
 	unmetered := config.Unmetered
-	if config.MemoryMinimumPages > 65536 {
+	pageSize := uint64(65536)
+	if len(config.MemoryPageSizes) != 0 {
+		if len(config.MemoryPageSizes) != max(1, int(config.MemoryCount)) {
+			return nil, wasm.ErrInvalid
+		}
+		for _, size := range config.MemoryPageSizes {
+			if size != 1 && size != 65536 {
+				return nil, wasm.ErrInvalid
+			}
+		}
+		pageSize = config.MemoryPageSizes[0]
+	}
+	if pageSize == 65536 && config.MemoryMinimumPages > 65536 {
 		return nil, wasm.ErrInvalid
 	}
 	if config.X86Features&^x86KnownFeatures != 0 || arch != "amd64" && config.X86Features != 0 {
@@ -132,7 +146,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		return nil, err
 	}
 	a := assembler{arch: arch, labels: map[int]int{}, bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true, compactBranches: arch == "arm64"}
-	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered, memoryMinimum: uint64(config.MemoryMinimumPages) * 65536}
+	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered, memoryMinimum: uint64(config.MemoryMinimumPages) * pageSize, memoryPageSizes: config.MemoryPageSizes}
 	e.x86Features = config.X86Features
 	pcs := make([]int, len(f.Code))
 	for i := range pcs {
@@ -451,7 +465,7 @@ func integerWide(op uint32) bool {
 	return op >= 0x50 && op <= 0x5a || op >= 0x79 && op <= 0x8a || op == 0xac || op == 0xad || op >= 0xc2
 }
 func helperOpcode(op uint32) bool {
-	return op == slots.SharedMemoryOp || op>>16 == 0xfe || op == 8 || op == 10 || op >= 0x23 && op <= 0x26 || op >= 0x28 && op <= 0x40 || op >= 0x5b && op <= 0x66 || op >= 0x8b && op <= 0xbf || op == 0xd2 || op == 0xd3 || op>>16 == 0xfb || op >= 0xfc0000 && op <= 0xfc0011 || op>>16 == 0xfd
+	return op >= 0xe0 && op <= 0xe6 || op == slots.SharedMemoryOp || op>>16 == 0xfe || op == 8 || op == 10 || op >= 0x23 && op <= 0x26 || op >= 0x28 && op <= 0x40 || op >= 0x5b && op <= 0x66 || op >= 0x8b && op <= 0xbf || op == 0xd2 || op == 0xd3 || op>>16 == 0xfb || op >= 0xfc0000 && op <= 0xfc0011 || op>>16 == 0xfd
 }
 
 func checkFunction(f *slots.Function) error {
@@ -502,9 +516,9 @@ func checkFunction(f *slots.Function) error {
 				return wasm.ErrInvalid
 			}
 		}
-		if in.Op == 8 || in.Op == 10 || in.Op >= 0x10 && in.Op <= 0x15 || in.Op>>16 == 0xfb || module.IsWideArithmetic(in.Op) {
+		if in.Op == 8 || in.Op == 10 || in.Op >= 0x10 && in.Op <= 0x15 || in.Op>>16 == 0xfb || module.IsWideArithmetic(in.Op) || in.Op >= 0xe0 && in.Op <= 0xe6 {
 			outputs := 0
-			if in.Op == 0x10 || in.Op == 0x11 || in.Op == 0x14 || in.Op>>16 == 0xfb || module.IsWideArithmetic(in.Op) {
+			if in.Op == 0x10 || in.Op == 0x11 || in.Op == 0x14 || in.Op>>16 == 0xfb || module.IsWideArithmetic(in.Op) || in.Op >= 0xe0 && in.Op <= 0xe6 {
 				outputs = len(f.Sources[in.Source].Outputs)
 			}
 			if uint64(in.Extra)+uint64(in.Count)+uint64(outputs) > uint64(len(f.Args)) {

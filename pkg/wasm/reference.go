@@ -5,6 +5,7 @@ const (
 	referenceIndexed   ValueType = 1 << 9
 	referenceNullable  ValueType = 1 << 10
 	referenceCanonical ValueType = 1 << 11
+	referenceExact     ValueType = 1 << 12
 )
 
 // FunctionReference constructs a reference to a module-local function type.
@@ -30,13 +31,13 @@ func (t ValueType) referenceEncoding() bool {
 		return false
 	}
 	flags := t & 0xff00
-	if flags&referenceExtended == 0 || flags & ^(referenceExtended|referenceIndexed|referenceNullable|referenceCanonical) != 0 {
+	if flags&referenceExtended == 0 || flags & ^(referenceExtended|referenceIndexed|referenceNullable|referenceCanonical|referenceExact) != 0 {
 		return false
 	}
 	if flags&referenceIndexed == 0 {
-		return t>>16 == 0 && flags&referenceCanonical == 0 && flags&referenceNullable == 0
+		return t>>16 == 0 && flags&(referenceCanonical|referenceNullable|referenceExact) == 0
 	}
-	return byte(t) == byte(FuncRef) || byte(t) == byte(StructRef) || byte(t) == byte(ArrayRef)
+	return byte(t) == byte(FuncRef) || byte(t) == byte(StructRef) || byte(t) == byte(ArrayRef) || byte(t) == byte(ContRef)
 }
 
 func (t ValueType) IsFunctionReference() bool {
@@ -63,11 +64,21 @@ func (t ValueType) Storage() ValueType {
 		if t.IsExceptionReference() {
 			return ExnRef
 		}
+		if t.IsContinuationReference() {
+			return ContRef
+		}
 		return AnyRef
 	}
 	return t
 }
 func (t ValueType) Canonical() bool { return t&referenceCanonical != 0 }
+func (t ValueType) Exact() bool     { return t&referenceExact != 0 }
+func (t ValueType) WithExact(exact bool) ValueType {
+	if exact {
+		return t | referenceExact
+	}
+	return t &^ referenceExact
+}
 func (t ValueType) TypeIndex() (uint32, bool) {
 	return uint32(t >> 16), t.IsReference() && t&referenceIndexed != 0
 }
@@ -109,6 +120,10 @@ func (t ValueType) WithTypeIndex(index uint32, canonical bool) ValueType {
 }
 func (t ValueType) HeapName() string {
 	switch ValueType(byte(t)) {
+	case ContRef:
+		return "cont"
+	case NoContRef:
+		return "nocont"
 	case ExnRef:
 		return "exn"
 	case NoExnRef:
@@ -137,13 +152,16 @@ func (t ValueType) HeapName() string {
 	return "unknown"
 }
 func (t ValueType) IsInternalReference() bool {
-	return t.IsReference() && !t.IsFunctionReference() && !t.IsExternalReference() && !t.IsExceptionReference()
+	return t.IsReference() && !t.IsFunctionReference() && !t.IsExternalReference() && !t.IsExceptionReference() && !t.IsContinuationReference()
+}
+func (t ValueType) IsContinuationReference() bool {
+	return t.IsReference() && (byte(t) == byte(ContRef) || byte(t) == byte(NoContRef))
 }
 func (t ValueType) IsExceptionReference() bool {
 	return t.IsReference() && (byte(t) == byte(ExnRef) || byte(t) == byte(NoExnRef))
 }
 func (t ValueType) IsGCReference() bool {
-	return t.IsReference() && !t.IsExceptionReference() && (byte(t) != byte(FuncRef) && byte(t) != byte(ExternRef))
+	return t.IsReference() && !t.IsExceptionReference() && !t.IsContinuationReference() && (byte(t) != byte(FuncRef) && byte(t) != byte(ExternRef))
 }
 
 func referenceSubtype(actual, expected ValueType, labels []uint32, nominal func(uint32, uint32) bool) bool {
@@ -167,14 +185,14 @@ func referenceSubtype(actual, expected ValueType, labels []uint32, nominal func(
 			a, e = labels[a], labels[e]
 		}
 		if a == e {
-			return true
+			return !expected.Exact() || actual.Exact()
 		}
-		if nominal != nil {
+		if nominal != nil && !expected.Exact() {
 			return nominal(a, e)
 		}
 		return false
 	}
-	if af == NoExnRef && expected.IsExceptionReference() || af == NoneRef && expected.IsInternalReference() || af == NoFuncRef && expected.IsFunctionReference() || af == NoExternRef && expected.IsExternalReference() {
+	if af == NoContRef && expected.IsContinuationReference() || af == NoExnRef && expected.IsExceptionReference() || af == NoneRef && expected.IsInternalReference() || af == NoFuncRef && expected.IsFunctionReference() || af == NoExternRef && expected.IsExternalReference() {
 		return true
 	}
 	if ei {

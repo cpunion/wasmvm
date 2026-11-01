@@ -46,6 +46,25 @@ func (c *context) checkTypeGroup(g module.TypeGroup, maximum uint32) {
 			}
 		}
 		d := m.TypeDef(i)
+		for side, use := range []uint64{d.Descriptor, d.Describes} {
+			if use == 0 {
+				continue
+			}
+			if c.features&wasm.CustomDescriptors == 0 || d.Kind != module.StructKind || use-1 < uint64(g.Start) || use-1 >= end {
+				c.fail("descriptor relationship outside its recursive group")
+			}
+			other := m.TypeDef(uint32(use - 1))
+			reciprocal := other.Describes
+			if side == 1 {
+				reciprocal = other.Descriptor
+				if use-1 >= uint64(i) {
+					c.fail("forward described type")
+				}
+			}
+			if other.Kind != module.StructKind || reciprocal != uint64(i)+1 || other.Open != d.Open {
+				c.fail("descriptor pairing or finality mismatch")
+			}
+		}
 		if len(d.Supers) > 1 {
 			c.fail("multiple supertypes")
 		}
@@ -69,6 +88,14 @@ func (c *context) checkTypeGroup(g module.TypeGroup, maximum uint32) {
 			}
 			if len(m.Types[i].Params) != 0 || len(m.Types[i].Results) != 0 {
 				c.fail("nonfunction signature")
+			}
+		case module.ContinuationKind:
+			if c.features&wasm.StackSwitching == 0 || len(d.Fields) != 0 || len(m.Types[i].Params) != 0 || len(m.Types[i].Results) != 0 {
+				c.fail("invalid continuation type")
+			}
+			c.index(d.Continuation, bound, "continuation function type")
+			if m.TypeDef(d.Continuation).Kind != module.FunctionKind {
+				c.fail("continuation function type required")
 			}
 		default:
 			c.fail("unknown composite type")
@@ -104,7 +131,20 @@ func (c *context) structuralSubtype(child, parent uint32) {
 	if a.Kind != b.Kind {
 		c.fail("supertype kind mismatch")
 	}
-	if a.Kind == module.FunctionKind {
+	for i, use := range []uint64{a.Descriptor, a.Describes} {
+		parentUse := b.Descriptor
+		if i == 1 {
+			parentUse = b.Describes
+		}
+		if (use == 0) != (parentUse == 0) || use != 0 && !c.matches(c.m.Reference(uint32(use-1), false), c.m.Reference(uint32(parentUse-1), false)) {
+			c.fail("descriptor subtype square mismatch")
+		}
+	}
+	if a.Kind == module.ContinuationKind {
+		if !c.matches(c.m.Reference(a.Continuation, false), c.m.Reference(b.Continuation, false)) {
+			c.fail("continuation function subtype")
+		}
+	} else if a.Kind == module.FunctionKind {
 		f, g := c.m.Types[child], c.m.Types[parent]
 		if len(f.Params) != len(g.Params) || len(f.Results) != len(g.Results) {
 			c.fail("function subtype arity")
