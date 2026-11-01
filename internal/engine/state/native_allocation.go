@@ -103,19 +103,29 @@ func (s *Store) FinishNativeAllocations(types []uint32) error {
 	var layouts [nativeabi.HeapAllocationBatch]*heapLayout
 	var identities [nativeabi.HeapAllocationBatch]uint32
 	offset, bytes := h.used, uint64(0)
+	previous := ^uint64(0)
+	var typ uint32
+	var layout *heapLayout
 	for i, ref := range refs[:count] {
 		at := uint64(uint32(ref)) * 4
 		local := h.views[at+3]
 		if h.views[at] != ref || local >= uint64(len(types)) || s.heap[uint32(ref)].Object != nil {
 			return wasm.ErrInvalid
 		}
-		typ := types[local]
-		layout, err := s.layout(typ)
-		if err != nil {
-			return err
+		if local != previous {
+			typ = types[local]
+			var err error
+			layout, err = s.layout(typ)
+			if err != nil {
+				return err
+			}
+			definition := s.registry.Types[typ].Definition
+			if definition.Kind != module.StructKind || definition.Descriptor != 0 || definition.Describes != 0 || len(definition.Fields) > nativeabi.MaxNativeStructFields {
+				return wasm.ErrInvalid
+			}
+			previous = local
 		}
-		definition := s.registry.Types[typ].Definition
-		if definition.Kind != module.StructKind || definition.Descriptor != 0 || definition.Describes != 0 || len(definition.Fields) > nativeabi.MaxNativeStructFields || h.views[at+2] != uint64(len(definition.Fields)) || layout.size > end-offset {
+		if h.views[at+2] != uint64(len(layout.widths)) || layout.size > end-offset {
 			return wasm.ErrInvalid
 		}
 		address := uint64(0)
