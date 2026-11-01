@@ -12,12 +12,17 @@ import (
 // objects contain typed handles; neither native code nor the collector stores
 // Go pointers in integer-valued guest frames.
 func (s *Store) GC(ctx context.Context, in *Instance, ins *module.Instr, args []value.Value, roots ...func(func(wasm.ValueType, value.Value))) (value.Value, error) {
-	switch ins.Op & 0xffff {
-	case 2, 3, 4, 5, 11, 12, 13, 14, 15, 28, 29, 30, 34:
-		return s.gcAccess(in, ins, args)
-	default:
-		return s.gcSlow(ctx, in, ins, args, roots...)
+	if n := GCAccessArity(ins.Op); n != 0 {
+		var b, c value.Value
+		if n > 1 {
+			b = args[1]
+		}
+		if n > 2 {
+			c = args[2]
+		}
+		return s.GCAccess(in, ins, args[0], b, c)
 	}
+	return s.gcSlow(ctx, in, ins, args, roots...)
 }
 
 // Allocation and bulk/cast operations keep their existing safepoint contract.

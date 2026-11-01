@@ -307,21 +307,31 @@ frames:
 				continue
 			}
 			if in.Op>>16 == 0xfb {
-				var local [5]value.Value
-				operands := local[:0]
-				if int(in.Count) > cap(operands) {
-					operands = make([]value.Value, 0, in.Count)
-				}
-				for _, slot := range code.Args[in.Extra : in.Extra+in.Count] {
-					operands = append(operands, values[int(slot)])
-				}
 				var err error
-				if e.store.HeapSafepoint != nil {
-					// Embedding Stores already retain all active executions. Avoid
-					// constructing an escaping visitor that their collector ignores.
-					result, err = e.store.GC(e.context, instance, im, operands)
+				if n := state.GCAccessArity(in.Op); n != 0 {
+					args := code.Args[in.Extra : in.Extra+in.Count]
+					var b, c value.Value
+					if n > 1 {
+						b = values[int(args[1])]
+					}
+					if n > 2 {
+						c = values[int(args[2])]
+					}
+					result, err = e.store.GCAccess(instance, im, values[int(args[0])], b, c)
 				} else {
-					result, err = e.store.GC(e.context, instance, im, operands, e.RetainedValues)
+					var local [5]value.Value
+					operands := local[:0]
+					if int(in.Count) > cap(operands) {
+						operands = make([]value.Value, 0, in.Count)
+					}
+					for _, slot := range code.Args[in.Extra : in.Extra+in.Count] {
+						operands = append(operands, values[int(slot)])
+					}
+					if e.store.HeapSafepoint != nil {
+						result, err = e.store.GC(e.context, instance, im, operands)
+					} else {
+						result, err = e.store.GC(e.context, instance, im, operands, e.RetainedValues)
+					}
 				}
 				if err != nil {
 					var t *wasm.Trap
