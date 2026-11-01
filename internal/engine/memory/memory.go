@@ -167,12 +167,7 @@ func (m *Memory) fill(dst uint64, b byte, count uint64) bool {
 	if b == 0 {
 		clear(data)
 	} else if len(data) != 0 {
-		data[0] = b
-		// Expand an initialized prefix with the compilers' bulk-copy primitive.
-		// Adding the copied count keeps the last, partial block within bounds.
-		for initialized := 1; initialized < len(data); {
-			initialized += copy(data[initialized:], data[:initialized])
-		}
+		fillNonzero(data, b)
 	}
 	return true
 }
