@@ -162,3 +162,59 @@ explicit network authority and traps at the guest's denial assertion without it.
 API, ownership, limits, cancellation, readiness, FIN, DNS and both IP families
 execute on both owned backends under Go/LLGo. Full world/toolchain and HTTP
 acceptance remain open.
+
+
+## HTTP providers
+
+`NewHTTP(sockets, HTTPConfig)` binds the pinned types (35 operations), async
+client.send and async handler.handle. Fields and nominal request/response/options
+resources implement the P3 variants and ownership rules, including immutable
+header views, independent clones, request-option children and consuming body
+accessors. Pure header storage is shared with P2; wire bindings remain versioned.
+
+A message owns optional native byte contents and an original trailers future.
+An affine source anchor retains these endpoints until send/consume/drop. Body,
+trailers, handling-result and transmission futures have independent leases.
+Closing a transmission future does not cancel the message. A scheduled trailer
+observer consumes its future without retaining a callback stack; an early error
+interrupts pending body I/O. Trailer results resolve only after body closure.
+Dropping or failing either consumer propagates typed failure and reclaims the
+remaining endpoints. The canonical stream status and detailed HTTP error future
+remain separate contracts.
+
+Client requests require separate URL and resolved-connection grants. External
+DNS uses the explicit socket resolver policy. No proxy, credentials, filesystem,
+network or environment authority is inherited. Callback panic denies/fails the
+operation. TLS trust configuration is cloned. Connect/first-byte/between-bytes
+timeouts, declared content length, headers, worker/request/message/resource
+limits and nonreused representation IDs bound work across Stores.
+
+The outbound wire profile is HTTP/1.1, including HTTPS. P3 trailer names may only
+become available at body EOF. Announcing them before sending would require
+buffering the complete body; Go's HTTP/2 server discards unannounced trailers.
+The provider therefore uses HTTP/1.1 chunked transfer and validates declared
+length independently. Broader outbound wire-protocol support remains explicit
+future work, not a silent loss of trailers. The server-facing HTTPHandler uses
+the embedding server's standard HTTP protocol support.
+
+Guest byte batches enter a zero-buffer pipe through the existing scheduler;
+network goroutines never enter guest code. Physical message readers are closed
+by a bounded reclaimer. Operation completion retains a separate late-result
+lease through publication or abandonment. Provider Close revokes endpoints;
+WaitClosed joins admitted work and physical cleanup. Close/wait instances and
+HTTP, then Sockets, then IO before releasing external storage.
+
+`CallIncoming` checks the async guest handler and transfers its response as soon
+as the result is available. The invocation keeps driving guest producers while
+the external consumer reads. Response Body.Close cancels and joins the invocation.
+`HTTPHandler` gives each request its own Store/owners through an explicit factory.
+A failed invocation requires discarding that request-scoped instance.
+
+Six fixtures are generated from the pinned WIT graph and independently validated
+by wasm-tools 1.258.0. They include malformed contracts, a real outgoing Core
+guest and an early-result server guest with a suspended byte producer. Wasmtime
+48.0.1 executes the outgoing request (204) and serves the streaming guest (200,
+`hello`). API/provider tests cover both owned backends, Go/LLGo, TLS, DNS, late
+trailers, length/progress errors, early replies, quotas, cancellation and shutdown.
+These checks do not close complete-world, independent language-toolchain, cm64
+or full conformance acceptance. Optimization remains deferred.

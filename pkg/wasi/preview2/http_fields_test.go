@@ -10,79 +10,79 @@ import (
 )
 
 func httpFieldTestLimits() httpFieldLimits {
-	return httpFieldLimits{count: 8, bytes: 256, forbidden: map[string]bool{"x-denied": true}}
+	return httpFieldLimits{Count: 8, Bytes: 256, Forbidden: map[string]bool{"x-denied": true}}
 }
 func TestHTTPFieldsBytesCaseOrderAndCopies(t *testing.T) {
-	h, err := newHTTPFields(httpFieldTestLimits(), []httpField{{"X-First", "\t\x80"}, {"x-first", ""}, {"Second", "two"}}, false)
+	h, err := newHTTPFields(httpFieldTestLimits(), []httpField{{Name: "X-First", Value: "\t\x80"}, {Name: "x-first", Value: ""}, {Name: "Second", Value: "two"}}, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	values := h.values("X-FIRST")
+	values := h.Values("X-FIRST")
 	if len(values) != 2 || values[0] != "\t\x80" || values[1] != "" {
 		t.Fatal(values)
 	}
-	if !h.has("second") || h.has("missing") || h.has("bad name") || len(h.values("bad name")) != 0 {
+	if !h.Has("second") || h.Has("missing") || h.Has("bad name") || len(h.Values("bad name")) != 0 {
 		t.Fatal("invalid lookup semantics")
 	}
-	entries := h.entries()
-	if len(entries) != 3 || entries[0].name != "X-First" || entries[1].name != "x-first" {
+	entries := h.Entries()
+	if len(entries) != 3 || entries[0].Name != "X-First" || entries[1].Name != "x-first" {
 		t.Fatal(entries)
 	}
-	entries[0].name = "mutated"
+	entries[0].Name = "mutated"
 	values[0] = "mutated"
-	if h.entries()[0].name != "X-First" || h.values("x-first")[0] != "\t\x80" {
+	if h.Entries()[0].Name != "X-First" || h.Values("x-first")[0] != "\t\x80" {
 		t.Fatal("aliased snapshot")
 	}
-	if err := h.mutate("x-FIRST", []string{"replacement", ""}, false); err != nil {
+	if err := h.Mutate("x-FIRST", []string{"replacement", ""}, false); err != nil {
 		t.Fatal(err)
 	}
-	if got := h.entries(); len(got) != 3 || got[0].name != "Second" || got[1].name != "x-FIRST" || got[2].value != "" {
+	if got := h.Entries(); len(got) != 3 || got[0].Name != "Second" || got[1].Name != "x-FIRST" || got[2].Value != "" {
 		t.Fatal(got)
 	}
-	if err := h.mutate("x-First", []string{"append"}, true); err != nil {
+	if err := h.Mutate("x-First", []string{"append"}, true); err != nil {
 		t.Fatal(err)
 	}
-	clone := h.clone()
-	if err := clone.mutate("X-FIRST", nil, false); err != nil {
+	clone := h.Clone()
+	if err := clone.Mutate("X-FIRST", nil, false); err != nil {
 		t.Fatal(err)
 	}
-	if clone.has("x-first") || !h.has("x-first") {
+	if clone.Has("x-first") || !h.Has("x-first") {
 		t.Fatal("clone shares mutation")
 	}
-	if err := h.mutate("absent", nil, false); err != nil {
+	if err := h.Mutate("absent", nil, false); err != nil {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"", "bad name", "a:b", "\x00", "é"} {
-		if h.has(name) || len(h.values(name)) != 0 {
+		if h.Has(name) || len(h.Values(name)) != 0 {
 			t.Fatal(name)
 		}
-		if err := h.mutate(name, nil, false); !errors.Is(err, httpHeaderSyntax) {
+		if err := h.Mutate(name, nil, false); !errors.Is(err, httpHeaderSyntax) {
 			t.Fatal(name, err)
 		}
 	}
 }
 func TestHTTPFieldsImmutableForbiddenLimitsAndAtomicFailure(t *testing.T) {
 	limits := httpFieldTestLimits()
-	immutable, err := newHTTPFields(limits, []httpField{{"x-denied", "secret"}, {"allowed", "yes"}}, true)
+	immutable, err := newHTTPFields(limits, []httpField{{Name: "x-denied", Value: "secret"}, {Name: "allowed", Value: "yes"}}, true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if immutable.has("x-denied") || !immutable.has("ALLOWED") {
-		t.Fatal(immutable.entries())
+	if immutable.Has("x-denied") || !immutable.Has("ALLOWED") {
+		t.Fatal(immutable.Entries())
 	}
-	if err := immutable.mutate("bad name", nil, false); !errors.Is(err, httpHeaderImmutable) {
+	if err := immutable.Mutate("bad name", nil, false); !errors.Is(err, httpHeaderImmutable) {
 		t.Fatal(err)
 	}
-	clone := immutable.clone()
-	if err := clone.mutate("new", []string{"value"}, true); err != nil {
+	clone := immutable.Clone()
+	if err := clone.Mutate("new", []string{"value"}, true); err != nil {
 		t.Fatal(err)
 	}
-	for _, fields := range [][]httpField{{{"bad name", "ok"}}, {{"ok", "bad\r\nvalue"}}, {{"ok", "\x7f"}}} {
+	for _, fields := range [][]httpField{{{Name: "bad name", Value: "ok"}}, {{Name: "ok", Value: "bad\r\nvalue"}}, {{Name: "ok", Value: "\x7f"}}} {
 		if _, err := newHTTPFields(limits, fields, false); !errors.Is(err, httpHeaderSyntax) {
 			t.Fatal(fields, err)
 		}
 	}
-	if _, err := newHTTPFields(limits, []httpField{{"X-Denied", "no"}}, false); !errors.Is(err, httpHeaderForbidden) {
+	if _, err := newHTTPFields(limits, []httpField{{Name: "X-Denied", Value: "no"}}, false); !errors.Is(err, httpHeaderForbidden) {
 		t.Fatal(err)
 	}
 	if _, err := newHTTPFields(httpFieldLimits{}, nil, false); !errors.Is(err, wasm.ErrLimit) {
@@ -91,10 +91,10 @@ func TestHTTPFieldsImmutableForbiddenLimitsAndAtomicFailure(t *testing.T) {
 	if _, err := newHTTPFields(limits, make([]httpField, 9), false); !errors.Is(err, wasm.ErrLimit) {
 		t.Fatal(err)
 	}
-	if _, err := newHTTPFields(limits, []httpField{{"a", strings.Repeat("x", 256)}}, false); !errors.Is(err, wasm.ErrLimit) {
+	if _, err := newHTTPFields(limits, []httpField{{Name: "a", Value: strings.Repeat("x", 256)}}, false); !errors.Is(err, wasm.ErrLimit) {
 		t.Fatal(err)
 	}
-	h, err := newHTTPFields(httpFieldLimits{count: 2, bytes: 8, forbidden: limits.forbidden}, []httpField{{"a", "1"}}, false)
+	h, err := newHTTPFields(httpFieldLimits{Count: 2, Bytes: 8, Forbidden: limits.Forbidden}, []httpField{{Name: "a", Value: "1"}}, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,17 +111,17 @@ func TestHTTPFieldsImmutableForbiddenLimitsAndAtomicFailure(t *testing.T) {
 		{strings.Repeat("a", 9), nil, false, wasm.ErrLimit},
 	}
 	for _, c := range cases {
-		if err := h.mutate(c.name, c.values, c.append); !errors.Is(err, c.want) {
+		if err := h.Mutate(c.name, c.values, c.append); !errors.Is(err, c.want) {
 			t.Fatal(c, err)
 		}
-		if h.entries()[0] != (httpField{"a", "1"}) {
+		if h.Entries()[0] != (httpField{Name: "a", Value: "1"}) {
 			t.Fatal("failed mutation changed fields")
 		}
 	}
-	if h.has(strings.Repeat("a", 9)) || len(h.values(strings.Repeat("a", 9))) != 0 {
+	if h.Has(strings.Repeat("a", 9)) || len(h.Values(strings.Repeat("a", 9))) != 0 {
 		t.Fatal("unbounded lookup")
 	}
-	if err := clone.mutate("x-Denied", []string{"no"}, false); !errors.Is(err, httpHeaderForbidden) {
+	if err := clone.Mutate("x-Denied", []string{"no"}, false); !errors.Is(err, httpHeaderForbidden) {
 		t.Fatal(err)
 	}
 	for _, e := range []httpHeaderError{httpHeaderSyntax, httpHeaderForbidden, httpHeaderImmutable} {
@@ -141,12 +141,12 @@ func TestHTTPFieldsConcurrentSnapshotsAndMutations(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < 100; j++ {
-				if err := h.mutate("x", []string{"value"}, false); err != nil {
+				if err := h.Mutate("x", []string{"value"}, false); err != nil {
 					t.Error(err)
 				}
-				_ = h.values("X")
-				_ = h.entries()
-				_ = h.clone()
+				_ = h.Values("X")
+				_ = h.Entries()
+				_ = h.Clone()
 			}
 		}()
 	}

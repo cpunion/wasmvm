@@ -74,6 +74,7 @@ type callerState struct {
 	instance *Instance
 	function *Function
 	created  []*Resource
+	reads    []*pendingHostRead
 	ctx      context.Context
 }
 

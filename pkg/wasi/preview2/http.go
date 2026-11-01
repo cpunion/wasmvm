@@ -148,13 +148,13 @@ func NewHTTP(network *Network, config HTTPConfig) (*HTTP, error) {
 	}
 	ctx, cancel := context.WithCancel(network.ctx)
 	p := &HTTP{network: network, config: config, clock: clock, ctx: ctx, cancel: cancel, next: 1, entries: map[uint32]*httpEntry{}, bodies: map[*httpBody]bool{}, done: make(chan struct{})}
-	p.fields = httpFieldLimits{count: config.MaxHeaderFields, bytes: uint64(config.MaxHeaderBytes), forbidden: map[string]bool{}}
+	p.fields = httpFieldLimits{Count: config.MaxHeaderFields, Bytes: uint64(config.MaxHeaderBytes), Forbidden: map[string]bool{}}
 	for _, name := range config.ForbiddenHeaders {
 		if !httpToken(name) {
 			cancel()
 			return nil, wasm.ErrInvalid
 		}
-		p.fields.forbidden[httpLower(name)] = true
+		p.fields.Forbidden[httpLower(name)] = true
 	}
 	p.config.ForbiddenHeaders = append([]string(nil), config.ForbiddenHeaders...)
 	if config.TLSConfig != nil {

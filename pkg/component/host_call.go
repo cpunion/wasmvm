@@ -13,6 +13,7 @@ type hostCall struct {
 	codec         *canonical.Codec
 	args          []Value
 	created       []*Resource
+	reads         []*pendingHostRead
 	ctx           context.Context
 	cancel        context.CancelFunc
 	completion    *HostCompletion
@@ -57,6 +58,8 @@ func (h *hostCall) expire(c *Caller) {
 	c.mu.Unlock()
 	h.created = append(h.created, c.created...)
 	c.created = nil
+	h.reads = append(h.reads, c.reads...)
+	c.reads = nil
 }
 func (h *hostCall) invoke(core *vm.Caller, fn func(*Caller) (*Value, error)) (*Value, error) {
 	c := h.caller(core)
@@ -108,6 +111,10 @@ func (h *hostCall) finish(core *vm.Caller, complete bool, err error) error {
 	h.created = nil
 	h.args = nil
 	guard := cleanupGuard{}
+	for _, read := range h.reads {
+		guard.run(func() { read.abort(core) })
+	}
+	h.reads = nil
 	if h.completion != nil {
 		guard.run(h.completion.close)
 	}

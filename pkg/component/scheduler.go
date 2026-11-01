@@ -49,7 +49,10 @@ func (in *Instance) scheduler() *taskScheduler {
 		in.tasks = &taskScheduler{}
 	}
 	if in.tasks.wake == nil {
-		in.tasks.wake = make(chan struct{}, 1)
+		if in.taskWake == nil {
+			in.taskWake = make(chan struct{}, 1)
+		}
+		in.tasks.wake = in.taskWake
 	}
 	return in.tasks
 }
@@ -418,6 +421,9 @@ func liftResult(codec *canonical.Codec, plan *validate.CanonicalFunction, values
 }
 
 func (in *Instance) stepTasks(c *vm.Caller) (bool, error) {
+	if err := in.flushSourceCleanup(c); err != nil {
+		return false, err
+	}
 	if in.tasks == nil {
 		return false, nil
 	}
@@ -468,6 +474,11 @@ func (in *Instance) awaitTasksContext(c *vm.Caller, ctx context.Context, ready f
 func (in *Instance) finishTasks(c *vm.Caller, failed *error, complete *bool) {
 	guard := cleanupGuard{panicked: recover()}
 	if in.tasks == nil {
+		guard.run(func() {
+			if err := in.flushSourceCleanup(c); *failed == nil {
+				*failed = err
+			}
+		})
 		guard.finish()
 		return
 	}
@@ -507,5 +518,10 @@ func (in *Instance) finishTasks(c *vm.Caller, failed *error, complete *bool) {
 		}
 	}
 	in.tasks = nil
+	guard.run(func() {
+		if err := in.flushSourceCleanup(c); *failed == nil {
+			*failed = err
+		}
+	})
 	guard.finish()
 }

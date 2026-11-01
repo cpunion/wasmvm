@@ -607,6 +607,18 @@ late-result leases, cancellation and suspended shutdown are tested. HTTP, comple
 worlds, independent language toolchains and remaining cm64/conformance contracts
 remain functional acceptance work; optimization remains deferred.
 
+The P3 HTTP provider binds all 37 types/client/handler operations. Native body
+streams, trailer/transmission futures, immutable metadata/options, explicit URL
+and resolved-connect authority, streaming client/server embedding, cancellation,
+physical quotas and deferred cleanup share the component/IO substrate. A
+nonblocking endpoint-read completion prevents sibling body/trailer waits from
+retaining a host callback stack. Six independently validated fixtures include
+actual outgoing and streaming-server Core guests, also executed by Wasmtime
+48.0.1. The outbound wire profile uses HTTP/1.1 for late trailer names; HTTPS
+is supported. Complete CLI/proxy world assembly, independent language toolchains,
+cm64 local borrows and full conformance remain functional work. M6 and deferred
+performance acceptance stay open.
+
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 
 ## M7 — Further optimization and experimental features

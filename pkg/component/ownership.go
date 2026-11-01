@@ -251,7 +251,8 @@ func (in *Instance) discardResource(ref *Resource) {
 	}
 }
 
-func (in *Instance) dropResource(c *vm.Caller, ref *Resource) error {
+func (in *Instance) dropResource(c *vm.Caller, ref *Resource) (err error) {
+	defer in.finishSourceCleanup(c, &err)
 	table, identity, id, owner, borrow, err := canonical.ReferenceInfo(ref)
 	if err != nil {
 		return err
@@ -308,6 +309,7 @@ func returnBorrows(codec *canonical.Codec) error {
 // Cleanup always consumes unpublished ownership. Host destructors still get a
 // cancellation context; failed/canceled guest code is never reentered.
 func (in *Instance) cleanupResource(core *vm.Caller, ref *Resource) (err error) {
+	defer in.finishSourceCleanup(core, &err)
 	table, identity, id, owner, borrow, err := canonical.ReferenceInfo(ref)
 	if err != nil || borrow || table != in.hostResources {
 		return nil

@@ -10,15 +10,20 @@ import (
 // DropAsync consumes a host-owned readable future/stream endpoint. It notifies
 // its writable peer; copying endpoints must first finish or cancel their copy.
 func (in *Instance) DropAsync(ctx context.Context, ref *Resource, options CallOptions) (uint64, error) {
-	return in.store.WithCaller(ctx, options, func(*vm.Caller) error { return in.dropAsync(ref) })
+	return in.store.WithCaller(ctx, options, func(c *vm.Caller) (err error) {
+		defer in.finishSourceCleanup(c, &err)
+		return in.dropAsync(ref)
+	})
 }
-func (c *Caller) DropAsync(ref *Resource) error {
-	if err := c.enter(); err != nil {
+func (c *Caller) DropAsync(ref *Resource) (err error) {
+	if err = c.enter(); err != nil {
 		return err
 	}
 	defer c.mu.Unlock()
+	defer c.instance.finishSourceCleanup(c.core, &err)
 	return c.instance.dropAsync(ref)
 }
+
 func (in *Instance) dropAsync(ref *Resource) error {
 	table, _, id, owner, borrow, err := canonical.ReferenceInfo(ref)
 	if err != nil {
