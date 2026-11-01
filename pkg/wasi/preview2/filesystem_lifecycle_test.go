@@ -146,8 +146,19 @@ func TestFileSystemErrorDowncastAndGuestRevocation(t *testing.T) {
 	imports := fsImports(t, p)
 	original := imports.Instances[FileSystemPreopensInterface].Functions["get-directories"]
 	imports.Instances[FileSystemPreopensInterface].Functions["get-directories"] = func(c *component.Caller, args []component.Value) (*component.Value, error) {
-		for _, cause := range []error{errors.New("unrelated host failure"), &FileSystemError{Code: FSAccess}} {
-			value, err := process.errors.NewError(c, cause)
+		for _, test := range []struct {
+			cause error
+			code  FileSystemErrorCode
+			typed bool
+		}{
+			{cause: errors.New("unrelated host failure")},
+			{cause: &NetworkError{Code: NetworkAccessDenied, Cause: unix.EACCES}},
+			{cause: &httpError{value: httpErr("internal-error").value, cause: unix.EACCES}},
+			{cause: unix.Errno(9999)},
+			{cause: &FileSystemError{Code: FSAccess}, code: FSAccess, typed: true},
+			{cause: &os.PathError{Op: "read", Path: "stdin", Err: unix.EISDIR}, code: FSIsDirectory, typed: true},
+		} {
+			value, err := process.errors.NewError(c, test.cause)
 			if err != nil {
 				return nil, err
 			}
@@ -155,8 +166,7 @@ func TestFileSystemErrorDowncastAndGuestRevocation(t *testing.T) {
 			if err != nil {
 				return nil, err
 			}
-			_, typed := cause.(*FileSystemError)
-			if typed && (code.Case != 1 || code.Elements[0].Bits != uint64(FSAccess)) || !typed && code.Case != 0 {
+			if test.typed && (code.Case != 1 || code.Elements[0].Bits != uint64(test.code)) || !test.typed && code.Case != 0 {
 				return nil, errors.New("incorrect filesystem error provenance")
 			}
 			if err = c.DropResource(value.Resource); err != nil {

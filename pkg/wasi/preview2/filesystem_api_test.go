@@ -196,21 +196,25 @@ func TestFileSystemReadOnlyDirectory(t *testing.T) {
 	a := fsAPI{t, fsInstance(t, p, "interpreter", "filesystem-api")}
 	root := a.root()
 	for _, flags := range []uint64{fsWrite, fsMutate} {
-		a.fail("open-at", FSReadOnly, root, component.Value{}, component.Value{Text: "data"}, component.Value{}, component.Value{Bits: flags})
+		a.fail("open-at", FSNotPermitted, root, component.Value{}, component.Value{Text: "data"}, component.Value{}, component.Value{Bits: flags})
 	}
 	for _, flags := range []uint64{1, 8} {
-		a.fail("open-at", FSReadOnly, root, component.Value{}, component.Value{Text: "data"}, component.Value{Bits: flags}, component.Value{Bits: fsRead})
+		a.fail("open-at", FSNotPermitted, root, component.Value{}, component.Value{Text: "data"}, component.Value{Bits: flags}, component.Value{Bits: fsRead})
 	}
 	for _, method := range []string{"create-directory-at", "remove-directory-at", "unlink-file-at"} {
-		a.fail(method, FSReadOnly, root, component.Value{Text: "sub"})
+		a.fail(method, FSNotPermitted, root, component.Value{Text: "sub"})
 	}
-	a.fail("set-times", FSReadOnly, root, component.Value{}, component.Value{})
-	a.fail("set-times-at", FSReadOnly, root, component.Value{}, component.Value{Text: "data"}, component.Value{}, component.Value{})
-	a.fail("symlink-at", FSReadOnly, root, component.Value{Text: "data"}, component.Value{Text: "new"})
-	a.fail("rename-at", FSReadOnly, root, component.Value{Text: "data"}, root, component.Value{Text: "new"})
-	a.fail("link-at", FSReadOnly, root, component.Value{}, component.Value{Text: "data"}, root, component.Value{Text: "new"})
+	a.fail("set-times", FSNotPermitted, root, component.Value{}, component.Value{})
+	a.fail("set-times-at", FSNotPermitted, root, component.Value{}, component.Value{Text: "data"}, component.Value{}, component.Value{})
+	a.fail("symlink-at", FSNotPermitted, root, component.Value{Text: "data"}, component.Value{Text: "new"})
+	a.fail("rename-at", FSNotPermitted, root, component.Value{Text: "data"}, root, component.Value{Text: "new"})
+	a.fail("link-at", FSNotPermitted, root, component.Value{}, component.Value{Text: "data"}, root, component.Value{Text: "new"})
 	dir := a.open(root, ".", 2, 0)
-	a.fail("read-directory", FSNotPermitted, dir)
+	entries := a.ok("read-directory", dir)
+	a.drop(entries)
+	if flags := a.ok("get-flags", dir); flags.Bits&fsRead == 0 {
+		t.Fatal("default read-only open lost its effective access mode", flags)
+	}
 	a.ok("sync", root)
 	a.ok("sync-data", root)
 	other := a.open(root, "data", 0, fsRead)

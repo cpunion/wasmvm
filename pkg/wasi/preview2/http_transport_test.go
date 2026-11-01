@@ -7,7 +7,9 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -18,6 +20,24 @@ import (
 	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/component"
 )
+
+func TestHTTPResponseTransportErrorPreservesPhase(t *testing.T) {
+	for _, test := range []struct {
+		cause error
+		name  string
+	}{
+		{&net.DNSError{Err: "no such host", IsNotFound: true}, "DNS-error"},
+		{&net.OpError{Op: "read", Err: context.DeadlineExceeded}, "connection-read-timeout"},
+		{&httpError{value: httpErr("connection-timeout").value, cause: context.DeadlineExceeded}, "connection-timeout"},
+		{errors.New("malformed response"), "HTTP-protocol-error"},
+	} {
+		err := httpResponseTransportError(test.cause)
+		var typed *httpError
+		if !errors.As(err, &typed) || typed.value.Case != httpErr(test.name).value.Case || !errors.Is(err, test.cause) {
+			t.Fatal(test.name, err)
+		}
+	}
+}
 
 func httpLoopbackURL(_ context.Context, u *url.URL) error {
 	if u.Hostname() == "127.0.0.1" || u.Hostname() == "::1" || u.Hostname() == "localhost" {

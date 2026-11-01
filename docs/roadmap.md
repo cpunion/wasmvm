@@ -21,7 +21,11 @@ The final increments add local i64 borrows, updated empty-buffer semantics and
 P2/P3 CLI commands. Those increments have merged after their final target CI.
 An expanded inventory adds 60 unchanged upstream P3 consumers and fixes actual
 readiness, stream ownership, resource retirement, socket closure, HTTP forwarding
-and body-size failures. Its final target CI and merged evidence remain required.
+and body-size failures. PR #83 merged after the exact final head passed all four
+target jobs and its 180 execution reports, artifact digests and review state
+were audited. A subsequent inventory adds all 92 stable P2 consumers, retaining
+the three excluded draft interfaces explicitly. Its final target validation
+and review remain required.
 Expanded WASI world conformance and all applicable performance acceptance remain
 open. Optional M7 proposals are outside this implemented scope.
 

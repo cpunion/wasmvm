@@ -5,6 +5,7 @@ package preview2
 import (
 	"errors"
 	"strings"
+	"syscall"
 	"unicode/utf8"
 
 	"github.com/cpunion/wasmvm/internal/wasi/host"
@@ -273,6 +274,21 @@ func (p *FileSystem) errorCode(c *component.Caller, args []component.Value) (*co
 	if errors.As(info.Cause, &cause) {
 		value.Case = 1
 		value.Elements = []component.Value{{Bits: uint64(cause.Code)}}
+	} else {
+		// Process IO can report OS errors without a filesystem provider
+		// wrapper, for example when stdin is an opened directory.
+		var errno syscall.Errno
+		var network *NetworkError
+		var httpFailure *httpError
+		if !errors.As(info.Cause, &network) && !errors.As(info.Cause, &httpFailure) && errors.As(info.Cause, &errno) {
+			for _, entry := range fileSystemErrnos {
+				if errors.Is(errno, entry.err) {
+					value.Case = 1
+					value.Elements = []component.Value{{Bits: uint64(entry.code)}}
+					break
+				}
+			}
+		}
 	}
 	return value, nil
 }

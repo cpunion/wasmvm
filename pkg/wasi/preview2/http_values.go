@@ -54,6 +54,11 @@ func httpErr(name string) *httpError {
 	}
 	return &httpError{value: v}
 }
+func httpSizeError(name string, actual uint64) *httpError {
+	err := httpErr(name)
+	err.value.Elements[0] = httpSome(component.Value{Bits: actual})
+	return err
+}
 func httpErrorResult(err error) component.Value {
 	var typed *httpError
 	if !errors.As(err, &typed) {

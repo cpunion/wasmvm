@@ -108,6 +108,11 @@ func TestResourceImportEqualityAndStoreAuthority(t *testing.T) {
 			t.Fatal("invalid resource binding published", in, err)
 		}
 	}
+	alias, err := m.Instantiate(nil, Imports{Resources: map[string]*HostResourceType{"a": a}}, CallOptions{})
+	if err != nil {
+		t.Fatal("equality import did not reuse the bound nominal identity", err)
+	}
+	alias.Close()
 	in, err := m.Instantiate(nil, Imports{Resources: map[string]*HostResourceType{"a": a, "b": a}}, CallOptions{})
 	if err != nil {
 		t.Fatal(err)

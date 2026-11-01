@@ -80,7 +80,7 @@ func fsTimestamps(at, mt component.Value) (uint64, uint64, uint32, error) {
 func fsWritable(d fsDescriptor) error {
 	if d.backing.directory != nil {
 		if d.flags&fsMutate == 0 {
-			return fsCode(FSReadOnly)
+			return fsCode(FSNotPermitted)
 		}
 	} else if d.flags&fsWrite == 0 {
 		return fsCode(FSNotPermitted)

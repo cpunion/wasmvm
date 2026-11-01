@@ -5,6 +5,7 @@ package preview2
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"net/url"
 	"sync"
@@ -313,7 +314,7 @@ func (p *HTTP) checkChildren(e *httpEntry) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if e.children != 0 {
-		return wasm.ErrTrap
+		return fmt.Errorf("%w: HTTP %s has live children", wasm.ErrTrap, httpResourceNames[e.kind])
 	}
 	return nil
 }
@@ -354,7 +355,7 @@ func (p *HTTP) drop(id uint32) error {
 	e.dropped = true
 	if e.children != 0 {
 		p.mu.Unlock()
-		return wasm.ErrTrap
+		return fmt.Errorf("%w: HTTP %s has live children", wasm.ErrTrap, httpResourceNames[e.kind])
 	}
 	var entries []*httpEntry
 	p.detach(e, &entries)

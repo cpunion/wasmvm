@@ -197,7 +197,10 @@ func (p *Poller) block(ctx context.Context, source PollSource) error {
 	}
 }
 func (p *Poller) wait(ctx context.Context, sources []PollSource) ([]component.Value, error) {
-	if len(sources) == 0 || uint64(len(sources)) > uint64(p.config.MaxPollItems) {
+	if len(sources) == 0 {
+		return nil, wasm.ErrTrap
+	}
+	if uint64(len(sources)) > uint64(p.config.MaxPollItems) {
 		return nil, wasm.ErrLimit
 	}
 	cases := make([]reflect.SelectCase, len(sources)+2)
@@ -272,7 +275,10 @@ func (p *Poller) Imports() component.Imports {
 		},
 		"poll": func(c *component.Caller, args []component.Value) (*component.Value, error) {
 			input := args[0].Elements
-			if len(input) == 0 || uint64(len(input)) > uint64(p.config.MaxPollItems) {
+			if len(input) == 0 {
+				return nil, wasm.ErrTrap
+			}
+			if uint64(len(input)) > uint64(p.config.MaxPollItems) {
 				return nil, wasm.ErrLimit
 			}
 			sources := make([]PollSource, len(input))

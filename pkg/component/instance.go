@@ -430,8 +430,14 @@ func (in *Instance) bind(types []validate.Extern, imports Imports) (map[string]i
 		case model.TypeSort:
 			if expected.Type.Kind == model.Resource {
 				host := imports.Resources[name]
+				// Equality imports carry an existing nominal identity; an alias
+				// needs no second host definition after that identity is bound.
+				if host == nil && in.importResourceIDs[expected.Type.Resource] != nil {
+					e.resource = in.importResourceIDs[expected.Type.Resource]
+					break
+				}
 				if host == nil || host.definition == nil {
-					return nil, vm.ErrLink
+					return nil, fmt.Errorf("%w: missing resource %q", vm.ErrLink, name)
 				}
 				rt := in.hostTypes[host.definition]
 				if rt == nil {
@@ -602,7 +608,7 @@ func (in *Instance) instantiate(caller *vm.Caller, component *closure, args map[
 				}
 				core, err := caller.Instantiate(l, m)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("Core instance %d: %w", d.Instance.Index, err)
 				}
 				info, err := m.Info()
 				if err != nil {
@@ -611,7 +617,7 @@ func (in *Instance) instantiate(caller *vm.Caller, component *closure, args map[
 				for _, e := range info.Exports {
 					ex, err := caller.Export(core, e.Name)
 					if err != nil {
-						return nil, err
+						return nil, fmt.Errorf("Core export %q: %w", e.Name, err)
 					}
 					exports[e.Name] = item{sort: model.CoreFunctionSort + model.Sort(e.Kind), core: ex}
 				}

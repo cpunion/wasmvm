@@ -25,6 +25,7 @@ func waitSource(ctx context.Context, source PollSource) error {
 	}
 }
 func (r *ioStream) failLocked(err error) {
+	err = normalizeStreamError(err)
 	r.closed = true
 	r.permit = 0
 	r.checked = false
@@ -65,7 +66,16 @@ func (r *ioStream) runOutput() {
 		}
 		r.notifyLocked()
 		dropped := r.dropped
+		finish := r.onDrain
+		if r.closed || r.ctx.Err() != nil {
+			r.onDrain = nil
+		} else {
+			finish = nil
+		}
 		r.mu.Unlock()
+		if finish != nil {
+			finish()
+		}
 		if dropped {
 			r.owner.finalize(r.id)
 		}
@@ -73,6 +83,29 @@ func (r *ioStream) runOutput() {
 	r.pumpOutput()
 	completed = true
 }
+
+// stopWrites revokes new write permits while preserving the accepted prefix.
+// The existing output worker invokes finish only after that prefix drains.
+func (r *ioStream) stopWrites(finish func()) {
+	r.mu.Lock()
+	if r.stopping {
+		r.mu.Unlock()
+		return
+	}
+	r.stopping, r.checked, r.permit = true, false, 0
+	if !r.running && (r.closed || len(r.queue) == 0 && !r.flushing) {
+		r.closed = true
+		r.notifyLocked()
+		r.mu.Unlock()
+		finish()
+		return
+	}
+	r.onDrain = finish
+	r.startWorkerLocked()
+	r.notifyLocked()
+	r.mu.Unlock()
+}
+
 func (r *ioStream) pumpOutput() {
 	for {
 		r.mu.Lock()
@@ -83,7 +116,16 @@ func (r *ioStream) pumpOutput() {
 		data := r.queue
 		flush := len(data) == 0 && r.flushing
 		if len(data) == 0 && !flush {
+			finish := r.onDrain
+			r.onDrain = nil
+			if r.stopping {
+				r.closed = true
+				r.notifyLocked()
+			}
 			r.mu.Unlock()
+			if finish != nil {
+				finish()
+			}
 			return
 		}
 		r.mu.Unlock()
@@ -94,9 +136,7 @@ func (r *ioStream) pumpOutput() {
 				err = errors.New("invalid output write count")
 			}
 			wouldBlock := errors.Is(err, ErrWouldBlock)
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrClosedPipe) {
-				err = io.ErrClosedPipe
-			}
+			err = normalizeStreamError(err)
 			r.mu.Lock()
 			if r.closed {
 				r.mu.Unlock()
@@ -120,9 +160,7 @@ func (r *ioStream) pumpOutput() {
 		} else {
 			err := r.source.output.Flush(r.ctx)
 			wouldBlock := errors.Is(err, ErrWouldBlock)
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrClosedPipe) {
-				err = io.ErrClosedPipe
-			}
+			err = normalizeStreamError(err)
 			r.mu.Lock()
 			if r.closed {
 				r.mu.Unlock()
@@ -150,7 +188,7 @@ func (r *ioStream) pumpOutput() {
 func (r *ioStream) checkWrite() (uint64, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if r.closed {
+	if r.closed || r.stopping {
 		return 0, io.ErrClosedPipe
 	}
 	free := uint64(0)
@@ -165,7 +203,7 @@ func (r *ioStream) write(data string) error { return r.enqueue(data, 0) }
 func (r *ioStream) enqueue(data string, zeroes uint64) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if r.closed {
+	if r.closed || r.stopping {
 		return io.ErrClosedPipe
 	}
 	if !r.checked || uint64(len(data)) > r.permit || zeroes > r.permit-uint64(len(data)) {
@@ -186,7 +224,7 @@ func (r *ioStream) enqueue(data string, zeroes uint64) error {
 func (r *ioStream) flush() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if r.closed {
+	if r.closed || r.stopping {
 		return io.ErrClosedPipe
 	}
 	r.flushing = true
@@ -225,6 +263,10 @@ func (r *ioStream) waitFlush(ctx context.Context) error {
 // this operation can complete on the active host call.
 func (r *ioStream) blockingWrite(ctx context.Context, data string) error {
 	r.mu.Lock()
+	if r.closed || r.stopping {
+		r.mu.Unlock()
+		return io.ErrClosedPipe
+	}
 	pending := r.running || len(r.queue) != 0 || r.flushing
 	r.checked = false
 	r.permit = 0
@@ -290,7 +332,7 @@ func (p outputPoll) Readiness() (bool, <-chan struct{}) {
 	r := p.stream
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	ready := r.closed || !r.flushing && uint64(len(r.queue)) < uint64(r.owner.config.MaxWriteBytes)
+	ready := r.closed || r.stopping || !r.flushing && uint64(len(r.queue)) < uint64(r.owner.config.MaxWriteBytes)
 	return ready, r.changed
 }
 

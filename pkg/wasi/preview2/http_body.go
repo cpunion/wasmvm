@@ -231,7 +231,17 @@ func (s *httpBodyPort) Write(ctx context.Context, data []byte) (int, error) {
 	if closed || s.body.ctx.Err() != nil {
 		return 0, io.ErrClosedPipe
 	}
-	return s.body.buffer.write(ctx, data)
+	n, err := s.body.buffer.writeChecked(ctx, data, func(actual uint64) error {
+		if s.body.expected != nil && actual > *s.body.expected {
+			return httpSizeError(s.body.errorName, actual)
+		}
+		return nil
+	})
+	var failure *httpError
+	if errors.As(err, &failure) {
+		s.body.finish(err, nil)
+	}
+	return n, err
 }
 func (s *httpBodyPort) Flush(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {

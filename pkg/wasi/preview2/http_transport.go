@@ -166,6 +166,19 @@ func httpTransportError(err error, fallback string) error {
 	e.cause = err
 	return e
 }
+
+// Dial already returns a typed connect/DNS failure. A remaining transport
+// timeout while waiting for response headers belongs to the read phase.
+func httpResponseTransportError(err error) error {
+	var typed *httpError
+	var timeout net.Error
+	if !errors.As(err, &typed) && errors.As(err, &timeout) && timeout.Timeout() {
+		failure := httpErr("connection-read-timeout")
+		failure.cause = err
+		return failure
+	}
+	return httpTransportError(err, "HTTP-protocol-error")
+}
 func (p *HTTP) fieldsFromHeader(header http.Header) (*httpFields, error) {
 	if uint64(len(header)) > uint64(p.config.MaxHeaderFields) {
 		return nil, wasm.ErrLimit
@@ -222,10 +235,10 @@ func (p *HTTP) requestURL(message *httpMessage) (*url.URL, error) {
 	if !message.authority.set || message.authority.value == "" {
 		return nil, httpErr("HTTP-request-URI-invalid")
 	}
-	path := "/"
-	if message.path.set && message.path.value != "" {
-		path = message.path.value
+	if !message.path.set || message.path.value == "" {
+		return nil, httpErr("HTTP-request-URI-invalid")
 	}
+	path := message.path.value
 	if strings.HasPrefix(path, "?") {
 		path = "/" + path
 	}
@@ -371,7 +384,7 @@ func (p *HTTP) sendRequest(c *component.Caller, args []component.Value) (compone
 		}
 		response, failed := transport.RoundTrip(request.WithContext(ctx))
 		if failed != nil {
-			p.completeResponse(future, nil, httpTransportError(failed, "HTTP-protocol-error"))
+			p.completeResponse(future, nil, httpResponseTransportError(failed))
 			message.body.close()
 			return
 		}

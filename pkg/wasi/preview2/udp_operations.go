@@ -242,6 +242,9 @@ func (p *UDP) receive(c *component.Caller, e *udpEntry, max uint64) (component.V
 	if max > uint64(p.config.MaxDatagrams) {
 		max = uint64(p.config.MaxDatagrams)
 	}
+	e.parent.mu.Lock()
+	peer := e.parent.remote
+	e.parent.mu.Unlock()
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	fd, err := e.file.begin(c.Context())
@@ -273,6 +276,11 @@ func (p *UDP) receive(c *component.Caller, e *udpEntry, max uint64) (component.V
 				break
 			}
 			return component.Value{}, err
+		}
+		// Kernels can retain datagrams queued before connect. A connected
+		// stream must still filter those packets against its current peer.
+		if peer != nil && address != *peer {
+			continue
 		}
 		data := string(e.buffer[:n])
 		// Policy callbacks must not run while holding stream/provider locks.

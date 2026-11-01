@@ -20,6 +20,8 @@ const TCPCreateInterface = "wasi:sockets/tcp-create-socket@0.2.12"
 // may run concurrently across Stores. An accepted connection inherits its
 // listener's grant. Socket creation alone grants no network access.
 type TCPConfig struct {
+	// DenyCreate rejects even socket allocation; operation grants remain separate.
+	DenyCreate              bool
 	MaxSockets              uint32
 	AllowBind, AllowConnect func(context.Context, SocketAddress) error
 }
@@ -61,21 +63,23 @@ const (
 )
 
 type tcpSocket struct {
-	mu            sync.Mutex
-	owner         *TCP
-	id            uint32
-	file          *socketFile
-	family        uint32
-	state         tcpState
-	operation     tcpOperation
-	failure       error
-	backlog       int
-	streams       bool
-	children      uint32 // guarded by provider.mu, including IO sources and pollables
-	dropped       bool   // guarded by provider.mu
-	read, write   *socketPoll
-	input, output *tcpSource
-	inherited     map[string]uint64
+	mu                          sync.Mutex
+	owner                       *TCP
+	id                          uint32
+	file                        *socketFile
+	family                      uint32
+	state                       tcpState
+	operation                   tcpOperation
+	failure                     error
+	backlog                     int
+	streams                     bool
+	children                    uint32 // pollable children; guarded by provider.mu
+	dropped                     bool   // guarded by provider.mu
+	read, write                 *socketPoll
+	input, output               *tcpSource
+	inherited                   map[string]uint64
+	readShutdown, writeShutdown bool
+	sources                     uint32 // independently owned IO views; guarded by provider.mu
 }
 
 func NewTCP(network *Network, config TCPConfig) (*TCP, error) {
@@ -245,23 +249,35 @@ func (p *TCP) drop(id uint32) error {
 	if s.children != 0 {
 		return wasm.ErrTrap
 	}
-	p.retire(s)
+	if s.sources == 0 {
+		p.retire(s)
+	}
 	return nil
 }
-func (p *TCP) child(s *tcpSocket) error {
+func (p *TCP) child(s *tcpSocket) error { return p.addChild(s, false) }
+func (p *TCP) addChild(s *tcpSocket, source bool) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.closed || s.dropped || p.sockets[s.id] != s {
 		return wasm.ErrClosed
 	}
-	s.children++
+	if source {
+		s.sources++
+	} else {
+		s.children++
+	}
 	return nil
 }
-func (p *TCP) release(s *tcpSocket) {
+func (p *TCP) release(s *tcpSocket) { p.releaseChild(s, false) }
+func (p *TCP) releaseChild(s *tcpSocket, source bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	s.children--
-	if !p.closed && s.dropped && s.children == 0 && p.sockets[s.id] == s {
+	if source {
+		s.sources--
+	} else {
+		s.children--
+	}
+	if !p.closed && s.dropped && s.children == 0 && s.sources == 0 && p.sockets[s.id] == s {
 		p.retire(s)
 	}
 }
@@ -277,6 +293,9 @@ func (s *tcpSocket) checkAddress(address SocketAddress, connect bool) error {
 }
 
 func tcpCreate(c *component.Caller, p *TCP, family uint32) (component.Value, error) {
+	if p.config.DenyCreate {
+		return component.Value{}, socketCode(NetworkAccessDenied)
+	}
 	if err := p.reserve(); err != nil {
 		return component.Value{}, err
 	}

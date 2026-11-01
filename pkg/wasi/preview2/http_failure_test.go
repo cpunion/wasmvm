@@ -178,6 +178,7 @@ func TestHTTPInvalidURIContentLengthAndTrailers(t *testing.T) {
 	a.ok("fields", "append", fields, component.Value{Text: "Content-Length"}, component.Value{Text: "bad"})
 	request := a.raw("[constructor]outgoing-request", fields)
 	a.ok("outgoing-request", "set-authority", request, httpSome(component.Value{Text: "localhost"}))
+	a.ok("outgoing-request", "set-path-with-query", request, httpSome(component.Value{Text: "/"}))
 	if v := a.call("outgoing", "handle", request, component.Value{}); v.Case != 1 || v.Elements[0].Case != 35 {
 		t.Fatal(v)
 	}

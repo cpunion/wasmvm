@@ -6,11 +6,105 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
+
+func TestIOStopWritesDrainsAcceptedPrefix(t *testing.T) {
+	buffer := NewOutputBuffer(2)
+	blocked := make(chan struct{}, 1)
+	_, stream := testIOStream(t, IOConfig{Stdout: notifyOutput{buffer, blocked}, MaxWriteBytes: 4}, false)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if n, err := stream.checkWrite(); err != nil || n != 4 {
+		t.Fatal(n, err)
+	}
+	if err := stream.write("abcd"); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-blocked:
+	case <-ctx.Done():
+		t.Fatal("output did not apply backpressure")
+	}
+	finished := make(chan struct{})
+	var count atomic.Uint32
+	finish := func() { count.Add(1); close(finished) }
+	stream.stopWrites(finish)
+	stream.stopWrites(finish)
+	if _, err := stream.checkWrite(); !errors.Is(err, io.ErrClosedPipe) {
+		t.Fatal(err)
+	}
+	if err := stream.write("e"); !errors.Is(err, io.ErrClosedPipe) {
+		t.Fatal(err)
+	}
+	if err := stream.flush(); !errors.Is(err, io.ErrClosedPipe) {
+		t.Fatal(err)
+	}
+	if err := stream.blockingWrite(ctx, "e"); !errors.Is(err, io.ErrClosedPipe) {
+		t.Fatal(err)
+	}
+	if ready, _ := (outputPoll{stream}).Readiness(); !ready {
+		t.Fatal("shutdown was not observable")
+	}
+	select {
+	case <-finished:
+		t.Fatal("closed before accepted prefix drained")
+	default:
+	}
+	if got := string(buffer.Drain()); got != "ab" {
+		t.Fatal(got)
+	}
+	select {
+	case <-finished:
+	case <-ctx.Done():
+		t.Fatal("shutdown did not finish")
+	}
+	if got := string(buffer.Drain()); got != "cd" || count.Load() != 1 {
+		t.Fatal(got, count.Load())
+	}
+}
+
+func TestIOStopWritesAfterFailureAndDrop(t *testing.T) {
+	for _, mode := range []string{"failed", "drop"} {
+		t.Run(mode, func(t *testing.T) {
+			buffer := NewOutputBuffer(1)
+			blocked := make(chan struct{}, 1)
+			p, stream := testIOStream(t, IOConfig{Stdout: notifyOutput{buffer, blocked}, MaxWriteBytes: 2}, false)
+			finished := make(chan struct{})
+			if mode == "failed" {
+				stream.mu.Lock()
+				stream.failLocked(errors.New("write failed"))
+				stream.mu.Unlock()
+				stream.stopWrites(func() { close(finished) })
+			} else {
+				if _, err := stream.checkWrite(); err != nil {
+					t.Fatal(err)
+				}
+				if err := stream.write("ab"); err != nil {
+					t.Fatal(err)
+				}
+				select {
+				case <-blocked:
+				case <-time.After(3 * time.Second):
+					t.Fatal("output did not block")
+				}
+				stream.stopWrites(func() { close(finished) })
+				if err := p.drop(stream.id); err != nil {
+					t.Fatal(err)
+				}
+			}
+			select {
+			case <-finished:
+			case <-time.After(3 * time.Second):
+				t.Fatal("shutdown callback was lost")
+			}
+		})
+	}
+}
 
 func testIOStream(t *testing.T, config IOConfig, input bool) (*IO, *ioStream) {
 	t.Helper()

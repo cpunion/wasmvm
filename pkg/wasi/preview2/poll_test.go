@@ -161,7 +161,7 @@ func TestPollSnapshotsNotificationsAndCancellation(t *testing.T) {
 	if _, err := p.wait(cancelCtx, []PollSource{b}); !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
-	if _, err := p.wait(ctx, nil); !errors.Is(err, wasm.ErrLimit) {
+	if _, err := p.wait(ctx, nil); !errors.Is(err, wasm.ErrTrap) {
 		t.Fatal(err)
 	}
 	if _, err := p.wait(ctx, []PollSource{a, a, a, a, a}); !errors.Is(err, wasm.ErrLimit) {
@@ -430,7 +430,11 @@ func TestPollQuotasAndEmptyInput(t *testing.T) {
 				}
 				_, expected = f.Call(nil, []component.Value{list}, component.CallOptions{})
 			}
-			if !errors.Is(expected, wasm.ErrLimit) {
+			want := wasm.ErrLimit
+			if kind == "empty" {
+				want = wasm.ErrTrap
+			}
+			if !errors.Is(expected, want) {
 				t.Fatal(kind, expected)
 			}
 			in.Close()

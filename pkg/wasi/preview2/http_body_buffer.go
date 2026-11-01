@@ -31,6 +31,9 @@ func newHTTPBodyBuffer(capacity uint32) (*httpBodyBuffer, error) {
 }
 func (b *httpBodyBuffer) notify() { close(b.changed); b.changed = make(chan struct{}) }
 func (b *httpBodyBuffer) write(ctx context.Context, data []byte) (int, error) {
+	return b.writeChecked(ctx, data, nil)
+}
+func (b *httpBodyBuffer) writeChecked(ctx context.Context, data []byte, check func(uint64) error) (int, error) {
 	if err := ctx.Err(); err != nil {
 		return 0, err
 	}
@@ -41,6 +44,17 @@ func (b *httpBodyBuffer) write(ctx context.Context, data []byte) (int, error) {
 	}
 	if len(data) == 0 {
 		return 0, nil
+	}
+	if uint64(len(data)) > ^uint64(0)-b.written {
+		return 0, wasm.ErrLimit
+	}
+	if check != nil {
+		if err := check(b.written + uint64(len(data))); err != nil {
+			b.finished = true
+			b.failure = err
+			b.notify()
+			return 0, err
+		}
 	}
 	n := len(data)
 	if !b.discarding {
