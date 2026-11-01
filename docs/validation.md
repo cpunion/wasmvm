@@ -5175,3 +5175,19 @@ example prints 42 under Go and LLGo. Relative file links are checked. The
 competitor section reuses the dated November 1 evidence and explicitly retains
 performance deficits, unsupported competitor features and phase boundaries.
 No package version, project license, release or new speed result is invented.
+
+The combined head `bedc3ac` again passed Go/macOS and the full Go/Linux semantic
+and coverage step, but Linux race repeated the 13-byte double-echo incomplete
+response. A local Linux amd64 container subsequently passed both the complete
+P2 package and the same full cross-package race scope; a paced server and 72
+focused macOS race repetitions also passed. These results do not resolve the
+CI failure. Temporary diagnostic output and pacing were removed.
+
+HTTP response publication previously discarded a later guest failure, replacing
+it with an unqualified incomplete-body error. The existing typed HTTP error now
+retains that original cause while preserving its WASI error-code value. A
+regression uses the owned HTTP consumer with fuel exhausted after setting its
+response: both backends retain the 200 headers, report HTTP-response-incomplete,
+and expose the resource-limit cause. Go race and pinned LLGo pass this case.
+The next exact-head CI must expose and resolve the original double-echo cause
+before merge; this change alone is not reported as its fix.

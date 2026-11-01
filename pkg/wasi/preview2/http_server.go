@@ -203,7 +203,9 @@ func (p *HTTP) CallIncoming(ctx context.Context, in *component.Instance, request
 			complete := reply.body.complete
 			reply.body.mu.Unlock()
 			if !complete {
-				reply.body.finish(httpErr("HTTP-response-incomplete"), nil)
+				failure := httpErr("HTTP-response-incomplete")
+				failure.cause = err
+				reply.body.finish(failure, nil)
 			}
 		}
 	}()
