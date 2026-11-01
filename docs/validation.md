@@ -4875,3 +4875,12 @@ release execute the expanded component and P2/P3 regressions on both owned
 backends. Vet passes. Affected validator coverage is 91.81%; component-only
 coverage in the same measurement is 91.43%. Final-head CI remains required.
 Experimental cm64 local borrowing and full WASI/performance acceptance stay open.
+
+
+The preceding HTTP/world integration merged as PR #79 at engine `68c6a193`.
+[Final-head CI](https://github.com/cpunion/wasmvm/actions/runs/41267161918)
+passes all four Go/LLGo target jobs. Artifact digests, exact source head and all
+180 execution reports are verified; all 30 executable packages exceed 90%.
+Component and P3 Linux coverage are 92.02% and 90.97%. No unresolved review
+threads remain. This closes that increment's integration checks; milestone
+performance and remaining functional acceptance stay separately recorded.
