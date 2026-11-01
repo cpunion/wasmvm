@@ -14,6 +14,21 @@ campaigns until capabilities are complete. Keep existing measured regressions
 and performance gates open. One active PR and prompt validated merges remain
 the integration policy.
 
+The declared M1–M6 functional implementations now cover the full owned Core
+profiles/backends, GC/Core Threads, P1/legacy threads, component/Canonical ABI,
+stable P2/P3 providers and their command/service/middleware embedding paths.
+The final increments add local i64 borrows, updated empty-buffer semantics and
+P2/P3 CLI commands. They still require their final target CI and merged evidence.
+Expanded WASI world conformance and all applicable performance acceptance remain
+open. Optional M7 proposals are outside this implemented scope.
+
+Functional closeout proceeds through the remaining final-head semantic checks,
+coverage/review/artifact audit and declared-world conformance review. Only then
+resume phase-separated performance comparisons and optimization. The historical
+increment notes below preserve requirements that were open at each increment;
+they are not a second list of unimplemented providers. No milestone is marked
+complete merely because its implementation exists.
+
 On 2026-10-29 the owner authorized merging the accumulated Core 2.0 work and
 then clarified that local optimization must not block completing capabilities.
 PRs #26, #27 and #28 have merged with their recorded semantic evidence and
