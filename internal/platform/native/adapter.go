@@ -29,7 +29,10 @@ func publish(code []byte) unsafe.Pointer {
 func unpublish(p unsafe.Pointer, n uint64) { C.wasmvm_unpublish(p, C.size_t(n)) }
 func allocate(n uint64) unsafe.Pointer     { return C.wasmvm_allocate(C.size_t(n)) }
 func deallocate(p unsafe.Pointer)          { C.wasmvm_deallocate(p) }
-func cancel(p unsafe.Pointer)              { C.wasmvm_cancel((*C.struct_wasmvm_record)(p)) }
+func atomicAccess(p unsafe.Pointer, width, operation uint32, a, b uint64) uint64 {
+	return uint64(C.wasmvm_atomic_access(p, C.uint32_t(width), C.uint32_t(operation), C.uint64_t(a), C.uint64_t(b)))
+}
+func cancel(p unsafe.Pointer) { C.wasmvm_cancel((*C.struct_wasmvm_record)(p)) }
 func enter(p, ctx unsafe.Pointer) Exit {
 	return Exit(C.wasmvm_enter(p, (*C.struct_wasmvm_record)(ctx)))
 }

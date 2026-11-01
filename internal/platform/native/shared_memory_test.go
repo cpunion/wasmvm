@@ -112,12 +112,12 @@ func TestSharedMemoryStableGrowthAndConcurrentEntryLifetime(t *testing.T) {
 	}
 	defer m.Close()
 	base, sizeAddress, maximum, err := m.SharedView()
-	if err != nil || base == 0 || sizeAddress == 0 || maximum != 4096 || atomic.LoadUint64(m.sharedSize) != 0 {
+	if err != nil || base == nil || sizeAddress == nil || maximum != 4096 || atomic.LoadUint64(m.sharedSize) != 0 {
 		t.Fatal("shared descriptor", base, sizeAddress, maximum, err)
 	}
 	for i := 0; i < 2; i++ {
 		address, size, err := m.begin()
-		if err != nil || address != base || size != 0 {
+		if err != nil || address != uint64(uintptr(base)) || size != 0 {
 			t.Fatal(address, size, err)
 		}
 	}

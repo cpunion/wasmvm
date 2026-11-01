@@ -32,14 +32,14 @@ func NewSharedMemory(size, maximum uint64) (*Memory, error) {
 // must retain the owner or a bound context until every use ends. The size cell
 // must be read atomically on every bounds observation; cached entry lengths do
 // not establish visibility of concurrent memory growth.
-func (m *Memory) SharedView() (base, sizeAddress, maximum uint64, err error) {
+func (m *Memory) SharedView() (base, sizeAddress unsafe.Pointer, maximum uint64, err error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.retired {
-		return 0, 0, 0, ErrClosed
+		return nil, nil, 0, ErrClosed
 	}
 	if m.sharedSize == nil {
-		return 0, 0, 0, ErrInvalid
+		return nil, nil, 0, ErrInvalid
 	}
-	return uint64(uintptr(m.data)), uint64(uintptr(unsafe.Pointer(m.sharedSize))), m.maximum, nil
+	return m.data, unsafe.Pointer(m.sharedSize), m.maximum, nil
 }
