@@ -21,6 +21,16 @@ experimental Core descriptor and exact-reference extensions. JavaScript
 prototype integration is excluded. `ValueType.Exact` and `WithExact` retain
 exactness alongside nullability and canonical type identity.
 
+`wasm.StackSwitching` with GC, typed function references and exception handling
+(or `Profile: "core3"`) enables experimental typed guest continuations and
+control tags. Captured guest frames and references consume Store heap quotas;
+restoration also checks active frame/slot limits. Handles are one-shot, and
+host callbacks do not expose or capture Go/C stacks. An unhandled control tag
+returns `*vm.Suspension`, matching `wasm.ErrSuspension`. `Payload` returns the
+tag and owned argument Values; release those Values and the signal explicitly.
+This terminal host-boundary signal is distinct from an exception, trap or
+component async continuation. See the [extension contract](design/core-extensions.md).
+
 Typical order:
 
 1. Create an Engine and compile bytes.

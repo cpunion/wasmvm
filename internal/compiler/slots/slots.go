@@ -47,11 +47,13 @@ type Handler struct {
 type Catch struct {
 	Kind    byte
 	Tag, PC uint32
+	Type    uint32 // Module-local continuation type for a suspension handler.
 	Dest    []Slot
 }
 type ProtectedBlock struct{ Start, End, Handler uint32 }
 type Function struct {
 	Handlers   []Handler
+	Prompts    map[uint32][]Catch
 	Protected  []ProtectedBlock
 	Signature  module.FuncType
 	Sources    []ir.Source
@@ -239,7 +241,7 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 			// SSA locations remain stable after release. Integer operands, local
 			// copies and equal literals can alias; suspended call tuples cannot.
 			in := Instruction{Op: src.Wasm.Op, Source: op.Source, Dst: NoSlot, A: NoSlot, B: NoSlot, C: NoSlot}
-			if in.Op == 0x10 || in.Op == 0x11 || in.Op == 0x14 || in.Op>>16 == 0xfb || module.IsWideArithmetic(in.Op) {
+			if in.Op == 0x10 || in.Op == 0x11 || in.Op == 0x14 || in.Op>>16 == 0xfb || module.IsWideArithmetic(in.Op) || in.Op >= 0xe0 && in.Op <= 0xe6 {
 				in.Extra = uint32(len(out.Args))
 				if in.Op>>16 == 0xfb && len(op.Args) > 0 {
 					in.A = out.ValueSlots[op.Args[0]]
@@ -385,6 +387,22 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 			outH.Catches = append(outH.Catches, catch)
 		}
 		out.Handlers = append(out.Handlers, outH)
+	}
+	if len(f.Prompts) != 0 {
+		out.Prompts = make(map[uint32][]Catch, len(f.Prompts))
+		for source, hs := range f.Prompts {
+			for _, h := range hs {
+				c := Catch{Kind: h.Kind, Tag: h.Tag}
+				if h.Kind == 0 {
+					c.PC = out.BlockPC[h.Target]
+					c.Type, _ = h.Types[len(h.Types)-1].TypeIndex()
+					for _, p := range f.Blocks[h.Target].Params {
+						c.Dest = append(c.Dest, out.ValueSlots[p])
+					}
+				}
+				out.Prompts[source] = append(out.Prompts[source], c)
+			}
+		}
 	}
 	for bi, b := range f.Blocks {
 		if b.Handler != 0 {

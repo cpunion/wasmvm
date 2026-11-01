@@ -235,7 +235,7 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 		case execute.Done:
 			return e.Results(), nil
 		case execute.Failed:
-			return nil, op.exceptionError(e.Err())
+			return nil, op.guestError(e.Err())
 		case execute.HostRequest:
 			if err := op.ctx.Err(); err != nil {
 				return nil, err
@@ -247,7 +247,7 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 			}
 			e.SetFuel(op.fuel)
 			if err = e.ResumeHost(results, err); err != nil {
-				return nil, op.exceptionError(err)
+				return nil, op.guestError(err)
 			}
 		}
 	}

@@ -103,6 +103,23 @@ func (d *decoder) expr() module.Expr {
 		case op == 0xd3 && d.features&wasm.GC != 0:
 		case op == 0xfb && d.features&wasm.GC != 0:
 			d.gcInstruction(&in)
+		case op >= 0xe0 && op <= 0xe6 && d.features&wasm.StackSwitching != 0:
+			in.A = d.u32()
+			if op == 0xe1 || op == 0xe4 || op == 0xe6 {
+				in.B = d.u32()
+			}
+			if op >= 0xe3 && op <= 0xe5 {
+				in.On = make([]module.Catch, d.count())
+				for i := range in.On {
+					h := &in.On[i]
+					h.Kind, h.Tag = d.byte(), d.u32()
+					if h.Kind == 0 {
+						h.Label = d.u32()
+					} else if h.Kind != 1 {
+						d.fail("invalid continuation handler kind")
+					}
+				}
+			}
 		case op == 0xfc:
 			sub := d.u32()
 			in.Op = op<<16 | sub

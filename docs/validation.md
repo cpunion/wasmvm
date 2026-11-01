@@ -5136,3 +5136,42 @@ IO, filesystem and socket owners likewise revoke their stream operations before
 broadcasting parent cancellation. A separate owner-close regression forces the
 external cancellation receipt to arrive before Close resumes; completion codes
 and one-time reclamation remain deterministic.
+
+## Phase 3 core extension integration and project README
+
+The PR #87 integration branch adds Core Stack Switching at proposal snapshot
+`d9fbe345495d15af623b981440d6aaacd5ad015c`, independently gated from Core 3.0.
+All four complete affected upstream scripts convert to 162 commands and 112
+binary assertions with pinned wasm-tools 1.262.0. The interpreter and both
+native tiers execute the complete inventory under Go 1.27.3 and LLGo
+`8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f` (`-O3 -lto=full`), including
+`assert_suspension`. The runner forces guest collection at every allocation;
+this forced mode also passes under both host compilers.
+
+Owned integration tests exercise multi-frame suspension/restoration, retained
+host references after their original roots release, parameter binding for
+both guest and host functions, invalid injection without consumption, consumed
+handles, exported control-tag identity, distinct terminal suspension payloads,
+result-bearing tag/exception boundaries, feature gates, exact-reference
+interaction, cancellation, frame/heap quotas and reclamation. Go race detection
+passes the Stack Switching integration. The full local Go package suite and
+vet pass; all 30 measured executable packages exceed 90% statement coverage
+(minimum 90.73% in that local profile).
+
+The earlier PR #87 head `d9f5c84` passed Go/macOS and LLGo/Linux. LLGo/macOS
+failed while downloading an existing Core input archive because DNS resolution
+failed. Go/Linux passed the full semantic and coverage suite, then its race
+pass reported HTTP-response-incomplete after receiving all 13 double-echo body
+bytes in both backends. Local macOS reproduction attempts pass: three complete
+interaction repetitions and eight focused repetitions at each of GOMAXPROCS
+1/2/4. This remains an observed integration failure until diagnosed and the
+combined final head passes; it is not counted as a successful matrix.
+
+The rewritten English README now reports package source availability,
+experimental API status, the absence of tags/releases and pkg.go.dev indexing,
+the actual PR CI workflow and per-package coverage policy. Its checked-in Core
+CLI examples execute under both interpreter/native; the extracted Go embedding
+example prints 42 under Go and LLGo. Relative file links are checked. The
+competitor section reuses the dated November 1 evidence and explicitly retains
+performance deficits, unsupported competitor features and phase boundaries.
+No package version, project license, release or new speed result is invented.

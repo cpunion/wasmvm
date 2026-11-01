@@ -34,6 +34,8 @@ const (
 	CustomPageSizes
 	// CustomDescriptors enables exact references and Core custom descriptors.
 	CustomDescriptors
+	// StackSwitching enables typed one-shot continuations and control tags.
+	StackSwitching
 )
 
 // Core3Features selects the full pinned Core 3.0 binary profile on both backends.
@@ -41,4 +43,4 @@ const (
 const Core3Features = ExtendedConst | TailCall | MultiMemory | RelaxedSIMD | Memory64 | FunctionReferences | GC | ExceptionHandling | Core3Rules
 
 // SupportedFeatures includes all accepted core feature flags.
-const SupportedFeatures = Core3Features | Threads | CompactImports | WideArithmetic | CustomPageSizes | CustomDescriptors
+const SupportedFeatures = Core3Features | Threads | CompactImports | WideArithmetic | CustomPageSizes | CustomDescriptors | StackSwitching

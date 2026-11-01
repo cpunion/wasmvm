@@ -79,12 +79,14 @@ type Block struct {
 	Term    Terminator
 }
 type Function struct {
-	Signature     module.FuncType
-	Locals        []wasm.ValueType
-	Values        []wasm.ValueType
-	Sources       []Source
-	Blocks        []Block
-	Handlers      []Handler
+	Signature module.FuncType
+	Locals    []wasm.ValueType
+	Values    []wasm.ValueType
+	Sources   []Source
+	Blocks    []Block
+	Handlers  []Handler
+	// Prompts are cold implicit transfers from resume operations, like catches.
+	Prompts       map[uint32][]Catch
 	TypeLabels    []uint32
 	TypeHierarchy *wasm.TypeHierarchy
 }
@@ -112,6 +114,8 @@ const (
 
 func EffectsOf(op uint32) Effects {
 	switch {
+	case op >= 0xe0 && op <= 0xe6:
+		return ReadGlobal | WriteGlobal | ReadMemory | WriteMemory | ReadTable | WriteTable | ReadSegment | WriteSegment | ReadHeap | WriteHeap | MayTrap | MayAllocate | MayCallHost | MaySuspend
 	case op>>16 == 0xfe:
 		return ReadMemory | WriteMemory | MayTrap | MaySuspend
 	case op == 8 || op == 10:
@@ -202,6 +206,13 @@ func EffectsOf(op uint32) Effects {
 func (f *Function) Successors(b Block, visit func(BlockID)) {
 	for _, e := range b.Term.Edges {
 		visit(e.Target)
+	}
+	for _, op := range b.Ops {
+		for _, h := range f.Prompts[op.Source] {
+			if h.Kind == 0 {
+				visit(h.Target)
+			}
+		}
 	}
 	for h := b.Handler; h != 0; h = f.Handlers[h-1].Parent {
 		for _, c := range f.Handlers[h-1].Catches {

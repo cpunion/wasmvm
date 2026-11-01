@@ -10,7 +10,7 @@ func (c *context) tagType(index uint32) module.FuncType {
 		c.fail("tags are disabled")
 	}
 	t := c.typ(index)
-	if len(t.Results) != 0 {
+	if len(t.Results) != 0 && c.features&wasm.StackSwitching == 0 {
 		c.fail("tag type has results")
 	}
 	return t
@@ -22,6 +22,14 @@ func (c *context) tag(index uint32) module.FuncType {
 	c.index(index, len(c.tags), "tag")
 	return c.tags[index]
 }
+
+func (c *context) exceptionTag(index uint32) module.FuncType {
+	t := c.tag(index)
+	if len(t.Results) != 0 {
+		c.fail("exception tag cannot have results")
+	}
+	return t
+}
 func (v *checker) catches(catches []module.Catch) {
 	if v.features&wasm.ExceptionHandling == 0 {
 		v.fail("exceptions are disabled")
@@ -32,7 +40,7 @@ func (v *checker) catches(catches []module.Catch) {
 		}
 		var types []wasm.ValueType
 		if c.Kind < 2 {
-			types = v.tag(c.Tag).Params
+			types = v.exceptionTag(c.Tag).Params
 		}
 		target := v.label(c.Label)
 		n := len(types)

@@ -18,6 +18,7 @@ func TestCoreExtensionsCLI(t *testing.T) {
 		{"compact-import-section/imports-compact/script.15.wasm", "--compact-imports", "", wasm.CompactImports, nil},
 		{"custom-page-sizes/custom-page-sizes/script.0.wasm", "--custom-page-sizes", "", wasm.CustomPageSizes, nil},
 		{"custom-descriptors/exact/script.0.wasm", "--custom-descriptors", "", wasm.CustomDescriptors | wasm.GC, nil},
+		{"stack-switching/validation/script.0.wasm", "--stack-switching", "", wasm.StackSwitching | wasm.GC | wasm.FunctionReferences | wasm.ExceptionHandling, nil},
 	} {
 		data, err := os.ReadFile(filepath.Join("../../testdata", row.path))
 		if err != nil {

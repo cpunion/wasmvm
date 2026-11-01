@@ -10,6 +10,7 @@ slot code and interpreter/native backends, without a reference-engine fallback.
 | Wide Arithmetic | `wasm.WideArithmetic` | `--wide-arithmetic` | [`024d4ce`](https://github.com/WebAssembly/wide-arithmetic/tree/024d4ce1b28cee7fd006d9c5175e3b7ece52b429) |
 | Custom Page Sizes | `wasm.CustomPageSizes` | `--custom-page-sizes` | [`61c873a`](https://github.com/WebAssembly/custom-page-sizes/tree/61c873a1860acad2772539164f284cc5110f1b1b) |
 | Custom Descriptors (non-JS, experimental Phase 3) | `wasm.CustomDescriptors` with GC | `--custom-descriptors` | [`a791af2`](https://github.com/WebAssembly/custom-descriptors/tree/a791af285f3876fb0bc6df89c218ff912347cf46) |
+| Stack Switching (experimental Phase 3) | `wasm.StackSwitching` with GC, typed references and EH | `--stack-switching` | [`d9fbe34`](https://github.com/WebAssembly/stack-switching/tree/d9fbe345495d15af623b981440d6aaacd5ad015c) |
 
 Compact imports decode both `0x7f` groups with individual external types and
 `0x7e` groups with one shared external type. The abstract module keeps its
@@ -108,8 +109,39 @@ produced by the same pinned wasm-tools, also tests forced collection during
 construction and exception/host boundaries, host payload reachability,
 descriptor cycles, exact hidden-edge accounting and object/byte quota failures.
 
-Stack Switching remains mandatory pending implementation and the pinned
-both-backend Go/LLGo matrix. Phase 3 snapshots remain
-explicit experimental gates rather than claims of final standardization.
+Stack Switching implements typed one-shot continuations, `cont.new`,
+`cont.bind`, `suspend`, `resume`, `resume_throw`, `resume_throw_ref` and `switch`.
+Continuation types have their own reference hierarchy (`cont` / `nocont`),
+canonical identities and checked function signatures. Control tags may return
+values; exception handling still rejects result-bearing exception tags.
+Resume handlers use existing typed control-flow edges and bounded slot tuples.
+
+Prompts delimit frames in the existing guest execution arena. Capturing a
+continuation copies its guest frames, values and nested prompts into a charged
+guest heap object. It does not capture a Go/C stack, retain machine addresses or
+native-code leases, or start a goroutine. Both backends restore the same logical
+frames and slot PCs. Binding and resumption consume one-shot handles; reuse
+traps. Invalid null-exception injection leaves the continuation unconsumed.
+Suspended references, bound arguments and owning instances participate in
+tracing; frame/slot and heap object/byte quotas apply across capture/restore.
+Host callbacks remain ordinary explicit requests and cannot capture host stacks.
+
+An unhandled control tag reaches the Go boundary as `vm.Suspension`, matching
+`wasm.ErrSuspension`, separately from traps and exceptions. Its private payload
+root retains tag identity and arguments. `Payload` returns owned argument
+values; callers release those values and the suspension. This signal is
+terminal at the host boundary, rather than an implicit host continuation API.
+
+All four affected Stack Switching scripts are pinned in `testdata/stack-switching`:
+162 commands and 112 binary assertions, including `assert_suspension`, with no
+text-parser assertions. The runner forces collection at every guest allocation.
+The owned `pkg/vm/testdata/stack-switching.wat` fixture also exercises saved
+multi-frame roots, bound guest/host functions, exact-reference interactions,
+null injection, consumed handles, signal ownership, cancellation and quota
+failure/cleanup. All run locally under Go and LLGo on both backends; final
+four-target integration validation remains required for PR #87.
+
+Phase 3 snapshots remain explicit experimental gates rather than claims of
+final standardization.
 Performance acceptance remains open; this extension work does not erase the
 November 1 performance audit or claim new parity results.

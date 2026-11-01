@@ -434,7 +434,7 @@ func (s *Store) validType(t wasm.ValueType) bool {
 			return false
 		}
 		k := s.registry.Types[id].Definition.Kind
-		return k == module.FunctionKind && t.IsFunctionReference() || k == module.StructKind && byte(t) == byte(wasm.StructRef) || k == module.ArrayKind && byte(t) == byte(wasm.ArrayRef)
+		return k == module.FunctionKind && t.IsFunctionReference() || k == module.StructKind && byte(t) == byte(wasm.StructRef) || k == module.ArrayKind && byte(t) == byte(wasm.ArrayRef) || k == module.ContinuationKind && t.IsContinuationReference()
 	}
 	return true
 }

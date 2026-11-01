@@ -36,6 +36,7 @@ Options precede the module path. All commands accept:
   --wide-arithmetic      Enable 128-bit integer arithmetic
   --custom-page-sizes    Enable static 1-byte or 64-KiB memory pages
   --custom-descriptors   Enable GC exact references and Core custom descriptors
+  --stack-switching      Enable typed continuations, GC, references and EH
   --timeout duration     Overall deadline (default 30s; 0 disables)
   --native-code-bytes n  Native code budget per module (default 67108864)
 Run also accepts:
@@ -101,6 +102,7 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	wideArithmetic := flags.Bool("wide-arithmetic", false, "")
 	customPageSizes := flags.Bool("custom-page-sizes", false, "")
 	customDescriptors := flags.Bool("custom-descriptors", false, "")
+	stackSwitching := flags.Bool("stack-switching", false, "")
 	timeout := flags.Duration("timeout", 30*time.Second, "")
 	codeBytes := flags.Uint64("native-code-bytes", vm.DefaultEngineConfig().Native.MaxCodeBytes, "")
 	var exported, fuel string
@@ -243,6 +245,9 @@ func Main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 	if *customDescriptors {
 		config.Features |= wasm.CustomDescriptors | wasm.GC
+	}
+	if *stackSwitching {
+		config.Features |= wasm.StackSwitching | wasm.GC | wasm.FunctionReferences | wasm.ExceptionHandling
 	}
 	if wasiConfig.preview > 1 {
 		wasiConfig.argv0, wasiConfig.args = positional[0], positional[1:]

@@ -22,6 +22,9 @@ func (c *context) field(index, field uint32) module.FieldType {
 	return d.Fields[field]
 }
 func (c *context) refTop(t wasm.ValueType) wasm.ValueType {
+	if t.IsContinuationReference() {
+		return wasm.ContRef
+	}
 	if t.IsExceptionReference() {
 		return wasm.ExnRef
 	}
@@ -196,6 +199,9 @@ func (v *checker) gc(in module.Instr) {
 	case 20, 21, 22, 23, 35, 36:
 		t := in.ReferenceType()
 		v.valueType(t, len(v.m.Types))
+		if t.IsContinuationReference() {
+			v.fail("continuation references are not castable")
+		}
 		if !t.IsReference() {
 			v.fail("cast reference type")
 		}
@@ -213,6 +219,9 @@ func (v *checker) gc(in module.Instr) {
 			v.fail("cast branch reference types")
 		}
 		a, b := in.Types[0], in.Types[1]
+		if b.IsContinuationReference() {
+			v.fail("continuation references are not castable")
+		}
 		v.valueType(a, len(v.m.Types))
 		v.valueType(b, len(v.m.Types))
 		compatible := v.matches(b, a)

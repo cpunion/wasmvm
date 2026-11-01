@@ -12,6 +12,13 @@ from core2_corpus import digest, extract, fetch, inventory
 ROOT = Path(__file__).resolve().parent.parent
 PRODUCER = "wasm-tools 1.262.0 (e22db44da 2026-10-13)"
 PROPOSALS = {
+    "stack-switching": {
+        "revision": "d9fbe345495d15af623b981440d6aaacd5ad015c",
+        "size": 15115309,
+        "sha256": "7fe7edd5af71bb1633363f7d5bf933cf0c59ce52b7c13e92c468f414178070ac",
+        "scripts": ["stack-switching/" + name + ".wast" for name in
+                    ["cont", "resume_throw", "validation", "validation_gc"]],
+    },
     "custom-descriptors": {
         "revision": "a791af285f3876fb0bc6df89c218ff912347cf46",
         "size": 15066255,

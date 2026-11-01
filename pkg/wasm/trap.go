@@ -19,10 +19,13 @@ const (
 	TrapCastFailure
 	TrapAtomicUnaligned
 	TrapWaitUnshared
+	TrapConsumedContinuation
 )
 
 func (c TrapCode) String() string {
 	switch c {
+	case TrapConsumedContinuation:
+		return "continuation already consumed"
 	case TrapAtomicUnaligned:
 		return "unaligned atomic access"
 	case TrapWaitUnshared:

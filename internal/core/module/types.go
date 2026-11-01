@@ -3,9 +3,10 @@ package module
 import "github.com/cpunion/wasmvm/pkg/wasm"
 
 const (
-	FunctionKind byte = 0x60
-	StructKind   byte = 0x5f
-	ArrayKind    byte = 0x5e
+	FunctionKind     byte = 0x60
+	StructKind       byte = 0x5f
+	ArrayKind        byte = 0x5e
+	ContinuationKind byte = 0x5d
 )
 
 type FieldType struct {
@@ -28,6 +29,7 @@ type TypeDef struct {
 	Fields []FieldType
 	// Optional indices use index+1 so every u32 index is representable.
 	Descriptor, Describes uint64
+	Continuation          uint32
 }
 type TypeGroup struct{ Start, Count uint32 }
 
@@ -45,6 +47,8 @@ func (m *Module) Reference(index uint32, nullable bool) wasm.ValueType {
 			family = wasm.StructRef
 		case ArrayKind:
 			family = wasm.ArrayRef
+		case ContinuationKind:
+			family = wasm.ContRef
 		}
 	}
 	return wasm.IndexedReference(family, index, nullable)
@@ -130,6 +134,9 @@ func (r *TypeRegistry) InternGroup(m *Module, start, count uint32, ids []uint32,
 	for i := start; i < start+count; i++ {
 		d := m.TypeDef(i)
 		word(uint64(d.Kind))
+		if d.Kind == ContinuationKind {
+			word(index(d.Continuation))
+		}
 		for _, use := range []uint64{d.Descriptor, d.Describes} {
 			if use == 0 {
 				word(0)
@@ -182,6 +189,9 @@ func (r *TypeRegistry) InternGroup(m *Module, start, count uint32, ids []uint32,
 	}
 	for i := start; i < start+count; i++ {
 		d := m.TypeDef(i)
+		if d.Kind == ContinuationKind {
+			d.Continuation = ids[d.Continuation]
+		}
 		if d.Descriptor != 0 {
 			d.Descriptor = uint64(ids[d.Descriptor-1]) + 1
 		}

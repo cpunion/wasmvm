@@ -65,6 +65,10 @@ func TestCustomDescriptorsProposal(t *testing.T) {
 	runProposal(t, proposalCorpus{"custom-descriptors", "a791af285f3876fb0bc6df89c218ff912347cf46", wasm.Core3Features | wasm.CustomDescriptors, []string{"array_new_exact", "binary-descriptors", "br_on_cast_desc_eq", "br_on_cast_desc_eq_fail", "descriptors", "exact-casts", "exact-func-import", "exact", "ref_cast_desc_eq", "ref_get_desc", "struct_new_desc"}, 267, 684, 597, 16})
 }
 
+func TestStackSwitchingProposal(t *testing.T) {
+	runProposal(t, proposalCorpus{"stack-switching", "d9fbe345495d15af623b981440d6aaacd5ad015c", wasm.Core3Features | wasm.StackSwitching, []string{"cont", "resume_throw", "validation", "validation_gc"}, 121, 162, 112, 0})
+}
+
 func runProposal(t *testing.T, corpus proposalCorpus) {
 	root := filepath.Join("../../../testdata", corpus.name)
 	raw, err := os.ReadFile(filepath.Join(root, "manifest.json"))
@@ -111,6 +115,9 @@ func runProposal(t *testing.T, corpus proposalCorpus) {
 					}
 					r := newSpec(t, context.Background(), tier)
 					r.features = corpus.features
+					// Exercise nested continuation transfers and descriptor/exception
+					// roots at every guest allocation throughout this whole inventory.
+					r.store.CollectEveryAllocation = corpus.features&wasm.StackSwitching != 0
 					for _, cmd := range script.Commands {
 						commands++
 						if cmd.Type == "assert_malformed" && cmd.ModuleType == "text" {
@@ -133,8 +140,9 @@ func runProposal(t *testing.T, corpus proposalCorpus) {
 					Passed                                                                     bool
 					Proposal, Revision, ManifestSHA256, Compiler, RuntimeVersion, GOOS, GOARCH string
 					Features                                                                   wasm.Features
+					ForcedCollection                                                           bool
 					Tier, Scripts, BinaryAssertions, TextParserAssertions, Commands            int
-				}{true, corpus.name, corpus.revision, fmt.Sprintf("%x", sha256.Sum256(raw)), runtime.Compiler, runtime.Version(), runtime.GOOS, runtime.GOARCH, corpus.features, tier, len(corpus.scripts), assertions, text, commands}
+				}{true, corpus.name, corpus.revision, fmt.Sprintf("%x", sha256.Sum256(raw)), runtime.Compiler, runtime.Version(), runtime.GOOS, runtime.GOARCH, corpus.features, corpus.features&wasm.StackSwitching != 0, tier, len(corpus.scripts), assertions, text, commands}
 				data, err := json.MarshalIndent(report, "", "  ")
 				if err != nil {
 					t.Fatal(err)

@@ -217,6 +217,9 @@ func (ex Extern) GlobalSet(v Value) error {
 }
 
 func (s *Store) referenceFeature(typ wasm.ValueType) error {
+	if typ.IsContinuationReference() && s.engine.config.Features&wasm.StackSwitching == 0 {
+		return wasm.ErrUnsupported
+	}
 	if typ.Exact() && s.engine.config.Features&wasm.CustomDescriptors == 0 {
 		return wasm.ErrUnsupported
 	}

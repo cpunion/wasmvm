@@ -89,6 +89,14 @@ func (c *context) checkTypeGroup(g module.TypeGroup, maximum uint32) {
 			if len(m.Types[i].Params) != 0 || len(m.Types[i].Results) != 0 {
 				c.fail("nonfunction signature")
 			}
+		case module.ContinuationKind:
+			if c.features&wasm.StackSwitching == 0 || len(d.Fields) != 0 || len(m.Types[i].Params) != 0 || len(m.Types[i].Results) != 0 {
+				c.fail("invalid continuation type")
+			}
+			c.index(d.Continuation, bound, "continuation function type")
+			if m.TypeDef(d.Continuation).Kind != module.FunctionKind {
+				c.fail("continuation function type required")
+			}
 		default:
 			c.fail("unknown composite type")
 		}
@@ -132,7 +140,11 @@ func (c *context) structuralSubtype(child, parent uint32) {
 			c.fail("descriptor subtype square mismatch")
 		}
 	}
-	if a.Kind == module.FunctionKind {
+	if a.Kind == module.ContinuationKind {
+		if !c.matches(c.m.Reference(a.Continuation, false), c.m.Reference(b.Continuation, false)) {
+			c.fail("continuation function subtype")
+		}
+	} else if a.Kind == module.FunctionKind {
 		f, g := c.m.Types[child], c.m.Types[parent]
 		if len(f.Params) != len(g.Params) || len(f.Results) != len(g.Results) {
 			c.fail("function subtype arity")

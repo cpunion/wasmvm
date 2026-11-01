@@ -50,18 +50,20 @@ type HostCall struct {
 	Args     []value.Value
 }
 type Execution struct {
-	store       *state.Store
-	context     context.Context
-	config      Config
-	frames      []frame
-	values      []value.Value
-	result      []value.Value
-	tailArgs    []value.Value
-	pending     *HostCall
-	pendingDest []slots.Slot
-	status      Status
-	err         error
-	fuel, steps uint64
+	store        *state.Store
+	context      context.Context
+	config       Config
+	frames       []frame
+	prompts      []prompt
+	transferring *continuationBody
+	values       []value.Value
+	result       []value.Value
+	tailArgs     []value.Value
+	pending      *HostCall
+	pendingDest  []slots.Slot
+	status       Status
+	err          error
+	fuel, steps  uint64
 }
 
 func New(store *state.Store, ctx context.Context, config Config) *Execution {
@@ -149,6 +151,9 @@ func (e *Execution) fail(err error) Status {
 	e.err, e.status = err, Failed
 	clear(e.frames)
 	e.frames = e.frames[:0]
+	clear(e.prompts)
+	e.prompts = e.prompts[:0]
+	e.transferring = nil
 	e.values = e.values[:0]
 	e.pending = nil
 	e.pendingDest = nil
@@ -256,6 +261,20 @@ frames:
 			}
 			var result value.Value
 			trap := wasm.NoTrap
+			if in.Op >= 0xe0 && in.Op <= 0xe6 {
+				f.pc = pc
+				if err := e.stackInstruction(in, im); err != nil {
+					var t *wasm.Trap
+					if errors.As(err, &t) {
+						t.Function, t.Offset = fn.Index, im.Offset
+					}
+					return e.fail(err)
+				}
+				if e.status != Running {
+					return e.status
+				}
+				continue frames
+			}
 			if module.IsWideArithmetic(in.Op) {
 				args := code.Args[in.Extra : in.Extra+in.Count+2]
 				left, right := values[args[0]].Lo, values[args[1]].Lo
@@ -320,6 +339,7 @@ frames:
 					break
 				}
 				if kind == ir.Return {
+					e.trimPrompts(fi)
 					outputs := code.Args[in.Extra : in.Extra+in.Count]
 					if fi == 0 {
 						e.result = e.result[:0]
@@ -750,6 +770,16 @@ frames:
 // RetainedValues covers reference slots in active or suspended frames. Slot
 // types remain fixed even when temporaries are reused, including edge scratch.
 func (e *Execution) RetainedValues(visit func(wasm.ValueType, value.Value)) {
+	if suspension, ok := e.err.(*state.Suspension); ok {
+		for i, typ := range suspension.Tag.Signature.Params {
+			if typ.IsReference() {
+				visit(typ, suspension.Args[i])
+			}
+		}
+	}
+	if e.transferring != nil {
+		e.transferring.Visit(visit, func(*state.Instance) {})
+	}
 	if ex, ok := e.store.ExceptionError(e.err); ok {
 		visit(wasm.ExnRef.NonNull(), value.Value{Lo: ex.Ref})
 	}
@@ -772,6 +802,12 @@ func (e *Execution) RetainedValues(visit func(wasm.ValueType, value.Value)) {
 // RetainedInstances preserves the owners of running and suspended function
 // bodies even if their last table/global reference was removed during a call.
 func (e *Execution) RetainedInstances(visit func(*state.Instance)) {
+	if suspension, ok := e.err.(*state.Suspension); ok {
+		visit(suspension.Tag.OwnerInstance)
+	}
+	if e.transferring != nil {
+		e.transferring.Visit(func(wasm.ValueType, value.Value) {}, visit)
+	}
 	for _, f := range e.frames {
 		visit(f.function.Instance)
 	}

@@ -323,6 +323,24 @@ func (l *lowerer) visit(pc int, in module.Instr, inputs, outputs []wasm.ValueTyp
 		edges = append(edges, l.edge(l.frames[len(l.frames)-1-int(in.A)].label))
 		l.terminate(ir.Terminator{Kind: ir.Table, Source: source, Args: []ir.Value{index}, Edges: edges})
 	default:
+		if op >= 0xe3 && op <= 0xe5 {
+			if l.f.Prompts == nil {
+				l.f.Prompts = make(map[uint32][]ir.Catch)
+			}
+			l.budget.charge(1 + uint64(len(in.On)))
+			for _, h := range in.On {
+				handler := ir.Catch{Kind: h.Kind, Tag: h.Tag}
+				if h.Kind == 0 {
+					handler.Target = l.frames[len(l.frames)-1-int(h.Label)].label
+					l.incoming[handler.Target]++
+					for _, param := range l.f.Blocks[handler.Target].Params {
+						handler.Types = append(handler.Types, l.f.Values[param])
+					}
+					l.budget.charge(uint64(len(handler.Types)))
+				}
+				l.f.Prompts[source] = append(l.f.Prompts[source], handler)
+			}
+		}
 		l.budget.charge(1 + uint64(len(inputs)) + uint64(len(outputs)))
 		s := &l.f.Sources[pc]
 		s.Inputs = append([]wasm.ValueType(nil), inputs...)
@@ -424,5 +442,21 @@ func (l *lowerer) prune() {
 		compact[i].Handler = mapping[compact[i].Handler]
 	}
 	f.Handlers = handlers
+	if f.Prompts != nil {
+		prompts := make(map[uint32][]ir.Catch)
+		for _, b := range compact {
+			for _, op := range b.Ops {
+				if hs, ok := f.Prompts[op.Source]; ok {
+					for i := range hs {
+						if hs[i].Kind == 0 {
+							hs[i].Target = blocks[hs[i].Target]
+						}
+					}
+					prompts[op.Source] = hs
+				}
+			}
+		}
+		f.Prompts = prompts
+	}
 	f.Blocks, f.Values = compact, types
 }

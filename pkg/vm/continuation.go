@@ -273,7 +273,7 @@ func (c *Caller) Poll(call *Continuation) (result CallResult, done bool, err err
 			return result, true, nil
 		case execute.Failed:
 			op.fuel = e.Fuel()
-			return result, false, op.exceptionError(e.Err())
+			return result, false, op.guestError(e.Err())
 		case execute.HostRequest:
 			op.fuel = e.Fuel()
 			request := e.Host()
@@ -293,7 +293,7 @@ func (c *Caller) Poll(call *Continuation) (result CallResult, done bool, err err
 				values, err = op.host(request, request.Caller)
 				e.SetFuel(op.fuel)
 				if err = e.ResumeHost(values, err); err != nil {
-					return result, false, op.exceptionError(err)
+					return result, false, op.guestError(err)
 				}
 			}
 		default:
@@ -358,7 +358,7 @@ func (call *Continuation) resumeValues(values []Value, failed error) error {
 	}
 	call.work.execution.SetFuel(op.fuel)
 	if failed := call.work.execution.ResumeHost(raw, err); failed != nil {
-		return op.exceptionError(failed)
+		return op.guestError(failed)
 	}
 	return nil
 }

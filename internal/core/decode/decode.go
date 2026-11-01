@@ -296,6 +296,11 @@ func (d *decoder) heapReference(nullable bool) wasm.ValueType {
 	h := must(d.r.S33())
 	var t wasm.ValueType
 	switch h {
+	case -24, -11:
+		if d.features&wasm.StackSwitching == 0 {
+			d.fail("continuation references are disabled")
+		}
+		t = wasm.ValueType(byte(int8(h)) & 0x7f)
 	case -30:
 		if d.features&wasm.CustomDescriptors == 0 {
 			d.fail("exact references are disabled")

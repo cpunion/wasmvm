@@ -24,10 +24,13 @@ flags retain their archived proposal behavior. Native execution requires a
 supported platform adapter; no backend fallback is performed.
 
 `--compact-imports`, `--wide-arithmetic` and `--custom-page-sizes` independently enable the pinned
-[core extensions](design/core-extensions.md). Both default to disabled, even
+[core extensions](design/core-extensions.md). All default to disabled, even
 with `--profile core3`, and apply to validate, inspect and run.
 `--custom-descriptors` enables the experimental pinned non-JS descriptor and
 exact-reference extension together with its GC prerequisite.
+`--stack-switching` enables the experimental pinned continuation/control-tag
+extension with its GC, typed-reference and exception-handling prerequisites.
+It remains independent of Core 3.0 and of component async.
 
 ## WASI Preview 1
 

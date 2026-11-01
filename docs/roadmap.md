@@ -17,6 +17,17 @@ backends, full affected upstream inventories, bounds/lifecycle/interactions,
 Go/LLGo execution and CLI/API support. Complete these capabilities before
 returning to performance optimization; existing performance deficits stay open.
 
+Implementation update: Compact Import Section and Wide Arithmetic merged in
+PR #86 after all four exact-head target jobs passed. Custom Page Sizes,
+non-JS Custom Descriptors and Stack Switching are implemented on the PR #87
+integration branch. Their complete affected binary inventories pass locally
+under Go and LLGo in the interpreter and both native tiers. Stack Switching
+also forces guest collection throughout its official corpus. Final combined
+four-target CI, coverage, artifact and review checks remain required before
+these three extensions are accepted and merged. The README now serves as the
+project entry point with source-package/release status, usage and dated
+competitor comparisons; no versioned release is claimed.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and

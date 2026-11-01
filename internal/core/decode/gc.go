@@ -61,6 +61,15 @@ func (d *decoder) typeGroup(m *module.Module) {
 		case module.ArrayKind:
 			d.charge(1)
 			def.Fields = []module.FieldType{d.fieldType()}
+		case module.ContinuationKind:
+			if d.features&wasm.StackSwitching == 0 {
+				d.fail("continuation types are disabled")
+			}
+			index := must(d.r.S33())
+			if index < 0 {
+				d.fail("invalid continuation function type index")
+			}
+			def.Continuation = uint32(index)
 		default:
 			d.fail("unknown composite type")
 		}

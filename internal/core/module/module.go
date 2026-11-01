@@ -172,6 +172,7 @@ type Instr struct {
 	Labels           []uint32
 	Types            []wasm.ValueType
 	Catches          []Catch
+	On               []Catch // Kind 0 resumes at Label; Kind 1 handles switch.
 }
 
 func (in *Instr) MemoryOffset() uint64 { return uint64(in.B) | uint64(in.MemoryOffsetHigh)<<32 }

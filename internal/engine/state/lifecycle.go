@@ -154,6 +154,9 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 				continue
 			}
 			d := s.registry.Types[o.Type].Definition
+			if o.Continuation != nil {
+				o.Continuation.Visit(visit, mark)
+			}
 			if o.Descriptor != 0 {
 				visit(wasm.AnyRef, value.Value{Lo: o.Descriptor})
 			}

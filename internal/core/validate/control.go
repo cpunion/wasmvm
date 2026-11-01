@@ -160,6 +160,8 @@ func (v *checker) instruction(in module.Instr) {
 	case op == 0:
 		v.unreachable()
 	case op == 1:
+	case op >= 0xe0 && op <= 0xe6:
+		v.stackSwitch(in)
 	case op == 2 || op == 3 || op == 4 || op == 0x1f:
 		if op == 4 {
 			v.pop(wasm.I32)
@@ -175,7 +177,7 @@ func (v *checker) instruction(in module.Instr) {
 			v.fail("exceptions are disabled")
 		}
 		if op == 8 {
-			v.pops(v.tag(in.A).Params)
+			v.pops(v.exceptionTag(in.A).Params)
 		} else {
 			v.pop(wasm.ExnRef)
 		}
