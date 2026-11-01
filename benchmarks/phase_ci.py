@@ -221,7 +221,8 @@ def validate_observation(observation, runtime, workload):
         for key in ("engine", "sourceRevision", "compiler", "compilerRevision", "mode", "goos", "goarch"):
             if record.get(key) != runtime[key]:
                 raise ValueError(f"own-engine {key} mismatch")
-        if record.get("runtimeVersion") != own_build.GO_VERSION or record.get("policy") != "unmetered; bounded cancellation; checked Core 2.0":
+        expected_policy = runtime.get("policy", "unmetered; bounded cancellation; checked Core 2.0")
+        if record.get("runtimeVersion") != own_build.GO_VERSION or record.get("policy") != expected_policy:
             raise ValueError("own-engine runtime or execution policy mismatch")
     if set(record["phasesNs"]) != set(PHASES):
         raise ValueError("phase runner omitted or added a canonical timing boundary")

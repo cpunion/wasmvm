@@ -1,5 +1,9 @@
 # Basic Runtime Performance Comparison
 
+**Current owned-engine comparison:** see the [2026-11-01 performance audit](performance-2026-11-01.md).
+The CLI totals below are historical reference-engine observations and do not
+describe the current wasmvm interpreter/native backend.
+
 Measurement date: **2026-10-26**, on a local Apple M4 Max (arm64), 16 logical CPUs, 128 GiB RAM, macOS 27.0.1. The official wazero CLI was built with Go 1.27.3. This is a local engineering baseline, not a general ranking of WebAssembly engines.
 
 **The tables below are historical CLI totals, not pure execution efficiency.**

@@ -1,0 +1,589 @@
+{
+  "date": "2026-11-01",
+  "proposalsRevision": "df6a2aca1cd9d779eb4f2f3e19dae8277f336015",
+  "websiteRevision": "3a8728d820194a06078afe34a1b51f2a6189ed0c",
+  "wasiRevision": "463701e0f6c575a5d24ae31c2ec1e0ebf09d28e1",
+  "proposals": [
+    {
+      "id": "js-promise-integration",
+      "name": "JS Promise Integration",
+      "url": "https://github.com/WebAssembly/js-promise-integration",
+      "phase": 5
+    },
+    {
+      "id": "content-security-policy",
+      "name": "Web Content Security Policy",
+      "url": "https://github.com/WebAssembly/content-security-policy",
+      "phase": 5
+    },
+    {
+      "id": "threads",
+      "name": "Threads",
+      "url": "https://github.com/webassembly/threads",
+      "phase": 4
+    },
+    {
+      "id": "compact-import-section",
+      "name": "Compact Import Section",
+      "url": "https://github.com/WebAssembly/compact-import-section",
+      "phase": 4
+    },
+    {
+      "id": "wide-arithmetic",
+      "name": "Wide Arithmetic",
+      "url": "https://github.com/WebAssembly/wide-arithmetic",
+      "phase": 4
+    },
+    {
+      "id": "ecmascript_module_integration",
+      "name": "ESM Integration",
+      "url": "https://github.com/WebAssembly/esm-integration",
+      "phase": 3
+    },
+    {
+      "id": "stack-switching",
+      "name": "Stack Switching",
+      "url": "https://github.com/WebAssembly/stack-switching",
+      "phase": 3
+    },
+    {
+      "id": "custom-page-sizes",
+      "name": "Custom Page Sizes",
+      "url": "https://github.com/WebAssembly/custom-page-sizes",
+      "phase": 3
+    },
+    {
+      "id": "custom-descs",
+      "name": "Custom Descriptors and JS Interop",
+      "url": "https://github.com/WebAssembly/custom-descriptors",
+      "phase": 3
+    },
+    {
+      "id": "relaxed-dead-code-validation",
+      "name": "Relaxed dead code validation",
+      "url": "https://github.com/WebAssembly/relaxed-dead-code-validation",
+      "phase": 2
+    },
+    {
+      "id": "numeric-values-in-wat",
+      "name": "Numeric Values in WAT Data Segments",
+      "url": "https://github.com/WebAssembly/wat-numeric-values",
+      "phase": 2
+    },
+    {
+      "id": "extended-name-section",
+      "name": "Extended Name Section",
+      "url": "https://github.com/WebAssembly/extended-name-section",
+      "phase": 2
+    },
+    {
+      "id": "rounding-mode-control",
+      "name": "Rounding Variants",
+      "url": "https://github.com/WebAssembly/rounding-mode-control",
+      "phase": 2
+    },
+    {
+      "id": "compilation-hints",
+      "name": "Compilation Hints",
+      "url": "https://github.com/WebAssembly/compilation-hints",
+      "phase": 2
+    },
+    {
+      "id": "js-primitive-builtins",
+      "name": "JS Primitive Builtins",
+      "url": "https://github.com/WebAssembly/js-primitive-builtins",
+      "phase": 2
+    },
+    {
+      "id": "acquire-release-atomics",
+      "name": "Acquire-Release Atomics",
+      "url": "https://github.com/WebAssembly/acquire-release-atomics",
+      "phase": 2
+    },
+    {
+      "id": "multibyte-array-access",
+      "name": "Multibyte Array Access",
+      "url": "https://github.com/WebAssembly/multibyte-array-access",
+      "phase": 2
+    },
+    {
+      "id": "fp16",
+      "name": "FP16",
+      "url": "https://github.com/WebAssembly/half-precision",
+      "phase": 2
+    },
+    {
+      "id": "type-imports",
+      "name": "Type Imports",
+      "url": "https://github.com/WebAssembly/proposal-type-imports",
+      "phase": 1
+    },
+    {
+      "id": "component-model",
+      "name": "Component Model",
+      "url": "https://github.com/WebAssembly/component-model",
+      "phase": 1
+    },
+    {
+      "id": "wasm_c_api",
+      "name": "WebAssembly C and C++ API",
+      "url": "https://github.com/WebAssembly/wasm-c-api",
+      "phase": 1
+    },
+    {
+      "id": "flexible-vectors",
+      "name": "Flexible Vectors",
+      "url": "https://github.com/WebAssembly/flexible-vectors",
+      "phase": 1
+    },
+    {
+      "id": "memory-control",
+      "name": "Memory control",
+      "url": "https://github.com/WebAssembly/memory-control",
+      "phase": 1
+    },
+    {
+      "id": "stringref",
+      "name": "Reference-Typed Strings",
+      "url": "https://github.com/WebAssembly/stringref",
+      "phase": 1
+    },
+    {
+      "id": "profiles",
+      "name": "Profiles",
+      "url": "https://github.com/WebAssembly/profiles",
+      "phase": 1
+    },
+    {
+      "id": "shared-everything-threads",
+      "name": "Shared-Everything Threads",
+      "url": "https://github.com/WebAssembly/shared-everything-threads",
+      "phase": 1
+    },
+    {
+      "id": "frozen-values",
+      "name": "Frozen Values",
+      "url": "https://github.com/WebAssembly/frozen-values",
+      "phase": 1
+    },
+    {
+      "id": "more-array-constructors",
+      "name": "More Array Constructors",
+      "url": "https://github.com/WebAssembly/more-array-constructors/",
+      "phase": 1
+    },
+    {
+      "id": "jit-interface",
+      "name": "JIT Interface",
+      "url": "https://github.com/WebAssembly/jit-interface",
+      "phase": 1
+    },
+    {
+      "id": "js-types",
+      "name": "Type Reflection for WebAssembly JavaScript API",
+      "url": "https://github.com/WebAssembly/js-types",
+      "phase": 1
+    },
+    {
+      "id": "js-text-encoding-builtins",
+      "name": "JS Text Encoding Builtins",
+      "url": "https://github.com/WebAssembly/js-text-encoding-builtins",
+      "phase": 1
+    },
+    {
+      "id": "mvp",
+      "name": "MVP",
+      "url": "https://github.com/WebAssembly/design/blob/main/MVP.md",
+      "phase": "finished",
+      "specVersion": "1.0",
+      "specs": [
+        "core",
+        "js-api",
+        "web-api"
+      ]
+    },
+    {
+      "id": "import_export_of_mutable_globals",
+      "name": "Import/Export of Mutable Globals",
+      "url": "https://github.com/WebAssembly/mutable-global",
+      "phase": "finished",
+      "specVersion": "1.0",
+      "specs": [
+        "core",
+        "js-api"
+      ]
+    },
+    {
+      "id": "non-trapping_float-to-int_conversions",
+      "name": "Non-trapping float-to-int conversions",
+      "url": "https://github.com/WebAssembly/nontrapping-float-to-int-conversions",
+      "phase": "finished",
+      "specVersion": "2.0",
+      "specs": [
+        "core"
+      ]
+    },
+    {
+      "id": "sign-extension_operators",
+      "name": "Sign-extension operators",
+      "url": "https://github.com/WebAssembly/sign-extension-ops",
+      "phase": "finished",
+      "specVersion": "2.0",
+      "specs": [
+        "core"
+      ]
+    },
+    {
+      "id": "multi-value",
+      "name": "Multi-value",
+      "url": "https://github.com/WebAssembly/multi-value",
+      "phase": "finished",
+      "specVersion": "2.0",
+      "specs": [
+        "core",
+        "js-api"
+      ]
+    },
+    {
+      "id": "javascript_bigint_to_webassembly_i64_integration",
+      "name": "JavaScript BigInt to WebAssembly i64 integration",
+      "url": "https://github.com/WebAssembly/JS-BigInt-integration",
+      "phase": "finished",
+      "specVersion": "2.0",
+      "specs": [
+        "js-api"
+      ]
+    },
+    {
+      "id": "reference_types",
+      "name": "Reference Types",
+      "url": "https://github.com/WebAssembly/reference-types",
+      "phase": "finished",
+      "specVersion": "2.0",
+      "specs": [
+        "core",
+        "js-api"
+      ]
+    },
+    {
+      "id": "bulk_memory_operations",
+      "name": "Bulk memory operations",
+      "url": "https://github.com/WebAssembly/bulk-memory-operations",
+      "phase": "finished",
+      "specVersion": "2.0",
+      "specs": [
+        "core"
+      ]
+    },
+    {
+      "id": "fixed-width_simd",
+      "name": "Fixed-width SIMD",
+      "url": "https://github.com/webassembly/simd",
+      "phase": "finished",
+      "specVersion": "2.0",
+      "specs": [
+        "core",
+        "js-api"
+      ]
+    },
+    {
+      "id": "tail_call",
+      "name": "Tail call",
+      "url": "https://github.com/WebAssembly/tail-call",
+      "phase": "finished",
+      "specVersion": "3.0",
+      "specs": [
+        "core"
+      ]
+    },
+    {
+      "id": "extended-const",
+      "name": "Extended Constant Expressions",
+      "url": "https://github.com/WebAssembly/extended-const",
+      "phase": "finished",
+      "specVersion": "3.0",
+      "specs": [
+        "core"
+      ]
+    },
+    {
+      "id": "function_references",
+      "name": "Typed Function References",
+      "url": "https://github.com/WebAssembly/function-references",
+      "phase": "finished",
+      "specVersion": "3.0",
+      "specs": [
+        "core",
+        "js-api"
+      ]
+    },
+    {
+      "id": "garbage_collection",
+      "name": "Garbage collection",
+      "url": "https://github.com/WebAssembly/gc",
+      "phase": "finished",
+      "specVersion": "3.0",
+      "specs": [
+        "core",
+        "js-api"
+      ]
+    },
+    {
+      "id": "multi-memory",
+      "name": "Multiple memories",
+      "url": "https://github.com/WebAssembly/multi-memory",
+      "phase": "finished",
+      "specVersion": "3.0",
+      "specs": [
+        "core",
+        "js-api"
+      ]
+    },
+    {
+      "id": "relaxed-simd",
+      "name": "Relaxed SIMD",
+      "url": "https://github.com/WebAssembly/relaxed-simd",
+      "phase": "finished",
+      "specVersion": "3.0",
+      "specs": [
+        "core"
+      ]
+    },
+    {
+      "id": "annotations",
+      "name": "Custom Annotation Syntax in the Text Format",
+      "url": "https://github.com/WebAssembly/annotations",
+      "phase": "finished",
+      "specVersion": "3.0",
+      "specs": [
+        "core"
+      ]
+    },
+    {
+      "id": "branch-hinting",
+      "name": "Branch Hinting",
+      "url": "https://github.com/WebAssembly/branch-hinting",
+      "phase": "finished",
+      "specVersion": "3.0",
+      "specs": [
+        "core"
+      ]
+    },
+    {
+      "id": "exception_handling",
+      "name": "Exception handling",
+      "url": "https://github.com/WebAssembly/exception-handling",
+      "phase": "finished",
+      "specVersion": "3.0",
+      "specs": [
+        "core",
+        "js-api"
+      ]
+    },
+    {
+      "id": "js-string-builtins",
+      "name": "JS String Builtins",
+      "url": "https://github.com/WebAssembly/js-string-builtins",
+      "phase": "finished",
+      "specVersion": "3.0",
+      "specs": [
+        "core",
+        "js-api"
+      ]
+    },
+    {
+      "id": "memory64",
+      "name": "Memory64",
+      "url": "https://github.com/WebAssembly/memory64",
+      "phase": "finished",
+      "specVersion": "3.0",
+      "specs": [
+        "core"
+      ]
+    },
+    {
+      "id": "unmanaged_closures",
+      "name": "Unmanaged closures",
+      "url": "https://github.com/WebAssembly/proposals/issues/6",
+      "phase": "inactive"
+    },
+    {
+      "id": "cond_sections",
+      "name": "Conditional sections",
+      "url": "https://github.com/WebAssembly/conditional-sections",
+      "phase": "inactive"
+    },
+    {
+      "id": "feature_detection",
+      "name": "Feature Detection",
+      "url": "https://github.com/WebAssembly/feature-detection",
+      "phase": "inactive"
+    },
+    {
+      "id": "module_linking",
+      "name": "Module Linking",
+      "url": "https://github.com/WebAssembly/module-linking",
+      "phase": "inactive"
+    },
+    {
+      "id": "interface_types",
+      "name": "Interface Types",
+      "url": "https://github.com/WebAssembly/interface-types",
+      "phase": "inactive"
+    },
+    {
+      "id": "funclets",
+      "name": "Funclets: Flexible Intraprocedural Control Flow",
+      "url": "https://github.com/WebAssembly/funclets",
+      "phase": "inactive"
+    },
+    {
+      "id": "call-tags",
+      "name": "Call Tags",
+      "url": "https://github.com/WebAssembly/call-tags",
+      "phase": "inactive"
+    },
+    {
+      "id": "constant-time",
+      "name": "Constant Time",
+      "url": "https://github.com/WebAssembly/constant-time",
+      "phase": "inactive"
+    },
+    {
+      "id": "gc-js-customization",
+      "name": "JS Customization for GC Objects",
+      "url": "https://github.com/WebAssembly/gc-js-customization",
+      "phase": "inactive"
+    },
+    {
+      "id": "instrument-tracing",
+      "name": "Instrument and Tracing Technology",
+      "url": "https://github.com/WebAssembly/instrument-tracing",
+      "phase": "inactive"
+    }
+  ],
+  "competitors": {
+    "Wasmtime": {
+      "bigInt": null,
+      "branchHinting": [
+        "flag",
+        "Requires flag `--wasm=branch-hinting`"
+      ],
+      "bulkMemory": "0.20",
+      "customAnnotationSyntaxInTheTextFormat": true,
+      "customPageSizes": [
+        "flag",
+        "Requires flag `--wasm=custom-page-sizes`"
+      ],
+      "esmIntegration": null,
+      "exceptionsFinal": "47",
+      "extendedConst": "25",
+      "gc": "47",
+      "jspi": null,
+      "jsStringBuiltins": null,
+      "memory64": "30",
+      "multiMemory": "15",
+      "multiValue": "0.17",
+      "mutableGlobals": true,
+      "profiles": true,
+      "referenceTypes": "0.20",
+      "relaxedSimd": "15",
+      "saturatedFloatToInt": true,
+      "signExtensions": true,
+      "simd": "0.33",
+      "tailCall": [
+        "22",
+        "Enabled by default when using the Cranelift backend, the s390x architecture supports it since 24"
+      ],
+      "threads": "15",
+      "typedFunctionReferences": "47",
+      "typeReflection": null,
+      "webContentSecurityPolicy": null,
+      "wideArithmetic": [
+        "flag",
+        "Requires flag `--wasm=wide-arithmetic`"
+      ]
+    },
+    "Wasmer": {
+      "bigInt": null,
+      "bulkMemory": "1.0",
+      "customAnnotationSyntaxInTheTextFormat": true,
+      "esmIntegration": null,
+      "jspi": null,
+      "jsStringBuiltins": null,
+      "referenceTypes": "2.0",
+      "threads": "4.0",
+      "exceptionsFinal": "6.0",
+      "extendedConst": "7.1",
+      "multiMemory": "7.3",
+      "multiValue": "1.0",
+      "mutableGlobals": "0.7",
+      "relaxedSimd": "7.1",
+      "saturatedFloatToInt": true,
+      "signExtensions": true,
+      "simd": "2.0",
+      "stackSwitching": "7.0",
+      "tailCall": "7.1",
+      "typeReflection": "2.0",
+      "webContentSecurityPolicy": null,
+      "wideArithmetic": "7.1"
+    },
+    "wazero": {
+      "bigInt": null,
+      "bulkMemory": true,
+      "customAnnotationSyntaxInTheTextFormat": null,
+      "exceptionsFinal": "flag",
+      "exceptions": false,
+      "extendedConst": "flag",
+      "esmIntegration": null,
+      "gc": false,
+      "jspi": null,
+      "jsStringBuiltins": null,
+      "memory64": false,
+      "tailCall": "flag",
+      "customPageSizes": null,
+      "multiValue": true,
+      "multiMemory": false,
+      "mutableGlobals": true,
+      "referenceTypes": true,
+      "relaxedSimd": false,
+      "saturatedFloatToInt": true,
+      "signExtensions": true,
+      "simd": true,
+      "stackSwitching": false,
+      "threads": "flag",
+      "typedFunctionReferences": "flag",
+      "typeReflection": null,
+      "webContentSecurityPolicy": null
+    },
+    "wasmedge": {
+      "bigInt": null,
+      "branchHinting": null,
+      "bulkMemory": "0.7.1",
+      "customAnnotationSyntaxInTheTextFormat": false,
+      "customPageSizes": false,
+      "esmIntegration": false,
+      "exceptionsFinal": "0.14.0",
+      "extendedConst": "0.10.0",
+      "gc": "0.14.0",
+      "jsPrimitiveBuiltins": null,
+      "jsStringBuiltins": null,
+      "jspi": null,
+      "memory64": false,
+      "multiMemory": "0.9.1",
+      "multiValue": "0.6.2",
+      "mutableGlobals": "0.2.0",
+      "referenceTypes": "0.7.1",
+      "relaxedSimd": "0.14.1",
+      "saturatedFloatToInt": "0.6.2",
+      "signExtensions": "0.6.2",
+      "simd": "0.7.2",
+      "tailCall": "0.10.0",
+      "threads": "0.10.1",
+      "typeReflection": false,
+      "typedFunctionReferences": "0.14.0",
+      "webContentSecurityPolicy": null,
+      "wideArithmetic": false
+    }
+  }
+}

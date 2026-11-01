@@ -70,6 +70,17 @@ def complete_report():
 
 
 class PhaseIntegrityTests(unittest.TestCase):
+    def test_explicit_modern_policy_still_rejects_mismatched_records(self):
+        report = complete_report()
+        runtime = next(r for r in report["runtimes"] if r.get("mode") == "api")
+        workload = report["fixtures"]["workloads"][0]
+        row = next(r for r in report["observations"] if r["runtime"] == runtime["id"] and r["workload"] == workload["id"])
+        runtime["policy"] = "unmetered; bounded cancellation; checked Core 3.0 + Threads"
+        with self.assertRaisesRegex(ValueError, "policy mismatch"):
+            phase.validate_observation(row, runtime, workload)
+        row["record"]["policy"] = runtime["policy"]
+        phase.validate_observation(row, runtime, workload)
+
     def test_native_dispatch_requires_its_measured_preparation_part(self):
         report = complete_report()
         runtime = next(r for r in report["runtimes"] if r.get("mode") == "dispatch")

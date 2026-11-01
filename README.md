@@ -44,12 +44,14 @@ competitor engines as independent references.
 - Support WASI Preview 1, Component Model-based WASI 0.2, and WASI 0.3 with native async as separate, versioned targets.
 - Run the same source and semantic tests under `go test` and `llgo test`. Building the host VM with LLGo and executing LLGo-produced Wasm guests are separate acceptance targets.
 
-The research snapshot is dated **2026-10-26**: WASI 0.3 has shipped, GC is part of Core 3.0, and Core Threads remains distinct from Shared-Everything Threads and shared GC objects. The Go ecosystem already includes wazero and Wago, which overlaps substantially with this project's goals. See the [standards report](docs/research/standards.md) and [implementation comparison](docs/research/implementations.md) for evidence and limitations.
+The latest [standards audit](docs/research/status-2026-11-01.md) and [performance audit](docs/research/performance-2026-11-01.md) are dated **2026-11-01**. WASI 0.3 has shipped, GC is part of Core 3.0, and Core Threads remains distinct from Shared-Everything Threads and shared GC objects. The original October 26 survey and reuse assessment remain historical context. Functional coverage does not imply performance parity: GC, shared-memory and host/component paths still have substantial deficits.
 
 ## Documentation
 
 | Document | Contents |
 | --- | --- |
+| [Current standards and support](docs/research/status-2026-11-01.md) | Every registered proposal, accepted-feature support, competitors and exact test evidence |
+| [Current performance gaps](docs/research/performance-2026-11-01.md) | Complete Core portfolio, GC/Threads, P1/P2/async, separate phases and raw evidence |
 | [Standards and proposals](docs/research/standards.md) | Proposal stages, Core/WASI versions, official sources, and conflicting or outdated material |
 | [Existing implementations](docs/research/implementations.md) | Runtime capability matrix and Wago/wazero reuse assessment |
 | [Wazero evaluation](docs/research/wazero-evaluation.md) | Actual feature and compiler results, known gaps, and reproducible experiments |
