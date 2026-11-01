@@ -226,6 +226,18 @@ func (c *Context) Cancel() {
 // Enter calls an approved C entry, never an interior continuation address. The
 // generated entry validates its continuation ID and restores spilled state.
 func (c *Context) Enter(l *Lease, entry uint32) (Exit, error) {
+	return c.run(l, entry, nil)
+}
+
+// Run combines state publication, native entry and the exit snapshot. The
+// snapshot is copied before a concurrent close can retire the native record.
+// It uses the same lease, memory and active-entry protocol as Enter.
+func (c *Context) Run(l *Lease, entry uint32, state State) (State, Exit, error) {
+	exit, err := c.run(l, entry, &state)
+	return state, exit, err
+}
+
+func (c *Context) run(l *Lease, entry uint32, state *State) (Exit, error) {
 	if l == nil {
 		return 0, ErrInvalid
 	}
@@ -233,6 +245,13 @@ func (c *Context) Enter(l *Lease, entry uint32) (Exit, error) {
 	if err := c.idle(); err != nil {
 		c.mu.Unlock()
 		return 0, err
+	}
+	if state != nil {
+		if state.Used > c.size || state.Depth > c.record.MaxDepth {
+			c.mu.Unlock()
+			return 0, ErrLimit
+		}
+		c.record.State = *state
 	}
 	code, address, err := l.begin(entry)
 	if err != nil {
@@ -259,11 +278,18 @@ func (c *Context) Enter(l *Lease, entry uint32) (Exit, error) {
 		c.memory.end()
 	}
 	c.mu.Lock()
+	if state != nil {
+		*state = r.State
+	}
+	closed := c.closed
 	c.active = false
 	c.release()
 	c.mu.Unlock()
 	if status < Return || status > Move {
 		return 0, ErrInvalid
+	}
+	if state != nil && closed {
+		return status, ErrClosed
 	}
 	return status, nil
 }

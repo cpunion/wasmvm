@@ -150,6 +150,49 @@ func TestEntryResumeAndRetirement(t *testing.T) {
 	code.Close()
 }
 
+func TestRunStatePublicationResumeAndLimits(t *testing.T) {
+	if !Available {
+		return
+	}
+	code, lease, ctx := makeProbe(t, addProbe())
+	code.Close()
+	s := State{ResultLo: 19, ResultHi: 23, RootMap: 7, Source: 91, Fuel: 100}
+	for exit := Return; exit <= Move; exit++ {
+		s.Payload[0] = uint64(exit)
+		got, status, err := ctx.Run(lease, 0, s)
+		if err != nil || status != exit || got.ResultLo != s.ResultLo+23 || got.Continuation != s.Continuation+1 || got.RootMap != 7 || got.Source != 91 || got.Fuel != 100 {
+			t.Fatal(got, status, err)
+		}
+		stored, err := ctx.State()
+		if err != nil || stored != got {
+			t.Fatal("snapshot mismatch", stored, got, err)
+		}
+		s = got
+	}
+	for _, bad := range []State{{Used: 65}, {Depth: 17}} {
+		if _, _, err := ctx.Run(lease, 0, bad); err != ErrLimit {
+			t.Fatal(err)
+		}
+	}
+	if _, _, err := ctx.Run(nil, 0, State{}); err != ErrInvalid {
+		t.Fatal(err)
+	}
+	if _, _, err := ctx.Run(lease, 1, State{}); err != ErrInvalid {
+		t.Fatal(err)
+	}
+	if _, _, err := ctx.Run(lease, 0, State{Payload: [4]uint64{999}}); err != ErrInvalid {
+		t.Fatal(err)
+	}
+	lease.Close()
+	if _, _, err := ctx.Run(lease, 0, State{}); err != ErrClosed {
+		t.Fatal(err)
+	}
+	ctx.Close()
+	if _, _, err := ctx.Run(lease, 0, State{}); err != ErrClosed {
+		t.Fatal(err)
+	}
+}
+
 func TestInvalidAndLimits(t *testing.T) {
 	if !Available {
 		return
@@ -374,6 +417,12 @@ func TestFrameStorage(t *testing.T) {
 }
 
 func TestCancelCloseWhileRunning(t *testing.T) {
+	for _, combined := range []bool{false, true} {
+		testCancelCloseWhileRunning(t, combined)
+	}
+}
+
+func testCancelCloseWhileRunning(t *testing.T, combined bool) {
 	if !Available {
 		return
 	}
@@ -381,7 +430,18 @@ func TestCancelCloseWhileRunning(t *testing.T) {
 		code, lease, ctx := makeProbe(t, cancelProbe())
 		done := make(chan error, 1)
 		go func() {
-			status, err := ctx.Enter(lease, 0)
+			var status Exit
+			var err error
+			if combined {
+				input := State{Fuel: 100, Source: 91}
+				var got State
+				got, status, err = ctx.Run(lease, 0, input)
+				if got != input {
+					err = ErrInvalid
+				}
+			} else {
+				status, err = ctx.Enter(lease, 0)
+			}
 			if err == nil && status != Poll {
 				err = ErrInvalid
 			}
@@ -415,6 +475,9 @@ func TestCancelCloseWhileRunning(t *testing.T) {
 		if _, err := ctx.Enter(lease, 0); err != ErrBusy {
 			t.Fatal(err)
 		}
+		if _, _, err := ctx.Run(lease, 0, State{}); err != ErrBusy {
+			t.Fatal(err)
+		}
 		code.Close()
 		lease.Close()
 		code.mu.Lock()
@@ -432,7 +495,7 @@ func TestCancelCloseWhileRunning(t *testing.T) {
 		}
 		select {
 		case err := <-done:
-			if err != nil {
+			if err != nil && !(combined && closeContext && err == ErrClosed) {
 				t.Fatal(err)
 			}
 		case <-time.After(5 * time.Second):
