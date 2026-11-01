@@ -13,7 +13,8 @@ go test ./pkg/component -run '^TestUpstreamComponentRuntime$'
 Regenerate with `python3 scripts/component_runtime_corpus.py --regenerate` and
 the pinned upstream archive plus wasm-tools 1.258.0 and the independently
 pinned 1.262.0 producer. The older producer still generates its original inputs
-byte-for-byte; the additional producer converts only the four former limitations.
+byte-for-byte except for the declared zero-length semantic adaptation below;
+the additional producer converts only the four former limitations.
 Its release archive and executable checksums are retained in the manifest. The separate
 [grammar/type corpus](../component-binary/README.md) covers those scripts.
 
@@ -39,3 +40,11 @@ non-threaded post-return cases and all version-suffix assertions execute on the
 owned engine. This is complete conversion of the pinned script inventory,
 with component threading still outside the declared runtime profile; it does
 not establish exhaustive WASI acceptance or close experimental cm64 semantics.
+
+The cumulative October 30 Canonical ABI correction checks typed buffer pointers
+even at length zero. `semanticCorrections` retains the original zero-length
+script and an adapted copy replacing its two `0xdeadbeef` addresses with the valid
+one-page memory endpoint. Every command and expected result is preserved; the
+runner executes the adapted binary. Offline preparation verifies the exact
+two-address transformation. Separate owned negative tests require invalid empty
+pointers to trap. See [the correction pins](../component-cm64/README.md).

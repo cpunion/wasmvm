@@ -34,12 +34,13 @@ type Layout struct {
 }
 
 type Builder struct {
-	limits  Limits
-	address wasm.ValueType
-	pointer uint64
-	nodes   uint32
-	active  map[*model.Type]bool
-	cache   map[*model.Type]*Layout
+	limits               Limits
+	address              wasm.ValueType
+	pointer              uint64
+	nodes                uint32
+	active               map[*model.Type]bool
+	cache                map[*model.Type]*Layout
+	borrowRepresentation func(uint64) wasm.ValueType
 }
 
 // NewBuilder selects the canonical memory's address width. The input type
@@ -49,6 +50,15 @@ func NewBuilder(memory64 bool, limits Limits) *Builder {
 	if memory64 {
 		b.address, b.pointer = wasm.I64, 8
 	}
+	return b
+}
+
+// NewLoweringBuilder selects representations for borrows lowered into their
+// defining component. Other borrows and all own handles remain i32 indices.
+// The resolver must remain stable for every resource ID already queried.
+func NewLoweringBuilder(memory64 bool, limits Limits, representation func(uint64) wasm.ValueType) *Builder {
+	b := NewBuilder(memory64, limits)
+	b.borrowRepresentation = representation
 	return b
 }
 
@@ -141,6 +151,9 @@ func (b *Builder) build(t *model.Type, depth uint32) (*Layout, error) {
 			return nil, invalid("missing resource identity")
 		}
 		scalar(4, wasm.I32)
+		if t.Kind == model.Borrow && b.borrowRepresentation != nil && b.borrowRepresentation(t.ResourceID) == wasm.I64 {
+			scalar(8, wasm.I64)
+		}
 	case model.Flags:
 		n := len(t.Labels)
 		if n == 0 || n > 32 {

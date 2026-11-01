@@ -38,9 +38,6 @@ func (r *resourceCodec) declaration(t *model.Type) (*resourceType, error) {
 	if rt == nil || rt.instance != r.in {
 		return nil, vm.ErrType
 	}
-	if t.Kind == model.Borrow && rt.representation == wasm.I64 && rt.owner == r.n {
-		return nil, unsupported("cm64 borrow conversion")
-	}
 	return rt, nil
 }
 
@@ -114,16 +111,17 @@ func (r *resourceCodec) Lift(t *model.Type, id uint32) (Value, error) {
 	return Value{Resource: ref}, nil
 }
 
-func (r *resourceCodec) Lower(t *model.Type, v Value) (uint32, error) {
+func (r *resourceCodec) Lower(t *model.Type, v Value) (uint64, error) {
 	if asyncValueType(t) {
-		return r.lowerAsync(t, v)
+		id, err := r.lowerAsync(t, v)
+		return uint64(id), err
 	}
 	if t.Kind == model.ErrorContext {
 		id, err := r.n.handles.AddErrorContext(v)
 		if err == nil {
 			r.lowered = append(r.lowered, ownedHandle{table: r.n.handles, id: id, generation: r.n.handles.EntryGeneration(id)})
 		}
-		return id, err
+		return uint64(id), err
 	}
 	rt, table, id, err := r.inspect(t, v)
 	if err != nil {
@@ -135,9 +133,10 @@ func (r *resourceCodec) Lower(t *model.Type, v Value) (uint32, error) {
 			return 0, err
 		}
 		if rt.owner == r.n {
-			return uint32(rep), nil
+			return rep, nil
 		}
-		return r.scope.Lower(r.n.handles, rt.identity, rep)
+		id, err := r.scope.Lower(r.n.handles, rt.identity, rep)
+		return uint64(id), err
 	}
 	rep, err := table.Take(rt.identity, id)
 	if err != nil {
@@ -148,7 +147,7 @@ func (r *resourceCodec) Lower(t *model.Type, v Value) (uint32, error) {
 	if err == nil {
 		r.lowered = append(r.lowered, ownedHandle{table: r.n.handles, rt: rt, id: id, generation: r.n.handles.EntryGeneration(id)})
 	}
-	return id, err
+	return uint64(id), err
 }
 
 func (r *resourceCodec) Accept(t *model.Type, v Value, commit bool) (Value, error) {

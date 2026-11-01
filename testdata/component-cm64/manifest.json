@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/WebAssembly/component-model",
+  "revision": "fed10b0b823b82553dd8363f16a640816f5eac65",
+  "archiveSHA256": "eff6bdead980beb136ab764567fc738e570624a4092e306cb4e9323b952366a3",
+  "sha256": {
+    "design/mvp/CanonicalABI.md": "4db32e484dadc3fec4aec3f937e6695a0844bbddeee6772cc731424720683c26",
+    "design/mvp/Binary.md": "52619525dd654e0ea6368ba5d53b6e38b004d3669a7f7f2dc3b11a6ada3cf185",
+    "LICENSE": "4d3653542be17c85050541db12115b467dacc543c0c6bba8a5a4ed2ffba52cc1",
+    "LICENSE-APACHE": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+  }
+}

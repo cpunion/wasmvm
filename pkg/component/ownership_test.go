@@ -308,8 +308,8 @@ func TestOwnedCM64Representation(t *testing.T) {
 		if err != nil || result.Value.Bits != rep {
 			t.Fatal(result, err)
 		}
-		if _, err := e.Compile(nil, fixture(t, "ownership64-borrow")); !errors.Is(err, wasm.ErrUnsupported) {
-			t.Fatal("unsupported local cm64 borrow reached instantiation", err)
+		if _, err := e.Compile(nil, fixture(t, "ownership64-borrow")); !errors.Is(err, wasm.ErrInvalid) {
+			t.Fatal("narrow core signature accepted for a local i64 borrow", err)
 		}
 		in.Close()
 		m.Close()

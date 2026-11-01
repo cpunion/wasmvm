@@ -644,6 +644,16 @@ Concrete-instance export visibility now preserves named bindings and immutable
 import types. Experimental cm64 local borrows and full WASI/performance
 acceptance remain open.
 
+The October 30 ABI correction now implements local i64 borrow representations
+independently of memory address width. Direct/aggregate/indirect calls,
+cross-component handle conversion, async suspension/cancellation and failure
+cleanup execute on both owned backends. Worst-case type-size validation accounts
+for abstract resource representations. Typed empty stream buffers now check
+alignment and point bounds; original upstream sources are retained with two
+explicit address corrections. The current independent producer still rejects
+the corrected local i64 signatures. Full WASI acceptance and the deferred
+performance gates remain open; this reference limitation is not a semantic pass.
+
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 
 ## M7 — Further optimization and experimental features

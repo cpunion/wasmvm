@@ -83,3 +83,13 @@ as a reference capability failure, separate from successful own execution.
 u32/byte/unit streams and guest future/stream producers which return the readable
 end before finishing a synchronous write. Tests supply owned-engine host sources
 and consumers; these custom bindings are not reference-provider conformance.
+
+`cm64-borrows.json` pins nine owned fixtures from
+`scripts/build_cm64_borrow_fixtures.py`, the original owned borrow source and the
+separate October 30 Component Model correction archive. Local resources preserve
+i64 representations in direct calls, records, variants, lists and parameter
+spills with either memory address width. Composed clients retain i32 handles;
+async callbacks and cancellation retain/release lenders. Bad allocator results
+and guest traps exercise failure cleanup. Independent wasm-tools parses these
+fixtures but its current validator rejects the new local i64 flat signature;
+no independent validation success is claimed.

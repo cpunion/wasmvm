@@ -3,6 +3,7 @@ package validate
 import (
 	"fmt"
 
+	"github.com/cpunion/wasmvm/internal/component/canonical"
 	"github.com/cpunion/wasmvm/internal/component/model"
 	"github.com/cpunion/wasmvm/internal/core/module"
 	corevalidate "github.com/cpunion/wasmvm/internal/core/validate"
@@ -16,6 +17,7 @@ type Component struct {
 	definition      *model.Binary
 	scope           *TypeScope
 	representations map[uint64]wasm.ValueType
+	wideResources   bool
 	CoreModules     []*CoreModule
 	CoreInstances   []*CoreInstance
 	Children        []*Component
@@ -30,6 +32,8 @@ func (c *Component) Definition() *model.Binary { return c.definition }
 
 // ResourceRepresentation is nonzero only for a representation owned here.
 func (c *Component) ResourceRepresentation(id uint64) wasm.ValueType { return c.representations[id] }
+
+func (c *Component) Has64BitResources() bool { return c.wideResources }
 
 // TypeAt returns an immutable checked type from this component's index space.
 // Runtime composition uses it to bind static resource IDs to instance identities.
@@ -60,6 +64,7 @@ type componentContext struct {
 	obligations       []*linear
 	containsValues    map[*Type]bool
 	localValues       map[*valueBinding]bool
+	lowerLayouts      [2]*canonical.Builder
 }
 
 func Check(definition *model.Binary, limits Limits) (*Component, error) {
@@ -136,6 +141,7 @@ func (c *componentContext) definition(d model.Definition) error {
 		if err == nil && t.Kind == model.Resource {
 			c.localResources[t.Resource] = true
 			c.representations[t.Resource] = t.Representation
+			c.result.wideResources = c.result.wideResources || t.Representation == wasm.I64
 		}
 		return err
 	case 8:

@@ -1,7 +1,9 @@
 # Component Canonical ABI foundation
 
 This work uses Component Model revision
-`d095e2f60ddae1f9a1e9b1e2fb547ec1114da677`. The synchronous value ABI is
+`d095e2f60ddae1f9a1e9b1e2fb547ec1114da677`, with the separately pinned
+[October 30 cm64 and empty-buffer corrections](../../testdata/component-cm64/README.md).
+The synchronous value ABI is
 implemented in `internal/component/canonical`, independently of the Core
 interpreter/native backend. Component binary decoding is implemented separately
 in `internal/component/decode`. The [type subsystem](component-validation.md)
@@ -39,7 +41,8 @@ allocation effects; the runtime must retain instance ownership through cleanup.
 ## Resource state
 
 `Resources` holds nominal resource declarations and owned/borrowed handles.
-Handles do not reuse IDs, preventing stale handles from gaining authority.
+Host capabilities do not reuse IDs. Guest tables use the specified LIFO free
+list; publication generations distinguish provisional ownership after reuse.
 Live entries share one bounded Store quota, and each table has a bounded 28-bit
 index domain. Representations preserve all 64 bits for cm64 resource types. `Take` consumes ownership
 without a destructor; `Drop` removes the handle before invoking a destructor
@@ -59,8 +62,38 @@ The runtime now wires own/borrow call conversions through the same flat/memory
 codec. Opaque host capabilities, prevalidated moves, borrowed scopes, nominal
 host bindings and failure cleanup supply that ownership contract. Resource
 representation integers never become forgeable public ownership capabilities.
-Standalone resource values/starts and local cm64 borrow conversion remain
-unsupported; the pinned Python reference covers the MVP resource representation.
+Standalone resource values/starts share the same ownership transaction.
+Local cm64 borrows preserve the full representation as described below; the
+original pinned Python layout reference covers only MVP resources.
+
+## Direction-aware cm64 borrows
+
+The ABI correction at `fed10b0b823b82553dd8363f16a640816f5eac65`
+distinguishes the component defining a resource and the direction of conversion.
+Lowering a borrow into its defining component uses the resource's actual i32 or
+i64 representation for its flat type, size and alignment. Every own value and
+every foreign borrow remains an i32 handle. Resource representation width is
+independent of the canonical memory's address width.
+
+One shared layout builder accepts an optional local-representation resolver;
+ordinary lifting retains the original i32 handle layouts. Validation and runtime
+use the same rule, including records, variant joins, lists and indirect parameter
+spills. Runtime layout caches belong to their namespace and retain no compilation
+plan. Type declarations enforce the worst-case size below 2^28 bytes, accounting
+for unknown imported representations while retaining known i32 sizes.
+
+Lenders stay pinned through async suspension and cross-component cancellation.
+Failed allocation, memory writes and guest traps release acquired lends through
+the existing ownership transaction. No representation integer is a public
+ownership capability. Nine authored fixtures execute on both backends; the
+independent wasm-tools 1.262.0 validator still rejects the new local i64 flat
+signature. Its result is a recorded reference limitation, not a passing oracle.
+
+The cumulative correction also checks typed stream/future buffer alignment and
+bounds when the element count is zero. The memory endpoint is valid; an address
+beyond it or a misaligned pointer traps. Untyped unit buffers ignore their pointer.
+The original official zero-length script is preserved alongside a declared
+two-address adaptation; all commands and expected outcomes remain unchanged.
 
 ## Evidence and remaining integration
 

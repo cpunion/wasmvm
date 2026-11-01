@@ -4884,3 +4884,43 @@ passes all four Go/LLGo target jobs. Artifact digests, exact source head and all
 Component and P3 Linux coverage are 92.02% and 90.97%. No unresolved review
 threads remain. This closes that increment's integration checks; milestone
 performance and remaining functional acceptance stay separately recorded.
+
+PR #80 merged at engine `12e17e03`. Its [final-head CI](https://github.com/cpunion/wasmvm/actions/runs/41269334011) passes all four target jobs. All nine artifact digests and 180 execution reports are verified; all 30 executable packages exceed 90% coverage. No unresolved review threads remain.
+
+## Direction-aware cm64 borrows and typed empty buffers
+
+The separately retained Component Model snapshot `fed10b0b` includes the October
+30 i64 borrow-layout and empty-buffer pointer corrections. Local borrows lower
+to their resource representation; foreign borrows and every own value remain
+i32 table handles, independently of memory address width. Nine authored fixtures
+exercise direct/record/variant/list/indirect calls, full-width edge values,
+cross-component conversion, async suspension and cancellation, bad allocators
+and trap cleanup. Known i32 and abstract/i64 worst-case type-size controls pass.
+
+The previous implementation accepted invalid typed zero-length stream pointers.
+The regression fails before the fix and passes after eager alignment/point-bound
+checks. The old official zero-length script also contains two `0xdeadbeef`
+addresses in successful typed empty-buffer operations. Its original bytes remain
+unchanged; `semanticCorrections` records an exact two-address adaptation to the
+valid memory endpoint. All command indices, expected outcomes and selected/
+deferred counts remain unchanged. The owned stdin readiness guest now uses a
+valid empty buffer; separate negative guests require invalid pointers to trap.
+
+Go 1.27.3 race and pinned LLGo `8e45ed5e` with `-O3 -lto=full` pass all affected
+canonical/decode/validate/component/P2/P3 package tests, executing both backends.
+Vet passes. The combined affected-package coverage profile measures:
+
+| Package | Statement coverage |
+| --- | ---: |
+| internal/component/canonical | 94.06% |
+| internal/component/decode | 96.45% |
+| internal/component/validate | 91.95% |
+| pkg/component | 92.31% |
+| pkg/wasi/preview2 | 90.28% |
+| pkg/wasi/preview3 | 90.97% |
+
+wasm-tools 1.262.0 still rejects the new local i64 borrow signature with
+`[I32]` versus `[I64]`. Independent parsing is not semantic validation and this
+reference limitation remains recorded. Final-head target CI, full WASI
+acceptance and deferred performance gates remain open. Local logs and the
+coverage profile are under `artifacts/components/component-forward-probe/cm64-*`.
