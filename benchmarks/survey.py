@@ -24,6 +24,15 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def sdk_library_directory(sdk, name, system=None):
+    suffix = ".dylib" if (system or platform.system()) == "Darwin" else ".so"
+    filename = "lib" + name + suffix
+    for directory in (sdk / "lib", sdk / "lib64"):
+        if (directory / filename).is_file():
+            return directory
+    raise FileNotFoundError("SDK library is missing: " + str(sdk / filename))
+
+
 def fixtures(root):
     groups = [("core", root / "benchmarks/embedded")]
     groups += [(p.name.removesuffix("-fixtures"), p)
@@ -46,6 +55,7 @@ def fixtures(root):
 
 
 def build(root, output, sdks):
+    libraries = {name: sdk_library_directory(sdk, name) for name, sdk in sdks.items()}
     revision = ci.capture(["git", "-C", str(root), "rev-parse", "HEAD"])
     toolchains = own_build.toolchains()
     builds, runtimes = {}, {}
@@ -86,11 +96,11 @@ def build(root, output, sdks):
         source = root / "benchmarks/embedded/c" / (name + ".c")
         command = ["cc", "-std=c11", "-D_POSIX_C_SOURCE=200809L", "-O2", "-Wall", "-Wextra", "-Werror",
                    "-I", str(sdk / "include"), str(source), "-o", str(binary),
-                   "-L", str(sdk / "lib"), "-Wl,-rpath," + str(sdk / "lib"), "-l" + name]
+                   "-L", str(libraries[name]), "-Wl,-rpath," + str(libraries[name]), "-l" + name]
         subprocess.run(command, check=True, timeout=180)
         suffix = ".dylib" if platform.system() == "Darwin" else ".so"
         builds[name] = dict(command=command, binary=str(binary), binarySha256=digest(binary),
-                            sourceSha256=digest(source), sdkLibrarySha256=digest(sdk / "lib" / ("lib" + name + suffix)))
+                            sourceSha256=digest(source), sdkLibrarySha256=digest(libraries[name] / ("lib" + name + suffix)))
         runtimes[name + ("-interpreter" if name == "wasmedge" else "-cranelift")] = dict(
             command=[str(binary)], backend="interpreter" if name == "wasmedge" else "compiler",
             version={"wasmtime": "48.0.1", "wasmer": "7.3.0", "wasmedge": "0.17.1"}[name])
@@ -140,6 +150,7 @@ def markdown(report):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--build-dir", type=Path, help="keep archived sources/binaries outside the result artifact")
     for name in ("wasmtime", "wasmer", "wasmedge"):
         parser.add_argument("--" + name + "-sdk", type=Path, required=True)
     parser.add_argument("--build-only", action="store_true")
@@ -155,7 +166,7 @@ def main():
             if digest(Path(value["binary"])) != value["binarySha256"]:
                 raise ValueError("built runner hash mismatch")
     else:
-        built = build(root, output / "build", {name: getattr(args, name + "_sdk").resolve()
+        built = build(root, args.build_dir.resolve() if args.build_dir else output / "build", {name: getattr(args, name + "_sdk").resolve()
                                              for name in ("wasmtime", "wasmer", "wasmedge")})
         build_file.write_text(json.dumps(built, indent=2) + "\n")
     if args.build_only:

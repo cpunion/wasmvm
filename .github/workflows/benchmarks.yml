@@ -119,6 +119,7 @@ jobs:
         run: |
           python3 head/benchmarks/survey.py \
             --output "$GITHUB_WORKSPACE/benchmark-results/phases" \
+            --build-dir "$RUNNER_TEMP/wasmvm-survey-build" \
             --wasmtime-sdk "$RUNNER_TEMP/wasm-runtime-tools/wasmtime-c-api/wasmtime-v48.0.1-x86_64-linux-c-api" \
             --wasmer-sdk "$RUNNER_TEMP/wasm-runtime-tools/wasmer" \
             --wasmedge-sdk "$RUNNER_TEMP/wasm-runtime-tools/wasmedge"

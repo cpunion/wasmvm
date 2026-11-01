@@ -2,6 +2,7 @@
 from pathlib import Path
 import importlib.util
 import json
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -10,6 +11,18 @@ import survey_modern
 
 
 class SurveyTests(unittest.TestCase):
+    def test_sdk_library_layouts_and_missing_dependency(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "lib64").mkdir()
+            (root / "lib64/libwasmedge.so").touch()
+            self.assertEqual(survey.sdk_library_directory(root, "wasmedge", "Linux"), root / "lib64")
+            (root / "lib").mkdir()
+            (root / "lib/libwasmtime.dylib").touch()
+            self.assertEqual(survey.sdk_library_directory(root, "wasmtime", "Darwin"), root / "lib")
+            with self.assertRaisesRegex(FileNotFoundError, "SDK library is missing"):
+                survey.sdk_library_directory(root, "wasmer", "Linux")
+
     def test_modern_manifest_has_independent_oracles(self):
         root = Path(__file__).resolve().parent / "modern"
         spec = importlib.util.spec_from_file_location("modern_oracle", root / "verify.py")

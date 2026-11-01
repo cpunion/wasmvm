@@ -39,6 +39,8 @@ def main():
     output = args.core_output.resolve() / "modern"
     output.mkdir(exist_ok=True)
     core = json.loads((args.core_output / "build.json").read_text())
+    workspace = Path(core["builds"]["go"]["binary"]).parent.parent / "modern"
+    workspace.mkdir(exist_ok=True)
     runtimes, builds = {}, {}
     for compiler in ("go", "llgo"):
         old = core["builds"][compiler]
@@ -50,7 +52,7 @@ def main():
         if patched == original:
             raise ValueError("missing feature instrumentation boundary")
         path.write_text(patched)
-        binary = output / ("wasmvm-" + compiler)
+        binary = workspace / ("wasmvm-" + compiler)
         command = [*old["command"]]
         command[command.index("-o") + 1] = str(binary)
         try:
@@ -64,7 +66,7 @@ def main():
         for backend in ("interpreter", "native"):
             name = "wasmvm-" + compiler + "-" + backend
             runtimes[name] = dict(core["runtimes"][name], command=[str(binary), "--mode", "api"], policy=POLICY)
-    target = output / "wazero"
+    target = workspace / "wazero"
     shutil.copytree(Path(core["builds"]["wazero"]["binary"]).parent, target, dirs_exist_ok=True)
     path = target / "main.go"
     source = path.read_text().replace('"github.com/tetratelabs/wazero/api"',
@@ -78,7 +80,7 @@ def main():
                              features="CoreFeaturesV2 | CoreFeaturesThreads")
     for backend in ("interpreter", "compiler"):
         runtimes["wazero-" + backend] = dict(command=[str(binary)], backend=backend)
-    shutil.copyfile(root / "benchmarks/embedded/c/common.h", output / "common.h")
+    shutil.copyfile(root / "benchmarks/embedded/c/common.h", workspace / "common.h")
     for name in ("wasmtime", "wasmer", "wasmedge"):
         source = (root / "benchmarks/embedded/c" / (name + ".c")).read_text()
         if name == "wasmtime":
@@ -90,7 +92,7 @@ def main():
         else:
             source = source.replace("WasmEdge_ConfigureSetRunMode(config, WasmEdge_RunMode_Interpreter);",
                                     "WasmEdge_ConfigureSetRunMode(config, WasmEdge_RunMode_Interpreter);\n WasmEdge_ConfigureAddProposal(config,WasmEdge_Proposal_Threads);\n WasmEdge_ConfigureAddProposal(config,WasmEdge_Proposal_FunctionReferences);\n WasmEdge_ConfigureAddProposal(config,WasmEdge_Proposal_GC);")
-        path, binary = output / (name + ".c"), output / (name + "-modern")
+        path, binary = workspace / (name + ".c"), workspace / (name + "-modern")
         path.write_text(source)
         command = list(core["builds"][name]["command"])
         command[command.index("-o") - 1] = str(path)
