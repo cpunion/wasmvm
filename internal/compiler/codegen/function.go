@@ -45,6 +45,7 @@ type CompiledFunction struct {
 	AliasedVectorReads            uint32
 	NativeHeap                    uint32
 	HeapCaches                    uint32
+	ForwardedHeap                 uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -298,6 +299,15 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			combinedThrough = end
 			continue
 		}
+		if end, ok := e.forwardHeapStoreLoad(pc); ok {
+			out.NativeHeap += 2
+			out.ForwardedHeap++
+			for entry := pc + 1; entry <= end; entry++ {
+				independentEntries = append(independentEntries, entry)
+			}
+			combinedThrough = end
+			continue
+		}
 
 		if end, ok := e.combineMultiplyAdd(pc); ok {
 			out.FusedIntegers++
@@ -424,7 +434,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			e.interrupt(uint32(pc))
 			e.conditionalEdges(f.Code[pc], pcs, -1)
 		} else {
-			e.plain(f.Code[pc], false)
+			if !e.heapInstruction(f.Code[pc]) {
+				e.plain(f.Code[pc], false)
+			}
 			a.branch(pcs[pc+1], false, 0)
 		}
 	}
