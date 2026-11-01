@@ -358,7 +358,15 @@ func (e *functionEmitter) selectMemory(index uint32) {
 	}
 	e.contextLoad(2, nativeabi.RuntimeDataOffset)
 	e.runtimeLoad(0, offset)
-	e.registerMove(length, e.operandRegister(0), true)
+	if e.nativeThreads && uint64(index) < uint64(len(e.sharedMemories)) && e.sharedMemories[index] {
+		if e.a.arch == "arm64" {
+			e.a.word(0xc8dffd31) // ldar x17, [x9]: observe the current shared size.
+		} else {
+			e.a.bytes(0x4c, 0x8b, 0x18) // mov r11, [rax]
+		}
+	} else {
+		e.registerMove(length, e.operandRegister(0), true)
+	}
 	e.runtimeLoad(0, offset+8)
 	e.registerMove(base, e.operandRegister(0), true)
 }

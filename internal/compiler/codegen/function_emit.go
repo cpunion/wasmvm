@@ -23,6 +23,8 @@ type functionEmitter struct {
 	x86Features                                                  X86Features
 	usesMemory                                                   bool
 	nativeBulk                                                   bool
+	nativeThreads                                                bool
+	sharedMemories                                               []bool
 	memoryViews                                                  bool
 	memoryFunctions, memoryTables, memoryGlobals, memoryBindings uint32
 	memoryMinimum                                                uint64

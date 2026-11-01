@@ -64,7 +64,11 @@ func (m *Memory) Read(offset uint64, dst []byte) error {
 	if offset > m.size || uint64(len(dst)) > m.size-offset {
 		return ErrLimit
 	}
-	copy(dst, unsafe.Slice((*byte)(m.data), int(m.size))[offset:offset+uint64(len(dst))])
+	if m.sharedSize != nil {
+		sharedTransfer(unsafe.Pointer(unsafe.SliceData(dst)), unsafe.Add(m.data, uintptr(offset)), uint64(len(dst)), 2)
+	} else {
+		copy(dst, unsafe.Slice((*byte)(m.data), int(m.size))[offset:offset+uint64(len(dst))])
+	}
 	return nil
 }
 func (m *Memory) Write(offset uint64, src []byte) error {
@@ -76,7 +80,11 @@ func (m *Memory) Write(offset uint64, src []byte) error {
 	if offset > m.size || uint64(len(src)) > m.size-offset {
 		return ErrLimit
 	}
-	copy(unsafe.Slice((*byte)(m.data), int(m.size))[offset:offset+uint64(len(src))], src)
+	if m.sharedSize != nil {
+		sharedTransfer(unsafe.Add(m.data, uintptr(offset)), unsafe.Pointer(unsafe.SliceData(src)), uint64(len(src)), 1)
+	} else {
+		copy(unsafe.Slice((*byte)(m.data), int(m.size))[offset:offset+uint64(len(src))], src)
+	}
 	return nil
 }
 

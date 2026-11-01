@@ -53,6 +53,15 @@ func (m *Memory) Native() *native.Memory {
 	}
 	return m.owner
 }
+
+// NativeShared returns only stable native shared storage, distinct from the
+// entry-exclusive private-memory contract exposed by Native.
+func (m *Memory) NativeShared() *native.Memory {
+	if m.sharedSize == nil {
+		return nil
+	}
+	return m.owner
+}
 func newMemory(declared module.Limits, quota uint32, offheap bool) (*Memory, error) {
 	pageSize := declared.PageBytes()
 	if pageSize != 1 && pageSize != PageSize {
@@ -171,14 +180,22 @@ func (m *Memory) readBytes(offset uint64, dst []byte) bool {
 	if !m.rangeBytes(offset, uint64(len(dst))) {
 		return false
 	}
-	copy(dst, m.bytes[int(offset):])
+	if m.sharedSize != nil {
+		checkedShared(native.SharedTransfer(bytePointer(dst, 0), bytePointer(m.bytes, offset), uint64(len(dst)), false, true))
+	} else {
+		copy(dst, m.bytes[int(offset):])
+	}
 	return true
 }
 func (m *Memory) writeBytes(offset uint64, src []byte) bool {
 	if !m.rangeBytes(offset, uint64(len(src))) {
 		return false
 	}
-	copy(m.bytes[int(offset):], src)
+	if m.sharedSize != nil {
+		checkedShared(native.SharedTransfer(bytePointer(m.bytes, offset), bytePointer(src, 0), uint64(len(src)), true, false))
+	} else {
+		copy(m.bytes[int(offset):], src)
+	}
 	return true
 }
 
@@ -188,6 +205,10 @@ func (m *Memory) writeBytes(offset uint64, src []byte) bool {
 func (m *Memory) fill(dst uint64, b byte, count uint64) bool {
 	if !m.rangeBytes(dst, count) {
 		return false
+	}
+	if m.sharedSize != nil {
+		checkedShared(native.SharedFill(bytePointer(m.bytes, dst), count, b))
+		return true
 	}
 	data := m.bytes[int(dst):int(dst+count)]
 	if b == 0 {
@@ -204,14 +225,22 @@ func (m *Memory) copyFrom(source *Memory, dst, src, count uint64) bool {
 	if !m.rangeBytes(dst, count) || !source.rangeBytes(src, count) {
 		return false
 	}
-	copy(m.bytes[int(dst):int(dst+count)], source.bytes[int(src):int(src+count)])
+	if m.sharedSize != nil || source.sharedSize != nil {
+		checkedShared(native.SharedTransfer(bytePointer(m.bytes, dst), bytePointer(source.bytes, src), count, m.sharedSize != nil, source.sharedSize != nil))
+	} else {
+		copy(m.bytes[int(dst):int(dst+count)], source.bytes[int(src):int(src+count)])
+	}
 	return true
 }
 func (m *Memory) initBytes(dst, src, count uint64, data []byte) bool {
 	if !m.rangeBytes(dst, count) || !fits(uint64(len(data)), src, count) {
 		return false
 	}
-	copy(m.bytes[int(dst):int(dst+count)], data[int(src):int(src+count)])
+	if m.sharedSize != nil {
+		checkedShared(native.SharedTransfer(bytePointer(m.bytes, dst), bytePointer(data, src), count, true, false))
+	} else {
+		copy(m.bytes[int(dst):int(dst+count)], data[int(src):int(src+count)])
+	}
 	return true
 }
 
@@ -267,7 +296,7 @@ func (m *Memory) load(op uint32, address, offset uint64, lane byte, previous val
 		if !ok {
 			return r, wasm.TrapMemoryBounds
 		}
-		x := read(b, n)
+		x := m.readAccess(b, n)
 		if op == 0x2c || op == 0x2e || op == 0x30 || op == 0x32 || op == 0x34 {
 			x = sign(x, n)
 		}
@@ -303,26 +332,26 @@ func (m *Memory) load(op uint32, address, offset uint64, lane byte, previous val
 	}
 	switch {
 	case sub == 0:
-		return value.Value{Lo: read(b, 8), Hi: read(b[8:], 8)}, wasm.NoTrap
+		return value.Value{Lo: m.readAccess(b, 8), Hi: m.readAccess(b[8:], 8)}, wasm.NoTrap
 	case sub >= 1 && sub <= 6:
 		width := uint(1) << ((sub - 1) / 2)
 		for i := uint(0); i < 8/width; i++ {
-			x := read(b[i*width:], width)
+			x := m.readAccess(b[i*width:], width)
 			if sub%2 == 1 {
 				x = sign(x, width)
 			}
 			setLane(&r, width*2, i, x)
 		}
 	case sub >= 7 && sub <= 10:
-		x := read(b, n)
+		x := m.readAccess(b, n)
 		for i := uint(0); i < 16/n; i++ {
 			setLane(&r, n, i, x)
 		}
 	case sub >= 84 && sub <= 87:
 		r = previous
-		setLane(&r, n, uint(lane), read(b, n))
+		setLane(&r, n, uint(lane), m.readAccess(b, n))
 	case sub == 92 || sub == 93:
-		r.Lo = read(b, n)
+		r.Lo = m.readAccess(b, n)
 	}
 	return r, wasm.NoTrap
 }
@@ -364,10 +393,10 @@ func (m *Memory) store(op uint32, address, offset uint64, lane byte, v value.Val
 		return wasm.TrapMemoryBounds
 	}
 	if n == 16 {
-		write(b, 8, v.Lo)
-		write(b[8:], 8, v.Hi)
+		m.writeAccess(b, 8, v.Lo)
+		m.writeAccess(b[8:], 8, v.Hi)
 	} else {
-		write(b, n, x)
+		m.writeAccess(b, n, x)
 	}
 	return wasm.NoTrap
 }

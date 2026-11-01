@@ -1,6 +1,7 @@
 package native
 
 import (
+	"context"
 	"errors"
 	"math/rand"
 	"testing"
@@ -19,6 +20,14 @@ func TestSharedAtomicWidthsBitPatternsAndCompareExchange(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer m.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := SharedAtomicContext(ctx, m.data, 8, AtomicAdd, 1, 0); !errors.Is(err, context.Canceled) {
+		t.Fatal("canceled atomic committed", err)
+	}
+	if old, err := SharedAtomic(m.data, 8, AtomicLoad, 0, 0); err != nil || old != 0 {
+		t.Fatal("canceled atomic changed data", old, err)
+	}
 	rng := rand.New(rand.NewSource(64))
 	for _, width := range []uint32{1, 2, 4, 8} {
 		mask := ^uint64(0) >> (64 - width*8)
