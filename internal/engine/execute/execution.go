@@ -320,12 +320,14 @@ frames:
 					result, err = e.store.GCAccess(instance, im, values[int(args[0])], b, c)
 				} else {
 					var local [5]value.Value
-					operands := local[:0]
-					if int(in.Count) > cap(operands) {
-						operands = make([]value.Value, 0, in.Count)
+					var operands []value.Value
+					if int(in.Count) <= len(local) {
+						operands = local[:in.Count]
+					} else {
+						operands = make([]value.Value, in.Count)
 					}
-					for _, slot := range code.Args[in.Extra : in.Extra+in.Count] {
-						operands = append(operands, values[int(slot)])
+					for i, slot := range code.Args[in.Extra : in.Extra+in.Count] {
+						operands[i] = values[int(slot)]
 					}
 					if e.store.HeapSafepoint != nil {
 						result, err = e.store.GC(e.context, instance, im, operands)
