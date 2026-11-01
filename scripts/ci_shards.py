@@ -27,7 +27,7 @@ def validate(shards, root=ROOT):
         paths = shard['packages'].split()
         if not paths or any(not re.fullmatch(r'\./(?:internal|pkg|cmd)/[a-z0-9_/-]+', p) for p in paths):
             raise ValueError('invalid package list')
-        if not set(shard['inputs'].split()) <= INPUTS or not isinstance(shard['cli'], bool):
+        if not set(shard['inputs'].split()) <= INPUTS:
             raise ValueError('invalid shard input/CLI configuration')
         packages.extend(paths)
     duplicate = [p for p, count in Counter(packages).items() if count != 1]
@@ -35,8 +35,6 @@ def validate(shards, root=ROOT):
         raise ValueError(f'package coverage mismatch: duplicates={duplicate}, '
                          f'missing={sorted(expected - set(packages))}, '
                          f'extra={sorted(set(packages) - expected)}')
-    if sum(s['cli'] for s in shards) != 1:
-        raise ValueError('exactly one shard must execute the CLI')
     return len(packages)
 
 

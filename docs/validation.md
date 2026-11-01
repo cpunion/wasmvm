@@ -5218,3 +5218,14 @@ Go semantics, race and quality/fuzz jobs are independent. The plan validator and
 its missing/duplicate/unknown-package regression checks pass, along with the
 22 script tests. Workflow syntax, final semantic/coverage evidence and actual
 per-job timings must be checked before merge; no unmeasured speedup is claimed.
+
+
+The first sharded head `565e352` passed all 15 required jobs. Go semantics took
+3.00/3.35 minutes, quality 2.98 and race 5.55. LLGo ranged from 5.88 to 11.28
+minutes, versus the preceding 26.38-minute failed macOS job and successful
+33.38-minute Linux job. Three shards exceeded ten minutes (10.10, 10.68 and
+11.28), so the next layout moves CLI compilation into its own jobs, shifts CLI
+tests from HTTP to component, and moves two small core packages into VM. The
+31-package inventory and full release profile are unchanged. Compatible shard
+caches provide a fallback for the standalone CLI. Final timings remain to be
+measured; the initial result is not presented as a completed ten-minute gate.

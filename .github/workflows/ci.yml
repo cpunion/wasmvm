@@ -141,6 +141,8 @@ jobs:
   llgo:
     name: llgo / ${{ matrix.platform.name }} / ${{ matrix.shard.name }}
     needs: plan
+    env:
+      LLGO_CACHE_GROUP: ${{ matrix.shard.name }}
     runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 12
     strategy:
@@ -174,9 +176,11 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ steps.cache-path.outputs.path }}
-          key: llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-${{ matrix.shard.name }}-${{ github.sha }}
+          key: llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-${{ env.LLGO_CACHE_GROUP }}-${{ github.sha }}
           restore-keys: |
-            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-${{ matrix.shard.name }}-
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-${{ env.LLGO_CACHE_GROUP }}-
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-component-
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-
       - name: Prepare this shard's pinned inputs
         env:
           CORPORA: ${{ matrix.shard.inputs }}
@@ -194,12 +198,6 @@ jobs:
           mkdir -p artifacts/ci
           read -ra packages <<< "$TEST_PACKAGES"
           llgo test -O3 -lto=full -json -debug-trace "artifacts/ci/llgo-${SHARD}.json" -count=1 -timeout=8m "${packages[@]}"
-      - name: Build and execute the LLGo CLI
-        if: matrix.shard.cli
-        run: |
-          mkdir -p artifacts/cli
-          llgo build -O3 -lto=full -o artifacts/cli/wasmvm ./cmd/wasmvm
-          python3 scripts/cli_smoke.py artifacts/cli/wasmvm --native available
       - name: Preserve shard execution and timing evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -218,6 +216,53 @@ jobs:
             artifacts/core2/evidence.json
             artifacts/core3/evidence.json
           if-no-files-found: error
+
+  llgo-cli:
+    name: llgo CLI / ${{ matrix.platform.name }}
+    runs-on: ${{ matrix.platform.runner }}
+    timeout-minutes: 10
+    env:
+      LLGO_CACHE_GROUP: cli
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - {name: linux-amd64, runner: ubuntu-24.04}
+          - {name: macos-arm64, runner: macos-15}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up pinned LLGo
+        id: llgo
+        uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
+        with:
+          llgo-version: ${{ env.LLGO_REVISION }}
+          install-method: source
+          go-version: ${{ env.GO_VERSION }}
+          llvm-version: '22'
+          cache: true
+      - name: Verify toolchain and locate its package cache
+        id: cache-path
+        env:
+          ACTUAL_LLGO_REVISION: ${{ steps.llgo.outputs.llgo-revision }}
+        run: |
+          test "$ACTUAL_LLGO_REVISION" = "$LLGO_REVISION"
+          go version
+          llgo version
+          printf 'path=%s\n' "$(llgo env LLGO_PKG_CACHE_DIR)" >> "$GITHUB_OUTPUT"
+      - name: Restore LLGo package objects
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ steps.cache-path.outputs.path }}
+          key: llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-${{ env.LLGO_CACHE_GROUP }}-${{ github.sha }}
+          restore-keys: |
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-${{ env.LLGO_CACHE_GROUP }}-
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-component-
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-
+      - name: Build and execute the LLGo CLI
+        run: |
+          mkdir -p artifacts/cli
+          llgo build -O3 -lto=full -o artifacts/cli/wasmvm ./cmd/wasmvm
+          python3 scripts/cli_smoke.py artifacts/cli/wasmvm --native available
 
   race:
     name: Go race / linux-amd64

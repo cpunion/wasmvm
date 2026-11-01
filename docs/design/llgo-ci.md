@@ -11,13 +11,14 @@ LLGo semantics and CLI retain `-O3 -lto=full`. The root module declares Go 1.26;
 older-toolchain assumptions in the initial survey are historical.
 
 The workflow runs complete Go semantics on both platforms. LLGo uses five
-package groups per platform: core, VM/codegen, component, HTTP/P1/CLI tests, and
+package groups per platform: core, VM/codegen, component/CLI tests, HTTP/P1, and
 P3/legacy threads. The checked [plan](../../.github/llgo-shards.json) assigns all
 31 test packages exactly once; [validation](../../scripts/ci_shards.py) rejects
 missing, duplicate or unlisted packages before the matrix starts. Each shard
 prepares only its required pinned corpora. The complete source/assertion scope
 is unchanged; the logical matrix remains both compilers on both platforms.
 
+CLI compilation/smoke checks run independently on each LLGo platform.
 Go race and pure-Go quality/fuzz work run once in separate Linux jobs. Coverage
 still measures all executable packages together and enforces 90% per package.
 Every shard and these shared checks must pass on the final PR head. No test

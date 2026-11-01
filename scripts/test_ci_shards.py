@@ -1,6 +1,5 @@
 import copy
 import json
-from pathlib import Path
 import unittest
 
 from ci_shards import ROOT, validate
@@ -28,8 +27,8 @@ class ShardsTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     validate(shards)
 
-    def test_duplicate_names_bad_inputs_and_missing_cli(self):
-        for mode in ('name', 'inputs', 'cli'):
+    def test_duplicate_names_inputs_and_shell_fragments(self):
+        for mode in ('name', 'inputs', 'path'):
             with self.subTest(mode=mode):
                 shards = copy.deepcopy(self.shards)
                 if mode == 'name':
@@ -37,8 +36,7 @@ class ShardsTest(unittest.TestCase):
                 elif mode == 'inputs':
                     shards[0]['inputs'] = 'untrusted-command'
                 else:
-                    for shard in shards:
-                        shard['cli'] = False
+                    shards[0]['packages'] += ' ./pkg/wasm;echo'
                 with self.assertRaises(ValueError):
                     validate(shards)
 
