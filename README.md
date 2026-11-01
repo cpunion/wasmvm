@@ -317,6 +317,12 @@ LLGo measures 142.6 ns/iteration versus Wasmtime's 146.9 and a separate native
 C/libc loop's 146.2. These shared-host results do not establish controlled
 superiority or full-portfolio acceptance.
 
+The [native allocation follow-up](docs/research/performance-native-allocation-2026-11-02.md)
+uses 63 warm calls of 100,000 linked allocations and includes every GC stall.
+LLGo improves from 582.3 to 60.2 ns/object versus Wasmtime's 60.17; Go reaches
+43.5. These are process-mean diagnostics, with raw latency distributions retained.
+Interpreter, shared-memory and full-portfolio performance acceptance remain open.
+
 Benchmark CI is opt-in through the `run-benchmarks` PR label or
 [workflow dispatch](https://github.com/cpunion/wasmvm/actions/workflows/benchmarks.yml).
 It compares exact base/head sources and pinned competitors and posts results
