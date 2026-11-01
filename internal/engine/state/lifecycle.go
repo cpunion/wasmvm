@@ -53,7 +53,8 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 	}
 	marked := make(map[*Instance]bool)
 	queue := make([]*Instance, 0, len(active))
-	var objects []*heapObject
+	objects := s.markObjects[:0]
+	s.markObjects = nil
 	mark := func(in *Instance) {
 		if in != nil && in.Owner == s && !in.disposed && !marked[in] {
 			marked[in] = true
@@ -187,6 +188,8 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 		}
 	}
 	s.heapThreshold = max(1<<20, s.usage.HeapBytes*2)
+	clear(objects)
+	s.markObjects = objects[:0]
 	if s.nativeHeap != nil {
 		s.compactNativeHeap()
 	}
@@ -344,6 +347,7 @@ func (s *Store) Close() {
 	}
 	s.heap = nil
 	s.heapObjects = nil
+	s.markObjects = nil
 	if s.nativeHeap != nil {
 		s.nativeHeap.close()
 	}
