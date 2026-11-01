@@ -301,7 +301,7 @@ func (p *Sockets) listen(c *component.Caller, s *netSocket) (*component.Value, e
 		return nil, err
 	}
 	_, st := c.FunctionInfo().Result().Case(0)
-	v, err := c.NewSource(st, component.AsyncSource{Read: stream.accept, Close: func() { stream.op.stop(); stream.op.finish(0) }})
+	v, err := c.NewSource(st, component.AsyncSource{Read: stream.accept, Close: func() { stream.op.stop(0) }})
 	if err != nil {
 		stream.op.finish(netCompletion(err))
 		return nil, err

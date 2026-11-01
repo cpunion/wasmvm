@@ -5054,3 +5054,18 @@ inventory policy: keep all producer programs in the four-target semantic matrix,
 while running unit, lifecycle, actual threaded-guest and streaming-interaction
 tests under race detection. No guest assertion or deadline was relaxed. The
 original failing job log remains retained; final-head CI is still required.
+
+The subsequent LLGo Linux run passed P2 but exposed a P3 FIFO completion race:
+dropping a data stream could publish `interrupted` instead of its successful
+close result. Separate stop/finish calls canceled the external read before
+claiming the terminal result. IO operations now claim and publish one terminal
+outcome before canceling producers or releasing their source. The same compact
+operation path handles stdio, filesystem and sockets. An earlier genuine failure
+still wins; repeated close remains idempotent. A deterministic regression forces
+the cancellation receipt to arrive during stop, and the existing FIFO/provider/
+instance-close cases run repeatedly with Go race detection and pinned LLGo.
+No expected outcome or resource-lifetime check was relaxed.
+IO, filesystem and socket owners likewise revoke their stream operations before
+broadcasting parent cancellation. A separate owner-close regression forces the
+external cancellation receipt to arrive before Close resumes; completion codes
+and one-time reclamation remain deterministic.

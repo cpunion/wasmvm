@@ -468,7 +468,21 @@ func TestFileSystemFIFOBackpressureAndShutdown(t *testing.T) {
 				t.Fatal("incoherent pending readiness")
 			}
 			if mode == "provider-close" {
+				// Force a canceled reader to report before global cancellation
+				// returns. Revocation must already own the terminal result.
+				cancel := p.cancel
+				receipt := make(chan struct{})
+				p.cancel = func() {
+					cancel()
+					go func() { s.op.finish(fileCompletionCode(context.Canceled)); close(receipt) }()
+					<-s.op.cell.done
+				}
 				p.Close()
+				select {
+				case <-receipt:
+				case <-time.After(time.Second):
+					t.Fatal("canceled reader remained parked")
+				}
 			} else if mode == "instance-close" {
 				in.Close()
 			} else {

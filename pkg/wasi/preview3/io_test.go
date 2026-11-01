@@ -28,6 +28,92 @@ func closeIO(t *testing.T, p *IO) {
 		t.Fatal(err)
 	}
 }
+
+func TestIOStopKeepsTerminalIntentBeforeReaderCancellation(t *testing.T) {
+	for _, intent := range []uint32{0, 3} {
+		for _, priorFailure := range []bool{false, true} {
+			p, err := NewIO(IOConfig{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			op, err := p.operation()
+			if err != nil {
+				t.Fatal(err)
+			}
+			ctx, cancel := op.ctx, op.cancel
+			// Force the completion that a canceled external read can publish
+			// before the stopping caller has returned from cancellation.
+			op.cancel = func() { cancel(); op.finish(op.code(ctx.Err())) }
+			var released atomic.Uint32
+			op.setRelease(func() { released.Add(1) })
+			want := intent
+			if priorFailure {
+				want = 2
+				op.finish(want)
+			}
+			done := make(chan struct{})
+			go func() { op.stop(intent); close(done) }()
+			select {
+			case <-done:
+			case <-time.After(3 * time.Second):
+				t.Fatal("stop deadlocked with reader completion")
+			}
+			op.stop(intent)
+			op.cell.mu.Lock()
+			ready, code := op.cell.ready, op.cell.value
+			op.cell.mu.Unlock()
+			if !ready || code != want || released.Load() != 1 {
+				t.Fatal("cancellation replaced terminal intent", ready, code, want, released.Load())
+			}
+			p.mu.Lock()
+			remaining := len(p.operations)
+			p.mu.Unlock()
+			if remaining != 0 {
+				t.Fatal("stopped operation retained", remaining)
+			}
+			closeIO(t, p)
+		}
+	}
+}
+
+func TestIOOwnerCloseClaimsResultsBeforeCancellingReaders(t *testing.T) {
+	p, err := NewIO(IOConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	op, err := p.operation()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cancel := p.cancel
+	receipt := make(chan struct{})
+	p.cancel = func() {
+		cancel()
+		go func() { op.finish(1); close(receipt) }()
+		// A canceled external reader can resolve its result before the owner
+		// resumes. Its receipt must observe an already claimed close result.
+		<-op.cell.done
+	}
+	done := make(chan struct{})
+	go func() { p.Close(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("owner close deadlocked")
+	}
+	select {
+	case <-receipt:
+	case <-time.After(3 * time.Second):
+		t.Fatal("reader receipt was stranded")
+	}
+	op.cell.mu.Lock()
+	code := op.cell.value
+	op.cell.mu.Unlock()
+	if code != op.closeCode {
+		t.Fatal("reader cancellation replaced owner close", code, op.closeCode)
+	}
+	closeIO(t, p)
+}
 func TestNativeStdioStreamsAndTerminalOwnership(t *testing.T) {
 	backends(t, func(t *testing.T, backend string) {
 		for _, drop := range []uint64{0, 1} {

@@ -149,7 +149,6 @@ func (p *FileSystem) Close() {
 		return
 	}
 	p.closed = true
-	p.cancel()
 	p.descriptors = nil
 	p.preopens = nil
 	streams := p.streams
@@ -158,6 +157,7 @@ func (p *FileSystem) Close() {
 	for stream := range streams {
 		stream.revoke()
 	}
+	p.cancel()
 	go func() {
 		p.workers.Wait()
 		p.mu.Lock()

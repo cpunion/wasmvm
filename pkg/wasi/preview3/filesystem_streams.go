@@ -81,11 +81,10 @@ func (p *FileSystem) stream(c *component.Caller, name string, args []component.V
 		accepted := false
 		defer func() {
 			if !accepted {
-				op.stop()
-				op.finish(fileErrorCases["io"] + 1)
+				op.stop(fileErrorCases["io"] + 1)
 			}
 		}()
-		stream, err := c.NewSource(streamType, component.AsyncSource{Read: s.readDirectory, Close: func() { op.stop(); op.finish(0) }})
+		stream, err := c.NewSource(streamType, component.AsyncSource{Read: s.readDirectory, Close: func() { op.stop(0) }})
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +124,7 @@ func (s *fileStream) Close() error {
 	s.descriptor.object.release()
 	return nil
 }
-func (s *fileStream) revoke() { s.op.stop(); s.op.finish(fileErrorCases["bad-descriptor"] + 1) }
+func (s *fileStream) revoke() { s.op.stop(fileErrorCases["bad-descriptor"] + 1) }
 func (s *fileStream) check(ctx context.Context) error {
 	if err := s.owner.check(ctx); err != nil {
 		return err

@@ -301,7 +301,6 @@ func (p *Sockets) Close() {
 		return
 	}
 	p.closed = true
-	p.cancel()
 	streams := make([]*netStream, 0, len(p.streams))
 	for s := range p.streams {
 		streams = append(streams, s)
@@ -309,9 +308,9 @@ func (p *Sockets) Close() {
 	p.handles = nil
 	p.mu.Unlock()
 	for _, s := range streams {
-		s.op.stop()
-		s.op.finish(netCode(netError("invalid-state")) + 1)
+		s.op.stop(netCode(netError("invalid-state")) + 1)
 	}
+	p.cancel()
 	go func() {
 		p.workers.Wait()
 		// Half-close jobs retain their socket leases. Drain them before forced
