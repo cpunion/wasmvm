@@ -4,6 +4,7 @@ import (
 	"math"
 	"math/bits"
 
+	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -23,13 +24,18 @@ func (e *functionEmitter) atomicInstruction(in slots.Instruction, pc uint32) boo
 		}
 		return true
 	}
-	if sub < 0x10 || sub > 0x4e || in.A == slots.NoSlot {
+	if sub > 3 && sub < 0x10 || sub > 0x4e || in.A == slots.NoSlot {
 		return false
 	}
-	width := [...]uint32{4, 8, 1, 2, 1, 2, 4}[(sub-0x10)%7]
-	group := (sub - 0x10) / 7
+	width, group := uint32(4), uint32(0)
+	if sub >= 0x10 {
+		width = [...]uint32{4, 8, 1, 2, 1, 2, 4}[(sub-0x10)%7]
+		group = (sub - 0x10) / 7
+	} else if sub == 2 {
+		width = 8
+	}
 	source := e.f.Sources[in.Source].Wasm
-	if source.Op != in.Op || group != 0 && in.B == slots.NoSlot || group == 8 && in.C == slots.NoSlot {
+	if source.Op != in.Op || (sub <= 2 || group != 0) && in.B == slots.NoSlot || (sub == 1 || sub == 2 || group == 8) && in.C == slots.NoSlot {
 		return false
 	}
 	if e.memoryViews {
@@ -38,6 +44,10 @@ func (e *functionEmitter) atomicInstruction(in slots.Instruction, pc uint32) boo
 	bound := e.trapExit(wasm.TrapMemoryBounds, source.Offset)
 	unaligned := e.trapExit(wasm.TrapAtomicUnaligned, source.Offset)
 	e.atomicAddress(in, width, source.MemoryOffset(), bound, unaligned)
+	if sub <= 2 {
+		e.atomicWaitNotify(in, sub, width, pc)
+		return true
+	}
 	if e.a.arch == "arm64" {
 		e.atomicARM64(in, width, group, pc)
 	} else {
@@ -115,6 +125,10 @@ func (e *functionEmitter) atomicARM64(in slots.Instruction, width, group uint32,
 			e.a.word(0x5300014a | (width*8-1)<<10) // uxtb/uxth w10, w10
 		}
 		e.slotLoad(in.C, 2, false, width == 8)
+	}
+	if e.arm64Features&ARM64LSE != 0 {
+		e.atomicLSE(width, group)
+		return
 	}
 	loop := e.a.label()
 	done := e.a.label()
@@ -249,4 +263,96 @@ func (e *functionEmitter) atomicAMD64(in slots.Instruction, width, group uint32,
 	} else if width == 4 {
 		e.a.bytes(0x89, 0xc0)
 	}
+}
+
+func (e *functionEmitter) atomicShared(in slots.Instruction) bool {
+	index := e.f.Sources[in.Source].Wasm.Memory
+	return uint64(index) < uint64(len(e.sharedMemories)) && e.sharedMemories[index]
+}
+
+func (e *functionEmitter) atomicWaitNotify(in slots.Instruction, sub, width, pc uint32) {
+	source := e.f.Sources[in.Source].Wasm
+	if sub != 0 && !e.atomicShared(in) {
+		e.trap(wasm.TrapWaitUnshared, source.Offset)
+		return
+	}
+	done, fallback := e.a.label(), e.a.label()
+	if sub == 0 {
+		e.constant(0, 0)
+		if e.atomicShared(in) {
+			e.slotLoad(in.B, 0, false, false)
+			e.test(false)
+			e.branch(done, "eq")
+			offset, ok := nativeabi.MemoryPairOffset(e.memoryFunctions, e.memoryTables, e.memoryGlobals, e.memoryBindings, source.Memory)
+			if !ok {
+				panic(wasm.ErrLimit)
+			}
+			e.contextLoad(2, nativeabi.RuntimeDataOffset)
+			e.runtimeLoad(0, offset)
+			if e.a.arch == "arm64" {
+				e.a.word(0x91000129 | nativeabi.SharedMemoryWaitersOffset<<10) // add x9, x9, #waiters
+				e.a.word(0xc8dffd29)                                           // ldar x9, [x9]
+			} else {
+				e.a.bytes(0x48, 0x8b, 0x40, nativeabi.SharedMemoryWaitersOffset)
+			}
+			e.test(true)
+			e.branch(fallback, "ne")
+		}
+	} else {
+		if e.a.arch == "arm64" {
+			e.a.word(0x08dffda9 | uint32(bits.TrailingZeros32(width))<<30)
+		} else {
+			e.atomicLoadAMD64(width)
+		}
+		e.slotLoad(in.B, 1, false, width == 8)
+		e.compare(width == 8)
+		mismatch := e.a.label()
+		e.branch(mismatch, "ne")
+		e.slotLoad(in.C, 0, false, true)
+		e.test(true)
+		e.branch(fallback, "ne")
+		e.constant(0, 2)
+		e.a.branch(done, false, 0)
+		e.a.mark(mismatch)
+		e.constant(0, 1)
+	}
+	e.a.mark(done)
+	e.slotStore(in.Dst, 0, false)
+	if !e.unmetered {
+		e.constant(0, 0)
+		e.slotStore(in.Dst, 0, true)
+	}
+	after := e.a.label()
+	e.a.branch(after, false, 0)
+	e.a.mark(fallback)
+	e.contextConst(nativeabi.SourceOffset, source.Offset)
+	e.leave(nativeabi.RuntimeHelper, uint64(pc), uint64(pc+1))
+	e.a.mark(after)
+}
+
+func (e *functionEmitter) atomicLSE(width, group uint32) {
+	size := uint32(bits.TrailingZeros32(width)) << 30
+	if group == 8 {
+		e.a.word(0x08eafdab | size) // casal[b/h] x/w10, x/w11, [x13]
+		e.registerMove(9, 10, width == 8)
+		return
+	}
+	var op uint32
+	switch group {
+	case 2, 3:
+		if group == 3 {
+			e.a.arm(width == 8, 0x4b0a03ea) // neg x/w10, x/w10
+		}
+		op = 0x38ea01a9 // ldaddal
+	case 4:
+		e.a.arm(width == 8, 0x2a2a03ea) // mvn x/w10, x/w10
+		op = 0x38ea11a9                 // ldclral
+	case 5:
+		op = 0x38ea31a9 // ldsetal
+	case 6:
+		op = 0x38ea21a9 // ldeoral
+	case 7:
+		op = 0x38ea81a9 // swpal
+	}
+	e.a.word(op | size)
 }

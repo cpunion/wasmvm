@@ -6,6 +6,8 @@ import "unsafe"
 
 const Available = false
 
+func ARM64CPUFeatures() uint32 { return 0 }
+
 func CPUFeatures() uint32 { return 0 }
 
 func publish([]byte) unsafe.Pointer                                              { return nil }

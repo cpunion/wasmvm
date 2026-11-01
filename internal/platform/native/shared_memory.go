@@ -3,10 +3,12 @@ package native
 import (
 	"sync/atomic"
 	"unsafe"
+
+	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 )
 
 // NewSharedMemory reserves zeroed storage up to the host-bounded maximum.
-// Neither its base nor its native-owned logical-size cell moves on growth.
+// Neither its base nor its native-owned size/waiter cells move on growth.
 // Simultaneous entries must use the shared-memory atomic access contract;
 // this owner supplies lifetime and size publication, not access synchronization.
 func NewSharedMemory(size, maximum uint64) (*Memory, error) {
@@ -17,7 +19,7 @@ func NewSharedMemory(size, maximum uint64) (*Memory, error) {
 	if err != nil {
 		return nil, err
 	}
-	p := allocate(8)
+	p := allocate(nativeabi.SharedMemoryControlBytes)
 	if p == nil {
 		m.Close()
 		return nil, ErrLimit

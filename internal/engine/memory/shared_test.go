@@ -3,12 +3,14 @@ package memory
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"testing"
 	"time"
 
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/value"
+	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
@@ -96,7 +98,15 @@ func TestSharedBackingReferencesAndSynchronizedOperations(t *testing.T) {
 }
 
 func TestWaiterQuotaCancellationTimeoutAndNotification(t *testing.T) {
-	d := NewDomain(1, false)
+	for _, offheap := range []bool{false, true} {
+		if offheap && !native.Available {
+			continue
+		}
+		t.Run(fmt.Sprint(offheap), func(t *testing.T) { testWaiterQuotaCancellationTimeoutAndNotification(t, offheap) })
+	}
+}
+func testWaiterQuotaCancellationTimeoutAndNotification(t *testing.T, offheap bool) {
+	d := NewDomain(1, offheap)
 	m, err := NewShared(module.Limits{Min: 1, Max: 1, HasMax: true, Shared: true}, 1, d)
 	if err != nil {
 		t.Fatal(err)

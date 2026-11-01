@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/cpunion/wasmvm/internal/core/module"
@@ -200,7 +201,7 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 	} else if sub >= 0x10 {
 		n = [7]uint{4, 8, 1, 2, 1, 2, 4}[(sub-0x10)%7]
 	}
-	if sub >= 0x10 && m.owner != nil {
+	if m.owner != nil {
 		bytes, ok := m.access(address, offset, n)
 		if !ok {
 			return value.Value{}, wasm.TrapMemoryBounds, nil
@@ -209,9 +210,37 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 		if at%uint64(n) != 0 {
 			return value.Value{}, wasm.TrapAtomicUnaligned, nil
 		}
-		old, err := native.SharedAtomicContext(ctx, unsafe.Pointer(unsafe.SliceData(bytes)), uint32(n), native.AtomicOperation((sub-0x10)/7), a, b)
-		return value.Value{Lo: old}, wasm.NoTrap, err
+		if sub >= 0x10 {
+			old, err := native.SharedAtomicContext(ctx, unsafe.Pointer(unsafe.SliceData(bytes)), uint32(n), native.AtomicOperation((sub-0x10)/7), a, b)
+			return value.Value{Lo: old}, wasm.NoTrap, err
+		}
+		if sub == 0 {
+			if uint32(a) == 0 || m.domain == nil || atomic.LoadUint64(m.sharedWaiters) == 0 {
+				return value.Value{}, wasm.NoTrap, nil
+			}
+		} else {
+			if m.domain == nil {
+				return value.Value{}, wasm.TrapWaitUnshared, nil
+			}
+			observed, err := native.SharedAtomicContext(ctx, unsafe.Pointer(unsafe.SliceData(bytes)), uint32(n), native.AtomicLoad, 0, 0)
+			if err != nil {
+				return value.Value{}, wasm.NoTrap, err
+			}
+			mask := ^uint64(0) >> (64 - n*8)
+			if observed != a&mask {
+				return value.Value{Lo: 1}, wasm.NoTrap, nil
+			}
+			if int64(b) == 0 {
+				return value.Value{Lo: 2}, wasm.NoTrap, nil
+			}
+		}
 	}
+	return m.atomicSlow(ctx, d, sub, address, offset, a, b, n)
+}
+
+// The queue path owns timers and deferred cleanup; scalar fast paths never
+// construct those captures under either host compiler.
+func (m *Memory) atomicSlow(ctx context.Context, d *Domain, sub uint32, address, offset, a, b uint64, n uint) (value.Value, wasm.TrapCode, error) {
 	d.mu.Lock()
 	bytes, ok := m.access(address, offset, n)
 	if !ok {
@@ -230,6 +259,7 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 		for queue != nil && queue.first != nil && count < uint32(a) {
 			w := queue.first
 			queue.remove(w)
+			m.releaseNativeWaiter()
 			w.notified = true
 			close(w.ready)
 			count++
@@ -245,12 +275,19 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 			d.mu.Unlock()
 			return value.Value{}, wasm.TrapWaitUnshared, nil
 		}
+		// Publish a pending registration before the SC comparison. A native
+		// zero-waiter notify may linearize before this reservation, but must
+		// fall back through the ordering lock after observing it.
+		if m.sharedWaiters != nil {
+			atomic.AddUint64(m.sharedWaiters, 1)
+		}
 		mask := ^uint64(0) >> (64 - n*8)
 		var observed uint64
 		if m.owner != nil {
 			var err error
 			observed, err = native.SharedAtomic(unsafe.Pointer(unsafe.SliceData(bytes)), uint32(n), native.AtomicLoad, 0, 0)
 			if err != nil {
+				m.releaseNativeWaiter()
 				d.mu.Unlock()
 				return value.Value{}, wasm.NoTrap, err
 			}
@@ -258,14 +295,17 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 			observed = read(bytes, n)
 		}
 		if observed != a&mask {
+			m.releaseNativeWaiter()
 			d.mu.Unlock()
 			return value.Value{Lo: 1}, wasm.NoTrap, nil
 		}
 		if int64(b) == 0 {
+			m.releaseNativeWaiter()
 			d.mu.Unlock()
 			return value.Value{Lo: 2}, wasm.NoTrap, nil
 		}
 		if d.waiting >= d.maxWaiters {
+			m.releaseNativeWaiter()
 			d.mu.Unlock()
 			return value.Value{}, wasm.NoTrap, &wasm.Error{Kind: wasm.ErrLimit, Detail: "shared memory waiters"}
 		}
@@ -305,6 +345,7 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 		}
 		if w.linked {
 			queue.remove(w)
+			m.releaseNativeWaiter()
 			if queue.first == nil {
 				delete(d.queues, key)
 			}
@@ -372,4 +413,11 @@ func (q *waitQueue) remove(w *waiter) {
 	w.previous = nil
 	w.next = nil
 	w.linked = false
+}
+
+// The metadata counts both pending SC comparisons and enqueued waiters.
+func (m *Memory) releaseNativeWaiter() {
+	if m.sharedWaiters != nil {
+		atomic.AddUint64(m.sharedWaiters, ^uint64(0))
+	}
 }

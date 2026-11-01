@@ -21,6 +21,7 @@ type functionEmitter struct {
 	edgeCopies                                                   uint32
 	unmetered                                                    bool
 	x86Features                                                  X86Features
+	arm64Features                                                ARM64Features
 	usesMemory                                                   bool
 	nativeBulk                                                   bool
 	nativeThreads                                                bool

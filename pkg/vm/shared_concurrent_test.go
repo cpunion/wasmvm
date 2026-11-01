@@ -129,6 +129,27 @@ func TestSharedConcurrentEntriesObserveGrowthAndCancel(t *testing.T) {
 			}
 		}
 		waitWord(8, func(v uint32) bool { return v == 20000 })
+		waitZero, wake := export(t, instances[0], "wait-zero"), export(t, instances[1], "wake")
+		for iteration := 0; iteration < 100; iteration++ {
+			if err := memory.WriteMemory(16, []byte{0, 0, 0, 0}); err != nil {
+				t.Fatal(err)
+			}
+			go func() {
+				r, err := waitZero.Call(ctx, nil, CallOptions{})
+				done <- outcome{r, err}
+			}()
+			// Deliberately race notification with comparison/registration.
+			if _, err := wake.Call(ctx, nil, CallOptions{}); err != nil {
+				t.Fatal(err)
+			}
+			woken := <-done
+			if woken.err != nil || bits(t, woken.result.Values[0]) > 1 {
+				t.Fatal("notification lost during wait registration", iteration, woken)
+			}
+		}
+		if engine.domain.Waiters() != 0 {
+			t.Fatal("completed registrations retained waiter quota")
+		}
 		counter := export(t, instances[0], "count")
 		childCtx, stop := context.WithCancel(ctx)
 		go func() {

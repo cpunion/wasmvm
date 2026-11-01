@@ -127,7 +127,7 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 		return 0, fuel, wasm.ErrInvalid
 	}
 	var memory *native.Memory
-	if len(fn.Instance.Memories) != 0 {
+	if entries.nativeMemory && len(fn.Instance.Memories) != 0 {
 		memory = fn.Instance.Memories[0].Native()
 		if memory == nil && fn.Instance.Memories[0].Shared() {
 			memory = fn.Instance.Memories[0].NativeShared()

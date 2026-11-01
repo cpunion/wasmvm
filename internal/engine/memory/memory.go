@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"unsafe"
 
+	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/internal/platform/native"
@@ -18,14 +19,15 @@ const MaxPages = 65536
 const MaxPages64 = 1 << 48
 
 type Memory struct {
-	bytes       []byte
-	owner       *native.Memory
-	declared    module.Limits
-	domain      *Domain
-	refs        uint64
-	reservation uint64
-	maximum     uint64
-	sharedSize  *uint64
+	bytes         []byte
+	owner         *native.Memory
+	declared      module.Limits
+	domain        *Domain
+	refs          uint64
+	reservation   uint64
+	maximum       uint64
+	sharedSize    *uint64
+	sharedWaiters *uint64
 }
 
 // New applies the host page quota independently of the module declaration.
@@ -101,6 +103,7 @@ func newMemory(declared module.Limits, quota uint32, offheap bool) (*Memory, err
 			if err == nil {
 				m.bytes = unsafe.Slice((*byte)(base), int(capacity))
 				m.sharedSize = (*uint64)(size)
+				m.sharedWaiters = (*uint64)(unsafe.Add(size, nativeabi.SharedMemoryWaitersOffset))
 			}
 		} else {
 			m.bytes, err = m.owner.Buffer()
@@ -141,6 +144,7 @@ func QuotaPages(declared module.Limits, pages uint64) uint64 {
 func (m *Memory) release() {
 	m.bytes = nil
 	m.sharedSize = nil
+	m.sharedWaiters = nil
 	m.maximum = 0
 	if m.owner != nil {
 		m.owner.Close()

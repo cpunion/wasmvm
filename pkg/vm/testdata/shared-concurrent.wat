@@ -14,4 +14,9 @@
       (local.set $i (i32.add (local.get $i) (i32.const 1)))
       (br_if $next (i32.lt_u (local.get $i) (local.get $count))))
     atomic.fence
-    (i32.atomic.load (i32.const 8))))
+    (i32.atomic.load (i32.const 8)))
+  (func (export "wait-zero") (result i32)
+    (memory.atomic.wait32 (i32.const 16) (i32.const 0) (i64.const -1)))
+  (func (export "wake") (result i32)
+    (i32.atomic.store (i32.const 16) (i32.const 1))
+    (memory.atomic.notify (i32.const 16) (i32.const 1))))

@@ -81,6 +81,7 @@ type Config struct {
 	// MemoryPageSizes follows memory index order; nil means default 64-KiB pages.
 	MemoryPageSizes []uint64
 	X86Features     X86Features
+	ARM64Features   ARM64Features
 	// DirectCallees contains only immutable definitions in the same module.
 	// An expanded entry requires one additional logical frame and InlineSlots
 	// remaining slots. The runtime must select an ordinary entry otherwise.
@@ -162,6 +163,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	a := assembler{arch: arch, labels: map[int]int{}, bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true, compactBranches: arch == "arm64"}
 	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered, memoryMinimum: uint64(config.MemoryMinimumPages) * pageSize, memoryPageSizes: config.MemoryPageSizes}
 	e.x86Features = config.X86Features
+	e.arm64Features = config.ARM64Features
 	e.nativeThreads = config.NativeThreads
 	e.sharedMemories = config.SharedMemories
 	e.nativeBulk = unmetered && config.MemoryCount == 1 && (len(config.SharedMemories) == 0 || !config.SharedMemories[0])
@@ -173,7 +175,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		if e.bulkMemoryOpcode(in) {
 			e.usesMemory = true
 		}
-		if isMemoryAccess(in.Op) || in.Op == 0x3f || in.Op == 0x40 || config.NativeThreads && in.Op>>16 == 0xfe && in.Op&0xffff >= 0x10 {
+		if isMemoryAccess(in.Op) || in.Op == 0x3f || in.Op == 0x40 || config.NativeThreads && in.Op>>16 == 0xfe && (in.Op&0xffff <= 2 || in.Op&0xffff >= 0x10) {
 			e.usesMemory = true
 			index := f.Sources[in.Source].Wasm.Memory
 			if in.Op == 0x3f || in.Op == 0x40 {
@@ -357,6 +359,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		}
 		if e.atomicInstruction(in, uint32(pc)) {
 			out.NativeAtomics++
+			if in.Op&0xffff <= 2 && e.atomicShared(in) {
+				out.Helpers++ // Queue/pending-registration fallback remains complete.
+			}
 			continue
 		}
 		switch op := in.Op; {

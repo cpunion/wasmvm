@@ -13,6 +13,9 @@ import "unsafe"
 
 const Available = true
 
+// ARM64CPUFeatures reports FEAT_LSE in bit zero; an unavailable probe returns zero.
+func ARM64CPUFeatures() uint32 { return uint32(C.wasmvm_arm64_features()) }
+
 // CPUFeatures reports SSSE3/SSE4.1/AVX2/AVX512F+VL/AVX512BITALG+VL in bits 0-4.
 // AVX-512 requires XMM/YMM/opmask/ZMM OS state even for 128-bit instructions.
 // Other targets return zero.
