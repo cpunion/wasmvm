@@ -11,27 +11,31 @@ go test ./pkg/component -run '^TestUpstreamComponentRuntime$'
 ```
 
 Regenerate with `python3 scripts/component_runtime_corpus.py --regenerate` and
-the pinned upstream archive plus wasm-tools 1.258.0. The separate
+the pinned upstream archive plus wasm-tools 1.258.0 and the independently
+pinned 1.262.0 producer. The older producer still generates its original inputs
+byte-for-byte; the additional producer converts only the four former limitations.
+Its release archive and executable checksums are retained in the manifest. The separate
 [grammar/type corpus](../component-binary/README.md) covers those scripts.
 
-The declared runtime profile selects 759 commands across 48 script views:
-381 successful result assertions, 76 trapping invocations, one action, 258
-successful instantiations, two initialization traps, eight invalid rejections
-and 33 component definitions. Each owned backend executes every selected command
+The declared runtime profile selects 962 commands across 52 script views:
+458 successful result assertions, 96 trapping invocations, one action, 317
+successful instantiations, two initialization traps, 45 invalid rejections
+and 43 component definitions. Each owned backend executes every selected command
 under both Go and LLGo. The runner distinguishes semantic traps from timeouts,
 resource limits and unsupported features; it never substitutes another runtime.
 No expected-unsupported assertion counts as successful execution.
 
-The manifest separately retains 167 commands requiring the optional
+The manifest separately retains 228 commands requiring the optional
 component-threading profile. Classification uses independently printed canonical
-thread opcodes and follows module/instance dependencies. Two mixed scripts also
-contain selected commands: cancel-targeted-resume and reentrance. Those views
+thread opcodes and follows module/instance dependencies. Three mixed scripts also
+contain selected commands: cancel-targeted-resume, reentrance and post-return. Those views
 are not claimed as complete-script passes. Component threading is M7, distinct
 from implemented Core Threads and P3 async tasks.
 
-Four scripts remain unconverted by the pinned producer: async/forward,
-async/big-interleaving-test and values/post-return require stream.forward text
-syntax; validation/version-suffix requires its text attribute. Original sources
-and exact diagnostics are retained. Existing authored forwarding/ABI fixtures
-remain separate evidence. These limitations do not constitute conformance passes
-or establish exhaustive component/WASI acceptance.
+The former stream.forward and version-suffix producer limitations are resolved.
+The original sources and prior diagnostics remain alongside the new conversion
+identity. Actual official forwarding, mixed asynchronous interleavings,
+non-threaded post-return cases and all version-suffix assertions execute on the
+owned engine. This is complete conversion of the pinned script inventory,
+with component threading still outside the declared runtime profile; it does
+not establish exhaustive WASI acceptance or close experimental cm64 semantics.

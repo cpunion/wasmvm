@@ -170,6 +170,39 @@ func (s *TypeScope) publish(t *Type, exporting bool) (*Type, error) {
 	return &out, nil
 }
 
+// Concrete instance exports retain their named type bindings. Copy only the
+// instance containers so export-binder bookkeeping cannot mutate import types.
+func (s *TypeScope) publishConcreteInstance(t *Type) (*Type, error) {
+	seen := map[*Type]*Type{}
+	var copyInstance func(*Type) (*Type, error)
+	copyInstance = func(in *Type) (*Type, error) {
+		if out := seen[in]; out != nil {
+			return out, nil
+		}
+		if err := s.pool.charge(1 + uint64(len(in.Exports))); err != nil {
+			return nil, err
+		}
+		out := *in
+		out.Exports = append([]Extern(nil), in.Exports...)
+		seen[in] = &out
+		for i, e := range out.Exports {
+			if e.Sort == model.InstanceSort {
+				var err error
+				out.Exports[i].Type, err = copyInstance(e.Type)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+		return &out, nil
+	}
+	out, err := copyInstance(t)
+	if err == nil {
+		err = s.expose(out, true)
+	}
+	return out, err
+}
+
 func (s *TypeScope) expose(t *Type, exporting bool) error {
 	if s.visibility.exports == nil {
 		s.visibility.exports = map[nameable]bool{}

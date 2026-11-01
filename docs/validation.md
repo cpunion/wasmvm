@@ -4851,3 +4851,36 @@ integrated head. Current canonical/component/P2/P3 coverage is
 93.96%/91.88%/90.20%/90.67%. The final four-job CI matrix must independently pass
 before merge. Generation-aware rollback and a round-trip endpoint publication
 are covered alongside the deterministic parent-cancellation regression.
+
+
+## Official forwarding and complete component source conversion
+
+wasm-tools 1.262.0 (`e22db44da`, 2026-10-13) converts the four scripts rejected
+by the older pinned producer. Release archive SHA-256 is
+`801b237643cc0f4ab27ebd1745e7863e23bf194a038bc6ca8ce5618212e43669`;
+macOS arm64 executable SHA-256 is
+`4a5b127f48340fbd453708283d190f9b1dbbe5820571eae5cbae0a205a095a00`.
+All previous corpus hashes remain unchanged. Complete source conversion now
+covers all 75 scripts. The selected inventory has 962 commands across 52 views:
+555 guest invocations, 317 successful instantiations, two initialization traps,
+45 invalid rejections and 43 definitions. 228 separately identified commands
+require optional component threading; no producer rejection counts as a pass.
+
+The official big-interleaving component initially failed both owned backends'
+validation while wasm-tools independently accepted it. Concrete instance exports
+now expose existing named bindings and copy only mutable exporter bookkeeping
+containers. The original 13-script validation corpus still passes, including
+resource binder forwarding and private-type rejection. Go race and pinned LLGo
+release execute the expanded component and P2/P3 regressions on both owned
+backends. Vet passes. Affected validator coverage is 91.81%; component-only
+coverage in the same measurement is 91.43%. Final-head CI remains required.
+Experimental cm64 local borrowing and full WASI/performance acceptance stay open.
+
+
+The preceding HTTP/world integration merged as PR #79 at engine `68c6a193`.
+[Final-head CI](https://github.com/cpunion/wasmvm/actions/runs/41267161918)
+passes all four Go/LLGo target jobs. Artifact digests, exact source head and all
+180 execution reports are verified; all 30 executable packages exceed 90%.
+Component and P3 Linux coverage are 92.02% and 90.97%. No unresolved review
+threads remain. This closes that increment's integration checks; milestone
+performance and remaining functional acceptance stay separately recorded.
