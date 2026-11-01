@@ -163,8 +163,11 @@ func (m *Memory) fill(dst uint64, b byte, count uint64) bool {
 	if !m.rangeBytes(dst, count) {
 		return false
 	}
-	for i := uint64(0); i < count; i++ {
-		m.bytes[int(dst+i)] = b
+	data := m.bytes[int(dst):int(dst+count)]
+	if b == 0 {
+		clear(data)
+	} else if len(data) != 0 {
+		fillNonzero(data, b)
 	}
 	return true
 }
