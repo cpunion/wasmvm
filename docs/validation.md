@@ -4885,6 +4885,8 @@ Component and P3 Linux coverage are 92.02% and 90.97%. No unresolved review
 threads remain. This closes that increment's integration checks; milestone
 performance and remaining functional acceptance stay separately recorded.
 
+PR #80 merged at engine `12e17e03`. Its [final-head CI](https://github.com/cpunion/wasmvm/actions/runs/41269334011) passes all four target jobs. All nine artifact digests and 180 execution reports are verified; all 30 executable packages exceed 90% coverage. No unresolved review threads remain.
+
 ## Direction-aware cm64 borrows and typed empty buffers
 
 The separately retained Component Model snapshot `fed10b0b` includes the October
