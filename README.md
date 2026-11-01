@@ -329,6 +329,12 @@ reduces LLGo i31, struct and indirect access from 552/591/1,200 to
 all GC pauses improves from 588 to 171 ns/object versus WasmEdge's 104.
 These targeted workstation results retain the remaining interpreter deficit.
 
+The [native Threads follow-up](docs/research/performance-native-threads-2026-11-02.md)
+adds direct shared accesses, all atomic widths and checked wait/notify paths on
+amd64 and arm64, with stable shared growth and concurrent-entry ownership.
+Targeted comparisons retain baseline and interpreter regressions; controlled
+full-portfolio acceptance remains open.
+
 Benchmark CI is opt-in through the `run-benchmarks` PR label or
 [workflow dispatch](https://github.com/cpunion/wasmvm/actions/workflows/benchmarks.yml).
 It compares exact base/head sources and pinned competitors and posts results
