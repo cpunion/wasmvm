@@ -61,7 +61,7 @@ func (e *functionEmitter) bulkMemory(in slots.Instruction, pc uint32) {
 // x9/x10 are cursors, x11 the total remainder, and x14/x15 chunk counters.
 // Only scratch vectors v0/v1 are touched. No guest slot changes during a chunk.
 func (e *functionEmitter) bulkARM64(pc uint32, copying, backwards bool) {
-	outer, block, pair, vector, tail, next, poll := e.a.label(), e.a.label(), e.a.label(), e.a.label(), e.a.label(), e.a.label(), e.a.label()
+	outer, block, vector, tail, next, poll := e.a.label(), e.a.label(), e.a.label(), e.a.label(), e.a.label(), e.a.label()
 	e.pollExits = append(e.pollExits, pollExit{poll, pc})
 	e.a.mark(outer)
 	e.a.word(0xf940000d | uint32(nativeabi.ControlOffset/8)<<10) // ldr x13, [x0, control]
@@ -71,19 +71,23 @@ func (e *functionEmitter) bulkARM64(pc uint32, copying, backwards bool) {
 	e.a.word(0x9a8e316e) // csel x14, x11, x14, lo
 	e.a.word(0xaa0e03ef) // mov x15, x14
 	e.a.mark(block)
-	e.a.word(0xf10201ff) // cmp x15, #128
-	e.a.branch(pair, true, 3)
-	for i := 0; i < 4; i++ {
-		e.bulkPairARM64(copying, backwards)
-	}
-	e.a.word(0xd10201ef) // sub x15, x15, #128
-	e.a.branch(block, false, 0)
-	e.a.mark(pair)
-	e.a.word(0xf10081ff) // cmp x15, #32
+	e.a.word(0xf10101ff) // cmp x15, #64
 	e.a.branch(vector, true, 3)
-	e.bulkPairARM64(copying, backwards)
-	e.a.word(0xd10081ef) // sub x15, x15, #32
-	e.a.branch(pair, false, 0)
+	for i := 0; i < 2; i++ {
+		if copying {
+			if backwards {
+				e.a.word(0xadff0540) // ldp q0, q1, [x10, #-32]!
+				e.a.word(0xadbf0520) // stp q0, q1, [x9, #-32]!
+			} else {
+				e.a.word(0xacc10540) // ldp q0, q1, [x10], #32
+				e.a.word(0xac810520) // stp q0, q1, [x9], #32
+			}
+		} else {
+			e.a.word(0xac810120) // stp q0, q0, [x9], #32
+		}
+	}
+	e.a.word(0xd10101ef) // sub x15, x15, #64
+	e.a.branch(block, false, 0)
 	e.a.mark(vector)
 	e.a.word(0xf10041ff) // cmp x15, #16
 	e.a.branch(tail, true, 3)
@@ -119,20 +123,6 @@ func (e *functionEmitter) bulkARM64(pc uint32, copying, backwards bool) {
 	e.a.mark(next)
 	e.a.word(0xeb0e016b) // subs x11, x11, x14
 	e.a.branch(outer, true, 1)
-}
-
-func (e *functionEmitter) bulkPairARM64(copying, backwards bool) {
-	if copying {
-		if backwards {
-			e.a.word(0xadff0540) // ldp q0, q1, [x10, #-32]!
-			e.a.word(0xadbf0520) // stp q0, q1, [x9, #-32]!
-		} else {
-			e.a.word(0xacc10540) // ldp q0, q1, [x10], #32
-			e.a.word(0xac810520) // stp q0, q1, [x9], #32
-		}
-	} else {
-		e.a.word(0xac810120) // stp q0, q0, [x9], #32
-	}
 }
 
 // REP strings use only the scratch register set and temporarily borrow the
