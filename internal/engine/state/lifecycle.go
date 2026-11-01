@@ -187,6 +187,9 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 		}
 	}
 	s.heapThreshold = max(1<<20, s.usage.HeapBytes*2)
+	if s.nativeHeap != nil {
+		s.compactNativeHeap()
+	}
 
 	kept := s.instances[:0]
 	for _, in := range s.instances {
@@ -340,6 +343,9 @@ func (s *Store) Close() {
 		s.releaseObject(uint32(i))
 	}
 	s.heap = nil
+	if s.nativeHeap != nil {
+		s.nativeHeap.close()
+	}
 	s.heapLayouts = nil
 	s.heapFree = nil
 	s.temporary = nil

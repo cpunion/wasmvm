@@ -22,7 +22,7 @@ func (e *Execution) resetRuntimeGlobals() {
 
 // The common frame machine retains every active/suspended instance and
 // serializes access, growth and reclamation. This execution owns the metadata
-// and numeric cells; table and linear-memory storage belong to the Store. No Go address
+// and value cells; table and linear-memory storage belong to the Store. No Go address
 // crosses the ABI. Every entry refreshes table pointers after intervening host
 // calls/helpers, and appends memory length/base pairs after global cells. Immutable function identities are copied only on instance change.
 func (e *Execution) bindRuntimeData(in *state.Instance) (uint64, error) {
@@ -39,6 +39,8 @@ func (e *Execution) bindRuntimeGlobals(in *state.Instance, f *slots.Function, in
 	if len(in.Memories) > 1 {
 		words += uint64(len(in.Memories)) * 2
 	}
+	heapBase := words
+	words += 2
 	if words > uint64(^uint(0)>>1)/8 {
 		return 0, wasm.ErrLimit
 	}
@@ -74,7 +76,7 @@ func (e *Execution) bindRuntimeGlobals(in *state.Instance, f *slots.Function, in
 			cells = make(map[*state.Global]int, len(indices))
 		}
 		for _, index := range indices {
-			if uint64(index) >= uint64(len(in.Globals)) || in.Globals[index] == nil || in.Globals[index].Type.Value.IsReference() {
+			if uint64(index) >= uint64(len(in.Globals)) || in.Globals[index] == nil || !in.Globals[index].Type.Value.Valid() {
 				return 0, wasm.ErrInvalid
 			}
 			g := in.Globals[index]
@@ -135,11 +137,18 @@ func (e *Execution) bindRuntimeGlobals(in *state.Instance, f *slots.Function, in
 			e.runtimeWords[at], e.runtimeWords[at+1] = uint64(len(buffer)), base
 		}
 	}
+	if in.Owner != nil {
+		e.runtimeWords[heapBase], e.runtimeWords[heapBase+1] = in.Owner.NativeHeapView()
+	} else {
+		e.runtimeWords[heapBase], e.runtimeWords[heapBase+1] = 0, 0
+	}
 	return address, nil
 }
 
 // Publish even on traps, fuel exhaustion and cancellation. The driver must see
 // writes preceding the exit before any helper, host callback or guest call.
+// Reference cells contain handles and are published before guest root tracing;
+// guest GC never runs concurrently with an active native entry.
 func (e *Execution) flushRuntimeGlobals() {
 	for _, binding := range e.runtimeGlobals {
 		binding.global.Value.Lo = e.runtimeWords[binding.word]

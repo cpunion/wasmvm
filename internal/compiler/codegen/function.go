@@ -43,6 +43,7 @@ type CompiledFunction struct {
 	NativeVectors                 uint32
 	FusedVectors                  uint32
 	AliasedVectorReads            uint32
+	NativeHeap                    uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -89,6 +90,8 @@ type Config struct {
 	MemoryCount     uint32
 	// Globals follows validated imported-then-defined global index order.
 	Globals []module.GlobalType
+	// HeapTypes contains the validated module-local aggregate definitions.
+	HeapTypes []module.TypeDef
 }
 
 func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
@@ -168,6 +171,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		}
 	}
 	e.header(uint64(len(f.Slots))*16, len(pcs))
+	e.prepareHeapAccesses(config)
 	globalIndices, usesRuntimeData := e.prepareRuntimeData(config)
 	e.memoryFunctions, e.memoryTables, e.memoryGlobals, e.memoryBindings = config.FunctionCount, config.TableCount, uint32(len(config.Globals)), uint32(len(globalIndices))
 	if e.usesMemory && !e.memoryViews {
@@ -364,6 +368,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			} else {
 				out.NativeTables++
 			}
+		case e.heapInstruction(in):
+			out.NativeHeap++
 		case op == 0x40:
 			out.MemoryGrows++
 			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))

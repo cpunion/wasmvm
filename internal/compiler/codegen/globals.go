@@ -17,14 +17,14 @@ func globalCell(f *slots.Function, in slots.Instruction, config Config) (uint32,
 		return 0, 0, false
 	}
 	g := config.Globals[index]
-	if g.Value != wasm.I32 && g.Value != wasm.I64 && g.Value != wasm.F32 && g.Value != wasm.F64 && g.Value != wasm.V128 || in.Op == 0x24 && !g.Mutable {
+	if !g.Value.Valid() || in.Op == 0x24 && !g.Mutable {
 		return 0, 0, false
 	}
 	slot := in.Dst
 	if in.Op == 0x24 {
 		slot = in.A
 	}
-	if slot == slots.NoSlot || uint64(slot) >= uint64(len(f.Slots)) || f.Slots[slot] != g.Value {
+	if slot == slots.NoSlot || uint64(slot) >= uint64(len(f.Slots)) || f.Slots[slot] != g.Value.Storage() {
 		return 0, 0, false
 	}
 	offset, ok := nativeabi.GlobalPointerOffset(config.FunctionCount, config.TableCount, index)
@@ -33,7 +33,7 @@ func globalCell(f *slots.Function, in slots.Instruction, config Config) (uint32,
 
 func (e *functionEmitter) prepareRuntimeData(config Config) ([]uint32, bool) {
 	seen := map[uint32]bool{}
-	needed := e.memoryViews
+	needed := e.memoryViews || len(e.heapAccesses) != 0
 	for _, in := range e.f.Code {
 		if _, _, ok := globalCell(e.f, in, config); ok {
 			seen[e.f.Sources[in.Source].Wasm.A] = true
@@ -48,6 +48,13 @@ func (e *functionEmitter) prepareRuntimeData(config Config) ([]uint32, bool) {
 		indices = append(indices, index)
 	}
 	sort.Slice(indices, func(i, j int) bool { return indices[i] < indices[j] })
+	if len(e.heapAccesses) != 0 {
+		var ok bool
+		e.heapPair, ok = nativeabi.HeapPairOffset(config.FunctionCount, config.TableCount, uint32(len(config.Globals)), uint32(len(indices)), config.MemoryCount)
+		if !ok {
+			panic(&wasm.Error{Kind: wasm.ErrLimit, Detail: "native heap view offset"})
+		}
+	}
 	if needed {
 		// The driver supplies this trusted view before any guest instruction,
 		// including arbitrary cold continuations. No Go pointer enters the ABI.

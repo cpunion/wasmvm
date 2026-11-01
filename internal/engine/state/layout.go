@@ -31,14 +31,8 @@ func (s *Store) layout(typ uint32) (*heapLayout, error) {
 		}
 	}
 	l := &heapLayout{}
-	width := func(f module.FieldType) int {
-		if f.Value.IsReference() {
-			return 8
-		}
-		return fieldBytes(f)
-	}
 	if d.Kind == module.ArrayKind {
-		l.stride = width(d.Fields[0])
+		l.stride = d.Fields[0].HeapBytes()
 	} else {
 		l.offsets = make([]uint32, len(d.Fields))
 		l.widths = make([]byte, len(d.Fields))
@@ -47,7 +41,7 @@ func (s *Store) layout(typ uint32) (*heapLayout, error) {
 				return nil, limit("heap layout")
 			}
 			l.offsets[i] = uint32(l.size)
-			n := width(f)
+			n := f.HeapBytes()
 			l.widths[i] = byte(n)
 			l.size += uint64(n)
 		}

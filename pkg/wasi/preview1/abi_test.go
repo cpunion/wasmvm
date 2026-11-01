@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cpunion/wasmvm/internal/wasi/host"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 	"golang.org/x/sys/unix"
@@ -344,6 +345,11 @@ func TestSocketAcceptAndBlockedClose(t *testing.T) {
 			}
 			defer unix.Close(client)
 			if err = unix.Connect(client, address); err != nil {
+				t.Fatal(err)
+			}
+			// Connect may complete before the listener becomes readable. Keep
+			// the nonblocking accept contract and wait for its readiness event.
+			if _, _, err := host.Poll(f.ctx, listener, true); err != nil {
 				t.Fatal(err)
 			}
 			f.want(ErrSuccess, "sock_accept", uint64(fd), 4, 300)

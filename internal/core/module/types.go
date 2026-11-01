@@ -22,6 +22,26 @@ func (f FieldType) Unpacked() wasm.ValueType {
 	return f.Value
 }
 
+// HeapBytes is the shared packed heap representation. References are numeric
+// handles, including indexed references; v128 fields retain both words.
+func (f FieldType) HeapBytes() int {
+	if f.Packed != 0 {
+		return int(f.Packed) / 8
+	}
+	if f.Value.IsReference() {
+		return 8
+	}
+	switch f.Value {
+	case wasm.I32, wasm.F32:
+		return 4
+	case wasm.I64, wasm.F64:
+		return 8
+	case wasm.V128:
+		return 16
+	}
+	return 0
+}
+
 type TypeDef struct {
 	Kind   byte
 	Open   bool

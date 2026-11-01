@@ -200,9 +200,9 @@ live-range allocation and broader loop/range optimization remain required.
 
 Use a private guest ABI with explicit VM frames: guest calls push checked logical frames and branch to native callee labels; returns branch to saved continuations. The initial backend keeps one bounded C entry frame, without hardware-stack switching or a native C/Go frame per guest call. Host interaction, collection, cancellation and traps leave through the explicit status protocol in the [native ABI](native-abi.md). Whole-function inlining and more advanced optimization follow correctness and profiling; both disabled and enabled optimizations must pass differential tests. A persistent AOT/cache file format is later work; generating native code in-process is required in M2.
 
-## Direct numeric globals
+## Direct globals
 
-Both emitters lower validated numeric global.get/set in precise and unmetered
+Both emitters lower validated numeric and reference global.get/set in precise and unmetered
 entries. An execution-owned native view provides per-index cell pointers;
 imported aliases share cells. Scalar precise copies preserve both words, while
 unmetered scalar values retain the canonical zero high word. V128 accesses use
@@ -212,12 +212,42 @@ integer/FP bit transfers. Unmetered scalar stores retain canonical zero words
 without rewriting them. Spare arm64 caller registers cache immutable pointers, sharing the
 existing allocator with table metadata. Mutable cell contents are always live.
 
-The driver snapshots only referenced numeric globals before Run and publishes
-writes after every native exit, before host/helper handling or errors. Reference
-globals keep the existing helper/root path. Missing views fail before any guest
+The driver snapshots only referenced globals before Run and publishes
+writes after every native exit, before host/helper handling, root tracing or errors.
+Reference cells carry Store-local handles. Reentry refreshes cells after nested
+guest/host writes. Missing views fail before any guest
 instruction and original cold continuations retain the same contract. See the
 [scope](../../benchmarks/native/globals-plan.md) and [native ABI](native-abi.md).
 This removes helper transitions; broader global live ranges remain open.
+
+## Direct GC field access
+
+Both emitters lower struct.get/get_s/get_u/set, array.get/get_s/get_u/set and
+array.len against the same packed field layout as the portable runtime. Each
+access checks null, slot bounds and the complete generation-tagged identity
+before loading a payload address; arrays also check the unsigned i32 index.
+Validated subtype prefixes retain their physical layout. Packed signed loads
+produce canonical i32 bits, and vectors use the existing vector allocator.
+Precise fuel, trap offsets, cold continuations, spills and root maps retain
+their ordinary contracts. Allocation, casts and bulk GC operations continue to
+use typed runtime exits.
+
+Native Stores own a compacting payload arena and a separate numeric handle
+view. Collection and arena/view growth run only at serialized safepoints and
+republish moved addresses before reentry. Guest handles never change when data
+moves. No generated store needs a Go or incremental guest write barrier:
+payloads contain numeric handles, and the collector traces the same bytes after
+native execution stops. Hidden descriptor edges, exception tags and continuation
+metadata keep their existing typed root visitors. Portable Stores keep Go-backed
+payloads without native relocation metadata in their object size class.
+
+Payload capacity is bounded by MaxHeapBytes, handle-view capacity by
+(MaxHeapObjects+1)*32 bytes; growth transiently retains at most two copies.
+Logical object/descriptor/continuation charges remain unchanged. Compaction
+also bounds retired allocation metadata after failed instances or handle reuse,
+independently of arena high-water capacity. Store close frees both native
+allocations after execution drains. See the [GC comparison](../research/performance-gc-2026-11-02.md)
+for measured gains and remaining deficits.
 
 ## Direct tables and function references
 

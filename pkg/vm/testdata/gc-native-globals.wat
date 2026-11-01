@@ -1,0 +1,18 @@
+;; Authored for wasmvm; binary produced by wasm-tools 1.262.0 parse.
+(module
+ (type $t (struct (field i32)))
+ (import "h" "collect" (func $collect))
+ (global $root (mut (ref null $t)) (ref.null $t))
+ (func (export "save-host") (result i32)
+  (global.set $root (struct.new $t (i32.const 77)))
+  (call $collect)
+  (struct.get $t 0 (global.get $root)))
+ (func (export "save-allocate") (result i32)
+  (global.set $root (struct.new $t (i32.const 88)))
+  (drop (struct.new $t (i32.const 55)))
+  (struct.get $t 0 (global.get $root)))
+ (func (export "save-trap")
+  (global.set $root (struct.new $t (i32.const 99)))
+  unreachable)
+ (func (export "load") (result i32)
+  (struct.get $t 0 (global.get $root))))
