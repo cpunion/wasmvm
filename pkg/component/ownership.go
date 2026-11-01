@@ -26,10 +26,11 @@ type resourceCodec struct {
 }
 
 type ownedHandle struct {
-	table *canonical.Resources
-	rt    *resourceType
-	id    uint32
-	end   *asyncEnd
+	table      *canonical.Resources
+	rt         *resourceType
+	id         uint32
+	end        *asyncEnd
+	generation uint64
 }
 
 func (r *resourceCodec) declaration(t *model.Type) (*resourceType, error) {
@@ -120,7 +121,7 @@ func (r *resourceCodec) Lower(t *model.Type, v Value) (uint32, error) {
 	if t.Kind == model.ErrorContext {
 		id, err := r.n.handles.AddErrorContext(v)
 		if err == nil {
-			r.lowered = append(r.lowered, ownedHandle{table: r.n.handles, id: id})
+			r.lowered = append(r.lowered, ownedHandle{table: r.n.handles, id: id, generation: r.n.handles.EntryGeneration(id)})
 		}
 		return id, err
 	}
@@ -145,7 +146,7 @@ func (r *resourceCodec) Lower(t *model.Type, v Value) (uint32, error) {
 	canonical.InvalidateReference(v.Resource)
 	id, err = r.n.handles.New(rt.identity, rep)
 	if err == nil {
-		r.lowered = append(r.lowered, ownedHandle{table: r.n.handles, rt: rt, id: id})
+		r.lowered = append(r.lowered, ownedHandle{table: r.n.handles, rt: rt, id: id, generation: r.n.handles.EntryGeneration(id)})
 	}
 	return id, err
 }
@@ -213,6 +214,9 @@ func (r *resourceCodec) Finish(err error) error {
 		}
 		for _, h := range lowered {
 			guard.run(func() {
+				if h.table.EntryGeneration(h.id) != h.generation {
+					return
+				}
 				if h.end != nil {
 					if h.end.table() == h.table && h.end.id == h.id {
 						h.end.abort()

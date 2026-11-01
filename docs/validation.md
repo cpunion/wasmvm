@@ -4812,3 +4812,31 @@ dependency licenses and source/generator/binary hashes. Guest builds are offline
 ordinary semantic CI executes committed bytes without installing these producers.
 Final-head four-job CI remains the merge gate. Local cm64 borrow conversion,
 exhaustive upstream conformance and deferred performance acceptance remain open.
+
+
+## Selected upstream component runtime corpus
+
+All 75 original pinned scripts and notices are retained. wasm-tools 1.258.0
+converts 71 scripts; 57 belong to runtime groups. The declared non-threading
+profile executes 759 commands from 48 script views per backend: 458 guest
+invocations, 258 successful instantiations, two initialization traps, eight invalid
+rejections and 33 definitions. 167 commands belong to optional component threading;
+four source scripts have explicit producer syntax limitations. The manifest
+retains exact indices, dependency classification, diagnostics and checksums.
+The grammar/type corpus remains separately measured. These are selected-profile
+results, not complete component or WASI conformance.
+
+The unmodified official tests initially failed on both owned backends. Fixes
+restore canonical LIFO guest handle reuse across tagged kinds, protect rollback
+with publication generations, admit pending async-ABI lowers in sync functions,
+allow task.return to omit unneeded result memory and trap internal deadlocks.
+Independent Wasmtime runs confirm cross-ABI and cancellation results. Its deadlock
+case also waits until externally stopped, recorded as a reference limitation.
+The explainer's unconditional memory equality differs from its cross-ABI test and
+Wasmtime's rule; supplied memory identity and encoding checks remain enforced.
+
+A separate HTTP CI failure reproduced locally under LLGo: parent cancellation
+could wake a trailer reader before the provider published its failure. A
+regression forcing that interval failed under both backends. Publishing the
+failure before local cancellation and checking parent cancellation at trailer
+resolution prevents false success. Final-head CI is required after integration.

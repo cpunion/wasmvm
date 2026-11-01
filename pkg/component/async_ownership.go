@@ -68,7 +68,7 @@ func (r *resourceCodec) lowerAsync(t *model.Type, v Value) (uint32, error) {
 	}
 	e.n, e.id = r.n, next
 	canonical.InvalidateReference(v.Resource)
-	r.lowered = append(r.lowered, ownedHandle{table: r.n.handles, id: next, end: e})
+	r.lowered = append(r.lowered, ownedHandle{table: r.n.handles, id: next, end: e, generation: r.n.handles.EntryGeneration(next)})
 	return next, nil
 }
 func (r *resourceCodec) acceptAsync(t *model.Type, v Value, commit bool) (Value, error) {

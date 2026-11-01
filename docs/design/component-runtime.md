@@ -95,7 +95,9 @@ child twice creates distinct declarations and independent handle domains;
 importing a resource and exporting it again retains its identity and authority.
 Only the defining component may create or inspect its representation, as
 already enforced by static validation. Representations preserve i32/i64 width;
-handles remain i32 indexes in the pinned 28-bit domain and are never reused.
+guest handles remain i32 indexes in the pinned 28-bit domain. Freed guest
+indices are reused in LIFO order, as required by the pinned canonical ABI.
+Private host capability domains never reuse IDs.
 
 `canon resource.new`, `resource.rep` and `resource.drop` execute on those
 instance tables. Drop consumes the handle before invoking the defining Core
@@ -446,7 +448,7 @@ resource cleanup to that capability. `Config.MaxTasks` bounds live callback
 tasks independently of the shared `MaxResources` handle quota.
 
 Waitable sets, subtasks, resources and error contexts share one tagged,
-non-reusing 28-bit handle domain. Intrusive membership and ready queues provide
+28-bit guest handle domain with LIFO index reuse. Intrusive membership and ready queues provide
 constant-time join, notification and poll. Progress is coalesced until delivery;
 borrow lenders remain pinned until the resolve event is delivered. Both sync
 and async subtask cancellation enforce single requests, exclusive waiters,
@@ -619,3 +621,36 @@ results produced after abandonment must be released immediately. Host argument,
 result and quota cleanup continues even if this callback panics, preserving any
 original execution panic. This closes the lifetime gap between external resource
 creation and fresh-Caller publication.
+
+
+## Upstream runtime semantics and handle reuse
+
+The pinned runtime corpus selects 759 commands across 48 script views, including
+458 guest invocations per backend. It separately retains 167 optional component-
+threading commands and four producer syntax limitations; see
+[the exact inventory](../../testdata/component-runtime/README.md). It does not
+claim exhaustive upstream conformance. Both owned backends execute selected
+resource, value, linking and async semantics under Go and LLGo.
+
+Guest handles follow the specified LIFO free list across resource, error-context,
+endpoint and waitable kinds. Host capabilities retain their private nonreusing
+indices and affine validity state. Each publication additionally has a bounded,
+monotonic generation. Failed canonical transactions reclaim only the generation
+they published, preserving later entries at a reused guest index and round-trip
+endpoint transfers. Reaching the 64-bit generation bound reports a resource limit
+before consuming ownership or quota.
+
+A sync-typed function may issue an async-ABI lower and receive a pending subtask;
+only actual blocking requires an async-typed caller. When no task is runnable and
+no admitted host producer can wake it, internal deadlock traps and abandons owned
+continuations. Pending host completions/sources continue waiting for their explicit
+external wakeups and cancellation. This detection is conservative for cycles
+involving host completions.
+
+For task.return, a missing memory option is valid when static validation finds
+no result memory requirement, even when the lift needs memory for spilled
+parameters. A supplied memory must still match the lift's mutable instance and
+string encoding remains checked. This matches the official cross-ABI runtime
+script and Wasmtime 48.0.1. The pinned explainer's unconditional LiftOptions.equal
+wording is stricter than that test/implementation; this discrepancy is retained
+rather than weakening checks on memory-bearing results.

@@ -132,7 +132,7 @@ func (in *Instance) lowerTask(c *vm.Caller, n *namespace, plan *validate.Canonic
 		complete = err == nil
 		return result, err
 	}
-	if n.task != nil && n.task.plan != nil && n.task.plan.Type.Kind != model.AsyncFunction {
+	if !plan.Async && n.task != nil && n.task.plan != nil && n.task.plan.Type.Kind != model.AsyncFunction {
 		return result, wasm.ErrTrap
 	}
 	if plan.Async {

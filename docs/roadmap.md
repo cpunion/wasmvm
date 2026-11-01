@@ -627,6 +627,14 @@ reverse-order close/join preserve explicit capability ownership. Local cm64
 borrows, exhaustive upstream conformance and deferred performance acceptance
 still keep M6 open.
 
+The upstream runtime corpus now executes 759 selected commands per backend,
+including 458 guest invocations. Official tests corrected guest handle LIFO
+reuse, rollback publication identity, nonblocking async lowers in sync functions,
+return-memory options and internal deadlock detection. The manifest retains
+167 optional component-threading commands and four unconverted producer scripts
+without counting them as passes. Complete upstream acceptance, local cm64 borrows
+and deferred performance gates remain open.
+
 **Exit gate:** both backends/host compilers pass the same async ABI and declared-world fixtures, including nested composition, async host calls, cancellation propagation, stream closure, partial failure and shutdown while suspended. No tasks/resources remain stranded; all accepted P2 behavior stays green. Core stack switching and component threading are separate proposals, not implied by this stage.
 
 ## M7 — Further optimization and experimental features

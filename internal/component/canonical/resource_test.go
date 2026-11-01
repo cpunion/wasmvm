@@ -271,3 +271,86 @@ func TestSharedResourceQuotaAndClosedDomains(t *testing.T) {
 		t.Fatal("escaped borrow retained quota", err, budget.live.Load())
 	}
 }
+
+func TestGuestHandleReuseAcrossKindsAndMoves(t *testing.T) {
+	budget := NewResourceBudget(8)
+	guest := NewGuestResourceTable(budget)
+	host := NewResourceTable(budget)
+	typ := &ResourceType{}
+	a, _ := guest.New(typ, 11)
+	b, _ := guest.New(typ, 22)
+	if a != 1 || b != 2 {
+		t.Fatal(a, b)
+	}
+	if err := guest.Drop(nil, typ, a); err != nil {
+		t.Fatal(err)
+	}
+	message, _ := NewErrorContext("diagnostic")
+	diagnostic, err := guest.AddErrorContext(message)
+	if err != nil || diagnostic != a {
+		t.Fatal(diagnostic, err)
+	}
+	if err := guest.Drop(nil, typ, b); err != nil {
+		t.Fatal(err)
+	}
+	opaque, err := guest.AddOpaque("endpoint")
+	if err != nil || opaque != b {
+		t.Fatal(opaque, err)
+	}
+	if err := guest.DropErrorContext(diagnostic); err != nil {
+		t.Fatal(err)
+	}
+	scope := NewBorrowScope(8)
+	borrow, err := scope.Lower(guest, typ, 33)
+	if err != nil || borrow != a {
+		t.Fatal(borrow, err)
+	}
+	if err := scope.End(); !errors.Is(err, wasm.ErrTrap) {
+		t.Fatal(err)
+	}
+	if err := guest.RemoveOpaque(opaque); err != nil {
+		t.Fatal(err)
+	}
+	// A transfer consumes no additional shared live slot and uses the last hole.
+	value, err := host.AddOpaque("moved")
+	if err != nil {
+		t.Fatal(err)
+	}
+	moved, err := host.MoveOpaque(value, guest)
+	if err != nil || moved != b {
+		t.Fatal(moved, err)
+	}
+	rep, err := guest.New(typ, 44)
+	if err != nil || rep != a {
+		t.Fatal(rep, err)
+	}
+	if got, err := guest.Take(typ, rep); err != nil || got != 44 {
+		t.Fatal(got, err)
+	}
+	before := guest.EntryGeneration(moved)
+	away, err := guest.MoveOpaque(moved, host)
+	if err != nil {
+		t.Fatal(err)
+	}
+	back, err := host.MoveOpaque(away, guest)
+	if err != nil || back != moved || guest.EntryGeneration(back) == before || host.EntryGeneration(away) != 0 {
+		t.Fatal("round-trip publication reused its rollback identity", back, err)
+	}
+	// A free slot remains usable even at the ABI index-space bound.
+	guest.next = 1 << 28
+	if id, err := guest.New(typ, 55); err != nil || id != a {
+		t.Fatal(id, err)
+	}
+	if _, err := guest.New(typ, 66); !errors.Is(err, wasm.ErrLimit) {
+		t.Fatal(err)
+	}
+	host.generation = ^uint64(0)
+	if _, err := host.AddOpaque("overflow"); !errors.Is(err, wasm.ErrLimit) {
+		t.Fatal(err)
+	}
+	host.Close()
+	guest.Close()
+	if budget.live.Load() != 0 {
+		t.Fatal("leaked shared quota", budget.live.Load())
+	}
+}

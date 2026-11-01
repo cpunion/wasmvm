@@ -3,6 +3,7 @@ package component
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/cpunion/wasmvm/internal/component/canonical"
 	"github.com/cpunion/wasmvm/internal/component/model"
 	"github.com/cpunion/wasmvm/internal/component/validate"
@@ -447,6 +448,21 @@ func (in *Instance) stepTasks(c *vm.Caller) (bool, error) {
 func (in *Instance) awaitTasks(c *vm.Caller, ready func() bool) error {
 	return in.awaitTasksContext(c, c.Context(), ready)
 }
+
+func (in *Instance) externalProgressPossible() bool {
+	if in.tasks == nil || in.tasks.head == nil {
+		return true
+	}
+	for t := in.tasks.head; t != nil; t = t.next {
+		// Host completions include asynchronous sources and scheduled IO. Their
+		// producers may wake the scheduler independently of guest execution.
+		if t.hostFunction != nil {
+			return true
+		}
+	}
+	return false
+}
+
 func (in *Instance) awaitTasksContext(c *vm.Caller, ctx context.Context, ready func() bool) error {
 	for !ready() {
 		if err := ctx.Err(); err != nil {
@@ -460,6 +476,12 @@ func (in *Instance) awaitTasksContext(c *vm.Caller, ctx context.Context, ready f
 			return err
 		}
 		if !progress {
+			if ready() {
+				continue
+			}
+			if !in.externalProgressPossible() {
+				return fmt.Errorf("%w: component deadlock: no runnable task or external producer", wasm.ErrTrap)
+			}
 			select {
 			case <-ctx.Done():
 				return ctx.Err()

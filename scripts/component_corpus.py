@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 import tarfile
 
+from component_runtime_corpus import prepare as prepare_runtime
+
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -75,6 +77,7 @@ def prepare(destination=None):
     print(f"Verified 132 grammar commands, {len(scripts)} semantic scripts "
           f"({binary} binary commands; {text} separate text-parser assertions), "
           "and 1,024 canonical layout cases")
+    prepare_runtime()
     return manifest
 
 

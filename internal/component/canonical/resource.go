@@ -17,6 +17,7 @@ type ResourceType struct {
 
 type resourceEntry struct {
 	id           uint32
+	generation   uint64
 	typeID       *ResourceType
 	rep          uint64
 	owned        bool
@@ -60,14 +61,16 @@ func (b *ResourceBudget) acquire() error {
 
 func (b *ResourceBudget) release(count uint32) { b.live.Add(0 - count) }
 
-// Resources is an instance's handle domain. IDs are never reused, so stale
-// handles cannot gain authority over a later resource. It is bounded by both
-// live entries and the pinned ABI's 28-bit handle space.
+// Resources is a bounded handle domain. Guest domains reuse freed indices in
+// ABI-mandated LIFO order; private host capability domains never reuse IDs.
 type Resources struct {
 	mu         sync.Mutex
 	order      uint64
 	entries    map[uint32]*resourceEntry
 	next       uint32
+	generation uint64
+	free       []uint32
+	reuse      bool
 	budget     *ResourceBudget
 	closed     bool
 	errorCount uint32
@@ -84,19 +87,62 @@ func NewResourceTable(budget *ResourceBudget) *Resources {
 	return &Resources{order: resourceTableOrder.Add(1), entries: map[uint32]*resourceEntry{}, next: 1, budget: budget}
 }
 
+// NewGuestResourceTable implements the canonical per-component handles table.
+// Host references use a separate nonreusing domain or a pinned borrow scope.
+func NewGuestResourceTable(budget *ResourceBudget) *Resources {
+	r := NewResourceTable(budget)
+	r.reuse = true
+	return r
+}
+
+func (r *Resources) availableLocked() bool {
+	return r.generation != ^uint64(0) && (len(r.free) != 0 || r.next < 1<<28)
+}
+
+func (r *Resources) indexLocked() uint32 {
+	r.generation++
+	if n := len(r.free); n != 0 {
+		i := r.free[n-1]
+		r.free = r.free[:n-1]
+		return i
+	}
+	i := r.next
+	r.next++
+	return i
+}
+
+func (r *Resources) removeLocked(id uint32) {
+	delete(r.entries, id)
+	if r.reuse {
+		r.free = append(r.free, id)
+	}
+}
+
+// EntryGeneration identifies one publication across index reuse and transfers.
+// Rollback must not consume a later publication at the same guest index.
+func (r *Resources) EntryGeneration(id uint32) uint64 {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if !r.closed {
+		if entry := r.entries[id]; entry != nil {
+			return entry.generation
+		}
+	}
+	return 0
+}
+
 func (r *Resources) addLocked(e *resourceEntry) (uint32, error) {
 	if r.closed {
 		return 0, wasm.ErrClosed
 	}
-	if r.next >= (1 << 28) {
+	if !r.availableLocked() {
 		return 0, exhausted()
 	}
 	if err := r.budget.acquire(); err != nil {
 		return 0, err
 	}
-	i := r.next
-	r.next++
-	e.id = i
+	i := r.indexLocked()
+	e.id, e.generation = i, r.generation
 	r.entries[i] = e
 	return i, nil
 }
@@ -143,7 +189,7 @@ func (r *Resources) Take(t *ResourceType, id uint32) (uint64, error) {
 	if !e.owned || e.lends != 0 {
 		return 0, scalarTrap("resource is borrowed")
 	}
-	delete(r.entries, id)
+	r.removeLocked(id)
 	r.budget.release(1)
 	return e.rep, nil
 }
@@ -174,7 +220,7 @@ func (r *Resources) DropWith(ctx context.Context, t *ResourceType, id uint32, dr
 		r.mu.Unlock()
 		return err
 	}
-	delete(r.entries, id)
+	r.removeLocked(id)
 	r.budget.release(1)
 	r.mu.Unlock()
 	if !e.owned {
@@ -275,7 +321,7 @@ func (s *BorrowScope) End() error {
 	for e, borrow := range s.borrows {
 		borrow.table.mu.Lock()
 		if borrow.table.entries[e.id] == e {
-			delete(borrow.table.entries, e.id)
+			borrow.table.removeLocked(e.id)
 			borrow.table.budget.release(1)
 			escaped = true
 		}
@@ -319,6 +365,10 @@ func (r *Resources) Drain(ctx context.Context) error {
 	entries := r.entries
 	r.budget.release(uint32(len(entries)))
 	r.entries = map[uint32]*resourceEntry{}
+	if r.reuse {
+		r.next = 1
+		r.free = nil
+	}
 	r.mu.Unlock()
 	if ctx == nil {
 		ctx = context.Background()
@@ -350,4 +400,5 @@ func (r *Resources) Close() {
 	}
 	r.budget.release(uint32(len(r.entries)))
 	r.entries = nil
+	r.free = nil
 }

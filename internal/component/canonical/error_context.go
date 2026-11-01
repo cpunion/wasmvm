@@ -109,7 +109,7 @@ func (r *Resources) DropErrorContext(id uint32) error {
 	if err != nil {
 		return err
 	}
-	delete(r.entries, id)
+	r.removeLocked(id)
 	r.errorCount--
 	r.budget.releaseError(e.errorContext)
 	r.budget.release(1)

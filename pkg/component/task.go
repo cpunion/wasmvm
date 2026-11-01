@@ -57,7 +57,10 @@ func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.
 		if n.blocked || task.plan == nil || !task.plan.Async || task.resolved || task.plan.Encoding != plan.Encoding {
 			return nil, wasm.ErrTrap
 		}
-		if (task.plan.Memory == nil) != (plan.Memory == nil) || plan.Memory != nil && n.items[model.CoreMemorySort][*plan.Memory].core != n.items[model.CoreMemorySort][*task.plan.Memory].core {
+		// A return without a memory option needs no result memory under static
+		// validation. The official cross-ABI corpus and Wasmtime permit this
+		// when the lift's memory was needed only for spilled parameters.
+		if plan.Memory != nil && (task.plan.Memory == nil || n.items[model.CoreMemorySort][*plan.Memory].core != n.items[model.CoreMemorySort][*task.plan.Memory].core) {
 			return nil, wasm.ErrTrap
 		}
 		equal, err := validate.EqualValue(plan.Type.Result, task.plan.Type.Result, in.config.Validate.MaxNodes, func(a, b uint64) bool {

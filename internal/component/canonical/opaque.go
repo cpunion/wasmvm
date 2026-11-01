@@ -28,7 +28,7 @@ func (r *Resources) RemoveOpaque(id uint32) error {
 	if r.closed || e == nil || e.opaque == nil {
 		return scalarTrap("invalid async handle")
 	}
-	delete(r.entries, id)
+	r.removeLocked(id)
 	r.budget.release(1)
 	return nil
 }
@@ -52,13 +52,12 @@ func (r *Resources) MoveOpaque(id uint32, dst *Resources) (uint32, error) {
 	if r.closed || dst.closed || e == nil || e.opaque == nil {
 		return 0, scalarTrap("invalid async handle")
 	}
-	if dst.next >= 1<<28 {
+	if !dst.availableLocked() {
 		return 0, exhausted()
 	}
-	next := dst.next
-	dst.next++
-	e.id = next
+	next := dst.indexLocked()
+	e.id, e.generation = next, dst.generation
 	dst.entries[next] = e
-	delete(r.entries, id)
+	r.removeLocked(id)
 	return next, nil
 }
