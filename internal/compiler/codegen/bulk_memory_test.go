@@ -101,7 +101,7 @@ func TestNativeBulkMemoryMatchesCompleteByteOracle(t *testing.T) {
 			compiled, lease, ctx := configuredContext(t, f, Config{Unmetered: true, MemoryCount: 1})
 			mem := bindMemory(t, ctx, 65536, 65536)
 			cases := [][3]uint64{{65536, 65536, 0}, {65536, 0, 1}, {65535, 0, 2}, {0, 65536, 1}, {65537, 0, 0}, {math.MaxUint64, 0, 1}, {1, 0, math.MaxUint64}, {0, math.MaxUint64, 2}, {0, 65537, 0}, {1 << 32, 0, 1}}
-			for _, n := range []uint64{0, 1, 2, 3, 7, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 4095, 4096, 4097, 8191, 8192, 8193, 32767} {
+			for _, n := range []uint64{0, 1, 2, 3, 7, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 255, 256, 257, 4095, 4096, 4097, 8191, 8192, 8193, 32767} {
 				for _, pair := range [][2]uint64{{0, 1}, {1, 0}, {5, 31}, {31, 5}, {16, 32}, {32, 16}, {257, 65}, {65, 257}, {0, 0}, {10001, 40000}} {
 					cases = append(cases, [3]uint64{pair[0], pair[1], n})
 				}
