@@ -29,9 +29,9 @@ static uint32_t run(unsigned kind, unsigned char *memory, uint32_t seed, uint32_
             sum = rotate(sum + i, 7) ^ UINT32_C(0x9e3779b9);
         break;
     case 2:
-        memset(memory + 4096, 0, 32768);
+        memset(memory, 0, 32768);
         for (uint32_t i = 0; i < count; i++) {
-            uint32_t address = 4096 + ((i * 17) & 8191) * 4, value;
+            uint32_t address = ((i * 17) & 8191) * 4, value;
             memcpy(&value, memory + address, sizeof(value));
             value = (value ^ i ^ seed) + UINT32_C(0x9e3779b9);
             memcpy(memory + address, &value, sizeof(value));
