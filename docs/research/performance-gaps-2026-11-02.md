@@ -427,3 +427,9 @@ Go identifies both allocation sites; LLGo reports none. Evidence was added to
 existing closed proposal #2351, whose PR #2027 was closed without a merge,
 rather than creating another issue. This is an attribution limitation, not a
 new VM timing claim or an assertion about unbuilt current upstream main.
+
+The [type-only dispatch experiment](performance-host-type-dispatch-held-2026-11-03.md)
+is held. Its exact-source public-host control does not establish a useful gain,
+and the full original P1 scope retains env/copy regressions. The experimental
+production change is excluded; the selected checked-memory implementation stays
+unchanged. Existing public-host regressions and their cause remain unresolved.
