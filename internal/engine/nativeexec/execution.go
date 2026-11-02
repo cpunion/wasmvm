@@ -28,6 +28,7 @@ type Execution struct {
 	runtimeInstance *state.Instance
 	runtimeFunction *slots.Function
 	runtimeGlobals  []globalBinding
+	entryState      native.State
 }
 
 func New(ctx context.Context, modules map[*slots.Module]*Lease, maxSlots, maxFrames uint32, metered bool) (*Execution, error) {
@@ -52,6 +53,7 @@ func (e *Execution) Begin(ctx context.Context, metered bool) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	e.entryState = native.State{}
 	e.ctx, e.metered = ctx, metered
 	e.reusable = false
 	e.stop = context.AfterFunc(ctx, e.native.Cancel)
@@ -70,6 +72,7 @@ func (e *Execution) Suspend() bool {
 	}
 	stopped := e.stop()
 	e.stop, e.ctx, e.runtimeInstance = nil, nil, nil
+	e.entryState = native.State{}
 	e.resetRuntimeGlobals()
 	e.reusable = e.native.BindMemory(nil) == nil && stopped
 	return e.reusable
@@ -94,6 +97,7 @@ func (e *Execution) Resize(length, capacity int) ([]value.Value, error) {
 
 func (e *Execution) Close() {
 	e.reusable = false
+	e.entryState = native.State{}
 	if e.stop != nil {
 		e.stop()
 		e.stop = nil
@@ -159,7 +163,8 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 		defer fn.Instance.Owner.FinishNativeAllocations(fn.Instance.Types)
 	}
 	needsData := entries.directRuntimeData
-	s := native.State{Used: uint64(base) * 16, Depth: uint64(depth), Function: uint64(fn.Index), Continuation: uint64(pc), Fuel: fuel, Budget: 64}
+	e.entryState = native.State{Used: uint64(base) * 16, Depth: uint64(depth), Function: uint64(fn.Index), Continuation: uint64(pc), Fuel: fuel, Budget: 64}
+	s := &e.entryState
 	if e.metered {
 		entry = entries.metered
 		s.Payload[3] = 1
@@ -179,19 +184,19 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 		if err := e.ctx.Err(); err != nil {
 			return 0, s.Fuel, err
 		}
-		next, exit, err := e.native.Run(module.code, entry, s)
+		previousFuel := s.Fuel
+		exit, err := e.native.RunState(module.code, entry, s)
 		if e.allocationView != 0 {
 			if finishErr := fn.Instance.Owner.FinishNativeAllocations(fn.Instance.Types); finishErr != nil {
-				return 0, next.Fuel, finishErr
+				return 0, s.Fuel, finishErr
 			}
 		}
 		if len(entries.globals) != 0 {
 			e.flushRuntimeGlobals()
 		}
 		if err != nil {
-			return 0, s.Fuel, err
+			return 0, previousFuel, err
 		}
-		s = next
 		switch exit {
 		case native.Poll:
 			s.Budget = 64

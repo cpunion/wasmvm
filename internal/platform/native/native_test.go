@@ -417,12 +417,12 @@ func TestFrameStorage(t *testing.T) {
 }
 
 func TestCancelCloseWhileRunning(t *testing.T) {
-	for _, combined := range []bool{false, true} {
-		testCancelCloseWhileRunning(t, combined)
+	for _, mode := range []int{0, 1, 2} {
+		testCancelCloseWhileRunning(t, mode)
 	}
 }
 
-func testCancelCloseWhileRunning(t *testing.T, combined bool) {
+func testCancelCloseWhileRunning(t *testing.T, mode int) {
 	if !Available {
 		return
 	}
@@ -432,10 +432,14 @@ func testCancelCloseWhileRunning(t *testing.T, combined bool) {
 		go func() {
 			var status Exit
 			var err error
-			if combined {
+			if mode != 0 {
 				input := State{Fuel: 100, Source: 91}
-				var got State
-				got, status, err = ctx.Run(lease, 0, input)
+				got := input
+				if mode == 1 {
+					got, status, err = ctx.Run(lease, 0, input)
+				} else {
+					status, err = ctx.RunState(lease, 0, &got)
+				}
 				if got != input {
 					err = ErrInvalid
 				}
@@ -495,7 +499,7 @@ func testCancelCloseWhileRunning(t *testing.T, combined bool) {
 		}
 		select {
 		case err := <-done:
-			if err != nil && !(combined && closeContext && err == ErrClosed) {
+			if err != nil && !(mode != 0 && closeContext && err == ErrClosed) {
 				t.Fatal(err)
 			}
 		case <-time.After(5 * time.Second):
@@ -552,4 +556,52 @@ func TestConcurrentPublicationAndReuse(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+}
+
+func TestBorrowedRunStateSnapshotsLimitsAndLease(t *testing.T) {
+	if !Available {
+		return
+	}
+	code, lease, ctx := makeProbe(t, addProbe())
+	code.Close()
+	state := State{ResultLo: 19, ResultHi: 23, RootMap: 7, Source: 91, Fuel: 100}
+	for want := Return; want <= Move; want++ {
+		state.Payload[0] = uint64(want)
+		before := state
+		status, err := ctx.RunState(lease, 0, &state)
+		if err != nil || status != want || state.ResultLo != before.ResultLo+23 || state.Continuation != before.Continuation+1 || state.RootMap != 7 || state.Source != 91 || state.Fuel != 100 {
+			t.Fatal(state, status, err)
+		}
+		stored, err := ctx.State()
+		if err != nil || stored != state {
+			t.Fatal("borrowed snapshot", stored, state, err)
+		}
+	}
+	if _, err := ctx.RunState(lease, 0, nil); err != ErrInvalid {
+		t.Fatal("nil borrowed state", err)
+	}
+	for _, bad := range []State{{Used: 65}, {Depth: 17}} {
+		before := bad
+		if _, err := ctx.RunState(lease, 0, &bad); err != ErrLimit || bad != before {
+			t.Fatal("invalid state changed", bad, err)
+		}
+	}
+	if _, err := ctx.RunState(nil, 0, &state); err != ErrInvalid {
+		t.Fatal(err)
+	}
+	if _, err := ctx.RunState(lease, 1, &state); err != ErrInvalid {
+		t.Fatal(err)
+	}
+	state.Payload[0] = 999
+	if _, err := ctx.RunState(lease, 0, &state); err != ErrInvalid {
+		t.Fatal("invalid status", err)
+	}
+	lease.Close()
+	if _, err := ctx.RunState(lease, 0, &state); err != ErrClosed {
+		t.Fatal(err)
+	}
+	ctx.Close()
+	if _, err := ctx.RunState(lease, 0, &state); err != ErrClosed {
+		t.Fatal(err)
+	}
 }
