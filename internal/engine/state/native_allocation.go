@@ -92,6 +92,13 @@ func (s *Store) FinishNativeAllocations(types []uint32) error {
 	if h == nil || h.pendingCount == 0 {
 		return nil
 	}
+	return s.finishNativeAllocations(types)
+}
+
+// Keep deferred rollback inside the active-batch path. In particular, an idle
+// finish must not construct LLGo's heap-owned exception/defer records.
+func (s *Store) finishNativeAllocations(types []uint32) error {
+	h := s.nativeHeap
 	words := h.allocationWords
 	count, end := words[nativeabi.HeapAllocationCursor/8], words[nativeabi.HeapAllocationUsed/8]
 	committed := uint64(0)
