@@ -21,7 +21,12 @@
   },
   {
     "name": "async",
-    "packages": "./pkg/wasi/preview3 ./pkg/wasi/threads",
-    "inputs": "wasi_threads component"
+    "packages": "./pkg/wasi/preview3",
+    "inputs": "component"
+  },
+  {
+    "name": "threads",
+    "packages": "./pkg/wasi/threads",
+    "inputs": "wasi_threads"
   }
 ]

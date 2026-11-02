@@ -119,7 +119,7 @@ func TestUpstreamP2WorldInteractions(t *testing.T) {
 			for _, mode := range []string{"p2-append-empty", "p2-append-same", "p2-append-same-empty", "p3-append", "p3-append-empty", "p3-append-same", "p3-append-same-empty"} {
 				t.Run(mode, func(t *testing.T) { testP2World(t, root, "p2_cli_http_headers", backend, mode) })
 			}
-			for _, mode := range []string{"double-echo", "double-echo-large", "hash-all"} {
+			for _, mode := range []string{"double-echo-executor-lifetimes", "double-echo-large", "hash-all"} {
 				t.Run(mode, func(t *testing.T) { testP2World(t, root, "p2_api_proxy_streaming", backend, mode) })
 			}
 			for _, mode := range []string{"modify_fields/30", "new_fields/30"} {
@@ -142,8 +142,8 @@ func (p2BrokenOutput) Flush(context.Context) error                { return nil }
 func (p2BrokenOutput) Readiness() (bool, <-chan struct{})         { return true, nil }
 func (p2BrokenOutput) Close() error                               { return nil }
 
-// Inventory consumers and assertions are unchanged. The separately named large
-// stress variant repairs its sample executor's stale pollables. Host inputs
+// Inventory consumers and assertions are unchanged. The separately named duplex
+// variants repair the sample executor's stale pollables. Host inputs
 // follow the pinned harness with hermetic filesystem, DNS and HTTP services.
 func testP2World(t *testing.T, root, name, backend, mode string) {
 	t.Helper()
@@ -374,7 +374,7 @@ func testP2World(t *testing.T, root, name, backend, mode string) {
 	}
 	defer engine.Close()
 	binary := name + ".wasm"
-	if mode == "double-echo-large" {
+	if mode == "double-echo-large" || mode == "double-echo-executor-lifetimes" {
 		binary = name + "-executor-lifetimes.wasm"
 	}
 	data, err := os.ReadFile(filepath.Join(root, "components", binary))
@@ -507,7 +507,7 @@ func testP2Incoming(t *testing.T, ctx context.Context, world *w.World, in *compo
 			mode = "echo"
 		}
 		path = "/" + mode
-		if mode == "double-echo-large" {
+		if mode == "double-echo-large" || mode == "double-echo-executor-lifetimes" {
 			path = "/double-echo"
 		}
 		if mode == "hash-all" {

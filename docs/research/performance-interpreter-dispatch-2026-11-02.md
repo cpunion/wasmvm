@@ -171,3 +171,39 @@ SIMD throughput, then native loop instruction selection/unrolling and memory
 addressing. GC/component/WASI and application-weighted portfolio gaps from the
 [broader audit](performance-2026-11-01.md) remain open; this scalar campaign does
 not claim to have requalified every family or target.
+
+
+## Linux amd64 PR diagnostic
+
+[Benchmark run 41383051505](https://github.com/cpunion/wasmvm/actions/runs/41383051505)
+compares merged base `b6f4752a7801b0a4653002dd078cdf1279f7ee84` with
+head `695ea2a7f76c9bc7eb7f6c445a3061e11e53e190`. The job completed in
+4m15s after avoiding four redundant production CLI builds. Four API builds
+retain identical compiler flags; LLGo base/head builds took 60.77/54.69 seconds,
+Go 1.58/1.53 seconds. All 228 phase records and 76 summary rows pass the
+strict 19-configuration/four-workload matrix checks, including actual owned
+native execution. CLI latency and controlled sustained acceptance remain
+separate full-suite work. Units below are ns/source iteration:
+
+| Workload | LLGo interpreter base | Head | Go interpreter head | WasmEdge interp | Own LLGo native | Wasmtime native | Wasmer native |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Integer | 69.42 | 57.06 | 67.01 | 49.15 | 1.35 | 1.33 | 1.33 |
+| Guest calls | 166.41 | 111.57 | 95.34 | 64.44 | 0.69 | 1.55 | 1.55 |
+| Memory | 157.00 | 121.84 | 140.47 | 97.76 | 0.96 | 0.64 | 0.62 |
+
+Go interpreter results regress by approximately 2–4% in these rows. The empty
+public call control regresses Go 311→391 ns/call while improving LLGo
+2724→1262; native controls regress Go 832→851 and LLGo 3935→4156. No control
+is subtracted from loop results. LLGo still trails Go for interpreted guest
+calls and trails WasmEdge in all three loops; native memory still trails both
+Cranelift references. These hosted results do not establish controlled parity.
+[Lossless phase evidence](evidence/performance-pr95-linux-2026-11-02.json.gz)
+retains all phases, samples, hashes and build timings.
+
+The semantic race job at this head separately failed an additional original
+P2 duplex interaction with a live pollable. The inventory and repaired stress
+fixture distinction is recorded in [validation](../validation.md#pr-95-duplex-fixture-lifetime-diagnostic).
+An eight-repetition local original-fixture diagnostic on the loaded host
+instead hit its existing 30-second compilation deadline; this was not a local
+reproduction of the CI lifetime trap. Three repetitions of both explicitly
+repaired duplex interactions passed under Go race in 106.39 seconds.
