@@ -57,12 +57,15 @@ func unrollFixture(padding int, reversed, constant bool, limit uint32) *slots.Fu
 }
 
 func TestMemoryUnrollSelectionAndCodeBudget(t *testing.T) {
-	for _, padding := range []int{0, 53, 54, 116, 117} {
+	for _, padding := range []int{0, 21, 22, 53, 54, 116, 117} {
 		f := unrollFixture(padding, false, false, 0)
 		for _, arch := range []string{"amd64", "arm64"} {
 			config := Config{Unmetered: true, MemoryMinimumPages: 1}
 			c, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), config)
-			copies := uint32(4)
+			copies := uint32(8)
+			if len(f.Code)-1 > 32 {
+				copies = 4
+			}
 			if len(f.Code)-1 > 64 {
 				copies = 2
 			}
@@ -92,7 +95,7 @@ func TestMemoryUnrollColdEntriesRemaindersAndWrap(t *testing.T) {
 			if reversed {
 				padding = 54
 			}
-			f := unrollFixture(padding, reversed, constant, 4)
+			f := unrollFixture(padding, reversed, constant, 17)
 			c, lease, ctx := configuredContext(t, f, Config{Unmetered: true, MemoryMinimumPages: 1})
 			_, refLease, ref := functionContext(t, f, true)
 			if c.UnrolledLoops != 1 {
@@ -104,7 +107,7 @@ func TestMemoryUnrollColdEntriesRemaindersAndWrap(t *testing.T) {
 				initial[i] = byte(i*193 + 127)
 			}
 			for pc := range f.Code {
-				for _, input := range [][3]uint64{{0, 0, 0}, {0, 1, 100}, {0, 2, 255}, {0, 3, 0}, {0, 4, 0}, {0, 5, 0}, {0, 8, 0}, {3, 8, 9}, {7, 3, 3}, {0xffffffff, 4, 200}, {1<<32 | 2, 1<<32 | 5, 0xffffffff}} {
+				for _, input := range [][3]uint64{{0, 0, 0}, {0, 1, 100}, {0, 2, 255}, {0, 3, 0}, {0, 4, 0}, {0, 5, 0}, {0, 7, 0}, {0, 8, 0}, {0, 9, 0}, {0, 15, 0}, {0, 16, 0}, {0, 17, 0}, {3, 8, 9}, {7, 3, 3}, {0xffffffff, 4, 200}, {1<<32 | 2, 1<<32 | 5, 0xffffffff}} {
 					memory.Write(0, initial)
 					refMemory.Write(0, initial)
 					for s := range f.Slots {
@@ -193,41 +196,48 @@ func TestMemoryUnrollCancellation(t *testing.T) {
 	if !native.Available {
 		return
 	}
-	f := unrollFixture(54, false, false, 0)
-	c, lease, ctx := configuredContext(t, f, Config{Unmetered: true, MemoryMinimumPages: 1})
-	if c.UnrolledLoops != 1 {
-		t.Fatal("cancellation fixture not unrolled")
-	}
-	bindMemory(t, ctx, 65536, 65536)
-	writeSlot(t, ctx, 16, 1, value.Value{Lo: 0xffffffff})
-	ctx.SetState(native.State{Used: 16, Depth: 1})
-	done := make(chan native.Exit, 1)
-	go func() {
-		exit, err := ctx.Enter(lease, 0)
-		if err != nil {
-			t.Error(err)
-		}
-		done <- exit
-	}()
-	defer ctx.Cancel()
-	deadline := time.Now().Add(5 * time.Second)
-	for {
-		if _, err := ctx.State(); err == native.ErrBusy {
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatal("unrolled loop did not start")
-		}
-		runtime.Gosched()
-	}
-	ctx.Cancel()
-	select {
-	case exit := <-done:
-		state, err := ctx.State()
-		if err != nil || exit != native.Poll || state.Continuation >= uint64(len(f.Code)) {
-			t.Fatal("unrolled loop lost original cancellation PC", exit, state, err)
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("unrolled loop missed cancellation")
+	for _, test := range []struct {
+		name    string
+		padding int
+	}{{"eight", 0}, {"four", 22}, {"two", 54}} {
+		t.Run(test.name, func(t *testing.T) {
+			f := unrollFixture(test.padding, false, false, 0)
+			c, lease, ctx := configuredContext(t, f, Config{Unmetered: true, MemoryMinimumPages: 1})
+			if c.UnrolledLoops != 1 {
+				t.Fatal("cancellation fixture not unrolled")
+			}
+			bindMemory(t, ctx, 65536, 65536)
+			writeSlot(t, ctx, 16, 1, value.Value{Lo: 0xffffffff})
+			ctx.SetState(native.State{Used: 16, Depth: 1})
+			done := make(chan native.Exit, 1)
+			go func() {
+				exit, err := ctx.Enter(lease, 0)
+				if err != nil {
+					t.Error(err)
+				}
+				done <- exit
+			}()
+			defer ctx.Cancel()
+			deadline := time.Now().Add(5 * time.Second)
+			for {
+				if _, err := ctx.State(); err == native.ErrBusy {
+					break
+				}
+				if time.Now().After(deadline) {
+					t.Fatal("unrolled loop did not start")
+				}
+				runtime.Gosched()
+			}
+			ctx.Cancel()
+			select {
+			case exit := <-done:
+				state, err := ctx.State()
+				if err != nil || exit != native.Poll || state.Continuation >= uint64(len(f.Code)) {
+					t.Fatal("unrolled loop lost original cancellation PC", exit, state, err)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("unrolled loop missed cancellation")
+			}
+		})
 	}
 }

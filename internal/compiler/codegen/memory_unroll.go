@@ -145,9 +145,9 @@ func (e *functionEmitter) memoryUnroll(start int, r memoryRegion) *memoryUnroll 
 	if backNo {
 		exit = int(yes.PC)
 	}
-	copies := 4
-	if length*copies > 256 {
-		copies = 2
+	copies := 8
+	for length*copies > 256 {
+		copies /= 2
 	}
 	// No poll, trap or helper can observe the frame between these copies.
 	// Keep a repeated comparison result only if the next body can read it
