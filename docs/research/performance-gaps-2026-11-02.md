@@ -389,3 +389,26 @@ LLGo 1.563542, Go 1.582500 and C 1.560000 ns/iteration; default/enabled wazero i
 Different poll granularity, incomplete calibration and the rest of the portfolio
 keep acceptance open. Next investigate shared numeric host marshaling and
 cheaper admission/context construction while preserving lifecycle contracts.
+
+## Shared scalar host ABI and P1 operation effects
+
+The [general scalar ABI comparison](performance-scalar-host-abi-2026-11-03.md)
+adds independent numeric callback stacks to the existing driver, preserving
+Caller/reentry/GC/error/suspension contracts and public reference callbacks.
+Go native P1 improves 6.3–6.8%, LLGo native 2.4–4.9%; its separate existing-public-
+host control retains 1–2% regressions and every original arithmetic regression.
+No later operation-effect percentage is combined with this source comparison.
+
+The [operation-effect comparison](performance-p1-call-effects-2026-11-03.md)
+then avoids unpublished private child contexts for the complete four-operation
+configuration/guest-memory group. I/O retains independent callback cancellation.
+Go native improves 37.3–38.7%, LLGo native 37.6–42.6%, interpreter 42.6–48.1%.
+Reported LLGo native args allocation falls 33.44→18.09 MB per 10000 callbacks;
+Go falls 4.48→2.08 MB. Original arithmetic regressions and all A/A records remain.
+
+Args-sizes still takes 3.09x Go, 21.14x cancellation-enabled wazero and 15.43x
+default Wasmtime in this latest study; policies and poll granularity differ.
+Ordinary C remains an explicitly unchecked lower bound. The selected source
+has no new controlled portfolio or sustained native acceptance claim. Next
+investigate capability/memory helpers and native-only LLGo allocation while
+retaining existing independently reproduced upstream issue boundaries.
