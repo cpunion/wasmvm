@@ -5297,3 +5297,27 @@ The benchmark PR comment names the final head and retains Go regressions.
 [benchmark run](https://github.com/cpunion/wasmvm/actions/runs/41386970959),
 [retained audit](research/evidence/pr95-final-ci-2026-11-02.json.gz).
 Controlled performance acceptance remains open.
+
+
+## PR #96 final atomic-path audit
+
+PR [#96](https://github.com/cpunion/wasmvm/pull/96), final head `e7fd90d`, merged
+as `ad66bde` after all 19 required semantic checks and final benchmark/report
+jobs passed. The first unlabelled benchmark event was immediately superseded
+by the labelled event; its cancellation is not counted as a passed measurement.
+The audit verifies 19 artifact digests, 240 execution reports, all 31 packages
+per compiler/platform, 12 LLGo traces plus independent single-package execution
+logs and all 30 coverage gates. No review findings remained.
+
+The final basic Linux benchmark took 6m44s; all 228 phase records, 76 summaries
+and 19 configurations validate. Its scalar LLGo interpretation regresses about
+10–13%; the PR suite does not include the targeted atomic families. Local atomic
+gains do not erase this deficit. Controlled performance acceptance stays open.
+The macOS P3 job took 10m49s: 196s pinned-compiler setup and 417s semantic build/
+execution. Other jobs stayed at or below 9m. This exceeds the desired 10m target
+but passes the unchanged 12m limit; the long setup is retained for investigation.
+
+[Semantic run](https://github.com/cpunion/wasmvm/actions/runs/41398431711),
+[benchmark run](https://github.com/cpunion/wasmvm/actions/runs/41398431845),
+[semantic audit](research/evidence/pr96-final-ci-2026-11-02.json.gz),
+[complete benchmark](research/evidence/performance-pr96-linux-2026-11-02.json.gz).

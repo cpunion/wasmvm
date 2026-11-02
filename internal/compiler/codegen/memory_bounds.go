@@ -19,6 +19,7 @@ type memoryRegion struct {
 	addresses map[int]memoryAddress
 	elided    map[int]bool
 	loop      *memoryLoop
+	unroll    *memoryUnroll
 }
 
 func (e *functionEmitter) codeLimit() int {
@@ -147,6 +148,7 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 	for start := 0; start < len(e.f.Code); start++ {
 		if r, ok := regions[start]; ok {
 			r.loop = e.memoryLoop(start, r)
+			r.unroll = e.memoryUnroll(start, r)
 			regions[start] = r
 		}
 	}
@@ -158,6 +160,10 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 // Thus direct resumption never inherits facts from instructions it did not run.
 func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, pcs []int, out *CompiledFunction) {
 	out.GuardedAccesses += r.guarded
+	if r.unroll != nil {
+		e.emitMemoryUnroll(start, r, pcs, out)
+		return
+	}
 	if r.loop != nil {
 		e.emitMemoryLoop(start, r, pcs, out)
 		return
