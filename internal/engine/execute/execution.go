@@ -281,6 +281,7 @@ frames:
 					return e.fail(err)
 				}
 			}
+		operands:
 			var a, b, c value.Value
 			if in.A != slots.NoSlot {
 				a = values[int(in.A)]
@@ -529,7 +530,18 @@ frames:
 				if !ok {
 					result.Lo = mem.Limits().Failure()
 				}
-			case 0x41, 0x42, 0x43, 0x44:
+			case 0x41:
+				result.Lo = uint64(in.Extra)
+				if !native && !metered && in.Count != 0 && e.steps&63 != 63 {
+					// Commit the constant before its consumer. Crossing the next
+					// source polling boundary uses the ordinary two steps.
+					values[int(in.Dst)] = result
+					pc++
+					in = code.Code[pc]
+					e.steps++
+					goto operands
+				}
+			case 0x42, 0x43, 0x44:
 				result.Lo = uint64(in.Extra) | uint64(in.Count)<<32
 			case 0x45:
 				result.Lo = numeric.I32Eqz(a.Lo)
