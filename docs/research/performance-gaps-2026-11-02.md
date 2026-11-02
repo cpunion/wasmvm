@@ -7,7 +7,7 @@ an LLGo defect. Controlled Linux amd64/macOS arm64 portfolio acceptance is open.
 | Gap | Evidence and action | Remaining deficit |
 | --- | --- | --- |
 | LLGo shared/atomic interpreter helpers | [Cached cancellation and numeric C bindings](performance-interpreter-atomics-2026-11-02.md): about 21%/22% improvement; checked helper allocation controls become zero | RMW remains about 2.12x WasmEdge and 1.40x wazero interpreter in that campaign |
-| Native scalar memory | [Conservative word-loop expansion](performance-native-word-loops-2026-11-02.md): LLGo 0.526→0.473 ns/iteration, versus Wasmtime 0.480 | C is 0.269; about 1.76x cost remains, and Linux evidence is required |
+| Native scalar memory | [Word-loop expansion](performance-native-word-loops-2026-11-02.md) initially improved LLGo 0.526→0.473, but regressed in the [complete combination](performance-atomic-combined-2026-11-02.md); held | Existing native loops remain; C and competitor deficits still need resolution |
 | Native atomic throughput | [100-million-iteration C comparison](performance-native-atomic-c-2026-11-02.md): LLGo 1.776, Go 1.772, C 1.723, Wasmtime 1.709 ns/iteration | About 3.1% versus C and 3.9% versus Wasmtime on one ARM64 kernel |
 | Interpreter operands and dispatcher counter | [Two complete twenty-case experiments](performance-interpreter-rejected-2026-11-02.md), including GC, SIMD and wait/notify | No consistent meaningful LLGo benefit; neither candidate is adopted |
 | GC and SIMD interpretation | All results retained in those twenty-case experiments | WasmEdge still leads most cases; removing operand checks does not solve this gap |
@@ -72,3 +72,6 @@ those gates or the expanded WASI world-conformance boundary.
 
 [Primary-source audit identities](evidence/performance-gaps-2026-11-02.json)
 retain pinned paths, URLs and content hashes without copying competitor sources.
+
+The [complete twenty-case atomic comparison](performance-atomic-combined-2026-11-02.md)
+confirms shared/RMW/wait interpreter gains and records why native expansion is held.

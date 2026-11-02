@@ -1,5 +1,9 @@
 # Bounded native word-loop expansion: 2026-11-02
 
+**Held experiment:** the [later complete combination](performance-atomic-combined-2026-11-02.md)
+does not repeat this native memory gain. Expansion is not selected for production;
+these earlier favorable results remain descriptive evidence.
+
 The measured candidate reduces LLGo native scalar memory from **0.526 to
 0.473 ns/source iteration**, approximately 10%, versus Wasmtime **0.480** and
 ordinary C **0.269** on this local ARM64 run. Go improves **0.540→0.493**.

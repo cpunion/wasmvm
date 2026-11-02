@@ -5276,3 +5276,24 @@ previous async object cache. This targets the measured critical path; hosted
 runner variance and queue delays remain outside the per-job execution budget.
 Final-head runs must validate the new split before it is claimed to meet the
 5–10 minute target.
+
+
+## PR #95 final interpreter/CI audit
+
+PR [#95](https://github.com/cpunion/wasmvm/pull/95), final head `ccc6b7b`, merged
+as `26fdb39` after all 19 required semantic checks and both benchmark/report jobs
+passed. Independent verification checked all 19 artifact SHA-256 digests,
+240 execution reports (60 per compiler/platform), all 31 semantic packages per
+compiler/platform and all 30 coverage gates. Twelve LLGo traces cover the six
+shards per platform. The pinned compiler records only build/link events for
+single-package shards: their same-job JSON execution logs independently confirm
+94 thread tests and 434 Preview 3 tests per platform, with no failed event.
+This corrects the audit tool's initial trace-format assumption, not a test skip.
+
+The longest job was 8m43s; the final Linux basic benchmark took 6m27s. All
+228 phase records, 76 summaries and 19 configurations pass strict validation.
+The benchmark PR comment names the final head and retains Go regressions.
+[Semantic run](https://github.com/cpunion/wasmvm/actions/runs/41386970894),
+[benchmark run](https://github.com/cpunion/wasmvm/actions/runs/41386970959),
+[retained audit](research/evidence/pr95-final-ci-2026-11-02.json.gz).
+Controlled performance acceptance remains open.
