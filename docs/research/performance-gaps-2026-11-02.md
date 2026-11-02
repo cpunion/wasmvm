@@ -79,3 +79,7 @@ confirms shared/RMW/wait interpreter gains and records why native expansion is h
 [CPU profiles and a new independent channel-polling reproduction](performance-interpreter-profile-2026-11-02.md)
 identify an additional runtime cost, reported as [LLGo #2965](https://github.com/xgo-dev/llgo/issues/2965).
 Its current-main source was inspected, while timings remain for the pinned compiler.
+
+The [grouped extension-check candidate](performance-interpreter-extension-guard-2026-11-02.md)
+improves the complete local interpreter matrix without the earlier private-loop
+regression. Native short-control regressions and final-head acceptance remain open.

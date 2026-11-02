@@ -69,8 +69,8 @@ checkout; its result is labeled base-go and does not serve as candidate proof.
 The subsequent full candidate Go/coverage run is the authoritative validation.
 No missing candidate check is replaced by that baseline run.
 
-A third, **not yet measured** structure retains the original scalar switch and
-places the existing extension classifiers behind one guard. It will compare
+A [third measured structure](performance-interpreter-extension-guard-2026-11-02.md) retains the original scalar switch and
+places the existing extension classifiers behind one guard. It compares
 against the latest integrated main, which includes the separately validated
 native-memory transformation. Earlier native rows are not relabeled as timings
 of this new combination. The first two experiments remain held regardless of
