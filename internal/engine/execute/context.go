@@ -23,7 +23,10 @@ func (c *cancellationContext) Err() error {
 	}
 }
 
-func cancellationView(ctx context.Context) (context.Context, <-chan struct{}) {
+// CancellationView shares an immutable cancellation binding with execution
+// drivers. The cached channel avoids the pinned LLGo live Err allocation while
+// retaining deadlines, values, causes and custom Err-only contexts.
+func CancellationView(ctx context.Context) (context.Context, <-chan struct{}) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
