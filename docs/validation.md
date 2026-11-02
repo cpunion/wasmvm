@@ -5254,3 +5254,25 @@ remain unchanged. The 92 original consumer entries, sources, binary hashes,
 ordinary streaming inventory scenario and negative lifetime checks are retained.
 The original small and large duplex failures remain diagnostic failures,
 not successful original-source conformance claims.
+
+
+### PR #95 LLGo async job budget
+
+At `c2363fe3d3ce0a8a8f4976fb24885230845bd5c2`, the macOS async job
+passed both semantic packages and uploaded its execution/trace artifact, but
+GitHub cancelled the job for exceeding its 12-minute budget during cleanup.
+This is a failed job, not an accepted semantic check. Verified artifact
+`13114699113` (SHA256 `6cdf7c5a55cff57f21102b9d285a6f8111bdb9f249e64bceb64fb7efc44ba102`)
+records full-LTO links of 295.61 seconds for Preview 3 and 111.11 seconds for
+legacy threads; their test executions take 113.40 and 100.88 seconds.
+Pinned toolchain setup adds 133 seconds; the joint build/test step takes
+537.88 seconds. Compilation, linking and execution are distinct costs.
+
+Preview 3 and legacy threads now have separate semantic jobs, with only their
+required fixture inputs. The package plan still runs every one of the 31 test
+packages exactly once per compiler/platform, and retains the same release
+profile, assertions, reports and timeout. The new threads shard can reuse the
+previous async object cache. This targets the measured critical path; hosted
+runner variance and queue delays remain outside the per-job execution budget.
+Final-head runs must validate the new split before it is claimed to meet the
+5–10 minute target.
