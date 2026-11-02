@@ -33,6 +33,7 @@ type CompiledFunction struct {
 	BoundsElided                  uint32
 	MemoryGuards, GuardedAccesses uint32
 	LoopGuards                    uint32
+	UnrolledLoops, UnrolledCopies uint32
 	DeadScalarOps                 uint32
 	MemoryGrows                   uint32
 	ForwardedScalars              uint32
