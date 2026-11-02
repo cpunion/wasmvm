@@ -359,3 +359,13 @@ Args-sizes still takes 3.28x Go, 28.51x Wasmtime and 64.52x wazero native in thi
 campaign. Ordinary C remains a separate unchecked lower bound. The candidate
 preserves the native record/lease/close protocol; integration and controlled
 acceptance remain open.
+
+[PR #103's final audit](pr103-final-ci-2026-11-03.md) now records its merge,
+all required semantic checks and retained core benchmark regressions. The
+[immutable P1 process view](performance-p1-process-context-2026-11-03.md)
+separately improves LLGo native P1 by another 4.5–6.5% against the state-borrow
+baseline and saves about 3.2 MB per 10000 callbacks. The two studies keep their
+own A/A and adverse control results; their percentages are not added or pooled.
+Args-sizes still takes 3.10x Go, 27.75x Wasmtime and 61.16x wazero native in the
+new campaign. This known #2959 workaround creates no duplicate upstream issue;
+all-target controlled acceptance and host-boundary work remain open.
