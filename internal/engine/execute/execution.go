@@ -290,51 +290,94 @@ frames:
 			}
 			var result value.Value
 			trap := wasm.NoTrap
-			switch op := in.Op; op {
-			case 0xe0, 0xe1, 0xe2, 0xe3, 0xe4, 0xe5, 0xe6:
-				im := &code.Sources[in.Source].Wasm
-				f.pc = pc
-				if err := e.stackInstruction(in, im); err != nil {
-					var t *wasm.Trap
-					if errors.As(err, &t) {
-						t.Function, t.Offset = fn.Index, im.Offset
+			if in.Op >= 0xe0 {
+				if in.Op >= 0xe0 && in.Op <= 0xe6 {
+					im := &code.Sources[in.Source].Wasm
+					f.pc = pc
+					if err := e.stackInstruction(in, im); err != nil {
+						var t *wasm.Trap
+						if errors.As(err, &t) {
+							t.Function, t.Offset = fn.Index, im.Offset
+						}
+						return e.fail(err)
 					}
-					return e.fail(err)
+					if e.status != Running {
+						return e.status
+					}
+					continue frames
 				}
-				if e.status != Running {
-					return e.status
+				if module.IsWideArithmetic(in.Op) {
+					args := code.Args[in.Extra : in.Extra+in.Count+2]
+					left, right := values[args[0]].Lo, values[args[1]].Lo
+					var lo, hi uint64
+					switch in.Op {
+					case 0xfc0013, 0xfc0014:
+						otherLo, otherHi := values[args[2]].Lo, values[args[3]].Lo
+						var carry uint64
+						if in.Op == 0xfc0013 {
+							lo, carry = bits.Add64(left, otherLo, 0)
+							hi, _ = bits.Add64(right, otherHi, carry)
+						} else {
+							lo, carry = bits.Sub64(left, otherLo, 0)
+							hi, _ = bits.Sub64(right, otherHi, carry)
+						}
+					default:
+						hi, lo = bits.Mul64(left, right)
+						if in.Op == 0xfc0015 {
+							if int64(left) < 0 {
+								hi -= right
+							}
+							if int64(right) < 0 {
+								hi -= left
+							}
+						}
+					}
+					values[args[in.Count]], values[args[in.Count+1]] = value.Value{Lo: lo}, value.Value{Lo: hi}
+					pc++
+					f.pc = pc
+					continue
 				}
-				continue frames
-			case 0xfc0013, 0xfc0014, 0xfc0015, 0xfc0016:
-				args := code.Args[in.Extra : in.Extra+in.Count+2]
-				left, right := values[args[0]].Lo, values[args[1]].Lo
-				var lo, hi uint64
-				switch in.Op {
-				case 0xfc0013, 0xfc0014:
-					otherLo, otherHi := values[args[2]].Lo, values[args[3]].Lo
-					var carry uint64
-					if in.Op == 0xfc0013 {
-						lo, carry = bits.Add64(left, otherLo, 0)
-						hi, _ = bits.Add64(right, otherHi, carry)
+				if in.Op>>16 == 0xfb {
+					im := &code.Sources[in.Source].Wasm
+					var err error
+					if n := state.GCAccessArity(in.Op); n != 0 {
+						// Slot lowering already supplies the first two operands.
+						if n > 2 {
+							c = values[int(code.Args[in.Extra+2])]
+						}
+						result, err = e.store.GCAccess(instance, im, a, b, c)
 					} else {
-						lo, carry = bits.Sub64(left, otherLo, 0)
-						hi, _ = bits.Sub64(right, otherHi, carry)
-					}
-				default:
-					hi, lo = bits.Mul64(left, right)
-					if in.Op == 0xfc0015 {
-						if int64(left) < 0 {
-							hi -= right
+						if int(in.Count) > cap(e.gcArgs) {
+							e.gcArgs = make([]value.Value, in.Count)
 						}
-						if int64(right) < 0 {
-							hi -= left
+						e.gcArgs = e.gcArgs[:in.Count]
+						operands := e.gcArgs
+						for i, slot := range code.Args[in.Extra : in.Extra+in.Count] {
+							operands[i] = values[int(slot)]
 						}
+						if e.store.HeapSafepoint != nil {
+							result, err = e.store.GC(e.context, instance, im, operands)
+						} else {
+							result, err = e.store.GC(e.context, instance, im, operands, e.RetainedValues)
+						}
+						e.clearGCArgs()
 					}
+					if err != nil {
+						var t *wasm.Trap
+						if errors.As(err, &t) {
+							t.Function = fn.Index
+						}
+						return e.fail(err)
+					}
+					if in.Dst != slots.NoSlot {
+						values[int(in.Dst)] = result
+					}
+					pc++
+					f.pc = pc
+					continue
 				}
-				values[args[in.Count]], values[args[in.Count+1]] = value.Value{Lo: lo}, value.Value{Lo: hi}
-				pc++
-				f.pc = pc
-				continue
+			}
+			switch op := in.Op; op {
 			case slots.ControlBase + uint32(ir.IfCast), slots.ControlBase + uint32(ir.IfNull), slots.ControlBase + uint32(ir.Jump), slots.ControlBase + uint32(ir.If), slots.ControlBase + uint32(ir.Table), slots.ControlBase + uint32(ir.Return), slots.ControlBase + uint32(ir.Trap):
 				kind := ir.TermKind(op - slots.ControlBase)
 				if kind == ir.Trap {
@@ -739,44 +782,6 @@ frames:
 				}
 				switch {
 
-				case op>>16 == 0xfb:
-					im := &code.Sources[in.Source].Wasm
-					var err error
-					if n := state.GCAccessArity(in.Op); n != 0 {
-						// Slot lowering already supplies the first two operands.
-						if n > 2 {
-							c = values[int(code.Args[in.Extra+2])]
-						}
-						result, err = e.store.GCAccess(instance, im, a, b, c)
-					} else {
-						if int(in.Count) > cap(e.gcArgs) {
-							e.gcArgs = make([]value.Value, in.Count)
-						}
-						e.gcArgs = e.gcArgs[:in.Count]
-						operands := e.gcArgs
-						for i, slot := range code.Args[in.Extra : in.Extra+in.Count] {
-							operands[i] = values[int(slot)]
-						}
-						if e.store.HeapSafepoint != nil {
-							result, err = e.store.GC(e.context, instance, im, operands)
-						} else {
-							result, err = e.store.GC(e.context, instance, im, operands, e.RetainedValues)
-						}
-						e.clearGCArgs()
-					}
-					if err != nil {
-						var t *wasm.Trap
-						if errors.As(err, &t) {
-							t.Function = fn.Index
-						}
-						return e.fail(err)
-					}
-					if in.Dst != slots.NoSlot {
-						values[int(in.Dst)] = result
-					}
-					pc++
-					f.pc = pc
-					continue
 				case op>>16 == 0xfe:
 					if op&0xffff == 3 {
 						e.store.Domain.Fence()
