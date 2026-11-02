@@ -25,12 +25,9 @@ jobs:
     name: Verify semantic shard coverage
     runs-on: ubuntu-24.04
     timeout-minutes: 2
-    outputs:
-      shards: ${{ steps.plan.outputs.shards }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - id: plan
-        run: python3 scripts/ci_shards.py --github-output "$GITHUB_OUTPUT"
+      - run: python3 scripts/ci_shards.py
 
   go:
     name: go / ${{ matrix.platform.name }}
@@ -139,10 +136,9 @@ jobs:
           if-no-files-found: error
 
   llgo:
-    name: llgo / ${{ matrix.platform.name }} / ${{ matrix.shard.name }}
-    needs: plan
+    name: llgo / ${{ matrix.platform.name }} / ${{ matrix.shard }}
     env:
-      LLGO_CACHE_GROUP: ${{ matrix.shard.name }}
+      LLGO_CACHE_GROUP: ${{ matrix.shard }}
     runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 12
     strategy:
@@ -151,9 +147,14 @@ jobs:
         platform:
           - {name: linux-amd64, runner: ubuntu-24.04}
           - {name: macos-arm64, runner: macos-15}
-        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
+        shard: ["core", "vm", "component", "http", "async"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Select semantic shard
+        id: shard
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: python3 scripts/ci_shards.py --shard "$SHARD" --github-output "$GITHUB_OUTPUT"
       - name: Set up pinned LLGo
         id: llgo
         uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
@@ -183,7 +184,7 @@ jobs:
             llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-
       - name: Prepare this shard's pinned inputs
         env:
-          CORPORA: ${{ matrix.shard.inputs }}
+          CORPORA: ${{ steps.shard.outputs.inputs }}
         run: |
           read -ra corpora <<< "$CORPORA"
           for corpus in "${corpora[@]}"; do
@@ -191,8 +192,8 @@ jobs:
           done
       - name: Execute LLGo semantic shard
         env:
-          TEST_PACKAGES: ${{ matrix.shard.packages }}
-          SHARD: ${{ matrix.shard.name }}
+          TEST_PACKAGES: ${{ steps.shard.outputs.packages }}
+          SHARD: ${{ matrix.shard }}
           WASMVM_CONFORMANCE_REPORT: ${{ github.workspace }}/artifacts/conformance/core2.json
         run: |
           mkdir -p artifacts/ci
@@ -202,13 +203,13 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: llgo-evidence-${{ matrix.platform.name }}-${{ matrix.shard.name }}
+          name: llgo-evidence-${{ matrix.platform.name }}-${{ matrix.shard }}
           path: |
             artifacts/conformance/
             artifacts/ci/
           if-no-files-found: error
       - name: Preserve core input provenance
-        if: always() && matrix.shard.name == 'core'
+        if: always() && matrix.shard == 'core'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: core2-inputs-llgo-${{ matrix.platform.name }}

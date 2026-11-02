@@ -130,6 +130,14 @@ and preserve real readiness, descriptor errors and actual connection completion
 on both backends. This WASI correction is separate from the measured core source
 above. The original CI failure remains recorded; final CI is still required.
 
+A supplementary Linux amd64 emulation run uses exact source `f67b1ad` and the
+Go 1.27.3 image pinned by digest. All six affected packages execute successfully,
+including complete core/proposal inventories and native atomic concurrency.
+This is target execution under emulation, not native-host timing evidence.
+CI shards now read the same checked-in manifest independently, so a queued Linux
+planning job does not block creating macOS semantic jobs. The shared package and
+matrix completeness checks remain mandatory.
+
 Final CI must retain every Go/LLGo semantic package on Linux amd64 and macOS
 arm64, shared race/quality checks and all 30 coverage thresholds. The full
 controlled portfolio, contended scaling, broader host/component boundaries and
