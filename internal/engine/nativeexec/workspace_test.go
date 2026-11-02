@@ -20,7 +20,7 @@ func TestInvocationWorkspaceLifecycle(t *testing.T) {
 		t.Fatal("rebound active invocation", err)
 	}
 	for i := range 4 {
-		if !e.Suspend() || !e.Suspend() || e.ctx != nil || e.runtimeInstance != nil {
+		if !e.Suspend() || !e.Suspend() || e.ctx != nil || e.runtimeInstance != nil || e.entryState != (native.State{}) {
 			t.Fatal("failed to suspend idle native storage")
 		}
 		if _, _, err := e.Run(fn, 0, 1, 0, 1); !errors.Is(err, wasm.ErrInvalid) {
@@ -60,6 +60,9 @@ func TestInvocationWorkspaceLifecycle(t *testing.T) {
 		t.Fatal("suspended workspace retained retired memory", err)
 	}
 	e.Close()
+	if e.entryState != (native.State{}) {
+		t.Fatal("closed workspace retained state")
+	}
 	e.Close()
 	if e.Suspend() || !errors.Is(e.Begin(nil, false), wasm.ErrInvalid) {
 		t.Fatal("closed workspace was reused")

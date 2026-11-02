@@ -237,6 +237,16 @@ func (c *Context) Run(l *Lease, entry uint32, state State) (State, Exit, error) 
 	return state, exit, err
 }
 
+// RunState publishes and updates caller-owned state in place. The host-side
+// pointer is borrowed only for this call; generated code sees the native
+// record, and the snapshot is copied before a concurrent close can release it.
+func (c *Context) RunState(l *Lease, entry uint32, state *State) (Exit, error) {
+	if state == nil {
+		return 0, ErrInvalid
+	}
+	return c.run(l, entry, state)
+}
+
 func (c *Context) run(l *Lease, entry uint32, state *State) (Exit, error) {
 	if l == nil {
 		return 0, ErrInvalid
