@@ -297,3 +297,26 @@ is held despite a memory/RMW win: LLGo float and SIMD-lane cases regress
 20.9%/25.2% against stable corresponding A/A controls. Its semantic checks
 pass, but its production code is excluded from this selected branch. The
 previous prefix implementation and all negative evidence remain preserved.
+
+## Loop-sensitive native reservations and upstream status
+
+The [seven-case native batch-sizing comparison](performance-native-batch-hints-2026-11-03.md)
+uses the exact combined source as its baseline, five interleaved blocks and
+Go/LLGo baseline A/A controls. LLGo short struct-access medians improve 11.2%,
+Go 5.2%; the loop retains the 256-handle batch and identical guest code. Native
+allocation regresses Go 4.4% and LLGo 2.1%, with respective A/A +0.8%/+2.0%.
+Every adverse block and first-call/setup sample remains retained. This is a
+local candidate, not final-head CI or controlled acceptance.
+
+The three deficits remain separate in that campaign: LLGo allocation takes
+1.169x Go's time; native struct access/indirect access take about 1.66x/1.86x
+Wasmtime; native scalar memory takes 1.566x unchecked C despite leading the
+named Wasmtime case. Adapter readiness is about 93.1 ms LLGo versus 3.9 ms Go,
+distinct from warm execution. No result from an earlier campaign is substituted.
+
+At the new upstream inspection, [LLGo #2959](https://github.com/xgo-dev/llgo/issues/2959)
+is closed by merged [#2963](https://github.com/xgo-dev/llgo/pull/2963). The
+pinned release-profile reproduction remains historical evidence; current
+upstream was not rebuilt or timed. #2932, #2957, #2958, #2965 and #2966 remain
+open, and #2971 remains an open contribution. No duplicate issue is created
+from an already-reported problem or an unexplained timing ratio.
