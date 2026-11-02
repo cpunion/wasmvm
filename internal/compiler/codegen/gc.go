@@ -16,12 +16,10 @@ func (e *functionEmitter) combineI31(pc int) (int, bool) {
 	if box.Op != 0xfb001c || (get.Op != 0xfb001d && get.Op != 0xfb001e) || get.A != box.Dst {
 		return 0, false
 	}
-	source := box.A
 	if box.Dst != get.Dst && !e.overwrittenBeforeExit(pc+2, box.Dst) {
 		e.gcScalar(box)
-		source = box.Dst
 	}
-	e.slotLoad(source, 0, false, false)
+	e.slotLoad(box.A, 0, false, false)
 	if e.a.arch == "arm64" {
 		reg := uint32(e.operandRegister(0))
 		if get.Op == 0xfb001d {
