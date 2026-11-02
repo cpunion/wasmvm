@@ -170,3 +170,42 @@ validation and expected baseline-failure logs, native code identities and all
 measurement/diagnostic programs.
 
 Observed shared-host load: first campaign [9.0087890625, 39.5263671875, 37.611328125]→[7.98486328125, 17.75341796875, 27.63818359375]; isolated campaign [5.84814453125, 5.85595703125, 8.98681640625]→[6.69384765625, 6.5576171875, 8.328125]. No CPU affinity or host isolation is claimed.
+
+
+## Integrated final head
+
+PR #99 merged as `e24dcaa4c2887fc0ea6b738747b111e9774b1246` after exact
+head `9892dfa1aa64e79fadf92bf2109cd2eb7d183785` passed all 19 semantic
+jobs and the authoritative benchmark/report workflow. The duplicate benchmark
+cancelled by opened/labeled concurrency is retained as superseded history.
+Nineteen artifact digests, 240 execution reports, every required package across
+Go/LLGo and Linux amd64/macOS arm64, 30 coverage gates and 12 LLGo traces
+validate. Independent execution logs prove the single-package shards, with
+94 threads and 434 async tests on each platform. No review findings remain.
+The longest semantic job takes 9m53s; the benchmark job takes 5m00s.
+
+Current-head Linux diagnostic results are ns/source iteration:
+
+| Workload | Go interpreter base → head | LLGo interpreter base → head | WasmEdge interpreter | wazero interpreter |
+| --- | ---: | ---: | ---: | ---: |
+| Integer | 82.535 → 70.746 | 85.243 → 65.210 | 52.400 | 57.574 |
+| Guest calls | 116.379 → 106.657 | 144.706 → 118.841 | 67.785 | 84.270 |
+| Memory | 157.515 → 142.656 | 161.251 → 134.523 | 100.074 | 105.280 |
+
+LLGo improves 23.5%, 17.9% and 16.6%, respectively. Remaining WasmEdge gaps
+are 1.24x/1.75x/1.34x. LLGo is faster than Go on integer/memory here but
+11.4% slower on calls; that does not independently identify a compiler defect.
+LLGo native integer/memory regress 1.9%/4.5% and Go native calls 3.7%.
+LLGo native memory 1.312 versus Wasmtime 0.670 remains a 1.96x deficit.
+Those regressions and all preparation/first/warm/cleanup observations remain
+visible; unchanged guest native bodies do not establish unchanged boundary
+performance. This PR suite has no ordinary C kernel, so its C API adapters
+cannot measure the ordinary-native gap.
+
+All 228 observations, 76 summaries and 19 configurations validate. Both source
+inventories independently match exact git archives (base 1454, head 1456 files),
+with Go 1.27.3 and pinned LLGo `-O3 -lto=full`. These hosted diagnostic results
+remain distinct from local ARM64 and later combined candidates. Controlled
+whole-portfolio, cancellation, allocation and native-C acceptance stay open.
+
+[Final semantic, benchmark and merge evidence](evidence/pr99-final-ci-2026-11-02.json.gz).

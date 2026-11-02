@@ -5363,3 +5363,19 @@ performance acceptance remains open.
 
 [Final-head evidence](research/evidence/pr98-final-ci-2026-11-02.json.gz) and
 [performance record](research/performance-interpreter-extension-guard-2026-11-02.md#integrated-final-head).
+
+
+## Uninterrupted I32 constant-consumer pairs
+
+Merged PR #99, engine `e24dcaa4c2887fc0ea6b738747b111e9774b1246`.
+The exact `9892dfa` head passes all 19 semantic jobs and benchmark/report.
+Artifact digests, 240 execution reports, 31 packages per compiler/platform,
+30 coverage gates, 12 LLGo traces and independent single-package execution
+logs validate. Both source PCs, exact fuel, public I32 bits and step-64
+cancellation are retained. Longest semantic job 9m53s; benchmark 5m00s.
+
+Linux LLGo interpreter integer/calls/memory improve 23.5%/17.9%/16.6%, while
+competitor deficits, native regressions and controlled acceptance remain open.
+[Exact-head evidence](research/evidence/pr99-final-ci-2026-11-02.json.gz) and
+[all results](research/performance-interpreter-integer-pairs-2026-11-02.md#integrated-final-head)
+retain the successful authoritative workflow and superseded cancelled duplicate.

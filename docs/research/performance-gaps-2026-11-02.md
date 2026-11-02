@@ -7,7 +7,7 @@ an LLGo defect. Controlled Linux amd64/macOS arm64 portfolio acceptance is open.
 | Gap | Evidence and action | Remaining deficit |
 | --- | --- | --- |
 | LLGo shared/atomic interpreter helpers | [Cached cancellation and numeric C bindings](performance-interpreter-atomics-2026-11-02.md): about 21%/22% improvement; checked helper allocation controls become zero | RMW remains about 2.12x WasmEdge and 1.40x wazero interpreter in that campaign |
-| Native scalar memory | [Word-loop expansion](performance-native-word-loops-2026-11-02.md) initially improved LLGo 0.526→0.473, but regressed in the [complete combination](performance-atomic-combined-2026-11-02.md); held | Existing native loops remain; C and competitor deficits still need resolution |
+| Native scalar memory | The initial [word-loop expansion](performance-native-word-loops-2026-11-02.md) regressed in the [complete combination](performance-atomic-combined-2026-11-02.md) and was held; the bounded [longer follow-up](performance-native-word-long-2026-11-02.md) advanced through merged PR #97 | C and Linux competitor deficits still need resolution; the held prototype is not treated as integrated |
 | Native atomic throughput | [100-million-iteration C comparison](performance-native-atomic-c-2026-11-02.md): LLGo 1.776, Go 1.772, C 1.723, Wasmtime 1.709 ns/iteration | About 3.1% versus C and 3.9% versus Wasmtime on one ARM64 kernel |
 | Interpreter operands and dispatcher counter | [Two complete twenty-case experiments](performance-interpreter-rejected-2026-11-02.md), including GC, SIMD and wait/notify | No consistent meaningful LLGo benefit; neither candidate is adopted |
 | GC and SIMD interpretation | All results retained in those twenty-case experiments | WasmEdge still leads most cases; removing operand checks does not solve this gap |
@@ -15,6 +15,11 @@ an LLGo defect. Controlled Linux amd64/macOS arm64 portfolio acceptance is open.
 Each campaign has its own source revisions and host conditions. Preparation,
 first-call and warm execution remain separate. Do not pool these tables into a
 synthetic fastest-per-case engine or calculate improvements across campaigns.
+
+The [final Linux PR #97 benchmark](https://github.com/cpunion/wasmvm/actions/runs/41403501261)
+improves LLGo native memory 1.823→1.649 ns/iteration, versus Wasmtime 0.944
+and Wasmer 0.880. Its completed integration does not close that remaining x86
+gap or permit the favorable local ARM64 result to replace it.
 
 ## Independently reproduced LLGo problems
 
@@ -113,3 +118,28 @@ The [native-allocation investigation](performance-llgo-native-allocation-2026-11
 retains the independent #2966 reproduction, matching-check C mechanism control
 and original corrected diagnostic. It does not attribute the complete Go/LLGo
 allocation gap or claim an unmeasured compiler-patch speedup.
+
+## Scoped packed-vector follow-up
+
+The [packed-vector comparisons](performance-packed-vector-loads-2026-11-02.md)
+retain both candidates. The first inlined helper improves widening but regresses
+LLGo scalar/full-vector/lane-memory controls 12–20% and is held. Keeping the
+widening operations in an outlined helper removes those observed large control
+regressions: widening improves 120.236→100.346 ns/iteration (16.5%) for LLGo and
+120.094→100.495 (16.3%) for Go. LLGo native controls are still 0.1–0.8% slower.
+WasmEdge widening remains 60.690; this 1.65x interpreter gap stays open.
+These are separate scoped shared-host campaigns, with their own baseline A/A
+controls and every phase retained. Final-head cross-platform validation is
+pending; the result is a candidate, not an integrated or controlled parity claim.
+
+
+## Integrated PR #99 Linux observations
+
+The [final-head audit](performance-interpreter-integer-pairs-2026-11-02.md#integrated-final-head)
+passes all required checks and retains exact source/artifact identities. LLGo
+interpreter integer/calls/memory improve 23.5%/17.9%/16.6% but still take
+1.24x/1.75x/1.34x WasmEdge's time. LLGo calls remain 11.4% behind Go.
+Native LLGo memory is 1.312 versus Wasmtime 0.670 ns/iteration. Native
+regressions remain retained; the diagnostic PR scope has no ordinary C kernel.
+Earlier ARM64 ordinary-C comparisons and later candidates stay separate.
+This integration does not close controlled performance or WASI world acceptance.
