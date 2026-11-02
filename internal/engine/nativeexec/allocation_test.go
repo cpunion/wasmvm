@@ -17,6 +17,65 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
+type allocationPanicContext struct{ context.Context }
+
+func (allocationPanicContext) Err() error { panic("allocation entry context") }
+
+func TestNativeAllocationReservationCleanupBeforeEntry(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	for _, panics := range []bool{false, true} {
+		d := &module.Module{Types: []module.FuncType{{}, {}}, TypeDefs: []module.TypeDef{{Kind: module.StructKind, Fields: []module.FieldType{{Value: wasm.I32}}}, {Kind: module.FunctionKind}}, Functions: []module.Function{{Type: 1, Body: module.Expr{{Op: 0x41, Bits: 42}, {Op: 0xfb0000}, {Op: 0x1a}, {Op: 0xb}}}}}
+		checked, err := validate.CheckWithFeatures(d, validate.DefaultLimits(), wasm.GC)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ir, err := lower.Compile(checked, lower.DefaultLimits())
+		if err != nil {
+			t.Fatal(err)
+		}
+		m, err := slots.Compile(ir, slots.DefaultLimits())
+		if err != nil {
+			t.Fatal(err)
+		}
+		e, fn, _ := prepare(t, m)
+		if !e.Suspend() {
+			t.Fatal("initial suspension")
+		}
+		ctx, cancel := context.WithCancel(context.Background())
+		var entryContext context.Context = ctx
+		if panics {
+			entryContext = allocationPanicContext{context.Background()}
+		}
+		if err := e.Begin(entryContext, false); err != nil {
+			t.Fatal(err)
+		}
+		cancel()
+		var caught any
+		func() {
+			defer func() { caught = recover() }()
+			_, fuel, err := e.Run(fn, 0, 1, 0, 17)
+			if panics || !errors.Is(err, context.Canceled) || fuel != 17 {
+				t.Fatal("pre-entry exit", panics, fuel, err)
+			}
+		}()
+		if panics && caught != "allocation entry context" || !panics && caught != nil {
+			t.Fatal("unexpected panic", panics, caught)
+		}
+		s := fn.Instance.Owner
+		if batches, count := s.NativeAllocationStats(); batches != 0 || count != 0 || s.Usage().HeapObjects != 0 {
+			t.Fatal("objects published without native entry", batches, count, s.Usage())
+		}
+		if view, err := s.PrepareNativeAllocations(nativeabi.HeapAllocationBatch); err != nil || view == 0 {
+			t.Fatal("pre-entry exit leaked reservation", panics, view, err)
+		}
+		if err := s.FinishNativeAllocations(fn.Instance.Types); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 func TestNativeAllocationPublicationOnTrapAndCancellation(t *testing.T) {
 	if !native.Available {
 		t.Skip("native platform unavailable")
