@@ -1,5 +1,24 @@
 # Native integer architecture gate
 
+The separate [scalar C reference](c/scalar_baseline.c) compares six existing
+parameterized kernels with ordinary native compilation: integer mixing, direct
+source calls, scalar memory, narrow/unaligned memory, dependent addresses and
+unaligned float64. Build it with:
+
+```sh
+clang -O3 -Wall -Wextra -Werror -o /tmp/native-scalar benchmarks/native/c/scalar_baseline.c
+/tmp/native-scalar function-calls 0 1 2654435769
+```
+
+Arguments are kernel name, unsigned seed, iteration count (1–1,000,000) and
+expected checksum. Every first/warmup/measured call validates its result; reset
+work remains inside the timer. The volatile indirect entry prevents the C
+optimizer from hoisting repeated pure calls across clocks. It supports the
+existing serial interleaving protocol and seven warm calls after two warmups.
+Use independent fixture oracles for longer and alternate-input checks.
+This C reference lacks Wasm bounds, fuel and cancellation checks; it has no VM
+validation/compilation phases. Keep those boundary differences visible.
+
 This probe runs the existing `integer-mix.wasm` directly through the project
 compiler and C entry adapter. It is not the public VM API: memory integration,
 guest-call dispatch and runtime helpers remain incomplete. Scalar numeric and

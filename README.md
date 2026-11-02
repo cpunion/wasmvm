@@ -341,6 +341,13 @@ Private reads/writes improve from 90 to 59 ns/iteration and SIMD widening from
 163 to 129; WasmEdge measures 40 and 63. Remaining deficits and both comparison
 campaigns are retained.
 
+The [dispatch and three-way gap audit](docs/research/performance-interpreter-dispatch-2026-11-02.md)
+compares named engines, Go versus LLGo, and six ordinary native C kernels.
+Reusable frames and cancellation polling reduce LLGo guest calls from 133 to
+93 ns/iteration; WasmEdge remains faster at 62. Memory/compiler gaps, empty-call
+regressions and rejected experiments remain recorded, with independent LLGo
+reproductions reported upstream.
+
 Benchmark CI is opt-in through the `run-benchmarks` PR label or
 [workflow dispatch](https://github.com/cpunion/wasmvm/actions/workflows/benchmarks.yml).
 It compares exact base/head sources and pinned competitors and posts results
