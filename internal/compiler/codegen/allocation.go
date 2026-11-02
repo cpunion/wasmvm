@@ -160,6 +160,7 @@ type registerCandidate struct {
 func (e *functionEmitter) allocateRegisters(config Config, regions map[int]memoryRegion) {
 	frequencies := instructionFrequencies(e.f)
 	weights := slotPriorities(e.f, regions, frequencies)
+	e.immediateRegisterCosts(weights, frequencies, regions)
 	var candidates []registerCandidate
 	for s, w := range weights {
 		if w != 0 {
