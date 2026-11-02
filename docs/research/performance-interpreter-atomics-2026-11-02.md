@@ -5,7 +5,10 @@ The final local candidate reduces LLGo interpreted shared memory from
 Go RMW remains 75.683→75.816 after retaining its standard cancellation path.
 LLGo now beats Go on both affected loops in this sample, but still trails
 WasmEdge and trails wazero on RMW. Controlled cross-platform and portfolio
-performance acceptance remain open. This candidate is not yet integrated.
+performance acceptance remain open. Integrated through PR #96 after dual-platform semantic validation. The final
+Linux basic benchmark has unrelated scalar regressions recorded in the
+[validation audit](../validation.md#pr-96-final-atomic-path-audit); controlled
+performance acceptance remains open.
 
 ## Mechanism and independently reproduced LLGo defects
 

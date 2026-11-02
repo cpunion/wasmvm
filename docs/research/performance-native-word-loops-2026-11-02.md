@@ -1,8 +1,10 @@
 # Bounded native word-loop expansion: 2026-11-02
 
-**Held experiment:** the [later complete combination](performance-atomic-combined-2026-11-02.md)
+**Initially held experiment:** the [later complete combination](performance-atomic-combined-2026-11-02.md)
 does not repeat this native memory gain. Expansion is not selected for production;
-these earlier favorable results remain descriptive evidence.
+these earlier favorable results remain descriptive evidence. A subsequent
+[longer native/A/A diagnostic](performance-native-word-long-2026-11-02.md)
+repeats the gain and supports a new contribution for cross-platform evaluation.
 
 The measured candidate reduces LLGo native scalar memory from **0.526 to
 0.473 ns/source iteration**, approximately 10%, versus Wasmtime **0.480** and
