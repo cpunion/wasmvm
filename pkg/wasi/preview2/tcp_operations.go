@@ -59,7 +59,7 @@ func (p *TCP) execute(c *component.Caller, s *tcpSocket, name string, args []com
 			}
 		} else {
 			err = socketConnect(fd, address)
-			if err == nil || err == unix.EINPROGRESS || err == unix.EALREADY {
+			if err == nil || err == unix.EINPROGRESS || err == unix.EALREADY || err == unix.EINTR {
 				s.state = tcpConnecting
 				s.operation = tcpConnectOperation
 				err = nil

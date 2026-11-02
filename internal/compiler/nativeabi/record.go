@@ -18,7 +18,8 @@ func TablePairOffset(functions, index uint32) (uint32, bool) {
 	return uint32(offset), offset <= math.MaxInt32-8
 }
 
-// MemoryPairOffset appends length/base pairs after any numeric-global view.
+// MemoryPairOffset appends one length/base pair per memory after global cells.
+// Shared lengths are stable native addresses of atomic u64 size cells.
 // Existing function/table/global offsets remain unchanged.
 func MemoryPairOffset(functions, tables, globals, bindings, index uint32) (uint32, bool) {
 	words := uint64(functions) + uint64(tables)*2
@@ -35,9 +36,6 @@ func MemoryPairOffset(functions, tables, globals, bindings, index uint32) (uint3
 const HeapSlotBytes = 32
 
 func HeapPairOffset(functions, tables, globals, bindings, memories uint32) (uint32, bool) {
-	if memories <= 1 {
-		memories = 0
-	}
 	return MemoryPairOffset(functions, tables, globals, bindings, memories)
 }
 

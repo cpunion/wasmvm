@@ -6,9 +6,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#if defined(__APPLE__) && defined(__aarch64__)
+#include <sys/sysctl.h>
+#endif
 #ifdef __x86_64__
 #include <cpuid.h>
 #endif
+
+uint32_t wasmvm_arm64_features(void) {
+#if defined(__APPLE__) && defined(__aarch64__)
+    int value = 0;
+    size_t size = sizeof(value);
+    if (sysctlbyname("hw.optional.arm.FEAT_LSE", &value, &size, 0, 0) == 0 && value)
+        return 1;
+#endif
+    return 0;
+}
 
 void wasmvm_cpu_probe(uint32_t *ecx1, uint32_t *ebx7, uint32_t *ecx7, uint64_t *xcr0) {
     *ecx1 = *ebx7 = *ecx7 = 0;

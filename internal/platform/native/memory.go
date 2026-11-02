@@ -2,6 +2,7 @@ package native
 
 import (
 	"sync"
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -14,7 +15,9 @@ type Memory struct {
 	mu                      sync.Mutex
 	data                    unsafe.Pointer
 	size, maximum, bindings uint64
-	active, retired         bool
+	active                  uint64
+	retired                 bool
+	sharedSize              *uint64
 }
 
 func NewMemory(size, maximum uint64) (*Memory, error) {
@@ -39,7 +42,7 @@ func (m *Memory) idle() error {
 	if m.retired {
 		return ErrClosed
 	}
-	if m.active {
+	if m.active != 0 {
 		return ErrBusy
 	}
 	return nil
@@ -61,7 +64,11 @@ func (m *Memory) Read(offset uint64, dst []byte) error {
 	if offset > m.size || uint64(len(dst)) > m.size-offset {
 		return ErrLimit
 	}
-	copy(dst, unsafe.Slice((*byte)(m.data), int(m.size))[offset:offset+uint64(len(dst))])
+	if m.sharedSize != nil {
+		sharedTransfer(unsafe.Pointer(unsafe.SliceData(dst)), unsafe.Add(m.data, uintptr(offset)), uint64(len(dst)), 2)
+	} else {
+		copy(dst, unsafe.Slice((*byte)(m.data), int(m.size))[offset:offset+uint64(len(dst))])
+	}
 	return nil
 }
 func (m *Memory) Write(offset uint64, src []byte) error {
@@ -73,19 +80,26 @@ func (m *Memory) Write(offset uint64, src []byte) error {
 	if offset > m.size || uint64(len(src)) > m.size-offset {
 		return ErrLimit
 	}
-	copy(unsafe.Slice((*byte)(m.data), int(m.size))[offset:offset+uint64(len(src))], src)
+	if m.sharedSize != nil {
+		sharedTransfer(unsafe.Add(m.data, uintptr(offset)), unsafe.Pointer(unsafe.SliceData(src)), uint64(len(src)), 1)
+	} else {
+		copy(unsafe.Slice((*byte)(m.data), int(m.size))[offset:offset+uint64(len(src))], src)
+	}
 	return nil
 }
 
-// Grow changes the byte length while idle. Failure leaves storage untouched;
-// success preserves old bytes and zeroes the extension. Old and new allocations
-// coexist during the copy, which the Store's transient allocation budget must
-// account for. A size equal to the current size performs no allocation.
+// Grow changes the logical length. Private storage must be idle and may move;
+// old and new allocations coexist during its bounded copy. Shared storage uses
+// an existing zeroed reservation and atomically publishes the new length while
+// other entries run. Failure preserves the old storage and logical length.
 func (m *Memory) Grow(size uint64) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if err := m.idle(); err != nil {
-		return err
+	if m.retired {
+		return ErrClosed
+	}
+	if m.active != 0 && m.sharedSize == nil {
+		return ErrBusy
 	}
 	if size < m.size {
 		return ErrInvalid
@@ -94,6 +108,13 @@ func (m *Memory) Grow(size uint64) error {
 		return ErrLimit
 	}
 	if size == m.size {
+		return nil
+	}
+	if m.sharedSize != nil {
+		// The whole reserved extent was zeroed at construction. No checked
+		// guest can address the extension until this publication.
+		m.size = size
+		atomic.StoreUint64(m.sharedSize, size)
 		return nil
 	}
 	data := allocate(size)
@@ -112,9 +133,13 @@ func (m *Memory) Close() {
 	m.release()
 }
 func (m *Memory) release() {
-	if m.retired && m.bindings == 0 && !m.active && m.data != nil {
+	if m.retired && m.bindings == 0 && m.active == 0 && m.data != nil {
 		deallocate(m.data)
 		m.data = nil
+		if m.sharedSize != nil {
+			deallocate(unsafe.Pointer(m.sharedSize))
+			m.sharedSize = nil
+		}
 	}
 }
 func (m *Memory) retain() error {
@@ -138,16 +163,21 @@ func (m *Memory) begin() (uint64, uint64, error) {
 	if m.data == nil {
 		return 0, 0, ErrClosed
 	}
-	if m.active {
+	if m.active != 0 && m.sharedSize == nil {
 		return 0, 0, ErrBusy
 	}
-	m.active = true
+	if m.active == ^uint64(0) {
+		return 0, 0, ErrLimit
+	}
+	m.active++
 	return uint64(uintptr(m.data)), m.size, nil
 }
 func (m *Memory) end() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.active = false
+	if m.active != 0 {
+		m.active--
+	}
 	m.release()
 }
 

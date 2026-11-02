@@ -4,16 +4,19 @@ import (
 	"context"
 	"math"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/value"
+	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/wasm"
+	"unsafe"
 )
 
-// Domain provides sequentially consistent ordering for every shared byte and
-// atomic operation, across all memories and Stores in one Engine. Private
-// memory keeps its existing direct access path. Waits release the domain lock.
+// Domain coordinates wait queues, ownership and growth. Native-backed shared
+// bytes use atomic accesses; portable backing serializes access under the domain
+// lock. Wait registration and notification share that lock in both modes.
 type Domain struct {
 	mu         sync.Mutex
 	offheap    bool
@@ -35,7 +38,14 @@ type waiter struct {
 func NewDomain(maxWaiters uint32, offheap bool) *Domain {
 	return &Domain{maxWaiters: maxWaiters, offheap: offheap}
 }
-func (d *Domain) Fence()          { d.mu.Lock(); d.mu.Unlock() }
+func (d *Domain) Fence() {
+	if d.offheap && native.Available {
+		checkedShared(native.SharedFence())
+		return
+	}
+	d.mu.Lock()
+	d.mu.Unlock()
+}
 func (d *Domain) Waiters() uint32 { d.mu.Lock(); defer d.mu.Unlock(); return d.waiting }
 
 func NewShared(declared module.Limits, quota uint32, domain *Domain) (*Memory, error) {
@@ -80,9 +90,12 @@ func (m *Memory) Release() {
 	}
 }
 func (m *Memory) Pages() uint64 {
-	if m.domain == nil {
+	if m.domain == nil || m.sharedSize != nil {
 		return m.pages()
 	}
+	return m.pagesLocked()
+}
+func (m *Memory) pagesLocked() uint64 {
 	m.domain.mu.Lock()
 	defer m.domain.mu.Unlock()
 	return m.pages()
@@ -99,41 +112,56 @@ func (m *Memory) Grow(n uint64) (uint64, bool) {
 	return m.grow(n)
 }
 func (m *Memory) Range(at, n uint64) bool {
-	if m.domain == nil {
+	if m.domain == nil || m.sharedSize != nil {
 		return m.rangeBytes(at, n)
 	}
+	return m.rangeLocked(at, n)
+}
+func (m *Memory) rangeLocked(at, n uint64) bool {
 	m.domain.mu.Lock()
 	defer m.domain.mu.Unlock()
 	return m.rangeBytes(at, n)
 }
 func (m *Memory) Read(at uint64, p []byte) bool {
-	if m.domain == nil {
+	if m.domain == nil || m.sharedSize != nil {
 		return m.readBytes(at, p)
 	}
+	return m.readLocked(at, p)
+}
+func (m *Memory) readLocked(at uint64, p []byte) bool {
 	m.domain.mu.Lock()
 	defer m.domain.mu.Unlock()
 	return m.readBytes(at, p)
 }
 func (m *Memory) Write(at uint64, p []byte) bool {
-	if m.domain == nil {
+	if m.domain == nil || m.sharedSize != nil {
 		return m.writeBytes(at, p)
 	}
+	return m.writeLocked(at, p)
+}
+func (m *Memory) writeLocked(at uint64, p []byte) bool {
 	m.domain.mu.Lock()
 	defer m.domain.mu.Unlock()
 	return m.writeBytes(at, p)
 }
 func (m *Memory) Fill(at uint64, b byte, n uint64) bool {
-	if m.domain == nil {
+	if m.domain == nil || m.sharedSize != nil {
 		return m.fill(at, b, n)
 	}
+	return m.fillLocked(at, b, n)
+}
+func (m *Memory) fillLocked(at uint64, b byte, n uint64) bool {
 	m.domain.mu.Lock()
 	defer m.domain.mu.Unlock()
 	return m.fill(at, b, n)
 }
 func (m *Memory) Init(dst, src, n uint64, p []byte) bool {
-	if m.domain == nil {
+	if m.domain == nil || m.sharedSize != nil {
 		return m.initBytes(dst, src, n, p)
 	}
+	return m.initLocked(dst, src, n, p)
+}
+func (m *Memory) initLocked(dst, src, n uint64, p []byte) bool {
 	m.domain.mu.Lock()
 	defer m.domain.mu.Unlock()
 	return m.initBytes(dst, src, n, p)
@@ -147,24 +175,30 @@ func (m *Memory) CopyFrom(source *Memory, dst, src, n uint64) bool {
 	if m.domain != nil && source.domain != nil && m.domain != source.domain {
 		return false
 	}
-	if d != nil {
+	if d != nil && (m.domain != nil && m.sharedSize == nil || source.domain != nil && source.sharedSize == nil) {
 		d.mu.Lock()
 		defer d.mu.Unlock()
 	}
 	return m.copyFrom(source, dst, src, n)
 }
 func (m *Memory) Load(op uint32, address, offset uint64, lane byte, previous value.Value) (value.Value, wasm.TrapCode) {
-	if m.domain == nil {
+	if m.domain == nil || m.sharedSize != nil {
 		return m.load(op, address, offset, lane, previous)
 	}
+	return m.loadLocked(op, address, offset, lane, previous)
+}
+func (m *Memory) loadLocked(op uint32, address, offset uint64, lane byte, previous value.Value) (value.Value, wasm.TrapCode) {
 	m.domain.mu.Lock()
 	defer m.domain.mu.Unlock()
 	return m.load(op, address, offset, lane, previous)
 }
 func (m *Memory) Store(op uint32, address, offset uint64, lane byte, v value.Value) wasm.TrapCode {
-	if m.domain == nil {
+	if m.domain == nil || m.sharedSize != nil {
 		return m.store(op, address, offset, lane, v)
 	}
+	return m.storeLocked(op, address, offset, lane, v)
+}
+func (m *Memory) storeLocked(op uint32, address, offset uint64, lane byte, v value.Value) wasm.TrapCode {
 	m.domain.mu.Lock()
 	defer m.domain.mu.Unlock()
 	return m.store(op, address, offset, lane, v)
@@ -185,13 +219,53 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 	if d == nil || m.domain != nil && m.domain != d {
 		return value.Value{}, wasm.NoTrap, wasm.ErrInvalid
 	}
-	d.mu.Lock()
 	n := uint(4)
 	if sub == 2 {
 		n = 8
 	} else if sub >= 0x10 {
 		n = [7]uint{4, 8, 1, 2, 1, 2, 4}[(sub-0x10)%7]
 	}
+	if m.owner != nil {
+		bytes, ok := m.access(address, offset, n)
+		if !ok {
+			return value.Value{}, wasm.TrapMemoryBounds, nil
+		}
+		at := m.declared.Address(address) + offset
+		if at%uint64(n) != 0 {
+			return value.Value{}, wasm.TrapAtomicUnaligned, nil
+		}
+		if sub >= 0x10 {
+			old, err := native.SharedAtomicContext(ctx, unsafe.Pointer(unsafe.SliceData(bytes)), uint32(n), native.AtomicOperation((sub-0x10)/7), a, b)
+			return value.Value{Lo: old}, wasm.NoTrap, err
+		}
+		if sub == 0 {
+			if uint32(a) == 0 || m.domain == nil || atomic.LoadUint64(m.sharedWaiters) == 0 {
+				return value.Value{}, wasm.NoTrap, nil
+			}
+		} else {
+			if m.domain == nil {
+				return value.Value{}, wasm.TrapWaitUnshared, nil
+			}
+			observed, err := native.SharedAtomicContext(ctx, unsafe.Pointer(unsafe.SliceData(bytes)), uint32(n), native.AtomicLoad, 0, 0)
+			if err != nil {
+				return value.Value{}, wasm.NoTrap, err
+			}
+			mask := ^uint64(0) >> (64 - n*8)
+			if observed != a&mask {
+				return value.Value{Lo: 1}, wasm.NoTrap, nil
+			}
+			if int64(b) == 0 {
+				return value.Value{Lo: 2}, wasm.NoTrap, nil
+			}
+		}
+	}
+	return m.atomicSlow(ctx, d, sub, address, offset, a, b, n)
+}
+
+// The queue path owns timers and deferred cleanup; scalar fast paths never
+// construct those captures under either host compiler.
+func (m *Memory) atomicSlow(ctx context.Context, d *Domain, sub uint32, address, offset, a, b uint64, n uint) (value.Value, wasm.TrapCode, error) {
+	d.mu.Lock()
 	bytes, ok := m.access(address, offset, n)
 	if !ok {
 		d.mu.Unlock()
@@ -209,6 +283,7 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 		for queue != nil && queue.first != nil && count < uint32(a) {
 			w := queue.first
 			queue.remove(w)
+			m.releaseNativeWaiter()
 			w.notified = true
 			close(w.ready)
 			count++
@@ -224,16 +299,37 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 			d.mu.Unlock()
 			return value.Value{}, wasm.TrapWaitUnshared, nil
 		}
+		// Publish a pending registration before the SC comparison. A native
+		// zero-waiter notify may linearize before this reservation, but must
+		// fall back through the ordering lock after observing it.
+		if m.sharedWaiters != nil {
+			atomic.AddUint64(m.sharedWaiters, 1)
+		}
 		mask := ^uint64(0) >> (64 - n*8)
-		if read(bytes, n) != a&mask {
+		var observed uint64
+		if m.owner != nil {
+			var err error
+			observed, err = native.SharedAtomic(unsafe.Pointer(unsafe.SliceData(bytes)), uint32(n), native.AtomicLoad, 0, 0)
+			if err != nil {
+				m.releaseNativeWaiter()
+				d.mu.Unlock()
+				return value.Value{}, wasm.NoTrap, err
+			}
+		} else {
+			observed = read(bytes, n)
+		}
+		if observed != a&mask {
+			m.releaseNativeWaiter()
 			d.mu.Unlock()
 			return value.Value{Lo: 1}, wasm.NoTrap, nil
 		}
 		if int64(b) == 0 {
+			m.releaseNativeWaiter()
 			d.mu.Unlock()
 			return value.Value{Lo: 2}, wasm.NoTrap, nil
 		}
 		if d.waiting >= d.maxWaiters {
+			m.releaseNativeWaiter()
 			d.mu.Unlock()
 			return value.Value{}, wasm.NoTrap, &wasm.Error{Kind: wasm.ErrLimit, Detail: "shared memory waiters"}
 		}
@@ -273,6 +369,7 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 		}
 		if w.linked {
 			queue.remove(w)
+			m.releaseNativeWaiter()
 			if queue.first == nil {
 				delete(d.queues, key)
 			}
@@ -340,4 +437,11 @@ func (q *waitQueue) remove(w *waiter) {
 	w.previous = nil
 	w.next = nil
 	w.linked = false
+}
+
+// The metadata counts both pending SC comparisons and enqueued waiters.
+func (m *Memory) releaseNativeWaiter() {
+	if m.sharedWaiters != nil {
+		atomic.AddUint64(m.sharedWaiters, ^uint64(0))
+	}
 }

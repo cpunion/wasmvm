@@ -453,3 +453,46 @@ func TestSignedFilesystemInstants(t *testing.T) {
 		t.Fatal("closed descriptor accepted")
 	}
 }
+
+// An interrupted snapshot has not established either readiness or a socket
+// failure. Retrying must preserve the descriptor, interest and zero timeout.
+func TestReadyRetriesInterruptedSnapshots(t *testing.T) {
+	for _, event := range []int16{0, unix.POLLOUT, unix.POLLHUP, unix.POLLNVAL} {
+		calls := 0
+		_, hangup, ready, err := pollReady(42, false, func(fds []unix.PollFd, timeout int) (int, error) {
+			calls++
+			if len(fds) != 1 || fds[0].Fd != 42 || fds[0].Events != unix.POLLOUT || timeout != 0 {
+				t.Fatal("changed readiness request", fds, timeout)
+			}
+			if calls <= 2 {
+				return -1, unix.EINTR
+			}
+			fds[0].Revents = event
+			return 1, nil
+		})
+		if calls != 3 {
+			t.Fatal("interruption escaped", calls, err)
+		}
+		if event == unix.POLLNVAL {
+			if !errors.Is(err, unix.EBADF) || ready || hangup {
+				t.Fatal("invalid descriptor", ready, hangup, err)
+			}
+		} else if err != nil || ready != (event != 0) || hangup != (event == unix.POLLHUP) {
+			t.Fatal("readiness lost", event, ready, hangup, err)
+		}
+	}
+	calls := 0
+	_, _, _, err := pollReady(42, true, func(fds []unix.PollFd, timeout int) (int, error) {
+		calls++
+		if fds[0].Events != unix.POLLIN {
+			t.Fatal("changed read interest")
+		}
+		if calls == 1 {
+			return -1, unix.EINTR
+		}
+		return -1, unix.EIO
+	})
+	if calls != 2 || !errors.Is(err, unix.EIO) {
+		t.Fatal("non-interruption error lost", calls, err)
+	}
+}

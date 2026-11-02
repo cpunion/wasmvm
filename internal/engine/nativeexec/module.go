@@ -33,6 +33,7 @@ type functionEntries struct {
 	usesRuntimeData             bool
 	globals                     []uint32
 	nativeAllocations           bool
+	nativeMemory                bool
 }
 
 // Compile prepares both policy tiers within one aggregate code-byte budget.
@@ -108,6 +109,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 	}
 	wantExpansion := map[*slots.Function]bool{}
 	features := codegen.X86Features(native.CPUFeatures())
+	armFeatures := codegen.ARM64Features(native.ARM64CPUFeatures())
 	// Publish all required ordinary tiers before spending spare code budget
 	// on optional expansion, including when later functions are large.
 	for tier := 0; tier < 3; tier++ {
@@ -121,7 +123,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 			}
 			bounded := limits
 			bounded.MaxCodeBytes = min(limits.MaxCodeBytes, uint64(math.MaxUint32)) - uint64(len(code))
-			config := codegen.Config{Unmetered: tier != 1, NativeAllocations: tier != 1, MemoryMinimumPages: minimum, X86Features: features,
+			config := codegen.Config{Unmetered: tier != 1, NativeAllocations: tier != 1, NativeThreads: true, MemoryMinimumPages: minimum, X86Features: features, ARM64Features: armFeatures,
 				MemoryPageSizes: pageSizes, HeapTypes: definition.TypeDefs,
 				FunctionCount: importedFunctions + uint32(len(m.Functions)), TableCount: tables, MemoryCount: memories, SharedMemories: shared, Globals: globals}
 			if tier == 2 {
@@ -154,6 +156,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 				indexes.expanded, indexes.inlineSlots, indexes.hasExpansion = index, body.InlineSlots, true
 				indexes.usesRuntimeData = body.UsesRuntimeData
 			}
+			indexes.nativeMemory = indexes.nativeMemory || body.UsesMemory
 			entries = append(entries, uint32(len(code)))
 			code = append(code, body.Entry.Code...)
 			out.entries[f] = indexes

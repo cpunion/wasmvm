@@ -49,7 +49,7 @@ func TestHeapPairOffsetPreservesRuntimeViews(t *testing.T) {
 	for _, tc := range []struct {
 		functions, tables, globals, bindings, memories, want uint32
 		ok                                                   bool
-	}{{0, 0, 0, 0, 0, 0, true}, {3, 2, 10, 0, 1, 56, true},
+	}{{0, 0, 0, 0, 0, 0, true}, {3, 2, 10, 0, 1, 72, true},
 		{3, 2, 10, 2, 3, 216, true}, {268435455, 0, 0, 0, 0, 2147483640, false}} {
 		got, ok := HeapPairOffset(tc.functions, tc.tables, tc.globals, tc.bindings, tc.memories)
 		if got != tc.want || ok != tc.ok {

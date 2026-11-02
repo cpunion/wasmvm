@@ -324,6 +324,24 @@ existing cancellation word before writing. Precise, shared and multi-memory
 operations retain their runtime helpers. The existing state/root/lease contracts
 and code-size limits apply without another native ABI or execution framework.
 
+## Implemented native shared memory and atomics
+
+Shared memories reserve a stable, host-quota-bounded native extent. Their
+accessible length lives in a separate atomic native cell; every emitted bounds
+observation reloads it, including during a running entry. Both targets directly
+emit all scalar atomic widths, RMW/CAS and fences. arm64 selects LSE only after
+CPU probing and otherwise retains cancellation-polled LL/SC loops. Wait mismatch,
+zero timeout and empty notification emit checked paths; blocking and queued
+notification use the existing bounded domain helper. Precise fuel charges the
+original instruction once across retries and helper resumption.
+
+Host/interpreter shared accesses use opaque ISA instructions to preserve Wasm's
+mixed-size overlapping access semantics. Portable backings retain domain locks.
+Pending waiters publish a native reservation before their SC value comparison;
+a notifier observing a reservation takes the ordering lock. Native allocation
+ownership, logical growth, queue cleanup and per-Store heaps remain separate.
+See the [implementation and comparison](../research/performance-native-threads-2026-11-02.md).
+
 ## Implemented Core 2.0 execution
 
 `internal/engine/state` owns typed imports, canonical signature identities,

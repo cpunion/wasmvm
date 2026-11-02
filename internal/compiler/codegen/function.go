@@ -21,6 +21,7 @@ func DefaultLimits() Limits { return Limits{64 << 20, 1 << 20, 1 << 20} }
 // never an interior machine address. ReferenceSlots conservatively describes
 // every reference-bearing slot in the current frame (root-map ID zero).
 type CompiledFunction struct {
+	NativeAtomics                 uint32
 	Entry                         nativeabi.Entry
 	Function                      *slots.Function
 	Offsets                       []uint32
@@ -80,6 +81,7 @@ type Config struct {
 	// MemoryPageSizes follows memory index order; nil means default 64-KiB pages.
 	MemoryPageSizes []uint64
 	X86Features     X86Features
+	ARM64Features   ARM64Features
 	// DirectCallees contains only immutable definitions in the same module.
 	// An expanded entry requires one additional logical frame and InlineSlots
 	// remaining slots. The runtime must select an ordinary entry otherwise.
@@ -98,6 +100,8 @@ type Config struct {
 	HeapTypes []module.TypeDef
 	// NativeAllocations requires the driver's prepare/finish batch protocol.
 	NativeAllocations bool
+	// NativeThreads requires stable shared views and machine atomic helpers.
+	NativeThreads bool
 }
 
 func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
@@ -149,7 +153,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		return nil, err
 	}
 	originalFunction := f
-	f = sharedMemoryHelpers(f, config.SharedMemories)
+	if !config.NativeThreads {
+		f = sharedMemoryHelpers(f, config.SharedMemories)
+	}
 	empty, err := nativeabi.Wrap(arch, nil, limits.MaxCodeBytes)
 	if err != nil {
 		return nil, err
@@ -157,6 +163,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	a := assembler{arch: arch, labels: map[int]int{}, bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true, compactBranches: arch == "arm64"}
 	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered, memoryMinimum: uint64(config.MemoryMinimumPages) * pageSize, memoryPageSizes: config.MemoryPageSizes}
 	e.x86Features = config.X86Features
+	e.arm64Features = config.ARM64Features
+	e.nativeThreads = config.NativeThreads
+	e.sharedMemories = config.SharedMemories
 	e.nativeBulk = unmetered && config.MemoryCount == 1 && (len(config.SharedMemories) == 0 || !config.SharedMemories[0])
 	pcs := make([]int, len(f.Code))
 	for i := range pcs {
@@ -166,7 +175,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		if e.bulkMemoryOpcode(in) {
 			e.usesMemory = true
 		}
-		if isMemoryAccess(in.Op) || in.Op == 0x3f || in.Op == 0x40 {
+		if isMemoryAccess(in.Op) || in.Op == 0x3f || in.Op == 0x40 || config.NativeThreads && in.Op>>16 == 0xfe && (in.Op&0xffff <= 2 || in.Op&0xffff >= 0x10) {
 			e.usesMemory = true
 			index := f.Sources[in.Source].Wasm.Memory
 			if in.Op == 0x3f || in.Op == 0x40 {
@@ -175,7 +184,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			if index != 0 && index >= config.MemoryCount {
 				return nil, wasm.ErrInvalid
 			}
-			if index != 0 && in.Op != 0x40 {
+			if in.Op != 0x40 && (index != 0 || config.NativeThreads && uint64(index) < uint64(len(config.SharedMemories)) && config.SharedMemories[index]) {
 				e.memoryViews = true
 			}
 		}
@@ -346,6 +355,13 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			out.ForwardedScalars++
 			independentEntries = append(independentEntries, pc+1)
 			combinedThrough = pc + 1
+			continue
+		}
+		if e.atomicInstruction(in, uint32(pc)) {
+			out.NativeAtomics++
+			if in.Op&0xffff <= 2 && e.atomicShared(in) {
+				out.Helpers++ // Queue/pending-registration fallback remains complete.
+			}
 			continue
 		}
 		switch op := in.Op; {

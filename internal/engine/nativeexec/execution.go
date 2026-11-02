@@ -129,8 +129,19 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 	var memory *native.Memory
 	if len(fn.Instance.Memories) != 0 {
 		memory = fn.Instance.Memories[0].Native()
-		if memory == nil && !fn.Instance.Memories[0].Shared() {
+		if memory == nil && fn.Instance.Memories[0].Shared() {
+			memory = fn.Instance.Memories[0].NativeShared()
+		}
+		if memory == nil {
 			return 0, fuel, wasm.ErrInvalid
+		}
+		if !entries.nativeMemory {
+			// Preserve ownership/retirement validation without binding data that
+			// the selected artifact cannot access.
+			if _, err := memory.Size(); err != nil {
+				return 0, fuel, err
+			}
+			memory = nil
 		}
 	}
 	if err := e.native.BindMemory(memory); err != nil {

@@ -447,6 +447,22 @@ fuel, cancellation, close and panic tests exercise these contracts with Go/LLGo.
 Call/helper speed and the final target matrix remain open acceptance gates.
 
 
+### Shared-memory views and concurrent entries
+
+Private runtime metadata includes one length/base pair for every declared
+memory, including the single-memory case. For shared memory, the length word
+holds a stable native size-cell address; emitted bounds checks load its current
+value atomically. Immutable descriptor addresses may stay in registers, while
+logical size and pending-waiter counts are always reloaded. Shared growth
+publishes size without moving or clearing the already-zeroed reserved extent.
+
+A 16-byte native control allocation stores the size and pending/registered
+waiter count. Neither contains Go pointers. Multiple contexts may bind and enter
+one shared backing; retirement frees it only after the last binding/entry ends.
+Private backing retains its existing exclusive-entry and relocation contract.
+The fixed external entry record remains unchanged. A function that cannot access
+memory omits the binding but still validates declared owner availability.
+
 ### Bounded reusable invocation workspace
 
 Each Store owns at most one idle outer-call workspace containing the existing

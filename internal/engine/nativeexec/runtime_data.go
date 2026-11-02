@@ -36,7 +36,7 @@ func (e *Execution) bindRuntimeGlobals(in *state.Instance, f *slots.Function, in
 		words += uint64(len(in.Globals)) + uint64(len(indices))*2
 	}
 	memoryBase := words
-	if len(in.Memories) > 1 {
+	if len(in.Memories) != 0 {
 		words += uint64(len(in.Memories)) * 2
 	}
 	heapBase := words
@@ -115,11 +115,18 @@ func (e *Execution) bindRuntimeGlobals(in *state.Instance, f *slots.Function, in
 		offset := len(in.Functions) + 2*i
 		e.runtimeWords[offset], e.runtimeWords[offset+1] = uint64(len(table.Values)), address
 	}
-	if len(in.Memories) > 1 {
+	if len(in.Memories) != 0 {
 		for i, memory := range in.Memories {
 			if memory != nil && memory.Shared() {
+				if memory.NativeShared() == nil {
+					return 0, wasm.ErrInvalid
+				}
+				base, size, _, err := memory.NativeShared().SharedView()
+				if err != nil {
+					return 0, err
+				}
 				at := int(memoryBase) + i*2
-				e.runtimeWords[at], e.runtimeWords[at+1] = 0, 0
+				e.runtimeWords[at], e.runtimeWords[at+1] = uint64(uintptr(size)), uint64(uintptr(base))
 				continue
 			}
 			if memory == nil || memory.Native() == nil {
