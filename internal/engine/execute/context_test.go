@@ -20,6 +20,11 @@ func TestCancellationViewMetadataAndRetainedBinding(t *testing.T) {
 	defer s.Close()
 	e := New(s, ctx, Config{Limits: DefaultLimits()})
 	defer e.Close()
+	// Exercise the immutable view itself with either host compiler.
+	view := &cancellationContext{Context: ctx, done: ctx.Done()}
+	if err := e.Rebind(view, DefaultLimits(), false, 0); err != nil {
+		t.Fatal(err)
+	}
 	retained := e.context
 	if got, ok := retained.Deadline(); !ok || !got.Equal(deadline) || retained.Value(key{}) != "first" || retained.Done() != ctx.Done() || retained.Err() != nil {
 		t.Fatal("lost context metadata", got, ok)

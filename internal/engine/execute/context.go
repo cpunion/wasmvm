@@ -1,6 +1,9 @@
 package execute
 
-import "context"
+import (
+	"context"
+	"runtime"
+)
 
 // Runtime helpers receive the same cancellation view as the dispatcher. The
 // pinned LLGo atomic.Value.Load allocates even on cancelCtx.Err's nil path.
@@ -23,6 +26,11 @@ func (c *cancellationContext) Err() error {
 func cancellationView(ctx context.Context) (context.Context, <-chan struct{}) {
 	if ctx == nil {
 		ctx = context.Background()
+	}
+	// Go has no allocation on the standard Err path; keep its cheaper poll.
+	// This constant branch confines the workaround to the affected compiler.
+	if runtime.Compiler != "llgo" {
+		return ctx, ctx.Done()
 	}
 	if c, ok := ctx.(*cancellationContext); ok {
 		return c, c.done
