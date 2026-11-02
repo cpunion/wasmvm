@@ -500,12 +500,22 @@ func Poll(ctx context.Context, fd int, read bool) (uint64, bool, error) {
 
 // Ready is a nonblocking readiness snapshot used before poll creates waiters.
 func Ready(fd int, read bool) (uint64, bool, bool, error) {
+	return pollReady(fd, read, unix.Poll)
+}
+
+func pollReady(fd int, read bool, poll func([]unix.PollFd, int) (int, error)) (uint64, bool, bool, error) {
 	event := int16(unix.POLLOUT)
 	if read {
 		event = unix.POLLIN
 	}
 	fds := []unix.PollFd{{Fd: int32(fd), Events: event}}
-	_, err := unix.Poll(fds, 0)
+	var err error
+	for {
+		_, err = poll(fds, 0)
+		if err != unix.EINTR {
+			break
+		}
+	}
 	if err != nil {
 		return 0, false, false, err
 	}

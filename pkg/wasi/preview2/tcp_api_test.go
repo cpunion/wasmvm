@@ -12,6 +12,7 @@ import (
 	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/component"
 	"github.com/cpunion/wasmvm/pkg/wasm"
+	"golang.org/x/sys/unix"
 )
 
 type tcpAPI struct{ networkAPI }
@@ -256,4 +257,33 @@ func TestTCPRefusedConnectionAndClosedState(t *testing.T) {
 	a.fail("start-connect", NetworkInvalidState, client, network, address)
 	a.drop(client)
 	a.drop(network)
+}
+
+func TestTCPInterruptionPreservesConnectOperation(t *testing.T) {
+	original := socketConnect
+	defer func() { socketConnect = original }()
+	for _, backend := range []string{"interpreter", "native"} {
+		if backend == "native" && !native.Available {
+			continue
+		}
+		t.Run(backend, func(t *testing.T) {
+			calls := 0
+			socketConnect = func(fd int, address SocketAddress) error {
+				calls++
+				err := original(fd, address)
+				// Model interruption after the nonblocking kernel connect started.
+				if err == nil || err == unix.EINPROGRESS || err == unix.EALREADY {
+					return unix.EINTR
+				}
+				return err
+			}
+			p, _, _ := tcpOwner(t, TCPConfig{AllowBind: tcpAllowLoopback, AllowConnect: tcpAllowLoopback})
+			a := tcpAPI{networkAPI{t, tcpInstance(t, p, backend, "tcp-api")}}
+			connection := a.connect()
+			if calls != 1 {
+				t.Fatal("connect was reissued after interruption", calls)
+			}
+			a.close(connection)
+		})
+	}
 }

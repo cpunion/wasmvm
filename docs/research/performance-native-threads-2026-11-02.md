@@ -119,6 +119,17 @@ inside a running entry, close creator roots, race notification against waiter
 registration, verify quotas/cleanup and cancel an atomic loop. Portable no-cgo
 execution remains complete through its synchronized Go backing.
 
+The first macOS CI execution reported an unknown WASI network error in the
+unchanged `p2_tcp_busy_poll` consumer. Thirty ordinary repeats and thirty
+signal-stress repeats did not reproduce that particular failure. Deterministic
+fault injection separately reproduced two matching error paths: an interrupted
+readiness snapshot and an interrupted nonblocking connect after it started.
+Readiness now retries `EINTR`; a started connect remains pending instead of
+becoming a permanent failure. Regression tests fail against the previous logic
+and preserve real readiness, descriptor errors and actual connection completion
+on both backends. This WASI correction is separate from the measured core source
+above. The original CI failure remains recorded; final CI is still required.
+
 Final CI must retain every Go/LLGo semantic package on Linux amd64 and macOS
 arm64, shared race/quality checks and all 30 coverage thresholds. The full
 controlled portfolio, contended scaling, broader host/component boundaries and
