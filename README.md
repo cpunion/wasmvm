@@ -335,6 +335,12 @@ amd64 and arm64, with stable shared growth and concurrent-entry ownership.
 Targeted comparisons retain baseline and interpreter regressions; controlled
 full-portfolio acceptance remains open.
 
+The [interpreter memory follow-up](docs/research/performance-interpreter-memory-2026-11-02.md)
+removes an unconditional LLGo result allocation and reduces scalar frame storage.
+Private reads/writes improve from 90 to 59 ns/iteration and SIMD widening from
+163 to 129; WasmEdge measures 40 and 63. Remaining deficits and both comparison
+campaigns are retained.
+
 Benchmark CI is opt-in through the `run-benchmarks` PR label or
 [workflow dispatch](https://github.com/cpunion/wasmvm/actions/workflows/benchmarks.yml).
 It compares exact base/head sources and pinned competitors and posts results
