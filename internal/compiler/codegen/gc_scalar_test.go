@@ -14,7 +14,7 @@ import (
 
 func TestI31ForwardingSlotsAndIndependentEntries(t *testing.T) {
 	for _, signed := range []bool{false, true} {
-		for _, alias := range [][3]slots.Slot{{0, 1, 2}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1}, {0, 0, 0}, {0, 31, 33}} {
+		for _, alias := range [][3]slots.Slot{{0, 1, 2}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1}, {0, 0, 0}, {0, 31, 33}, {31, 1, 0}, {31, 33, 32}} {
 			for _, overwrite := range []bool{false, true} {
 				t.Run(fmt.Sprintf("signed=%v/slots=%v/overwrite=%v", signed, alias, overwrite), func(t *testing.T) {
 					get := uint32(0xfb001e)

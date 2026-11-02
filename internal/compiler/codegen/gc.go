@@ -19,6 +19,21 @@ func (e *functionEmitter) combineI31(pc int) (int, bool) {
 	if box.Dst != get.Dst && !e.overwrittenBeforeExit(pc+2, box.Dst) {
 		e.gcScalar(box)
 	}
+	if source, ok := e.registers[box.A]; ok {
+		if dst, ok := e.registers[get.Dst]; ok {
+			if e.a.arch == "arm64" {
+				op := uint32(0x12007800) // and wD, wS, #0x7fffffff
+				if get.Op == 0xfb001d {
+					op = 0x13007800 // sbfx wD, wS, #0, #31
+				}
+				e.a.arm(false, op|uint32(source)<<5|uint32(dst))
+				return pc + 1, true
+			}
+			if get.Op == 0xfb001e && e.x86ArithmeticImmediate(0x71, dst, source, 0x7fffffff) {
+				return pc + 1, true
+			}
+		}
+	}
 	e.slotLoad(box.A, 0, false, false)
 	if e.a.arch == "arm64" {
 		reg := uint32(e.operandRegister(0))
