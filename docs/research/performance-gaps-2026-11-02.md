@@ -161,3 +161,12 @@ paired process block regresses for both Go and LLGo (median tables +2.61%/+2.14%
 Passing semantics and resemblance to C's independent accumulators do not justify
 integrating it. The contribution branch retains the simpler implementation;
 repeated group control and address induction remain separate hypotheses.
+
+The [combined Linux preflight](performance-linux-combined-2026-11-02.md) also
+passes its scoped workflow and source/artifact audits, while retaining Go
+interpreter call/memory regressions and a 2.1% LLGo call regression. It does not
+replace PR #99's isolated result. Its native memory remains 1.33x Wasmtime.
+A compile-only allocation study identifies a concrete x86 issue: fixed-register
+weights favor literal operations that encode their operands directly, while a
+running local incurs a real frame store and two reloads per source iteration.
+Model those emitted costs before further speculative reduction complexity.
