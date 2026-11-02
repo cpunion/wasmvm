@@ -131,3 +131,15 @@ WasmEdge widening remains 60.690; this 1.65x interpreter gap stays open.
 These are separate scoped shared-host campaigns, with their own baseline A/A
 controls and every phase retained. Final-head cross-platform validation is
 pending; the result is a candidate, not an integrated or controlled parity claim.
+
+
+## Integrated PR #99 Linux observations
+
+The [final-head audit](performance-interpreter-integer-pairs-2026-11-02.md#integrated-final-head)
+passes all required checks and retains exact source/artifact identities. LLGo
+interpreter integer/calls/memory improve 23.5%/17.9%/16.6% but still take
+1.24x/1.75x/1.34x WasmEdge's time. LLGo calls remain 11.4% behind Go.
+Native LLGo memory is 1.312 versus Wasmtime 0.670 ns/iteration. Native
+regressions remain retained; the diagnostic PR scope has no ordinary C kernel.
+Earlier ARM64 ordinary-C comparisons and later candidates stay separate.
+This integration does not close controlled performance or WASI world acceptance.
