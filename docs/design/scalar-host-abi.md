@@ -62,3 +62,9 @@ aliases use normal ordered-write behavior. Long lists check cancellation every
 their individual synchronization. This does not expose a backing view or retain
 host buffers. P1 paired size outputs preserve memory32 overflow checks and use
 this general facility to reduce repeated capability entry and cleanup.
+
+The [final combined comparison](../research/performance-scalar-host-combined-2026-11-03.md)
+measures this complete contribution against PR #104 production in one campaign.
+It retains both compilers/backends, default and cancellation-enabled references,
+ordinary C, baseline A/A and the adverse original controls. Earlier per-change
+percentages are not composed into a combined claim.

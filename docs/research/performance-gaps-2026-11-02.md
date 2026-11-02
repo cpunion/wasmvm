@@ -433,3 +433,13 @@ is held. Its exact-source public-host control does not establish a useful gain,
 and the full original P1 scope retains env/copy regressions. The experimental
 production change is excluded; the selected checked-memory implementation stays
 unchanged. Existing public-host regressions and their cause remain unresolved.
+
+The [final combined scalar-host comparison](performance-scalar-host-combined-2026-11-03.md)
+measures actual PR #104 production against the complete selected contribution:
+LLGo native P1 improves 39.7–50.4%, interpreter 45.5–57.6%, Go native
+44.6–54.9%. No per-source percentages are composed. Original integer regressions
+and all A/A rows remain. Args-sizes still takes 2.96x Go and 19.15x enabled
+wazero; startup, native C and controlled portfolio gaps remain open.
+The [PR #104 audit](pr104-final-ci-2026-11-03.md) records its completed merge,
+nineteen required jobs and 240 verified execution reports, including the
+macOS capacity history without rerunning successful work.
