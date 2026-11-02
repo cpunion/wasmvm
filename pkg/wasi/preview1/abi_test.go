@@ -168,6 +168,17 @@ func TestABIAndResources(t *testing.T) {
 			f.want(ErrSuccess, "environ_sizes_get", 0, 4)
 			f.want(ErrSuccess, "environ_get", 16, 32)
 			f.want(ErrFault, "args_sizes_get", 0, 131071)
+			beforeSizes := string(f.read(0, 8))
+			for _, offsets := range [][2]uint64{{0xffffffff, 4}, {0, 0xffffffff}, {0, 131071}} {
+				f.want(ErrFault, "args_sizes_get", offsets[0], offsets[1])
+				if string(f.read(0, 8)) != beforeSizes {
+					t.Fatal("size precheck partially wrote output")
+				}
+			}
+			f.want(ErrSuccess, "args_sizes_get", 0, 0)
+			if f.u32(0) != 10 {
+				t.Fatal("overlapping size outputs lost write order")
+			}
 			f.want(ErrFault, "args_get", 131069, 32)
 			f.want(ErrFault, "environ_get", 16, 131071)
 			f.want(ErrFault, "random_get", 0xffffffff, 2)

@@ -369,3 +369,77 @@ own A/A and adverse control results; their percentages are not added or pooled.
 Args-sizes still takes 3.10x Go, 27.75x Wasmtime and 61.16x wazero native in the
 new campaign. This known #2959 workaround creates no duplicate upstream issue;
 all-target controlled acceptance and host-boundary work remain open.
+
+## Host-boundary architecture and reference policy audit
+
+The [explicit entry-FFI experiment](performance-native-entry-ffi-held-2026-11-03.md)
+is held despite removing about eighty reported bytes per native entry: P1 wins
+are only 2.4–3.0% and original native arithmetic controls regress materially.
+It is excluded from PR #104. The [qualitative stack/source audit](performance-p1-boundary-profile-2026-11-03.md)
+identifies repeated context/admission/allocation and public marshaling paths,
+while wazero uses its existing numeric host stack and precomputed metadata.
+Captures are first-long-call diagnostics, without CPU-time attribution.
+
+The [separate cancellation-policy comparison](performance-p1-cancellation-policy-2026-11-03.md)
+keeps default and cancellation-enabled wazero configurations explicitly separate.
+Args-sizes LLGo still takes 37.06x the enabled reference and 3.10x Go in that
+campaign. A separate fixed one-million-iteration arithmetic diagnostic finds
+LLGo 1.563542, Go 1.582500 and C 1.560000 ns/iteration; default/enabled wazero is
+1.692125/13.894500. The original short controls and all A/A samples remain.
+Different poll granularity, incomplete calibration and the rest of the portfolio
+keep acceptance open. Next investigate shared numeric host marshaling and
+cheaper admission/context construction while preserving lifecycle contracts.
+
+## Shared scalar host ABI and P1 operation effects
+
+The [general scalar ABI comparison](performance-scalar-host-abi-2026-11-03.md)
+adds independent numeric callback stacks to the existing driver, preserving
+Caller/reentry/GC/error/suspension contracts and public reference callbacks.
+Go native P1 improves 6.3–6.8%, LLGo native 2.4–4.9%; its separate existing-public-
+host control retains 1–2% regressions and every original arithmetic regression.
+No later operation-effect percentage is combined with this source comparison.
+
+The [operation-effect comparison](performance-p1-call-effects-2026-11-03.md)
+then avoids unpublished private child contexts for the complete four-operation
+configuration/guest-memory group. I/O retains independent callback cancellation.
+Go native improves 37.3–38.7%, LLGo native 37.6–42.6%, interpreter 42.6–48.1%.
+Reported LLGo native args allocation falls 33.44→18.09 MB per 10000 callbacks;
+Go falls 4.48→2.08 MB. Original arithmetic regressions and all A/A records remain.
+
+Args-sizes still takes 3.09x Go, 21.14x cancellation-enabled wazero and 15.43x
+default Wasmtime in this latest study; policies and poll granularity differ.
+Ordinary C remains an explicitly unchecked lower bound. The selected source
+has no new controlled portfolio or sustained native acceptance claim. Next
+investigate capability/memory helpers and native-only LLGo allocation while
+retaining existing independently reproduced upstream issue boundaries.
+
+The [generic memory-batch comparison](performance-host-memory-batch-2026-11-03.md)
+reduces repeated Caller entry for complete prechecked multi-field outputs.
+Paired-size LLGo native improves another 11.1–11.7% against the exact operation-
+effect source, with its own A/A and adverse controls retained. Reported native
+args allocation falls 18.09→15.85 MB per 10000 callbacks; Go stays about 2.08 MB.
+Args still takes 2.97x Go and 19.35x cancellation-enabled wazero in that study.
+No earlier percentage or favorable control replaces any new slower result.
+
+The [independent memory-profile reproduction](performance-llgo-memprofile-2026-11-03.md)
+confirms that the pin exposes size-class records without allocation stacks.
+Go identifies both allocation sites; LLGo reports none. Evidence was added to
+existing closed proposal #2351, whose PR #2027 was closed without a merge,
+rather than creating another issue. This is an attribution limitation, not a
+new VM timing claim or an assertion about unbuilt current upstream main.
+
+The [type-only dispatch experiment](performance-host-type-dispatch-held-2026-11-03.md)
+is held. Its exact-source public-host control does not establish a useful gain,
+and the full original P1 scope retains env/copy regressions. The experimental
+production change is excluded; the selected checked-memory implementation stays
+unchanged. Existing public-host regressions and their cause remain unresolved.
+
+The [final combined scalar-host comparison](performance-scalar-host-combined-2026-11-03.md)
+measures actual PR #104 production against the complete selected contribution:
+LLGo native P1 improves 39.7–50.4%, interpreter 45.5–57.6%, Go native
+44.6–54.9%. No per-source percentages are composed. Original integer regressions
+and all A/A rows remain. Args-sizes still takes 2.96x Go and 19.15x enabled
+wazero; startup, native C and controlled portfolio gaps remain open.
+The [PR #104 audit](pr104-final-ci-2026-11-03.md) records its completed merge,
+nineteen required jobs and 240 verified execution reports, including the
+macOS capacity history without rerunning successful work.

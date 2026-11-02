@@ -25,16 +25,7 @@ func (p *Process) invoke(c *abiCall, name string, a []uint64) error {
 			n += uint64(len(s)) + 1
 		}
 		if strings.HasSuffix(name, "sizes_get") {
-			if err := c.check(a[0], 4); err != nil {
-				return err
-			}
-			if err := c.check(a[1], 4); err != nil {
-				return err
-			}
-			if err := c.u32(a[0], uint32(len(list))); err != nil {
-				return err
-			}
-			return c.u32(a[1], uint32(n))
+			return c.u32Pair(a[0], uint32(len(list)), a[1], uint32(n))
 		}
 		if err := c.check(a[0], uint64(len(list))*4); err != nil {
 			return err

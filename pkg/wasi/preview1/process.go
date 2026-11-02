@@ -343,7 +343,7 @@ func (p *Process) Exited() (uint32, bool) {
 	defer p.mu.Unlock()
 	return p.exitCode, p.exited
 }
-func (p *Process) begin(parent context.Context) (context.Context, func(), error) {
+func (p *Process) enterCall() error {
 	p.mu.Lock()
 	if p.closing {
 		var err error = wasm.ErrClosed
@@ -351,20 +351,31 @@ func (p *Process) begin(parent context.Context) (context.Context, func(), error)
 			err = &ExitError{p.exitCode}
 		}
 		p.mu.Unlock()
-		return nil, nil, err
+		return err
 	}
 	p.active++
 	p.mu.Unlock()
+	return nil
+}
+func (p *Process) leaveCall() {
+	p.mu.Lock()
+	p.active--
+	p.finishLocked()
+	p.mu.Unlock()
+}
+func (p *Process) begin(parent context.Context, memoryOnly bool) (context.Context, func(), error) {
+	if err := p.enterCall(); err != nil {
+		return nil, nil, err
+	}
+	// Configuration-only memory operations do not publish their context to host
+	// callbacks or blocking I/O. Their caller/process cancellation checks and
+	// active-call drain remain the same; no child binding needs to be retired.
+	if memoryOnly {
+		return parent, p.leaveCall, nil
+	}
 	ctx, cancel := context.WithCancel(parent)
 	stop := context.AfterFunc(p.ctx, cancel)
-	return ctx, func() {
-		stop()
-		cancel()
-		p.mu.Lock()
-		p.active--
-		p.finishLocked()
-		p.mu.Unlock()
-	}, nil
+	return ctx, func() { stop(); cancel(); p.leaveCall() }, nil
 }
 func (p *Process) hold(fd uint32, rights Rights) (descriptor, func(), error) {
 	p.mu.Lock()
@@ -436,7 +447,7 @@ const writeRights = RightFdWrite | RightFdAllocate | RightFdDatasync | RightFdSy
 // Install publishes all 46 typed imports as one module binding. The Process
 // retains no Store or guest reference; closing one Store leaves siblings alive.
 func (p *Process) Install(store *vm.Store, linker *vm.Linker) error {
-	_, finish, err := p.begin(context.Background())
+	_, finish, err := p.begin(context.Background(), false)
 	if err != nil {
 		return err
 	}
@@ -454,29 +465,28 @@ func (p *Process) Install(store *vm.Store, linker *vm.Linker) error {
 		if def.name == "proc_exit" {
 			results = nil
 		}
-		ex, err := store.NewFunction(vm.FunctionType{Params: params, Results: results}, func(c *vm.Caller, args []vm.Value) ([]vm.Value, error) {
-			ctx, finish, err := p.begin(c.Context())
+		ex, err := store.NewScalarFunction(vm.FunctionType{Params: params, Results: results}, func(c *vm.Caller, stack []uint64) error {
+			ctx, finish, err := p.begin(c.Context(), def.memoryOnly)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			defer finish()
-			v := make([]uint64, len(args))
-			for i, arg := range args {
-				v[i], _, _ = arg.Bits()
-			}
 			call := abiCall{caller: c, ctx: ctx, p: p}
-			err = p.invoke(&call, def.name, v)
+			err = p.invoke(&call, def.name, stack[:len(def.signature)])
 			var exit *ExitError
 			if errors.As(err, &exit) {
-				return nil, exit
+				return exit
 			}
 			if processErr := p.ctx.Err(); processErr != nil {
-				return nil, processErr
+				return processErr
 			}
 			if ctx.Err() != nil {
-				return nil, ctx.Err()
+				return ctx.Err()
 			}
-			return []vm.Value{vm.I32(uint32(errno(err)))}, nil
+			if len(results) != 0 {
+				stack[0] = uint64(errno(err))
+			}
+			return nil
 		})
 		if err != nil {
 			return err

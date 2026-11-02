@@ -11,19 +11,22 @@ import (
 	"github.com/cpunion/wasmvm/pkg/vm"
 )
 
-type definition struct{ name, signature string }
+type definition struct {
+	name, signature string
+	memoryOnly      bool
+}
 
 var functions = []definition{
-	{"args_get", "ii"}, {"args_sizes_get", "ii"}, {"environ_get", "ii"}, {"environ_sizes_get", "ii"},
-	{"clock_res_get", "ii"}, {"clock_time_get", "iIi"}, {"fd_advise", "iIIi"}, {"fd_allocate", "iII"},
-	{"fd_close", "i"}, {"fd_datasync", "i"}, {"fd_fdstat_get", "ii"}, {"fd_fdstat_set_flags", "ii"}, {"fd_fdstat_set_rights", "iII"},
-	{"fd_filestat_get", "ii"}, {"fd_filestat_set_size", "iI"}, {"fd_filestat_set_times", "iIIi"}, {"fd_pread", "iiiIi"},
-	{"fd_prestat_get", "ii"}, {"fd_prestat_dir_name", "iii"}, {"fd_pwrite", "iiiIi"}, {"fd_read", "iiii"},
-	{"fd_readdir", "iiiIi"}, {"fd_renumber", "ii"}, {"fd_seek", "iIii"}, {"fd_sync", "i"}, {"fd_tell", "ii"}, {"fd_write", "iiii"},
-	{"path_create_directory", "iii"}, {"path_filestat_get", "iiiii"}, {"path_filestat_set_times", "iiiiIIi"}, {"path_link", "iiiiiii"},
-	{"path_open", "iiiiiIIii"}, {"path_readlink", "iiiiii"}, {"path_remove_directory", "iii"}, {"path_rename", "iiiiii"},
-	{"path_symlink", "iiiii"}, {"path_unlink_file", "iii"}, {"poll_oneoff", "iiii"}, {"proc_exit", "i"}, {"proc_raise", "i"},
-	{"sched_yield", ""}, {"random_get", "ii"}, {"sock_accept", "iii"}, {"sock_recv", "iiiiii"}, {"sock_send", "iiiii"}, {"sock_shutdown", "ii"},
+	{"args_get", "ii", true}, {"args_sizes_get", "ii", true}, {"environ_get", "ii", true}, {"environ_sizes_get", "ii", true},
+	{"clock_res_get", "ii", false}, {"clock_time_get", "iIi", false}, {"fd_advise", "iIIi", false}, {"fd_allocate", "iII", false},
+	{"fd_close", "i", false}, {"fd_datasync", "i", false}, {"fd_fdstat_get", "ii", false}, {"fd_fdstat_set_flags", "ii", false}, {"fd_fdstat_set_rights", "iII", false},
+	{"fd_filestat_get", "ii", false}, {"fd_filestat_set_size", "iI", false}, {"fd_filestat_set_times", "iIIi", false}, {"fd_pread", "iiiIi", false},
+	{"fd_prestat_get", "ii", false}, {"fd_prestat_dir_name", "iii", false}, {"fd_pwrite", "iiiIi", false}, {"fd_read", "iiii", false},
+	{"fd_readdir", "iiiIi", false}, {"fd_renumber", "ii", false}, {"fd_seek", "iIii", false}, {"fd_sync", "i", false}, {"fd_tell", "ii", false}, {"fd_write", "iiii", false},
+	{"path_create_directory", "iii", false}, {"path_filestat_get", "iiiii", false}, {"path_filestat_set_times", "iiiiIIi", false}, {"path_link", "iiiiiii", false},
+	{"path_open", "iiiiiIIii", false}, {"path_readlink", "iiiiii", false}, {"path_remove_directory", "iii", false}, {"path_rename", "iiiiii", false},
+	{"path_symlink", "iiiii", false}, {"path_unlink_file", "iii", false}, {"poll_oneoff", "iiii", false}, {"proc_exit", "i", false}, {"proc_raise", "i", false},
+	{"sched_yield", "", false}, {"random_get", "ii", false}, {"sock_accept", "iii", false}, {"sock_recv", "iiiiii", false}, {"sock_send", "iiiii", false}, {"sock_shutdown", "ii", false},
 }
 
 func (e Errno) Error() string { return fmt.Sprintf("WASI errno %d", uint16(e)) }
@@ -74,6 +77,19 @@ func (c *abiCall) u32(at uint64, v uint32) error {
 	var b [4]byte
 	binary.LittleEndian.PutUint32(b[:], v)
 	return c.write(at, b[:])
+}
+
+func (c *abiCall) u32Pair(first uint64, a uint32, second uint64, b uint32) error {
+	if first > 1<<32-4 || second > 1<<32-4 {
+		return ErrFault
+	}
+	var data [8]byte
+	binary.LittleEndian.PutUint32(data[:4], a)
+	binary.LittleEndian.PutUint32(data[4:], b)
+	if err := c.caller.WriteMemoryBatch(0, []vm.MemoryWrite{{Offset: first, Data: data[:4]}, {Offset: second, Data: data[4:]}}); err != nil {
+		return ErrFault
+	}
+	return nil
 }
 func (c *abiCall) u64(at, v uint64) error {
 	var b [8]byte
