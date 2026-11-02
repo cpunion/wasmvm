@@ -254,3 +254,75 @@ return before the defer. It joins #2957, #2958, #2959, #2965 and #2966 as an
 independent compiler/runtime finding. Nearby NewSlice2 calls and the complete
 GC/Go throughput difference remain investigations. No compiler pin is changed
 and no generic timing gap is filed as a new defect.
+
+## Native allocation follow-up candidate
+
+The [bounded batch comparison](performance-native-allocation-batches-2026-11-02.md)
+keeps the helper-only experiment and its adverse observations. A separate fixed
+twenty-block comparison against the current PR engine finds combined LLGo
+allocation-loop medians 63.831→56.883 ns/iteration, Go 47.500→46.394 and
+Wasmtime 107.000. The head still takes 1.226x Go's time. Independent counters
+reduce native publication batches 154→39 and third-call LLGo host allocation
+162032→38032 bytes for the unchanged globally retained 10000-node chain.
+The helper-only change removes an independently proved 80-byte idle-call
+allocation but does not alone establish a VM throughput gain. No duplicate
+LLGo issue or compiler upgrade is introduced. The combination remains on a
+follow-up branch while PR #101 checks run; cross-platform integration, startup,
+zero engine allocation and controlled portfolio acceptance remain open.
+## Coalesced-read prefix candidate
+
+The [complete twenty-case comparison](performance-prefix-chains-2026-11-02.md)
+reduces dispatch for already-coalesced local reads, preserving all original PCs,
+fuel and polling. LLGo interpreter integer/calls/memory improve 16.4%/12.6%/19.0%;
+integer/memory lead the named WasmEdge configuration in that local campaign.
+SIMD widening, lanes and RMW still take 1.47x/1.75x/1.97x its time.
+
+All 86 captured native bodies match, but a native GC regression and short wait
+regressions remain retained. A fresh native A/A follow-up narrows but does not
+close that uncertainty; the candidate is not integrated or performance-accepted.
+Go/LLGo allocation gaps and ordinary-C native memory deficit remain open.
+
+## Complete dispatcher/allocation integration candidate
+
+The [twenty-case combined comparison](performance-core-dispatch-allocation-2026-11-02.md)
+keeps exact native and interpreter baseline A/A controls. Both host compilers
+improve every nonempty interpreter case. LLGo native allocation improves
+62.604→54.746 ns/iteration, while short native controls retain material
+regressions. Guest-body identity does not waive them; controlled acceptance
+and integration remain open. Loop-aware reservation sizing is a candidate
+investigation for one-constructor functions, not an attributed result.
+
+The subsequent [general I32-prefix experiment](performance-all-i32-prefixes-held-2026-11-02.md)
+is held despite a memory/RMW win: LLGo float and SIMD-lane cases regress
+20.9%/25.2% against stable corresponding A/A controls. Its semantic checks
+pass, but its production code is excluded from this selected branch. The
+previous prefix implementation and all negative evidence remain preserved.
+
+## Loop-sensitive native reservations and upstream status
+
+The [seven-case native batch-sizing comparison](performance-native-batch-hints-2026-11-03.md)
+uses the exact combined source as its baseline, five interleaved blocks and
+Go/LLGo baseline A/A controls. LLGo short struct-access medians improve 11.2%,
+Go 5.2%; the loop retains the 256-handle batch and identical guest code. Native
+allocation regresses Go 4.4% and LLGo 2.1%, with respective A/A +0.8%/+2.0%.
+Every adverse block and first-call/setup sample remains retained. This is a
+local candidate, not final-head CI or controlled acceptance.
+
+The three deficits remain separate in that campaign: LLGo allocation takes
+1.169x Go's time; native struct access/indirect access take about 1.66x/1.86x
+Wasmtime; native scalar memory takes 1.566x unchecked C despite leading the
+named Wasmtime case. Adapter readiness is about 93.1 ms LLGo versus 3.9 ms Go,
+distinct from warm execution. No result from an earlier campaign is substituted.
+
+At the new upstream inspection, [LLGo #2959](https://github.com/xgo-dev/llgo/issues/2959)
+is closed by merged [#2963](https://github.com/xgo-dev/llgo/pull/2963). The
+pinned release-profile reproduction remains historical evidence; current
+upstream was not rebuilt or timed. #2932, #2957, #2958, #2965 and #2966 remain
+open, and #2971 remains an open contribution. No duplicate issue is created
+from an already-reported problem or an unexplained timing ratio.
+
+The [independent startup investigation](performance-llgo-startup-2026-11-03.md)
+reproduces the readiness deficit without VM work: os-only LLGo 34.112 ms versus
+Go 3.508 ms. A separate C GC/FFI control is 4.247 ms versus LLGo 34.052 ms.
+It is reported as [LLGo 2973](https://github.com/xgo-dev/llgo/issues/2973), explicitly retaining
+an open root cause and pinned-only scope. Warm execution remains a distinct gap.

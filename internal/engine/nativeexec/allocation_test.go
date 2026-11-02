@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cpunion/wasmvm/internal/compiler/lower"
+	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/core/validate"
@@ -22,7 +23,7 @@ func TestNativeAllocationPublicationOnTrapAndCancellation(t *testing.T) {
 	}
 	for _, canceled := range []bool{false, true} {
 		body := module.Expr{}
-		for range 63 {
+		for range nativeabi.HeapAllocationBatch - 1 {
 			body = append(body, module.Instr{Op: 0x41, Bits: 42}, module.Instr{Op: 0xfb0000}, module.Instr{Op: 0x1a})
 		}
 		if canceled {
@@ -45,7 +46,7 @@ func TestNativeAllocationPublicationOnTrapAndCancellation(t *testing.T) {
 			t.Fatal(err)
 		}
 		e, fn, lease := prepare(t, m)
-		if !lease.entries[fn.Code].nativeAllocations {
+		if lease.entries[fn.Code].allocationBatch != nativeabi.HeapAllocationBatch {
 			t.Fatal("constructor was not lowered")
 		}
 		if canceled {
@@ -83,10 +84,10 @@ func TestNativeAllocationPublicationOnTrapAndCancellation(t *testing.T) {
 		}
 		s := fn.Instance.Owner
 		_, count := s.NativeAllocationStats()
-		if count > 63 || !canceled && count != 63 || s.Usage().HeapObjects != count {
+		if count > nativeabi.HeapAllocationBatch-1 || !canceled && count != nativeabi.HeapAllocationBatch-1 || s.Usage().HeapObjects != count {
 			t.Fatal("exit lost committed allocations", canceled, count, s.Usage())
 		}
-		for index := uint64(1); index <= 64; index++ {
+		for index := uint64(1); index <= nativeabi.HeapAllocationBatch; index++ {
 			ref := uint64(1<<63|1<<32) | index
 			if s.IsLiveReference(ref) {
 				v, err := s.GC(context.Background(), fn.Instance, &module.Instr{Op: 0xfb0002}, []value.Value{{Lo: ref}})
@@ -95,7 +96,7 @@ func TestNativeAllocationPublicationOnTrapAndCancellation(t *testing.T) {
 				}
 			}
 		}
-		if _, err := s.PrepareNativeAllocations(); err != nil {
+		if _, err := s.PrepareNativeAllocations(nativeabi.HeapAllocationBatch); err != nil {
 			t.Fatal("exit leaked reservation", err)
 		}
 		if err := s.FinishNativeAllocations(fn.Instance.Types); err != nil {

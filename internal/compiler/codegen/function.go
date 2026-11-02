@@ -50,6 +50,7 @@ type CompiledFunction struct {
 	ForwardedHeap                 uint32
 	NativeBulk                    uint32
 	NativeAllocations             uint32
+	NativeAllocationBatch         uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -221,6 +222,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	a.dispatch(pcs)
 	out = &CompiledFunction{Function: originalFunction, Offsets: make([]uint32, len(pcs)), UsesMemory: e.usesMemory, GlobalIndices: globalIndices, UsesRuntimeData: usesRuntimeData}
 	out.HeapCaches = uint32(len(e.heapCaches))
+	out.NativeAllocationBatch = e.allocationBatch
 	for _, in := range f.Code {
 		if nativeVectorOpcode(in.Op) || nativeVectorMemoryOpcode(in.Op) {
 			out.NativeVectors++

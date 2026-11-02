@@ -19,7 +19,7 @@ func allocationStore(t *testing.T) (*Store, []uint32) {
 		t.Skip("native platform unavailable")
 	}
 	limits := DefaultLimits()
-	limits.MaxHeapObjects = 140
+	limits.MaxHeapObjects = 2*nativeabi.HeapAllocationBatch + 12
 	s := NewNative(limits)
 	t.Cleanup(s.Close)
 	types, ok := s.registry.InternModule(&module.Module{Types: []module.FuncType{{}, {}}, TypeDefs: []module.TypeDef{
@@ -60,15 +60,18 @@ func TestNativeAllocationBatchesPublishRootsQuotasAndReuse(t *testing.T) {
 	s, types := allocationStore(t)
 	var last, first uint64
 	for batch := 0; batch < 2; batch++ {
-		address, err := s.PrepareNativeAllocations()
+		if err := s.reserveNativePayload(nativeabi.HeapAllocationBatch * 12); err != nil {
+			t.Fatal(err)
+		}
+		address, err := s.PrepareNativeAllocations(nativeabi.HeapAllocationBatch)
 		if err != nil || address == 0 {
 			t.Fatal(address, err)
 		}
-		if _, err := s.PrepareNativeAllocations(); !errors.Is(err, wasm.ErrInvalid) {
+		if _, err := s.PrepareNativeAllocations(nativeabi.HeapAllocationBatch); !errors.Is(err, wasm.ErrInvalid) {
 			t.Fatal("overlapping batches", err)
 		}
 		for i := 0; i < nativeabi.HeapAllocationBatch; i++ {
-			last = stagedAllocation(t, s, 0, uint32(batch*64+i), last)
+			last = stagedAllocation(t, s, 0, uint32(batch*nativeabi.HeapAllocationBatch+i), last)
 			if first == 0 {
 				first = last
 			}
@@ -83,11 +86,12 @@ func TestNativeAllocationBatchesPublishRootsQuotasAndReuse(t *testing.T) {
 			t.Fatal("idle finish", err)
 		}
 	}
-	if s.Usage().HeapObjects != 128 || s.Usage().HeapBytes != 128*76 || s.nativeHeap.allocatedObjects != 128 || s.nativeHeap.allocationBatches != 2 {
+	const total = 2 * nativeabi.HeapAllocationBatch
+	if s.Usage().HeapObjects != total || s.Usage().HeapBytes != total*76 || s.nativeHeap.allocatedObjects != total || s.nativeHeap.allocationBatches != 2 {
 		t.Fatal("batch accounting", s.Usage())
 	}
 	s.CollectReferences([]ReferenceValue{{Type: wasm.AnyRef, Value: value.Value{Lo: last}}}, nil, nil)
-	for i := 127; i >= 0; i-- {
+	for i := total - 1; i >= 0; i-- {
 		o, ok := s.heapObject(last)
 		if !ok || o.get(0).Lo != uint64(i) {
 			t.Fatal("batch root chain lost", i, last)
@@ -98,7 +102,7 @@ func TestNativeAllocationBatchesPublishRootsQuotasAndReuse(t *testing.T) {
 		t.Fatal("unexpected chain tail")
 	}
 	s.CollectReferences(nil, nil, nil)
-	if _, err := s.PrepareNativeAllocations(); err != nil {
+	if _, err := s.PrepareNativeAllocations(nativeabi.HeapAllocationBatch); err != nil {
 		t.Fatal(err)
 	}
 	empty := stagedAllocation(t, s, 1, 0, 0)
@@ -111,7 +115,7 @@ func TestNativeAllocationBatchesPublishRootsQuotasAndReuse(t *testing.T) {
 	// A skipped constructor leaves all reserved handles available, including
 	// metadata pages that have not yet materialized their first object.
 	for range 3 {
-		if _, err := s.PrepareNativeAllocations(); err != nil {
+		if _, err := s.PrepareNativeAllocations(nativeabi.HeapAllocationBatch); err != nil {
 			t.Fatal(err)
 		}
 		if err := s.FinishNativeAllocations(types); err != nil {
@@ -119,11 +123,11 @@ func TestNativeAllocationBatchesPublishRootsQuotasAndReuse(t *testing.T) {
 		}
 	}
 	s.CollectEveryAllocation = true
-	if address, err := s.PrepareNativeAllocations(); err != nil || address != 0 {
+	if address, err := s.PrepareNativeAllocations(nativeabi.HeapAllocationBatch); err != nil || address != 0 {
 		t.Fatal("forced collection bypassed", address, err)
 	}
 	s.Close()
-	if _, err := s.PrepareNativeAllocations(); !errors.Is(err, wasm.ErrClosed) {
+	if _, err := s.PrepareNativeAllocations(nativeabi.HeapAllocationBatch); !errors.Is(err, wasm.ErrClosed) {
 		t.Fatal("closed heap", err)
 	}
 }
@@ -132,7 +136,7 @@ func TestNativeAllocationInvalidBatchesDiscardReservations(t *testing.T) {
 	for _, kind := range []string{"count", "cursor", "type", "address", "length", "shape"} {
 		t.Run(kind, func(t *testing.T) {
 			s, types := allocationStore(t)
-			if _, err := s.PrepareNativeAllocations(); err != nil {
+			if _, err := s.PrepareNativeAllocations(nativeabi.HeapAllocationBatch); err != nil {
 				t.Fatal(err)
 			}
 			ref := stagedAllocation(t, s, 0, 42, 0)
@@ -158,7 +162,7 @@ func TestNativeAllocationInvalidBatchesDiscardReservations(t *testing.T) {
 			if s.Usage().HeapObjects != 0 || s.nativeHeap.pendingCount != 0 || s.IsLiveReference(ref) {
 				t.Fatal("invalid batch leaked objects")
 			}
-			if _, err := s.PrepareNativeAllocations(); err != nil {
+			if _, err := s.PrepareNativeAllocations(nativeabi.HeapAllocationBatch); err != nil {
 				t.Fatal(err)
 			}
 			stagedAllocation(t, s, 0, 17, 0)
@@ -166,5 +170,72 @@ func TestNativeAllocationInvalidBatchesDiscardReservations(t *testing.T) {
 				t.Fatal("invalid batch poisoned next invocation", err)
 			}
 		})
+	}
+}
+
+func TestNativeAllocationBatchHonorsObjectQuota(t *testing.T) {
+	for _, quota := range []uint32{1, 63, 64, 65, nativeabi.HeapAllocationBatch - 1, nativeabi.HeapAllocationBatch, nativeabi.HeapAllocationBatch + 1} {
+		s, types := allocationStore(t)
+		s.limits.MaxHeapObjects = quota
+		address, err := s.PrepareNativeAllocations(nativeabi.HeapAllocationBatch)
+		count := uint64(min(quota, nativeabi.HeapAllocationBatch))
+		if err != nil || address == 0 || s.nativeHeap.pendingCount != count {
+			t.Fatal("reservation exceeded quota", quota, address, err)
+		}
+		for range count {
+			stagedAllocation(t, s, 1, 0, 0)
+		}
+		if err := s.FinishNativeAllocations(types); err != nil {
+			t.Fatal(quota, err)
+		}
+		if s.Usage().HeapObjects != count || s.Usage().HeapBytes != count*64 || s.nativeHeap.pendingCount != 0 {
+			t.Fatal("publication lost quota accounting", quota, s.Usage())
+		}
+		address, err = s.PrepareNativeAllocations(nativeabi.HeapAllocationBatch)
+		if err != nil || (address == 0) != (count == uint64(quota)) || s.nativeHeap.pendingCount != uint64(quota)-count {
+			t.Fatal("remaining quota not preserved", quota, address, err)
+		}
+		if err := s.FinishNativeAllocations(types); err != nil {
+			t.Fatal(quota, err)
+		}
+		s.CollectReferences(nil, nil, nil)
+		if s.Usage().HeapObjects != 0 || s.Usage().HeapBytes != 0 {
+			t.Fatal("batch objects survived unrooted collection", quota, s.Usage())
+		}
+	}
+}
+
+func TestNativeAllocationRequestedBatchBoundsAndPartialRelease(t *testing.T) {
+	s, types := allocationStore(t)
+	for _, invalid := range []uint32{0, nativeabi.HeapAllocationBatch + 1, ^uint32(0)} {
+		before := s.Usage()
+		if address, err := s.PrepareNativeAllocations(invalid); address != 0 || !errors.Is(err, wasm.ErrInvalid) {
+			t.Fatal("invalid reservation limit", invalid, address, err)
+		}
+		if s.Usage() != before || s.nativeHeap.pendingCount != 0 || len(s.heap) != 0 {
+			t.Fatal("invalid reservation changed heap")
+		}
+	}
+	for _, limit := range []uint32{1, 63, 64, 65, 255, 256, 64} {
+		address, err := s.PrepareNativeAllocations(limit)
+		if err != nil || address == 0 || s.nativeHeap.pendingCount != uint64(limit) {
+			t.Fatal("requested capacity", limit, address, err, s.nativeHeap.pendingCount)
+		}
+		ref := stagedAllocation(t, s, 1, 0, 0)
+		if err := s.FinishNativeAllocations(types); err != nil {
+			t.Fatal(err)
+		}
+		if !s.IsLiveReference(ref) || s.Usage().HeapObjects != 1 || s.nativeHeap.pendingCount != 0 || len(s.heapFree) != len(s.heap)-2 {
+			t.Fatal("partial batch lost objects or unused handles", limit, s.Usage())
+		}
+		s.CollectReferences(nil, nil, nil)
+	}
+	// The compiler's requested size remains subordinate to the store quota.
+	s.limits.MaxHeapObjects = 3
+	if _, err := s.PrepareNativeAllocations(nativeabi.HeapAllocationSmallBatch); err != nil || s.nativeHeap.pendingCount != 3 {
+		t.Fatal("small batch bypassed quota", err, s.nativeHeap.pendingCount)
+	}
+	if err := s.FinishNativeAllocations(types); err != nil {
+		t.Fatal(err)
 	}
 }

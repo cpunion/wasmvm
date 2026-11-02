@@ -159,6 +159,7 @@ type registerCandidate struct {
 // their separate shared physical pool. Every class is stable at every cold PC.
 func (e *functionEmitter) allocateRegisters(config Config, regions map[int]memoryRegion) {
 	frequencies := instructionFrequencies(e.f)
+	e.prepareAllocationBatch(frequencies)
 	weights := slotPriorities(e.f, regions, frequencies)
 	e.immediateRegisterCosts(weights, frequencies, regions)
 	var candidates []registerCandidate
