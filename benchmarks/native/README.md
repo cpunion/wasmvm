@@ -19,6 +19,21 @@ Use independent fixture oracles for longer and alternate-input checks.
 This C reference lacks Wasm bounds, fuel and cancellation checks; it has no VM
 validation/compilation phases. Keep those boundary differences visible.
 
+The separate [C11 atomic reference](c/atomic_baseline.c) adds the parameterized
+sequentially consistent RMW kernel. For example:
+
+```sh
+clang -std=c11 -D_POSIX_C_SOURCE=200809L -O3 -Wall -Wextra -Werror -o /tmp/native-atomic benchmarks/native/c/atomic_baseline.c
+/tmp/native-atomic atomic-rmw 0 100000000 100000000
+```
+
+It accepts positive counts through INT32_MAX and checks unsigned wrap results.
+The [long ARM64 comparison](../../docs/research/performance-native-atomic-c-2026-11-02.md)
+records native-CPU flags, sanitizers, assembly, independent controls and all phases;
+add `-mcpu=native` on ARM64 or the appropriate target-specific option explicitly
+when reproducing that optimized reference. Native C remains a separately labeled
+algorithm reference with fewer execution contracts.
+
 This probe runs the existing `integer-mix.wasm` directly through the project
 compiler and C entry adapter. It is not the public VM API: memory integration,
 guest-call dispatch and runtime helpers remain incomplete. Scalar numeric and

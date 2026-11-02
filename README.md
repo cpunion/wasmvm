@@ -15,6 +15,8 @@ wasmvm owns decoding, validation, compilation, execution, guest GC and host
 integration. Competing runtimes are independent test and benchmark references;
 execution never silently switches to one of them.
 
+Current optimization evidence: [competitor, Go/LLGo and ordinary-native gaps](docs/research/performance-gaps-2026-11-02.md), with per-case outcomes and upstream compiler reports. Performance acceptance remains open.
+
 ## Project status
 
 **Experimental; no tagged release or stable API commitment yet.** The module
