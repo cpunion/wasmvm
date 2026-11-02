@@ -145,7 +145,15 @@ func (e *Execution) push(fn *state.Function, dest []slots.Slot) error {
 		e.values = e.values[:needed]
 	}
 	clear(e.values[base:])
-	e.frames = append(e.frames, frame{function: fn, base: base, dest: dest})
+	// Reuse frame capacity directly; the pinned LLGo scalar append otherwise
+	// allocates temporary argument storage on every guest call.
+	i := len(e.frames)
+	if i == cap(e.frames) {
+		e.frames = append(e.frames, frame{})
+	} else {
+		e.frames = e.frames[:i+1]
+	}
+	e.frames[i] = frame{function: fn, base: base, dest: dest}
 	return nil
 }
 
