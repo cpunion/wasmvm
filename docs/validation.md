@@ -5297,3 +5297,25 @@ The benchmark PR comment names the final head and retains Go regressions.
 [benchmark run](https://github.com/cpunion/wasmvm/actions/runs/41386970959),
 [retained audit](research/evidence/pr95-final-ci-2026-11-02.json.gz).
 Controlled performance acceptance remains open.
+
+
+## PR #97 final native-memory audit
+
+PR [#97](https://github.com/cpunion/wasmvm/pull/97), final head `196fae5`, merged
+as `38692ea` after all 19 semantic checks, final benchmark/report jobs and review
+verification passed. Independently checked: all 19 artifact digests, 240 execution
+reports, 31 packages/compiler/platform, 12 LLGo traces plus single-package execution
+logs and all 30 coverage gates. The cancelled initial benchmark event was
+superseded by the successful labelled event.
+
+The final basic Linux benchmark took 6m15s. All 228 phase records, 76 summaries
+and 19 configurations validate. LLGo native scalar memory improves 1.823→1.649
+ns/iteration, Go 1.960→1.627, versus Wasmtime 0.944 / Wasmer 0.880. The x86 gap
+remains open; the longer local ARM64 win does not replace controlled acceptance.
+Two semantic jobs exceeded the desired 10m target: Linux component 10m44s and
+VM 10m17s. Both pass the unchanged 12m bound; no timeout is relabeled success.
+
+[Semantic run](https://github.com/cpunion/wasmvm/actions/runs/41403498249),
+[benchmark run](https://github.com/cpunion/wasmvm/actions/runs/41403501261),
+[retained semantic audit](research/evidence/pr97-final-ci-2026-11-02.json.gz),
+[complete benchmark](research/evidence/performance-pr97-linux-2026-11-02.json.gz).

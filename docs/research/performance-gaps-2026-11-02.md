@@ -75,3 +75,7 @@ retain pinned paths, URLs and content hashes without copying competitor sources.
 
 The [complete twenty-case atomic comparison](performance-atomic-combined-2026-11-02.md)
 confirms shared/RMW/wait interpreter gains and records why native expansion is held.
+
+[CPU profiles and a new independent channel-polling reproduction](performance-interpreter-profile-2026-11-02.md)
+identify an additional runtime cost, reported as [LLGo #2965](https://github.com/xgo-dev/llgo/issues/2965).
+Its current-main source was inspected, while timings remain for the pinned compiler.
