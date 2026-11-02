@@ -24,12 +24,18 @@ P2/P3 header-append modes, streaming echo through an outbound request, hash
 fanout and cloned/new field maps. Reactor tests call its actual string, imported
 stream and imported-record exports, rather than only its empty CLI entry.
 
-A separately named `p2_api_proxy_streaming-executor-lifetimes` stress variant
-transfers 160 KiB through 4 KiB body buffers. The sample executor in the
+A separately named `p2_api_proxy_streaming-executor-lifetimes` variant
+covers both the additional small duplex interaction and the 160 KiB stress
+interaction through 4 KiB body buffers. The small case is explicitly named
+`double-echo-executor-lifetimes`; the unchanged inventory still uses the
+original guest. The sample executor in the
 unchanged consumer retains nonready subscriptions while repolling futures; a
 future can then consume EOF and drop its stream with an old pollable still live.
 The strict runtime traps that invalid resource drop. The original large-body
 diagnostic is retained as a failure, not claimed as a successful original test.
+The original small duplex interaction also failed with a live pollable in
+[PR #95 race CI](https://github.com/cpunion/wasmvm/actions/runs/41383051587/job/125077801323).
+Neither original duplex failure is counted as a passing original interaction.
 Wasmtime 48.0.1 passed 40 ordinary and 100 paced diagnostic requests, so a
 reference-runtime failure is not claimed. The explicit patch retires all old
 subscriptions and wakes their futures for fresh registration. Its patch,

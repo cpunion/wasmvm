@@ -141,7 +141,7 @@ jobs:
             if [[ -f benchmark-results/cli/report.md ]]; then
               cat benchmark-results/cli/report.md
             else
-              printf 'The legacy reference CLI series runs only in full mode. Owned CLI timings are in the phase report.\n'
+              printf 'The legacy reference and owned production CLI series run only in full mode. API phase timings are above.\n'
             fi
           } > benchmark-results/report.md
           cat benchmark-results/report.md >> "$GITHUB_STEP_SUMMARY"

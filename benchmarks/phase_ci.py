@@ -437,7 +437,7 @@ def markdown(report):
               "Zero-duration or near-clock-cost controls are resolution-limited. Clock-pair samples are controls, not corrections. "
               "No disk compilation cache is enabled. Timings are advisory, with only three process repetitions and shared-runner noise; "
               "incorrect results, incomplete matrices, or broken protocols fail the job. These Go/LLGo/C embedding paths have different "
-              "host-call overhead, and the report does not claim to remove it. Native wasmvm is not implemented; "
+              "host-call overhead, and the report does not claim to remove it. "
               "hosted measurements do not pass the M2 controlled performance gates.", ""]
     return "\n".join(lines)
 

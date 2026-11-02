@@ -5239,3 +5239,18 @@ harness test link consuming 174.12 seconds, alongside CLI (296.40), component
 (222.30) and validator (192.29) links. The phase harness has only core/VM
 dependencies, so moving it to the lighter core group needs no additional
 corpora and reduces this imbalance without adding jobs or changing tests.
+
+
+## PR #95 duplex fixture lifetime diagnostic
+
+The Go race job at head `695ea2a7f76c9bc7eb7f6c445a3061e11e53e190`
+failed the extra original `native/double-echo` interaction with
+`IO stream 3 has live pollables`. This is consistent with the already documented
+sample-executor lifetime bug above; it does not establish a runtime data race
+or a new LLGo defect. The separately named small
+`double-echo-executor-lifetimes` interaction now uses the same pinned repaired
+executor as the existing large-body stress case. Its HTTP payload assertions
+remain unchanged. The 92 original consumer entries, sources, binary hashes,
+ordinary streaming inventory scenario and negative lifetime checks are retained.
+The original small and large duplex failures remain diagnostic failures,
+not successful original-source conformance claims.
