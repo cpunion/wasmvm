@@ -68,6 +68,39 @@ func TestIOStopWritesDrainsAcceptedPrefix(t *testing.T) {
 	}
 }
 
+func TestIOStopWritesWhileEmptyWorkerRetires(t *testing.T) {
+	_, stream := testIOStream(t, IOConfig{Stdout: NewOutputBuffer(4)}, false)
+	// pumpOutput has observed an empty queue and returned, but its worker has
+	// not yet published running=false. Shutdown arrives in that interval.
+	stream.mu.Lock()
+	stream.running = true
+	stream.mu.Unlock()
+	finished := make(chan struct{})
+	var count atomic.Uint32
+	stream.stopWrites(func() { count.Add(1); close(finished) })
+	select {
+	case <-finished:
+		t.Fatal("shutdown did not wait for worker retirement")
+	default:
+	}
+	stream.finishOutput()
+	select {
+	case <-finished:
+	case <-time.After(2 * time.Second):
+		t.Fatal("empty worker lost the shutdown completion")
+	}
+	stream.mu.Lock()
+	done := stream.workerDone
+	closed, pending := stream.closed, stream.onDrain != nil
+	stream.mu.Unlock()
+	if !closed || pending || count.Load() != 1 {
+		t.Fatal("shutdown did not finish exactly once", closed, pending, count.Load())
+	}
+	if done != nil {
+		<-done
+	}
+}
+
 func TestIOStopWritesAfterFailureAndDrop(t *testing.T) {
 	for _, mode := range []string{"failed", "drop"} {
 		t.Run(mode, func(t *testing.T) {
