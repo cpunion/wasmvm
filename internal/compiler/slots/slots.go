@@ -33,6 +33,8 @@ type Instruction struct {
 // Tail calls store only inputs, with no local result slots. Returns store Count
 // slots at Extra. Other operations have at most three inline operands and one
 // inline result.
+// Scalar constants store their low/high bits in Extra/Count. Local, global,
+// table, memory-size/grow and ref.func indices use Extra without a tuple.
 // Branches address Count edges starting at Extra; A is the condition/index.
 // Every instruction retains its original source and fuel boundary.
 type Edge struct{ PC, Start, Count uint32 }
@@ -241,6 +243,12 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 			// SSA locations remain stable after release. Integer operands, local
 			// copies and equal literals can alias; suspended call tuples cannot.
 			in := Instruction{Op: src.Wasm.Op, Source: op.Source, Dst: NoSlot, A: NoSlot, B: NoSlot, C: NoSlot}
+			switch {
+			case in.Op >= 0x41 && in.Op <= 0x44:
+				in.Extra, in.Count = uint32(src.Wasm.Bits), uint32(src.Wasm.Bits>>32)
+			case in.Op >= 0x20 && in.Op <= 0x26 || in.Op == 0x3f || in.Op == 0x40 || in.Op == 0xd2:
+				in.Extra = src.Wasm.A
+			}
 			if in.Op == 0x10 || in.Op == 0x11 || in.Op == 0x14 || in.Op>>16 == 0xfb || module.IsWideArithmetic(in.Op) || in.Op >= 0xe0 && in.Op <= 0xe6 {
 				in.Extra = uint32(len(out.Args))
 				if in.Op>>16 == 0xfb && len(op.Args) > 0 {

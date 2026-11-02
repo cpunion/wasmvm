@@ -468,16 +468,16 @@ frames:
 					result = a
 				}
 			case 0x20:
-				result = values[int(code.Sources[in.Source].Wasm.A)]
+				result = values[int(in.Extra)]
 			case 0x21, 0x22:
-				values[int(code.Sources[in.Source].Wasm.A)] = a
+				values[int(in.Extra)] = a
 				result = a
 			case 0x23:
-				result = instance.Globals[code.Sources[in.Source].Wasm.A].Value
+				result = instance.Globals[in.Extra].Value
 			case 0x24:
-				instance.Globals[code.Sources[in.Source].Wasm.A].Value = a
+				instance.Globals[in.Extra].Value = a
 			case 0x25:
-				table := instance.Tables[code.Sources[in.Source].Wasm.A]
+				table := instance.Tables[in.Extra]
 				index := table.Type.Limits.Address(a.Lo)
 				if index >= uint64(len(table.Values)) {
 					trap = wasm.TrapTableBounds
@@ -485,7 +485,7 @@ frames:
 					result.Lo = table.Values[index]
 				}
 			case 0x26:
-				table := instance.Tables[code.Sources[in.Source].Wasm.A]
+				table := instance.Tables[in.Extra]
 				index := table.Type.Limits.Address(a.Lo)
 				if index >= uint64(len(table.Values)) {
 					trap = wasm.TrapTableBounds
@@ -501,16 +501,16 @@ frames:
 				im := &code.Sources[in.Source].Wasm
 				trap = instance.Memories[im.Memory].Store(op, a.Lo, im.MemoryOffset(), 0, b)
 			case 0x3f:
-				result.Lo = uint64(instance.Memories[code.Sources[in.Source].Wasm.A].Pages())
+				result.Lo = uint64(instance.Memories[in.Extra].Pages())
 			case 0x40:
-				mem := instance.Memories[code.Sources[in.Source].Wasm.A]
+				mem := instance.Memories[in.Extra]
 				old, ok := e.store.GrowMemory(mem, mem.Limits().Address(a.Lo))
 				result.Lo = uint64(old)
 				if !ok {
 					result.Lo = mem.Limits().Failure()
 				}
 			case 0x41, 0x42, 0x43, 0x44:
-				result.Lo = code.Sources[in.Source].Wasm.Bits
+				result.Lo = uint64(in.Extra) | uint64(in.Count)<<32
 			case 0x45:
 				result.Lo = numeric.I32Eqz(a.Lo)
 			case 0x46:
@@ -654,7 +654,7 @@ frames:
 					result.Lo = 1
 				}
 			case 0xd2:
-				result.Lo = instance.Functions[code.Sources[in.Source].Wasm.A]
+				result.Lo = instance.Functions[in.Extra]
 			case 0x10, 0x11, 0x12, 0x13, 0x14, 0x15:
 				im := &code.Sources[in.Source].Wasm
 				tail := module.IsTailCall(op)
