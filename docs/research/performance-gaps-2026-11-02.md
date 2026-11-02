@@ -143,3 +143,17 @@ Native LLGo memory is 1.312 versus Wasmtime 0.670 ns/iteration. Native
 regressions remain retained; the diagnostic PR scope has no ordinary C kernel.
 Earlier ARM64 ordinary-C comparisons and later candidates stay separate.
 This integration does not close controlled performance or WASI world acceptance.
+
+
+## Coalesced-read prefix candidate
+
+The [complete twenty-case comparison](performance-prefix-chains-2026-11-02.md)
+reduces dispatch for already-coalesced local reads, preserving all original PCs,
+fuel and polling. LLGo interpreter integer/calls/memory improve 16.4%/12.6%/19.0%;
+integer/memory lead the named WasmEdge configuration in that local campaign.
+SIMD widening, lanes and RMW still take 1.47x/1.75x/1.97x its time.
+
+All 86 captured native bodies match, but a native GC regression and short wait
+regressions remain retained. A fresh native A/A follow-up narrows but does not
+close that uncertainty; the candidate is not integrated or performance-accepted.
+Go/LLGo allocation gaps and ordinary-C native memory deficit remain open.
