@@ -281,3 +281,19 @@ All 86 captured native bodies match, but a native GC regression and short wait
 regressions remain retained. A fresh native A/A follow-up narrows but does not
 close that uncertainty; the candidate is not integrated or performance-accepted.
 Go/LLGo allocation gaps and ordinary-C native memory deficit remain open.
+
+## Complete dispatcher/allocation integration candidate
+
+The [twenty-case combined comparison](performance-core-dispatch-allocation-2026-11-02.md)
+keeps exact native and interpreter baseline A/A controls. Both host compilers
+improve every nonempty interpreter case. LLGo native allocation improves
+62.604→54.746 ns/iteration, while short native controls retain material
+regressions. Guest-body identity does not waive them; controlled acceptance
+and integration remain open. Loop-aware reservation sizing is a candidate
+investigation for one-constructor functions, not an attributed result.
+
+The subsequent [general I32-prefix experiment](performance-all-i32-prefixes-held-2026-11-02.md)
+is held despite a memory/RMW win: LLGo float and SIMD-lane cases regress
+20.9%/25.2% against stable corresponding A/A controls. Its semantic checks
+pass, but its production code is excluded from this selected branch. The
+previous prefix implementation and all negative evidence remain preserved.
