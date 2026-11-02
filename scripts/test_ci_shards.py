@@ -1,8 +1,13 @@
 import copy
 import json
+import re
 import unittest
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
 
-from ci_shards import ROOT, validate
+from ci_shards import ROOT, validate, validate_matrix
 
 
 class ShardsTest(unittest.TestCase):
@@ -39,6 +44,26 @@ class ShardsTest(unittest.TestCase):
                     shards[0]['packages'] += ' ./pkg/wasm;echo'
                 with self.assertRaises(ValueError):
                     validate(shards)
+
+
+    def test_independent_matrix_preserves_every_shard(self):
+        workflow = (ROOT / '.github/workflows/ci.yml').read_text()
+        validate_matrix(self.shards, workflow)
+        for replacement in ('[]', '["core", "core", "vm", "component", "http", "async"]', '["missing"]'):
+            changed = re.sub(r'^        shard: \[[^\n]+\]$', '        shard: ' + replacement, workflow, flags=re.MULTILINE)
+            with self.assertRaises(ValueError):
+                validate_matrix(self.shards, changed)
+
+    def test_selected_job_uses_the_authoritative_package_and_input_lists(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for shard in self.shards:
+                target = Path(directory) / shard['name']
+                subprocess.run([sys.executable, str(ROOT / 'scripts/ci_shards.py'), '--shard', shard['name'], '--github-output', str(target)], check=True, capture_output=True)
+                self.assertEqual(target.read_text(), 'packages=' + shard['packages'] + '\ninputs=' + shard['inputs'] + '\n')
+            target = Path(directory) / 'invalid'
+            failed = subprocess.run([sys.executable, str(ROOT / 'scripts/ci_shards.py'), '--shard', 'missing', '--github-output', str(target)], capture_output=True)
+            self.assertNotEqual(failed.returncode, 0)
+            self.assertFalse(target.exists())
 
 
 if __name__ == '__main__':

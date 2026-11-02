@@ -38,15 +38,37 @@ def validate(shards, root=ROOT):
     return len(packages)
 
 
+
+def validate_matrix(shards, workflow=None):
+    # The owned workflow uses a JSON list so this check needs no YAML dependency.
+    if workflow is None:
+        workflow = (ROOT / '.github/workflows/ci.yml').read_text()
+    lists = re.findall(r'^        shard: (\[[^\n]+\])$', workflow, re.MULTILINE)
+    if len(lists) != 1:
+        raise ValueError('expected one explicit semantic shard matrix')
+    names = json.loads(lists[0])
+    if Counter(names) != Counter(shard['name'] for shard in shards):
+        raise ValueError('workflow shard matrix differs from the complete plan')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--github-output', type=Path)
+    parser.add_argument('--shard', help='select one independently scheduled semantic job')
     args = parser.parse_args()
     shards = json.loads((ROOT / '.github/llgo-shards.json').read_text())
     count = validate(shards)
+    validate_matrix(shards)
+    selected = next((s for s in shards if s['name'] == args.shard), None)
+    if args.shard and selected is None:
+        parser.error('unknown semantic shard: ' + args.shard)
     if args.github_output:
         with args.github_output.open('a') as output:
-            output.write('shards=' + json.dumps(shards, separators=(',', ':')) + '\n')
+            if selected is None:
+                output.write('shards=' + json.dumps(shards, separators=(',', ':')) + '\n')
+            else:
+                output.write('packages=' + selected['packages'] + '\n')
+                output.write('inputs=' + selected['inputs'] + '\n')
     print(f'Validated {count} test packages, once each across {len(shards)} LLGo shards')
 
 
