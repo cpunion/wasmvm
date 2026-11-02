@@ -155,6 +155,34 @@ required; earlier results are not relabeled as that head's measurements.
 [Regression and validation evidence](evidence/interpreter-i32-result-width-2026-11-02.json.gz).
 
 
+## Current PR head Linux follow-up
+
+The runtime benchmark job at `4e6cd7bb5898a12febcd2fa00745a0559528e534`
+passes in 5.02 minutes. All 228 phase records, 76 summaries and
+19 configurations validate. The artifact archive SHA-256 matches GitHub's
+digest; both Go/LLGo source inventories independently match git archives of
+the exact base/head commits (1,453/1,454 files). Both LLGo builds retain pinned
+`8e45ed5` and `-O3 -lto=full`. The earlier source's measurements remain separate.
+
+| Workload | Go interpreter base → head | LLGo interpreter base → head | WasmEdge interpreter |
+| --- | ---: | ---: | ---: |
+| Integer | 96.693 → 88.336 | 94.598 → 92.150 | 52.266 |
+| Guest calls | 125.714 → 117.362 | 143.184 → 139.162 | 69.647 |
+| Memory | 180.836 → 169.765 | 182.301 → 174.969 | 101.848 |
+
+Units: ns/source iteration. Go improves 6–9%, LLGo 2.6–4.0%. Native LLGo
+integer regresses 1.824→1.852; native memory improves 1.389→1.355 versus
+Wasmtime 0.738 and Wasmer 1.114. All remaining configurations/phases are in the
+[lossless current-head evidence](evidence/pr98-final-head-linux-2026-11-02.json.gz).
+The PR body now uses these current-head values, including the native regression.
+
+The benchmark-report job and the dual-platform semantic matrix still require
+completion; no current-head semantic artifacts or merge acceptance are inferred
+from this benchmark job. All competitor deficits and controlled acceptance stay
+open. Original queued-job observations are historical status, not a reason to
+restart a live workflow or reuse an earlier head's semantic success.
+
+
 ## Integrated final head
 
 PR #98 merged as `a00756b9241e6e08214f23445cf269bc7bba5e2d` after the

@@ -59,29 +59,35 @@ func (r *ioStream) runOutput() {
 			r.failLocked(errors.New("output source panicked"))
 			r.mu.Unlock()
 		}
-		r.mu.Lock()
-		r.running = false
-		if !r.dropped && !r.closed && r.ctx.Err() == nil && (len(r.queue) != 0 || r.flushing) {
-			r.startWorkerLocked()
-		}
-		r.notifyLocked()
-		dropped := r.dropped
-		finish := r.onDrain
-		if r.closed || r.ctx.Err() != nil {
-			r.onDrain = nil
-		} else {
-			finish = nil
-		}
-		r.mu.Unlock()
-		if finish != nil {
-			finish()
-		}
-		if dropped {
-			r.owner.finalize(r.id)
-		}
+		r.finishOutput()
 	}()
 	r.pumpOutput()
 	completed = true
+}
+
+func (r *ioStream) finishOutput() {
+	r.mu.Lock()
+	r.running = false
+	// Shutdown can arrive after pumpOutput observes an empty queue but before
+	// this worker retires. A successor must still consume its drain callback.
+	if !r.dropped && !r.closed && r.ctx.Err() == nil && (len(r.queue) != 0 || r.flushing || r.stopping) {
+		r.startWorkerLocked()
+	}
+	r.notifyLocked()
+	dropped := r.dropped
+	finish := r.onDrain
+	if r.closed || r.ctx.Err() != nil {
+		r.onDrain = nil
+	} else {
+		finish = nil
+	}
+	r.mu.Unlock()
+	if finish != nil {
+		finish()
+	}
+	if dropped {
+		r.owner.finalize(r.id)
+	}
 }
 
 // stopWrites revokes new write permits while preserving the accepted prefix.

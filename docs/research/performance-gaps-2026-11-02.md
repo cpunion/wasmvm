@@ -28,6 +28,7 @@ was not rebuilt; these reports do not assert its status.
 
 | Report | Independent observation | Local treatment |
 | --- | --- | --- |
+| [#2932](https://github.com/xgo-dev/llgo/issues/2932#issuecomment-6579659757) | A return before reaching defer still allocates about 64 reported bytes/call under the pinned full-LTO profile; static/captured defers report about 112/176 | Retain complete cleanup semantics; compiler setup sinking/open-coding remains upstream work |
 | [#2957](https://github.com/xgo-dev/llgo/issues/2957) | Append within existing capacity still materializes a temporary | Reuse admitted guest-frame capacity directly |
 | [#2959](https://github.com/xgo-dev/llgo/issues/2959#issuecomment-6566786471) | Uncancelled context.Err/atomic.Value.Load path allocates; unused return storage is materialized | Cache the execution-bound cancellation view for LLGo; retain Go's cheaper standard path |
 | [#2958](https://github.com/xgo-dev/llgo/issues/2958#issuecomment-6568684544) | Numeric-only Cgo scalar and two-word-result calls each allocate about 16 MB over one million calls; Go allocates zero | Direct LLGo C declarations for retained C-owned numeric memory; host-buffer checks remain |
@@ -132,6 +133,87 @@ These are separate scoped shared-host campaigns, with their own baseline A/A
 controls and every phase retained. Final-head cross-platform validation is
 pending; the result is a candidate, not an integrated or controlled parity claim.
 
+## Native comparison-liveness follow-up
+
+The [bounded unroll cleanup](performance-native-unroll-predicates-2026-11-02.md)
+keeps live comparison results but removes repeated writes before a proven
+overwrite. A capture of 86 body pairs changes only unmetered scalar/float64
+memory on amd64/arm64, each 24 bytes smaller. All metered and other captured
+functions remain byte-identical.
+
+The native-only scoped campaign uses 50 million core-memory iterations and
+five million for five other scalar workloads, matching counts for every engine and C.
+LLGo core memory improves 0.450242→0.442667 ns/iteration; every paired block
+improves 1.2–1.7%. Go improves as well. A/A calibration remains outside the
+controlled target; float64 is inconclusive and control regressions remain
+retained. The ordinary C memory control is still 0.265180 (a 1.67x gap).
+The diagnostic C CLI admits longer inputs with a separate safe float cap;
+its timed kernel assembly is unchanged. This small native cleanup does not
+replace the remaining induction, reduction, GC or SIMD work or the x86 gap.
+
+PR #98's [current-head Linux follow-up](performance-interpreter-extension-guard-2026-11-02.md#current-pr-head-linux-follow-up)
+also passes its runtime benchmark job and retains its native integer regression;
+semantic/report checks remain pending. The candidate branches do not replace
+that PR head's integration evidence.
+
+The [isolated reduction split](performance-native-reduction-held-2026-11-02.md)
+is held: its only changed native body is the target ARM64 memory loop, but every
+paired process block regresses for both Go and LLGo (median tables +2.61%/+2.14%).
+Passing semantics and resemblance to C's independent accumulators do not justify
+integrating it. The contribution branch retains the simpler implementation;
+repeated group control and address induction remain separate hypotheses.
+
+The [combined Linux preflight](performance-linux-combined-2026-11-02.md) also
+passes its scoped workflow and source/artifact audits, while retaining Go
+interpreter call/memory regressions and a 2.1% LLGo call regression. It does not
+replace PR #99's isolated result. Its native memory remains 1.33x Wasmtime.
+A compile-only allocation study identifies a concrete x86 issue: fixed-register
+weights favor literal operations that encode their operands directly, while a
+running local incurs a real frame store and two reloads per source iteration.
+Model those emitted costs before further speculative reduction complexity.
+
+
+## X86 immediate-cost investigation
+
+The [native cost-model candidate](performance-native-immediate-weights-2026-11-02.md)
+corrects an owned allocator mismatch: encoded literal work had displaced a
+running value, adding a store/two reloads per source iteration. Seven unmetered
+x86 bodies change; all ARM64/metered captures remain identical. Local Go/LLGo
+and emulated x86 semantics pass. The short real-Linux preflight improves LLGo
+memory 11.2% but regresses Go memory 1.5%; it is not a stable-win claim. Longer
+native/C comparisons below cover the nine kernels; final contribution validation
+and controlled acceptance remain pending. The
+compiler pin stays fixed; this is not reported upstream as an LLGo issue.
+
+
+The [ordinary-C mechanism comparison](performance-native-c-memory-mechanism-2026-11-02.md)
+finds no emitted-kernel change when disabling C vectorization. Disabling loop
+unrolling raises the observed C memory time 0.267→0.366 ns/iteration; wasmvm
+Go/LLGo remain about 0.448. C's induction updates and partial sums motivate
+compact compiler work; another speculative reduction rewrite is not accepted
+from source resemblance. A/A calibration and controlled performance remain open.
+
+
+The [longer x86 follow-up](performance-native-immediate-weights-2026-11-02.md#longer-linux-observations-eight-complete-cases)
+validates eight complete workloads from an explicitly failed nine-case workflow.
+Memory improves both Go/LLGo 11–12% with consistent paired blocks, yet LLGo
+remains 1.42x Wasmtime and 1.84x ordinary C. Narrow memory and dependent-address
+C gaps remain 2.26x/1.55x. The final struct-allocation reference-classification
+failure is retained; that missing case completes separately at its original
+manifest count below. Narrow/i31/Go
+struct-access regressions and A/A discrepancies remain visible. No new LLGo
+issue is inferred from these native throughput differences.
+
+
+The [bounded allocation follow-up](performance-native-immediate-weights-2026-11-02.md#remaining-allocation-case)
+passes separately at the manifest's original 10,000 retained allocations. The
+one-million request correctly exceeds unchanged heap limits and is retained as
+a resource rejection. Native LLGo allocation is 184.627 versus Go 102.263
+ns/iteration (1.81x); its apparent base/head gain is smaller than A/A drift.
+This sharpens the host-compiler allocation/collection investigation without
+inventing a new LLGo defect report. The nine-kernel observations span two
+separate hosts; no aggregate controlled performance claim is made.
+
 
 ## Integrated PR #99 Linux observations
 
@@ -143,3 +225,32 @@ Native LLGo memory is 1.312 versus Wasmtime 0.670 ns/iteration. Native
 regressions remain retained; the diagnostic PR scope has no ordinary C kernel.
 Earlier ARM64 ordinary-C comparisons and later candidates stay separate.
 This integration does not close controlled performance or WASI world acceptance.
+
+
+## Integrated packed loads
+
+PR #100's [final audit and scoped Linux evidence](performance-packed-vector-loads-2026-11-02.md#integrated-final-head-and-linux-follow-up)
+pass semantics and retain all diagnostic outcomes. Linux widening improves
+LLGo 33.5% but remains 1.65x WasmEdge and 1.23x Go; the separate complete lane
+follow-up remains 1.89x WasmEdge and 1.28x Go. Short PR scalar interpreter
+regressions of 3–7% remain unresolved; the longer scoped memory control improves
+and cannot substitute for integer/call cases. No controlled acceptance is closed.
+The native cost-model candidate remains separate from this merged implementation.
+
+## Three-gap follow-up: native group size and LLGo defer
+
+The [eight-copy native memory increment](performance-native-eight-copy-groups-2026-11-02.md)
+compares exact `872e257`/`25298a6` sources under both compilers, three native
+competitors and matching ordinary C. LLGo memory improves 0.451034→0.419618
+ns/iteration, versus Wasmtime 0.474800 and C 0.285740: a local competitor win,
+with a 1.469x C deficit still open. Narrow/dependent memory remain 1.481x/1.296x
+C and float remains 1.8% behind Wasmtime. Small control/float regressions and
+all baseline A/A observations are retained. Linux performance and final-head
+cross-platform CI are pending; the earlier x86 cost-model study is distinct.
+
+[The new defer reproduction](performance-llgo-defer-2026-11-02.md) confirms the
+existing #2932 issue on the pinned release profile, including allocation on a
+return before the defer. It joins #2957, #2958, #2959, #2965 and #2966 as an
+independent compiler/runtime finding. Nearby NewSlice2 calls and the complete
+GC/Go throughput difference remain investigations. No compiler pin is changed
+and no generic timing gap is filed as a new defect.
