@@ -111,7 +111,7 @@ def build_candidates(head, base, temporary):
     return builds
 
 
-def own_commands(builds):
+def own_commands(builds, native=False):
     result = []
     for ref in ("base", "head"):
         for compiler in ("go", "llgo"):
@@ -120,9 +120,10 @@ def own_commands(builds):
                 continue
             if build["status"] != "available":
                 raise ValueError("required own-engine build is unavailable")
-            for mode in ("api", "dispatch"):
-                result.append({"id": f"wasmvm-{ref}-{compiler}-{mode}", "engine": "wasmvm",
-                    "backend": "interpreter", "mode": mode, "hostCompiler": compiler,
+            for name in (("api", "dispatch", "native") if native else ("api", "dispatch")):
+                mode, backend = ("api", "native") if name == "native" else (name, "interpreter")
+                result.append({"id": f"wasmvm-{ref}-{compiler}-{name}", "engine": "wasmvm",
+                    "backend": backend, "mode": mode, "hostCompiler": compiler,
                     "compiler": "gc" if compiler == "go" else "llgo",
                     "compilerRevision": build["toolchain"]["revision"],
                     "sourceRevision": build["sourceRevision"], "sourceDigest": build["sourceDigest"],
@@ -131,8 +132,8 @@ def own_commands(builds):
     return result
 
 
-def runtime_commands(builds, c_directory, own_builds):
-    result = own_commands(own_builds)
+def runtime_commands(builds, c_directory, own_builds, native=False):
+    result = own_commands(own_builds, native)
     for name in ("base", "head"):
         for backend in ("interpreter", "compiler"):
             result.append({"id": f"{name}-{backend}", "backend": backend,
@@ -273,14 +274,23 @@ def summarize(report):
             raise ValueError("own-engine source digest mismatch")
         if build["status"] == "baseline-unavailable" and (not name.startswith("base-") or not build.get("reason")):
             raise ValueError("invalid baseline-unavailable provenance")
-    expected_own = {r["id"]: r for r in own_commands(report["ownBuilds"])}
+    native = report.get("ownNative", False)
+    if type(native) is not bool:
+        raise ValueError("invalid owned backend matrix")
+    expected_own = {r["id"]: r for r in own_commands(report["ownBuilds"], native)}
     expected_ids = set(ci.CONFIGURATIONS) | set(expected_own)
     if len(report["runtimes"]) != len(expected_ids) or set(runtimes) != expected_ids or len(workloads) != len(selection(report)) or set(workloads) != set(selection(report)):
         raise ValueError("incomplete embedded runtime/workload configuration")
     for name, expected in expected_own.items():
         if runtimes[name] != expected:
             raise ValueError("own-engine runtime does not match build provenance")
-    own_cli.summarize(report["productionCLI"], report["ownBuilds"], selected_fixtures(report))
+    if report["productionCLI"].get("status") == "not-requested":
+        if report.get("suite") != "pr" or not report["productionCLI"].get("reason") or any(
+                b["status"] != "baseline-unavailable" and b["cli"]["status"] != "not-requested"
+                for b in report["ownBuilds"].values()):
+            raise ValueError("production CLI scope does not match the declared suite")
+    else:
+        own_cli.summarize(report["productionCLI"], report["ownBuilds"], selected_fixtures(report))
     expected = {(r, w, n) for r in runtimes for w in workloads for n in range(ROUNDS)}
     seen = set()
     for item in report["observations"]:
@@ -292,7 +302,7 @@ def summarize(report):
     if seen != expected:
         raise ValueError("incomplete embedded process matrix")
     result = []
-    for runtime in CONFIGURATIONS:
+    for runtime in (*expected_own, *ci.CONFIGURATIONS):
         if runtime not in runtimes:
             continue
         for workload in selection(report):
@@ -345,6 +355,13 @@ def markdown(report):
     for workload in selection(report):
         unit = indexed[("wasmvm-head-go-api", workload)]["unit"]
         lines.append(f"| {workload} | {unit} | {own_cells(workload, 'go', 'api')} | {own_cells(workload, 'llgo', 'api')} |")
+    if report.get("ownNative", False):
+        lines += ["", "Owned native execution (same source and host compilers):", "",
+                  "| Workload | Unit | Go base | Head | Delta | LLGo base | Head | Delta |",
+                  "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
+        for workload in selection(report):
+            unit = indexed[("wasmvm-head-go-native", workload)]["unit"]
+            lines.append(f"| {workload} | {unit} | {own_cells(workload, 'go', 'native')} | {own_cells(workload, 'llgo', 'native')} |")
     for compiler in ("go", "llgo"):
         base = report["ownBuilds"][f"base-{compiler}"]
         head = report["ownBuilds"][f"head-{compiler}"]
@@ -375,7 +392,10 @@ def markdown(report):
         if "decode" in parts:
             values = " | ".join(f"{parts[key] / 1e6:.6f}" for key in ("decode", "validate", "lower", "slots"))
             lines.append(f"| {row['runtime']} | {row['workload']} | {values} |")
-    lines += ["", "</details>", "", own_cli.markdown(report["productionCLI"], report["ownBuilds"], selected_fixtures(report)),
+    cli_text = ("Production CLI latency: not requested in this PR scope; API process startup is measured separately above. Full runs retain the production CLI series."
+                if report["productionCLI"].get("status") == "not-requested" else
+                own_cli.markdown(report["productionCLI"], report["ownBuilds"], selected_fixtures(report)))
+    lines += ["", "</details>", "", cli_text,
               "### Wazero dependency selection (reference only)", ""]
     versions = report["builds"]
     lines += [f"wazero base `{versions['base']['version']}`, head `{versions['head']['version']}`; "
@@ -437,7 +457,7 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     report = {"schemaVersion": 1, "suite": args.suite, "status": "running", "baseSha": args.base_sha, "headSha": args.head_sha,
               "processRounds": ROUNDS, "samplesPerProcess": SAMPLES, "warmupsPerProcess": WARMUPS,
-              "processDeadlineSeconds": args.timeout,
+              "processDeadlineSeconds": args.timeout, "ownNative": True,
               "startedAt": datetime.now(timezone.utc).isoformat(), "observations": [],
               "host": {"platform": platform.platform(), "machine": platform.machine(), "logicalCPUs": os.cpu_count()},
               "seed": 20261026, "metric": "direct embedding API phase nanoseconds"}
@@ -454,11 +474,12 @@ def main():
         with tempfile.TemporaryDirectory(prefix="wasmvm-phase-") as temporary:
             temporary = Path(temporary)
             report["builds"] = build_candidates(head, base, temporary)
-            report["ownBuilds"] = own_build.build(head, base, temporary, args.base_sha, args.head_sha)
+            report["ownBuilds"] = own_build.build(head, base, temporary, args.base_sha, args.head_sha,
+                                                 native=True, include_cli=args.suite == "full")
             c_directory = temporary / "c"
             subprocess.run(["python3", str(head / "benchmarks/embedded/c/build.py"), "--tools-dir", str(args.tools_dir.resolve()),
                             "--output-dir", str(c_directory)], check=True, timeout=180)
-            report["runtimes"] = runtime_commands(report["builds"], c_directory, report["ownBuilds"])
+            report["runtimes"] = runtime_commands(report["builds"], c_directory, report["ownBuilds"], native=True)
             report["cBuild"] = json.loads((c_directory / "build.json").read_text())
             subprocess.run(["python3", str(head / "benchmarks/embedded/c/check.py"),
                             "--runners-dir", str(c_directory)], check=True, timeout=180)
@@ -481,8 +502,11 @@ def main():
             if args.suite == "full":
                 report["nativeFeature"] = native_compare.run(head, report["ownBuilds"], report["runtimes"],
                     next(w for w in report["fixtures"]["workloads"] if w["id"] == "integer-sustained"), invoke, args.timeout)
-            report["productionCLI"] = {"rounds": own_cli.ROUNDS, "runtimes": own_cli.configurations(report["ownBuilds"]), "observations": []}
-            own_cli.run(head, report["ownBuilds"], selected_fixtures(report), args.timeout, report["seed"], report["productionCLI"])
+            if args.suite == "full":
+                report["productionCLI"] = {"rounds": own_cli.ROUNDS, "runtimes": own_cli.configurations(report["ownBuilds"]), "observations": []}
+                own_cli.run(head, report["ownBuilds"], selected_fixtures(report), args.timeout, report["seed"], report["productionCLI"])
+            else:
+                report["productionCLI"] = {"status": "not-requested", "reason": "production CLI latency is measured in full runs"}
             report["summary"] = summarize(report)
             report["status"] = "complete"
     except Exception as error:

@@ -11,6 +11,43 @@ import own_build
 
 
 class IsolatedSourceTests(unittest.TestCase):
+    def test_phase_scope_omits_cli_links_without_changing_release_profiles(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            calls = []
+
+            def prepare(head, checkout, revision, target):
+                (target / "internal/bench/phase").mkdir(parents=True)
+                (target / "cmd/wasmvm").mkdir(parents=True)
+                (target / "cmd/wasmvm/main.go").write_text("package main\n")
+                sources = own_build.hashes(target, own_build.ENGINE_PATHS, own_build.HARNESS)
+                return {"status": "available", "sourceRevision": revision,
+                        "sourceHashes": sources, "sourceDigest": own_build.source_digest(sources)}
+
+            def run(command, **kwargs):
+                calls.append((command, kwargs["env"]))
+                Path(command[command.index("-o") + 1]).write_bytes(b"fixture binary")
+
+            tools = {name: {"command": name, "revision": name,
+                           "buildFlags": own_build.LLGO_BUILD_FLAGS if name == "llgo" else []}
+                     for name in ("go", "llgo")}
+            with patch.object(own_build, "prepare", side_effect=prepare), \
+                    patch.object(own_build, "toolchains", return_value=tools), \
+                    patch.object(own_build.subprocess, "run", side_effect=run), \
+                    patch.object(own_build.ci, "capture", return_value=own_build.MODULE + "/pkg/vm"):
+                builds = own_build.build(root, root, root, "a"*40, "b"*40, native=True, include_cli=False)
+            self.assertEqual(len(calls), 4)
+            for command, env in calls:
+                self.assertEqual(command[-1], "./benchmarks/embedded/wasmvm")
+                if command[0] == "llgo":
+                    self.assertEqual(command[2:4], ["-O3", "-lto=full"])
+                else:
+                    self.assertEqual(env["CGO_ENABLED"], "1")
+            for build in builds.values():
+                self.assertEqual(build["cli"]["status"], "not-requested")
+                self.assertEqual(set(build["buildTimingsNs"]), {"phaseNs"})
+                self.assertTrue(build["sourceHashes"])
+
     def commit(self, root):
         subprocess.run(["git", "-C", str(root), "add", "."], check=True, capture_output=True)
         subprocess.run(["git", "-C", str(root), "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
