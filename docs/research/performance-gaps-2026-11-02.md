@@ -254,3 +254,18 @@ return before the defer. It joins #2957, #2958, #2959, #2965 and #2966 as an
 independent compiler/runtime finding. Nearby NewSlice2 calls and the complete
 GC/Go throughput difference remain investigations. No compiler pin is changed
 and no generic timing gap is filed as a new defect.
+
+## Native allocation follow-up candidate
+
+The [bounded batch comparison](performance-native-allocation-batches-2026-11-02.md)
+keeps the helper-only experiment and its adverse observations. A separate fixed
+twenty-block comparison against the current PR engine finds combined LLGo
+allocation-loop medians 63.831→56.883 ns/iteration, Go 47.500→46.394 and
+Wasmtime 107.000. The head still takes 1.226x Go's time. Independent counters
+reduce native publication batches 154→39 and third-call LLGo host allocation
+162032→38032 bytes for the unchanged globally retained 10000-node chain.
+The helper-only change removes an independently proved 80-byte idle-call
+allocation but does not alone establish a VM throughput gain. No duplicate
+LLGo issue or compiler upgrade is introduced. The combination remains on a
+follow-up branch while PR #101 checks run; cross-platform integration, startup,
+zero engine allocation and controlled portfolio acceptance remain open.

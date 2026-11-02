@@ -103,3 +103,8 @@ batch-size effects are not mixed with the idle-wrapper effect. Controlled
 cross-platform performance, allocation and expanded WASI acceptance remain open.
 
 [Complete measurements, helper proof, source identities and validation](evidence/performance-native-idle-cleanup-2026-11-02.json.gz)
+
+The subsequent [bounded batch combination](performance-native-allocation-batches-2026-11-02.md)
+is measured against the original PR engine and this helper-only middle control
+in one twenty-block campaign. It is a separate follow-up candidate; the standalone
+regressions above remain recorded rather than being relabelled as gains.
