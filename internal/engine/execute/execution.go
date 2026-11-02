@@ -52,6 +52,7 @@ type HostCall struct {
 type Execution struct {
 	store        *state.Store
 	context      context.Context
+	done         <-chan struct{}
 	config       Config
 	frames       []frame
 	prompts      []prompt
@@ -71,7 +72,7 @@ func New(store *state.Store, ctx context.Context, config Config) *Execution {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	return &Execution{store: store, context: ctx, config: config, fuel: config.Fuel, status: Done}
+	return &Execution{store: store, context: ctx, done: ctx.Done(), config: config, fuel: config.Fuel, status: Done}
 }
 func (e *Execution) Fuel() uint64 { return e.fuel }
 
@@ -145,7 +146,15 @@ func (e *Execution) push(fn *state.Function, dest []slots.Slot) error {
 		e.values = e.values[:needed]
 	}
 	clear(e.values[base:])
-	e.frames = append(e.frames, frame{function: fn, base: base, dest: dest})
+	// Reuse frame capacity directly; the pinned LLGo scalar append otherwise
+	// allocates temporary argument storage on every guest call.
+	i := len(e.frames)
+	if i == cap(e.frames) {
+		e.frames = append(e.frames, frame{})
+	} else {
+		e.frames = e.frames[:i+1]
+	}
+	e.frames[i] = frame{function: fn, base: base, dest: dest}
 	return nil
 }
 
@@ -180,7 +189,18 @@ func (e *Execution) fail(err error) Status {
 // Abort releases every active frame and pending host request. Host drivers use
 // it in deferred panic cleanup before propagating the original host panic.
 func (e *Execution) Abort(err error) { e.fail(err) }
-func (e *Execution) poll() error     { return e.context.Err() }
+func (e *Execution) poll() error {
+	if e.done == nil {
+		// Retain Err-only contexts as well as the ordinary background context.
+		return e.context.Err()
+	}
+	select {
+	case <-e.done:
+		return e.context.Err()
+	default:
+		return nil
+	}
+}
 
 func (e *Execution) ResumeHost(results []value.Value, err error) error {
 	if e.status != HostRequest || e.pending == nil {
@@ -249,12 +269,11 @@ frames:
 				}
 			}
 			in := code.Code[pc]
-			source := &code.Sources[in.Source]
-			im := &source.Wasm
 			if metered {
+				source := &code.Sources[in.Source]
 				cost := source.Fuel()
 				if cost > e.fuel {
-					return e.fail(&wasm.Error{Kind: wasm.ErrLimit, Offset: im.Offset, Detail: "execution fuel"})
+					return e.fail(&wasm.Error{Kind: wasm.ErrLimit, Offset: source.Wasm.Offset, Detail: "execution fuel"})
 				}
 				e.fuel -= cost
 			}
@@ -277,6 +296,7 @@ frames:
 			var result value.Value
 			trap := wasm.NoTrap
 			if in.Op >= 0xe0 && in.Op <= 0xe6 {
+				im := &code.Sources[in.Source].Wasm
 				f.pc = pc
 				if err := e.stackInstruction(in, im); err != nil {
 					var t *wasm.Trap
@@ -322,6 +342,7 @@ frames:
 				continue
 			}
 			if in.Op>>16 == 0xfb {
+				im := &code.Sources[in.Source].Wasm
 				var err error
 				if n := state.GCAccessArity(in.Op); n != 0 {
 					// Slot lowering already supplies the first two operands.
@@ -391,6 +412,7 @@ frames:
 				}
 				index := uint32(0)
 				if kind == ir.IfCast {
+					im := &code.Sources[in.Source].Wasm
 					target := module.ResolveType(im.Types[1], instance.Types)
 					matched := false
 					if im.Op == 0xfb0025 || im.Op == 0xfb0026 {
@@ -431,6 +453,7 @@ frames:
 				f.pc = pc
 				var ex *state.Exception
 				if op == 8 {
+					im := &code.Sources[in.Source].Wasm
 					var local [8]value.Value
 					operands := local[:0]
 					if int(in.Count) > cap(operands) {
@@ -465,16 +488,16 @@ frames:
 					result = a
 				}
 			case 0x20:
-				result = values[int(im.A)]
+				result = values[int(in.Extra)]
 			case 0x21, 0x22:
-				values[int(im.A)] = a
+				values[int(in.Extra)] = a
 				result = a
 			case 0x23:
-				result = instance.Globals[im.A].Value
+				result = instance.Globals[in.Extra].Value
 			case 0x24:
-				instance.Globals[im.A].Value = a
+				instance.Globals[in.Extra].Value = a
 			case 0x25:
-				table := instance.Tables[im.A]
+				table := instance.Tables[in.Extra]
 				index := table.Type.Limits.Address(a.Lo)
 				if index >= uint64(len(table.Values)) {
 					trap = wasm.TrapTableBounds
@@ -482,7 +505,7 @@ frames:
 					result.Lo = table.Values[index]
 				}
 			case 0x26:
-				table := instance.Tables[im.A]
+				table := instance.Tables[in.Extra]
 				index := table.Type.Limits.Address(a.Lo)
 				if index >= uint64(len(table.Values)) {
 					trap = wasm.TrapTableBounds
@@ -491,21 +514,23 @@ frames:
 				}
 			case 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
 				0x30, 0x31, 0x32, 0x33, 0x34, 0x35:
+				im := &code.Sources[in.Source].Wasm
 				result, trap = instance.Memories[im.Memory].Load(op, a.Lo, im.MemoryOffset(), 0, value.Value{})
 			case 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d,
 				0x3e:
+				im := &code.Sources[in.Source].Wasm
 				trap = instance.Memories[im.Memory].Store(op, a.Lo, im.MemoryOffset(), 0, b)
 			case 0x3f:
-				result.Lo = uint64(instance.Memories[im.A].Pages())
+				result.Lo = uint64(instance.Memories[in.Extra].Pages())
 			case 0x40:
-				mem := instance.Memories[im.A]
+				mem := instance.Memories[in.Extra]
 				old, ok := e.store.GrowMemory(mem, mem.Limits().Address(a.Lo))
 				result.Lo = uint64(old)
 				if !ok {
 					result.Lo = mem.Limits().Failure()
 				}
 			case 0x41, 0x42, 0x43, 0x44:
-				result.Lo = im.Bits
+				result.Lo = uint64(in.Extra) | uint64(in.Count)<<32
 			case 0x45:
 				result.Lo = numeric.I32Eqz(a.Lo)
 			case 0x46:
@@ -649,8 +674,9 @@ frames:
 					result.Lo = 1
 				}
 			case 0xd2:
-				result.Lo = instance.Functions[im.A]
+				result.Lo = instance.Functions[in.Extra]
 			case 0x10, 0x11, 0x12, 0x13, 0x14, 0x15:
+				im := &code.Sources[in.Source].Wasm
 				tail := module.IsTailCall(op)
 				count := in.Count
 				inputs := code.Args[in.Extra : in.Extra+count]
@@ -758,12 +784,14 @@ frames:
 						e.store.Domain.Fence()
 						break
 					}
+					im := &code.Sources[in.Source].Wasm
 					var err error
 					result, trap, err = instance.Memories[im.Memory].Atomic(e.context, e.store.Domain, op&0xffff, a.Lo, im.MemoryOffset(), b.Lo, c.Lo)
 					if err != nil {
 						return e.fail(err)
 					}
 				case op>>16 == 0xfd:
+					im := &code.Sources[in.Source].Wasm
 					sub := op & 0xffff
 					switch {
 					case sub <= 10 || sub >= 84 && sub <= 87 || sub == 92 || sub == 93:
@@ -774,6 +802,7 @@ frames:
 						result = simd.Eval(im, a, b, c)
 					}
 				case op >= 0xfc0008 && op <= 0xfc0011:
+					im := &code.Sources[in.Source].Wasm
 					var err error
 					result, trap, err = e.bulk(instance, *im, a, b, c)
 					if err != nil {
@@ -784,7 +813,7 @@ frames:
 				}
 			}
 			if trap != wasm.NoTrap {
-				return e.fail(&wasm.Trap{Code: trap, Function: fn.Index, Offset: im.Offset})
+				return e.fail(&wasm.Trap{Code: trap, Function: fn.Index, Offset: code.Sources[in.Source].Wasm.Offset})
 			}
 			if in.Dst != slots.NoSlot {
 				values[int(in.Dst)] = result

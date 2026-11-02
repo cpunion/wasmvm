@@ -47,7 +47,7 @@ def main():
             runtimes = [{"id": "head-compiler", "command": [refs["head"]["binary"]]}]
             runtimes += [{"id": name+"-cranelift", "command": [str(c_dir / (name+"-phase"))]} for name in ("wasmtime", "wasmer")]
             if args.scope == "fixed-simd":
-                builds = own_build.build(head, base, temporary / "api", report["baseSha"], report["headSha"], native=True)
+                builds = own_build.build(head, base, temporary / "api", report["baseSha"], report["headSha"], native=True, include_cli=False)
                 report["ownBuilds"] = builds
                 report["fixedSIMD"] = native_simd.run(head, builds, runtimes)
                 report["status"] = report["fixedSIMD"]["status"]

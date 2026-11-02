@@ -7,6 +7,7 @@ import platform
 import shutil
 import subprocess
 import tarfile
+import time
 
 import ci
 
@@ -118,7 +119,7 @@ def prepare(head, checkout, revision, target):
             "harnessHashes": hashes(target, HARNESS)}
 
 
-def build(head, base, temporary, base_sha, head_sha, native=False):
+def build(head, base, temporary, base_sha, head_sha, native=False, include_cli=True):
     selected = toolchains()
     result = {}
     for name, checkout, revision in (("base", base, base_sha), ("head", head, head_sha)):
@@ -139,7 +140,11 @@ def build(head, base, temporary, base_sha, head_sha, native=False):
                 environment["CGO_ENABLED"] = "1" if native else "0"
             executable = target / "wasmvm-phase"
             command = [toolchain["command"], "build", *toolchain.get("buildFlags", []), "-o", str(executable), "./benchmarks/embedded/wasmvm"]
+            print(f"Building {name}/{compiler} phase runner ({revision})", flush=True)
+            started = time.perf_counter_ns()
             subprocess.run(command, cwd=target, env=environment, check=True, timeout=600)
+            timings = {"phaseNs": time.perf_counter_ns() - started}
+            print(f"Built {name}/{compiler} phase runner in {timings['phaseNs']/1e9:.2f}s", flush=True)
             dependencies = ci.capture([selected["go"]["command"], "list", "-deps", "./benchmarks/embedded/wasmvm"],
                                       cwd=target, env=environment).splitlines()
             if MODULE + "/pkg/vm" not in dependencies or any(
@@ -147,10 +152,16 @@ def build(head, base, temporary, base_sha, head_sha, native=False):
                                      "github.com/wasmerio/wasmer", "github.com/wasmedge")) for item in dependencies):
                 raise ValueError("own-engine executable contains an unexpected engine dependency")
             cli = {"status": "baseline-unavailable", "reason": "the selected revision predates cmd/wasmvm"}
-            if (target / "cmd/wasmvm/main.go").is_file():
+            if not include_cli:
+                cli = {"status": "not-requested", "reason": "production CLI latency is outside this benchmark scope"}
+            elif (target / "cmd/wasmvm/main.go").is_file():
                 cli_binary = target / "wasmvm-cli"
                 cli_command = [toolchain["command"], "build", *toolchain.get("buildFlags", []), "-o", str(cli_binary), "./cmd/wasmvm"]
+                print(f"Building {name}/{compiler} production CLI", flush=True)
+                started = time.perf_counter_ns()
                 subprocess.run(cli_command, cwd=target, env=environment, check=True, timeout=600)
+                timings["cliNs"] = time.perf_counter_ns() - started
+                print(f"Built {name}/{compiler} production CLI in {timings['cliNs']/1e9:.2f}s", flush=True)
                 cli = {"status": "available", "binary": str(cli_binary),
                        "binarySha256": digest(cli_binary), "buildCommand": cli_command}
             elif name == "head":
@@ -161,5 +172,6 @@ def build(head, base, temporary, base_sha, head_sha, native=False):
                 "binarySha256": digest(executable), "compiler": compiler, "toolchain": toolchain,
                 "buildCommand": command, "buildEnvironment": {k: environment.get(k) for k in
                     ("GOWORK", "GOFLAGS", "GOTOOLCHAIN", "CGO_ENABLED", "LLGO_ROOT")},
-                "generatedProvenanceSha256": digest(generated), "dependencies": dependencies, "cli": cli}
+                "generatedProvenanceSha256": digest(generated), "dependencies": dependencies, "cli": cli,
+                "buildTimingsNs": timings}
     return result

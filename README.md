@@ -335,6 +335,19 @@ amd64 and arm64, with stable shared growth and concurrent-entry ownership.
 Targeted comparisons retain baseline and interpreter regressions; controlled
 full-portfolio acceptance remains open.
 
+The [interpreter memory follow-up](docs/research/performance-interpreter-memory-2026-11-02.md)
+removes an unconditional LLGo result allocation and reduces scalar frame storage.
+Private reads/writes improve from 90 to 59 ns/iteration and SIMD widening from
+163 to 129; WasmEdge measures 40 and 63. Remaining deficits and both comparison
+campaigns are retained.
+
+The [dispatch and three-way gap audit](docs/research/performance-interpreter-dispatch-2026-11-02.md)
+compares named engines, Go versus LLGo, and six ordinary native C kernels.
+Reusable frames and cancellation polling reduce LLGo guest calls from 133 to
+93 ns/iteration; WasmEdge remains faster at 62. Memory/compiler gaps, empty-call
+regressions and rejected experiments remain recorded, with independent LLGo
+reproductions reported upstream.
+
 Benchmark CI is opt-in through the `run-benchmarks` PR label or
 [workflow dispatch](https://github.com/cpunion/wasmvm/actions/workflows/benchmarks.yml).
 It compares exact base/head sources and pinned competitors and posts results
@@ -351,7 +364,7 @@ go test -count=1 -timeout=10m ./...
 llgo test -O3 -lto=full -count=1 -timeout=10m ./...
 ```
 
-CI distributes all 31 test packages once across five LLGo shards per platform,
+CI distributes all 31 test packages once across six LLGo shards per platform,
 retaining `-O3 -lto=full`, with a separate CLI build, and separates Go semantics, race and quality work. It
 caches compiler-specific package objects and records LLGo build traces; the
 target is 5–10 minutes per job, subject to measured final-run acceptance.

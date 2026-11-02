@@ -3,16 +3,17 @@
 Initial design date: 2026-10-26. The historical research below is retained with
 its original evidence; the current implementation/CI contract is recorded here.
 
-## Current implementation and CI (2026-11-01)
+## Current implementation and CI (2026-11-02)
 
 The owned Core 2/3 interpreter and native compiler execute on Linux amd64 and
 macOS arm64 with Go 1.27.3 and LLGo `8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f`.
 LLGo semantics and CLI retain `-O3 -lto=full`. The root module declares Go 1.26;
 older-toolchain assumptions in the initial survey are historical.
 
-The workflow runs complete Go semantics on both platforms. LLGo uses five
-package groups per platform: core, VM/codegen, component/CLI tests, HTTP/P1, and
-P3/legacy threads. The checked [plan](../../.github/llgo-shards.json) assigns all
+The workflow runs complete Go semantics on both platforms. LLGo uses six
+package groups per platform: core, VM/codegen, component/CLI tests, HTTP/P1,
+P3, and legacy threads. The last two are separate after the measured combined
+job exceeded its budget; their full-LTO links and semantic tests remain intact. The checked [plan](../../.github/llgo-shards.json) assigns all
 31 test packages exactly once; [validation](../../scripts/ci_shards.py) rejects
 missing, duplicate or unlisted packages before the matrix starts. Each shard
 prepares only its required pinned corpora. The complete source/assertion scope

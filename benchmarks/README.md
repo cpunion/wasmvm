@@ -1,5 +1,17 @@
 # Runtime performance comparisons
 
+The `run-benchmarks` PR label runs the basic `pr` comparison and posts its
+exact base/head, Go/LLGo, interpreter/native and named competitor results to the
+PR. Its job has a ten-minute budget. Controlled sustained native acceptance is
+reserved for explicit `suite=full` or `suite=native-simd` workflow dispatches;
+ordinary PR measurements do not satisfy or waive those gates. This avoids
+rerunning the unchanged sustained integer campaign on interpreter-only changes.
+PR runs build one API/dispatch runner per revision and host compiler, then
+measure both interpreter and native execution from those same binaries. They
+retain API process startup and every guest phase; production CLI builds/timings
+run only in the explicit full suite. Build durations are recorded separately
+and printed as they complete, so linking delays remain visible.
+
 The [2026-11-01 owned-engine audit](../docs/research/performance-2026-11-01.md)
 measures the complete existing Core portfolio, modern GC/Threads and selected
 P1/component/P2/async boundaries. Dispatch Runtime benchmarks with `suite=survey`

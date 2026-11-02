@@ -315,6 +315,22 @@ buffers may coexist transiently during copying and until host collection, so
 the page quota bounds logical memory rather than process RSS. Store-wide memory
 accounting and scheduling of chunked bulk operations remain runtime work.
 
+Interpreter dispatch resolves original source metadata only when required for
+semantics, fuel or traps. Existing instruction words cache scalar constant bits
+and single indices; instruction size remains 32 bytes. Guest frames write
+directly into retained capacity, avoiding LLGo append temporaries on ordinary
+calls. Context binding caches Done once; a nonblocking poll calls Err only after
+closure, while nil-channel contexts retain Err polling. Rebind/quiescence update
+both references. The [three-way gap audit](../research/performance-interpreter-dispatch-2026-11-02.md)
+retains competitor, host-compiler and ordinary native C comparisons, including
+regressions and the rejected unchecked-frame experiment.
+
+Interpreter loads keep lane updates in value form, preventing a vector helper
+from forcing scalar results onto the host heap. Fixed opcode widths are read-only
+metadata, and scalar dispatch uses a smaller frame than the vector helper. The
+[paired comparison](../research/performance-interpreter-memory-2026-11-02.md)
+retains allocation-only and frame-outlining results separately.
+
 Ordinary native entries lower private single-memory `memory.fill`/`memory.copy`
 directly on both targets, including i64 addresses/counts. Complete checked ranges
 precede all writes. arm64 uses paired vector accesses with exact tails; amd64

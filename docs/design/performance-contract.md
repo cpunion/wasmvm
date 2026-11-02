@@ -72,6 +72,15 @@ This gives **nine configurations in the Go/reference series and four in the LLGo
 
 Each own-engine host compiler is evaluated independently. Go and LLGo results must not be pooled into one median. The native compiler must expose its actual selected backend and emitted-code identity; a requested native run that silently interprets is a correctness failure. The known LLGo/wazero native boundary does not excuse failures in wasmvm's own native backend.
 
+Every gap investigation keeps three comparisons distinct: named competing Wasm
+engines, Go versus pinned LLGo for the same backend/source, and an ordinary
+native implementation of the same algorithm where available. Native C is an
+explicitly unchecked reference, with its compiler flags and missing Wasm
+contracts recorded. Do not confuse this reference with wasmvm's native backend
+or interpret its missing VM setup phases as measured zeroes. Preserve per-case
+regressions and reproduce definite LLGo compiler/runtime defects independently
+before reporting them upstream; a throughput difference alone is not a defect.
+
 All participants receive the same head fixture bytes, runtime arguments, expected results, resource sizes, and shared feature profile. Record policy differences rather than asserting identical cancellation or metering semantics. Every kernel has finite inputs and an external process timeout. Pin reference versions, SDKs, backends, optimization settings, and checksums. Upgrading a reference is a separate recorded baseline event. Missing required tools, corpus files, or selected backends are infrastructure failures.
 
 ## 2. Direct, nonoverlapping measurement boundaries

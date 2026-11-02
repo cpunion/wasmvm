@@ -17,7 +17,7 @@ import own_cli
 PROJECT = Path(__file__).resolve().parent.parent
 
 
-def complete_report():
+def complete_report(native=False):
     fixtures = phase.load_workloads(PROJECT)
     runtimes = [{"id": name, "backend": "interpreter" if name.endswith("interpreter") else "compiler"}
                 for name in ci.CONFIGURATIONS]
@@ -33,7 +33,9 @@ def complete_report():
         "binary": f"/{ref}-{compiler}", "binarySha256": "d" * 64,
         "cli": {"status": "available", "binary": f"/{ref}-{compiler}-cli", "binarySha256": "e" * 64},
     } for ref in ("base", "head") for compiler in ("go", "llgo")}
-    runtimes.extend(phase.own_commands(report["ownBuilds"]))
+    if native:
+        report["ownNative"] = True
+    runtimes.extend(phase.own_commands(report["ownBuilds"], native))
     for runtime in runtimes:
         for workload in fixtures["workloads"]:
             for number in range(phase.ROUNDS):
@@ -121,12 +123,36 @@ class PhaseIntegrityTests(unittest.TestCase):
         self.assertEqual(len(phase.summarize(report)), 60)
         self.assertEqual(len(report["productionCLI"]["observations"]), 48)
         self.assertIn("PR suite", phase.markdown(report))
+        self.assertIn("do not accept the sustained native gate", phase.markdown(report))
         self.assertNotIn("| integer-sustained |", phase.markdown(report))
         report["observations"].pop()
         with self.assertRaisesRegex(ValueError, "incomplete"):
             phase.summarize(report)
         report["suite"] = "unknown"
         with self.assertRaisesRegex(ValueError, "unknown"):
+            phase.summarize(report)
+
+    def test_pr_api_native_matrix_without_unrequested_cli_builds(self):
+        report = complete_report(native=True)
+        report["suite"] = "pr"
+        omitted = {"integer-sustained", "memory-sustained"}
+        report["observations"] = [x for x in report["observations"] if x["workload"] not in omitted]
+        report["productionCLI"] = {"status": "not-requested", "reason": "full suite only"}
+        for b in report["ownBuilds"].values():
+            b["cli"] = {"status": "not-requested", "reason": "full suite only"}
+        self.assertEqual(len(report["observations"]), 228)
+        self.assertEqual(len(phase.summarize(report)), 76)
+        text = phase.markdown(report)
+        self.assertIn("Owned native execution", text)
+        self.assertIn("Production CLI latency: not requested", text)
+        native = next(r for r in report["runtimes"] if r["id"] == "wasmvm-head-llgo-native")
+        self.assertEqual((native["mode"], native["backend"]), ("api", "native"))
+        report["suite"] = "full"
+        with self.assertRaisesRegex(ValueError, "CLI scope"):
+            phase.summarize(report)
+        report["suite"] = "pr"
+        report["observations"].pop()
+        with self.assertRaisesRegex(ValueError, "incomplete"):
             phase.summarize(report)
 
     def test_reject_incomplete_duplicate_and_bad_measurements(self):
