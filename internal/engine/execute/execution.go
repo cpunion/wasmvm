@@ -281,10 +281,13 @@ frames:
 					return e.fail(err)
 				}
 			}
-			if in.Count != 0 && in.Op == 0x41 && !native && !metered && e.steps&63 != 63 {
-				// Commit the constant before its consumer. Crossing the next
-				// source polling boundary uses the ordinary two steps.
-				values[int(in.Dst)] = value.Value{Lo: uint64(in.Extra)}
+			for in.Count != 0 && (in.Op == 0x20 || in.Op == 0x41) && !native && !metered && e.steps&63 != 63 {
+				// Coalesced local reads already occupy their result slot.
+				// Commit constants before advancing, retaining every source
+				// step and stopping before the next polling boundary.
+				if in.Op == 0x41 {
+					values[int(in.Dst)] = value.Value{Lo: uint64(in.Extra)}
+				}
 				pc++
 				in = code.Code[pc]
 				e.steps++

@@ -1,11 +1,16 @@
 package slots
 
-// Keep both original PCs and semantics. Only uninterrupted unmetered execution
-// can use this hint; native and precise-fuel execution retain their own paths.
-func cacheIntegerPairs(f *Function, budget *budget) {
+// Keep original PCs and semantics. A coalesced local read changes no value;
+// the constant hint requires a pure following consumer. Only uninterrupted
+// unmetered interpretation can consume these prefixes without redispatching.
+func cachePrefixes(f *Function, budget *budget) {
 	budget.charge(uint64(len(f.Code)))
 	for pc := 0; pc+1 < len(f.Code); pc++ {
 		in, next := &f.Code[pc], f.Code[pc+1]
+		if in.Op == 0x20 && in.Dst != NoSlot && uint32(in.Dst) == in.Extra {
+			in.Count = 1
+			continue
+		}
 		if in.Op != 0x41 || in.Dst == NoSlot || next.B != in.Dst || next.A == NoSlot || next.A == in.Dst {
 			continue
 		}
