@@ -69,10 +69,8 @@ type Execution struct {
 }
 
 func New(store *state.Store, ctx context.Context, config Config) *Execution {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	return &Execution{store: store, context: ctx, done: ctx.Done(), config: config, fuel: config.Fuel, status: Done}
+	ctx, done := cancellationView(ctx)
+	return &Execution{store: store, context: ctx, done: done, config: config, fuel: config.Fuel, status: Done}
 }
 func (e *Execution) Fuel() uint64 { return e.fuel }
 

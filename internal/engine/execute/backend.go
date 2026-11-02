@@ -36,11 +36,7 @@ func (e *Execution) Rebind(ctx context.Context, limits Limits, metered bool, fue
 	if e.status == Running || e.status == HostRequest {
 		return errors.New("execution is not an idle workspace")
 	}
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	e.context = ctx
-	e.done = ctx.Done()
+	e.context, e.done = cancellationView(ctx)
 	e.config = Config{Limits: limits, Metered: metered, Fuel: fuel, Backend: e.config.Backend}
 	e.fuel, e.steps = fuel, 0
 	e.status, e.err = Done, nil
