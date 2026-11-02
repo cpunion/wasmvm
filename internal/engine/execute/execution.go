@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"math/bits"
-	"unsafe"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -241,7 +240,6 @@ frames:
 		instance := fn.Instance
 		pc := f.pc
 		values := e.values[base : base+len(code.Slots)]
-		frameBase := unsafe.Pointer(unsafe.SliceData(values))
 		for {
 			if native {
 				var err error
@@ -267,13 +265,13 @@ frames:
 			}
 			var a, b, c value.Value
 			if in.A != slots.NoSlot {
-				a = *frameSlot(frameBase, in.A)
+				a = values[int(in.A)]
 			}
 			if in.B != slots.NoSlot {
-				b = *frameSlot(frameBase, in.B)
+				b = values[int(in.B)]
 			}
 			if in.C != slots.NoSlot {
-				c = *frameSlot(frameBase, in.C)
+				c = values[int(in.C)]
 			}
 			var result value.Value
 			trap := wasm.NoTrap
@@ -356,7 +354,7 @@ frames:
 					return e.fail(err)
 				}
 				if in.Dst != slots.NoSlot {
-					*frameSlot(frameBase, in.Dst) = result
+					values[int(in.Dst)] = result
 				}
 				pc++
 				f.pc = pc
@@ -798,18 +796,12 @@ frames:
 				return e.fail(&wasm.Trap{Code: trap, Function: fn.Index, Offset: code.Sources[in.Source].Wasm.Offset})
 			}
 			if in.Dst != slots.NoSlot {
-				*frameSlot(frameBase, in.Dst) = result
+				values[int(in.Dst)] = result
 			}
 			pc++
 		}
 	}
 	panic("interp: running without frames")
-}
-
-// Frame indices are verified by slots.Compile. The enclosing slice still checks
-// the complete frame extent; calls, growth and reentry reacquire its base.
-func frameSlot(base unsafe.Pointer, slot slots.Slot) *value.Value {
-	return (*value.Value)(unsafe.Add(base, uintptr(slot)*unsafe.Sizeof(value.Value{})))
 }
 
 // RetainedValues covers reference slots in active or suspended frames. Slot

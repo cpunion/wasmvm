@@ -123,9 +123,6 @@ func Compile(m *lower.Module, limits Limits) (result *Module, err error) {
 			return nil, err
 		}
 		result.Functions[i] = compileFunction(f, &b)
-		if err := verifyFrameAccesses(result.Functions[i], &verify); err != nil {
-			return nil, err
-		}
 	}
 	return result, nil
 }
