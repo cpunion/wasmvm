@@ -345,6 +345,12 @@ func (m *Memory) loadVector(op uint32, address, offset uint64, lane byte, previo
 	case sub == 0:
 		return value.Value{Lo: m.readAccess(b, 8), Hi: m.readAccess(b[8:], 8)}, wasm.NoTrap
 	case sub >= 1 && sub <= 6:
+		if m.sharedSize == nil {
+			// Private bytes, or portable shared bytes under the domain lock,
+			// can be read once. Concurrent native shared bytes retain their
+			// existing per-lane accesses below.
+			return widenLoad(binary.LittleEndian.Uint64(b), sub), wasm.NoTrap
+		}
 		width := uint(1) << ((sub - 1) / 2)
 		for i := uint(0); i < 8/width; i++ {
 			x := m.readAccess(b[i*width:], width)
@@ -355,9 +361,15 @@ func (m *Memory) loadVector(op uint32, address, offset uint64, lane byte, previo
 		}
 	case sub >= 7 && sub <= 10:
 		x := m.readAccess(b, n)
-		for i := uint(0); i < 16/n; i++ {
-			r = withLane(r, n, i, x)
+		switch n {
+		case 1:
+			x *= 0x0101010101010101
+		case 2:
+			x *= 0x0001000100010001
+		case 4:
+			x |= x << 32
 		}
+		r.Lo, r.Hi = x, x
 	case sub >= 84 && sub <= 87:
 		r = previous
 		r = withLane(r, n, uint(lane), m.readAccess(b, n))
