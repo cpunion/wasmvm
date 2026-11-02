@@ -5395,3 +5395,13 @@ lane-only completion. Short PR scalar/native regressions and all competitor,
 Go/LLGo and controlled-acceptance gaps remain visible.
 [Final evidence](research/evidence/pr100-final-ci-2026-11-02.json.gz) and
 [complete report](research/performance-packed-vector-loads-2026-11-02.md#integrated-final-head-and-linux-follow-up).
+
+
+## Pending TCP shutdown during output-worker retirement
+
+The deterministic empty-worker retirement test fails before the correction and
+passes afterward. Fixed `52a873e` passes all 31 Go packages/30 coverage gates,
+pinned LLGo Preview2, package race/vet and ten original native TCP consumers.
+Final-head target CI remains required. The earlier PR101 Linux timeout is
+retained, with no deadline extension or consumer skip.
+[Race and proof](research/tcp-output-retirement-2026-11-02.md).

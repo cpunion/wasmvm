@@ -207,3 +207,15 @@ identical measured engine sources. The exact contribution-head dual-platform
 matrix and PR comparison are still required. The isolated cost-model Linux base
 already contains the comparison cleanup, so its 11–12% memory improvement is
 not relabelled as a measured combined change against main.
+
+
+## Earlier contribution CI and independent shutdown correction
+
+The `5f41558` contribution benchmark passes; native memory improves Go
+0.9084→0.8043 and LLGo 0.9061→0.8549 ns/iteration, versus Wasmtime 0.7218.
+All 228 observations/76 summaries/19 configurations and exact source inventories
+validate. Small integer/call regressions remain retained. Semantic CI exposes
+an existing [output shutdown retirement race](tcp-output-retirement-2026-11-02.md)
+in a metered TCP consumer. Its deterministic regression fails before correction;
+the contribution includes that bounded lifecycle fix and requires fresh final-
+head CI. Earlier source data remain separate; controlled acceptance stays open.
