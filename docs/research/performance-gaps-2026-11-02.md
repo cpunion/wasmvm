@@ -28,6 +28,7 @@ was not rebuilt; these reports do not assert its status.
 
 | Report | Independent observation | Local treatment |
 | --- | --- | --- |
+| [#2932](https://github.com/xgo-dev/llgo/issues/2932#issuecomment-6579659757) | A return before reaching defer still allocates about 64 reported bytes/call under the pinned full-LTO profile; static/captured defers report about 112/176 | Retain complete cleanup semantics; compiler setup sinking/open-coding remains upstream work |
 | [#2957](https://github.com/xgo-dev/llgo/issues/2957) | Append within existing capacity still materializes a temporary | Reuse admitted guest-frame capacity directly |
 | [#2959](https://github.com/xgo-dev/llgo/issues/2959#issuecomment-6566786471) | Uncancelled context.Err/atomic.Value.Load path allocates; unused return storage is materialized | Cache the execution-bound cancellation view for LLGo; retain Go's cheaper standard path |
 | [#2958](https://github.com/xgo-dev/llgo/issues/2958#issuecomment-6568684544) | Numeric-only Cgo scalar and two-word-result calls each allocate about 16 MB over one million calls; Go allocates zero | Direct LLGo C declarations for retained C-owned numeric memory; host-buffer checks remain |
@@ -235,3 +236,21 @@ follow-up remains 1.89x WasmEdge and 1.28x Go. Short PR scalar interpreter
 regressions of 3–7% remain unresolved; the longer scoped memory control improves
 and cannot substitute for integer/call cases. No controlled acceptance is closed.
 The native cost-model candidate remains separate from this merged implementation.
+
+## Three-gap follow-up: native group size and LLGo defer
+
+The [eight-copy native memory increment](performance-native-eight-copy-groups-2026-11-02.md)
+compares exact `872e257`/`25298a6` sources under both compilers, three native
+competitors and matching ordinary C. LLGo memory improves 0.451034→0.419618
+ns/iteration, versus Wasmtime 0.474800 and C 0.285740: a local competitor win,
+with a 1.469x C deficit still open. Narrow/dependent memory remain 1.481x/1.296x
+C and float remains 1.8% behind Wasmtime. Small control/float regressions and
+all baseline A/A observations are retained. Linux performance and final-head
+cross-platform CI are pending; the earlier x86 cost-model study is distinct.
+
+[The new defer reproduction](performance-llgo-defer-2026-11-02.md) confirms the
+existing #2932 issue on the pinned release profile, including allocation on a
+return before the defer. It joins #2957, #2958, #2959, #2965 and #2966 as an
+independent compiler/runtime finding. Nearby NewSlice2 calls and the complete
+GC/Go throughput difference remain investigations. No compiler pin is changed
+and no generic timing gap is filed as a new defect.

@@ -219,3 +219,14 @@ an existing [output shutdown retirement race](tcp-output-retirement-2026-11-02.m
 in a metered TCP consumer. Its deterministic regression fails before correction;
 the contribution includes that bounded lifecycle fix and requires fresh final-
 head CI. Earlier source data remain separate; controlled acceptance stays open.
+
+## Later bounded group-size increment
+
+PR #101 subsequently adds the independently measured
+[eight-copy group selection](performance-native-eight-copy-groups-2026-11-02.md)
+on `872e257`→`25298a6`. The earlier cost-model/contribution sizes and Linux
+rates above retain their own revisions; they are not relabelled as the expanded
+final source. The combined main comparison still changes ten of 86 bodies, but
+memory now grows to 3886 bytes on x86 and 3932 on ARM64. Every metered body
+still matches. The new ARM64 six-case study retains all phases and small
+regressions; Linux group-size performance and final-head CI are pending.
