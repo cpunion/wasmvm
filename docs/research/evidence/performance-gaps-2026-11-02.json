@@ -1,0 +1,45 @@
+{
+  "project": "WasmEdge",
+  "version": "0.17.1",
+  "revision": "0502c560d787d969c66f5676b9e11ac64bba3656",
+  "retrieval": "GitHub connected source at pinned commit",
+  "sources": [
+    {
+      "path": "lib/executor/engine/engine.cpp",
+      "url": "https://github.com/WasmEdge/WasmEdge/blob/0502c560d787d969c66f5676b9e11ac64bba3656/lib/executor/engine/engine.cpp",
+      "lines": 2120,
+      "sha256": "77f6c68775bd3d5fb162de66ee961334e3944b0d56e0a1e6de7404c01bdd7ac3"
+    },
+    {
+      "path": "include/executor/engine/atomic.ipp",
+      "url": "https://github.com/WasmEdge/WasmEdge/blob/0502c560d787d969c66f5676b9e11ac64bba3656/include/executor/engine/atomic.ipp",
+      "lines": 445,
+      "sha256": "b545067c687dfdcd4d077a76416cf36357d53c55dd7f6262d75107f61125bebb"
+    },
+    {
+      "path": "include/runtime/stackmgr.h",
+      "url": "https://github.com/WasmEdge/WasmEdge/blob/0502c560d787d969c66f5676b9e11ac64bba3656/include/runtime/stackmgr.h",
+      "lines": 233,
+      "sha256": "877f09712b4b76ed8dcf1794b496e22fb21ccd0cced50275cf69f1ef04eab330"
+    },
+    {
+      "path": "lib/executor/helper.cpp",
+      "url": "https://github.com/WasmEdge/WasmEdge/blob/0502c560d787d969c66f5676b9e11ac64bba3656/lib/executor/helper.cpp",
+      "lines": 583,
+      "sha256": "4bb6001b3e46ac87c2650359c659d3b350c757c0998b255919c0a8acd58bdad5"
+    },
+    {
+      "path": "lib/executor/engine/controlInstr.cpp",
+      "url": "https://github.com/WasmEdge/WasmEdge/blob/0502c560d787d969c66f5676b9e11ac64bba3656/lib/executor/engine/controlInstr.cpp",
+      "lines": 268,
+      "sha256": "9fd8fbb61fcd1a6d66d149266ae1ca9d3e324ccdcfe530af4cbe3c6fdb141232"
+    },
+    {
+      "path": "include/api/wasmedge/wasmedge_configure.h",
+      "url": "https://github.com/WasmEdge/WasmEdge/blob/0502c560d787d969c66f5676b9e11ac64bba3656/include/api/wasmedge/wasmedge_configure.h",
+      "lines": 477,
+      "sha256": "d5958ce659a4df5147e4c200776d33f3ef13e5adf28e43f72ec66e7b5ec925a5"
+    }
+  ],
+  "classification": "Pinned primary-source mechanism audit; no quantitative causal attribution"
+}

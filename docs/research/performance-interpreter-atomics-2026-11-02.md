@@ -140,3 +140,8 @@ runs use the CI cross-package coverage scope and pass. Both outcomes remain
 recorded. The pinned source root was recovered from an exact git archive after
 the original worktree disappeared externally; compiler and binary identities
 remain unchanged.
+
+A separate [long native C atomic probe](performance-native-atomic-c-2026-11-02.md)
+now supplies the missing ordinary-native RMW comparison. The [gap ledger and
+competitor mechanism audit](performance-gaps-2026-11-02.md) keep compiler defects,
+engine deficits and native comparisons distinct.
