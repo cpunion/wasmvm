@@ -364,7 +364,7 @@ go test -count=1 -timeout=10m ./...
 llgo test -O3 -lto=full -count=1 -timeout=10m ./...
 ```
 
-CI distributes all 31 test packages once across five LLGo shards per platform,
+CI distributes all 31 test packages once across six LLGo shards per platform,
 retaining `-O3 -lto=full`, with a separate CLI build, and separates Go semantics, race and quality work. It
 caches compiler-specific package objects and records LLGo build traces; the
 target is 5–10 minutes per job, subject to measured final-run acceptance.
