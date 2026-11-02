@@ -157,14 +157,24 @@ func (e *functionEmitter) overwrittenBeforeExit(pc int, slot slots.Slot) bool {
 		if remap, ok := e.addresses[pc]; ok {
 			address = remap.local
 		}
-		if address == slot || in.B == slot || in.C == slot || op == 0x20 && local == slot {
+		in.A = address
+		read, write := scalarSlotUse(in, local, slot)
+		if read {
 			return false
 		}
-		if in.Dst == slot || (op == 0x21 || op == 0x22) && local == slot {
+		if write {
 			return true
 		}
 	}
 	return false
+}
+
+// Operand reads precede destination writes, including local aliases. Both
+// ordinary fallthrough and proven unrolled continuations use this contract.
+func scalarSlotUse(in slots.Instruction, local, slot slots.Slot) (read, write bool) {
+	read = in.A == slot || in.B == slot || in.C == slot || in.Op == 0x20 && local == slot
+	write = in.Dst == slot || (in.Op == 0x21 || in.Op == 0x22) && local == slot
+	return
 }
 
 // Recognize the complete pattern without emitting code. Copy forwarding uses

@@ -11,6 +11,7 @@ type memoryUnroll struct {
 	constant      uint32
 	copies, exit  int
 	backYes       bool
+	keepPredicate bool
 }
 
 // Prove one unsigned, unit-stride local recurrence and an invariant bound.
@@ -148,7 +149,23 @@ func (e *functionEmitter) memoryUnroll(start int, r memoryRegion) *memoryUnroll 
 	if length*copies > 256 {
 		copies = 2
 	}
-	return &memoryUnroll{current.local, bound.local, bound.bias, copies, exit, backYes}
+	// No poll, trap or helper can observe the frame between these copies.
+	// Keep a repeated comparison result only if the next body can read it
+	// before overwriting it. The final comparison is always emitted normally.
+	keepPredicate := true
+	for pc := start; pc < r.end; pc++ {
+		in := e.f.Code[pc]
+		local := slots.Slot(e.f.Sources[in.Source].Wasm.A)
+		read, write := scalarSlotUse(in, local, cmp.Dst)
+		if read {
+			break
+		}
+		if write {
+			keepPredicate = false
+			break
+		}
+	}
+	return &memoryUnroll{current.local, bound.local, bound.bias, copies, exit, backYes, keepPredicate}
 }
 
 func (e *functionEmitter) emitMemoryUnroll(start int, r memoryRegion, pcs []int, out *CompiledFunction) {
@@ -181,14 +198,16 @@ func (e *functionEmitter) emitMemoryUnroll(start int, r memoryRegion, pcs []int,
 			e.emitMemoryRegionRange(start, r.end, r, pcs, out)
 		} else {
 			e.emitMemoryRegionRange(start, r.end-1, r, pcs, out)
-			// The guard proves these comparisons continue the loop. Keep their
-			// scalar results exact, even if a later iteration reads the slot.
-			predicate := uint64(1)
-			if !u.backYes {
-				predicate = 0
+			// The guard proves these comparisons continue the loop. A next
+			// iteration that can read the scalar still receives its exact value.
+			if u.keepPredicate {
+				predicate := uint64(1)
+				if !u.backYes {
+					predicate = 0
+				}
+				e.constant(0, predicate)
+				e.slotStore(cmp.Dst, 0, false)
 			}
-			e.constant(0, predicate)
-			e.slotStore(cmp.Dst, 0, false)
 		}
 	}
 	e.slotLoad(cmp.Dst, 0, false, false)
