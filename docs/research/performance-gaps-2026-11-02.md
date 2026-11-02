@@ -170,3 +170,45 @@ A compile-only allocation study identifies a concrete x86 issue: fixed-register
 weights favor literal operations that encode their operands directly, while a
 running local incurs a real frame store and two reloads per source iteration.
 Model those emitted costs before further speculative reduction complexity.
+
+
+## X86 immediate-cost investigation
+
+The [native cost-model candidate](performance-native-immediate-weights-2026-11-02.md)
+corrects an owned allocator mismatch: encoded literal work had displaced a
+running value, adding a store/two reloads per source iteration. Seven unmetered
+x86 bodies change; all ARM64/metered captures remain identical. Local Go/LLGo
+and emulated x86 semantics pass. The short real-Linux preflight improves LLGo
+memory 11.2% but regresses Go memory 1.5%; it is not a stable-win claim. Longer
+native/C comparisons below cover the nine kernels; final contribution validation
+and controlled acceptance remain pending. The
+compiler pin stays fixed; this is not reported upstream as an LLGo issue.
+
+
+The [ordinary-C mechanism comparison](performance-native-c-memory-mechanism-2026-11-02.md)
+finds no emitted-kernel change when disabling C vectorization. Disabling loop
+unrolling raises the observed C memory time 0.267→0.366 ns/iteration; wasmvm
+Go/LLGo remain about 0.448. C's induction updates and partial sums motivate
+compact compiler work; another speculative reduction rewrite is not accepted
+from source resemblance. A/A calibration and controlled performance remain open.
+
+
+The [longer x86 follow-up](performance-native-immediate-weights-2026-11-02.md#longer-linux-observations-eight-complete-cases)
+validates eight complete workloads from an explicitly failed nine-case workflow.
+Memory improves both Go/LLGo 11–12% with consistent paired blocks, yet LLGo
+remains 1.42x Wasmtime and 1.84x ordinary C. Narrow memory and dependent-address
+C gaps remain 2.26x/1.55x. The final struct-allocation reference-classification
+failure is retained; that missing case completes separately at its original
+manifest count below. Narrow/i31/Go
+struct-access regressions and A/A discrepancies remain visible. No new LLGo
+issue is inferred from these native throughput differences.
+
+
+The [bounded allocation follow-up](performance-native-immediate-weights-2026-11-02.md#remaining-allocation-case)
+passes separately at the manifest's original 10,000 retained allocations. The
+one-million request correctly exceeds unchanged heap limits and is retained as
+a resource rejection. Native LLGo allocation is 184.627 versus Go 102.263
+ns/iteration (1.81x); its apparent base/head gain is smaller than A/A drift.
+This sharpens the host-compiler allocation/collection investigation without
+inventing a new LLGo defect report. The nine-kernel observations span two
+separate hosts; no aggregate controlled performance claim is made.
