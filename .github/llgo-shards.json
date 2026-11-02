@@ -11,8 +11,8 @@
   },
   {
     "name": "component",
-    "packages": "./internal/component/canonical ./internal/component/decode ./internal/component/validate ./pkg/component ./internal/cli",
-    "inputs": "core2 core3 core_extensions preview1 wasi_threads component"
+    "packages": "./internal/component/canonical ./internal/component/decode ./internal/component/validate ./pkg/component",
+    "inputs": "component"
   },
   {
     "name": "http",
@@ -25,8 +25,8 @@
     "inputs": "component"
   },
   {
-    "name": "threads",
-    "packages": "./pkg/wasi/threads",
-    "inputs": "wasi_threads"
+    "name": "entry",
+    "packages": "./internal/cli ./pkg/wasi/threads",
+    "inputs": "core2 core3 core_extensions preview1 wasi_threads component"
   }
 ]
