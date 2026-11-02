@@ -59,7 +59,6 @@ establishes controlled parity. Full observations remain in the
 
 | Sustained native, ns/iteration | Go base | Head | LLGo base | Head | Wasmtime | Wasmer | wazero compiler |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-
 | threads/shared-memory | 0.863 | 0.843 | 0.832 | 0.841 | 0.992 | 0.979 | 1.138 |
 | runtime/simd-memory-full | 3.247 | 3.258 | 3.062 | 3.238 | 3.358 | 3.227 | 3.508 |
 | runtime/simd-memory-widen | 1.056 | 1.051 | 1.029 | 1.016 | 1.018 | 1.014 | 1.111 |
