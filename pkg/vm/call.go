@@ -254,11 +254,16 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 }
 func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]value.Value, error) {
 	s := op.store
-	s.mu.Lock()
-	args, err := s.encodeValuesLocked(request.Args, request.Function.Signature.Params)
-	s.mu.Unlock()
-	if err != nil {
-		return nil, err
+	scalar, isScalar := request.Function.Host.(ScalarHostFunction)
+	var args []Value
+	var err error
+	if !isScalar {
+		s.mu.Lock()
+		args, err = s.encodeValuesLocked(request.Args, request.Function.Signature.Params)
+		s.mu.Unlock()
+		if err != nil {
+			return nil, err
+		}
 	}
 	caller := &Caller{active: true, op: op, instance: in}
 	panicked := true
@@ -278,6 +283,19 @@ func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]valu
 			v.Release()
 		}
 	}()
+	if isScalar {
+		signature := FunctionType(request.Function.Signature)
+		stack := scalarStack(request.Args, signature)
+		err = scalar(caller, stack)
+		panicked = false
+		if err != nil {
+			return nil, op.hostError(err)
+		}
+		caller.mu.Lock()
+		caller.active = false
+		caller.mu.Unlock()
+		return scalarResults(stack, signature.Results), nil
+	}
 	var results []Value
 	var errResult error
 	if host, ok := request.Function.Host.(SuspendableHostFunction); ok {

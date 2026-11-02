@@ -454,29 +454,28 @@ func (p *Process) Install(store *vm.Store, linker *vm.Linker) error {
 		if def.name == "proc_exit" {
 			results = nil
 		}
-		ex, err := store.NewFunction(vm.FunctionType{Params: params, Results: results}, func(c *vm.Caller, args []vm.Value) ([]vm.Value, error) {
+		ex, err := store.NewScalarFunction(vm.FunctionType{Params: params, Results: results}, func(c *vm.Caller, stack []uint64) error {
 			ctx, finish, err := p.begin(c.Context())
 			if err != nil {
-				return nil, err
+				return err
 			}
 			defer finish()
-			v := make([]uint64, len(args))
-			for i, arg := range args {
-				v[i], _, _ = arg.Bits()
-			}
 			call := abiCall{caller: c, ctx: ctx, p: p}
-			err = p.invoke(&call, def.name, v)
+			err = p.invoke(&call, def.name, stack[:len(def.signature)])
 			var exit *ExitError
 			if errors.As(err, &exit) {
-				return nil, exit
+				return exit
 			}
 			if processErr := p.ctx.Err(); processErr != nil {
-				return nil, processErr
+				return processErr
 			}
 			if ctx.Err() != nil {
-				return nil, ctx.Err()
+				return ctx.Err()
 			}
-			return []vm.Value{vm.I32(uint32(errno(err)))}, nil
+			if len(results) != 0 {
+				stack[0] = uint64(errno(err))
+			}
+			return nil
 		})
 		if err != nil {
 			return err
