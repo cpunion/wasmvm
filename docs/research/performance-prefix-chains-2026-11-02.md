@@ -1,6 +1,6 @@
 # Coalesced local-read prefixes: 2026-11-02
 
-Status: candidate held for further native-regression and cross-platform review,
+Status: candidate awaiting final native-regression and cross-platform review,
 not integrated or performance-accepted. Base `ed5a0fb837b7d54da61c2847f6aae30c777d1e36`,
 engine `d8a35692817833bb77fc2a52b6e4200fb23d7b03`.
 
@@ -110,3 +110,14 @@ Linux/ARM64 checks remain open.
 [Lossless evidence](evidence/performance-prefix-chains-2026-11-02.json.gz)
 retains both complete campaigns, all unfavorable observations, A/A controls,
 source/binary/toolchain/SDK identities, capture/measurement programs, and tests.
+
+
+## Eligibility guard follow-up
+
+The [guard-order experiment](performance-prefix-guard-held-2026-11-02.md) is
+rejected: LLGo memory is 25.1% slower than this earlier prefix implementation.
+The exact `d8a3569` engine/test sources are restored. A native/interpreter A/A
+comparison again fails to reproduce the original native GC regression at its
+initial magnitude; all three campaigns and unfavorable outcomes stay retained.
+Proceed with this compact earlier implementation's final target validation;
+controlled regression/whole-portfolio acceptance remains open.
