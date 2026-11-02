@@ -27,7 +27,7 @@ func TestQuiesceRebindPolicyAndBorrowedResults(t *testing.T) {
 	}
 	results := e.Results()
 	e.Quiesce()
-	if results[0].Lo != 42 || len(e.frames) != 0 || e.pending != nil || e.context != context.Background() {
+	if results[0].Lo != 42 || len(e.frames) != 0 || e.pending != nil || e.context != context.Background() || e.done != nil {
 		t.Fatal("quiescence lost results or retained invocation roots")
 	}
 	for _, limits := range []Limits{{}, DefaultLimits()} {
@@ -51,6 +51,23 @@ func TestQuiesceRebindPolicyAndBorrowedResults(t *testing.T) {
 	}
 	if err := e.Start(in.Functions[0], nil); err != nil || e.Run() != Failed || !errors.Is(e.Err(), context.Canceled) {
 		t.Fatal(err, e.Err())
+	}
+	e.Quiesce()
+	// A cached cancellation channel must be replaced with each invocation.
+	ctx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+	if err := e.Rebind(ctx, DefaultLimits(), false, 0); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.Start(in.Functions[0], nil); err != nil || e.Run() != Done {
+		t.Fatal("retained previous cancellation", err, e.Err())
+	}
+	if err := e.Start(in.Functions[0], nil); err != nil {
+		t.Fatal(err)
+	}
+	cancel()
+	if e.Run() != Failed || !errors.Is(e.Err(), context.Canceled) {
+		t.Fatal("lost rebound cancellation", e.Err())
 	}
 	e.Quiesce()
 	host, err := s.NewHost(module.FuncType{}, "host")

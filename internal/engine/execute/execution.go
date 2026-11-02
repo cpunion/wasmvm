@@ -52,6 +52,7 @@ type HostCall struct {
 type Execution struct {
 	store        *state.Store
 	context      context.Context
+	done         <-chan struct{}
 	config       Config
 	frames       []frame
 	prompts      []prompt
@@ -71,7 +72,7 @@ func New(store *state.Store, ctx context.Context, config Config) *Execution {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	return &Execution{store: store, context: ctx, config: config, fuel: config.Fuel, status: Done}
+	return &Execution{store: store, context: ctx, done: ctx.Done(), config: config, fuel: config.Fuel, status: Done}
 }
 func (e *Execution) Fuel() uint64 { return e.fuel }
 
@@ -188,7 +189,18 @@ func (e *Execution) fail(err error) Status {
 // Abort releases every active frame and pending host request. Host drivers use
 // it in deferred panic cleanup before propagating the original host panic.
 func (e *Execution) Abort(err error) { e.fail(err) }
-func (e *Execution) poll() error     { return e.context.Err() }
+func (e *Execution) poll() error {
+	if e.done == nil {
+		// Retain Err-only contexts as well as the ordinary background context.
+		return e.context.Err()
+	}
+	select {
+	case <-e.done:
+		return e.context.Err()
+	default:
+		return nil
+	}
+}
 
 func (e *Execution) ResumeHost(results []value.Value, err error) error {
 	if e.status != HostRequest || e.pending == nil {

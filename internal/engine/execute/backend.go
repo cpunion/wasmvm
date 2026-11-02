@@ -15,6 +15,7 @@ import (
 func (e *Execution) Quiesce() {
 	e.Abort(nil)
 	e.context = context.Background()
+	e.done = nil
 	e.status = Done
 }
 
@@ -39,6 +40,7 @@ func (e *Execution) Rebind(ctx context.Context, limits Limits, metered bool, fue
 		ctx = context.Background()
 	}
 	e.context = ctx
+	e.done = ctx.Done()
 	e.config = Config{Limits: limits, Metered: metered, Fuel: fuel, Backend: e.config.Backend}
 	e.fuel, e.steps = fuel, 0
 	e.status, e.err = Done, nil
