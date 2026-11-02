@@ -289,16 +289,19 @@ func (m *Memory) access(address, offset uint64, size uint) ([]byte, bool) {
 	return m.bytes[int(at):int(at+uint64(size))], true
 }
 
+// Fixed widths stay outside the per-access frame. Tables are read-only.
+var scalarLoadWidths = [...]uint8{4, 8, 4, 8, 1, 1, 2, 2, 1, 1, 2, 2, 4, 4}
+var scalarStoreWidths = [...]uint8{4, 8, 4, 8, 1, 2, 1, 2, 4}
+
 // Load implements every scalar and fixed-SIMD load, including lane operations.
 // The address addition is widened before bounds checking. All immediates and
 // lane indexes must have passed validation. previous supplies load_lane's input.
-func (m *Memory) load(op uint32, address, offset uint64, lane byte, previous value.Value) (r value.Value, trap wasm.TrapCode) {
+func (m *Memory) load(op uint32, address, offset uint64, lane byte, previous value.Value) (value.Value, wasm.TrapCode) {
 	if op >= 0x28 && op <= 0x35 {
-		sizes := [14]uint{4, 8, 4, 8, 1, 1, 2, 2, 1, 1, 2, 2, 4, 4}
-		n := sizes[op-0x28]
+		n := uint(scalarLoadWidths[op-0x28])
 		b, ok := m.access(address, offset, n)
 		if !ok {
-			return r, wasm.TrapMemoryBounds
+			return value.Value{}, wasm.TrapMemoryBounds
 		}
 		x := m.readAccess(b, n)
 		if op == 0x2c || op == 0x2e || op == 0x30 || op == 0x32 || op == 0x34 {
@@ -309,6 +312,10 @@ func (m *Memory) load(op uint32, address, offset uint64, lane byte, previous val
 		}
 		return value.Value{Lo: x}, wasm.NoTrap
 	}
+	return m.loadVector(op, address, offset, lane, previous)
+}
+
+func (m *Memory) loadVector(op uint32, address, offset uint64, lane byte, previous value.Value) (r value.Value, trap wasm.TrapCode) {
 	sub := op & 0xffff
 	if op>>16 != 0xfd {
 		panic("memory: non-load opcode")
@@ -379,7 +386,7 @@ func (m *Memory) store(op uint32, address, offset uint64, lane byte, v value.Val
 	x := v.Lo
 	switch {
 	case op >= 0x36 && op <= 0x3e:
-		n = [9]uint{4, 8, 4, 8, 1, 2, 1, 2, 4}[op-0x36]
+		n = uint(scalarStoreWidths[op-0x36])
 	case op == 0xfd000b:
 		n = 16
 	case op >= 0xfd0058 && op <= 0xfd005b:
