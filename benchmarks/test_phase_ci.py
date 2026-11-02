@@ -121,6 +121,7 @@ class PhaseIntegrityTests(unittest.TestCase):
         self.assertEqual(len(phase.summarize(report)), 60)
         self.assertEqual(len(report["productionCLI"]["observations"]), 48)
         self.assertIn("PR suite", phase.markdown(report))
+        self.assertIn("do not accept the sustained native gate", phase.markdown(report))
         self.assertNotIn("| integer-sustained |", phase.markdown(report))
         report["observations"].pop()
         with self.assertRaisesRegex(ValueError, "incomplete"):

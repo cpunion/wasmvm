@@ -325,7 +325,7 @@ def markdown(report):
     if "nativeFeature" in report:
         lines += [native_compare.markdown(report["nativeFeature"])]
     if report.get("suite", "full") == "pr":
-        lines += ["**PR suite:** all workload families, with the duplicate long integer/memory cases reserved for explicit full runs. Loop counts, three processes and seven warm samples for each selected case are unchanged.", ""]
+        lines += ["**PR suite:** all workload families, with duplicate long integer/memory cases and controlled native acceptance reserved for explicit full runs. Loop counts, three processes and seven warm samples for each selected case are unchanged. These diagnostic comparisons do not accept the sustained native gate.", ""]
     else:
         lines += ["**Full suite:** includes the sustained integer/memory cases.", ""]
     indexed = {(row["runtime"], row["workload"]): row for row in rows}
@@ -478,8 +478,9 @@ def main():
                     report["observations"].append(item)
                     del report["activeCase"]
                 print(f"Embedded phase round {number+1}/{ROUNDS} complete", flush=True)
-            report["nativeFeature"] = native_compare.run(head, report["ownBuilds"], report["runtimes"],
-                next(w for w in report["fixtures"]["workloads"] if w["id"] == "integer-sustained"), invoke, args.timeout)
+            if args.suite == "full":
+                report["nativeFeature"] = native_compare.run(head, report["ownBuilds"], report["runtimes"],
+                    next(w for w in report["fixtures"]["workloads"] if w["id"] == "integer-sustained"), invoke, args.timeout)
             report["productionCLI"] = {"rounds": own_cli.ROUNDS, "runtimes": own_cli.configurations(report["ownBuilds"]), "observations": []}
             own_cli.run(head, report["ownBuilds"], selected_fixtures(report), args.timeout, report["seed"], report["productionCLI"])
             report["summary"] = summarize(report)
@@ -493,7 +494,7 @@ def main():
         report["finishedAt"] = datetime.now(timezone.utc).isoformat()
         (output / "results.json").write_text(json.dumps(report, indent=2) + "\n")
         (output / "report.md").write_text(markdown(report))
-    if report["nativeFeature"]["status"] != "pass":
+    if args.suite == "full" and report["nativeFeature"]["status"] != "pass":
         raise SystemExit("native feature performance gate blocks merging; see report")
 
 
