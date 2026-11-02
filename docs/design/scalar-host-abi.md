@@ -51,3 +51,14 @@ private merged context. Every other import and socket-admission path keeps the
 existing independently cancelled child context. Finishing an I/O callback still
 retires its context before releasing the active-call count. No context is pooled
 or rebound, and a metadata callback's close/error/result protocol is unchanged.
+
+## Checked memory batches
+
+Caller.WriteMemoryBatch accepts one memory index and an ordered list of
+MemoryWrite values. It holds the existing Caller capability while checking all
+ranges, then copies in list order. Invalid ranges cause no mutation; valid
+aliases use normal ordered-write behavior. Long lists check cancellation every
+256 entries. Cancellation can leave partial progress, and shared transfers keep
+their individual synchronization. This does not expose a backing view or retain
+host buffers. P1 paired size outputs preserve memory32 overflow checks and use
+this general facility to reduce repeated capability entry and cleanup.

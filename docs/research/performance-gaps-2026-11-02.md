@@ -412,3 +412,18 @@ Ordinary C remains an explicitly unchecked lower bound. The selected source
 has no new controlled portfolio or sustained native acceptance claim. Next
 investigate capability/memory helpers and native-only LLGo allocation while
 retaining existing independently reproduced upstream issue boundaries.
+
+The [generic memory-batch comparison](performance-host-memory-batch-2026-11-03.md)
+reduces repeated Caller entry for complete prechecked multi-field outputs.
+Paired-size LLGo native improves another 11.1–11.7% against the exact operation-
+effect source, with its own A/A and adverse controls retained. Reported native
+args allocation falls 18.09→15.85 MB per 10000 callbacks; Go stays about 2.08 MB.
+Args still takes 2.97x Go and 19.35x cancellation-enabled wazero in that study.
+No earlier percentage or favorable control replaces any new slower result.
+
+The [independent memory-profile reproduction](performance-llgo-memprofile-2026-11-03.md)
+confirms that the pin exposes size-class records without allocation stacks.
+Go identifies both allocation sites; LLGo reports none. Evidence was added to
+existing closed proposal #2351, whose PR #2027 was closed without a merge,
+rather than creating another issue. This is an attribution limitation, not a
+new VM timing claim or an assertion about unbuilt current upstream main.
