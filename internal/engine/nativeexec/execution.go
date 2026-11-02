@@ -149,9 +149,9 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 	}
 	entry := entries.ordinary
 	e.allocationView = 0
-	if !e.metered && entries.nativeAllocations {
+	if !e.metered && entries.allocationBatch != 0 {
 		var err error
-		e.allocationView, err = fn.Instance.Owner.PrepareNativeAllocations()
+		e.allocationView, err = fn.Instance.Owner.PrepareNativeAllocations(entries.allocationBatch)
 		if err != nil {
 			return 0, fuel, err
 		}

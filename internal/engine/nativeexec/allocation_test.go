@@ -46,7 +46,7 @@ func TestNativeAllocationPublicationOnTrapAndCancellation(t *testing.T) {
 			t.Fatal(err)
 		}
 		e, fn, lease := prepare(t, m)
-		if !lease.entries[fn.Code].nativeAllocations {
+		if lease.entries[fn.Code].allocationBatch != nativeabi.HeapAllocationBatch {
 			t.Fatal("constructor was not lowered")
 		}
 		if canceled {
@@ -96,7 +96,7 @@ func TestNativeAllocationPublicationOnTrapAndCancellation(t *testing.T) {
 				}
 			}
 		}
-		if _, err := s.PrepareNativeAllocations(); err != nil {
+		if _, err := s.PrepareNativeAllocations(nativeabi.HeapAllocationBatch); err != nil {
 			t.Fatal("exit leaked reservation", err)
 		}
 		if err := s.FinishNativeAllocations(fn.Instance.Types); err != nil {

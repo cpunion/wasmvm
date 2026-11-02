@@ -32,7 +32,7 @@ type functionEntries struct {
 	directRuntimeData           bool
 	usesRuntimeData             bool
 	globals                     []uint32
-	nativeAllocations           bool
+	allocationBatch             uint32
 	nativeMemory                bool
 }
 
@@ -148,7 +148,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 				indexes.ordinary = index
 				indexes.globals = body.GlobalIndices
 				indexes.directRuntimeData = body.UsesRuntimeData
-				indexes.nativeAllocations = body.NativeAllocations != 0
+				indexes.allocationBatch = body.NativeAllocationBatch
 				wantExpansion[f] = body.Calls != 0
 			case 1:
 				indexes.metered = index

@@ -21,12 +21,13 @@ func (s *Store) NativeAllocationStats() (uint64, uint64) {
 // PrepareNativeAllocations reserves handles and stable payload capacity. It
 // neither traces roots nor allocates guest objects. Serialized native execution
 // is the only borrower; FinishNativeAllocations must run on every exit/error.
-func (s *Store) PrepareNativeAllocations() (uint64, error) {
+// batchLimit must be positive and no greater than HeapAllocationBatch.
+func (s *Store) PrepareNativeAllocations(batchLimit uint32) (uint64, error) {
 	if s.closed {
 		return 0, wasm.ErrClosed
 	}
 	h := s.nativeHeap
-	if h == nil || h.pendingCount != 0 {
+	if h == nil || h.pendingCount != 0 || batchLimit == 0 || batchLimit > nativeabi.HeapAllocationBatch {
 		return 0, wasm.ErrInvalid
 	}
 	if s.CollectEveryAllocation || s.usage.HeapObjects >= uint64(s.limits.MaxHeapObjects) || s.usage.HeapBytes >= s.limits.MaxHeapBytes || s.usage.HeapBytes >= s.heapThreshold || s.heapSerial == math.MaxUint64 {
@@ -51,7 +52,7 @@ func (s *Store) PrepareNativeAllocations() (uint64, error) {
 	words := h.allocationWords
 	clear(words)
 	refs := words[nativeabi.HeapAllocationHeaderBytes/8:]
-	count := min(uint64(nativeabi.HeapAllocationBatch), uint64(s.limits.MaxHeapObjects)-s.usage.HeapObjects, math.MaxUint64-s.heapSerial)
+	count := min(uint64(batchLimit), uint64(s.limits.MaxHeapObjects)-s.usage.HeapObjects, math.MaxUint64-s.heapSerial)
 	if len(s.heap) == 0 {
 		s.heap = appendValue(s.heap, heapSlot{})
 	}

@@ -57,7 +57,7 @@ func TestNativeAllocationTargetsFieldsAliasesAndSlowGuards(t *testing.T) {
 			f, cfg, inputs := allocationFunction(fields, defaults, large)
 			for _, arch := range []string{"amd64", "arm64"} {
 				compiled, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), cfg)
-				if err != nil || compiled.NativeAllocations != 1 || !compiled.UsesRuntimeData {
+				if err != nil || compiled.NativeAllocations != 1 || compiled.NativeAllocationBatch != nativeabi.HeapAllocationSmallBatch || !compiled.UsesRuntimeData {
 					t.Fatal(arch, compiled, err)
 				}
 				limit := DefaultLimits()
@@ -139,6 +139,60 @@ func TestNativeAllocationTargetsFieldsAliasesAndSlowGuards(t *testing.T) {
 					offset += field.HeapBytes()
 				}
 			}
+		}
+	}
+}
+
+func TestNativeAllocationBatchRespectsConstructorScope(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		edges        map[int][]uint32
+		constructors []int
+		want         uint32
+	}{
+		{"none", map[int][]uint32{8: {2}}, nil, 0},
+		{"before-loop", map[int][]uint32{8: {2}}, []int{0}, nativeabi.HeapAllocationSmallBatch},
+		{"inside-loop", map[int][]uint32{8: {2}}, []int{3}, nativeabi.HeapAllocationBatch},
+		{"after-loop", map[int][]uint32{8: {2}}, []int{10}, nativeabi.HeapAllocationSmallBatch},
+		{"acyclic", nil, []int{0}, nativeabi.HeapAllocationSmallBatch},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			f := frequencyFixture(12, test.edges)
+			f.Sources = []ir.Source{{Wasm: module.Instr{Op: 0xfb0001}}}
+			for _, pc := range test.constructors {
+				f.Code[pc] = slots.Instruction{Op: 0xfb0001}
+			}
+			e := functionEmitter{f: f, hasAllocations: len(test.constructors) != 0, allocationTypes: []module.TypeDef{{Kind: module.StructKind}}}
+			e.prepareAllocationBatch(instructionFrequencies(f))
+			if e.allocationBatch != test.want {
+				t.Fatal("batch ignores constructor scope", e.allocationBatch, test.want)
+			}
+		})
+	}
+	for _, count := range []int{nativeabi.HeapAllocationSmallBatch, nativeabi.HeapAllocationSmallBatch + 1} {
+		f := frequencyFixture(count, nil)
+		f.Sources = []ir.Source{{Wasm: module.Instr{Op: 0xfb0001}}}
+		for pc := range f.Code {
+			f.Code[pc] = slots.Instruction{Op: 0xfb0001}
+		}
+		e := functionEmitter{f: f, hasAllocations: true, allocationTypes: []module.TypeDef{{Kind: module.StructKind}}}
+		e.prepareAllocationBatch(nil)
+		want := uint32(nativeabi.HeapAllocationSmallBatch)
+		if count > nativeabi.HeapAllocationSmallBatch {
+			want = nativeabi.HeapAllocationBatch
+		}
+		if e.allocationBatch != want {
+			t.Fatal("straight-line constructor capacity", count, e.allocationBatch)
+		}
+	}
+	// A missing frequency vector includes bounded-analysis fallback. Metered
+	// compilation never reserves a batch or emits native constructors.
+	f, cfg, _ := allocationFunction(nil, true, false)
+	for _, arch := range []string{"amd64", "arm64"} {
+		cfg.Unmetered = false
+		compiled, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), cfg)
+		if err != nil || compiled.NativeAllocationBatch != 0 || compiled.NativeAllocations != 0 {
+			t.Fatal("metered batch", arch, compiled, err)
 		}
 	}
 }

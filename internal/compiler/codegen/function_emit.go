@@ -56,6 +56,7 @@ type functionEmitter struct {
 	heapCaches                                                   map[uint64]heapCache
 	allocationTypes                                              []module.TypeDef
 	hasAllocations                                               bool
+	allocationBatch                                              uint32
 }
 
 type memoryFallback struct{ label, pc int }

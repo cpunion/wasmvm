@@ -6,6 +6,27 @@ import (
 	"github.com/cpunion/wasmvm/internal/core/module"
 )
 
+// Reuse the bounded register-frequency hints for profitability only. Unknown
+// flow keeps the previous small batch; generated quota/payload guards apply to
+// every reservation size. Large straight-line sequences also amortize entry.
+func (e *functionEmitter) prepareAllocationBatch(frequencies []uint64) {
+	if !e.hasAllocations {
+		return
+	}
+	e.allocationBatch = nativeabi.HeapAllocationSmallBatch
+	var constructors uint32
+	for pc, in := range e.f.Code {
+		if _, ok := e.heapAllocationType(in); !ok {
+			continue
+		}
+		constructors++
+		if frequency(frequencies, pc) > 1 || constructors > nativeabi.HeapAllocationSmallBatch {
+			e.allocationBatch = nativeabi.HeapAllocationBatch
+			return
+		}
+	}
+}
+
 func (e *functionEmitter) heapAllocationType(in slots.Instruction) (module.TypeDef, bool) {
 	if in.Op != 0xfb0000 && in.Op != 0xfb0001 {
 		return module.TypeDef{}, false
