@@ -153,3 +153,33 @@ source `94c2c16` passes all 31 local Go packages, all 30 coverage gates, affecte
 pinned LLGo suites, race, no-cgo and vet. New final-head CI and benchmarking are
 required; earlier results are not relabeled as that head's measurements.
 [Regression and validation evidence](evidence/interpreter-i32-result-width-2026-11-02.json.gz).
+
+
+## Integrated final head
+
+PR #98 merged as `a00756b9241e6e08214f23445cf269bc7bba5e2d` after the
+exact `4e6cd7bb5898a12febcd2fa00745a0559528e534` head passed all 19 required
+semantic jobs and benchmark/report checks. Nineteen artifact SHA-256 digests,
+240 execution reports, every required package/compiler/platform, 30 coverage
+gates and 12 LLGo traces validate. Single-package shards additionally retain
+independent execution-log proofs: threads 94 and async 434 passing tests on
+each platform. No review findings remained.
+
+The current-head Linux benchmark improves LLGo interpreter integer
+94.598→92.150, calls 143.184→139.162 and memory 182.301→174.969
+ns/iteration, versus WasmEdge 52.266/69.647/101.848. Go improves 6–9%.
+Native LLGo integer regresses 1.824→1.852; memory improves 1.389→1.355
+versus Wasmtime 0.738. Every phase/configuration and remaining deficit stay
+retained. The 228 observations / 76 summaries / 19 configurations validate;
+both source inventories independently match exact git archives.
+
+The benchmark job takes 5m01s; the longest semantic job is Linux component at
+10m13s. Every job stays within its configured bound, while the 5–10 minute
+semantic target still has a small component overrun. These measured job times
+exclude queue delays. This integration does not close controlled whole-portfolio
+acceptance or substitute local ARM64 performance for Linux observations.
+
+[Final semantic, benchmark and merge evidence](evidence/pr98-final-ci-2026-11-02.json.gz)
+retains all execution/trace/coverage reports, exact-head source/artifact audits,
+reviews, current-head bot report and merge identity. Earlier-head/raw experiments
+remain separate historical records.

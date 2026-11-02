@@ -281,6 +281,14 @@ frames:
 					return e.fail(err)
 				}
 			}
+			if in.Count != 0 && in.Op == 0x41 && !native && !metered && e.steps&63 != 63 {
+				// Commit the constant before its consumer. Crossing the next
+				// source polling boundary uses the ordinary two steps.
+				values[int(in.Dst)] = value.Value{Lo: uint64(in.Extra)}
+				pc++
+				in = code.Code[pc]
+				e.steps++
+			}
 			var a, b, c value.Value
 			if in.A != slots.NoSlot {
 				a = values[int(in.A)]
@@ -531,6 +539,7 @@ frames:
 				}
 			case 0x41:
 				result.Lo = uint64(in.Extra)
+
 			case 0x42, 0x43, 0x44:
 				result.Lo = uint64(in.Extra) | uint64(in.Count)<<32
 			case 0x45:

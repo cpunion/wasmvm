@@ -26,6 +26,7 @@ was not rebuilt; these reports do not assert its status.
 | [#2957](https://github.com/xgo-dev/llgo/issues/2957) | Append within existing capacity still materializes a temporary | Reuse admitted guest-frame capacity directly |
 | [#2959](https://github.com/xgo-dev/llgo/issues/2959#issuecomment-6566786471) | Uncancelled context.Err/atomic.Value.Load path allocates; unused return storage is materialized | Cache the execution-bound cancellation view for LLGo; retain Go's cheaper standard path |
 | [#2958](https://github.com/xgo-dev/llgo/issues/2958#issuecomment-6568684544) | Numeric-only Cgo scalar and two-word-result calls each allocate about 16 MB over one million calls; Go allocates zero | Direct LLGo C declarations for retained C-owned numeric memory; host-buffer checks remain |
+| [#2966](https://github.com/xgo-dev/llgo/issues/2966) | Native BDWGC AllocZ emits bzero after GC_malloc has already cleared storage; a minimal program and final disassembly reproduce it | Keep the compiler pin; track an upstream allocator correction as a separate future baseline event |
 
 The numeric Cgo reproduction narrows the existing residual-allocation report;
 it does not show that struct returns alone cause it. Optimized wrappers allocate
@@ -83,3 +84,32 @@ Its current-main source was inspected, while timings remain for the pinned compi
 The [grouped extension-check candidate](performance-interpreter-extension-guard-2026-11-02.md)
 improves the complete local interpreter matrix without the earlier private-loop
 regression. Native short-control regressions and final-head acceptance remain open.
+
+## Isolated integer-pair follow-up
+
+The [complete integer-pair comparison](performance-interpreter-integer-pairs-2026-11-02.md)
+uses the corrected I32-width source as its baseline. The LLGo interpreter improves
+integer 60.280→49.789, memory 130.860→100.099 and calls 91.448→82.646
+ns/iteration. Baseline A/A controls are retained. This is a descriptive candidate,
+not integrated final-head or controlled portfolio acceptance.
+
+The three remaining comparisons in that same campaign are:
+
+| Comparison | Observed head deficit | Next investigation |
+| --- | --- | --- |
+| Named competitors | LLGo interpreter integer is 2.3% behind WasmEdge, memory 8.6%, calls 32.9%; SIMD widening and RMW take about twice its time | Shared dispatch/SIMD/helper paths, preserving exact polling and fuel |
+| LLGo versus Go | GC allocation 166.904 versus 136.300 ns/iteration; notify 57.167 versus 48.500 | Allocation and synchronization profiles; independent reproductions before additional LLGo reports |
+| Ordinary native C | LLGo native memory 0.474 versus 0.267 ns/iteration, despite Wasmtime 0.478; integer/calls are much closer | Address lowering and accumulator dependencies; retain bounds, overflow and cold-entry contracts |
+
+Notify and wait-mismatch interpreter results regress 4.4% and 2.7% against the
+corrected baseline. Their short samples, all native regressions, unsupported
+reference outcomes and the earlier compound experiment remain visible. A fast
+case is not substituted for any slower case. The negative-I32 public bit-width
+bug found during this investigation belongs to wasmvm and is fixed in PR #98;
+it is not an LLGo issue. Existing independently reproduced LLGo reports are
+#2957, #2958, #2959, #2965 and #2966 above; no duplicate issue is opened for a timing gap.
+
+The [native-allocation investigation](performance-llgo-native-allocation-2026-11-02.md)
+retains the independent #2966 reproduction, matching-check C mechanism control
+and original corrected diagnostic. It does not attribute the complete Go/LLGo
+allocation gap or claim an unmeasured compiler-patch speedup.

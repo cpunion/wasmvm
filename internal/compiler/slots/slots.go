@@ -33,7 +33,9 @@ type Instruction struct {
 // Tail calls store only inputs, with no local result slots. Returns store Count
 // slots at Extra. Other operations have at most three inline operands and one
 // inline result.
-// Scalar constants store their low/high bits in Extra/Count. Local, global,
+// I64/F64 constants store their low/high bits in Extra/Count. I32 uses Extra;
+// its Count is a pure following-integer-operation hint (zero or one).
+// Local, global,
 // table, memory-size/grow and ref.func indices use Extra without a tuple.
 // Branches address Count edges starting at Extra; A is the condition/index.
 // Every instruction retains its original source and fuel boundary.
@@ -246,6 +248,9 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 			switch {
 			case in.Op >= 0x41 && in.Op <= 0x44:
 				in.Extra, in.Count = uint32(src.Wasm.Bits), uint32(src.Wasm.Bits>>32)
+				if in.Op == 0x41 {
+					in.Count = 0
+				}
 			case in.Op >= 0x20 && in.Op <= 0x26 || in.Op == 0x3f || in.Op == 0x40 || in.Op == 0xd2:
 				in.Extra = src.Wasm.A
 			}
@@ -422,5 +427,6 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 			out.Protected = append(out.Protected, ProtectedBlock{out.BlockPC[bi], end, b.Handler})
 		}
 	}
+	cacheIntegerPairs(out, budget)
 	return out
 }
