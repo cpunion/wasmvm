@@ -5343,3 +5343,39 @@ VM 10m17s. Both pass the unchanged 12m bound; no timeout is relabeled success.
 [benchmark run](https://github.com/cpunion/wasmvm/actions/runs/41403501261),
 [retained semantic audit](research/evidence/pr97-final-ci-2026-11-02.json.gz),
 [complete benchmark](research/evidence/performance-pr97-linux-2026-11-02.json.gz).
+
+
+## Grouped interpreter extensions and exact I32 result bits
+
+Merged PR #98, engine `a00756b9241e6e08214f23445cf269bc7bba5e2d`. A single
+extension guard reduces repeated classifiers while retaining the scalar switch.
+I32 constant results zero-extend their 32-bit bits through the public API;
+64-bit and NaN-payload controls preserve exact representations. Original PCs,
+fuel, polls and traps remain intact.
+
+The final `4e6cd7b` head passes all 19 semantic checks and benchmark/report.
+Nineteen artifact digests, 240 execution reports, 31 packages per compiler and
+platform, all 30 coverage gates and 12 LLGo traces validate. Independent logs
+prove execution for single-package shards; reviews have no findings. Benchmark
+job 5m01s; longest semantic job 10m13s. Linux interpreter results improve but
+competitor deficits and a native integer regression remain recorded. Controlled
+performance acceptance remains open.
+
+[Final-head evidence](research/evidence/pr98-final-ci-2026-11-02.json.gz) and
+[performance record](research/performance-interpreter-extension-guard-2026-11-02.md#integrated-final-head).
+
+
+## Uninterrupted I32 constant-consumer pairs
+
+Merged PR #99, engine `e24dcaa4c2887fc0ea6b738747b111e9774b1246`.
+The exact `9892dfa` head passes all 19 semantic jobs and benchmark/report.
+Artifact digests, 240 execution reports, 31 packages per compiler/platform,
+30 coverage gates, 12 LLGo traces and independent single-package execution
+logs validate. Both source PCs, exact fuel, public I32 bits and step-64
+cancellation are retained. Longest semantic job 9m53s; benchmark 5m00s.
+
+Linux LLGo interpreter integer/calls/memory improve 23.5%/17.9%/16.6%, while
+competitor deficits, native regressions and controlled acceptance remain open.
+[Exact-head evidence](research/evidence/pr99-final-ci-2026-11-02.json.gz) and
+[all results](research/performance-interpreter-integer-pairs-2026-11-02.md#integrated-final-head)
+retain the successful authoritative workflow and superseded cancelled duplicate.

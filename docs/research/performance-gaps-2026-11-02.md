@@ -212,3 +212,15 @@ ns/iteration (1.81x); its apparent base/head gain is smaller than A/A drift.
 This sharpens the host-compiler allocation/collection investigation without
 inventing a new LLGo defect report. The nine-kernel observations span two
 separate hosts; no aggregate controlled performance claim is made.
+
+
+## Integrated PR #99 Linux observations
+
+The [final-head audit](performance-interpreter-integer-pairs-2026-11-02.md#integrated-final-head)
+passes all required checks and retains exact source/artifact identities. LLGo
+interpreter integer/calls/memory improve 23.5%/17.9%/16.6% but still take
+1.24x/1.75x/1.34x WasmEdge's time. LLGo calls remain 11.4% behind Go.
+Native LLGo memory is 1.312 versus Wasmtime 0.670 ns/iteration. Native
+regressions remain retained; the diagnostic PR scope has no ordinary C kernel.
+Earlier ARM64 ordinary-C comparisons and later candidates stay separate.
+This integration does not close controlled performance or WASI world acceptance.

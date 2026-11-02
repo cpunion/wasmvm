@@ -178,3 +178,12 @@ assembly and every result, including the unsuccessful candidate.
 Inline host load: [13.21533203125, 10.15380859375, 9.07763671875]→[11.4677734375, 10.4541015625, 9.34423828125].
 
 Outlined host load: [12.7822265625, 10.64111328125, 9.61572265625]→[8.80029296875, 9.87939453125, 9.4541015625].
+
+
+## Contribution scope
+
+The contribution merges validated PR #99 main without changing the measured
+packed-load implementation. The additional public I32-bit regression test is
+retained from main. Final dual-compiler/platform semantic CI and the exact-head
+PR benchmark remain required. The preceding PR #99 integration evidence stays
+separate from this SIMD candidate's scoped measurements.
