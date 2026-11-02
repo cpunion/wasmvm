@@ -320,3 +320,9 @@ pinned release-profile reproduction remains historical evidence; current
 upstream was not rebuilt or timed. #2932, #2957, #2958, #2965 and #2966 remain
 open, and #2971 remains an open contribution. No duplicate issue is created
 from an already-reported problem or an unexplained timing ratio.
+
+The [independent startup investigation](performance-llgo-startup-2026-11-03.md)
+reproduces the readiness deficit without VM work: os-only LLGo 34.112 ms versus
+Go 3.508 ms. A separate C GC/FFI control is 4.247 ms versus LLGo 34.052 ms.
+It is reported as [LLGo 2973](https://github.com/xgo-dev/llgo/issues/2973), explicitly retaining
+an open root cause and pinned-only scope. Warm execution remains a distinct gap.
