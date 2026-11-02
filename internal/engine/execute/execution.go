@@ -529,7 +529,9 @@ frames:
 				if !ok {
 					result.Lo = mem.Limits().Failure()
 				}
-			case 0x41, 0x42, 0x43, 0x44:
+			case 0x41:
+				result.Lo = uint64(in.Extra)
+			case 0x42, 0x43, 0x44:
 				result.Lo = uint64(in.Extra) | uint64(in.Count)<<32
 			case 0x45:
 				result.Lo = numeric.I32Eqz(a.Lo)
