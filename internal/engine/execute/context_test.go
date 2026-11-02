@@ -29,7 +29,7 @@ func TestCancellationViewMetadataAndRetainedBinding(t *testing.T) {
 	if got, ok := retained.Deadline(); !ok || !got.Equal(deadline) || retained.Value(key{}) != "first" || retained.Done() != ctx.Done() || retained.Err() != nil {
 		t.Fatal("lost context metadata", got, ok)
 	}
-	if view, done := cancellationView(retained); view != retained || done != retained.Done() {
+	if view, done := CancellationView(retained); view != retained || done != retained.Done() {
 		t.Fatal("duplicated an immutable cancellation view")
 	}
 	e.Quiesce()

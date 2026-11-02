@@ -326,3 +326,26 @@ reproduces the readiness deficit without VM work: os-only LLGo 34.112 ms versus
 Go 3.508 ms. A separate C GC/FFI control is 4.247 ms versus LLGo 34.052 ms.
 It is reported as [LLGo 2973](https://github.com/xgo-dev/llgo/issues/2973), explicitly retaining
 an open root cause and pinned-only scope. Warm execution remains a distinct gap.
+
+## P1 host-boundary follow-up
+
+[PR #102 final audit](pr102-final-ci-2026-11-03.md) retains all 240 reports and
+both distinct-host benchmarks, including adverse original Intel results. Its
+rebalanced six-shard CI still executes all 31 packages/compiler/platform.
+
+The [raw host-buffer experiment](performance-host-storage-held-2026-11-03.md)
+is held: LLGo throughput does not consistently improve and Go's native control
+regresses 9.8%. Its production code is excluded from the selected
+[operation cancellation-view candidate](performance-operation-context-2026-11-03.md).
+The latter improves LLGo native P1 by 4.4–5.2%, interpreter by 4.5–8.7%, while
+retaining all original control regressions and A/A samples. Args-sizes still
+takes 3.42x Go, 29.9x Wasmtime and 68.9x wazero native. Ordinary C's same-algorithm
+control stays separately identified with its missing VM policies and coarse
+short-call timing. Final contribution CI and controlled acceptance remain open.
+
+The [independent input-parameter reproduction](performance-llgo-value-parameter-2026-11-03.md)
+is reported as [LLGo #2974](https://github.com/xgo-dev/llgo/issues/2974): a
+nonescaping 112-byte input's address causes an unconditional AllocU(112), about
+128 reported bytes/call, versus Go zero. The value-only control allocates zero
+under both compilers. This narrows the native state-copy investigation without
+assigning all remaining VM allocation to it or changing the compiler pin.
