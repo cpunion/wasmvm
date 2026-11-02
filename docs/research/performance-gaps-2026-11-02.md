@@ -131,3 +131,26 @@ WasmEdge widening remains 60.690; this 1.65x interpreter gap stays open.
 These are separate scoped shared-host campaigns, with their own baseline A/A
 controls and every phase retained. Final-head cross-platform validation is
 pending; the result is a candidate, not an integrated or controlled parity claim.
+
+## Native comparison-liveness follow-up
+
+The [bounded unroll cleanup](performance-native-unroll-predicates-2026-11-02.md)
+keeps live comparison results but removes repeated writes before a proven
+overwrite. A capture of 86 body pairs changes only unmetered scalar/float64
+memory on amd64/arm64, each 24 bytes smaller. All metered and other captured
+functions remain byte-identical.
+
+The native-only scoped campaign uses 50 million core-memory iterations and
+five million for five other scalar workloads, matching counts for every engine and C.
+LLGo core memory improves 0.450242→0.442667 ns/iteration; every paired block
+improves 1.2–1.7%. Go improves as well. A/A calibration remains outside the
+controlled target; float64 is inconclusive and control regressions remain
+retained. The ordinary C memory control is still 0.265180 (a 1.67x gap).
+The diagnostic C CLI admits longer inputs with a separate safe float cap;
+its timed kernel assembly is unchanged. This small native cleanup does not
+replace the remaining induction, reduction, GC or SIMD work or the x86 gap.
+
+PR #98's [current-head Linux follow-up](performance-interpreter-extension-guard-2026-11-02.md#current-pr-head-linux-follow-up)
+also passes its runtime benchmark job and retains its native integer regression;
+semantic/report checks remain pending. The candidate branches do not replace
+that PR head's integration evidence.
