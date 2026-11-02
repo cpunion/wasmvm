@@ -39,3 +39,15 @@ host-boundary performance. Compare all original P1 kernels, existing public-host
 controls, both compilers/backends, baseline A/A aliases, explicitly identified
 reference cancellation policies and ordinary C. Keep every original regression,
 preparation/first/warm boundary and unsupported policy comparison visible.
+
+## P1 operation effects
+
+Each P1 import declares whether it only reads immutable process configuration
+and touches checked guest memory. This complete group consists of args_get,
+args_sizes_get, environ_get and environ_sizes_get. These bounded operations
+never hand a context to host I/O or injected callbacks, so they retain process
+admission/draining and caller/process cancellation checks without creating a
+private merged context. Every other import and socket-admission path keeps the
+existing independently cancelled child context. Finishing an I/O callback still
+retires its context before releasing the active-call count. No context is pooled
+or rebound, and a metadata callback's close/error/result protocol is unchanged.

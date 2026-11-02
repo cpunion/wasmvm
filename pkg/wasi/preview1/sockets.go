@@ -17,7 +17,7 @@ func (p *Process) ImportSocket(file *os.File, listening bool) (uint32, error) {
 	if file == nil {
 		return 0, ErrBadf
 	}
-	ctx, finish, err := p.begin(context.Background())
+	ctx, finish, err := p.begin(context.Background(), false)
 	if err != nil {
 		file.Close()
 		return 0, err

@@ -46,7 +46,7 @@ func TestProcessConfigurationAndCleanup(t *testing.T) {
 	if err := p.WaitClosed(nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := p.begin(ctx); !errors.Is(err, wasm.ErrClosed) {
+	if _, _, err := p.begin(ctx, false); !errors.Is(err, wasm.ErrClosed) {
 		t.Fatal(err)
 	}
 	if _, err := p.ImportSocket(nil, false); !errors.Is(err, ErrBadf) {
