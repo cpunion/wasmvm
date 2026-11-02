@@ -349,3 +349,13 @@ nonescaping 112-byte input's address causes an unconditional AllocU(112), about
 128 reported bytes/call, versus Go zero. The value-only control allocates zero
 under both compilers. This narrows the native state-copy investigation without
 assigning all remaining VM allocation to it or changing the compiler pin.
+
+The [borrowed native-state comparison](performance-native-state-borrow-2026-11-03.md)
+removes one pinned-LLGo 112-byte input-parameter allocation from each native
+entry using execution-owned numeric storage. Native P1 improves 2.7–6.1% and
+reported host allocation drops about 1.28 MB per 10000 callbacks; all original
+short-arithmetic regressions and the separate sustained diagnostic stay visible.
+Args-sizes still takes 3.28x Go, 28.51x Wasmtime and 64.52x wazero native in this
+campaign. Ordinary C remains a separate unchecked lower bound. The candidate
+preserves the native record/lease/close protocol; integration and controlled
+acceptance remain open.
