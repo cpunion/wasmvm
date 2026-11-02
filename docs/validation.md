@@ -5379,3 +5379,19 @@ competitor deficits, native regressions and controlled acceptance remain open.
 [Exact-head evidence](research/evidence/pr99-final-ci-2026-11-02.json.gz) and
 [all results](research/performance-interpreter-integer-pairs-2026-11-02.md#integrated-final-head)
 retain the successful authoritative workflow and superseded cancelled duplicate.
+
+
+## Packed interpreter widening and splat loads
+
+Merged PR #100, engine `ed5a0fb837b7d54da61c2847f6aae30c777d1e36`; exact head `f72a9b8`
+passes all semantic jobs and benchmark/report. Nineteen artifact digests,
+240 execution reports, all 31 packages per compiler/platform, 30 coverage gates,
+12 LLGo traces and independent single-package logs validate. Reviews are clear.
+Longest semantic job 10m22s remains above the ten-minute target.
+
+Scoped Linux widening improves Go 26.9% and LLGo 33.5%. The cancelled first
+job's three complete cases/partial lanes remain separate from the successful
+lane-only completion. Short PR scalar/native regressions and all competitor,
+Go/LLGo and controlled-acceptance gaps remain visible.
+[Final evidence](research/evidence/pr100-final-ci-2026-11-02.json.gz) and
+[complete report](research/performance-packed-vector-loads-2026-11-02.md#integrated-final-head-and-linux-follow-up).

@@ -182,3 +182,28 @@ separate campaigns/hosts, not one successful nine-case workflow or a pooled
 controlled acceptance result. The consistent scalar-memory improvement supports
 continuing the compact candidate; final contribution-head validation, narrower
 regressions, GC compiler gap and controlled acceptance remain open.
+
+
+## Contribution against merged packed-load main
+
+The contribution combines this x86 cost correction with the previously measured
+bounded comparison-liveness cleanup, sharing existing compiler stages and
+runtime contracts. Its engine/test sources remain byte-for-byte `e9fff30` after
+merging validated PR #100 history and evidence; no held reduction prototype is
+included. This avoids a redundant full semantic campaign for two small related
+native compiler increments.
+
+Against main `ed5a0fb837b7d54da61c2847f6aae30c777d1e36`, a fresh compile-only
+capture compares 86 bodies. Exactly ten unmetered bodies change: eight x86 and
+two ARM64 scalar/float memory bodies. All metered and remaining 76 bodies are
+identical. X86 scalar memory shrinks 3653→3554 bytes; ARM64 memory
+3796→3772. X86 dependent address grows 2904→2937; other changes retain sizes
+or remove the comparison writes. The baseline x86 feature mask and actual
+ARM64 mask are recorded; foreign bodies are never published or timed.
+[Combined body evidence](evidence/native-costs-main-body-identity-2026-11-02.json.gz).
+
+Local 31-package/30-coverage and pinned LLGo affected tests remain valid for the
+identical measured engine sources. The exact contribution-head dual-platform
+matrix and PR comparison are still required. The isolated cost-model Linux base
+already contains the comparison cleanup, so its 11–12% memory improvement is
+not relabelled as a measured combined change against main.

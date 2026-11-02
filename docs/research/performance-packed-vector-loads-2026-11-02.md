@@ -187,3 +187,63 @@ packed-load implementation. The additional public I32-bit regression test is
 retained from main. Final dual-compiler/platform semantic CI and the exact-head
 PR benchmark remain required. The preceding PR #99 integration evidence stays
 separate from this SIMD candidate's scoped measurements.
+
+
+## Integrated final head and Linux follow-up
+
+PR #100 merges as `ed5a0fb837b7d54da61c2847f6aae30c777d1e36`, exact head
+`f72a9b8cb353094bb796ec2617676712fec730e1`. All 19 required semantic jobs
+and benchmark/report pass. Nineteen artifact digests, 240 execution reports,
+31 packages per compiler/platform, 30 coverage gates, 12 LLGo traces and the
+independent single-package execution logs validate. Reviews have no findings.
+Longest semantic job is 10m22s, above the ten-minute target and within the
+configured twelve-minute bound. In its Linux VM trace, compiler build takes
+528.2s while test execution is much shorter; no test coverage is removed.
+
+The ordinary current-head PR benchmark records LLGo scalar interpreter
+regressions about 3–7%, and Go native memory 1.6513→1.8649 (+12.9%).
+These remain explicit. Identical-binary wazero controls also move considerably;
+that does not prove the own regressions are harmless or caused only by noise.
+The new scoped memory control cannot resolve the PR's integer/call regressions.
+
+A separate exact-source Linux diagnostic uses all four affected/control cases,
+one million iterations, Go/LLGo native/interpreter base/head, exact interpreter
+baseline A/A aliases, five pinned reference configurations and an applicable
+ordinary-C scalar control. All phases and alternate oracles remain retained.
+AMD EPYC 7763; every process is bound to the same affinity CPU.
+
+Run 41442715061 is **cancelled**, not a successful four-case run. It completes
+scalar memory, full-vector memory and widening, plus two of three lane blocks,
+before its ten-minute diagnostic limit. All 168 retained observations validate;
+46 rows have three complete blocks, 15 lane rows have only two. The original
+running report and cancellation log stay retained. Only lanes are then measured
+in run 41444954758, which passes its complete 45-observation/15-configuration
+matrix and alternate checks. Both source inventories independently match the
+exact PR base/head archives and pinned compiler profiles. No incomplete lane
+block is silently promoted, and separate hosts/campaigns are not pooled.
+
+Three-complete-case diagnostic, ns/source iteration:
+
+| Workload | Go interpreter base → head | LLGo interpreter base → head | WasmEdge interpreter |
+| --- | ---: | ---: | ---: |
+| Scalar memory | 224.433 → 221.691 | 231.561 → 225.423 | 294.371 |
+| Full-vector memory | 254.795 → 244.751 | 265.982 → 254.200 | 158.127 |
+| Widening | 254.248 → 185.969 | 342.488 → 227.841 | 138.400 |
+
+Widening improves Go 26.9% and LLGo 33.5%, but LLGo remains 1.65x WasmEdge
+and 1.23x Go. Scalar memory improves about 1–3%; native scalar-memory controls
+are approximately flat (Go 1.6627→1.6554, LLGo 1.6535→1.6505). They do not
+erase the earlier short PR observation or accept controlled native performance.
+
+The separate lane-only follow-up observes Go 162.612→158.011 and LLGo
+203.661→202.189 ns/iteration, versus WasmEdge 106.834 and wazero interpreter
+204.602. LLGo native lanes regress 0.3%; Go native improves 0.2%. The remaining
+1.89x WasmEdge and 1.28x Go interpreter gaps stay open. Its different CPU/host
+identity remains in the raw artifact; its rates are not substituted into the
+preceding three-case table.
+
+[Final-head evidence](evidence/pr100-final-ci-2026-11-02.json.gz) retains every
+completed phase/block, cancelled partial report, successful lane completion,
+source/artifact audits, semantic reports, traces, coverage, reviews and merge.
+This integration accepts the compact implementation increment; scalar regression
+investigation and controlled whole-portfolio acceptance remain open.

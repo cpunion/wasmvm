@@ -224,3 +224,14 @@ Native LLGo memory is 1.312 versus Wasmtime 0.670 ns/iteration. Native
 regressions remain retained; the diagnostic PR scope has no ordinary C kernel.
 Earlier ARM64 ordinary-C comparisons and later candidates stay separate.
 This integration does not close controlled performance or WASI world acceptance.
+
+
+## Integrated packed loads
+
+PR #100's [final audit and scoped Linux evidence](performance-packed-vector-loads-2026-11-02.md#integrated-final-head-and-linux-follow-up)
+pass semantics and retain all diagnostic outcomes. Linux widening improves
+LLGo 33.5% but remains 1.65x WasmEdge and 1.23x Go; the separate complete lane
+follow-up remains 1.89x WasmEdge and 1.28x Go. Short PR scalar interpreter
+regressions of 3–7% remain unresolved; the longer scoped memory control improves
+and cannot substitute for integer/call cases. No controlled acceptance is closed.
+The native cost-model candidate remains separate from this merged implementation.
