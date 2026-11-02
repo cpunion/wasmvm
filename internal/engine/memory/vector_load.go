@@ -5,6 +5,8 @@ import "github.com/cpunion/wasmvm/internal/engine/value"
 // widenLoad spreads an already checked eight-byte input into two words. Each
 // input lane occupies the low half of its output lane, leaving the upper half
 // free for sign extension without carries between lanes.
+//
+//go:noinline
 func widenLoad(x uint64, sub uint32) (r value.Value) {
 	width := uint(8) << ((sub - 1) / 2)
 	switch width {
