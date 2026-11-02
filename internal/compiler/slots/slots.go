@@ -35,7 +35,7 @@ type Instruction struct {
 // inline result.
 // I64/F64 constants store their low/high bits in Extra/Count. I32 uses Extra;
 // its Count is a pure following-integer-operation hint (zero or one).
-// Local, global,
+// Coalesced local.get uses Count as a zero/one no-copy hint. Local, global,
 // table, memory-size/grow and ref.func indices use Extra without a tuple.
 // Branches address Count edges starting at Extra; A is the condition/index.
 // Every instruction retains its original source and fuel boundary.
@@ -427,6 +427,6 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 			out.Protected = append(out.Protected, ProtectedBlock{out.BlockPC[bi], end, b.Handler})
 		}
 	}
-	cacheIntegerPairs(out, budget)
+	cachePrefixes(out, budget)
 	return out
 }
