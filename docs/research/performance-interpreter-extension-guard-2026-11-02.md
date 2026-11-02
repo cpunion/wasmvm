@@ -124,3 +124,32 @@ No unsafe cancellation shortcut is introduced to bypass it.
 [Lossless evidence](evidence/performance-interpreter-extension-guard-2026-11-02.json.gz)
 contains all 294 summaries, every raw call/phase, A/A aliases, twelve unsupported
 outcomes, source/build/toolchain/SDK identities, measurement code and validation.
+
+
+## Follow-up: exact I32 result width
+
+The initial final-head Linux benchmark at `081d2f6` completed successfully:
+LLGo integer 88.544→86.489, guest calls 139.498→125.299 and memory
+169.752→156.242 ns/iteration. Go improves 9–18% in that campaign. WasmEdge
+remains faster at 53.050 / 68.529 / 104.188 respectively. All 228 phase records,
+76 summaries and 19 configurations validate; [complete raw data](evidence/pr98-initial-linux-2026-11-02.json.gz)
+remain evidence for that exact earlier source. Its semantic matrix was still
+queued when the public result-width regression below was discovered; it does
+not stand in for validation of the subsequent head.
+
+The cached constant dispatcher previously combined both words for I32 as well
+as 64-bit constants. Decoded `i32.const -1` therefore exposed
+`0xffffffffffffffff` through interpreter Value.Bits, while native exposed the
+correct `0xffffffff`. Minimum I32 similarly exposed unwanted upper bits.
+The new public-API regression fails on the earlier interpreter in both fuel
+policies and passes on the corrected interpreter/native backends under Go and
+pinned LLGo. I64 full-word and F32/F64 NaN payload controls retain exact bits.
+
+The correction reconstructs I32 only from its 32-bit Extra word; I64 and FP
+constant layouts remain unchanged. Original instructions, fuel, PCs and polls
+remain intact. This correctness fix is included in PR #98; the subsequent
+integer-pair optimization remains on a separate contribution branch. The fixed
+source `94c2c16` passes all 31 local Go packages, all 30 coverage gates, affected
+pinned LLGo suites, race, no-cgo and vet. New final-head CI and benchmarking are
+required; earlier results are not relabeled as that head's measurements.
+[Regression and validation evidence](evidence/interpreter-i32-result-width-2026-11-02.json.gz).
