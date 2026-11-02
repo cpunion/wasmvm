@@ -9,12 +9,19 @@ an LLGo defect. Controlled Linux amd64/macOS arm64 portfolio acceptance is open.
 | LLGo shared/atomic interpreter helpers | [Cached cancellation and numeric C bindings](performance-interpreter-atomics-2026-11-02.md): about 21%/22% improvement; checked helper allocation controls become zero | RMW remains about 2.12x WasmEdge and 1.40x wazero interpreter in that campaign |
 | Native scalar memory | The initial [word-loop expansion](performance-native-word-loops-2026-11-02.md) regressed in the [complete combination](performance-atomic-combined-2026-11-02.md) and was held; the bounded [longer follow-up](performance-native-word-long-2026-11-02.md) advanced through merged PR #97 | C and Linux competitor deficits still need resolution; the held prototype is not treated as integrated |
 | Native atomic throughput | [100-million-iteration C comparison](performance-native-atomic-c-2026-11-02.md): LLGo 1.776, Go 1.772, C 1.723, Wasmtime 1.709 ns/iteration | About 3.1% versus C and 3.9% versus Wasmtime on one ARM64 kernel |
+| Native i31 payloads | [Direct payload selection](performance-i31-payload-2026-11-03.md): LLGo 2.543→1.350, Go 1.363, Wasmtime 1.811 and ordinary C 1.286 ns/iteration in one final campaign | Local candidate: 46.9% LLGo improvement, 25.5% faster than this Wasmtime, 4.9% above C; other GC, startup and all-platform gates remain open |
 | Interpreter operands and dispatcher counter | [Two complete twenty-case experiments](performance-interpreter-rejected-2026-11-02.md), including GC, SIMD and wait/notify | No consistent meaningful LLGo benefit; neither candidate is adopted |
 | GC and SIMD interpretation | All results retained in those twenty-case experiments | WasmEdge still leads most cases; removing operand checks does not solve this gap |
 
 Each campaign has its own source revisions and host conditions. Preparation,
 first-call and warm execution remain separate. Do not pool these tables into a
 synthetic fastest-per-case engine or calculate improvements across campaigns.
+
+The [two native-cleanup scope experiments](performance-native-allocation-scope-held-2026-11-03.md)
+remove a known LLGo defer allocation but do not improve the complete measured
+scope. Both production changes remain held; their adverse results and new
+pre-entry cancellation/panic reservation tests are retained. The i31 follow-up
+keeps its own three source-changing campaigns separate from those experiments.
 
 The [final Linux PR #97 benchmark](https://github.com/cpunion/wasmvm/actions/runs/41403501261)
 improves LLGo native memory 1.823→1.649 ns/iteration, versus Wasmtime 0.944
