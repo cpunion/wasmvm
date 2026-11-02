@@ -281,18 +281,16 @@ frames:
 					return e.fail(err)
 				}
 			}
-			if !native && !metered {
-				for in.Count != 0 && (in.Op == 0x20 || in.Op == 0x41) && e.steps&63 != 63 {
-					// Coalesced local reads already occupy their result slot.
-					// Commit constants before advancing, retaining every source
-					// step and stopping before the next polling boundary.
-					if in.Op == 0x41 {
-						values[int(in.Dst)] = value.Value{Lo: uint64(in.Extra)}
-					}
-					pc++
-					in = code.Code[pc]
-					e.steps++
+			for in.Count != 0 && (in.Op == 0x20 || in.Op == 0x41) && !native && !metered && e.steps&63 != 63 {
+				// Coalesced local reads already occupy their result slot.
+				// Commit constants before advancing, retaining every source
+				// step and stopping before the next polling boundary.
+				if in.Op == 0x41 {
+					values[int(in.Dst)] = value.Value{Lo: uint64(in.Extra)}
 				}
+				pc++
+				in = code.Code[pc]
+				e.steps++
 			}
 			var a, b, c value.Value
 			if in.A != slots.NoSlot {
