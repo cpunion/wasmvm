@@ -159,5 +159,5 @@ The [isolated reduction split](performance-native-reduction-held-2026-11-02.md)
 is held: its only changed native body is the target ARM64 memory loop, but every
 paired process block regresses for both Go and LLGo (median tables +2.61%/+2.14%).
 Passing semantics and resemblance to C's independent accumulators do not justify
-integrating it. The accepted candidate branch retains the simpler implementation;
+integrating it. The contribution branch retains the simpler implementation;
 repeated group control and address induction remain separate hypotheses.
