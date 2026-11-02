@@ -40,7 +40,7 @@ func engines(t *testing.T, run func(*testing.T, *vm.Engine, vm.CallOptions)) {
 	}
 }
 
-func newGroup(t *testing.T, e *vm.Engine, ctx context.Context, config Config, mode uint32) (*Group, vm.Extern) {
+func compileGroupModule(t *testing.T, e *vm.Engine, ctx context.Context) *vm.CompiledModule {
 	t.Helper()
 	bytes, err := os.ReadFile("testdata/group.wasm")
 	if err != nil {
@@ -51,6 +51,16 @@ func newGroup(t *testing.T, e *vm.Engine, ctx context.Context, config Config, mo
 		t.Fatal(err)
 	}
 	t.Cleanup(m.Close)
+	return m
+}
+
+func newGroup(t *testing.T, e *vm.Engine, ctx context.Context, config Config, mode uint32) (*Group, vm.Extern) {
+	t.Helper()
+	return groupFromModule(t, e, compileGroupModule(t, e, ctx), ctx, config, mode)
+}
+
+func groupFromModule(t *testing.T, e *vm.Engine, m *vm.CompiledModule, ctx context.Context, config Config, mode uint32) (*Group, vm.Extern) {
+	t.Helper()
 	p, err := preview1.NewProcess(preview1.DefaultConfig())
 	if err != nil {
 		t.Fatal(err)
@@ -118,11 +128,13 @@ func TestGroupInstancesInitializationAndReturn(t *testing.T) {
 
 func TestGroupTrapExitAndCancel(t *testing.T) {
 	engines(t, func(t *testing.T, e *vm.Engine, options vm.CallOptions) {
+		// Compilation is setup, outside the worker-cancellation deadline.
+		m := compileGroupModule(t, e, nil)
 		for _, mode := range []uint32{1, 2, 3, 9} {
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			cfg := DefaultConfig()
 			cfg.Execution = options
-			g, _ := newGroup(t, e, ctx, cfg, mode)
+			g, _ := groupFromModule(t, e, m, ctx, cfg, mode)
 			err := g.Run()
 			cancel()
 			switch mode {
