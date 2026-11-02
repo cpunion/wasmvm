@@ -369,3 +369,23 @@ own A/A and adverse control results; their percentages are not added or pooled.
 Args-sizes still takes 3.10x Go, 27.75x Wasmtime and 61.16x wazero native in the
 new campaign. This known #2959 workaround creates no duplicate upstream issue;
 all-target controlled acceptance and host-boundary work remain open.
+
+## Host-boundary architecture and reference policy audit
+
+The [explicit entry-FFI experiment](performance-native-entry-ffi-held-2026-11-03.md)
+is held despite removing about eighty reported bytes per native entry: P1 wins
+are only 2.4–3.0% and original native arithmetic controls regress materially.
+It is excluded from PR #104. The [qualitative stack/source audit](performance-p1-boundary-profile-2026-11-03.md)
+identifies repeated context/admission/allocation and public marshaling paths,
+while wazero uses its existing numeric host stack and precomputed metadata.
+Captures are first-long-call diagnostics, without CPU-time attribution.
+
+The [separate cancellation-policy comparison](performance-p1-cancellation-policy-2026-11-03.md)
+keeps default and cancellation-enabled wazero configurations explicitly separate.
+Args-sizes LLGo still takes 37.06x the enabled reference and 3.10x Go in that
+campaign. A separate fixed one-million-iteration arithmetic diagnostic finds
+LLGo 1.563542, Go 1.582500 and C 1.560000 ns/iteration; default/enabled wazero is
+1.692125/13.894500. The original short controls and all A/A samples remain.
+Different poll granularity, incomplete calibration and the rest of the portfolio
+keep acceptance open. Next investigate shared numeric host marshaling and
+cheaper admission/context construction while preserving lifecycle contracts.
