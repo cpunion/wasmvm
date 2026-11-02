@@ -288,9 +288,6 @@ frames:
 			if in.B != slots.NoSlot {
 				b = values[int(in.B)]
 			}
-			if in.C != slots.NoSlot {
-				c = values[int(in.C)]
-			}
 			var result value.Value
 			trap := wasm.NoTrap
 			switch op := in.Op; op {
@@ -440,6 +437,9 @@ frames:
 				return Failed
 			case 1, 0x1a:
 			case 0x1b, 0x1c:
+				if in.C != slots.NoSlot {
+					c = values[int(in.C)]
+				}
 				result = b
 				if uint32(c.Lo) != 0 {
 					result = a
@@ -734,6 +734,9 @@ frames:
 				}
 				continue frames
 			default:
+				if in.C != slots.NoSlot {
+					c = values[int(in.C)]
+				}
 				switch {
 
 				case op>>16 == 0xfb:
