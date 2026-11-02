@@ -83,3 +83,27 @@ Its current-main source was inspected, while timings remain for the pinned compi
 The [grouped extension-check candidate](performance-interpreter-extension-guard-2026-11-02.md)
 improves the complete local interpreter matrix without the earlier private-loop
 regression. Native short-control regressions and final-head acceptance remain open.
+
+## Isolated integer-pair follow-up
+
+The [complete integer-pair comparison](performance-interpreter-integer-pairs-2026-11-02.md)
+uses the corrected I32-width source as its baseline. The LLGo interpreter improves
+integer 60.280→49.789, memory 130.860→100.099 and calls 91.448→82.646
+ns/iteration. Baseline A/A controls are retained. This is a descriptive candidate,
+not integrated final-head or controlled portfolio acceptance.
+
+The three remaining comparisons in that same campaign are:
+
+| Comparison | Observed head deficit | Next investigation |
+| --- | --- | --- |
+| Named competitors | LLGo interpreter integer is 2.3% behind WasmEdge, memory 8.6%, calls 32.9%; SIMD widening and RMW take about twice its time | Shared dispatch/SIMD/helper paths, preserving exact polling and fuel |
+| LLGo versus Go | GC allocation 166.904 versus 136.300 ns/iteration; notify 57.167 versus 48.500 | Allocation and synchronization profiles; independent reproductions before additional LLGo reports |
+| Ordinary native C | LLGo native memory 0.474 versus 0.267 ns/iteration, despite Wasmtime 0.478; integer/calls are much closer | Address lowering and accumulator dependencies; retain bounds, overflow and cold-entry contracts |
+
+Notify and wait-mismatch interpreter results regress 4.4% and 2.7% against the
+corrected baseline. Their short samples, all native regressions, unsupported
+reference outcomes and the earlier compound experiment remain visible. A fast
+case is not substituted for any slower case. The negative-I32 public bit-width
+bug found during this investigation belongs to wasmvm and is fixed in PR #98;
+it is not an LLGo issue. Existing independently reproduced LLGo reports are
+#2957, #2958, #2959 and #2965 above; no duplicate issue is opened for a timing gap.
