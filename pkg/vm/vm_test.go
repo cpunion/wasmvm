@@ -32,8 +32,11 @@ func setupWithEngine(t *testing.T, newEngine func() *Engine) (*Engine, *Store, *
 	return e, s, NewLinker(s)
 }
 func compileDefinition(t *testing.T, e *Engine, d *module.Module) *CompiledModule {
+	return compileDefinitionWithFeatures(t, e, d, 0)
+}
+func compileDefinitionWithFeatures(t *testing.T, e *Engine, d *module.Module, features wasm.Features) *CompiledModule {
 	t.Helper()
-	v, err := validate.Check(d, validate.DefaultLimits())
+	v, err := validate.CheckWithFeatures(d, validate.DefaultLimits(), features)
 	if err != nil {
 		t.Fatal(err)
 	}

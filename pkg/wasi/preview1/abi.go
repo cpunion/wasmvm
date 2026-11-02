@@ -78,6 +78,19 @@ func (c *abiCall) u32(at uint64, v uint32) error {
 	binary.LittleEndian.PutUint32(b[:], v)
 	return c.write(at, b[:])
 }
+
+func (c *abiCall) u32Pair(first uint64, a uint32, second uint64, b uint32) error {
+	if first > 1<<32-4 || second > 1<<32-4 {
+		return ErrFault
+	}
+	var data [8]byte
+	binary.LittleEndian.PutUint32(data[:4], a)
+	binary.LittleEndian.PutUint32(data[4:], b)
+	if err := c.caller.WriteMemoryBatch(0, []vm.MemoryWrite{{Offset: first, Data: data[:4]}, {Offset: second, Data: data[4:]}}); err != nil {
+		return ErrFault
+	}
+	return nil
+}
 func (c *abiCall) u64(at, v uint64) error {
 	var b [8]byte
 	binary.LittleEndian.PutUint64(b[:], v)
