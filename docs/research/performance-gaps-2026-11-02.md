@@ -4,6 +4,13 @@ The remaining gaps are tracked separately. Fast native integer/atomic loops do
 not establish a fast interpreter. A throughput difference alone does not establish
 an LLGo defect. Controlled Linux amd64/macOS arm64 portfolio acceptance is open.
 
+The subsequent [compiler-only baseline study](performance-llgo-result-upgrade-2026-11-03.md)
+rebuilds the merged #2963 compiler on unchanged VM source. Nil-return and
+nonescaping named-result allocations disappear; actual native public empty/live
+costs decrease 4.9%/15.8%, while retained-session empty regresses 2.7%. This
+separate host-pin migration preserves all historical results and guest producers;
+defer, startup and full competitor/native-C acceptance remain open.
+
 | Gap | Evidence and action | Remaining deficit |
 | --- | --- | --- |
 | LLGo shared/atomic interpreter helpers | [Cached cancellation and numeric C bindings](performance-interpreter-atomics-2026-11-02.md): about 21%/22% improvement; checked helper allocation controls become zero | RMW remains about 2.12x WasmEdge and 1.40x wazero interpreter in that campaign |

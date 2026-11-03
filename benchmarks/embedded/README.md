@@ -73,7 +73,7 @@ All process/configuration/workload cases are interleaved in seeded random order.
 ## Backends and provenance
 
 - **Owned wasmvm:** exact base/head commits, each built with pinned Go 1.27.3
-  and LLGo runtime revision `8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f`.
+  and LLGo runtime revision `983465e779527ff496857a9a1915c1b57131091f`.
   The LLGo release profile uses `-O3 -lto=full`, also used by the semantic CI
   and native integer probe. Both source revisions use the same flags; exact
   build commands remain in each report. Earlier default `-Os` diagnostics are
@@ -140,7 +140,7 @@ checkouts; both must contain the candidate dependency selection.
 
 ```sh
 python3 benchmarks/install_tools.py --sdk --destination /tmp/wasmvm-phase-tools
-WASMVM_LLGO_REVISION=8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f \
+WASMVM_LLGO_REVISION=983465e779527ff496857a9a1915c1b57131091f \
 python3 benchmarks/phase_ci.py \
   --base-dir /path/to/base --base-sha FULL_BASE_COMMIT \
   --head-dir /path/to/head --head-sha FULL_HEAD_COMMIT \

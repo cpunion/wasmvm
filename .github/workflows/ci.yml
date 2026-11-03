@@ -18,7 +18,7 @@ concurrency:
 
 env:
   GO_VERSION: '1.27.3'
-  LLGO_REVISION: 8e45ed5e8bbd080995b0516ef40ec1f5218d2e1f
+  LLGO_REVISION: 983465e779527ff496857a9a1915c1b57131091f
 
 jobs:
   plan:
