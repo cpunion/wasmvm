@@ -64,6 +64,8 @@ class IsolatedSourceTests(unittest.TestCase):
             (root / "pkg/vm").mkdir(parents=True)
             engine = root / "pkg/vm/engine.go"
             engine.write_text("package vm\nconst Revision = 1\n")
+            (root / "docs/research").mkdir(parents=True)
+            (root / "docs/research/retained.txt").write_text("unrelated retained evidence\n")
             for path in own_build.HARNESS:
                 (root / path).mkdir(parents=True)
                 (root / path / "main.go").write_text("package main\n// old harness\n")
@@ -90,6 +92,8 @@ class IsolatedSourceTests(unittest.TestCase):
             self.assertEqual((baseline / "pkg/vm/engine.go").read_text(), "package vm\nconst Revision = 1\n")
             self.assertEqual((candidate / "pkg/vm/engine.go").read_text(), "package vm\nconst Revision = 2\n")
             self.assertFalse((candidate / "pkg/vm/untracked.go").exists())
+            self.assertFalse((baseline / "docs").exists())
+            self.assertFalse((candidate / "docs").exists())
             self.assertNotEqual(before["sourceDigest"], after["sourceDigest"])
             phase_path = "internal/bench/phase/phase.go"
             self.assertEqual({k: v for k, v in before["harnessHashes"].items() if k != phase_path},

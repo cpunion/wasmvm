@@ -338,6 +338,12 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			continue
 		}
 
+		if end, ok := e.combineI31(pc); ok {
+			out.FusedIntegers++
+			independentEntries = append(independentEntries, pc+1)
+			combinedThrough = end
+			continue
+		}
 		if end, ok := e.combineMultiplyAdd(pc); ok {
 			out.FusedIntegers++
 			for entry := pc + 1; entry <= end; entry++ {

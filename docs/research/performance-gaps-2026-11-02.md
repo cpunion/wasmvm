@@ -9,12 +9,19 @@ an LLGo defect. Controlled Linux amd64/macOS arm64 portfolio acceptance is open.
 | LLGo shared/atomic interpreter helpers | [Cached cancellation and numeric C bindings](performance-interpreter-atomics-2026-11-02.md): about 21%/22% improvement; checked helper allocation controls become zero | RMW remains about 2.12x WasmEdge and 1.40x wazero interpreter in that campaign |
 | Native scalar memory | The initial [word-loop expansion](performance-native-word-loops-2026-11-02.md) regressed in the [complete combination](performance-atomic-combined-2026-11-02.md) and was held; the bounded [longer follow-up](performance-native-word-long-2026-11-02.md) advanced through merged PR #97 | C and Linux competitor deficits still need resolution; the held prototype is not treated as integrated |
 | Native atomic throughput | [100-million-iteration C comparison](performance-native-atomic-c-2026-11-02.md): LLGo 1.776, Go 1.772, C 1.723, Wasmtime 1.709 ns/iteration | About 3.1% versus C and 3.9% versus Wasmtime on one ARM64 kernel |
+| Native i31 payloads | [Direct payload selection](performance-i31-payload-2026-11-03.md): LLGo 2.543→1.350, Go 1.363, Wasmtime 1.811 and ordinary C 1.286 ns/iteration in one final campaign | Local candidate: 46.9% LLGo improvement, 25.5% faster than this Wasmtime, 4.9% above C; other GC, startup and all-platform gates remain open |
 | Interpreter operands and dispatcher counter | [Two complete twenty-case experiments](performance-interpreter-rejected-2026-11-02.md), including GC, SIMD and wait/notify | No consistent meaningful LLGo benefit; neither candidate is adopted |
 | GC and SIMD interpretation | All results retained in those twenty-case experiments | WasmEdge still leads most cases; removing operand checks does not solve this gap |
 
 Each campaign has its own source revisions and host conditions. Preparation,
 first-call and warm execution remain separate. Do not pool these tables into a
 synthetic fastest-per-case engine or calculate improvements across campaigns.
+
+The [two native-cleanup scope experiments](performance-native-allocation-scope-held-2026-11-03.md)
+remove a known LLGo defer allocation but do not improve the complete measured
+scope. Both production changes remain held; their adverse results and new
+pre-entry cancellation/panic reservation tests are retained. The i31 follow-up
+keeps its own three source-changing campaigns separate from those experiments.
 
 The [final Linux PR #97 benchmark](https://github.com/cpunion/wasmvm/actions/runs/41403501261)
 improves LLGo native memory 1.823→1.649 ns/iteration, versus Wasmtime 0.944
@@ -33,6 +40,7 @@ was not rebuilt; these reports do not assert its status.
 | [#2959](https://github.com/xgo-dev/llgo/issues/2959#issuecomment-6566786471) | Uncancelled context.Err/atomic.Value.Load path allocates; unused return storage is materialized | Cache the execution-bound cancellation view for LLGo; retain Go's cheaper standard path |
 | [#2958](https://github.com/xgo-dev/llgo/issues/2958#issuecomment-6568684544) | Numeric-only Cgo scalar and two-word-result calls each allocate about 16 MB over one million calls; Go allocates zero | Direct LLGo C declarations for retained C-owned numeric memory; host-buffer checks remain |
 | [#2966](https://github.com/xgo-dev/llgo/issues/2966) | Native BDWGC AllocZ emits bzero after GC_malloc has already cleared storage; a minimal program and final disassembly reproduce it | Keep the compiler pin; track an upstream allocator correction as a separate future baseline event |
+| [#2975](https://github.com/xgo-dev/llgo/issues/2975) | Nonescaping function-to-interface conversion retains AllocU under full LTO; 100,000 conversions allocate about 3.2 MB versus zero in Go | Preboxed assertion controls allocate zero; this reproduction does not attribute warm VM callback costs |
 
 The numeric Cgo reproduction narrows the existing residual-allocation report;
 it does not show that struct returns alone cause it. Optimized wrappers allocate
@@ -443,3 +451,14 @@ wazero; startup, native C and controlled portfolio gaps remain open.
 The [PR #104 audit](pr104-final-ci-2026-11-03.md) records its completed merge,
 nineteen required jobs and 240 verified execution reports, including the
 macOS capacity history without rerunning successful work.
+
+The [PR #105 audit](pr105-final-ci-2026-11-03.md) records the selected scalar-host
+implementation's completed dual-platform validation and adverse Linux controls.
+The subsequent [host-binding experiment](performance-host-binding-held-2026-11-03.md)
+and [heap-to-local experiment](performance-heap-local-held-2026-11-03.md) remain
+held: neither establishes a useful gain for its target. Their production changes
+are excluded from the selected i31 follow-up; additional heap continuation tests
+pass against the existing implementation with both compilers.
+The [independent boxing report](performance-llgo-function-boxing-2026-11-03.md)
+retains allocation controls and disassembly identifying conversion, rather than
+assertion extraction, as the allocating operation.

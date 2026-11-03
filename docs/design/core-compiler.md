@@ -264,6 +264,16 @@ forwarding on both emitters. Cache keys reset at every entry and remain separate
 from guest register homes. Forwarding preserves all original cold PCs and
 checks, packed/vector bits, poll intervals and precise-tier behavior.
 
+Adjacent `ref.i31` and `i31.get_s/u` operations also forward their integer
+payload in the unmetered tier. Preserve a boxed slot that later exits can
+observe, while extracting from the original integer to avoid extending its
+dependency chain through tagging. Cached operands use direct ARM64 AND/SBFX
+or AMD64 unsigned immediate AND; spilled/signed-AMD64 operands keep generic
+lowering. Original interior PCs retain independently checked entries, and
+combinations cannot cross a poll boundary. The [i31 comparison](../research/performance-i31-payload-2026-11-03.md)
+keeps all source stages, ordinary C, competitors and adverse controls; one
+kernel's gain does not close portfolio acceptance.
+
 ## Direct tables and function references
 
 Both emitters lower table.get/table.set and ref.func in precise and unmetered
