@@ -9,10 +9,18 @@ import (
 )
 
 type heapLayout struct {
-	offsets []uint32
-	widths  []byte
-	size    uint64
-	stride  int
+	offsets    []uint32
+	widths     []byte
+	references []heapReference
+	size       uint64
+	stride     int
+}
+
+// Reference positions and kinds are immutable properties of the admitted type.
+// Arrays use one element entry; structs and exceptions retain byte offsets.
+type heapReference struct {
+	typ    wasm.ValueType
+	offset uint32
 }
 
 func (s *Store) layout(typ uint32) (*heapLayout, error) {
@@ -33,6 +41,9 @@ func (s *Store) layout(typ uint32) (*heapLayout, error) {
 	l := &heapLayout{}
 	if d.Kind == module.ArrayKind {
 		l.stride = d.Fields[0].HeapBytes()
+		if t := d.Fields[0].Value; t.IsReference() {
+			l.references = []heapReference{{typ: t}}
+		}
 	} else {
 		l.offsets = make([]uint32, len(d.Fields))
 		l.widths = make([]byte, len(d.Fields))
@@ -41,6 +52,9 @@ func (s *Store) layout(typ uint32) (*heapLayout, error) {
 				return nil, limit("heap layout")
 			}
 			l.offsets[i] = uint32(l.size)
+			if f.Value.IsReference() {
+				l.references = append(l.references, heapReference{typ: f.Value, offset: uint32(l.size)})
+			}
 			n := f.HeapBytes()
 			l.widths[i] = byte(n)
 			l.size += uint64(n)

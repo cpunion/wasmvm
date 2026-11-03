@@ -80,3 +80,63 @@ func TestTraceWorklistBoundsDeepSharedCyclesAndReleasesPointers(t *testing.T) {
 		}
 	}
 }
+
+func TestTracePackedFieldsArraysAndFunctionOwners(t *testing.T) {
+	for _, offheap := range []bool{false, true} {
+		if offheap && !native.Available {
+			continue
+		}
+		s := New(DefaultLimits())
+		if offheap {
+			s = NewNative(DefaultLimits())
+		}
+		t.Cleanup(s.Close)
+		owner, err := s.Allocate(build(t, ownedDefinition()), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		m := &module.Module{Types: []module.FuncType{{}, {}}, TypeDefs: []module.TypeDef{
+			{Kind: module.StructKind, Fields: []module.FieldType{
+				{Value: wasm.I32, Packed: 8}, {Value: wasm.I64}, {Value: wasm.V128},
+				{Value: wasm.ExternRef}, {Value: wasm.AnyRef}, {Value: wasm.FuncRef},
+			}},
+			{Kind: module.ArrayKind, Fields: []module.FieldType{{Value: wasm.ExternRef}}},
+		}}
+		types, ok := s.registry.InternModule(m, s.limits.MaxTypes)
+		if !ok {
+			t.Fatal("type registry")
+		}
+		allocate := func(typ, length uint32) uint64 {
+			ref, err := s.allocateObject(typ, length)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return ref
+		}
+		orphan, head, array := allocate(types[0], 6), allocate(types[0], 6), allocate(types[1], 3)
+		o, _ := s.heapObject(head)
+		o.set(0, value.Value{Lo: 128})
+		o.set(1, value.Value{Lo: orphan})
+		o.set(2, value.Value{Lo: orphan, Hi: orphan})
+		o.set(3, value.Value{Lo: 55})
+		o.set(4, value.Value{Lo: array})
+		o.set(5, value.Value{Lo: owner.Functions[0]})
+		a, _ := s.heapObject(array)
+		for i := uint32(0); i < 3; i++ {
+			a.set(i, value.Value{Lo: uint64(56 + i)})
+		}
+		externals := make(map[uint64]int)
+		s.CollectReferences([]ReferenceValue{{wasm.AnyRef, value.Value{Lo: head}}}, nil,
+			func(ref uint64) { externals[ref]++ })
+		if owner.disposed || s.Usage().Instances != 1 || s.Usage().HeapObjects != 2 || s.IsLiveReference(orphan) {
+			t.Fatal("packed references, numeric bits or function owner", offheap, s.Usage())
+		}
+		if len(externals) != 4 || externals[55] != 1 || externals[56] != 1 || externals[57] != 1 || externals[58] != 1 {
+			t.Fatal("external struct/array references", offheap, externals)
+		}
+		s.CollectReferences(nil, nil, nil)
+		if !owner.disposed || s.Usage().Instances != 0 || s.Usage().HeapObjects != 0 {
+			t.Fatal("unrooted function owner or heap retained", offheap, s.Usage())
+		}
+	}
+}

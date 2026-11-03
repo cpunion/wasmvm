@@ -1,6 +1,8 @@
 package state
 
 import (
+	"encoding/binary"
+
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/memory"
 	"github.com/cpunion/wasmvm/internal/engine/value"
@@ -157,31 +159,26 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 
 			if o.Tag != nil {
 				mark(o.Tag.OwnerInstance)
-				for i, t := range o.Tag.Signature.Params {
-					if t.IsReference() {
-						visit(t, o.get(uint32(i)))
-					}
+			} else {
+				if o.Continuation != nil {
+					o.Continuation.Visit(visit, mark)
 				}
-				continue
+				if o.Descriptor != 0 {
+					visit(wasm.AnyRef, value.Value{Lo: o.Descriptor})
+				}
 			}
-			d := s.registry.Types[o.Type].Definition
-			if o.Continuation != nil {
-				o.Continuation.Visit(visit, mark)
-			}
-			if o.Descriptor != 0 {
-				visit(wasm.AnyRef, value.Value{Lo: o.Descriptor})
-			}
-			if d.Kind == module.ArrayKind {
-				if d.Fields[0].Value.IsReference() {
+			layout := o.Layout
+			if layout.stride != 0 {
+				if len(layout.references) != 0 {
+					typ := layout.references[0].typ
 					for i := uint32(0); i < o.Length; i++ {
-						visit(d.Fields[0].Value, o.get(i))
+						offset := uint64(i) * uint64(layout.stride)
+						visit(typ, value.Value{Lo: binary.LittleEndian.Uint64(o.Data[offset:])})
 					}
 				}
 			} else {
-				for i, f := range d.Fields {
-					if f.Value.IsReference() {
-						visit(f.Value, o.get(uint32(i)))
-					}
+				for _, ref := range layout.references {
+					visit(ref.typ, value.Value{Lo: binary.LittleEndian.Uint64(o.Data[ref.offset:])})
 				}
 			}
 		}
