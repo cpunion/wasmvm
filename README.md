@@ -17,22 +17,15 @@ execution never silently switches to one of them.
 
 Current optimization evidence: [competitor, Go/LLGo and ordinary-native gaps](docs/research/performance-gaps-2026-11-02.md), with per-case outcomes and upstream compiler reports. Performance acceptance remains open.
 
-The [LLGo host-compiler migration](docs/research/performance-llgo-result-upgrade-2026-11-03.md)
-records old/new compiler results on identical VM source, separately from VM
-optimizations. Historical benchmark and guest-producer pins retain their identities.
-
-The subsequent [direct-context study](docs/research/performance-direct-context-poll-2026-11-03.md)
-compares all 20 interpreter/native kernels and six ordinary C kernels after
-removing the obsolete cancellation wrapper, retaining remaining gaps and regressions.
-
-The [free-handle comparison](docs/research/performance-gc-free-chain-2026-11-04.md)
-keeps 16-byte handle slots and removes their separate free-index array. Its
-long-loop diagnostics observe 3.9%/10.5% lower Go/LLGo native allocation time;
-LLGo still takes about 5.69x Wasmtime. All twenty workloads, native C comparisons
-and adverse duration/public-call controls are retained, including slower LLGo
-interpreter memory controls. [PR113's final audit](docs/research/pr113-final-ci-2026-11-04.md)
-verifies its merged baseline across both compilers/platforms. Whole-portfolio
-performance and expanded WASI acceptance remain open.
+The [native GC sweep study](docs/research/performance-native-gc-sweep-2026-11-04.md)
+observes 8.5% lower LLGo native linked-allocation time against the merged
+[PR114 baseline](docs/research/pr114-final-ci-2026-11-04.md). Empty allocation is
+19.21 ns versus Wasmtime 20.68 ns, with a retained 1.7% self-baseline regression;
+long linked allocation still takes 5.32x Wasmtime. All twenty original kernels,
+ordinary C comparisons and adverse controls remain recorded. The
+[LLGo migration](docs/research/performance-llgo-result-upgrade-2026-11-03.md)
+remains a separate compiler-baseline event. Controlled performance and expanded
+WASI acceptance remain open.
 
 ## Project status
 
