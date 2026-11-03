@@ -141,13 +141,20 @@ func (s *Store) releaseObject(index uint32) {
 	if obj == nil {
 		return
 	}
+	if s.nativeHeap != nil && len(obj.Data) == 0 {
+		s.nativeHeap.empty[index/64] &^= uint64(1) << (index % 64)
+	}
+	s.releaseHeapObject(index, obj)
+}
+
+// The collector already has a live cell. Empty-object sweeping updates its
+// bitmap once per word; individual release/rollback removes the bit above.
+func (s *Store) releaseHeapObject(index uint32, obj *heapObject) {
+	slot := &s.heap[index]
 	s.usage.HeapObjects--
 	s.usage.HeapBytes -= obj.Bytes
 	if s.nativeHeap != nil {
 		clear(s.nativeHeap.views[int(index)*4 : int(index)*4+4])
-		if len(obj.Data) == 0 {
-			s.nativeHeap.empty[index/64] &^= uint64(1) << (index % 64)
-		}
 	}
 	*obj = heapObject{}
 	slot.Object = nil

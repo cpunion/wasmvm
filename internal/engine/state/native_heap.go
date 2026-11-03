@@ -116,7 +116,7 @@ func (s *Store) compactNativeHeap(sweep bool) {
 		}
 		if sweep {
 			if !o.Mark {
-				s.releaseObject(uint32(a.handle))
+				s.releaseHeapObject(uint32(a.handle), o)
 				continue
 			}
 			o.Mark = false
@@ -147,16 +147,19 @@ func (s *Store) trackNativeEmpty(index uint32) {
 // handle can be reserved for another generation. No tombstones accumulate.
 func (s *Store) sweepNativeEmpty() {
 	for page, word := range s.nativeHeap.empty {
+		var live uint64
 		for word != 0 {
 			index := uint32(page*64 + bits.TrailingZeros64(word))
 			o := s.heap[index].Object
 			if o.Mark {
 				o.Mark = false
+				live |= word & -word
 			} else {
-				s.releaseObject(index)
+				s.releaseHeapObject(index, o)
 			}
 			word &= word - 1
 		}
+		s.nativeHeap.empty[page] = live
 	}
 }
 
