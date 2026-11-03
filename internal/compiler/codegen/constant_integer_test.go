@@ -150,7 +150,7 @@ func TestARMConstantIntegerSelectionAndColdAliases(t *testing.T) {
 	}
 }
 
-func TestConstantIntegerForwardedLocalDoesNotReviveLiteral(t *testing.T) {
+func TestConstantIntegerForwardedLocalPreservesResults(t *testing.T) {
 	for _, wide := range []bool{false, true} {
 		typ, literal, add := wasm.I32, uint32(0x41), uint32(0x6a)
 		if wide {
@@ -182,15 +182,8 @@ func TestConstantIntegerForwardedLocalDoesNotReviveLiteral(t *testing.T) {
 					if !ok || end != 2 {
 						t.Fatal("missing local fusion", arch, wide, local, tee, end, ok)
 					}
-					if local == 0 && !tee {
-						limit := 8
-						if arch == "amd64" {
-							limit = 6
-							if wide {
-								limit++
-							}
-						}
-						if len(e.a.code) != limit {
+					if arch == "arm64" && local == 0 && !tee {
+						if len(e.a.code) != 8 {
 							t.Fatal("overwritten literal materialized", arch, wide, e.a.code)
 						}
 					}

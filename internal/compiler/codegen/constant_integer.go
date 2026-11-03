@@ -26,9 +26,10 @@ func (e *functionEmitter) combineIntegerConstant(pc int) (int, bool) {
 	if !e.canRegisterImmediate(in.Op, in.Dst, in.A, bits) {
 		return 0, false
 	}
-	// Forwarding into a local does not revive the literal overwritten by the
-	// original arithmetic result. Restore that result below when it stays live.
-	if constant.Dst != original && constant.Dst != in.Dst && !e.overwrittenBeforeExit(pc+2, constant.Dst) {
+	// ARM forwarding does not revive a literal overwritten by the original
+	// arithmetic result. Keep amd64's existing placement while investigating
+	// its observed hosted integer-loop regression.
+	if (e.a.arch != "arm64" || constant.Dst != original) && constant.Dst != in.Dst && !e.overwrittenBeforeExit(pc+2, constant.Dst) {
 		e.literal(constant)
 	}
 	e.registerImmediate(in.Op, in.Dst, in.A, bits)
