@@ -117,8 +117,8 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 			visit(g.Type.Value, g.Value)
 		}
 	}
-	ih, oh := 0, 0
-	for ih < len(queue) || oh < len(objects) {
+	ih := 0
+	for ih < len(queue) || len(objects) != 0 {
 		for ih < len(queue) {
 			in := queue[ih]
 			ih++
@@ -141,9 +141,13 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 			}
 			in.RetainedValues(visit)
 		}
-		for oh < len(objects) {
-			o := objects[oh]
-			oh++
+		for len(objects) != 0 {
+			// Retain only pending objects. Long chains need a small worklist,
+			// while mark bits still deduplicate cycles and shared children.
+			last := len(objects) - 1
+			o := objects[last]
+			objects[last] = nil
+			objects = objects[:last]
 
 			if o.Tag != nil {
 				mark(o.Tag.OwnerInstance)
@@ -188,8 +192,7 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 		}
 	}
 	s.heapThreshold = max(1<<20, s.usage.HeapBytes*2)
-	clear(objects)
-	s.markObjects = objects[:0]
+	s.markObjects = objects
 	if s.nativeHeap != nil {
 		s.compactNativeHeap()
 	}
