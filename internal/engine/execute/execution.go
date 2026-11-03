@@ -282,12 +282,6 @@ frames:
 				e.steps++
 			}
 			var a, b, c value.Value
-			if in.A != slots.NoSlot {
-				a = values[int(in.A)]
-			}
-			if in.B != slots.NoSlot {
-				b = values[int(in.B)]
-			}
 			var result value.Value
 			trap := wasm.NoTrap
 			// Internal control instructions have their own dispatch cases below.
@@ -295,6 +289,13 @@ frames:
 			if in.Op >= 0xe0 && in.Op < slots.ControlBase {
 				switch in.Op >> 16 {
 				case 0xfd:
+					var a, b, c value.Value
+					if in.A != slots.NoSlot {
+						a = values[int(in.A)]
+					}
+					if in.B != slots.NoSlot {
+						b = values[int(in.B)]
+					}
 					op := in.Op
 					if in.C != slots.NoSlot {
 						c = values[int(in.C)]
@@ -311,6 +312,13 @@ frames:
 					}
 					goto commit
 				case 0xfb:
+					var a, b, c value.Value
+					if in.A != slots.NoSlot {
+						a = values[int(in.A)]
+					}
+					if in.B != slots.NoSlot {
+						b = values[int(in.B)]
+					}
 					im := &code.Sources[in.Source].Wasm
 					var err error
 					if n := state.GCAccessArity(in.Op); n != 0 {
@@ -397,6 +405,13 @@ frames:
 						continue frames
 					}
 				}
+			}
+			// Keep scalar inputs out of the cold extension handlers' live ranges.
+			if in.A != slots.NoSlot {
+				a = values[int(in.A)]
+			}
+			if in.B != slots.NoSlot {
+				b = values[int(in.B)]
 			}
 			switch op := in.Op; op {
 			case slots.ControlBase + uint32(ir.IfCast), slots.ControlBase + uint32(ir.IfNull), slots.ControlBase + uint32(ir.Jump), slots.ControlBase + uint32(ir.If), slots.ControlBase + uint32(ir.Table), slots.ControlBase + uint32(ir.Return), slots.ControlBase + uint32(ir.Trap):
