@@ -290,7 +290,9 @@ frames:
 			}
 			var result value.Value
 			trap := wasm.NoTrap
-			if in.Op >= 0xe0 {
+			// Internal control instructions have their own dispatch cases below.
+			// Classify only Wasm opcodes through the extension prefixes.
+			if in.Op >= 0xe0 && in.Op < slots.ControlBase {
 				switch in.Op >> 16 {
 				case 0xfd:
 					op := in.Op
