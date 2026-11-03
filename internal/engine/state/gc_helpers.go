@@ -48,6 +48,15 @@ func (s *Store) popTemporary(mark int) {
 }
 
 func (s *Store) gcAllocate(in *Instance, ins *module.Instr, args []value.Value, length uint32) (uint64, *heapObject, error) {
+	// Default constructors have no operand roots to borrow. Keep their path
+	// outside the rooted helper's deferred cleanup and exception frame.
+	if len(args) == 0 {
+		return s.gcAllocateObject(in.Types[ins.A], length)
+	}
+	return s.gcAllocateRooted(in, ins, args, length)
+}
+
+func (s *Store) gcAllocateRooted(in *Instance, ins *module.Instr, args []value.Value, length uint32) (uint64, *heapObject, error) {
 	// Operands stay rooted even on a constant-expression stack. Restore the
 	// borrowed root extent on ordinary errors and host-collector panics alike.
 	mark := len(s.temporary)
@@ -67,7 +76,11 @@ func (s *Store) gcAllocate(in *Instance, ins *module.Instr, args []value.Value, 
 			s.temporary = appendValue(s.temporary, ReferenceValue{ft, a})
 		}
 	}
-	ref, err := s.allocateObject(in.Types[ins.A], length)
+	return s.gcAllocateObject(in.Types[ins.A], length)
+}
+
+func (s *Store) gcAllocateObject(typ, length uint32) (uint64, *heapObject, error) {
+	ref, err := s.allocateObject(typ, length)
 	if err != nil {
 		return 0, nil, err
 	}
