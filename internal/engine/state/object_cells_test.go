@@ -37,7 +37,7 @@ func TestObjectMetadataReusesGenerationsAcrossPagesAndRelocation(t *testing.T) {
 			o.set(0, value.Value{Lo: uint64(i)})
 			handles, objects = append(handles, ref), append(objects, o)
 		}
-		if len(s.heapObjects) != 3 || len(s.heapObjects[2]) != 6 {
+		if len(s.heapObjects) != 3 || len(s.heapObjects[2].objects) != 6 {
 			t.Fatal("metadata exceeds handle quota", len(s.heapObjects))
 		}
 		for round := 0; round < 3; round++ {

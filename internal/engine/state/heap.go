@@ -43,13 +43,18 @@ type heapSlot struct {
 // quota; a recycled generation reuses its cleared metadata cell.
 const heapObjectsPerPage = 64
 
+type heapObjectPage struct {
+	objects  []heapObject
+	hasEmpty bool
+}
+
 func (s *Store) objectCell(index uint32) *heapObject {
 	page := uint64(index) / heapObjectsPerPage
 	for page >= uint64(len(s.heapObjects)) {
 		remaining := uint64(s.limits.MaxHeapObjects) + 1 - uint64(len(s.heapObjects))*heapObjectsPerPage
-		s.heapObjects = appendValue(s.heapObjects, make([]heapObject, int(min(heapObjectsPerPage, remaining))))
+		s.heapObjects = appendValue(s.heapObjects, heapObjectPage{objects: make([]heapObject, int(min(heapObjectsPerPage, remaining)))})
 	}
-	return &s.heapObjects[page][uint64(index)%heapObjectsPerPage]
+	return &s.heapObjects[page].objects[uint64(index)%heapObjectsPerPage]
 }
 
 func (s *Store) heapObject(ref uint64) (*heapObject, bool) {
@@ -141,14 +146,11 @@ func (s *Store) releaseObject(index uint32) {
 	if obj == nil {
 		return
 	}
-	if s.nativeHeap != nil && len(obj.Data) == 0 {
-		s.nativeHeap.empty[index/64] &^= uint64(1) << (index % 64)
-	}
 	s.releaseHeapObject(index, obj)
 }
 
-// The collector already has a live cell. Empty-object sweeping updates its
-// bitmap once per word; individual release/rollback removes the bit above.
+// The collector already has a live cell. Clearing its layout also removes it
+// from the empty-object inventory, including individual release and rollback.
 func (s *Store) releaseHeapObject(index uint32, obj *heapObject) {
 	slot := &s.heap[index]
 	s.usage.HeapObjects--

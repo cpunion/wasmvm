@@ -1,7 +1,6 @@
 package state
 
 import (
-	"math/bits"
 	"unsafe"
 
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
@@ -18,7 +17,6 @@ type nativeHeap struct {
 	views                               []uint64
 	used                                uint64
 	objects                             []nativeHeapAllocation
-	empty                               []uint64
 	allocation                          *native.Memory
 	allocationWords                     []uint64
 	pendingCount                        uint64
@@ -27,7 +25,7 @@ type nativeHeap struct {
 
 // Nonempty payloads retain allocation order for in-place relocation. Numeric
 // handles avoid duplicate host pointers and validate reused generations. Empty
-// objects use one bit per handle instead of appending a relocation record.
+// objects are swept in metadata pages instead of appending relocation records.
 type nativeHeapAllocation struct {
 	offset, handle uint64
 }
@@ -136,30 +134,31 @@ func (s *Store) compactNativeHeap(sweep bool) {
 }
 
 func (s *Store) trackNativeEmpty(index uint32) {
-	h := s.nativeHeap
-	for int(index/64) >= len(h.empty) {
-		h.empty = appendValue(h.empty, uint64(0))
-	}
-	h.empty[index/64] |= uint64(1) << (index % 64)
+	s.heapObjects[uint64(index)/heapObjectsPerPage].hasEmpty = true
 }
 
-// Bits name live cells directly, so rollback and release clear them before a
-// handle can be reserved for another generation. No tombstones accumulate.
+// Only pages that may contain empty objects need this scan. Released cells
+// have no layout; a conservative page summary retains no individual identities
+// and is reset by collection. Empty allocation adds no record or backing array.
 func (s *Store) sweepNativeEmpty() {
-	for page, word := range s.nativeHeap.empty {
-		var live uint64
-		for word != 0 {
-			index := uint32(page*64 + bits.TrailingZeros64(word))
-			o := s.heap[index].Object
+	for page := range s.heapObjects {
+		p := &s.heapObjects[page]
+		if !p.hasEmpty {
+			continue
+		}
+		p.hasEmpty = false
+		for cell := range p.objects {
+			o := &p.objects[cell]
+			if o.Layout == nil || len(o.Data) != 0 {
+				continue
+			}
 			if o.Mark {
 				o.Mark = false
-				live |= word & -word
+				p.hasEmpty = true
 			} else {
-				s.releaseHeapObject(index, o)
+				s.releaseHeapObject(uint32(page*heapObjectsPerPage+cell), o)
 			}
-			word &= word - 1
 		}
-		s.nativeHeap.empty[page] = live
 	}
 }
 

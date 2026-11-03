@@ -27,7 +27,7 @@ func checkNativeInventory(t *testing.T, s *Store) {
 		}
 		used += uint64(len(o.Data))
 	}
-	wantEmpty := make([]uint64, len(s.nativeHeap.empty))
+	wantEmpty := make([]bool, len(s.heapObjects))
 	for i, slot := range s.heap {
 		o := slot.Object
 		if o == nil {
@@ -39,7 +39,7 @@ func checkNativeInventory(t *testing.T, s *Store) {
 			if o.Data != nil || i/64 >= len(wantEmpty) || seen[ref] {
 				t.Fatal("empty object missing or duplicated", i)
 			}
-			wantEmpty[i/64] |= uint64(1) << (i % 64)
+			wantEmpty[i/heapObjectsPerPage] = true
 			seen[ref] = true
 		} else {
 			address = uint64(uintptr(unsafe.Pointer(unsafe.SliceData(o.Data))))
@@ -52,9 +52,9 @@ func checkNativeInventory(t *testing.T, s *Store) {
 			t.Fatal("incoherent native view", ref, v)
 		}
 	}
-	for page, word := range wantEmpty {
-		if s.nativeHeap.empty[page] != word {
-			t.Fatal("empty bitmap exposes a dead or missing handle", page)
+	for page, empty := range wantEmpty {
+		if s.heapObjects[page].hasEmpty != empty {
+			t.Fatal("empty-page summary was not updated", page)
 		}
 	}
 	if uint64(len(seen)) != s.Usage().HeapObjects || used != s.nativeHeap.used || uint64(len(wantEmpty)) > (uint64(s.limits.MaxHeapObjects)+64)/64 {
@@ -90,7 +90,7 @@ func TestNativeSweepIncludesEmptySlowAndBatchObjects(t *testing.T) {
 	for i := 0; i < 61; i++ {
 		stagedAllocation(t, s, uint32(i%2), uint32(i), 0)
 	}
-	if len(s.nativeHeap.objects) != 2 || s.nativeHeap.empty[0] != 1<<2 {
+	if len(s.nativeHeap.objects) != 2 || len(s.heapObjects) != 1 || !s.heapObjects[0].hasEmpty {
 		t.Fatal("unpublished reservations entered sweep inventory")
 	}
 	words := s.nativeHeap.allocationWords
@@ -144,7 +144,7 @@ func TestNativeSweepIncludesEmptySlowAndBatchObjects(t *testing.T) {
 	}
 }
 
-func TestNativeEmptyPayloadMaintenanceBoundsRollbackBitmap(t *testing.T) {
+func TestNativeEmptyPayloadMaintenanceBoundsRollbackPages(t *testing.T) {
 	s, types := allocationStore(t)
 	for _, size := range []uint32{0, 1 << 18} {
 		// Exercise both an arena-free heap and one with a large old capacity.
@@ -159,10 +159,12 @@ func TestNativeEmptyPayloadMaintenanceBoundsRollbackBitmap(t *testing.T) {
 				t.Fatal(err)
 			}
 			s.rollbackHeap(0)
-			if s.IsLiveReference(ref) || len(s.nativeHeap.objects) != 0 || len(s.nativeHeap.empty) != 1 || s.nativeHeap.empty[0] != 0 {
-				t.Fatal("empty rollback retained a bit or relocation record")
+			if s.IsLiveReference(ref) || len(s.nativeHeap.objects) != 0 || len(s.heapObjects) != 1 {
+				t.Fatal("empty rollback accumulated metadata")
 			}
 		}
+		s.CollectReferences(nil, nil, nil)
+		checkNativeInventory(t, s)
 	}
 	checkNative := func() {
 		t.Helper()
