@@ -114,3 +114,45 @@ func TestCanceledWorkspaceCannotBeReused(t *testing.T) {
 		t.Fatal("canceled native context was reused")
 	}
 }
+
+func TestOwnedInvocationCancellationAndRebinding(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	e, fn, lease := prepare(t, fixture(t, false))
+	if !e.Suspend() {
+		t.Fatal("initial suspension")
+	}
+	for range 4 {
+		ctx, cancel := context.WithCancel(context.Background())
+		if err := e.BeginOwned(ctx, false); err != nil {
+			t.Fatal(err)
+		}
+		if err := e.BeginOwned(ctx, false); !errors.Is(err, wasm.ErrInvalid) {
+			t.Fatal("rebound active owned invocation", err)
+		}
+		if _, _, err := e.Run(fn, 0, 1, 0, 1); err != nil || !e.Suspend() {
+			t.Fatal("owned invocation could not quiesce", err)
+		}
+		// The former owner has detached this workspace before canceling its
+		// context. The retired context must not write the next native binding.
+		cancel()
+		runtime.GC()
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	if err := e.BeginOwned(ctx, false); err != nil {
+		t.Fatal(err)
+	}
+	cancel()
+	e.Interrupt()
+	if exit, err := e.native.Enter(lease.code, lease.entries[fn.Code].ordinary); err != nil || exit != native.Poll {
+		t.Fatal("owned interrupt did not reach native control", exit, err)
+	}
+	if _, _, err := e.Run(fn, 0, 1, 0, 0); !errors.Is(err, context.Canceled) {
+		t.Fatal("owned invocation lost cancellation", err)
+	}
+	if e.Suspend() || e.Suspend() || !errors.Is(e.BeginOwned(nil, false), wasm.ErrInvalid) {
+		t.Fatal("interrupted owned context was recycled")
+	}
+}

@@ -62,14 +62,23 @@ func (c *Caller) NewSuspendableFunction(signature FunctionType, fn SuspendableHo
 }
 
 func (op *operation) removeFrame(e *execute.Execution) {
+	op.store.mu.Lock()
 	for i, frame := range op.frames {
 		if frame == e {
 			last := len(op.frames) - 1
 			op.frames[i], op.frames[last] = op.frames[last], nil
 			op.frames = op.frames[:last]
+			op.store.mu.Unlock()
 			return
 		}
 	}
+	op.store.mu.Unlock()
+}
+
+func (op *operation) addFrame(e *execute.Execution) {
+	op.store.mu.Lock()
+	op.frames = append(op.frames, e)
+	op.store.mu.Unlock()
 }
 
 func (op *operation) executionLimits(except *execute.Execution) (execute.Limits, error) {
@@ -132,7 +141,7 @@ func (c *Caller) Start(fn Extern, args []Value) (*Continuation, error) {
 		w.execution.Close()
 		return nil, err
 	}
-	op.frames = append(op.frames, w.execution)
+	op.addFrame(w.execution)
 	if op.continuations == nil {
 		op.continuations = map[*Continuation]struct{}{}
 	}

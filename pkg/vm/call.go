@@ -213,7 +213,7 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 		op.releaseWorkspace(w)
 		return nil, err
 	}
-	op.frames = append(op.frames, e)
+	op.addFrame(e)
 	defer func() {
 		op.removeFrame(e)
 		op.releaseWorkspace(w)

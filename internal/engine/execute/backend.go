@@ -19,6 +19,15 @@ func (e *Execution) Quiesce() {
 	e.status = Done
 }
 
+// Interrupt requests a concurrent native exit after the invocation context has
+// been canceled. The owner keeps this frame registered until delivery drains;
+// its backend cannot be closed or rebound concurrently. Interpreters poll ctx.
+func (e *Execution) Interrupt() {
+	if backend, ok := e.config.Backend.(interface{ Interrupt() }); ok {
+		backend.Interrupt()
+	}
+}
+
 // SetLimits redistributes a session's logical frame/slot budget between parked
 // executions. The driver calls it only while this execution is not running.
 func (e *Execution) SetLimits(limits Limits) error {

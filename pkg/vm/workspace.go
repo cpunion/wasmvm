@@ -23,7 +23,7 @@ func (op *operation) acquireWorkspace(limits execute.Limits) (*callWorkspace, er
 	config := execute.Config{Limits: limits, Metered: op.options.Metered, Fuel: op.fuel}
 	if w != nil {
 		if w.native != nil {
-			if err := w.native.Begin(op.ctx, op.options.Metered); err != nil {
+			if err := w.native.BeginOwned(op.ctx, op.options.Metered); err != nil {
 				w.execution.Close()
 				return nil, err
 			}
@@ -36,7 +36,7 @@ func (op *operation) acquireWorkspace(limits execute.Limits) (*callWorkspace, er
 	}
 	w = &callWorkspace{}
 	if s.engine.config.Backend == "native" {
-		backend, err := nativeexec.New(op.ctx, s.nativeModules, limits.MaxSlots, limits.MaxFrames, op.options.Metered)
+		backend, err := nativeexec.NewOwned(op.ctx, s.nativeModules, limits.MaxSlots, limits.MaxFrames, op.options.Metered)
 		if err != nil {
 			return nil, err
 		}
