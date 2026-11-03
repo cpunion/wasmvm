@@ -358,7 +358,7 @@ func (s *Store) Close() {
 		s.nativeHeap.close()
 	}
 	s.heapLayouts = nil
-	s.heapFree = nil
+	s.heapFree = 0
 	s.temporary = nil
 	s.allocating = nil
 	s.HeapSafepoint = nil

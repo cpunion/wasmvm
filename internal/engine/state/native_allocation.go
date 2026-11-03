@@ -58,9 +58,10 @@ func (s *Store) PrepareNativeAllocations(batchLimit uint32) (uint64, error) {
 	}
 	for h.pendingCount < count {
 		index := uint32(len(s.heap))
-		if len(s.heapFree) != 0 {
-			n := len(s.heapFree) - 1
-			index, s.heapFree = s.heapFree[n], s.heapFree[:n]
+		if s.heapFree != 0 {
+			index = s.heapFree
+			s.heapFree = s.heap[index].Next
+			s.heap[index].Next = 0
 		} else {
 			if uint64(len(s.heap)) > uint64(s.limits.MaxHeapObjects) {
 				break
@@ -183,7 +184,8 @@ func (s *Store) releaseNativeReservations(committed uint64) {
 		if int(index)*4+4 <= len(h.views) {
 			clear(h.views[int(index)*4 : int(index)*4+4])
 		}
-		s.heapFree = appendValue(s.heapFree, index)
+		s.heap[index].Next = s.heapFree
+		s.heapFree = index
 	}
 	h.pendingCount = 0
 	clear(h.allocationWords)

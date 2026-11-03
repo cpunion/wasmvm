@@ -225,7 +225,7 @@ func TestNativeAllocationRequestedBatchBoundsAndPartialRelease(t *testing.T) {
 		if err := s.FinishNativeAllocations(types); err != nil {
 			t.Fatal(err)
 		}
-		if !s.IsLiveReference(ref) || s.Usage().HeapObjects != 1 || s.nativeHeap.pendingCount != 0 || len(s.heapFree) != len(s.heap)-2 {
+		if !s.IsLiveReference(ref) || s.Usage().HeapObjects != 1 || s.nativeHeap.pendingCount != 0 || freeHeapSlots(t, s) != len(s.heap)-2 {
 			t.Fatal("partial batch lost objects or unused handles", limit, s.Usage())
 		}
 		s.CollectReferences(nil, nil, nil)

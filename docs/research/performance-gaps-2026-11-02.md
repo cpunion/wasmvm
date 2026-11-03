@@ -101,8 +101,19 @@ reference positions reduce native allocation Go 55.537→46.495 and LLGo
 61.614→56.505 ns/object in its own campaign; Wasmtime is 9.000. LLGo remains
 about 21.5% above Go and 6.28x Wasmtime. Both host compilers pass affected suites
 and all 48 reports each, and the complete twenty-case and separate duration
-comparisons remain retained. New exact-head CI/review and all applicable
-acceptance gates stay open; no new LLGo defect is inferred from these timings.
+comparisons remain retained. [PR113 final CI](pr113-final-ci-2026-11-04.md)
+verifies the merged source across both compilers/platforms. Controlled acceptance
+stays open; no new LLGo defect is inferred from these timings.
+
+
+The [free-handle chain candidate](performance-gc-free-chain-2026-11-04.md) removes
+its separate index array while retaining16-byte slots and all generation/rollback
+contracts. In its own long campaign, LLGo native allocation improves10.5%
+(60.760→54.354ns, A/A−0.59%); Wasmtime is9.560, so5.69x remains. Both compilers
+pass affected suites and48 reports each, plus native allocation/trap/cancellation.
+The original twenty-case scope and separate duration/public-call controls retain
+all adverse outcomes, including LLGo scalar/dependent interpretation about1.5%
+and native timeout+3.3%. Final-head CI and whole-portfolio acceptance remain open.
 
 ## Independently reproduced LLGo problems
 

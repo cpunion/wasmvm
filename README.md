@@ -25,13 +25,14 @@ The subsequent [direct-context study](docs/research/performance-direct-context-p
 compares all 20 interpreter/native kernels and six ordinary C kernels after
 removing the obsolete cancellation wrapper, retaining remaining gaps and regressions.
 
-The [GC trace-layout comparison](docs/research/performance-gc-tracing-2026-11-03.md)
-observes 16.3%/8.3% lower Go/LLGo native allocation time in separate long-loop
-diagnostics. LLGo remains about 6.3x Wasmtime for that case; the complete
-twenty-workload results and all adverse controls stay recorded.
-[PR112's final audit](docs/research/pr112-final-ci-2026-11-03.md) verifies its
-merged implementation across both compilers/platforms. Whole-portfolio
-performance acceptance remains open.
+The [free-handle comparison](docs/research/performance-gc-free-chain-2026-11-04.md)
+keeps 16-byte handle slots and removes their separate free-index array. Its
+long-loop diagnostics observe 3.9%/10.5% lower Go/LLGo native allocation time;
+LLGo still takes about 5.69x Wasmtime. All twenty workloads, native C comparisons
+and adverse duration/public-call controls are retained, including slower LLGo
+interpreter memory controls. [PR113's final audit](docs/research/pr113-final-ci-2026-11-04.md)
+verifies its merged baseline across both compilers/platforms. Whole-portfolio
+performance and expanded WASI acceptance remain open.
 
 ## Project status
 

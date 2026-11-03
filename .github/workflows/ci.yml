@@ -155,6 +155,9 @@ jobs:
         env:
           SHARD: ${{ matrix.shard }}
         run: python3 scripts/ci_shards.py --shard "$SHARD" --github-output "$GITHUB_OUTPUT"
+      - name: Install Linux LLVM dependencies
+        if: runner.os == 'Linux'
+        run: bash scripts/setup_linux_llgo.sh
       - name: Set up pinned LLGo
         id: llgo
         uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
@@ -163,6 +166,7 @@ jobs:
           install-method: source
           go-version: ${{ env.GO_VERSION }}
           llvm-version: '22'
+          install-dependencies: ${{ runner.os != 'Linux' }}
           cache: true
       - name: Verify toolchain and locate its package cache
         id: cache-path
@@ -232,6 +236,9 @@ jobs:
           - {name: macos-arm64, runner: macos-15}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Install Linux LLVM dependencies
+        if: runner.os == 'Linux'
+        run: bash scripts/setup_linux_llgo.sh
       - name: Set up pinned LLGo
         id: llgo
         uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
@@ -240,6 +247,7 @@ jobs:
           install-method: source
           go-version: ${{ env.GO_VERSION }}
           llvm-version: '22'
+          install-dependencies: ${{ runner.os != 'Linux' }}
           cache: true
       - name: Verify toolchain and locate its package cache
         id: cache-path
@@ -318,12 +326,16 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Install Linux LLVM dependencies
+        if: runner.os == 'Linux'
+        run: bash scripts/setup_linux_llgo.sh
       - uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
         with:
           llgo-version: ${{ env.LLGO_REVISION }}
           go-version: ${{ env.GO_VERSION }}
           install-method: source
           llvm-version: '22'
+          install-dependencies: ${{ runner.os != 'Linux' }}
           cache: true
       - run: |
           experiments/wazero/scripts/run.sh go upstream -race
