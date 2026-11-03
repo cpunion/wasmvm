@@ -147,7 +147,12 @@ func (op *operation) stopWatcher() {
 func (op *operation) cancel() {
 	op.stopWatcher()
 	op.cancelContext()
-	op.interrupt()
+	// Only the invocation driver calls this method and mutates frames. Once
+	// its last frame has detached, cancellation has no native writer to drain.
+	// External cancellation still takes Store.mu through interrupt/Close.
+	if len(op.frames) != 0 {
+		op.interrupt()
+	}
 }
 func (op *operation) finish() {
 	s := op.store
