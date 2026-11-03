@@ -197,3 +197,8 @@ changes require a separate baseline event. LLGo issue2983 is being handled
 independently; no duplicate upstream contribution was made here. Native GC,
 interpreter gaps, public boundaries, ordinary-C ratios, controlled portfolio
 acceptance and expanded WASI acceptance remain open.
+
+The [numeric-dispatch follow-up](pr115-interpreter-diagnosis-2026-11-04.md)
+retains this original GC source and data, addresses the separately observed
+Go/Linux interpreter regression, and records every rejected source variant.
+The adopted candidate uses the same GC representation, compiler profile and quotas.

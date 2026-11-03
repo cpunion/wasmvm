@@ -27,6 +27,11 @@ ordinary C comparisons and adverse controls remain recorded. The
 remains a separate compiler-baseline event. Controlled performance and expanded
 WASI acceptance remain open.
 
+The [interpreter follow-up](docs/research/pr115-interpreter-diagnosis-2026-11-04.md)
+observes 10.1% / 8.3% / 13.7% lower LLGo integer/call/memory-loop times locally.
+Its separate Linux Go controls resolve the earlier interpreter regressions;
+all held variants, ordinary-native observations and longer controls remain recorded.
+
 ## Project status
 
 **Experimental; no tagged release or stable API commitment yet.** The module
