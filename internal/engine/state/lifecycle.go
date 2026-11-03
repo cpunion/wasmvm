@@ -1,6 +1,8 @@
 package state
 
 import (
+	"encoding/binary"
+
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/memory"
 	"github.com/cpunion/wasmvm/internal/engine/value"
@@ -53,7 +55,8 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 	}
 	marked := make(map[*Instance]bool)
 	queue := make([]*Instance, 0, len(active))
-	objects := s.markObjects[:0]
+	objects := s.markObjects[:cap(s.markObjects)]
+	pending := 0
 	s.markObjects = nil
 	mark := func(in *Instance) {
 		if in != nil && in.Owner == s && !in.disposed && !marked[in] {
@@ -77,7 +80,12 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 		if v.Lo&heapTag != 0 {
 			if o, ok := s.heapObject(v.Lo); ok && !o.Mark {
 				o.Mark = true
-				objects = appendValue(objects, o)
+				if pending == len(objects) {
+					objects = appendValue(objects, o)
+				} else {
+					objects[pending] = o
+				}
+				pending++
 			}
 		} else if v.Lo&i31Tag != 0 {
 		} else if v.Lo&externalTag != 0 {
@@ -117,8 +125,8 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 			visit(g.Type.Value, g.Value)
 		}
 	}
-	ih, oh := 0, 0
-	for ih < len(queue) || oh < len(objects) {
+	ih := 0
+	for ih < len(queue) || pending != 0 {
 		for ih < len(queue) {
 			in := queue[ih]
 			ih++
@@ -141,37 +149,36 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 			}
 			in.RetainedValues(visit)
 		}
-		for oh < len(objects) {
-			o := objects[oh]
-			oh++
+		for pending != 0 {
+			// Retain only pending objects. Long chains need a small worklist,
+			// while mark bits still deduplicate cycles and shared children.
+			// Reuse slots without rebuilding a slice header for each object.
+			pending--
+			o := objects[pending]
+			objects[pending] = nil
 
 			if o.Tag != nil {
 				mark(o.Tag.OwnerInstance)
-				for i, t := range o.Tag.Signature.Params {
-					if t.IsReference() {
-						visit(t, o.get(uint32(i)))
-					}
+			} else {
+				if o.Continuation != nil {
+					o.Continuation.Visit(visit, mark)
 				}
-				continue
+				if o.Descriptor != 0 {
+					visit(wasm.AnyRef, value.Value{Lo: o.Descriptor})
+				}
 			}
-			d := s.registry.Types[o.Type].Definition
-			if o.Continuation != nil {
-				o.Continuation.Visit(visit, mark)
-			}
-			if o.Descriptor != 0 {
-				visit(wasm.AnyRef, value.Value{Lo: o.Descriptor})
-			}
-			if d.Kind == module.ArrayKind {
-				if d.Fields[0].Value.IsReference() {
+			layout := o.Layout
+			if layout.stride != 0 {
+				if len(layout.references) != 0 {
+					typ := layout.references[0].typ
 					for i := uint32(0); i < o.Length; i++ {
-						visit(d.Fields[0].Value, o.get(i))
+						offset := uint64(i) * uint64(layout.stride)
+						visit(typ, value.Value{Lo: binary.LittleEndian.Uint64(o.Data[offset:])})
 					}
 				}
 			} else {
-				for i, f := range d.Fields {
-					if f.Value.IsReference() {
-						visit(f.Value, o.get(uint32(i)))
-					}
+				for _, ref := range layout.references {
+					visit(ref.typ, value.Value{Lo: binary.LittleEndian.Uint64(o.Data[ref.offset:])})
 				}
 			}
 		}
@@ -188,7 +195,6 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 		}
 	}
 	s.heapThreshold = max(1<<20, s.usage.HeapBytes*2)
-	clear(objects)
 	s.markObjects = objects[:0]
 	if s.nativeHeap != nil {
 		s.compactNativeHeap()
