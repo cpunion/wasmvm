@@ -21,6 +21,10 @@ The [LLGo host-compiler migration](docs/research/performance-llgo-result-upgrade
 records old/new compiler results on identical VM source, separately from VM
 optimizations. Historical benchmark and guest-producer pins retain their identities.
 
+The subsequent [direct-context study](docs/research/performance-direct-context-poll-2026-11-03.md)
+compares all 20 interpreter/native kernels and six ordinary C kernels after
+removing the obsolete cancellation wrapper, retaining remaining gaps and regressions.
+
 ## Project status
 
 **Experimental; no tagged release or stable API commitment yet.** The module

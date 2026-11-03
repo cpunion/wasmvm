@@ -156,8 +156,8 @@ feature or package is skipped.
 Keep the remaining interpreter SIMD/GC/allocation/atomic gaps, native-C memory,
 public boundary, startup and expanded WASI-world acceptance open. In particular,
 removing a channel-poll workaround does not fix the independently reported LLGo
-channel/defer/boxing/parameter or startup problems. PR110 must finish before
-this candidate becomes the next contribution PR.
+channel/defer/boxing/parameter or startup problems. [PR110 has merged](pr110-final-ci-2026-11-03.md); this candidate is the next
+contribution and still needs its own final-head CI/performance evidence.
 
 [Lossless evidence](evidence/performance-direct-context-poll-2026-11-03.json.gz)
 retains all sources/identities, original outcomes, independent verification,
