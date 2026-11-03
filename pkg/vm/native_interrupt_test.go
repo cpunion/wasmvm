@@ -155,3 +155,63 @@ func TestRetiredOperationWatcherCannotInterruptReusedWorkspace(t *testing.T) {
 		}
 	})
 }
+
+func TestHostPanicDrainsConcurrentCapability(t *testing.T) {
+	withBackends(t, func(t *testing.T, newEngine func() *Engine) {
+		e, s, linker := setupWithEngine(t, newEngine)
+		entered := make(chan struct{})
+		done := make(chan error, 1)
+		notify, err := s.NewFunction(FunctionType{}, func(*Caller, []Value) ([]Value, error) {
+			close(entered)
+			return nil, nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := linker.Define("h", "notify", notify); err != nil {
+			t.Fatal(err)
+		}
+		d := &module.Module{Types: []module.FuncType{{}}, Imports: []module.Import{{Module: "h", Name: "notify"}},
+			Functions: []module.Function{{Body: module.Expr{{Op: 0x10}, {Op: 3, Block: -64}, {Op: 0xc}, {Op: 0xb}, {Op: 0xb}}}},
+			Exports:   []module.Export{{Name: "loop", Index: 1}}}
+		loop := export(t, instantiate(t, linker, compileDefinition(t, e, d)), "loop")
+		sentinel := errors.New("outer callback panicked")
+		host, err := s.NewFunction(FunctionType{}, func(c *Caller, _ []Value) ([]Value, error) {
+			go func() { _, err := c.Call(loop, nil); done <- err }()
+			select {
+			case <-entered:
+			case <-time.After(5 * time.Second):
+				t.Error("concurrent capability did not enter")
+			}
+			panic(sentinel)
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		func() {
+			defer func() {
+				if got := recover(); got != sentinel {
+					t.Fatal("panic was not preserved", got)
+				}
+			}()
+			host.Call(nil, nil, CallOptions{})
+		}()
+		select {
+		case err := <-done:
+			if !errors.Is(err, context.Canceled) {
+				t.Fatal("concurrent capability was not canceled", err)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatal("panic did not drain concurrent capability")
+		}
+		compiled, err := e.Compile(nil, addBinary)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer compiled.Close()
+		add := export(t, instantiate(t, linker, compiled), "add")
+		if r, err := add.Call(nil, []Value{I32(20), I32(22)}, CallOptions{}); err != nil || bits(t, r.Values[0]) != 42 {
+			t.Fatal("panic left the Store busy or interrupted", err)
+		}
+	})
+}

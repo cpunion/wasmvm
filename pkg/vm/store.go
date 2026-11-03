@@ -145,18 +145,19 @@ func (op *operation) stopWatcher() {
 }
 
 func (op *operation) cancel() {
-	op.stopWatcher()
 	op.cancelContext()
-	// Only the invocation driver calls this method and mutates frames. Once
-	// its last frame has detached, cancellation has no native writer to drain.
-	// External cancellation still takes Store.mu through interrupt/Close.
-	if len(op.frames) != 0 {
-		op.interrupt()
-	}
+	op.interrupt()
 }
 func (op *operation) finish() {
 	s := op.store
-	op.cancel()
+	op.stopWatcher()
+	op.cancelContext()
+	// Host capabilities have drained before finish. Only this driver can now
+	// mutate the registry; no native writer remains after its last frame left.
+	// Panic cleanup and external cancellation still take Store.mu unconditionally.
+	if len(op.frames) != 0 {
+		op.interrupt()
+	}
 	for call := range op.continuations {
 		call.mu.Lock()
 		call.abort()
