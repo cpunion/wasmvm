@@ -311,12 +311,12 @@ func TestMultipleEntriesAndFloatingEnvironment(t *testing.T) {
 	if status, err := ctx.Enter(lease, 1); status != Return || err != nil {
 		t.Fatal(status, err)
 	}
-	owner, entry, err := lease.begin(1)
+	entry, err := lease.begin(1)
 	if err != nil {
 		t.Fatal(err)
 	}
 	good := probeFP(entry, unsafe.Pointer(ctx.record))
-	owner.end()
+	lease.end()
 	if !good {
 		t.Fatal("host floating-point environment was not restored")
 	}
@@ -365,12 +365,12 @@ func TestGeneratedEntryPreservesRegisters(t *testing.T) {
 	if err := ctx.SetState(State{ResultLo: 20, ResultHi: 22, Payload: [4]uint64{uint64(Return), 99}}); err != nil {
 		t.Fatal(err)
 	}
-	owner, address, err := lease.begin(0)
+	address, err := lease.begin(0)
 	if err != nil {
 		t.Fatal(err)
 	}
 	good := probeRegisters(address, unsafe.Pointer(ctx.record))
-	owner.end()
+	lease.end()
 	if !good {
 		t.Fatal("generated entry corrupted preserved registers")
 	}

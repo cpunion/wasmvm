@@ -3,6 +3,7 @@ package native
 import (
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -10,12 +11,13 @@ import (
 // leases can still enter, and storage is freed only after leases and entries
 // drain. No finalizer participates in code lifetime.
 type Code struct {
-	mu             sync.Mutex
-	address        unsafe.Pointer
-	size           uint64
-	entries        []uint32
-	retired        bool
-	leases, active uint64
+	mu      sync.Mutex
+	address unsafe.Pointer
+	size    uint64
+	entries []uint32
+	retired bool
+	// A closed lease keeps its pin until all admitted entries have returned.
+	leases uint64
 }
 
 // Publish copies code, seals it executable, and records approved C-ABI entry
@@ -47,9 +49,11 @@ func Publish(code []byte, entries []uint32, maxBytes uint64) (*Code, error) {
 }
 
 type Lease struct {
-	mu   sync.Mutex
-	code *Code
+	state atomic.Uint64
+	code  *Code
 }
+
+const leaseClosed = uint64(1) << 63
 
 func (c *Code) Acquire() (*Lease, error) {
 	c.mu.Lock()
@@ -69,7 +73,7 @@ func (c *Code) Close() {
 }
 
 func (c *Code) release() {
-	if c.retired && c.leases == 0 && c.active == 0 && c.address != nil {
+	if c.retired && c.leases == 0 && c.address != nil {
 		unpublish(c.address, c.size)
 		c.address = nil
 		c.entries = nil
@@ -77,38 +81,63 @@ func (c *Code) release() {
 }
 
 func (l *Lease) Close() {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	if l.code != nil {
-		c := l.code
-		c.mu.Lock()
-		c.leases--
-		c.release()
-		c.mu.Unlock()
-		l.code = nil
+	for {
+		state := l.state.Load()
+		if state&leaseClosed != 0 {
+			return
+		}
+		if l.state.CompareAndSwap(state, state|leaseClosed) {
+			if state == 0 {
+				l.releaseCode()
+			}
+			return
+		}
 	}
 }
 
-func (l *Lease) begin(entry uint32) (*Code, unsafe.Pointer, error) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	if l.code == nil {
-		return nil, nil, ErrClosed
+// Admission pins the immutable code through this lease. Closing prevents new
+// admissions; only the last departing entry may drop a closed lease's pin.
+func (l *Lease) begin(entry uint32) (unsafe.Pointer, error) {
+	for {
+		state := l.state.Load()
+		if state&leaseClosed != 0 {
+			return nil, ErrClosed
+		}
+		if state == leaseClosed-1 {
+			return nil, ErrLimit
+		}
+		if l.state.CompareAndSwap(state, state+1) {
+			break
+		}
 	}
 	c := l.code
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if uint64(entry) >= uint64(len(c.entries)) {
-		return nil, nil, ErrInvalid
+	if c == nil {
+		l.end()
+		return nil, ErrClosed
 	}
-	c.active++
-	return c, unsafe.Add(c.address, uintptr(c.entries[entry])), nil
+	if uint64(entry) >= uint64(len(c.entries)) {
+		l.end()
+		return nil, ErrInvalid
+	}
+	return unsafe.Add(c.address, uintptr(c.entries[entry])), nil
 }
 
-func (c *Code) end() {
+func (l *Lease) end() {
+	if l.state.Add(^uint64(0)) == leaseClosed {
+		l.releaseCode()
+	}
+}
+
+// Called exactly once, with admission closed and no entries still using code.
+func (l *Lease) releaseCode() {
+	c := l.code
+	l.code = nil
+	if c == nil {
+		return
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.active--
+	c.leases--
 	c.release()
 }
 
@@ -263,7 +292,7 @@ func (c *Context) run(l *Lease, entry uint32, state *State) (Exit, error) {
 		}
 		c.record.State = *state
 	}
-	code, address, err := l.begin(entry)
+	address, err := l.begin(entry)
 	if err != nil {
 		c.mu.Unlock()
 		return 0, err
@@ -271,7 +300,7 @@ func (c *Context) run(l *Lease, entry uint32, state *State) (Exit, error) {
 	if c.memory != nil {
 		base, size, err := c.memory.begin()
 		if err != nil {
-			code.end()
+			l.end()
 			c.mu.Unlock()
 			return 0, err
 		}
@@ -283,7 +312,7 @@ func (c *Context) run(l *Lease, entry uint32, state *State) (Exit, error) {
 	status := enter(address, unsafe.Pointer(r))
 	runtime.KeepAlive(c)
 	runtime.KeepAlive(l)
-	code.end()
+	l.end()
 	if c.memory != nil {
 		c.memory.end()
 	}
