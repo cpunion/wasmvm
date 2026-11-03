@@ -53,7 +53,8 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 	}
 	marked := make(map[*Instance]bool)
 	queue := make([]*Instance, 0, len(active))
-	objects := s.markObjects[:0]
+	objects := s.markObjects[:cap(s.markObjects)]
+	pending := 0
 	s.markObjects = nil
 	mark := func(in *Instance) {
 		if in != nil && in.Owner == s && !in.disposed && !marked[in] {
@@ -77,7 +78,12 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 		if v.Lo&heapTag != 0 {
 			if o, ok := s.heapObject(v.Lo); ok && !o.Mark {
 				o.Mark = true
-				objects = appendValue(objects, o)
+				if pending == len(objects) {
+					objects = appendValue(objects, o)
+				} else {
+					objects[pending] = o
+				}
+				pending++
 			}
 		} else if v.Lo&i31Tag != 0 {
 		} else if v.Lo&externalTag != 0 {
@@ -118,7 +124,7 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 		}
 	}
 	ih := 0
-	for ih < len(queue) || len(objects) != 0 {
+	for ih < len(queue) || pending != 0 {
 		for ih < len(queue) {
 			in := queue[ih]
 			ih++
@@ -141,13 +147,13 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 			}
 			in.RetainedValues(visit)
 		}
-		for len(objects) != 0 {
+		for pending != 0 {
 			// Retain only pending objects. Long chains need a small worklist,
 			// while mark bits still deduplicate cycles and shared children.
-			last := len(objects) - 1
-			o := objects[last]
-			objects[last] = nil
-			objects = objects[:last]
+			// Reuse slots without rebuilding a slice header for each object.
+			pending--
+			o := objects[pending]
+			objects[pending] = nil
 
 			if o.Tag != nil {
 				mark(o.Tag.OwnerInstance)
@@ -192,7 +198,7 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 		}
 	}
 	s.heapThreshold = max(1<<20, s.usage.HeapBytes*2)
-	s.markObjects = objects
+	s.markObjects = objects[:0]
 	if s.nativeHeap != nil {
 		s.compactNativeHeap()
 	}
