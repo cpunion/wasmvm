@@ -1,16 +1,19 @@
 # Native integer architecture gate
 
-The separate [scalar C reference](c/scalar_baseline.c) compares six existing
+The separate [scalar C reference](c/scalar_baseline.c) compares nine existing
 parameterized kernels with ordinary native compilation: integer mixing, direct
 source calls, scalar memory, narrow/unaligned memory, dependent addresses and
-unaligned float64. Build it with:
+unaligned float64, and full/widening/lane SIMD memory operations. The SIMD
+references use ordinary C arrays and alias-safe `memcpy`; Clang may vectorize
+them. Their little-endian representation matches the supported benchmark hosts.
+Build it with:
 
 ```sh
 clang -O3 -Wall -Wextra -Werror -o /tmp/native-scalar benchmarks/native/c/scalar_baseline.c
 /tmp/native-scalar function-calls 0 1 2654435769
 ```
 
-Arguments are kernel name, unsigned seed, iteration count (1–1,000,000) and
+Arguments are kernel name, unsigned seed, iteration count (1–INT32_MAX, except float64 limited to 1,000,000) and
 expected checksum. Every first/warmup/measured call validates its result; reset
 work remains inside the timer. The volatile indirect entry prevents the C
 optimizer from hoisting repeated pure calls across clocks. It supports the

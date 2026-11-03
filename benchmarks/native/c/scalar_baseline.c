@@ -1,4 +1,4 @@
-// Unchecked native C references for six existing parameterized Wasm kernels.
+// Unchecked native C references for scalar and SIMD memory Wasm kernels.
 // Clang may inline/vectorize; each call includes the fixture's memory reset.
 #if defined(__APPLE__) && !defined(_DARWIN_C_SOURCE)
 #define _DARWIN_C_SOURCE
@@ -86,6 +86,42 @@ static uint32_t run(unsigned kind, unsigned char *memory, uint32_t seed, uint32_
         sum = (uint32_t)total;
         break;
     }
+    case 6:
+    case 7:
+    case 8: {
+        uint32_t lanes[4] = {seed, seed, seed, seed};
+        static const uint32_t increments[4] = {1, 3, 5, 7};
+        for (uint32_t i = 0; i < 256; i++) memory[i] = (unsigned char)(i * 193 + 127);
+        for (uint32_t i = 0; i < count; i++) {
+            uint32_t address = (i & 127) + 1;
+            if (kind == 6) {
+                memcpy(memory + address, lanes, sizeof(lanes));
+                memory[address + 16] = (unsigned char)(seed + i);
+                memcpy(lanes, memory + address + 1, sizeof(lanes));
+            } else if (kind == 7) {
+                uint16_t old[8], scalar;
+                memcpy(old, lanes, sizeof(old));
+                memcpy(&scalar, memory + ((i * 17) & 127), sizeof(scalar));
+                for (unsigned lane = 0; lane < 8; lane++) {
+                    int8_t byte;
+                    memcpy(&byte, memory + (i & 127) + lane, sizeof(byte));
+                    old[lane] = (uint16_t)((old[lane] ^ (uint16_t)(int16_t)byte) + scalar);
+                }
+                memcpy(lanes, old, sizeof(lanes));
+            } else {
+                uint32_t low;
+                memcpy(memory + address, &lanes[3], sizeof(lanes[3]));
+                memory[address + 4] = (unsigned char)(seed + i);
+                memcpy(&lanes[1], memory + address + 1, sizeof(lanes[1]));
+                memcpy(&low, memory + address, sizeof(low));
+                lanes[0] ^= low;
+            }
+            if (kind != 7)
+                for (unsigned lane = 0; lane < 4; lane++) lanes[lane] += increments[lane];
+        }
+        sum = lanes[0] ^ lanes[1] ^ lanes[2] ^ lanes[3];
+        break;
+    }
     default: abort();
     }
     return sum;
@@ -97,16 +133,20 @@ static uint32_t (*volatile kernel)(unsigned, unsigned char *, uint32_t, uint32_t
 
 int main(int argc, char **argv) {
     static const char *names[] = {"integer-loop", "function-calls", "memory-load-store",
-        "narrow-unaligned", "dependent-address", "float64-unaligned"};
+        "narrow-unaligned", "dependent-address", "float64-unaligned",
+        "simd-memory-full", "simd-memory-widen", "simd-memory-lanes"};
     if (argc != 5) return 2;
     unsigned kind = 0;
     while (kind < sizeof(names) / sizeof(names[0]) && strcmp(names[kind], argv[1])) kind++;
     if (kind == sizeof(names) / sizeof(names[0])) return 2;
     uint32_t seed = (uint32_t)strtoul(argv[2], NULL, 0);
-    uint32_t count = (uint32_t)strtoul(argv[3], NULL, 0);
+    char *count_end;
+    uint64_t parsed_count = strtoull(argv[3], &count_end, 0);
+    if (!*argv[3] || *count_end || !parsed_count || parsed_count > INT32_MAX) return 2;
+    uint32_t count = (uint32_t)parsed_count;
     uint32_t expected = (uint32_t)strtoul(argv[4], NULL, 0);
     // The float fixture must return an in-range Wasm i32.trunc_f64_u result.
-    if (!count || count > 1000000) return 2;
+    if (kind == 5 && count > 1000000) return 2;
     unsigned char *memory = calloc(1, 65536);
     if (!memory) return 2;
     int interleave = getenv("WASMVM_INTERLEAVE") != NULL;
