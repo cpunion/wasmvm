@@ -490,3 +490,18 @@ Darwin C CLOCK_MONOTONIC's 1000-ns granularity. The final study uses the same
 finer clock for both C references and native C, retains Go timers, and keeps
 the earlier source/clock study separate. Single-call C results near resolution
 are not precise pure-call costs. Component clocks and batched latency remain open.
+
+The [PR #107 final audit](pr107-final-ci-2026-11-03.md) retains the corrected
+Linux integer result and the earlier adverse head. The subsequent
+[atomic native lease admission](performance-native-lease-admission-2026-11-03.md)
+removes hot code-pin locking while preserving concurrent close and executing
+entries. [PR #108 merged with full CI](pr108-final-ci-2026-11-03.md): Linux LLGo
+empty native latency improves 5461→2885 ns, still 2.06x Go; sustained
+integer/calls/memory are 1.020x/0.516x/1.115x Wasmtime in this core-only campaign.
+Separate macOS batches improve full LLGo empty native API 5.4% and public-host
+callback 10.2%, with about 224 fewer reported allocation bytes per short call.
+The bounded argument-cache experiment is held; all adverse controls remain.
+Independent startup evidence narrows [LLGo #2973](https://github.com/xgo-dev/llgo/issues/2973#issuecomment-6593936533),
+and the actual boundary-allocation evidence updates [LLGo #2932](https://github.com/xgo-dev/llgo/issues/2932#issuecomment-6596297878).
+Public-boundary/compiler/native-C gaps remain separate and open; no standalone
+ABI component or tiny C identity result replaces complete-VM acceptance.
