@@ -121,7 +121,11 @@ func (s *Store) allocateObject(typ uint32, length uint32, extra ...uint64) (uint
 	*o = heapObject{Type: typ, Data: data, Layout: layout, Length: length, Bytes: bytes, Serial: s.heapSerial}
 	s.heap[index].Object = o
 	if s.nativeHeap != nil {
-		s.nativeHeap.objects = appendValue(s.nativeHeap.objects, nativeHeapAllocation{offset, ref})
+		if payload != 0 {
+			s.nativeHeap.objects = appendValue(s.nativeHeap.objects, nativeHeapAllocation{offset, ref})
+		} else {
+			s.trackNativeEmpty(index)
+		}
 		s.publishHeapObject(ref, o)
 	}
 	s.usage.HeapObjects++
@@ -141,6 +145,9 @@ func (s *Store) releaseObject(index uint32) {
 	s.usage.HeapBytes -= obj.Bytes
 	if s.nativeHeap != nil {
 		clear(s.nativeHeap.views[int(index)*4 : int(index)*4+4])
+		if len(obj.Data) == 0 {
+			s.nativeHeap.empty[index/64] &^= uint64(1) << (index % 64)
+		}
 	}
 	*obj = heapObject{}
 	slot.Object = nil

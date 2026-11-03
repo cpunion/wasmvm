@@ -185,6 +185,7 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 	}
 	if s.nativeHeap != nil {
 		s.compactNativeHeap(true)
+		s.sweepNativeEmpty()
 	} else {
 		for i := 1; i < len(s.heap); i++ {
 			o := s.heap[i].Object

@@ -1,6 +1,7 @@
 package state
 
 import (
+	"math/bits"
 	"unsafe"
 
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
@@ -17,14 +18,16 @@ type nativeHeap struct {
 	views                               []uint64
 	used                                uint64
 	objects                             []nativeHeapAllocation
+	empty                               []uint64
 	allocation                          *native.Memory
 	allocationWords                     []uint64
 	pendingCount                        uint64
 	allocationBatches, allocatedObjects uint64
 }
 
-// Every published native object has one record, including empty payloads.
-// Numeric handles avoid duplicate host pointers and validate reused generations.
+// Nonempty payloads retain allocation order for in-place relocation. Numeric
+// handles avoid duplicate host pointers and validate reused generations. Empty
+// objects use one bit per handle instead of appending a relocation record.
 type nativeHeapAllocation struct {
 	offset, handle uint64
 }
@@ -55,11 +58,11 @@ func (s *Store) prepareHeapViews(count uint64) error {
 
 func (s *Store) allocateNativePayload(size uint64) ([]byte, uint64, error) {
 	h := s.nativeHeap
-	if err := s.reserveNativePayload(size); err != nil {
-		return nil, 0, err
-	}
 	if size == 0 {
 		return nil, 0, nil
+	}
+	if err := s.reserveNativePayload(size); err != nil {
+		return nil, 0, err
 	}
 	offset := h.used
 	h.used += size
@@ -93,9 +96,6 @@ func (s *Store) reserveNativePayload(size uint64) error {
 		}
 		for _, a := range h.objects {
 			o, _ := s.heapObject(a.handle)
-			if len(o.Data) == 0 {
-				continue
-			}
 			o.Data = h.data[a.offset : a.offset+uint64(len(o.Data))]
 			s.publishHeapObject(a.handle, o)
 		}
@@ -103,8 +103,8 @@ func (s *Store) reserveNativePayload(size uint64) error {
 	return nil
 }
 
-// Collection sweeps the complete allocation inventory while compacting it.
-// Capacity maintenance removes only tombstones and leaves live mark bits alone.
+// Collection sweeps nonempty objects while compacting their payloads. Capacity
+// maintenance removes only tombstones and leaves live mark bits alone.
 func (s *Store) compactNativeHeap(sweep bool) {
 	h := s.nativeHeap
 	kept := 0
@@ -133,6 +133,31 @@ func (s *Store) compactNativeHeap(sweep bool) {
 		kept++
 	}
 	h.objects, h.used = h.objects[:kept], used
+}
+
+func (s *Store) trackNativeEmpty(index uint32) {
+	h := s.nativeHeap
+	for int(index/64) >= len(h.empty) {
+		h.empty = appendValue(h.empty, uint64(0))
+	}
+	h.empty[index/64] |= uint64(1) << (index % 64)
+}
+
+// Bits name live cells directly, so rollback and release clear them before a
+// handle can be reserved for another generation. No tombstones accumulate.
+func (s *Store) sweepNativeEmpty() {
+	for page, word := range s.nativeHeap.empty {
+		for word != 0 {
+			index := uint32(page*64 + bits.TrailingZeros64(word))
+			o := s.heap[index].Object
+			if o.Mark {
+				o.Mark = false
+			} else {
+				s.releaseObject(index)
+			}
+			word &= word - 1
+		}
+	}
 }
 
 func (s *Store) publishHeapObject(ref uint64, o *heapObject) {

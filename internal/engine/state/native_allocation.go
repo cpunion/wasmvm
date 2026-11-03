@@ -159,8 +159,10 @@ func (s *Store) finishNativeAllocations(types []uint32) error {
 		*o = heapObject{Type: identities[i], Layout: layout, Length: uint32(len(layout.widths)), Bytes: layout.size + 64, Serial: s.heapSerial}
 		if layout.size != 0 {
 			o.Data = h.data[offset : offset+layout.size]
+			h.objects = appendValue(h.objects, nativeHeapAllocation{offset, ref})
+		} else {
+			s.trackNativeEmpty(uint32(ref))
 		}
-		h.objects = appendValue(h.objects, nativeHeapAllocation{offset, ref})
 		s.heap[uint32(ref)].Object = o
 		s.publishHeapObject(ref, o)
 		offset += layout.size

@@ -18,32 +18,46 @@ func checkNativeInventory(t *testing.T, s *Store) {
 	var used uint64
 	for _, a := range s.nativeHeap.objects {
 		o, ok := s.heapObject(a.handle)
-		if !ok || seen[a.handle] || a.offset != used {
+		if !ok || seen[a.handle] || a.offset != used || len(o.Data) == 0 {
 			t.Fatal("invalid allocation inventory", a)
 		}
 		seen[a.handle] = true
-		at := int(uint32(a.handle)) * 4
-		address := uint64(0)
-		if len(o.Data) != 0 {
-			if unsafe.SliceData(o.Data) != &s.nativeHeap.data[used] {
-				t.Fatal("payload not rebound", a.handle)
-			}
-			address = uint64(uintptr(unsafe.Pointer(unsafe.SliceData(o.Data))))
-		} else if o.Data != nil {
-			t.Fatal("empty object exposes an arena slice", a.handle)
-		}
-		v := s.nativeHeap.views[at : at+4]
-		if v[0] != a.handle || v[1] != address || v[2] != uint64(o.Length) || v[3] != 0 {
-			t.Fatal("incoherent native view", a.handle, v)
+		if unsafe.SliceData(o.Data) != &s.nativeHeap.data[used] {
+			t.Fatal("payload not rebound", a.handle)
 		}
 		used += uint64(len(o.Data))
 	}
+	wantEmpty := make([]uint64, len(s.nativeHeap.empty))
 	for i, slot := range s.heap {
-		if slot.Object != nil && !seen[heapTag|uint64(slot.Generation)<<32|uint64(i)] {
+		o := slot.Object
+		if o == nil {
+			continue
+		}
+		ref := heapTag | uint64(slot.Generation)<<32 | uint64(i)
+		address := uint64(0)
+		if len(o.Data) == 0 {
+			if o.Data != nil || i/64 >= len(wantEmpty) || seen[ref] {
+				t.Fatal("empty object missing or duplicated", i)
+			}
+			wantEmpty[i/64] |= uint64(1) << (i % 64)
+			seen[ref] = true
+		} else {
+			address = uint64(uintptr(unsafe.Pointer(unsafe.SliceData(o.Data))))
+		}
+		if !seen[ref] {
 			t.Fatal("live object missing from sweep inventory", i)
 		}
+		v := s.nativeHeap.views[i*4 : i*4+4]
+		if v[0] != ref || v[1] != address || v[2] != uint64(o.Length) || v[3] != 0 {
+			t.Fatal("incoherent native view", ref, v)
+		}
 	}
-	if uint64(len(seen)) != s.Usage().HeapObjects || used != s.nativeHeap.used {
+	for page, word := range wantEmpty {
+		if s.nativeHeap.empty[page] != word {
+			t.Fatal("empty bitmap exposes a dead or missing handle", page)
+		}
+	}
+	if uint64(len(seen)) != s.Usage().HeapObjects || used != s.nativeHeap.used || uint64(len(wantEmpty)) > (uint64(s.limits.MaxHeapObjects)+64)/64 {
 		t.Fatal("inventory accounting", len(seen), used, s.Usage())
 	}
 }
@@ -76,7 +90,7 @@ func TestNativeSweepIncludesEmptySlowAndBatchObjects(t *testing.T) {
 	for i := 0; i < 61; i++ {
 		stagedAllocation(t, s, uint32(i%2), uint32(i), 0)
 	}
-	if len(s.nativeHeap.objects) != 3 {
+	if len(s.nativeHeap.objects) != 2 || s.nativeHeap.empty[0] != 1<<2 {
 		t.Fatal("unpublished reservations entered sweep inventory")
 	}
 	words := s.nativeHeap.allocationWords
@@ -99,9 +113,7 @@ func TestNativeSweepIncludesEmptySlowAndBatchObjects(t *testing.T) {
 	}
 	add(ex.Ref, true)
 	roots[len(roots)-1].Type = wasm.ExnRef
-	if uint64(len(s.nativeHeap.objects)) != s.Usage().HeapObjects {
-		t.Fatal("empty published objects missing")
-	}
+	checkNativeInventory(t, s)
 	s.CollectReferences(roots, nil, nil)
 	checkNativeInventory(t, s)
 	if s.Usage().HeapObjects != uint64(len(roots)) || s.Usage().HeapBytes != expectedBytes || s.heapThreshold != max(1<<20, expectedBytes*2) {
@@ -132,7 +144,7 @@ func TestNativeSweepIncludesEmptySlowAndBatchObjects(t *testing.T) {
 	}
 }
 
-func TestNativeEmptyPayloadMaintenanceBoundsRollbackRecords(t *testing.T) {
+func TestNativeEmptyPayloadMaintenanceBoundsRollbackBitmap(t *testing.T) {
 	s, types := allocationStore(t)
 	for _, size := range []uint32{0, 1 << 18} {
 		// Exercise both an arena-free heap and one with a large old capacity.
@@ -147,8 +159,8 @@ func TestNativeEmptyPayloadMaintenanceBoundsRollbackRecords(t *testing.T) {
 				t.Fatal(err)
 			}
 			s.rollbackHeap(0)
-			if s.IsLiveReference(ref) || len(s.nativeHeap.objects) > 64 {
-				t.Fatal("empty rollback accumulated records", len(s.nativeHeap.objects))
+			if s.IsLiveReference(ref) || len(s.nativeHeap.objects) != 0 || len(s.nativeHeap.empty) != 1 || s.nativeHeap.empty[0] != 0 {
+				t.Fatal("empty rollback retained a bit or relocation record")
 			}
 		}
 	}
@@ -173,8 +185,11 @@ func TestNativeEmptyPayloadMaintenanceBoundsRollbackRecords(t *testing.T) {
 		}
 	}
 	checkNative()
-	for _, a := range s.nativeHeap.objects {
-		o, _ := s.heapObject(a.handle)
+	for _, slot := range s.heap {
+		o := slot.Object
+		if o == nil {
+			continue
+		}
 		if !o.Mark || len(o.Data) != 0 && o.get(0).Lo != 42 {
 			t.Fatal("capacity maintenance altered live object")
 		}
