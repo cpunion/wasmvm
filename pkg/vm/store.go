@@ -60,7 +60,8 @@ type Store struct {
 type operation struct {
 	store         *Store
 	ctx           context.Context
-	cancel        context.CancelFunc
+	cancelContext context.CancelFunc
+	stopInterrupt func() bool
 	options       CallOptions
 	fuel          uint64
 	frames        []*execute.Execution
@@ -100,19 +101,63 @@ func (s *Store) begin(ctx context.Context, options CallOptions) (*operation, err
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	watch := s.engine.config.Backend == "native" && ctx.Done() != nil
 	ctx, cancel := context.WithCancel(ctx)
 	// The driver checks cancellation at every host boundary and memory access,
 	// before the interpreter/backend can supply its existing cached view.
 	if runtime.Compiler == "llgo" {
 		ctx, _ = execute.CancellationView(ctx)
 	}
-	op := &operation{store: s, ctx: ctx, cancel: cancel, options: options, fuel: options.Fuel}
+	op := &operation{store: s, ctx: ctx, cancelContext: cancel, options: options, fuel: options.Fuel}
+	if watch {
+		op.stopInterrupt = context.AfterFunc(ctx, op.interrupt)
+	}
 	s.active = op
 	return op, nil
 }
+
+func (op *operation) interrupt() {
+	s := op.store
+	if s.engine.config.Backend != "native" {
+		return
+	}
+	s.mu.Lock()
+	op.interruptLocked()
+	s.mu.Unlock()
+}
+
+// The existing frame registry also owns cancellation delivery. Registration and
+// removal use Store.mu, so an old watcher cannot reach a recycled workspace.
+func (op *operation) interruptLocked() {
+	if op.store.engine.config.Backend != "native" {
+		return
+	}
+	for _, frame := range op.frames {
+		frame.Interrupt()
+	}
+}
+
+func (op *operation) stopWatcher() {
+	if op.stopInterrupt != nil {
+		op.stopInterrupt()
+		op.stopInterrupt = nil
+	}
+}
+
+func (op *operation) cancel() {
+	op.cancelContext()
+	op.interrupt()
+}
 func (op *operation) finish() {
 	s := op.store
-	op.cancel()
+	op.stopWatcher()
+	op.cancelContext()
+	// Host capabilities have drained before finish. Only this driver can now
+	// mutate the registry; no native writer remains after its last frame left.
+	// Panic cleanup and external cancellation still take Store.mu unconditionally.
+	if len(op.frames) != 0 {
+		op.interrupt()
+	}
 	for call := range op.continuations {
 		call.mu.Lock()
 		call.abort()
@@ -138,7 +183,8 @@ func (s *Store) Close() {
 	}
 	s.closing = true
 	if s.active != nil {
-		s.active.cancel()
+		s.active.cancelContext()
+		s.active.interruptLocked()
 	} else {
 		s.closeLocked()
 	}

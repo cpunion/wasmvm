@@ -2,6 +2,7 @@ package nativeexec
 
 import (
 	"context"
+	"sync/atomic"
 	"unsafe"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
@@ -20,6 +21,7 @@ type Execution struct {
 	maxFrames       uint64
 	metered         bool
 	stop            func() bool
+	interrupted     atomic.Bool
 	reusable        bool
 	values          []value.Value
 	runtimeData     *native.Memory
@@ -32,12 +34,22 @@ type Execution struct {
 }
 
 func New(ctx context.Context, modules map[*slots.Module]*Lease, maxSlots, maxFrames uint32, metered bool) (*Execution, error) {
+	return newExecution(ctx, modules, maxSlots, maxFrames, metered, false)
+}
+
+// NewOwned delegates cancellation delivery to the invocation owner. The owner
+// must interrupt on cancellation and drain that delivery before Close or reuse.
+func NewOwned(ctx context.Context, modules map[*slots.Module]*Lease, maxSlots, maxFrames uint32, metered bool) (*Execution, error) {
+	return newExecution(ctx, modules, maxSlots, maxFrames, metered, true)
+}
+
+func newExecution(ctx context.Context, modules map[*slots.Module]*Lease, maxSlots, maxFrames uint32, metered, owned bool) (*Execution, error) {
 	c, err := native.NewContext(0, uint64(maxSlots)*16, uint64(max(1, maxFrames)))
 	if err != nil {
 		return nil, err
 	}
 	e := &Execution{native: c, modules: modules, maximum: uint64(maxSlots) * 16, maxFrames: uint64(maxFrames), reusable: true}
-	if err := e.Begin(ctx, metered); err != nil {
+	if err := e.begin(ctx, metered, owned); err != nil {
 		e.Close()
 		return nil, err
 	}
@@ -47,7 +59,17 @@ func New(ctx context.Context, modules map[*slots.Module]*Lease, maxSlots, maxFra
 // Begin binds an idle context to a new invocation. A context whose cancellation
 // callback started is never reused: Suspend returns false and the owner closes it.
 func (e *Execution) Begin(ctx context.Context, metered bool) error {
-	if e.native == nil || e.stop != nil || !e.reusable {
+	return e.begin(ctx, metered, false)
+}
+
+// BeginOwned binds a new invocation with the same owner-delivered cancellation
+// contract as NewOwned. No per-workspace watcher is registered.
+func (e *Execution) BeginOwned(ctx context.Context, metered bool) error {
+	return e.begin(ctx, metered, true)
+}
+
+func (e *Execution) begin(ctx context.Context, metered, owned bool) error {
+	if e.native == nil || e.ctx != nil || !e.reusable || e.interrupted.Load() {
 		return wasm.ErrInvalid
 	}
 	if ctx == nil {
@@ -56,8 +78,17 @@ func (e *Execution) Begin(ctx context.Context, metered bool) error {
 	e.entryState = native.State{}
 	e.ctx, e.metered = ctx, metered
 	e.reusable = false
-	e.stop = context.AfterFunc(ctx, e.native.Cancel)
+	if !owned {
+		e.stop = context.AfterFunc(ctx, e.native.Cancel)
+	}
 	return nil
+}
+
+// Interrupt is concurrent with Run. The owner serializes it with Close and
+// rebinding. Native cancellation is sticky, so interrupted storage is retired.
+func (e *Execution) Interrupt() {
+	e.interrupted.Store(true)
+	e.native.Cancel()
 }
 
 // Suspend removes the former cancellation writer and releases native-visible
@@ -67,10 +98,13 @@ func (e *Execution) Suspend() bool {
 	if e.native == nil {
 		return false
 	}
-	if e.stop == nil {
+	if e.ctx == nil {
 		return e.reusable
 	}
-	stopped := e.stop()
+	stopped := !e.interrupted.Load()
+	if e.stop != nil {
+		stopped = e.stop() && stopped
+	}
 	e.stop, e.ctx, e.runtimeInstance = nil, nil, nil
 	e.entryState = native.State{}
 	e.resetRuntimeGlobals()
@@ -97,6 +131,7 @@ func (e *Execution) Resize(length, capacity int) ([]value.Value, error) {
 
 func (e *Execution) Close() {
 	e.reusable = false
+	e.ctx = nil
 	e.entryState = native.State{}
 	if e.stop != nil {
 		e.stop()
@@ -119,7 +154,7 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 	if e.native == nil {
 		return 0, fuel, native.ErrClosed
 	}
-	if e.stop == nil {
+	if e.ctx == nil {
 		return 0, fuel, wasm.ErrInvalid
 	}
 	module := e.modules[fn.Instance.Compiled]

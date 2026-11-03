@@ -6,12 +6,12 @@
   },
   {
     "name": "vm",
-    "packages": "./internal/compiler/codegen ./internal/compiler/nativeabi ./internal/engine/memory ./internal/engine/nativeexec ./internal/engine/numeric ./internal/engine/simd ./internal/engine/state ./internal/platform/native ./internal/wasi/host ./pkg/vm ./internal/compat ./internal/compiler/ir",
+    "packages": "./pkg/vm ./internal/compiler/codegen ./internal/engine/nativeexec ./internal/engine/state ./internal/engine/simd ./internal/engine/memory ./internal/platform/native ./internal/engine/numeric",
     "inputs": "core2"
   },
   {
     "name": "component",
-    "packages": "./internal/component/canonical ./internal/component/decode ./internal/component/validate ./pkg/component",
+    "packages": "./internal/component/canonical ./internal/component/decode ./internal/component/validate ./pkg/component ./internal/compiler/nativeabi ./internal/compiler/ir ./internal/compat ./internal/wasi/host",
     "inputs": "component"
   },
   {

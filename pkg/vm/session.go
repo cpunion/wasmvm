@@ -35,12 +35,17 @@ func (s *Store) withCaller(ctx context.Context, options CallOptions, fn func(*Ca
 	defer op.finish()
 	caller := &Caller{active: true, op: op}
 	defer func() {
+		// A capability may still be executing on another goroutine. Cancel
+		// before waiting for its lock, including on normal return and panic.
+		op.stopWatcher()
+		op.cancel()
 		caller.mu.Lock()
 		caller.active = false
 		caller.mu.Unlock()
 		for _, v := range caller.temporary {
 			v.Release()
 		}
+		fuel = op.fuel
 	}()
 	complete := false
 	defer func() {
@@ -49,14 +54,13 @@ func (s *Store) withCaller(ctx context.Context, options CallOptions, fn func(*Ca
 				err = errors.Join(err, failed)
 			}
 		}
-		fuel = op.fuel
 	}()
 	err = fn(caller)
 	if err == nil {
 		err = op.ctx.Err()
 	}
 	complete = err == nil
-	return op.fuel, err
+	return 0, err // The capability-draining defer publishes final fuel.
 }
 
 // ReadExternalMemory and WriteExternalMemory copy through a same-Store memory

@@ -5,6 +5,9 @@ Base: `344bbc35f9818f89dcb2779c6819619fa06b1da7` (merged PR #107).
 Exact contribution-head Linux/macOS CI and controlled portfolio acceptance
 remain required. Local results below are shared-host diagnostics.
 
+Subsequent integration: [PR #108 merged after the complete final-head CI audit](pr108-final-ci-2026-11-03.md).
+Controlled portfolio acceptance remains open.
+
 ## Change and lifetime contract
 
 A platform Lease now combines its closed bit and admitted-entry count in one

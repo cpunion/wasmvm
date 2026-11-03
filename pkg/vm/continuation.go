@@ -61,7 +61,7 @@ func (c *Caller) NewSuspendableFunction(signature FunctionType, fn SuspendableHo
 	return c.op.store.newHostFunction(signature, fn, referenceType...)
 }
 
-func (op *operation) removeFrame(e *execute.Execution) {
+func (op *operation) removeFrameLocked(e *execute.Execution) {
 	for i, frame := range op.frames {
 		if frame == e {
 			last := len(op.frames) - 1
@@ -69,6 +69,17 @@ func (op *operation) removeFrame(e *execute.Execution) {
 			op.frames = op.frames[:last]
 			return
 		}
+	}
+}
+
+func (op *operation) addFrame(e *execute.Execution) {
+	s := op.store
+	if s.engine.config.Backend == "native" {
+		s.mu.Lock()
+	}
+	op.frames = append(op.frames, e)
+	if s.engine.config.Backend == "native" {
+		s.mu.Unlock()
 	}
 }
 
@@ -125,14 +136,13 @@ func (c *Caller) Start(fn Extern, args []Value) (*Continuation, error) {
 	}
 	call := &Continuation{op: op, work: w, result: f.Signature.Results}
 	if err := w.execution.SetLimits(limits); err != nil {
-		w.execution.Close()
+		op.releaseWorkspace(w)
 		return nil, err
 	}
 	if err := w.execution.Start(fn.external.Function, raw); err != nil {
-		w.execution.Close()
+		op.releaseWorkspace(w)
 		return nil, err
 	}
-	op.frames = append(op.frames, w.execution)
 	if op.continuations == nil {
 		op.continuations = map[*Continuation]struct{}{}
 	}
@@ -155,7 +165,6 @@ func (call *Continuation) abort() {
 	}
 	call.closed = true
 	call.work.execution.Abort(wasm.ErrClosed)
-	call.op.removeFrame(call.work.execution)
 	delete(call.op.continuations, call)
 	for _, v := range call.args {
 		v.Release()
