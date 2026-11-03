@@ -220,6 +220,17 @@ Avoid retaining Go memory across native calls. If a later zero-copy API needs it
 
 Code moves through `AllocatedWritable -> Relocated -> SealedExecutable -> Published -> Retired -> Freed`. New execution leases can be acquired only for `Published` code. `Retired` code may still execute or resume under an existing retained instance/execution lease, but accepts no new unretained entries. `Freed` code is never executable; transition to it requires all leases and active entries to be released. Validate every relocation, range, alignment, and branch target before publication. Store immutable trap/source/root-map metadata with the code generation. Synchronize publication so readers cannot observe incomplete bytes or metadata.
 
+Each platform lease holds one code pin. Its atomic admission word combines a
+closed bit with an entry count: entry loads and conditionally increments the
+count, and departure decrements it. Close sets the bit, rejects later entries,
+and releases the pin only when the count reaches zero. Thus a closed lease
+continues to pin code while admitted entries execute; the Code owner needs no
+separate active-entry counter. The code address and approved entry table remain
+immutable until the last pin is released. Invalid entry indices roll admission
+back, and count overflow fails before incrementing. Only final pin release
+takes the Code lock. Context/memory synchronization, the C ABI and cancellation
+ownership remain independent of this protocol.
+
 On Linux, allocate writable non-executable memory, finish emission/relocation, perform the architecture's required instruction-cache maintenance, and change protection to executable non-writable. Do not leave ordinary RWX mappings. On darwin/arm64, use a platform JIT arena and the supported write-protection mechanism; respect the embedding application's Hardened Runtime and entitlements. Apple's callback-allowlist mode cannot be mixed with `pthread_jit_write_protect_np`. Keep an entire write transaction inside one adapter call on one OS thread, invalidate the instruction cache before execution, and publish only after write access has ended. Missing permission returns an explicit native-unavailable error. Source: [Apple JIT porting guide](https://developer.apple.com/documentation/apple-silicon/porting-just-in-time-compilers-to-apple-silicon).
 
 Published code is immutable. Tier replacement publishes a new code generation and updates dispatch metadata; it does not patch bytes currently being executed. Active calls, suspended continuations, function references, and host reentrancy retain the old generation. Closing a module retires code; unmapping waits until those references are quiescent. Do not rely on a finalizer to prevent use-after-unmap. M2 initially uses in-memory code caching only; persisted native artifacts require a separate trust and compatibility design.
