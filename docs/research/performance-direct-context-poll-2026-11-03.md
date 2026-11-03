@@ -1,7 +1,7 @@
 # Direct invocation-context polling: 2026-11-03
 
-Status: contribution candidate; final-head dual-platform CI and performance are
-pending. Controlled whole-portfolio and ordinary-native acceptance remain open.
+Status: integrated in [PR #111, with final CI and benchmark evidence](pr111-final-ci-2026-11-03.md).
+Controlled whole-portfolio and ordinary-native acceptance remain open.
 
 The new LLGo host pin fixes the nil-return allocation that motivated the cached
 cancellation view. Use the original invocation context directly in dispatch,

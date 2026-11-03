@@ -11,14 +11,26 @@ costs decrease 4.9%/15.8%, while retained-session empty regresses 2.7%. This
 separate host-pin migration preserves all historical results and guest producers;
 defer, startup and full competitor/native-C acceptance remain open.
 
-The separate [direct-context candidate](performance-direct-context-poll-2026-11-03.md)
+The separate [direct-context change](performance-direct-context-poll-2026-11-03.md)
 then removes the obsolete wrapper/channel on that fixed new compiler. All
 twenty LLGo interpreter cases improve locally (3.5–32.5%); scalar integer/calls/
 memory lead the same-run WasmEdge, while SIMD, GC allocation and some thread
 helpers remain behind. Native direct-struct +8.1% and other adverse controls
 remain visible. Both host compilers pass all 31 local packages/60 reports each;
-final contribution-head dual-platform evidence and controlled acceptance are
-still required. This candidate is separate from compiler migration PR110.
+[PR111 final-head dual-platform evidence](pr111-final-ci-2026-11-03.md) verifies
+all 240 reports, 31 packages per compiler/platform and thirty coverage gates.
+Controlled acceptance remains open; this is separate from compiler migration PR110.
+
+The subsequent [vector-constant experiment](performance-vector-constants-held-2026-11-03.md)
+stays held: local full/lane interpreter gains do not waive a 25.1% native
+widening control regression. Both original campaigns and all adverse outcomes
+remain retained. Longer native/C SIMD comparisons are still needed.
+
+An independent experimental host-SIMD probe reports three unnecessary local
+array allocations as [LLGo #2983](https://github.com/xgo-dev/llgo/issues/2983):
+about 96 reported bytes/call versus zero in Go and a supplied-buffer control.
+[Source, linked assembly and all rounds](performance-llgo-simd-array-escape-2026-11-03.md)
+are retained; the project compiler pin and release profile remain unchanged.
 
 | Gap | Evidence and action | Remaining deficit |
 | --- | --- | --- |
