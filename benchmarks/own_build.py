@@ -89,7 +89,15 @@ def prepare(head, checkout, revision, target):
     ci.verify_checkout(checkout, revision)
     subprocess.run(["git", "-C", str(checkout), "diff", "--quiet", revision, "--", "."],
                    check=True, timeout=60)
-    archive(checkout, revision, target)
+    # Keep snapshots proportional to the measured engine. Documentation and
+    # retained research artifacts can dwarf its sources and create background
+    # filesystem work after a build. Old baselines may lack some engine paths.
+    paths = ci.capture(["git", "-C", str(checkout), "ls-tree", "--name-only",
+                        revision, "--", *ENGINE_PATHS]).splitlines()
+    if paths:
+        archive(checkout, revision, target, paths)
+    else:
+        target.mkdir(parents=True, exist_ok=True)
     sources = hashes(target, ENGINE_PATHS, HARNESS)
     if not (target / "pkg/vm/engine.go").is_file():
         return {"status": "baseline-unavailable", "sourceRevision": revision,

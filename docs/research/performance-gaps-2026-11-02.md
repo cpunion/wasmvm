@@ -40,6 +40,7 @@ was not rebuilt; these reports do not assert its status.
 | [#2959](https://github.com/xgo-dev/llgo/issues/2959#issuecomment-6566786471) | Uncancelled context.Err/atomic.Value.Load path allocates; unused return storage is materialized | Cache the execution-bound cancellation view for LLGo; retain Go's cheaper standard path |
 | [#2958](https://github.com/xgo-dev/llgo/issues/2958#issuecomment-6568684544) | Numeric-only Cgo scalar and two-word-result calls each allocate about 16 MB over one million calls; Go allocates zero | Direct LLGo C declarations for retained C-owned numeric memory; host-buffer checks remain |
 | [#2966](https://github.com/xgo-dev/llgo/issues/2966) | Native BDWGC AllocZ emits bzero after GC_malloc has already cleared storage; a minimal program and final disassembly reproduce it | Keep the compiler pin; track an upstream allocator correction as a separate future baseline event |
+| [#2975](https://github.com/xgo-dev/llgo/issues/2975) | Nonescaping function-to-interface conversion retains AllocU under full LTO; 100,000 conversions allocate about 3.2 MB versus zero in Go | Preboxed assertion controls allocate zero; this reproduction does not attribute warm VM callback costs |
 
 The numeric Cgo reproduction narrows the existing residual-allocation report;
 it does not show that struct returns alone cause it. Optimized wrappers allocate
@@ -450,3 +451,14 @@ wazero; startup, native C and controlled portfolio gaps remain open.
 The [PR #104 audit](pr104-final-ci-2026-11-03.md) records its completed merge,
 nineteen required jobs and 240 verified execution reports, including the
 macOS capacity history without rerunning successful work.
+
+The [PR #105 audit](pr105-final-ci-2026-11-03.md) records the selected scalar-host
+implementation's completed dual-platform validation and adverse Linux controls.
+The subsequent [host-binding experiment](performance-host-binding-held-2026-11-03.md)
+and [heap-to-local experiment](performance-heap-local-held-2026-11-03.md) remain
+held: neither establishes a useful gain for its target. Their production changes
+are excluded from the selected i31 follow-up; additional heap continuation tests
+pass against the existing implementation with both compilers.
+The [independent boxing report](performance-llgo-function-boxing-2026-11-03.md)
+retains allocation controls and disassembly identifying conversion, rather than
+assertion extraction, as the allocating operation.
