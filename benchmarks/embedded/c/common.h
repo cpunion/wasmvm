@@ -1,6 +1,10 @@
 #ifndef WASMVM_PHASE_COMMON_H
 #define WASMVM_PHASE_COMMON_H
 
+#if defined(__APPLE__) && !defined(_DARWIN_C_SOURCE)
+#define _DARWIN_C_SOURCE
+#endif
+
 #include <errno.h>
 #include <inttypes.h>
 #include <limits.h>

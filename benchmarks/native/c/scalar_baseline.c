@@ -1,5 +1,9 @@
 // Unchecked native C references for six existing parameterized Wasm kernels.
 // Clang may inline/vectorize; each call includes the fixture's memory reset.
+#if defined(__APPLE__) && !defined(_DARWIN_C_SOURCE)
+#define _DARWIN_C_SOURCE
+#endif
+
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>

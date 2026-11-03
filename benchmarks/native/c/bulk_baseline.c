@@ -1,6 +1,10 @@
 // Native libc reference for runtime-fixtures/bulk-overlap.wat. Compile with
 // -O3 -fno-builtin-memset -fno-builtin-memmove to retain the complete memory work.
 // This measures the unchecked C loop separately from validated Wasm engines.
+#if defined(__APPLE__) && !defined(_DARWIN_C_SOURCE)
+#define _DARWIN_C_SOURCE
+#endif
+
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>

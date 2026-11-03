@@ -1,5 +1,9 @@
 // Native C11 reference for the parameterized atomic-rmw guest kernel.
 // This reference has no VM cancellation, bounds, validation or fuel contract.
+#if defined(__APPLE__) && !defined(_DARWIN_C_SOURCE)
+#define _DARWIN_C_SOURCE
+#endif
+
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdatomic.h>
