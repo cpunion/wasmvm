@@ -149,3 +149,53 @@ func TestARMConstantIntegerSelectionAndColdAliases(t *testing.T) {
 		}
 	}
 }
+
+func TestConstantIntegerForwardedLocalDoesNotReviveLiteral(t *testing.T) {
+	for _, wide := range []bool{false, true} {
+		typ, literal, add := wasm.I32, uint32(0x41), uint32(0x6a)
+		if wide {
+			typ, literal, add = wasm.I64, 0x42, 0x7c
+		}
+		for _, local := range []uint32{0, 2} {
+			for _, tee := range []bool{false, true} {
+				assignment := uint32(0x21)
+				dst := slots.NoSlot
+				if tee {
+					assignment, dst = 0x22, 2
+				}
+				f := &slots.Function{LocalCount: 3, Slots: []wasm.ValueType{typ, typ, typ}, Sources: []ir.Source{{Wasm: module.Instr{Bits: 1}}, {Wasm: module.Instr{A: local}}}, Code: []slots.Instruction{
+					{Op: literal, Dst: 1, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
+					{Op: add, Dst: 1, A: 0, B: 1, C: slots.NoSlot},
+					{Op: assignment, Source: 1, Dst: dst, A: 1, B: slots.NoSlot, C: slots.NoSlot},
+					{Op: slots.ControlBase + uint32(ir.Return), Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
+				}}
+				if native.Available {
+					checkLinearIntegerEntries(t, f)
+				}
+				for _, arch := range []string{"amd64", "arm64"} {
+					registers := map[slots.Slot]byte{0: 3, 1: 12, 2: 13}
+					if arch == "arm64" {
+						registers = map[slots.Slot]byte{0: 19, 1: 20, 2: 21}
+					}
+					e := functionEmitter{a: &assembler{arch: arch}, f: f, unmetered: true, registers: registers}
+					end, ok := e.combineIntegerConstant(0)
+					if !ok || end != 2 {
+						t.Fatal("missing local fusion", arch, wide, local, tee, end, ok)
+					}
+					if local == 0 && !tee {
+						limit := 8
+						if arch == "amd64" {
+							limit = 6
+							if wide {
+								limit++
+							}
+						}
+						if len(e.a.code) != limit {
+							t.Fatal("overwritten literal materialized", arch, wide, e.a.code)
+						}
+					}
+				}
+			}
+		}
+	}
+}
