@@ -157,14 +157,16 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 			o := objects[pending]
 			objects[pending] = nil
 
-			if o.Tag != nil {
-				mark(o.Tag.OwnerInstance)
-			} else {
-				if o.Continuation != nil {
-					o.Continuation.Visit(visit, mark)
-				}
-				if o.Descriptor != 0 {
-					visit(wasm.AnyRef, value.Value{Lo: o.Descriptor})
+			if extra := s.existingObjectExtras(o); extra != nil {
+				if extra.Tag != nil {
+					mark(extra.Tag.OwnerInstance)
+				} else {
+					if extra.Continuation != nil {
+						extra.Continuation.Visit(visit, mark)
+					}
+					if extra.Descriptor != 0 {
+						visit(wasm.AnyRef, value.Value{Lo: extra.Descriptor})
+					}
 				}
 			}
 			layout := o.Layout

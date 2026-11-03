@@ -34,20 +34,36 @@ func TestObjectMetadataReusesGenerationsAcrossPagesAndRelocation(t *testing.T) {
 				t.Fatal(offheap, i, err)
 			}
 			o, _ := s.heapObject(ref)
+			if o.extraIndex != 0 {
+				t.Fatal("ordinary allocation materialized optional metadata")
+			}
 			o.set(0, value.Value{Lo: uint64(i)})
 			handles, objects = append(handles, ref), append(objects, o)
 		}
 		if len(s.heapObjects) != 3 || len(s.heapObjects[2].objects) != 6 {
 			t.Fatal("metadata exceeds handle quota", len(s.heapObjects))
 		}
+		for _, page := range s.heapObjects {
+			if page.extras != nil {
+				t.Fatal("ordinary objects allocated optional pages")
+			}
+		}
 		for round := 0; round < 3; round++ {
 			for i := 0; i < len(handles); i += 2 {
 				old := handles[i]
-				objects[i].Tag = &Tag{}
-				objects[i].Descriptor = handles[0]
+				extra := s.objectExtras(old)
+				page := &s.heapObjects[uint64(uint32(old))/heapObjectsPerPage]
+				if len(page.extras) != len(page.objects) || extra != &page.extras[uint64(uint32(old))%heapObjectsPerPage] {
+					t.Fatal("optional metadata exceeded its stable page")
+				}
+				extra.Tag = &Tag{}
+				s.objectExtras(old).Descriptor = handles[0]
 				objects[i].Mark = true
 				s.releaseObject(uint32(old))
-				if s.IsLiveReference(old) || objects[i].Tag != nil || objects[i].Descriptor != 0 || objects[i].Mark || objects[i].Layout != nil || objects[i].Continuation != nil || objects[i].Data != nil {
+				if *extra != (heapObjectExtra{}) {
+					t.Fatal("optional page retained host references")
+				}
+				if s.IsLiveReference(old) || objects[i].extraIndex != 0 || objects[i].Mark || objects[i].Layout != nil || objects[i].Data != nil {
 					t.Fatal("dead metadata retained references", old)
 				}
 				ref, err := s.allocateObject(types[0], uint32(1+(i+round)%23))

@@ -122,7 +122,7 @@ func (s *Store) newTaggedPayload(tag *Tag, args []value.Value, roots ...func(fun
 		return nil, err
 	}
 	o, _ := s.heapObject(ref)
-	o.Tag = tag
+	s.objectExtras(ref).Tag = tag
 	for i, v := range args {
 		o.set(uint32(i), v)
 	}
@@ -130,14 +130,19 @@ func (s *Store) newTaggedPayload(tag *Tag, args []value.Value, roots ...func(fun
 }
 func (s *Store) Exception(ref uint64) (*Tag, []value.Value, error) {
 	o, ok := s.heapObject(ref)
-	if !ok || o.Tag == nil {
+	if !ok {
 		return nil, nil, ErrReference
 	}
-	args := make([]value.Value, len(o.Tag.Signature.Params))
+	extra := s.existingObjectExtras(o)
+	if extra == nil || extra.Tag == nil {
+		return nil, nil, ErrReference
+	}
+	tag := extra.Tag
+	args := make([]value.Value, len(tag.Signature.Params))
 	for i := range args {
 		args[i] = o.get(uint32(i))
 	}
-	return o.Tag, args, nil
+	return tag, args, nil
 }
 func (s *Store) ExceptionError(err error) (*Exception, bool) {
 	var ex *Exception
