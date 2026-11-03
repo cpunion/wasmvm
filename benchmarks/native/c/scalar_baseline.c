@@ -1,5 +1,9 @@
 // Unchecked native C references for six existing parameterized Wasm kernels.
 // Clang may inline/vectorize; each call includes the fixture's memory reset.
+#if defined(__APPLE__) && !defined(_DARWIN_C_SOURCE)
+#define _DARWIN_C_SOURCE
+#endif
+
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -9,7 +13,12 @@
 
 static uint64_t now_ns(void) {
     struct timespec ts;
-    if (clock_gettime(CLOCK_MONOTONIC, &ts)) abort();
+#ifdef __APPLE__
+    const clockid_t clock = CLOCK_MONOTONIC_RAW;
+#else
+    const clockid_t clock = CLOCK_MONOTONIC;
+#endif
+    if (clock_gettime(clock, &ts)) abort();
     return (uint64_t)ts.tv_sec * UINT64_C(1000000000) + ts.tv_nsec;
 }
 

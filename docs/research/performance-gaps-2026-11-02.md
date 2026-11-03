@@ -9,7 +9,7 @@ an LLGo defect. Controlled Linux amd64/macOS arm64 portfolio acceptance is open.
 | LLGo shared/atomic interpreter helpers | [Cached cancellation and numeric C bindings](performance-interpreter-atomics-2026-11-02.md): about 21%/22% improvement; checked helper allocation controls become zero | RMW remains about 2.12x WasmEdge and 1.40x wazero interpreter in that campaign |
 | Native scalar memory | The initial [word-loop expansion](performance-native-word-loops-2026-11-02.md) regressed in the [complete combination](performance-atomic-combined-2026-11-02.md) and was held; the bounded [longer follow-up](performance-native-word-long-2026-11-02.md) advanced through merged PR #97 | C and Linux competitor deficits still need resolution; the held prototype is not treated as integrated |
 | Native atomic throughput | [100-million-iteration C comparison](performance-native-atomic-c-2026-11-02.md): LLGo 1.776, Go 1.772, C 1.723, Wasmtime 1.709 ns/iteration | About 3.1% versus C and 3.9% versus Wasmtime on one ARM64 kernel |
-| Native i31 payloads | [Direct payload selection](performance-i31-payload-2026-11-03.md): LLGo 2.543→1.350, Go 1.363, Wasmtime 1.811 and ordinary C 1.286 ns/iteration in one final campaign | Local candidate: 46.9% LLGo improvement, 25.5% faster than this Wasmtime, 4.9% above C; other GC, startup and all-platform gates remain open |
+| Native i31 payloads | [Direct payload selection](performance-i31-payload-2026-11-03.md): LLGo 2.543→1.350, Go 1.363, Wasmtime 1.811 and ordinary C 1.286 ns/iteration in one final campaign | Merged PR #106 with dual-platform semantic validation: 46.9% LLGo improvement, 25.5% below this Wasmtime's time, 4.9% above C; other GC, startup and controlled all-platform performance gates remain open |
 | Interpreter operands and dispatcher counter | [Two complete twenty-case experiments](performance-interpreter-rejected-2026-11-02.md), including GC, SIMD and wait/notify | No consistent meaningful LLGo benefit; neither candidate is adopted |
 | GC and SIMD interpretation | All results retained in those twenty-case experiments | WasmEdge still leads most cases; removing operand checks does not solve this gap |
 
@@ -462,3 +462,25 @@ pass against the existing implementation with both compilers.
 The [independent boxing report](performance-llgo-function-boxing-2026-11-03.md)
 retains allocation controls and disassembly identifying conversion, rather than
 assertion extraction, as the allocating operation.
+
+The [PR #106 audit](pr106-final-ci-2026-11-03.md) closes its semantic integration,
+not the GC/portfolio performance gates. Two subsequent
+[native heap-cache experiments](performance-native-heap-caches-held-2026-11-03.md)
+remain held: extra cache homes and a two-way cache do not establish a gain.
+Their production changes are excluded; independent multi-handle/cold-entry/
+trap-state tests also pass against selected production with Go and LLGo.
+Exact disassembly identifies redundant constant materialization before ARM
+immediate operations; investigate sharing the existing amd64 constant fusion
+before adding more cache state. No new LLGo defect is inferred from these timings.
+
+The [shared immediate selector and overwritten-literal follow-up](performance-immediate-literals-2026-11-03.md)
+uses the existing constant fusion on ARM as well as amd64, retaining all cold
+entries. The final original-production comparison improves LLGo indirect access
+4.587916→4.496333 ns/source iteration (2.0%, A/A +0.09%), still 1.76x Wasmtime
+and 1.60x ordinary C. LLGo calls +1.08%, Go allocation +5.26% and unstable
+empty-call controls remain adverse evidence. Final contribution CI is pending;
+this does not close portfolio acceptance. A separate clock reproduction finds
+Darwin C CLOCK_MONOTONIC's 1000-ns granularity. The final study uses the same
+finer clock for both C references and native C, retains Go timers, and keeps
+the earlier source/clock study separate. Single-call C results near resolution
+are not precise pure-call costs. Component clocks and batched latency remain open.

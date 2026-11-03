@@ -1,6 +1,10 @@
 #ifndef WASMVM_PHASE_COMMON_H
 #define WASMVM_PHASE_COMMON_H
 
+#if defined(__APPLE__) && !defined(_DARWIN_C_SOURCE)
+#define _DARWIN_C_SOURCE
+#endif
+
 #include <errno.h>
 #include <inttypes.h>
 #include <limits.h>
@@ -34,7 +38,12 @@ static void fail(const char *message) {
 
 static uint64_t now_ns(void) {
   struct timespec timestamp;
-  if (clock_gettime(CLOCK_MONOTONIC, &timestamp) != 0)
+#ifdef __APPLE__
+  const clockid_t clock = CLOCK_MONOTONIC_RAW;
+#else
+  const clockid_t clock = CLOCK_MONOTONIC;
+#endif
+  if (clock_gettime(clock, &timestamp) != 0)
     fail("clock_gettime failed");
   return (uint64_t)timestamp.tv_sec * UINT64_C(1000000000) +
          (uint64_t)timestamp.tv_nsec;

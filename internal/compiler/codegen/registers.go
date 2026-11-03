@@ -244,11 +244,89 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 
 // Immediate shift selection is valid only along a proven constant fallthrough.
 // The original slot PC keeps the generic instruction for independent entry.
-func (e *functionEmitter) canRegisterImmediate(op uint32, dst, left slots.Slot, bits uint64) bool {
-	_, dok := e.registers[dst]
-	_, lok := e.registers[left]
-	_, arithmetic := x86ImmediateGroup(op, bits)
-	return dok && lok && (op >= 0x74 && op <= 0x78 || op >= 0x86 && op <= 0x8a || e.a.arch == "amd64" && arithmetic)
+func (e *functionEmitter) canRegisterImmediate(op uint32, dst, left slots.Slot, value uint64) bool {
+	d, dok := e.registers[dst]
+	l, lok := e.registers[left]
+	if !dok || !lok {
+		return false
+	}
+	if e.a.arch == "arm64" {
+		_, ok := armRegisterImmediate(op, d, l, value)
+		return ok
+	}
+	_, arithmetic := x86ImmediateGroup(op, value)
+	return op >= 0x74 && op <= 0x78 || op >= 0x86 && op <= 0x8a || arithmetic
+}
+
+// Share immediate eligibility and encoding between standalone selection and
+// constant-pair fusion. The latter must never discard a literal on a fallback.
+func armRegisterImmediate(op uint32, dst, left byte, value uint64) (uint32, bool) {
+	wide := integerWide(op)
+	if !wide {
+		value = uint64(uint32(value))
+	}
+	if (op == 0x6c || op == 0x7e) && value != 0 && value&(value-1) == 0 {
+		shift := uint32(0x74)
+		if wide {
+			shift = 0x86
+		}
+		return armRegisterImmediate(shift, dst, left, uint64(bits.TrailingZeros64(value)))
+	}
+	ins, ok := uint32(0), false
+	switch op {
+	case 0x6a, 0x7c, 0x6b, 0x7d:
+		if value < 4096 {
+			ins, ok = 0x11000000|uint32(value)<<10, true
+			if op == 0x6b || op == 0x7d {
+				ins |= 1 << 30
+			}
+		}
+	case 0x71, 0x83:
+		if value != 0 && value != ^uint64(0) && value&(value+1) == 0 {
+			ins, ok = 0x53000000|uint32(bits.Len64(value)-1)<<10, true
+			if wide {
+				ins |= 1 << 22
+			}
+		}
+	case 0x6c, 0x7e:
+		if value > 2 && (value-1)&(value-2) == 0 {
+			ins, ok = 0x0b000000|uint32(left)<<16|uint32(bits.TrailingZeros64(value-1))<<10, true
+		}
+	}
+	if ok {
+		if wide {
+			ins |= 1 << 31
+		}
+		return ins | uint32(left)<<5 | uint32(dst), true
+	}
+	if !(op >= 0x74 && op <= 0x78 || op >= 0x86 && op <= 0x8a) {
+		return 0, false
+	}
+	first, width := uint32(0x74), uint32(32)
+	if wide {
+		first, width = 0x86, 64
+	}
+	kind, count := op-first, uint32(value)&(width-1)
+	var word uint32
+	if kind >= 3 {
+		if kind == 3 {
+			count = (width - count) & (width - 1)
+		}
+		word = 0x13800000 | uint32(left)<<16 | count<<10
+	} else {
+		immr, imms := count, width-1
+		word = 0x53000000
+		if kind == 0 {
+			immr, imms = (width-count)&(width-1), width-1-count
+		} else if kind == 1 {
+			word = 0x13000000
+		}
+		word |= immr<<16 | imms<<10
+	}
+	if wide {
+		word |= 1<<31 | 1<<22
+	}
+	return word | uint32(left)<<5 | uint32(dst), true
 }
 
 func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, value uint64) bool {
@@ -257,7 +335,14 @@ func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, val
 	if !dok || !lok {
 		return false
 	}
-	if e.a.arch == "amd64" && e.x86ArithmeticImmediate(op, d, l, value) {
+	if e.a.arch == "arm64" {
+		word, ok := armRegisterImmediate(op, d, l, value)
+		if ok {
+			e.a.word(word)
+		}
+		return ok
+	}
+	if e.x86ArithmeticImmediate(op, d, l, value) {
 		return true
 	}
 	wide := integerWide(op)
@@ -273,33 +358,6 @@ func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, val
 			return e.registerImmediate(shift, dst, left, uint64(bits.TrailingZeros64(value)))
 		}
 	}
-	if e.a.arch == "arm64" {
-		ins, ok := uint32(0), false
-		switch op {
-		case 0x6a, 0x7c, 0x6b, 0x7d:
-			if value < 4096 {
-				ins, ok = 0x11000000|uint32(value)<<10, true
-				if op == 0x6b || op == 0x7d {
-					ins |= 1 << 30
-				}
-			}
-		case 0x71, 0x83:
-			if value != 0 && value != ^uint64(0) && value&(value+1) == 0 {
-				ins, ok = 0x53000000|uint32(bits.Len64(value)-1)<<10, true
-				if wide {
-					ins |= 1 << 22
-				}
-			}
-		case 0x6c, 0x7e:
-			if value > 2 && (value-1)&(value-2) == 0 {
-				ins, ok = 0x0b000000|uint32(l)<<16|uint32(bits.TrailingZeros64(value-1))<<10, true
-			}
-		}
-		if ok {
-			e.a.arm(wide, ins|uint32(l)<<5|uint32(d))
-			return true
-		}
-	}
 	if !(op >= 0x74 && op <= 0x78 || op >= 0x86 && op <= 0x8a) {
 		return false
 	}
@@ -308,40 +366,16 @@ func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, val
 		first, width = 0x86, 64
 	}
 	kind, count := op-first, uint32(value)&(width-1)
-	a := e.a
-	if a.arch == "amd64" {
-		e.registerMove(d, l, wide)
-		rex := byte(0x40) | d>>3
-		if wide {
-			rex |= 8
-		}
-		if rex != 0x40 {
-			a.bytes(rex)
-		}
-		ext := [...]byte{4, 7, 5, 0, 1}[kind]
-		a.bytes(0xc1, 0xc0|ext<<3|d&7, byte(count))
-		return true
-	}
-	var word uint32
-	if kind >= 3 {
-		if kind == 3 {
-			count = (width - count) & (width - 1)
-		}
-		word = 0x13800000 | uint32(l)<<16 | count<<10 // EXTR/ROR
-	} else {
-		immr, imms := count, width-1
-		word = 0x53000000 // UBFM: LSL/LSR
-		if kind == 0 {
-			immr, imms = (width-count)&(width-1), width-1-count
-		} else if kind == 1 {
-			word = 0x13000000 // SBFM: ASR
-		}
-		word |= immr<<16 | imms<<10
-	}
+	e.registerMove(d, l, wide)
+	rex := byte(0x40) | d>>3
 	if wide {
-		word |= 1<<31 | 1<<22
+		rex |= 8
 	}
-	a.word(word | uint32(l)<<5 | uint32(d))
+	if rex != 0x40 {
+		e.a.bytes(rex)
+	}
+	ext := [...]byte{4, 7, 5, 0, 1}[kind]
+	e.a.bytes(0xc1, 0xc0|ext<<3|d&7, byte(count))
 	return true
 }
 

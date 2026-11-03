@@ -1,7 +1,9 @@
 # Native i31 payload forwarding: 2026-11-03
 
-Status: **local follow-up candidate; final target CI and controlled acceptance
-open**. The checked-memory baseline is actual production source `ceea912`.
+Status: **merged in PR #106; final dual-platform semantic CI passed; controlled
+performance acceptance remains open**. The [exact-head audit](pr106-final-ci-2026-11-03.md)
+retains all reports and adverse hosted controls. The checked-memory baseline
+is actual production source `ceea912`.
 Sources `3f27587`, `1677123` and `1594908` incrementally forward an adjacent
 `ref.i31` → `i31.get_s/u` pair, select the original integer as extraction source,
 and select cached-register payload operations directly. The final source uses
