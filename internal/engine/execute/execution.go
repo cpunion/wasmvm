@@ -546,8 +546,11 @@ frames:
 					0xb2, 0xb3, 0xb4, 0xb5, 0xb6, 0xb7, 0xb8, 0xb9,
 					0xba, 0xbb, 0xbc, 0xbd, 0xbe, 0xbf:
 					result.Lo, trap = numeric.Eval(op, a.Lo, b.Lo)
+					if trap != wasm.NoTrap {
+						goto commit
+					}
 				}
-				goto commit
+				goto write
 			}
 			switch op := in.Op; op {
 			case slots.ControlBase + uint32(ir.IfCast), slots.ControlBase + uint32(ir.IfNull), slots.ControlBase + uint32(ir.Jump), slots.ControlBase + uint32(ir.If), slots.ControlBase + uint32(ir.Table), slots.ControlBase + uint32(ir.Return), slots.ControlBase + uint32(ir.Trap):
@@ -859,6 +862,7 @@ frames:
 			if trap != wasm.NoTrap {
 				return e.fail(&wasm.Trap{Code: trap, Function: fn.Index, Offset: code.Sources[in.Source].Wasm.Offset})
 			}
+		write:
 			if in.Dst != slots.NoSlot {
 				values[int(in.Dst)] = result
 			}
