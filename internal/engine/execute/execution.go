@@ -243,6 +243,7 @@ frames:
 		f.suspended = false
 		fn := f.function
 		code := fn.Code
+		instructions := code.Code
 		base := f.base
 		instance := fn.Instance
 		pc := f.pc
@@ -255,7 +256,9 @@ frames:
 					return e.fail(err)
 				}
 			}
-			in := code.Code[pc]
+			// Instructions are immutable for the frame's lifetime. Read only the
+			// fields needed by the selected handler instead of copying the record.
+			in := &instructions[pc]
 			if metered {
 				source := &code.Sources[in.Source]
 				cost := source.Fuel()
@@ -278,66 +281,47 @@ frames:
 					values[int(in.Dst)] = value.Value{Lo: uint64(in.Extra)}
 				}
 				pc++
-				in = code.Code[pc]
+				in = &instructions[pc]
 				e.steps++
 			}
 			var a, b, c value.Value
-			if in.A != slots.NoSlot {
-				a = values[int(in.A)]
-			}
-			if in.B != slots.NoSlot {
-				b = values[int(in.B)]
-			}
 			var result value.Value
 			trap := wasm.NoTrap
-			if in.Op >= 0xe0 {
-				if in.Op >= 0xe0 && in.Op <= 0xe6 {
+			// Internal control instructions have their own dispatch cases below.
+			// Classify only Wasm opcodes through the extension prefixes.
+			if in.Op >= 0xe0 && in.Op < slots.ControlBase {
+				switch in.Op >> 16 {
+				case 0xfd:
+					var a, b, c value.Value
+					if in.A != slots.NoSlot {
+						a = values[int(in.A)]
+					}
+					if in.B != slots.NoSlot {
+						b = values[int(in.B)]
+					}
+					op := in.Op
+					if in.C != slots.NoSlot {
+						c = values[int(in.C)]
+					}
 					im := &code.Sources[in.Source].Wasm
-					f.pc = pc
-					if err := e.stackInstruction(in, im); err != nil {
-						var t *wasm.Trap
-						if errors.As(err, &t) {
-							t.Function, t.Offset = fn.Index, im.Offset
-						}
-						return e.fail(err)
-					}
-					if e.status != Running {
-						return e.status
-					}
-					continue frames
-				}
-				if module.IsWideArithmetic(in.Op) {
-					args := code.Args[in.Extra : in.Extra+in.Count+2]
-					left, right := values[args[0]].Lo, values[args[1]].Lo
-					var lo, hi uint64
-					switch in.Op {
-					case 0xfc0013, 0xfc0014:
-						otherLo, otherHi := values[args[2]].Lo, values[args[3]].Lo
-						var carry uint64
-						if in.Op == 0xfc0013 {
-							lo, carry = bits.Add64(left, otherLo, 0)
-							hi, _ = bits.Add64(right, otherHi, carry)
-						} else {
-							lo, carry = bits.Sub64(left, otherLo, 0)
-							hi, _ = bits.Sub64(right, otherHi, carry)
-						}
+					sub := op & 0xffff
+					switch {
+					case sub <= 10 || sub >= 84 && sub <= 87 || sub == 92 || sub == 93:
+						result, trap = instance.Memories[im.Memory].Load(op, a.Lo, im.MemoryOffset(), im.Lane, b)
+					case sub == 11 || sub >= 88 && sub <= 91:
+						trap = instance.Memories[im.Memory].Store(op, a.Lo, im.MemoryOffset(), im.Lane, b)
 					default:
-						hi, lo = bits.Mul64(left, right)
-						if in.Op == 0xfc0015 {
-							if int64(left) < 0 {
-								hi -= right
-							}
-							if int64(right) < 0 {
-								hi -= left
-							}
-						}
+						result = simd.Eval(im, a, b, c)
 					}
-					values[args[in.Count]], values[args[in.Count+1]] = value.Value{Lo: lo}, value.Value{Lo: hi}
-					pc++
-					f.pc = pc
-					continue
-				}
-				if in.Op>>16 == 0xfb {
+					goto commit
+				case 0xfb:
+					var a, b, c value.Value
+					if in.A != slots.NoSlot {
+						a = values[int(in.A)]
+					}
+					if in.B != slots.NoSlot {
+						b = values[int(in.B)]
+					}
 					im := &code.Sources[in.Source].Wasm
 					var err error
 					if n := state.GCAccessArity(in.Op); n != 0 {
@@ -375,7 +359,62 @@ frames:
 					pc++
 					f.pc = pc
 					continue
+				case 0xfc:
+					if module.IsWideArithmetic(in.Op) {
+						args := code.Args[in.Extra : in.Extra+in.Count+2]
+						left, right := values[args[0]].Lo, values[args[1]].Lo
+						var lo, hi uint64
+						switch in.Op {
+						case 0xfc0013, 0xfc0014:
+							otherLo, otherHi := values[args[2]].Lo, values[args[3]].Lo
+							var carry uint64
+							if in.Op == 0xfc0013 {
+								lo, carry = bits.Add64(left, otherLo, 0)
+								hi, _ = bits.Add64(right, otherHi, carry)
+							} else {
+								lo, carry = bits.Sub64(left, otherLo, 0)
+								hi, _ = bits.Sub64(right, otherHi, carry)
+							}
+						default:
+							hi, lo = bits.Mul64(left, right)
+							if in.Op == 0xfc0015 {
+								if int64(left) < 0 {
+									hi -= right
+								}
+								if int64(right) < 0 {
+									hi -= left
+								}
+							}
+						}
+						values[args[in.Count]], values[args[in.Count+1]] = value.Value{Lo: lo}, value.Value{Lo: hi}
+						pc++
+						f.pc = pc
+						continue
+					}
+				default:
+					if in.Op <= 0xe6 {
+						im := &code.Sources[in.Source].Wasm
+						f.pc = pc
+						if err := e.stackInstruction(*in, im); err != nil {
+							var t *wasm.Trap
+							if errors.As(err, &t) {
+								t.Function, t.Offset = fn.Index, im.Offset
+							}
+							return e.fail(err)
+						}
+						if e.status != Running {
+							return e.status
+						}
+						continue frames
+					}
 				}
+			}
+			// Keep scalar inputs out of the cold extension handlers' live ranges.
+			if in.A != slots.NoSlot {
+				a = values[int(in.A)]
+			}
+			if in.B != slots.NoSlot {
+				b = values[int(in.B)]
 			}
 			switch op := in.Op; op {
 			case slots.ControlBase + uint32(ir.IfCast), slots.ControlBase + uint32(ir.IfNull), slots.ControlBase + uint32(ir.Jump), slots.ControlBase + uint32(ir.If), slots.ControlBase + uint32(ir.Table), slots.ControlBase + uint32(ir.Return), slots.ControlBase + uint32(ir.Trap):
@@ -796,17 +835,6 @@ frames:
 					if err != nil {
 						return e.fail(err)
 					}
-				case op>>16 == 0xfd:
-					im := &code.Sources[in.Source].Wasm
-					sub := op & 0xffff
-					switch {
-					case sub <= 10 || sub >= 84 && sub <= 87 || sub == 92 || sub == 93:
-						result, trap = instance.Memories[im.Memory].Load(op, a.Lo, im.MemoryOffset(), im.Lane, b)
-					case sub == 11 || sub >= 88 && sub <= 91:
-						trap = instance.Memories[im.Memory].Store(op, a.Lo, im.MemoryOffset(), im.Lane, b)
-					default:
-						result = simd.Eval(im, a, b, c)
-					}
 				case op >= 0xfc0008 && op <= 0xfc0011:
 					im := &code.Sources[in.Source].Wasm
 					var err error
@@ -818,6 +846,7 @@ frames:
 					panic("interp: unknown validated opcode")
 				}
 			}
+		commit:
 			if trap != wasm.NoTrap {
 				return e.fail(&wasm.Trap{Code: trap, Function: fn.Index, Offset: code.Sources[in.Source].Wasm.Offset})
 			}

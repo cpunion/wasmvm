@@ -375,8 +375,14 @@ func pureOpcode(op uint32) bool {
 	}
 	// Core 2.0's reserved SIMD holes; the same pinned binary grammar is checked
 	// by the decoder. This guard keeps internal dispatch mistakes visible.
-	mask := [4]uint64{0xffffffffffffffff, 0xffffffffffffffff, 0xf7e27f9bfbffffff, 0xffffbffbffe27f9b}
-	return mask[op/64]&(uint64(1)<<(op%64)) != 0
+	if op < 128 {
+		return true
+	}
+	mask := uint64(0xf7e27f9bfbffffff)
+	if op >= 192 {
+		mask = 0xffffbffbffe27f9b
+	}
+	return mask&(uint64(1)<<(op%64)) != 0
 }
 
 func floating(op uint32, a, b Value) (r Value) {

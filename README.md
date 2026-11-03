@@ -25,6 +25,12 @@ The subsequent [direct-context study](docs/research/performance-direct-context-p
 compares all 20 interpreter/native kernels and six ordinary C kernels after
 removing the obsolete cancellation wrapper, retaining remaining gaps and regressions.
 
+The [instruction-view comparison](docs/research/performance-interpreter-instruction-view-2026-11-03.md)
+observes 20.8–24.9% lower LLGo SIMD interpretation time in a complete twenty-kernel
+diagnostic study. Its high-load A/A variation and all adverse controls remain
+recorded. [Three earlier Linux CI heads](docs/research/pr112-cold-operands-ci-2026-11-03.md)
+retain scalar regressions; integration and whole-portfolio acceptance remain open.
+
 ## Project status
 
 **Experimental; no tagged release or stable API commitment yet.** The module

@@ -11,14 +11,30 @@ costs decrease 4.9%/15.8%, while retained-session empty regresses 2.7%. This
 separate host-pin migration preserves all historical results and guest producers;
 defer, startup and full competitor/native-C acceptance remain open.
 
-The separate [direct-context candidate](performance-direct-context-poll-2026-11-03.md)
+The separate [direct-context change](performance-direct-context-poll-2026-11-03.md)
 then removes the obsolete wrapper/channel on that fixed new compiler. All
 twenty LLGo interpreter cases improve locally (3.5–32.5%); scalar integer/calls/
 memory lead the same-run WasmEdge, while SIMD, GC allocation and some thread
 helpers remain behind. Native direct-struct +8.1% and other adverse controls
 remain visible. Both host compilers pass all 31 local packages/60 reports each;
-final contribution-head dual-platform evidence and controlled acceptance are
-still required. This candidate is separate from compiler migration PR110.
+[PR111 final-head dual-platform evidence](pr111-final-ci-2026-11-03.md) verifies
+all 240 reports, 31 packages per compiler/platform and thirty coverage gates.
+Controlled acceptance remains open; this is separate from compiler migration PR110.
+
+The subsequent [vector-constant experiment](performance-vector-constants-held-2026-11-03.md)
+stays held: local full/lane interpreter gains do not waive a 25.1% native
+widening control regression. Both original campaigns and all adverse outcomes
+remain retained. A [separately declared long-native/C follow-up](performance-native-simd-long-2026-11-03.md)
+uses 82–167 ms VM calls and exact native A/A aliases. Widening is close to C;
+lane and scalar memory remain about 1.105x/1.515x C. The held candidate's earlier
+25.1% widening regression does not recur, but its new 0.66% lane regression
+remains; no held implementation is adopted or controlled gate closed.
+
+An independent experimental host-SIMD probe reports three unnecessary local
+array allocations as [LLGo #2983](https://github.com/xgo-dev/llgo/issues/2983):
+about 96 reported bytes/call versus zero in Go and a supplied-buffer control.
+[Source, linked assembly and all rounds](performance-llgo-simd-array-escape-2026-11-03.md)
+are retained; the project compiler pin and release profile remain unchanged.
 
 | Gap | Evidence and action | Remaining deficit |
 | --- | --- | --- |
@@ -43,6 +59,35 @@ The [final Linux PR #97 benchmark](https://github.com/cpunion/wasmvm/actions/run
 improves LLGo native memory 1.823→1.649 ns/iteration, versus Wasmtime 0.944
 and Wasmer 0.880. Its completed integration does not close that remaining x86
 gap or permit the favorable local ARM64 result to replace it.
+
+The [unified prefix-dispatch study](performance-interpreter-prefix-2026-11-03.md)
+then improves all nineteen sustained LLGo interpreter cases, 2.0–23.7%, and
+long GC interpretation 6.8–10.8%. Full-vector SIMD leads this WasmEdge; widening
+and lanes remain about 1.103x/1.070x its time. Native long controls stay near
+baseline, while Go long direct/indirect GC +2.2%/+1.6% and all short adverse
+outcomes remain retained. Public-boundary, native-C and controlled acceptance
+remain open.
+
+The first prefix candidate's [complete Linux CI](pr112-initial-ci-2026-11-03.md)
+passes semantics but retains LLGo scalar interpretation +7.5–17.1%; integration
+is held. A [source-changing control-range correction](performance-interpreter-prefix-control-2026-11-03.md)
+excludes internal controls before prefix classification. Its full local comparison
+improves nineteen sustained LLGo interpreter cases 4.4–24.6%, while retaining
+all new Go/native adverse controls. New exact-head Linux/macOS CI remains
+required; ARM64 observations do not prove the Linux regression resolved.
+
+The [second full CI head](pr112-control-ci-2026-11-03.md) passes all 240 reports
+but retains Linux scalar regressions +5.5–13.8%. [Exact-source amd64 assembly](performance-interpreter-cold-operands-2026-11-03.md)
+shows scalar operand storage moved to the stack. A subsequent source correction
+loads scalar inputs after cold extension dispatch and restores register storage;
+its complete local comparison improves LLGo SIMD 17.6–21.7%. New Linux evidence
+then [passes full semantics but retains scalar regressions](pr112-cold-operands-ci-2026-11-03.md):
+LLGo +6.4–12.1%, Go +6.2–10.4%. Integration remains held. A separate
+[immutable-instruction view](performance-interpreter-instruction-view-2026-11-03.md)
+removes eager field copies in actual amd64 assembly and observes local LLGo SIMD
+improvement 20.8–24.9%, while retaining high-load A/A variation and all adverse
+controls. That new source requires its own target CI. All three failed CI
+performance comparisons stay open; no emulated throughput replaces native data.
 
 ## Independently reproduced LLGo problems
 
