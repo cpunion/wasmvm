@@ -1,6 +1,6 @@
 # Keep internal control outside Wasm prefix dispatch: 2026-11-03
 
-Status: source-changing correction; local validation/diagnostics pass, new final-head Linux/macOS CI remains required. No performance acceptance claim.
+Status: held after [full semantic CI and repeated Linux regressions](pr112-control-ci-2026-11-03.md). The [operand-lifetime correction](performance-interpreter-cold-operands-2026-11-03.md) is separate; all original outcomes remain retained.
 
 The [initial PR112 head](pr112-initial-ci-2026-11-03.md) passes all semantic CI
 but regresses Linux LLGo scalar interpretation 7.5–17.1%. Preserve its entire

@@ -76,6 +76,14 @@ improves nineteen sustained LLGo interpreter cases 4.4–24.6%, while retaining
 all new Go/native adverse controls. New exact-head Linux/macOS CI remains
 required; ARM64 observations do not prove the Linux regression resolved.
 
+The [second full CI head](pr112-control-ci-2026-11-03.md) passes all 240 reports
+but retains Linux scalar regressions +5.5–13.8%. [Exact-source amd64 assembly](performance-interpreter-cold-operands-2026-11-03.md)
+shows scalar operand storage moved to the stack. A subsequent source correction
+loads scalar inputs after cold extension dispatch and restores register storage;
+its complete local comparison improves LLGo SIMD 17.6–21.7%. New Linux evidence
+remains required. All native/Go adverse controls and both failed CI performance
+comparisons stay open; no emulated throughput replaces native data.
+
 ## Independently reproduced LLGo problems
 
 All reports concern pinned `8e45ed5` with `-O3 -lto=full`. Current upstream main
