@@ -33,6 +33,9 @@ type heapObject struct {
 type heapSlot struct {
 	Object     *heapObject
 	Generation uint32
+	// Free slots link through the existing alignment space. Zero terminates
+	// the chain; live and retired slots never participate in it.
+	Next uint32
 }
 
 // Handle-indexed pages keep object addresses stable without allocating a host
@@ -85,8 +88,8 @@ func (s *Store) allocateObject(typ uint32, length uint32, extra ...uint64) (uint
 	// Select a handle before reserving payload storage so limit failures cannot
 	// consume arena space. Commit the free list only after allocations succeed.
 	index := uint32(max(1, len(s.heap)))
-	if len(s.heapFree) != 0 {
-		index = s.heapFree[len(s.heapFree)-1]
+	if s.heapFree != 0 {
+		index = s.heapFree
 	} else if uint64(len(s.heap)) > math.MaxUint32 || uint64(index) > uint64(s.limits.MaxHeapObjects) {
 		return 0, limit("guest heap handles")
 	}
@@ -106,9 +109,9 @@ func (s *Store) allocateObject(typ uint32, length uint32, extra ...uint64) (uint
 	if len(s.heap) == 0 {
 		s.heap = appendValue(s.heap, heapSlot{})
 	}
-	if len(s.heapFree) != 0 {
-		n := len(s.heapFree) - 1
-		s.heapFree = s.heapFree[:n]
+	if s.heapFree != 0 {
+		s.heapFree = s.heap[index].Next
+		s.heap[index].Next = 0
 	} else {
 		s.heap = appendValue(s.heap, heapSlot{Generation: 1})
 	}
@@ -145,7 +148,8 @@ func (s *Store) releaseObject(index uint32) {
 	slot.Object = nil
 	if slot.Generation < 0x7fffffff {
 		slot.Generation++
-		s.heapFree = appendValue(s.heapFree, index)
+		slot.Next = s.heapFree
+		s.heapFree = index
 	}
 }
 func (s *Store) rollbackHeap(serial uint64) {
