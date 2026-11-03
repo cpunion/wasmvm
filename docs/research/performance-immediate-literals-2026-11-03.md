@@ -1,7 +1,10 @@
 # Shared integer immediates and short-call clock precision: 2026-11-03
 
-Status: **selected local candidate; final contribution CI and controlled
-performance acceptance remain open**. Original production is `a176cb5`.
+Status: **earlier both-target candidate; the contribution now restores original
+amd64 placement after its adverse Linux result**. See the
+[corrective follow-up](performance-arm-immediates-x86-preserved-2026-11-03.md).
+New-head CI and controlled performance acceptance remain open. This report
+retains the original measured sources and observations. Original production is `a176cb5`.
 `9eda283` shares immediate encoding/eligibility and constant-pair fusion between
 amd64 and arm64. `85c0210` also drops a literal overwritten by the original
 arithmetic result when fusion retargets its output into a local. The compiler
