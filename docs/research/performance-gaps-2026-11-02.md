@@ -505,3 +505,16 @@ Independent startup evidence narrows [LLGo #2973](https://github.com/xgo-dev/llg
 and the actual boundary-allocation evidence updates [LLGo #2932](https://github.com/xgo-dev/llgo/issues/2932#issuecomment-6596297878).
 Public-boundary/compiler/native-C gaps remain separate and open; no standalone
 ABI component or tiny C identity result replaces complete-VM acceptance.
+
+[Operation-owned interruption](performance-native-operation-cancel-2026-11-03.md)
+reduces background native public allocation from about 3168 to 2096 reported
+LLGo bytes/call, with about 31% local API and 43% session improvements. It also
+fixes an exact-main session teardown deadlock involving concurrent capability
+use. [PR #109 final CI](pr109-final-ci-2026-11-03.md) verifies all profiles after
+balancing the existing shards: Linux VM 7m32s versus its original canceled
+12m34s job; all final jobs stay below ten minutes. Final Linux native short call
+is 1888 ns, still 2.81x Go. LLGo integer/calls/memory remain behind Wasmer in
+this core-only run; Go memory +17.5% and earlier live-parent/dispatch regressions
+stay open. Evaluate the already merged LLGo named-result fix separately from
+the pinned compiler before retaining or removing related workarounds. Complete
+native-C/controlled portfolio and expanded-world acceptance still requires work.
