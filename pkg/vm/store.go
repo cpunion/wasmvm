@@ -3,7 +3,6 @@ package vm
 import (
 	"context"
 	"errors"
-	"runtime"
 	"sync"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -103,11 +102,6 @@ func (s *Store) begin(ctx context.Context, options CallOptions) (*operation, err
 	}
 	watch := s.engine.config.Backend == "native" && ctx.Done() != nil
 	ctx, cancel := context.WithCancel(ctx)
-	// The driver checks cancellation at every host boundary and memory access,
-	// before the interpreter/backend can supply its existing cached view.
-	if runtime.Compiler == "llgo" {
-		ctx, _ = execute.CancellationView(ctx)
-	}
 	op := &operation{store: s, ctx: ctx, cancelContext: cancel, options: options, fuel: options.Fuel}
 	if watch {
 		op.stopInterrupt = context.AfterFunc(ctx, op.interrupt)

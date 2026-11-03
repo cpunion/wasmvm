@@ -52,7 +52,6 @@ type HostCall struct {
 type Execution struct {
 	store        *state.Store
 	context      context.Context
-	done         <-chan struct{}
 	config       Config
 	frames       []frame
 	prompts      []prompt
@@ -69,8 +68,7 @@ type Execution struct {
 }
 
 func New(store *state.Store, ctx context.Context, config Config) *Execution {
-	ctx, done := CancellationView(ctx)
-	return &Execution{store: store, context: ctx, done: done, config: config, fuel: config.Fuel, status: Done}
+	return &Execution{store: store, context: contextOrBackground(ctx), config: config, fuel: config.Fuel, status: Done}
 }
 func (e *Execution) Fuel() uint64 { return e.fuel }
 
@@ -188,16 +186,7 @@ func (e *Execution) fail(err error) Status {
 // it in deferred panic cleanup before propagating the original host panic.
 func (e *Execution) Abort(err error) { e.fail(err) }
 func (e *Execution) poll() error {
-	if e.done == nil {
-		// Retain Err-only contexts as well as the ordinary background context.
-		return e.context.Err()
-	}
-	select {
-	case <-e.done:
-		return e.context.Err()
-	default:
-		return nil
-	}
+	return e.context.Err()
 }
 
 func (e *Execution) ResumeHost(results []value.Value, err error) error {

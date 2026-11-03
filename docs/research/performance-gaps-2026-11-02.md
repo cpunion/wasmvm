@@ -11,6 +11,15 @@ costs decrease 4.9%/15.8%, while retained-session empty regresses 2.7%. This
 separate host-pin migration preserves all historical results and guest producers;
 defer, startup and full competitor/native-C acceptance remain open.
 
+The separate [direct-context candidate](performance-direct-context-poll-2026-11-03.md)
+then removes the obsolete wrapper/channel on that fixed new compiler. All
+twenty LLGo interpreter cases improve locally (3.5–32.5%); scalar integer/calls/
+memory lead the same-run WasmEdge, while SIMD, GC allocation and some thread
+helpers remain behind. Native direct-struct +8.1% and other adverse controls
+remain visible. Both host compilers pass all 31 local packages/60 reports each;
+final contribution-head dual-platform evidence and controlled acceptance are
+still required. This candidate is separate from compiler migration PR110.
+
 | Gap | Evidence and action | Remaining deficit |
 | --- | --- | --- |
 | LLGo shared/atomic interpreter helpers | [Cached cancellation and numeric C bindings](performance-interpreter-atomics-2026-11-02.md): about 21%/22% improvement; checked helper allocation controls become zero | RMW remains about 2.12x WasmEdge and 1.40x wazero interpreter in that campaign |

@@ -15,7 +15,6 @@ import (
 func (e *Execution) Quiesce() {
 	e.Abort(nil)
 	e.context = context.Background()
-	e.done = nil
 	e.status = Done
 }
 
@@ -45,7 +44,7 @@ func (e *Execution) Rebind(ctx context.Context, limits Limits, metered bool, fue
 	if e.status == Running || e.status == HostRequest {
 		return errors.New("execution is not an idle workspace")
 	}
-	e.context, e.done = CancellationView(ctx)
+	e.context = contextOrBackground(ctx)
 	e.config = Config{Limits: limits, Metered: metered, Fuel: fuel, Backend: e.config.Backend}
 	e.fuel, e.steps = fuel, 0
 	e.status, e.err = Done, nil

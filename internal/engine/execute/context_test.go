@@ -9,7 +9,7 @@ import (
 	"github.com/cpunion/wasmvm/internal/engine/state"
 )
 
-func TestCancellationViewMetadataAndRetainedBinding(t *testing.T) {
+func TestContextMetadataAndRetainedBinding(t *testing.T) {
 	type key struct{}
 	deadline := time.Now().Add(time.Hour)
 	parent, stop := context.WithDeadline(context.WithValue(context.Background(), key{}, "first"), deadline)
@@ -20,17 +20,15 @@ func TestCancellationViewMetadataAndRetainedBinding(t *testing.T) {
 	defer s.Close()
 	e := New(s, ctx, Config{Limits: DefaultLimits()})
 	defer e.Close()
-	// Exercise the immutable view itself with either host compiler.
-	view := &cancellationContext{Context: ctx, done: ctx.Done()}
-	if err := e.Rebind(view, DefaultLimits(), false, 0); err != nil {
+	if err := e.Rebind(ctx, DefaultLimits(), false, 0); err != nil {
 		t.Fatal(err)
 	}
 	retained := e.context
 	if got, ok := retained.Deadline(); !ok || !got.Equal(deadline) || retained.Value(key{}) != "first" || retained.Done() != ctx.Done() || retained.Err() != nil {
 		t.Fatal("lost context metadata", got, ok)
 	}
-	if view, done := CancellationView(retained); view != retained || done != retained.Done() {
-		t.Fatal("duplicated an immutable cancellation view")
+	if retained != ctx {
+		t.Fatal("replaced the invocation context")
 	}
 	e.Quiesce()
 	second, cancelSecond := context.WithCancel(context.WithValue(context.Background(), key{}, "second"))

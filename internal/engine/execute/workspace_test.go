@@ -27,7 +27,7 @@ func TestQuiesceRebindPolicyAndBorrowedResults(t *testing.T) {
 	}
 	results := e.Results()
 	e.Quiesce()
-	if results[0].Lo != 42 || len(e.frames) != 0 || e.pending != nil || e.context != context.Background() || e.done != nil {
+	if results[0].Lo != 42 || len(e.frames) != 0 || e.pending != nil || e.context != context.Background() {
 		t.Fatal("quiescence lost results or retained invocation roots")
 	}
 	for _, limits := range []Limits{{}, DefaultLimits()} {
@@ -53,7 +53,7 @@ func TestQuiesceRebindPolicyAndBorrowedResults(t *testing.T) {
 		t.Fatal(err, e.Err())
 	}
 	e.Quiesce()
-	// A cached cancellation channel must be replaced with each invocation.
+	// Each invocation must replace the previous cancellation binding.
 	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
 	if err := e.Rebind(ctx, DefaultLimits(), false, 0); err != nil {
