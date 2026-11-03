@@ -5,7 +5,7 @@ import "github.com/cpunion/wasmvm/internal/compiler/slots"
 // Select a literal operand without materializing a dead temporary. Every
 // interior instruction retains an independent generic continuation.
 func (e *functionEmitter) combineIntegerConstant(pc int) (int, bool) {
-	if !e.unmetered || e.a.arch != "amd64" || pc+1 >= e.codeLimit() || pc/256 != (pc+1)/256 {
+	if !e.unmetered || pc+1 >= e.codeLimit() || pc/256 != (pc+1)/256 {
 		return 0, false
 	}
 	constant, in := e.f.Code[pc], e.f.Code[pc+1]

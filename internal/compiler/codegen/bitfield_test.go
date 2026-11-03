@@ -93,11 +93,21 @@ func TestMaskShiftProofBoundaries(t *testing.T) {
 			f.Code = append(prefix, f.Code...)
 		}
 		for _, arch := range []string{"arm64", "amd64"} {
-			c, err := CompileUnmeteredFunction(arch, f, DefaultLimits())
-			// amd64 can independently fuse immediate arithmetic in this
-			// fixture. Only arm64's bitfield selection is excluded here.
-			if err != nil || arch == "arm64" && c.FusedIntegers != 0 {
+			if _, err := CompileUnmeteredFunction(arch, f, DefaultLimits()); err != nil {
 				t.Fatal(kind, arch, err)
+			}
+			// Other selectors may fuse immediate pairs on either target.
+			// Check this selector's rejected proof without weakening semantics.
+			e := functionEmitter{a: &assembler{arch: arch}, f: f, unmetered: true, registers: map[slots.Slot]byte{}}
+			for i := range f.Slots {
+				e.registers[slots.Slot(i)] = byte(19 + i)
+			}
+			pc := 0
+			if kind == "poll" {
+				pc = 254
+			}
+			if _, ok := e.combineMaskShift(pc); ok || len(e.a.code) != 0 {
+				t.Fatal("unsafe bitfield selection", kind, arch, ok, e.a.code)
 			}
 		}
 		if native.Available {

@@ -49,7 +49,7 @@ func TestConstantIntegerAliasesAndEntries(t *testing.T) {
 }
 
 func TestIntegerConstantPollBoundary(t *testing.T) {
-	f := &slots.Function{Slots: []wasm.ValueType{wasm.I32, wasm.I32}, Sources: []ir.Source{{Wasm: module.Instr{Bits: 7}}}}
+	f := &slots.Function{Slots: []wasm.ValueType{wasm.I32, wasm.I32}, Sources: []ir.Source{{Wasm: module.Instr{Bits: 8}}}}
 	for range 255 {
 		f.Code = append(f.Code, slots.Instruction{Op: 1, Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot})
 	}
@@ -57,10 +57,12 @@ func TestIntegerConstantPollBoundary(t *testing.T) {
 		slots.Instruction{Op: 0x41, Dst: 1, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
 		slots.Instruction{Op: 0x6c, Dst: 0, A: 0, B: 1, C: slots.NoSlot},
 		slots.Instruction{Op: slots.ControlBase + uint32(ir.Return), Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot})
-	for _, compile := range []func(string, *slots.Function, Limits) (*CompiledFunction, error){CompileFunction, CompileUnmeteredFunction} {
-		c, err := compile("amd64", f, DefaultLimits())
-		if err != nil || c.FusedIntegers != 0 {
-			t.Fatal(c, err)
+	for _, arch := range []string{"amd64", "arm64"} {
+		for _, compile := range []func(string, *slots.Function, Limits) (*CompiledFunction, error){CompileFunction, CompileUnmeteredFunction} {
+			c, err := compile(arch, f, DefaultLimits())
+			if err != nil || c.FusedIntegers != 0 {
+				t.Fatal(c, err)
+			}
 		}
 	}
 }
@@ -96,6 +98,51 @@ func TestConstantIntegerLocalForwarding(t *testing.T) {
 							f.Code = append(f.Code, slots.Instruction{Op: slots.ControlBase + uint32(ir.Return), Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot})
 							checkLinearIntegerEntries(t, f)
 						})
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestARMConstantIntegerSelectionAndColdAliases(t *testing.T) {
+	for _, wide := range []bool{false, true} {
+		for _, tc := range []struct {
+			kind  uint32
+			bits  uint64
+			fused bool
+		}{
+			{0, 4095, true}, {0, 4096, false}, {1, 127, true}, {2, 4, true}, {2, 9, true}, {2, 7, false},
+			{7, 1, true}, {7, 8191, true}, {7, 0x1555, false}, {8, 127, false}, {9, 128, false},
+			{10, 0, true}, {11, 66, true}, {12, 127, true}, {13, 1 << 63, true}, {14, ^uint64(0), true},
+		} {
+			typ, literal, first, constant := wasm.I32, uint32(0x41), uint32(0x6a), tc.bits
+			if wide {
+				typ, literal, first = wasm.I64, 0x42, 0x7c
+			} else {
+				constant = uint64(uint32(constant))
+			}
+			for _, left := range []slots.Slot{0, 1} {
+				f := &slots.Function{Slots: []wasm.ValueType{typ, typ, typ}, Sources: []ir.Source{{Wasm: module.Instr{Bits: constant}}}, Code: []slots.Instruction{
+					{Op: literal, Dst: 1, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
+					{Op: first + tc.kind, Dst: 1, A: left, B: 1, C: slots.NoSlot},
+					{Op: slots.ControlBase + uint32(ir.Return), Dst: slots.NoSlot, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot},
+				}}
+				for _, fast := range []bool{false, true} {
+					c, err := CompileFunctionWithConfig("arm64", f, DefaultLimits(), Config{Unmetered: fast})
+					if err != nil || (c.FusedIntegers == 1) != (tc.fused && fast && left == 0) {
+						t.Fatal(wide, tc, left, fast, c, err)
+					}
+				}
+				if native.Available {
+					checkLinearIntegerEntries(t, f)
+				}
+				if left == 0 && tc.fused {
+					for _, registers := range []map[slots.Slot]byte{{0: 19}, {1: 20}, {}} {
+						e := functionEmitter{a: &assembler{arch: "arm64"}, f: f, unmetered: true, registers: registers}
+						if _, ok := e.combineIntegerConstant(0); ok || len(e.a.code) != 0 {
+							t.Fatal("spilled fallback emitted a partial pair", registers, e.a.code)
+						}
 					}
 				}
 			}
