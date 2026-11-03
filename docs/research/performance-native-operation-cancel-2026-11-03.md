@@ -140,3 +140,29 @@ profiles and guest semantics were not changed to obtain a passing measurement.
 
 [All three complete campaigns, phases, plans, oracles, compiler/binary/source
 identities, quality checks, baseline deadlock and intermediate quality evidence](evidence/performance-native-operation-cancel-2026-11-03.json.gz).
+
+## First contribution-head CI and shard correction
+
+Head `1ca6ddb` passes the Linux PR benchmark: 228 observations/76 regenerated
+summaries, with exact 1473-base/1475-head source inventories and pinned flags.
+LLGo native empty call is 3029→2164 ns (-28.6%); sustained integer/calls/memory
+change +0.8%/-1.3%/-0.1%. Retain Go sustained calls +7.4%. This unbatched
+latency protocol differs from the local batches; neither replaces the other.
+
+Its Linux VM job is canceled after 12m34s against a twelve-minute job budget.
+The semantic step succeeds: original JSON logs prove all twelve assigned
+packages and 2799 tests pass. Trace evidence identifies a 645.967-second build,
+with codegen and VM links taking about 257/256 seconds, while the component
+shard build takes 199.322 seconds. No test failure or guest hang is observed.
+The job cancellation still blocks integration. Preserve its outcome and logs.
+
+Rebalance four corpus-independent packages (nativeabi, IR, compat and host)
+from VM to the existing component shard, leaving eight packages in each. Schedule
+heavy VM packages first. Core2-dependent numeric/SIMD packages remain in VM with
+their input preparation. All 31 packages still run exactly once across the same
+six shards, with unchanged compiler profiles/timeouts and no additional jobs.
+The plan and matrix checks pass. Final-head CI must validate the correction;
+an unchanged retry is not used to replace the canceled job.
+
+[First-head reports/traces, source/phase comparison, canceled-job log and
+package execution proof](evidence/pr109-first-ci-2026-11-03.json.gz).
