@@ -45,6 +45,7 @@ func (s *Store) withCaller(ctx context.Context, options CallOptions, fn func(*Ca
 		for _, v := range caller.temporary {
 			v.Release()
 		}
+		fuel = op.fuel
 	}()
 	complete := false
 	defer func() {
@@ -53,14 +54,13 @@ func (s *Store) withCaller(ctx context.Context, options CallOptions, fn func(*Ca
 				err = errors.Join(err, failed)
 			}
 		}
-		fuel = op.fuel
 	}()
 	err = fn(caller)
 	if err == nil {
 		err = op.ctx.Err()
 	}
 	complete = err == nil
-	return op.fuel, err
+	return 0, err // The capability-draining defer publishes final fuel.
 }
 
 // ReadExternalMemory and WriteExternalMemory copy through a same-Store memory
