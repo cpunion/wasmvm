@@ -243,6 +243,7 @@ frames:
 		f.suspended = false
 		fn := f.function
 		code := fn.Code
+		instructions := code.Code
 		base := f.base
 		instance := fn.Instance
 		pc := f.pc
@@ -255,7 +256,9 @@ frames:
 					return e.fail(err)
 				}
 			}
-			in := code.Code[pc]
+			// Instructions are immutable for the frame's lifetime. Read only the
+			// fields needed by the selected handler instead of copying the record.
+			in := &instructions[pc]
 			if metered {
 				source := &code.Sources[in.Source]
 				cost := source.Fuel()
@@ -278,7 +281,7 @@ frames:
 					values[int(in.Dst)] = value.Value{Lo: uint64(in.Extra)}
 				}
 				pc++
-				in = code.Code[pc]
+				in = &instructions[pc]
 				e.steps++
 			}
 			var a, b, c value.Value
@@ -392,7 +395,7 @@ frames:
 					if in.Op <= 0xe6 {
 						im := &code.Sources[in.Source].Wasm
 						f.pc = pc
-						if err := e.stackInstruction(in, im); err != nil {
+						if err := e.stackInstruction(*in, im); err != nil {
 							var t *wasm.Trap
 							if errors.As(err, &t) {
 								t.Function, t.Offset = fn.Index, im.Offset
