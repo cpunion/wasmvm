@@ -23,9 +23,9 @@ type nativeHeap struct {
 	allocationBatches, allocatedObjects uint64
 }
 
-// Keep relocation metadata out of portable heap objects and their size class.
+// Every published native object has one record, including empty payloads.
+// Numeric handles avoid duplicate host pointers and validate reused generations.
 type nativeHeapAllocation struct {
-	object         *heapObject
 	offset, handle uint64
 }
 
@@ -55,11 +55,11 @@ func (s *Store) prepareHeapViews(count uint64) error {
 
 func (s *Store) allocateNativePayload(size uint64) ([]byte, uint64, error) {
 	h := s.nativeHeap
-	if size == 0 {
-		return nil, 0, nil
-	}
 	if err := s.reserveNativePayload(size); err != nil {
 		return nil, 0, err
+	}
+	if size == 0 {
+		return nil, 0, nil
 	}
 	offset := h.used
 	h.used += size
@@ -74,7 +74,7 @@ func (s *Store) reserveNativePayload(size uint64) error {
 	// tombstone retention independently of a previously large arena capacity;
 	// the live/dead ratio keeps compaction amortized for nearly full heaps.
 	if size > uint64(len(h.data))-h.used || uint64(len(h.objects)) >= 2*s.usage.HeapObjects+64 {
-		s.compactNativeHeap()
+		s.compactNativeHeap(false)
 	}
 	if size > uint64(len(h.data))-h.used {
 		capacity := min(s.limits.MaxHeapBytes, max(h.used+size, max(4096, uint64(len(h.data))*2)))
@@ -92,7 +92,10 @@ func (s *Store) reserveNativePayload(size uint64) error {
 			return err
 		}
 		for _, a := range h.objects {
-			o := a.object
+			o, _ := s.heapObject(a.handle)
+			if len(o.Data) == 0 {
+				continue
+			}
 			o.Data = h.data[a.offset : a.offset+uint64(len(o.Data))]
 			s.publishHeapObject(a.handle, o)
 		}
@@ -100,27 +103,35 @@ func (s *Store) reserveNativePayload(size uint64) error {
 	return nil
 }
 
-func (s *Store) compactNativeHeap() {
+// Collection sweeps the complete allocation inventory while compacting it.
+// Capacity maintenance removes only tombstones and leaves live mark bits alone.
+func (s *Store) compactNativeHeap(sweep bool) {
 	h := s.nativeHeap
 	kept := 0
 	var used uint64
 	for _, a := range h.objects {
-		o := a.object
-		// A metadata cell can have been reused by a newer generation while
-		// this old relocation record is still a tombstone.
-		live, ok := s.heapObject(a.handle)
-		if !ok || live != o || o.Data == nil {
+		o, ok := s.heapObject(a.handle)
+		if !ok {
 			continue
 		}
+		if sweep {
+			if !o.Mark {
+				s.releaseObject(uint32(a.handle))
+				continue
+			}
+			o.Mark = false
+		}
 		size := uint64(len(o.Data))
-		copy(h.data[used:used+size], o.Data)
-		o.Data, a.offset = h.data[used:used+size], used
+		if size != 0 && a.offset != used {
+			copy(h.data[used:used+size], o.Data)
+			o.Data = h.data[used : used+size]
+			s.publishHeapObject(a.handle, o)
+		}
+		a.offset = used
 		used += size
 		h.objects[kept] = a
 		kept++
-		s.publishHeapObject(a.handle, o)
 	}
-	clear(h.objects[kept:])
 	h.objects, h.used = h.objects[:kept], used
 }
 
