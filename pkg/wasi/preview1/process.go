@@ -9,12 +9,10 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/cpunion/wasmvm/internal/engine/execute"
 	"github.com/cpunion/wasmvm/internal/wasi/host"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -119,9 +117,6 @@ func NewProcess(config Config) (*Process, error) {
 		return nil, Err2Big
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	if runtime.Compiler == "llgo" {
-		ctx, _ = execute.CancellationView(ctx)
-	}
 	p := &Process{ctx: ctx, cancel: cancel, done: make(chan struct{}), config: config, fds: make(map[uint32]*descriptor)}
 	p.clock = config.Clock
 	if p.clock.Now == nil && p.clock.Resolution == nil && p.clock.Wait == nil {
