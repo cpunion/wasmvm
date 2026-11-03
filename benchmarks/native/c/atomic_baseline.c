@@ -10,7 +10,12 @@
 
 static uint64_t now_ns(void) {
     struct timespec ts;
-    if (clock_gettime(CLOCK_MONOTONIC, &ts)) abort();
+#ifdef __APPLE__
+    const clockid_t clock = CLOCK_MONOTONIC_RAW;
+#else
+    const clockid_t clock = CLOCK_MONOTONIC;
+#endif
+    if (clock_gettime(clock, &ts)) abort();
     return (uint64_t)ts.tv_sec * UINT64_C(1000000000) + ts.tv_nsec;
 }
 
