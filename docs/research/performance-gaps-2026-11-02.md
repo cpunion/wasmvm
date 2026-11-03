@@ -81,8 +81,13 @@ but retains Linux scalar regressions +5.5–13.8%. [Exact-source amd64 assembly]
 shows scalar operand storage moved to the stack. A subsequent source correction
 loads scalar inputs after cold extension dispatch and restores register storage;
 its complete local comparison improves LLGo SIMD 17.6–21.7%. New Linux evidence
-remains required. All native/Go adverse controls and both failed CI performance
-comparisons stay open; no emulated throughput replaces native data.
+then [passes full semantics but retains scalar regressions](pr112-cold-operands-ci-2026-11-03.md):
+LLGo +6.4–12.1%, Go +6.2–10.4%. Integration remains held. A separate
+[immutable-instruction view](performance-interpreter-instruction-view-2026-11-03.md)
+removes eager field copies in actual amd64 assembly and observes local LLGo SIMD
+improvement 20.8–24.9%, while retaining high-load A/A variation and all adverse
+controls. That new source requires its own target CI. All three failed CI
+performance comparisons stay open; no emulated throughput replaces native data.
 
 ## Independently reproduced LLGo problems
 

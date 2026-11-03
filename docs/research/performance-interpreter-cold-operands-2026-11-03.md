@@ -1,6 +1,11 @@
 # Scalar operand lifetime after extension dispatch: 2026-11-03
 
-Status: source-changing correction, local validation and complete diagnostic scope pass; new exact-head cross-platform CI is required. Performance acceptance stays open.
+Status: local validation and complete diagnostic scope pass; exact-head full CI passes semantics but retains Linux scalar regressions. Integration and performance acceptance stay open.
+
+The [completed CI audit](pr112-cold-operands-ci-2026-11-03.md) verifies all 240
+reports and thirty coverage gates, but LLGo scalar interpretation still regresses
+6.4–12.1%. A separate [immutable-instruction follow-up](performance-interpreter-instruction-view-2026-11-03.md)
+requires its own final-head CI; its observations do not replace this outcome.
 
 Both earlier PR112 heads pass full semantic CI but retain material Linux scalar
 regressions. The [second CI hold](pr112-control-ci-2026-11-03.md) records
