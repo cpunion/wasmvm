@@ -17,6 +17,10 @@ execution never silently switches to one of them.
 
 Current optimization evidence: [competitor, Go/LLGo and ordinary-native gaps](docs/research/performance-gaps-2026-11-02.md), with per-case outcomes and upstream compiler reports. Performance acceptance remains open.
 
+The [LLGo host-compiler migration](docs/research/performance-llgo-result-upgrade-2026-11-03.md)
+records old/new compiler results on identical VM source, separately from VM
+optimizations. Historical benchmark and guest-producer pins retain their identities.
+
 ## Project status
 
 **Experimental; no tagged release or stable API commitment yet.** The module

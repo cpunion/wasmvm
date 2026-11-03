@@ -5,6 +5,10 @@ Selected production `4bb81a964981058dd36026c7a927845ee05d2888`, baseline
 Linux/macOS CI and controlled performance acceptance remain required. Local
 diagnostics below retain the benefits and adverse cases separately.
 
+Subsequent integration: [PR #109 merged after final-head validation and the
+measured CI shard correction](pr109-final-ci-2026-11-03.md). Performance
+acceptance remains open.
+
 ## Ownership and bounded teardown
 
 Public operations deliver native interruption through their existing frame

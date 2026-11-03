@@ -214,14 +214,14 @@ func TestSystemClockSignedRangeAndContracts(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-func waitActive(t *testing.T, m *MonotonicClock) {
+func waitPending(t *testing.T, m *MonotonicClock) {
 	t.Helper()
 	deadline := time.Now().Add(time.Second)
 	for {
 		m.mu.Lock()
-		active := m.active
+		pending := m.pending
 		m.mu.Unlock()
-		if active > 0 {
+		if pending > 0 {
 			return
 		}
 		if time.Now().After(deadline) {
@@ -259,7 +259,9 @@ func TestMonotonicClockSuspensionCancellationAndClose(t *testing.T) {
 			_, err := wait.Call(nil, []component.Value{{Bits: ^uint64(0)}}, component.CallOptions{})
 			pending <- err
 		}()
-		waitActive(t, clock)
+		// Completed waits can still have a retiring worker in active. Wait for
+		// the indefinite operation to occupy the quota before testing its bound.
+		waitPending(t, clock)
 		other := instantiate(t, m, clock.Imports())
 		second, _ := other.Function("wait-for")
 		if _, err := second.Call(nil, []component.Value{{Bits: 1e9}}, component.CallOptions{}); !errors.Is(err, wasm.ErrLimit) {

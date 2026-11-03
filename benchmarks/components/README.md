@@ -518,7 +518,7 @@ and reference limitations do not establish M6/performance acceptance.
 ### Run-to-completion async lift probe
 
 Build `benchmarks/components/async_lift.go` with Go and pinned LLGo
-`8e45ed5 -O3 -lto=full`. Invoke `async_lift COMPONENT BACKEND CALLS YIELDS ENTRY`
+`983465e -O3 -lto=full` (the current host pin in `../own_build.py`). Invoke `async_lift COMPONENT BACKEND CALLS YIELDS ENTRY`
 using `pkg/component/testdata/async-lift.wasm`, 3000 calls, 128 yields and entry
 `run`, `stackful` or `direct`. `run` performs 129 callback invocations per call;
 `stackful` uses task.return and one thread.yield; `direct` keeps a synchronous
