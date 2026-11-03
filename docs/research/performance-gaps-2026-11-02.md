@@ -472,3 +472,15 @@ trap-state tests also pass against selected production with Go and LLGo.
 Exact disassembly identifies redundant constant materialization before ARM
 immediate operations; investigate sharing the existing amd64 constant fusion
 before adding more cache state. No new LLGo defect is inferred from these timings.
+
+The [shared immediate selector and overwritten-literal follow-up](performance-immediate-literals-2026-11-03.md)
+uses the existing constant fusion on ARM as well as amd64, retaining all cold
+entries. The final original-production comparison improves LLGo indirect access
+4.587916→4.496333 ns/source iteration (2.0%, A/A +0.09%), still 1.76x Wasmtime
+and 1.60x ordinary C. LLGo calls +1.08%, Go allocation +5.26% and unstable
+empty-call controls remain adverse evidence. Final contribution CI is pending;
+this does not close portfolio acceptance. A separate clock reproduction finds
+Darwin C CLOCK_MONOTONIC's 1000-ns granularity. The final study uses the same
+finer clock for both C references and native C, retains Go timers, and keeps
+the earlier source/clock study separate. Single-call C results near resolution
+are not precise pure-call costs. Component clocks and batched latency remain open.
