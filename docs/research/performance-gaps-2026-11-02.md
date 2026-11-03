@@ -602,6 +602,14 @@ balancing the existing shards: Linux VM 7m32s versus its original canceled
 12m34s job; all final jobs stay below ten minutes. Final Linux native short call
 is 1888 ns, still 2.81x Go. LLGo integer/calls/memory remain behind Wasmer in
 this core-only run; Go memory +17.5% and earlier live-parent/dispatch regressions
-stay open. Evaluate the already merged LLGo named-result fix separately from
-the pinned compiler before retaining or removing related workarounds. Complete
+stay open. The named-result fix PR2963 is already production pin `983465e`;
+further compiler changes require a separate baseline event. Complete
 native-C/controlled portfolio and expanded-world acceptance still requires work.
+
+
+The [native sweep/page-summary study](performance-native-gc-sweep-2026-11-04.md)
+reduces long native linked allocation 8.5% under LLGo and 5.9% under Go against
+PR114. LLGo remains 5.32x Wasmtime and 7.8% above Go in that scope. Empty native
+allocation retains +1.71% versus own base while taking 19.215 ns versus Wasmtime
+20.680 ns. All original 20 cases, ordinary-C gaps, Go interpreter regressions and
+separate adverse controls remain recorded; no overall acceptance closes.

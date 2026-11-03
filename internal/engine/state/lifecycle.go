@@ -183,22 +183,24 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 			}
 		}
 	}
-	for i := 1; i < len(s.heap); i++ {
-		o := s.heap[i].Object
-		if o == nil {
-			continue
-		}
-		if !o.Mark {
-			s.releaseObject(uint32(i))
-		} else {
-			o.Mark = false
+	if s.nativeHeap != nil {
+		s.compactNativeHeap(true)
+		s.sweepNativeEmpty()
+	} else {
+		for i := 1; i < len(s.heap); i++ {
+			o := s.heap[i].Object
+			if o == nil {
+				continue
+			}
+			if !o.Mark {
+				s.releaseObject(uint32(i))
+			} else {
+				o.Mark = false
+			}
 		}
 	}
 	s.heapThreshold = max(1<<20, s.usage.HeapBytes*2)
 	s.markObjects = objects[:0]
-	if s.nativeHeap != nil {
-		s.compactNativeHeap()
-	}
 
 	kept := s.instances[:0]
 	for _, in := range s.instances {

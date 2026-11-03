@@ -33,7 +33,7 @@ func TestIntegerPairsPreserveValuesFuelAndReuse(t *testing.T) {
 		for _, metered := range []bool{false, true} {
 			e := New(s, nil, Config{Limits: DefaultLimits(), Metered: metered, Fuel: 100})
 			for range 2 {
-				if err := e.Start(in.Functions[0], []value.Value{{Lo: uint64(test.input)}}); err != nil || e.Run() != Done || uint32(e.Results()[0].Lo) != test.want || e.Results()[0].Hi != 0 {
+				if err := e.Start(in.Functions[0], []value.Value{{Lo: uint64(test.input), Hi: ^uint64(0)}}); err != nil || e.Run() != Done || uint32(e.Results()[0].Lo) != test.want || e.Results()[0].Hi != 0 {
 					t.Fatal(test, metered, err, e.Err(), e.Results())
 				}
 				if metered && e.Fuel() != 97 {

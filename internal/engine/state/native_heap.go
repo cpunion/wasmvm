@@ -23,9 +23,10 @@ type nativeHeap struct {
 	allocationBatches, allocatedObjects uint64
 }
 
-// Keep relocation metadata out of portable heap objects and their size class.
+// Nonempty payloads retain allocation order for in-place relocation. Numeric
+// handles avoid duplicate host pointers and validate reused generations. Empty
+// objects are swept in metadata pages instead of appending relocation records.
 type nativeHeapAllocation struct {
-	object         *heapObject
 	offset, handle uint64
 }
 
@@ -74,7 +75,7 @@ func (s *Store) reserveNativePayload(size uint64) error {
 	// tombstone retention independently of a previously large arena capacity;
 	// the live/dead ratio keeps compaction amortized for nearly full heaps.
 	if size > uint64(len(h.data))-h.used || uint64(len(h.objects)) >= 2*s.usage.HeapObjects+64 {
-		s.compactNativeHeap()
+		s.compactNativeHeap(false)
 	}
 	if size > uint64(len(h.data))-h.used {
 		capacity := min(s.limits.MaxHeapBytes, max(h.used+size, max(4096, uint64(len(h.data))*2)))
@@ -92,7 +93,7 @@ func (s *Store) reserveNativePayload(size uint64) error {
 			return err
 		}
 		for _, a := range h.objects {
-			o := a.object
+			o, _ := s.heapObject(a.handle)
 			o.Data = h.data[a.offset : a.offset+uint64(len(o.Data))]
 			s.publishHeapObject(a.handle, o)
 		}
@@ -100,28 +101,65 @@ func (s *Store) reserveNativePayload(size uint64) error {
 	return nil
 }
 
-func (s *Store) compactNativeHeap() {
+// Collection sweeps nonempty objects while compacting their payloads. Capacity
+// maintenance removes only tombstones and leaves live mark bits alone.
+func (s *Store) compactNativeHeap(sweep bool) {
 	h := s.nativeHeap
 	kept := 0
 	var used uint64
 	for _, a := range h.objects {
-		o := a.object
-		// A metadata cell can have been reused by a newer generation while
-		// this old relocation record is still a tombstone.
-		live, ok := s.heapObject(a.handle)
-		if !ok || live != o || o.Data == nil {
+		o, ok := s.heapObject(a.handle)
+		if !ok {
 			continue
 		}
+		if sweep {
+			if !o.Mark {
+				s.releaseHeapObject(uint32(a.handle), o)
+				continue
+			}
+			o.Mark = false
+		}
 		size := uint64(len(o.Data))
-		copy(h.data[used:used+size], o.Data)
-		o.Data, a.offset = h.data[used:used+size], used
+		if size != 0 && a.offset != used {
+			copy(h.data[used:used+size], o.Data)
+			o.Data = h.data[used : used+size]
+			s.publishHeapObject(a.handle, o)
+		}
+		a.offset = used
 		used += size
 		h.objects[kept] = a
 		kept++
-		s.publishHeapObject(a.handle, o)
 	}
-	clear(h.objects[kept:])
 	h.objects, h.used = h.objects[:kept], used
+}
+
+func (s *Store) trackNativeEmpty(index uint32) {
+	s.heapObjects[uint64(index)/heapObjectsPerPage].hasEmpty = true
+}
+
+// Only pages that may contain empty objects need this scan. Released cells
+// have no layout; a conservative page summary retains no individual identities
+// and is reset by collection. Empty allocation adds no record or backing array.
+func (s *Store) sweepNativeEmpty() {
+	for page := range s.heapObjects {
+		p := &s.heapObjects[page]
+		if !p.hasEmpty {
+			continue
+		}
+		p.hasEmpty = false
+		for cell := range p.objects {
+			o := &p.objects[cell]
+			if o.Layout == nil || len(o.Data) != 0 {
+				continue
+			}
+			if o.Mark {
+				o.Mark = false
+				p.hasEmpty = true
+			} else {
+				s.releaseHeapObject(uint32(page*heapObjectsPerPage+cell), o)
+			}
+		}
+	}
 }
 
 func (s *Store) publishHeapObject(ref uint64, o *heapObject) {
