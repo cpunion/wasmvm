@@ -152,6 +152,7 @@ func (s *Store) finishNativeAllocations(types []uint32) error {
 		return wasm.ErrInvalid
 	}
 	offset = h.used
+	previousEmptyPage := ^uint64(0)
 	for i, ref := range refs[:count] {
 		layout := layouts[i]
 		s.heapSerial++
@@ -161,7 +162,11 @@ func (s *Store) finishNativeAllocations(types []uint32) error {
 			o.Data = h.data[offset : offset+layout.size]
 			h.objects = appendValue(h.objects, nativeHeapAllocation{offset, ref})
 		} else {
-			s.trackNativeEmpty(uint32(ref))
+			page := uint64(uint32(ref)) / heapObjectsPerPage
+			if page != previousEmptyPage {
+				s.heapObjects[page].hasEmpty = true
+				previousEmptyPage = page
+			}
 		}
 		s.heap[uint32(ref)].Object = o
 		s.publishHeapObject(ref, o)
