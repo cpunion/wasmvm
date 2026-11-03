@@ -40,6 +40,7 @@ was not rebuilt; these reports do not assert its status.
 | [#2959](https://github.com/xgo-dev/llgo/issues/2959#issuecomment-6566786471) | Uncancelled context.Err/atomic.Value.Load path allocates; unused return storage is materialized | Cache the execution-bound cancellation view for LLGo; retain Go's cheaper standard path |
 | [#2958](https://github.com/xgo-dev/llgo/issues/2958#issuecomment-6568684544) | Numeric-only Cgo scalar and two-word-result calls each allocate about 16 MB over one million calls; Go allocates zero | Direct LLGo C declarations for retained C-owned numeric memory; host-buffer checks remain |
 | [#2966](https://github.com/xgo-dev/llgo/issues/2966) | Native BDWGC AllocZ emits bzero after GC_malloc has already cleared storage; a minimal program and final disassembly reproduce it | Keep the compiler pin; track an upstream allocator correction as a separate future baseline event |
+| [#2973](https://github.com/xgo-dev/llgo/issues/2973) | Independent startup markers narrow the gap to first-goroutine creator symbolization and Darwin's default metadata path; same-source constructor-to-main is 67.0 ms versus 2.64/1.93 ms under separate diagnostic metadata profiles | [Retain all marker/handshake/profile campaigns](performance-llgo-startup-markers-2026-11-03.md); update the existing issue; preserve normal traceback/debugger contracts and the production compiler profile |
 | [#2975](https://github.com/xgo-dev/llgo/issues/2975) | Nonescaping function-to-interface conversion retains AllocU under full LTO; 100,000 conversions allocate about 3.2 MB versus zero in Go | Preboxed assertion controls allocate zero; this reproduction does not attribute warm VM callback costs |
 
 The numeric Cgo reproduction narrows the existing residual-allocation report;
@@ -90,6 +91,11 @@ retain pinned paths, URLs and content hashes without copying competitor sources.
 
 The [complete twenty-case atomic comparison](performance-atomic-combined-2026-11-02.md)
 confirms shared/RMW/wait interpreter gains and records why native expansion is held.
+
+The later [independent heap null-branch experiment](performance-heap-null-branches-held-2026-11-03.md)
+also remains held: smaller ARM64 bodies do not close the direct/indirect heap
+gap, and the full campaign retains adverse Go/LLGo controls. The selected
+implementation keeps its original null-safe cache protocol.
 
 [CPU profiles and a new independent channel-polling reproduction](performance-interpreter-profile-2026-11-02.md)
 identify an additional runtime cost, reported as [LLGo #2965](https://github.com/xgo-dev/llgo/issues/2965).
