@@ -24,7 +24,11 @@ Controlled acceptance remains open; this is separate from compiler migration PR1
 The subsequent [vector-constant experiment](performance-vector-constants-held-2026-11-03.md)
 stays held: local full/lane interpreter gains do not waive a 25.1% native
 widening control regression. Both original campaigns and all adverse outcomes
-remain retained. Longer native/C SIMD comparisons are still needed.
+remain retained. A [separately declared long-native/C follow-up](performance-native-simd-long-2026-11-03.md)
+uses 82–167 ms VM calls and exact native A/A aliases. Widening is close to C;
+lane and scalar memory remain about 1.105x/1.515x C. The held candidate's earlier
+25.1% widening regression does not recur, but its new 0.66% lane regression
+remains; no held implementation is adopted or controlled gate closed.
 
 An independent experimental host-SIMD probe reports three unnecessary local
 array allocations as [LLGo #2983](https://github.com/xgo-dev/llgo/issues/2983):

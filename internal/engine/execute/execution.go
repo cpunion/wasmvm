@@ -291,7 +291,8 @@ frames:
 			var result value.Value
 			trap := wasm.NoTrap
 			if in.Op >= 0xe0 {
-				if in.Op>>16 == 0xfd {
+				switch in.Op >> 16 {
+				case 0xfd:
 					op := in.Op
 					if in.C != slots.NoSlot {
 						c = values[int(in.C)]
@@ -307,54 +308,7 @@ frames:
 						result = simd.Eval(im, a, b, c)
 					}
 					goto commit
-				}
-				if in.Op >= 0xe0 && in.Op <= 0xe6 {
-					im := &code.Sources[in.Source].Wasm
-					f.pc = pc
-					if err := e.stackInstruction(in, im); err != nil {
-						var t *wasm.Trap
-						if errors.As(err, &t) {
-							t.Function, t.Offset = fn.Index, im.Offset
-						}
-						return e.fail(err)
-					}
-					if e.status != Running {
-						return e.status
-					}
-					continue frames
-				}
-				if module.IsWideArithmetic(in.Op) {
-					args := code.Args[in.Extra : in.Extra+in.Count+2]
-					left, right := values[args[0]].Lo, values[args[1]].Lo
-					var lo, hi uint64
-					switch in.Op {
-					case 0xfc0013, 0xfc0014:
-						otherLo, otherHi := values[args[2]].Lo, values[args[3]].Lo
-						var carry uint64
-						if in.Op == 0xfc0013 {
-							lo, carry = bits.Add64(left, otherLo, 0)
-							hi, _ = bits.Add64(right, otherHi, carry)
-						} else {
-							lo, carry = bits.Sub64(left, otherLo, 0)
-							hi, _ = bits.Sub64(right, otherHi, carry)
-						}
-					default:
-						hi, lo = bits.Mul64(left, right)
-						if in.Op == 0xfc0015 {
-							if int64(left) < 0 {
-								hi -= right
-							}
-							if int64(right) < 0 {
-								hi -= left
-							}
-						}
-					}
-					values[args[in.Count]], values[args[in.Count+1]] = value.Value{Lo: lo}, value.Value{Lo: hi}
-					pc++
-					f.pc = pc
-					continue
-				}
-				if in.Op>>16 == 0xfb {
+				case 0xfb:
 					im := &code.Sources[in.Source].Wasm
 					var err error
 					if n := state.GCAccessArity(in.Op); n != 0 {
@@ -392,6 +346,54 @@ frames:
 					pc++
 					f.pc = pc
 					continue
+				case 0xfc:
+					if module.IsWideArithmetic(in.Op) {
+						args := code.Args[in.Extra : in.Extra+in.Count+2]
+						left, right := values[args[0]].Lo, values[args[1]].Lo
+						var lo, hi uint64
+						switch in.Op {
+						case 0xfc0013, 0xfc0014:
+							otherLo, otherHi := values[args[2]].Lo, values[args[3]].Lo
+							var carry uint64
+							if in.Op == 0xfc0013 {
+								lo, carry = bits.Add64(left, otherLo, 0)
+								hi, _ = bits.Add64(right, otherHi, carry)
+							} else {
+								lo, carry = bits.Sub64(left, otherLo, 0)
+								hi, _ = bits.Sub64(right, otherHi, carry)
+							}
+						default:
+							hi, lo = bits.Mul64(left, right)
+							if in.Op == 0xfc0015 {
+								if int64(left) < 0 {
+									hi -= right
+								}
+								if int64(right) < 0 {
+									hi -= left
+								}
+							}
+						}
+						values[args[in.Count]], values[args[in.Count+1]] = value.Value{Lo: lo}, value.Value{Lo: hi}
+						pc++
+						f.pc = pc
+						continue
+					}
+				default:
+					if in.Op <= 0xe6 {
+						im := &code.Sources[in.Source].Wasm
+						f.pc = pc
+						if err := e.stackInstruction(in, im); err != nil {
+							var t *wasm.Trap
+							if errors.As(err, &t) {
+								t.Function, t.Offset = fn.Index, im.Offset
+							}
+							return e.fail(err)
+						}
+						if e.status != Running {
+							return e.status
+						}
+						continue frames
+					}
 				}
 			}
 			switch op := in.Op; op {
