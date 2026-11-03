@@ -213,9 +213,7 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 		op.releaseWorkspace(w)
 		return nil, err
 	}
-	op.addFrame(e)
 	defer func() {
-		op.removeFrame(e)
 		op.releaseWorkspace(w)
 	}()
 	if err := e.Start(ref, args); err != nil {

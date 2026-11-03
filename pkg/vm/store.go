@@ -118,6 +118,9 @@ func (s *Store) begin(ctx context.Context, options CallOptions) (*operation, err
 
 func (op *operation) interrupt() {
 	s := op.store
+	if s.engine.config.Backend != "native" {
+		return
+	}
 	s.mu.Lock()
 	op.interruptLocked()
 	s.mu.Unlock()
@@ -126,6 +129,9 @@ func (op *operation) interrupt() {
 // The existing frame registry also owns cancellation delivery. Registration and
 // removal use Store.mu, so an old watcher cannot reach a recycled workspace.
 func (op *operation) interruptLocked() {
+	if op.store.engine.config.Backend != "native" {
+		return
+	}
 	for _, frame := range op.frames {
 		frame.Interrupt()
 	}

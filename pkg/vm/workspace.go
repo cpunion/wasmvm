@@ -14,27 +14,32 @@ type callWorkspace struct {
 
 func (op *operation) acquireWorkspace(limits execute.Limits) (*callWorkspace, error) {
 	s := op.store
-	var w *callWorkspace
 	if op.depth == 1 {
 		s.mu.Lock()
-		w, s.workspace = s.workspace, nil
-		s.mu.Unlock()
-	}
-	config := execute.Config{Limits: limits, Metered: op.options.Metered, Fuel: op.fuel}
-	if w != nil {
-		if w.native != nil {
-			if err := w.native.BeginOwned(op.ctx, op.options.Metered); err != nil {
+		w := s.workspace
+		if w != nil {
+			s.workspace = nil
+			var err error
+			if w.native != nil {
+				err = w.native.BeginOwned(op.ctx, op.options.Metered)
+			}
+			if err == nil {
+				err = w.execution.Rebind(op.ctx, limits, op.options.Metered, op.fuel)
+			}
+			if err == nil {
+				op.frames = append(op.frames, w.execution)
+			}
+			s.mu.Unlock()
+			if err != nil {
 				w.execution.Close()
 				return nil, err
 			}
+			return w, nil
 		}
-		if err := w.execution.Rebind(op.ctx, limits, op.options.Metered, op.fuel); err != nil {
-			w.execution.Close()
-			return nil, err
-		}
-		return w, nil
+		s.mu.Unlock()
 	}
-	w = &callWorkspace{}
+	config := execute.Config{Limits: limits, Metered: op.options.Metered, Fuel: op.fuel}
+	w := &callWorkspace{}
 	if s.engine.config.Backend == "native" {
 		backend, err := nativeexec.NewOwned(op.ctx, s.nativeModules, limits.MaxSlots, limits.MaxFrames, op.options.Metered)
 		if err != nil {
@@ -43,24 +48,27 @@ func (op *operation) acquireWorkspace(limits execute.Limits) (*callWorkspace, er
 		w.native, config.Backend = backend, backend
 	}
 	w.execution = execute.New(s.state, op.ctx, config)
+	op.addFrame(w.execution)
 	return w, nil
 }
 
 func (op *operation) releaseWorkspace(w *callWorkspace) {
+	s := op.store
+	s.mu.Lock()
+	op.removeFrameLocked(w.execution)
 	reusable := true
 	if w.native != nil {
 		reusable = w.native.Suspend()
 	}
-	w.execution.Quiesce()
-	if op.depth == 1 && reusable {
-		s := op.store
-		s.mu.Lock()
-		if !s.closing {
-			s.workspace, w = w, nil
-		}
-		s.mu.Unlock()
+	cached := op.depth == 1 && reusable && !s.closing
+	if cached {
+		s.workspace = w
 	}
-	if w != nil {
+	s.mu.Unlock()
+	// This operation still owns Store admission. No later operation or session
+	// call can borrow the cache before this synchronous release returns.
+	w.execution.Quiesce()
+	if !cached {
 		w.execution.Close()
 	}
 }
