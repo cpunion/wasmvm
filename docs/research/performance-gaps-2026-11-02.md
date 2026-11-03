@@ -68,6 +68,14 @@ baseline, while Go long direct/indirect GC +2.2%/+1.6% and all short adverse
 outcomes remain retained. Public-boundary, native-C and controlled acceptance
 remain open.
 
+The first prefix candidate's [complete Linux CI](pr112-initial-ci-2026-11-03.md)
+passes semantics but retains LLGo scalar interpretation +7.5–17.1%; integration
+is held. A [source-changing control-range correction](performance-interpreter-prefix-control-2026-11-03.md)
+excludes internal controls before prefix classification. Its full local comparison
+improves nineteen sustained LLGo interpreter cases 4.4–24.6%, while retaining
+all new Go/native adverse controls. New exact-head Linux/macOS CI remains
+required; ARM64 observations do not prove the Linux regression resolved.
+
 ## Independently reproduced LLGo problems
 
 All reports concern pinned `8e45ed5` with `-O3 -lto=full`. Current upstream main

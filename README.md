@@ -25,9 +25,9 @@ The subsequent [direct-context study](docs/research/performance-direct-context-p
 compares all 20 interpreter/native kernels and six ordinary C kernels after
 removing the obsolete cancellation wrapper, retaining remaining gaps and regressions.
 
-The [prefix-dispatch comparison](docs/research/performance-interpreter-prefix-2026-11-03.md)
-reduces LLGo SIMD interpretation by 19.8–23.7% in its complete twenty-kernel study.
-Separate batch/long controls retain native-C and Go regressions; whole-portfolio
+The [prefix-dispatch comparison](docs/research/performance-interpreter-prefix-control-2026-11-03.md)
+reduces LLGo SIMD interpretation by 19.7–24.6% in its complete twenty-kernel study.
+All original Linux, native-C and Go regressions remain recorded; whole-portfolio
 performance acceptance remains open.
 
 ## Project status

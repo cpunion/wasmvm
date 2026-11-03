@@ -1,6 +1,6 @@
 # Unified interpreter prefix dispatch: 2026-11-03
 
-Status: candidate, pending exact-head dual-platform CI. Performance acceptance remains open.
+Status: superseded after [initial-head Linux regressions](pr112-initial-ci-2026-11-03.md); the [control-range correction](performance-interpreter-prefix-control-2026-11-03.md) is separate. All original outcomes remain retained; performance acceptance stays open.
 
 Route SIMD, GC and Wide Arithmetic by their encoded prefix before unrelated
 scalar/extension checks. Stack Switching retains its existing instruction range.
