@@ -60,6 +60,14 @@ improves LLGo native memory 1.823→1.649 ns/iteration, versus Wasmtime 0.944
 and Wasmer 0.880. Its completed integration does not close that remaining x86
 gap or permit the favorable local ARM64 result to replace it.
 
+The [unified prefix-dispatch study](performance-interpreter-prefix-2026-11-03.md)
+then improves all nineteen sustained LLGo interpreter cases, 2.0–23.7%, and
+long GC interpretation 6.8–10.8%. Full-vector SIMD leads this WasmEdge; widening
+and lanes remain about 1.103x/1.070x its time. Native long controls stay near
+baseline, while Go long direct/indirect GC +2.2%/+1.6% and all short adverse
+outcomes remain retained. Public-boundary, native-C and controlled acceptance
+remain open.
+
 ## Independently reproduced LLGo problems
 
 All reports concern pinned `8e45ed5` with `-O3 -lto=full`. Current upstream main
