@@ -89,6 +89,21 @@ improvement 20.8–24.9%, while retaining high-load A/A variation and all advers
 controls. That new source requires its own target CI. All three failed CI
 performance comparisons stay open; no emulated throughput replaces native data.
 
+[PR112's final head](pr112-final-ci-2026-11-03.md) then passes the full semantic
+matrix and merges: Linux LLGo integer/calls improve 3.0%/5.5%, memory increases
+0.5%, and Go integer/memory +8.7%/+9.6% remain recorded. Separate public-call and
+duration controls preserve all original outcomes. Sustained GC allocation exposes
+a roughly 6.90x Wasmtime deficit despite favorable short-loop observations.
+
+The subsequent [shared GC trace-layout study](performance-gc-tracing-2026-11-03.md)
+retains a held LIFO-slice regression and a cursor-only precursor. Immutable typed
+reference positions reduce native allocation Go 55.537→46.495 and LLGo
+61.614→56.505 ns/object in its own campaign; Wasmtime is 9.000. LLGo remains
+about 21.5% above Go and 6.28x Wasmtime. Both host compilers pass affected suites
+and all 48 reports each, and the complete twenty-case and separate duration
+comparisons remain retained. New exact-head CI/review and all applicable
+acceptance gates stay open; no new LLGo defect is inferred from these timings.
+
 ## Independently reproduced LLGo problems
 
 All reports concern pinned `8e45ed5` with `-O3 -lto=full`. Current upstream main

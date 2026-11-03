@@ -25,11 +25,13 @@ The subsequent [direct-context study](docs/research/performance-direct-context-p
 compares all 20 interpreter/native kernels and six ordinary C kernels after
 removing the obsolete cancellation wrapper, retaining remaining gaps and regressions.
 
-The [instruction-view comparison](docs/research/performance-interpreter-instruction-view-2026-11-03.md)
-observes 20.8–24.9% lower LLGo SIMD interpretation time in a complete twenty-kernel
-diagnostic study. Its high-load A/A variation and all adverse controls remain
-recorded. [Three earlier Linux CI heads](docs/research/pr112-cold-operands-ci-2026-11-03.md)
-retain scalar regressions; integration and whole-portfolio acceptance remain open.
+The [GC trace-layout comparison](docs/research/performance-gc-tracing-2026-11-03.md)
+observes 16.3%/8.3% lower Go/LLGo native allocation time in separate long-loop
+diagnostics. LLGo remains about 6.3x Wasmtime for that case; the complete
+twenty-workload results and all adverse controls stay recorded.
+[PR112's final audit](docs/research/pr112-final-ci-2026-11-03.md) verifies its
+merged implementation across both compilers/platforms. Whole-portfolio
+performance acceptance remains open.
 
 ## Project status
 
