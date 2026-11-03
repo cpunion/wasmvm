@@ -291,6 +291,23 @@ frames:
 			var result value.Value
 			trap := wasm.NoTrap
 			if in.Op >= 0xe0 {
+				if in.Op>>16 == 0xfd {
+					op := in.Op
+					if in.C != slots.NoSlot {
+						c = values[int(in.C)]
+					}
+					im := &code.Sources[in.Source].Wasm
+					sub := op & 0xffff
+					switch {
+					case sub <= 10 || sub >= 84 && sub <= 87 || sub == 92 || sub == 93:
+						result, trap = instance.Memories[im.Memory].Load(op, a.Lo, im.MemoryOffset(), im.Lane, b)
+					case sub == 11 || sub >= 88 && sub <= 91:
+						trap = instance.Memories[im.Memory].Store(op, a.Lo, im.MemoryOffset(), im.Lane, b)
+					default:
+						result = simd.Eval(im, a, b, c)
+					}
+					goto commit
+				}
 				if in.Op >= 0xe0 && in.Op <= 0xe6 {
 					im := &code.Sources[in.Source].Wasm
 					f.pc = pc
@@ -796,17 +813,6 @@ frames:
 					if err != nil {
 						return e.fail(err)
 					}
-				case op>>16 == 0xfd:
-					im := &code.Sources[in.Source].Wasm
-					sub := op & 0xffff
-					switch {
-					case sub <= 10 || sub >= 84 && sub <= 87 || sub == 92 || sub == 93:
-						result, trap = instance.Memories[im.Memory].Load(op, a.Lo, im.MemoryOffset(), im.Lane, b)
-					case sub == 11 || sub >= 88 && sub <= 91:
-						trap = instance.Memories[im.Memory].Store(op, a.Lo, im.MemoryOffset(), im.Lane, b)
-					default:
-						result = simd.Eval(im, a, b, c)
-					}
 				case op >= 0xfc0008 && op <= 0xfc0011:
 					im := &code.Sources[in.Source].Wasm
 					var err error
@@ -818,6 +824,7 @@ frames:
 					panic("interp: unknown validated opcode")
 				}
 			}
+		commit:
 			if trap != wasm.NoTrap {
 				return e.fail(&wasm.Trap{Code: trap, Function: fn.Index, Offset: code.Sources[in.Source].Wasm.Offset})
 			}
