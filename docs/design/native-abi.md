@@ -485,19 +485,31 @@ public results keep their existing copied/rooted ownership. Raw borrowed
 results remain valid through public encoding; their pointer-free values are
 not guest GC roots once the invocation's frames leave. Reused locals are zeroed.
 
-Before caching, quiescence releases guest frame references, pending host
+Before a cached workspace can be borrowed again, quiescence releases guest frame references, pending host
 requests, the invocation context and the linear-memory binding. Native metadata
 keeps bounded storage but drops its former instance identity so that the next
 entry rebuilds it from live Store state. Policy rebinding resets fuel, steps,
 metering and execution limits without replacing the backend.
 
-The former native cancellation callback must stop before it starts. A callback
-that already started makes the workspace non-reusable, even if native entry has
-returned: its sticky control word is never reset. Discard/close serializes with
-late cancellation through Context ownership. Normal release stops the callback
-before operation completion cancels its context. Store close retires an idle
-workspace before state and executable leases; an active call retains ownership
-until its deferred cleanup, including panic and close-from-callback paths.
+Public operations own interruption through their existing registered frames.
+Workspace borrowing/rebinding and registration share the Store lock, as do
+detachment and the cache decision. Cancellation delivery takes that lock and
+can only reach frames still owned by the same operation. A delayed watcher of
+a retired operation cannot reach a workspace borrowed by a later operation.
+A background parent requires no watcher: Store close and panic/teardown request
+interruption directly. A cancelable parent has one operation-level watcher,
+shared by native calls, reentry and suspended continuations. Caller contexts
+retain their independent standard cancellation, deadlines, values and causes.
+
+An interrupted native workspace is never reused: its sticky control word and
+interrupted flag are not reset. Standalone native executions retain automatic
+per-context cancellation unless their owner explicitly assumes delivery and
+draining. Session teardown cancels concurrent capability calls before waiting
+for them, then publishes final fuel after they drain. Panic cleanup and external
+cancellation always synchronize delivery; a fully drained final operation can
+skip an empty interruption dispatch. Store close retires idle storage before
+state and executable leases. Active calls keep ownership through deferred
+cleanup, including panic and close-from-callback paths.
 
 
 ### Fallthrough interrupt polling
