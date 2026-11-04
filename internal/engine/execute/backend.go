@@ -22,8 +22,8 @@ func (e *Execution) Quiesce() {
 // been canceled. The owner keeps this frame registered until delivery drains;
 // its backend cannot be closed or rebound concurrently. Interpreters poll ctx.
 func (e *Execution) Interrupt() {
-	if backend, ok := e.config.Backend.(interface{ Interrupt() }); ok {
-		backend.Interrupt()
+	if e.interrupter != nil {
+		e.interrupter.Interrupt()
 	}
 }
 

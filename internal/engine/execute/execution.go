@@ -53,6 +53,8 @@ type Execution struct {
 	store        *state.Store
 	context      context.Context
 	config       Config
+	frameBackend FrameBackend
+	interrupter  interface{ Interrupt() }
 	frames       []frame
 	prompts      []prompt
 	transferring *continuationBody
@@ -69,7 +71,12 @@ type Execution struct {
 }
 
 func New(store *state.Store, ctx context.Context, config Config) *Execution {
-	return &Execution{store: store, context: contextOrBackground(ctx), config: config, fuel: config.Fuel, status: Done}
+	e := &Execution{store: store, context: contextOrBackground(ctx), config: config, fuel: config.Fuel, status: Done}
+	// Backend identity is fixed for this workspace, including across Rebind.
+	// Discover optional method sets once rather than on every Run/interrupt.
+	e.frameBackend, _ = config.Backend.(FrameBackend)
+	e.interrupter, _ = config.Backend.(interface{ Interrupt() })
+	return e
 }
 func (e *Execution) Fuel() uint64 { return e.fuel }
 
@@ -236,7 +243,7 @@ func (e *Execution) Run() Status {
 		return e.fail(err)
 	}
 	backend := e.config.Backend
-	frameBackend, _ := backend.(FrameBackend)
+	frameBackend := e.frameBackend
 	native := backend != nil
 	metered := e.config.Metered && !native
 frames:
