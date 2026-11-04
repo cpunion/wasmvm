@@ -221,6 +221,17 @@ Global live-range allocation and broader loop/range optimization remain required
 
 Use a private guest ABI with explicit VM frames: guest calls push checked logical frames and branch to native callee labels; returns branch to saved continuations. The initial backend keeps one bounded C entry frame, without hardware-stack switching or a native C/Go frame per guest call. Host interaction, collection, cancellation and traps leave through the explicit status protocol in the [native ABI](native-abi.md). Whole-function inlining and more advanced optimization follow correctness and profiling; both disabled and enabled optimizations must pass differential tests. A persistent AOT/cache file format is later work; generating native code in-process is required in M2.
 
+The retained backend-contract experiment requires `Resize`, `RunFrames`,
+`Interrupt` and `Close` together. Its shared driver validates explicit frame
+packets through one noninlined native bridge; it has no optional frame-capability
+assertion, capability cache or legacy single-frame fallback. Portable execution
+keeps a nil backend. Frame transfers, canonical state, roots, fuel, cancellation
+and owned storage retain the same runtime contracts. The low-level single-frame
+convenience entry is separate from this driver protocol. The experiment removes
+repeated LLGo method-table allocations without adding execution-state fields,
+but overall performance and final-head integration gates remain open. See the
+[source, semantic and performance evidence](../research/performance-native-backend-contract-2026-11-05.md).
+
 ## Direct globals
 
 Both emitters lower validated numeric and reference global.get/set in precise and unmetered
