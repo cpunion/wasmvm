@@ -54,7 +54,7 @@ func TestGCAllocationRestoresBorrowedRootsAfterCollectorPanic(t *testing.T) {
 		t.Fatal(err)
 	}
 	o, ok := s.heapObject(parent.Lo)
-	if !ok || o.get(0).Lo != child || !s.IsLiveReference(child) || len(s.temporary) != 1 || o.extraIndex != 0 {
+	if !ok || s.getObject(o, 0).Lo != child || !s.IsLiveReference(child) || len(s.temporary) != 1 || s.existingObjectExtras(o) != nil {
 		t.Fatal("constructor could not recover after collector panic")
 	}
 }

@@ -61,7 +61,7 @@ func TestNativeHeapForwardedLocalAndTee(t *testing.T) {
 									address := uint64(uintptr(unsafe.Pointer(unsafe.SliceData(buffer))))
 									words := unsafe.Slice((*uint64)(unsafe.Pointer(unsafe.SliceData(buffer))), len(buffer)/8)
 									ref := uint64(0x8000000100000001)
-									words[0], words[1], words[6], words[7], words[8] = 2, address+16, ref, address+128, 2
+									words[0], words[1], words[6], words[7], words[8] = 2, address+16, ref, address+128, 0xfedcba98<<32|2
 									width, offset := field.HeapBytes(), 9
 									if array {
 										offset = width

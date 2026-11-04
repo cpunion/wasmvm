@@ -32,6 +32,11 @@ func publish(code []byte) unsafe.Pointer {
 func unpublish(p unsafe.Pointer, n uint64) { C.wasmvm_unpublish(p, C.size_t(n)) }
 func allocate(n uint64) unsafe.Pointer     { return C.wasmvm_allocate(C.size_t(n)) }
 func deallocate(p unsafe.Pointer)          { C.wasmvm_deallocate(p) }
+func reserve(n uint64) unsafe.Pointer      { return C.wasmvm_reserve(C.size_t(n)) }
+func commit(p unsafe.Pointer, previous, size uint64) bool {
+	return C.wasmvm_commit(p, C.size_t(previous), C.size_t(size)) != 0
+}
+func unreserve(p unsafe.Pointer, n uint64) { C.wasmvm_unreserve(p, C.size_t(n)) }
 
 // Guest addresses below always refer to retained native allocations. Numeric
 // C parameters avoid generated pointer-check closures; host-buffer transfers

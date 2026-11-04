@@ -105,7 +105,7 @@ func TestNativeHeapFieldsEveryWidthAndContinuation(t *testing.T) {
 					words[pair/8], words[pair/8+1] = 2, address+uint64(pair)+16
 					view := words[pair/8+6:]
 					ref := uint64(0x8000000100000001)
-					view[0], view[1], view[2] = ref, address+uint64(pair)+128, 2
+					view[0], view[1], view[2] = ref, address+uint64(pair)+128, 0xfedcba98<<32|2
 					width, offset := field.HeapBytes(), 9
 					if array {
 						offset = width

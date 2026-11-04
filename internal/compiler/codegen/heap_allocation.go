@@ -58,9 +58,9 @@ func (e *functionEmitter) heapAllocation(in slots.Instruction, pc uint32) bool {
 		e.registerMove(1, header, true)
 		e.allocateHeapAMD64(payload, slow)
 	}
-	e.constant(0, uint64(len(t.Fields)))
+	e.constant(0, uint64(e.f.Sources[in.Source].Wasm.A)<<32|uint64(len(t.Fields)))
 	e.allocationDescriptor(16)
-	e.constant(0, uint64(e.f.Sources[in.Source].Wasm.A))
+	e.constant(0, 0)
 	e.allocationDescriptor(24)
 	// All guards precede publication. No exit or collection can occur while
 	// fields are initialized; output slots may alias still-unread operands.

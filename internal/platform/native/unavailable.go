@@ -14,6 +14,9 @@ func publish([]byte) unsafe.Pointer                                             
 func unpublish(unsafe.Pointer, uint64)                                           {}
 func allocate(uint64) unsafe.Pointer                                             { return nil }
 func deallocate(unsafe.Pointer)                                                  {}
+func reserve(uint64) unsafe.Pointer                                              { return nil }
+func commit(unsafe.Pointer, uint64, uint64) bool                                 { return false }
+func unreserve(unsafe.Pointer, uint64)                                           {}
 func atomicAccess(unsafe.Pointer, uint32, uint32, uint64, uint64) (uint64, bool) { return 0, false }
 func sharedLoad(unsafe.Pointer, uint32) uint64                                   { return 0 }
 func sharedStore(unsafe.Pointer, uint32, uint64)                                 {}

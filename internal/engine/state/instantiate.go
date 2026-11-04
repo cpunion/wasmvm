@@ -68,10 +68,9 @@ func (s *Store) AllocateContext(ctx context.Context, compiled *slots.Module, res
 			clear(s.tags[oldTags:])
 			s.tags = s.tags[:oldTags]
 			s.registry.Rollback(oldTypes)
-			for id := range s.heapLayouts {
-				if int(id) > oldTypes {
-					delete(s.heapLayouts, id)
-				}
+			if oldTypes+1 < len(s.heapLayouts) {
+				clear(s.heapLayouts[oldTypes+1:])
+				s.heapLayouts = s.heapLayouts[:oldTypes+1]
 			}
 		}
 	}()

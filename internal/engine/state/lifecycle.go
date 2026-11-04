@@ -2,6 +2,7 @@ package state
 
 import (
 	"encoding/binary"
+	"unsafe"
 
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/memory"
@@ -78,8 +79,7 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 			return
 		}
 		if v.Lo&heapTag != 0 {
-			if o, ok := s.heapObject(v.Lo); ok && !o.Mark {
-				o.Mark = true
+			if o, ok := s.heapObject(v.Lo); ok && s.markObject(o) {
 				if pending == len(objects) {
 					objects = appendValue(objects, o)
 				} else {
@@ -169,18 +169,18 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 					}
 				}
 			}
-			layout := o.Layout
+			layout := s.heapLayouts[o.Type]
 			if layout.stride != 0 {
 				if len(layout.references) != 0 {
 					typ := layout.references[0].typ
 					for i := uint32(0); i < o.Length; i++ {
 						offset := uint64(i) * uint64(layout.stride)
-						visit(typ, value.Value{Lo: binary.LittleEndian.Uint64(o.Data[offset:])})
+						visit(typ, value.Value{Lo: heapReferenceAt(o, offset)})
 					}
 				}
 			} else {
 				for _, ref := range layout.references {
-					visit(ref.typ, value.Value{Lo: binary.LittleEndian.Uint64(o.Data[ref.offset:])})
+					visit(ref.typ, value.Value{Lo: heapReferenceAt(o, uint64(ref.offset))})
 				}
 			}
 		}
@@ -190,14 +190,15 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 		s.sweepNativeEmpty()
 	} else {
 		for i := 1; i < len(s.heap); i++ {
-			o := s.heap[i].Object
+			slot := &s.heap[i]
+			o := slot.Object
 			if o == nil {
 				continue
 			}
-			if !o.Mark {
-				s.releaseObject(uint32(i))
+			if slot.Next&heapMarked == 0 {
+				s.releaseHeapObject(uint32(i), o)
 			} else {
-				o.Mark = false
+				slot.Next &^= heapMarked
 			}
 		}
 	}
@@ -220,6 +221,14 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 		s.functions = s.functions[:len(s.functions)-1]
 	}
 	s.sweepObjects()
+}
+
+// Admitted layouts enumerate only full eight-byte reference fields. Array
+// positions are bounded by the initialized length, whose complete payload was
+// quota/size checked on allocation. Trace exact field widths without rebuilding
+// a variable payload slice and its checks for every object in the graph.
+func heapReferenceAt(o *heapObject, offset uint64) uint64 {
+	return binary.LittleEndian.Uint64((*[8]byte)(unsafe.Add(unsafe.Pointer(o.Data), uintptr(offset)))[:])
 }
 
 func (s *Store) dispose(in *Instance) {

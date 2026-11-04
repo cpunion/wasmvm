@@ -70,10 +70,10 @@ func (s *Store) GCAccess(in *Instance, ins *module.Instr, a, b, c value.Value) (
 			v.Lo &= (1 << field.Packed) - 1
 			v.Hi = 0
 		}
-		o.set(index, v)
+		s.setObject(o, index, v)
 		return result, nil
 	}
-	result = o.get(index)
+	result = s.getObject(o, index)
 	if op == 3 || op == 12 {
 		result.Lo = uint64(uint32(int32(uint32(result.Lo)<<(32-field.Packed)) >> (32 - field.Packed)))
 	}

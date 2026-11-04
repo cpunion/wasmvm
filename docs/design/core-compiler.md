@@ -241,21 +241,24 @@ Precise fuel, trap offsets, cold continuations, spills and root maps retain
 their ordinary contracts. Allocation, casts and bulk GC operations continue to
 use typed runtime exits.
 
-Native Stores own a compacting payload arena and a separate numeric handle
+Native Stores own a compacting payload arena and a shared numeric object-header
 view. Collection and arena/view growth run only at serialized safepoints and
-republish moved addresses before reentry. Guest handles never change when data
+update shared payload pointers before reentry. Guest handles never change when data
 moves. No generated store needs a Go or incremental guest write barrier:
 payloads contain numeric handles, and the collector traces the same bytes after
 native execution stops. Hidden descriptor edges, exception tags and continuation
 metadata keep their existing typed root visitors. Portable Stores keep Go-backed
 payloads without native relocation metadata in their object size class.
 
-Payload capacity is bounded by MaxHeapBytes, handle-view capacity by
-(MaxHeapObjects+1)*32 bytes; growth transiently retains at most two copies.
+Payload capacity is bounded by MaxHeapBytes, header-view virtual capacity by
+(MaxHeapObjects+1)*32 bytes. Payload growth transiently retains at most two
+copies; stable header growth enables pages in place without moving records.
 Logical object/descriptor/continuation charges remain unchanged. Compaction
 also bounds retired allocation metadata after failed instances or handle reuse,
 independently of arena high-water capacity. Store close frees both native
-allocations after execution drains. See the [GC comparison](../research/performance-gc-2026-11-02.md)
+allocations after execution drains. The [shared header contract](shared-heap-header.md)
+specifies typed portable roots, native backing and complete batch publication.
+See the [GC comparison](../research/performance-gc-2026-11-02.md)
 for measured gains and remaining deficits.
 
 The [heap-traffic follow-up](../research/performance-gc-followup-2026-11-02.md)

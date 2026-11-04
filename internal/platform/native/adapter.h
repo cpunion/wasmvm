@@ -22,6 +22,9 @@ void *wasmvm_publish(const void *source, size_t size);
 void wasmvm_unpublish(void *code, size_t size);
 void *wasmvm_allocate(size_t size);
 void wasmvm_deallocate(void *p);
+void *wasmvm_reserve(size_t maximum);
+int wasmvm_commit(void *p, size_t previous, size_t size);
+void wasmvm_unreserve(void *p, size_t maximum);
 struct wasmvm_atomic_result { uint64_t value, retry; };
 struct wasmvm_atomic_result wasmvm_atomic_access(uintptr_t address, uint32_t width, uint32_t operation,
                               uint64_t a, uint64_t b);

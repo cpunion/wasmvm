@@ -93,13 +93,13 @@ func TestCompactHeapFieldAndArrayStorage(t *testing.T) {
 		t.Fatal(err)
 	}
 	o, _ := s.heapObject(ref)
-	if len(o.Data) != 33 {
-		t.Fatal("struct fields padded to frame width", len(o.Data))
+	if int(s.objectSize(o)) != 33 {
+		t.Fatal("struct fields padded to frame width", int(s.objectSize(o)))
 	}
 	values := []value.Value{{Lo: 255}, {Lo: math.MaxUint64}, {Lo: 3, Hi: 7}, {Lo: 123}}
 	for i, v := range values {
-		o.set(uint32(i), v)
-		if got := o.get(uint32(i)); got != v {
+		s.setObject(o, uint32(i), v)
+		if got := s.getObject(o, uint32(i)); got != v {
 			t.Fatal(i, got, v)
 		}
 	}
@@ -108,11 +108,11 @@ func TestCompactHeapFieldAndArrayStorage(t *testing.T) {
 		t.Fatal(err)
 	}
 	o, _ = s.heapObject(ref)
-	if len(o.Data) != 1024 || o.Bytes != 1088 {
-		t.Fatal("packed array storage", len(o.Data), o.Bytes)
+	if int(s.objectSize(o)) != 1024 || s.objectBytes(o) != 1088 {
+		t.Fatal("packed array storage", int(s.objectSize(o)), s.objectBytes(o))
 	}
-	o.set(1023, value.Value{Lo: 0x123})
-	if o.get(1023).Lo != 0x23 {
+	s.setObject(o, 1023, value.Value{Lo: 0x123})
+	if s.getObject(o, 1023).Lo != 0x23 {
 		t.Fatal("packed truncation")
 	}
 }

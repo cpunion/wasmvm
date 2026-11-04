@@ -35,7 +35,7 @@ func TestTraceWorklistBoundsDeepSharedCyclesAndReleasesPointers(t *testing.T) {
 				t.Fatal(err)
 			}
 			o, _ := s.heapObject(ref)
-			o.set(3, value.Value{Lo: external})
+			s.setObject(o, 3, value.Value{Lo: external})
 			return ref
 		}
 		orphan, shared := allocate(99), allocate(77)
@@ -44,13 +44,13 @@ func TestTraceWorklistBoundsDeepSharedCyclesAndReleasesPointers(t *testing.T) {
 			ref := allocate(uint64(1000 + i))
 			o, _ := s.heapObject(ref)
 			// Numeric bits must not keep an otherwise unreachable object alive.
-			o.set(0, value.Value{Lo: orphan})
-			o.set(1, value.Value{Lo: head})
-			o.set(2, value.Value{Lo: shared})
+			s.setObject(o, 0, value.Value{Lo: orphan})
+			s.setObject(o, 1, value.Value{Lo: head})
+			s.setObject(o, 2, value.Value{Lo: shared})
 			head = ref
 		}
 		leaf, _ := s.heapObject(shared)
-		leaf.set(1, value.Value{Lo: head})
+		s.setObject(leaf, 1, value.Value{Lo: head})
 		roots := []ReferenceValue{{wasm.AnyRef, value.Value{Lo: head}},
 			{wasm.AnyRef, value.Value{Lo: head}}}
 		externals := make(map[uint64]int)
@@ -115,15 +115,15 @@ func TestTracePackedFieldsArraysAndFunctionOwners(t *testing.T) {
 		}
 		orphan, head, array := allocate(types[0], 6), allocate(types[0], 6), allocate(types[1], 3)
 		o, _ := s.heapObject(head)
-		o.set(0, value.Value{Lo: 128})
-		o.set(1, value.Value{Lo: orphan})
-		o.set(2, value.Value{Lo: orphan, Hi: orphan})
-		o.set(3, value.Value{Lo: 55})
-		o.set(4, value.Value{Lo: array})
-		o.set(5, value.Value{Lo: owner.Functions[0]})
+		s.setObject(o, 0, value.Value{Lo: 128})
+		s.setObject(o, 1, value.Value{Lo: orphan})
+		s.setObject(o, 2, value.Value{Lo: orphan, Hi: orphan})
+		s.setObject(o, 3, value.Value{Lo: 55})
+		s.setObject(o, 4, value.Value{Lo: array})
+		s.setObject(o, 5, value.Value{Lo: owner.Functions[0]})
 		a, _ := s.heapObject(array)
 		for i := uint32(0); i < 3; i++ {
-			a.set(i, value.Value{Lo: uint64(56 + i)})
+			s.setObject(a, i, value.Value{Lo: uint64(56 + i)})
 		}
 		externals := make(map[uint64]int)
 		s.CollectReferences([]ReferenceValue{{wasm.AnyRef, value.Value{Lo: head}}}, nil,

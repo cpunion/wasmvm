@@ -68,7 +68,7 @@ func (s *Store) gcSlow(ctx context.Context, in *Instance, ins *module.Instr, arg
 		}
 		if op == 0 || op == 32 {
 			for i, a := range args[:len(fs)] {
-				o.set(uint32(i), packField(a, fs[i]))
+				s.setObject(o, uint32(i), packField(a, fs[i]))
 			}
 		}
 	case 6, 7, 8:
@@ -90,9 +90,9 @@ func (s *Store) gcSlow(ctx context.Context, in *Instance, ins *module.Instr, arg
 					return result, err
 				}
 				if op == 6 {
-					o.set(uint32(i), packField(args[0], f))
+					s.setObject(o, uint32(i), packField(args[0], f))
 				} else if op == 8 {
-					o.set(uint32(i), packField(args[i], f))
+					s.setObject(o, uint32(i), packField(args[i], f))
 				}
 			}
 		}
@@ -117,7 +117,7 @@ func (s *Store) gcSlow(ctx context.Context, in *Instance, ins *module.Instr, arg
 				if err := gcPoll(ctx, i); err != nil {
 					return result, err
 				}
-				o.set(uint32(i), readField(data[int(start)+i*width:], width))
+				s.setObject(o, uint32(i), readField(data[int(start)+i*width:], width))
 			}
 		} else {
 			data := in.Elements[ins.B]
@@ -133,7 +133,7 @@ func (s *Store) gcSlow(ctx context.Context, in *Instance, ins *module.Instr, arg
 				if err := gcPoll(ctx, i); err != nil {
 					return result, err
 				}
-				o.set(uint32(i), value.Value{Lo: data[int(start)+i]})
+				s.setObject(o, uint32(i), value.Value{Lo: data[int(start)+i]})
 			}
 		}
 	case 16:
@@ -150,7 +150,7 @@ func (s *Store) gcSlow(ctx context.Context, in *Instance, ins *module.Instr, arg
 			if err := gcPoll(ctx, int(i)); err != nil {
 				return result, err
 			}
-			o.set(start+i, v)
+			s.setObject(o, start+i, v)
 		}
 	case 17:
 		dst, err := s.gcObject(ins, args[0].Lo)
@@ -176,8 +176,8 @@ func (s *Store) gcSlow(ctx context.Context, in *Instance, ins *module.Instr, arg
 			if backwards {
 				offset = n - done - k
 			}
-			width := dst.Layout.stride
-			copy(dst.Data[(int(di)+int(offset))*width:(int(di)+int(offset+k))*width], src.Data[(int(si)+int(offset))*width:(int(si)+int(offset+k))*width])
+			width := s.heapLayouts[dst.Type].stride
+			copy(s.objectData(dst)[(int(di)+int(offset))*width:(int(di)+int(offset+k))*width], s.objectData(src)[(int(si)+int(offset))*width:(int(si)+int(offset+k))*width])
 			done += k
 		}
 	case 18, 19:
@@ -199,7 +199,7 @@ func (s *Store) gcSlow(ctx context.Context, in *Instance, ins *module.Instr, arg
 				if err := gcPoll(ctx, int(i)); err != nil {
 					return result, err
 				}
-				o.set(di+i, readField(data[int(si)+int(i)*width:], width))
+				s.setObject(o, di+i, readField(data[int(si)+int(i)*width:], width))
 			}
 		} else {
 			data := in.Elements[ins.B]
@@ -210,7 +210,7 @@ func (s *Store) gcSlow(ctx context.Context, in *Instance, ins *module.Instr, arg
 				if err := gcPoll(ctx, int(i)); err != nil {
 					return result, err
 				}
-				o.set(di+i, value.Value{Lo: data[int(si)+int(i)]})
+				s.setObject(o, di+i, value.Value{Lo: data[int(si)+int(i)]})
 			}
 		}
 	case 20, 21, 22, 23:

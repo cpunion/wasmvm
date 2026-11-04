@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <unistd.h>
 #if defined(__APPLE__) && defined(__aarch64__)
 #include <sys/sysctl.h>
 #endif
@@ -137,6 +138,33 @@ void wasmvm_unpublish(void *code, size_t size) {
 
 void *wasmvm_allocate(size_t size) { return calloc(1, size); }
 void wasmvm_deallocate(void *p) { free(p); }
+
+/* Reserve address space without touching uncommitted pages. Growth only changes
+   permissions on newly exposed anonymous zero pages; existing addresses stay. */
+static size_t wasmvm_page_round(size_t size, size_t page) {
+    if (!page || size > SIZE_MAX - (page - 1)) return 0;
+    return (size + page - 1) / page * page;
+}
+void *wasmvm_reserve(size_t maximum) {
+    long page = sysconf(_SC_PAGESIZE);
+    size_t rounded = page > 0 ? wasmvm_page_round(maximum ? maximum : 1, (size_t)page) : 0;
+    if (!rounded) return NULL;
+    void *p = mmap(NULL, rounded, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    return p == MAP_FAILED ? NULL : p;
+}
+int wasmvm_commit(void *p, size_t previous, size_t size) {
+    long page = sysconf(_SC_PAGESIZE);
+    if (page <= 0 || size < previous) return 0;
+    size_t from = wasmvm_page_round(previous, (size_t)page);
+    size_t to = wasmvm_page_round(size, (size_t)page);
+    if (size && !to) return 0;
+    return to == from || mprotect((char *)p + from, to - from, PROT_READ | PROT_WRITE) == 0;
+}
+void wasmvm_unreserve(void *p, size_t maximum) {
+    long page = sysconf(_SC_PAGESIZE);
+    size_t rounded = page > 0 ? wasmvm_page_round(maximum ? maximum : 1, (size_t)page) : 0;
+    if (rounded) munmap(p, rounded);
+}
 void wasmvm_cancel(struct wasmvm_record *ctx) { __atomic_store_n(&ctx->control, 1, __ATOMIC_RELEASE); }
 
 uint32_t wasmvm_enter(const void *entry, struct wasmvm_record *ctx) {

@@ -60,7 +60,7 @@ func TestHeapFreeChainFailureReuseAndRetirement(t *testing.T) {
 			}
 			refs[i] = ref
 			o, _ := s.heapObject(ref)
-			o.set(0, value.Value{Lo: uint64(42 + i)})
+			s.setObject(o, 0, value.Value{Lo: uint64(42 + i)})
 		}
 		s.releaseObject(uint32(refs[1]))
 		s.releaseObject(uint32(refs[0]))
@@ -76,7 +76,7 @@ func TestHeapFreeChainFailureReuseAndRetirement(t *testing.T) {
 				t.Fatal("LIFO reuse or stale-generation check", offheap, old, ref, err)
 			}
 			o, _ := s.heapObject(ref)
-			if o.get(0) != (value.Value{}) {
+			if s.getObject(o, 0) != (value.Value{}) {
 				t.Fatal("old payload exposed")
 			}
 		}
