@@ -202,7 +202,12 @@ jobs:
         run: |
           mkdir -p artifacts/ci
           read -ra packages <<< "$TEST_PACKAGES"
-          llgo test -O3 -lto=full -json -debug-trace "artifacts/ci/llgo-${SHARD}.json" -count=1 -timeout=8m "${packages[@]}"
+          semantic_parallelism=()
+          if [[ "$RUNNER_OS" == macOS && ( "$SHARD" == entry || "$SHARD" == http ) ]]; then
+            # Bound concurrent full-LTO links on the small macOS runners.
+            semantic_parallelism=(-p=1)
+          fi
+          llgo test -O3 -lto=full "${semantic_parallelism[@]}" -json -debug-trace "artifacts/ci/llgo-${SHARD}.json" -count=1 -timeout=8m "${packages[@]}"
       - name: Preserve shard execution and timing evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

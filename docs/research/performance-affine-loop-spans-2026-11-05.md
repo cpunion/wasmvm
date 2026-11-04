@@ -2,7 +2,7 @@
 
 **Retained candidate; acceptance remains open.** Against the preceding outlined-boundary source, native C/Rust SHA durations fall **6.38% / 5.50% under LLGo** and **6.85% / 6.04% under Go**. The new proof handles independent invariant bases and non-unit strides within the existing bounded compiler pass; runtime, ISA, source guests and release profiles are unchanged.
 
-Measured engine `0cde7c5578386d280eebce6b6cd7faaaa45f2d09`, preceding L `22f1a1dd635c102b0c63b27c57d1148a85da4743`, production `df3ac3314f83b77bd1f1e88d7bacb342052df30a` (engine-equivalent to main `4ce79899a1f3ed45163afa622cc408cc6a79a599`). Six files change against L; 23 engine files differ against production, including tests. The held frame-scope experiment is not included.
+Measured engine `0cde7c5578386d280eebce6b6cd7faaaa45f2d09`, preceding L `22f1a1dd635c102b0c63b27c57d1148a85da4743`, production `df3ac3314f83b77bd1f1e88d7bacb342052df30a` (engine-equivalent to main `4ce79899a1f3ed45163afa622cc408cc6a79a599`). Six engine/test files change against L; 23 engine files differ against production, including tests. The held frame-scope experiment is not included.
 
 ## Mechanism and qualification
 
@@ -10,7 +10,7 @@ For an equality-exit loop, require an entry cursor below the limit and a positiv
 
 All ten complete affected packages pass pinned Go 1.27.3 and LLGo 3571 (`-O3 -lto=full`) on macOS arm64, with **108 actual conformance reports** and coverage **90.71%–100%**. New actual native tests cover multiple/aliased bases, unit/power-of-two/non-power-of-two strides, high input bits, wrapping and negative offsets, side effects before traps and every interior PC; guard-only tests cover memory32 endpoints without multi-GiB mappings. Both ISAs compile, and actual emulated Linux amd64 guard tests pass with diagnostic Go 1.27.0; that older toolchain is not pinned production acceptance. Race, cgocheck2 and no-cgo checks pass. Eight compiled-application configurations pass 64 checksum calls and 48 expected traps.
 
-The retained L hosted run exposed an OfficialGoGuest tier2 compile deadline at 90 s. The exact local L fixture passes all three tiers in 19.27 s test execution. Hosted trace includes 348.23 s CLI test linking, 115.86 s thread-test linking and 194.45 s thread execution with overlap. N reuses the same eagerly compiled native artifact for ordinary/metered official Go guest calls, with independent process/store/instance state and unchanged 90 s compile budget and all output assertions. Both host compilers execute every tier. Full hosted final-head qualification and review are still required.
+The retained L hosted run exposed an OfficialGoGuest tier2 compile deadline at 90 s. The exact local L fixture passes all three tiers in 19.27 s test execution. Hosted trace includes 348.23 s CLI test linking, 115.86 s thread-test linking and 194.45 s thread execution with overlap. N reuses the same eagerly compiled native artifact for ordinary/metered official Go guest calls, with independent process/store/instance state and unchanged 90 s compile budget and all output assertions. Both host compilers execute every tier. On the small macOS runners, entry/http shards now use `-p=1` to bound overlapping package builds, full-LTO links and test processes; all 31 packages, six shards, release flags and deadlines stay unchanged. Full hosted final-head qualification and review are still required.
 
 ## Fixed comparison
 
