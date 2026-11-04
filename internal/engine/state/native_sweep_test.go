@@ -18,14 +18,14 @@ func checkNativeInventory(t *testing.T, s *Store) {
 	var used uint64
 	for _, a := range s.nativeHeap.objects {
 		o, ok := s.heapObject(a.handle)
-		if !ok || seen[a.handle] || a.offset != used || len(o.Data) == 0 {
+		if !ok || seen[a.handle] || a.offset != used || int(s.objectSize(o)) == 0 {
 			t.Fatal("invalid allocation inventory", a)
 		}
 		seen[a.handle] = true
-		if unsafe.SliceData(o.Data) != &s.nativeHeap.data[used] {
+		if o.Data != &s.nativeHeap.data[used] {
 			t.Fatal("payload not rebound", a.handle)
 		}
-		used += uint64(len(o.Data))
+		used += uint64(int(s.objectSize(o)))
 	}
 	wantEmpty := make([]bool, len(s.heapObjects))
 	for i, slot := range s.heap {
@@ -35,20 +35,20 @@ func checkNativeInventory(t *testing.T, s *Store) {
 		}
 		ref := heapTag | uint64(slot.Generation)<<32 | uint64(i)
 		address := uint64(0)
-		if len(o.Data) == 0 {
+		if int(s.objectSize(o)) == 0 {
 			if o.Data != nil || i/64 >= len(wantEmpty) || seen[ref] {
 				t.Fatal("empty object missing or duplicated", i)
 			}
 			wantEmpty[i/heapObjectsPerPage] = true
 			seen[ref] = true
 		} else {
-			address = uint64(uintptr(unsafe.Pointer(unsafe.SliceData(o.Data))))
+			address = uint64(uintptr(unsafe.Pointer(o.Data)))
 		}
 		if !seen[ref] {
 			t.Fatal("live object missing from sweep inventory", i)
 		}
 		v := s.nativeHeap.views[i*4 : i*4+4]
-		if v[0] != ref || v[1] != address || v[2] != uint64(o.Length) || v[3] != 0 {
+		if v[0] != ref || v[1] != address || v[2] != uint64(o.Type)<<32|uint64(o.Length) || v[3] != o.Serial {
 			t.Fatal("incoherent native view", ref, v)
 		}
 	}
@@ -72,7 +72,7 @@ func TestNativeSweepIncludesEmptySlowAndBatchObjects(t *testing.T) {
 		if keep {
 			roots = append(roots, ReferenceValue{wasm.AnyRef, value.Value{Lo: ref}})
 			o, _ := s.heapObject(ref)
-			expectedBytes += o.Bytes
+			expectedBytes += s.objectBytes(o)
 		}
 	}
 	// A dead prefix forces payload movement past both empty and nonempty
@@ -129,7 +129,7 @@ func TestNativeSweepIncludesEmptySlowAndBatchObjects(t *testing.T) {
 		}
 		if keep {
 			o, _ := s.heapObject(ref)
-			if o.Mark {
+			if s.objectMarked(o) {
 				t.Fatal("mark survived collection")
 			}
 		}
@@ -181,9 +181,9 @@ func TestNativeEmptyPayloadMaintenanceBoundsRollbackPages(t *testing.T) {
 			t.Fatal(err)
 		}
 		o, _ := s.heapObject(ref)
-		o.Mark = true
+		s.markObject(o)
 		if local == 0 {
-			o.set(0, value.Value{Lo: 42})
+			s.setObject(o, 0, value.Value{Lo: 42})
 		}
 	}
 	checkNative()
@@ -192,10 +192,10 @@ func TestNativeEmptyPayloadMaintenanceBoundsRollbackPages(t *testing.T) {
 		if o == nil {
 			continue
 		}
-		if !o.Mark || len(o.Data) != 0 && o.get(0).Lo != 42 {
+		if !s.objectMarked(o) || int(s.objectSize(o)) != 0 && s.getObject(o, 0).Lo != 42 {
 			t.Fatal("capacity maintenance altered live object")
 		}
-		o.Mark = false
+		s.clearObjectMark(o)
 	}
 	s.CollectReferences(nil, nil, nil)
 	checkNativeInventory(t, s)

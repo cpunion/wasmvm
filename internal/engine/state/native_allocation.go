@@ -115,10 +115,16 @@ func (s *Store) finishNativeAllocations(types []uint32) error {
 	previous := ^uint64(0)
 	var typ uint32
 	var layout *heapLayout
+	var maxIndex uint32
 	for i, ref := range refs[:count] {
-		at := uint64(uint32(ref)) * 4
-		local := h.views[at+3]
-		if h.views[at] != ref || local >= uint64(len(types)) || s.heap[uint32(ref)].Object != nil {
+		index := uint32(ref)
+		at := uint64(index) * 4
+		if index == 0 || uint64(index) >= uint64(len(s.heap)) || at+4 > uint64(len(h.views)) || uint32(ref>>32) != s.heap[index].Generation|1<<31 || s.heap[index].Object != nil {
+			return wasm.ErrInvalid
+		}
+		maxIndex = max(maxIndex, index)
+		local := h.views[at+2] >> 32
+		if h.views[at] != ref || local >= uint64(len(types)) || h.views[at+3] != 0 {
 			return wasm.ErrInvalid
 		}
 		if local != previous {
@@ -134,7 +140,7 @@ func (s *Store) finishNativeAllocations(types []uint32) error {
 			}
 			previous = local
 		}
-		if h.views[at+2] != uint64(len(layout.widths)) || layout.size > end-offset {
+		if uint32(h.views[at+2]) != uint32(len(layout.widths)) || layout.size > end-offset {
 			return wasm.ErrInvalid
 		}
 		address := uint64(0)
@@ -151,15 +157,22 @@ func (s *Store) finishNativeAllocations(types []uint32) error {
 	if offset != end || count > uint64(s.limits.MaxHeapObjects)-s.usage.HeapObjects || bytes > s.limits.MaxHeapBytes-s.usage.HeapBytes || count > math.MaxUint64-s.heapSerial {
 		return wasm.ErrInvalid
 	}
+	if count != 0 {
+		if err := s.materializeObjectSlabs(uint64(maxIndex) / heapObjectsPerPage); err != nil {
+			return err
+		}
+	}
 	offset = h.used
 	previousEmptyPage := ^uint64(0)
 	for i, ref := range refs[:count] {
 		layout := layouts[i]
 		s.heapSerial++
-		o := s.objectCell(uint32(ref))
-		*o = heapObject{Type: identities[i], Layout: layout, Length: uint32(len(layout.widths)), Bytes: layout.size + 64, Serial: s.heapSerial}
+		index := uint64(uint32(ref))
+		o := &s.heapObjects[index/heapObjectsPerPage].objects[index%heapObjectsPerPage]
+		// The initialized header is already the native view. Publish only its
+		// canonical type and full epoch after validating the entire batch.
+		o.Type, o.Serial = identities[i], s.heapSerial
 		if layout.size != 0 {
-			o.Data = h.data[offset : offset+layout.size]
 			h.objects = appendValue(h.objects, nativeHeapAllocation{offset, ref})
 		} else {
 			page := uint64(uint32(ref)) / heapObjectsPerPage
@@ -169,7 +182,6 @@ func (s *Store) finishNativeAllocations(types []uint32) error {
 			}
 		}
 		s.heap[uint32(ref)].Object = o
-		s.publishHeapObject(ref, o)
 		offset += layout.size
 	}
 	h.used = end

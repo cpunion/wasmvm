@@ -31,8 +31,10 @@ func MemoryPairOffset(functions, tables, globals, bindings, index uint32) (uint3
 }
 
 // HeapPairOffset appends the heap slot count/base after existing runtime views.
-// A slot is four words: complete handle, data address, element count, reserved.
-// Views and payloads may relocate only while the serialized executor is idle.
+// A slot is four words: complete handle, data address, packed 32-bit length/type,
+// and 64-bit allocation epoch. Constructors stage local types and a zero epoch;
+// publication canonicalizes types and assigns epochs at a serialized safepoint.
+// Headers alias owned stable native storage; only payloads may relocate.
 const HeapSlotBytes = 32
 
 func HeapPairOffset(functions, tables, globals, bindings, memories uint32) (uint32, bool) {

@@ -39,7 +39,7 @@ func (s *Store) prepareHeapViews(count uint64) error {
 	size := min(maximum, max(count*nativeabi.HeapSlotBytes, max(64*nativeabi.HeapSlotBytes, uint64(len(h.views))*16)))
 	var err error
 	if h.slots == nil {
-		h.slots, err = native.NewMemory(size, maximum)
+		h.slots, err = native.NewStableMemory(size, maximum)
 	} else {
 		err = h.slots.Grow(size)
 	}
@@ -94,8 +94,7 @@ func (s *Store) reserveNativePayload(size uint64) error {
 		}
 		for _, a := range h.objects {
 			o, _ := s.heapObject(a.handle)
-			o.Data = h.data[a.offset : a.offset+uint64(len(o.Data))]
-			s.publishHeapObject(a.handle, o)
+			o.Data = &h.data[a.offset]
 		}
 	}
 	return nil
@@ -114,13 +113,13 @@ func (s *Store) compactNativeHeap(sweep bool) {
 			continue
 		}
 		if sweep {
-			if !o.Mark {
+			if !s.objectMarked(o) {
 				s.releaseHeapObject(uint32(a.handle), o)
 				continue
 			}
-			o.Mark = false
+			s.clearObjectMark(o)
 		}
-		size := uint64(len(o.Data))
+		size := s.objectSize(o)
 		if size != 0 && a.offset != used {
 			// Adjacent survivors share one overlapping-safe move. Object views
 			// may be rebound before the move because this serialized safepoint
@@ -133,8 +132,7 @@ func (s *Store) compactNativeHeap(sweep bool) {
 				runFrom, runTo = a.offset, used
 			}
 			runBytes += size
-			o.Data = h.data[used : used+size]
-			s.publishHeapObject(a.handle, o)
+			o.Data = &h.data[used]
 		}
 		a.offset = used
 		used += size
@@ -152,7 +150,7 @@ func (s *Store) trackNativeEmpty(index uint32) {
 }
 
 // Only pages that may contain empty objects need this scan. Released cells
-// have no layout; a conservative page summary retains no individual identities
+// have no live slot; a conservative page summary retains no individual identities
 // and is reset by collection. Empty allocation adds no record or backing array.
 func (s *Store) sweepNativeEmpty() {
 	for page := range s.heapObjects {
@@ -163,27 +161,18 @@ func (s *Store) sweepNativeEmpty() {
 		p.hasEmpty = false
 		for cell := range p.objects {
 			o := &p.objects[cell]
-			if o.Layout == nil || len(o.Data) != 0 {
+			index := uint64(page)*heapObjectsPerPage + uint64(cell)
+			if index >= uint64(len(s.heap)) || s.heap[index].Object != o || o.Data != nil {
 				continue
 			}
-			if o.Mark {
-				o.Mark = false
+			if s.objectMarked(o) {
+				s.clearObjectMark(o)
 				p.hasEmpty = true
 			} else {
 				s.releaseHeapObject(uint32(page*heapObjectsPerPage+cell), o)
 			}
 		}
 	}
-}
-
-func (s *Store) publishHeapObject(ref uint64, o *heapObject) {
-	at := int(uint32(ref)) * 4
-	var address uint64
-	if len(o.Data) != 0 {
-		address = uint64(uintptr(unsafe.Pointer(unsafe.SliceData(o.Data))))
-	}
-	views := s.nativeHeap.views
-	views[at], views[at+1], views[at+2], views[at+3] = ref, address, uint64(o.Length), 0
 }
 
 // NativeHeapView borrows the handle view until the next serialized safepoint.

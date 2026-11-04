@@ -49,7 +49,7 @@ func stagedAllocation(t *testing.T, s *Store, local uint32, number uint32, next 
 		address = uint64(uintptr(unsafe.Pointer(&h.data[at])))
 	}
 	index := uint64(uint32(ref)) * 4
-	h.views[index], h.views[index+1], h.views[index+2], h.views[index+3] = ref, address, length, uint64(local)
+	h.views[index], h.views[index+1], h.views[index+2], h.views[index+3] = ref, address, uint64(local)<<32|length, 0
 	w[nativeabi.HeapAllocationUsed/8] += size
 	w[nativeabi.HeapAllocationBudget/8] -= size + 64
 	w[nativeabi.HeapAllocationCursor/8]++
@@ -93,10 +93,10 @@ func TestNativeAllocationBatchesPublishRootsQuotasAndReuse(t *testing.T) {
 	s.CollectReferences([]ReferenceValue{{Type: wasm.AnyRef, Value: value.Value{Lo: last}}}, nil, nil)
 	for i := total - 1; i >= 0; i-- {
 		o, ok := s.heapObject(last)
-		if !ok || o.get(0).Lo != uint64(i) {
+		if !ok || s.getObject(o, 0).Lo != uint64(i) {
 			t.Fatal("batch root chain lost", i, last)
 		}
-		last = o.get(1).Lo
+		last = s.getObject(o, 1).Lo
 	}
 	if last != 0 {
 		t.Fatal("unexpected chain tail")
@@ -148,13 +148,13 @@ func TestNativeAllocationInvalidBatchesDiscardReservations(t *testing.T) {
 			case "cursor":
 				h.allocationWords[nativeabi.HeapAllocationUsed/8] = ^uint64(0)
 			case "type":
-				h.views[at+3] = uint64(len(types))
+				h.views[at+2] = uint64(len(types))<<32 | 2
 			case "address":
 				h.views[at+1]++
 			case "length":
 				h.views[at+2]++
 			case "shape":
-				h.views[at+3] = 1
+				h.views[at+2] = 1<<32 | 2
 			}
 			if err := s.FinishNativeAllocations(types); !errors.Is(err, wasm.ErrInvalid) {
 				t.Fatal("invalid batch accepted", kind, err)

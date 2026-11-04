@@ -6,6 +6,7 @@ import (
 	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 	"math"
+	"unsafe"
 )
 
 type heapLayout struct {
@@ -13,6 +14,7 @@ type heapLayout struct {
 	widths     []byte
 	references []heapReference
 	size       uint64
+	overhead   uint64
 	stride     int
 }
 
@@ -24,8 +26,10 @@ type heapReference struct {
 }
 
 func (s *Store) layout(typ uint32) (*heapLayout, error) {
-	if l := s.heapLayouts[typ]; l != nil {
-		return l, nil
+	if uint64(typ) < uint64(len(s.heapLayouts)) {
+		if l := s.heapLayouts[typ]; l != nil {
+			return l, nil
+		}
 	}
 	if typ == 0 || uint64(typ) >= uint64(len(s.registry.Types)) {
 		return nil, wasm.ErrInvalid
@@ -38,7 +42,10 @@ func (s *Store) layout(typ uint32) (*heapLayout, error) {
 			d.Fields[i] = module.FieldType{Value: t}
 		}
 	}
-	l := &heapLayout{}
+	l := &heapLayout{overhead: 64}
+	if d.Descriptor != 0 {
+		l.overhead += 8
+	}
 	if d.Kind == module.ArrayKind {
 		l.stride = d.Fields[0].HeapBytes()
 		if t := d.Fields[0].Value; t.IsReference() {
@@ -60,36 +67,84 @@ func (s *Store) layout(typ uint32) (*heapLayout, error) {
 			l.size += uint64(n)
 		}
 	}
-	if s.heapLayouts == nil {
-		s.heapLayouts = make(map[uint32]*heapLayout)
+	if uint64(typ) >= uint64(len(s.heapLayouts)) {
+		n := min(uint64(len(s.registry.Types)), max(uint64(typ)+1, uint64(len(s.heapLayouts))*2))
+		layouts := make([]*heapLayout, int(n))
+		copy(layouts, s.heapLayouts)
+		s.heapLayouts = layouts
 	}
 	s.heapLayouts[typ] = l
 	return l, nil
 }
-func (o *heapObject) location(i uint32) (int, int) {
-	if o.Layout.stride != 0 {
-		return int(i) * o.Layout.stride, o.Layout.stride
+func (s *Store) objectSize(o *heapObject) uint64 {
+	layout := s.heapLayouts[o.Type]
+	if layout.stride != 0 {
+		return uint64(o.Length) * uint64(layout.stride)
 	}
-	return int(o.Layout.offsets[i]), int(o.Layout.widths[i])
+	return layout.size
 }
-func (o *heapObject) get(i uint32) value.Value {
-	offset, width := o.location(i)
-	return readField(o.Data[offset:], width)
+
+func (s *Store) objectData(o *heapObject) []byte {
+	return unsafe.Slice(o.Data, int(s.objectSize(o)))
 }
-func (o *heapObject) set(i uint32, v value.Value) {
-	offset, width := o.location(i)
-	data := o.Data[offset:]
+
+func (s *Store) objectBytes(o *heapObject) uint64 {
+	bytes := s.objectSize(o) + s.heapLayouts[o.Type].overhead
+	if extra := s.existingObjectExtras(o); extra != nil {
+		bytes += extra.Bytes
+	}
+	return bytes
+}
+
+func (s *Store) objectLocation(o *heapObject, i uint32) (unsafe.Pointer, int) {
+	layout := s.heapLayouts[o.Type]
+	var offset, width int
+	if layout.stride != 0 {
+		if i >= o.Length {
+			panic("state: array field index out of bounds")
+		}
+		offset, width = int(i)*layout.stride, layout.stride
+	} else {
+		offset, width = int(layout.offsets[i]), int(layout.widths[i])
+	}
+	return unsafe.Add(unsafe.Pointer(o.Data), offset), width
+}
+
+// Location derives bounds from the initialized header and immutable layout.
+// Exact-width byte arrays retain unaligned little-endian access without a
+// variable-length slice header for every scalar field.
+func (s *Store) getObject(o *heapObject, i uint32) value.Value {
+	p, width := s.objectLocation(o, i)
 	switch width {
 	case 1:
-		data[0] = byte(v.Lo)
+		return value.Value{Lo: uint64(*(*byte)(p))}
 	case 2:
-		binary.LittleEndian.PutUint16(data, uint16(v.Lo))
+		return value.Value{Lo: uint64(binary.LittleEndian.Uint16((*[2]byte)(p)[:]))}
 	case 4:
-		binary.LittleEndian.PutUint32(data, uint32(v.Lo))
+		return value.Value{Lo: uint64(binary.LittleEndian.Uint32((*[4]byte)(p)[:]))}
 	case 8:
-		binary.LittleEndian.PutUint64(data, v.Lo)
+		return value.Value{Lo: binary.LittleEndian.Uint64((*[8]byte)(p)[:])}
 	case 16:
-		binary.LittleEndian.PutUint64(data, v.Lo)
+		data := (*[16]byte)(p)
+		return value.Value{Lo: binary.LittleEndian.Uint64(data[:8]), Hi: binary.LittleEndian.Uint64(data[8:])}
+	}
+	panic("state: invalid validated data field")
+}
+
+func (s *Store) setObject(o *heapObject, i uint32, v value.Value) {
+	p, width := s.objectLocation(o, i)
+	switch width {
+	case 1:
+		*(*byte)(p) = byte(v.Lo)
+	case 2:
+		binary.LittleEndian.PutUint16((*[2]byte)(p)[:], uint16(v.Lo))
+	case 4:
+		binary.LittleEndian.PutUint32((*[4]byte)(p)[:], uint32(v.Lo))
+	case 8:
+		binary.LittleEndian.PutUint64((*[8]byte)(p)[:], v.Lo)
+	case 16:
+		data := (*[16]byte)(p)
+		binary.LittleEndian.PutUint64(data[:8], v.Lo)
 		binary.LittleEndian.PutUint64(data[8:], v.Hi)
 	}
 }

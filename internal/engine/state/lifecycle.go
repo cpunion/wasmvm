@@ -78,8 +78,7 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 			return
 		}
 		if v.Lo&heapTag != 0 {
-			if o, ok := s.heapObject(v.Lo); ok && !o.Mark {
-				o.Mark = true
+			if o, ok := s.heapObject(v.Lo); ok && s.markObject(o) {
 				if pending == len(objects) {
 					objects = appendValue(objects, o)
 				} else {
@@ -169,18 +168,19 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 					}
 				}
 			}
-			layout := o.Layout
+			layout := s.heapLayouts[o.Type]
+			data := s.objectData(o)
 			if layout.stride != 0 {
 				if len(layout.references) != 0 {
 					typ := layout.references[0].typ
 					for i := uint32(0); i < o.Length; i++ {
 						offset := uint64(i) * uint64(layout.stride)
-						visit(typ, value.Value{Lo: binary.LittleEndian.Uint64(o.Data[offset:])})
+						visit(typ, value.Value{Lo: binary.LittleEndian.Uint64(data[offset:])})
 					}
 				}
 			} else {
 				for _, ref := range layout.references {
-					visit(ref.typ, value.Value{Lo: binary.LittleEndian.Uint64(o.Data[ref.offset:])})
+					visit(ref.typ, value.Value{Lo: binary.LittleEndian.Uint64(data[ref.offset:])})
 				}
 			}
 		}
@@ -194,10 +194,10 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 			if o == nil {
 				continue
 			}
-			if !o.Mark {
+			if !s.objectMarked(o) {
 				s.releaseObject(uint32(i))
 			} else {
-				o.Mark = false
+				s.clearObjectMark(o)
 			}
 		}
 	}

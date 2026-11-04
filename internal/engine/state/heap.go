@@ -3,6 +3,7 @@ package state
 import (
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"math"
+	"unsafe"
 
 	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -20,13 +21,10 @@ type ReferenceValue struct {
 	Value value.Value
 }
 type heapObject struct {
-	Type, Length uint32
-	Data         []byte
-	Layout       *heapLayout
-	Bytes        uint64
+	Ref          uint64
+	Data         *byte
+	Length, Type uint32
 	Serial       uint64
-	extraIndex   uint32
-	Mark         bool
 }
 
 // Exceptional payloads and extension-specific roots are allocated only when
@@ -35,21 +33,22 @@ type heapObjectExtra struct {
 	Descriptor   uint64
 	Tag          *Tag
 	Continuation ContinuationBody
+	Bytes        uint64
 }
 
 // Optional cells share a lazily allocated page; exceptional objects do not
 // allocate a separate host object for each tag, descriptor or continuation.
 func (s *Store) objectExtras(ref uint64) *heapObjectExtra {
 	index := uint32(ref)
-	o := s.heap[index].Object
-	if o.extraIndex == 0 {
+	slot := &s.heap[index]
+	if slot.Next&heapHasExtra == 0 {
 		page := uint64(index) / heapObjectsPerPage
 		if s.heapObjects[page].extras == nil {
 			s.materializeExtraSlab(page)
 		}
-		o.extraIndex = index
+		slot.Next |= heapHasExtra
 	}
-	return s.existingObjectExtras(o)
+	return s.existingObjectExtras(slot.Object)
 }
 
 func (s *Store) materializeExtraSlab(page uint64) {
@@ -66,11 +65,11 @@ func (s *Store) materializeExtraSlab(page uint64) {
 	}
 }
 
-// Optional indexes occupy existing record padding and do not root host data.
-// A zero index keeps normal allocation and tracing independent of extra slabs.
+// Only published objects use live-slot flags. A cleared header cannot confuse
+// a free-list index with a mark or optional-cell flag.
 func (s *Store) existingObjectExtras(o *heapObject) *heapObjectExtra {
-	index := uint64(o.extraIndex)
-	if index == 0 {
+	index := uint64(uint32(o.Ref))
+	if index == 0 || s.heap[index].Next&heapHasExtra == 0 {
 		return nil
 	}
 	return &s.heapObjects[index/heapObjectsPerPage].extras[index%heapObjectsPerPage]
@@ -86,9 +85,31 @@ func (s *Store) objectDescriptor(o *heapObject) uint64 {
 type heapSlot struct {
 	Object     *heapObject
 	Generation uint32
-	// Free slots link through the existing alignment space. Zero terminates
-	// the chain; live and retired slots never participate in it.
+	// Free slots link through the existing alignment space; zero terminates
+	// the chain. Live slots use mark/optional flags; retired slots use zero.
 	Next uint32
+}
+
+const (
+	heapMarked uint32 = 1 << iota
+	heapHasExtra
+)
+
+func (s *Store) markObject(o *heapObject) bool {
+	slot := &s.heap[uint32(o.Ref)]
+	if slot.Next&heapMarked != 0 {
+		return false
+	}
+	slot.Next |= heapMarked
+	return true
+}
+
+func (s *Store) objectMarked(o *heapObject) bool {
+	return o.Ref != 0 && s.heap[uint32(o.Ref)].Next&heapMarked != 0
+}
+
+func (s *Store) clearObjectMark(o *heapObject) {
+	s.heap[uint32(o.Ref)].Next &^= heapMarked
 }
 
 // Handle-indexed pages keep object addresses stable without allocating a host
@@ -103,18 +124,20 @@ type heapObjectPage struct {
 	blockOffset, blockPages uint8
 }
 
-func (s *Store) objectCell(index uint32) *heapObject {
+func (s *Store) objectCell(index uint32) (*heapObject, error) {
 	page := uint64(index) / heapObjectsPerPage
 	if page >= uint64(len(s.heapObjects)) {
-		s.materializeObjectSlabs(page)
+		if err := s.materializeObjectSlabs(page); err != nil {
+			return nil, err
+		}
 	}
-	return &s.heapObjects[page].objects[uint64(index)%heapObjectsPerPage]
+	return &s.heapObjects[page].objects[uint64(index)%heapObjectsPerPage], nil
 }
 
-// Small Stores start with one logical page. Larger heaps share progressively
-// larger typed allocations, capped at eight pages, without moving any live cell.
+// Small Stores start with one logical page. Larger portable heaps share typed
+// allocations capped at eight pages; native pages alias stable owned headers.
 // The final slab and page stop at the handle quota, including the null slot.
-func (s *Store) materializeObjectSlabs(page uint64) {
+func (s *Store) materializeObjectSlabs(page uint64) error {
 	for page >= uint64(len(s.heapObjects)) {
 		first := uint64(len(s.heapObjects))
 		remaining := uint64(s.limits.MaxHeapObjects) + 1 - first*heapObjectsPerPage
@@ -122,7 +145,17 @@ func (s *Store) materializeObjectSlabs(page uint64) {
 		if count == 0 {
 			panic("state: metadata handle quota")
 		}
-		cells := make([]heapObject, int(count))
+		var cells []heapObject
+		if s.nativeHeap == nil {
+			cells = make([]heapObject, int(count))
+		} else {
+			end := first*heapObjectsPerPage + count
+			if err := s.prepareHeapViews(end); err != nil {
+				return err
+			}
+			headers := unsafe.Slice((*heapObject)(unsafe.Pointer(unsafe.SliceData(s.nativeHeap.views))), len(s.nativeHeap.views)/4)
+			cells = headers[first*heapObjectsPerPage : end : end]
+		}
 		pages := (count + heapObjectsPerPage - 1) / heapObjectsPerPage
 		for i, at := uint64(0), 0; i < pages; i++ {
 			end := min(len(cells), at+heapObjectsPerPage)
@@ -132,6 +165,7 @@ func (s *Store) materializeObjectSlabs(page uint64) {
 			at = end
 		}
 	}
+	return nil
 }
 
 func (s *Store) heapObject(ref uint64) (*heapObject, bool) {
@@ -151,15 +185,12 @@ func (s *Store) allocateObject(typ uint32, length uint32, extra ...uint64) (uint
 	if layout.stride != 0 {
 		payload = uint64(length) * uint64(layout.stride)
 	}
-	bytes := payload + 64
+	bytes := payload + layout.overhead
 	if len(extra) != 0 {
 		if extra[0] > math.MaxUint64-bytes {
 			return 0, limit("guest continuation bytes")
 		}
 		bytes += extra[0]
-	}
-	if s.registry.Types[typ].Definition.Descriptor != 0 {
-		bytes += 8
 	}
 	if s.HeapSafepoint != nil && (s.CollectEveryAllocation || s.usage.HeapObjects >= uint64(s.limits.MaxHeapObjects) || bytes > s.limits.MaxHeapBytes-s.usage.HeapBytes || s.usage.HeapBytes >= s.heapThreshold) {
 		s.HeapSafepoint()
@@ -174,6 +205,10 @@ func (s *Store) allocateObject(typ uint32, length uint32, extra ...uint64) (uint
 		index = s.heapFree
 	} else if uint64(len(s.heap)) > math.MaxUint32 || uint64(index) > uint64(s.limits.MaxHeapObjects) {
 		return 0, limit("guest heap handles")
+	}
+	o, err := s.objectCell(index)
+	if err != nil {
+		return 0, err
 	}
 	var data []byte
 	var offset uint64
@@ -199,16 +234,17 @@ func (s *Store) allocateObject(typ uint32, length uint32, extra ...uint64) (uint
 	}
 	s.heapSerial++
 	ref := heapTag | uint64(s.heap[index].Generation)<<32 | uint64(index)
-	o := s.objectCell(index)
-	*o = heapObject{Type: typ, Data: data, Layout: layout, Length: length, Bytes: bytes, Serial: s.heapSerial}
+	*o = heapObject{Ref: ref, Type: typ, Data: unsafe.SliceData(data), Length: length, Serial: s.heapSerial}
 	s.heap[index].Object = o
+	if len(extra) != 0 {
+		s.objectExtras(ref).Bytes = extra[0]
+	}
 	if s.nativeHeap != nil {
 		if payload != 0 {
 			s.nativeHeap.objects = appendValue(s.nativeHeap.objects, nativeHeapAllocation{offset, ref})
 		} else {
 			s.trackNativeEmpty(index)
 		}
-		s.publishHeapObject(ref, o)
 	}
 	s.usage.HeapObjects++
 	s.usage.HeapBytes += bytes
@@ -226,20 +262,18 @@ func (s *Store) releaseObject(index uint32) {
 	s.releaseHeapObject(index, obj)
 }
 
-// The collector already has a live cell. Clearing its layout also removes it
+// The collector already has a live cell. Clearing its identity also removes it
 // from the empty-object inventory, including individual release and rollback.
 func (s *Store) releaseHeapObject(index uint32, obj *heapObject) {
 	slot := &s.heap[index]
 	s.usage.HeapObjects--
-	s.usage.HeapBytes -= obj.Bytes
-	if s.nativeHeap != nil {
-		clear(s.nativeHeap.views[int(index)*4 : int(index)*4+4])
-	}
+	s.usage.HeapBytes -= s.objectBytes(obj)
 	if extra := s.existingObjectExtras(obj); extra != nil {
 		*extra = heapObjectExtra{}
 	}
 	*obj = heapObject{}
 	slot.Object = nil
+	slot.Next = 0
 	if slot.Generation < 0x7fffffff {
 		slot.Generation++
 		slot.Next = s.heapFree

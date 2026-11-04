@@ -184,13 +184,13 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 		}
 	}
 	if a.length {
-		e.pointerLoad(0, 2, 16)
+		e.heapLengthLoad(0)
 		e.heapResult(in.Dst)
 		return true
 	}
 	if a.array {
 		e.slotLoad(in.B, 0, false, false)
-		e.pointerLoad(1, 2, 16)
+		e.heapLengthLoad(1)
 		e.compare(true)
 		e.branch(e.trapExit(wasm.TrapArrayBounds, e.f.Sources[in.Source].Wasm.Offset), "hs")
 		e.pointerLoad(2, 2, 8)
@@ -260,6 +260,16 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 		e.heapResult(in.Dst)
 	}
 	return true
+}
+
+// Header word two packs length below the local/canonical type. Always
+// zero-extend just its low 32 bits, including array bounds comparisons.
+func (e *functionEmitter) heapLengthLoad(dst byte) {
+	if e.a.arch == "amd64" {
+		e.a.bytes(0x8b, 0x42|dst<<3, 16) // mov r32, [rdx+16]
+	} else {
+		e.a.word(0xb9401160 | uint32(e.operandRegister(dst))) // ldr wN, [x11,#16]
+	}
 }
 
 func (e *functionEmitter) heapResult(dst slots.Slot) {

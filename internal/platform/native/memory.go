@@ -18,6 +18,28 @@ type Memory struct {
 	active                  uint64
 	retired                 bool
 	sharedSize              *uint64
+	reserved                uint64
+}
+
+// NewStableMemory reserves a bounded virtual range and exposes only its initial
+// zeroed length. Growth commits pages without moving existing addresses or
+// copying old bytes. Its private access and binding lifetime match NewMemory.
+func NewStableMemory(size, maximum uint64) (*Memory, error) {
+	if !Available {
+		return nil, ErrUnavailable
+	}
+	if size > maximum || maximum > uint64(^uint(0)>>1) {
+		return nil, ErrLimit
+	}
+	data := reserve(maximum)
+	if data == nil {
+		return nil, ErrLimit
+	}
+	if !commit(data, 0, size) {
+		unreserve(data, maximum)
+		return nil, ErrLimit
+	}
+	return &Memory{data: data, size: size, maximum: maximum, reserved: max(1, maximum)}, nil
 }
 
 func NewMemory(size, maximum uint64) (*Memory, error) {
@@ -88,10 +110,10 @@ func (m *Memory) Write(offset uint64, src []byte) error {
 	return nil
 }
 
-// Grow changes the logical length. Private storage must be idle and may move;
-// old and new allocations coexist during its bounded copy. Shared storage uses
-// an existing zeroed reservation and atomically publishes the new length while
-// other entries run. Failure preserves the old storage and logical length.
+// Grow changes the logical length. Private storage must be idle; moving owners
+// copy bounded old bytes, while stable owners commit zero pages in place.
+// Shared storage atomically publishes length within its existing reservation.
+// Failure preserves the old contents and logical length.
 func (m *Memory) Grow(size uint64) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -117,6 +139,13 @@ func (m *Memory) Grow(size uint64) error {
 		atomic.StoreUint64(m.sharedSize, size)
 		return nil
 	}
+	if m.reserved != 0 {
+		if !commit(m.data, m.size, size) {
+			return ErrLimit
+		}
+		m.size = size
+		return nil
+	}
 	data := allocate(size)
 	if data == nil {
 		return ErrLimit
@@ -134,7 +163,12 @@ func (m *Memory) Close() {
 }
 func (m *Memory) release() {
 	if m.retired && m.bindings == 0 && m.active == 0 && m.data != nil {
-		deallocate(m.data)
+		if m.reserved != 0 {
+			unreserve(m.data, m.reserved)
+			m.reserved = 0
+		} else {
+			deallocate(m.data)
+		}
 		m.data = nil
 		if m.sharedSize != nil {
 			deallocate(unsafe.Pointer(m.sharedSize))

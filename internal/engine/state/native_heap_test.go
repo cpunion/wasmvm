@@ -34,8 +34,8 @@ func TestNativeHeapRelocationCollectionAndGenerations(t *testing.T) {
 			t.Fatal(err)
 		}
 		o, _ := s.heapObject(ref)
-		o.set(0, value.Value{Lo: uint64(i)})
-		o.set(o.Length-1, value.Value{Lo: uint64(i + 1)})
+		s.setObject(o, 0, value.Value{Lo: uint64(i)})
+		s.setObject(o, o.Length-1, value.Value{Lo: uint64(i + 1)})
 		objects = append(objects, o)
 		handles = append(handles, ref)
 		if i%3 != 0 {
@@ -55,12 +55,12 @@ func TestNativeHeapRelocationCollectionAndGenerations(t *testing.T) {
 			}
 			continue
 		}
-		if unsafe.SliceData(o.Data) != &s.nativeHeap.data[used] || o.get(0).Lo != uint64(i) || o.get(o.Length-1).Lo != uint64(i+1) {
+		if o.Data != &s.nativeHeap.data[used] || s.getObject(o, 0).Lo != uint64(i) || s.getObject(o, o.Length-1).Lo != uint64(i+1) {
 			t.Fatal("relocation corrupted payload", i, used)
 		}
-		used += uint64(len(o.Data))
-		address := uint64(uintptr(unsafe.Pointer(unsafe.SliceData(o.Data))))
-		if s.nativeHeap.views[at] != ref || s.nativeHeap.views[at+1] != address || s.nativeHeap.views[at+2] != uint64(o.Length) {
+		used += uint64(int(s.objectSize(o)))
+		address := uint64(uintptr(unsafe.Pointer(o.Data)))
+		if s.nativeHeap.views[at] != ref || s.nativeHeap.views[at+1] != address || s.nativeHeap.views[at+2] != uint64(o.Type)<<32|uint64(o.Length) {
 			t.Fatal("native view not refreshed", i)
 		}
 	}
@@ -73,7 +73,7 @@ func TestNativeHeapRelocationCollectionAndGenerations(t *testing.T) {
 			t.Fatal(err)
 		}
 		o, _ := s.heapObject(ref)
-		for _, b := range o.Data {
+		for _, b := range s.objectData(o) {
 			if b != 0 {
 				t.Fatal("reused bytes not zeroed")
 			}
@@ -120,10 +120,10 @@ func TestNativeHeapExactQuotasAndHandleRetirement(t *testing.T) {
 			t.Fatal(ref, previous, err)
 		}
 		o, _ := s.heapObject(ref)
-		if o.get(0).Lo != 0 {
+		if s.getObject(o, 0).Lo != 0 {
 			t.Fatal("freed contents exposed")
 		}
-		o.set(0, value.Value{Lo: 255})
+		s.setObject(o, 0, value.Value{Lo: 255})
 		if _, err := s.allocateObject(ids[0], 0); !errors.Is(err, wasm.ErrLimit) {
 			t.Fatal("object quota", err)
 		}

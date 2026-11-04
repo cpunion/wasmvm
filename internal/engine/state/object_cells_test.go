@@ -34,10 +34,10 @@ func TestObjectMetadataReusesGenerationsAcrossPagesAndRelocation(t *testing.T) {
 				t.Fatal(offheap, i, err)
 			}
 			o, _ := s.heapObject(ref)
-			if o.extraIndex != 0 {
+			if s.existingObjectExtras(o) != nil {
 				t.Fatal("ordinary allocation materialized optional metadata")
 			}
-			o.set(0, value.Value{Lo: uint64(i)})
+			s.setObject(o, 0, value.Value{Lo: uint64(i)})
 			handles, objects = append(handles, ref), append(objects, o)
 		}
 		if len(s.heapObjects) != 3 || len(s.heapObjects[2].objects) != 6 {
@@ -58,12 +58,12 @@ func TestObjectMetadataReusesGenerationsAcrossPagesAndRelocation(t *testing.T) {
 				}
 				extra.Tag = &Tag{}
 				s.objectExtras(old).Descriptor = handles[0]
-				objects[i].Mark = true
+				s.markObject(objects[i])
 				s.releaseObject(uint32(old))
 				if *extra != (heapObjectExtra{}) {
 					t.Fatal("optional page retained host references")
 				}
-				if s.IsLiveReference(old) || objects[i].extraIndex != 0 || objects[i].Mark || objects[i].Layout != nil || objects[i].Data != nil {
+				if s.IsLiveReference(old) || *objects[i] != (heapObject{}) {
 					t.Fatal("dead metadata retained references", old)
 				}
 				ref, err := s.allocateObject(types[0], uint32(1+(i+round)%23))
@@ -75,11 +75,11 @@ func TestObjectMetadataReusesGenerationsAcrossPagesAndRelocation(t *testing.T) {
 					t.Fatal("metadata address moved")
 				}
 				for j := uint32(0); j < o.Length; j++ {
-					if o.get(j) != (value.Value{}) {
+					if s.getObject(o, j) != (value.Value{}) {
 						t.Fatal("new generation exposed old bytes", i, j)
 					}
 				}
-				o.set(0, value.Value{Lo: uint64(i)})
+				s.setObject(o, 0, value.Value{Lo: uint64(i)})
 				handles[i] = ref
 			}
 			roots := make([]ReferenceValue, len(handles))
@@ -89,7 +89,7 @@ func TestObjectMetadataReusesGenerationsAcrossPagesAndRelocation(t *testing.T) {
 			s.CollectReferences(roots, nil, nil)
 			for i, ref := range handles {
 				o, ok := s.heapObject(ref)
-				if !ok || o != objects[i] || o.get(0).Lo != uint64(i) {
+				if !ok || o != objects[i] || s.getObject(o, 0).Lo != uint64(i) {
 					t.Fatal("relocation followed a retired generation", offheap, i, ref)
 				}
 				if offheap && s.nativeHeap.views[int(uint32(ref))*4] != ref {

@@ -35,13 +35,13 @@ func TestNativePayloadRunsAcrossDeadGapsAndReusedHandles(t *testing.T) {
 			}
 			o, _ := s.heapObject(ref)
 			for j := range o.Length {
-				o.set(j, value.Value{Lo: uint64(i*31 + int(j) + round)})
+				s.setObject(o, j, value.Value{Lo: uint64(i*31 + int(j) + round)})
 			}
 			if i == 0 || i >= 24 || i%7 == 0 || round == 1 && i%3 == 0 {
 				dead = append(dead, ref)
 			} else {
 				roots = append(roots, ReferenceValue{wasm.AnyRef, value.Value{Lo: ref}})
-				expected = append(expected, append([]byte(nil), o.Data...))
+				expected = append(expected, append([]byte(nil), s.objectData(o)...))
 			}
 		}
 		// Capacity maintenance must preserve marks and all live payloads even
@@ -58,7 +58,7 @@ func TestNativePayloadRunsAcrossDeadGapsAndReusedHandles(t *testing.T) {
 		checkNativeInventory(t, s)
 		for i, r := range roots {
 			o, ok := s.heapObject(r.Value.Lo)
-			if !ok || string(o.Data) != string(expected[i]) || o.Mark {
+			if !ok || string(s.objectData(o)) != string(expected[i]) || s.objectMarked(o) {
 				t.Fatal("run relocation changed a survivor", round, i)
 			}
 		}

@@ -65,7 +65,7 @@ type Store struct {
 	heapObjects               []heapObjectPage
 	markObjects               []*heapObject
 	nativeHeap                *nativeHeap
-	heapLayouts               map[uint32]*heapLayout
+	heapLayouts               []*heapLayout
 	heapFree                  uint32
 	heapSerial, heapThreshold uint64
 	temporary                 []ReferenceValue

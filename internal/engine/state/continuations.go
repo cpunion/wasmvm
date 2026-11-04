@@ -64,7 +64,7 @@ func (s *Store) Continuation(ref uint64, take bool) (ContinuationBody, error) {
 	if take {
 		bytes := body.HeapBytes()
 		s.usage.HeapBytes -= bytes
-		o.Bytes -= bytes
+		extra.Bytes -= bytes
 		extra.Continuation = nil
 	}
 	return body, nil
