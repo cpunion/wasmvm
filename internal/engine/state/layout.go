@@ -89,32 +89,38 @@ func (s *Store) objectData(o *heapObject) []byte {
 }
 
 func (s *Store) objectBytes(o *heapObject) uint64 {
-	bytes := s.objectSize(o) + s.heapLayouts[o.Type].overhead
+	layout := s.heapLayouts[o.Type]
+	bytes := layout.size
+	if layout.stride != 0 {
+		bytes = uint64(o.Length) * uint64(layout.stride)
+	}
+	bytes += layout.overhead
 	if extra := s.existingObjectExtras(o); extra != nil {
 		bytes += extra.Bytes
 	}
 	return bytes
 }
 
-func (s *Store) objectLocation(o *heapObject, i uint32) (unsafe.Pointer, int) {
-	layout := s.heapLayouts[o.Type]
-	var offset, width int
+func (layout *heapLayout) location(length, i uint32) (int, int) {
 	if layout.stride != 0 {
-		if i >= o.Length {
-			panic("state: array field index out of bounds")
+		if i >= length {
+			arrayFieldBounds()
 		}
-		offset, width = int(i)*layout.stride, layout.stride
-	} else {
-		offset, width = int(layout.offsets[i]), int(layout.widths[i])
+		return int(i) * layout.stride, layout.stride
 	}
-	return unsafe.Add(unsafe.Pointer(o.Data), offset), width
+	return int(layout.offsets[i]), int(layout.widths[i])
+}
+
+func arrayFieldBounds() {
+	panic("state: array field index out of bounds")
 }
 
 // Location derives bounds from the initialized header and immutable layout.
 // Exact-width byte arrays retain unaligned little-endian access without a
 // variable-length slice header for every scalar field.
 func (s *Store) getObject(o *heapObject, i uint32) value.Value {
-	p, width := s.objectLocation(o, i)
+	offset, width := s.heapLayouts[o.Type].location(o.Length, i)
+	p := unsafe.Add(unsafe.Pointer(o.Data), offset)
 	switch width {
 	case 1:
 		return value.Value{Lo: uint64(*(*byte)(p))}
@@ -132,7 +138,8 @@ func (s *Store) getObject(o *heapObject, i uint32) value.Value {
 }
 
 func (s *Store) setObject(o *heapObject, i uint32, v value.Value) {
-	p, width := s.objectLocation(o, i)
+	offset, width := s.heapLayouts[o.Type].location(o.Length, i)
+	p := unsafe.Add(unsafe.Pointer(o.Data), offset)
 	switch width {
 	case 1:
 		*(*byte)(p) = byte(v.Lo)

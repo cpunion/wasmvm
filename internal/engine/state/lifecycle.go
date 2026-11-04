@@ -2,6 +2,7 @@ package state
 
 import (
 	"encoding/binary"
+	"unsafe"
 
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/memory"
@@ -169,18 +170,17 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 				}
 			}
 			layout := s.heapLayouts[o.Type]
-			data := s.objectData(o)
 			if layout.stride != 0 {
 				if len(layout.references) != 0 {
 					typ := layout.references[0].typ
 					for i := uint32(0); i < o.Length; i++ {
 						offset := uint64(i) * uint64(layout.stride)
-						visit(typ, value.Value{Lo: binary.LittleEndian.Uint64(data[offset:])})
+						visit(typ, value.Value{Lo: heapReferenceAt(o, offset)})
 					}
 				}
 			} else {
 				for _, ref := range layout.references {
-					visit(ref.typ, value.Value{Lo: binary.LittleEndian.Uint64(data[ref.offset:])})
+					visit(ref.typ, value.Value{Lo: heapReferenceAt(o, uint64(ref.offset))})
 				}
 			}
 		}
@@ -220,6 +220,14 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 		s.functions = s.functions[:len(s.functions)-1]
 	}
 	s.sweepObjects()
+}
+
+// Admitted layouts enumerate only full eight-byte reference fields. Array
+// positions are bounded by the initialized length, whose complete payload was
+// quota/size checked on allocation. Trace exact field widths without rebuilding
+// a variable payload slice and its checks for every object in the graph.
+func heapReferenceAt(o *heapObject, offset uint64) uint64 {
+	return binary.LittleEndian.Uint64((*[8]byte)(unsafe.Add(unsafe.Pointer(o.Data), uintptr(offset)))[:])
 }
 
 func (s *Store) dispose(in *Instance) {
