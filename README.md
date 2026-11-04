@@ -17,6 +17,13 @@ execution never silently switches to one of them.
 
 Current optimization evidence: [competitor, Go/LLGo and ordinary-native gaps](docs/research/performance-gaps-2026-11-02.md), with per-case outcomes and upstream compiler reports. Performance acceptance remains open.
 
+The [Cgo compiler study](docs/research/performance-llgo-cgo-upgrade-2026-11-04.md)
+isolates the merged LLGo checking-closure fix. In its independent M4 cohort,
+native entry improves 121→72 ns and complete native public calls 802→748 ns
+(−6.7%); full calls remain 2.34x Go and 11.17x Wasmtime. The broader upstream
+upgrade is held after public-call regressions; all GC and other adverse outcomes
+remain recorded.
+
 The [native boundary study](docs/research/performance-native-boundary-2026-11-04.md)
 moves cleanup frames to ownership-changing paths. Local M4 batch-inclusive LLGo
 native public empty calls improve 839→717 ns (−14.6%), and internal dispatch

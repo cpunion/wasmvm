@@ -3,19 +3,23 @@
 Initial design date: 2026-10-26. The historical research below is retained with
 its original evidence; the current implementation/CI contract is recorded here.
 
-## Current implementation and CI (2026-11-03)
+## Current implementation and CI (2026-11-04)
 
 The owned Core 2/3 interpreter and native compiler execute on Linux amd64 and
-macOS arm64 with Go 1.27.3 and LLGo `983465e779527ff496857a9a1915c1b57131091f`.
+macOS arm64 with Go 1.27.3 and LLGo `3571c2523e010e6842c4dd8a5213554fdc72d2a3`.
 LLGo semantics and CLI retain `-O3 -lto=full`. The root module declares Go 1.26;
 older-toolchain assumptions in the initial survey are historical.
 
-The [compiler-only migration study](../research/performance-llgo-result-upgrade-2026-11-03.md)
-compares the previous `8e45ed5` pin with `983465e` on identical VM source and
-release flags. This is a toolchain baseline event; the VM cancellation-view
-workaround is unchanged. Historical reports and guest-producer pins retain
-their original compiler identities. PR source-base/head measurements use the
-same new compiler for both, separately from the old/new compiler study.
+The [Cgo compiler study](../research/performance-llgo-cgo-upgrade-2026-11-04.md)
+compares the prior `983465e` pin with the five-commit `3571c25` checking-closure
+fix already included in merged LLGo #2971. It retains the independent complete
+`dd109ec` experiment and its public-call regressions; that broader compiler
+upgrade is not selected. All experiments use identical engine source and release
+flags. This is a compiler baseline event, with no production VM implementation
+change. Historical reports and guest-producer pins keep their original identities;
+PR source-base/head measurements use the selected compiler on both sources.
+The earlier [named-result migration](../research/performance-llgo-result-upgrade-2026-11-03.md)
+retains its separate `8e45ed5` → `983465e` evidence.
 
 The workflow runs complete Go semantics on both platforms. LLGo uses six
 package groups per platform: core, VM/codegen, component/CLI tests, HTTP/P1,
