@@ -236,9 +236,31 @@ func (e *Execution) Run() Status {
 		return e.fail(err)
 	}
 	backend := e.config.Backend
-	native := backend != nil
-	metered := e.config.Metered && !native
-frames:
+	if backend == nil {
+		return e.runSlots(false)
+	}
+	for {
+		f := &e.frames[len(e.frames)-1]
+		f.suspended = false
+		pc, err := e.runBackend(backend, f.function, f.base, f.pc)
+		if err != nil {
+			return e.fail(err)
+		}
+		// Transfer validation can replace frames or relocate their values.
+		// Publish the checked boundary before selecting the shared slot view.
+		e.frames[len(e.frames)-1].pc = pc
+		if status := e.runSlots(true); status != Running {
+			return status
+		}
+	}
+}
+
+// runSlots is the single instruction-semantic dispatcher. Portable execution
+// stays in its frame-local loop. A native driver services exactly one checked,
+// already-charged boundary here before returning to compiled code; neither the
+// backend interface nor its mutable frame transfer is live in this hot loop.
+func (e *Execution) runSlots(boundary bool) Status {
+	metered := e.config.Metered && !boundary
 	for len(e.frames) > 0 {
 		fi := len(e.frames) - 1
 		f := &e.frames[fi]
@@ -251,19 +273,6 @@ frames:
 		pc := f.pc
 		values := e.values[base : base+len(code.Slots)]
 		for {
-			if native {
-				var err error
-				pc, err = e.runBackend(backend, fn, base, pc)
-				if err != nil {
-					return e.fail(err)
-				}
-				fi = len(e.frames) - 1
-				f = &e.frames[fi]
-				fn, base = f.function, f.base
-				code, instance = fn.Code, fn.Instance
-				instructions = code.Code
-				values = e.values[base : base+len(code.Slots)]
-			}
 			// Instructions are immutable for the frame's lifetime. Read only the
 			// fields needed by the selected handler instead of copying the record.
 			in := &instructions[pc]
@@ -281,7 +290,7 @@ frames:
 					return e.fail(err)
 				}
 			}
-			for in.Count != 0 && (in.Op == 0x20 || in.Op == 0x41) && !native && !metered && e.steps&63 != 63 {
+			for in.Count != 0 && (in.Op == 0x20 || in.Op == 0x41) && !boundary && !metered && e.steps&63 != 63 {
 				// Coalesced local reads already occupy their result slot.
 				// Commit constants before advancing, retaining every source
 				// step and stopping before the next polling boundary.
@@ -366,7 +375,7 @@ frames:
 					}
 					pc++
 					f.pc = pc
-					continue
+					goto next
 				case 0xfc:
 					if module.IsWideArithmetic(in.Op) {
 						args := code.Args[in.Extra : in.Extra+in.Count+2]
@@ -397,7 +406,7 @@ frames:
 						values[args[in.Count]], values[args[in.Count+1]] = value.Value{Lo: lo}, value.Value{Lo: hi}
 						pc++
 						f.pc = pc
-						continue
+						goto next
 					}
 				default:
 					if in.Op <= 0xe6 {
@@ -413,7 +422,7 @@ frames:
 						if e.status != Running {
 							return e.status
 						}
-						continue frames
+						goto transferred
 					}
 				}
 			}
@@ -592,7 +601,7 @@ frames:
 					e.frames[fi] = frame{}
 					e.frames = e.frames[:fi]
 					e.values = e.values[:base]
-					continue frames
+					goto transferred
 				}
 				index := uint32(0)
 				if kind == ir.IfCast {
@@ -631,7 +640,7 @@ frames:
 					values[int(move.Dst)] = values[int(move.Src)]
 				}
 				pc = edge.PC
-				continue
+				goto next
 
 			case 8, 10:
 				f.pc = pc
@@ -662,7 +671,7 @@ frames:
 					ex = &state.Exception{Owner: e.store, Ref: ref}
 				}
 				if e.raise(ex) {
-					continue frames
+					goto transferred
 				}
 				return Failed
 			case 1, 0x1a:
@@ -818,7 +827,7 @@ frames:
 					copy(e.values[base:], e.tailArgs)
 					clear(e.tailArgs)
 					e.tailArgs = e.tailArgs[:0]
-					continue frames
+					goto transferred
 				}
 				// Publish the caller continuation before a host suspension or
 				// frame push. Straight-line execution keeps its PC local.
@@ -841,7 +850,7 @@ frames:
 				for i := uint32(0); i < count; i++ {
 					e.values[calleeBase+int(i)] = e.values[base+int(inputs[i])]
 				}
-				continue frames
+				goto transferred
 			default:
 				if in.C != slots.NoSlot {
 					c = values[int(in.C)]
@@ -879,6 +888,17 @@ frames:
 				values[int(in.Dst)] = result
 			}
 			pc++
+		next:
+			if boundary {
+				f.pc = pc
+				return Running
+			}
+		}
+	transferred:
+		// Frame-changing instructions already published their complete
+		// continuation. The native driver must select that frame afresh.
+		if boundary {
+			return Running
 		}
 	}
 	panic("interp: running without frames")
