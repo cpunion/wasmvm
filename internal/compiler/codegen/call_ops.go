@@ -198,16 +198,29 @@ func (e *functionEmitter) callZero(slots uint32, cancelled int) {
 		return
 	}
 	chunk := func(n uint32) {
-		e.callConst(0, 0)
-		e.callConst(5, uint64(n))
-		loop := e.a.label()
-		e.a.mark(loop)
-		e.callStore(0, e.callReg(6), 0)
-		e.callStore(0, e.callReg(6), 8)
-		e.callAdvance(6, 16)
-		e.callAdvance(5, -1)
-		e.callTest(5)
-		e.branch(loop, "ne")
+		e.a.word(0x4f00e400) // movi v0.16b, #0; all guest vectors were spilled.
+		if blocks := n / 8; blocks != 0 {
+			e.callConst(5, uint64(blocks))
+			loop := e.a.label()
+			e.a.mark(loop)
+			for pair := uint32(0); pair < 4; pair++ {
+				e.a.word(0xad000000 | pair*2<<15 | uint32(e.callReg(6))<<5) // stp q0,q0,[cursor,#pair*32]
+			}
+			e.callAdvance(6, 128)
+			e.callAdvance(5, -1)
+			e.callTest(5)
+			e.branch(loop, "ne")
+		}
+		remaining := n % 8
+		for pair := uint32(0); pair < remaining/2; pair++ {
+			e.a.word(0xad000000 | pair*2<<15 | uint32(e.callReg(6))<<5)
+		}
+		if remaining%2 != 0 {
+			e.a.word(0x3d800000 | (remaining-1)<<10 | uint32(e.callReg(6))<<5) // str q0,[cursor,#slot*16]
+		}
+		if remaining != 0 {
+			e.callAdvance(6, int(remaining)*16)
+		}
 	}
 	if chunks != 0 {
 		e.callConst(7, uint64(chunks))
