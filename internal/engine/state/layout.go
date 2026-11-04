@@ -77,9 +77,12 @@ func (s *Store) layout(typ uint32) (*heapLayout, error) {
 	return l, nil
 }
 func (s *Store) objectSize(o *heapObject) uint64 {
-	layout := s.heapLayouts[o.Type]
+	return s.heapLayouts[o.Type].payloadSize(o.Length)
+}
+
+func (layout *heapLayout) payloadSize(length uint32) uint64 {
 	if layout.stride != 0 {
-		return uint64(o.Length) * uint64(layout.stride)
+		return uint64(length) * uint64(layout.stride)
 	}
 	return layout.size
 }
@@ -90,11 +93,7 @@ func (s *Store) objectData(o *heapObject) []byte {
 
 func (s *Store) objectBytes(o *heapObject) uint64 {
 	layout := s.heapLayouts[o.Type]
-	bytes := layout.size
-	if layout.stride != 0 {
-		bytes = uint64(o.Length) * uint64(layout.stride)
-	}
-	bytes += layout.overhead
+	bytes := layout.payloadSize(o.Length) + layout.overhead
 	if extra := s.existingObjectExtras(o); extra != nil {
 		bytes += extra.Bytes
 	}

@@ -124,16 +124,6 @@ type heapObjectPage struct {
 	blockOffset, blockPages uint8
 }
 
-func (s *Store) objectCell(index uint32) (*heapObject, error) {
-	page := uint64(index) / heapObjectsPerPage
-	if page >= uint64(len(s.heapObjects)) {
-		if err := s.materializeObjectSlabs(page); err != nil {
-			return nil, err
-		}
-	}
-	return &s.heapObjects[page].objects[uint64(index)%heapObjectsPerPage], nil
-}
-
 // Small Stores start with one logical page. Larger portable heaps share typed
 // allocations capped at eight pages; native pages alias stable owned headers.
 // The final slab and page stop at the handle quota, including the null slot.
@@ -206,10 +196,13 @@ func (s *Store) allocateObject(typ uint32, length uint32, extra ...uint64) (uint
 	} else if uint64(len(s.heap)) > math.MaxUint32 || uint64(index) > uint64(s.limits.MaxHeapObjects) {
 		return 0, limit("guest heap handles")
 	}
-	o, err := s.objectCell(index)
-	if err != nil {
-		return 0, err
+	page := uint64(index) / heapObjectsPerPage
+	if page >= uint64(len(s.heapObjects)) {
+		if err := s.materializeObjectSlabs(page); err != nil {
+			return 0, err
+		}
 	}
+	o := &s.heapObjects[page].objects[uint64(index)%heapObjectsPerPage]
 	var data []byte
 	var offset uint64
 	if s.nativeHeap != nil {
@@ -267,10 +260,14 @@ func (s *Store) releaseObject(index uint32) {
 func (s *Store) releaseHeapObject(index uint32, obj *heapObject) {
 	slot := &s.heap[index]
 	s.usage.HeapObjects--
-	s.usage.HeapBytes -= s.objectBytes(obj)
-	if extra := s.existingObjectExtras(obj); extra != nil {
+	layout := s.heapLayouts[obj.Type]
+	bytes := layout.payloadSize(obj.Length) + layout.overhead
+	if slot.Next&heapHasExtra != 0 {
+		extra := &s.heapObjects[uint64(index)/heapObjectsPerPage].extras[uint64(index)%heapObjectsPerPage]
+		bytes += extra.Bytes
 		*extra = heapObjectExtra{}
 	}
+	s.usage.HeapBytes -= bytes
 	*obj = heapObject{}
 	slot.Object = nil
 	slot.Next = 0

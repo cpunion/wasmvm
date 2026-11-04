@@ -190,14 +190,15 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 		s.sweepNativeEmpty()
 	} else {
 		for i := 1; i < len(s.heap); i++ {
-			o := s.heap[i].Object
+			slot := &s.heap[i]
+			o := slot.Object
 			if o == nil {
 				continue
 			}
-			if !s.objectMarked(o) {
-				s.releaseObject(uint32(i))
+			if slot.Next&heapMarked == 0 {
+				s.releaseHeapObject(uint32(i), o)
 			} else {
-				s.clearObjectMark(o)
+				slot.Next &^= heapMarked
 			}
 		}
 	}
