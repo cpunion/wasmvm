@@ -254,34 +254,16 @@ frames:
 		for {
 			if native {
 				var err error
-				if frameBackend == nil {
-					pc, e.fuel, err = backend.Run(fn, base, len(e.frames), pc, e.fuel)
-				} else {
-					e.nativeFrames = state.NativeFrames{Function: fn, Base: base, Depth: len(e.frames), PC: pc, Fuel: e.fuel,
-						MaxFrames: e.config.Limits.MaxFrames, MaxSlots: e.config.Limits.MaxSlots, Values: e.values}
-					err = frameBackend.RunFrames(&e.nativeFrames)
-					if err == nil {
-						err = e.adoptNativeFrames(&e.nativeFrames)
-					}
-					if err != nil && len(e.nativeFrames.Values) >= len(e.values) {
-						// An error discards logical frames, but an arena moved by
-						// the backend remains the owner of reusable value storage.
-						e.values = e.nativeFrames.Values[:len(e.values)]
-					}
-					pc, e.fuel = e.nativeFrames.PC, e.nativeFrames.Fuel
-					e.nativeFrames = state.NativeFrames{}
-					if err == nil {
-						fi = len(e.frames) - 1
-						f = &e.frames[fi]
-						fn, base = f.function, f.base
-						code, instance = fn.Code, fn.Instance
-						instructions = code.Code
-						values = e.values[base : base+len(code.Slots)]
-					}
-				}
+				pc, err = e.runBackend(backend, frameBackend, fn, base, pc)
 				if err != nil {
 					return e.fail(err)
 				}
+				fi = len(e.frames) - 1
+				f = &e.frames[fi]
+				fn, base = f.function, f.base
+				code, instance = fn.Code, fn.Instance
+				instructions = code.Code
+				values = e.values[base : base+len(code.Slots)]
 			}
 			// Instructions are immutable for the frame's lifetime. Read only the
 			// fields needed by the selected handler instead of copying the record.

@@ -12,6 +12,31 @@ type FrameBackend interface {
 	RunFrames(*state.NativeFrames) error
 }
 
+// Keep packet construction, validation and cleanup out of the portable opcode
+// dispatcher. Inlining this native-only bridge enlarges the shared hot loop.
+//
+//go:noinline
+func (e *Execution) runBackend(backend Backend, framed FrameBackend, fn *state.Function, base int, pc uint32) (uint32, error) {
+	if framed == nil {
+		var err error
+		pc, e.fuel, err = backend.Run(fn, base, len(e.frames), pc, e.fuel)
+		return pc, err
+	}
+	e.nativeFrames = state.NativeFrames{Function: fn, Base: base, Depth: len(e.frames), PC: pc, Fuel: e.fuel,
+		MaxFrames: e.config.Limits.MaxFrames, MaxSlots: e.config.Limits.MaxSlots, Values: e.values}
+	err := framed.RunFrames(&e.nativeFrames)
+	if err == nil {
+		err = e.adoptNativeFrames(&e.nativeFrames)
+	}
+	if err != nil && len(e.nativeFrames.Values) >= len(e.values) {
+		// Preserve the current owned storage after an error or relocation.
+		e.values = e.nativeFrames.Values[:len(e.values)]
+	}
+	pc, e.fuel = e.nativeFrames.PC, e.nativeFrames.Fuel
+	e.nativeFrames = state.NativeFrames{}
+	return pc, err
+}
+
 // adoptNativeFrames validates the whole transfer before changing the shared
 // stack. Native execution may only coalesce ordinary same-instance direct calls;
 // imported, indirect and tail calls remain explicit runtime boundaries. The
