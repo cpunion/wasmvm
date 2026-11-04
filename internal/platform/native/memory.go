@@ -193,18 +193,22 @@ func (m *Memory) drop() {
 }
 func (m *Memory) begin() (uint64, uint64, error) {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	if m.data == nil {
+		m.mu.Unlock()
 		return 0, 0, ErrClosed
 	}
 	if m.active != 0 && m.sharedSize == nil {
+		m.mu.Unlock()
 		return 0, 0, ErrBusy
 	}
 	if m.active == ^uint64(0) {
+		m.mu.Unlock()
 		return 0, 0, ErrLimit
 	}
 	m.active++
-	return uint64(uintptr(m.data)), m.size, nil
+	address, size := uint64(uintptr(m.data)), m.size
+	m.mu.Unlock()
+	return address, size, nil
 }
 func (m *Memory) end() {
 	m.mu.Lock()
