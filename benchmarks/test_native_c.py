@@ -5,6 +5,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import time
 import unittest
 
 from native.memory_fixtures import checksum as memory_checksum
@@ -37,6 +38,26 @@ class NativeCReferenceTests(unittest.TestCase):
         self.assertEqual((record["checksum"], record["seed"], record["iterations"]),
                          (expected, seed, count))
         self.assertEqual(len(record["warmCallNs"]), 7)
+
+    def test_reference_clocks_share_the_observer_time_domain(self):
+        compiler = shutil.which("clang") or shutil.which("cc")
+        sources = [ROOT / "embedded/c/common.h", *(ROOT / "native/c").glob("*_baseline.c")]
+        self.assertEqual(len(sources), 4)
+        for source in sources:
+            with self.subTest(source=source.name):
+                path = Path(self.directory.name) / "clock.c"
+                binary = path.with_suffix("")
+                path.write_text('#define main reference_main\n#include ' + json.dumps(str(source)) +
+                                '\n#undef main\nint main(void) { printf("%" PRIu64 "\\n", now_ns()); }\n')
+                subprocess.run([compiler, "-std=c11", "-D_POSIX_C_SOURCE=200809L", "-O2",
+                                "-Wall", "-Wextra", "-Werror", "-Wno-unused-function",
+                                str(path), "-o", str(binary)],
+                               check=True, capture_output=True, text=True)
+                before = time.perf_counter_ns()
+                sampled = int(subprocess.check_output([str(binary)], text=True))
+                after = time.perf_counter_ns()
+                self.assertLessEqual(before, sampled)
+                self.assertLessEqual(sampled, after)
 
     def test_simd_byte_overlap_sign_extension_and_wrap(self):
         for kind in ("simd-memory-full", "simd-memory-widen", "simd-memory-lanes"):

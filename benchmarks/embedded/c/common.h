@@ -39,7 +39,7 @@ static void fail(const char *message) {
 static uint64_t now_ns(void) {
   struct timespec timestamp;
 #ifdef __APPLE__
-  const clockid_t clock = CLOCK_MONOTONIC_RAW;
+  const clockid_t clock = CLOCK_UPTIME_RAW;
 #else
   const clockid_t clock = CLOCK_MONOTONIC;
 #endif
