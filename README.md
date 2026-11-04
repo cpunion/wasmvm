@@ -17,12 +17,12 @@ execution never silently switches to one of them.
 
 Current optimization evidence: [competitor, Go/LLGo and ordinary-native gaps](docs/research/performance-gaps-2026-11-02.md), with per-case outcomes and upstream compiler reports. Performance acceptance remains open.
 
-The [compact GC follow-up](docs/research/performance-gc-compact-2026-11-04.md)
-reduces common object records from 104 to 64 bytes. Local M4 measurements show
-14.0% lower LLGo native linked-allocation time and empty-object interpretation
-107.27→68.19 ns/iteration versus WasmEdge 90.62. Long linked allocation remains
-4.58x Wasmtime. Original portfolio regressions, independent longer controls and
-a separate reference-clock correction are retained; performance acceptance stays open.
+The [native GC follow-up](docs/research/performance-native-payload-runs-2026-11-04.md)
+coalesces adjacent payload moves. Local M4 long-chain allocation changes LLGo
+40.34→37.95 ns/object (−5.9%), still 4.27x Wasmtime. Two smaller metadata layouts
+were held for regressions; full-portfolio outcomes and all phases remain explicit.
+The earlier [compact metadata study](docs/research/performance-gc-compact-2026-11-04.md)
+retains its separate 104→64-byte record change and reference-clock baseline event.
 
 Earlier [GC sweep](docs/research/performance-native-gc-sweep-2026-11-04.md) and
 [interpreter](docs/research/pr115-interpreter-diagnosis-2026-11-04.md) studies

@@ -107,6 +107,7 @@ func (s *Store) compactNativeHeap(sweep bool) {
 	h := s.nativeHeap
 	kept := 0
 	var used uint64
+	var runFrom, runTo, runBytes uint64
 	for _, a := range h.objects {
 		o, ok := s.heapObject(a.handle)
 		if !ok {
@@ -121,7 +122,17 @@ func (s *Store) compactNativeHeap(sweep bool) {
 		}
 		size := uint64(len(o.Data))
 		if size != 0 && a.offset != used {
-			copy(h.data[used:used+size], o.Data)
+			// Adjacent survivors share one overlapping-safe move. Object views
+			// may be rebound before the move because this serialized safepoint
+			// exposes no payloads until the complete run has been copied.
+			if runBytes != 0 && a.offset != runFrom+runBytes {
+				copy(h.data[runTo:runTo+runBytes], h.data[runFrom:runFrom+runBytes])
+				runBytes = 0
+			}
+			if runBytes == 0 {
+				runFrom, runTo = a.offset, used
+			}
+			runBytes += size
 			o.Data = h.data[used : used+size]
 			s.publishHeapObject(a.handle, o)
 		}
@@ -129,6 +140,9 @@ func (s *Store) compactNativeHeap(sweep bool) {
 		used += size
 		h.objects[kept] = a
 		kept++
+	}
+	if runBytes != 0 {
+		copy(h.data[runTo:runTo+runBytes], h.data[runFrom:runFrom+runBytes])
 	}
 	h.objects, h.used = h.objects[:kept], used
 }
