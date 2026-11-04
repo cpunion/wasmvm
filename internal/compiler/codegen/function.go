@@ -51,6 +51,7 @@ type CompiledFunction struct {
 	NativeBulk                    uint32
 	NativeAllocations             uint32
 	NativeAllocationBatch         uint32
+	CallRelocations               []CallRelocation
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -104,6 +105,11 @@ type Config struct {
 	NativeAllocations bool
 	// NativeThreads requires stable shared views and machine atomic helpers.
 	NativeThreads bool
+	// LinkedCallees enables bounded native direct calls within this module.
+	// All linked bodies use the same sorted global binding layout. The caller
+	// must resolve CallRelocations before publishing any linked body.
+	LinkedCallees map[uint32]*slots.Function
+	LinkedGlobals []uint32
 }
 
 func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
@@ -191,6 +197,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			}
 		}
 	}
+	e.start = a.label()
+	a.mark(e.start)
 	e.header(uint64(len(f.Slots))*16, len(pcs))
 	e.prepareHeapAccesses(config)
 	if config.NativeAllocations && unmetered {
@@ -378,6 +386,10 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			kind := ir.TermKind(op - slots.ControlBase)
 			switch kind {
 			case ir.Return:
+				if config.LinkedCallees != nil {
+					e.linkedReturn(pc)
+					continue
+				}
 				e.leave(nativeabi.Return, uint64(pc), uint64(pc))
 			case ir.Trap:
 				e.trap(wasm.TrapUnreachable, uint64(src.Wasm.Offset))
@@ -465,6 +477,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				}
 				continue
 			}
+			if op == 0x10 && e.linkedCall(pc, config.LinkedCallees[src.Wasm.A]) {
+				continue
+			}
 			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
 			e.leave(nativeabi.Call, uint64(pc), uint64(pc+1))
 		case helperOpcode(op):
@@ -523,6 +538,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	for i, l := range pcs {
 		out.Offsets[i] = out.Entry.BodyOffset + uint32(a.labels[l])
+	}
+	for _, call := range e.linkedRelocations {
+		out.CallRelocations = append(out.CallRelocations, CallRelocation{Offset: out.Entry.BodyOffset + uint32(a.labels[call.label]), Function: call.target})
 	}
 	return out, nil
 }

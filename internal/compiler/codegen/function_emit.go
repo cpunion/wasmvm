@@ -57,6 +57,8 @@ type functionEmitter struct {
 	allocationTypes                                              []module.TypeDef
 	hasAllocations                                               bool
 	allocationBatch                                              uint32
+	start                                                        int
+	linkedRelocations                                            []linkedRelocation
 }
 
 type memoryFallback struct{ label, pc int }

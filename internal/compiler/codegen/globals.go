@@ -48,6 +48,19 @@ func (e *functionEmitter) prepareRuntimeData(config Config) ([]uint32, bool) {
 		indices = append(indices, index)
 	}
 	sort.Slice(indices, func(i, j int) bool { return indices[i] < indices[j] })
+	if config.LinkedCallees != nil {
+		for i, index := range config.LinkedGlobals {
+			if uint64(index) >= uint64(len(config.Globals)) || i != 0 && index <= config.LinkedGlobals[i-1] {
+				panic(&wasm.Error{Kind: wasm.ErrInvalid, Detail: "native linked global layout"})
+			}
+			delete(seen, index)
+		}
+		if len(seen) != 0 {
+			panic(&wasm.Error{Kind: wasm.ErrInvalid, Detail: "missing linked global binding"})
+		}
+		indices = config.LinkedGlobals
+		needed = true
+	}
 	if len(e.heapAccesses) != 0 || e.hasAllocations {
 		var ok bool
 		e.heapPair, ok = nativeabi.HeapPairOffset(config.FunctionCount, config.TableCount, uint32(len(config.Globals)), uint32(len(indices)), config.MemoryCount)

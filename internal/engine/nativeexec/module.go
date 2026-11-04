@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"runtime"
+	"sort"
 
 	"github.com/cpunion/wasmvm/internal/compiler/codegen"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -19,10 +20,12 @@ import (
 type Module struct {
 	code    *native.Code
 	entries map[*slots.Function]functionEntries
+	linked  bool
 }
 type Lease struct {
 	code    *native.Lease
 	entries map[*slots.Function]functionEntries
+	linked  bool
 }
 
 type functionEntries struct {
@@ -42,6 +45,16 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 	if !native.Available {
 		return nil, wasm.ErrUnsupported
 	}
+	compiled, err := compileModule(ctx, m, limits, true)
+	if errors.Is(err, wasm.ErrLimit) {
+		// Linking is an optimization. A module that fits the complete ordinary
+		// tiers must still compile when its linked metadata exceeds the budget.
+		return compileModule(ctx, m, limits, false)
+	}
+	return compiled, err
+}
+
+func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, allowLink bool) (*Module, error) {
 	out := &Module{entries: make(map[*slots.Function]functionEntries, len(m.Functions))}
 	var code []byte
 	var entries []uint32
@@ -90,6 +103,29 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 	for i, f := range m.Functions {
 		callees[importedFunctions+uint32(i)] = f
 	}
+	var linkedCallees map[uint32]*slots.Function
+	var linkedGlobals []uint32
+	if allowLink {
+		seen := map[uint32]bool{}
+		for _, f := range m.Functions {
+			for _, in := range f.Code {
+				if in.Op == 0x10 && callees[f.Sources[in.Source].Wasm.A] != nil {
+					linkedCallees = callees
+				}
+				if in.Op == 0x23 || in.Op == 0x24 {
+					seen[f.Sources[in.Source].Wasm.A] = true
+				}
+			}
+		}
+		for index := range seen {
+			linkedGlobals = append(linkedGlobals, index)
+		}
+		sort.Slice(linkedGlobals, func(i, j int) bool { return linkedGlobals[i] < linkedGlobals[j] })
+	}
+	out.linked = linkedCallees != nil
+	relocations := [2][]codegen.CallRelocation{}
+	targets := [2]map[uint32]uint32{{}, {}}
+	usesMemory := false
 	// Index structurally identical types once. Bound code expansion per type,
 	// independently of map iteration order and table contents at instantiation.
 	keys := make([]string, len(definition.Types))
@@ -126,6 +162,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 			config := codegen.Config{Unmetered: tier != 1, NativeAllocations: tier != 1, NativeThreads: true, MemoryMinimumPages: minimum, X86Features: features, ARM64Features: armFeatures,
 				MemoryPageSizes: pageSizes, HeapTypes: definition.TypeDefs,
 				FunctionCount: importedFunctions + uint32(len(m.Functions)), TableCount: tables, MemoryCount: memories, SharedMemories: shared, Globals: globals}
+			config.LinkedCallees, config.LinkedGlobals = linkedCallees, linkedGlobals
 			if tier == 2 {
 				config.DirectCallees = callees
 				config.IndirectCallees = indirect
@@ -157,9 +194,32 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 				indexes.usesRuntimeData = body.UsesRuntimeData
 			}
 			indexes.nativeMemory = indexes.nativeMemory || body.UsesMemory
+			usesMemory = usesMemory || body.UsesMemory
+			policy := 0
+			if tier == 1 {
+				policy = 1
+			}
+			if tier != 2 {
+				targets[policy][importedFunctions+uint32(functionIndex)] = uint32(len(code)) + body.Entry.BodyOffset
+			}
+			for _, relocation := range body.CallRelocations {
+				relocation.Offset += uint32(len(code))
+				relocations[policy] = append(relocations[policy], relocation)
+			}
 			entries = append(entries, uint32(len(code)))
 			code = append(code, body.Entry.Code...)
 			out.entries[f] = indexes
+		}
+	}
+	for policy := range relocations {
+		if err := codegen.LinkCalls(runtime.GOARCH, code, relocations[policy], targets[policy]); err != nil {
+			return nil, err
+		}
+	}
+	if out.linked && usesMemory {
+		for f, entry := range out.entries {
+			entry.nativeMemory = true
+			out.entries[f] = entry
 		}
 	}
 	if err := ctx.Err(); err != nil {
@@ -175,7 +235,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 	return out, nil
 }
 func (m *Module) Acquire() (*Lease, error) {
-	l := &Lease{entries: m.entries}
+	l := &Lease{entries: m.entries, linked: m.linked}
 	if m.code != nil {
 		var err error
 		l.code, err = m.code.Acquire()
