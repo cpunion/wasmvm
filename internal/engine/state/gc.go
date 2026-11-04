@@ -63,7 +63,9 @@ func (s *Store) gcSlow(ctx context.Context, in *Instance, ins *module.Instr, arg
 		if err != nil {
 			return result, err
 		}
-		o.Descriptor = descriptor
+		if descriptor != 0 {
+			s.objectExtras(ref).Descriptor = descriptor
+		}
 		if op == 0 || op == 32 {
 			for i, a := range args[:len(fs)] {
 				o.set(uint32(i), packField(a, fs[i]))

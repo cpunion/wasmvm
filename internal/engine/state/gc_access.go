@@ -48,7 +48,7 @@ func (s *Store) GCAccess(in *Instance, ins *module.Instr, a, b, c value.Value) (
 		return value.Value{Lo: uint64(o.Length)}, nil
 	}
 	if op == 34 {
-		return value.Value{Lo: o.Descriptor}, nil
+		return value.Value{Lo: s.objectDescriptor(o)}, nil
 	}
 	fields := s.registry.Types[in.Types[ins.A]].Definition.Fields
 	index := ins.B

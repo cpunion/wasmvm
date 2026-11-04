@@ -42,8 +42,7 @@ func (s *Store) NewContinuation(typ uint32, body ContinuationBody) (uint64, erro
 	if err != nil {
 		return 0, err
 	}
-	o, _ := s.heapObject(ref)
-	o.Continuation = body
+	s.objectExtras(ref).Continuation = body
 	return ref, nil
 }
 
@@ -57,15 +56,16 @@ func (s *Store) Continuation(ref uint64, take bool) (ContinuationBody, error) {
 	if !ok || s.registry.Types[o.Type].Definition.Kind != module.ContinuationKind {
 		return nil, ErrReference
 	}
-	if o.Continuation == nil {
+	extra := s.existingObjectExtras(o)
+	if extra == nil || extra.Continuation == nil {
 		return nil, &wasm.Trap{Code: wasm.TrapConsumedContinuation}
 	}
-	body := o.Continuation
+	body := extra.Continuation
 	if take {
 		bytes := body.HeapBytes()
 		s.usage.HeapBytes -= bytes
 		o.Bytes -= bytes
-		o.Continuation = nil
+		extra.Continuation = nil
 	}
 	return body, nil
 }

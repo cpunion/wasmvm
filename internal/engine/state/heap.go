@@ -20,16 +20,69 @@ type ReferenceValue struct {
 	Value value.Value
 }
 type heapObject struct {
-	Type          uint32
-	Descriptor    uint64
-	Continuation  ContinuationBody
-	Tag           *Tag
-	Data          []byte
-	Layout        *heapLayout
-	Length        uint32
-	Bytes, Serial uint64
-	Mark          bool
+	Type, Length uint32
+	Data         []byte
+	Layout       *heapLayout
+	Bytes        uint64
+	Serial       uint64
+	extraIndex   uint32
+	Mark         bool
 }
+
+// Exceptional payloads and extension-specific roots are allocated only when
+// present. Ordinary structs and arrays retain a compact shared object record.
+type heapObjectExtra struct {
+	Descriptor   uint64
+	Tag          *Tag
+	Continuation ContinuationBody
+}
+
+// Optional cells share a lazily allocated page; exceptional objects do not
+// allocate a separate host object for each tag, descriptor or continuation.
+func (s *Store) objectExtras(ref uint64) *heapObjectExtra {
+	index := uint32(ref)
+	o := s.heap[index].Object
+	if o.extraIndex == 0 {
+		page := uint64(index) / heapObjectsPerPage
+		if s.heapObjects[page].extras == nil {
+			s.materializeExtraSlab(page)
+		}
+		o.extraIndex = index
+	}
+	return s.existingObjectExtras(o)
+}
+
+func (s *Store) materializeExtraSlab(page uint64) {
+	p := &s.heapObjects[page]
+	first := page - uint64(p.blockOffset)
+	pages := uint64(p.blockPages)
+	count := (pages-1)*heapObjectsPerPage + uint64(len(s.heapObjects[first+pages-1].objects))
+	cells := make([]heapObjectExtra, int(count))
+	at := 0
+	for i := first; i < first+pages; i++ {
+		end := at + len(s.heapObjects[i].objects)
+		s.heapObjects[i].extras = cells[at:end:end]
+		at = end
+	}
+}
+
+// Optional indexes occupy existing record padding and do not root host data.
+// A zero index keeps normal allocation and tracing independent of extra slabs.
+func (s *Store) existingObjectExtras(o *heapObject) *heapObjectExtra {
+	index := uint64(o.extraIndex)
+	if index == 0 {
+		return nil
+	}
+	return &s.heapObjects[index/heapObjectsPerPage].extras[index%heapObjectsPerPage]
+}
+
+func (s *Store) objectDescriptor(o *heapObject) uint64 {
+	if extra := s.existingObjectExtras(o); extra != nil {
+		return extra.Descriptor
+	}
+	return 0
+}
+
 type heapSlot struct {
 	Object     *heapObject
 	Generation uint32
@@ -44,17 +97,41 @@ type heapSlot struct {
 const heapObjectsPerPage = 64
 
 type heapObjectPage struct {
-	objects  []heapObject
-	hasEmpty bool
+	objects                 []heapObject
+	extras                  []heapObjectExtra
+	hasEmpty                bool
+	blockOffset, blockPages uint8
 }
 
 func (s *Store) objectCell(index uint32) *heapObject {
 	page := uint64(index) / heapObjectsPerPage
-	for page >= uint64(len(s.heapObjects)) {
-		remaining := uint64(s.limits.MaxHeapObjects) + 1 - uint64(len(s.heapObjects))*heapObjectsPerPage
-		s.heapObjects = appendValue(s.heapObjects, heapObjectPage{objects: make([]heapObject, int(min(heapObjectsPerPage, remaining)))})
+	if page >= uint64(len(s.heapObjects)) {
+		s.materializeObjectSlabs(page)
 	}
 	return &s.heapObjects[page].objects[uint64(index)%heapObjectsPerPage]
+}
+
+// Small Stores start with one logical page. Larger heaps share progressively
+// larger typed allocations, capped at eight pages, without moving any live cell.
+// The final slab and page stop at the handle quota, including the null slot.
+func (s *Store) materializeObjectSlabs(page uint64) {
+	for page >= uint64(len(s.heapObjects)) {
+		first := uint64(len(s.heapObjects))
+		remaining := uint64(s.limits.MaxHeapObjects) + 1 - first*heapObjectsPerPage
+		count := min(remaining, min(uint64(8), first+1)*heapObjectsPerPage)
+		if count == 0 {
+			panic("state: metadata handle quota")
+		}
+		cells := make([]heapObject, int(count))
+		pages := (count + heapObjectsPerPage - 1) / heapObjectsPerPage
+		for i, at := uint64(0), 0; i < pages; i++ {
+			end := min(len(cells), at+heapObjectsPerPage)
+			s.heapObjects = appendValue(s.heapObjects, heapObjectPage{
+				objects: cells[at:end:end], blockOffset: uint8(i), blockPages: uint8(pages),
+			})
+			at = end
+		}
+	}
 }
 
 func (s *Store) heapObject(ref uint64) (*heapObject, bool) {
@@ -158,6 +235,9 @@ func (s *Store) releaseHeapObject(index uint32, obj *heapObject) {
 	if s.nativeHeap != nil {
 		clear(s.nativeHeap.views[int(index)*4 : int(index)*4+4])
 	}
+	if extra := s.existingObjectExtras(obj); extra != nil {
+		*extra = heapObjectExtra{}
+	}
 	*obj = heapObject{}
 	slot.Object = nil
 	if slot.Generation < 0x7fffffff {
@@ -209,7 +289,7 @@ func (s *Store) TestReference(ref uint64, expected wasm.ValueType) bool {
 		if !ok {
 			return false
 		}
-		if o.Tag != nil {
+		if extra := s.existingObjectExtras(o); extra != nil && extra.Tag != nil {
 			return s.registry.Subtype(wasm.ExnRef.NonNull(), expected)
 		}
 		d := s.registry.Types[o.Type].Definition
@@ -245,7 +325,7 @@ func (s *Store) DescriptorEqual(ref, descriptor uint64, target wasm.ValueType) (
 		return target.Nullable(), nil
 	}
 	obj, ok := s.heapObject(ref)
-	return ok && obj.Descriptor == descriptor, nil
+	return ok && s.objectDescriptor(obj) == descriptor, nil
 }
 func (s *Store) IsLiveReference(ref uint64) bool {
 	if ref&heapTag != 0 {

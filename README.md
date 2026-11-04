@@ -17,20 +17,18 @@ execution never silently switches to one of them.
 
 Current optimization evidence: [competitor, Go/LLGo and ordinary-native gaps](docs/research/performance-gaps-2026-11-02.md), with per-case outcomes and upstream compiler reports. Performance acceptance remains open.
 
-The [native GC sweep study](docs/research/performance-native-gc-sweep-2026-11-04.md)
-observes 8.5% lower LLGo native linked-allocation time against the merged
-[PR114 baseline](docs/research/pr114-final-ci-2026-11-04.md). Empty allocation is
-19.21 ns versus Wasmtime 20.68 ns, with a retained 1.7% self-baseline regression;
-long linked allocation still takes 5.32x Wasmtime. All twenty original kernels,
-ordinary C comparisons and adverse controls remain recorded. The
-[LLGo migration](docs/research/performance-llgo-result-upgrade-2026-11-03.md)
-remains a separate compiler-baseline event. Controlled performance and expanded
-WASI acceptance remain open.
+The [compact GC follow-up](docs/research/performance-gc-compact-2026-11-04.md)
+reduces common object records from 104 to 64 bytes. Local M4 measurements show
+14.0% lower LLGo native linked-allocation time and empty-object interpretation
+107.27→68.19 ns/iteration versus WasmEdge 90.62. Long linked allocation remains
+4.58x Wasmtime. Original portfolio regressions, independent longer controls and
+a separate reference-clock correction are retained; performance acceptance stays open.
 
-The [interpreter follow-up](docs/research/pr115-interpreter-diagnosis-2026-11-04.md)
-observes 10.1% / 8.3% / 13.7% lower LLGo integer/call/memory-loop times locally.
-Its separate Linux Go controls resolve the earlier interpreter regressions;
-all held variants, ordinary-native observations and longer controls remain recorded.
+Earlier [GC sweep](docs/research/performance-native-gc-sweep-2026-11-04.md) and
+[interpreter](docs/research/pr115-interpreter-diagnosis-2026-11-04.md) studies
+retain their original results and held variants. The
+[LLGo migration](docs/research/performance-llgo-result-upgrade-2026-11-03.md)
+remains a separate compiler-baseline event.
 
 ## Project status
 

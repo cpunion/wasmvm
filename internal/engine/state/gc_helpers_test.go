@@ -2,6 +2,7 @@ package state
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/cpunion/wasmvm/internal/core/module"
@@ -53,7 +54,45 @@ func TestGCAllocationRestoresBorrowedRootsAfterCollectorPanic(t *testing.T) {
 		t.Fatal(err)
 	}
 	o, ok := s.heapObject(parent.Lo)
-	if !ok || o.get(0).Lo != child || !s.IsLiveReference(child) || len(s.temporary) != 1 {
+	if !ok || o.get(0).Lo != child || !s.IsLiveReference(child) || len(s.temporary) != 1 || o.extraIndex != 0 {
 		t.Fatal("constructor could not recover after collector panic")
+	}
+}
+
+func TestDefaultGCAllocationPreservesOuterRootsAndCollectorFailure(t *testing.T) {
+	for _, offheap := range []bool{false, true} {
+		s, typ := compactStore(t, offheap)
+		old := compactObject(t, s, typ)
+		s.temporary = []ReferenceValue{{Type: wasm.AnyRef, Value: value.Value{Lo: old}}}
+		in := &Instance{Types: []uint32{typ}}
+		ins := &module.Instr{Op: 0xfb0001}
+		s.CollectEveryAllocation = true
+		s.HeapSafepoint = func() {
+			s.CollectReferences(s.temporary, nil, nil)
+			panic("default collector interrupted")
+		}
+		before := s.Usage()
+		func() {
+			defer func() {
+				if recover() != "default collector interrupted" {
+					t.Fatal("default constructor changed collector panic")
+				}
+			}()
+			s.GC(context.Background(), in, ins, nil)
+		}()
+		if s.Usage() != before || len(s.temporary) != 1 || s.temporary[0].Value.Lo != old || !s.IsLiveReference(old) {
+			t.Fatal("default constructor changed outer roots or published a failed object")
+		}
+		s.CollectEveryAllocation = false
+		s.HeapSafepoint = func() {}
+		s.limits.MaxHeapObjects = 1
+		if _, err := s.GC(context.Background(), in, ins, nil); !errors.Is(err, wasm.ErrLimit) || s.Usage() != before || len(s.temporary) != 1 {
+			t.Fatal("default constructor lost quota or outer roots", err)
+		}
+		s.limits.MaxHeapObjects = 2
+		v, err := s.GC(context.Background(), in, ins, nil)
+		if err != nil || !s.IsLiveReference(v.Lo) || !s.IsLiveReference(old) || len(s.temporary) != 1 {
+			t.Fatal("default constructor did not recover after collector failure", err)
+		}
 	}
 }
