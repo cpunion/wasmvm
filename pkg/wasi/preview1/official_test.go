@@ -31,6 +31,11 @@ type programConfig struct {
 
 func runProgram(t *testing.T, engine *vm.Engine, options vm.CallOptions, path string, metadata programConfig) {
 	t.Helper()
+	runCompiledProgram(t, engine, nil, options, path, metadata)
+}
+
+func runCompiledProgram(t *testing.T, engine *vm.Engine, compiled *vm.CompiledModule, options vm.CallOptions, path string, metadata programConfig) {
+	t.Helper()
 	config := DefaultConfig()
 	config.Args = append([]string{filepath.Base(path)}, metadata.Args...)
 	keys := []string{}
@@ -73,21 +78,24 @@ func runProgram(t *testing.T, engine *vm.Engine, options vm.CallOptions, path st
 	if err := p.Install(store, linker); err != nil {
 		t.Fatal(err)
 	}
-	bytes, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
+	module := compiled
+	if module == nil {
+		bytes, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		compileTimeout := metadata.CompileTimeout
+		if compileTimeout == 0 {
+			compileTimeout = 20 * time.Second
+		}
+		compileCtx, stopCompile := context.WithTimeout(p.Context(), compileTimeout)
+		module, err = engine.Compile(compileCtx, bytes)
+		stopCompile()
+		if err != nil {
+			t.Fatalf("compile: %v", err)
+		}
+		defer module.Close()
 	}
-	compileTimeout := metadata.CompileTimeout
-	if compileTimeout == 0 {
-		compileTimeout = 20 * time.Second
-	}
-	compileCtx, stopCompile := context.WithTimeout(p.Context(), compileTimeout)
-	module, err := engine.Compile(compileCtx, bytes)
-	stopCompile()
-	if err != nil {
-		t.Fatalf("compile: %v", err)
-	}
-	defer module.Close()
 	ctx, cancel := context.WithTimeout(p.Context(), 20*time.Second)
 	defer cancel()
 	instance, err := linker.Instantiate(ctx, module, options)
@@ -212,20 +220,52 @@ func TestOfficialGoGuest(t *testing.T) {
 		t.Fatal("Go guest hash changed")
 	}
 	expected := "go-p1-ok 42400\n"
+	parent := t
+	var nativeEngine *vm.Engine
+	var nativeModule *vm.CompiledModule
 	for _, tier := range []int{0, 1, 2} {
 		passed := t.Run(fmt.Sprint(tier), func(t *testing.T) {
-			cfg := vm.DefaultEngineConfig()
-			cfg.Profile = "core3"
-			cfg.Native.MaxCodeBytes = 256 << 20
-			if tier != 0 {
-				cfg.Backend = "native"
+			engine := nativeEngine
+			if tier == 0 || engine == nil {
+				cfg := vm.DefaultEngineConfig()
+				cfg.Profile = "core3"
+				cfg.Native.MaxCodeBytes = 256 << 20
+				if tier != 0 {
+					cfg.Backend = "native"
+				}
+				engine, err = vm.NewEngineWithConfig(cfg)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if tier == 0 {
+					t.Cleanup(engine.Close)
+				} else {
+					parent.Cleanup(engine.Close)
+				}
+				if tier != 0 {
+					nativeEngine = engine
+				}
 			}
-			engine, err := vm.NewEngineWithConfig(cfg)
-			if err != nil {
-				t.Fatal(err)
+			module := nativeModule
+			if tier == 0 || module == nil {
+				compileCtx, stopCompile := context.WithTimeout(context.Background(), 90*time.Second)
+				module, err = engine.Compile(compileCtx, input)
+				stopCompile()
+				if err != nil {
+					t.Fatalf("compile: %v", err)
+				}
+				if tier == 0 {
+					t.Cleanup(module.Close)
+				} else {
+					parent.Cleanup(module.Close)
+				}
+				if tier != 0 {
+					// One native artifact already contains both policy tiers.
+					// Each call still gets independent process/store/instance state.
+					nativeModule = module
+				}
 			}
-			defer engine.Close()
-			runProgram(t, engine, vm.CallOptions{Metered: tier == 2, Fuel: 1 << 42}, path, programConfig{CompileTimeout: 90 * time.Second, Root: "empty", GuestRoot: "/sandbox", Stdin: "input", Args: []string{"argument"}, Env: map[string]string{"VM_TEST": "guest"}, Stdout: &expected})
+			runCompiledProgram(t, engine, module, vm.CallOptions{Metered: tier == 2, Fuel: 1 << 42}, path, programConfig{Root: "empty", GuestRoot: "/sandbox", Stdin: "input", Args: []string{"argument"}, Env: map[string]string{"VM_TEST": "guest"}, Stdout: &expected})
 		})
 		completed := 0
 		if passed {
