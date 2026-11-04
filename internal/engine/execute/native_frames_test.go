@@ -24,49 +24,53 @@ type batchFrameBackend struct {
 
 func (b *batchFrameBackend) RunFrames(out *state.NativeFrames) error {
 	b.limits = Limits{out.MaxFrames, out.MaxSlots}
-	charge := func(fn *state.Function, pc uint32) error {
+	charge := func(packet *state.NativeFrames, fn *state.Function, pc uint32) error {
 		if !b.metered {
 			return nil
 		}
 		src := fn.Code.Sources[fn.Code.Code[pc].Source]
 		cost := src.Fuel()
-		if out.Fuel < cost {
+		if packet.Fuel < cost {
 			return &wasm.Error{Kind: wasm.ErrLimit, Offset: src.Wasm.Offset, Detail: "execution fuel"}
 		}
-		out.Fuel -= cost
+		packet.Fuel -= cost
 		return nil
 	}
-	fn, pc := out.Function, out.PC
-	if err := charge(fn, pc); err != nil {
-		return err
+	current := *out
+	var frames []state.NativeFrame
+	for {
+		err := b.advance(&current, charge)
+		out.Values, out.PC, out.Fuel = current.Values, current.PC, current.Fuel
+		if err != nil {
+			return err
+		}
+		fn, pc := current.Function, current.PC
+		in := fn.Code.Code[pc]
+		var callee *state.Function
+		if in.Op == 0x10 {
+			index := fn.Code.Sources[in.Source].Wasm.A
+			callee, _ = b.store.Function(fn.Instance.Functions[index])
+		}
+		if callee == nil || callee.Code == nil {
+			if len(frames) != 0 {
+				out.Frames = append(frames, state.NativeFrame{Function: fn, Base: current.Base, PC: pc})
+			}
+			return nil
+		}
+		args := make([]value.Value, in.Count)
+		for i, slot := range fn.Code.Args[in.Extra : in.Extra+in.Count] {
+			args[i] = current.Values[current.Base+int(slot)]
+		}
+		frames = append(frames, state.NativeFrame{Function: fn, Base: current.Base, PC: pc + 1, CallPC: pc})
+		base := current.Base + len(fn.Code.Slots)
+		current.Values, err = b.Resize(base+len(callee.Code.Slots), base+len(callee.Code.Slots))
+		if err != nil {
+			return err
+		}
+		copy(current.Values[base:], args)
+		current.Function, current.Base, current.PC = callee, base, 0
+		b.batches++
 	}
-	in := fn.Code.Code[pc]
-	if in.Op != 0x10 {
-		return nil
-	}
-	index := fn.Code.Sources[in.Source].Wasm.A
-	callee, ok := b.store.Function(fn.Instance.Functions[index])
-	if !ok || callee.Code == nil {
-		return nil
-	}
-	args := make([]value.Value, in.Count)
-	for i, slot := range fn.Code.Args[in.Extra : in.Extra+in.Count] {
-		args[i] = out.Values[out.Base+int(slot)]
-	}
-	base := out.Base + len(fn.Code.Slots)
-	var err error
-	out.Values, err = b.Resize(base+len(callee.Code.Slots), base+len(callee.Code.Slots))
-	if err != nil {
-		return err
-	}
-	copy(out.Values[base:], args)
-	out.Frames = []state.NativeFrame{
-		{Function: fn, Base: out.Base, PC: pc + 1, CallPC: pc},
-		{Function: callee, Base: base},
-	}
-	out.PC = 0
-	b.batches++
-	return charge(callee, 0)
 }
 
 type failingBatchBackend struct {

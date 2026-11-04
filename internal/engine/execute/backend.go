@@ -52,10 +52,11 @@ func (e *Execution) Rebind(ctx context.Context, limits Limits, metered bool, fue
 }
 
 // Backend executes compiled code through the shared explicit-frame packet.
-// Its returned instruction has already consumed fuel; the common machine owns
+// Its returned runtime boundary has already consumed fuel; the common machine owns
 // runtime effects and validates the complete frame/arena transfer. Interrupt
 // requests bounded cancellation; frame registration owns delivery lifetime.
-// An absent backend selects slot dispatch. Resize owns pointer-free storage.
+// Ordinary scalar work must execute in the backend, not return for portable
+// fallback. An absent backend selects slot dispatch. Resize owns pointer-free storage.
 type Backend interface {
 	Resize(length, capacity int) ([]value.Value, error)
 	RunFrames(*state.NativeFrames) error

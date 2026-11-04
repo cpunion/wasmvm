@@ -11,7 +11,6 @@ import (
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/numeric"
-	"github.com/cpunion/wasmvm/internal/engine/simd"
 	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -237,7 +236,7 @@ func (e *Execution) Run() Status {
 	}
 	backend := e.config.Backend
 	if backend == nil {
-		return e.runSlots(false)
+		return e.runSlots()
 	}
 	for {
 		f := &e.frames[len(e.frames)-1]
@@ -249,18 +248,22 @@ func (e *Execution) Run() Status {
 		// Transfer validation can replace frames or relocate their values.
 		// Publish the checked boundary before selecting the shared slot view.
 		e.frames[len(e.frames)-1].pc = pc
-		if status := e.runSlots(true); status != Running {
+		e.steps++
+		if e.steps&63 == 0 {
+			if err := e.poll(); err != nil {
+				return e.fail(err)
+			}
+		}
+		if status := e.runRuntime(); status != Running {
 			return status
 		}
 	}
 }
 
-// runSlots is the single instruction-semantic dispatcher. Portable execution
-// stays in its frame-local loop. A native driver services exactly one checked,
-// already-charged boundary here before returning to compiled code; neither the
-// backend interface nor its mutable frame transfer is live in this hot loop.
-func (e *Execution) runSlots(boundary bool) Status {
-	metered := e.config.Metered && !boundary
+// runSlots keeps portable scalar/local/control execution in a frame-local loop.
+// Runtime effects share their handlers with validated native exits.
+func (e *Execution) runSlots() Status {
+	metered := e.config.Metered
 	for len(e.frames) > 0 {
 		fi := len(e.frames) - 1
 		f := &e.frames[fi]
@@ -290,7 +293,7 @@ func (e *Execution) runSlots(boundary bool) Status {
 					return e.fail(err)
 				}
 			}
-			for in.Count != 0 && (in.Op == 0x20 || in.Op == 0x41) && !boundary && !metered && e.steps&63 != 63 {
+			for in.Count != 0 && (in.Op == 0x20 || in.Op == 0x41) && !metered && e.steps&63 != 63 {
 				// Coalesced local reads already occupy their result slot.
 				// Commit constants before advancing, retaining every source
 				// step and stopping before the next polling boundary.
@@ -309,72 +312,18 @@ func (e *Execution) runSlots(boundary bool) Status {
 			if in.Op >= 0xe0 && in.Op < slots.ControlBase {
 				switch in.Op >> 16 {
 				case 0xfd:
-					var a, b, c value.Value
-					if in.A != slots.NoSlot {
-						a = values[int(in.A)]
-					}
-					if in.B != slots.NoSlot {
-						b = values[int(in.B)]
-					}
-					op := in.Op
-					if in.C != slots.NoSlot {
-						c = values[int(in.C)]
-					}
-					im := &code.Sources[in.Source].Wasm
-					sub := op & 0xffff
-					switch {
-					case sub <= 10 || sub >= 84 && sub <= 87 || sub == 92 || sub == 93:
-						result, trap = instance.Memories[im.Memory].Load(op, a.Lo, im.MemoryOffset(), im.Lane, b)
-					case sub == 11 || sub >= 88 && sub <= 91:
-						trap = instance.Memories[im.Memory].Store(op, a.Lo, im.MemoryOffset(), im.Lane, b)
-					default:
-						result = simd.Eval(im, a, b, c)
-					}
-					goto commit
-				case 0xfb:
-					var a, b, c value.Value
-					if in.A != slots.NoSlot {
-						a = values[int(in.A)]
-					}
-					if in.B != slots.NoSlot {
-						b = values[int(in.B)]
-					}
-					im := &code.Sources[in.Source].Wasm
-					var err error
-					if n := state.GCAccessArity(in.Op); n != 0 {
-						// Slot lowering already supplies the first two operands.
-						if n > 2 {
-							c = values[int(code.Args[in.Extra+2])]
-						}
-						result, err = e.store.GCAccess(instance, im, a, b, c)
-					} else {
-						if int(in.Count) > cap(e.gcArgs) {
-							e.gcArgs = make([]value.Value, in.Count)
-						}
-						e.gcArgs = e.gcArgs[:in.Count]
-						operands := e.gcArgs
-						for i, slot := range code.Args[in.Extra : in.Extra+in.Count] {
-							operands[i] = values[int(slot)]
-						}
-						if e.store.HeapSafepoint != nil {
-							result, err = e.store.GC(e.context, instance, im, operands)
-						} else {
-							result, err = e.store.GC(e.context, instance, im, operands, e.RetainedValues)
-						}
-						e.clearGCArgs()
-					}
-					if err != nil {
-						var t *wasm.Trap
-						if errors.As(err, &t) {
-							t.Function = fn.Index
-						}
-						return e.fail(err)
-					}
-					if in.Dst != slots.NoSlot {
-						values[int(in.Dst)] = result
+					f.pc = pc
+					if status := e.runSIMD(); status != Running {
+						return status
 					}
 					pc++
+					goto next
+				case 0xfb:
 					f.pc = pc
+					if status := e.runGC(); status != Running {
+						return status
+					}
+					pc++
 					goto next
 				case 0xfc:
 					if module.IsWideArithmetic(in.Op) {
@@ -410,17 +359,9 @@ func (e *Execution) runSlots(boundary bool) Status {
 					}
 				default:
 					if in.Op <= 0xe6 {
-						im := &code.Sources[in.Source].Wasm
 						f.pc = pc
-						if err := e.stackInstruction(*in, im); err != nil {
-							var t *wasm.Trap
-							if errors.As(err, &t) {
-								t.Function, t.Offset = fn.Index, im.Offset
-							}
-							return e.fail(err)
-						}
-						if e.status != Running {
-							return e.status
+						if status := e.runRuntime(); status != Running {
+							return status
 						}
 						goto transferred
 					}
@@ -570,57 +511,20 @@ func (e *Execution) runSlots(boundary bool) Status {
 				goto write
 			}
 			switch op := in.Op; op {
-			case slots.ControlBase + uint32(ir.IfCast), slots.ControlBase + uint32(ir.IfNull), slots.ControlBase + uint32(ir.Jump), slots.ControlBase + uint32(ir.If), slots.ControlBase + uint32(ir.Table), slots.ControlBase + uint32(ir.Return), slots.ControlBase + uint32(ir.Trap):
+			case slots.ControlBase + uint32(ir.IfCast), slots.ControlBase + uint32(ir.Return):
+				f.pc = pc
+				if status := e.runRuntime(); status != Running {
+					return status
+				}
+				goto transferred
+			case slots.ControlBase + uint32(ir.IfNull), slots.ControlBase + uint32(ir.Jump), slots.ControlBase + uint32(ir.If), slots.ControlBase + uint32(ir.Table), slots.ControlBase + uint32(ir.Trap):
 				kind := ir.TermKind(op - slots.ControlBase)
 				if kind == ir.Trap {
 					trap = wasm.TrapUnreachable
 					break
 				}
-				if kind == ir.Return {
-					e.trimPrompts(fi)
-					outputs := code.Args[in.Extra : in.Extra+in.Count]
-					if fi == 0 {
-						if len(outputs) > cap(e.result) {
-							e.result = make([]value.Value, len(outputs))
-						} else {
-							e.result = e.result[:len(outputs)]
-						}
-						for i, src := range outputs {
-							e.result[i] = values[int(src)]
-						}
-						clear(e.frames)
-						e.frames = e.frames[:0]
-						e.values = e.values[:0]
-						e.status = Done
-						return Done
-					}
-					parentBase := e.frames[fi-1].base
-					for i, src := range outputs {
-						e.values[parentBase+int(f.dest[i])] = values[int(src)]
-					}
-					e.frames[fi] = frame{}
-					e.frames = e.frames[:fi]
-					e.values = e.values[:base]
-					goto transferred
-				}
 				index := uint32(0)
-				if kind == ir.IfCast {
-					im := &code.Sources[in.Source].Wasm
-					target := module.ResolveType(im.Types[1], instance.Types)
-					matched := false
-					if im.Op == 0xfb0025 || im.Op == 0xfb0026 {
-						var err error
-						matched, err = e.store.DescriptorEqual(a.Lo, b.Lo, target)
-						if err != nil {
-							return e.fail(&wasm.Trap{Code: wasm.TrapNullReference, Offset: im.Offset, Function: fn.Index})
-						}
-					} else {
-						matched = e.store.TestReference(a.Lo, target)
-					}
-					if !matched {
-						index = 1
-					}
-				} else if kind == ir.IfNull && a.Lo != 0 {
+				if kind == ir.IfNull && a.Lo != 0 {
 					index = 1
 				} else if kind == ir.If && uint32(a.Lo) == 0 {
 					index = 1
@@ -644,36 +548,10 @@ func (e *Execution) runSlots(boundary bool) Status {
 
 			case 8, 10:
 				f.pc = pc
-				var ex *state.Exception
-				if op == 8 {
-					im := &code.Sources[in.Source].Wasm
-					var local [8]value.Value
-					operands := local[:0]
-					if int(in.Count) > cap(operands) {
-						operands = make([]value.Value, in.Count)
-					} else {
-						operands = operands[:in.Count]
-					}
-					for i, s := range code.Args[in.Extra : in.Extra+in.Count] {
-						operands[i] = values[int(s)]
-					}
-					var err error
-					ex, err = e.store.NewException(instance.Tags[im.A], operands, e.RetainedValues)
-					if err != nil {
-						return e.fail(err)
-					}
-				} else {
-					ref := values[int(code.Args[in.Extra])].Lo
-					if ref == 0 {
-						trap = wasm.TrapNullReference
-						break
-					}
-					ex = &state.Exception{Owner: e.store, Ref: ref}
+				if status := e.runRuntime(); status != Running {
+					return status
 				}
-				if e.raise(ex) {
-					goto transferred
-				}
-				return Failed
+				goto transferred
 			case 1, 0x1a:
 			case 0x1b, 0x1c:
 				if in.C != slots.NoSlot {
@@ -751,133 +629,19 @@ func (e *Execution) runSlots(boundary bool) Status {
 			case 0xd2:
 				result.Lo = instance.Functions[in.Extra]
 			case 0x10, 0x11, 0x12, 0x13, 0x14, 0x15:
-				im := &code.Sources[in.Source].Wasm
-				tail := module.IsTailCall(op)
-				count := in.Count
-				inputs := code.Args[in.Extra : in.Extra+count]
-				var target uint64
-				if op == 0x10 || op == 0x12 {
-					target = instance.Functions[im.A]
-				} else if op == 0x14 || op == 0x15 {
-					count--
-					target = values[int(inputs[count])].Lo
-					if target == 0 {
-						trap = wasm.TrapNullReference
-						break
-					}
-				} else {
-					count--
-					table := instance.Tables[im.B]
-					index := table.Type.Limits.Address(values[int(inputs[count])].Lo)
-					if index >= uint64(len(table.Values)) {
-						trap = wasm.TrapTableBounds
-						break
-					}
-					target = table.Values[index]
-					if target == 0 {
-						trap = wasm.TrapUninitializedElement
-						break
-					}
-				}
-				callee, ok := e.store.Function(target)
-				if !ok {
-					return e.fail(state.ErrReference)
-				}
-				if (op == 0x11 || op == 0x13 || op == 0x14 || op == 0x15) && !e.store.FunctionSubtype(callee.TypeID, instance.Types[im.A]) {
-					trap = wasm.TrapIndirectCallType
-					break
-				}
-				var dest []slots.Slot
-				if tail {
-					dest = f.dest
-				} else {
-					dest = code.Args[in.Extra+in.Count : in.Extra+in.Count+uint32(len(callee.Signature.Results))]
-				}
-				if err := e.poll(); err != nil {
-					return e.fail(err)
-				}
-				if tail {
-					// Preserve the tuple before retiring/reusing the current frame.
-					// This supports overlapping/permuted arguments and a different
-					// callee signature without charging an additional guest frame.
-					if callee.Code != nil && uint64(base)+uint64(len(callee.Code.Slots)) > uint64(e.config.Limits.MaxSlots) {
-						return e.fail(&wasm.Error{Kind: wasm.ErrLimit, Detail: "guest frame slots"})
-					}
-					if int(count) > cap(e.tailArgs) {
-						e.tailArgs = make([]value.Value, count)
-					} else {
-						e.tailArgs = e.tailArgs[:count]
-					}
-					for i, src := range inputs[:count] {
-						e.tailArgs[i] = values[int(src)]
-					}
-					e.values = e.values[:base]
-					e.frames[fi] = frame{}
-					e.frames = e.frames[:fi]
-					if callee.Code == nil {
-						e.pending = &HostCall{Function: callee, Caller: instance, Args: append([]value.Value(nil), e.tailArgs...)}
-						e.pendingDest, e.status = dest, HostRequest
-						clear(e.tailArgs)
-						e.tailArgs = e.tailArgs[:0]
-						return HostRequest
-					}
-					if err := e.push(callee, dest); err != nil {
-						return e.fail(err)
-					}
-					copy(e.values[base:], e.tailArgs)
-					clear(e.tailArgs)
-					e.tailArgs = e.tailArgs[:0]
-					goto transferred
-				}
-				// Publish the caller continuation before a host suspension or
-				// frame push. Straight-line execution keeps its PC local.
-				f.pc = pc + 1
-				f.callPC, f.suspended = pc, true
-				if callee.Code == nil {
-					args := make([]value.Value, count)
-					for i := range args {
-						args[i] = e.values[base+int(inputs[i])]
-					}
-					e.pending = &HostCall{Function: callee, Caller: instance, Args: args}
-					e.pendingDest = dest
-					e.status = HostRequest
-					return HostRequest
-				}
-				if err := e.push(callee, dest); err != nil {
-					return e.fail(err)
-				}
-				calleeBase := e.frames[len(e.frames)-1].base
-				for i := uint32(0); i < count; i++ {
-					e.values[calleeBase+int(i)] = e.values[base+int(inputs[i])]
+				f.pc = pc
+				if status := e.runRuntime(); status != Running {
+					return status
 				}
 				goto transferred
 			default:
-				if in.C != slots.NoSlot {
-					c = values[int(in.C)]
+				f.pc = pc
+				if status := e.runRuntime(); status != Running {
+					return status
 				}
-				switch {
+				pc++
+				goto next
 
-				case op>>16 == 0xfe:
-					if op&0xffff == 3 {
-						e.store.Domain.Fence()
-						break
-					}
-					im := &code.Sources[in.Source].Wasm
-					var err error
-					result, trap, err = instance.Memories[im.Memory].Atomic(e.context, e.store.Domain, op&0xffff, a.Lo, im.MemoryOffset(), b.Lo, c.Lo)
-					if err != nil {
-						return e.fail(err)
-					}
-				case op >= 0xfc0008 && op <= 0xfc0011:
-					im := &code.Sources[in.Source].Wasm
-					var err error
-					result, trap, err = e.bulk(instance, *im, a, b, c)
-					if err != nil {
-						return e.fail(err)
-					}
-				default:
-					panic("interp: unknown validated opcode")
-				}
 			}
 		commit:
 			if trap != wasm.NoTrap {
@@ -889,17 +653,8 @@ func (e *Execution) runSlots(boundary bool) Status {
 			}
 			pc++
 		next:
-			if boundary {
-				f.pc = pc
-				return Running
-			}
 		}
 	transferred:
-		// Frame-changing instructions already published their complete
-		// continuation. The native driver must select that frame afresh.
-		if boundary {
-			return Running
-		}
 	}
 	panic("interp: running without frames")
 }
