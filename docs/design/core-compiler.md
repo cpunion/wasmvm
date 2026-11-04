@@ -232,6 +232,15 @@ repeated LLGo method-table allocations without adding execution-state fields,
 but overall performance and final-head integration gates remain open. See the
 [source, semantic and performance evidence](../research/performance-native-backend-contract-2026-11-05.md).
 
+The subsequent [shared-slot dispatcher experiment](../research/performance-slot-dispatch-driver-2026-11-05.md)
+moves native transfer into the outer driver. Both backends retain one instruction
+handler; a native exit services exactly one already-charged boundary and publishes
+its continuation before reentry. Portable execution keeps its frame-local loop.
+This improves measured interpreter workloads but remains held for native/portable
+regressions and final acceptance. Native effect boundaries still enter the large
+slot-dispatch stack frame; a separate runtime-effect handler shared by both
+drivers remains required work, alongside global allocation and the other gates.
+
 ## Direct globals
 
 Both emitters lower validated numeric and reference global.get/set in precise and unmetered
