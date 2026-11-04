@@ -10,6 +10,8 @@ Go 1.27.3 and LLGo `3571c2523e010e6842c4dd8a5213554fdc72d2a3`, LLVM 22.1.8, LLGo
 
 Seven complete affected packages pass under both compilers, with **96 actual Core/proposal reports**. The compiled application probe additionally passes **64 checksum calls and 48 expected unreachable traps**, including successful reuse after traps and completed store close. Race, cgocheck2 and no-cgo checks pass; no-cgo verifies explicit native unavailability. These checks do not replace final Linux amd64/macOS arm64 × Go/LLGo 31-package qualification and its 30 coverage gates.
 
+Qualification correction: the original `additional.py` pointed at the preceding admission checkout, so its records do not prove departure validation. Those records and the [original evidence bundle](evidence/performance-native-memory-departure-2026-11-04.json.xz) remain preserved. The correct-source rerun in `corrections/additional.json` passes race, cgocheck2 and no-cgo with an explicit checkout, compiler hash and verified measured-engine digest. The revised evidence bundle corrects this provenance; semantic reports and raw timings are unchanged.
+
 Exact scoped Go statement coverage:
 
 | Package | Coverage |
@@ -102,4 +104,4 @@ Keep this compact combined change for final target CI and review. Production mai
 
 Next architectural work should reduce ordinary guest Call/Return transitions through the host while retaining explicit bounded frames, precise root maps, quotas, cancellation, metering and complete runtime semantics. The two compiled inputs have 5001 logical calls; the earlier diagnostic found the same guest machine bodies under both host compilers. These observations motivate investigation, not a claimed independent call-cost measurement or predicted speedup. Do not replace the shared frame machine or move guest recursion onto the hardware stack.
 
-[Lossless evidence](evidence/performance-native-memory-departure-2026-11-04.json.xz) contains the complete engine patch, exact source/toolchain/SDK identities, all scoped semantic/coverage/pointer checks, disassembly, both complete new cohorts, source/fixture identities, independent verifiers and compiled application inputs. Executables, SDK binaries and archived engine build trees are excluded. Full production CI, controlled compiler/platform performance and expanded application/WASI-world acceptance remain unfinished.
+[Corrected lossless evidence](evidence/performance-native-memory-departure-2026-11-04-v2.json.xz) contains the complete engine patch, exact source/toolchain/SDK identities, all scoped semantic/coverage/pointer checks, disassembly, both complete new cohorts, source/fixture identities, independent verifiers and compiled application inputs. Executables, SDK binaries and archived engine build trees are excluded. Full production CI, controlled compiler/platform performance and expanded application/WASI-world acceptance remain unfinished.
