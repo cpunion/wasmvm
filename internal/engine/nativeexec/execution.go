@@ -151,11 +151,31 @@ func (e *Execution) Close() {
 }
 
 func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uint64) (uint32, uint64, error) {
+	return e.runFrames(fn, base, depth, pc, fuel, e.maximum/16, e.maxFrames)
+}
+
+// RunFrames uses the invocation's current budgets, which may be smaller than
+// the workspace's original capacity after a suspended parent shares its quota.
+// Frame transfer is handled by the common machine before runtime effects.
+func (e *Execution) RunFrames(frames *state.NativeFrames) error {
+	var err error
+	frames.PC, frames.Fuel, err = e.runFrames(frames.Function, frames.Base, frames.Depth, frames.PC, frames.Fuel,
+		min(e.maximum/16, uint64(frames.MaxSlots)), min(e.maxFrames, uint64(frames.MaxFrames)))
+	return err
+}
+
+func (e *Execution) runFrames(fn *state.Function, base, depth int, pc uint32, fuel, maxSlots, maxFrames uint64) (uint32, uint64, error) {
 	if e.native == nil {
 		return 0, fuel, native.ErrClosed
 	}
 	if e.ctx == nil {
 		return 0, fuel, wasm.ErrInvalid
+	}
+	if fn == nil || fn.Code == nil || fn.Instance == nil || base < 0 || depth < 1 {
+		return 0, fuel, wasm.ErrInvalid
+	}
+	if uint64(depth) > maxFrames || uint64(base)+uint64(len(fn.Code.Slots)) > maxSlots {
+		return 0, fuel, wasm.ErrLimit
 	}
 	module := e.modules[fn.Instance.Compiled]
 	if module == nil {
@@ -188,24 +208,24 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 	}
 	e.allocationView = 0
 	if !e.metered && entries.allocationBatch != 0 {
-		return e.runAllocations(module, entries, fn, base, depth, pc, fuel)
+		return e.runAllocations(module, entries, fn, base, depth, pc, fuel, maxSlots, maxFrames)
 	}
-	return e.run(module, entries, fn, base, depth, pc, fuel)
+	return e.run(module, entries, fn, base, depth, pc, fuel, maxSlots, maxFrames)
 }
 
 // Only allocating entries need an unwind frame. It still covers every error
 // and panic after reservation, including binding and pre-entry cancellation.
-func (e *Execution) runAllocations(module *Lease, entries functionEntries, fn *state.Function, base, depth int, pc uint32, fuel uint64) (uint32, uint64, error) {
+func (e *Execution) runAllocations(module *Lease, entries functionEntries, fn *state.Function, base, depth int, pc uint32, fuel, maxSlots, maxFrames uint64) (uint32, uint64, error) {
 	var err error
 	e.allocationView, err = fn.Instance.Owner.PrepareNativeAllocations(entries.allocationBatch)
 	if err != nil {
 		return 0, fuel, err
 	}
 	defer fn.Instance.Owner.FinishNativeAllocations(fn.Instance.Types)
-	return e.run(module, entries, fn, base, depth, pc, fuel)
+	return e.run(module, entries, fn, base, depth, pc, fuel, maxSlots, maxFrames)
 }
 
-func (e *Execution) run(module *Lease, entries functionEntries, fn *state.Function, base, depth int, pc uint32, fuel uint64) (uint32, uint64, error) {
+func (e *Execution) run(module *Lease, entries functionEntries, fn *state.Function, base, depth int, pc uint32, fuel, maxSlots, maxFrames uint64) (uint32, uint64, error) {
 	entry := entries.ordinary
 	needsData := entries.directRuntimeData
 	e.entryState = native.State{Used: uint64(base) * 16, Depth: uint64(depth), Function: uint64(fn.Index), Continuation: uint64(pc), Fuel: fuel, Budget: 64}
@@ -213,8 +233,8 @@ func (e *Execution) run(module *Lease, entries functionEntries, fn *state.Functi
 	if e.metered {
 		entry = entries.metered
 		s.Payload[3] = 1
-	} else if entries.hasExpansion && uint64(depth) < e.maxFrames &&
-		uint64(base)+uint64(len(fn.Code.Slots))+uint64(entries.inlineSlots) <= e.maximum/16 {
+	} else if entries.hasExpansion && uint64(depth) < maxFrames &&
+		uint64(base)+uint64(len(fn.Code.Slots))+uint64(entries.inlineSlots) <= maxSlots {
 		entry = entries.expanded
 		needsData = needsData || entries.usesRuntimeData
 	}
