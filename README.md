@@ -17,20 +17,19 @@ execution never silently switches to one of them.
 
 Current optimization evidence: [competitor, Go/LLGo and ordinary-native gaps](docs/research/performance-gaps-2026-11-02.md), with per-case outcomes and upstream compiler reports. Performance acceptance remains open.
 
+The [native boundary study](docs/research/performance-native-boundary-2026-11-04.md)
+moves cleanup frames to ownership-changing paths. Local M4 batch-inclusive LLGo
+native public empty calls improve 839→717 ns (−14.6%), and internal dispatch
+220→145 ns (−33.9%). Public calls remain 2.45x Go and 12.08x Wasmtime;
+cancellation policies, longer kernels and adverse outcomes remain explicit.
+
 The [shared-header study](docs/research/performance-shared-headers-2026-11-04.md)
 unifies object metadata and native views in one 32-byte header. Local M4 long-chain
 allocation changes LLGo 38.71→31.18 ns/object (−19.5%), still
 3.46x Wasmtime. Native empty/sparse allocation improves about 23%; remaining
 interpreter regressions and all original-count comparisons remain explicit.
-Earlier [payload relocation](docs/research/performance-native-payload-runs-2026-11-04.md)
-and [compact metadata](docs/research/performance-gc-compact-2026-11-04.md) results
-retain their independent cohorts and reference-clock baseline event.
-
-Earlier [GC sweep](docs/research/performance-native-gc-sweep-2026-11-04.md) and
-[interpreter](docs/research/pr115-interpreter-diagnosis-2026-11-04.md) studies
-retain their original results and held variants. The
-[LLGo migration](docs/research/performance-llgo-result-upgrade-2026-11-03.md)
-remains a separate compiler-baseline event.
+Earlier studies retain their independent cohorts, held variants and the
+[LLGo compiler baseline event](docs/research/performance-llgo-result-upgrade-2026-11-03.md).
 
 ## Project status
 
