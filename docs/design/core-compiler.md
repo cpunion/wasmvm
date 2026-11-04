@@ -134,7 +134,7 @@ in the [validation record](../validation.md).
 
 ## Native compilation
 
-The complete native pipeline is: typed IR verification, optimization, legalization to target operations, instruction selection, register allocation, spill insertion, frame layout, branch resolution/relocations, code emission, and publication with trap/safepoint/source maps. Implement amd64 and arm64 emitters in Go. The baseline uses linear-scan allocation with separate integer/vector classes, fixed-register constraints, call clobbers, live-range splitting, parallel-move resolution, and verified spill reloads. Target tests check actual execution as well as encoding/disassembly.
+The complete native pipeline is: typed IR verification, optimization, legalization to target operations, instruction selection, register allocation, spill insertion, frame layout, branch resolution/relocations, code emission, and publication with trap/safepoint/source maps. Implement amd64 and arm64 emitters in Go. The target allocator requires linear scan with separate integer/vector classes, fixed-register constraints, call clobbers, live-range splitting, parallel-move resolution, and verified spill reloads. Target tests check actual execution as well as encoding/disassembly.
 
 The current development allocator assigns stable homes by bounded CFG loop-use
 priorities; global live-range splitting remains required work. Merged backward
@@ -154,6 +154,17 @@ falling back to scratch loads for spilled or FP bit patterns. It tests only low
 i32 condition bits and preserves source/destination aliases. The precise tier
 selects both input words; unmetered scalar storage follows its existing
 canonical-input contract. V128 retains its complete vector transfer path.
+
+Guarded loop regions can select a different integer/reference location plan
+using the same bounded slot-use priorities. Common homes keep their registers;
+every displaced word reaches the canonical frame before any replacement loads.
+Private backedges retain the local plan, while ordinary loop exits restore the
+enclosing plan. Deferred poll, trap and call exits capture the plan at their
+originating instruction, preserving complete snapshots and original PCs.
+Checked cold/interior entries keep the function plan. FP/vector and immutable
+homes remain function-wide. Entry/exit transfer costs gate region selection;
+this infrastructure does not complete global live-range splitting or linear
+scan. See the [execution and performance evidence](../research/performance-loop-register-plans-2026-11-05.md).
 
 Use the platform's accepted baseline CPU feature set, with explicit detection and recorded features for optional instructions. Specialized artifacts cannot run on a weaker CPU. Floating-point/vector operations require correct Wasm NaNs, signed zero, rounding, conversions and lane behavior. Division and conversion instructions often need explicit prechecks; host instruction traps and language overflow behavior are not automatically Wasm semantics.
 
