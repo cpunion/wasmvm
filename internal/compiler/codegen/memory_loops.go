@@ -24,9 +24,10 @@ type memoryLoop struct {
 	addresses     map[int]memoryAddress
 }
 type loopBackedge struct {
-	header int
-	yes    bool
-	exit   int
+	header    int
+	yes       bool
+	exit      int
+	registers *registerPlan
 }
 
 // One invariant local plus the entry cursor and a constant bias, modulo i32.
@@ -204,6 +205,12 @@ func (e *functionEmitter) emitMemoryLoop(start int, r memoryRegion, pcs []int, o
 	}
 	out.MemoryGuards += uint32(len(loop.spans))
 	out.LoopGuards++
+	previous := e.currentRegisterPlan()
+	plan := e.loopRegisterPlan(start, r)
+	if plan != nil {
+		e.transitionRegisters(plan)
+		out.RegisterRegions++
+	}
 	header := e.a.label()
 	e.a.mark(header)
 	if start%256 == 0 {
@@ -216,7 +223,11 @@ func (e *functionEmitter) emitMemoryLoop(start int, r memoryRegion, pcs []int, o
 	if e.loopBackedges == nil {
 		e.loopBackedges = map[int]loopBackedge{}
 	}
-	e.loopBackedges[r.end+1] = loopBackedge{header: header, yes: loop.yes, exit: loop.exit}
+	edge := loopBackedge{header: header, yes: loop.yes, exit: loop.exit}
+	if plan != nil {
+		edge.registers = previous
+	}
+	e.loopBackedges[r.end+1] = edge
 }
 
 // Equality exits must be reached before the cursor wraps. Nondivisible strides

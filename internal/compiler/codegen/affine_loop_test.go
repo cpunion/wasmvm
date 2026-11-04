@@ -63,7 +63,7 @@ func TestAffineLoopMultipleBasesStridesAliasesWrapAndInteriorPCs(t *testing.T) {
 	}
 }
 
-func compareAffineLoop(t *testing.T, f *slots.Function) {
+func compareAffineLoop(t *testing.T, f *slots.Function, entries ...int) {
 	t.Helper()
 	if !native.Available {
 		return
@@ -74,12 +74,20 @@ func compareAffineLoop(t *testing.T, f *slots.Function) {
 	memory := bindMemory(t, ctx, size, size)
 	refMemory := bindMemory(t, ref, size, size)
 	initial := bytes.Repeat([]byte{0xa5}, size)
-	for pc := range f.Code {
+	if len(entries) == 0 {
+		for pc := range f.Code {
+			entries = append(entries, pc)
+		}
+	}
+	for _, pc := range entries {
 		for _, input := range [][3]uint64{{0, 80, 0}, {5, 5, 3}, {0, 80, 10}, {0, 80, 12}, {size - 10, 0, 0}, {0, size - 4, 0}, {0xfffffffd, 80, 3}, {0xffffffff, 1, 0}, {1 << 32, 80, 1<<63 | 3}} {
 			memory.Write(0, initial)
 			refMemory.Write(0, initial)
 			for s := range f.Slots {
 				v := value.Value{Lo: uint64(s) + 7}
+				if f.Slots[s] == wasm.V128 {
+					v.Hi = 0x123456789abcdef0
+				}
 				if s < 3 {
 					v.Lo = input[s]
 				}

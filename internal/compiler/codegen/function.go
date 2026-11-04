@@ -33,6 +33,7 @@ type CompiledFunction struct {
 	BoundsElided                  uint32
 	MemoryGuards, GuardedAccesses uint32
 	LoopGuards                    uint32
+	RegisterRegions               uint32
 	UnrolledLoops, UnrolledCopies uint32
 	DeadScalarOps                 uint32
 	MemoryGrows                   uint32
@@ -268,6 +269,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				out.ForwardedPredicates++
 			} else {
 				e.branchCondition(in.A, edge.header, edge.yes)
+			}
+			if edge.registers != nil {
+				e.transitionRegisters(edge.registers)
 			}
 			if edge.exit != pc+1 {
 				a.branch(pcs[edge.exit], false, 0)
@@ -509,15 +513,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		a.branch(pcs[fallback.pc+1], false, 0)
 	}
 	e.emitPollExits()
-	for _, call := range e.callExits {
-		a.mark(call.label)
-		e.contextConst(nativeabi.SourceOffset, call.source)
-		e.leave(nativeabi.Call, uint64(call.pc), uint64(call.pc+1))
-	}
-	for _, trap := range e.trapExits {
-		a.mark(trap.label)
-		e.trap(trap.code, trap.source)
-	}
+	e.emitCallExits()
+	e.emitTrapExits()
 	a.mark(e.bad)
 	e.rawStatus(nativeabi.BadState)
 	a.mark(e.zero)

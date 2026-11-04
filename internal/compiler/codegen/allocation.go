@@ -62,11 +62,15 @@ func frequency(weights []uint64, pc int) uint64 {
 
 func slotPriorities(f *slots.Function, regions map[int]memoryRegion, frequencies []uint64) []uint64 {
 	weights := make([]uint64, len(f.Slots))
-	use := func(s slots.Slot, w uint64) {
+	collectSlotPriorities(f, regions, frequencies, 0, len(f.Code), true, func(s slots.Slot, w uint64) {
 		if s != slots.NoSlot {
 			weights[s] += w
 		}
-	}
+	})
+	return weights
+}
+
+func collectSlotPriorities(f *slots.Function, regions map[int]memoryRegion, frequencies []uint64, start, end int, tuples bool, use func(slots.Slot, uint64)) {
 	move := func(dst, src slots.Slot, w uint64) {
 		if dst != slots.NoSlot && dst != src {
 			use(dst, w)
@@ -74,16 +78,22 @@ func slotPriorities(f *slots.Function, regions map[int]memoryRegion, frequencies
 		}
 	}
 	// Account for all tuples/moves once, including diagnostic-only entries.
-	for _, s := range f.Args {
-		use(s, 1)
+	if tuples {
+		for _, s := range f.Args {
+			use(s, 1)
+		}
+		for _, m := range f.Moves {
+			use(m.Src, 1)
+			use(m.Dst, 1)
+		}
 	}
-	for _, m := range f.Moves {
-		use(m.Src, 1)
-		use(m.Dst, 1)
+	work := uint64(end-start) * 8
+	if tuples {
+		work += uint64(len(f.Args)+len(f.Moves)+len(f.Edges)) * 8
 	}
-	work := uint64(len(f.Code)+len(f.Args)+len(f.Moves)+len(f.Edges)) * 8
 	region := memoryRegion{end: -1}
-	for pc, in := range f.Code {
+	for pc := start; pc < end; pc++ {
+		in := f.Code[pc]
 		if next, ok := regions[pc]; ok {
 			region = next
 		} else if pc > region.end {
@@ -146,7 +156,6 @@ func slotPriorities(f *slots.Function, regions map[int]memoryRegion, frequencies
 			}
 		}
 	}
-	return weights
 }
 
 type registerCandidate struct {

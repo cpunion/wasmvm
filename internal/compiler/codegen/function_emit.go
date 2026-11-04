@@ -46,6 +46,7 @@ type functionEmitter struct {
 	vectorAliases                                                map[slots.Slot]slots.Slot
 	aliasedVectorReads                                           uint32
 	registerSlots                                                []slots.Slot
+	registerPlan                                                 *registerPlan
 	pollExits                                                    []pollExit
 	trapExits                                                    []nativeTrapExit
 	callExits                                                    []nativeCallExit
@@ -66,11 +67,13 @@ type memoryFallback struct{ label, pc int }
 type nativeCallExit struct {
 	label, pc int
 	source    uint64
+	registers *registerPlan
 }
 
 type pollExit struct {
-	label int
-	pc    uint32
+	label     int
+	pc        uint32
+	registers *registerPlan
 }
 
 func (e *functionEmitter) integer(in slots.Instruction) {
@@ -431,17 +434,20 @@ func (e *functionEmitter) interrupt(pc uint32) {
 		e.a.bytes(0)
 		e.branch(exit, "ne")
 	}
-	e.pollExits = append(e.pollExits, pollExit{exit, pc})
+	e.pollExits = append(e.pollExits, pollExit{exit, pc, e.currentRegisterPlan()})
 }
 
 func (e *functionEmitter) emitPollExits() {
+	baseline := e.currentRegisterPlan()
 	for _, exit := range e.pollExits {
+		e.useRegisterPlan(exit.registers)
 		e.a.mark(exit.label)
 		if e.a.arch == "arm64" {
 			e.a.word(0xd50339bf) // dmb ishld: acquire after the atomic load.
 		}
 		e.leave(nativeabi.Poll, 0, uint64(exit.pc))
 	}
+	e.useRegisterPlan(baseline)
 }
 
 func (e *functionEmitter) literal(in slots.Instruction) {
@@ -506,13 +512,34 @@ func (e *functionEmitter) literal(in slots.Instruction) {
 // Keep source publication and register spills off successful conversion paths.
 // Each trap site retains its original instruction offset.
 type nativeTrapExit struct {
-	label  int
-	code   wasm.TrapCode
-	source uint64
+	label     int
+	code      wasm.TrapCode
+	source    uint64
+	registers *registerPlan
 }
 
 func (e *functionEmitter) trapExit(code wasm.TrapCode, source uint64) int {
 	label := e.a.label()
-	e.trapExits = append(e.trapExits, nativeTrapExit{label, code, source})
+	e.trapExits = append(e.trapExits, nativeTrapExit{label, code, source, e.currentRegisterPlan()})
 	return label
+}
+
+func (e *functionEmitter) emitCallExits() {
+	baseline := e.currentRegisterPlan()
+	for _, call := range e.callExits {
+		e.useRegisterPlan(call.registers)
+		e.a.mark(call.label)
+		e.contextConst(nativeabi.SourceOffset, call.source)
+		e.leave(nativeabi.Call, uint64(call.pc), uint64(call.pc+1))
+	}
+	e.useRegisterPlan(baseline)
+}
+func (e *functionEmitter) emitTrapExits() {
+	baseline := e.currentRegisterPlan()
+	for _, trap := range e.trapExits {
+		e.useRegisterPlan(trap.registers)
+		e.a.mark(trap.label)
+		e.trap(trap.code, trap.source)
+	}
+	e.useRegisterPlan(baseline)
 }
