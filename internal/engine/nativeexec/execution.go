@@ -186,17 +186,27 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 	if err := e.native.BindMemory(memory); err != nil {
 		return 0, fuel, err
 	}
-	entry := entries.ordinary
 	e.allocationView = 0
 	if !e.metered && entries.allocationBatch != 0 {
-		var err error
-		e.allocationView, err = fn.Instance.Owner.PrepareNativeAllocations(entries.allocationBatch)
-		if err != nil {
-			return 0, fuel, err
-		}
-		// Covers cancellation/binding errors before the adapter was entered.
-		defer fn.Instance.Owner.FinishNativeAllocations(fn.Instance.Types)
+		return e.runAllocations(module, entries, fn, base, depth, pc, fuel)
 	}
+	return e.run(module, entries, fn, base, depth, pc, fuel)
+}
+
+// Only allocating entries need an unwind frame. It still covers every error
+// and panic after reservation, including binding and pre-entry cancellation.
+func (e *Execution) runAllocations(module *Lease, entries functionEntries, fn *state.Function, base, depth int, pc uint32, fuel uint64) (uint32, uint64, error) {
+	var err error
+	e.allocationView, err = fn.Instance.Owner.PrepareNativeAllocations(entries.allocationBatch)
+	if err != nil {
+		return 0, fuel, err
+	}
+	defer fn.Instance.Owner.FinishNativeAllocations(fn.Instance.Types)
+	return e.run(module, entries, fn, base, depth, pc, fuel)
+}
+
+func (e *Execution) run(module *Lease, entries functionEntries, fn *state.Function, base, depth int, pc uint32, fuel uint64) (uint32, uint64, error) {
+	entry := entries.ordinary
 	needsData := entries.directRuntimeData
 	e.entryState = native.State{Used: uint64(base) * 16, Depth: uint64(depth), Function: uint64(fn.Index), Continuation: uint64(pc), Fuel: fuel, Budget: 64}
 	s := &e.entryState

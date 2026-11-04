@@ -563,9 +563,13 @@ frames:
 					e.trimPrompts(fi)
 					outputs := code.Args[in.Extra : in.Extra+in.Count]
 					if fi == 0 {
-						e.result = e.result[:0]
-						for _, src := range outputs {
-							e.result = append(e.result, values[int(src)])
+						if len(outputs) > cap(e.result) {
+							e.result = make([]value.Value, len(outputs))
+						} else {
+							e.result = e.result[:len(outputs)]
+						}
+						for i, src := range outputs {
+							e.result[i] = values[int(src)]
 						}
 						clear(e.frames)
 						e.frames = e.frames[:0]

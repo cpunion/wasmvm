@@ -7,6 +7,7 @@ import (
 
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/state"
+	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
@@ -83,5 +84,45 @@ func TestQuiesceRebindPolicyAndBorrowedResults(t *testing.T) {
 	e.Quiesce()
 	if e.pending != nil || e.Footprint() != (Limits{}) {
 		t.Fatal("pending request survived suspension")
+	}
+}
+
+func TestWorkspaceReturnTuplesAcrossShapes(t *testing.T) {
+	s := state.New(state.DefaultLimits())
+	defer s.Close()
+	d := &module.Module{}
+	for _, n := range []int{0, 1, 17, 3} {
+		types := make([]wasm.ValueType, n)
+		body := module.Expr{}
+		for i := range n {
+			types[i] = wasm.V128
+			body = append(body, module.Instr{Op: 0x20, A: uint32(n - i - 1)})
+		}
+		body = append(body, module.Instr{Op: 0xb})
+		d.Types = append(d.Types, module.FuncType{Params: types, Results: types})
+		d.Functions = append(d.Functions, module.Function{Type: uint32(len(d.Types) - 1), Body: body})
+	}
+	in := instance(t, s, d, nil)
+	e := New(s, nil, Config{Limits: DefaultLimits()})
+	defer e.Close()
+	for _, index := range []int{0, 1, 2, 3, 1, 0, 2} {
+		n := len(d.Types[index].Params)
+		args := make([]value.Value, n)
+		for i := range args {
+			args[i] = value.Value{Lo: uint64(i + 1), Hi: ^uint64(i)}
+		}
+		if err := e.Start(in.Functions[index], args); err != nil || e.Run() != Done {
+			t.Fatal("tuple return", index, err, e.Err())
+		}
+		got := e.Results()
+		e.Quiesce()
+		if len(got) != n {
+			t.Fatal("stale tuple length", index, len(got), n)
+		}
+		for i, v := range got {
+			if v != args[n-i-1] {
+				t.Fatal("tuple bits or slot order", index, i, v, args[n-i-1])
+			}
+		}
 	}
 }
