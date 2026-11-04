@@ -160,14 +160,19 @@ traversal; guest GC runs only while native execution is idle. This view does not
 provide shared-memory atomic globals.
 
 After any multi-memory pairs, a final `(slot count, native base)` pair describes
-the Store-owned GC handle view. Each 32-byte slot contains the complete handle,
-payload address, array length and a reserved zero word. Generated field accesses
+the Store-owned GC handle view. Each shared 32-byte object header contains the
+complete handle, payload address, packed low 32-bit length/high 32-bit canonical
+type, and full 64-bit allocation epoch. Constructors stage local types and zero
+epochs; the driver validates the complete batch before canonical publication.
+Generated field accesses read only the low 32-bit length and
 check the index and complete identity before dereferencing a payload; null and
 array-bounds traps preserve their original source offsets. The typed collector
-shares the payload bytes with portable helpers and traces numeric handles.
-Arena compaction/growth updates all live slot addresses; slot-view growth
-preserves identities. Both happen at serialized safepoints, and every native
-reentry refreshes the pair. See [direct GC access](core-compiler.md#direct-gc-field-access)
+shares these headers and payloads with portable helpers and traces numeric
+handles. Arena compaction/growth updates the shared payload pointer once.
+Header-view growth commits pages in stable owned native address space; identities
+and header pointers do not move. Both happen at serialized safepoints, and every
+native reentry refreshes the pair. See [shared headers](shared-heap-header.md) and
+[direct GC access](core-compiler.md#direct-gc-field-access)
 for storage bounds and relocation ownership.
 
 Both native tiers directly implement table.get/table.set and ref.func using this
@@ -377,6 +382,11 @@ time. Growth allocates, copies, commits, and refreshes the context at the next
 entry; failure leaves the previous allocation and size intact. The eventual
 Store must account for peak old-plus-new bytes, instance/aggregate quotas and
 shared/imported ownership. This private-memory owner is not Core Threads support.
+
+The header view uses `native.NewStableMemory`: a bounded anonymous reservation
+with pages enabled as the logical extent grows. Its private access and retirement
+rules match `Memory`, while growth preserves the base without copying. This
+option does not change ordinary or shared guest-memory growth behavior.
 
 The emitter supports all 23 scalar loads/stores, memory.size and the explicit
 GrowMemory exit. A growth exit names the charged instruction and resumes after
