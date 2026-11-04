@@ -136,21 +136,22 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 		if candidates >= 3 {
 			guards, addresses, guarded = e.memoryGuards(start, end, proven)
 		}
-		if len(proven) != 0 {
-			r := memoryRegion{end: end - 1, proven: proven, guards: guards, guarded: guarded, addresses: addresses}
+		r := memoryRegion{end: end - 1, proven: proven, guards: guards, guarded: guarded, addresses: addresses}
+		r.loop = e.memoryLoop(start, r)
+		if r.loop != nil {
+			r.proven, r.guards, r.addresses = r.loop.proven, nil, r.loop.addresses
+			r.elided = e.deadAddressTemps(start, end, r)
+			r.guarded = uint32(len(r.proven))
+		} else {
 			if len(guards) != 0 {
 				r.elided = e.deadAddressTemps(start, end, r)
 			}
+			r.unroll = e.memoryUnroll(start, r)
+		}
+		if len(proven) != 0 || r.loop != nil {
 			regions[start] = r
 		}
 		start = end
-	}
-	for start := 0; start < len(e.f.Code); start++ {
-		if r, ok := regions[start]; ok {
-			r.loop = e.memoryLoop(start, r)
-			r.unroll = e.memoryUnroll(start, r)
-			regions[start] = r
-		}
 	}
 	return regions
 }
