@@ -159,7 +159,7 @@ Use the platform's accepted baseline CPU feature set, with explicit detection an
 
 Initially emit explicit memory/table/stack bounds checks and explicit trap exits. Signal-handler recovery is not the default safety mechanism. Eliminate checks only with validated range/effect proofs covering growth, calls, 64-bit overflow and aliases. Imported or mutable function/table targets cannot be treated as immutable without valid guards. Mark the entire profile supported only when each operation has verified native lowering or a documented runtime helper with the same semantics; helper use is reported in performance evidence. Native execution must never interpret an unsupported function silently.
 
-The unmetered backend groups at least three affine accesses anchored in unchanged
+The unmetered straight-line pass groups at least three affine accesses anchored in unchanged
 i32 locals within its existing <=256-instruction, positive-minimum-memory
 regions. Guards read the first access's existing address operand and validate
 the entire span against memory32 and the current binding. Failed guards enter
@@ -188,24 +188,25 @@ aliases and all original cold PCs. Rotate forms apply only to logical operands.
 Local versions invalidate stale facts; CFG/helper/growth/poll boundaries reset
 analysis. All memory operations still execute in order.
 
-A bounded loop analysis additionally recognizes one-block, literal-bounded i32
-+1 recurrences whose accesses share one affine root. The update follows every
-access, the root's base remains invariant, edges have no moves, and a pure
-local/copy/constant/add prefix contains at most 16 operations. Calls, growth, possible arithmetic traps,
-internal CFG entries, nonlinear addresses and unsupported recurrences retain
-ordinary checked code. The entire candidate, including its branch, stays within
-one 256-instruction interval.
+A bounded loop analysis also recognizes one-block, literal-bounded i32 equality
+exits with independent invariant bases and a nonzero unsigned stride. Calls,
+growth, possible arithmetic traps, internal CFG entries, mutated bases and
+nonlinear addresses retain ordinary checked code. The whole candidate,
+including its branch, stays within one 256-instruction interval; it does not
+require three accesses sharing a root.
 
-The original header executes its canonical prefix, then checks `i < limit` and
-`uint32(firstAddress - firstBias) + (limit - 1 - i) + span <= 2^32` and the bound
-memory length, using widened arithmetic. A failed check resumes the exact first
-checked access without replaying prefix effects or trapping early. A successful
-check enters a shared body with a private prefix/backedge and no repeated span
-check. Original dispatcher PCs and cold conditional branches always target
-checked original headers. Private backedges keep interruption polls; any return
-to the driver loses the proof. Warm-only dead temporary removal preserves all
-physical slots at every exit. This is conservative loop versioning; global
-live-range allocation and broader loop/range optimization remain required.
+At the original header, require `i < limit` and `(limit - i) % stride == 0`.
+For each affine group, compute its initial i32 origin with wrapping arithmetic,
+then check the widened origin plus its complete future displacement and
+nonwrapping access extent against memory32 and the current binding. A folded
+address additionally proves its canonical local anchor and whole folded offset.
+Guard work is bounded and polled. Failure enters the original checked header
+without effects or an early trap. Success enters the shared body with private
+backedges and no repeated span checks. All interior dispatcher PCs keep their
+checked originals; backedge interruption and physical-frame requirements stay
+intact, and driver returns lose the proof. The precise fuel tier is unchanged.
+See the [affine-loop comparison](../research/performance-affine-loop-spans-2026-11-05.md).
+Global live-range allocation and broader loop/range optimization remain required.
 
 Use a private guest ABI with explicit VM frames: guest calls push checked logical frames and branch to native callee labels; returns branch to saved continuations. The initial backend keeps one bounded C entry frame, without hardware-stack switching or a native C/Go frame per guest call. Host interaction, collection, cancellation and traps leave through the explicit status protocol in the [native ABI](native-abi.md). Whole-function inlining and more advanced optimization follow correctness and profiling; both disabled and enabled optimizations must pass differential tests. A persistent AOT/cache file format is later work; generating native code in-process is required in M2.
 
