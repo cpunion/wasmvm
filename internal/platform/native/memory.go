@@ -221,13 +221,21 @@ func (m *Memory) end() {
 // growth or host reentry; no stale native address survives that handoff.
 func (c *Context) BindMemory(m *Memory) error {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 	if err := c.idle(); err != nil {
+		c.mu.Unlock()
 		return err
 	}
 	if c.memory == m {
+		c.mu.Unlock()
 		return nil
 	}
+	return c.replaceMemoryLocked(m)
+}
+
+// The common unchanged binding needs no cleanup frame. Keep exceptional
+// cleanup around the ownership transfer, including its nested memory locks.
+func (c *Context) replaceMemoryLocked(m *Memory) error {
+	defer c.mu.Unlock()
 	if m != nil {
 		if err := m.retain(); err != nil {
 			return err
