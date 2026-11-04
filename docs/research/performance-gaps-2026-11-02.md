@@ -613,3 +613,21 @@ PR114. LLGo remains 5.32x Wasmtime and 7.8% above Go in that scope. Empty native
 allocation retains +1.71% versus own base while taking 19.215 ns versus Wasmtime
 20.680 ns. All original 20 cases, ordinary-C gaps, Go interpreter regressions and
 separate adverse controls remain recorded; no overall acceptance closes.
+
+
+## Cgo compiler baseline selection
+
+The [independent compiler study](performance-llgo-cgo-upgrade-2026-11-04.md)
+compares the existing `983465e` pin with complete upstream `dd109ec` and the
+five-commit `3571c25` Cgo checking-closure branch already included in merged
+LLGo #2971. The complete-range event is held: live-parent native public empty /
+integer increase 13.46% / 16.10%, despite a faster raw native entry. The isolated
+Cgo candidate improves empty native public calls 6.71% and raw entry about 41%,
+while long native/interpreted GC allocation increases 3.29% / 4.84%. Each scope
+retains contemporaneous reused-binary A/A controls; neither replaces the other.
+Full calls remain 2.34x Go and 11.17x Wasmtime in the selected batch cohort.
+The earlier [entry-effects source candidate](performance-entry-effects-2026-11-04.md)
+remains held with its complete GC and SIMD regressions; none of its engine
+changes enter this contribution. LLGo #2983 remains with its existing contributor.
+Final target CI/review, controlled portfolio/native-C parity, cancellation and
+expanded WASI-world acceptance remain required.
