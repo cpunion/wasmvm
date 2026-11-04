@@ -24,10 +24,12 @@ func (b *movingFrameBackend) Resize(length, capacity int) ([]value.Value, error)
 	b.moves++
 	return next[:length], nil
 }
-func (b *movingFrameBackend) Run(_ *state.Function, _, _ int, pc uint32, fuel uint64) (uint32, uint64, error) {
-	return pc, fuel, nil
-}
-func (b *movingFrameBackend) Close() { b.arena = nil }
+
+// This test model returns the current checked boundary unchanged; the shared
+// machine executes it. Production backends generate code for ordinary work.
+func (b *movingFrameBackend) RunFrames(_ *state.NativeFrames) error { return nil }
+func (b *movingFrameBackend) Interrupt()                            {}
+func (b *movingFrameBackend) Close()                                { b.arena = nil }
 
 func TestFrameDispatchAcrossArenaGrowth(t *testing.T) {
 	for _, owned := range []bool{false, true} {

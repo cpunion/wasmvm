@@ -5,26 +5,14 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
-// FrameBackend extends the native boundary with a batch of explicit guest
-// frames. It shares the existing frame machine for all observable runtime work;
-// it does not add a second host, exception, GC or continuation driver.
-type FrameBackend interface {
-	RunFrames(*state.NativeFrames) error
-}
-
 // Keep packet construction, validation and cleanup out of the portable opcode
 // dispatcher. Inlining this native-only bridge enlarges the shared hot loop.
 //
 //go:noinline
-func (e *Execution) runBackend(backend Backend, framed FrameBackend, fn *state.Function, base int, pc uint32) (uint32, error) {
-	if framed == nil {
-		var err error
-		pc, e.fuel, err = backend.Run(fn, base, len(e.frames), pc, e.fuel)
-		return pc, err
-	}
+func (e *Execution) runBackend(backend Backend, fn *state.Function, base int, pc uint32) (uint32, error) {
 	e.nativeFrames = state.NativeFrames{Function: fn, Base: base, Depth: len(e.frames), PC: pc, Fuel: e.fuel,
 		MaxFrames: e.config.Limits.MaxFrames, MaxSlots: e.config.Limits.MaxSlots, Values: e.values}
-	err := framed.RunFrames(&e.nativeFrames)
+	err := backend.RunFrames(&e.nativeFrames)
 	if err == nil {
 		err = e.adoptNativeFrames(&e.nativeFrames)
 	}

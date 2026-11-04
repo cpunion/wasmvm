@@ -22,8 +22,8 @@ func (e *Execution) Quiesce() {
 // been canceled. The owner keeps this frame registered until delivery drains;
 // its backend cannot be closed or rebound concurrently. Interpreters poll ctx.
 func (e *Execution) Interrupt() {
-	if e.interrupter != nil {
-		e.interrupter.Interrupt()
+	if e.config.Backend != nil {
+		e.config.Backend.Interrupt()
 	}
 }
 
@@ -51,13 +51,15 @@ func (e *Execution) Rebind(ctx context.Context, limits Limits, metered bool, fue
 	return nil
 }
 
-// Backend executes compiled code up to a typed runtime boundary. The returned
-// instruction has already consumed fuel; only its explicit runtime effect is
-// serviced by the common frame machine. An absent backend selects slot dispatch.
-// Resize owns pointer-free frame storage and preserves it across growth.
+// Backend executes compiled code through the shared explicit-frame packet.
+// Its returned instruction has already consumed fuel; the common machine owns
+// runtime effects and validates the complete frame/arena transfer. Interrupt
+// requests bounded cancellation; frame registration owns delivery lifetime.
+// An absent backend selects slot dispatch. Resize owns pointer-free storage.
 type Backend interface {
 	Resize(length, capacity int) ([]value.Value, error)
-	Run(fn *state.Function, base, depth int, pc uint32, fuel uint64) (uint32, uint64, error)
+	RunFrames(*state.NativeFrames) error
+	Interrupt()
 	Close()
 }
 

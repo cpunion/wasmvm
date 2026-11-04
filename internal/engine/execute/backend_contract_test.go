@@ -17,7 +17,7 @@ type interruptFrameBackend struct {
 
 func (b *interruptFrameBackend) Interrupt() { b.interrupts++ }
 
-func TestBackendCapabilitiesSurviveWorkspacePolicyChanges(t *testing.T) {
+func TestBackendFrameContractSurvivesWorkspacePolicyChanges(t *testing.T) {
 	s := state.New(state.DefaultLimits())
 	defer s.Close()
 	in := instance(t, s, &module.Module{Types: []module.FuncType{{Params: []wasm.ValueType{wasm.I32}, Results: []wasm.ValueType{wasm.I32}}}, Functions: []module.Function{
@@ -53,7 +53,7 @@ func TestBackendCapabilitiesSurviveWorkspacePolicyChanges(t *testing.T) {
 	}
 }
 
-func TestBackendWithoutOptionalCapabilitiesRemainsPortable(t *testing.T) {
+func TestBackendFrameModelAndPortableDispatchRemainReusable(t *testing.T) {
 	for _, backend := range []Backend{nil, &movingFrameBackend{}} {
 		s := state.New(state.DefaultLimits())
 		in := instance(t, s, &module.Module{Types: []module.FuncType{{Results: []wasm.ValueType{wasm.I32}}}, Functions: []module.Function{{Body: module.Expr{{Op: 0x41, Bits: 19}, {Op: 0xb}}}}}, nil)
