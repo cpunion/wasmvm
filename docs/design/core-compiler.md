@@ -239,7 +239,17 @@ its continuation before reentry. Portable execution keeps its frame-local loop.
 This improves measured interpreter workloads but remains held for native/portable
 regressions and final acceptance. Native effect boundaries still enter the large
 slot-dispatch stack frame; a separate runtime-effect handler shared by both
-drivers remains required work, alongside global allocation and the other gates.
+drivers motivates the next experiment, alongside global allocation and the other gates.
+
+The [runtime-effects experiment](../research/performance-runtime-effects-2026-11-05.md)
+removes the portable boundary mode. Native exits select shared call/return,
+exception, stack, GC and SIMD effects, with complete next-PC/frame publication.
+The portable scalar/local/CFG loop keeps its direct execution, sharing effect
+handlers and canonical state primitives. Ordinary scalar native exits fail
+instead of falling back to that loop. Smaller static frames still introduce
+extra transfers and do not establish throughput gains: GC, SIMD, atomic and
+public-call regressions keep this experiment held. Direct native leaf routing,
+portable primitive routing and adequately controlled measurements remain work.
 
 ## Direct globals
 
