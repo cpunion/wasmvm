@@ -74,7 +74,8 @@ shorter hot body. Static counts do not establish elapsed improvement.
 
 `testing.AllocsPerRun(5)` performs one warmup and five fresh Engine/Compile/Close
 operations per unchanged module. Fixture reads and serialization are outside
-counting; no Store or guest call participates. These are Go heap event counts,
+counting; no Store or guest call participates. The diagnostic compiles for the
+local macOS arm64 target. These are Go heap event counts,
 not LLGo counters, executable/peak memory or elapsed latency.
 
 All 22 cases record fewer events, by **119–730 per compile**:
@@ -86,7 +87,11 @@ All 22 cases record fewer events, by **119–730 per compile**:
 | SHA-256 / Clang | 7511 | 6910 |
 | SHA-256 / Rust | 7480 | 6838 |
 
-Full final-head Go/LLGo target CI and contribution review remain required.
+[The preceding CI](https://github.com/cpunion/wasmvm/actions/runs/42036970753)
+completes for `2b37289`/engine `3355a8d`: all 21 required jobs pass, with one
+optional skip. The longest job is 565 s (9m25s), excluding queue time. These
+results apply to the baseline; current final-head validation remains required.
+Contribution review also remains required.
 [Linux comparison 42051975324](https://github.com/cpunion/wasmvm/actions/runs/42051975324)
 is dispatched once for the exact `993cbb3` source against `3355a8d`, with one shared
 build and all five original-count groups. It retains the Go/LLGo, competitor and

@@ -559,5 +559,16 @@
       "protocol": "Original counts; five fresh blocks, two warmups, seven interleaved calls; one shared build; no retry or flag/ISA/alignment sweep."
     },
     "initialEvidenceArchiveUnchanged": true
+  },
+  "previousCI": {
+    "run": 42036970753,
+    "source": "2b372892d0a25185e2f534c329f258ac3279ce68",
+    "engine": "3355a8d5293198474c8cd97379317093f9e983ae",
+    "conclusion": "success",
+    "requiredSuccessfulJobs": 21,
+    "optionalSkips": 1,
+    "longestJobSeconds": 565.0,
+    "artifactAudit": "Download in progress; no completed artifact audit claim.",
+    "scope": "Previous CFG allocation baseline only. Does not validate frame reconstruction source 993cbb3."
   }
 }
