@@ -1,7 +1,7 @@
 # Integer arithmetic with frame operands: 2026-11-06
 
-**Local Go/LLGo suites and reference encodings pass. Actual new x86 execution
-and elapsed acceptance remain required.** Engine
+**Local qualification and Linux Go/LLGo codegen jobs pass. The full CI run has
+an unrelated component cancellation-test failure; controlled acceptance remains open.** Engine
 `5099a76ddad5910dd2cfff195ca8a4bca9be9cf0`; baseline engine
 `4054f1b96a707fa6f5334221574b8e393f8effc0`, documentation head `ab377e7`.
 The [preceding comparison-immediate event](performance-loop-compare-immediates-2026-11-06.md)
@@ -84,8 +84,19 @@ native-C rows and separate lifecycle phases retain the existing protocol:
 five fresh process blocks, two warmups and seven interleaved calls, with four
 identical-binary A/A controls per case. Hosted diagnostic calibration does not
 replace controlled acceptance. No phase subtraction, cross-source/target
-pooling, favorable retry or flag/ISA/alignment sweep is used. At this record's
-observation the shared build passes and measurement groups are queued.
+pooling, favorable retry or flag/ISA/alignment sweep is used. All six required jobs now pass: the shared build takes 395s and the longest
+measurement group 329s. The audit verifies all 22 cases, 362 alternate checksum
+checks and 12 expected reference-GC rejections; nine cases resolve all four
+advisory controls. No controlled milestone acceptance is claimed.
+
+| Linux SHA | Go head/base | LLGo head/base | LLGo / Go | / wazero JIT | / Wasmtime | / native C | A/A |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Clang | 0.946 | 0.970 | 1.008 | 0.720 | 1.372 | 1.649 | resolved, advisory |
+| Rust | 0.907 | 0.919 | 0.992 | 0.659 | 1.320 | 1.575 | resolved, advisory |
+
+All other rows, adverse observations, unresolved controls and separate lifecycle
+phases remain in the immutable report archive. This event does not validate the
+subsequent [raw-register change](performance-raw-integer-registers-2026-11-06.md).
 
 ## Preceding validation and remaining gates
 
@@ -110,7 +121,13 @@ controls resolved. SHA LLGo elapsed head/base medians are 0.956 (Clang) and
 1.416/1.447 and to native C 1.702/1.723. These are separate-source advisory
 observations and demonstrate remaining gaps, not controlled gains.
 
-New final-head CI, actual x86 kernel execution, contribution review/integration,
+The source-bound [CI 42083219131](https://github.com/cpunion/wasmvm/actions/runs/42083219131)
+passes the Linux Go/LLGo codegen jobs. Its Go component job fails because a short
+operation deadline can expire before the expected worker starts. The subsequent
+raw-register study records the synchronized test fix and its dual-compiler/race
+validation; the original CI outcome is retained.
+
+Final-head CI, complete final-source x86 kernel execution, contribution review/integration,
 general allocation/rematerialization, preparation costs, expanded world/release
 conformance and controlled competitive/native acceptance remain open.
 
@@ -130,3 +147,7 @@ Baseline full-CI archive `artifacts/loop-frame-operands-20261106/ci-ab-evidence.
 
 Preceding Linux archive `artifacts/loop-compare-immediates-20261106/hosted-evidence-current.tar.gz`: 2096744 bytes, 16 files; SHA-256
 `16ff5e70fe005a9ca32e619a5d4e4f690056b174bcd46494fb77a18960b408a6`.
+
+Completed Linux event archive `artifacts/loop-frame-operands-20261106/hosted-evidence-final.tar.gz`:
+2106484 bytes, 16 files; SHA-256
+`2088852c440b1918313daaaedf4b51b168b6f5bef6cebbfb932ab2c737a0aeca`.

@@ -1,5 +1,5 @@
 {
-  "classification": "Mixed-residency x86 integer instruction selection. Local ARM64 execution and actual published images, x86 emission/reference-assembler proof only. New x86 guest execution/elapsed acceptance and final-head CI remain required.",
+  "classification": "Local qualification and independent LLVM bytes pass; completed Linux source-pinned benchmark. Linux Go/LLGo codegen jobs pass, full CI has a component cancellation-test failure. Final-head CI and controlled acceptance remain open.",
   "plan": {
     "baseline": "ab377e7b5eddf712ef285f673dba9adb3dd14d75",
     "baselineEngine": "4054f1b96a707fa6f5334221574b8e393f8effc0",
@@ -416,5 +416,52 @@
     "bytes": 1994348,
     "sha256": "15bf355687f25a62599ef7a140f6579c4657fda9d2b23ea1a0dbba3e9d769cfc",
     "files": 239
+  },
+  "currentLinuxResult": {
+    "run": "https://github.com/cpunion/wasmvm/actions/runs/42078773487",
+    "sourceHead": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
+    "sourceBase": "4054f1b96a707fa6f5334221574b8e393f8effc0",
+    "checkedAlternativeConfigurations": 362,
+    "resolvedWorkloads": 9,
+    "jobs": [
+      {
+        "id": 127425967190,
+        "name": "Build routing comparison once / linux-amd64",
+        "seconds": 395.0
+      },
+      {
+        "id": 127433961183,
+        "name": "Routing comparison / memory-simd",
+        "seconds": 329.0
+      },
+      {
+        "id": 127433961199,
+        "name": "Routing comparison / threads",
+        "seconds": 61.0
+      },
+      {
+        "id": 127433961236,
+        "name": "Routing comparison / gc",
+        "seconds": 22.0
+      },
+      {
+        "id": 127433961345,
+        "name": "Routing comparison / core",
+        "seconds": 172.0
+      },
+      {
+        "id": 127433961371,
+        "name": "Routing comparison / applications",
+        "seconds": 197.0
+      }
+    ],
+    "cases": 22,
+    "expectedReferenceRejections": 12,
+    "evidence": {
+      "path": "artifacts/loop-frame-operands-20261106/hosted-evidence-final.tar.gz",
+      "bytes": 2106484,
+      "sha256": "2088852c440b1918313daaaedf4b51b168b6f5bef6cebbfb932ab2c737a0aeca",
+      "files": 16
+    }
   }
 }

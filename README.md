@@ -16,14 +16,14 @@ integration. Competing runtimes are independent test and benchmark references;
 execution never silently switches to one of them.
 
 Performance acceptance remains open. The
-[latest frame-operand study](docs/research/performance-frame-operands-2026-11-06.md)
-reduces x86 SHA compression loops by fourteen instructions each and validates
-encodings against LLVM. Current x86 execution and elapsed acceptance remain
-pending. Its baseline passes all four compiler/platform semantic profiles;
-prior mixed/adverse timings and the cancelled artifact-finalization run remain
-recorded. The [full hosted comparison](docs/research/performance-loop-nonresident-values-2026-11-05.md)
-retains all 22 competitor/Go/LLGo/native-C workloads and separate execution phases.
-Results are dated and target-specific; they do not establish a universal winner.
+[latest register study](docs/research/performance-raw-integer-registers-2026-11-06.md)
+removes the remaining 20/18 x86 SHA compression frame accesses using spare
+FP registers. Local Go/LLGo tests pass, while ARM64 Clang timing is slightly
+adverse and final Linux execution/performance validation is pending. The
+[preceding completed Linux comparison](docs/research/performance-frame-operands-2026-11-06.md)
+retains all 22 competitor/Go/LLGo/native-C workloads, separate phases and
+unresolved controls. Results are dated and target-specific; controlled
+competitive/native acceptance and final-head CI remain required.
 The [gap audit](docs/research/performance-gaps-2026-11-02.md) retains the broader
 portfolio and independently reproduced upstream compiler reports.
 
