@@ -329,7 +329,7 @@ func equalRegisterPlans(a, b *registerPlan) bool {
 		}
 		return true
 	}
-	return equal(a.homes, b.homes) && equal(a.floats, b.floats) && equal(a.vectors, b.vectors) && equal(a.raw, b.raw)
+	return equal(a.homes, b.homes) && equal(a.floats, b.floats) && equal(a.vectors, b.vectors)
 }
 
 type allocationEdge struct {

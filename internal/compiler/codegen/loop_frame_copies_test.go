@@ -43,11 +43,7 @@ func frameCopyFixture(wide, memory, entryRead bool) (*slots.Function, int) {
 		}
 		// The old anchor is still used after the target is born. They cannot
 		// share a fixed home, but the target can later read through this anchor.
-		// Keep more independent live anchors hot than either GPR bank holds.
-		// Spare FP homes must coexist with deferred copies and cold recovery.
-		for range 5 {
-			emit(add, 3, 3, anchor, 0, 0)
-		}
+		emit(add, 3, 3, anchor, 0, 0)
 		emit(0x22, source, target, slots.NoSlot, uint32(anchor), 0)
 		emit(add, source, source, 8, 0, 0)
 		emit(add, 3, 3, target, 0, 0)
@@ -140,9 +136,6 @@ func TestLoopFrameCopiesCompleteWordsColdPCsPollAndLateTrap(t *testing.T) {
 			c, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), config)
 			if err != nil {
 				t.Fatal(arch, mode, err)
-			}
-			if !mode.header && !mode.entryRead && c.RawScalarSlots == 0 {
-				t.Fatal(arch, mode, "raw bank not exercised")
 			}
 			if (c.DeferredFrameCopies != 0) != (!mode.header && !mode.entryRead) {
 				t.Fatal(arch, mode, "wrong reconstruction selection", c.DeferredFrameCopies, c.NativeLoops, c.ValueLoops)

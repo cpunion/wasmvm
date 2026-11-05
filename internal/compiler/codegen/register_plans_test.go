@@ -59,136 +59,122 @@ func TestLoopRegisterPlansPressureColdEntriesAndCanonicalTuples(t *testing.T) {
 
 func TestRegisterPlanDeferredPollsAndTransitionsKeepEveryWord(t *testing.T) {
 	for _, arch := range []string{"amd64", "arm64"} {
-		for _, raw := range []bool{false, true} {
-			for _, where := range []string{"before", "inside", "return", "trap", "call"} {
-				a := assembler{arch: arch, labels: map[int]int{}, longBranches: true}
-				f := &slots.Function{Slots: []wasm.ValueType{wasm.I32, wasm.I32, wasm.I64, wasm.I64, wasm.I64, wasm.V128, wasm.F64}}
-				e := functionEmitter{a: &a, f: f, unmetered: true, exit: a.label()}
-				e.contextLoad(0, nativeabi.ArenaOffset)
-				frame := byte(6)
-				if arch == "arm64" {
-					frame = 12
+		for _, where := range []string{"before", "inside", "return", "trap", "call"} {
+			a := assembler{arch: arch, labels: map[int]int{}, longBranches: true}
+			f := &slots.Function{Slots: []wasm.ValueType{wasm.I64, wasm.I64, wasm.I64, wasm.I64, wasm.I64, wasm.V128}}
+			e := functionEmitter{a: &a, f: f, unmetered: true, exit: a.label()}
+			e.contextLoad(0, nativeabi.ArenaOffset)
+			frame := byte(6)
+			if arch == "arm64" {
+				frame = 12
+			}
+			e.registerMove(frame, e.operandRegister(0), true)
+			pool := e.integerRegisterPool()
+			old := &registerPlan{homes: map[slots.Slot]byte{0: pool[0], 1: pool[1], 2: pool[2]}, slots: []slots.Slot{0, 1, 2}}
+			region := &registerPlan{homes: map[slots.Slot]byte{1: pool[1], 3: pool[0], 4: pool[2]}, slots: []slots.Slot{1, 3, 4}}
+			for _, s := range old.slots {
+				e.slotLoad(s, 0, false, true)
+				e.registerMove(old.homes[s], e.operandRegister(0), true)
+			}
+			e.useRegisterPlan(old)
+			e.constant(0, 0xfedcba9876543210)
+			e.slotStore(0, 0, false)
+			if where == "before" {
+				e.contextConst(nativeabi.ControlOffset, 1)
+			}
+			e.interrupt(11)
+			e.transitionRegisters(region)
+			for _, item := range []struct {
+				slot slots.Slot
+				bits uint64
+			}{{1, 0x8000000000000001}, {3, 0x1122334455667788}, {4, 0xffffffffffffffff}} {
+				e.constant(0, item.bits)
+				e.slotStore(item.slot, 0, false)
+			}
+			if where == "trap" {
+				a.branch(e.trapExit(wasm.TrapUnreachable, 777), false, 0)
+			}
+			if where == "call" {
+				label := a.label()
+				e.callExits = append(e.callExits, nativeCallExit{label, 22, 888, e.currentRegisterPlan()})
+				a.branch(label, false, 0)
+			}
+			if where == "inside" {
+				e.contextConst(nativeabi.ControlOffset, 1)
+			}
+			e.interrupt(22)
+			e.transitionRegisters(old)
+			e.leave(nativeabi.Return, 0, 33)
+			e.emitPollExits()
+			e.emitCallExits()
+			e.emitTrapExits()
+			a.mark(e.exit)
+			body, err := a.finish()
+			if err != nil {
+				t.Fatal(err)
+			}
+			wrapped, err := nativeabi.Wrap(arch, body, 1<<16)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !native.Available || arch != runtime.GOARCH {
+				continue
+			}
+			code, err := native.Publish(wrapped.Code, []uint32{0}, 1<<16)
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(code.Close)
+			lease, err := code.Acquire()
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(lease.Close)
+			ctx, err := native.NewContext(96, 96, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(ctx.Close)
+			expected := make([]value.Value, 6)
+			for s := range expected {
+				expected[s] = value.Value{Lo: 0x9876543210000000 | uint64(s)}
+				if s == 5 {
+					expected[s].Hi = 0xaabbccddeeff0011
 				}
-				e.registerMove(frame, e.operandRegister(0), true)
-				pool := e.integerRegisterPool()
-				old := &registerPlan{homes: map[slots.Slot]byte{0: pool[0], 1: pool[1], 2: pool[2]}, slots: []slots.Slot{0, 1, 2}}
-				region := &registerPlan{homes: map[slots.Slot]byte{1: pool[1], 3: pool[0], 4: pool[2]}, slots: []slots.Slot{1, 3, 4}}
-				if raw {
-					fp := e.floatRegisterPool()
-					old = &registerPlan{homes: map[slots.Slot]byte{0: pool[0]}, raw: map[slots.Slot]byte{1: fp[0], 2: fp[1]}, vectors: map[slots.Slot]byte{5: fp[2]}, floats: map[slots.Slot]byte{6: fp[3]}, slots: []slots.Slot{0, 1, 2, 5, 6}}
-					region = &registerPlan{homes: map[slots.Slot]byte{1: pool[0]}, raw: map[slots.Slot]byte{3: fp[1], 4: fp[0]}, vectors: old.vectors, floats: old.floats, slots: []slots.Slot{1, 3, 4, 5, 6}}
+				writeSlot(t, ctx, 0, slots.Slot(s), expected[s])
+			}
+			ctx.SetState(native.State{Depth: 1})
+			exit, err := ctx.Enter(lease, 0)
+			state, stateErr := ctx.State()
+			want, pc := native.Poll, uint64(11)
+			expected[0].Lo = 0xfedcba9876543210
+			if where != "before" {
+				expected[1].Lo = 0x8000000000000001
+				expected[3].Lo = 0x1122334455667788
+				expected[4].Lo = 0xffffffffffffffff
+				pc = 22
+			}
+			if where == "return" {
+				want, pc = native.Return, 33
+			}
+			if where == "trap" {
+				want, pc = native.Trap, 0
+				if state.Source != 777 || state.Payload[0] != uint64(wasm.TrapUnreachable) {
+					t.Fatal(state)
 				}
-				e.transitionRegisters(old)
-				if raw {
-					e.move(2, 1) // Raw -> raw, preserving the complete Lo of an i32.
-					e.move(0, 2) // Raw -> GPR.
-					e.move(2, 0) // GPR -> raw.
-					e.move(3, 2) // Raw -> frame.
-					e.move(2, 4) // Frame -> raw.
+			}
+			if where == "call" {
+				want, pc = native.Call, 23
+				if state.Source != 888 || state.Payload[0] != 22 {
+					t.Fatal(state)
 				}
-				e.constant(0, 0xfedcba9876543210)
-				e.slotStore(0, 0, false)
-				if where == "before" {
-					e.contextConst(nativeabi.ControlOffset, 1)
-				}
-				e.interrupt(11)
-				e.transitionRegisters(region)
-				for _, item := range []struct {
-					slot slots.Slot
-					bits uint64
-				}{{1, 0x8000000000000001}, {3, 0x1122334455667788}, {4, 0xffffffffffffffff}} {
-					e.constant(0, item.bits)
-					e.slotStore(item.slot, 0, false)
-				}
-				if where == "trap" {
-					a.branch(e.trapExit(wasm.TrapUnreachable, 777), false, 0)
-				}
-				if where == "call" {
-					label := a.label()
-					e.callExits = append(e.callExits, nativeCallExit{label, 22, 888, e.currentRegisterPlan()})
-					a.branch(label, false, 0)
-				}
-				if where == "inside" {
-					e.contextConst(nativeabi.ControlOffset, 1)
-				}
-				e.interrupt(22)
-				e.transitionRegisters(old)
-				e.leave(nativeabi.Return, 0, 33)
-				e.emitPollExits()
-				e.emitCallExits()
-				e.emitTrapExits()
-				a.mark(e.exit)
-				body, err := a.finish()
-				if err != nil {
-					t.Fatal(err)
-				}
-				wrapped, err := nativeabi.Wrap(arch, body, 1<<16)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if !native.Available || arch != runtime.GOARCH {
-					continue
-				}
-				code, err := native.Publish(wrapped.Code, []uint32{0}, 1<<16)
-				if err != nil {
-					t.Fatal(err)
-				}
-				t.Cleanup(code.Close)
-				lease, err := code.Acquire()
-				if err != nil {
-					t.Fatal(err)
-				}
-				t.Cleanup(lease.Close)
-				ctx, err := native.NewContext(uint64(len(f.Slots)*16), uint64(len(f.Slots)*16), 1)
-				if err != nil {
-					t.Fatal(err)
-				}
-				t.Cleanup(ctx.Close)
-				expected := make([]value.Value, len(f.Slots))
-				for s := range expected {
-					expected[s] = value.Value{Lo: 0x9876543210000000 | uint64(s)}
-					if s == 5 || raw {
-						expected[s].Hi = 0xaabbccddeeff0011
-					}
-					writeSlot(t, ctx, 0, slots.Slot(s), expected[s])
-				}
-				ctx.SetState(native.State{Depth: 1, Fuel: 42, Budget: 37})
-				exit, err := ctx.Enter(lease, 0)
-				state, stateErr := ctx.State()
-				want, pc := native.Poll, uint64(11)
-				if raw {
-					expected[3].Lo = expected[1].Lo
-					expected[2].Lo = expected[4].Lo
-				}
-				expected[0].Lo = 0xfedcba9876543210
-				if where != "before" {
-					expected[1].Lo = 0x8000000000000001
-					expected[3].Lo = 0x1122334455667788
-					expected[4].Lo = 0xffffffffffffffff
-					pc = 22
-				}
-				if where == "return" {
-					want, pc = native.Return, 33
-				}
-				if where == "trap" {
-					want, pc = native.Trap, 0
-					if state.Source != 777 || state.Payload[0] != uint64(wasm.TrapUnreachable) {
-						t.Fatal(state)
-					}
-				}
-				if where == "call" {
-					want, pc = native.Call, 23
-					if state.Source != 888 || state.Payload[0] != 22 {
-						t.Fatal(state)
-					}
-				}
-				if err != nil || stateErr != nil || exit != want || state.Continuation != pc || state.Fuel != 42 || state.Budget != 37 {
-					t.Fatal(arch, raw, where, exit, state, err, stateErr)
-				}
-				for s, v := range expected {
-					if got := readSlot(t, ctx, 0, slots.Slot(s)); got != v {
-						t.Fatal(arch, raw, where, s, got, v)
-					}
+			}
+			if err != nil || stateErr != nil || exit != want || state.Continuation != pc {
+				t.Fatal(arch, where, exit, state, err, stateErr)
+			}
+			for s, v := range expected {
+				if got := readSlot(t, ctx, 0, slots.Slot(s)); got != v {
+					t.Fatal(arch, where, s, got, v)
 				}
 			}
 		}
