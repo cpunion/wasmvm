@@ -1064,5 +1064,66 @@
     "Exact-source hosted measurement and controlled competitor/native acceptance",
     "Review and integration under the one-active-contribution policy",
     "General SSA/value-version allocation and broader application/WASI-world acceptance"
-  ]
+  ],
+  "ciQualityCorrection": {
+    "scope": "Test helper only; production engine unchanged from fb6e872. No old timing is reattributed to a new source.",
+    "source": {
+      "head": "dd2477df7585d21c3c6e3761b3290232ec6173b4",
+      "engineUnchanged": "fb6e872b4758eb5c4e52c334e23c9e12036a58bb",
+      "testPatchSha256": "f3ab29acabcddc0dbab06acf5c720830be6508365ae0f0dc1e87ea312f2cdd72",
+      "onlyTestHelperChanged": true,
+      "failureRun": "https://github.com/cpunion/wasmvm/actions/runs/41974831619"
+    },
+    "validation": [
+      {
+        "name": "vet",
+        "command": [
+          "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+          "vet",
+          "./..."
+        ],
+        "exit": 0,
+        "seconds": 3.3260988749098033,
+        "base": "c305634cd8cb4c8b4f763fa76fbb82d578475c95",
+        "patchSha256": "f3ab29acabcddc0dbab06acf5c720830be6508365ae0f0dc1e87ea312f2cdd72"
+      },
+      {
+        "name": "go",
+        "command": [
+          "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+          "test",
+          "-count=1",
+          "-run",
+          "TestShared",
+          "./internal/compiler/codegen"
+        ],
+        "exit": 0,
+        "seconds": 2.8551815000828356,
+        "base": "c305634cd8cb4c8b4f763fa76fbb82d578475c95",
+        "patchSha256": "f3ab29acabcddc0dbab06acf5c720830be6508365ae0f0dc1e87ea312f2cdd72"
+      },
+      {
+        "name": "llgo",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-3571c25",
+          "test",
+          "-O3",
+          "-lto=full",
+          "-count=1",
+          "-run",
+          "TestShared",
+          "./internal/compiler/codegen"
+        ],
+        "exit": 0,
+        "seconds": 51.10337333404459,
+        "base": "c305634cd8cb4c8b4f763fa76fbb82d578475c95",
+        "patchSha256": "f3ab29acabcddc0dbab06acf5c720830be6508365ae0f0dc1e87ea312f2cdd72"
+      }
+    ],
+    "archive": {
+      "path": "/Users/lijie/source/goplus/wasmvm/artifacts/loop-value-coalescing-20261105/shared-default/vet-fix-evidence.tar.gz",
+      "bytes": 10165,
+      "sha256": "6895a59f1b6ee4a2542f81f70abeb86fe81b2f35d46ae59e7aa67a14d169a155"
+    }
+  }
 }

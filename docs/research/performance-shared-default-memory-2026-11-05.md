@@ -47,3 +47,10 @@ commands, source/toolchain hashes, reports and the raw archive manifest.
 `artifacts/loop-value-coalescing-20261105/shared-default/evidence.tar.gz`
 contains 158 files, 2420994 bytes, SHA-256
 `ae11b912d0ac7d00b694347e57d65b0d7df2a2bb26384b1019f11bdf2df99cc7`.
+
+The first full CI at `c305634` fails `go vet` on an integer-to-pointer conversion
+in the new invalid-binding test. Commit `dd2477d` writes the null base through
+the retained descriptor buffer directly. Full local `go vet ./...` and both
+compilers' shared-memory tests pass; production engine files are unchanged.
+The original failed CI and all follow-up commands remain in the evidence index.
+Final-head four-profile validation is still required.

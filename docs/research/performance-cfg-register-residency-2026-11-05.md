@@ -1,7 +1,10 @@
 # CFG register residency and shared selection: 2026-11-05
 
-**Local dual-compiler execution passes; new-source timing and final acceptance
-remain open.** Engine source: `2be7d9f17b54b7ed5582faabd741f0f5fa9c01c7`.
+**Local dual-compiler execution and the hosted diagnostic pass; controlled
+performance and final integration remain open.** Engine source:
+`2be7d9f17b54b7ed5582faabd741f0f5fa9c01c7`.
+The [complete hosted comparison](performance-cfg-register-residency-hosted-2026-11-05.md)
+recovers the severe memory regression and retains all 22 workloads and gaps.
 This corrects the [loop-residency experiment](performance-loop-value-coalescing-2026-11-05.md),
 whose lexical-loop extension did not recover the hosted x86 regression.
 
@@ -75,9 +78,9 @@ range from 90.71% to 100%. Race, cgocheck2 and no-cgo checks pass. Ninety-six
 runner configurations execute both compilers/backends over 22 fixtures and
 both SHA work sizes. These runs qualify correctness, not performance.
 
-A new exact-source hosted event will use the unchanged protocol and original
-baseline above. All source stages remain separate; no prior timing cohort is
-retried or removed. Hosted results remain advisory. Final four-profile CI
+A new exact-source hosted event completes with the unchanged protocol and
+original baseline above. All source stages remain separate; no prior timing
+cohort is retried or removed. Hosted results remain advisory. Final four-profile CI
 (31 packages/profile, 30 coverage gates), review, controlled competitor/native
 performance and the broader application/WASI-world acceptance remain open.
 
