@@ -248,6 +248,16 @@ Rematerialization/frame reconstruction remains required. The initial ordinary
 fine-endpoint mapping regressed applications and was rejected; see the
 [semantic tests, retained regressions and costed correction](../research/performance-cfg-value-allocation-2026-11-05.md).
 
+Private-loop integer copies can now use bounded frame reconstruction. A
+copy-only nonresident word must have no read of its entry value and an independent
+materialized equal-version anchor throughout the body. Anchors may change with
+versions; reserved anchors prevent cycles. Selection/observation boundaries retain
+those identities. Ordinary exits and cold backedge polls materialize every raw
+word, while taken private backedges rely on the proven next-iteration overwrite.
+Shared homes and variable plans retain their existing contracts. Uncongested
+functions avoid optional full-CFG reconstruction. See the
+[execution models, x86 code, arm64 identity and allocation-event results](../research/performance-loop-frame-copies-2026-11-05.md).
+
 Ordinary emission and bounded native regions use one ordered instruction
 selector pipeline. Their callers retain mapping, guard, remapping, shared-write
 boundaries and all original-PC continuations. Logical shifts, live integer

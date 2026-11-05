@@ -16,9 +16,10 @@ integration. Competing runtimes are independent test and benchmark references;
 execution never silently switches to one of them.
 
 Performance acceptance remains open. The
-[latest value-allocation study](docs/research/performance-cfg-value-allocation-2026-11-05.md)
-records a rejected application regression, its costed correction and remaining
-preparation costs. The
+[latest frame-reconstruction study](docs/research/performance-loop-frame-copies-2026-11-05.md)
+reduces x86 Clang SHA hot frame traffic and Go preparation heap events, while
+competitive elapsed measurement remains pending. It retains the preceding
+rejected allocation and its correction. The
 [full hosted comparison](docs/research/performance-loop-nonresident-values-2026-11-05.md)
 retains all 22 competitor/Go/LLGo/native-C workloads and separate execution phases.
 Results are dated and target-specific; they do not establish a universal winner.

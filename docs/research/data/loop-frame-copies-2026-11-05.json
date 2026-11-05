@@ -1,0 +1,563 @@
+{
+  "classification": "Semantics, static output and Go heap-event diagnostic. No elapsed performance acceptance.",
+  "plan": {
+    "baseline": "2b372892d0a25185e2f534c329f258ac3279ce68",
+    "baselineEngine": "3355a8d5293198474c8cd97379317093f9e983ae",
+    "mechanism": "Prove private-loop copy-only nonresident words have no read of their entry version and always have an independent materialized equal-version anchor. Forward reads and defer writes; reconstruct every raw word before poll/ordinary exit. Original cold PCs and precise tier unchanged.",
+    "requirements": [
+      "Bounded deterministic version/anchor planning; shared-home and variable-residency anchors excluded",
+      "Independent full-word/all-cold-PC/header/first-backedge/late-trap models on both target compilers; actual Go/LLGo release execution",
+      "Actual SHA application output and code/entry identities before any timing scope selection",
+      "Source-pinned phase-separated Go/LLGo/competitor/native measurements; retain every adverse and unresolved observation; no favorable retries"
+    ],
+    "scope": "Initial scalar-word reconstruction covers i32/i64 copies; other existing runtime operations remain fully implemented. General value rematerialization, full preparation/controlled performance and broader world/release acceptance remain open.",
+    "source": "993cbb3a59f9b19b58523ce8f239c2d6b37ec3dd",
+    "measurementBaseline": "3355a8d5293198474c8cd97379317093f9e983ae",
+    "baselineReuse": "Fresh processes reuse the preceding costed event binaries only after exact engine/harness/toolchain/flag and executable checks. Measurement source is the actual embedded engine revision 3355a8d; documentation-only 2b37289 has identical measured inputs. Candidate executables are fresh.",
+    "measurementScope": "Core/API boundary and applications, expanded before timing to every additional group whose actual guest images change. All 22 fixture publications/checksum oracles required. No timing retry, flag/ISA/alignment sweep or subtraction."
+  },
+  "qualification": [
+    {
+      "compiler": "go",
+      "command": [
+        "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+        "test",
+        "-count=1",
+        "-timeout=4m",
+        "-coverpkg=./internal/compiler/codegen,./internal/engine/nativeexec",
+        "-coverprofile=/Users/lijie/source/goplus/wasmvm/artifacts/loop-frame-copies-20261105/final/go-coverage.out",
+        "./internal/compiler/codegen",
+        "./internal/engine/nativeexec",
+        "./pkg/vm"
+      ],
+      "exit": 0,
+      "wallSeconds": 4.550791084067896,
+      "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "sourceManifestSHA256": "e7d1dbcd6a44c9d5d5374d997da4197447b49cf35fa7647d52caae1dbde353f6",
+      "source": "993cbb3a59f9b19b58523ce8f239c2d6b37ec3dd"
+    },
+    {
+      "compiler": "llgo",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-3571c25",
+        "test",
+        "-O3",
+        "-lto=full",
+        "-count=1",
+        "-timeout=4m",
+        "./internal/compiler/codegen",
+        "./internal/engine/nativeexec",
+        "./pkg/vm"
+      ],
+      "exit": 0,
+      "wallSeconds": 35.45896408287808,
+      "compilerSHA256": "4ec6e101cc510011d56e8ef9dee4053abbde521f284963bd2b468b281d3fec0c",
+      "sourceManifestSHA256": "e7d1dbcd6a44c9d5d5374d997da4197447b49cf35fa7647d52caae1dbde353f6",
+      "source": "993cbb3a59f9b19b58523ce8f239c2d6b37ec3dd"
+    },
+    {
+      "compiler": "vet",
+      "command": [
+        "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+        "vet",
+        "./internal/compiler/codegen",
+        "./internal/engine/nativeexec"
+      ],
+      "exit": 0,
+      "wallSeconds": 0.21301887487061322,
+      "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "sourceManifestSHA256": "e7d1dbcd6a44c9d5d5374d997da4197447b49cf35fa7647d52caae1dbde353f6",
+      "source": "993cbb3a59f9b19b58523ce8f239c2d6b37ec3dd"
+    }
+  ],
+  "coverage": {
+    "github.com/cpunion/wasmvm/internal/compiler/codegen": {
+      "covered": 8286,
+      "total": 8485,
+      "percent": 97.65468473777254
+    },
+    "github.com/cpunion/wasmvm/internal/engine/nativeexec": {
+      "covered": 459,
+      "total": 496,
+      "percent": 92.54032258064517
+    }
+  },
+  "publication": {
+    "classification": "Output-only actual arm64 publication diagnostic; no timing or causal attribution",
+    "publications": 66,
+    "comparisons": [
+      {
+        "workload": "core/call-control",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 3420,
+        "headBytes": 3420,
+        "headPublishedSha256": "a0fa8b2c91e605d2096f695d31c91f9c931a01c023e865a69e259d39c12d0109",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "core/integer-loop",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 5736,
+        "headBytes": 5736,
+        "headPublishedSha256": "920cb918fd2a3c6c146a134aa723b796147488c16188bc320a1e3078415f3a90",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "core/function-calls",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 11360,
+        "headBytes": 11360,
+        "headPublishedSha256": "ab08262350eab3e2e434e94a1a39604a5db259f2e1f8b362c914191b6d870246",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "core/memory-load-store",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 10956,
+        "headBytes": 10956,
+        "headPublishedSha256": "ec6e88e780b9773b923d1f32e34d4ff1b56224d6a93a0a2e6f892b29ee9ffccd",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "memory/narrow-unaligned",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 11852,
+        "headBytes": 11852,
+        "headPublishedSha256": "fc351f11a5e29d1376962977ea59ad7878040c41adc2d4fa99167d83c053ee94",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "memory/dependent-address",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 10328,
+        "headBytes": 10328,
+        "headPublishedSha256": "602861154aa8731b9668c30214de5b5c249c52527ac8411a4e95c8ba80a0f9b7",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "memory/float64-unaligned",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 12544,
+        "headBytes": 12544,
+        "headPublishedSha256": "0746fed2328dc0e35774fa29a33e1557ee426f461697003a078037c2a2fcfa37",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "runtime/simd-memory-full",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 7720,
+        "headBytes": 7720,
+        "headPublishedSha256": "fcd26a870fbf6cf8b638cec3acdffa781e29125280d888745f99e26889b6d8f9",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "runtime/simd-memory-widen",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 6832,
+        "headBytes": 6832,
+        "headPublishedSha256": "06f2100f486a0626d8084ec4e6f3f8a876262d274c842e8881f95603fcd930b2",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "runtime/simd-memory-lanes",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 8384,
+        "headBytes": 8384,
+        "headPublishedSha256": "f6fe2b2c602ac5aeb04eee9119b0933827478adb8e410974ffde3f6a59aa09e6",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "gc/i31-roundtrip",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 4108,
+        "headBytes": 4108,
+        "headPublishedSha256": "c1de86b66d6f6c671dd4ef3b931fb2e42728c45136056556201be4b40a5cd265",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "gc/struct-access",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 5536,
+        "headBytes": 5536,
+        "headPublishedSha256": "6c5afdcf4e0d8601b68ee7ae447f813a3d845cf425472d4b9fa0c1e33fd8d54e",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "gc/struct-allocation",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 5216,
+        "headBytes": 5216,
+        "headPublishedSha256": "c84b4bc0da45dd14d9fdba78ba3644d6965ca895dba953072ac98fc0efe8e102",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "gc/struct-indirect-access",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 10016,
+        "headBytes": 10016,
+        "headPublishedSha256": "f453a70dcb98a2bca419ec7384ff4a71349f03ee9f84ea8e1f57689b5c124504",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "threads/private-memory",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 4860,
+        "headBytes": 4860,
+        "headPublishedSha256": "0666af058f56f95064392eb58f14687f6a2aa6a068c12532b976eac0e3f0efcb",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "threads/shared-memory",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 5104,
+        "headBytes": 5104,
+        "headPublishedSha256": "7a91d9b75e18fcc5015cfc7f181cfb4def4af8e837793ed5cf88be3baf2585b5",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "threads/atomic-rmw",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 4732,
+        "headBytes": 4732,
+        "headPublishedSha256": "e771495531ab85a193988efa8928d63b3beb0810cba49d458be2c94e03ee78e3",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "threads/notify-empty",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 4952,
+        "headBytes": 4952,
+        "headPublishedSha256": "2c505dc193b5145e497067fbee7463f2ecbbf550799105f1af7ca4b2ff201205",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "threads/wait-mismatch",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 5348,
+        "headBytes": 5348,
+        "headPublishedSha256": "c0d8273db694e440f3f64990e3f1354f7730eb1f489c724e933ebfe59ce97b3a",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "threads/wait-timeout",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 5328,
+        "headBytes": 5328,
+        "headPublishedSha256": "832544458203e619257a7737232a3755336120f6690402ef1df46c29704ce6fb",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "applications/sha256-clang",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 101308,
+        "headBytes": 101308,
+        "headPublishedSha256": "b7c0b375a2c232e058cdc6a8eae9f5298def7269f8048234fe589318092931a1",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "applications/sha256-rust",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 101476,
+        "headBytes": 101476,
+        "headPublishedSha256": "b235a9910d370b0dd91b2811c961414aa69c458f9cee0320694dfaff526d4c69",
+        "baselineHeadEntryOffsetsIdentical": true
+      }
+    ]
+  },
+  "goPreparationAllocationEvents": {
+    "classification": "Go heap allocation-event diagnostic only; no elapsed, LLGo allocation-counter, executable-memory or total-memory claim.",
+    "method": "testing.AllocsPerRun(5): one warmup, five fresh Engine/Compile/Close operations per identical module. Fixture file reading and result serialization are outside allocation counting. No Store/guest call.",
+    "cases": [
+      {
+        "workload": "core/call-control",
+        "baseAllocations": 593,
+        "headAllocations": 458,
+        "difference": -135
+      },
+      {
+        "workload": "core/integer-loop",
+        "baseAllocations": 1019,
+        "headAllocations": 623,
+        "difference": -396
+      },
+      {
+        "workload": "core/function-calls",
+        "baseAllocations": 1459,
+        "headAllocations": 1075,
+        "difference": -384
+      },
+      {
+        "workload": "core/memory-load-store",
+        "baseAllocations": 975,
+        "headAllocations": 765,
+        "difference": -210
+      },
+      {
+        "workload": "memory/narrow-unaligned",
+        "baseAllocations": 1605,
+        "headAllocations": 875,
+        "difference": -730
+      },
+      {
+        "workload": "memory/dependent-address",
+        "baseAllocations": 1319,
+        "headAllocations": 830,
+        "difference": -489
+      },
+      {
+        "workload": "memory/float64-unaligned",
+        "baseAllocations": 1040,
+        "headAllocations": 806,
+        "difference": -234
+      },
+      {
+        "workload": "runtime/simd-memory-full",
+        "baseAllocations": 1316,
+        "headAllocations": 767,
+        "difference": -549
+      },
+      {
+        "workload": "runtime/simd-memory-widen",
+        "baseAllocations": 1205,
+        "headAllocations": 741,
+        "difference": -464
+      },
+      {
+        "workload": "runtime/simd-memory-lanes",
+        "baseAllocations": 1371,
+        "headAllocations": 760,
+        "difference": -611
+      },
+      {
+        "workload": "gc/i31-roundtrip",
+        "baseAllocations": 596,
+        "headAllocations": 477,
+        "difference": -119
+      },
+      {
+        "workload": "gc/struct-access",
+        "baseAllocations": 732,
+        "headAllocations": 568,
+        "difference": -164
+      },
+      {
+        "workload": "gc/struct-allocation",
+        "baseAllocations": 718,
+        "headAllocations": 558,
+        "difference": -160
+      },
+      {
+        "workload": "gc/struct-indirect-access",
+        "baseAllocations": 1068,
+        "headAllocations": 776,
+        "difference": -292
+      },
+      {
+        "workload": "threads/private-memory",
+        "baseAllocations": 928,
+        "headAllocations": 602,
+        "difference": -326
+      },
+      {
+        "workload": "threads/shared-memory",
+        "baseAllocations": 930,
+        "headAllocations": 605,
+        "difference": -325
+      },
+      {
+        "workload": "threads/atomic-rmw",
+        "baseAllocations": 680,
+        "headAllocations": 535,
+        "difference": -145
+      },
+      {
+        "workload": "threads/notify-empty",
+        "baseAllocations": 678,
+        "headAllocations": 528,
+        "difference": -150
+      },
+      {
+        "workload": "threads/wait-mismatch",
+        "baseAllocations": 695,
+        "headAllocations": 545,
+        "difference": -150
+      },
+      {
+        "workload": "threads/wait-timeout",
+        "baseAllocations": 694,
+        "headAllocations": 544,
+        "difference": -150
+      },
+      {
+        "workload": "applications/sha256-clang",
+        "baseAllocations": 7511,
+        "headAllocations": 6910,
+        "difference": -601
+      },
+      {
+        "workload": "applications/sha256-rust",
+        "baseAllocations": 7480,
+        "headAllocations": 6838,
+        "difference": -642
+      }
+    ]
+  },
+  "x86": [
+    {
+      "producer": "clang",
+      "selectedDeferredWords": 2,
+      "baseInstructions": 92,
+      "headInstructions": 88,
+      "baseFrameReferences": 24,
+      "headFrameReferences": 20,
+      "polls": 1,
+      "baseBytes": 10956,
+      "headBytes": 10984
+    },
+    {
+      "producer": "rust",
+      "selectedDeferredWords": 0,
+      "baseInstructions": 85,
+      "headInstructions": 85,
+      "baseFrameReferences": 18,
+      "headFrameReferences": 18,
+      "polls": 1,
+      "baseBytes": 10866,
+      "headBytes": 10866
+    }
+  ],
+  "hosted": {
+    "run": 42051975324,
+    "source": "993cbb3a59f9b19b58523ce8f239c2d6b37ec3dd",
+    "baseline": "3355a8d5293198474c8cd97379317093f9e983ae",
+    "observation": {
+      "attempt": 1,
+      "conclusion": "",
+      "headSha": "993cbb3a59f9b19b58523ce8f239c2d6b37ec3dd",
+      "jobs": [
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "databaseId": 127330155082,
+          "name": "Build routing comparison once / linux-amd64",
+          "startedAt": "2026-11-05T15:08:49Z",
+          "status": "queued",
+          "steps": [],
+          "url": "https://github.com/cpunion/wasmvm/actions/runs/42051975324/job/127330155082"
+        },
+        {
+          "completedAt": "2026-11-05T15:08:49Z",
+          "conclusion": "skipped",
+          "databaseId": 127330156874,
+          "name": "Native feature and competitors / ${{ matrix.platform.name }}",
+          "startedAt": "2026-11-05T15:08:49Z",
+          "status": "completed",
+          "steps": [],
+          "url": "https://github.com/cpunion/wasmvm/actions/runs/42051975324/job/127330156874"
+        },
+        {
+          "completedAt": "2026-11-05T15:08:49Z",
+          "conclusion": "skipped",
+          "databaseId": 127330158052,
+          "name": "Runtime performance / linux-amd64",
+          "startedAt": "2026-11-05T15:08:50Z",
+          "status": "completed",
+          "steps": [],
+          "url": "https://github.com/cpunion/wasmvm/actions/runs/42051975324/job/127330158052"
+        },
+        {
+          "completedAt": "2026-11-05T15:08:49Z",
+          "conclusion": "skipped",
+          "databaseId": 127330158068,
+          "name": "Report benchmark comparison on PR",
+          "startedAt": "2026-11-05T15:08:50Z",
+          "status": "completed",
+          "steps": [],
+          "url": "https://github.com/cpunion/wasmvm/actions/runs/42051975324/job/127330158068"
+        }
+      ],
+      "status": "queued"
+    },
+    "scope": "One pinned Linux amd64 full 22-case comparison, pending."
+  },
+  "evidence": {
+    "path": "artifacts/loop-frame-copies-20261105/evidence.tar.gz",
+    "bytes": 1854290,
+    "sha256": "e7da5ce8408823e1c1dfd70dedd48954ea5568a1bb31ee6513fed816dc0a868a",
+    "files": 224
+  },
+  "inputs": [
+    {
+      "path": "allocations/audit.json",
+      "sha256": "81d78a64a2f1a7ed77a300c26c24a396a0334b6ce90285fd19ef75640f3e6836",
+      "bytes": 3502
+    },
+    {
+      "path": "local-build/build.json",
+      "sha256": "c321167bd16043e53c3e97c5f63efa7d7472a58c06814068fc334817b8f2f16f",
+      "bytes": 852187
+    },
+    {
+      "path": "publication/audit.json",
+      "sha256": "f1732a77b46ee591060b1387a6300ce52c7e62d5e4e8a32d8c7a3c773c01600b",
+      "bytes": 6448
+    },
+    {
+      "path": "publication/outputs.json",
+      "sha256": "d007fa4cd60fd0b21bc55eb0fe9a9a18f5f9b356bd4e810ca9bbc2598d9b157b",
+      "bytes": 121859
+    },
+    {
+      "path": "x86-sha/build.json",
+      "sha256": "9d172b3f2f6445dc1e7f35be2f5086f96ca85e81a9aceb7217c488302dcda4d9",
+      "bytes": 358483
+    },
+    {
+      "path": "x86-sha/spans.json",
+      "sha256": "f3f432f65c1b1c61ff8b2eb00f392d97f3bd75fa96f1805798ca90e25178008e",
+      "bytes": 28690
+    }
+  ],
+  "measurementDecision": {
+    "source": "993cbb3a59f9b19b58523ce8f239c2d6b37ec3dd",
+    "originalLocalTimingPlan": "Core and applications plus other changed-image groups.",
+    "localWarmCollectionStarted": false,
+    "reason": "All 22 actual arm64 guest images remain identical; the new execution mechanism selects x86 Clang SHA only. Avoid a redundant sustained arm64 execution event. Go allocation-event counting remains a separate compile diagnostic.",
+    "actualTimedEvent": {
+      "run": 42051975324,
+      "platform": "linux-amd64",
+      "groups": [
+        "core",
+        "memory-simd",
+        "gc",
+        "threads",
+        "applications"
+      ],
+      "baseline": "3355a8d5293198474c8cd97379317093f9e983ae",
+      "protocol": "Original counts; five fresh blocks, two warmups, seven interleaved calls; one shared build; no retry or flag/ISA/alignment sweep."
+    },
+    "initialEvidenceArchiveUnchanged": true
+  }
+}
