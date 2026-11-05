@@ -279,7 +279,17 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 			pc = end
 			continue
 		}
+		if end, ok := e.combineI31(pc); ok {
+			out.FusedIntegers++
+			pc = end
+			continue
+		}
 		if end, ok := e.combineMultiplyAdd(pc); ok {
+			out.FusedIntegers++
+			pc = end
+			continue
+		}
+		if end, ok := e.combineIntegerConstant(pc); ok {
 			out.FusedIntegers++
 			pc = end
 			continue
