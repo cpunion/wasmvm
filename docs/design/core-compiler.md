@@ -291,13 +291,12 @@ existing path. The frame is already validated, execution-owned storage; guest
 linear-memory proofs, polls, original PCs and precise fuel stay unchanged. See
 the [assembler witnesses and source-pinned comparison](../research/performance-frame-operands-2026-11-06.md).
 
-Fixed-map private loops also rank spilled integer Lo words for spare FP/SIMD
-homes. Raw bit moves preserve all 64 Lo bits and each independent frame Hi;
-typed homes, constants and deferred-copy targets remain disjoint. Existing
-moves, transitions and snapshots handle all observations. Variable mappings
-retain their typed banks. Cross-bank dependencies and larger entry/exit bodies
-still need target-specific elapsed validation; the ARM64 Clang observation is
-adverse. See the [raw register study](../research/performance-raw-integer-registers-2026-11-06.md).
+Copy/result forwarding shares eligibility with fully resident and mixed GPR/frame
+integer operations. Both forms emit through the common scalar selector and
+retain original cold entries and every observable word. The experimental raw-FP
+allocation policy was reverted after substantial Linux SHA regressions under
+both compilers. The engine retains its established typed banks and GPR/frame
+forms; see the [shared-selector evidence](../research/performance-mixed-scalar-forwarding-2026-11-06.md).
 
 Ordinary emission and bounded native regions use one ordered instruction
 selector pipeline. Their callers retain mapping, guard, remapping, shared-write

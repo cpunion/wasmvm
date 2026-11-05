@@ -1,9 +1,12 @@
 # Integer words in spare FP registers: 2026-11-06
 
-**Local Go/LLGo qualification passes; performance acceptance remains open.**
-Engine `0e32719ab934ea2246e320da777303a808b363f7` compares with
-`5099a76ddad5910dd2cfff195ca8a4bca9be9cf0`. ARM64 Clang SHA is slightly
-slower in this advisory event. The independent Linux comparison is still live.
+**Rejected and reverted.** Engine `0e32719ab934ea2246e320da777303a808b363f7`
+compares with `5099a76ddad5910dd2cfff195ca8a4bca9be9cf0`. The completed Linux
+event regresses both SHA cases by about 22% under LLGo and 23% under Go, with
+all four advisory controls resolved for each. Commit `4a744df` removes this
+production allocation strategy. The following design, semantic and static
+observations describe the rejected experiment; its code and evidence remain in
+history. Current development uses [mixed scalar forwarding](performance-mixed-scalar-forwarding-2026-11-06.md).
 
 ## Shared register and frame contracts
 
@@ -89,9 +92,21 @@ in the raw records. No timer subtraction, favorable retry or ISA/flag/alignment
 sweep is used. These observations do not identify a new LLGo compiler defect;
 LLGo #2983 remains with its existing contributor.
 
-The new [Linux event 42088602463](https://github.com/cpunion/wasmvm/actions/runs/42088602463)
+The completed [Linux event 42088602463](https://github.com/cpunion/wasmvm/actions/runs/42088602463)
 compares this exact engine against `5099a76`, with one shared build and all 22
-original-count workloads. It remains independent of local and prior events.
+original-count workloads. All six required jobs pass: build 314s, longest measurement group 392s. The audit
+checks 22 cases, 362 alternate configurations and 12 expected GC rejections.
+Nine cases resolve all four advisory controls, including both SHA cases.
+
+| Rejected Linux SHA | Go head/base | LLGo head/base | LLGo / Go | / wazero JIT | / Wasmtime | / native C |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Clang | 1.234 | 1.217 | 0.987 | 0.859 | 1.630 | 1.957 |
+| Rust | 1.236 | 1.218 | 0.984 | 0.813 | 1.604 | 1.911 |
+
+The measured regression withdraws this allocation policy. Removed frame accesses
+provide no elapsed acceptance; the hardware-level cause remains unisolated.
+All other rows, unresolved controls and lifecycle phases remain recorded.
+It remains independent of local and prior events.
 The completed [preceding Linux event](performance-frame-operands-2026-11-06.md)
 for `5099a76` has 22 cases, 362 alternate checks and nine cases resolving all
 four advisory controls. Its SHA LLGo head/base ratios are 0.970/0.919; ratios to
@@ -120,3 +135,7 @@ source/compiler identities and separate events. Immutable local evidence:
 SHA-256 `7b09e2b7d5cfd1bd1e840b18169103701177105b1f2c535fcc4c40002240e61f`.
 The completed preceding Linux archive is 2106484 bytes, 16 files;
 SHA-256 `2088852c440b1918313daaaedf4b51b168b6f5bef6cebbfb932ab2c737a0aeca`.
+
+Completed rejected Linux evidence: `artifacts/loop-raw-registers-20261106/hosted-evidence-final.tar.gz`,
+2112890 bytes, 16 files; SHA-256
+`62d5ae960295bd1ff14e9524103aceed593cb21cb54ab966f37432c4cf5325e3`.

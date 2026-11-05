@@ -96,7 +96,7 @@ advisory controls. No controlled milestone acceptance is claimed.
 
 All other rows, adverse observations, unresolved controls and separate lifecycle
 phases remain in the immutable report archive. This event does not validate the
-subsequent [raw-register change](performance-raw-integer-registers-2026-11-06.md).
+subsequently rejected [raw-register experiment](performance-raw-integer-registers-2026-11-06.md).
 
 ## Preceding validation and remaining gates
 

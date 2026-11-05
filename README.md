@@ -16,14 +16,16 @@ integration. Competing runtimes are independent test and benchmark references;
 execution never silently switches to one of them.
 
 Performance acceptance remains open. The
-[latest register study](docs/research/performance-raw-integer-registers-2026-11-06.md)
-removes the remaining 20/18 x86 SHA compression frame accesses using spare
-FP registers. Local Go/LLGo tests pass, while ARM64 Clang timing is slightly
-adverse and final Linux execution/performance validation is pending. The
-[preceding completed Linux comparison](docs/research/performance-frame-operands-2026-11-06.md)
-retains all 22 competitor/Go/LLGo/native-C workloads, separate phases and
-unresolved controls. Results are dated and target-specific; controlled
-competitive/native acceptance and final-head CI remain required.
+[latest scalar-forwarding study](docs/research/performance-mixed-scalar-forwarding-2026-11-06.md)
+shares existing GPR/frame instruction selection with copy/result forwarding.
+Local Go/LLGo qualification passes; final Linux execution and elapsed evidence
+remain required. The preceding FP-register allocation experiment is reverted
+after both Linux SHA cases regress by about 22% under LLGo. Its
+[complete adverse evidence](docs/research/performance-raw-integer-registers-2026-11-06.md)
+and the [last good comparison](docs/research/performance-frame-operands-2026-11-06.md)
+retain all 22 competitor/Go/LLGo/native-C workloads, separate phases and
+unresolved controls. Results remain dated and target-specific; controlled
+competitive/native acceptance and corrected-head CI remain open.
 The [gap audit](docs/research/performance-gaps-2026-11-02.md) retains the broader
 portfolio and independently reproduced upstream compiler reports.
 

@@ -1,0 +1,174 @@
+{
+  "classification": "Shared eligibility and copy/result forwarding for existing mixed GPR/frame arithmetic. Local related Go/LLGo suites pass; all22ARM64guest images are unchanged. New x86 selector numeric execution, full final-head CI and elapsed acceptance remain required.",
+  "plan": {
+    "baseline": "4a744df7c0b5907718f5909b99b58143b29b78a0",
+    "baselineEngine": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
+    "mechanism": "Expose existing nontrapping mixed integer forms to the shared scalar copy/result forwarding selectors. Share emission eligibility; do not add a bank, execution framework, opcode semantics, ISA requirement or guest fast path. Preserve every original cold PC, raw Lo/Hi, fuel/poll/trap boundary and deferred reconstruction.",
+    "requirements": [
+      "Both-width arithmetic, GPR/frame source and target combinations, source/destination aliasing, forwarded copies/literals and complete observable cold frames. Raw-FP production allocation is withdrawn as a separate failed experiment.",
+      "All existing Go/LLGo release suites and exact >=90% coverage, independent encoding witness and final Linux numeric execution.",
+      "Inspect actual publication and private loop spans before warm measurement. Preserve every losing/inconclusive observation and all separate preparation phases; no favorable repeat or flag/alignment sweep.",
+      "Keep current raw-source CI42091050950 and benchmark42088602463 live. Do not duplicate LLGo2983 or create another active contribution PR."
+    ],
+    "originalBaseline": "8dcd3346f9ba9e3f012ab85f81738d994e22ebf2",
+    "measurementBaseline": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
+    "rawDecision": "Rejected and reverted in4a744df after completed original-count Linux SHA LLGo head/base1.2172/1.2184, Go1.2338/1.2359; both all-four A/A controls resolved. Retain all raw-source evidence and source-bound CI8dcd334.",
+    "scopeCorrection": "Use the existing GPR/frame forms. No raw FP allocation remains in the production engine; the pending experimental forwarding patch was preserved before reverting the failed bank strategy.",
+    "source": "96ea7fb32b6397e704aa11598e80a1d3c657ca03",
+    "measurementScope": "Exact candidate against the last good frame-operand engine5099a76; the rejected raw-FP source remains an independent failed event. Inspect actual images before choosing local scope. Full22-case Linux comparison retains lifecycle/competitor/native/Go/LLGo rows.",
+    "baselineReuse": "Reuse exact-source5099a76 candidate binaries from the completed frame-operand event only after verifying all engine/harness/toolchain/profile/binary/library hashes. Current revert removes every production raw-FP change; component cancellation-test fix is separately retained.",
+    "originalRequirements": [
+      "Both-width arithmetic, raw/GPR/frame source and target combinations, source/destination aliasing, forwarded copies/literals and whole observable cold frames.",
+      "All existing Go/LLGo release suites and exact >=90% coverage, independent encoding witness and final Linux numeric execution.",
+      "Inspect actual publication and private loop spans before warm measurement. Preserve every losing/inconclusive observation and all separate preparation phases; no favorable repeat or flag/alignment sweep.",
+      "Keep current raw-source CI42091050950 and benchmark42088602463 live. Do not duplicate LLGo2983 or create another active contribution PR."
+    ]
+  },
+  "qualification": [
+    {
+      "compiler": "go",
+      "exit": 0,
+      "wallSeconds": 5.2746726660989225,
+      "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "source": "96ea7fb32b6397e704aa11598e80a1d3c657ca03"
+    },
+    {
+      "compiler": "llgo",
+      "exit": 0,
+      "wallSeconds": 35.729148749960586,
+      "compilerSHA256": "4ec6e101cc510011d56e8ef9dee4053abbde521f284963bd2b468b281d3fec0c",
+      "source": "96ea7fb32b6397e704aa11598e80a1d3c657ca03"
+    },
+    {
+      "compiler": "vet",
+      "exit": 0,
+      "wallSeconds": 0.24152899999171495,
+      "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "source": "96ea7fb32b6397e704aa11598e80a1d3c657ca03"
+    }
+  ],
+  "coverage": {
+    "github.com/cpunion/wasmvm/internal/compiler/codegen": {
+      "covered": 8460,
+      "total": 8660,
+      "percent": 97.6905311778291
+    },
+    "github.com/cpunion/wasmvm/internal/engine/nativeexec": {
+      "covered": 459,
+      "total": 496,
+      "percent": 92.54032258064517
+    }
+  },
+  "publication": {
+    "fixtures": 22,
+    "freshWitnesses": 44,
+    "reusedBaselineWitnesses": 22,
+    "changedImages": 0,
+    "baseHeadGoLLGoImagesAndEntryListsIdentical": true
+  },
+  "static": {
+    "target": "amd64",
+    "featureMask": 7,
+    "compressionInstructions": {
+      "clang": [
+        70,
+        69
+      ],
+      "rust": [
+        67,
+        65
+      ]
+    },
+    "frameReferences": {
+      "clang": [
+        20,
+        20
+      ],
+      "rust": [
+        18,
+        18
+      ]
+    },
+    "compressionFunctionBytes": {
+      "clang": [
+        10864,
+        10859
+      ],
+      "rust": [
+        10746,
+        10738
+      ]
+    },
+    "wrapperFunctionBytes": {
+      "clang": [
+        15868,
+        15892
+      ],
+      "rust": [
+        16178,
+        16202
+      ]
+    },
+    "scheduleInstructions": [
+      43,
+      43
+    ],
+    "scheduleFrameReferences": 0,
+    "pollsPerLoop": 1
+  },
+  "measurementDecision": "All22ARM64published images and entry lists match the exact5099a76baseline; do not repeat local warm measurements. Linux42093658819 retains all22original-count cases, five fresh blocks/seven interleaved calls, four A/A controls, alternate checks and lifecycle/competitor/native-C rows.",
+  "rejectedRaw": {
+    "source": "0e32719ab934ea2246e320da777303a808b363f7",
+    "baseline": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
+    "revert": "4a744df",
+    "completedLinuxRun": 42088602463,
+    "cases": 22,
+    "alternateChecks": 362,
+    "expectedUnsupported": 12,
+    "allFourResolvedCases": 9,
+    "shaGoHeadBase": {
+      "clang": 1.2338464229645525,
+      "rust": 1.2359449027335956
+    },
+    "shaLLGoHeadBase": {
+      "clang": 1.2172204992659412,
+      "rust": 1.2183557656703436
+    },
+    "bothSHAAllFourControlsResolved": true,
+    "evidence": {
+      "path": "artifacts/loop-raw-registers-20261106/hosted-evidence-final.tar.gz",
+      "bytes": 2112890,
+      "sha256": "62d5ae960295bd1ff14e9524103aceed593cb21cb54ab966f37432c4cf5325e3",
+      "files": 16
+    },
+    "localEvidence": {
+      "path": "artifacts/loop-raw-registers-20261106/evidence.tar.gz",
+      "bytes": 3327140,
+      "sha256": "7b09e2b7d5cfd1bd1e840b18169103701177105b1f2c535fcc4c40002240e61f",
+      "files": 343
+    },
+    "decision": "Reject and revert the production raw-FP bank strategy. Preserve its complete semantic and adverse performance evidence; do not pool it with the corrected source."
+  },
+  "ci": {
+    "priorRun": 42091050950,
+    "priorSource": "8dcd3346f9ba9e3f012ab85f81738d994e22ebf2",
+    "classification": "Keep original source-bound jobs live. This run covers the rejected raw source, not the corrected selector source. Start final-head CI only after it is terminal."
+  },
+  "currentLinuxRun": 42093658819,
+  "limitations": [
+    "Exact package coverage is not specification coverage.",
+    "The initial pressured-frame test has no forwarding opportunity across deferred-copy boundaries. Its failed count assertion is retained; separate direct selection and pressured ordinary-frame tests verify all twelve forms.",
+    "The ARM64 counterpart executes locally; newly selected x86 forwarding must execute under both compilers in Linux CI before integration.",
+    "The first publication attempt ran before its build manifest existed; it emitted no guest code. Its startup failure is retained and the completed build precedes all44actual publication witnesses.",
+    "No new opcode encoder or ISA requirement; existing LLVM witnesses apply to the retained encoders, while new complete-frame semantic checks remain required.",
+    "The original raw-source CI and later final-head CI are separate events. Do not restart live jobs due queue or observation timeout.",
+    "External LLGo2991 remains open and cannot be merged upstream under owner policy. LLGo2983 remains with its contributor.",
+    "General allocation/rematerialization, preparation costs, broader world/release conformance and controlled competitive/native acceptance remain open."
+  ],
+  "evidence": {
+    "path": "artifacts/loop-mixed-forwarding-20261106/evidence.tar.gz",
+    "bytes": 1776913,
+    "sha256": "fff33ac681e8a72a2d65ed8d1eefc0d378ae6839b33fe200382758c57eec2c84",
+    "files": 246
+  }
+}

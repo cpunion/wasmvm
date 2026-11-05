@@ -1,5 +1,5 @@
 {
-  "classification": "Raw integer Lo homes in spare FP/SIMD registers. Local ARM64 semantics and output/static witnesses pass; the ARM64 Clang warm observation is adverse. Actual final x86 semantics, full final-head CI and controlled competitive/native acceptance remain required.",
+  "classification": "Rejected and reverted in4a744df. Completed Linux original-count SHA elapsed regresses under both Go and LLGo despite zero frame traffic; both SHA cases resolve all four advisory controls. All raw semantic/performance evidence remains separate.",
   "plan": {
     "baseline": "3bf4213dcee9f68c0001605f93d7c18bb82a7435",
     "baselineEngine": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
@@ -638,10 +638,303 @@
     "files": 16
   },
   "currentLinux": {
-    "run": 42088602463,
-    "source": "0e32719ab934ea2246e320da777303a808b363f7",
-    "baseline": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
-    "status": "live; preserve the source-bound event"
+    "run": "https://github.com/cpunion/wasmvm/actions/runs/42088602463",
+    "sourceHead": "0e32719ab934ea2246e320da777303a808b363f7",
+    "sourceBase": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
+    "checkedAlternativeConfigurations": 362,
+    "resolvedWorkloads": 9,
+    "jobs": [
+      {
+        "id": 127460334003,
+        "name": "Build routing comparison once / linux-amd64",
+        "seconds": 314.0
+      },
+      {
+        "id": 127463302866,
+        "name": "Routing comparison / core",
+        "seconds": 153.0
+      },
+      {
+        "id": 127463302872,
+        "name": "Routing comparison / applications",
+        "seconds": 204.0
+      },
+      {
+        "id": 127463303020,
+        "name": "Routing comparison / threads",
+        "seconds": 62.0
+      },
+      {
+        "id": 127463303293,
+        "name": "Routing comparison / memory-simd",
+        "seconds": 392.0
+      },
+      {
+        "id": 127463303325,
+        "name": "Routing comparison / gc",
+        "seconds": 26.0
+      }
+    ],
+    "status": "complete",
+    "cases": 22,
+    "expectedReferenceRejections": 12,
+    "evidence": {
+      "path": "artifacts/loop-raw-registers-20261106/hosted-evidence-final.tar.gz",
+      "bytes": 2112890,
+      "sha256": "62d5ae960295bd1ff14e9524103aceed593cb21cb54ab966f37432c4cf5325e3",
+      "files": 16
+    },
+    "workloads": [
+      {
+        "workload": "core/call-control",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9304308797127468,
+          "llgoHeadBase": 0.9169497923744809,
+          "llgoGo": 1.171731789676797,
+          "llgoWazero": 6.930099857346647,
+          "llgoWasmtime": 3.6199701937406856
+        }
+      },
+      {
+        "workload": "core/integer-loop",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9989332877946236,
+          "llgoHeadBase": 1.001145426420046,
+          "llgoGo": 1.001211716266975,
+          "llgoWazero": 1.0088989471206862,
+          "llgoWasmtime": 1.0074061287714293,
+          "llgoC": 1.0135108949985376
+        }
+      },
+      {
+        "workload": "core/function-calls",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.014423516096848,
+          "llgoHeadBase": 1.000200946918285,
+          "llgoGo": 0.9953864343628193,
+          "llgoWazero": 0.5097470615080006,
+          "llgoWasmtime": 0.4988059370859239,
+          "llgoC": 0.8274295246816726
+        }
+      },
+      {
+        "workload": "core/memory-load-store",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9990631074202648,
+          "llgoHeadBase": 1.0051721580232638,
+          "llgoGo": 1.0002554976953162,
+          "llgoWazero": 0.7174103670562876,
+          "llgoWasmtime": 1.1726586620545665,
+          "llgoC": 1.6117773708214334
+        }
+      },
+      {
+        "workload": "memory/narrow-unaligned",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 1.0098565700309214,
+          "llgoHeadBase": 1.0029256107298379,
+          "llgoGo": 0.9961899100939484,
+          "llgoWazero": 0.75263230341066,
+          "llgoWasmtime": 1.200825899505723,
+          "llgoC": 2.002913312636794
+        }
+      },
+      {
+        "workload": "memory/dependent-address",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9991889494438974,
+          "llgoHeadBase": 1.0026558806514996,
+          "llgoGo": 0.9947293035877842,
+          "llgoWazero": 0.9448788160497689,
+          "llgoWasmtime": 1.3384865226519806,
+          "llgoC": 1.7750967871521401
+        }
+      },
+      {
+        "workload": "memory/float64-unaligned",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9920929324482624,
+          "llgoHeadBase": 1.0005330526372611,
+          "llgoGo": 1.0062328867053238,
+          "llgoWazero": 0.6961195893663392,
+          "llgoWasmtime": 1.0137701118581233,
+          "llgoC": 1.02072414472569
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-full",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 1.0009855806510737,
+          "llgoHeadBase": 0.9989947580662357,
+          "llgoGo": 0.9967167921454189,
+          "llgoWazero": 0.8604713727267419,
+          "llgoWasmtime": 1.06199546157723,
+          "llgoC": 0.8436191026130582
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-widen",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9872984319356849,
+          "llgoHeadBase": 0.9863492606851971,
+          "llgoGo": 0.9976430901521494,
+          "llgoWazero": 0.6598671927452657,
+          "llgoWasmtime": 1.622964132539496,
+          "llgoC": 0.5754086692210373
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-lanes",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9997546384512261,
+          "llgoHeadBase": 0.9989712067735104,
+          "llgoGo": 0.9962059089792468,
+          "llgoWazero": 0.9526529562889409,
+          "llgoWasmtime": 1.0846641702767261,
+          "llgoC": 1.3601808743212431
+        }
+      },
+      {
+        "workload": "gc/i31-roundtrip",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9875288683602771,
+          "llgoHeadBase": 1.0185900185900185,
+          "llgoGo": 0.9994855004677269,
+          "llgoWasmtime": 0.9229074889867841
+        }
+      },
+      {
+        "workload": "gc/struct-access",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9664846915803692,
+          "llgoHeadBase": 1.10122616721687,
+          "llgoGo": 0.9518416072208473,
+          "llgoWasmtime": 2.250361396021202
+        }
+      },
+      {
+        "workload": "gc/struct-allocation",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.0219677374310963,
+          "llgoHeadBase": 1.0052639057188508,
+          "llgoGo": 1.2198708804302034,
+          "llgoWasmtime": 0.2985874299219282
+        }
+      },
+      {
+        "workload": "gc/struct-indirect-access",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.019199062825408,
+          "llgoHeadBase": 0.9966466347829724,
+          "llgoGo": 1.0142894645353087,
+          "llgoWasmtime": 2.9335946317539143
+        }
+      },
+      {
+        "workload": "threads/private-memory",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9761536361154092,
+          "llgoHeadBase": 1.0157049790600279,
+          "llgoGo": 1.0854390054390055,
+          "llgoWazero": 1.3253889943074004,
+          "llgoWasmtime": 4.863389500069628
+        }
+      },
+      {
+        "workload": "threads/shared-memory",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9783969559346999,
+          "llgoHeadBase": 0.9054489464229706,
+          "llgoGo": 0.9959540835528792,
+          "llgoWazero": 1.361531535394246,
+          "llgoWasmtime": 4.436295054484493
+        }
+      },
+      {
+        "workload": "threads/atomic-rmw",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9188880842071846,
+          "llgoHeadBase": 1.0367346084189148,
+          "llgoGo": 1.0691944765339063,
+          "llgoWazero": 1.1431341767476222,
+          "llgoWasmtime": 1.515200660964825
+        }
+      },
+      {
+        "workload": "threads/notify-empty",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9956835086907928,
+          "llgoHeadBase": 0.985897435897436,
+          "llgoGo": 1.071569576156377,
+          "llgoWazero": 0.06358086786368836,
+          "llgoWasmtime": 0.13575645828838195
+        }
+      },
+      {
+        "workload": "threads/wait-mismatch",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.0155306612351787,
+          "llgoHeadBase": 1.0195722966394736,
+          "llgoGo": 1.0877117581748506,
+          "llgoWazero": 0.04511771906680453,
+          "llgoWasmtime": 0.13703451356583027
+        }
+      },
+      {
+        "workload": "threads/wait-timeout",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.0640021213509148,
+          "llgoHeadBase": 1.0659397581000234,
+          "llgoGo": 0.9324618242783995,
+          "llgoWazero": 0.005954040311906822,
+          "llgoWasmtime": 0.04546529097255976
+        }
+      },
+      {
+        "workload": "applications/sha256-clang",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 1.2338464229645525,
+          "llgoHeadBase": 1.2172204992659412,
+          "llgoGo": 0.9872589847285392,
+          "llgoWazero": 0.8590521316679361,
+          "llgoWasmtime": 1.6300064429561938,
+          "llgoC": 1.9570604307867003
+        }
+      },
+      {
+        "workload": "applications/sha256-rust",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 1.2359449027335956,
+          "llgoHeadBase": 1.2183557656703436,
+          "llgoGo": 0.9842087747091433,
+          "llgoWazero": 0.8134682115383626,
+          "llgoWasmtime": 1.604367284991367,
+          "llgoC": 1.9112187041204094
+        }
+      }
+    ]
   },
   "ciFailure": {
     "run": 42083219131,
@@ -665,5 +958,11 @@
     "bytes": 3327140,
     "sha256": "7b09e2b7d5cfd1bd1e840b18169103701177105b1f2c535fcc4c40002240e61f",
     "files": 343
+  },
+  "decision": {
+    "productionEnabled": false,
+    "revert": "4a744df",
+    "nextSource": "96ea7fb",
+    "reason": "Linux SHA LLGo+21.7/+21.8percent and Go+23.4/+23.6percent; both SHA controls resolve. The local ARM64 Clang observation is adverse too."
   }
 }
