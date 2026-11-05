@@ -97,7 +97,7 @@ func (e *functionEmitter) combineScalarCopies(start int) (int, bool) {
 		if deferConstant {
 			e.literal(previous)
 		}
-		e.registerScalar(in)
+		e.registerScalar(in, pc)
 	}
 	if end != pc {
 		if !e.overwrittenBeforeExit(end+1, original.Dst) {
@@ -130,11 +130,11 @@ func (e *functionEmitter) canRegisterScalar(in slots.Instruction, pc int) bool {
 	return e.canRegisterConversion(in)
 }
 
-func (e *functionEmitter) registerScalar(in slots.Instruction) {
+func (e *functionEmitter) registerScalar(in slots.Instruction, pc int) {
 	if nativeVectorOpcode(in.Op) {
 		e.vectorInstruction(in)
 	} else if isMemoryAccess(in.Op) {
-		e.memoryInstruction(in, true)
+		e.memoryAt(in, true, e.f.Sources[in.Source].Wasm.MemoryOffset(), e.memoryOperands[pc])
 	} else if isInteger(in.Op) {
 		e.integer(in)
 	} else if isFloat(in.Op) {
@@ -163,7 +163,7 @@ func (e *functionEmitter) forwardScalarResult(pc int) bool {
 	if !e.canRegisterScalar(forwarded, pc) {
 		return false
 	}
-	e.registerScalar(forwarded)
+	e.registerScalar(forwarded, pc)
 	if !e.overwrittenBeforeExit(pc+2, in.Dst) {
 		e.move(in.Dst, dst)
 	}

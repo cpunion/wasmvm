@@ -23,6 +23,7 @@ type memoryRegion struct {
 	values    *loopValuePlans
 	copies    *loopFrameCopies
 	predicate *loopPredicate
+	operands  map[int]memoryOperand
 }
 
 func (e *functionEmitter) codeLimit() int {
@@ -161,6 +162,7 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 			}
 			r.unroll = e.memoryUnroll(start, r)
 		}
+		r.operands = e.memoryOperandFacts(start, end, r)
 		if len(proven) != 0 || r.loop != nil {
 			regions[start] = r
 		}
@@ -191,6 +193,7 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 	e.regionLimit = end + 1
 	e.regionEnd = r.end + 1
 	e.provenPCs = r.proven
+	e.memoryOperands = r.operands
 	e.guardPCs = r.guards
 	e.addresses, e.elidedPCs = r.addresses, r.elided
 	e.regionPredicate = r.predicate
@@ -202,6 +205,7 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 		e.regionLimit = 0
 		e.regionEnd = 0
 		e.provenPCs = nil
+		e.memoryOperands = nil
 		e.guardPCs = nil
 		e.vectorAliases = nil
 		e.addresses = nil
@@ -270,11 +274,15 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 		}
 		if address, ok := r.addresses[pc]; ok {
 			in.A = address.local
-			e.memoryAt(in, true, address.offset)
+			e.memoryAt(in, true, address.offset, r.operands[pc])
 			continue
 		}
 		if end, ok := e.combinePlain(pc, start, out); ok {
 			pc = end
+			continue
+		}
+		if isMemoryAccess(in.Op) {
+			e.memoryAt(in, r.proven[pc], e.f.Sources[in.Source].Wasm.MemoryOffset(), r.operands[pc])
 			continue
 		}
 		e.plain(in, r.proven[pc])

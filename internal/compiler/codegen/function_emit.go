@@ -41,6 +41,8 @@ type functionEmitter struct {
 	elidedPCs                                                    map[int]bool
 	regionPredicate                                              *loopPredicate
 	boundsElided                                                 uint32
+	directMemoryOperands                                         uint32
+	memoryOperands                                               map[int]memoryOperand
 	constantRegisters                                            map[uint64]byte
 	runtimeRegisters                                             map[uint32]byte
 	registers                                                    map[slots.Slot]byte

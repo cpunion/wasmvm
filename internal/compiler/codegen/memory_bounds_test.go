@@ -52,6 +52,9 @@ func TestMemoryRangeProofs(t *testing.T) {
 				if err != nil || (c.BoundsElided >= 2) != tc.proven {
 					t.Fatal(arch, "range proof", err)
 				}
+				if arch == "amd64" && (c.DirectMemoryOperands != 0) != tc.proven {
+					t.Fatal(tc.name, "direct memory operand", c.DirectMemoryOperands, tc.proven)
+				}
 				limit := DefaultLimits()
 				limit.MaxCodeBytes = uint64(len(c.Entry.Code)) - 1
 				if _, err = CompileFunctionWithConfig(arch, f, limit, config); !errors.Is(err, wasm.ErrLimit) {

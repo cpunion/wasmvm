@@ -33,6 +33,7 @@ type CompiledFunction struct {
 	ForwardedPredicates           uint32
 	UsesMemory                    bool
 	BoundsElided                  uint32
+	DirectMemoryOperands          uint32
 	MemoryGuards, GuardedAccesses uint32
 	LoopGuards                    uint32
 	RegisterRegions               uint32
@@ -575,6 +576,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	out.EdgeCopies = e.edgeCopies
 	out.MixedIntegers = e.mixedIntegers
 	out.BoundsElided = e.boundsElided
+	out.DirectMemoryOperands = e.directMemoryOperands
 	out.AliasedVectorReads = e.aliasedVectorReads
 	body, err := a.finish()
 	if err != nil {
