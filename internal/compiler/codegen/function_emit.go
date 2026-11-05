@@ -19,6 +19,7 @@ type functionEmitter struct {
 	f                                                            *slots.Function
 	exit, bad, zero, overflow                                    int
 	edgeCopies                                                   uint32
+	mixedIntegers                                                uint32
 	unmetered                                                    bool
 	x86Features                                                  X86Features
 	arm64Features                                                ARM64Features
@@ -103,6 +104,9 @@ func (e *functionEmitter) integer(in slots.Instruction) {
 	}
 	wide := integerWide(op)
 	if e.registerInteger(op, in.Dst, in.A, in.B) {
+		return
+	}
+	if e.frameInteger(op, in.Dst, in.A, in.B) {
 		return
 	}
 	if op >= 0x6d && op <= 0x70 || op >= 0x7f && op <= 0x82 {

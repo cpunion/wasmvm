@@ -208,21 +208,8 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 		a.bytes(0xd3, 0xc0|ext<<3|d&7)
 		return true
 	}
-	var opcode byte
-	switch kind {
-	case 3:
-		opcode = 0x01
-	case 4:
-		opcode = 0x29
-	case 5:
-		opcode = 0xaf
-	case 10:
-		opcode = 0x21
-	case 11:
-		opcode = 0x09
-	case 12:
-		opcode = 0x31
-	default:
+	opcode := x86IntegerBinaryOpcode(kind)
+	if opcode == 0 {
 		return false
 	}
 	// Every arithmetic/logical operation below writes its complete destination.
@@ -230,8 +217,31 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 	if d != l {
 		e.registerMove(d, l, wide)
 	}
+	e.x86RegisterBinary(opcode, d, r, wide)
+	return true
+}
+
+func x86IntegerBinaryOpcode(kind uint32) byte {
+	switch kind {
+	case 3:
+		return 0x01
+	case 4:
+		return 0x29
+	case 5:
+		return 0xaf
+	case 10:
+		return 0x21
+	case 11:
+		return 0x09
+	case 12:
+		return 0x31
+	}
+	return 0
+}
+
+func (e *functionEmitter) x86RegisterBinary(opcode byte, d, r byte, wide bool) {
 	src, dest := r, d
-	if kind == 5 {
+	if opcode == 0xaf {
 		src, dest = d, r
 	}
 	rex := byte(0x40) | (src>>3)<<2 | dest>>3
@@ -239,13 +249,12 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 		rex |= 8
 	}
 	if rex != 0x40 {
-		a.bytes(rex)
+		e.a.bytes(rex)
 	}
-	if kind == 5 {
-		a.bytes(0x0f)
+	if opcode == 0xaf {
+		e.a.bytes(0x0f)
 	}
-	a.bytes(opcode, 0xc0|(src&7)<<3|dest&7)
-	return true
+	e.a.bytes(opcode, 0xc0|(src&7)<<3|dest&7)
 }
 
 // Immediate shift selection is valid only along a proven constant fallthrough.

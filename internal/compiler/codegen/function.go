@@ -29,6 +29,7 @@ type CompiledFunction struct {
 	ReferenceSlots                []uint32
 	Helpers, Calls, EdgeCopies    uint32
 	FusedIntegers                 uint32
+	MixedIntegers                 uint32
 	ForwardedPredicates           uint32
 	UsesMemory                    bool
 	BoundsElided                  uint32
@@ -572,6 +573,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	e.trapCode(wasm.TrapIntegerOverflow)
 	a.mark(e.exit)
 	out.EdgeCopies = e.edgeCopies
+	out.MixedIntegers = e.mixedIntegers
 	out.BoundsElided = e.boundsElided
 	out.AliasedVectorReads = e.aliasedVectorReads
 	body, err := a.finish()
