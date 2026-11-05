@@ -223,7 +223,11 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 	default:
 		return false
 	}
-	e.registerMove(d, l, wide)
+	// Every arithmetic/logical operation below writes its complete destination.
+	// A 32-bit result already clears the upper half, so no self-copy is needed.
+	if d != l {
+		e.registerMove(d, l, wide)
+	}
 	src, dest := r, d
 	if kind == 5 {
 		src, dest = d, r
@@ -366,7 +370,13 @@ func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, val
 		first, width = 0x86, 64
 	}
 	kind, count := op-first, uint32(value)&(width-1)
-	e.registerMove(d, l, wide)
+	if d != l || count == 0 {
+		// A zero-count shift may retain high bits; the copy canonicalizes i32.
+		e.registerMove(d, l, wide)
+	}
+	if count == 0 {
+		return true
+	}
 	rex := byte(0x40) | d>>3
 	if wide {
 		rex |= 8
