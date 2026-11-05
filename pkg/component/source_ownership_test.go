@@ -164,19 +164,30 @@ func TestSourceReadWithIndependentContext(t *testing.T) {
 		in, typ := sourceType(t, backend, "host-source-stream-u8")
 		finished := make(chan struct{}, 1)
 		_, err := in.WithCaller(nil, CallOptions{}, func(c *Caller) error {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			started := make(chan struct{})
 			value, err := c.NewSource(typ, AsyncSource{Read: func(c *Caller, _ uint32) (*ReadCompletion, error) {
 				p := NewReadCompletion()
 				ctx := c.Context()
 				go func() { <-ctx.Done(); p.Cancelled(); finished <- struct{}{} }()
+				close(started)
 				return p, nil
 			}})
 			if err != nil {
 				return err
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
-			defer cancel()
-			if _, err := c.ReadAsyncContext(ctx, value.Resource, 1); !errors.Is(err, context.DeadlineExceeded) {
-				return err
+			// Cancellation must follow source startup. A short wall deadline can
+			// expire before startup on a busy host, leaving no worker to join.
+			go func() {
+				select {
+				case <-started:
+					cancel()
+				case <-ctx.Done():
+				}
+			}()
+			if _, err := c.ReadAsyncContext(ctx, value.Resource, 1); !errors.Is(err, context.Canceled) {
+				t.Fatalf("%s independent read: %v", backend, err)
 			}
 			if c.Context().Err() != nil {
 				t.Fatal("operation cancellation escaped to parent")
