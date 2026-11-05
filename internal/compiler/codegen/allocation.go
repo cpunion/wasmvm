@@ -206,10 +206,7 @@ func (e *functionEmitter) selectRegisters(config Config, regions map[int]memoryR
 	}
 	slices.SortFunc(candidates, compareRegisterCandidates)
 	available := e.integerRegisterPool()
-	floatAvailable := []byte{3, 4, 5, 6, 7, 8, 9, 10}
-	if e.a.arch == "arm64" {
-		floatAvailable = []byte{8, 9, 10, 11, 12, 13, 14, 15, 16, 17}
-	}
+	floatAvailable := e.floatRegisterPool()
 	integers, floats, vectors := map[slots.Slot]byte{}, map[slots.Slot]byte{}, map[slots.Slot]byte{}
 	e.constantRegisters, e.runtimeRegisters = map[uint64]byte{}, map[uint32]byte{}
 	var used [32]bool

@@ -58,6 +58,7 @@ func (e *functionEmitter) transitionRegisters(next *registerPlan) {
 	if previous == next {
 		return
 	}
+	clear(e.vectorAliases)
 	e.registers, e.floatRegisters, e.vectorRegisters = nil, nil, nil
 	if previous != nil {
 		for _, s := range previous.slots {

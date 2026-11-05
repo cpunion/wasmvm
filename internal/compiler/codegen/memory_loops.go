@@ -24,12 +24,14 @@ type memoryLoop struct {
 	addresses     map[int]memoryAddress
 }
 type loopBackedge struct {
-	header    int
-	yes       bool
-	always    bool
-	flags     bool
-	exit      int
-	registers *registerPlan
+	header        int
+	yes           bool
+	always        bool
+	flags         bool
+	exit          int
+	registers     *registerPlan
+	branch        *registerPlan
+	restoreMemory bool
 }
 
 // One invariant local plus the entry cursor and a constant bias, modulo i32.
@@ -216,6 +218,9 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 		e.transitionRegisters(plan)
 		out.RegisterRegions++
 	}
+	// Remember a borrowed length even when later coalescing or a value split
+	// removes its owner. An unused R11 still contains that old cached word.
+	restoreMemory := e.loopBorrowedMemoryLength()
 	values := e.loopValueVersions(start, r)
 	coalesced, entry, merges := e.coalesceLoopRegisters(values, (r.end-start+1)*128)
 	if coalesced != nil {
@@ -224,18 +229,42 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 		out.CoalescedSlotGroups += merges
 	}
 	warm := e.hoistLoopLiterals(values, r, out)
+	warm.guards, warm.loop = nil, nil
+	// The range planner still needs the original loop eligibility marker.
+	candidate := warm
+	candidate.loop = loop
+	plans := e.loopValuePlans(start, candidate, previous)
+	restoreMemory = restoreMemory || e.loopBorrowedMemoryLength()
+	if plans != nil {
+		warm.values = plans
+		e.transitionRegisters(plans.at(start))
+		out.ValueLoops++
+		for _, p := range plans.plans {
+			if e.a.arch == "amd64" {
+				for _, reg := range p.homes {
+					restoreMemory = restoreMemory || reg == 11 && e.usesMemory
+				}
+			}
+		}
+	}
 	header := e.a.label()
 	e.a.mark(header)
 	if start%256 == 0 {
 		e.interrupt(uint32(start))
 	}
-	warm.guards, warm.loop = nil, nil
 	e.emitMemoryRegionRange(start, r.end, warm, pcs, out)
 	if e.loopBackedges == nil {
 		e.loopBackedges = map[int]loopBackedge{}
 	}
-	edge := loopBackedge{header: header, yes: loop.yes, always: loop.always, flags: loop.flags, exit: loop.exit}
-	if plan != nil || coalesced != nil {
+	edge := loopBackedge{header: header, yes: loop.yes, always: loop.always, flags: loop.flags, exit: loop.exit, restoreMemory: restoreMemory}
+	if plans != nil {
+		edge.branch = plans.at(r.end + 1)
+		if !equalRegisterPlans(edge.branch, plans.at(start)) {
+			edge.header = e.a.label()
+			e.allocationEdges = append(e.allocationEdges, allocationEdge{edge.header, header, edge.branch, plans.at(start)})
+		}
+	}
+	if plan != nil || coalesced != nil || plans != nil {
 		edge.registers = previous
 	}
 	e.loopBackedges[r.end+1] = edge

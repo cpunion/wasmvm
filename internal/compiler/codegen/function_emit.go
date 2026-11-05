@@ -33,6 +33,7 @@ type functionEmitter struct {
 	memoryPageSizes                                              []uint64
 	regionLimit                                                  int
 	regionEnd                                                    int
+	nativeRegionLimit                                            int
 	provenPCs                                                    map[int]bool
 	guardPCs                                                     map[int]memoryGuard
 	addresses                                                    map[int]memoryAddress
@@ -54,6 +55,9 @@ type functionEmitter struct {
 	allocationLimit                                              int
 	allocationEdges                                              []allocationEdge
 	allocationEntries                                            []allocationEdge
+	valueFlow                                                    *valueFlow
+	valueIntervals                                               []registerInterval
+	privatePollLabels                                            []int
 	pollExits                                                    []pollExit
 	trapExits                                                    []nativeTrapExit
 	callExits                                                    []nativeCallExit

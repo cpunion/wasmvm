@@ -139,6 +139,9 @@ func (e *functionEmitter) overwrittenBeforeExit(pc int, slot slots.Slot) bool {
 		// Selection stops at remapped accesses; observation scans may cross
 		// proven accesses, but a later guard can expose the complete frame.
 		limit = e.regionEnd
+		if e.allocationLimit != 0 {
+			limit = min(limit, e.allocationLimit)
+		}
 	}
 	for ; pc < limit && pc%256 != 0; pc++ {
 		if _, guard := e.guardPCs[pc]; guard {

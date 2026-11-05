@@ -121,7 +121,7 @@ func (b *scanBank) advance(block int, incoming []registerInterval) {
 	}
 }
 
-func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCells int) {
+func (e *functionEmitter) prepareSlotLinearScan(regions map[int]memoryRegion, maxCells int) {
 	if !e.unmetered {
 		return
 	}
@@ -247,11 +247,21 @@ func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCel
 		}
 		return 0
 	})
-	integers := scanBank{pool: e.integerRegisterPool()}
-	floats := scanBank{pool: []byte{3, 4, 5, 6, 7, 8, 9, 10}}
-	if e.a.arch == "arm64" {
-		floats.pool = []byte{8, 9, 10, 11, 12, 13, 14, 15, 16, 17}
+	for i := range order {
+		last := len(e.f.Code) - 1
+		if order[i].last+1 < len(blocks) {
+			last = blocks[order[i].last+1] - 1
+		}
+		order[i].first, order[i].last = blocks[order[i].first], last
 	}
+	e.installRegisterPlans(order, blocks, maxCells)
+}
+
+// Both conservative slot residency and SSA value ranges use this same bank,
+// mapping, spill/reload and cold-entry implementation. Endpoints are code PCs.
+func (e *functionEmitter) installRegisterPlans(order []registerInterval, blocks []int, maxCells int) {
+	integers := scanBank{pool: e.integerRegisterPool()}
+	floats := scanBank{pool: e.floatRegisterPool()}
 	baseline := e.currentRegisterPlan()
 	plans := make([]*registerPlan, len(e.f.Code))
 	var previous *registerPlan
@@ -263,7 +273,7 @@ func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCel
 	remainingCells := maxCells
 	for block, start := range blocks {
 		var inInteger, inFloat []registerInterval
-		for position < len(order) && order[position].first == block {
+		for position < len(order) && order[position].first == start {
 			interval := order[position]
 			t := e.f.Slots[interval.slot]
 			if t == wasm.F32 || t == wasm.F64 || t == wasm.V128 {
@@ -273,39 +283,15 @@ func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCel
 			}
 			position++
 		}
-		integers.advance(block, inInteger)
-		floats.advance(block, inFloat)
-		plan := &registerPlan{homes: map[slots.Slot]byte{}, floats: map[slots.Slot]byte{}, vectors: map[slots.Slot]byte{}}
-		for i, r := range integers.resident {
-			if r.valid {
-				plan.homes[r.interval.slot] = integers.pool[i]
-				plan.slots = append(plan.slots, r.interval.slot)
-				if baseline == nil {
-					useful = true
-				} else if _, ok := baseline.homes[r.interval.slot]; !ok {
-					useful = true
-				}
+		integers.advance(start, inInteger)
+		floats.advance(start, inFloat)
+		plan := registerBankPlan(e.f, &integers, &floats, nil)
+		for _, slot := range plan.slots {
+			kind, _ := registerLocation(baseline, slot)
+			if kind == 0 {
+				useful = true
 			}
 		}
-		for i, r := range floats.resident {
-			if r.valid {
-				s := r.interval.slot
-				if e.f.Slots[s] == wasm.V128 {
-					plan.vectors[s] = floats.pool[i]
-				} else {
-					plan.floats[s] = floats.pool[i]
-				}
-				plan.slots = append(plan.slots, s)
-				if baseline == nil {
-					useful = true
-				} else if _, f := baseline.floats[s]; !f {
-					if _, v := baseline.vectors[s]; !v {
-						useful = true
-					}
-				}
-			}
-		}
-		slices.Sort(plan.slots)
 		if equalRegisterPlans(previous, plan) {
 			plan = previous
 		} else {

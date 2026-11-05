@@ -2,6 +2,7 @@ package codegen
 
 import (
 	"math"
+	"slices"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
@@ -35,6 +36,10 @@ type CompiledFunction struct {
 	LoopGuards                    uint32
 	RegisterRegions               uint32
 	AllocationBlocks              uint32
+	ValueVersions, ValuePhis      uint32
+	ValueLoops                    uint32
+	// Generated private backedge polls, excluding header/guard/cold polls.
+	PrivatePollOffsets            []uint32
 	CoalescedSlotGroups           uint32
 	HoistedLiterals               uint32
 	NativeLoops                   uint32
@@ -262,6 +267,14 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	out.HeapCaches = uint32(len(e.heapCaches))
 	out.NativeAllocationBatch = e.allocationBatch
 	out.AllocationBlocks = uint32(len(e.allocationStarts))
+	if e.valueFlow != nil {
+		out.ValueVersions = uint32(len(e.valueFlow.nodes))
+		for _, node := range e.valueFlow.nodes {
+			if node.phi {
+				out.ValuePhis++
+			}
+		}
+	}
 	for _, in := range f.Code {
 		if nativeVectorOpcode(in.Op) || nativeVectorMemoryOpcode(in.Op) {
 			out.NativeVectors++
@@ -273,13 +286,32 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		}
 	}
 	var independentEntries []int
+	var regionStarts []int
+	for pc := range regions {
+		regionStarts = append(regionStarts, pc)
+	}
+	slices.Sort(regionStarts)
+	regionPosition := 0
 	combinedThrough := -1
 	allocationBlock := 0
 	for pc, in := range f.Code {
 		if pc <= combinedThrough {
 			continue
 		}
+		for regionPosition < len(regionStarts) && regionStarts[regionPosition] <= pc {
+			regionPosition++
+		}
+		e.nativeRegionLimit = 0
+		if regionPosition < len(regionStarts) {
+			e.nativeRegionLimit = regionStarts[regionPosition]
+		}
 		if edge, ok := e.loopBackedges[pc]; ok {
+			if edge.branch != nil {
+				e.transitionRegisters(edge.branch)
+			}
+			poll := a.label()
+			a.mark(poll)
+			e.privatePollLabels = append(e.privatePollLabels, poll)
 			e.interrupt(uint32(pc))
 			if edge.always {
 				a.branch(edge.header, false, 0)
@@ -299,7 +331,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			} else {
 				e.branchCondition(in.A, edge.header, edge.yes)
 			}
-			restoreMemory := e.loopBorrowedMemoryLength()
+			restoreMemory := edge.restoreMemory || e.loopBorrowedMemoryLength()
 			if edge.registers != nil {
 				e.transitionRegisters(edge.registers)
 			}
@@ -532,6 +564,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	for i, l := range pcs {
 		out.Offsets[i] = out.Entry.BodyOffset + uint32(a.labels[l])
+	}
+	for _, label := range e.privatePollLabels {
+		out.PrivatePollOffsets = append(out.PrivatePollOffsets, out.Entry.BodyOffset+uint32(a.labels[label]))
 	}
 	for _, call := range e.linkedRelocations {
 		out.CallRelocations = append(out.CallRelocations, CallRelocation{Offset: out.Entry.BodyOffset + uint32(a.labels[call.label]), Function: call.target})

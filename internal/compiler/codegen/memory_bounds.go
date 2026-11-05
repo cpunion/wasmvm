@@ -20,12 +20,16 @@ type memoryRegion struct {
 	elided    map[int]bool
 	loop      *nativeLoop
 	unroll    *memoryUnroll
+	values    *loopValuePlans
 }
 
 func (e *functionEmitter) codeLimit() int {
 	limit := len(e.f.Code)
 	if e.regionLimit != 0 {
 		limit = min(limit, e.regionLimit)
+	}
+	if e.nativeRegionLimit != 0 {
+		limit = min(limit, e.nativeRegionLimit)
 	}
 	if e.allocationLimit != 0 {
 		limit = min(limit, e.allocationLimit)
@@ -178,6 +182,7 @@ func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, pcs []int,
 }
 
 func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, pcs []int, out *CompiledFunction) {
+	previousLimit := e.allocationLimit
 	e.regionLimit = end + 1
 	e.regionEnd = r.end + 1
 	e.provenPCs = r.proven
@@ -185,6 +190,7 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 	e.addresses, e.elidedPCs = r.addresses, r.elided
 	e.vectorAliases = map[slots.Slot]slots.Slot{}
 	defer func() {
+		e.allocationLimit = previousLimit
 		e.regionLimit = 0
 		e.regionEnd = 0
 		e.provenPCs = nil
@@ -196,6 +202,9 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 	var boundaries []int
 	coalesced := e.coalescedRegisterSlots()
 	for pc := start; pc <= end; pc++ {
+		if r.values != nil && pc > start && r.values.at(pc) != r.values.at(pc-1) {
+			boundaries = append(boundaries, pc)
+		}
 		in := e.f.Code[pc]
 		local := slots.NoSlot
 		if in.Op == 0x21 || in.Op == 0x22 {
@@ -218,6 +227,10 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 	}
 	next := 0
 	for pc := start; pc <= end; pc++ {
+		if r.values != nil {
+			e.transitionRegisters(r.values.at(pc))
+			e.allocationLimit = min(end+1, r.values.next[pc-r.values.first])
+		}
 		if guard, ok := r.guards[pc]; ok {
 			cold := e.targetPC(pcs, pc)
 			if pc == start {

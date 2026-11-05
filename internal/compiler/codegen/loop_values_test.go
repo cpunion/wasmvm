@@ -300,49 +300,24 @@ func TestLoopValueCoalescingIncludesNonresidentEntryValues(t *testing.T) {
 func forcePrivateLoopPoll(t *testing.T, c *CompiledFunction, arch string) []byte {
 	t.Helper()
 	code := append([]byte(nil), c.Entry.Code...)
-	found := 0
-	// The original conditional PC has a later independent cold entry. Its
-	// checked backedge is not the private loop whose aliased snapshot we test.
-	limit := int(c.Offsets[len(c.Function.Code)-2])
+	if len(c.PrivatePollOffsets) != 1 {
+		t.Fatal(arch, "private poll sites", c.PrivatePollOffsets)
+	}
+	pc := int(c.PrivatePollOffsets[0])
 	if arch == "arm64" {
 		load := uint32(0xf9400009) | uint32(nativeabi.ControlOffset/8)<<10
-		for pc := 0; pc+12 <= limit; pc += 4 {
-			a, b := binary.LittleEndian.Uint32(code[pc:]), binary.LittleEndian.Uint32(code[pc+4:])
-			if a != load || b&0xff00001f != 0xb5000009 {
-				continue
-			}
-			for branch := pc + 8; branch < pc+24 && branch+4 <= limit; branch += 4 {
-				d := binary.LittleEndian.Uint32(code[branch:])
-				conditional := (d&0xff000010 == 0x54000000 || d&0x7e000000 == 0x34000000) && d&0x00800000 != 0
-				unconditional := d&0xfc000000 == 0x14000000 && d&0x02000000 != 0
-				if conditional || unconditional {
-					binary.LittleEndian.PutUint32(code[pc:], 0xd2800029)
-					found++
-					break
-				}
-			}
+		if binary.LittleEndian.Uint32(code[pc:]) != load || binary.LittleEndian.Uint32(code[pc+4:])&0xff00001f != 0xb5000009 {
+			t.Fatal("private poll metadata did not identify the actual control load")
 		}
+		binary.LittleEndian.PutUint32(code[pc:], 0xd2800029)
 	} else {
 		pattern := []byte{0x48, 0x83, 0xbf}
 		pattern = binary.LittleEndian.AppendUint32(pattern, uint32(nativeabi.ControlOffset))
 		pattern = append(pattern, 0)
-		for pc := 0; pc+24 <= limit; pc++ {
-			if !bytes.Equal(code[pc:pc+8], pattern) || code[pc+8] != 0x0f || code[pc+9] != 0x85 {
-				continue
-			}
-			for branch := pc + 14; branch < pc+30 && branch+6 <= len(code); branch++ {
-				conditional := code[branch] == 0x0f && (code[branch+1] == 0x84 || code[branch+1] == 0x85) && int32(binary.LittleEndian.Uint32(code[branch+2:])) < 0
-				unconditional := code[branch] == 0xe9 && int32(binary.LittleEndian.Uint32(code[branch+1:])) < 0
-				if conditional || unconditional {
-					copy(code[pc:pc+8], []byte{0x48, 0x83, 0xff, 1, 0x90, 0x90, 0x90, 0x90})
-					found++
-					break
-				}
-			}
+		if !bytes.Equal(code[pc:pc+8], pattern) || code[pc+8] != 0x0f || code[pc+9] != 0x85 {
+			t.Fatal("private poll metadata did not identify the actual control comparison")
 		}
-	}
-	if found != 1 {
-		t.Fatal(arch, "private poll sites", found)
+		copy(code[pc:pc+8], []byte{0x48, 0x83, 0xff, 1, 0x90, 0x90, 0x90, 0x90})
 	}
 	return code
 }
