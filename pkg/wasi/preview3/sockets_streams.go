@@ -66,26 +66,24 @@ func (s *netStream) Close() error {
 	p.mu.Lock()
 	delete(p.streams, s)
 	closed := p.closed
+	if !closed && s.shutdown {
+		// Close joins admitted cleanup before it can force-close descriptors.
+		p.workers.Add(1)
+	}
 	p.mu.Unlock()
 	if closed || !s.shutdown {
 		s.socket.release()
 		return nil
 	}
-	// Half-close outside the VM, retaining the object until this queued work has
-	// run. At most two data streams exist per physical TCP socket.
-	p.jobs <- func() {
-		p.mu.Lock()
-		closed := s.socket.closed
-		p.mu.Unlock()
-		if !closed {
-			how := unix.SHUT_WR
-			if s.input {
-				how = unix.SHUT_RD
-			}
-			_ = unix.Shutdown(s.socket.fd, how)
-		}
-		s.socket.release()
+	defer p.workers.Done()
+	// These sockets are nonblocking. Complete the half-close and release this
+	// lease before the guest can consume another physical-socket quota slot.
+	how := unix.SHUT_WR
+	if s.input {
+		how = unix.SHUT_RD
 	}
+	_ = unix.Shutdown(s.socket.fd, how)
+	s.socket.release()
 	return nil
 }
 func (s *netStream) check(ctx context.Context) error {

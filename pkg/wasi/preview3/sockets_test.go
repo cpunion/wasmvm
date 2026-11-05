@@ -136,28 +136,21 @@ func TestSocketShutdownDrainsDescriptorLeases(t *testing.T) {
 			close(release)
 		}
 	}()
-	p.jobs <- func() { close(started); <-release; s.release() }
+	if err := p.begin(); err != nil {
+		t.Fatal(err)
+	}
+	go func() { close(started); <-release; s.release(); p.end() }()
 	<-started
 	p.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	ticker := time.NewTicker(time.Millisecond)
-	defer ticker.Stop()
-	for {
-		p.mu.Lock()
-		stopping := p.stopping
-		p.mu.Unlock()
-		if stopping {
-			break
-		}
-		select {
-		case <-ctx.Done():
-			t.Fatal("socket shutdown did not reach the reaper", ctx.Err())
-		case <-ticker.C:
-		}
+	wait, stop := context.WithTimeout(ctx, time.Millisecond)
+	if err := p.WaitClosed(wait); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatal("socket shutdown did not join admitted descriptor work", err)
 	}
+	stop()
 	if _, err := unix.FcntlInt(uintptr(s.fd), unix.F_GETFD, 0); err != nil {
-		t.Fatal("descriptor closed while a half-close job retained its lease", err)
+		t.Fatal("descriptor closed while admitted work retained its lease", err)
 	}
 	close(release)
 	if err := p.WaitClosed(ctx); err != nil {

@@ -19,6 +19,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"sync/atomic"
@@ -162,6 +163,13 @@ func testUpstreamWASIConsumer(t *testing.T, root, name, backend string, scenario
 		t.Fatal(err)
 	}
 	cfg := WorldConfig{Environment: env, IO: IOConfig{Stdin: NewBytesInput(input), Stdout: output, Stderr: diagnostic}, FileSystem: FileSystemConfig{Preopens: []FileSystemPreopen{{GuestPath: ".", HostPath: dir}}}, Sockets: SocketsConfig{AllowBind: allow, AllowConnect: allow, AllowSend: allow, AllowReceive: allow, AllowNameLookup: true, Resolve: resolve}, HTTP: HTTPConfig{AllowRequest: func(context.Context, *url.URL) error { return nil }, AllowConnect: allow, ForbiddenHeaders: []string{"custom-forbidden-header"}}}
+	if name == "p3_sockets_tcp_busy_poll" {
+		// Sequential connections must reclaim their physical sockets without
+		// depending on a separately scheduled cleanup worker.
+		cfg.Sockets.MaxSockets = 8
+		previous := runtime.GOMAXPROCS(1)
+		defer runtime.GOMAXPROCS(previous)
+	}
 	if name == "p3_cli_deny_listen" {
 		cfg.Sockets = SocketsConfig{}
 	}

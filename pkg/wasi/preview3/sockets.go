@@ -33,21 +33,20 @@ type SocketsConfig struct {
 	ResolveTimeout                                     time.Duration
 }
 type Sockets struct {
-	mu               sync.Mutex
-	io               *IO
-	config           SocketsConfig
-	ctx              context.Context
-	cancel           context.CancelFunc
-	closed, stopping bool
-	done, reaped     chan struct{}
-	workers          sync.WaitGroup
-	active, opening  uint32
-	next             uint64
-	resources        map[string]*component.HostResourceType
-	handles          map[uint32]*netSocket
-	objects          map[*netSocket]struct{}
-	streams          map[*netStream]struct{}
-	jobs             chan func()
+	mu              sync.Mutex
+	io              *IO
+	config          SocketsConfig
+	ctx             context.Context
+	cancel          context.CancelFunc
+	closed          bool
+	done            chan struct{}
+	workers         sync.WaitGroup
+	active, opening uint32
+	next            uint64
+	resources       map[string]*component.HostResourceType
+	handles         map[uint32]*netSocket
+	objects         map[*netSocket]struct{}
+	streams         map[*netStream]struct{}
 }
 type netSocket struct {
 	mu                                 sync.Mutex
@@ -97,11 +96,10 @@ func NewSockets(ioOwner *IO, config SocketsConfig) (*Sockets, error) {
 		config.Resolve = func(ctx context.Context, name string) ([]netip.Addr, error) { return r.LookupNetIP(ctx, "ip", name) }
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	p := &Sockets{io: ioOwner, config: config, ctx: ctx, cancel: cancel, done: make(chan struct{}), reaped: make(chan struct{}), next: 1, handles: map[uint32]*netSocket{}, objects: map[*netSocket]struct{}{}, streams: map[*netStream]struct{}{}, jobs: make(chan func(), int(config.MaxSockets)*3+1), resources: map[string]*component.HostResourceType{}}
+	p := &Sockets{io: ioOwner, config: config, ctx: ctx, cancel: cancel, done: make(chan struct{}), next: 1, handles: map[uint32]*netSocket{}, objects: map[*netSocket]struct{}{}, streams: map[*netStream]struct{}{}, resources: map[string]*component.HostResourceType{}}
 	for _, name := range []string{"tcp-socket", "udp-socket"} {
 		p.resources[name] = component.NewHostResourceType(func(_ *component.Caller, id uint32) error { p.drop(id); return nil })
 	}
-	go p.reap()
 	return p, nil
 }
 func (p *Sockets) check(ctx context.Context) error {
@@ -217,28 +215,11 @@ func (s *netSocket) close() {
 		return
 	}
 	s.closed = true
-	p.mu.Unlock()
 	// The last lease must release the binding before a subsequent guest bind
 	// or send. These nonblocking sockets never enable positive SO_LINGER.
 	_ = unix.Close(s.fd)
-	p.mu.Lock()
 	delete(p.objects, s)
 	p.mu.Unlock()
-}
-func (p *Sockets) reap() {
-	defer close(p.reaped)
-	for {
-		job := <-p.jobs
-		if job != nil {
-			job()
-		}
-		p.mu.Lock()
-		stop := p.stopping
-		p.mu.Unlock()
-		if stop && len(p.jobs) == 0 {
-			return
-		}
-	}
 }
 func (p *Sockets) publish(c *component.Caller, s *netSocket) (component.Value, error) {
 	p.mu.Lock()
@@ -313,13 +294,6 @@ func (p *Sockets) Close() {
 	p.cancel()
 	go func() {
 		p.workers.Wait()
-		// Half-close jobs retain their socket leases. Drain them before forced
-		// shutdown closes remaining guest handles, preventing descriptor reuse.
-		p.mu.Lock()
-		p.stopping = true
-		p.mu.Unlock()
-		p.jobs <- nil
-		<-p.reaped
 		p.mu.Lock()
 		objects := make([]*netSocket, 0, len(p.objects))
 		for s := range p.objects {

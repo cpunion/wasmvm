@@ -149,8 +149,11 @@ invalid/zoned results, unmapped IPv4 duplicates and empty results. Resolver
 callbacks are bounded by name/address/work limits and a timeout.
 
 MaxSockets bounds published capabilities and physical objects separately,
-including unpublished accepted sockets and deferred closes. A bounded cleanup
-queue retains FD leases through half-close and closes outside VM callbacks.
+including unpublished accepted sockets and admitted cleanup. Nonblocking
+half-closes release their leases synchronously, so sequential guest connections
+do not depend on a cleanup worker being scheduled before quota admission.
+Cleanup admitted under the owner lock joins the same shutdown barrier as host
+work; forced close cannot reuse its descriptor before the half-close finishes.
 MaxWorkers bounds async datagram/connect/DNS/readiness work; IO limits also bound
 stream operations and batches. Native batch completion cleanup releases accepted
 FDs after publication, cancellation or abandonment, including late returns.
