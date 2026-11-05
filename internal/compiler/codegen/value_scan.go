@@ -11,11 +11,12 @@ func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCel
 	if !e.unmetered {
 		return
 	}
+	e.prepareSlotLinearScan(regions, maxCells)
+	previousPlans, previousStarts := e.allocationPlans, e.allocationStarts
 	starts := make([]bool, len(e.f.Code))
 	starts[0] = true
 	remaining := maxCells
 	if len(e.f.Handlers)+len(e.f.Prompts) > remaining {
-		e.prepareSlotLinearScan(regions, maxCells)
 		return
 	}
 	for _, edge := range e.f.Edges {
@@ -24,12 +25,10 @@ func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCel
 	for _, handler := range e.f.Handlers {
 		remaining -= len(handler.Catches)
 		if remaining < 0 {
-			e.prepareSlotLinearScan(regions, maxCells)
 			return
 		}
 		for _, c := range handler.Catches {
 			if uint64(c.PC) >= uint64(len(starts)) {
-				e.prepareSlotLinearScan(regions, maxCells)
 				return
 			}
 			starts[c.PC] = true
@@ -38,12 +37,10 @@ func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCel
 	for _, catches := range e.f.Prompts {
 		remaining -= len(catches)
 		if remaining < 0 {
-			e.prepareSlotLinearScan(regions, maxCells)
 			return
 		}
 		for _, c := range catches {
 			if uint64(c.PC) >= uint64(len(starts)) {
-				e.prepareSlotLinearScan(regions, maxCells)
 				return
 			}
 			starts[c.PC] = true
@@ -69,9 +66,9 @@ func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCel
 			blocks = append(blocks, pc)
 		}
 	}
-	flow := buildValueFlow(e.f, blocks, regions, instructionFrequencies(e.f), maxCells)
+	frequencies := instructionFrequencies(e.f)
+	flow := buildValueFlow(e.f, blocks, regions, frequencies, maxCells)
 	if flow == nil {
-		e.prepareSlotLinearScan(regions, maxCells)
 		return
 	}
 	intervals := flow.intervals()
@@ -87,23 +84,23 @@ func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCel
 		loops[i].first, loops[i].last = flow.blocks[loops[i].first].first, flow.blocks[loops[i].last].end-1
 	}
 	order := append([]registerInterval(nil), intervals...)
+	// Ordinary mappings keep the original block boundaries. Fine-grained value
+	// endpoints would fragment cold dispatch and prevent instruction selection
+	// even when no physical mapping changes. Private loops split explicitly.
+	for i := range order {
+		first, _ := slices.BinarySearch(blocks, order[i].first+1)
+		last, _ := slices.BinarySearch(blocks, order[i].last+1)
+		order[i].first = flow.blocks[first-1].first
+		order[i].last = flow.blocks[last-1].end - 1
+	}
 	extendRegisterLoops(order, loops)
 	order = mergeValueIntervals(order)
-	for _, interval := range order {
-		starts[interval.first] = true
-		if interval.last+1 < len(starts) {
-			starts[interval.last+1] = true
-		}
-	}
-	points := blocks[:0]
-	for pc, first := range starts {
-		if first {
-			points = append(points, pc)
-		}
-	}
 	sortValueIntervals(order)
 	e.valueFlow, e.valueIntervals = flow, intervals
-	e.installRegisterPlans(order, points, maxCells)
+	e.installRegisterPlans(order, blocks, maxCells)
+	if e.valueAllocationCost(e.allocationPlans, regions, frequencies) >= e.valueAllocationCost(previousPlans, regions, frequencies) {
+		e.allocationPlans, e.allocationStarts = previousPlans, previousStarts
+	}
 }
 
 func sortValueIntervals(intervals []registerInterval) {
