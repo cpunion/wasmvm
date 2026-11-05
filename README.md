@@ -16,16 +16,14 @@ integration. Competing runtimes are independent test and benchmark references;
 execution never silently switches to one of them.
 
 Performance acceptance remains open. The
-[compiler preparation study](docs/research/performance-typed-compiler-ordering-2026-11-05.md)
-removes reflective ordering and formatted signature keys. All 22 native images
-remain identical and Go heap event counts fall, while elapsed observations
-remain inconclusive and adverse rows stay recorded. The
-[loop compilation study](docs/research/performance-loop-invariant-literals-2026-11-05.md)
-records all 22 competitor/Go/LLGo/native-C comparisons, separate preparation
-phases and adverse outcomes. No workload resolves all four local A/A controls;
-static code reductions do not establish elapsed improvement. The
-[gap audit](docs/research/performance-gaps-2026-11-02.md) retains the broader
-portfolio and upstream compiler reports.
+[latest value-allocation study](docs/research/performance-cfg-value-allocation-2026-11-05.md)
+records a rejected application regression, its costed correction and remaining
+preparation costs. The
+[full hosted comparison](docs/research/performance-loop-nonresident-values-2026-11-05.md)
+retains all 22 competitor/Go/LLGo/native-C workloads and separate execution phases.
+Results are dated and target-specific; they do not establish a universal winner.
+The [gap audit](docs/research/performance-gaps-2026-11-02.md) retains the broader
+portfolio and independently reproduced upstream compiler reports.
 
 ## Project status
 

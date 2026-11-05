@@ -235,6 +235,19 @@ their checked sequence. Header polls, trapping bodies and unproved memory
 accesses reject the motion. Full-frame poll/exit publication uses the existing
 plans. See the [execution, static output and inconclusive elapsed comparison](../research/performance-loop-invariant-literals-2026-11-05.md).
 
+A bounded full-CFG value graph now reconstructs write versions and entry phis
+from slot operations, including ordered edge copies and opaque handler/prompt
+entries. Iterative predecessor resolution avoids recursive depth and fixed-point
+sweeps. Ordinary allocation rounds value ranges to structural block boundaries,
+keeps cyclic mappings stable and compares complete weighted access/transfer
+costs against the conservative slot plan. Private nontrapping loops may split
+unshared integer, FP and vector residency using the same banks, selector and
+backedge-transition stubs. Shared bundles remain pinned; every displaced raw
+word is stored. New mapping points bound both selection and observation scans.
+Rematerialization/frame reconstruction remains required. The initial ordinary
+fine-endpoint mapping regressed applications and was rejected; see the
+[semantic tests, retained regressions and costed correction](../research/performance-cfg-value-allocation-2026-11-05.md).
+
 Ordinary emission and bounded native regions use one ordered instruction
 selector pipeline. Their callers retain mapping, guard, remapping, shared-write
 boundaries and all original-PC continuations. Logical shifts, live integer

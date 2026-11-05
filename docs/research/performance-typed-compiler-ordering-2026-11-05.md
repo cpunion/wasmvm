@@ -153,12 +153,19 @@ job durations.
 
 ## Outstanding gates and evidence
 
-This candidate stays on the contribution branch. Full exact final-head
-Go/LLGo CI on both targets and review remain required. The already dispatched
-[42011604985](https://github.com/cpunion/wasmvm/actions/runs/42011604985) validates
-the preceding `42ca455` source; it does not validate this candidate. Existing
-[41992901763](https://github.com/cpunion/wasmvm/actions/runs/41992901763) measures
-the still earlier `00bb578` source. Neither is restarted or relabeled.
+[Final-head CI 42018345234](https://github.com/cpunion/wasmvm/actions/runs/42018345234)
+passes for source `97667b6` (engine `55976a4`): 21 required successful jobs,
+one intentional optional skip, 240 conformance reports across all four
+compiler/platform profiles and 31 packages in seven LLGo shards per platform.
+All 30 package coverage gates pass; the minimum is **90.75%**. The longest
+successful job is **499 s (8m19s)**, excluding queue time. Manifest pins,
+compiler/platform identities and forced Stack Switching collection are audited.
+These results do not validate later CFG value allocation.
+
+The superseded `42ca455` run 42011604985 was canceled once production changed,
+after preserving its metadata; this was a source replacement, not a timing retry.
+The existing `00bb578` comparison 41992901763 is now complete in its
+[separate report](performance-loop-nonresident-values-2026-11-05.md).
 The one-active-contribution policy still holds while LLGo #2991 is open.
 LLGo #2983 stays with its existing contributor.
 
@@ -177,3 +184,5 @@ the existing harness exclusion and did not change engine code or timing data.
 
 Local bundle: `artifacts/typed-compiler-ordering-20261105/evidence.tar.gz`, 3447715 bytes, 206 files;
 SHA-256 `1b127ac948d35b9c83a1a167b294822ba6bcc5ce91abe90bcb2c15300b907436`. Earlier bundles are immutable.
+
+Full CI artifacts are retained separately in `artifacts/typed-compiler-ordering-20261105/ci-artifacts-evidence.tar.gz`, 5813140 bytes, 267 files; SHA-256 `ce285149acc3ebadea541ad6ad991f53d6389c86fe9f4e8d7af872cc1f260762`. The earlier `ci-evidence.tar.gz` contains run/audit metadata only.
