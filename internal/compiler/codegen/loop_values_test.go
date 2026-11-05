@@ -123,6 +123,28 @@ func coalescedArithmeticLoopFixture(reverse, flags, always bool) *slots.Function
 			f.Sources[in.Source].Wasm.Op = 0x46
 		}
 	}
+	// Shared inputs remain eligible for shifted-operand selection. The final
+	// frame still observes every intermediate, so overwrite the two temporaries.
+	var rotations []slots.Instruction
+	emit := func(op uint32, dst, a, b slots.Slot, bits uint64) {
+		source := uint32(len(f.Sources))
+		f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: op, Bits: bits, Offset: uint64(1000 + source)}})
+		rotations = append(rotations, slots.Instruction{Op: op, Dst: dst, A: a, B: b, C: slots.NoSlot, Source: source})
+	}
+	emit(0x41, 12, slots.NoSlot, slots.NoSlot, 13)
+	emit(0x78, 13, 2, 12, 0)
+	emit(0x73, 14, 2, 13, 0)
+	emit(0x41, 12, slots.NoSlot, slots.NoSlot, 19)
+	emit(0x78, 13, 2, 12, 0)
+	emit(0x73, 14, 14, 13, 0)
+	emit(0x41, 12, slots.NoSlot, slots.NoSlot, 0)
+	pc := len(f.Code) - 4
+	f.Code = append(append(append([]slots.Instruction(nil), f.Code[:pc]...), rotations...), f.Code[pc:]...)
+	for i := range f.Edges {
+		if f.Edges[i].PC > 1 {
+			f.Edges[i].PC += uint32(len(rotations))
+		}
+	}
 	if reverse {
 		f.Edges[0], f.Edges[1] = f.Edges[1], f.Edges[0]
 	}
@@ -281,6 +303,9 @@ func TestCoalescedLoopEveryPCFullFramesMemoryAndGeneratedPoll(t *testing.T) {
 			}
 			if c.NativeLoops != 1 || test.arithmetic && (c.UsesMemory || c.LoopGuards != 0) {
 				t.Fatal(arch, "loop classification", test.name, c.NativeLoops, c.UsesMemory, c.LoopGuards)
+			}
+			if test.arithmetic && test.flags && arch == "arm64" && c.FusedIntegers < 2 {
+				t.Fatal("shared input prevented shifted-operand selection", c.FusedIntegers)
 			}
 			forcePrivateLoopPoll(t, c, arch)
 		}

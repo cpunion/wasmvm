@@ -198,17 +198,13 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 	for pc := start; pc <= end; pc++ {
 		in := e.f.Code[pc]
 		local := slots.NoSlot
-		if in.Op >= 0x20 && in.Op <= 0x22 {
+		if in.Op == 0x21 || in.Op == 0x22 {
 			local = slots.Slot(e.f.Sources[in.Source].Wasm.A)
 		}
-		operand := in.A
-		if remap, ok := r.addresses[pc]; ok {
-			operand = remap.local
-		}
 		// Selectors may extend copy reads or advance a following local write.
-		// Keep instructions touching shared homes independent, so the version
-		// proof describes the actual emitted lifetime of every shared word.
-		if coalesced[operand] || coalesced[in.B] || coalesced[in.C] || coalesced[in.Dst] || coalesced[local] {
+		// Split at every shared-home write. Read-only sequences may still fuse:
+		// their inputs cannot change physical value before the next boundary.
+		if coalesced[in.Dst] || coalesced[local] {
 			boundaries = append(boundaries, pc, pc+1)
 			continue
 		}
