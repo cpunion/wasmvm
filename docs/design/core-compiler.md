@@ -218,6 +218,16 @@ writes split instruction selection, while read-only sequences retain fusion.
 Vector aliases expire on every write to their physical source register.
 See the [nonresident-value evidence](../research/performance-loop-nonresident-values-2026-11-05.md).
 
+The same loop version graph now serves coalescing and invariant literal
+materialization. A literal moves before the private header only when its
+original entry word is unread and every write assigns identical typed bits.
+Slots sharing a physical home remain excluded. All six literal classes retain
+their exact representation, including floating-point signed zero and NaN bits.
+The private body omits those writes; original cold PCs and failed guards keep
+their checked sequence. Header polls, trapping bodies and unproved memory
+accesses reject the motion. Full-frame poll/exit publication uses the existing
+plans. See the [execution, static output and inconclusive elapsed comparison](../research/performance-loop-invariant-literals-2026-11-05.md).
+
 Ordinary emission and bounded native regions use one ordered instruction
 selector pipeline. Their callers retain mapping, guard, remapping, shared-write
 boundaries and all original-PC continuations. Logical shifts, live integer

@@ -1,7 +1,7 @@
 # Register homes for nonresident loop values: 2026-11-05
 
-**Local dual-compiler execution passes; full CI and elapsed-time acceptance
-remain open.** Engine source: `00bb57898295bb2994e2362cae8cdf3c85b431af`;
+**Full four-profile Go/LLGo CI passes; elapsed-time acceptance remains open.**
+Engine source: `00bb57898295bb2994e2362cae8cdf3c85b431af`;
 baseline: `67ce0eb52e5b5f7be40e5d0838f4139bc4bc3043` (engine `2f8e44f`).
 The [preceding event](performance-loop-scratch-registers-hosted-2026-11-05.md)
 is retained and does not measure this change.
@@ -61,11 +61,19 @@ materialization is retained. Core integer/memory modules stay at 2188/4284 bytes
 These counts do not establish elapsed improvement or competitor parity.
 
 [Full CI 41992896773](https://github.com/cpunion/wasmvm/actions/runs/41992896773)
-and [comparison 41992901763](https://github.com/cpunion/wasmvm/actions/runs/41992901763)
-are incomplete at the recorded observation, with jobs queued or running. Neither
-workflow has been resubmitted. The comparison retains all five groups, both
-compilers, competitor/native rows, separate phases and adverse observations.
-Final-head CI, review, elapsed-time/controlled acceptance, general value
+passes all 21 required jobs, with one intentional optional skip. The independent
+artifact audit verifies 240 conformance reports across all four compiler/platform
+combinations, 31 test packages in seven LLGo shards per platform and 30 package
+coverage gates. Minimum coverage is **90.88%**. The longest job takes **504 s
+(8m24s)**; queue time is separate. All Stack Switching reports force collection.
+These results apply to `00bb578`, not the later invariant-literal source.
+
+[Comparison 41992901763](https://github.com/cpunion/wasmvm/actions/runs/41992901763)
+remains pending at the closeout observation: its shared build passes and five
+measurement groups await runners. Neither workflow has been resubmitted.
+The comparison retains all five groups, both compilers, competitor/native rows,
+separate phases and adverse observations. Contribution review and final-head CI,
+elapsed-time/controlled acceptance, general value
 allocation/splitting/rematerialization and broader WASI-world qualification remain
 open. Integration stays on this branch under the one-active-contribution policy
 while LLGo #2991 remains open. LLGo #2983 stays with its existing contributor.
@@ -75,3 +83,9 @@ sources, commands, compiler hashes, coverage, manifest audits and raw file hashe
 Local archive: `artifacts/loop-nonresident-values-20261105/evidence.tar.gz`,
 440324 bytes, SHA-256
 `0d5e55345c6c478d20061c48827922415e641136230ad1f669c67ad7d5dacfab`.
+
+The subsequent CI bundle is separate:
+`artifacts/loop-nonresident-values-20261105/ci-evidence.tar.gz`, 5810541 bytes,
+267 files, SHA-256
+`a07c8a20fb6fe1415163f42b98e099b49737da624c7ec146df1197f2f1c993b3`.
+The initial archive remains immutable.

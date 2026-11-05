@@ -15,28 +15,13 @@ wasmvm owns decoding, validation, compilation, execution, guest GC and host
 integration. Competing runtimes are independent test and benchmark references;
 execution never silently switches to one of them.
 
-Current optimization evidence: [competitor, Go/LLGo and ordinary-native gaps](docs/research/performance-gaps-2026-11-02.md), with per-case outcomes and upstream compiler reports. Performance acceptance remains open.
-
-The [Cgo compiler study](docs/research/performance-llgo-cgo-upgrade-2026-11-04.md)
-isolates the merged LLGo checking-closure fix. In its independent M4 cohort,
-native entry improves 121→72 ns and complete native public calls 802→748 ns
-(−6.7%); full calls remain 2.34x Go and 11.17x Wasmtime. The broader upstream
-upgrade is held after public-call regressions; all GC and other adverse outcomes
-remain recorded.
-
-The [native boundary study](docs/research/performance-native-boundary-2026-11-04.md)
-moves cleanup frames to ownership-changing paths. Local M4 batch-inclusive LLGo
-native public empty calls improve 839→717 ns (−14.6%), and internal dispatch
-220→145 ns (−33.9%). Public calls remain 2.45x Go and 12.08x Wasmtime;
-cancellation policies, longer kernels and adverse outcomes remain explicit.
-
-The [shared-header study](docs/research/performance-shared-headers-2026-11-04.md)
-unifies object metadata and native views in one 32-byte header. Local M4 long-chain
-allocation changes LLGo 38.71→31.18 ns/object (−19.5%), still
-3.46x Wasmtime. Native empty/sparse allocation improves about 23%; remaining
-interpreter regressions and all original-count comparisons remain explicit.
-Earlier studies retain their independent cohorts, held variants and the
-[LLGo compiler baseline event](docs/research/performance-llgo-result-upgrade-2026-11-03.md).
+Performance acceptance remains open. The latest
+[loop compilation study](docs/research/performance-loop-invariant-literals-2026-11-05.md)
+records all 22 competitor/Go/LLGo/native-C comparisons, separate preparation
+phases and adverse outcomes. No workload resolves all four local A/A controls;
+static code reductions do not establish elapsed improvement. The
+[gap audit](docs/research/performance-gaps-2026-11-02.md) retains the broader
+portfolio and upstream compiler reports.
 
 ## Project status
 
@@ -283,6 +268,13 @@ records primary sources, feature flags and ambiguous entries.
 | [Wago 90f2b57](https://github.com/wago-org/wago/tree/90f2b57dafa7f8c3cc7e3aca38b91148f15e1d1e) | Go; beta runtime | Reports Core 3, optional Threads, compact imports and wide arithmetic; no fresh performance measurement here |
 
 ### Measured performance
+
+The [2026-11-05 source event](docs/research/performance-loop-invariant-literals-2026-11-05.md)
+provides the latest 22-case local arm64 table and published Go/LLGo code audit.
+Its A/A controls resolve **0/22** workloads, so no performance gate closes.
+The [preceding hosted comparison](docs/research/performance-loop-scratch-registers-hosted-2026-11-05.md)
+retains the independent amd64 cohort. Results from different sources/hosts
+must be read separately.
 
 **Performance parity is not achieved.** The 2026-11-01 audit measures engine
 `4ad69c2` on Apple M4 Max, macOS arm64, Go 1.27.3 and LLGo `8e45ed5` with
