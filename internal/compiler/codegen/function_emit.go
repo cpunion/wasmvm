@@ -58,6 +58,10 @@ type functionEmitter struct {
 	valueFlow                                                    *valueFlow
 	valueIntervals                                               []registerInterval
 	privatePollLabels                                            []int
+	frameAliases                                                 map[slots.Slot]slots.Slot
+	deferredFrameSlots                                           map[slots.Slot]bool
+	frameCopyLimit                                               int
+	pollFrameCopies                                              []loopSlotCopy
 	pollExits                                                    []pollExit
 	trapExits                                                    []nativeTrapExit
 	callExits                                                    []nativeCallExit
@@ -88,6 +92,7 @@ type pollExit struct {
 	label     int
 	pc        uint32
 	registers *registerPlan
+	copies    []loopSlotCopy
 }
 
 func (e *functionEmitter) integer(in slots.Instruction) {
@@ -204,6 +209,7 @@ func (e *functionEmitter) decrement() {
 	}
 }
 func (e *functionEmitter) slotLoad(slot slots.Slot, reg byte, high, wide bool) {
+	slot = e.frameRead(slot)
 	if slot == slots.NoSlot {
 		e.constant(reg, 0)
 		return
@@ -285,6 +291,10 @@ func (e *functionEmitter) slotStore(slot slots.Slot, reg byte, high bool) {
 	a.word(0xf9000000 | uint32(reg+9) | base<<5 | (offset/8)<<10)
 }
 func (e *functionEmitter) move(dst, src slots.Slot) {
+	if e.deferredFrameSlots != nil && e.deferredFrameSlots[dst] {
+		return
+	}
+	src = e.frameRead(src)
 	if dst == slots.NoSlot || dst == src {
 		return
 	}
@@ -454,7 +464,7 @@ func (e *functionEmitter) interrupt(pc uint32) {
 		e.a.bytes(0)
 		e.branch(exit, "ne")
 	}
-	e.pollExits = append(e.pollExits, pollExit{exit, pc, e.currentRegisterPlan()})
+	e.pollExits = append(e.pollExits, pollExit{exit, pc, e.currentRegisterPlan(), e.pollFrameCopies})
 }
 
 func (e *functionEmitter) emitPollExits() {
@@ -465,6 +475,7 @@ func (e *functionEmitter) emitPollExits() {
 		if e.a.arch == "arm64" {
 			e.a.word(0xd50339bf) // dmb ishld: acquire after the atomic load.
 		}
+		e.materializeFrameCopies(exit.copies)
 		e.leave(nativeabi.Poll, 0, uint64(exit.pc))
 	}
 	e.useRegisterPlan(baseline)

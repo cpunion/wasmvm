@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
+	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
 func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCells int) {
@@ -13,6 +14,24 @@ func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCel
 	}
 	e.prepareSlotLinearScan(regions, maxCells)
 	previousPlans, previousStarts := e.allocationPlans, e.allocationStarts
+	// Uncongested banks already hold every slot. Keep their stable mappings
+	// without constructing a full write-version CFG merely to reorder homes.
+	if len(e.f.Handlers) == 0 && len(e.f.Prompts) == 0 {
+		integers, floats := len(e.integerRegisterPool()), len(e.floatRegisterPool())
+		for _, typ := range e.f.Slots {
+			if typ == wasm.F32 || typ == wasm.F64 || typ == wasm.V128 {
+				floats--
+			} else {
+				integers--
+			}
+			if integers < 0 || floats < 0 {
+				break
+			}
+		}
+		if integers >= 0 && floats >= 0 {
+			return
+		}
+	}
 	starts := make([]bool, len(e.f.Code))
 	starts[0] = true
 	remaining := maxCells

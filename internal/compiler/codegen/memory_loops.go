@@ -32,6 +32,8 @@ type loopBackedge struct {
 	registers     *registerPlan
 	branch        *registerPlan
 	restoreMemory bool
+	copies        []loopSlotCopy
+	aliases       map[slots.Slot]slots.Slot
 }
 
 // One invariant local plus the entry cursor and a constant bias, modulo i32.
@@ -247,6 +249,10 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 			}
 		}
 	}
+	warm.copies = e.planLoopFrameCopies(values, warm, (r.end-start+1)*128)
+	if warm.copies != nil {
+		out.DeferredFrameCopies += uint32(len(warm.copies.final))
+	}
 	header := e.a.label()
 	e.a.mark(header)
 	if start%256 == 0 {
@@ -257,6 +263,10 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 		e.loopBackedges = map[int]loopBackedge{}
 	}
 	edge := loopBackedge{header: header, yes: loop.yes, always: loop.always, flags: loop.flags, exit: loop.exit, restoreMemory: restoreMemory}
+	if warm.copies != nil {
+		edge.copies = warm.copies.final
+		edge.aliases = warm.copies.aliases[len(warm.copies.aliases)-1]
+	}
 	if plans != nil {
 		edge.branch = plans.at(r.end + 1)
 		if !equalRegisterPlans(edge.branch, plans.at(start)) {

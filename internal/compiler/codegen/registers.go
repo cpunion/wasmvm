@@ -118,6 +118,7 @@ func (e *functionEmitter) spillRegisters() {
 // Common integer operations can name the allocated registers directly. The
 // remaining instructions retain the tested constrained-register lowering.
 func (e *functionEmitter) canRegisterInteger(op uint32, dst, left, right slots.Slot) bool {
+	left, right = e.frameRead(left), e.frameRead(right)
 	d, dok := e.registers[dst]
 	l, lok := e.registers[left]
 	r, rok := e.registers[right]
@@ -138,6 +139,7 @@ func (e *functionEmitter) canRegisterInteger(op uint32, dst, left, right slots.S
 }
 
 func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot) bool {
+	left, right = e.frameRead(left), e.frameRead(right)
 	if !e.canRegisterInteger(op, dst, left, right) {
 		return false
 	}
@@ -249,6 +251,7 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 // Immediate shift selection is valid only along a proven constant fallthrough.
 // The original slot PC keeps the generic instruction for independent entry.
 func (e *functionEmitter) canRegisterImmediate(op uint32, dst, left slots.Slot, value uint64) bool {
+	left = e.frameRead(left)
 	d, dok := e.registers[dst]
 	l, lok := e.registers[left]
 	if !dok || !lok {
@@ -334,6 +337,7 @@ func armRegisterImmediate(op uint32, dst, left byte, value uint64) (uint32, bool
 }
 
 func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, value uint64) bool {
+	left = e.frameRead(left)
 	d, dok := e.registers[dst]
 	l, lok := e.registers[left]
 	if !dok || !lok {

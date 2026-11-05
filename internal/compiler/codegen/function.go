@@ -38,6 +38,7 @@ type CompiledFunction struct {
 	AllocationBlocks              uint32
 	ValueVersions, ValuePhis      uint32
 	ValueLoops                    uint32
+	DeferredFrameCopies           uint32
 	// Generated private backedge polls, excluding header/guard/cold polls.
 	PrivatePollOffsets            []uint32
 	CoalescedSlotGroups           uint32
@@ -306,6 +307,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			e.nativeRegionLimit = regionStarts[regionPosition]
 		}
 		if edge, ok := e.loopBackedges[pc]; ok {
+			e.frameAliases = edge.aliases
+			e.pollFrameCopies = edge.copies
 			if edge.branch != nil {
 				e.transitionRegisters(edge.branch)
 			}
@@ -313,12 +316,14 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			a.mark(poll)
 			e.privatePollLabels = append(e.privatePollLabels, poll)
 			e.interrupt(uint32(pc))
+			e.pollFrameCopies = nil
 			if edge.always {
 				a.branch(edge.header, false, 0)
 				if edge.registers != nil {
 					e.useRegisterPlan(edge.registers)
 				}
 				independentEntries = append(independentEntries, pc)
+				e.frameAliases = nil
 				continue
 			}
 			if arch == "arm64" && edge.flags {
@@ -331,6 +336,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			} else {
 				e.branchCondition(in.A, edge.header, edge.yes)
 			}
+			e.frameAliases = nil
+			e.materializeFrameCopies(edge.copies)
 			restoreMemory := edge.restoreMemory || e.loopBorrowedMemoryLength()
 			if edge.registers != nil {
 				e.transitionRegisters(edge.registers)

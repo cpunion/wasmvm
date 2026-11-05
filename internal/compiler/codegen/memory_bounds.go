@@ -21,6 +21,7 @@ type memoryRegion struct {
 	loop      *nativeLoop
 	unroll    *memoryUnroll
 	values    *loopValuePlans
+	copies    *loopFrameCopies
 }
 
 func (e *functionEmitter) codeLimit() int {
@@ -30,6 +31,9 @@ func (e *functionEmitter) codeLimit() int {
 	}
 	if e.nativeRegionLimit != 0 {
 		limit = min(limit, e.nativeRegionLimit)
+	}
+	if e.frameCopyLimit != 0 {
+		limit = min(limit, e.frameCopyLimit)
 	}
 	if e.allocationLimit != 0 {
 		limit = min(limit, e.allocationLimit)
@@ -190,6 +194,8 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 	e.addresses, e.elidedPCs = r.addresses, r.elided
 	e.vectorAliases = map[slots.Slot]slots.Slot{}
 	defer func() {
+		e.frameAliases, e.deferredFrameSlots = nil, nil
+		e.frameCopyLimit = 0
 		e.allocationLimit = previousLimit
 		e.regionLimit = 0
 		e.regionEnd = 0
@@ -202,6 +208,9 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 	var boundaries []int
 	coalesced := e.coalescedRegisterSlots()
 	for pc := start; pc <= end; pc++ {
+		if r.copies != nil && r.copies.boundary[pc-r.copies.first] {
+			boundaries = append(boundaries, pc)
+		}
 		if r.values != nil && pc > start && r.values.at(pc) != r.values.at(pc-1) {
 			boundaries = append(boundaries, pc)
 		}
@@ -227,6 +236,11 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 	}
 	next := 0
 	for pc := start; pc <= end; pc++ {
+		if r.copies != nil {
+			e.frameAliases = r.copies.aliases[pc-r.copies.first]
+			e.deferredFrameSlots = r.copies.deferred
+			e.frameCopyLimit = min(end+1, r.copies.next[pc-r.copies.first])
+		}
 		if r.values != nil {
 			e.transitionRegisters(r.values.at(pc))
 			e.allocationLimit = min(end+1, r.values.next[pc-r.values.first])

@@ -142,6 +142,9 @@ func (e *functionEmitter) overwrittenBeforeExit(pc int, slot slots.Slot) bool {
 		if e.allocationLimit != 0 {
 			limit = min(limit, e.allocationLimit)
 		}
+		if e.frameCopyLimit != 0 {
+			limit = min(limit, e.frameCopyLimit)
+		}
 	}
 	for ; pc < limit && pc%256 != 0; pc++ {
 		if _, guard := e.guardPCs[pc]; guard {
@@ -161,6 +164,10 @@ func (e *functionEmitter) overwrittenBeforeExit(pc int, slot slots.Slot) bool {
 			address = remap.local
 		}
 		in.A = address
+		in.A, in.B, in.C = e.frameRead(in.A), e.frameRead(in.B), e.frameRead(in.C)
+		if op == 0x20 {
+			local = e.frameRead(local)
+		}
 		read, write := scalarSlotUse(in, local, slot)
 		if read {
 			return false
