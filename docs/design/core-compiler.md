@@ -167,12 +167,15 @@ within this local transform. See the [loop-plan evidence](../research/performanc
 
 The subsequent global slot-residency pass scans conservative first/last access
 intervals over basic blocks, with separate integer and shared FP/vector banks.
-Expiration and furthest-end eviction split residency; a spilled slot can regain
-a register later. Residency intervals extend through backward control edges,
-including their branch block. Nested and crossing spans merge before endpoint
-extension, preventing loop-body and backedge mappings from repeatedly spilling
-and reloading the same words. Traversal retains its existing edge/tuple budget;
-span sorting and endpoint lookup avoid a loop/slot Cartesian product.
+Expiration and cost-based eviction split residency; a spilled slot can regain
+a register later. Eviction reuses the conservative allocator's existing access
+priorities, with deterministic endpoint and slot tie-breaks. An iterative CFG
+SCC traversal identifies actual cycles before residency spans are extended
+through their branch blocks. A backward layout edge to an earlier return block
+does not form a loop. Nested and crossing cyclic spans merge before endpoint
+extension, preventing repeated mapping transfers around a hot loop. Graph
+nodes/edges, tuples and materialized maps have explicit work bounds; sorting
+and endpoint lookup avoid a loop/slot Cartesian product.
 Every displaced word reaches its canonical frame before any
 replacement loads. Branch copies retain the existing typed move plans, while
 mapping transitions belong to their actual source edge. One shared cold-entry
@@ -197,6 +200,14 @@ and V128 snapshots at its poll and ordinary exits. Pairwise interference work
 has a body-proportional bound; exhaustion keeps the incoming plan. Shared-home
 writes split instruction selection, while read-only sequences retain fusion.
 Vector aliases expire on every write to their physical source register.
+
+Ordinary emission and bounded native regions use one ordered instruction
+selector pipeline. Their callers retain mapping, guard, remapping, shared-write
+boundaries and all original-PC continuations. Logical shifts, live integer
+literal selection and i31 fusion therefore remain available inside a native
+loop without duplicating the selector inventory. Exact-frame models include
+live literal words and interrupted private backedges. See the
+[CFG residency correction and retained regressions](../research/performance-cfg-register-residency-2026-11-05.md).
 
 The private-loop emitter handles arithmetic and already-proven memory regions
 alongside the existing affine whole-loop proof. The memory proof is optional;

@@ -1,5 +1,10 @@
 # Loop value versions and shared lowering: 2026-11-05
 
+The [subsequent CFG residency correction](performance-cfg-register-residency-2026-11-05.md)
+retains both adverse hosted events and replaces layout-based loop detection
+with actual cyclic components and shared allocation costs. The stages below
+remain historical evidence for their exact source revisions.
+
 **Local dual-compiler semantics pass. Throughput and final four-profile
 acceptance remain open.** Engine source:
 `8b5ec48a77abb155a98ef009add078a1d34a3447`; baseline engine:
