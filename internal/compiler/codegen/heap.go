@@ -3,7 +3,6 @@ package codegen
 import (
 	"math"
 	"math/bits"
-	"sort"
 
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -40,26 +39,26 @@ func (e *functionEmitter) prepareHeapCaches() {
 			weights[access.cacheClass] += frequency(frequencies, pc)
 		}
 	}
-	var classes []uint64
+	var classes [2]registerCandidate
 	for class, weight := range weights {
-		if weight >= 2 {
-			classes = append(classes, class)
+		if weight < 2 {
+			continue
+		}
+		candidate := registerCandidate{key: class, weight: weight}
+		if compareRegisterCandidates(candidate, classes[0]) < 0 {
+			classes[1], classes[0] = classes[0], candidate
+		} else if compareRegisterCandidates(candidate, classes[1]) < 0 {
+			classes[1] = candidate
 		}
 	}
-	sort.Slice(classes, func(i, j int) bool {
-		if weights[classes[i]] != weights[classes[j]] {
-			return weights[classes[i]] > weights[classes[j]]
-		}
-		return classes[i] < classes[j]
-	})
-	for _, class := range classes[:min(2, len(classes))] {
-		if len(free) < 2 {
+	for _, candidate := range classes {
+		if candidate.weight == 0 || len(free) < 2 {
 			break
 		}
 		if e.heapCaches == nil {
 			e.heapCaches = map[uint64]heapCache{}
 		}
-		e.heapCaches[class] = heapCache{free[0], free[1]}
+		e.heapCaches[candidate.key] = heapCache{free[0], free[1]}
 		// A non-null reference cannot match this initial key. The address is
 		// written only after all miss checks succeed, before installing a key.
 		e.a.aconst(uint32(free[0]), 0, false)

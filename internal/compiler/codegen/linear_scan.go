@@ -1,6 +1,8 @@
 package codegen
 
 import (
+	"cmp"
+	"slices"
 	"sort"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
@@ -233,11 +235,17 @@ func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCel
 			order = append(order, interval)
 		}
 	}
-	sort.Slice(order, func(i, j int) bool {
-		if order[i].first != order[j].first {
-			return order[i].first < order[j].first
+	slices.SortFunc(order, func(a, b registerInterval) int {
+		if n := cmp.Compare(a.first, b.first); n != 0 {
+			return n
 		}
-		return intervalBefore(order[i], order[j])
+		if intervalBefore(a, b) {
+			return -1
+		}
+		if intervalBefore(b, a) {
+			return 1
+		}
+		return 0
 	})
 	integers := scanBank{pool: e.integerRegisterPool()}
 	floats := scanBank{pool: []byte{3, 4, 5, 6, 7, 8, 9, 10}}
@@ -297,7 +305,7 @@ func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCel
 				}
 			}
 		}
-		sort.Slice(plan.slots, func(i, j int) bool { return plan.slots[i] < plan.slots[j] })
+		slices.Sort(plan.slots)
 		if equalRegisterPlans(previous, plan) {
 			plan = previous
 		} else {

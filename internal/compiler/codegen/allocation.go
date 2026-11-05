@@ -1,7 +1,8 @@
 package codegen
 
 import (
-	"sort"
+	"cmp"
+	"slices"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -163,6 +164,16 @@ type registerCandidate struct {
 	key, weight uint64
 }
 
+func compareRegisterCandidates(a, b registerCandidate) int {
+	if n := cmp.Compare(b.weight, a.weight); n != 0 {
+		return n
+	}
+	if n := cmp.Compare(a.kind, b.kind); n != 0 {
+		return n
+	}
+	return cmp.Compare(a.key, b.key)
+}
+
 // All immutable integer words compete with scalar homes before the inventory
 // fills. Constants/metadata remain in ARM caller registers; FP/vector homes use
 // their separate shared physical pool. Every class is stable at every cold PC.
@@ -193,16 +204,7 @@ func (e *functionEmitter) selectRegisters(config Config, regions map[int]memoryR
 			candidates = append(candidates, registerCandidate{2, bits, w})
 		}
 	}
-	sort.Slice(candidates, func(i, j int) bool {
-		a, b := candidates[i], candidates[j]
-		if a.weight != b.weight {
-			return a.weight > b.weight
-		}
-		if a.kind != b.kind {
-			return a.kind < b.kind
-		}
-		return a.key < b.key
-	})
+	slices.SortFunc(candidates, compareRegisterCandidates)
 	available := e.integerRegisterPool()
 	floatAvailable := []byte{3, 4, 5, 6, 7, 8, 9, 10}
 	if e.a.arch == "arm64" {

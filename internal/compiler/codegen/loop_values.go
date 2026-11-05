@@ -2,7 +2,7 @@ package codegen
 
 import (
 	"encoding/binary"
-	"sort"
+	"slices"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -230,7 +230,7 @@ func (e *functionEmitter) coalesceLoopRegisters(v *loopValues, work int) (*regis
 			extra = append(extra, s)
 		}
 	}
-	sort.Slice(extra, func(i, j int) bool { return extra[i] < extra[j] })
+	slices.Sort(extra)
 	tracked = append(tracked, extra...)
 	indices := map[slots.Slot]int{}
 	g := loopValueGroups{}

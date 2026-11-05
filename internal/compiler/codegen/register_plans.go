@@ -1,7 +1,7 @@
 package codegen
 
 import (
-	"sort"
+	"slices"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -129,13 +129,7 @@ func (e *functionEmitter) loopRegisterPlan(start int, r memoryRegion) *registerP
 			candidates = append(candidates, registerCandidate{key: uint64(s), weight: w})
 		}
 	}
-	sort.Slice(candidates, func(i, j int) bool {
-		a, b := candidates[i], candidates[j]
-		if a.weight != b.weight {
-			return a.weight > b.weight
-		}
-		return a.key < b.key
-	})
+	slices.SortFunc(candidates, compareRegisterCandidates)
 	pool := append(e.integerRegisterPool(), extra...)
 	if len(candidates) > len(pool) {
 		candidates = candidates[:len(pool)]

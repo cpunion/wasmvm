@@ -1,8 +1,9 @@
 package codegen
 
 import (
+	"cmp"
 	"encoding/binary"
-	"sort"
+	"slices"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -186,14 +187,14 @@ func (e *functionEmitter) prepareVectorConstants() {
 		weights[v] *= len(probe.a.code)
 		values = append(values, v)
 	}
-	sort.Slice(values, func(i, j int) bool {
-		if weights[values[i]] != weights[values[j]] {
-			return weights[values[i]] > weights[values[j]]
+	slices.SortFunc(values, func(a, b [2]uint64) int {
+		if n := cmp.Compare(weights[b], weights[a]); n != 0 {
+			return n
 		}
-		if values[i][0] != values[j][0] {
-			return values[i][0] < values[j][0]
+		if n := cmp.Compare(a[0], b[0]); n != 0 {
+			return n
 		}
-		return values[i][1] < values[j][1]
+		return cmp.Compare(a[1], b[1])
 	})
 	pool := []byte{13, 14, 15}
 	if e.a.arch == "arm64" {

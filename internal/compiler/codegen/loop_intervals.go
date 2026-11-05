@@ -1,6 +1,9 @@
 package codegen
 
-import "sort"
+import (
+	"cmp"
+	"slices"
+)
 
 type registerLoop struct{ first, last int }
 
@@ -27,11 +30,11 @@ func extendRegisterLoops(intervals []registerInterval, loops []registerLoop) {
 	if len(loops) == 0 {
 		return
 	}
-	sort.Slice(loops, func(i, j int) bool {
-		if loops[i].first != loops[j].first {
-			return loops[i].first < loops[j].first
+	slices.SortFunc(loops, func(a, b registerLoop) int {
+		if n := cmp.Compare(a.first, b.first); n != 0 {
+			return n
 		}
-		return loops[i].last < loops[j].last
+		return cmp.Compare(a.last, b.last)
 	})
 	merged := loops[:0]
 	for _, loop := range loops {

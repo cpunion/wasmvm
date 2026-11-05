@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"math"
 	"runtime"
-	"sort"
+	"slices"
 
 	"github.com/cpunion/wasmvm/internal/compiler/codegen"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -117,7 +117,7 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 		for index := range seen {
 			linkedGlobals = append(linkedGlobals, index)
 		}
-		sort.Slice(linkedGlobals, func(i, j int) bool { return linkedGlobals[i] < linkedGlobals[j] })
+		slices.Sort(linkedGlobals)
 	}
 	out.linked = linkedCallees != nil
 	relocations := [2][]codegen.CallRelocation{}
@@ -125,11 +125,8 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 	usesMemory := false
 	// Index structurally identical types once. Bound code expansion per type,
 	// independently of map iteration order and table contents at instantiation.
-	keys := make([]string, len(definition.Types))
-	for i := range definition.Types {
-		keys[i] = fmt.Sprint(m.IR.Validated.TypeLabels()[i])
-	}
-	bySignature := map[string][]uint32{}
+	keys := m.IR.Validated.TypeLabels()
+	bySignature := map[uint32][]uint32{}
 	for i, f := range m.Functions {
 		key := keys[definition.Functions[i].Type]
 		if len(bySignature[key]) < 4 && codegen.CanExpandLeaf(f) {
