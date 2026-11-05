@@ -38,6 +38,7 @@ type functionEmitter struct {
 	guardPCs                                                     map[int]memoryGuard
 	addresses                                                    map[int]memoryAddress
 	elidedPCs                                                    map[int]bool
+	regionPredicate                                              *loopPredicate
 	boundsElided                                                 uint32
 	constantRegisters                                            map[uint64]byte
 	runtimeRegisters                                             map[uint32]byte

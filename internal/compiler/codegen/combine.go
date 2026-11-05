@@ -151,7 +151,13 @@ func (e *functionEmitter) overwrittenBeforeExit(pc int, slot slots.Slot) bool {
 			return false
 		}
 		if e.elidedPCs[pc] {
-			continue
+			p := e.regionPredicate
+			// Recoverable definitions retain their logical read/write order.
+			// Their original words are restored before any observation, so
+			// earlier dead intermediates need not be kept physically alive.
+			if p == nil || pc != e.regionEnd-1 && (p.literal == nil || pc != e.regionEnd-2) {
+				continue
+			}
 		}
 		in := e.f.Code[pc]
 		op := in.Op

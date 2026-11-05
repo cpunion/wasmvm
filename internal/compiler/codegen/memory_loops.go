@@ -268,6 +268,7 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 		warm.elided = elided
 		out.DeferredPredicates++
 	}
+	warm.predicate = predicate
 	header := e.a.label()
 	e.a.mark(header)
 	if start%256 == 0 {

@@ -22,6 +22,7 @@ type memoryRegion struct {
 	unroll    *memoryUnroll
 	values    *loopValuePlans
 	copies    *loopFrameCopies
+	predicate *loopPredicate
 }
 
 func (e *functionEmitter) codeLimit() int {
@@ -192,6 +193,7 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 	e.provenPCs = r.proven
 	e.guardPCs = r.guards
 	e.addresses, e.elidedPCs = r.addresses, r.elided
+	e.regionPredicate = r.predicate
 	e.vectorAliases = map[slots.Slot]slots.Slot{}
 	defer func() {
 		e.frameAliases, e.deferredFrameSlots = nil, nil
@@ -204,6 +206,7 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 		e.vectorAliases = nil
 		e.addresses = nil
 		e.elidedPCs = nil
+		e.regionPredicate = nil
 	}()
 	var boundaries []int
 	coalesced := e.coalescedRegisterSlots()
