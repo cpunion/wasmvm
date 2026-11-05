@@ -1,0 +1,1068 @@
+{
+  "classification": "Exact-source local semantics and static publication; final four-profile CI and performance acceptance remain open.",
+  "engineSource": "fb6e872b4758eb5c4e52c334e23c9e12036a58bb",
+  "previousEngine": "2be7d9f17b54b7ed5582faabd741f0f5fa9c01c7",
+  "qualification": [
+    {
+      "compiler": "go",
+      "command": [
+        "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+        "test",
+        "-count=1",
+        "-timeout=8m",
+        "-coverpkg=./internal/platform/native,./internal/compiler/nativeabi,./internal/compiler/slots,./internal/compiler/codegen,./internal/engine/state,./internal/engine/execute,./internal/engine/nativeexec,./pkg/vm,./pkg/component,./pkg/wasi/preview1",
+        "-coverprofile=/Users/lijie/source/goplus/wasmvm/artifacts/loop-value-coalescing-20261105/shared-default/go-coverage.out",
+        "./internal/platform/native",
+        "./internal/compiler/nativeabi",
+        "./internal/compiler/slots",
+        "./internal/compiler/codegen",
+        "./internal/engine/state",
+        "./internal/engine/execute",
+        "./internal/engine/nativeexec",
+        "./pkg/vm",
+        "./pkg/component",
+        "./pkg/wasi/preview1"
+      ],
+      "exit": 0,
+      "elapsedSeconds": 44.65145041584037,
+      "sourceRevision": "fb6e872b4758eb5c4e52c334e23c9e12036a58bb",
+      "cwd": "/Users/lijie/source/goplus/wasmvm-wt-loop-value-coalescing-20261105",
+      "compilerSha256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "reports": [
+        "go/conformance/core3-0.json",
+        "go/conformance/core3-1.json",
+        "go/conformance/core2.json",
+        "go/conformance/core2.json.native-2",
+        "go/conformance/core3-2.json",
+        "go/conformance/core2.json.native-1",
+        "go/conformance/wasi/preview1-2.json",
+        "go/conformance/wasi/go-guest-1.json",
+        "go/conformance/wasi/go-guest-0.json",
+        "go/conformance/wasi/preview1-0.json",
+        "go/conformance/wasi/preview1-1.json",
+        "go/conformance/wasi/go-guest-2.json",
+        "go/conformance/proposals/function-references-2.json",
+        "go/conformance/proposals/tail-call-0.json",
+        "go/conformance/proposals/custom-descriptors-2.json",
+        "go/conformance/proposals/custom-page-sizes-2.json",
+        "go/conformance/proposals/threads-2.json",
+        "go/conformance/proposals/extended-const-2.json",
+        "go/conformance/proposals/relaxed-simd-2.json",
+        "go/conformance/proposals/compact-import-section-2.json",
+        "go/conformance/proposals/tail-call-1.json",
+        "go/conformance/proposals/stack-switching-2.json",
+        "go/conformance/proposals/wide-arithmetic-2.json",
+        "go/conformance/proposals/multi-memory-2.json",
+        "go/conformance/proposals/gc-2.json",
+        "go/conformance/proposals/memory64-0.json",
+        "go/conformance/proposals/memory64-1.json",
+        "go/conformance/proposals/exception-handling-2.json",
+        "go/conformance/proposals/gc-0.json",
+        "go/conformance/proposals/multi-memory-0.json",
+        "go/conformance/proposals/wide-arithmetic-0.json",
+        "go/conformance/proposals/stack-switching-0.json",
+        "go/conformance/proposals/exception-handling-1.json",
+        "go/conformance/proposals/memory64-2.json",
+        "go/conformance/proposals/exception-handling-0.json",
+        "go/conformance/proposals/stack-switching-1.json",
+        "go/conformance/proposals/wide-arithmetic-1.json",
+        "go/conformance/proposals/multi-memory-1.json",
+        "go/conformance/proposals/gc-1.json",
+        "go/conformance/proposals/relaxed-simd-1.json",
+        "go/conformance/proposals/compact-import-section-1.json",
+        "go/conformance/proposals/tail-call-2.json",
+        "go/conformance/proposals/function-references-0.json",
+        "go/conformance/proposals/threads-0.json",
+        "go/conformance/proposals/custom-page-sizes-0.json",
+        "go/conformance/proposals/extended-const-1.json",
+        "go/conformance/proposals/custom-descriptors-0.json",
+        "go/conformance/proposals/custom-descriptors-1.json",
+        "go/conformance/proposals/extended-const-0.json",
+        "go/conformance/proposals/custom-page-sizes-1.json",
+        "go/conformance/proposals/threads-1.json",
+        "go/conformance/proposals/function-references-1.json",
+        "go/conformance/proposals/compact-import-section-0.json",
+        "go/conformance/proposals/relaxed-simd-0.json"
+      ],
+      "scope": "Ten actual affected package tests on macOS arm64; Go scoped coverage. Not four-profile production acceptance."
+    },
+    {
+      "compiler": "llgo",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-3571c25",
+        "test",
+        "-O3",
+        "-lto=full",
+        "-count=1",
+        "-timeout=8m",
+        "./internal/platform/native",
+        "./internal/compiler/nativeabi",
+        "./internal/compiler/slots",
+        "./internal/compiler/codegen",
+        "./internal/engine/state",
+        "./internal/engine/execute",
+        "./internal/engine/nativeexec",
+        "./pkg/vm",
+        "./pkg/component",
+        "./pkg/wasi/preview1"
+      ],
+      "exit": 0,
+      "elapsedSeconds": 131.62150570796803,
+      "sourceRevision": "fb6e872b4758eb5c4e52c334e23c9e12036a58bb",
+      "cwd": "/Users/lijie/source/goplus/wasmvm-wt-loop-value-coalescing-20261105",
+      "compilerSha256": "4ec6e101cc510011d56e8ef9dee4053abbde521f284963bd2b468b281d3fec0c",
+      "reports": [
+        "llgo/conformance/core3-0.json",
+        "llgo/conformance/core3-1.json",
+        "llgo/conformance/core2.json",
+        "llgo/conformance/core2.json.native-2",
+        "llgo/conformance/core3-2.json",
+        "llgo/conformance/core2.json.native-1",
+        "llgo/conformance/wasi/preview1-2.json",
+        "llgo/conformance/wasi/go-guest-1.json",
+        "llgo/conformance/wasi/go-guest-0.json",
+        "llgo/conformance/wasi/preview1-0.json",
+        "llgo/conformance/wasi/preview1-1.json",
+        "llgo/conformance/wasi/go-guest-2.json",
+        "llgo/conformance/proposals/function-references-2.json",
+        "llgo/conformance/proposals/tail-call-0.json",
+        "llgo/conformance/proposals/custom-descriptors-2.json",
+        "llgo/conformance/proposals/custom-page-sizes-2.json",
+        "llgo/conformance/proposals/threads-2.json",
+        "llgo/conformance/proposals/extended-const-2.json",
+        "llgo/conformance/proposals/relaxed-simd-2.json",
+        "llgo/conformance/proposals/compact-import-section-2.json",
+        "llgo/conformance/proposals/tail-call-1.json",
+        "llgo/conformance/proposals/stack-switching-2.json",
+        "llgo/conformance/proposals/wide-arithmetic-2.json",
+        "llgo/conformance/proposals/multi-memory-2.json",
+        "llgo/conformance/proposals/gc-2.json",
+        "llgo/conformance/proposals/memory64-0.json",
+        "llgo/conformance/proposals/memory64-1.json",
+        "llgo/conformance/proposals/exception-handling-2.json",
+        "llgo/conformance/proposals/gc-0.json",
+        "llgo/conformance/proposals/multi-memory-0.json",
+        "llgo/conformance/proposals/wide-arithmetic-0.json",
+        "llgo/conformance/proposals/stack-switching-0.json",
+        "llgo/conformance/proposals/exception-handling-1.json",
+        "llgo/conformance/proposals/memory64-2.json",
+        "llgo/conformance/proposals/exception-handling-0.json",
+        "llgo/conformance/proposals/stack-switching-1.json",
+        "llgo/conformance/proposals/wide-arithmetic-1.json",
+        "llgo/conformance/proposals/multi-memory-1.json",
+        "llgo/conformance/proposals/gc-1.json",
+        "llgo/conformance/proposals/relaxed-simd-1.json",
+        "llgo/conformance/proposals/compact-import-section-1.json",
+        "llgo/conformance/proposals/tail-call-2.json",
+        "llgo/conformance/proposals/function-references-0.json",
+        "llgo/conformance/proposals/threads-0.json",
+        "llgo/conformance/proposals/custom-page-sizes-0.json",
+        "llgo/conformance/proposals/extended-const-1.json",
+        "llgo/conformance/proposals/custom-descriptors-0.json",
+        "llgo/conformance/proposals/custom-descriptors-1.json",
+        "llgo/conformance/proposals/extended-const-0.json",
+        "llgo/conformance/proposals/custom-page-sizes-1.json",
+        "llgo/conformance/proposals/threads-1.json",
+        "llgo/conformance/proposals/function-references-1.json",
+        "llgo/conformance/proposals/compact-import-section-0.json",
+        "llgo/conformance/proposals/relaxed-simd-0.json"
+      ],
+      "scope": "Ten actual affected package tests on macOS arm64; Go scoped coverage. Not four-profile production acceptance."
+    }
+  ],
+  "additional": [
+    {
+      "name": "race",
+      "cwd": "/Users/lijie/source/goplus/wasmvm-wt-loop-value-coalescing-20261105",
+      "sourceRevision": "fb6e872b4758eb5c4e52c334e23c9e12036a58bb",
+      "command": [
+        "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+        "test",
+        "-race",
+        "-count=1",
+        "-timeout=4m",
+        "./internal/compiler/codegen",
+        "./internal/platform/native",
+        "./internal/engine/nativeexec",
+        "./pkg/vm"
+      ],
+      "environment": {
+        "CGO_ENABLED": "1"
+      },
+      "compilerSha256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "exit": 0,
+      "elapsedSeconds": 53.96678533311933
+    },
+    {
+      "name": "cgocheck2",
+      "cwd": "/Users/lijie/source/goplus/wasmvm-wt-loop-value-coalescing-20261105",
+      "sourceRevision": "fb6e872b4758eb5c4e52c334e23c9e12036a58bb",
+      "command": [
+        "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+        "test",
+        "-count=1",
+        "./internal/platform/native",
+        "./internal/engine/nativeexec",
+        "./pkg/vm"
+      ],
+      "environment": {
+        "CGO_ENABLED": "1",
+        "GOEXPERIMENT": "cgocheck2"
+      },
+      "compilerSha256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "exit": 0,
+      "elapsedSeconds": 3.3088930000085384
+    },
+    {
+      "name": "no-cgo",
+      "cwd": "/Users/lijie/source/goplus/wasmvm-wt-loop-value-coalescing-20261105",
+      "sourceRevision": "fb6e872b4758eb5c4e52c334e23c9e12036a58bb",
+      "command": [
+        "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+        "test",
+        "-count=1",
+        "./internal/engine/nativeexec",
+        "./internal/engine/execute"
+      ],
+      "environment": {
+        "CGO_ENABLED": "0"
+      },
+      "compilerSha256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "exit": 0,
+      "elapsedSeconds": 8.475725583033636
+    }
+  ],
+  "coverage": "github.com/cpunion/wasmvm/internal/compiler/codegen: 97.33% (7535/7742 statements)\ngithub.com/cpunion/wasmvm/internal/compiler/nativeabi: 100.00% (34/34 statements)\ngithub.com/cpunion/wasmvm/internal/compiler/slots: 99.68% (313/314 statements)\ngithub.com/cpunion/wasmvm/internal/engine/execute: 92.16% (1046/1135 statements)\ngithub.com/cpunion/wasmvm/internal/engine/nativeexec: 92.79% (463/499 statements)\ngithub.com/cpunion/wasmvm/internal/engine/state: 95.21% (1490/1565 statements)\ngithub.com/cpunion/wasmvm/internal/platform/native: 94.81% (420/443 statements)\ngithub.com/cpunion/wasmvm/pkg/component: 91.20% (3120/3421 statements)\ngithub.com/cpunion/wasmvm/pkg/vm: 93.07% (1356/1457 statements)\ngithub.com/cpunion/wasmvm/pkg/wasi/preview1: 90.71% (1230/1356 statements)\n",
+  "runnerQualification": {
+    "source": "fb6e872b4758eb5c4e52c334e23c9e12036a58bb",
+    "configurations": 96,
+    "status": "complete",
+    "raw": "runner-qualification.json",
+    "sha256": "6463e18010c378e8e5fcf1e7d13063494296a6e1b90de3e5d41cb3ca2f81c684"
+  },
+  "nativePublications": [
+    {
+      "producer": "clang",
+      "bytes": 101308,
+      "sha256": "b7c0b375a2c232e058cdc6a8eae9f5298def7269f8048234fe589318092931a1",
+      "sameGoLLGo": true,
+      "sameAs2beBaseline": true
+    },
+    {
+      "producer": "rust",
+      "bytes": 101476,
+      "sha256": "b235a9910d370b0dd91b2811c961414aa69c458f9cee0320694dfaff526d4c69",
+      "sameGoLLGo": true,
+      "sameAs2beBaseline": true
+    }
+  ],
+  "development": {
+    "source": "fb6e872b4758eb5c4e52c334e23c9e12036a58bb",
+    "initialSharedTests": "pass",
+    "fullCodegenFirstRun": "failed because the old shared-memory unroll rejection now permits the guarded default-memory case",
+    "resolution": "Preserve rejection for indexed shared memories and helper-only shared access; independently execute guarded/unrolled shared loops at every original PC. All raw first-attempt logs retained."
+  },
+  "archive": {
+    "path": "/Users/lijie/source/goplus/wasmvm/artifacts/loop-value-coalescing-20261105/shared-default/evidence.tar.gz",
+    "bytes": 2420994,
+    "sha256": "ae11b912d0ac7d00b694347e57d65b0d7df2a2bb26384b1019f11bdf2df99cc7",
+    "manifest": [
+      {
+        "path": "additional-cgocheck2.log",
+        "bytes": 173,
+        "sha256": "3e31e4d6cfb602b1838935d8f061505bd0b4b1024258792f0c072fe695c7f30d"
+      },
+      {
+        "path": "additional-no-cgo.log",
+        "bytes": 127,
+        "sha256": "32264854d808b11b5eed6fcbed36d7b049ad874a7a78898947f0504580daa069"
+      },
+      {
+        "path": "additional-plan.json",
+        "bytes": 1392,
+        "sha256": "d6b2fd6f02d7753c06430ea701f65f7aecf6f2c7afc6c7f6c8984de6a1248a1b"
+      },
+      {
+        "path": "additional-race.log",
+        "bytes": 238,
+        "sha256": "fdc3e61512ec4f33667cb5b5a52ec53020762d71266d1ff7e45de3b1ab2a00ec"
+      },
+      {
+        "path": "additional.json",
+        "bytes": 1831,
+        "sha256": "91e1eb279a366aa7970605e73a6a7687163279cda2d2c5b98b53503397c3928b"
+      },
+      {
+        "path": "additional.py",
+        "bytes": 1302,
+        "sha256": "f46add5fc47150625dea70cc03b0e19fa30a2bb7926d96d80a81da0f64066375"
+      },
+      {
+        "path": "base-clang-published.bin",
+        "bytes": 101308,
+        "sha256": "b7c0b375a2c232e058cdc6a8eae9f5298def7269f8048234fe589318092931a1"
+      },
+      {
+        "path": "base-clang-published.json",
+        "bytes": 70,
+        "sha256": "a067db902d4b37e1b4c7545f9e33789a0c5b1155597d617dbdc2e259a189016c"
+      },
+      {
+        "path": "base-rust-published.bin",
+        "bytes": 101476,
+        "sha256": "b235a9910d370b0dd91b2811c961414aa69c458f9cee0320694dfaff526d4c69"
+      },
+      {
+        "path": "base-rust-published.json",
+        "bytes": 70,
+        "sha256": "97111ac7f9847f4142fed821df0549997517a457fa73cefbb22c810c0d466715"
+      },
+      {
+        "path": "build-attempts.json",
+        "bytes": 855,
+        "sha256": "816029e27214db2286516b3dffafceb23e6b9cd356fda596bc6723824ce08b70"
+      },
+      {
+        "path": "build-go.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "build-llgo.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "comparison/build.json",
+        "bytes": 845177,
+        "sha256": "d834aee0d1e94f170fb5bf47d4280a9ff452776ba5d24af36cd6011e1348b4e6"
+      },
+      {
+        "path": "coverage-check.json",
+        "bytes": 1263,
+        "sha256": "41501fdf9fd10075d4d8e5ea51c58f465912afe3a2b1c5f4b0c20220a25c02df"
+      },
+      {
+        "path": "coverage-check.log",
+        "bytes": 776,
+        "sha256": "d6e0a48f80afb7a20a5d29646256743e97d08c3b0fea61d67ff98015c4b0609e"
+      },
+      {
+        "path": "development-loop-shared-bounds-test.go.txt",
+        "bytes": 8190,
+        "sha256": "17d8422ec65c23d45f4cb82fdf1f215984829becf866d17b218c28ba1f5240e3"
+      },
+      {
+        "path": "development-loop.json",
+        "bytes": 342,
+        "sha256": "80ee64dbeb00e18189f610c2cb67ab99648a785c14d2deebae556ef05b288591"
+      },
+      {
+        "path": "development-loop.log",
+        "bytes": 6003,
+        "sha256": "de7b274c96b90c36d2263f4520f533af428cc5a2f0f8f26b664adf684507f529"
+      },
+      {
+        "path": "development-loop.patch",
+        "bytes": 9302,
+        "sha256": "53cceed452f79e30e55fda3ed5ec2e92d3c528fa17d03a8208acc441019bab4e"
+      },
+      {
+        "path": "development-notes.json",
+        "bytes": 425,
+        "sha256": "4b623239d1a0720bc115451faf9a6578b785d6f21b2e326056b46e76a6687f34"
+      },
+      {
+        "path": "development-shared-bounds-test.go.txt",
+        "bytes": 5676,
+        "sha256": "558acddfa71033fd1c46ced9df55f3de8320887385b4f330e2f18a14b7b14ef9"
+      },
+      {
+        "path": "development.json",
+        "bytes": 372,
+        "sha256": "aaaaf74fc0ba3598e80e3c654e9deb8cb74ff821f7410421e1a8efc8435aea60"
+      },
+      {
+        "path": "development.log",
+        "bytes": 64,
+        "sha256": "3ccbfd882e2042039d75cf1edf5a6c4f1ad82ae23663486df85c3568d1408345"
+      },
+      {
+        "path": "development.patch",
+        "bytes": 9302,
+        "sha256": "53cceed452f79e30e55fda3ed5ec2e92d3c528fa17d03a8208acc441019bab4e"
+      },
+      {
+        "path": "engine.patch",
+        "bytes": 92666,
+        "sha256": "83761d1740516e4affdfcd3ec9aa513ed90c3a68f0acf0e2073e14df781a7a01"
+      },
+      {
+        "path": "go/conformance/core2.json",
+        "bytes": 673,
+        "sha256": "32fd4df39b7cdf8d840abbcbe6b227e7c970cadb36d3c99dd2b22c8863c33611"
+      },
+      {
+        "path": "go/conformance/core2.json.native-1",
+        "bytes": 675,
+        "sha256": "a5b01e8a045328721b2dfa5ff3f9e614b592fe729b58bfe9d625f2aec3a2ecb1"
+      },
+      {
+        "path": "go/conformance/core2.json.native-2",
+        "bytes": 675,
+        "sha256": "14fc03555bb553ea68e8bd4cf270075ecc044ed8eb4be351c5e6939c16df9c8f"
+      },
+      {
+        "path": "go/conformance/core3-0.json",
+        "bytes": 414,
+        "sha256": "5e2f6efba307377a5527aa584bce95af7c8f1e25dc476d9a192bd60d73365718"
+      },
+      {
+        "path": "go/conformance/core3-1.json",
+        "bytes": 414,
+        "sha256": "aa8a43e73df3e2032d52456b331228dda7d86bd55414af1077cb39c241ddd004"
+      },
+      {
+        "path": "go/conformance/core3-2.json",
+        "bytes": 414,
+        "sha256": "083374e8ddb32cf857d63d3827024c03afdbaeea134a97245785afedcdf6d8dc"
+      },
+      {
+        "path": "go/conformance/proposals/compact-import-section-0.json",
+        "bytes": 451,
+        "sha256": "cdbb43bbea2249c6e34e63f964beb40e6700d6e2f2796cbc4b5ab3b0a885706e"
+      },
+      {
+        "path": "go/conformance/proposals/compact-import-section-1.json",
+        "bytes": 451,
+        "sha256": "e4ecbf5fc7f09021a1cf8274b9a5bc3df2998493f12df352910f75d6156dce63"
+      },
+      {
+        "path": "go/conformance/proposals/compact-import-section-2.json",
+        "bytes": 451,
+        "sha256": "da8f79a848b4654d441c74ed3a79b84f634eca9d9a456fe27da0089a46abdaa8"
+      },
+      {
+        "path": "go/conformance/proposals/custom-descriptors-0.json",
+        "bytes": 451,
+        "sha256": "ee9f81388888dc70bac0ed9cd78d55c5b2345b7f20af96f5e4fd5a58593d349d"
+      },
+      {
+        "path": "go/conformance/proposals/custom-descriptors-1.json",
+        "bytes": 451,
+        "sha256": "de112014f02aabc3a8948bf57205958291eab9f391a23f37caeb5b31f889627e"
+      },
+      {
+        "path": "go/conformance/proposals/custom-descriptors-2.json",
+        "bytes": 451,
+        "sha256": "79974e7cc235a7435fcf6e0107fd2a6765542ee89575a691d67eae4906d34b60"
+      },
+      {
+        "path": "go/conformance/proposals/custom-page-sizes-0.json",
+        "bytes": 446,
+        "sha256": "b4d128c6c320110624b33b6869b38c29aa25b6c72fc1eaa1d7f0e515e7316127"
+      },
+      {
+        "path": "go/conformance/proposals/custom-page-sizes-1.json",
+        "bytes": 446,
+        "sha256": "998b79616cfbc413b83d2d2d010058af0ff495d36c57e53503ed28751e53b8dd"
+      },
+      {
+        "path": "go/conformance/proposals/custom-page-sizes-2.json",
+        "bytes": 446,
+        "sha256": "273f9d21e5cb81dfcdefffed45ca066788fe0b559044ef2408f3f43cb736935f"
+      },
+      {
+        "path": "go/conformance/proposals/exception-handling-0.json",
+        "bytes": 449,
+        "sha256": "bdd7821ba67d88b444b2cd46d9d1c08ffeef155bc3c2ccee4459fe7043ffc9e9"
+      },
+      {
+        "path": "go/conformance/proposals/exception-handling-1.json",
+        "bytes": 449,
+        "sha256": "e95acc801cb5fd754ab8f5b10ca007d3b5fa175b286ab9eb049fcbb52e85467c"
+      },
+      {
+        "path": "go/conformance/proposals/exception-handling-2.json",
+        "bytes": 449,
+        "sha256": "3762b4d65621b2c5c1f1ad4460bd5a63ebe659d0033f305c4f87dba5373ef68f"
+      },
+      {
+        "path": "go/conformance/proposals/extended-const-0.json",
+        "bytes": 442,
+        "sha256": "db3fab6d0d01d624ff37494906308b1a20b421194e9196e07e20d8a20e650ce8"
+      },
+      {
+        "path": "go/conformance/proposals/extended-const-1.json",
+        "bytes": 442,
+        "sha256": "ef2a727de8ba1a27f48df9804a7ec74823ac376ec6968cf3b9333da85c4594c5"
+      },
+      {
+        "path": "go/conformance/proposals/extended-const-2.json",
+        "bytes": 442,
+        "sha256": "bde88d09c67fd2fabea63355a0aff93f8f197f2b94496ba2700a90a4e860c008"
+      },
+      {
+        "path": "go/conformance/proposals/function-references-0.json",
+        "bytes": 451,
+        "sha256": "0c1499d0e3992eb61c2926d5471719fce8146209ebfeb7fa4cc7191af6b88530"
+      },
+      {
+        "path": "go/conformance/proposals/function-references-1.json",
+        "bytes": 451,
+        "sha256": "5fe65290bd6955a22ae768ac91511d99c55424c9591698b0da5d385f50924f8e"
+      },
+      {
+        "path": "go/conformance/proposals/function-references-2.json",
+        "bytes": 451,
+        "sha256": "a1638d1bb2ee3cf6b5f92a3a753b8c5366fdfc9d2f931ce1ec9eed45e1782ac3"
+      },
+      {
+        "path": "go/conformance/proposals/gc-0.json",
+        "bytes": 433,
+        "sha256": "900f01e49dbb83ed3cd39e7b404cc4640d43a2d120d5fac096cbe86862a6fa57"
+      },
+      {
+        "path": "go/conformance/proposals/gc-1.json",
+        "bytes": 433,
+        "sha256": "2f74e28700dbd949859717272eb908236008bc050e0ed4f4cef34b6938e086e3"
+      },
+      {
+        "path": "go/conformance/proposals/gc-2.json",
+        "bytes": 433,
+        "sha256": "f3669b5bb863a312091980a207c282f6bac487402a0693adb6654335c3b1f799"
+      },
+      {
+        "path": "go/conformance/proposals/memory64-0.json",
+        "bytes": 443,
+        "sha256": "324c2039397b10e57dbb3d5791031de2d7e4bacf50bd3da9cf7dc9437d701881"
+      },
+      {
+        "path": "go/conformance/proposals/memory64-1.json",
+        "bytes": 443,
+        "sha256": "40d85815690b73b23ff3ee18f2755b897344b961febda6e1a4c4b80fa2889d47"
+      },
+      {
+        "path": "go/conformance/proposals/memory64-2.json",
+        "bytes": 443,
+        "sha256": "d966a01f8d56a2aa493609992c7d8e88b955b7635d7931d2e17f7faf899ef983"
+      },
+      {
+        "path": "go/conformance/proposals/multi-memory-0.json",
+        "bytes": 441,
+        "sha256": "f4482552ceae355ff7b279f5d3625106cb103a7a35c884e177aaa0116b49b794"
+      },
+      {
+        "path": "go/conformance/proposals/multi-memory-1.json",
+        "bytes": 441,
+        "sha256": "5cf4a0da17ebb97c4c3367a7003efd55327fc43a4c7675f1e79639743c47256b"
+      },
+      {
+        "path": "go/conformance/proposals/multi-memory-2.json",
+        "bytes": 441,
+        "sha256": "2acacf1a20c2c772a4ae95a1233ee34d34b8d70cd5e0220781460efb8c188120"
+      },
+      {
+        "path": "go/conformance/proposals/relaxed-simd-0.json",
+        "bytes": 438,
+        "sha256": "0507cee35ffd835d82185ad164e26a342812ad9b696cbac85421c2f959780cc3"
+      },
+      {
+        "path": "go/conformance/proposals/relaxed-simd-1.json",
+        "bytes": 438,
+        "sha256": "d805607f4b241283009ffeb278897247e9fba4103365023e78aac0da0ea6d0d3"
+      },
+      {
+        "path": "go/conformance/proposals/relaxed-simd-2.json",
+        "bytes": 438,
+        "sha256": "b5d07396376437056424a62302547a384b655d340ca7f05dacc9d6360f36b119"
+      },
+      {
+        "path": "go/conformance/proposals/stack-switching-0.json",
+        "bytes": 446,
+        "sha256": "605d3bd2ae4bb5c8b70a47d3cc412658cd17bd3ad40afece005732b940fd4770"
+      },
+      {
+        "path": "go/conformance/proposals/stack-switching-1.json",
+        "bytes": 446,
+        "sha256": "4225c00806db11052cf741f5d55f29870fa3cd4d175866a7aaf7315dbc106e45"
+      },
+      {
+        "path": "go/conformance/proposals/stack-switching-2.json",
+        "bytes": 446,
+        "sha256": "670045c2f9615873e8f388590ead482014596532676a2c92b267161076f8abc4"
+      },
+      {
+        "path": "go/conformance/proposals/tail-call-0.json",
+        "bytes": 438,
+        "sha256": "4900ae57cacf8948243cd31beac232fbdb40989d51e729e27da84d6ef5bc26a0"
+      },
+      {
+        "path": "go/conformance/proposals/tail-call-1.json",
+        "bytes": 438,
+        "sha256": "b39902eeed358622384f57dee803a0515499c671989c1d10195b768bd51ad847"
+      },
+      {
+        "path": "go/conformance/proposals/tail-call-2.json",
+        "bytes": 438,
+        "sha256": "623c0b1aa7e2cd483d7dbe1aa75ca00dff052d05df530b80a5a27cb869ea0f22"
+      },
+      {
+        "path": "go/conformance/proposals/threads-0.json",
+        "bytes": 409,
+        "sha256": "88d1af05753d463318725f54cccb875fe0ffce26ee8302ad2bb034036e3ccc4c"
+      },
+      {
+        "path": "go/conformance/proposals/threads-1.json",
+        "bytes": 409,
+        "sha256": "0e1cbf4bd4b622603cd0995af412bc8fe13ce85d3ca9693f78c6ca8e986aa80a"
+      },
+      {
+        "path": "go/conformance/proposals/threads-2.json",
+        "bytes": 409,
+        "sha256": "89678587529cedb2294832e590e7919159283cfc1334b03d4c35ee64fa204d39"
+      },
+      {
+        "path": "go/conformance/proposals/wide-arithmetic-0.json",
+        "bytes": 446,
+        "sha256": "f16c356c3270e2ded398ad1b6f804d1267b9753450dc52319355aa3e453555c8"
+      },
+      {
+        "path": "go/conformance/proposals/wide-arithmetic-1.json",
+        "bytes": 446,
+        "sha256": "d335e1839897e6364ac48995194998e517522e5e63ab0faeae5727bd70a34682"
+      },
+      {
+        "path": "go/conformance/proposals/wide-arithmetic-2.json",
+        "bytes": 446,
+        "sha256": "af713119407d05c11dc9e23a3cb202c1631f8e08aa07dfe340f9ea0cbd75df3f"
+      },
+      {
+        "path": "go/conformance/wasi/go-guest-0.json",
+        "bytes": 434,
+        "sha256": "25a5ac71f8fbfe177463512327ef7084f583828d9f4de8a0e9a0fb4d9c697bdc"
+      },
+      {
+        "path": "go/conformance/wasi/go-guest-1.json",
+        "bytes": 434,
+        "sha256": "95bc1b9d08d82e16856eb9a7caf02b5a7095915c5ce71a55b83d50d5d081ead7"
+      },
+      {
+        "path": "go/conformance/wasi/go-guest-2.json",
+        "bytes": 434,
+        "sha256": "3ea2cfdb0fb983de2983b669492acff997111048bf7418ee418f762c54017068"
+      },
+      {
+        "path": "go/conformance/wasi/preview1-0.json",
+        "bytes": 459,
+        "sha256": "a6d4c8638032e2440c85976276cd56ca4f16b70a7f598fb65b846c3664e328b8"
+      },
+      {
+        "path": "go/conformance/wasi/preview1-1.json",
+        "bytes": 459,
+        "sha256": "108efa7ea6aa3bd63aa1135841b3035f2810d94e92f1c0c17f34703ea05af8c3"
+      },
+      {
+        "path": "go/conformance/wasi/preview1-2.json",
+        "bytes": 459,
+        "sha256": "9923c5a4559a23340dd5ecf46b9c5fe95368f1460c4a12f94c237df8ad63c240"
+      },
+      {
+        "path": "go-coverage.out",
+        "bytes": 8741860,
+        "sha256": "a9981788f5c8f5607ec50e1676717a49309c88dcc415700dda3dbbec256e0f5a"
+      },
+      {
+        "path": "go-semantics.log",
+        "bytes": 3363,
+        "sha256": "bae33297ddaae94ac4afd44b7ccdaffe49acbb3eb1afb8b91e2380dedb0d77e4"
+      },
+      {
+        "path": "head-clang-published.bin",
+        "bytes": 101308,
+        "sha256": "b7c0b375a2c232e058cdc6a8eae9f5298def7269f8048234fe589318092931a1"
+      },
+      {
+        "path": "head-clang-published.json",
+        "bytes": 70,
+        "sha256": "a067db902d4b37e1b4c7545f9e33789a0c5b1155597d617dbdc2e259a189016c"
+      },
+      {
+        "path": "head-llgo-clang-published.bin",
+        "bytes": 101308,
+        "sha256": "b7c0b375a2c232e058cdc6a8eae9f5298def7269f8048234fe589318092931a1"
+      },
+      {
+        "path": "head-llgo-clang-published.json",
+        "bytes": 68,
+        "sha256": "cc164bc1746f641ada8a2d9930e9d8ddfb7c0185958c1113e2d3b173819de17e"
+      },
+      {
+        "path": "head-llgo-rust-published.bin",
+        "bytes": 101476,
+        "sha256": "b235a9910d370b0dd91b2811c961414aa69c458f9cee0320694dfaff526d4c69"
+      },
+      {
+        "path": "head-llgo-rust-published.json",
+        "bytes": 70,
+        "sha256": "97111ac7f9847f4142fed821df0549997517a457fa73cefbb22c810c0d466715"
+      },
+      {
+        "path": "head-rust-published.bin",
+        "bytes": 101476,
+        "sha256": "b235a9910d370b0dd91b2811c961414aa69c458f9cee0320694dfaff526d4c69"
+      },
+      {
+        "path": "head-rust-published.json",
+        "bytes": 70,
+        "sha256": "97111ac7f9847f4142fed821df0549997517a457fa73cefbb22c810c0d466715"
+      },
+      {
+        "path": "inspect-build-head-llgo.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "inspect-build-head.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "inspect-publication-llgo.py",
+        "bytes": 3669,
+        "sha256": "9f0228b4679bc1b500d9304d38d23e703d26a2024e9be90cb0fbe07bd6227b2f"
+      },
+      {
+        "path": "inspect-publication.py",
+        "bytes": 4005,
+        "sha256": "55ff1ce6f9a64fec6466d51c71c2d477e04905a007623c23f36679d74982b315"
+      },
+      {
+        "path": "llgo/conformance/core2.json",
+        "bytes": 675,
+        "sha256": "db3f6c872cca6f2967e41db247dcd22124dfc438e2988fccbf708ec2cedd08e3"
+      },
+      {
+        "path": "llgo/conformance/core2.json.native-1",
+        "bytes": 677,
+        "sha256": "b64767d9ab3ae4d689ca7c8ebc5db975917633560317203a3fa889e7b25f4f89"
+      },
+      {
+        "path": "llgo/conformance/core2.json.native-2",
+        "bytes": 677,
+        "sha256": "affeb93c76309b14004146121bdf933f3a2d5cb278d66284f445129e82e3be5b"
+      },
+      {
+        "path": "llgo/conformance/core3-0.json",
+        "bytes": 416,
+        "sha256": "a3f824a20081743e350140125c35c5b615113a9d1b4bb7a1c003950b048ca170"
+      },
+      {
+        "path": "llgo/conformance/core3-1.json",
+        "bytes": 416,
+        "sha256": "7f1a8bdcf94853ac49c9718705b766d0441f5249d640f65ce016d3be2f1451be"
+      },
+      {
+        "path": "llgo/conformance/core3-2.json",
+        "bytes": 416,
+        "sha256": "ad6d27b553086a2824ecdba5e3274b6114e46a05e4a261c72cb644a9e0b9cfad"
+      },
+      {
+        "path": "llgo/conformance/proposals/compact-import-section-0.json",
+        "bytes": 453,
+        "sha256": "26e120bb4889d9bce12e627ec00ddbf03e75679320f7d0b88c663c7a2583342e"
+      },
+      {
+        "path": "llgo/conformance/proposals/compact-import-section-1.json",
+        "bytes": 453,
+        "sha256": "aae702266cc6791b625085ba905cae243d25e56209dc5b9ec43e188babee62be"
+      },
+      {
+        "path": "llgo/conformance/proposals/compact-import-section-2.json",
+        "bytes": 453,
+        "sha256": "5a81235e50e54062dd9d75f0d21322febfee438c43a7e2f1a801c208cdd83ed5"
+      },
+      {
+        "path": "llgo/conformance/proposals/custom-descriptors-0.json",
+        "bytes": 453,
+        "sha256": "29cd598f2a33d199fd09d6e9fe1314d47b70bc6b4beefbc9e5b6a4e5c63aeefc"
+      },
+      {
+        "path": "llgo/conformance/proposals/custom-descriptors-1.json",
+        "bytes": 453,
+        "sha256": "1f8ce659eac9cee5e7aa10dcc59f9c1b86839a60f584c65d1744c035eb228123"
+      },
+      {
+        "path": "llgo/conformance/proposals/custom-descriptors-2.json",
+        "bytes": 453,
+        "sha256": "3452a8d598fddd78baabc2592c372e4230142354a236dc866100b89bef754e75"
+      },
+      {
+        "path": "llgo/conformance/proposals/custom-page-sizes-0.json",
+        "bytes": 448,
+        "sha256": "a0b34d041eb9706d27ebd91353d81fc8f8655c22807a3f49daed3e1580d5737b"
+      },
+      {
+        "path": "llgo/conformance/proposals/custom-page-sizes-1.json",
+        "bytes": 448,
+        "sha256": "e0192accf3970fc443c99f86f0b545250f55a796da79a846d8e6c620050393a7"
+      },
+      {
+        "path": "llgo/conformance/proposals/custom-page-sizes-2.json",
+        "bytes": 448,
+        "sha256": "67d1807e3a7590cd0a8d83b3a32db9006d4d8bc42da286f715063b9c60f32c50"
+      },
+      {
+        "path": "llgo/conformance/proposals/exception-handling-0.json",
+        "bytes": 451,
+        "sha256": "e99fcbe56ac341e6744a969b6f78a46cfae64acd2050478bb39c41de5c56e7a2"
+      },
+      {
+        "path": "llgo/conformance/proposals/exception-handling-1.json",
+        "bytes": 451,
+        "sha256": "8587e47ed7112792ecbc3d8974c7b36fc12c8d6f6f381b2b9f1fdd2935632500"
+      },
+      {
+        "path": "llgo/conformance/proposals/exception-handling-2.json",
+        "bytes": 451,
+        "sha256": "d9e2b90bfb197af097568d4a0d6989f3ea480245885369811ca322edd6245716"
+      },
+      {
+        "path": "llgo/conformance/proposals/extended-const-0.json",
+        "bytes": 444,
+        "sha256": "7e9e29c9dad1f24d6ed72f3cba7f4e4b8bfa2c69f3554fab6fca001265026193"
+      },
+      {
+        "path": "llgo/conformance/proposals/extended-const-1.json",
+        "bytes": 444,
+        "sha256": "d43ddae289550e6fcfb50cce3d56ef7dc94aed8ea0b3978b7ed8e8775c15fcba"
+      },
+      {
+        "path": "llgo/conformance/proposals/extended-const-2.json",
+        "bytes": 444,
+        "sha256": "e76ff452309f5f7e10c951264d6b6a3e9cd4b533e587d451d9dfc8cd68da1952"
+      },
+      {
+        "path": "llgo/conformance/proposals/function-references-0.json",
+        "bytes": 453,
+        "sha256": "2fe875d32227b9e010d561a9e85dba3ec77c2006f3c9c6f01594ff61d009d9a2"
+      },
+      {
+        "path": "llgo/conformance/proposals/function-references-1.json",
+        "bytes": 453,
+        "sha256": "5844180b7c04abc008259f5fe9b30d02d65f5cb3bd428e15e0dfe748e8b9ebf4"
+      },
+      {
+        "path": "llgo/conformance/proposals/function-references-2.json",
+        "bytes": 453,
+        "sha256": "730627ae5a0008b01290f6e18c5ff4c32c6e95b0149d62828d44dd629212fe9f"
+      },
+      {
+        "path": "llgo/conformance/proposals/gc-0.json",
+        "bytes": 435,
+        "sha256": "d4f1473721122a4b820d8dfdbd985d195f0024d2621dea579d51504554f670ec"
+      },
+      {
+        "path": "llgo/conformance/proposals/gc-1.json",
+        "bytes": 435,
+        "sha256": "466b9f6508c2ff6673dbfa028658c15e9ca5574cfe047fb7322162173df7d5bd"
+      },
+      {
+        "path": "llgo/conformance/proposals/gc-2.json",
+        "bytes": 435,
+        "sha256": "5cf70bf097d78ea57eaa54aec89b51679ba1297b4ff5f02fcc1e91eed4513456"
+      },
+      {
+        "path": "llgo/conformance/proposals/memory64-0.json",
+        "bytes": 445,
+        "sha256": "a1290b35adc538841b74d4e227e0b3f30fbb818da17fdc33188770088959a0d8"
+      },
+      {
+        "path": "llgo/conformance/proposals/memory64-1.json",
+        "bytes": 445,
+        "sha256": "bc2ebb3214818e9d56bebbc6094879193082142df09898614fb17181b562e73a"
+      },
+      {
+        "path": "llgo/conformance/proposals/memory64-2.json",
+        "bytes": 445,
+        "sha256": "b2bb45083cf4c16cd9597508d9d014ea61384585cc4a2d8b676f1e261e67b535"
+      },
+      {
+        "path": "llgo/conformance/proposals/multi-memory-0.json",
+        "bytes": 443,
+        "sha256": "e8d42b8c5fac26136d498e21a0f650ad5476f74ea3d0d7284a07d4ee89d89a13"
+      },
+      {
+        "path": "llgo/conformance/proposals/multi-memory-1.json",
+        "bytes": 443,
+        "sha256": "a0bdbda8e14578263b9b24b621200e9db2a87a153da185ac9cd6225270bae6e3"
+      },
+      {
+        "path": "llgo/conformance/proposals/multi-memory-2.json",
+        "bytes": 443,
+        "sha256": "f54464607dcda113a533be04b5b8480e50bad0fbb8558d34e1dfa559f4a497b8"
+      },
+      {
+        "path": "llgo/conformance/proposals/relaxed-simd-0.json",
+        "bytes": 440,
+        "sha256": "d5f8901205b6906ff9cfe7b11dc63d67c780e13e0ce4226b63e0d140989be48e"
+      },
+      {
+        "path": "llgo/conformance/proposals/relaxed-simd-1.json",
+        "bytes": 440,
+        "sha256": "11182774e951b4b1813ac7d119d12da2eae88ec630a626b26d8d6c62c555f33d"
+      },
+      {
+        "path": "llgo/conformance/proposals/relaxed-simd-2.json",
+        "bytes": 440,
+        "sha256": "f890920658331333616e9ec8305111949c333fc43e14a9fc77f58fa660665345"
+      },
+      {
+        "path": "llgo/conformance/proposals/stack-switching-0.json",
+        "bytes": 448,
+        "sha256": "714137a97cce4c531026aff3a8a7fade9c4c9e0a5aa3f849fb79088dca6e1527"
+      },
+      {
+        "path": "llgo/conformance/proposals/stack-switching-1.json",
+        "bytes": 448,
+        "sha256": "a308cea57785c7e0b19335e6493658fa37422cf22337378667fc237004fd7a2e"
+      },
+      {
+        "path": "llgo/conformance/proposals/stack-switching-2.json",
+        "bytes": 448,
+        "sha256": "eb6a04d039bfdccd6638d5ae01a828809a966ea66d47497036363d8585273403"
+      },
+      {
+        "path": "llgo/conformance/proposals/tail-call-0.json",
+        "bytes": 440,
+        "sha256": "7a3c499aaf61541ce09b7e39c4ab03fac407f88551b23045116c5707172a54fe"
+      },
+      {
+        "path": "llgo/conformance/proposals/tail-call-1.json",
+        "bytes": 440,
+        "sha256": "0cf88aec5873dbe690d6e8e4c0b5baafdf32484ad241745c5bd9fd92d5cacd64"
+      },
+      {
+        "path": "llgo/conformance/proposals/tail-call-2.json",
+        "bytes": 440,
+        "sha256": "472c7c92e7f0f1c8db7249cdb6746694d7b6a3b49957e4511885f21653aee6c3"
+      },
+      {
+        "path": "llgo/conformance/proposals/threads-0.json",
+        "bytes": 411,
+        "sha256": "9e953cafd02fb140a8548fe8592df43af4d84d86d045b542434bebd55b5453e3"
+      },
+      {
+        "path": "llgo/conformance/proposals/threads-1.json",
+        "bytes": 411,
+        "sha256": "5395ebbe02a7fb22e08f35e4bd22b6694615ba416ad9b0c34aad98e19651595c"
+      },
+      {
+        "path": "llgo/conformance/proposals/threads-2.json",
+        "bytes": 411,
+        "sha256": "0de131ea52b297dc8305b5c891e820f012310ed4b3f1ab1bc85cb2082ac14b34"
+      },
+      {
+        "path": "llgo/conformance/proposals/wide-arithmetic-0.json",
+        "bytes": 448,
+        "sha256": "e7bb29e5f72a4393e97bf7cf13a7bfa975830119e85554b12bda0032167f2e3f"
+      },
+      {
+        "path": "llgo/conformance/proposals/wide-arithmetic-1.json",
+        "bytes": 448,
+        "sha256": "1ba07710aacc254fec0d5b3bb5479745ba34225e227f244ace144555b2e46b4b"
+      },
+      {
+        "path": "llgo/conformance/proposals/wide-arithmetic-2.json",
+        "bytes": 448,
+        "sha256": "4b0c232bebebe66ece966993c86189064ff44ebead65a98a2d3faf79e7b0d044"
+      },
+      {
+        "path": "llgo/conformance/wasi/go-guest-0.json",
+        "bytes": 436,
+        "sha256": "3c40c421ef6cf879233dc3c603c9b18cd779cfaa95417237326cbc8f946b4135"
+      },
+      {
+        "path": "llgo/conformance/wasi/go-guest-1.json",
+        "bytes": 436,
+        "sha256": "f899c4e52a6272d15d0f042526a8f879f27236a4b2c31208d8f617a97d3271cb"
+      },
+      {
+        "path": "llgo/conformance/wasi/go-guest-2.json",
+        "bytes": 436,
+        "sha256": "fe11ae9c347c42a1a90ca82ba1546d3d7d11a33b771adf074d2e8cf4c31ff7d1"
+      },
+      {
+        "path": "llgo/conformance/wasi/preview1-0.json",
+        "bytes": 461,
+        "sha256": "1b5c0078542b3d4320093aaea0e8b0042bc8b3cd2ec4eb754a42aa4f9fe7c096"
+      },
+      {
+        "path": "llgo/conformance/wasi/preview1-1.json",
+        "bytes": 461,
+        "sha256": "0bacabcbfd7962fff370296d38698b0bfc35c0e5eab46f432ab463342a378768"
+      },
+      {
+        "path": "llgo/conformance/wasi/preview1-2.json",
+        "bytes": 461,
+        "sha256": "936932b3e29dc61d23fece17c5bbac413b11b9f2a73c727cd21296dc11010ecc"
+      },
+      {
+        "path": "llgo-semantics.log",
+        "bytes": 598,
+        "sha256": "765a0054192243015b2e49c03915dab51b2714345b0c7d12f0176ea4c37247dd"
+      },
+      {
+        "path": "prepare-comparison.py",
+        "bytes": 3873,
+        "sha256": "0e1e8e540bcc1361ef8737227dcd1389464910e2a7855a28d012dd5fce099c14"
+      },
+      {
+        "path": "publication-summary.json",
+        "bytes": 384,
+        "sha256": "f5e63236e290dd38a52084f404896ac89f7f42616554c788ccae5e973ab8d73c"
+      },
+      {
+        "path": "published-builds.json",
+        "bytes": 1447932,
+        "sha256": "475ff770e3573607571a055928b75433ade32010ae95da8929021dfbb8d720de"
+      },
+      {
+        "path": "published-head-llgo-builds.json",
+        "bytes": 728649,
+        "sha256": "fe6f88ac1a2cf4c695d537c7ccd4c033e8da2c370b8fbe86260748ebe5459db7"
+      },
+      {
+        "path": "qualification.json",
+        "bytes": 8073,
+        "sha256": "852df3037215af62c1eb96455fd28c9128bc4028ddc411acaf2e57ec7f2e5c85"
+      },
+      {
+        "path": "qualify-runners.py",
+        "bytes": 1858,
+        "sha256": "f0e414455ee2a463db9efa3d1724fe9433f826635691bb65bd1750bed728391b"
+      },
+      {
+        "path": "qualify.py",
+        "bytes": 3350,
+        "sha256": "ec4e1ab2f2e36590913d06866537c404ee0429f7a8473541c0e02c727efbefab"
+      },
+      {
+        "path": "reused-base-publication.json",
+        "bytes": 736180,
+        "sha256": "cbe1fb7a9592e74ebddc42e474d4f5f6c2aed09eeaf167833e36a29825e9aacf"
+      },
+      {
+        "path": "runner-qualification.json",
+        "bytes": 219378,
+        "sha256": "6463e18010c378e8e5fcf1e7d13063494296a6e1b90de3e5d41cb3ca2f81c684"
+      }
+    ]
+  },
+  "remaining": [
+    "Final four-profile CI: 31 packages/profile and 30 package coverage gates",
+    "Exact-source hosted measurement and controlled competitor/native acceptance",
+    "Review and integration under the one-active-contribution policy",
+    "General SSA/value-version allocation and broader application/WASI-world acceptance"
+  ]
+}

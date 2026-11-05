@@ -271,6 +271,18 @@ intact, and driver returns lose the proof. The precise fuel tier is unchanged.
 See the [affine-loop comparison](../research/performance-affine-loop-spans-2026-11-05.md).
 Global live-range allocation and broader loop/range optimization remain required.
 
+The same bounded range and loop proofs also apply to a shared default memory
+when the function selects no other memory. Shared storage retains its base
+across growth. Entry atomically reads the shared length and validates that base
+and the declared minimum; that length remains a safe lower bound. Proven
+accesses reuse the reserved base registers without another descriptor load.
+Every access without a proof and `memory.size` still atomically refreshes the
+current shared length. A stale lower bound can only send a region to its checked
+fallback. Mixed memories, helpers and memory64 retain their existing paths;
+call/resume entries refresh the binding. This shares the private-memory proof
+pipeline rather than adding another execution framework.
+See the [shared-memory validation](../research/performance-shared-default-memory-2026-11-05.md).
+
 Use a private guest ABI with explicit VM frames: guest calls push checked logical frames and branch to native callee labels; returns branch to saved continuations. The initial backend keeps one bounded C entry frame, without hardware-stack switching or a native C/Go frame per guest call. Host interaction, collection, cancellation and traps leave through the explicit status protocol in the [native ABI](native-abi.md). Whole-function inlining and more advanced optimization follow correctness and profiling; both disabled and enabled optimizations must pass differential tests. A persistent AOT/cache file format is later work; generating native code in-process is required in M2.
 
 The retained backend-contract experiment requires `Resize`, `RunFrames`,
