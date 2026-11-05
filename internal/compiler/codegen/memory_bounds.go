@@ -18,7 +18,7 @@ type memoryRegion struct {
 	guarded   uint32
 	addresses map[int]memoryAddress
 	elided    map[int]bool
-	loop      *memoryLoop
+	loop      *nativeLoop
 	unroll    *memoryUnroll
 }
 
@@ -141,9 +141,9 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 			guards, addresses, guarded = e.memoryGuards(start, end, proven)
 		}
 		r := memoryRegion{end: end - 1, proven: proven, guards: guards, guarded: guarded, addresses: addresses}
-		r.loop = e.memoryLoop(start, r)
-		if r.loop != nil {
-			r.proven, r.guards, r.addresses = r.loop.proven, nil, r.loop.addresses
+		if proof := e.memoryLoop(start, r); proof != nil {
+			r.loop = &nativeLoop{yes: proof.yes, exit: proof.exit, flags: true, memory: proof}
+			r.proven, r.guards, r.addresses = proof.proven, nil, proof.addresses
 			r.elided = e.deadAddressTemps(start, end, r)
 			r.guarded = uint32(len(r.proven))
 		} else {
@@ -170,7 +170,7 @@ func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, pcs []int,
 		return
 	}
 	if r.loop != nil {
-		e.emitMemoryLoop(start, r, pcs, out)
+		e.emitNativeLoop(start, r, pcs, out)
 		return
 	}
 	out.DeadScalarOps += uint32(len(r.elided))

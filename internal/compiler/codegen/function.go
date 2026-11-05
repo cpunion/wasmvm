@@ -36,6 +36,7 @@ type CompiledFunction struct {
 	RegisterRegions               uint32
 	AllocationBlocks              uint32
 	CoalescedSlotGroups           uint32
+	NativeLoops                   uint32
 	UnrolledLoops, UnrolledCopies uint32
 	DeadScalarOps                 uint32
 	MemoryGrows                   uint32
@@ -218,7 +219,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	if e.usesMemory && !e.memoryViews {
 		e.prepareMemory()
 	}
-	regions := e.memoryRegions()
+	regions := e.addNativeLoops(e.memoryRegions())
 	if unmetered {
 		e.selectRegisters(config, regions)
 		e.prepareVectorConstants()
@@ -274,7 +275,15 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		}
 		if edge, ok := e.loopBackedges[pc]; ok {
 			e.interrupt(uint32(pc))
-			if arch == "arm64" {
+			if edge.always {
+				a.branch(edge.header, false, 0)
+				if edge.registers != nil {
+					e.useRegisterPlan(edge.registers)
+				}
+				independentEntries = append(independentEntries, pc)
+				continue
+			}
+			if arch == "arm64" && edge.flags {
 				cc := armIntegerCondition(f.Code[pc-1].Op)
 				if !edge.yes {
 					cc ^= 1
@@ -541,6 +550,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		if f.Code[pc].Op == slots.ControlBase+uint32(ir.If) {
 			e.interrupt(uint32(pc))
 			e.conditionalEdges(f.Code[pc], pcs, -1)
+		} else if f.Code[pc].Op == slots.ControlBase+uint32(ir.Jump) {
+			e.interrupt(uint32(pc))
+			e.edge(f.Code[pc].Extra, pcs, -1)
 		} else {
 			if !e.heapInstruction(f.Code[pc]) {
 				e.plain(f.Code[pc], false)

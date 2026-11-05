@@ -156,7 +156,7 @@ func (e *functionEmitter) coalesceLoopRegisters(start int, r memoryRegion, work 
 			continue
 		}
 		in := e.f.Code[pc]
-		if !plainOpcode(in.Op) || scalarCanTrap(in.Op) || isMemoryAccess(in.Op) && !r.loop.proven[pc] {
+		if !plainOpcode(in.Op) || scalarCanTrap(in.Op) || isMemoryAccess(in.Op) && !r.proven[pc] {
 			return nil, nil, 0
 		}
 		local := slots.Slot(e.f.Sources[in.Source].Wasm.A)

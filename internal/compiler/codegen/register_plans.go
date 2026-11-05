@@ -106,7 +106,7 @@ func (e *functionEmitter) transitionRegisters(next *registerPlan) {
 // with the number of unused slots or the whole function for each loop.
 func (e *functionEmitter) loopRegisterPlan(start int, r memoryRegion) *registerPlan {
 	old := e.currentRegisterPlan()
-	if old == nil {
+	if old == nil || r.loop.memory == nil {
 		return nil
 	}
 	weights := map[slots.Slot]uint64{}
@@ -188,7 +188,7 @@ func (e *functionEmitter) loopRegisterPlan(start int, r memoryRegion) *registerP
 			transfers++
 		}
 	}
-	if uint64(r.loop.limit)/uint64(r.loop.stride)*(after-before) <= 2*transfers {
+	if uint64(r.loop.memory.limit)/uint64(r.loop.memory.stride)*(after-before) <= 2*transfers {
 		return nil
 	}
 	plan := &registerPlan{homes: homes, floats: old.floats, vectors: old.vectors}

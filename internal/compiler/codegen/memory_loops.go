@@ -26,6 +26,8 @@ type memoryLoop struct {
 type loopBackedge struct {
 	header    int
 	yes       bool
+	always    bool
+	flags     bool
 	exit      int
 	registers *registerPlan
 }
@@ -190,21 +192,24 @@ func (e *functionEmitter) memoryLoop(start int, r memoryRegion) *memoryLoop {
 	return &memoryLoop{cursor: cursor, limit: limit, stride: update.bias, yes: backYes, exit: exit, spans: spans, proven: proven, addresses: addresses}
 }
 
-func (e *functionEmitter) emitMemoryLoop(start int, r memoryRegion, pcs []int, out *CompiledFunction) {
+func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, out *CompiledFunction) {
 	loop := r.loop
-	cold := e.a.label()
-	e.memoryFallbacks = append(e.memoryFallbacks, memoryFallback{cold, start, e.currentRegisterPlan()})
-	e.emitLoopProgress(*loop, cold)
-	for i, span := range loop.spans {
-		// Guards alter only scratch registers. A canceled guard resumes the fully
-		// checked entry with unchanged canonical slots, including every raw bit.
-		if i%16 == 0 {
-			e.interrupt(uint32(start))
+	if proof := loop.memory; proof != nil {
+		cold := e.a.label()
+		e.memoryFallbacks = append(e.memoryFallbacks, memoryFallback{cold, start, e.currentRegisterPlan()})
+		e.emitLoopProgress(*proof, cold)
+		for i, span := range proof.spans {
+			// Guards alter only scratch registers. A canceled guard resumes the fully
+			// checked entry with unchanged canonical slots, including every raw bit.
+			if i%16 == 0 {
+				e.interrupt(uint32(start))
+			}
+			e.emitLoopSpan(*proof, span, cold)
 		}
-		e.emitLoopSpan(*loop, span, cold)
+		out.MemoryGuards += uint32(len(proof.spans))
+		out.LoopGuards++
 	}
-	out.MemoryGuards += uint32(len(loop.spans))
-	out.LoopGuards++
+	out.NativeLoops++
 	previous := e.currentRegisterPlan()
 	plan := e.loopRegisterPlan(start, r)
 	if plan != nil {
@@ -224,12 +229,11 @@ func (e *functionEmitter) emitMemoryLoop(start int, r memoryRegion, pcs []int, o
 	}
 	warm := r
 	warm.guards, warm.loop = nil, nil
-	warm.proven = loop.proven
 	e.emitMemoryRegionRange(start, r.end, warm, pcs, out)
 	if e.loopBackedges == nil {
 		e.loopBackedges = map[int]loopBackedge{}
 	}
-	edge := loopBackedge{header: header, yes: loop.yes, exit: loop.exit}
+	edge := loopBackedge{header: header, yes: loop.yes, always: loop.always, flags: loop.flags, exit: loop.exit}
 	if plan != nil || coalesced != nil {
 		edge.registers = previous
 	}

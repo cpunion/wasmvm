@@ -110,6 +110,47 @@ func coalescedValueLoopFixture(literals bool) *slots.Function {
 	return f
 }
 
+func coalescedArithmeticLoopFixture(reverse, flags, always bool) *slots.Function {
+	f := coalescedValueLoopFixture(true)
+	for pc := range f.Code {
+		in := &f.Code[pc]
+		if in.Op == 0x36 || in.Op == 0x38 || in.Op == 0x39 || in.Op == 0xfd000b {
+			in.Op, in.A, in.B = 0x1a, in.B, slots.NoSlot
+			f.Sources[in.Source].Wasm.Op = 0x1a
+		}
+		if reverse && in.Op == 0x47 {
+			in.Op = 0x46
+			f.Sources[in.Source].Wasm.Op = 0x46
+		}
+	}
+	if reverse {
+		f.Edges[0], f.Edges[1] = f.Edges[1], f.Edges[0]
+	}
+	if !flags {
+		pc := len(f.Code) - 2
+		branch, ret := f.Code[pc], f.Code[pc+1]
+		source := uint32(len(f.Sources))
+		f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: 0x20, A: 14, Offset: 999}})
+		copy := slots.Instruction{Op: 0x20, Dst: 15, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot, Source: source}
+		branch.A = 15
+		f.Code = append(append([]slots.Instruction(nil), f.Code[:pc]...), copy, branch, ret)
+		for i := range f.Edges {
+			if f.Edges[i].PC > 1 {
+				f.Edges[i].PC++
+			}
+		}
+	}
+	if always {
+		branch := &f.Code[len(f.Code)-2]
+		branch.Op = slots.ControlBase + uint32(ir.Jump)
+		branch.Count = 1
+		branch.A = slots.NoSlot
+		f.Sources[branch.Source].Wasm.Op = branch.Op
+		f.Edges = []slots.Edge{{PC: 1}}
+	}
+	return f
+}
+
 func TestLoopValueCoalescingBudgetsAndUnsafeObservations(t *testing.T) {
 	for _, kind := range []string{"accept", "precise", "header-poll", "trap", "unproved", "budget", "no-mapping"} {
 		f := coalescedValueLoopFixture(false)
@@ -130,7 +171,7 @@ func TestLoopValueCoalescingBudgetsAndUnsafeObservations(t *testing.T) {
 		case "trap":
 			f.Code[3].Op = 0x6d
 		case "unproved":
-			delete(r.loop.proven, 1)
+			delete(r.proven, 1)
 		case "budget":
 			work = 1
 		case "no-mapping":
@@ -173,10 +214,19 @@ func forcePrivateLoopPoll(t *testing.T, c *CompiledFunction, arch string) []byte
 	if arch == "arm64" {
 		load := uint32(0xf9400009) | uint32(nativeabi.ControlOffset/8)<<10
 		for pc := 0; pc+12 <= limit; pc += 4 {
-			a, b, d := binary.LittleEndian.Uint32(code[pc:]), binary.LittleEndian.Uint32(code[pc+4:]), binary.LittleEndian.Uint32(code[pc+8:])
-			if a == load && b&0xff00001f == 0xb5000009 && d&0xff000010 == 0x54000000 && d&0x00800000 != 0 {
-				binary.LittleEndian.PutUint32(code[pc:], 0xd2800029)
-				found++
+			a, b := binary.LittleEndian.Uint32(code[pc:]), binary.LittleEndian.Uint32(code[pc+4:])
+			if a != load || b&0xff00001f != 0xb5000009 {
+				continue
+			}
+			for branch := pc + 8; branch < pc+24 && branch+4 <= limit; branch += 4 {
+				d := binary.LittleEndian.Uint32(code[branch:])
+				conditional := (d&0xff000010 == 0x54000000 || d&0x7e000000 == 0x34000000) && d&0x00800000 != 0
+				unconditional := d&0xfc000000 == 0x14000000 && d&0x02000000 != 0
+				if conditional || unconditional {
+					binary.LittleEndian.PutUint32(code[pc:], 0xd2800029)
+					found++
+					break
+				}
 			}
 		}
 	} else {
@@ -187,8 +237,10 @@ func forcePrivateLoopPoll(t *testing.T, c *CompiledFunction, arch string) []byte
 			if !bytes.Equal(code[pc:pc+8], pattern) || code[pc+8] != 0x0f || code[pc+9] != 0x85 {
 				continue
 			}
-			for branch := pc + 14; branch < pc+23 && branch+6 <= len(code); branch++ {
-				if code[branch] == 0x0f && (code[branch+1] == 0x84 || code[branch+1] == 0x85) && int32(binary.LittleEndian.Uint32(code[branch+2:])) < 0 {
+			for branch := pc + 14; branch < pc+30 && branch+6 <= len(code); branch++ {
+				conditional := code[branch] == 0x0f && (code[branch+1] == 0x84 || code[branch+1] == 0x85) && int32(binary.LittleEndian.Uint32(code[branch+2:])) < 0
+				unconditional := code[branch] == 0xe9 && int32(binary.LittleEndian.Uint32(code[branch+1:])) < 0
+				if conditional || unconditional {
 					copy(code[pc:pc+8], []byte{0x48, 0x83, 0xff, 1, 0x90, 0x90, 0x90, 0x90})
 					found++
 					break
@@ -203,8 +255,22 @@ func forcePrivateLoopPoll(t *testing.T, c *CompiledFunction, arch string) []byte
 }
 
 func TestCoalescedLoopEveryPCFullFramesMemoryAndGeneratedPoll(t *testing.T) {
-	for _, literals := range []bool{false, true} {
-		f := coalescedValueLoopFixture(literals)
+	type loopCase struct {
+		name                                         string
+		literals, arithmetic, reverse, flags, always bool
+	}
+	cases := []loopCase{{name: "memory"}, {name: "literals", literals: true}}
+	for _, reverse := range []bool{false, true} {
+		for _, flags := range []bool{false, true} {
+			cases = append(cases, loopCase{"arithmetic", true, true, reverse, flags, false})
+		}
+	}
+	cases = append(cases, loopCase{"unconditional", true, true, false, true, true})
+	for _, test := range cases {
+		f := coalescedValueLoopFixture(test.literals)
+		if test.arithmetic {
+			f = coalescedArithmeticLoopFixture(test.reverse, test.flags, test.always)
+		}
 		for _, arch := range []string{"amd64", "arm64"} {
 			c, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), Config{Unmetered: true, MemoryMinimumPages: 1})
 			if err != nil {
@@ -212,6 +278,9 @@ func TestCoalescedLoopEveryPCFullFramesMemoryAndGeneratedPoll(t *testing.T) {
 			}
 			if c.CoalescedSlotGroups < 5 {
 				t.Fatal(arch, "value classes not exercised", c.CoalescedSlotGroups)
+			}
+			if c.NativeLoops != 1 || test.arithmetic && (c.UsesMemory || c.LoopGuards != 0) {
+				t.Fatal(arch, "loop classification", test.name, c.NativeLoops, c.UsesMemory, c.LoopGuards)
 			}
 			forcePrivateLoopPoll(t, c, arch)
 		}
@@ -233,9 +302,15 @@ func TestCoalescedLoopEveryPCFullFramesMemoryAndGeneratedPoll(t *testing.T) {
 		memory, refMemory := bindMemory(t, ctx, 65536, 65536), bindMemory(t, ref, 65536, 65536)
 		initialMemory := bytes.Repeat([]byte{0xa5}, 65536)
 		for _, address := range []uint64{0, 65536 - 48, 65536 - 47, 0xffffffff, 1 << 32} {
+			if test.arithmetic && address != 0 {
+				continue
+			}
 			for start := range f.Code {
 				for _, poll := range []bool{false, true} {
-					if poll && (start != 0 || address != 0 && address != 65536-48) {
+					if test.always && !poll {
+						continue
+					}
+					if !test.always && poll && (start != 0 || address != 0 && address != 65536-48) {
 						continue
 					}
 					memory.Write(0, initialMemory)
@@ -260,6 +335,9 @@ func TestCoalescedLoopEveryPCFullFramesMemoryAndGeneratedPoll(t *testing.T) {
 						case 13:
 							v.Lo = 4
 						}
+						if test.reverse && (s == 14 || s == 15) {
+							v.Lo = 0
+						}
 						writeSlot(t, ctx, 16, slots.Slot(s), v)
 						writeSlot(t, ref, 16, slots.Slot(s), v)
 					}
@@ -267,6 +345,14 @@ func TestCoalescedLoopEveryPCFullFramesMemoryAndGeneratedPoll(t *testing.T) {
 					entry := lease
 					if poll {
 						state.Budget = uint64(len(f.Code) - 2)
+						if test.always {
+							branch := len(f.Code) - 2
+							if start <= 1 {
+								state.Budget = uint64(branch - start)
+							} else {
+								state.Budget = uint64(2*branch - start)
+							}
+						}
 						entry = pollLease
 					}
 					ctx.SetState(state)
@@ -276,18 +362,18 @@ func TestCoalescedLoopEveryPCFullFramesMemoryAndGeneratedPoll(t *testing.T) {
 					gs, gerr := ctx.State()
 					ws, serr := ref.State()
 					if err != nil || werr != nil || gerr != nil || serr != nil || got != want || gs.Continuation != ws.Continuation || gs.Payload[0] != ws.Payload[0] || got == native.Trap && gs.Source != ws.Source {
-						t.Fatal(literals, address, start, poll, got, want, gs, ws, err, werr, gerr, serr)
+						t.Fatal(test.name, test.reverse, test.flags, address, start, poll, got, want, gs, ws, err, werr, gerr, serr)
 					}
 					for s := range f.Slots {
 						if a, b := readSlot(t, ctx, 16, slots.Slot(s)), readSlot(t, ref, 16, slots.Slot(s)); a != b {
-							t.Fatal(literals, address, start, poll, "slot", s, a, b)
+							t.Fatal(test.name, test.reverse, test.flags, address, start, poll, "slot", s, a, b)
 						}
 					}
 					actual, expected := make([]byte, 65536), make([]byte, 65536)
 					memory.Read(0, actual)
 					refMemory.Read(0, expected)
 					if !bytes.Equal(actual, expected) {
-						t.Fatal(literals, address, start, poll, "memory effects differ")
+						t.Fatal(test.name, address, start, poll, "memory effects differ")
 					}
 				}
 			}
