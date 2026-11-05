@@ -211,6 +211,12 @@ func (e *functionEmitter) emitMemoryLoop(start int, r memoryRegion, pcs []int, o
 		e.transitionRegisters(plan)
 		out.RegisterRegions++
 	}
+	coalesced, entry, merges := e.coalesceLoopRegisters(start, r, (r.end-start+1)*128)
+	if coalesced != nil {
+		e.transitionRegisters(entry)
+		e.useRegisterPlan(coalesced)
+		out.CoalescedSlotGroups += merges
+	}
 	header := e.a.label()
 	e.a.mark(header)
 	if start%256 == 0 {
@@ -224,7 +230,7 @@ func (e *functionEmitter) emitMemoryLoop(start int, r memoryRegion, pcs []int, o
 		e.loopBackedges = map[int]loopBackedge{}
 	}
 	edge := loopBackedge{header: header, yes: loop.yes, exit: loop.exit}
-	if plan != nil {
+	if plan != nil || coalesced != nil {
 		edge.registers = previous
 	}
 	e.loopBackedges[r.end+1] = edge

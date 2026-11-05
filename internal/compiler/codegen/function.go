@@ -35,6 +35,7 @@ type CompiledFunction struct {
 	LoopGuards                    uint32
 	RegisterRegions               uint32
 	AllocationBlocks              uint32
+	CoalescedSlotGroups           uint32
 	UnrolledLoops, UnrolledCopies uint32
 	DeadScalarOps                 uint32
 	MemoryGrows                   uint32

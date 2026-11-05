@@ -15,6 +15,7 @@ type registerPlan struct {
 	floats  map[slots.Slot]byte
 	vectors map[slots.Slot]byte
 	slots   []slots.Slot
+	shared  bool
 }
 
 func (e *functionEmitter) currentRegisterPlan() *registerPlan {
@@ -37,30 +38,31 @@ func (e *functionEmitter) useRegisterPlan(plan *registerPlan) {
 
 // Spill all displaced words before loading any new home. Equal homes keep
 // their complete current value; no transition clobbers a still-needed source.
+func registerLocation(p *registerPlan, s slots.Slot) (byte, byte) {
+	if p != nil {
+		if r, ok := p.homes[s]; ok {
+			return 1, r
+		}
+		if r, ok := p.floats[s]; ok {
+			return 2, r
+		}
+		if r, ok := p.vectors[s]; ok {
+			return 3, r
+		}
+	}
+	return 0, 0
+}
+
 func (e *functionEmitter) transitionRegisters(next *registerPlan) {
 	previous := e.currentRegisterPlan()
 	if previous == next {
 		return
 	}
-	location := func(p *registerPlan, s slots.Slot) (byte, byte) {
-		if p != nil {
-			if r, ok := p.homes[s]; ok {
-				return 1, r
-			}
-			if r, ok := p.floats[s]; ok {
-				return 2, r
-			}
-			if r, ok := p.vectors[s]; ok {
-				return 3, r
-			}
-		}
-		return 0, 0
-	}
 	e.registers, e.floatRegisters, e.vectorRegisters = nil, nil, nil
 	if previous != nil {
 		for _, s := range previous.slots {
-			kind, r := location(previous, s)
-			nextKind, nextReg := location(next, s)
+			kind, r := registerLocation(previous, s)
+			nextKind, nextReg := registerLocation(next, s)
 			if kind == nextKind && r == nextReg {
 				continue
 			}
@@ -78,8 +80,8 @@ func (e *functionEmitter) transitionRegisters(next *registerPlan) {
 	}
 	if next != nil {
 		for _, s := range next.slots {
-			kind, r := location(next, s)
-			oldKind, oldReg := location(previous, s)
+			kind, r := registerLocation(next, s)
+			oldKind, oldReg := registerLocation(previous, s)
 			if kind == oldKind && r == oldReg {
 				continue
 			}

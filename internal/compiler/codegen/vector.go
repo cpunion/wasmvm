@@ -120,8 +120,10 @@ func (e *functionEmitter) vectorConstant(dst byte, lo, hi uint64) {
 // expires when either slot changes; aliases never cross a region or CFG edge.
 func (e *functionEmitter) forgetVectorAliases(slot slots.Slot) {
 	delete(e.vectorAliases, slot)
+	written, cached := e.vectorRegisters[slot]
 	for dst, source := range e.vectorAliases {
-		if source == slot {
+		reg, resident := e.vectorRegisters[source]
+		if source == slot || cached && resident && reg == written {
 			delete(e.vectorAliases, dst)
 		}
 	}
