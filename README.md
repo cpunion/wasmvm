@@ -16,11 +16,12 @@ integration. Competing runtimes are independent test and benchmark references;
 execution never silently switches to one of them.
 
 Performance acceptance remains open. The
-[latest predicate-reconstruction study](docs/research/performance-loop-predicates-2026-11-06.md)
-reduces hot loop instructions on both targets and retains mixed local elapsed
-results across 18 workloads. Final-head CI, x86 execution and controlled
-performance acceptance remain open. It links the preceding frame-copy and
-allocation studies, including rejected changes and adverse results. The
+[latest comparison-immediate study](docs/research/performance-loop-compare-immediates-2026-11-06.md)
+reduces hot loop instructions on both targets and retains mixed elapsed results
+across 18 local workloads. The preceding Linux event covers all 22 cases.
+Final-head CI, current x86 execution and controlled performance acceptance remain
+open; rejected changes, adverse values and the earlier artifact-upload timeout
+remain recorded. The
 [full hosted comparison](docs/research/performance-loop-nonresident-values-2026-11-05.md)
 retains all 22 competitor/Go/LLGo/native-C workloads and separate execution phases.
 Results are dated and target-specific; they do not establish a universal winner.

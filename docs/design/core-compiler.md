@@ -270,6 +270,17 @@ Every original cold PC and precise-fuel instruction stays available. Comparison
 encodings are shared with ordinary emission. See the
 [complete-frame tests and source-pinned comparison](../research/performance-loop-predicates-2026-11-06.md).
 
+A final adjacent integer literal can also use the target's comparison immediate
+when its entry word is unread and it is neither shared, already hoisted nor a
+copy-reconstruction anchor. x86 imm8/imm32 sign extension and ARM64 shifted imm12
+eligibility share their encoder with eqz. Cold exits restore the literal before
+copies and the original comparison; ordinary exits retain only its final
+observable word when the result aliases it. Observation scans keep the logical
+uses and definitions of these recoverable operations, while physical selection
+still stops at omitted instructions. This preserves preceding arithmetic/local
+fusion without weakening any observation boundary. See the
+[rejected static interaction and corrected comparison](../research/performance-loop-compare-immediates-2026-11-06.md).
+
 Ordinary emission and bounded native regions use one ordered instruction
 selector pipeline. Their callers retain mapping, guard, remapping, shared-write
 boundaries and all original-PC continuations. Logical shifts, live integer

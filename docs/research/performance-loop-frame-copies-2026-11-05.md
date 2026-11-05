@@ -93,12 +93,55 @@ optional skip. The longest job is 565 s (9m25s), excluding queue time. These
 results apply to the baseline; current final-head validation remains required.
 Contribution review also remains required.
 [Linux comparison 42051975324](https://github.com/cpunion/wasmvm/actions/runs/42051975324)
-is dispatched once for the exact `993cbb3` source against `3355a8d`, with one shared
-build and all five original-count groups. It retains the Go/LLGo, competitor and
-native-C rows and separate lifecycle phases. It targets x86, where the actual
-code changed; its queued observation is not a performance result. Pinned local
-baseline/reference binaries are reused only after exact engine, harness,
-toolchain, flag and executable checks. No new LLGo defect is inferred.
+now completes for exact source `993cbb3` against `3355a8d`: all six required
+build/measurement jobs pass, 22 cases, 362 alternate checks and 12 expected
+reference-GC rejections. Seven cases resolve all four diagnostic controls. The
+shared build takes 405s; the longest measurement group takes 495s, excluding
+queue time. Complete separate lifecycle phases and all competitor/native-C rows
+remain retained. No timing is pooled with another source or target.
+
+Clang SHA records Go/LLGo warm elapsed ratios of 0.941/0.957 against baseline;
+Rust records 0.994/1.000 with unresolved controls. The Clang frame-traffic change
+therefore accompanies a 4.3% lower LLGo median in this advisory event; it does
+not complete controlled acceptance. Smaller elapsed ratios are faster.
+
+| Workload | LLGo / Go native | LLGo / Go interpreter | LLGo native / wazero JIT | / Wasmtime | / Wasmer | LLGo interpreter / wazero interpreter | / WasmEdge interpreter | LLGo native / C | A/A |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| core/call-control | 1.221× | 1.358× | 7.696× | 4.084× | 2.288× | 3.400× | 2.049× | unavailable | inconclusive |
+| core/integer-loop | 1.011× | 0.809× | 1.022× | 1.021× | 1.017× | 0.344× | 0.547× | 1.023× | inconclusive |
+| core/function-calls | 1.001× | 0.816× | 0.511× | 0.499× | 0.498× | 0.368× | 0.846× | 0.829× | inconclusive |
+| core/memory-load-store | 1.001× | 0.930× | 0.714× | 1.172× | 1.170× | 0.516× | 0.714× | 1.613× | inconclusive |
+| memory/narrow-unaligned | 0.995× | 0.967× | 0.862× | 1.315× | 1.312× | 0.499× | 0.718× | 2.081× | resolved, advisory |
+| memory/dependent-address | 0.987× | 0.893× | 1.086× | 1.442× | 1.441× | 0.562× | 0.358× | 1.685× | resolved, advisory |
+| memory/float64-unaligned | 1.008× | 0.946× | 0.714× | 1.184× | 1.177× | 0.700× | 0.415× | 1.199× | resolved, advisory |
+| runtime/simd-memory-full | 0.994× | 0.938× | 0.891× | 1.105× | 1.069× | 0.427× | 0.979× | 0.924× | resolved, advisory |
+| runtime/simd-memory-widen | 1.002× | 1.023× | 0.844× | 1.906× | 1.899× | 0.440× | 1.006× | 0.492× | resolved, advisory |
+| runtime/simd-memory-lanes | 0.995× | 1.129× | 0.981× | 1.183× | 1.192× | 0.483× | 1.176× | 1.376× | resolved, advisory |
+| gc/i31-roundtrip | 0.987× | 0.908× | unsupported | 0.922× | unsupported | unsupported | 0.442× | unavailable | inconclusive |
+| gc/struct-access | 1.043× | 0.845× | unsupported | 2.113× | unsupported | unsupported | 0.363× | unavailable | inconclusive |
+| gc/struct-allocation | 1.300× | 1.393× | unsupported | 0.306× | unsupported | unsupported | 1.389× | unavailable | inconclusive |
+| gc/struct-indirect-access | 0.986× | 0.892× | unsupported | 2.849× | unsupported | unsupported | 0.764× | unavailable | inconclusive |
+| threads/private-memory | 1.083× | 1.118× | 0.930× | 2.763× | 2.156× | 0.862× | 0.646× | unavailable | inconclusive |
+| threads/shared-memory | 1.090× | 0.673× | 1.048× | 2.952× | 2.315× | 0.871× | 0.648× | unavailable | inconclusive |
+| threads/atomic-rmw | 1.010× | 0.718× | 1.311× | 1.285× | 1.174× | 0.859× | 0.638× | unavailable | inconclusive |
+| threads/notify-empty | 1.179× | 0.935× | 0.080× | 0.359× | 0.262× | 0.794× | 0.516× | unavailable | inconclusive |
+| threads/wait-mismatch | 1.022× | 0.708× | 0.056× | 0.238× | 0.575× | 0.739× | 0.512× | unavailable | inconclusive |
+| threads/wait-timeout | 0.863× | 0.688× | 0.006× | 0.050× | 0.024× | 0.097× | 0.001× | unavailable | inconclusive |
+| applications/sha256-clang | 0.997× | 0.914× | 0.772× | 1.473× | 1.430× | 0.556× | 0.765× | 1.772× | resolved, advisory |
+| applications/sha256-rust | 0.981× | 0.927× | 0.770× | 1.540× | 1.456× | 0.575× | 0.773× | 1.844× | inconclusive |
+
+The source's [CI run 42057704970](https://github.com/cpunion/wasmvm/actions/runs/42057704970)
+is **cancelled**, despite passing semantic evidence. Twenty required jobs pass;
+VM shard tests pass in 394s, but finalizing a 26,623-byte artifact retries HTML
+responses for 378s and exceeds the 12-minute job limit. The preserved archive
+contains 240 passing, matching conformance reports across four profiles and all
+30 package coverage gates (minimum 90.77%). This is not a green merge gate.
+The [subsequent increment](performance-loop-compare-immediates-2026-11-06.md)
+bounds required artifact finalization to two minutes and retains the failure.
+New final-head CI and contribution review remain required.
+
+Pinned local baseline/reference binaries are reused only after exact engine,
+harness, toolchain, flag and executable checks. No new LLGo defect is inferred.
 
 Integration follows the one-active-contribution policy while LLGo #2991 remains
 open. LLGo #2983 stays with its existing contributor. Application-effective
@@ -109,3 +152,9 @@ not complete the requested performance goal or a milestone.
 The [data index](data/loop-frame-copies-2026-11-05.json) retains exact source,
 qualification, all allocation rows, publication identities and raw input hashes.
 Local evidence: `artifacts/loop-frame-copies-20261105/evidence.tar.gz`, 1854290 bytes, 224 files; SHA-256 `e7da5ce8408823e1c1dfd70dedd48954ea5568a1bb31ee6513fed816dc0a868a`.
+
+Supplemental Linux archive: `artifacts/loop-frame-copies-20261105/hosted-evidence-current.tar.gz`, 2095193 bytes; SHA-256
+`841890717284818cec46c8f90f2d476ca71df69817e61be5bb0517e074a644f4`.
+
+Cancelled-CI archive: `artifacts/loop-compare-immediates-20261106/ci-eab-evidence.tar.gz`, 6115008 bytes; SHA-256
+`4f6df9a3797258f6ce4ce1815e017de6078e351256875418502013da0d807ee6`.

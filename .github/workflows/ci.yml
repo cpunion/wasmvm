@@ -210,6 +210,7 @@ jobs:
           llgo test -O3 -lto=full "${semantic_parallelism[@]}" -json -debug-trace "artifacts/ci/llgo-${SHARD}.json" -count=1 -timeout=8m "${packages[@]}"
       - name: Preserve shard execution and timing evidence
         if: always()
+        timeout-minutes: 2
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: llgo-evidence-${{ matrix.platform.name }}-${{ matrix.shard }}

@@ -1,0 +1,722 @@
+{
+  "classification": "Corrected private-loop immediate selection, complete local dual-compiler semantics, static target output and a separate18-case macOS ARM64 advisory event. No controlled or x86 elapsed acceptance.",
+  "source": "4054f1b96a707fa6f5334221574b8e393f8effc0",
+  "baseline": "15567dfe8068f5e279c61c67f9bd06d37ac0176e",
+  "qualification": [
+    {
+      "compiler": "go",
+      "command": [
+        "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+        "test",
+        "-count=1",
+        "-timeout=4m",
+        "-coverpkg=./internal/compiler/codegen,./internal/engine/nativeexec",
+        "-coverprofile=/Users/lijie/source/goplus/wasmvm/artifacts/loop-compare-immediates-20261106/selected/final/coverage.out",
+        "./internal/compiler/codegen",
+        "./internal/engine/nativeexec",
+        "./pkg/vm"
+      ],
+      "exit": 0,
+      "wallSeconds": 4.961837459122762,
+      "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "source": "4054f1b96a707fa6f5334221574b8e393f8effc0"
+    },
+    {
+      "compiler": "llgo",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-3571c25",
+        "test",
+        "-O3",
+        "-lto=full",
+        "-count=1",
+        "-timeout=4m",
+        "./internal/compiler/codegen",
+        "./internal/engine/nativeexec",
+        "./pkg/vm"
+      ],
+      "exit": 0,
+      "wallSeconds": 35.6481902920641,
+      "compilerSHA256": "4ec6e101cc510011d56e8ef9dee4053abbde521f284963bd2b468b281d3fec0c",
+      "source": "4054f1b96a707fa6f5334221574b8e393f8effc0"
+    },
+    {
+      "compiler": "vet",
+      "command": [
+        "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+        "vet",
+        "./internal/compiler/codegen",
+        "./internal/engine/nativeexec"
+      ],
+      "exit": 0,
+      "wallSeconds": 0.2832369168754667,
+      "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "source": "4054f1b96a707fa6f5334221574b8e393f8effc0"
+    }
+  ],
+  "coverage": {
+    "github.com/cpunion/wasmvm/internal/compiler/codegen": {
+      "covered": 8396,
+      "total": 8596,
+      "percent": 97.67333643555142
+    },
+    "github.com/cpunion/wasmvm/internal/engine/nativeexec": {
+      "covered": 459,
+      "total": 496,
+      "percent": 92.54032258064517
+    }
+  },
+  "static": {
+    "x86CompressionInstructions": {
+      "clang": [
+        85,
+        84
+      ],
+      "rust": [
+        82,
+        81
+      ]
+    },
+    "arm64CompressionInstructions": {
+      "clang": [
+        46,
+        45
+      ],
+      "rust": [
+        40,
+        39
+      ]
+    },
+    "scheduleInstructions": {
+      "x86": [
+        44,
+        43
+      ],
+      "arm64": [
+        28,
+        27
+      ]
+    },
+    "polls": 1,
+    "x86FunctionBytes": {
+      "clang": [
+        11000,
+        11007
+      ],
+      "rust": [
+        10882,
+        10889
+      ]
+    }
+  },
+  "rejectedStaticAttempt": {
+    "source": "b92b24967d5d935d83f76d917c5fde508428801d",
+    "classification": "Semantically valid but static interaction rejected before elapsed measurement.",
+    "x86SHA": {
+      "scheduleInstructions": [
+        44,
+        45
+      ],
+      "clangCompressionInstructions": [
+        85,
+        86
+      ],
+      "rustCompressionInstructions": [
+        82,
+        83
+      ],
+      "frameReferencesUnchanged": true
+    },
+    "arm64SHA": "Hot instruction counts unchanged; complete module images grow8bytes.",
+    "cause": "The observation scan skipped recoverable literal/comparison definitions. Preceding immediate/local fusion therefore retained raw intermediate writes, adding two moves while removing one literal."
+  },
+  "evidence": {
+    "path": "artifacts/loop-compare-immediates-20261106/evidence.tar.gz",
+    "bytes": 6362658,
+    "sha256": "c948e755241e4585c686b3dc7a3314f40ad274be88f7780881addc3c8ab20470",
+    "files": 417
+  },
+  "precedingHostedEvidence": {
+    "path": "artifacts/loop-frame-copies-20261105/hosted-evidence-current.tar.gz",
+    "bytes": 2095193,
+    "sha256": "841890717284818cec46c8f90f2d476ca71df69817e61be5bb0517e074a644f4",
+    "files": 16
+  },
+  "precedingCI": {
+    "run": 42057704970,
+    "source": "eab79fe994a31e72418ef4aa8f0a30f83bf7b34a",
+    "engine": "993cbb3a59f9b19b58523ce8f239c2d6b37ec3dd",
+    "workflowPassed": false,
+    "successfulJobs": 20,
+    "cancelledJobs": 1,
+    "semanticExecutionPassed": true,
+    "semanticSeconds": 394,
+    "uploadSeconds": 378,
+    "artifactBytes": 26623,
+    "failedJobTotalSeconds": 839,
+    "reason": "Artifact finalization returned HTML instead of JSON on three120-second requests. Content transfer completed immediately; finalization retries exceeded12-minute job timeout, although upload eventually finalized. Evidence remains intact.",
+    "change": "Mandatory LLGo shard artifact upload gets a2-minute step timeout. Semantic/release flags, package/shard coverage and required evidence remain unchanged. New final-head CI is still required."
+  },
+  "precedingCIEvidence": {
+    "path": "artifacts/loop-compare-immediates-20261106/ci-eab-evidence.tar.gz",
+    "bytes": 6115008,
+    "sha256": "4f6df9a3797258f6ce4ce1815e017de6078e351256875418502013da0d807ee6",
+    "files": 271
+  },
+  "newLinuxRun": 42070246689,
+  "measurement": {
+    "classification": "Separate local macOS arm64 event; descriptive elapsed ratios (lower is faster), not controlled milestone acceptance.",
+    "cases": [
+      {
+        "workload": "core/call-control",
+        "allFourControlsResolve": false,
+        "sourceElapsedRatios": {
+          "go-native": 0.6938525593926035,
+          "go-interpreter": 1.0321207430340558,
+          "llgo-native": 1.0255241567912488,
+          "llgo-interpreter": 1.0
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 1.0255241567912488,
+          "head-go-native": 1.191316625485351,
+          "wazero-compiler": 7.352941176470588,
+          "wasmtime-cranelift": 3.857142857142857,
+          "wasmer-cranelift": 1.6527913809990207,
+          "wasmedge-interpreter": 1.3276947285601888
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 4083,
+          "head-go-native": 2833,
+          "base-llgo-native": 3291,
+          "head-llgo-native": 3375
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 157042,
+          "head-go-native": 165208,
+          "base-llgo-native": 531334,
+          "head-llgo-native": 514500
+        }
+      },
+      {
+        "workload": "core/integer-loop",
+        "allFourControlsResolve": true,
+        "sourceElapsedRatios": {
+          "go-native": 1.005934504888829,
+          "go-interpreter": 1.0017526354882318,
+          "llgo-native": 1.0047153889231437,
+          "llgo-interpreter": 1.0025724010153527
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 1.0047153889231437,
+          "head-go-native": 0.9877793931731985,
+          "wazero-compiler": 0.9193289057301751,
+          "wasmtime-cranelift": 1.0150760852196032,
+          "wasmer-cranelift": 1.001522792863639,
+          "wasmedge-interpreter": 0.031951153185572914,
+          "native-c": 1.0092029472680808
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 1572667,
+          "head-go-native": 1582000,
+          "base-llgo-native": 1555333,
+          "head-llgo-native": 1562667
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 218041,
+          "head-go-native": 228292,
+          "base-llgo-native": 741792,
+          "head-llgo-native": 616417
+        }
+      },
+      {
+        "workload": "core/function-calls",
+        "allFourControlsResolve": true,
+        "sourceElapsedRatios": {
+          "go-native": 0.9991137537161634,
+          "go-interpreter": 0.969566510728954,
+          "llgo-native": 0.9890203057510684,
+          "llgo-interpreter": 1.0033180939641595
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.9890203057510684,
+          "head-go-native": 0.9733752460324719,
+          "wazero-compiler": 0.5475095137420719,
+          "wasmtime-cranelift": 0.8616440437545124,
+          "wasmer-cranelift": 0.9909642857142857,
+          "wasmedge-interpreter": 0.012480018566878092,
+          "native-c": 1.0025265885377015
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 798875,
+          "head-go-native": 798167,
+          "base-llgo-native": 785541,
+          "head-llgo-native": 776916
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 305667,
+          "head-go-native": 289833,
+          "base-llgo-native": 686583,
+          "head-llgo-native": 853417
+        }
+      },
+      {
+        "workload": "core/memory-load-store",
+        "allFourControlsResolve": true,
+        "sourceElapsedRatios": {
+          "go-native": 0.9990701470371808,
+          "go-interpreter": 0.9825024932721879,
+          "llgo-native": 1.0050778114816492,
+          "llgo-interpreter": 0.9812217945128289
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 1.0050778114816492,
+          "head-go-native": 0.9754486754560409,
+          "wazero-compiler": 0.5056881689326005,
+          "wasmtime-cranelift": 0.9176713910761155,
+          "wasmer-cranelift": 0.8164549749575465,
+          "wasmedge-interpreter": 0.004798232396009168,
+          "native-c": 1.6156783733826248
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 448458,
+          "head-go-native": 448041,
+          "base-llgo-native": 434833,
+          "head-llgo-native": 437041
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 311084,
+          "head-go-native": 328958,
+          "base-llgo-native": 912875,
+          "head-llgo-native": 719416
+        }
+      },
+      {
+        "workload": "threads/private-memory",
+        "allFourControlsResolve": false,
+        "sourceElapsedRatios": {
+          "go-native": 1.055944055944056,
+          "go-interpreter": 0.9818737400530504,
+          "llgo-native": 1.081518194861093,
+          "llgo-interpreter": 1.0058575181705733
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 1.081518194861093,
+          "head-go-native": 0.8786225165562914,
+          "wazero-compiler": 1.2756923076923077,
+          "wasmtime-cranelift": 1.1987856006939424,
+          "wasmer-cranelift": 1.0934265180985032,
+          "wasmedge-interpreter": 0.04273764180166065
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 17875,
+          "head-go-native": 18875,
+          "base-llgo-native": 15334,
+          "head-llgo-native": 16584
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 205542,
+          "head-go-native": 198416,
+          "base-llgo-native": 800791,
+          "head-llgo-native": 600791
+        }
+      },
+      {
+        "workload": "threads/shared-memory",
+        "allFourControlsResolve": false,
+        "sourceElapsedRatios": {
+          "go-native": 1.071245283018868,
+          "go-interpreter": 0.992330044432503,
+          "llgo-native": 1.0795076923076923,
+          "llgo-interpreter": 0.9924612934055431
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 1.0795076923076923,
+          "head-go-native": 0.823916208726692,
+          "wazero-compiler": 1.2605633802816902,
+          "wasmtime-cranelift": 1.220313043478261,
+          "wasmer-cranelift": 1.1994529914529914,
+          "wasmedge-interpreter": 0.045396553464262704
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 19875,
+          "head-go-native": 21291,
+          "base-llgo-native": 16250,
+          "head-llgo-native": 17542
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 215791,
+          "head-go-native": 201000,
+          "base-llgo-native": 560375,
+          "head-llgo-native": 554792
+        }
+      },
+      {
+        "workload": "threads/atomic-rmw",
+        "allFourControlsResolve": false,
+        "sourceElapsedRatios": {
+          "go-native": 0.9609369369369369,
+          "go-interpreter": 1.0196285352469396,
+          "llgo-native": 0.9389702970297029,
+          "llgo-interpreter": 0.9960008387375484
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.9389702970297029,
+          "head-go-native": 0.8891097277431936,
+          "wazero-compiler": 1.0364590163934426,
+          "wasmtime-cranelift": 1.1245019920318724,
+          "wasmer-cranelift": 0.5244425765351265,
+          "wasmedge-interpreter": 0.07277342598958846
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 27750,
+          "head-go-native": 26666,
+          "base-llgo-native": 25250,
+          "head-llgo-native": 23709
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 182250,
+          "head-go-native": 184417,
+          "base-llgo-native": 602709,
+          "head-llgo-native": 669375
+        }
+      },
+      {
+        "workload": "threads/notify-empty",
+        "allFourControlsResolve": false,
+        "sourceElapsedRatios": {
+          "go-native": 1.04028054822727,
+          "go-interpreter": 0.9581195593456299,
+          "llgo-native": 0.9244401032582154,
+          "llgo-interpreter": 1.006488023952096
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.9244401032582154,
+          "head-go-native": 0.8195707305004021,
+          "wazero-compiler": 0.06221884127386621,
+          "wasmtime-cranelift": 0.1870570629923483,
+          "wasmer-cranelift": 0.25811855921142346,
+          "wasmedge-interpreter": 0.033059624592368594
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 15541,
+          "head-go-native": 16167,
+          "base-llgo-native": 14333,
+          "head-llgo-native": 13250
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 190542,
+          "head-go-native": 195542,
+          "base-llgo-native": 735208,
+          "head-llgo-native": 512375
+        }
+      },
+      {
+        "workload": "threads/wait-mismatch",
+        "allFourControlsResolve": false,
+        "sourceElapsedRatios": {
+          "go-native": 0.9897070467141726,
+          "go-interpreter": 1.0091366614610826,
+          "llgo-native": 1.025866242478733,
+          "llgo-interpreter": 0.9890010334599434
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 1.025866242478733,
+          "head-go-native": 0.74165,
+          "wazero-compiler": 0.059095617529880476,
+          "wasmtime-cranelift": 0.16337522441651706,
+          "wasmer-cranelift": 0.5020987069257329,
+          "wasmedge-interpreter": 0.033891063296981494
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 20208,
+          "head-go-native": 20000,
+          "base-llgo-native": 14459,
+          "head-llgo-native": 14833
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 222250,
+          "head-go-native": 196291,
+          "base-llgo-native": 649750,
+          "head-llgo-native": 740709
+        }
+      },
+      {
+        "workload": "threads/wait-timeout",
+        "allFourControlsResolve": false,
+        "sourceElapsedRatios": {
+          "go-native": 1.0044910717493623,
+          "go-interpreter": 0.9959590539013718,
+          "llgo-native": 0.9920634920634921,
+          "llgo-interpreter": 1.0069107039018084
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.9920634920634921,
+          "head-go-native": 0.5588740253236998,
+          "wazero-compiler": 0.005633082797844972,
+          "wasmtime-cranelift": 0.03610279302759755,
+          "wasmer-cranelift": 0.009235545115859544,
+          "wasmedge-interpreter": 0.01624502382430214
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 27833,
+          "head-go-native": 27958,
+          "base-llgo-native": 15750,
+          "head-llgo-native": 15625
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 212334,
+          "head-go-native": 196666,
+          "base-llgo-native": 690417,
+          "head-llgo-native": 621125
+        }
+      },
+      {
+        "workload": "memory/narrow-unaligned",
+        "allFourControlsResolve": true,
+        "sourceElapsedRatios": {
+          "go-native": 0.9839530279892881,
+          "go-interpreter": 0.9830296948774162,
+          "llgo-native": 0.990517301952446,
+          "llgo-interpreter": 0.9904887957759438
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.990517301952446,
+          "head-go-native": 0.9876253268817499,
+          "wazero-compiler": 0.6238172198172198,
+          "wasmtime-cranelift": 0.9516903320491653,
+          "wasmer-cranelift": 0.9020982620441744,
+          "wasmedge-interpreter": 0.005722483458524848,
+          "native-c": 1.4217982253230224
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 667291,
+          "head-go-native": 656583,
+          "base-llgo-native": 654666,
+          "head-llgo-native": 648458
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 320167,
+          "head-go-native": 309875,
+          "base-llgo-native": 691167,
+          "head-llgo-native": 702000
+        }
+      },
+      {
+        "workload": "memory/dependent-address",
+        "allFourControlsResolve": true,
+        "sourceElapsedRatios": {
+          "go-native": 1.0104723288555513,
+          "go-interpreter": 0.9985836203438594,
+          "llgo-native": 1.0075443037974683,
+          "llgo-interpreter": 0.9971405834234516
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 1.0075443037974683,
+          "head-go-native": 0.9877698792742969,
+          "wazero-compiler": 0.5856781257358136,
+          "wasmtime-cranelift": 0.8883158852429187,
+          "wasmer-cranelift": 0.8796549626507448,
+          "wasmedge-interpreter": 0.03427650252761655,
+          "native-c": 1.305977852618543
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 1834167,
+          "head-go-native": 1853375,
+          "base-llgo-native": 1817000,
+          "head-llgo-native": 1830708
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 290000,
+          "head-go-native": 292583,
+          "base-llgo-native": 726000,
+          "head-llgo-native": 840500
+        }
+      },
+      {
+        "workload": "memory/float64-unaligned",
+        "allFourControlsResolve": true,
+        "sourceElapsedRatios": {
+          "go-native": 0.9907752792955231,
+          "go-interpreter": 0.973437811598644,
+          "llgo-native": 0.9896407103825137,
+          "llgo-interpreter": 0.9981999157295854
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.9896407103825137,
+          "head-go-native": 0.9750994728879173,
+          "wazero-compiler": 0.8447194032530962,
+          "wasmtime-cranelift": 1.024695950820275,
+          "wasmer-cranelift": 1.026753937758401,
+          "wasmedge-interpreter": 0.008593975652927223,
+          "native-c": 1.1044339451485479
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 749833,
+          "head-go-native": 742916,
+          "base-llgo-native": 732000,
+          "head-llgo-native": 724417
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 319584,
+          "head-go-native": 320084,
+          "base-llgo-native": 846709,
+          "head-llgo-native": 762500
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-full",
+        "allFourControlsResolve": true,
+        "sourceElapsedRatios": {
+          "go-native": 0.9985311440130639,
+          "go-interpreter": 1.0090004390321377,
+          "llgo-native": 0.9877799650856145,
+          "llgo-interpreter": 1.0054789910325854
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.9877799650856145,
+          "head-go-native": 0.9862902905183806,
+          "wazero-compiler": 0.890911244684147,
+          "wasmtime-cranelift": 0.9152461548923855,
+          "wasmer-cranelift": 0.967347774947344,
+          "wasmedge-interpreter": 0.04297279410083237,
+          "native-c": 0.9456316893645771
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 3375416,
+          "head-go-native": 3370458,
+          "base-llgo-native": 3365375,
+          "head-llgo-native": 3324250
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 260500,
+          "head-go-native": 259166,
+          "base-llgo-native": 697875,
+          "head-llgo-native": 644625
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-widen",
+        "allFourControlsResolve": true,
+        "sourceElapsedRatios": {
+          "go-native": 0.9932814710042432,
+          "go-interpreter": 1.0041981701162352,
+          "llgo-native": 1.0047555018137848,
+          "llgo-interpreter": 1.0030402864888115
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 1.0047555018137848,
+          "head-go-native": 0.9860363118547526,
+          "wazero-compiler": 0.9187669172932331,
+          "wasmtime-cranelift": 1.0042697606961566,
+          "wasmer-cranelift": 0.998077194722231,
+          "wasmedge-interpreter": 0.01713530830096347,
+          "native-c": 1.007557657329938
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 1060500,
+          "head-go-native": 1053375,
+          "base-llgo-native": 1033750,
+          "head-llgo-native": 1038666
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 247541,
+          "head-go-native": 245417,
+          "base-llgo-native": 608209,
+          "head-llgo-native": 594000
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-lanes",
+        "allFourControlsResolve": true,
+        "sourceElapsedRatios": {
+          "go-native": 0.9978574241419333,
+          "go-interpreter": 0.9917621446787336,
+          "llgo-native": 1.0041113807510444,
+          "llgo-interpreter": 0.9994824096600042
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 1.0041113807510444,
+          "head-go-native": 1.0019724224347275,
+          "wazero-compiler": 0.8274132805574453,
+          "wasmtime-cranelift": 0.865420936702131,
+          "wasmer-cranelift": 0.862124328736521,
+          "wasmedge-interpreter": 0.05570311209009473,
+          "native-c": 1.1293321702917922
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 5017792,
+          "head-go-native": 5007041,
+          "base-llgo-native": 4996375,
+          "head-llgo-native": 5016917
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 270125,
+          "head-go-native": 262042,
+          "base-llgo-native": 731542,
+          "head-llgo-native": 814375
+        }
+      },
+      {
+        "workload": "applications/sha256-clang",
+        "allFourControlsResolve": true,
+        "sourceElapsedRatios": {
+          "go-native": 0.9815529068353199,
+          "go-interpreter": 0.9954020248545304,
+          "llgo-native": 0.9848428366262469,
+          "llgo-interpreter": 0.997295882175456
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.9848428366262469,
+          "head-go-native": 0.9768296901935088,
+          "wazero-compiler": 0.6691567778626603,
+          "wasmtime-cranelift": 1.0427693121693122,
+          "wasmer-cranelift": 1.0429072628654583,
+          "wasmedge-interpreter": 0.007525412338362789,
+          "native-c": 1.1983186859824426
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 1027750,
+          "head-go-native": 1008791,
+          "base-llgo-native": 1000583,
+          "head-llgo-native": 985417
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 2307791,
+          "head-go-native": 2247750,
+          "base-llgo-native": 4583250,
+          "head-llgo-native": 4395125
+        }
+      },
+      {
+        "workload": "applications/sha256-rust",
+        "allFourControlsResolve": true,
+        "sourceElapsedRatios": {
+          "go-native": 1.009982962410819,
+          "go-interpreter": 0.995966582996322,
+          "llgo-native": 1.0116726835138388,
+          "llgo-interpreter": 0.9985685113447935
+        },
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 1.0116726835138388,
+          "head-go-native": 0.9892524842510345,
+          "wazero-compiler": 0.6494901112484549,
+          "wasmtime-cranelift": 1.133987189060632,
+          "wasmer-cranelift": 1.12568582881113,
+          "wasmedge-interpreter": 0.008626775738719622,
+          "native-c": 1.292059955762277
+        },
+        "ownNativeWarmNs": {
+          "base-go-native": 1051792,
+          "head-go-native": 1062292,
+          "base-llgo-native": 1038750,
+          "head-llgo-native": 1050875
+        },
+        "ownNativePreparationNs": {
+          "base-go-native": 2322292,
+          "head-go-native": 2268125,
+          "base-llgo-native": 4681791,
+          "head-llgo-native": 4760250
+        }
+      }
+    ]
+  }
+}
