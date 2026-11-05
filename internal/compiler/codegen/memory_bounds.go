@@ -243,60 +243,8 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 			e.memoryAt(in, true, address.offset)
 			continue
 		}
-		if end, ok := e.combineVectorAffine(pc); ok {
-			out.FusedVectors++
+		if end, ok := e.combinePlain(pc, start, out); ok {
 			pc = end
-			continue
-		}
-		if end, ok := e.combineMaskShift(pc); ok {
-			out.FusedIntegers++
-			pc = end
-			continue
-		}
-		if end, ok := e.combineShiftedInteger(pc); ok {
-			out.FusedIntegers++
-			pc = end
-			continue
-		}
-		if e.logicalShift(pc, in) {
-			out.FusedIntegers++
-			pc += 2
-			continue
-		}
-		if end, ok := e.combineDeadImmediate(pc); ok {
-			out.ForwardedScalars++
-			pc = end
-			continue
-		}
-		if pc > start {
-			prev := e.f.Code[pc-1]
-			if (prev.Op == 0x41 || prev.Op == 0x42) && prev.Dst == in.B && in.B != slots.NoSlot && e.registerImmediate(in.Op, in.Dst, in.A, e.f.Sources[prev.Source].Wasm.Bits) {
-				continue
-			}
-		}
-		if end, ok := e.combineScalarCopies(pc); ok {
-			out.ForwardedScalars++
-			pc = end
-			continue
-		}
-		if end, ok := e.combineI31(pc); ok {
-			out.FusedIntegers++
-			pc = end
-			continue
-		}
-		if end, ok := e.combineMultiplyAdd(pc); ok {
-			out.FusedIntegers++
-			pc = end
-			continue
-		}
-		if end, ok := e.combineIntegerConstant(pc); ok {
-			out.FusedIntegers++
-			pc = end
-			continue
-		}
-		if e.forwardScalarResult(pc) {
-			out.ForwardedScalars++
-			pc++
 			continue
 		}
 		e.plain(in, r.proven[pc])

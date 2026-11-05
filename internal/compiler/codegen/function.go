@@ -349,80 +349,11 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			combinedThrough = region.end
 			continue
 		}
-		if end, ok := e.combineVectorAffine(pc); ok {
-			out.FusedVectors++
+		if end, ok := e.combinePlain(pc, 0, out); ok {
 			for entry := pc + 1; entry <= end; entry++ {
 				independentEntries = append(independentEntries, entry)
 			}
 			combinedThrough = end
-			continue
-		}
-		if end, ok := e.combineMaskShift(pc); ok {
-			out.FusedIntegers++
-			for entry := pc + 1; entry <= end; entry++ {
-				independentEntries = append(independentEntries, entry)
-			}
-			combinedThrough = end
-			continue
-		}
-		if end, ok := e.combineShiftedInteger(pc); ok {
-			out.FusedIntegers++
-			for entry := pc + 1; entry <= end; entry++ {
-				independentEntries = append(independentEntries, entry)
-			}
-			combinedThrough = end
-			continue
-		}
-		if e.logicalShift(pc, in) {
-			out.FusedIntegers++
-			independentEntries = append(independentEntries, pc+1, pc+2)
-			combinedThrough = pc + 2
-			continue
-		}
-		if end, ok := e.combineScalarCopies(pc); ok {
-			out.ForwardedScalars++
-			for entry := pc + 1; entry <= end; entry++ {
-				independentEntries = append(independentEntries, entry)
-			}
-			combinedThrough = end
-			continue
-		}
-		if end, ok := e.forwardHeapStoreLoad(pc); ok {
-			out.NativeHeap += 2
-			out.ForwardedHeap++
-			for entry := pc + 1; entry <= end; entry++ {
-				independentEntries = append(independentEntries, entry)
-			}
-			combinedThrough = end
-			continue
-		}
-
-		if end, ok := e.combineI31(pc); ok {
-			out.FusedIntegers++
-			independentEntries = append(independentEntries, pc+1)
-			combinedThrough = end
-			continue
-		}
-		if end, ok := e.combineMultiplyAdd(pc); ok {
-			out.FusedIntegers++
-			for entry := pc + 1; entry <= end; entry++ {
-				independentEntries = append(independentEntries, entry)
-			}
-			combinedThrough = end
-			continue
-		}
-		if end, ok := e.combineIntegerConstant(pc); ok {
-			out.FusedIntegers++
-			for entry := pc + 1; entry <= end; entry++ {
-				independentEntries = append(independentEntries, entry)
-			}
-			combinedThrough = end
-			continue
-		}
-		if e.forwardScalarResult(pc) {
-			out.ForwardedScalars++
-			independentEntries = append(independentEntries, pc+1)
-			combinedThrough = pc + 1
 			continue
 		}
 		if e.atomicInstruction(in, uint32(pc)) {
