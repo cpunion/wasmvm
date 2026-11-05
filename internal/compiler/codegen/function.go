@@ -298,8 +298,12 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			} else {
 				e.branchCondition(in.A, edge.header, edge.yes)
 			}
+			restoreMemory := e.loopBorrowedMemoryLength()
 			if edge.registers != nil {
 				e.transitionRegisters(edge.registers)
+			}
+			if restoreMemory {
+				e.prepareMemory()
 			}
 			if edge.exit != pc+1 {
 				a.branch(e.targetPC(pcs, edge.exit), false, 0)
