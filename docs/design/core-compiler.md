@@ -168,7 +168,12 @@ within this local transform. See the [loop-plan evidence](../research/performanc
 The subsequent global slot-residency pass scans conservative first/last access
 intervals over basic blocks, with separate integer and shared FP/vector banks.
 Expiration and furthest-end eviction split residency; a spilled slot can regain
-a register later. Every displaced word reaches its canonical frame before any
+a register later. Residency intervals extend through backward control edges,
+including their branch block. Nested and crossing spans merge before endpoint
+extension, preventing loop-body and backedge mappings from repeatedly spilling
+and reloading the same words. Traversal retains its existing edge/tuple budget;
+span sorting and endpoint lookup avoid a loop/slot Cartesian product.
+Every displaced word reaches its canonical frame before any
 replacement loads. Branch copies retain the existing typed move plans, while
 mapping transitions belong to their actual source edge. One shared cold-entry
 transition per distinct plan preserves every original continuation without
