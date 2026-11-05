@@ -1,0 +1,132 @@
+{
+  "classification": "Static inspection of the exact Go executable pair from hosted event 41987225706. Original adverse timings remain open; no code-layout causality or compiler-bug claim.",
+  "sourceHead": "11a3a18bb5d28072b8dc6d726ba0aa2df885be59",
+  "sourceBase": "9f19606e7e765287c5c11c0558317bdd2a1c7ca2",
+  "runtimeFunctions": 266,
+  "identicalAfterVerifiedRelocationNormalization": 266,
+  "differentAlignmentModulo64": 249,
+  "zeroBaseSitesPerBinary": 8,
+  "binaryHashes": {
+    "base": "b9b42af6ec982169cbc235bf30847055137b89e5a9638406f8e84ece3e47f783",
+    "head": "1e8cf8ecc2f4d9eac0a45a90202b2d55d550fcd14394d7619a2242c8e7c1f07a"
+  },
+  "buildArtifactDigest": "sha256:ed75dc7a8ef39b5962915f5149e77ba831eb9ba210eeae38f0c7d4a1d9733963",
+  "archive": {
+    "path": "artifacts/loop-scratch-registers-20261105/final/go-runtime-static-evidence.tar.gz",
+    "bytes": 1278036,
+    "sha256": "384b619834cb62ae5d3488b64b85fe7d60faf55c8e82d7106f49a5d9df7804a3",
+    "fileCount": 22
+  },
+  "manifest": [
+    {
+      "path": "inspect-go-interpreter.py",
+      "bytes": 3881,
+      "sha256": "06649ad23a2360c9816b90e9fe3dbbf73f4be704241b3cc247d5846d63dbcd3e"
+    },
+    {
+      "path": "inspect-go-runtime.py",
+      "bytes": 3673,
+      "sha256": "3400dbf456aeb8c7865b0e8505adfcb5d9dea64850217c17eb301babf78e9078"
+    },
+    {
+      "path": "verify-go-relocations.py",
+      "bytes": 2715,
+      "sha256": "d6016f74b7719f4197c12ef49c0ad0b3e227ad27086e88cef1dd687c30b679e5"
+    },
+    {
+      "path": "download-ranges.py",
+      "bytes": 4074,
+      "sha256": "67a7d3982ecdaf0658706db37e6a8c017cf20a34b64edf4c52665af1217d7f0e"
+    },
+    {
+      "path": "download-preflight.json",
+      "bytes": 271,
+      "sha256": "9df2be6fe18ac52787bd486b49a53659c342c25c8522e1ba4a27cf618fe902cd"
+    },
+    {
+      "path": "download-resume.json",
+      "bytes": 9995,
+      "sha256": "65d181369af03c4dbf777895c348b692aa68d6e93e26f30438129540a2501e4a"
+    },
+    {
+      "path": "go-interpreter-static/base.asm",
+      "bytes": 687021,
+      "sha256": "d56b154c741fe46c3c4ea8046dac0a3825c85070133998ddff4e0e1880d43655"
+    },
+    {
+      "path": "go-interpreter-static/comparison.json",
+      "bytes": 18689,
+      "sha256": "e98770b0342d3aeef18c7923d3b55273e17c276ef12dd2ab2505df088f3bd2ba"
+    },
+    {
+      "path": "go-interpreter-static/head.asm",
+      "bytes": 687021,
+      "sha256": "1481908f2c867f98e4f78695a7a105140a6ea6f86d908d431d699f03487841d7"
+    },
+    {
+      "path": "go-runtime-static/105c700cb69addbf.diff",
+      "bytes": 335,
+      "sha256": "c12acdbc938e57816c616b9f0ac3c7845468c3cad1ca1b8b6b801b6ada4d0b9a"
+    },
+    {
+      "path": "go-runtime-static/198afc0d22d3bede.diff",
+      "bytes": 312,
+      "sha256": "9297fd97f167a25864e50ad6342605238bfc681f0d9ad49279c705da96a55365"
+    },
+    {
+      "path": "go-runtime-static/368da98bbb636ace.diff",
+      "bytes": 362,
+      "sha256": "3665b7ed999a03ec7dae581ba1107a45204aea3a23a56b2e1820b75b761fac23"
+    },
+    {
+      "path": "go-runtime-static/5bc5ab6041866f86.diff",
+      "bytes": 543,
+      "sha256": "5721631cc1b3a08ed78cccd986dfcc39d783af4dec583c1fed303343b0a110d1"
+    },
+    {
+      "path": "go-runtime-static/base-zerobase-symbol.txt",
+      "bytes": 28,
+      "sha256": "47451ead76a7afaede0e69e73189848107759e8a481a9ac057994ad25f8ad8dd"
+    },
+    {
+      "path": "go-runtime-static/base.asm",
+      "bytes": 3252059,
+      "sha256": "32db23e8928b2c09721c0514a4ee6b80c3dd3e1e83cae8e99d53b92bc02410d9"
+    },
+    {
+      "path": "go-runtime-static/bbedb5b24848846c.diff",
+      "bytes": 305,
+      "sha256": "83b2e831019a18c52c70ea030186ead60d0baf0b93e4a6d95320c7df4591e849"
+    },
+    {
+      "path": "go-runtime-static/bc0f71a30a3533da.diff",
+      "bytes": 308,
+      "sha256": "7bce4b681447b67cb2beb2da229210fb002a53cd90a6ecf93a6af9878b7f81f0"
+    },
+    {
+      "path": "go-runtime-static/comparison.json",
+      "bytes": 131173,
+      "sha256": "5838d658f2356641b887703aa386267638fd293cec444feb0d1b3a958dd2f4b7"
+    },
+    {
+      "path": "go-runtime-static/f2aa45d34f6e2fac.diff",
+      "bytes": 341,
+      "sha256": "b1b58dfced2c2146a8aa68f2d6ae0efa31fea700c857dbd9df365baab1a8d3a2"
+    },
+    {
+      "path": "go-runtime-static/head-zerobase-symbol.txt",
+      "bytes": 28,
+      "sha256": "05b4062d9c3ed568c01b476438cf7ee2b16eb1075d6c2c4f4d2f9f6dc3a6ab21"
+    },
+    {
+      "path": "go-runtime-static/head.asm",
+      "bytes": 3252117,
+      "sha256": "96daf12e4c715e1f00268b045beec12e9209994e4ab543dc76edf4cf64f40522"
+    },
+    {
+      "path": "go-runtime-static/verified-relocations.json",
+      "bytes": 66990,
+      "sha256": "0d1b6e65a18868e04599406334d5b0b80dcea898ccc5c1b4385afdeb523029d3"
+    }
+  ]
+}

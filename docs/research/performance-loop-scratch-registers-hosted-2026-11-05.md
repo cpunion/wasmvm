@@ -53,9 +53,13 @@ The Clang SHA controls are inconclusive; Rust SHA resolves the diagnostic contro
 The Go interpreter has adverse rows, including SIMD widening (1.263x base),
 struct access (1.111x) and integer/memory loops (1.093x/1.089x). Its engine
 sources did not change: the exact build source-hash comparison finds changes
-only under codegen. Original binaries have distinct hashes, and their static
-instruction comparison is pending the build-artifact download. Source equality
-does not prove instruction equality, harmless layout changes or host-only noise.
+only under codegen. The [exact-binary static audit](data/go-runtime-static-2026-11-05.json) checks
+266 engine/VM/wasm functions. All instruction shapes match after documented
+relocation normalization; eight LEAQ sites per binary are independently decoded
+and verified against `runtime.zerobase`, explaining the seven initial text
+differences. Of those functions, 249 change their entry offset modulo 64,
+including all 35 execute functions. This supports investigating layout, but
+does not prove it causes the slowdown or establish host-only noise.
 Keep these observations open; no favorable timing rerun replaces them.
 
 ## Current competitor and host-compiler gaps

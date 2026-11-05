@@ -207,12 +207,16 @@ inside a basic block. See the
 A subsequent bounded loop pass versions each write, includes dead definition
 points and observes every final frame word. Copy-connected slots of the same
 storage type can share a physical home when all overlapping versions have
-identical bits. A distinct initial entry plan spills displaced words before
-loading shared homes. The body retains complete integer/reference, scalar FP
+identical bits. Nonresident copies participate in the same graph, but a group
+must reuse an already resident member's home. Memory-only groups acquire no
+registers. A distinct initial entry plan spills displaced words before loading
+shared homes, including a sole live-in that was previously uncached. The body
+retains complete integer/reference, scalar FP
 and V128 snapshots at its poll and ordinary exits. Pairwise interference work
 has a body-proportional bound; exhaustion keeps the incoming plan. Shared-home
 writes split instruction selection, while read-only sequences retain fusion.
 Vector aliases expire on every write to their physical source register.
+See the [nonresident-value evidence](../research/performance-loop-nonresident-values-2026-11-05.md).
 
 Ordinary emission and bounded native regions use one ordered instruction
 selector pipeline. Their callers retain mapping, guard, remapping, shared-write
