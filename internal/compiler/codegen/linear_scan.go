@@ -156,6 +156,7 @@ func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCel
 	// Exhaustion retains the existing conservative function-wide allocator.
 	work := uint64(len(e.f.Code)+len(e.f.Args)+len(e.f.Moves)+len(e.f.Edges)) * 8
 	block := 0
+	var loops []registerLoop
 	for pc, in := range e.f.Code {
 		if block+1 < len(blocks) && pc == blocks[block+1] {
 			block++
@@ -189,12 +190,15 @@ func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCel
 			for _, s := range e.f.Args[uint64(in.Extra) : uint64(in.Extra)+count] {
 				use(s)
 			}
-		} else if in.Op >= slots.ControlBase+uint32(ir.Jump) && (in.Op <= slots.ControlBase+uint32(ir.Table) || in.Op == slots.ControlBase+uint32(ir.IfNull)) {
+		} else if in.Op >= slots.ControlBase+uint32(ir.Jump) && (in.Op <= slots.ControlBase+uint32(ir.Table) || in.Op == slots.ControlBase+uint32(ir.IfNull) || in.Op == slots.ControlBase+uint32(ir.IfCast)) {
 			if uint64(in.Count) > work {
 				return
 			}
 			work -= uint64(in.Count)
 			for _, edge := range e.f.Edges[in.Extra : in.Extra+in.Count] {
+				if int(edge.PC) <= pc {
+					loops = append(loops, registerLoop{sort.SearchInts(blocks, int(edge.PC)), block})
+				}
 				if uint64(edge.Count) > work {
 					return
 				}
@@ -206,6 +210,7 @@ func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCel
 			}
 		}
 	}
+	extendRegisterLoops(intervals, loops)
 	var order []registerInterval
 	for _, interval := range intervals {
 		if interval.first >= 0 {
