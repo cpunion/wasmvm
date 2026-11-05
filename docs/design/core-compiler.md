@@ -258,6 +258,18 @@ Shared homes and variable plans retain their existing contracts. Uncongested
 functions avoid optional full-CFG reconstruction. See the
 [execution models, x86 code, arm64 identity and allocation-event results](../research/performance-loop-frame-copies-2026-11-05.md).
 
+The same observable-frame snapshot now also covers a final integer comparison.
+Its entry result must be unread, and the existing private-body proof excludes
+traps, interior polls and header polls. The body omits the boolean write; the
+backedge polls first, then compares the preserved operands and branches on flags
+on both targets. A taken backedge needs no result word. Ordinary exit writes the
+known exit condition; a cold poll reconstructs deferred copies first and uses the
+original comparison emitter before publishing the original branch continuation.
+Register transitions retain every input word, including aliased destinations.
+Every original cold PC and precise-fuel instruction stays available. Comparison
+encodings are shared with ordinary emission. See the
+[complete-frame tests and source-pinned comparison](../research/performance-loop-predicates-2026-11-06.md).
+
 Ordinary emission and bounded native regions use one ordered instruction
 selector pipeline. Their callers retain mapping, guard, remapping, shared-write
 boundaries and all original-PC continuations. Logical shifts, live integer

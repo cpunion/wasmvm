@@ -16,10 +16,11 @@ integration. Competing runtimes are independent test and benchmark references;
 execution never silently switches to one of them.
 
 Performance acceptance remains open. The
-[latest frame-reconstruction study](docs/research/performance-loop-frame-copies-2026-11-05.md)
-reduces x86 Clang SHA hot frame traffic and Go preparation heap events, while
-competitive elapsed measurement remains pending. It retains the preceding
-rejected allocation and its correction. The
+[latest predicate-reconstruction study](docs/research/performance-loop-predicates-2026-11-06.md)
+reduces hot loop instructions on both targets and retains mixed local elapsed
+results across 18 workloads. Final-head CI, x86 execution and controlled
+performance acceptance remain open. It links the preceding frame-copy and
+allocation studies, including rejected changes and adverse results. The
 [full hosted comparison](docs/research/performance-loop-nonresident-values-2026-11-05.md)
 retains all 22 competitor/Go/LLGo/native-C workloads and separate execution phases.
 Results are dated and target-specific; they do not establish a universal winner.
