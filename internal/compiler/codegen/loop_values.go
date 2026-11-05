@@ -2,6 +2,7 @@ package codegen
 
 import (
 	"encoding/binary"
+	"sort"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -147,7 +148,7 @@ func (e *functionEmitter) coalescedRegisterSlots() map[slots.Slot]bool {
 // classes only when every overlapping version has identical bits.
 func (e *functionEmitter) coalesceLoopRegisters(start int, r memoryRegion, work int) (*registerPlan, *registerPlan, uint32) {
 	old := e.currentRegisterPlan()
-	if !e.unmetered || old == nil || len(old.slots) < 2 || r.loop == nil || start%256 == 0 {
+	if !e.unmetered || old == nil || len(old.slots) == 0 || r.loop == nil || start%256 == 0 {
 		return nil, nil, 0
 	}
 	v := loopValues{first: start, current: map[slots.Slot]int{}, bySlot: map[slots.Slot][]int{}, literals: map[loopLiteral]uint32{}}
@@ -207,14 +208,29 @@ func (e *functionEmitter) coalesceLoopRegisters(start int, r memoryRegion, work 
 	for _, index := range v.current {
 		v.versions[index].last = (r.end + 1) * 2
 	}
+	// A copied value need not already own a register. Include nonresident
+	// versions in the same interference graph, then reuse a resident member's
+	// existing home. This adds aliases, never an additional physical register.
+	tracked := append([]slots.Slot(nil), old.slots...)
+	resident := map[slots.Slot]bool{}
+	for _, s := range old.slots {
+		resident[s] = true
+	}
+	var extra []slots.Slot
+	for s := range v.bySlot {
+		if !resident[s] {
+			extra = append(extra, s)
+		}
+	}
+	sort.Slice(extra, func(i, j int) bool { return extra[i] < extra[j] })
+	tracked = append(tracked, extra...)
 	indices := map[slots.Slot]int{}
 	g := loopValueGroups{}
-	for i, s := range old.slots {
+	for i, s := range tracked {
 		indices[s] = i
 		g.parent = append(g.parent, i)
 		g.members = append(g.members, []slots.Slot{s})
 	}
-	merges := uint32(0)
 	for _, copy := range v.copies {
 		a, aok := indices[copy.dst]
 		b, bok := indices[copy.src]
@@ -244,16 +260,25 @@ func (e *functionEmitter) coalesceLoopRegisters(start int, r memoryRegion, work 
 		g.parent[b] = a
 		g.members[a] = append(g.members[a], g.members[b]...)
 		g.members[b] = nil
-		merges++
 	}
-	if merges == 0 {
-		return nil, nil, 0
-	}
-	full, entry := cloneRegisterPlan(old), cloneRegisterPlan(old)
-	full.shared, entry.shared = true, false
+	var full, entry *registerPlan
+	merges := uint32(0)
 	for _, members := range g.members {
 		if len(members) < 2 {
 			continue
+		}
+		var kind, reg byte
+		for _, s := range members {
+			if kind, reg = registerLocation(old, s); kind != 0 {
+				break
+			}
+		}
+		if kind == 0 {
+			continue // A memory-only group does not acquire a new register.
+		}
+		if full == nil {
+			full, entry = cloneRegisterPlan(old), cloneRegisterPlan(old)
+			full.shared, entry.shared = true, false
 		}
 		representative := members[0]
 		for _, s := range members {
@@ -263,18 +288,27 @@ func (e *functionEmitter) coalesceLoopRegisters(start int, r memoryRegion, work 
 				break
 			}
 		}
-		kind, reg := registerLocation(old, representative)
+		if k, r := registerLocation(old, representative); k != 0 {
+			kind, reg = k, r
+		}
 		for _, s := range members {
 			setRegisterHome(full, s, kind, reg)
-			if s != representative {
-				delete(entry.homes, s)
-				delete(entry.floats, s)
-				delete(entry.vectors, s)
-			}
+			delete(entry.homes, s)
+			delete(entry.floats, s)
+			delete(entry.vectors, s)
 		}
+		setRegisterHome(entry, representative, kind, reg)
+		merges += uint32(len(members) - 1)
 	}
+	if merges == 0 {
+		return nil, nil, 0
+	}
+	full.slots = full.slots[:0]
 	entry.slots = entry.slots[:0]
-	for _, s := range old.slots {
+	for _, s := range tracked {
+		if kind, _ := registerLocation(full, s); kind != 0 {
+			full.slots = append(full.slots, s)
+		}
 		if kind, _ := registerLocation(entry, s); kind != 0 {
 			entry.slots = append(entry.slots, s)
 		}

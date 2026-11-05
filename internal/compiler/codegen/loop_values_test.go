@@ -176,6 +176,32 @@ func coalescedArithmeticLoopFixture(reverse, flags, always bool) *slots.Function
 	return f
 }
 
+func coalescedNonresidentLoopFixture(literals bool) *slots.Function {
+	f := coalescedValueLoopFixture(literals)
+	var code []slots.Instruction
+	for _, in := range f.Code {
+		code = append(code, in)
+		if in.Op != 0x21 || in.A != 2 && in.A != 4 && in.A != 6 && in.A != 8 && in.A != 10 || f.Sources[in.Source].Wasm.A != uint32(in.A)+1 {
+			continue
+		}
+		// More equal final words than either target's entire register bank.
+		// Their old values are dead, while the original target remains live-in.
+		for i := 0; i < 24; i++ {
+			dst := slots.Slot(len(f.Slots))
+			f.Slots = append(f.Slots, f.Slots[in.A])
+			f.Args = append(f.Args, dst)
+			source := uint32(len(f.Sources))
+			f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: 0x21, A: uint32(dst), Offset: uint64(2000 + source)}})
+			code = append(code, slots.Instruction{Op: 0x21, Dst: slots.NoSlot, A: in.A, B: slots.NoSlot, C: slots.NoSlot, Source: source})
+		}
+	}
+	f.Code = code
+	f.LocalCount = uint32(len(f.Slots))
+	f.Code[len(f.Code)-1].Count = uint32(len(f.Args))
+	f.Edges[1].PC = uint32(len(f.Code) - 1)
+	return f
+}
+
 func TestLoopValueCoalescingBudgetsAndUnsafeObservations(t *testing.T) {
 	for _, kind := range []string{"accept", "precise", "header-poll", "trap", "unproved", "budget", "no-mapping"} {
 		f := coalescedValueLoopFixture(false)
@@ -223,6 +249,48 @@ func TestLoopValueCoalescingBudgetsAndUnsafeObservations(t *testing.T) {
 		} else if full != nil || entry != nil || merges != 0 {
 			t.Fatal(kind, "unsafe coalescing")
 		}
+	}
+}
+
+func TestLoopValueCoalescingIncludesNonresidentEntryValues(t *testing.T) {
+	for _, test := range []struct {
+		source, target slots.Slot
+		kind           byte
+	}{{2, 3, 1}, {4, 5, 2}, {6, 7, 2}, {8, 9, 3}, {10, 11, 1}} {
+		f := coalescedValueLoopFixture(false)
+		e := functionEmitter{a: &assembler{arch: "arm64", labels: map[int]int{}}, f: f, unmetered: true, usesMemory: true, memoryMinimum: 65536}
+		r := e.memoryRegions()[1]
+		old := &registerPlan{homes: map[slots.Slot]byte{}, floats: map[slots.Slot]byte{}, vectors: map[slots.Slot]byte{}, slots: []slots.Slot{test.source}}
+		setRegisterHome(old, test.source, test.kind, 4)
+		e.useRegisterPlan(old)
+		full, entry, merges := e.coalesceLoopRegisters(1, r, 100000)
+		if full == nil || entry == nil || merges != 1 {
+			t.Fatal(test, "nonresident value not coalesced", merges)
+		}
+		for _, s := range []slots.Slot{test.source, test.target} {
+			if kind, reg := registerLocation(full, s); kind != test.kind || reg != 4 {
+				t.Fatal(test, s, "did not reuse resident home", kind, reg)
+			}
+		}
+		// The target's original value is read before the source's first write.
+		// Transition must load that nonresident live-in, not the old cached word.
+		if len(entry.slots) != 1 || entry.slots[0] != test.target {
+			t.Fatal(test, "wrong live-in representative", entry.slots)
+		}
+		if kind, reg := registerLocation(entry, test.target); kind != test.kind || reg != 4 {
+			t.Fatal(test, "entry did not load original nonresident bits")
+		}
+		if e.currentRegisterPlan() != old || len(old.slots) != 1 {
+			t.Fatal("analysis modified the incoming plan")
+		}
+	}
+	f := coalescedValueLoopFixture(false)
+	e := functionEmitter{a: &assembler{arch: "arm64", labels: map[int]int{}}, f: f, unmetered: true, usesMemory: true, memoryMinimum: 65536}
+	// The address never joins any copied-value group. Uncached groups must
+	// remain in the frame when none has a resident member to supply a home.
+	e.useRegisterPlan(&registerPlan{homes: map[slots.Slot]byte{0: 4}, slots: []slots.Slot{0}})
+	if full, entry, merges := e.coalesceLoopRegisters(1, e.memoryRegions()[1], 100000); full != nil || entry != nil || merges != 0 {
+		t.Fatal("memory-only groups acquired registers")
 	}
 }
 
@@ -284,7 +352,7 @@ func TestCoalescedLoopEveryPCFullFramesMemoryAndGeneratedPoll(t *testing.T) {
 		name                                         string
 		literals, arithmetic, reverse, flags, always bool
 	}
-	cases := []loopCase{{name: "memory"}, {name: "literals", literals: true}}
+	cases := []loopCase{{name: "memory"}, {name: "literals", literals: true}, {name: "nonresident"}, {name: "nonresident", literals: true}}
 	for _, reverse := range []bool{false, true} {
 		for _, flags := range []bool{false, true} {
 			cases = append(cases, loopCase{"arithmetic", true, true, reverse, flags, false})
@@ -296,6 +364,9 @@ func TestCoalescedLoopEveryPCFullFramesMemoryAndGeneratedPoll(t *testing.T) {
 		if test.arithmetic {
 			f = coalescedArithmeticLoopFixture(test.reverse, test.flags, test.always)
 		}
+		if test.name == "nonresident" {
+			f = coalescedNonresidentLoopFixture(test.literals)
+		}
 		for _, arch := range []string{"amd64", "arm64"} {
 			c, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), Config{Unmetered: true, MemoryMinimumPages: 1})
 			if err != nil {
@@ -303,6 +374,9 @@ func TestCoalescedLoopEveryPCFullFramesMemoryAndGeneratedPoll(t *testing.T) {
 			}
 			if c.CoalescedSlotGroups < 5 {
 				t.Fatal(arch, "value classes not exercised", c.CoalescedSlotGroups)
+			}
+			if test.name == "nonresident" && c.CoalescedSlotGroups < 120 {
+				t.Fatal(arch, "nonresident value classes not exercised", c.CoalescedSlotGroups)
 			}
 			if c.NativeLoops != 1 || test.arithmetic && (c.UsesMemory || c.LoopGuards != 0) {
 				t.Fatal(arch, "loop classification", test.name, c.NativeLoops, c.UsesMemory, c.LoopGuards)
