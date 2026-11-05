@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import platform
 import random
+import re
 import shutil
 import statistics
 import subprocess
@@ -125,6 +126,41 @@ def compile_runner(command, directory, environment):
                 elapsedSeconds=time.monotonic() - start)
 
 
+def linked_paths(text):
+    if 'not found' in text:
+        raise ValueError('a runtime shared library is missing')
+    return [(name, Path(path)) for name, path in re.findall(r'^\s*(\S+)\s+=>\s+(/\S+)', text, re.M)]
+
+
+def bundle_host_libraries(output, builds):
+    if platform.system() != 'Linux':
+        return dict(status='not-needed-for-local-dry-build')
+    target = output / 'host-libraries'
+    target.mkdir()
+    result = {}
+    system = ('libc.so', 'libm.so', 'libpthread.so', 'libdl.so', 'librt.so', 'libresolv.so',
+              'libstdc++.so', 'libgcc_s.so', 'libutil.so', 'libnsl.so')
+    for name, row in builds.items():
+        probe = subprocess.run(['ldd', row['binary']], capture_output=True, text=True, check=False)
+        text = probe.stdout + probe.stderr
+        if probe.returncode:
+            if probe.returncode == 1 and ('not a dynamic executable' in text or 'statically linked' in text):
+                result[name] = dict(ldd=text, copied=[], status='static executable')
+                continue
+            raise ValueError('unable to inspect runtime linkage: ' + name)
+        result[name] = dict(ldd=text, copied=[])
+        for soname, source in linked_paths(text):
+            if soname.startswith(system) or source.resolve().is_relative_to(output):
+                continue
+            destination = target / soname
+            if destination.exists() and own_build.digest(destination) != own_build.digest(source):
+                raise ValueError('conflicting runtime library: ' + soname)
+            if not destination.exists():
+                shutil.copyfile(source, destination)
+            result[name]['copied'].append(dict(source=str(source), destination=str(destination), sha256=own_build.digest(destination)))
+    return result
+
+
 def build(args):
     head, base, out, tools = [p.resolve() for p in [args.head_dir, args.base_dir, args.output_dir, args.tools_dir]]
     out.mkdir(parents=True, exist_ok=True)
@@ -187,7 +223,8 @@ def build(args):
         runtimes[name + ('-interpreter' if name == 'wasmedge' else '-cranelift')] = dict(command=[builds[name]['binary']], backend='interpreter' if name == 'wasmedge' else 'compiler')
     for name, source in [('native-c', head / 'benchmarks/native/c/scalar_baseline.c'), ('native-application', head / 'benchmarks/applications/sha256.c')]:
         builds[name] = dict(compile_runner([cc, '-O3', '-std=c11', '-D_POSIX_C_SOURCE=200809L', '-Wall', '-Wextra', '-Werror', str(source), '-o', str(out / name)], head, env), sourceSha256=own_build.digest(source))
-    save(out / 'build.json', dict(schemaVersion=1, head=builds['head-go']['sourceRevision'], base=builds['base-go']['sourceRevision'], builds=builds, runtimes=runtimes, fixtures=fixtures(head), protocol=dict(blocks=BLOCKS, samples=7, warmups=2, seed=SEED), installation=json.loads((tools / 'installation.json').read_text()), clang=ci.capture([cc, '--version'])))
+    linkage = bundle_host_libraries(out, builds)
+    save(out / 'build.json', dict(schemaVersion=1, head=builds['head-go']['sourceRevision'], base=builds['base-go']['sourceRevision'], builds=builds, runtimes=runtimes, fixtures=fixtures(head), protocol=dict(blocks=BLOCKS, samples=7, warmups=2, seed=SEED), installation=json.loads((tools / 'installation.json').read_text()), clang=ci.capture([cc, '--version']), linkage=linkage))
 
 
 def calibration(case, runtimes):

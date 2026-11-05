@@ -325,7 +325,8 @@ jobs:
           python3 - <<'PY'
           import os
           from pathlib import Path
-          directories = sorted({str(p.parent.resolve()) for p in Path('routing-build/tools').rglob('*.so*') if p.is_file()})
+          directories = [str(Path('routing-build/host-libraries').resolve())]
+          directories += sorted({str(p.parent.resolve()) for p in Path('routing-build/tools').rglob('*.so*') if p.is_file()})
           with open(os.environ['GITHUB_ENV'], 'a') as output:
               output.write('LD_LIBRARY_PATH=' + ':'.join(directories) + '\n')
           PY

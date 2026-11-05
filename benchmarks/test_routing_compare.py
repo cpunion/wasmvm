@@ -5,6 +5,11 @@ import routing_compare as routing
 
 
 class RoutingComparisonTests(unittest.TestCase):
+    def test_missing_runtime_dependencies_fail_instead_of_reaching_timing(self):
+        self.assertEqual([('libgc.so.1', Path('/lib/libgc.so.1'))], routing.linked_paths(' libgc.so.1 => /lib/libgc.so.1 (0x1)\n'))
+        with self.assertRaises(ValueError):
+            routing.linked_paths(' libgc.so.1 => not found\n')
+
     def test_portfolio_retains_every_family_and_both_compiled_producers(self):
         root = Path(__file__).resolve().parent.parent
         fixtures = routing.fixtures(root)
