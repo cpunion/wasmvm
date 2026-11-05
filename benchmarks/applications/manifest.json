@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "profile": "Core 2.0",
+  "algorithm": "SHA-256 over LCG-generated 64-byte blocks, including standard padding",
+  "checksum": "First32 digest bits, big-endian",
+  "api": {
+    "export": "run",
+    "parameters": [
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ]
+  },
+  "complete": true,
+  "producers": {
+    "clang": {
+      "command": [
+        "/opt/homebrew/opt/llvm@22/bin/clang",
+        "--no-default-config",
+        "--target=wasm32-unknown-unknown",
+        "-O3",
+        "-ffreestanding",
+        "-nostdlib",
+        "-mbulk-memory",
+        "-Wl,--no-entry",
+        "-Wl,--export=run",
+        "-Wl,--export-memory",
+        "-Wl,-z,stack-size=65536",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "sha256.c",
+        "-o",
+        "fixtures/sha256-clang.wasm"
+      ],
+      "exit": 0,
+      "elapsedSeconds": 0.2444996249396354,
+      "version": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm@22/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm@22/22.1.8/etc/clang/arm64-apple-darwin27.cfg",
+      "compilerBinarySha256": "68bb87f784f09da01b7aea0f70952fb23f606242cdc4f6ff3cc26c372af0706f",
+      "source": "sha256.c",
+      "sourceSha256": "aea04836e3a0af4f1c1f5b560a4c072740e9474fd0230077551ffbb35374cce7",
+      "validation": {
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/components/wasm-tools-1.262.0/wasm-tools-1.262.0-aarch64-macos/wasm-tools",
+          "validate",
+          "--features=-all,wasm2",
+          "/Users/lijie/source/goplus/wasmvm-wt-compiled-apps-20261104/benchmarks/applications/fixtures/sha256-clang.wasm"
+        ],
+        "exit": 0,
+        "version": "wasm-tools 1.262.0 (e22db44da 2026-10-13)",
+        "binarySha256": "4a5b127f48340fbd453708283d190f9b1dbbe5820571eae5cbae0a205a095a00"
+      },
+      "reusedSuccessfulBuild": "guest-build/clang.json and clang-validation.log; Rust failed later at its linker; C was not rebuilt",
+      "linker": {
+        "version": "Homebrew LLD 23.1.4",
+        "binarySha256": "bcc465b526deeb48db164ee2a8d1451f6299e3712f8966b7bc8dd8bc98b43ef3",
+        "discovery": "clang22 --target=wasm32 -print-prog-name=wasm-ld resolves /opt/homebrew/bin/wasm-ld; this is the first successful C build linker"
+      }
+    },
+    "rust": {
+      "command": [
+        "/Users/lijie/.rustup/toolchains/1.98.0-aarch64-apple-darwin/bin/rustc",
+        "--edition=2021",
+        "--crate-type=cdylib",
+        "-C",
+        "linker=/opt/homebrew/bin/wasm-ld",
+        "--target=wasm32-unknown-unknown",
+        "-C",
+        "opt-level=3",
+        "-C",
+        "panic=abort",
+        "-C",
+        "lto=fat",
+        "-C",
+        "codegen-units=1",
+        "-C",
+        "link-arg=--strip-debug",
+        "--remap-path-prefix=/Users/lijie/source/goplus/wasmvm-wt-compiled-apps-20261104/benchmarks/applications=/wasmvm/applications",
+        "sha256.rs",
+        "-o",
+        "fixtures/sha256-rust.wasm"
+      ],
+      "exit": 0,
+      "elapsedSeconds": 0.27668108278885484,
+      "version": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+      "compilerBinarySha256": "a11618eca0956a8aa4372c2bc898690b513cbdfa2cb9125b2a5301e360ed5b49",
+      "validation": {
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/components/wasm-tools-1.262.0/wasm-tools-1.262.0-aarch64-macos/wasm-tools",
+          "validate",
+          "--features=-all,wasm2",
+          "/Users/lijie/source/goplus/wasmvm-wt-compiled-apps-20261104/benchmarks/applications/fixtures/sha256-rust.wasm"
+        ],
+        "exit": 0,
+        "version": "wasm-tools 1.262.0 (e22db44da 2026-10-13)",
+        "binarySha256": "4a5b127f48340fbd453708283d190f9b1dbbe5820571eae5cbae0a205a095a00"
+      },
+      "source": "sha256.rs",
+      "sourceSha256": "8a4567687a63b18fd9e1179ae07f16315015402e70442a6281bd75e122dbb538",
+      "linker": {
+        "version": "Homebrew LLD 23.1.4",
+        "binarySha256": "bcc465b526deeb48db164ee2a8d1451f6299e3712f8966b7bc8dd8bc98b43ef3"
+      },
+      "targetLibraries": {
+        "libaddr2line-0d2267a8fd879483.rlib": "2e660f37c105be79cfdcf1fe0a0852b627c892d599995200e469d053a975c9e7",
+        "libadler2-36e52c8b4cd930a9.rlib": "9f1a739c5f8c83f7dd7f21afc5b9d15598fc7aa6c4f43dc07dcbb4bba1b9a062",
+        "liballoc-f0d4163c5fd49b53.rlib": "07a61424062418e969527cc0ab206efe8d84016842bda769fc7b9b9993cbbc39",
+        "libcfg_if-8e8084e1567ce5cf.rlib": "cf0d63cff8c446a1545781721abed5c015c6e0f4cf76d33441c1f15a3d8ce902",
+        "libcompiler_builtins-90df46eeac58516f.rlib": "7dfd1c8213f793665b5bbcf591584be2cefe502253248cdb07537926185c7e9e",
+        "libcore-215f4b620d8fa5fa.rlib": "bdefa812f68f77cfdd9a0ee10fc06c8ebfb4adb0114bc8337a9d8bdb66c81a5a",
+        "libdlmalloc-e10a3866f39aae36.rlib": "2cbb1109eba7c7260710cefc316cdab1d11815d9ce3404a8b8c55d8808cfa5dd",
+        "libgetopts-ada458d590e09792.rlib": "4d0b1432f92525cf0d3d7e1b2ae616c6701d3692bce385e7d8d4f1c0988878e6",
+        "libgimli-bf948b02a5639dc0.rlib": "11028d5e9048ad81484a2063a952a11e013bb7f1e8a356551584eda5eff6de89",
+        "libhashbrown-f1dc077af071f610.rlib": "4328026c5b79fe16d0549fdffc98ecc2db9ed19e43ae84e9aeb4ce3a83982c6f",
+        "liblibc-839ba8580c6de9d3.rlib": "0bc9cbf4492024b09c2ed94f5c77e9653fd69f5f72cc058078bd8c34bdb93efa",
+        "libmemchr-31a276decffabb85.rlib": "6d4726a314da1a2e5db263f93f4de53a72972b71005d5edc35178f66a09878ad",
+        "libminiz_oxide-f17e375e922ad1b9.rlib": "c89be59c4da72765013f613a81ab4854b90a6019fac700b368624249630e3478",
+        "libobject-c8cd7df34f91eda7.rlib": "a266452ec9efeb9e148bd861f79ad9db3465d496b28f2dae3d111d912004c08e",
+        "libpanic_abort-5892b156bd25a7f7.rlib": "c62dc525f59a2a525c8e6ce90ed828634a69e3af3b5e2375002cad6b56e0a591",
+        "libpanic_unwind-08611405b1cd5d10.rlib": "1c6e8e412c0af879234a1338b023c4f021deabd541a81d776d81c32f48fd953c",
+        "libproc_macro-66e4db933dbaf9b0.rlib": "3887995707062a5a2051c4df7d51aeb2ea6939b58ce2dfd63973733bf665e712",
+        "librustc_demangle-344ddc6930defb58.rlib": "e4585e9859047e3a5641ad677d91c20e7d5b88a695b8303f7c92135cdba00717",
+        "librustc_literal_escaper-3e54f7a70d06db44.rlib": "4d02ed362567b805383b32591898402aabeeca04bd0156924264a9f8c35561a8",
+        "librustc_std_workspace_alloc-8c6edbf58fe52e8e.rlib": "b29dc085eee6727094224610c61587f57cb82499981349d2b85c0cfc903b126c",
+        "librustc_std_workspace_core-2a3b564f42d877c6.rlib": "a35359af6293fc1a1c5438cc54aacbc63c113bd078dcc36a27b3ad391fee6657",
+        "librustc_std_workspace_std-75992898c0efe9b7.rlib": "681e0ce75744dfdc485f943b3075000785458fa3111e8a0f3add8ee714a7efc1",
+        "libstd-acdd03ff9e5ac310.rlib": "a42edec42bc0cf9a961ba4bc01be1ac5d13810add7de771fc25157b678fd6a5e",
+        "libstd_detect-b118bb1ba99d9d35.rlib": "592a6137152c460f65a7fd0283074c8a1b97febf805fd906a9195f1629872c78",
+        "libsysroot-0ba53c545769174c.rlib": "98195130c5fa177bfc4ef4de5c1d6a852a595745bf88be24e5fee175e5db9372",
+        "libtest-d99e7b8e8a747d89.rlib": "f95c0fb86e94ac7832d96d4c2ea08c5b8e20861bfd97cd2792f62815800a0655",
+        "libunwind-f737cd0d3c7ec337.rlib": "2a8eee76081db333cc1cf4265afa52e78ad327b06536ae21a53e872aefa86265"
+      }
+    }
+  },
+  "workloads": [
+    {
+      "id": "applications/sha256-clang",
+      "producer": "clang",
+      "family": "application",
+      "wasm": "fixtures/sha256-clang.wasm",
+      "wasmSha256": "0caacaf53022911df286081e92f4f15129d050f291add7b17c4830f1ddeb1ecd",
+      "bytes": 1996,
+      "seed": 305419896,
+      "iterations": 5000,
+      "expectedChecksum": 3307539256,
+      "unit": "ns/message block (64 bytes)",
+      "maxIterations": 65536
+    },
+    {
+      "id": "applications/sha256-rust",
+      "producer": "rust",
+      "family": "application",
+      "wasm": "fixtures/sha256-rust.wasm",
+      "wasmSha256": "ebba794bf7e74c248a8bbf82e2726f3a884fd14ae99138cd43c800065aa0f16e",
+      "bytes": 2032,
+      "seed": 305419896,
+      "iterations": 5000,
+      "expectedChecksum": 3307539256,
+      "unit": "ns/message block (64 bytes)",
+      "maxIterations": 65536
+    }
+  ]
+}
