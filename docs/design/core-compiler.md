@@ -179,10 +179,28 @@ load for the chosen cold entry; immutable metadata remains function-wide.
 Tuple traversal and materialized map cells have independent work bounds;
 exhaustion retains the conservative allocator. The pass preserves dead frame
 words instead of treating its residency intervals as semantic liveness. It
-does not yet construct SSA value-version live ranges or split allocation inside
-a basic block. Those remain required work, alongside performance acceptance;
-the measured SHA loop instruction counts are unchanged. See the
+does not itself construct SSA value-version live ranges or split allocation
+inside a basic block. See the
 [global-plan validation and static comparison](../research/performance-global-register-plans-2026-11-05.md).
+
+A subsequent bounded loop pass versions each write, includes dead definition
+points and observes every final frame word. Copy-connected slots of the same
+storage type can share a physical home when all overlapping versions have
+identical bits. A distinct initial entry plan spills displaced words before
+loading shared homes. The body retains complete integer/reference, scalar FP
+and V128 snapshots at its poll and ordinary exits. Pairwise interference work
+has a body-proportional bound; exhaustion keeps the incoming plan. Shared-home
+writes split instruction selection, while read-only sequences retain fusion.
+Vector aliases expire on every write to their physical source register.
+
+The private-loop emitter handles arithmetic and already-proven memory regions
+alongside the existing affine whole-loop proof. The memory proof is optional;
+helpers, traps, interior entries, edge copies and poll-window crossings remain
+ineligible. Both conditional polarities, copied boolean conditions and
+unconditional loops use the same bounded poll and cold-entry contracts. This
+is local copy coalescing; whole-function SSA allocation, more general live-range
+splitting/spills and performance acceptance remain required. See the
+[loop-value validation and actual machine-code comparison](../research/performance-loop-value-coalescing-2026-11-05.md).
 
 Use the platform's accepted baseline CPU feature set, with explicit detection and recorded features for optional instructions. Specialized artifacts cannot run on a weaker CPU. Floating-point/vector operations require correct Wasm NaNs, signed zero, rounding, conversions and lane behavior. Division and conversion instructions often need explicit prechecks; host instruction traps and language overflow behavior are not automatically Wasm semantics.
 
