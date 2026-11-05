@@ -40,6 +40,7 @@ type CompiledFunction struct {
 	ValueLoops                    uint32
 	DeferredFrameCopies           uint32
 	DeferredPredicates            uint32
+	DeferredPredicateLiterals     uint32
 	// Generated private backedge polls, excluding header/guard/cold polls.
 	PrivatePollOffsets            []uint32
 	CoalescedSlotGroups           uint32
@@ -328,8 +329,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				continue
 			}
 			if edge.snapshot != nil && edge.snapshot.predicate != nil {
-				in := *edge.snapshot.predicate
-				e.predicateFlags(in)
+				in := edge.snapshot.predicate.in
+				e.predicateFlags(edge.snapshot.predicate)
 				cc := x86IntegerCondition(in.Op)
 				if arch == "arm64" {
 					cc = armIntegerCondition(in.Op)

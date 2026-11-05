@@ -109,6 +109,10 @@ func modelPredicateLoop(f *slots.Function, initial []value.Value, start, branch 
 		case in.Op == 1:
 		case in.Op == 0x21:
 			words[f.Sources[in.Source].Wasm.A].Lo = a
+		case in.Op == 0x41:
+			words[in.Dst].Lo = uint64(uint32(f.Sources[in.Source].Wasm.Bits))
+		case in.Op == 0x42:
+			words[in.Dst].Lo = f.Sources[in.Source].Wasm.Bits
 		case in.Op == 0x73:
 			words[in.Dst].Lo = uint64(uint32(a) ^ uint32(b))
 		case in.Op == 0x85:
@@ -143,9 +147,16 @@ func TestLoopPredicateCompleteFramesColdPCsAndPoll(t *testing.T) {
 				name                        string
 				alias                       int
 				pressure, header, entryRead bool
-			}{{name: "resident"}, {name: "left-alias", alias: 1}, {name: "right-alias", alias: 2}, {name: "pressure", pressure: true}, {name: "header", header: true}, {name: "entry-read", entryRead: true}} {
+				literal, separate, readWord bool
+			}{{name: "resident"}, {name: "left-alias", alias: 1}, {name: "right-alias", alias: 2}, {name: "pressure", pressure: true}, {name: "header", header: true}, {name: "entry-read", entryRead: true},
+				{name: "literal-result", literal: true}, {name: "literal-separate", literal: true, separate: true}, {name: "literal-pressure", literal: true, pressure: true}, {name: "literal-header", literal: true, header: true}, {name: "literal-entry-read", literal: true, separate: true, readWord: true}} {
 				t.Run(fmt.Sprintf("%x/%t/%s", op, back, mode.name), func(t *testing.T) {
 					f, branch := predicateLoopFixture(op, mode.alias, mode.pressure, mode.entryRead)
+					cursor, mask, rhs := predicateLoopInputs(op, back)
+					literal := mode.literal && op != 0x45 && op != 0x50
+					if literal {
+						branch = addPredicateLiteral(f, branch, rhs, mode.separate, mode.readWord)
+					}
 					if mode.header {
 						f.Edges[0].PC = 0
 					}
@@ -159,6 +170,9 @@ func TestLoopPredicateCompleteFramesColdPCsAndPoll(t *testing.T) {
 						}
 						if (c.DeferredPredicates == 1) != (!mode.header && !mode.entryRead) {
 							t.Fatal(arch, "wrong predicate selection", c.DeferredPredicates)
+						}
+						if (c.DeferredPredicateLiterals == 1) != (literal && !mode.header && !mode.readWord) {
+							t.Fatal(arch, "wrong literal selection", c.DeferredPredicateLiterals)
 						}
 					}
 					if !native.Available {
@@ -175,7 +189,6 @@ func TestLoopPredicateCompleteFramesColdPCsAndPoll(t *testing.T) {
 						t.Fatal(err)
 					}
 					t.Cleanup(polled.Close)
-					cursor, mask, rhs := predicateLoopInputs(op, back)
 					initial := make([]value.Value, len(f.Slots))
 					for s := range initial {
 						initial[s] = value.Value{Lo: 0x1234567800000000 | uint64(s+1), Hi: 0x89abcdef00000000 | uint64(s+1)}
@@ -227,6 +240,137 @@ func TestLoopPredicateCompleteFramesColdPCsAndPoll(t *testing.T) {
 					}
 				})
 			}
+		}
+	}
+}
+
+func addPredicateLiteral(f *slots.Function, branch int, bits uint64, separate, entryRead bool) int {
+	insert := func(pc int, op uint32, dst, a slots.Slot, local uint32, bits uint64) {
+		source := uint32(len(f.Sources))
+		f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: op, A: local, Bits: bits, Offset: uint64(1000 + source)}})
+		f.Code = append(f.Code, slots.Instruction{})
+		copy(f.Code[pc+1:], f.Code[pc:])
+		f.Code[pc] = slots.Instruction{Op: op, Source: source, Dst: dst, A: a, B: slots.NoSlot, C: slots.NoSlot}
+		for i := range f.Edges {
+			if int(f.Edges[i].PC) > pc {
+				f.Edges[i].PC++
+			}
+		}
+		branch++
+	}
+	dst := f.Code[branch-1].Dst
+	if separate {
+		dst = 2
+		// A previous nonliteral definition prevents invariant hoisting, while
+		// retaining a properly typed separate i64 operand for wide comparisons.
+		insert(1, 0x21, slots.NoSlot, 4, 2, 0)
+	}
+	if entryRead {
+		insert(1, 0x21, slots.NoSlot, dst, 4, 0)
+	}
+	literal := uint32(0x41)
+	if f.Code[branch-1].Op >= 0x50 {
+		literal = 0x42
+	}
+	f.Code[branch-1].B = dst
+	insert(branch-1, literal, dst, slots.NoSlot, 0, bits)
+	return branch
+}
+
+func TestLoopComparisonImmediateBoundaries(t *testing.T) {
+	for _, wide := range []bool{false, true} {
+		for _, bits := range []uint64{0, 127, 128, 255, 4095, 4096, 4097, 0xfff000, 0x1000000, 0x7fffffff, 0x80000000, 0xffffffff, 1 << 32, 0xffffffff80000000, ^uint64(0)} {
+			op := uint32(0x47)
+			if wide {
+				op = 0x52
+			}
+			f, branch := predicateLoopFixture(op, 0, false, false)
+			branch = addPredicateLiteral(f, branch, bits, false, false)
+			for _, arch := range []string{"amd64", "arm64"} {
+				c, err := CompileUnmeteredFunction(arch, f, DefaultLimits())
+				if err != nil {
+					t.Fatal(arch, wide, bits, err)
+				}
+				value := bits
+				if !wide {
+					value = uint64(uint32(value))
+				}
+				// Independent ISA constraints, including sign extension for
+				// cmp r64,imm32 and the optional ARM64 imm12 shift by 12.
+				want := !wide || value <= 0x7fffffff || value >= 0xffffffff80000000
+				if arch == "arm64" {
+					want = value <= 4095 || value%4096 == 0 && value/4096 <= 4095
+				}
+				if (c.DeferredPredicateLiterals == 1) != want {
+					t.Fatal(arch, wide, bits, "immediate boundary", c.DeferredPredicateLiterals, want)
+				}
+			}
+			if !native.Available {
+				continue
+			}
+			t.Run(fmt.Sprintf("wide=%t/%x", wide, bits), func(t *testing.T) {
+				_, lease, ctx := functionContext(t, f, true)
+				initial := make([]value.Value, len(f.Slots))
+				for s := range initial {
+					initial[s] = value.Value{Lo: 0x1234567800000000 | uint64(s+1), Hi: 0xfedcba9800000000 | uint64(s+1)}
+				}
+				initial[0].Lo, initial[1].Lo = bits, 1
+				for start := range f.Code {
+					for s, v := range initial {
+						writeSlot(t, ctx, 16, slots.Slot(s), v)
+					}
+					if err := ctx.SetState(native.State{Used: 16, Depth: 1, Continuation: uint64(start)}); err != nil {
+						t.Fatal(err)
+					}
+					want, exit, pc := modelPredicateLoop(f, initial, start, branch, false)
+					got, err := ctx.Enter(lease, 0)
+					state, stateErr := ctx.State()
+					if err != nil || stateErr != nil || got != exit || state.Continuation != pc {
+						t.Fatal(start, got, exit, state, err, stateErr)
+					}
+					for s, v := range want {
+						if got := readSlot(t, ctx, 16, slots.Slot(s)); got != v {
+							t.Fatal(start, "word", s, got, v)
+						}
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestLoopPredicateLiteralRecoveryConstraints(t *testing.T) {
+	for _, mode := range []string{"valid", "shared", "copy-anchor", "hoisted", "wrong-width", "same-input"} {
+		f, branch := predicateLoopFixture(0x47, 0, false, false)
+		branch = addPredicateLiteral(f, branch, 7, true, false)
+		e := functionEmitter{a: &assembler{arch: "arm64"}, f: f, unmetered: true}
+		r := memoryRegion{end: branch - 1, loop: &nativeLoop{flags: true}}
+		v := e.loopValueVersions(1, r)
+		p := e.planLoopPredicate(v, r)
+		if p == nil {
+			t.Fatal("invalid recovery fixture")
+		}
+		switch mode {
+		case "shared":
+			e.useRegisterPlan(&registerPlan{homes: map[slots.Slot]byte{2: 3, 4: 3}, slots: []slots.Slot{2, 4}, shared: true})
+		case "copy-anchor":
+			r.copies = &loopFrameCopies{final: []loopSlotCopy{{dst: 5, src: 2}}}
+		case "hoisted":
+			r.elided = map[int]bool{r.end - 1: true}
+		case "wrong-width":
+			f.Code[r.end-1].Op = 0x42
+		case "same-input":
+			p.in.A = p.in.B
+		}
+		e.deferPredicateLiteral(p, v, r)
+		if (p.literal != nil) != (mode == "valid") {
+			t.Fatal(mode, "unsafe literal recovery")
+		}
+	}
+	for _, arch := range []string{"amd64", "arm64"} {
+		e := functionEmitter{a: &assembler{arch: arch}}
+		if e.registerCompareImmediateFlags(3, 0x52, 1<<32) || len(e.a.code) != 0 {
+			t.Fatal(arch, "unencodable immediate changed output")
 		}
 	}
 }

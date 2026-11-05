@@ -408,35 +408,69 @@ func (e *functionEmitter) registerCompare(dst, left, right byte, op uint32) {
 }
 
 func (e *functionEmitter) registerCompareFlags(left, right byte, op uint32) {
+	if op == 0x45 || op == 0x50 {
+		e.registerCompareImmediateFlags(left, op, 0)
+		return
+	}
 	a := e.a
 	wide := integerWide(op)
-	index := op - 0x45
-	if wide {
-		index = op - 0x50
-	}
 	if a.arch == "arm64" {
-		if index == 0 {
-			a.arm(wide, 0x7100001f|uint32(left)<<5)
-		} else {
-			a.arm(wide, 0x6b00001f|uint32(right)<<16|uint32(left)<<5)
-		}
+		a.arm(wide, 0x6b00001f|uint32(right)<<16|uint32(left)<<5)
 		return
+	}
+	rex := byte(0x40) | left>>3 | (right>>3)<<2
+	if wide {
+		rex |= 8
+	}
+	if rex != 0x40 {
+		a.bytes(rex)
+	}
+	a.bytes(0x39, 0xc0|(right&7)<<3|left&7)
+}
+
+// The same eligibility result is used before deleting a literal and while
+// emitting the comparison. ARM64 returns its shifted imm12 instruction field;
+// x86 returns the normalized value representable by a sign-extended imm32.
+func comparisonImmediate(arch string, wide bool, value uint64) (uint64, bool) {
+	if !wide {
+		value = uint64(uint32(value))
+	}
+	if arch == "arm64" {
+		if value < 4096 {
+			return value << 10, true
+		}
+		if value&4095 == 0 && value>>12 < 4096 {
+			return value>>12<<10 | 1<<22, true
+		}
+		return 0, false
+	}
+	return value, !wide || uint64(int64(int32(value))) == value
+}
+
+func (e *functionEmitter) registerCompareImmediateFlags(left byte, op uint32, value uint64) bool {
+	wide := integerWide(op)
+	bits, ok := comparisonImmediate(e.a.arch, wide, value)
+	if !ok {
+		return false
+	}
+	if e.a.arch == "arm64" {
+		e.a.arm(wide, 0x7100001f|uint32(bits)|uint32(left)<<5)
+		return true
 	}
 	rex := byte(0x40) | left>>3
 	if wide {
 		rex |= 8
 	}
-	if index != 0 {
-		rex |= (right >> 3) << 2
-	}
 	if rex != 0x40 {
-		a.bytes(rex)
+		e.a.bytes(rex)
 	}
-	if index == 0 {
-		a.bytes(0x83, 0xf8|left&7, 0)
+	if int32(bits) == int32(int8(bits)) {
+		e.a.bytes(0x83, 0xf8|left&7, byte(bits))
 	} else {
-		a.bytes(0x39, 0xc0|(right&7)<<3|left&7)
+		e.a.bytes(0x81, 0xf8|left&7)
+		e.a.word(uint32(bits))
 	}
+	return true
 }
 
 func x86IntegerCondition(op uint32) byte {

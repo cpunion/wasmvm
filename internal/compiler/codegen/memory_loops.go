@@ -253,13 +253,18 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 	if warm.copies != nil {
 		out.DeferredFrameCopies += uint32(len(warm.copies.final))
 	}
-	predicate := e.loopPredicate(values, r)
+	predicate := e.planLoopPredicate(values, r)
 	if predicate != nil {
+		e.deferPredicateLiteral(predicate, values, warm)
 		elided := make(map[int]bool, len(warm.elided)+1)
 		for pc, skip := range warm.elided {
 			elided[pc] = skip
 		}
 		elided[r.end] = true
+		if predicate.literal != nil {
+			elided[r.end-1] = true
+			out.DeferredPredicateLiterals++
+		}
 		warm.elided = elided
 		out.DeferredPredicates++
 	}
