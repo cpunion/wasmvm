@@ -17,14 +17,14 @@ func TestRegisterLoopClosureIncludesCrossingAndNestedBackedges(t *testing.T) {
 					}
 				}
 			}
-			intervals := []registerInterval{{0, first, last}, {1, -1, -1}}
+			intervals := []registerInterval{{0, first, last, 0}, {1, -1, -1, 0}}
 			extendRegisterLoops(intervals, append([]registerLoop(nil), loops...))
 			if intervals[0].first != wantFirst || intervals[0].last != wantLast || intervals[1].first != -1 {
 				t.Fatal(first, last, intervals, wantFirst, wantLast)
 			}
 		}
 	}
-	intervals := []registerInterval{{0, 1, 2}}
+	intervals := []registerInterval{{0, 1, 2, 0}}
 	extendRegisterLoops(intervals, nil)
 	if intervals[0].first != 1 || intervals[0].last != 2 {
 		t.Fatal("acyclic interval changed")

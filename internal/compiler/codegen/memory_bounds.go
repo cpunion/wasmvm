@@ -258,6 +258,11 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 			pc = end
 			continue
 		}
+		if e.logicalShift(pc, in) {
+			out.FusedIntegers++
+			pc += 2
+			continue
+		}
 		if end, ok := e.combineDeadImmediate(pc); ok {
 			out.ForwardedScalars++
 			pc = end

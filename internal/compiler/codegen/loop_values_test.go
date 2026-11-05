@@ -137,6 +137,9 @@ func coalescedArithmeticLoopFixture(reverse, flags, always bool) *slots.Function
 	emit(0x41, 12, slots.NoSlot, slots.NoSlot, 19)
 	emit(0x78, 13, 2, 12, 0)
 	emit(0x73, 14, 14, 13, 0)
+	emit(0x73, 14, 1, 2, 0)
+	emit(0x41, 12, slots.NoSlot, slots.NoSlot, 5)
+	emit(0x78, 14, 14, 12, 0)
 	emit(0x41, 12, slots.NoSlot, slots.NoSlot, 0)
 	pc := len(f.Code) - 4
 	f.Code = append(append(append([]slots.Instruction(nil), f.Code[:pc]...), rotations...), f.Code[pc:]...)
@@ -306,6 +309,9 @@ func TestCoalescedLoopEveryPCFullFramesMemoryAndGeneratedPoll(t *testing.T) {
 			}
 			if test.arithmetic && test.flags && arch == "arm64" && c.FusedIntegers < 2 {
 				t.Fatal("shared input prevented shifted-operand selection", c.FusedIntegers)
+			}
+			if test.arithmetic && test.flags && arch == "amd64" && c.FusedIntegers == 0 {
+				t.Fatal("native loop lost logical/shift selection")
 			}
 			forcePrivateLoopPoll(t, c, arch)
 		}

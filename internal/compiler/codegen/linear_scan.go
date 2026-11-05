@@ -16,11 +16,15 @@ import (
 type registerInterval struct {
 	slot        slots.Slot
 	first, last int
+	priority    uint64
 }
 
 type intervalQueue []registerInterval
 
 func intervalBefore(a, b registerInterval) bool {
+	if a.priority != b.priority {
+		return a.priority > b.priority
+	}
 	if a.last != b.last {
 		return a.last < b.last
 	}
@@ -65,7 +69,7 @@ type registerResident struct {
 }
 
 // Each bank shares the target inventory with the existing constrained-register
-// lowering. Expiration and furthest-end eviction split residency at block
+// lowering. Expiration and cost-based eviction split residency at block
 // boundaries. Spilled intervals can reenter when a register becomes available.
 type scanBank struct {
 	pool     []byte
@@ -91,22 +95,21 @@ func (b *scanBank) advance(block int, incoming []registerInterval) {
 			b.pending.pop()
 			continue
 		}
-		free, furthest := -1, -1
+		free, worst := -1, -1
 		for i, r := range b.resident {
 			if !r.valid {
 				free = i
 				break
 			}
-			if furthest < 0 || r.interval.last > b.resident[furthest].interval.last ||
-				r.interval.last == b.resident[furthest].interval.last && r.interval.slot > b.resident[furthest].interval.slot {
-				furthest = i
+			if worst < 0 || intervalBefore(b.resident[worst].interval, r.interval) {
+				worst = i
 			}
 		}
 		if free < 0 {
-			if furthest < 0 || !intervalBefore(candidate, b.resident[furthest].interval) {
+			if worst < 0 || !intervalBefore(candidate, b.resident[worst].interval) {
 				break
 			}
-			free = furthest
+			free = worst
 		}
 		b.pending.pop()
 		if b.resident[free].valid {
@@ -145,18 +148,30 @@ func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCel
 			blocks = append(blocks, pc)
 		}
 	}
-	if len(blocks) < 2 {
+	if len(blocks) < 2 || len(blocks) > maxCells {
+		return
+	}
+	var cfg []registerCFGEdge
+	for block := 0; block+1 < len(blocks); block++ {
+		op := e.f.Code[blocks[block+1]-1].Op
+		if op < slots.ControlBase && op != 8 && op != 10 && op != 0x12 && op != 0x13 && op != 0x15 {
+			cfg = append(cfg, registerCFGEdge{block, block + 1})
+		}
+	}
+	if len(cfg)+len(blocks) > maxCells {
 		return
 	}
 	intervals := make([]registerInterval, len(e.f.Slots))
 	for s := range intervals {
 		intervals[s] = registerInterval{slot: slots.Slot(s), first: -1, last: -1}
+		if len(e.registerPriorities) != 0 {
+			intervals[s].priority = e.registerPriorities[s]
+		}
 	}
 	// Repeated tuple/edge lists cannot multiply compilation work without bound.
 	// Exhaustion retains the existing conservative function-wide allocator.
 	work := uint64(len(e.f.Code)+len(e.f.Args)+len(e.f.Moves)+len(e.f.Edges)) * 8
 	block := 0
-	var loops []registerLoop
 	for pc, in := range e.f.Code {
 		if block+1 < len(blocks) && pc == blocks[block+1] {
 			block++
@@ -190,15 +205,16 @@ func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCel
 			for _, s := range e.f.Args[uint64(in.Extra) : uint64(in.Extra)+count] {
 				use(s)
 			}
-		} else if in.Op >= slots.ControlBase+uint32(ir.Jump) && (in.Op <= slots.ControlBase+uint32(ir.Table) || in.Op == slots.ControlBase+uint32(ir.IfNull) || in.Op == slots.ControlBase+uint32(ir.IfCast)) {
+		} else if registerBranch(in.Op) {
 			if uint64(in.Count) > work {
 				return
 			}
 			work -= uint64(in.Count)
+			if uint64(len(cfg))+uint64(len(blocks))+uint64(in.Count) > uint64(maxCells) {
+				return
+			}
 			for _, edge := range e.f.Edges[in.Extra : in.Extra+in.Count] {
-				if int(edge.PC) <= pc {
-					loops = append(loops, registerLoop{sort.SearchInts(blocks, int(edge.PC)), block})
-				}
+				cfg = append(cfg, registerCFGEdge{block, sort.SearchInts(blocks, int(edge.PC))})
 				if uint64(edge.Count) > work {
 					return
 				}
@@ -210,7 +226,7 @@ func (e *functionEmitter) prepareLinearScan(regions map[int]memoryRegion, maxCel
 			}
 		}
 	}
-	extendRegisterLoops(intervals, loops)
+	extendRegisterLoops(intervals, registerLoopComponents(len(blocks), cfg))
 	var order []registerInterval
 	for _, interval := range intervals {
 		if interval.first >= 0 {

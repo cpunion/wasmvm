@@ -46,6 +46,7 @@ type functionEmitter struct {
 	vectorAliases                                                map[slots.Slot]slots.Slot
 	aliasedVectorReads                                           uint32
 	registerSlots                                                []slots.Slot
+	registerPriorities                                           []uint64
 	registerPlan                                                 *registerPlan
 	allocationPlans                                              []*registerPlan
 	allocationStarts                                             []int

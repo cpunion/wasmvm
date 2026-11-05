@@ -17,8 +17,8 @@ import (
 
 func TestLinearScanSplitsAndReentersSpilledIntervals(t *testing.T) {
 	b := scanBank{pool: []byte{19}}
-	b.advance(0, []registerInterval{{0, 0, 4}})
-	b.advance(1, []registerInterval{{1, 1, 1}, {2, 1, 2}})
+	b.advance(0, []registerInterval{{0, 0, 4, 0}})
+	b.advance(1, []registerInterval{{1, 1, 1, 0}, {2, 1, 2, 0}})
 	if b.resident[0].interval.slot != 1 || len(b.pending) != 2 {
 		t.Fatal("short interval did not displace the long interval", b)
 	}
@@ -34,7 +34,7 @@ func TestLinearScanSplitsAndReentersSpilledIntervals(t *testing.T) {
 	if b.resident[0].valid || len(b.pending) != 0 {
 		t.Fatal(b)
 	}
-	b.advance(6, []registerInterval{{3, 6, 6}, {4, 6, 6}})
+	b.advance(6, []registerInterval{{3, 6, 6, 0}, {4, 6, 6, 0}})
 	if b.resident[0].interval.slot != 3 {
 		t.Fatal("nondeterministic equal-end tie", b)
 	}
@@ -43,9 +43,30 @@ func TestLinearScanSplitsAndReentersSpilledIntervals(t *testing.T) {
 		t.Fatal(b)
 	}
 	var unavailable scanBank
-	unavailable.advance(0, []registerInterval{{0, 0, 1}})
+	unavailable.advance(0, []registerInterval{{0, 0, 1, 0}})
 	if len(unavailable.resident) != 0 || len(unavailable.pending) != 1 {
 		t.Fatal(unavailable)
+	}
+}
+
+func TestLinearScanKeepsCostlyLoopValuesAcrossShorterColdIntervals(t *testing.T) {
+	b := scanBank{pool: []byte{19}}
+	b.advance(0, []registerInterval{{0, 0, 10, 1000}})
+	b.advance(1, []registerInterval{{1, 1, 1, 10}})
+	if b.resident[0].interval.slot != 0 {
+		t.Fatal("loop accumulator evicted for a cheap temporary")
+	}
+	b.advance(2, []registerInterval{{2, 2, 3, 2000}})
+	if b.resident[0].interval.slot != 2 {
+		t.Fatal("higher-cost value did not gain residency")
+	}
+	b.advance(4, nil)
+	if b.resident[0].interval.slot != 0 {
+		t.Fatal("spilled accumulator did not regain residency")
+	}
+	b.advance(11, nil)
+	if b.resident[0].valid || len(b.pending) != 0 {
+		t.Fatal("expired values retained residency")
 	}
 }
 

@@ -20,7 +20,7 @@ func instructionFrequencies(f *slots.Function) []uint64 {
 	work := uint64(len(f.Code)+len(f.Edges)) * 4
 	found := false
 	for pc, in := range f.Code {
-		if in.Op < slots.ControlBase+uint32(ir.Jump) || in.Op > slots.ControlBase+uint32(ir.Table) && in.Op != slots.ControlBase+uint32(ir.IfNull) {
+		if !registerBranch(in.Op) {
 			continue
 		}
 		if uint64(in.Count) > work {
@@ -178,6 +178,7 @@ func (e *functionEmitter) selectRegisters(config Config, regions map[int]memoryR
 	e.prepareAllocationBatch(frequencies)
 	weights := slotPriorities(e.f, regions, frequencies)
 	e.immediateRegisterCosts(weights, frequencies, regions)
+	e.registerPriorities = weights
 	var candidates []registerCandidate
 	for s, w := range weights {
 		if w != 0 {
