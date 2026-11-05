@@ -136,8 +136,8 @@ in the [validation record](../validation.md).
 
 The complete native pipeline is: typed IR verification, optimization, legalization to target operations, instruction selection, register allocation, spill insertion, frame layout, branch resolution/relocations, code emission, and publication with trap/safepoint/source maps. Implement amd64 and arm64 emitters in Go. The target allocator requires linear scan with separate integer/vector classes, fixed-register constraints, call clobbers, live-range splitting, parallel-move resolution, and verified spill reloads. Target tests check actual execution as well as encoding/disassembly.
 
-The current development allocator assigns stable homes by bounded CFG loop-use
-priorities; global live-range splitting remains required work. Merged backward
+The conservative allocator assigns stable homes by bounded CFG loop-use
+priorities and also selects the immutable metadata inventory. Merged backward
 edge intervals provide capped frequency hints, including nested/overlapping
 spans. They do not prove reachability or justify removing a check. Tuple/move
 and expanded-leaf literal scans have separate work budgets and conservative
@@ -161,10 +161,28 @@ every displaced word reaches the canonical frame before any replacement loads.
 Private backedges retain the local plan, while ordinary loop exits restore the
 enclosing plan. Deferred poll, trap and call exits capture the plan at their
 originating instruction, preserving complete snapshots and original PCs.
-Checked cold/interior entries keep the function plan. FP/vector and immutable
-homes remain function-wide. Entry/exit transfer costs gate region selection;
-this infrastructure does not complete global live-range splitting or linear
-scan. See the [execution and performance evidence](../research/performance-loop-register-plans-2026-11-05.md).
+Checked cold/interior entries retain an explicit mapping. Entry/exit transfer
+costs gate loop-region selection; FP/vector homes keep their incoming mapping
+within this local transform. See the [loop-plan evidence](../research/performance-loop-register-plans-2026-11-05.md).
+
+The subsequent global slot-residency pass scans conservative first/last access
+intervals over basic blocks, with separate integer and shared FP/vector banks.
+Expiration and furthest-end eviction split residency; a spilled slot can regain
+a register later. Every displaced word reaches its canonical frame before any
+replacement loads. Branch copies retain the existing typed move plans, while
+mapping transitions belong to their actual source edge. One shared cold-entry
+transition per distinct plan preserves every original continuation without
+duplicating the full spill/reload sequence at every PC. Poll, call and trap
+exits retain all value classes and original source identities. Mutable homes
+load for the chosen cold entry; immutable metadata remains function-wide.
+
+Tuple traversal and materialized map cells have independent work bounds;
+exhaustion retains the conservative allocator. The pass preserves dead frame
+words instead of treating its residency intervals as semantic liveness. It
+does not yet construct SSA value-version live ranges or split allocation inside
+a basic block. Those remain required work, alongside performance acceptance;
+the measured SHA loop instruction counts are unchanged. See the
+[global-plan validation and static comparison](../research/performance-global-register-plans-2026-11-05.md).
 
 Use the platform's accepted baseline CPU feature set, with explicit detection and recorded features for optional instructions. Specialized artifacts cannot run on a weaker CPU. Floating-point/vector operations require correct Wasm NaNs, signed zero, rounding, conversions and lane behavior. Division and conversion instructions often need explicit prechecks; host instruction traps and language overflow behavior are not automatically Wasm semantics.
 
