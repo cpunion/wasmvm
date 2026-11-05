@@ -36,6 +36,7 @@ type CompiledFunction struct {
 	RegisterRegions               uint32
 	AllocationBlocks              uint32
 	CoalescedSlotGroups           uint32
+	HoistedLiterals               uint32
 	NativeLoops                   uint32
 	UnrolledLoops, UnrolledCopies uint32
 	DeadScalarOps                 uint32

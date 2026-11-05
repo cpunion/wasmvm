@@ -216,18 +216,19 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 		e.transitionRegisters(plan)
 		out.RegisterRegions++
 	}
-	coalesced, entry, merges := e.coalesceLoopRegisters(start, r, (r.end-start+1)*128)
+	values := e.loopValueVersions(start, r)
+	coalesced, entry, merges := e.coalesceLoopRegisters(values, (r.end-start+1)*128)
 	if coalesced != nil {
 		e.transitionRegisters(entry)
 		e.useRegisterPlan(coalesced)
 		out.CoalescedSlotGroups += merges
 	}
+	warm := e.hoistLoopLiterals(values, r, out)
 	header := e.a.label()
 	e.a.mark(header)
 	if start%256 == 0 {
 		e.interrupt(uint32(start))
 	}
-	warm := r
 	warm.guards, warm.loop = nil, nil
 	e.emitMemoryRegionRange(start, r.end, warm, pcs, out)
 	if e.loopBackedges == nil {

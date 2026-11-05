@@ -144,12 +144,10 @@ func (e *functionEmitter) coalescedRegisterSlots() map[slots.Slot]bool {
 
 // Version liveness includes every final frame word, not just future guest
 // reads. Only proven nontrapping loop bodies have no intervening observation.
-// Coalescing retains fixed homes throughout the body, sharing all three value
-// classes only when every overlapping version has identical bits.
-func (e *functionEmitter) coalesceLoopRegisters(start int, r memoryRegion, work int) (*registerPlan, *registerPlan, uint32) {
-	old := e.currentRegisterPlan()
-	if !e.unmetered || old == nil || len(old.slots) == 0 || r.loop == nil || start%256 == 0 {
-		return nil, nil, 0
+// One version graph serves coalescing and invariant literal materialization.
+func (e *functionEmitter) loopValueVersions(start int, r memoryRegion) *loopValues {
+	if !e.unmetered || r.loop == nil || start%256 == 0 {
+		return nil
 	}
 	v := loopValues{first: start, current: map[slots.Slot]int{}, bySlot: map[slots.Slot][]int{}, literals: map[loopLiteral]uint32{}}
 	for pc := start; pc <= r.end; pc++ {
@@ -158,7 +156,7 @@ func (e *functionEmitter) coalesceLoopRegisters(start int, r memoryRegion, work 
 		}
 		in := e.f.Code[pc]
 		if !plainOpcode(in.Op) || scalarCanTrap(in.Op) || isMemoryAccess(in.Op) && !r.proven[pc] {
-			return nil, nil, 0
+			return nil
 		}
 		local := slots.Slot(e.f.Sources[in.Source].Wasm.A)
 		switch in.Op {
@@ -168,7 +166,7 @@ func (e *functionEmitter) coalesceLoopRegisters(start int, r memoryRegion, work 
 			v.copies = append(v.copies, loopSlotCopy{in.Dst, local})
 		case 0x21, 0x22:
 			if in.A == slots.NoSlot {
-				return nil, nil, 0
+				return nil
 			}
 			value := v.read(in.A, pc)
 			v.write(local, value, pc)
@@ -207,6 +205,16 @@ func (e *functionEmitter) coalesceLoopRegisters(start int, r memoryRegion, work 
 	}
 	for _, index := range v.current {
 		v.versions[index].last = (r.end + 1) * 2
+	}
+	return &v
+}
+
+// Sharing all three value classes retains fixed homes throughout the body.
+// Every overlapping version must have identical bits.
+func (e *functionEmitter) coalesceLoopRegisters(v *loopValues, work int) (*registerPlan, *registerPlan, uint32) {
+	old := e.currentRegisterPlan()
+	if v == nil || old == nil || len(old.slots) == 0 {
+		return nil, nil, 0
 	}
 	// A copied value need not already own a register. Include nonresident
 	// versions in the same interference graph, then reuse a resident member's
