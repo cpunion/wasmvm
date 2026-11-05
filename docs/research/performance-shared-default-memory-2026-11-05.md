@@ -66,8 +66,9 @@ Linux amd64/macOS arm64 profile, the complete 31-package shard inventory, all
 These results are retained without rerunning the complete matrix solely for
 the test helper correction; final PR-head CI and review remain required.
 
-[Run 41976051215](https://github.com/cpunion/wasmvm/actions/runs/41976051215)
-measures the new shared-memory source against `747514e`, with the same five
-groups, pinned toolchains and sampling protocol. It is a separate source event
-from the CFG comparison. Its outcomes are not yet accepted or inferred from
-the correctness and static-publication results above.
+The [completed hosted comparison](performance-shared-default-memory-hosted-2026-11-05.md)
+measures this shared-memory source against `747514e`, with the same five groups,
+pinned toolchains and sampling protocol. All six jobs succeed. LLGo shared-memory
+native elapsed time is 0.681x the preceding source, but remains 2.853x Wasmtime;
+every Threads control is inconclusive. These diagnostics do not establish
+controlled performance acceptance or measure the later register-lending source.

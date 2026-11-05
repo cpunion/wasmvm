@@ -165,6 +165,19 @@ Checked cold/interior entries retain an explicit mapping. Entry/exit transfer
 costs gate loop-region selection; FP/vector homes keep their incoming mapping
 within this local transform. See the [loop-plan evidence](../research/performance-loop-register-plans-2026-11-05.md).
 
+Bounded x86 integer loops and proven memory-unroll groups can also lend fixed
+registers that their complete bodies do not clobber. One shared constraint
+inventory retains RDX for scalar select and RDX/R8 for baseline popcount;
+unknown or floating/vector operations lend nothing. A proven default-memory
+body can reuse R11 because its accesses need no dynamic length observation.
+Normal exits and unroll backedges spill displaced words, restore the enclosing
+plan, and refresh the default memory view before any subsequent checked access
+or `memory.size`. Poll exits retain the complete borrowed-register snapshot;
+cold entries keep the ordinary inventory. Transfer costs gate both loop forms.
+Arithmetic writes and positive constant shifts omit redundant x86 self-copies;
+zero-count shifts retain i32 canonicalization. See the
+[constraint, frame and machine-code evidence](../research/performance-loop-scratch-registers-2026-11-05.md).
+
 The subsequent global slot-residency pass scans conservative first/last access
 intervals over basic blocks, with separate integer and shared FP/vector banks.
 Expiration and cost-based eviction split residency; a spilled slot can regain
