@@ -251,6 +251,15 @@ extra transfers and do not establish throughput gains: GC, SIMD, atomic and
 public-call regressions keep this experiment held. Direct native leaf routing,
 portable primitive routing and adequately controlled measurements remain work.
 
+The [direct-routing follow-up](../research/performance-direct-runtime-routing-2026-11-05.md)
+selects native GC/SIMD/call/throw/return leaves in the outer driver, avoiding the
+general dispatcher prologue on those exits. Portable SIMD, GC access and atomic
+operand routing stays in its hot loop, calling the existing canonical state,
+memory and SIMD primitives. Complex effects still share their leaves and full
+PC/frame/fuel/root/cancellation contracts; scalar native fallback remains invalid.
+Local dual-compiler semantics pass. The hosted comparison and all final-head
+platform, coverage, review and controlled performance gates remain separate.
+
 ## Direct globals
 
 Both emitters lower validated numeric and reference global.get/set in precise and unmetered
