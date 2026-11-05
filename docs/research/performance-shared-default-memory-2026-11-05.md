@@ -54,3 +54,20 @@ the retained descriptor buffer directly. Full local `go vet ./...` and both
 compilers' shared-memory tests pass; production engine files are unchanged.
 The original failed CI and all follow-up commands remain in the evidence index.
 Final-head four-profile validation is still required.
+
+The completed [c305 CI](https://github.com/cpunion/wasmvm/actions/runs/41974831619)
+has 20 successful jobs, that one quality failure and one intentional optional
+skip. Its artifact audit verifies all 240 execution reports: 60 per Go/LLGo and
+Linux amd64/macOS arm64 profile, the complete 31-package shard inventory, all
+14 proposal inventories/tiers, forced collection for Stack Switching, and all
+30 coverage gates. Minimum coverage is 90.82%; the longest successful job is
+8m16s. The audit explicitly records `semanticPassed: true` and overall
+`passed: false`. The quality correction changes no production engine file.
+These results are retained without rerunning the complete matrix solely for
+the test helper correction; final PR-head CI and review remain required.
+
+[Run 41976051215](https://github.com/cpunion/wasmvm/actions/runs/41976051215)
+measures the new shared-memory source against `747514e`, with the same five
+groups, pinned toolchains and sampling protocol. It is a separate source event
+from the CFG comparison. Its outcomes are not yet accepted or inferred from
+the correctness and static-publication results above.

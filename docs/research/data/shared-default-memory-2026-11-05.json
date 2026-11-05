@@ -1060,10 +1060,10 @@
     ]
   },
   "remaining": [
-    "Final four-profile CI: 31 packages/profile and 30 package coverage gates",
-    "Exact-source hosted measurement and controlled competitor/native acceptance",
-    "Review and integration under the one-active-contribution policy",
-    "General SSA/value-version allocation and broader application/WASI-world acceptance"
+    "Final PR-head CI and review; overall source c305 CI retains the corrected quality failure",
+    "Exact-source shared-memory hosted measurement and controlled competitor/native acceptance",
+    "General SSA/value-version allocation and broader application/WASI-world acceptance",
+    "Integration under the one-active-contribution policy"
   ],
   "ciQualityCorrection": {
     "scope": "Test helper only; production engine unchanged from fb6e872. No old timing is reattributed to a new source.",
@@ -1124,6 +1124,269 @@
       "path": "/Users/lijie/source/goplus/wasmvm/artifacts/loop-value-coalescing-20261105/shared-default/vet-fix-evidence.tar.gz",
       "bytes": 10165,
       "sha256": "6895a59f1b6ee4a2542f81f70abeb86fe81b2f35d46ae59e7aa67a14d169a155"
+    }
+  },
+  "ciSemanticAudit": {
+    "passed": false,
+    "semanticPassed": true,
+    "qualityPassed": false,
+    "qualityCorrection": "dd2477df7585d21c3c6e3761b3290232ec6173b4",
+    "source": "c305634cd8cb4c8b4f763fa76fbb82d578475c95",
+    "engine": "fb6e872b4758eb5c4e52c334e23c9e12036a58bb",
+    "run": 41974831619,
+    "attempt": 1,
+    "requiredSuccessfulJobs": 20,
+    "intentionalOptionalSkips": 1,
+    "testPackagesPerLLGoPlatform": 31,
+    "shardsPerLLGoPlatform": 7,
+    "profiles": 4,
+    "actualConformanceReports": 240,
+    "allManifestPinsAndCompilerIdentitiesChecked": true,
+    "stackSwitchingForcedCollectionAllProfiles": true,
+    "coveragePackages": 30,
+    "minimumCoverage": 90.8153916628493,
+    "coverage": {
+      "github.com/cpunion/wasmvm/internal/bench/phase": {
+        "covered": 240,
+        "total": 252,
+        "percent": 95.23809523809524
+      },
+      "github.com/cpunion/wasmvm/internal/binary": {
+        "covered": 78,
+        "total": 78,
+        "percent": 100.0
+      },
+      "github.com/cpunion/wasmvm/internal/cli": {
+        "covered": 582,
+        "total": 595,
+        "percent": 97.81512605042016
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/codegen": {
+        "covered": 7473,
+        "total": 7742,
+        "percent": 96.5254456212865
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/ir": {
+        "covered": 301,
+        "total": 311,
+        "percent": 96.78456591639872
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/lower": {
+        "covered": 324,
+        "total": 327,
+        "percent": 99.08256880733946
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/nativeabi": {
+        "covered": 34,
+        "total": 34,
+        "percent": 100.0
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/slots": {
+        "covered": 313,
+        "total": 314,
+        "percent": 99.68152866242038
+      },
+      "github.com/cpunion/wasmvm/internal/component/canonical": {
+        "covered": 1440,
+        "total": 1531,
+        "percent": 94.05617243631613
+      },
+      "github.com/cpunion/wasmvm/internal/component/decode": {
+        "covered": 353,
+        "total": 366,
+        "percent": 96.44808743169399
+      },
+      "github.com/cpunion/wasmvm/internal/component/validate": {
+        "covered": 2170,
+        "total": 2360,
+        "percent": 91.94915254237289
+      },
+      "github.com/cpunion/wasmvm/internal/core/constant": {
+        "covered": 8,
+        "total": 8,
+        "percent": 100.0
+      },
+      "github.com/cpunion/wasmvm/internal/core/decode": {
+        "covered": 527,
+        "total": 543,
+        "percent": 97.05340699815838
+      },
+      "github.com/cpunion/wasmvm/internal/core/module": {
+        "covered": 289,
+        "total": 294,
+        "percent": 98.29931972789116
+      },
+      "github.com/cpunion/wasmvm/internal/core/validate": {
+        "covered": 1093,
+        "total": 1168,
+        "percent": 93.57876712328768
+      },
+      "github.com/cpunion/wasmvm/internal/engine/execute": {
+        "covered": 1046,
+        "total": 1135,
+        "percent": 92.15859030837004
+      },
+      "github.com/cpunion/wasmvm/internal/engine/memory": {
+        "covered": 470,
+        "total": 508,
+        "percent": 92.51968503937007
+      },
+      "github.com/cpunion/wasmvm/internal/engine/nativeexec": {
+        "covered": 462,
+        "total": 499,
+        "percent": 92.58517034068136
+      },
+      "github.com/cpunion/wasmvm/internal/engine/numeric": {
+        "covered": 268,
+        "total": 268,
+        "percent": 100.0
+      },
+      "github.com/cpunion/wasmvm/internal/engine/simd": {
+        "covered": 303,
+        "total": 309,
+        "percent": 98.05825242718447
+      },
+      "github.com/cpunion/wasmvm/internal/engine/state": {
+        "covered": 1490,
+        "total": 1565,
+        "percent": 95.2076677316294
+      },
+      "github.com/cpunion/wasmvm/internal/platform/native": {
+        "covered": 419,
+        "total": 443,
+        "percent": 94.5823927765237
+      },
+      "github.com/cpunion/wasmvm/internal/wasi/host": {
+        "covered": 561,
+        "total": 606,
+        "percent": 92.57425742574257
+      },
+      "github.com/cpunion/wasmvm/pkg/component": {
+        "covered": 3153,
+        "total": 3421,
+        "percent": 92.16603332358959
+      },
+      "github.com/cpunion/wasmvm/pkg/vm": {
+        "covered": 1358,
+        "total": 1457,
+        "percent": 93.20521619766643
+      },
+      "github.com/cpunion/wasmvm/pkg/wasi/preview1": {
+        "covered": 1233,
+        "total": 1356,
+        "percent": 90.929203539823
+      },
+      "github.com/cpunion/wasmvm/pkg/wasi/preview2": {
+        "covered": 4832,
+        "total": 5315,
+        "percent": 90.91251175917215
+      },
+      "github.com/cpunion/wasmvm/pkg/wasi/preview3": {
+        "covered": 3965,
+        "total": 4366,
+        "percent": 90.8153916628493
+      },
+      "github.com/cpunion/wasmvm/pkg/wasi/threads": {
+        "covered": 224,
+        "total": 226,
+        "percent": 99.11504424778761
+      },
+      "github.com/cpunion/wasmvm/pkg/wasm": {
+        "covered": 169,
+        "total": 177,
+        "percent": 95.48022598870057
+      }
+    },
+    "longestSuccessfulJobSeconds": 496.0,
+    "jobs": [
+      {
+        "name": "Verify semantic shard coverage",
+        "seconds": 13.0
+      },
+      {
+        "name": "go / linux-amd64",
+        "seconds": 189.0
+      },
+      {
+        "name": "llgo CLI / linux-amd64",
+        "seconds": 310.0
+      },
+      {
+        "name": "llgo / macos-arm64 / http",
+        "seconds": 436.0
+      },
+      {
+        "name": "llgo CLI / macos-arm64",
+        "seconds": 360.0
+      },
+      {
+        "name": "Go race / linux-amd64",
+        "seconds": 267.0
+      },
+      {
+        "name": "llgo / macos-arm64 / legacy",
+        "seconds": 473.0
+      },
+      {
+        "name": "go / macos-arm64",
+        "seconds": 171.0
+      },
+      {
+        "name": "llgo / macos-arm64 / vm",
+        "seconds": 363.0
+      },
+      {
+        "name": "llgo / macos-arm64 / entry",
+        "seconds": 393.0
+      },
+      {
+        "name": "llgo / linux-amd64 / vm",
+        "seconds": 455.0
+      },
+      {
+        "name": "llgo / linux-amd64 / http",
+        "seconds": 364.0
+      },
+      {
+        "name": "llgo / macos-arm64 / async",
+        "seconds": 433.0
+      },
+      {
+        "name": "llgo / linux-amd64 / entry",
+        "seconds": 420.0
+      },
+      {
+        "name": "llgo / macos-arm64 / component",
+        "seconds": 362.0
+      },
+      {
+        "name": "llgo / linux-amd64 / component",
+        "seconds": 354.0
+      },
+      {
+        "name": "llgo / linux-amd64 / core",
+        "seconds": 496.0
+      },
+      {
+        "name": "llgo / linux-amd64 / async",
+        "seconds": 334.0
+      },
+      {
+        "name": "llgo / macos-arm64 / core",
+        "seconds": 350.0
+      },
+      {
+        "name": "llgo / linux-amd64 / legacy",
+        "seconds": 246.0
+      }
+    ],
+    "scope": "Full pinned four-profile semantic inventory passes for fb6. Overall CI fails its quality job; dd2477d changes only the test helper and passes local full vet plus Go/LLGo shared tests. Final PR-head CI, review, controlled performance and broader WASI-world acceptance remain open.",
+    "archive": {
+      "path": "/Users/lijie/source/goplus/wasmvm/artifacts/loop-value-coalescing-20261105/shared-default/ci-evidence.tar.gz",
+      "bytes": 5795032,
+      "sha256": "90561ce820c4a5c42eb03bd49a28ec81dd9a06fc3abd4853f6e26d06477abcb7",
+      "files": 269,
+      "auditSha256": "fe445e046570d0347ee6ef0f33a147b1f326e0b5631411dcf393a28868f6bd99"
     }
   }
 }
