@@ -136,7 +136,7 @@ func TestFrameIntegerRejectsWithoutEmission(t *testing.T) {
 		case "vector":
 			e.vectorRegisters = map[slots.Slot]byte{1: 3}
 		}
-		if e.frameInteger(op, 2, left, 1) || len(a.code) != 0 {
+		if e.canRegisterScalar(slots.Instruction{Op: op, Dst: 2, A: left, B: 1}, 0) || e.frameInteger(op, 2, left, 1) || len(a.code) != 0 {
 			t.Fatal(mode, "fallback emitted partial code")
 		}
 	}

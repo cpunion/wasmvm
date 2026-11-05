@@ -118,7 +118,11 @@ func (e *functionEmitter) canRegisterScalar(in slots.Instruction, pc int) bool {
 		return e.provenPCs[pc]
 	}
 	if isInteger(in.Op) {
-		return e.canRegisterInteger(in.Op, in.Dst, in.A, in.B)
+		if e.canRegisterInteger(in.Op, in.Dst, in.A, in.B) {
+			return true
+		}
+		opcode, _ := e.frameIntegerForm(in.Op, in.A, in.B)
+		return opcode != 0
 	}
 	if isFloat(in.Op) {
 		return e.canRegisterFloat(in) || e.canReinterpretRegister(in)
@@ -132,7 +136,7 @@ func (e *functionEmitter) registerScalar(in slots.Instruction) {
 	} else if isMemoryAccess(in.Op) {
 		e.memoryInstruction(in, true)
 	} else if isInteger(in.Op) {
-		e.registerInteger(in.Op, in.Dst, in.A, in.B)
+		e.integer(in)
 	} else if isFloat(in.Op) {
 		e.floating(in)
 	} else {

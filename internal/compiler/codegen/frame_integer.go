@@ -5,9 +5,9 @@ import "github.com/cpunion/wasmvm/internal/compiler/slots"
 // Nonresident operands remain in the validated, execution-owned VM frame.
 // x86 can read them directly without moving both inputs through RAX/RCX.
 // The ordinary fully resident path and this path share one opcode inventory.
-func (e *functionEmitter) frameInteger(op uint32, dst, left, right slots.Slot) bool {
+func (e *functionEmitter) frameIntegerForm(op uint32, left, right slots.Slot) (byte, bool) {
 	if !e.unmetered || e.a.arch != "amd64" || left == slots.NoSlot || right == slots.NoSlot {
-		return false
+		return 0, false
 	}
 	wide := integerWide(op)
 	kind := op - 0x67
@@ -16,19 +16,32 @@ func (e *functionEmitter) frameInteger(op uint32, dst, left, right slots.Slot) b
 	}
 	opcode := x86IntegerBinaryOpcode(kind)
 	if opcode == 0 {
+		return 0, false
+	}
+	left, right = e.frameRead(left), e.frameRead(right)
+	// A cached FP/vector word cannot be read through its stale frame backing.
+	for _, s := range []slots.Slot{left, right} {
+		if _, ok := e.floatRegisters[s]; ok {
+			return 0, false
+		}
+		if _, ok := e.vectorRegisters[s]; ok {
+			return 0, false
+		}
+	}
+	return opcode, wide
+}
+
+func (e *functionEmitter) frameInteger(op uint32, dst, left, right slots.Slot) bool {
+	opcode, wide := e.frameIntegerForm(op, left, right)
+	if opcode == 0 {
 		return false
 	}
 	left, right = e.frameRead(left), e.frameRead(right)
 	l, lok := e.registers[left]
 	r, rok := e.registers[right]
-	// A cached FP/vector word cannot be read through its stale frame backing.
-	for _, s := range []slots.Slot{left, right} {
-		if _, ok := e.floatRegisters[s]; ok {
-			return false
-		}
-		if _, ok := e.vectorRegisters[s]; ok {
-			return false
-		}
+	kind := op - 0x67
+	if wide {
+		kind = op - 0x79
 	}
 	d, dok := e.registers[dst]
 	accumulator := d
@@ -47,11 +60,13 @@ func (e *functionEmitter) frameInteger(op uint32, dst, left, right slots.Slot) b
 		if accumulator != l {
 			e.registerMove(accumulator, l, wide)
 		}
+
 	} else {
 		e.x86FrameRead(0x8b, accumulator, left, wide)
 	}
 	if rok {
 		e.x86RegisterBinary(opcode, accumulator, r, wide)
+
 	} else {
 		if opcode != 0xaf {
 			opcode += 2 // reg <- r/m direction, rather than r/m <- reg.

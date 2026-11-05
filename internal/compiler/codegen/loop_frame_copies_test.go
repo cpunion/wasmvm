@@ -8,6 +8,7 @@ import (
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/module"
+	"github.com/cpunion/wasmvm/internal/engine/numeric"
 	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -93,10 +94,8 @@ func modelFrameCopies(f *slots.Function, initial []value.Value, start, branch in
 			}
 		case 0x41:
 			words[in.Dst].Lo = uint64(uint32(src.Bits))
-		case 0x6a:
-			words[in.Dst].Lo = uint64(uint32(a) + uint32(b))
-		case 0x7c:
-			words[in.Dst].Lo = a + b
+		case 0x6a, 0x6b, 0x6c, 0x71, 0x72, 0x73, 0x7c, 0x7d, 0x7e, 0x83, 0x84, 0x85:
+			words[in.Dst].Lo, _ = numeric.Eval(in.Op, a, b)
 		case 0x47:
 			words[in.Dst].Lo = 0
 			if uint32(a) != uint32(b) {
