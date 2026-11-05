@@ -9,20 +9,30 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
-// Memory bases are stable only during one entry. The owner excludes growth and
-// concurrent access; every reentry refreshes the context and these registers.
+// Private bases are stable during one entry; shared bases remain stable across
+// growth. An entry length is a lower bound, never a current shared-size view.
+// Every reentry refreshes the context and these registers.
 // amd64 reserves r10/r11, arm64 x16/x17, outside the constrained scratch set.
 func (e *functionEmitter) prepareMemory() {
-	e.contextLoad(0, nativeabi.MemoryBaseOffset)
-	e.test(true)
-	e.branch(e.bad, "eq")
 	base, length := byte(10), byte(11)
 	if e.a.arch == "arm64" {
 		base, length = 16, 17
 	}
-	e.registerMove(base, e.operandRegister(0), true)
-	e.contextLoad(0, nativeabi.MemorySizeOffset)
-	e.registerMove(length, e.operandRegister(0), true)
+	if e.sharedDefaultMemory {
+		e.selectMemory(0)
+		e.registerMove(e.operandRegister(0), base, true)
+	} else {
+		e.contextLoad(0, nativeabi.MemoryBaseOffset)
+	}
+	e.test(true)
+	e.branch(e.bad, "eq")
+	if e.sharedDefaultMemory {
+		e.registerMove(e.operandRegister(0), length, true)
+	} else {
+		e.registerMove(base, e.operandRegister(0), true)
+		e.contextLoad(0, nativeabi.MemorySizeOffset)
+		e.registerMove(length, e.operandRegister(0), true)
+	}
 	if e.memoryMinimum != 0 {
 		e.constant(1, e.memoryMinimum)
 		e.compare(true)
@@ -36,7 +46,7 @@ func (e *functionEmitter) memoryInstruction(in slots.Instruction, proven bool) {
 }
 
 func (e *functionEmitter) memoryAt(in slots.Instruction, proven bool, offset uint64) {
-	if e.memoryViews {
+	if e.memoryViews && (!e.sharedDefaultMemory || !proven) {
 		index := e.f.Sources[in.Source].Wasm.Memory
 		if in.Op == 0x3f {
 			index = e.f.Sources[in.Source].Wasm.A

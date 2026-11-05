@@ -27,6 +27,7 @@ type functionEmitter struct {
 	nativeThreads                                                bool
 	sharedMemories                                               []bool
 	memoryViews                                                  bool
+	sharedDefaultMemory                                          bool
 	memoryFunctions, memoryTables, memoryGlobals, memoryBindings uint32
 	memoryMinimum                                                uint64
 	memoryPageSizes                                              []uint64

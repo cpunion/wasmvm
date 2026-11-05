@@ -147,7 +147,7 @@ func TestMemoryUnrollColdEntriesRemaindersAndWrap(t *testing.T) {
 }
 
 func TestMemoryUnrollRejectsUnprovedGroups(t *testing.T) {
-	for _, kind := range []string{"metered", "minimum", "shared", "long", "step", "limit-write", "predicate", "edge-move", "unproven-load", "mask", "trap", "invariant-address", "dependent-address", "subword-load", "subword-store"} {
+	for _, kind := range []string{"metered", "minimum", "indexed-shared", "shared-helper", "long", "step", "limit-write", "predicate", "edge-move", "unproven-load", "mask", "trap", "invariant-address", "dependent-address", "subword-load", "subword-store"} {
 		f := unrollFixture(0, false, false, 0)
 		config := Config{Unmetered: true, MemoryMinimumPages: 1}
 		switch kind {
@@ -155,8 +155,11 @@ func TestMemoryUnrollRejectsUnprovedGroups(t *testing.T) {
 			config.Unmetered = false
 		case "minimum":
 			config.MemoryMinimumPages = 0
-		case "shared":
-			config.NativeThreads, config.MemoryCount, config.SharedMemories = true, 1, []bool{true}
+		case "indexed-shared":
+			config.NativeThreads, config.MemoryCount, config.SharedMemories = true, 2, []bool{true, true}
+			f.Sources[3].Wasm.Memory, f.Sources[6].Wasm.Memory = 1, 1
+		case "shared-helper":
+			config.MemoryCount, config.SharedMemories = 1, []bool{true}
 		case "long":
 			f = unrollFixture(118, false, false, 0)
 		case "step":

@@ -96,9 +96,6 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 	if len(definition.Memories) != 0 && memories == uint32(len(definition.Memories)) && !definition.Memories[0].Index64 {
 		minimum = uint32(definition.Memories[0].Min)
 	}
-	if len(shared) != 0 && shared[0] {
-		minimum = 0
-	}
 	callees := make(map[uint32]*slots.Function, len(m.Functions))
 	for i, f := range m.Functions {
 		callees[importedFunctions+uint32(i)] = f

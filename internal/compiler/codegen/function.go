@@ -178,6 +178,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	e.arm64Features = config.ARM64Features
 	e.nativeThreads = config.NativeThreads
 	e.sharedMemories = config.SharedMemories
+	e.sharedDefaultMemory = config.NativeThreads && len(config.SharedMemories) != 0 && config.SharedMemories[0]
 	e.nativeBulk = unmetered && config.MemoryCount == 1 && (len(config.SharedMemories) == 0 || !config.SharedMemories[0])
 	pcs := make([]int, len(f.Code))
 	for i := range pcs {
@@ -196,11 +197,15 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			if index != 0 && index >= config.MemoryCount {
 				return nil, wasm.ErrInvalid
 			}
+			if index != 0 {
+				e.sharedDefaultMemory = false
+			}
 			if in.Op != 0x40 && (index != 0 || config.NativeThreads && uint64(index) < uint64(len(config.SharedMemories)) && config.SharedMemories[index]) {
 				e.memoryViews = true
 			}
 		}
 	}
+	e.sharedDefaultMemory = e.sharedDefaultMemory && e.memoryViews
 	e.start = a.label()
 	a.mark(e.start)
 	e.header(uint64(len(f.Slots))*16, len(pcs))
@@ -216,7 +221,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	globalIndices, usesRuntimeData := e.prepareRuntimeData(config)
 	e.memoryFunctions, e.memoryTables, e.memoryGlobals, e.memoryBindings = config.FunctionCount, config.TableCount, uint32(len(config.Globals)), uint32(len(globalIndices))
-	if e.usesMemory && !e.memoryViews {
+	if e.usesMemory && (!e.memoryViews || e.sharedDefaultMemory) {
 		e.prepareMemory()
 	}
 	regions := e.addNativeLoops(e.memoryRegions())
