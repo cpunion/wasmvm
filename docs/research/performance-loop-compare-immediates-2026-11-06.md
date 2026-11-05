@@ -169,12 +169,54 @@ still fails validation. Five shard-tooling tests and the 31-package matrix
 validation pass. New final-head CI remains required; the cancelled older run is
 not presented as a successful merge gate or rerun solely to replace its outcome.
 
-A new [Linux event42070246689](https://github.com/cpunion/wasmvm/actions/runs/42070246689)
-targets exact source `4054f1b` against `993cbb3`, covering the cumulative predicate
-and literal changes. It is dispatched only after the preceding event completes.
-Actual x86 execution, final-head four-profile CI, contribution review, general
+The subsequent [Linux event 42070246689](https://github.com/cpunion/wasmvm/actions/runs/42070246689)
+now completes for exact source `4054f1b` against `993cbb3`, covering the cumulative
+predicate and literal changes: all six build/measurement jobs pass, 22 cases,
+362 alternate checks and 12 expected GC capability rejections. Seven cases
+resolve all four controls. SHA LLGo warm head/base medians are 0.956/0.941
+(Clang/Rust), with unresolved controls for both; these advisory results remain
+separate from the local ARM64 event. The full matrix follows. Lower is faster.
+
+| Workload | LLGo / Go native | LLGo / Go interpreter | LLGo native / wazero JIT | / Wasmtime | / Wasmer | LLGo interpreter / wazero interpreter | / WasmEdge interpreter | LLGo native / C | A/A |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| core/call-control | 2.056× | 2.916× | 11.489× | 4.646× | 3.867× | 5.041× | 3.481× | unavailable | inconclusive |
+| core/integer-loop | 0.997× | 0.846× | 1.010× | 1.007× | 1.005× | 0.568× | 0.658× | 1.011× | inconclusive |
+| core/function-calls | 0.995× | 0.885× | 0.435× | 0.440× | 0.438× | 0.649× | 0.905× | 0.822× | inconclusive |
+| core/memory-load-store | 0.991× | 0.887× | 0.664× | 1.050× | 1.052× | 0.508× | 0.779× | 1.421× | resolved, advisory |
+| memory/narrow-unaligned | 0.997× | 0.945× | 0.849× | 1.275× | 1.272× | 0.485× | 0.679× | 2.019× | resolved, advisory |
+| memory/dependent-address | 0.987× | 0.841× | 1.006× | 1.332× | 1.332× | 0.416× | 0.353× | 1.561× | resolved, advisory |
+| memory/float64-unaligned | 0.985× | 0.926× | 0.688× | 1.169× | 1.161× | 0.524× | 0.422× | 1.177× | resolved, advisory |
+| runtime/simd-memory-full | 0.996× | 0.906× | 0.873× | 1.084× | 1.046× | 0.507× | 0.982× | 0.905× | resolved, advisory |
+| runtime/simd-memory-widen | 1.007× | 1.024× | 0.679× | 1.539× | 1.557× | 0.497× | 0.577× | 0.398× | resolved, advisory |
+| runtime/simd-memory-lanes | 0.996× | 1.050× | 0.947× | 1.144× | 1.150× | 0.450× | 1.122× | 1.331× | resolved, advisory |
+| gc/i31-roundtrip | 1.015× | 0.891× | unsupported | 0.923× | unsupported | unsupported | 0.797× | unavailable | inconclusive |
+| gc/struct-access | 1.097× | 0.899× | unsupported | 1.584× | unsupported | unsupported | 0.732× | unavailable | inconclusive |
+| gc/struct-allocation | 1.289× | 1.825× | unsupported | 0.324× | unsupported | unsupported | 1.395× | unavailable | inconclusive |
+| gc/struct-indirect-access | 1.064× | 0.945× | unsupported | 1.489× | unsupported | unsupported | 0.762× | unavailable | inconclusive |
+| threads/private-memory | 1.019× | 1.072× | 0.831× | 2.489× | 2.141× | 0.510× | 0.534× | unavailable | inconclusive |
+| threads/shared-memory | 1.072× | 0.613× | 0.807× | 2.743× | 2.058× | 0.538× | 0.565× | unavailable | inconclusive |
+| threads/atomic-rmw | 1.269× | 0.686× | 1.746× | 1.583× | 1.392× | 0.861× | 0.558× | unavailable | inconclusive |
+| threads/notify-empty | 1.025× | 0.950× | 0.077× | 0.307× | 0.223× | 0.781× | 0.464× | unavailable | inconclusive |
+| threads/wait-mismatch | 0.964× | 0.670× | 0.052× | 0.209× | 0.545× | 0.440× | 0.459× | unavailable | inconclusive |
+| threads/wait-timeout | 0.864× | 0.653× | 0.005× | 0.046× | 0.023× | 0.095× | 0.001× | unavailable | inconclusive |
+| applications/sha256-clang | 0.980× | 0.874× | 0.747× | 1.416× | 1.376× | 0.496× | 0.782× | 1.702× | inconclusive |
+| applications/sha256-rust | 0.988× | 0.881× | 0.724× | 1.447× | 1.355× | 0.493× | 0.818× | 1.723× | inconclusive |
+
+[Final CI 42073348453](https://github.com/cpunion/wasmvm/actions/runs/42073348453)
+also completes for `ab377e7`/engine `4054f1b`: all 21 required jobs pass, with one
+intentional optional skip. The audit verifies 240 matching reports across four
+profiles, pinned manifests/compiler identities, forced Stack Switching
+collection, 31 packages in seven LLGo shards per platform and 30 package coverage
+gates (minimum 90.84%). The longest job is 616s (10m16s), so the desired ten-minute
+budget is still slightly exceeded. Its required evidence upload takes two
+seconds; compiler setup and semantic execution take 117s and 461s. The cancelled
+earlier CI remains retained. This completed CI validates the immediate-selection
+source, not the subsequent frame-operand source.
+
+Contribution review/integration, actual new-source x86 execution, general
 rematerialization, expanded world/release conformance and controlled performance
-acceptance remain open.
+acceptance remain open. The [frame-operand follow-up](performance-frame-operands-2026-11-06.md)
+records the next source without pooling evidence.
 
 ## Evidence
 
@@ -192,3 +234,9 @@ Preceding Linux archive `artifacts/loop-frame-copies-20261105/hosted-evidence-cu
 
 Preceding cancelled-CI archive `artifacts/loop-compare-immediates-20261106/ci-eab-evidence.tar.gz`: 6115008 bytes; SHA-256
 `4f6df9a3797258f6ce4ce1815e017de6078e351256875418502013da0d807ee6`.
+
+Completed Linux archive: `artifacts/loop-compare-immediates-20261106/hosted-evidence-current.tar.gz`; SHA-256
+`16ff5e70fe005a9ca32e619a5d4e4f690056b174bcd46494fb77a18960b408a6`.
+
+Final CI archive: `artifacts/loop-frame-operands-20261106/ci-ab-evidence.tar.gz`; SHA-256
+`b172110acb478326e1cf32f475c11f5824503fee9ef2e453d639d822e779750b`.

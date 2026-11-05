@@ -718,5 +718,318 @@
         }
       }
     ]
+  },
+  "completedLinux": {
+    "run": 42070246689,
+    "source": "4054f1b96a707fa6f5334221574b8e393f8effc0",
+    "baseline": "993cbb3a59f9b19b58523ce8f239c2d6b37ec3dd",
+    "classification": "Hosted advisory; controlled milestone acceptance remains open",
+    "cases": 22,
+    "alternateChecks": 362,
+    "expectedReferenceRejections": 12,
+    "allFourControlsResolvedCases": 7,
+    "jobs": [
+      {
+        "id": 127395902351,
+        "name": "Build routing comparison once / linux-amd64",
+        "seconds": 367.0
+      },
+      {
+        "id": 127401859476,
+        "name": "Routing comparison / threads",
+        "seconds": 83.0
+      },
+      {
+        "id": 127401859499,
+        "name": "Routing comparison / core",
+        "seconds": 104.0
+      },
+      {
+        "id": 127401859792,
+        "name": "Routing comparison / memory-simd",
+        "seconds": 489.0
+      },
+      {
+        "id": 127401859973,
+        "name": "Routing comparison / applications",
+        "seconds": 196.0
+      },
+      {
+        "id": 127401859986,
+        "name": "Routing comparison / gc",
+        "seconds": 38.0
+      }
+    ],
+    "evidence": {
+      "path": "artifacts/loop-compare-immediates-20261106/hosted-evidence-current.tar.gz",
+      "bytes": 2096744,
+      "sha256": "16ff5e70fe005a9ca32e619a5d4e4f690056b174bcd46494fb77a18960b408a6",
+      "files": 16
+    },
+    "workloads": [
+      {
+        "workload": "core/call-control",
+        "allFourControlsResolve": false,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 1.071080602302923,
+          "head-go-native": 2.055673608159796,
+          "wazero-compiler": 11.489311163895486,
+          "wasmtime-cranelift": 4.646493756003842,
+          "wasmer-cranelift": 3.8665067945643483
+        }
+      },
+      {
+        "workload": "core/integer-loop",
+        "allFourControlsResolve": false,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.9952116538438518,
+          "head-go-native": 0.9972864623010607,
+          "wazero-compiler": 1.009590125262767,
+          "wasmtime-cranelift": 1.0067893269414134,
+          "wasmer-cranelift": 1.0051292847975974,
+          "native-c": 1.0114784921613282
+        }
+      },
+      {
+        "workload": "core/function-calls",
+        "allFourControlsResolve": false,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.9998168883222223,
+          "head-go-native": 0.9945464014614889,
+          "wazero-compiler": 0.43512781053003163,
+          "wasmtime-cranelift": 0.44010317157050055,
+          "wasmer-cranelift": 0.4382240369261062,
+          "native-c": 0.8220326886018129
+        }
+      },
+      {
+        "workload": "core/memory-load-store",
+        "allFourControlsResolve": true,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.9952655338202371,
+          "head-go-native": 0.9910755576546526,
+          "wazero-compiler": 0.6644476569405937,
+          "wasmtime-cranelift": 1.0499598671072599,
+          "wasmer-cranelift": 1.0517171168725397,
+          "native-c": 1.4212960163201458
+        }
+      },
+      {
+        "workload": "memory/narrow-unaligned",
+        "allFourControlsResolve": true,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.9704822640374874,
+          "head-go-native": 0.9968475108043698,
+          "wazero-compiler": 0.849097898445969,
+          "wasmtime-cranelift": 1.2745592159594281,
+          "wasmer-cranelift": 1.271902157393669,
+          "native-c": 2.019290637485122
+        }
+      },
+      {
+        "workload": "memory/dependent-address",
+        "allFourControlsResolve": true,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.9271443995128016,
+          "head-go-native": 0.9871855987541452,
+          "wazero-compiler": 1.0060058636060016,
+          "wasmtime-cranelift": 1.332013323263495,
+          "wasmer-cranelift": 1.3316391916166854,
+          "native-c": 1.561208283082618
+        }
+      },
+      {
+        "workload": "memory/float64-unaligned",
+        "allFourControlsResolve": true,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.993508340193614,
+          "head-go-native": 0.9845115447971634,
+          "wazero-compiler": 0.6884523561844924,
+          "wasmtime-cranelift": 1.1686036516533933,
+          "wasmer-cranelift": 1.1609425059827443,
+          "native-c": 1.1773497339884413
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-full",
+        "allFourControlsResolve": true,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.9821883794736134,
+          "head-go-native": 0.9963211760669712,
+          "wazero-compiler": 0.8728224241164338,
+          "wasmtime-cranelift": 1.0843318895965093,
+          "wasmer-cranelift": 1.0461054122210462,
+          "native-c": 0.9045019923483966
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-widen",
+        "allFourControlsResolve": true,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.8053072107379609,
+          "head-go-native": 1.0074682034635576,
+          "wazero-compiler": 0.678752305287808,
+          "wasmtime-cranelift": 1.5389089455234306,
+          "wasmer-cranelift": 1.5571186052951587,
+          "native-c": 0.3981086012101825
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-lanes",
+        "allFourControlsResolve": true,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.9628944823989362,
+          "head-go-native": 0.9961146850915179,
+          "wazero-compiler": 0.9473177730553862,
+          "wasmtime-cranelift": 1.144374449632667,
+          "wasmer-cranelift": 1.1501890653297717,
+          "native-c": 1.3310031575641923
+        }
+      },
+      {
+        "workload": "gc/i31-roundtrip",
+        "allFourControlsResolve": false,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.8795233892321271,
+          "head-go-native": 1.0146366297569047,
+          "wasmtime-cranelift": 0.9228988191711044
+        }
+      },
+      {
+        "workload": "gc/struct-access",
+        "allFourControlsResolve": false,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 1.0799798792756539,
+          "head-go-native": 1.0965270684371808,
+          "wasmtime-cranelift": 1.5836252996496405
+        }
+      },
+      {
+        "workload": "gc/struct-allocation",
+        "allFourControlsResolve": false,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 1.0417636558674757,
+          "head-go-native": 1.288568394278297,
+          "wasmtime-cranelift": 0.3244654825991732
+        }
+      },
+      {
+        "workload": "gc/struct-indirect-access",
+        "allFourControlsResolve": false,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 1.062366173611282,
+          "head-go-native": 1.0639372951122723,
+          "wasmtime-cranelift": 1.488756294405739
+        }
+      },
+      {
+        "workload": "threads/private-memory",
+        "allFourControlsResolve": false,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.946526286624645,
+          "head-go-native": 1.0186358553857622,
+          "wazero-compiler": 0.8312043795620438,
+          "wasmtime-cranelift": 2.489071038251366,
+          "wasmer-cranelift": 2.141178314008148
+        }
+      },
+      {
+        "workload": "threads/shared-memory",
+        "allFourControlsResolve": false,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.8447139467440021,
+          "head-go-native": 1.0717152796360716,
+          "wazero-compiler": 0.8067683940172231,
+          "wasmtime-cranelift": 2.743150684931507,
+          "wasmer-cranelift": 2.0578034682080926
+        }
+      },
+      {
+        "workload": "threads/atomic-rmw",
+        "allFourControlsResolve": false,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 1.2374439337726342,
+          "head-go-native": 1.2691390277146752,
+          "wazero-compiler": 1.74592757529591,
+          "wasmtime-cranelift": 1.58304112209117,
+          "wasmer-cranelift": 1.3919028340080972
+        }
+      },
+      {
+        "workload": "threads/notify-empty",
+        "allFourControlsResolve": false,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.880091649694501,
+          "head-go-native": 1.0254103223254893,
+          "wazero-compiler": 0.07725465755227409,
+          "wasmtime-cranelift": 0.30735870864492676,
+          "wasmer-cranelift": 0.22257593750447113
+        }
+      },
+      {
+        "workload": "threads/wait-mismatch",
+        "allFourControlsResolve": false,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 1.009153568432953,
+          "head-go-native": 0.9637110817023055,
+          "wazero-compiler": 0.051506172104173804,
+          "wasmtime-cranelift": 0.2088310982650235,
+          "wasmer-cranelift": 0.5449926144756277
+        }
+      },
+      {
+        "workload": "threads/wait-timeout",
+        "allFourControlsResolve": false,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.9068442049634734,
+          "head-go-native": 0.86421764676838,
+          "wazero-compiler": 0.005267371069333807,
+          "wasmtime-cranelift": 0.04566349424999478,
+          "wasmer-cranelift": 0.02252290508544369
+        }
+      },
+      {
+        "workload": "applications/sha256-clang",
+        "allFourControlsResolve": false,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.9564798940242797,
+          "head-go-native": 0.9798238150915789,
+          "wazero-compiler": 0.747088285282051,
+          "wasmtime-cranelift": 1.416016935202672,
+          "wasmer-cranelift": 1.3762202226677003,
+          "native-c": 1.7023545900888184
+        }
+      },
+      {
+        "workload": "applications/sha256-rust",
+        "allFourControlsResolve": false,
+        "llgoNativeElapsedRatios": {
+          "base-llgo-native": 0.9414270301865791,
+          "head-go-native": 0.9879783524694035,
+          "wazero-compiler": 0.7241937340335048,
+          "wasmtime-cranelift": 1.4467106151150333,
+          "wasmer-cranelift": 1.3547617822539693,
+          "native-c": 1.7231446875529068
+        }
+      }
+    ]
+  },
+  "completedCI": {
+    "run": 42073348453,
+    "source": "ab377e7b5eddf712ef285f673dba9adb3dd14d75",
+    "engine": "4054f1b96a707fa6f5334221574b8e393f8effc0",
+    "passed": true,
+    "requiredSuccessfulJobs": 21,
+    "actualConformanceReports": 240,
+    "profiles": 4,
+    "coveragePackages": 30,
+    "minimumCoverage": 90.83829592304168,
+    "longestSuccessfulJobSeconds": 616.0,
+    "evidence": {
+      "path": "artifacts/loop-frame-operands-20261106/ci-ab-evidence.tar.gz",
+      "bytes": 5914474,
+      "sha256": "b172110acb478326e1cf32f475c11f5824503fee9ef2e453d639d822e779750b",
+      "files": 268
+    }
   }
 }

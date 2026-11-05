@@ -16,13 +16,12 @@ integration. Competing runtimes are independent test and benchmark references;
 execution never silently switches to one of them.
 
 Performance acceptance remains open. The
-[latest comparison-immediate study](docs/research/performance-loop-compare-immediates-2026-11-06.md)
-reduces hot loop instructions on both targets and retains mixed elapsed results
-across 18 local workloads. The preceding Linux event covers all 22 cases.
-Final-head CI, current x86 execution and controlled performance acceptance remain
-open; rejected changes, adverse values and the earlier artifact-upload timeout
-remain recorded. The
-[full hosted comparison](docs/research/performance-loop-nonresident-values-2026-11-05.md)
+[latest frame-operand study](docs/research/performance-frame-operands-2026-11-06.md)
+reduces x86 SHA compression loops by fourteen instructions each and validates
+encodings against LLVM. Current x86 execution and elapsed acceptance remain
+pending. Its baseline passes all four compiler/platform semantic profiles;
+prior mixed/adverse timings and the cancelled artifact-finalization run remain
+recorded. The [full hosted comparison](docs/research/performance-loop-nonresident-values-2026-11-05.md)
 retains all 22 competitor/Go/LLGo/native-C workloads and separate execution phases.
 Results are dated and target-specific; they do not establish a universal winner.
 The [gap audit](docs/research/performance-gaps-2026-11-02.md) retains the broader

@@ -281,6 +281,16 @@ still stops at omitted instructions. This preserves preceding arithmetic/local
 fusion without weakening any observation boundary. See the
 [rejected static interaction and corrected comparison](../research/performance-loop-compare-immediates-2026-11-06.md).
 
+Unmetered x86 integer arithmetic also selects mixed register/frame operands.
+Add, subtract, multiply, AND, OR and XOR share the existing binary opcode
+inventory. Nonresident inputs use direct frame operands; a missing destination
+uses the existing scratch accumulator and store. Commutative forms may exchange
+inputs; a right-aliased subtraction preserves its input until consumption.
+Read aliases are resolved first, and cached FP/vector inputs retain their
+existing path. The frame is already validated, execution-owned storage; guest
+linear-memory proofs, polls, original PCs and precise fuel stay unchanged. See
+the [assembler witnesses and source-pinned comparison](../research/performance-frame-operands-2026-11-06.md).
+
 Ordinary emission and bounded native regions use one ordered instruction
 selector pipeline. Their callers retain mapping, guard, remapping, shared-write
 boundaries and all original-PC continuations. Logical shifts, live integer

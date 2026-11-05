@@ -1,0 +1,420 @@
+{
+  "classification": "Mixed-residency x86 integer instruction selection. Local ARM64 execution and actual published images, x86 emission/reference-assembler proof only. New x86 guest execution/elapsed acceptance and final-head CI remain required.",
+  "plan": {
+    "baseline": "ab377e7b5eddf712ef285f673dba9adb3dd14d75",
+    "baselineEngine": "4054f1b96a707fa6f5334221574b8e393f8effc0",
+    "mechanism": "Use x86 arithmetic memory operands for nonresident VM-frame integer inputs, preserving existing GPR homes and sharing the binary opcode inventory. Read inputs before writes, retain right-aliased subtraction with a scratch accumulator, and use the existing destination store. No new physical bank or execution path.",
+    "requirements": [
+      "All add/sub/mul/and/or/xor i32/i64 forms, cached/spilled source/destination combinations and operand aliases; complete raw Lo/Hi words and remapped copy inputs",
+      "No partial emission on unsupported opcode, metered tier or non-frame input. Keep all cold PCs, fuel, polls, traps and resource limits",
+      "Complete local Go/LLGo release suites, exact >=90% package coverage, byte/assembler witness and actual Linux amd64 execution before merge",
+      "Actual published ARM64 images and x86 SHA output before choosing measured scope; source-pinned lifecycle/competitor/native comparison with no favorable retries or ISA/flag/alignment sweeps",
+      "Keep CI42073348453 and benchmark42070246689 live; do not replace them due queue/observation timeout. LLGo2983 remains with existing contributor."
+    ],
+    "source": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
+    "measurementBaseline": "4054f1b96a707fa6f5334221574b8e393f8effc0",
+    "measurementScope": "Inspect actual images and reference-assembler output first; collect only target-relevant original-count lifecycle/competitor/native data, preserving all earlier source events.",
+    "baselineReuse": "Reuse exact source4054f1b candidate binaries from preceding event only after engine/harness/toolchain/profile and executable/library verification. Candidate executables are fresh."
+  },
+  "qualification": [
+    {
+      "compiler": "go",
+      "command": [
+        "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+        "test",
+        "-count=1",
+        "-timeout=4m",
+        "-coverpkg=./internal/compiler/codegen,./internal/engine/nativeexec",
+        "-coverprofile=/Users/lijie/source/goplus/wasmvm/artifacts/loop-frame-operands-20261106/final/coverage.out",
+        "./internal/compiler/codegen",
+        "./internal/engine/nativeexec",
+        "./pkg/vm"
+      ],
+      "exit": 0,
+      "wallSeconds": 5.109368625096977,
+      "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "source": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0"
+    },
+    {
+      "compiler": "llgo",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-3571c25",
+        "test",
+        "-O3",
+        "-lto=full",
+        "-count=1",
+        "-timeout=4m",
+        "./internal/compiler/codegen",
+        "./internal/engine/nativeexec",
+        "./pkg/vm"
+      ],
+      "exit": 0,
+      "wallSeconds": 36.04188712500036,
+      "compilerSHA256": "4ec6e101cc510011d56e8ef9dee4053abbde521f284963bd2b468b281d3fec0c",
+      "source": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0"
+    },
+    {
+      "compiler": "vet",
+      "command": [
+        "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+        "vet",
+        "./internal/compiler/codegen",
+        "./internal/engine/nativeexec"
+      ],
+      "exit": 0,
+      "wallSeconds": 0.3942303750663996,
+      "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "source": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0"
+    }
+  ],
+  "coverage": {
+    "github.com/cpunion/wasmvm/internal/compiler/codegen": {
+      "covered": 8449,
+      "total": 8649,
+      "percent": 97.68759394149613
+    },
+    "github.com/cpunion/wasmvm/internal/engine/nativeexec": {
+      "covered": 459,
+      "total": 496,
+      "percent": 92.54032258064517
+    }
+  },
+  "publication": {
+    "classification": "Output-only actual arm64 publication diagnostic; no timing or causal attribution",
+    "publications": 66,
+    "comparisons": [
+      {
+        "workload": "core/call-control",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 3420,
+        "headBytes": 3420,
+        "headPublishedSha256": "a0fa8b2c91e605d2096f695d31c91f9c931a01c023e865a69e259d39c12d0109",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "core/integer-loop",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 5748,
+        "headBytes": 5748,
+        "headPublishedSha256": "0929b0787e602382f2f999f81b24d29a4e40e975b6fecb64c79666b1ff5228d6",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "core/function-calls",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 11360,
+        "headBytes": 11360,
+        "headPublishedSha256": "ab08262350eab3e2e434e94a1a39604a5db259f2e1f8b362c914191b6d870246",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "core/memory-load-store",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 10956,
+        "headBytes": 10956,
+        "headPublishedSha256": "ec6e88e780b9773b923d1f32e34d4ff1b56224d6a93a0a2e6f892b29ee9ffccd",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "memory/narrow-unaligned",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 11864,
+        "headBytes": 11864,
+        "headPublishedSha256": "98179162149df2bdc565517fd40fda7518fb1ac965b5452688a6b713847a02ca",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "memory/dependent-address",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 10340,
+        "headBytes": 10340,
+        "headPublishedSha256": "4357dc88ef2102e8aecde9df775a76e1873c7a172a4d50fb162164b4257213fb",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "memory/float64-unaligned",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 12544,
+        "headBytes": 12544,
+        "headPublishedSha256": "0746fed2328dc0e35774fa29a33e1557ee426f461697003a078037c2a2fcfa37",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "runtime/simd-memory-full",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 7732,
+        "headBytes": 7732,
+        "headPublishedSha256": "a4e4e4ad7b8d44684133012de6a8088b22a666e5fb15646206a7cae043639389",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "runtime/simd-memory-widen",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 6844,
+        "headBytes": 6844,
+        "headPublishedSha256": "9ef59a5248611a76084ebe93b8a3786c1aacadb9472aa348adf1aa78b7aceaf3",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "runtime/simd-memory-lanes",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 8396,
+        "headBytes": 8396,
+        "headPublishedSha256": "cff1f7aeb75a5548635d042e3c58b5cdc6a334213caa3db1c26017c733129422",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "gc/i31-roundtrip",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 4108,
+        "headBytes": 4108,
+        "headPublishedSha256": "c1de86b66d6f6c671dd4ef3b931fb2e42728c45136056556201be4b40a5cd265",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "gc/struct-access",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 5536,
+        "headBytes": 5536,
+        "headPublishedSha256": "6c5afdcf4e0d8601b68ee7ae447f813a3d845cf425472d4b9fa0c1e33fd8d54e",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "gc/struct-allocation",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 5216,
+        "headBytes": 5216,
+        "headPublishedSha256": "c84b4bc0da45dd14d9fdba78ba3644d6965ca895dba953072ac98fc0efe8e102",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "gc/struct-indirect-access",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 10016,
+        "headBytes": 10016,
+        "headPublishedSha256": "f453a70dcb98a2bca419ec7384ff4a71349f03ee9f84ea8e1f57689b5c124504",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "threads/private-memory",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 4872,
+        "headBytes": 4872,
+        "headPublishedSha256": "6df007d130d44d692d1d6bb1e5ad64c92ef9f7fa65794f53e29a082f36e3a0c4",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "threads/shared-memory",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 5116,
+        "headBytes": 5116,
+        "headPublishedSha256": "172c37548dbf9f3362487c53bb7087bea89fe0e97e426eb90c6ce13795b13c35",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "threads/atomic-rmw",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 4732,
+        "headBytes": 4732,
+        "headPublishedSha256": "e771495531ab85a193988efa8928d63b3beb0810cba49d458be2c94e03ee78e3",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "threads/notify-empty",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 4952,
+        "headBytes": 4952,
+        "headPublishedSha256": "2c505dc193b5145e497067fbee7463f2ecbbf550799105f1af7ca4b2ff201205",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "threads/wait-mismatch",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 5348,
+        "headBytes": 5348,
+        "headPublishedSha256": "c0d8273db694e440f3f64990e3f1354f7730eb1f489c724e933ebfe59ce97b3a",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "threads/wait-timeout",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 5328,
+        "headBytes": 5328,
+        "headPublishedSha256": "832544458203e619257a7737232a3755336120f6690402ef1df46c29704ce6fb",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "applications/sha256-clang",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 101332,
+        "headBytes": 101332,
+        "headPublishedSha256": "0946f42f564e67b28a231672e501c56b8dd569b3970503f32dd39b18cfc13340",
+        "baselineHeadEntryOffsetsIdentical": true
+      },
+      {
+        "workload": "applications/sha256-rust",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": false,
+        "baseBytes": 101500,
+        "headBytes": 101500,
+        "headPublishedSha256": "4f1c990f4e1e59f6975c17d7f885f8157ea389a2c1ab2bd1c43b25216d7a6936",
+        "baselineHeadEntryOffsetsIdentical": true
+      }
+    ]
+  },
+  "encoder": {
+    "source": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
+    "build": [
+      {
+        "role": "go",
+        "command": [
+          "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+          "test",
+          "-count=1",
+          "-timeout=2m",
+          "-run",
+          "^TestDiagnosticFrameBytes$",
+          "./internal/compiler/codegen"
+        ],
+        "exit": 0,
+        "seconds": 1.8463559169322252,
+        "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764"
+      },
+      {
+        "role": "llgo",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-3571c25",
+          "test",
+          "-O3",
+          "-lto=full",
+          "-count=1",
+          "-timeout=2m",
+          "-run",
+          "^TestDiagnosticFrameBytes$",
+          "./internal/compiler/codegen"
+        ],
+        "exit": 0,
+        "seconds": 29.723483207868412,
+        "compilerSHA256": "4ec6e101cc510011d56e8ef9dee4053abbde521f284963bd2b468b281d3fec0c"
+      }
+    ],
+    "referenceCommand": [
+      "/opt/homebrew/opt/llvm@22/bin/llvm-mc",
+      "-triple=x86_64-unknown-linux-gnu",
+      "-show-encoding"
+    ],
+    "referenceSHA256": "c68457d0bd100e2d2b0e502c1cf891bfca7e4ed40a528c87a40542dd905588a0",
+    "referenceVersion": "Homebrew LLVM version 22.1.8\n  Optimized build.\n\n  Registered Targets:\n    aarch64     - AArch64 (little endian)\n    aarch64_32  - AArch64 (little endian ILP32)\n    aarch64_be  - AArch64 (big endian)\n    amdgcn      - AMD GCN GPUs\n    arm         - ARM\n    arm64       - ARM64 (little endian)\n    arm64_32    - ARM64 (little endian ILP32)\n    armeb       - ARM (big endian)\n    avr         - Atmel AVR Microcontroller\n    bpf         - BPF (host endian)\n    bpfeb       - BPF (big endian)\n    bpfel       - BPF (little endian)\n    hexagon     - Hexagon\n    lanai       - Lanai\n    loongarch32 - 32-bit LoongArch\n    loongarch64 - 64-bit LoongArch\n    mips        - MIPS (32-bit big endian)\n    mips64      - MIPS (64-bit big endian)\n    mips64el    - MIPS (64-bit little endian)\n    mipsel      - MIPS (32-bit little endian)\n    msp430      - MSP430 [experimental]\n    nvptx       - NVIDIA PTX 32-bit\n    nvptx64     - NVIDIA PTX 64-bit\n    ppc32       - PowerPC 32\n    ppc32le     - PowerPC 32 LE\n    ppc64       - PowerPC 64\n    ppc64le     - PowerPC 64 LE\n    r600        - AMD GPUs HD2XXX-HD6XXX\n    riscv32     - 32-bit RISC-V\n    riscv32be   - 32-bit big endian RISC-V\n    riscv64     - 64-bit RISC-V\n    riscv64be   - 64-bit big endian RISC-V\n    sparc       - Sparc\n    sparcel     - Sparc LE\n    sparcv9     - Sparc V9\n    spirv       - SPIR-V Logical\n    spirv32     - SPIR-V 32-bit\n    spirv64     - SPIR-V 64-bit\n    systemz     - SystemZ\n    thumb       - Thumb\n    thumbeb     - Thumb (big endian)\n    ve          - VE\n    wasm32      - WebAssembly 32-bit\n    wasm64      - WebAssembly 64-bit\n    x86         - 32-bit X86: Pentium-Pro and above\n    x86-64      - 64-bit X86: EM64T and AMD64\n    xcore       - XCore\n",
+    "instructionsMatched": 588,
+    "fullResidencyAliasKernels": 684,
+    "GoLLGoBytesIdentical": true,
+    "scope": "Code emission and independent LLVM assembler byte comparison only. No x86 guest code executes on the ARM64 host; actual amd64 execution remains required in CI."
+  },
+  "measurementDecision": {
+    "source": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
+    "baseline": "4054f1b96a707fa6f5334221574b8e393f8effc0",
+    "scope": "Full22-case Linuxamd64 event with existing original-count protocol. No new ARM64 sustained campaign.",
+    "reason": "All22 actual ARM64 published images and entry lists match. x86 compression bodies lose14instructions each, retaining20/18frame references and one poll.",
+    "qualification": "Local ARM64 actual execution, x86 emission/reference bytes and future Linux actual execution are separate outcomes.",
+    "restrictions": "No favorable retries, flag/ISA/alignment sweeps, phase subtraction or cross-event pooling. No elapsed acceptance from static instruction counts."
+  },
+  "static": {
+    "x86CompressionInstructions": {
+      "clang": [
+        84,
+        70
+      ],
+      "rust": [
+        81,
+        67
+      ]
+    },
+    "x86CompressionFrameReferences": {
+      "clang": [
+        20,
+        20
+      ],
+      "rust": [
+        18,
+        18
+      ]
+    },
+    "scheduleInstructions": [
+      43,
+      43
+    ],
+    "polls": 1,
+    "functionBytes": {
+      "clang": [
+        11007,
+        10864
+      ],
+      "rust": [
+        10889,
+        10746
+      ]
+    }
+  },
+  "precedingCI": {
+    "run": 42073348453,
+    "source": "ab377e7b5eddf712ef285f673dba9adb3dd14d75",
+    "engine": "4054f1b96a707fa6f5334221574b8e393f8effc0",
+    "passed": true,
+    "requiredSuccessfulJobs": 21,
+    "profiles": 4,
+    "reports": 240,
+    "coveragePackages": 30,
+    "minimumCoverage": 90.83829592304168,
+    "longestJobSeconds": 616.0,
+    "evidence": {
+      "path": "artifacts/loop-frame-operands-20261106/ci-ab-evidence.tar.gz",
+      "bytes": 5914474,
+      "sha256": "b172110acb478326e1cf32f475c11f5824503fee9ef2e453d639d822e779750b",
+      "files": 268
+    }
+  },
+  "precedingHosted": {
+    "run": 42070246689,
+    "source": "4054f1b96a707fa6f5334221574b8e393f8effc0",
+    "baseline": "993cbb3a59f9b19b58523ce8f239c2d6b37ec3dd",
+    "passed": true,
+    "cases": 22,
+    "alternateChecks": 362,
+    "expectedReferenceRejections": 12,
+    "allFourControlsResolvedCases": 7,
+    "evidence": {
+      "path": "artifacts/loop-compare-immediates-20261106/hosted-evidence-current.tar.gz",
+      "bytes": 2096744,
+      "sha256": "16ff5e70fe005a9ca32e619a5d4e4f690056b174bcd46494fb77a18960b408a6",
+      "files": 16
+    }
+  },
+  "currentLinuxRun": 42078773487,
+  "evidence": {
+    "path": "artifacts/loop-frame-operands-20261106/evidence.tar.gz",
+    "bytes": 1994348,
+    "sha256": "15bf355687f25a62599ef7a140f6579c4657fda9d2b23ea1a0dbba3e9d769cfc",
+    "files": 239
+  }
+}
