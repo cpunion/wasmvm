@@ -11,6 +11,7 @@ import (
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/numeric"
+	"github.com/cpunion/wasmvm/internal/engine/simd"
 	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -247,14 +248,33 @@ func (e *Execution) Run() Status {
 		}
 		// Transfer validation can replace frames or relocate their values.
 		// Publish the checked boundary before selecting the shared slot view.
-		e.frames[len(e.frames)-1].pc = pc
+		f = &e.frames[len(e.frames)-1]
+		f.pc = pc
 		e.steps++
 		if e.steps&63 == 0 {
 			if err := e.poll(); err != nil {
 				return e.fail(err)
 			}
 		}
-		if status := e.runRuntime(); status != Running {
+		// Select shared leaves here so a common dispatcher does not save
+		// and restore another frame before each native runtime effect.
+		op := f.function.Code.Code[pc].Op
+		var status Status
+		switch {
+		case op>>16 == 0xfb:
+			status = e.runGC()
+		case op>>16 == 0xfd:
+			status = e.runSIMD()
+		case op == slots.ControlBase+uint32(ir.Return):
+			status = e.returnFrame()
+		case op >= 0x10 && op <= 0x15:
+			status = e.runCall()
+		case op == 8 || op == 10:
+			status = e.runThrow()
+		default:
+			status = e.runRuntime()
+		}
+		if status != Running {
 			return status
 		}
 	}
@@ -312,18 +332,63 @@ func (e *Execution) runSlots() Status {
 			if in.Op >= 0xe0 && in.Op < slots.ControlBase {
 				switch in.Op >> 16 {
 				case 0xfd:
-					f.pc = pc
-					if status := e.runSIMD(); status != Running {
-						return status
+					var a, b, c value.Value
+					if in.A != slots.NoSlot {
+						a = values[int(in.A)]
 					}
-					pc++
-					goto next
+					if in.B != slots.NoSlot {
+						b = values[int(in.B)]
+					}
+					op := in.Op
+					if in.C != slots.NoSlot {
+						c = values[int(in.C)]
+					}
+					im := &code.Sources[in.Source].Wasm
+					sub := op & 0xffff
+					switch {
+					case sub <= 10 || sub >= 84 && sub <= 87 || sub == 92 || sub == 93:
+						result, trap = instance.Memories[im.Memory].Load(op, a.Lo, im.MemoryOffset(), im.Lane, b)
+					case sub == 11 || sub >= 88 && sub <= 91:
+						trap = instance.Memories[im.Memory].Store(op, a.Lo, im.MemoryOffset(), im.Lane, b)
+					default:
+						result = simd.Eval(im, a, b, c)
+					}
+					goto commit
 				case 0xfb:
-					f.pc = pc
-					if status := e.runGC(); status != Running {
-						return status
+					// Field/array access is a canonical state primitive. Keep
+					// its operand routing in this loop; complex GC effects use
+					// the same shared leaf as native execution.
+					if n := state.GCAccessArity(in.Op); n != 0 {
+						var a, b, c value.Value
+						if in.A != slots.NoSlot {
+							a = values[int(in.A)]
+						}
+						if in.B != slots.NoSlot {
+							b = values[int(in.B)]
+						}
+						if n > 2 {
+							c = values[int(code.Args[in.Extra+2])]
+						}
+						var err error
+						result, err = e.store.GCAccess(instance, &code.Sources[in.Source].Wasm, a, b, c)
+						if err != nil {
+							var t *wasm.Trap
+							if errors.As(err, &t) {
+								t.Function = fn.Index
+							}
+							return e.fail(err)
+						}
+						if in.Dst != slots.NoSlot {
+							values[int(in.Dst)] = result
+						}
+					} else {
+						f.pc = pc
+						if status := e.runGC(); status != Running {
+							return status
+						}
 					}
 					pc++
+					f.pc = pc
 					goto next
 				case 0xfc:
 					if module.IsWideArithmetic(in.Op) {
@@ -511,7 +576,13 @@ func (e *Execution) runSlots() Status {
 				goto write
 			}
 			switch op := in.Op; op {
-			case slots.ControlBase + uint32(ir.IfCast), slots.ControlBase + uint32(ir.Return):
+			case slots.ControlBase + uint32(ir.Return):
+				f.pc = pc
+				if status := e.returnFrame(); status != Running {
+					return status
+				}
+				goto transferred
+			case slots.ControlBase + uint32(ir.IfCast):
 				f.pc = pc
 				if status := e.runRuntime(); status != Running {
 					return status
@@ -548,7 +619,7 @@ func (e *Execution) runSlots() Status {
 
 			case 8, 10:
 				f.pc = pc
-				if status := e.runRuntime(); status != Running {
+				if status := e.runThrow(); status != Running {
 					return status
 				}
 				goto transferred
@@ -630,18 +701,37 @@ func (e *Execution) runSlots() Status {
 				result.Lo = instance.Functions[in.Extra]
 			case 0x10, 0x11, 0x12, 0x13, 0x14, 0x15:
 				f.pc = pc
-				if status := e.runRuntime(); status != Running {
+				if status := e.runCall(); status != Running {
 					return status
 				}
 				goto transferred
 			default:
-				f.pc = pc
-				if status := e.runRuntime(); status != Running {
-					return status
+				if in.C != slots.NoSlot {
+					c = values[int(in.C)]
 				}
-				pc++
-				goto next
+				switch {
 
+				case op>>16 == 0xfe:
+					if op&0xffff == 3 {
+						e.store.Domain.Fence()
+						break
+					}
+					im := &code.Sources[in.Source].Wasm
+					var err error
+					result, trap, err = instance.Memories[im.Memory].Atomic(e.context, e.store.Domain, op&0xffff, a.Lo, im.MemoryOffset(), b.Lo, c.Lo)
+					if err != nil {
+						return e.fail(err)
+					}
+				case op >= 0xfc0008 && op <= 0xfc0011:
+					im := &code.Sources[in.Source].Wasm
+					var err error
+					result, trap, err = e.bulk(instance, *im, a, b, c)
+					if err != nil {
+						return e.fail(err)
+					}
+				default:
+					panic("interp: unknown validated opcode")
+				}
 			}
 		commit:
 			if trap != wasm.NoTrap {

@@ -24,20 +24,6 @@ func (e *Execution) runRuntime() Status {
 	code := fn.Code
 	pc := f.pc
 	in := &code.Code[pc]
-	switch in.Op {
-	case slots.ControlBase + uint32(ir.Return):
-		return e.returnFrame()
-	case 0x10, 0x11, 0x12, 0x13, 0x14, 0x15:
-		return e.runCall()
-	case 8, 10:
-		return e.runThrow()
-	}
-	switch in.Op >> 16 {
-	case 0xfb:
-		return e.runGC()
-	case 0xfd:
-		return e.runSIMD()
-	}
 	instance := fn.Instance
 	values := e.values[f.base : f.base+len(code.Slots)]
 	var a, b, c, result value.Value
