@@ -60,10 +60,10 @@ func (e *functionEmitter) nullConditionalEdges(in slots.Instruction, pcs []int, 
 func (e *functionEmitter) conditionalEdgesUsing(in slots.Instruction, pcs []int, next int, branch func(slots.Slot, int, bool)) {
 	yes, no := e.f.Edges[in.Extra], e.f.Edges[in.Extra+1]
 	if yes.Count == 0 && (int(no.PC) == next || no.Count != 0 || int(yes.PC) != next) {
-		branch(in.A, pcs[yes.PC], true)
+		branch(in.A, e.targetPC(pcs, int(yes.PC)), true)
 		e.edge(in.Extra+1, pcs, next)
 	} else if no.Count == 0 {
-		branch(in.A, pcs[no.PC], false)
+		branch(in.A, e.targetPC(pcs, int(no.PC)), false)
 		e.edge(in.Extra, pcs, next)
 	} else {
 		other := e.a.label()

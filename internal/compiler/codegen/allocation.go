@@ -167,6 +167,13 @@ type registerCandidate struct {
 // fills. Constants/metadata remain in ARM caller registers; FP/vector homes use
 // their separate shared physical pool. Every class is stable at every cold PC.
 func (e *functionEmitter) allocateRegisters(config Config, regions map[int]memoryRegion) {
+	e.selectRegisters(config, regions)
+	plan := e.currentRegisterPlan()
+	e.useRegisterPlan(nil)
+	e.transitionRegisters(plan)
+}
+
+func (e *functionEmitter) selectRegisters(config Config, regions map[int]memoryRegion) {
 	frequencies := instructionFrequencies(e.f)
 	e.prepareAllocationBatch(frequencies)
 	weights := slotPriorities(e.f, regions, frequencies)
@@ -214,11 +221,8 @@ func (e *functionEmitter) allocateRegisters(config Config, regions map[int]memor
 				r := floatAvailable[0]
 				floatAvailable = floatAvailable[1:]
 				if t == wasm.V128 {
-					e.vectorMemory(s, r, false)
 					vectors[s] = r
 				} else {
-					e.slotLoad(s, 0, false, t == wasm.F64)
-					e.floatFromInteger(r, e.operandRegister(0), t == wasm.F64)
 					floats[s] = r
 				}
 				e.registerSlots = append(e.registerSlots, s)
@@ -239,8 +243,6 @@ func (e *functionEmitter) allocateRegisters(config Config, regions map[int]memor
 		switch candidate.kind {
 		case 0:
 			s := slots.Slot(candidate.key)
-			e.slotLoad(s, 0, false, true)
-			e.registerMove(reg, e.operandRegister(0), true)
 			integers[s] = reg
 			e.registerSlots = append(e.registerSlots, s)
 		case 1:
@@ -250,4 +252,5 @@ func (e *functionEmitter) allocateRegisters(config Config, regions map[int]memor
 		}
 	}
 	e.registers, e.floatRegisters, e.vectorRegisters = integers, floats, vectors
+	e.registerPlan = nil
 }

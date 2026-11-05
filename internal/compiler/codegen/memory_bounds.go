@@ -23,10 +23,14 @@ type memoryRegion struct {
 }
 
 func (e *functionEmitter) codeLimit() int {
+	limit := len(e.f.Code)
 	if e.regionLimit != 0 {
-		return e.regionLimit
+		limit = min(limit, e.regionLimit)
 	}
-	return len(e.f.Code)
+	if e.allocationLimit != 0 {
+		limit = min(limit, e.allocationLimit)
+	}
+	return limit
 }
 
 // A bounded local abstract interpretation, never a speculative loop invariant.
@@ -202,10 +206,10 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 	next := 0
 	for pc := start; pc <= end; pc++ {
 		if guard, ok := r.guards[pc]; ok {
-			cold := pcs[pc]
+			cold := e.targetPC(pcs, pc)
 			if pc == start {
 				cold = e.a.label()
-				e.memoryFallbacks = append(e.memoryFallbacks, memoryFallback{cold, pc})
+				e.memoryFallbacks = append(e.memoryFallbacks, memoryFallback{cold, pc, e.currentRegisterPlan()})
 			}
 			e.emitMemoryGuard(guard, cold)
 			out.MemoryGuards++

@@ -47,6 +47,11 @@ type functionEmitter struct {
 	aliasedVectorReads                                           uint32
 	registerSlots                                                []slots.Slot
 	registerPlan                                                 *registerPlan
+	allocationPlans                                              []*registerPlan
+	allocationStarts                                             []int
+	allocationLimit                                              int
+	allocationEdges                                              []allocationEdge
+	allocationEntries                                            []allocationEdge
 	pollExits                                                    []pollExit
 	trapExits                                                    []nativeTrapExit
 	callExits                                                    []nativeCallExit
@@ -62,7 +67,10 @@ type functionEmitter struct {
 	linkedRelocations                                            []linkedRelocation
 }
 
-type memoryFallback struct{ label, pc int }
+type memoryFallback struct {
+	label, pc int
+	registers *registerPlan
+}
 
 type nativeCallExit struct {
 	label, pc int
@@ -90,10 +98,16 @@ func (e *functionEmitter) integer(in slots.Instruction) {
 	}
 	e.slotLoad(in.A, 0, false, wide)
 	e.slotLoad(in.B, 1, false, wide)
+	zero, overflow := e.zero, e.overflow
+	if e.allocationPlans != nil && (op >= 0x6d && op <= 0x70 || op >= 0x7f && op <= 0x82) {
+		source := uint64(e.f.Sources[in.Source].Wasm.Offset)
+		zero = e.trapExit(wasm.TrapIntegerDivideByZero, source)
+		overflow = e.trapExit(wasm.TrapIntegerOverflow, source)
+	}
 	if e.a.arch == "amd64" {
-		integerAMD64Core(e.a, op, wide, e.zero, e.overflow)
+		integerAMD64Core(e.a, op, wide, zero, overflow)
 	} else {
-		integerARM64Core(e.a, op, wide, e.zero, e.overflow)
+		integerARM64Core(e.a, op, wide, zero, overflow)
 	}
 	e.slotStore(in.Dst, 0, false)
 	if !e.unmetered {
@@ -403,7 +417,7 @@ func (e *functionEmitter) edge(index uint32, pcs []int, next int) {
 		e.move(m.Dst, m.Src)
 	}
 	if int(edge.PC) != next {
-		e.a.branch(pcs[edge.PC], false, 0)
+		e.a.branch(e.targetPC(pcs, int(edge.PC)), false, 0)
 	}
 }
 

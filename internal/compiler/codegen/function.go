@@ -34,6 +34,7 @@ type CompiledFunction struct {
 	MemoryGuards, GuardedAccesses uint32
 	LoopGuards                    uint32
 	RegisterRegions               uint32
+	AllocationBlocks              uint32
 	UnrolledLoops, UnrolledCopies uint32
 	DeadScalarOps                 uint32
 	MemoryGrows                   uint32
@@ -218,20 +219,41 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	regions := e.memoryRegions()
 	if unmetered {
-		e.allocateRegisters(config, regions)
+		e.selectRegisters(config, regions)
 		e.prepareVectorConstants()
 		e.prepareConstants()
 		e.prepareRuntimeRegisters()
 		e.prepareHeapCaches()
+		e.prepareLinearScan(regions, 1<<18)
+		plan := e.currentRegisterPlan()
+		e.useRegisterPlan(nil)
+		if e.allocationPlans == nil {
+			e.transitionRegisters(plan)
+		}
 		e.contextLoad(0, nativeabi.PayloadOffset+24)
 		e.test(true)
 		e.branch(e.bad, "ne")
 		e.contextLoad(0, nativeabi.ContinuationOffset)
 	}
-	a.dispatch(pcs)
+	entryPCs := pcs
+	if e.allocationPlans != nil {
+		entryPCs = make([]int, len(pcs))
+		entries := map[*registerPlan]int{}
+		for pc, plan := range e.allocationPlans {
+			label, ok := entries[plan]
+			if !ok {
+				label = a.label()
+				entries[plan] = label
+				e.allocationEntries = append(e.allocationEntries, allocationEdge{label: label, from: e.currentRegisterPlan(), to: plan})
+			}
+			entryPCs[pc] = label
+		}
+	}
+	a.dispatch(entryPCs)
 	out = &CompiledFunction{Function: originalFunction, Offsets: make([]uint32, len(pcs)), UsesMemory: e.usesMemory, GlobalIndices: globalIndices, UsesRuntimeData: usesRuntimeData}
 	out.HeapCaches = uint32(len(e.heapCaches))
 	out.NativeAllocationBatch = e.allocationBatch
+	out.AllocationBlocks = uint32(len(e.allocationStarts))
 	for _, in := range f.Code {
 		if nativeVectorOpcode(in.Op) || nativeVectorMemoryOpcode(in.Op) {
 			out.NativeVectors++
@@ -244,19 +266,10 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	var independentEntries []int
 	combinedThrough := -1
+	allocationBlock := 0
 	for pc, in := range f.Code {
 		if pc <= combinedThrough {
 			continue
-		}
-		// Only fallthrough from the preceding constant proves an immediate.
-		// Keep the original PC as a generic cold entry for branches/resumption.
-		if unmetered && pc > 0 && pc%256 != 0 {
-			previous := f.Code[pc-1]
-			if (previous.Op == 0x41 || previous.Op == 0x42) && previous.Dst == in.B && in.B != slots.NoSlot &&
-				e.registerImmediate(in.Op, in.Dst, in.A, f.Sources[previous.Source].Wasm.Bits) {
-				independentEntries = append(independentEntries, pc)
-				continue
-			}
 		}
 		if edge, ok := e.loopBackedges[pc]; ok {
 			e.interrupt(uint32(pc))
@@ -274,10 +287,34 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				e.transitionRegisters(edge.registers)
 			}
 			if edge.exit != pc+1 {
-				a.branch(pcs[edge.exit], false, 0)
+				a.branch(e.targetPC(pcs, edge.exit), false, 0)
 			}
 			independentEntries = append(independentEntries, pc)
 			continue
+		}
+		if e.allocationPlans != nil {
+			for allocationBlock+1 < len(e.allocationStarts) && pc >= e.allocationStarts[allocationBlock+1] {
+				allocationBlock++
+			}
+			e.allocationLimit = len(f.Code)
+			if allocationBlock+1 < len(e.allocationStarts) {
+				e.allocationLimit = e.allocationStarts[allocationBlock+1]
+			}
+			if pc == 0 {
+				e.useRegisterPlan(e.allocationPlans[pc])
+			} else {
+				e.transitionRegisters(e.allocationPlans[pc])
+			}
+		}
+		// Only fallthrough from the preceding constant proves an immediate.
+		// Keep the original PC as a generic cold entry for branches/resumption.
+		if unmetered && pc > 0 && pc%256 != 0 {
+			previous := f.Code[pc-1]
+			if (previous.Op == 0x41 || previous.Op == 0x42) && previous.Dst == in.B && in.B != slots.NoSlot &&
+				e.registerImmediate(in.Op, in.Dst, in.A, f.Sources[previous.Source].Wasm.Bits) {
+				independentEntries = append(independentEntries, pc)
+				continue
+			}
 		}
 		if e.compareBranchFallthrough(pc, pcs) {
 			out.ForwardedPredicates++
@@ -496,6 +533,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	// A validated function never falls through its final terminator.
 	for _, pc := range independentEntries {
+		if e.allocationPlans != nil {
+			e.useRegisterPlan(e.allocationPlans[pc])
+		}
 		a.mark(pcs[pc])
 		if f.Code[pc].Op == slots.ControlBase+uint32(ir.If) {
 			e.interrupt(uint32(pc))
@@ -504,14 +544,17 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			if !e.heapInstruction(f.Code[pc]) {
 				e.plain(f.Code[pc], false)
 			}
-			a.branch(pcs[pc+1], false, 0)
+			a.branch(e.targetPC(pcs, pc+1), false, 0)
 		}
 	}
 	for _, fallback := range e.memoryFallbacks {
+		e.useRegisterPlan(fallback.registers)
 		a.mark(fallback.label)
 		e.plain(f.Code[fallback.pc], false)
-		a.branch(pcs[fallback.pc+1], false, 0)
+		a.branch(e.targetPC(pcs, fallback.pc+1), false, 0)
 	}
+	e.emitAllocationEdges()
+	e.emitAllocationEntries(pcs)
 	e.emitPollExits()
 	e.emitCallExits()
 	e.emitTrapExits()

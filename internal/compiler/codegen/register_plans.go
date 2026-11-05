@@ -8,16 +8,18 @@ import (
 )
 
 // Immutable mappings describe each native program point, including late exits.
-// Scalar frame slots remain canonical at every driver boundary. FP/vector
-// homes and immutable metadata keep their function-wide assignment.
+// All value classes reach their canonical frame slots at driver boundaries.
+// Immutable constants and runtime metadata retain function-wide registers.
 type registerPlan struct {
-	homes map[slots.Slot]byte
-	slots []slots.Slot
+	homes   map[slots.Slot]byte
+	floats  map[slots.Slot]byte
+	vectors map[slots.Slot]byte
+	slots   []slots.Slot
 }
 
 func (e *functionEmitter) currentRegisterPlan() *registerPlan {
 	if e.registerPlan == nil && (len(e.registers) != 0 || len(e.registerSlots) != 0) {
-		e.registerPlan = &registerPlan{e.registers, e.registerSlots}
+		e.registerPlan = &registerPlan{homes: e.registers, floats: e.floatRegisters, vectors: e.vectorRegisters, slots: e.registerSlots}
 	}
 	return e.registerPlan
 }
@@ -25,10 +27,12 @@ func (e *functionEmitter) useRegisterPlan(plan *registerPlan) {
 	e.registerPlan = plan
 	if plan == nil {
 		e.registers = nil
+		e.floatRegisters, e.vectorRegisters = nil, nil
 		e.registerSlots = nil
 		return
 	}
 	e.registers, e.registerSlots = plan.homes, plan.slots
+	e.floatRegisters, e.vectorRegisters = plan.floats, plan.vectors
 }
 
 // Spill all displaced words before loading any new home. Equal homes keep
@@ -38,21 +42,57 @@ func (e *functionEmitter) transitionRegisters(next *registerPlan) {
 	if previous == next {
 		return
 	}
-	e.registers = nil
-	for _, s := range previous.slots {
-		r, ok := previous.homes[s]
-		nextReg, found := next.homes[s]
-		if ok && (!found || nextReg != r) {
-			e.registerMove(e.operandRegister(0), r, true)
-			e.slotStore(s, 0, false)
+	location := func(p *registerPlan, s slots.Slot) (byte, byte) {
+		if p != nil {
+			if r, ok := p.homes[s]; ok {
+				return 1, r
+			}
+			if r, ok := p.floats[s]; ok {
+				return 2, r
+			}
+			if r, ok := p.vectors[s]; ok {
+				return 3, r
+			}
+		}
+		return 0, 0
+	}
+	e.registers, e.floatRegisters, e.vectorRegisters = nil, nil, nil
+	if previous != nil {
+		for _, s := range previous.slots {
+			kind, r := location(previous, s)
+			nextKind, nextReg := location(next, s)
+			if kind == nextKind && r == nextReg {
+				continue
+			}
+			switch kind {
+			case 1:
+				e.registerMove(e.operandRegister(0), r, true)
+				e.slotStore(s, 0, false)
+			case 2:
+				e.floatToInteger(e.operandRegister(0), r, e.f.Slots[s] == wasm.F64)
+				e.slotStore(s, 0, false)
+			case 3:
+				e.vectorMemory(s, r, true)
+			}
 		}
 	}
-	for _, s := range next.slots {
-		r, ok := next.homes[s]
-		old, found := previous.homes[s]
-		if ok && (!found || old != r) {
-			e.slotLoad(s, 0, false, true)
-			e.registerMove(r, e.operandRegister(0), true)
+	if next != nil {
+		for _, s := range next.slots {
+			kind, r := location(next, s)
+			oldKind, oldReg := location(previous, s)
+			if kind == oldKind && r == oldReg {
+				continue
+			}
+			switch kind {
+			case 1:
+				e.slotLoad(s, 0, false, true)
+				e.registerMove(r, e.operandRegister(0), true)
+			case 2:
+				e.slotLoad(s, 0, false, e.f.Slots[s] == wasm.F64)
+				e.floatFromInteger(r, e.operandRegister(0), e.f.Slots[s] == wasm.F64)
+			case 3:
+				e.vectorMemory(s, r, false)
+			}
 		}
 	}
 	e.useRegisterPlan(next)
@@ -149,7 +189,7 @@ func (e *functionEmitter) loopRegisterPlan(start int, r memoryRegion) *registerP
 	if uint64(r.loop.limit)/uint64(r.loop.stride)*(after-before) <= 2*transfers {
 		return nil
 	}
-	plan := &registerPlan{homes: homes}
+	plan := &registerPlan{homes: homes, floats: old.floats, vectors: old.vectors}
 	for _, s := range old.slots {
 		if _, ok := old.homes[s]; !ok {
 			plan.slots = append(plan.slots, s)

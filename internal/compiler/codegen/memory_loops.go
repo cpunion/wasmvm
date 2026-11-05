@@ -193,7 +193,7 @@ func (e *functionEmitter) memoryLoop(start int, r memoryRegion) *memoryLoop {
 func (e *functionEmitter) emitMemoryLoop(start int, r memoryRegion, pcs []int, out *CompiledFunction) {
 	loop := r.loop
 	cold := e.a.label()
-	e.memoryFallbacks = append(e.memoryFallbacks, memoryFallback{cold, start})
+	e.memoryFallbacks = append(e.memoryFallbacks, memoryFallback{cold, start, e.currentRegisterPlan()})
 	e.emitLoopProgress(*loop, cold)
 	for i, span := range loop.spans {
 		// Guards alter only scratch registers. A canceled guard resumes the fully

@@ -216,8 +216,8 @@ func (e *functionEmitter) emitMemoryUnroll(start int, r memoryRegion, pcs []int,
 	if !u.backYes {
 		condition = "ne"
 	}
-	e.branch(pcs[u.exit], condition)
-	e.a.branch(pcs[start], false, 0)
+	e.branch(e.targetPC(pcs, u.exit), condition)
+	e.a.branch(e.targetPC(pcs, start), false, 0)
 	e.a.mark(cold)
 	// Short remainders, unusual initial cursors and independent entries use
 	// the original one-iteration body and conditional branch.
