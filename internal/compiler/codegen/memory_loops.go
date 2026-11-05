@@ -269,6 +269,12 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 		out.DeferredPredicates++
 	}
 	warm.predicate = predicate
+	raw := e.loopRawRegisterPlan(values, warm, loop.memory)
+	if raw != nil {
+		e.transitionRegisters(raw)
+		out.RawScalarSlots += uint32(len(raw.raw))
+		out.RegisterRegions++
+	}
 	header := e.a.label()
 	e.a.mark(header)
 	if start%256 == 0 {
@@ -293,7 +299,7 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 			e.allocationEdges = append(e.allocationEdges, allocationEdge{edge.header, header, edge.branch, plans.at(start)})
 		}
 	}
-	if plan != nil || coalesced != nil || plans != nil {
+	if plan != nil || coalesced != nil || plans != nil || raw != nil {
 		edge.registers = previous
 	}
 	e.loopBackedges[r.end+1] = edge

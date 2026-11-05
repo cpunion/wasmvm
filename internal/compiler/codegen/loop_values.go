@@ -107,7 +107,7 @@ func cloneRegisterPlan(p *registerPlan) *registerPlan {
 		}
 		return result
 	}
-	return &registerPlan{homes: clone(p.homes), floats: clone(p.floats), vectors: clone(p.vectors), slots: append([]slots.Slot(nil), p.slots...), shared: p.shared}
+	return &registerPlan{homes: clone(p.homes), floats: clone(p.floats), vectors: clone(p.vectors), raw: clone(p.raw), slots: append([]slots.Slot(nil), p.slots...), shared: p.shared}
 }
 func setRegisterHome(p *registerPlan, s slots.Slot, kind, reg byte) {
 	switch kind {
@@ -117,6 +117,11 @@ func setRegisterHome(p *registerPlan, s slots.Slot, kind, reg byte) {
 		p.floats[s] = reg
 	case 3:
 		p.vectors[s] = reg
+	case 4:
+		if p.raw == nil {
+			p.raw = map[slots.Slot]byte{}
+		}
+		p.raw[s] = reg
 	}
 }
 
@@ -304,6 +309,7 @@ func (e *functionEmitter) coalesceLoopRegisters(v *loopValues, work int) (*regis
 			delete(entry.homes, s)
 			delete(entry.floats, s)
 			delete(entry.vectors, s)
+			delete(entry.raw, s)
 		}
 		setRegisterHome(entry, representative, kind, reg)
 		merges += uint32(len(members) - 1)

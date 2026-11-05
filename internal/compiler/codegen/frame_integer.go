@@ -47,11 +47,16 @@ func (e *functionEmitter) frameInteger(op uint32, dst, left, right slots.Slot) b
 		if accumulator != l {
 			e.registerMove(accumulator, l, wide)
 		}
+	} else if raw, ok := e.rawRegisters[left]; ok {
+		e.floatToInteger(accumulator, raw, wide)
 	} else {
 		e.x86FrameRead(0x8b, accumulator, left, wide)
 	}
 	if rok {
 		e.x86RegisterBinary(opcode, accumulator, r, wide)
+	} else if raw, ok := e.rawRegisters[right]; ok {
+		e.floatToInteger(1, raw, wide)
+		e.x86RegisterBinary(opcode, accumulator, 1, wide)
 	} else {
 		if opcode != 0xaf {
 			opcode += 2 // reg <- r/m direction, rather than r/m <- reg.

@@ -97,8 +97,9 @@ func (e *functionEmitter) registerMove(dst, src byte, wide bool) {
 }
 
 func (e *functionEmitter) spillRegisters() {
-	registers, floats := e.registers, e.floatRegisters
+	registers, floats, raw := e.registers, e.floatRegisters, e.rawRegisters
 	e.registers, e.floatRegisters = nil, nil
+	e.rawRegisters = nil
 	// Stable order makes emitted code independent of Go map iteration order.
 	for _, s := range e.registerSlots {
 		if r, ok := e.vectorRegisters[s]; ok {
@@ -107,12 +108,15 @@ func (e *functionEmitter) spillRegisters() {
 		}
 		if r, ok := registers[s]; ok {
 			e.registerMove(e.operandRegister(0), r, true)
+		} else if r, ok := raw[s]; ok {
+			e.floatToInteger(e.operandRegister(0), r, true)
 		} else {
 			e.floatToInteger(e.operandRegister(0), floats[s], e.f.Slots[s] == wasm.F64)
 		}
 		e.slotStore(s, 0, false)
 	}
 	e.registers, e.floatRegisters = registers, floats
+	e.rawRegisters = raw
 }
 
 // Common integer operations can name the allocated registers directly. The

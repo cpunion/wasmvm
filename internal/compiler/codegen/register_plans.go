@@ -14,13 +14,14 @@ type registerPlan struct {
 	homes   map[slots.Slot]byte
 	floats  map[slots.Slot]byte
 	vectors map[slots.Slot]byte
+	raw     map[slots.Slot]byte
 	slots   []slots.Slot
 	shared  bool
 }
 
 func (e *functionEmitter) currentRegisterPlan() *registerPlan {
 	if e.registerPlan == nil && (len(e.registers) != 0 || len(e.registerSlots) != 0) {
-		e.registerPlan = &registerPlan{homes: e.registers, floats: e.floatRegisters, vectors: e.vectorRegisters, slots: e.registerSlots}
+		e.registerPlan = &registerPlan{homes: e.registers, floats: e.floatRegisters, vectors: e.vectorRegisters, raw: e.rawRegisters, slots: e.registerSlots}
 	}
 	return e.registerPlan
 }
@@ -29,11 +30,13 @@ func (e *functionEmitter) useRegisterPlan(plan *registerPlan) {
 	if plan == nil {
 		e.registers = nil
 		e.floatRegisters, e.vectorRegisters = nil, nil
+		e.rawRegisters = nil
 		e.registerSlots = nil
 		return
 	}
 	e.registers, e.registerSlots = plan.homes, plan.slots
 	e.floatRegisters, e.vectorRegisters = plan.floats, plan.vectors
+	e.rawRegisters = plan.raw
 }
 
 // Spill all displaced words before loading any new home. Equal homes keep
@@ -49,6 +52,9 @@ func registerLocation(p *registerPlan, s slots.Slot) (byte, byte) {
 		if r, ok := p.vectors[s]; ok {
 			return 3, r
 		}
+		if r, ok := p.raw[s]; ok {
+			return 4, r
+		}
 	}
 	return 0, 0
 }
@@ -60,6 +66,7 @@ func (e *functionEmitter) transitionRegisters(next *registerPlan) {
 	}
 	clear(e.vectorAliases)
 	e.registers, e.floatRegisters, e.vectorRegisters = nil, nil, nil
+	e.rawRegisters = nil
 	if previous != nil {
 		for _, s := range previous.slots {
 			kind, r := registerLocation(previous, s)
@@ -76,6 +83,9 @@ func (e *functionEmitter) transitionRegisters(next *registerPlan) {
 				e.slotStore(s, 0, false)
 			case 3:
 				e.vectorMemory(s, r, true)
+			case 4:
+				e.floatToInteger(e.operandRegister(0), r, true)
+				e.slotStore(s, 0, false)
 			}
 		}
 	}
@@ -95,6 +105,9 @@ func (e *functionEmitter) transitionRegisters(next *registerPlan) {
 				e.floatFromInteger(r, e.operandRegister(0), e.f.Slots[s] == wasm.F64)
 			case 3:
 				e.vectorMemory(s, r, false)
+			case 4:
+				e.slotLoad(s, 0, false, true)
+				e.floatFromInteger(r, e.operandRegister(0), true)
 			}
 		}
 	}

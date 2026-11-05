@@ -45,6 +45,7 @@ type functionEmitter struct {
 	runtimeRegisters                                             map[uint32]byte
 	registers                                                    map[slots.Slot]byte
 	floatRegisters                                               map[slots.Slot]byte
+	rawRegisters                                                 map[slots.Slot]byte
 	vectorRegisters                                              map[slots.Slot]byte
 	vectorConstants                                              map[[2]uint64]byte
 	vectorAliases                                                map[slots.Slot]slots.Slot
@@ -224,6 +225,10 @@ func (e *functionEmitter) slotLoad(slot slots.Slot, reg byte, high, wide bool) {
 			e.constant(reg, 0)
 			return
 		}
+		if r, ok := e.rawRegisters[slot]; ok {
+			e.floatToInteger(e.operandRegister(reg), r, wide)
+			return
+		}
 		if r, ok := e.floatRegisters[slot]; ok {
 			e.floatToInteger(e.operandRegister(reg), r, e.f.Slots[slot] == wasm.F64)
 			if !wide {
@@ -265,6 +270,10 @@ func (e *functionEmitter) slotStore(slot slots.Slot, reg byte, high bool) {
 	}
 	if e.unmetered && e.f.Slots[slot] != wasm.V128 {
 		if high {
+			return
+		}
+		if r, ok := e.rawRegisters[slot]; ok {
+			e.floatFromInteger(r, e.operandRegister(reg), true)
 			return
 		}
 		if r, ok := e.floatRegisters[slot]; ok {
@@ -326,6 +335,20 @@ func (e *functionEmitter) move(dst, src slots.Slot) {
 	if d, ok := e.registers[dst]; ok {
 		if s, ok := e.registers[src]; ok {
 			e.registerMove(d, s, true)
+			return
+		}
+		if s, ok := e.rawRegisters[src]; ok {
+			e.floatToInteger(d, s, true)
+			return
+		}
+	}
+	if d, ok := e.rawRegisters[dst]; ok {
+		if s, ok := e.rawRegisters[src]; ok {
+			e.floatMove(d, s, true)
+			return
+		}
+		if s, ok := e.registers[src]; ok {
+			e.floatFromInteger(d, s, true)
 			return
 		}
 	}

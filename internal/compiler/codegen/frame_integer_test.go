@@ -13,7 +13,7 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
-func frameIntegerKernel(t *testing.T, op uint32, dst slots.Slot, mask int, aliases bool) nativeabi.Entry {
+func frameIntegerKernel(t *testing.T, op uint32, dst slots.Slot, mask int, aliases bool, rawMasks ...int) nativeabi.Entry {
 	t.Helper()
 	a := assembler{arch: "amd64", labels: map[int]int{}}
 	f := &slots.Function{Slots: []wasm.ValueType{wasm.I64, wasm.I64, wasm.I64, wasm.I64, wasm.I64}}
@@ -26,6 +26,15 @@ func frameIntegerKernel(t *testing.T, op uint32, dst slots.Slot, mask int, alias
 		if mask&(1<<s) != 0 {
 			plan.homes[slots.Slot(s)] = reg
 			plan.slots = append(plan.slots, slots.Slot(s))
+		}
+	}
+	if len(rawMasks) != 0 {
+		plan.raw = map[slots.Slot]byte{}
+		for s, reg := range e.floatRegisterPool()[:len(f.Slots)] {
+			if rawMasks[0]&(1<<s) != 0 {
+				plan.raw[slots.Slot(s)] = reg
+				plan.slots = append(plan.slots, slots.Slot(s))
+			}
 		}
 	}
 	e.transitionRegisters(plan)
@@ -57,58 +66,67 @@ func TestFrameIntegerResidencyAliasesAndCompleteWords(t *testing.T) {
 				if aliases {
 					masks = []int{0, 1, 2, 4, 8, 16, 24, 25, 26, 28, 31}
 				}
+				rawMasks := []int{0, 1, 2, 3, 4, 5, 6, 7}
+				if aliases {
+					rawMasks = []int{0, 8, 16, 24, 28}
+				}
 				for _, mask := range masks {
-					t.Run(fmt.Sprintf("%x/dst%d/%t/%d", op, dst, aliases, mask), func(t *testing.T) {
-						entry := frameIntegerKernel(t, op, dst, mask, aliases)
-						if !native.Available || runtime.GOARCH != "amd64" {
-							return
+					for _, rawMask := range rawMasks {
+						if mask&rawMask != 0 {
+							continue
 						}
-						code, err := native.Publish(entry.Code, []uint32{0}, 1<<16)
-						if err != nil {
-							t.Fatal(err)
-						}
-						t.Cleanup(code.Close)
-						lease, err := code.Acquire()
-						if err != nil {
-							t.Fatal(err)
-						}
-						t.Cleanup(lease.Close)
-						ctx, err := native.NewContext(80, 80, 1)
-						if err != nil {
-							t.Fatal(err)
-						}
-						t.Cleanup(ctx.Close)
-						edges := []uint64{0, 1, 0x80000000, 0xffffffff, 1 << 32, 1 << 63, ^uint64(0), 0x123456789abcdef0}
-						for _, left := range edges {
-							for _, right := range edges {
-								initial := []value.Value{{Lo: left, Hi: 11}, {Lo: right, Hi: 22}, {Lo: 77, Hi: 33}, {Lo: left, Hi: 44}, {Lo: right, Hi: 55}}
-								if aliases {
-									initial[0].Lo, initial[1].Lo = ^left, ^right
-								}
-								for s, v := range initial {
-									writeSlot(t, ctx, 0, slots.Slot(s), v)
-								}
-								if err := ctx.SetState(native.State{Depth: 1, Fuel: 42, Budget: 37}); err != nil {
-									t.Fatal(err)
-								}
-								exit, err := ctx.Enter(lease, 0)
-								state, stateErr := ctx.State()
-								if err != nil || stateErr != nil || exit != native.Return || state.Continuation != 17 || state.Fuel != 42 || state.Budget != 37 {
-									t.Fatal(exit, state, err, stateErr)
-								}
-								want, trap := numeric.Eval(op, left, right)
-								if trap != wasm.NoTrap {
-									t.Fatal(trap)
-								}
-								initial[dst].Lo = want
-								for s, v := range initial {
-									if got := readSlot(t, ctx, 0, slots.Slot(s)); got != v {
-										t.Fatal(left, right, "word", s, got, v)
+						t.Run(fmt.Sprintf("%x/dst%d/%t/gpr%d/raw%d", op, dst, aliases, mask, rawMask), func(t *testing.T) {
+							entry := frameIntegerKernel(t, op, dst, mask, aliases, rawMask)
+							if !native.Available || runtime.GOARCH != "amd64" {
+								return
+							}
+							code, err := native.Publish(entry.Code, []uint32{0}, 1<<16)
+							if err != nil {
+								t.Fatal(err)
+							}
+							t.Cleanup(code.Close)
+							lease, err := code.Acquire()
+							if err != nil {
+								t.Fatal(err)
+							}
+							t.Cleanup(lease.Close)
+							ctx, err := native.NewContext(80, 80, 1)
+							if err != nil {
+								t.Fatal(err)
+							}
+							t.Cleanup(ctx.Close)
+							edges := []uint64{0, 1, 0x80000000, 0xffffffff, 1 << 32, 1 << 63, ^uint64(0), 0x123456789abcdef0}
+							for _, left := range edges {
+								for _, right := range edges {
+									initial := []value.Value{{Lo: left, Hi: 11}, {Lo: right, Hi: 22}, {Lo: 77, Hi: 33}, {Lo: left, Hi: 44}, {Lo: right, Hi: 55}}
+									if aliases {
+										initial[0].Lo, initial[1].Lo = ^left, ^right
+									}
+									for s, v := range initial {
+										writeSlot(t, ctx, 0, slots.Slot(s), v)
+									}
+									if err := ctx.SetState(native.State{Depth: 1, Fuel: 42, Budget: 37}); err != nil {
+										t.Fatal(err)
+									}
+									exit, err := ctx.Enter(lease, 0)
+									state, stateErr := ctx.State()
+									if err != nil || stateErr != nil || exit != native.Return || state.Continuation != 17 || state.Fuel != 42 || state.Budget != 37 {
+										t.Fatal(exit, state, err, stateErr)
+									}
+									want, trap := numeric.Eval(op, left, right)
+									if trap != wasm.NoTrap {
+										t.Fatal(trap)
+									}
+									initial[dst].Lo = want
+									for s, v := range initial {
+										if got := readSlot(t, ctx, 0, slots.Slot(s)); got != v {
+											t.Fatal(left, right, "word", s, got, v)
+										}
 									}
 								}
 							}
-						}
-					})
+						})
+					}
 				}
 			}
 		}
