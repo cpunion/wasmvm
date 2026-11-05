@@ -1,5 +1,5 @@
 {
-  "classification": "Local dual-compiler execution and independent cross-ISA static evidence. Final CI, elapsed-time comparison and controlled acceptance remain open.",
+  "classification": "Full four-profile semantic CI and exact-source hosted comparison pass. Eight of 22 diagnostic controls resolve; controlled performance and integration acceptance remain open.",
   "engineSource": "2f8e44f493a127b6e9b2f82400b220626e9accbe",
   "sourceStages": {
     "privateLoops": "8cce483",
@@ -3357,8 +3357,8 @@
     ]
   },
   "remaining": [
-    "Final CI artifact audit, PR-head checks and review",
-    "Exact-source hosted comparison and controlled competitor/native acceptance",
+    "Final PR-head checks and review",
+    "Unresolved timing regressions and controlled competitor/native acceptance",
     "General SSA/value-version allocation, splitting and rematerialization",
     "Broader application/WASI-world acceptance",
     "PR integration under the one-active-contribution policy"
@@ -3369,6 +3369,37 @@
     "conclusion": "success",
     "requiredSuccessfulJobs": 21,
     "intentionalOptionalSkips": 1,
-    "artifactAudit": "in progress"
+    "artifactAudit": "passed",
+    "actualConformanceReports": 240,
+    "minimumCoverage": 90.7695831424645
+  },
+  "ciEvidence": {
+    "path": "artifacts/loop-scratch-registers-20261105/final/ci-evidence.tar.gz",
+    "bytes": 5799424,
+    "sha256": "9318a63a68f088dee0917da3acd01142438c80a82a62240c20e0f3dfa1a40960",
+    "fileCount": 268,
+    "run": "https://github.com/cpunion/wasmvm/actions/runs/41984737690",
+    "source": "2f8e44f493a127b6e9b2f82400b220626e9accbe",
+    "profiles": 4,
+    "actualConformanceReports": 240,
+    "packagesPerLLGoPlatform": 31,
+    "coveragePackages": 30,
+    "minimumCoverage": 90.7695831424645,
+    "longestSuccessfulJobSeconds": 532.0,
+    "auditSHA256": "0d5ba52d597016292687f1701227636d1c8cc42f9a0806852b921173503aa8fe",
+    "manifestLocation": "Retained in the separate frozen CI archive and local ci-evidence-index.json."
+  },
+  "hostedComparison": {
+    "run": "https://github.com/cpunion/wasmvm/actions/runs/41987225706",
+    "head": "11a3a18bb5d28072b8dc6d726ba0aa2df885be59",
+    "engine": "2f8e44f493a127b6e9b2f82400b220626e9accbe",
+    "baseline": "9f19606e7e765287c5c11c0558317bdd2a1c7ca2",
+    "status": "completed",
+    "controlledAcceptance": false,
+    "conclusion": "success",
+    "resolvedWorkloads": 8,
+    "totalWorkloads": 22,
+    "archiveSHA256": "d3df0f7aaf94e0a9544d58b5ccfd2cc78b0af28e1a97f12991e4cf41a171baea",
+    "report": "docs/research/performance-loop-scratch-registers-hosted-2026-11-05.md"
   }
 }

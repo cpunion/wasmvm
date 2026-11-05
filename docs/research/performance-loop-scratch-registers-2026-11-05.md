@@ -1,6 +1,6 @@
 # Region register constraints and integer selection: 2026-11-05
 
-**Local dual-compiler execution passes; elapsed-time and final integration
+**Full four-profile semantic CI passes; elapsed-time and final integration
 acceptance remain open.** Engine source:
 `2f8e44f493a127b6e9b2f82400b220626e9accbe`. The preceding
 [shared-memory event](performance-shared-default-memory-hosted-2026-11-05.md)
@@ -78,9 +78,13 @@ The stages `8cce483` (private loops), `b97bf83` (shared unroll planner), and the
 final source above have separate local qualification. Earlier reports are not
 reattributed to the final source. [CI 41984737690](https://github.com/cpunion/wasmvm/actions/runs/41984737690)
 passes all 21 required jobs across the complete platform/compiler matrix;
-one optional reference job is intentionally skipped. Its raw conformance and
-coverage artifacts are audited separately. CPU policy, toolchain pins and alignment remain
-unchanged. Final PR-head checks/review, controlled competitor/native performance,
+one optional reference job is intentionally skipped. The artifact audit checks all
+240 actual conformance reports, 31 packages per LLGo platform, manifest pins and
+compiler identities. All 30 full-CI package coverage gates exceed 90% (minimum
+90.77%); the longest job takes 532 seconds (8m52s). The separate CI bundle has
+SHA-256 `9318a63a68f088dee0917da3acd01142438c80a82a62240c20e0f3dfa1a40960`.
+CPU policy, toolchain pins and alignment remain unchanged. Final PR-head
+checks/review, controlled competitor/native performance,
 general SSA/value allocation and broader application/WASI-world acceptance remain
 open. Changes stay on the contribution branch while LLGo PR #2991 remains open;
 LLGo #2983 stays with its existing contributor.
@@ -90,3 +94,11 @@ commands, sources, compiler/binary identities, coverage and the raw manifest.
 Local archive: `artifacts/loop-scratch-registers-20261105/evidence.tar.gz`,
 5556799 bytes, SHA-256
 `621db72f397a3398667038ccaaf6a3da87f5e10359c90455207b838d8bbfaeab`.
+
+The [complete hosted comparison](performance-loop-scratch-registers-hosted-2026-11-05.md)
+measures this exact engine against the preceding shared-memory source. All six
+jobs pass; the audit checks 22 workloads and 362 alternate configurations.
+LLGo native Clang/Rust SHA elapsed medians are 0.792x/0.816x base, but remain
+1.554x/1.607x Wasmtime and 1.866x/1.900x unchecked C. Eight workloads resolve
+the four diagnostic A/A controls. Go interpreter and preparation regressions
+remain recorded; this hosted event does not close controlled acceptance.
