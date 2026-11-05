@@ -32,7 +32,7 @@ type loopBackedge struct {
 	registers     *registerPlan
 	branch        *registerPlan
 	restoreMemory bool
-	copies        []loopSlotCopy
+	snapshot      *frameSnapshot
 	aliases       map[slots.Slot]slots.Slot
 }
 
@@ -253,6 +253,16 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 	if warm.copies != nil {
 		out.DeferredFrameCopies += uint32(len(warm.copies.final))
 	}
+	predicate := e.loopPredicate(values, r)
+	if predicate != nil {
+		elided := make(map[int]bool, len(warm.elided)+1)
+		for pc, skip := range warm.elided {
+			elided[pc] = skip
+		}
+		elided[r.end] = true
+		warm.elided = elided
+		out.DeferredPredicates++
+	}
 	header := e.a.label()
 	e.a.mark(header)
 	if start%256 == 0 {
@@ -263,8 +273,11 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 		e.loopBackedges = map[int]loopBackedge{}
 	}
 	edge := loopBackedge{header: header, yes: loop.yes, always: loop.always, flags: loop.flags, exit: loop.exit, restoreMemory: restoreMemory}
+	if predicate != nil || warm.copies != nil {
+		edge.snapshot = &frameSnapshot{predicate: predicate}
+	}
 	if warm.copies != nil {
-		edge.copies = warm.copies.final
+		edge.snapshot.copies = warm.copies.final
 		edge.aliases = warm.copies.aliases[len(warm.copies.aliases)-1]
 	}
 	if plans != nil {

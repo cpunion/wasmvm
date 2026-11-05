@@ -2,7 +2,6 @@ package codegen
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"runtime"
 	"slices"
@@ -10,7 +9,6 @@ import (
 	"time"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
-	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/value"
@@ -177,7 +175,7 @@ func checkLoopScratchFrames(t *testing.T, f *slots.Function, kind string, shared
 	}
 	pollLease := lease
 	if kind != "unroll" {
-		patched, err := native.Publish(forceScratchLoopPoll(t, compiled, branchPC), []uint32{0}, DefaultLimits().MaxCodeBytes)
+		patched, err := native.Publish(forcePrivateLoopPoll(t, compiled, runtime.GOARCH), []uint32{0}, DefaultLimits().MaxCodeBytes)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -254,54 +252,4 @@ func checkLoopScratchFrames(t *testing.T, f *slots.Function, kind string, shared
 			}
 		}
 	}
-}
-
-// Match the actual poll-exit continuation, rather than assuming every nearby
-// backward layout branch is a loop. Other cold transfers may precede the loop.
-func forceScratchLoopPoll(t *testing.T, compiled *CompiledFunction, branchPC int) []byte {
-	t.Helper()
-	a := assembler{arch: runtime.GOARCH}
-	e := functionEmitter{a: &a}
-	if runtime.GOARCH == "arm64" {
-		a.word(0xd50339bf)
-	}
-	e.contextConst(nativeabi.ContinuationOffset, uint64(branchPC))
-	code := append([]byte(nil), compiled.Entry.Code...)
-	limit, found := int(compiled.Offsets[branchPC]), 0
-	for pc := 0; pc+14 <= limit; pc++ {
-		var target int
-		if runtime.GOARCH == "arm64" {
-			if pc%4 != 0 {
-				continue
-			}
-			load, branch := binary.LittleEndian.Uint32(code[pc:]), binary.LittleEndian.Uint32(code[pc+4:])
-			if load != 0xf9400009|uint32(nativeabi.ControlOffset/8)<<10 || branch&0xff00001f != 0xb5000009 {
-				continue
-			}
-			delta := int32((branch >> 5) & 0x7ffff)
-			delta = delta << 13 >> 11
-			target = pc + 4 + int(delta)
-		} else {
-			pattern := []byte{0x48, 0x83, 0xbf}
-			pattern = binary.LittleEndian.AppendUint32(pattern, uint32(nativeabi.ControlOffset))
-			pattern = append(pattern, 0, 0x0f, 0x85)
-			if !bytes.Equal(code[pc:pc+10], pattern) {
-				continue
-			}
-			target = pc + 14 + int(int32(binary.LittleEndian.Uint32(code[pc+10:])))
-		}
-		if target < 0 || target+len(a.code) > len(code) || !bytes.Equal(code[target:target+len(a.code)], a.code) {
-			continue
-		}
-		if runtime.GOARCH == "arm64" {
-			binary.LittleEndian.PutUint32(code[pc:], 0xd2800029)
-		} else {
-			copy(code[pc:pc+8], []byte{0x48, 0x83, 0xff, 1, 0x90, 0x90, 0x90, 0x90})
-		}
-		found++
-	}
-	if found != 1 {
-		t.Fatal("private loop poll continuation", branchPC, found)
-	}
-	return code
 }

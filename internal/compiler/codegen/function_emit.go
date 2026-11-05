@@ -61,7 +61,7 @@ type functionEmitter struct {
 	frameAliases                                                 map[slots.Slot]slots.Slot
 	deferredFrameSlots                                           map[slots.Slot]bool
 	frameCopyLimit                                               int
-	pollFrameCopies                                              []loopSlotCopy
+	pollSnapshot                                                 *frameSnapshot
 	pollExits                                                    []pollExit
 	trapExits                                                    []nativeTrapExit
 	callExits                                                    []nativeCallExit
@@ -92,7 +92,7 @@ type pollExit struct {
 	label     int
 	pc        uint32
 	registers *registerPlan
-	copies    []loopSlotCopy
+	snapshot  *frameSnapshot
 }
 
 func (e *functionEmitter) integer(in slots.Instruction) {
@@ -464,7 +464,7 @@ func (e *functionEmitter) interrupt(pc uint32) {
 		e.a.bytes(0)
 		e.branch(exit, "ne")
 	}
-	e.pollExits = append(e.pollExits, pollExit{exit, pc, e.currentRegisterPlan(), e.pollFrameCopies})
+	e.pollExits = append(e.pollExits, pollExit{exit, pc, e.currentRegisterPlan(), e.pollSnapshot})
 }
 
 func (e *functionEmitter) emitPollExits() {
@@ -475,7 +475,7 @@ func (e *functionEmitter) emitPollExits() {
 		if e.a.arch == "arm64" {
 			e.a.word(0xd50339bf) // dmb ishld: acquire after the atomic load.
 		}
-		e.materializeFrameCopies(exit.copies)
+		e.materializeFrameSnapshot(exit.snapshot, false, false)
 		e.leave(nativeabi.Poll, 0, uint64(exit.pc))
 	}
 	e.useRegisterPlan(baseline)

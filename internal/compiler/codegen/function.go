@@ -39,6 +39,7 @@ type CompiledFunction struct {
 	ValueVersions, ValuePhis      uint32
 	ValueLoops                    uint32
 	DeferredFrameCopies           uint32
+	DeferredPredicates            uint32
 	// Generated private backedge polls, excluding header/guard/cold polls.
 	PrivatePollOffsets            []uint32
 	CoalescedSlotGroups           uint32
@@ -308,7 +309,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		}
 		if edge, ok := e.loopBackedges[pc]; ok {
 			e.frameAliases = edge.aliases
-			e.pollFrameCopies = edge.copies
+			e.pollSnapshot = edge.snapshot
 			if edge.branch != nil {
 				e.transitionRegisters(edge.branch)
 			}
@@ -316,7 +317,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			a.mark(poll)
 			e.privatePollLabels = append(e.privatePollLabels, poll)
 			e.interrupt(uint32(pc))
-			e.pollFrameCopies = nil
+			e.pollSnapshot = nil
 			if edge.always {
 				a.branch(edge.header, false, 0)
 				if edge.registers != nil {
@@ -326,7 +327,18 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				e.frameAliases = nil
 				continue
 			}
-			if arch == "arm64" && edge.flags {
+			if edge.snapshot != nil && edge.snapshot.predicate != nil {
+				in := *edge.snapshot.predicate
+				e.predicateFlags(in)
+				cc := x86IntegerCondition(in.Op)
+				if arch == "arm64" {
+					cc = armIntegerCondition(in.Op)
+				}
+				if !edge.yes {
+					cc ^= 1
+				}
+				a.branch(edge.header, true, cc)
+			} else if arch == "arm64" && edge.flags {
 				cc := armIntegerCondition(f.Code[pc-1].Op)
 				if !edge.yes {
 					cc ^= 1
@@ -337,7 +349,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				e.branchCondition(in.A, edge.header, edge.yes)
 			}
 			e.frameAliases = nil
-			e.materializeFrameCopies(edge.copies)
+			e.materializeFrameSnapshot(edge.snapshot, true, !edge.yes)
 			restoreMemory := edge.restoreMemory || e.loopBorrowedMemoryLength()
 			if edge.registers != nil {
 				e.transitionRegisters(edge.registers)
