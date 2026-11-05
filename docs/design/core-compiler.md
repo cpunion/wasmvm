@@ -204,6 +204,13 @@ does not itself construct SSA value-version live ranges or split allocation
 inside a basic block. See the
 [global-plan validation and static comparison](../research/performance-global-register-plans-2026-11-05.md).
 
+Planning uses typed deterministic ordering instead of reflective slice sorting.
+Allocation, loop residency and bounded top-two heap-cache selection share the
+same complete priority order. Native module preparation indexes immutable
+structural type labels directly as integers. These preparation changes retain
+the existing register plans and guest code; they do not supply SSA allocation.
+See the [semantic, allocation-event and inconclusive timing evidence](../research/performance-typed-compiler-ordering-2026-11-05.md).
+
 A subsequent bounded loop pass versions each write, includes dead definition
 points and observes every final frame word. Copy-connected slots of the same
 storage type can share a physical home when all overlapping versions have

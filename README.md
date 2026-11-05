@@ -15,7 +15,11 @@ wasmvm owns decoding, validation, compilation, execution, guest GC and host
 integration. Competing runtimes are independent test and benchmark references;
 execution never silently switches to one of them.
 
-Performance acceptance remains open. The latest
+Performance acceptance remains open. The
+[compiler preparation study](docs/research/performance-typed-compiler-ordering-2026-11-05.md)
+removes reflective ordering and formatted signature keys. All 22 native images
+remain identical and Go heap event counts fall, while elapsed observations
+remain inconclusive and adverse rows stay recorded. The
 [loop compilation study](docs/research/performance-loop-invariant-literals-2026-11-05.md)
 records all 22 competitor/Go/LLGo/native-C comparisons, separate preparation
 phases and adverse outcomes. No workload resolves all four local A/A controls;
