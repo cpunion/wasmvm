@@ -52,3 +52,8 @@ Final-head four-profile semantics, all 31 packages/profile, 30 coverage gates,
 review, controlled competitor/native acceptance, global allocation and the
 broader application/WASI-world portfolio remain open. No milestone or goal is
 marked complete.
+
+The follow-up [public-call allocation diagnosis](performance-public-allocation-2026-11-05.md)
+retains both a negative aggregate-passing result and the remaining Go/LLGo
+allocation-byte gap. It changes no engine source or hosted candidate and makes
+no timing or compiler-defect claim from allocation totals alone.
