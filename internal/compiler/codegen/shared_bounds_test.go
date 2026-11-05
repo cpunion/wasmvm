@@ -18,7 +18,7 @@ import (
 
 // The descriptor and its size cell have separate native owners, retained until
 // the context has stopped. No Go address is written into either ABI record.
-func bindSharedTestMemory(t *testing.T, ctx *native.Context, size, maximum uint64) (*native.Memory, uint64) {
+func bindSharedTestMemory(t *testing.T, ctx *native.Context, size, maximum uint64, missingBase ...bool) (*native.Memory, uint64) {
 	t.Helper()
 	m, err := native.NewSharedMemory(size, maximum)
 	if err != nil {
@@ -43,6 +43,9 @@ func bindSharedTestMemory(t *testing.T, ctx *native.Context, size, maximum uint6
 	}
 	words := unsafe.Slice((*uint64)(unsafe.Pointer(unsafe.SliceData(buffer))), 2)
 	words[0], words[1] = uint64(uintptr(length)), uint64(uintptr(base))
+	if len(missingBase) != 0 && missingBase[0] {
+		words[1] = 0
+	}
 	return m, uint64(uintptr(unsafe.Pointer(unsafe.SliceData(buffer))))
 }
 
@@ -92,10 +95,7 @@ func TestSharedDefaultMemoryValidatesEntryMinimumAndBase(t *testing.T) {
 			if kind == "short" {
 				size--
 			}
-			_, view := bindSharedTestMemory(t, ctx, size, 65536)
-			if kind == "missing-base" {
-				*(*uint64)(unsafe.Pointer(uintptr(view + 8))) = 0
-			}
+			_, view := bindSharedTestMemory(t, ctx, size, 65536, kind == "missing-base")
 			state := native.State{Used: 16, Depth: 1}
 			state.Payload[2] = view
 			if err := ctx.SetState(state); err != nil {
