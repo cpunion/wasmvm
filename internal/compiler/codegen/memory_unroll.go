@@ -192,6 +192,11 @@ func (e *functionEmitter) emitMemoryUnroll(start int, r memoryRegion, pcs []int,
 	e.constant(1, uint64(u.copies))
 	e.compare(false)
 	e.branch(cold, "lo")
+	previous := e.currentRegisterPlan()
+	if plan := e.loopRegisterPlan(start, r); plan != nil {
+		e.transitionRegisters(plan)
+		out.RegisterRegions++
+	}
 	cmp := e.f.Code[r.end]
 	for i := 0; i < u.copies; i++ {
 		if i+1 == u.copies {
@@ -209,6 +214,11 @@ func (e *functionEmitter) emitMemoryUnroll(start int, r memoryRegion, pcs []int,
 				e.slotStore(cmp.Dst, 0, false)
 			}
 		}
+	}
+	restoreMemory := e.loopBorrowedMemoryLength()
+	e.transitionRegisters(previous)
+	if restoreMemory {
+		e.prepareMemory()
 	}
 	e.slotLoad(cmp.Dst, 0, false, false)
 	e.test(false)

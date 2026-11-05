@@ -55,11 +55,16 @@ func scratchLoopFixture(t *testing.T, wide bool, kind string) *slots.Function {
 	if wide {
 		typ, xor, pop = wasm.I64, 0x85, 0x7b
 	}
-	params := make([]wasm.ValueType, 9)
+	address, cursor := uint32(8), uint32(9)
+	if kind == "unroll" {
+		address, cursor = 9, 10
+	}
+	params := make([]wasm.ValueType, cursor)
 	for i := range params {
 		params[i] = typ
 	}
 	params[8] = wasm.I32
+	params[address] = wasm.I32
 	body := module.Expr{{Op: 3, Block: -64}}
 	for i := uint32(0); i < 8; i++ {
 		body = append(body, module.Instr{Op: 0x20, A: i}, module.Instr{Op: 0x20, A: (i + 1) % 8})
@@ -73,12 +78,24 @@ func scratchLoopFixture(t *testing.T, wide bool, kind string) *slots.Function {
 		}
 		body = append(body, module.Instr{Op: 0x21, A: i})
 	}
+	if kind == "unroll" {
+		body = append(body, module.Instr{Op: 0x20, A: cursor}, module.Instr{Op: 0x41, Bits: 255}, module.Instr{Op: 0x71})
+	} else {
+		body = append(body, module.Instr{Op: 0x41})
+	}
 	body = append(body, module.Expr{
-		{Op: 0x41}, {Op: 0x20, A: 9}, {Op: 0x36, A: 2},
-		{Op: 0x20, A: 9}, {Op: 0x41, Bits: 1}, {Op: 0x6a}, {Op: 0x22, A: 9},
-		{Op: 0x41, Bits: 4}, {Op: 0x47}, {Op: 0xd}, {Op: 0xb},
+		{Op: 0x20, A: cursor}, {Op: 0x36, A: 2},
+		{Op: 0x20, A: cursor}, {Op: 0x41, Bits: 1}, {Op: 0x6a}, {Op: 0x22, A: cursor},
+	}...)
+	if kind == "unroll" {
+		body = append(body, module.Instr{Op: 0x20, A: 8}, module.Instr{Op: 0x49})
+	} else {
+		body = append(body, module.Instr{Op: 0x41, Bits: 4}, module.Instr{Op: 0x47})
+	}
+	body = append(body, module.Expr{
+		{Op: 0xd}, {Op: 0xb},
 		// Both checked access and memory.size must see the restored length.
-		{Op: 0x20, A: 8}, {Op: 0x28, A: 2}, {Op: 0x1a}, {Op: 0x3f}, {Op: 0x20}, {Op: 0xb},
+		{Op: 0x20, A: address}, {Op: 0x28, A: 2}, {Op: 0x1a}, {Op: 0x3f}, {Op: 0x20}, {Op: 0xb},
 	}...)
 	m := functionFixture(module.FuncType{Params: params, Results: []wasm.ValueType{wasm.I32, typ}}, 1, body)
 	m.Memories = []module.Limits{{Min: 1}}
@@ -87,7 +104,7 @@ func scratchLoopFixture(t *testing.T, wide bool, kind string) *slots.Function {
 
 func TestLoopScratchHomesRestoreEveryFrameMemoryAndContinuation(t *testing.T) {
 	for _, wide := range []bool{false, true} {
-		for _, kind := range []string{"xor", "select", "popcount"} {
+		for _, kind := range []string{"xor", "select", "popcount", "unroll"} {
 			for _, shared := range []bool{false, true} {
 				t.Run(fmt.Sprintf("wide=%v/%s/shared=%v", wide, kind, shared), func(t *testing.T) {
 					checkLoopScratchFrames(t, scratchLoopFixture(t, wide, kind), kind, shared)
@@ -114,7 +131,7 @@ func checkLoopScratchFrames(t *testing.T, f *slots.Function, kind string, shared
 	}
 	for _, arch := range []string{"amd64", "arm64"} {
 		c, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), cfg)
-		if err != nil || c.NativeLoops != 1 {
+		if err != nil || kind != "unroll" && c.NativeLoops != 1 || kind == "unroll" && c.UnrolledLoops != 1 {
 			t.Fatal(arch, "loop not exercised", err)
 		}
 		if arch == "amd64" {
@@ -123,7 +140,7 @@ func checkLoopScratchFrames(t *testing.T, f *slots.Function, kind string, shared
 			e.selectRegisters(cfg, regions)
 			e.prepareLinearScan(regions, 1<<18)
 			for start, r := range regions {
-				if r.loop == nil {
+				if r.loop == nil && r.unroll == nil {
 					continue
 				}
 				if e.allocationPlans != nil {
@@ -138,7 +155,7 @@ func checkLoopScratchFrames(t *testing.T, f *slots.Function, kind string, shared
 					registers = append(registers, reg)
 				}
 				for _, reg := range []byte{2, 8, 11} {
-					want := reg == 11 || kind == "xor" || reg == 8 && kind == "select"
+					want := reg == 11 || kind == "xor" || kind == "unroll" || reg == 8 && kind == "select"
 					if slices.Contains(registers, reg) != want {
 						t.Fatal(kind, "scratch home", reg, registers)
 					}
@@ -158,16 +175,19 @@ func checkLoopScratchFrames(t *testing.T, f *slots.Function, kind string, shared
 	if shared {
 		mem, view = bindSharedTestMemory(t, ctx, 65536, 65536)
 	}
-	patched, err := native.Publish(forceScratchLoopPoll(t, compiled, branchPC), []uint32{0}, DefaultLimits().MaxCodeBytes)
-	if err != nil {
-		t.Fatal(err)
+	pollLease := lease
+	if kind != "unroll" {
+		patched, err := native.Publish(forceScratchLoopPoll(t, compiled, branchPC), []uint32{0}, DefaultLimits().MaxCodeBytes)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(patched.Close)
+		pollLease, err = patched.Acquire()
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(pollLease.Close)
 	}
-	t.Cleanup(patched.Close)
-	pollLease, err := patched.Acquire()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(pollLease.Close)
 	pollBudget := uint64(0)
 	for pc := 0; pc != branchPC; pollBudget++ {
 		if pollBudget > uint64(len(f.Code)) {
@@ -184,7 +204,7 @@ func checkLoopScratchFrames(t *testing.T, f *slots.Function, kind string, shared
 	for pc := range f.Code {
 		for _, address := range []uint64{0, 65532, 65533} {
 			for _, poll := range []bool{false, true} {
-				if poll && (pc != 0 || address != 0) {
+				if poll && (pc != 0 || address != 0 || kind == "unroll") {
 					continue
 				}
 				mem.Write(0, initial)
@@ -199,7 +219,9 @@ func checkLoopScratchFrames(t *testing.T, f *slots.Function, kind string, shared
 							bits |= 0xabcdef0000000000
 						}
 					}
-					if s == 8 {
+					if kind == "unroll" && s == 8 {
+						bits = 17
+					} else if kind == "unroll" && s == 9 || kind != "unroll" && s == 8 {
 						bits = address
 					} else if s == 9 {
 						bits = 0
