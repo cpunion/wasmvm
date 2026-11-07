@@ -56,6 +56,21 @@ class RoutingComparisonTests(unittest.TestCase):
             source = (root / 'benchmarks/embedded/c' / (name + '.c')).read_text()
             self.assertNotEqual(source, routing.reference_source(name, source))
 
+    def test_allocation_means_keep_slow_calls_and_calibrate_the_same_statistic(self):
+        rows = [dict(runtime=name, block=i, record={'warmCallNs': values})
+                for name, values in [('head-llgo-native', [1] * 6 + [701]),
+                                     ('aa-head-llgo-native', [101] * 7)]
+                for i in range(routing.BLOCKS)]
+        case = dict(observations=rows)
+        runtimes = {'head-llgo-native': {}, 'aa-head-llgo-native': {}}
+        self.assertEqual(1, routing.warm_values(case)['head-llgo-native'])
+        self.assertFalse(routing.calibration(case, runtimes)[0]['resolved'])
+        case['warmStatistic'] = 'mean-including-pauses-v1'
+        self.assertEqual(101, routing.warm_values(case)['head-llgo-native'])
+        self.assertTrue(routing.calibration(case, runtimes)[0]['resolved'])
+        self.assertEqual([1] * 6 + [701], rows[0]['record']['warmCallNs'])
+        self.assertEqual(routing.BLOCKS * 2, len(rows))
+
     def test_calibration_rejects_consistent_bias_noise_and_unresolved_clocks(self):
         def case(values):
             return {'observations': [dict(runtime=name, block=i, record={'warmCallNs': [v] * 7})

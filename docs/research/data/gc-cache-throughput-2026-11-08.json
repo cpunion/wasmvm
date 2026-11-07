@@ -1,0 +1,8 @@
+{
+  "archive": "../evidence/gc-cache-throughput-2026-11-08.json.xz",
+  "archiveSHA256": "7ea951b3b307a3c5a2c859986b5ffc0933cd2f4e1616cd539e3d04d214fb0a92",
+  "archiveBytes": 14276,
+  "originalSHA256": "493a47f566f7440f24d8bd7e775254ca49a56f01962f448aec53a880de7d6d05",
+  "originalBytes": 87028,
+  "classification": "Independent historical reduction and local qualification. Current source timing event/final PR CI remain independent; no controlled performance acceptance."
+}

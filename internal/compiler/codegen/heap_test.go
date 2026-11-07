@@ -83,16 +83,40 @@ func addHeapFixtureLoop(f *slots.Function, target uint32) {
 	f.Code = append(f.Code, ret)
 }
 
+// Five hot scalar homes fill the saved inventory before a heap pair is selected.
+// The pair must therefore use the same caller inventory as ordinary guest slots.
+func addHeapFixturePressure(f *slots.Function) int {
+	start := len(f.Code) - 1
+	ret := f.Code[start]
+	f.Code = f.Code[:start]
+	for range 5 {
+		slot := slots.Slot(len(f.Slots))
+		f.Slots = append(f.Slots, wasm.I32)
+		f.LocalCount++
+		for range 4 {
+			source := uint32(len(f.Sources))
+			f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: 0x6a, Offset: uint64(200 + len(f.Code))}})
+			f.Code = append(f.Code, slots.Instruction{Op: 0x6a, Source: source, Dst: slot, A: slot, B: slot, C: slots.NoSlot})
+		}
+	}
+	f.Code = append(f.Code, ret)
+	return start
+}
+
 func TestNativeHeapFieldsEveryWidthAndContinuation(t *testing.T) {
 	fields := []module.FieldType{{Value: wasm.I32, Packed: 8}, {Value: wasm.I32, Packed: 16},
 		{Value: wasm.I32}, {Value: wasm.I64}, {Value: wasm.F32}, {Value: wasm.F64}, {Value: wasm.AnyRef}, {Value: wasm.V128}}
 	for _, field := range fields {
 		for _, array := range []bool{false, true} {
 			for _, signed := range []bool{false, true} {
-				for _, mode := range []struct{ loop, unmetered bool }{{}, {unmetered: true}, {loop: true}, {loop: true, unmetered: true}} {
+				for _, mode := range []struct{ loop, unmetered, pressure bool }{{}, {unmetered: true}, {loop: true}, {loop: true, unmetered: true}, {loop: true, unmetered: true, pressure: true}} {
 					loop, unmetered := mode.loop, mode.unmetered
 					f, config := heapFixture(field, array, signed)
 					heapOps := uint32(len(f.Code) - 1)
+					pressureStart := 0
+					if mode.pressure {
+						pressureStart = addHeapFixturePressure(f)
+					}
 					if loop {
 						addHeapFixtureLoop(f, 0)
 					}
@@ -112,6 +136,16 @@ func TestNativeHeapFieldsEveryWidthAndContinuation(t *testing.T) {
 						}
 						if c.HeapCaches != wantCaches {
 							t.Fatal("heap cache policy", arch, unmetered, loop, c.HeapCaches, wantCaches)
+						}
+						if mode.pressure && arch == "amd64" {
+							emitter := functionEmitter{a: &assembler{arch: arch}, f: f, unmetered: true}
+							emitter.prepareHeapAccesses(config)
+							emitter.selectRegisters(config, nil)
+							for _, cache := range emitter.heapCaches {
+								if cache.key < 9 || cache.key > 11 || cache.address < 9 || cache.address > 11 {
+									t.Fatal("caller cache not exercised", cache)
+								}
+							}
 						}
 						if !loop && (c.ForwardedHeap == 1) != unmetered {
 							t.Fatal("heap forwarding policy", arch, unmetered, c.ForwardedHeap)
@@ -160,12 +194,26 @@ func TestNativeHeapFieldsEveryWidthAndContinuation(t *testing.T) {
 						binary.LittleEndian.PutUint64(cell, initial.Lo)
 						binary.LittleEndian.PutUint64(cell[8:], initial.Hi)
 						want := []value.Value{{Lo: ref}, {Lo: 0x100000001}, argument, {}, {}, {}}
+						if mode.pressure {
+							for i := 0; i < 5; i++ {
+								want = append(want, value.Value{Lo: uint64(0x81234567 + i)})
+							}
+						}
 						if loop {
 							want = append(want, value.Value{})
 						}
 						// i32 indices truncate even on cold continuations.
 						for i, v := range want {
 							writeSlot(t, ctx, 16, slots.Slot(i), v)
+						}
+						if mode.pressure {
+							for i := 0; i < 5; i++ {
+								for step := 0; step < 4; step++ {
+									if pressureStart+i*4+step >= pc {
+										want[6+i].Lo = uint64(uint32(want[6+i].Lo * 2))
+									}
+								}
+							}
 						}
 						if pc == 0 {
 							want[3] = unpack(initial)

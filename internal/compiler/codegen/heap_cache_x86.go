@@ -87,7 +87,7 @@ func (e *functionEmitter) heapCachePrioritiesAMD64(config Config, frequencies []
 	return weights
 }
 
-// Keep one checked cache within the existing callee-saved GPR inventory. Its
+// Keep one checked cache within the existing guest GPR inventory. Its
 // two words compete with ordinary slot priorities rather than expanding banks.
 func (e *functionEmitter) selectHeapCacheAMD64(class uint64, available []byte, used *[32]bool) {
 	if len(e.heapCaches) != 0 {
@@ -96,7 +96,7 @@ func (e *functionEmitter) selectHeapCacheAMD64(class uint64, available []byte, u
 	var pair [2]byte
 	n := 0
 	for _, r := range available {
-		if !used[r] && (r == 3 || r >= 12 && r <= 15) {
+		if !used[r] {
 			pair[n] = r
 			n++
 			if n == 2 {
