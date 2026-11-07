@@ -336,12 +336,22 @@ jobs:
           python3 -u head/benchmarks/routing_compare.py measure \
             --head-dir "$GITHUB_WORKSPACE/head" --build-dir "$GITHUB_WORKSPACE/routing-build" \
             --group "${{ matrix.group }}" --output-dir "$GITHUB_WORKSPACE/routing-results"
+      - name: Measure the separately declared sustained GC cohort
+        if: matrix.group == 'gc'
+        run: |
+          python3 -u head/benchmarks/routing_compare.py measure \
+            --head-dir "$GITHUB_WORKSPACE/head" --build-dir "$GITHUB_WORKSPACE/routing-build" \
+            --group gc --gc-sustained --output-dir "$GITHUB_WORKSPACE/routing-results/sustained"
       - name: Publish the complete group result
         if: always()
         run: |
           mkdir -p routing-results
           if [[ -f routing-results/report.md ]]; then
             cat routing-results/report.md >> "$GITHUB_STEP_SUMMARY"
+            if [[ -f routing-results/sustained/report.md ]]; then
+              printf '\nSeparate sustained GC cohort:\n\n' >> "$GITHUB_STEP_SUMMARY"
+              cat routing-results/sustained/report.md >> "$GITHUB_STEP_SUMMARY"
+            fi
           else
             echo 'Routing measurement unavailable; setup or execution failed. No performance acceptance.' >> "$GITHUB_STEP_SUMMARY"
           fi

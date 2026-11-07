@@ -186,6 +186,9 @@ func (e *functionEmitter) allocateRegisters(config Config, regions map[int]memor
 
 func (e *functionEmitter) selectRegisters(config Config, regions map[int]memoryRegion) {
 	frequencies := instructionFrequencies(e.f)
+	if e.a.arch == "amd64" {
+		e.heapCaches = nil
+	}
 	e.prepareAllocationBatch(frequencies)
 	weights := slotPriorities(e.f, regions, frequencies)
 	e.immediateRegisterCosts(weights, frequencies, regions)
@@ -204,6 +207,9 @@ func (e *functionEmitter) selectRegisters(config Config, regions map[int]memoryR
 			candidates = append(candidates, registerCandidate{2, bits, w})
 		}
 	}
+	for class, weight := range e.heapCachePrioritiesAMD64(config, frequencies) {
+		candidates = append(candidates, registerCandidate{3, class, weight})
+	}
 	slices.SortFunc(candidates, compareRegisterCandidates)
 	available := e.integerRegisterPool()
 	floatAvailable := e.floatRegisterPool()
@@ -211,6 +217,10 @@ func (e *functionEmitter) selectRegisters(config Config, regions map[int]memoryR
 	e.constantRegisters, e.runtimeRegisters = map[uint64]byte{}, map[uint32]byte{}
 	var used [32]bool
 	for _, candidate := range candidates {
+		if candidate.kind == 3 {
+			e.selectHeapCacheAMD64(candidate.key, available, &used)
+			continue
+		}
 		if candidate.kind == 0 {
 			s := slots.Slot(candidate.key)
 			t := e.f.Slots[s]

@@ -1,0 +1,8 @@
+{
+  "archive": "../evidence/amd64-heap-cache-2026-11-07.json.xz",
+  "archiveSHA256": "924cf56a3c31213d1ff815741672b1db34142d42942475ea4a6ed41ccf765f91",
+  "archiveBytes": 49532,
+  "originalSHA256": "c136c25b6f4ba73bc13d6d8880d507f0a91d7ed4d88930fe4bc0119a4b7e335c",
+  "originalBytes": 542434,
+  "classification": "Local qualification, independent completed hosted cohorts and failed first CI; final corrected-head semantic CI remains required"
+}

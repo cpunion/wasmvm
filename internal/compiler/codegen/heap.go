@@ -25,6 +25,12 @@ type heapCache struct{ key, address byte }
 // checked on every hit; each miss uses the ordinary null/index/generation
 // checks. Entry resets prevent a moved address surviving a safepoint.
 func (e *functionEmitter) prepareHeapCaches() {
+	if e.unmetered && e.a.arch == "amd64" {
+		for _, cache := range e.heapCaches {
+			e.a.xconst(cache.key, 0)
+		}
+		return
+	}
 	if !e.unmetered || e.a.arch != "arm64" || len(e.heapAccesses) == 0 {
 		return
 	}
@@ -132,10 +138,18 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 	if cached {
 		ready = e.a.label()
 		// Null must miss even when an entry's cache key is initially zero.
-		// CCMP sets Z only for a non-null, complete matching handle.
+		// ARM CCMP combines the non-null and complete-handle checks.
 		e.test(true)
-		e.a.word(0xfa401120 | uint32(cache.key)<<16) // ccmp x9,key,#0,ne
-		e.branch(ready, "eq")
+		if e.a.arch == "amd64" {
+			miss := e.a.label()
+			e.branch(miss, "eq") // A null handle must never hit the initial zero key.
+			e.registerCompareFlags(0, cache.key, 0x51)
+			e.branch(ready, "eq")
+			e.a.mark(miss)
+		} else {
+			e.a.word(0xfa401120 | uint32(cache.key)<<16) // ccmp x9,key,#0,ne
+			e.branch(ready, "eq")
+		}
 	}
 	e.test(true)
 	e.branch(e.trapExit(wasm.TrapNullReference, e.f.Sources[in.Source].Wasm.Offset), "eq")
@@ -170,13 +184,15 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 		e.pointerLoad(2, 2, 8)
 	}
 	if cached {
-		e.registerMove(cache.address, 11, true)
-		e.registerMove(cache.key, 9, true)
+		e.registerMove(cache.address, e.operandRegister(2), true)
+		e.registerMove(cache.key, e.operandRegister(0), true)
 		e.a.mark(ready)
 	}
 	base := e.operandRegister(2)
 	if cached {
-		if !a.array && a.offset == 0 {
+		if e.a.arch == "amd64" {
+			e.registerMove(2, cache.address, true)
+		} else if !a.array && a.offset == 0 {
 			base = cache.address
 		} else {
 			e.registerMove(11, cache.address, true)

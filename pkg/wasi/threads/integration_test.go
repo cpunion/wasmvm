@@ -16,8 +16,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasi/preview1"
+	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
 type corpusManifest struct {
@@ -157,87 +159,126 @@ func TestLLGoThreadedGuest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	engines(t, func(t *testing.T, e *vm.Engine, options vm.CallOptions) {
-		// The full guest compiles once per tier; child Stores retain this code.
-		m, err := e.Compile(nil, b)
-		if err != nil {
-			t.Fatal(err)
+	parent := t
+	var nativeEngine *vm.Engine
+	var nativeModule *vm.CompiledModule
+	for _, tier := range []string{"interpreter", "native", "fuel"} {
+		if tier != "interpreter" && !native.Available {
+			continue
 		}
-		defer m.Close()
-		completed := 0
-		for _, mode := range []string{"all", "exit", "panic"} {
-			if t.Run(mode, func(t *testing.T) {
-				ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-				defer cancel()
-				pc := preview1.DefaultConfig()
-				pc.Args = []string{"guest", mode}
-				dir := t.TempDir()
-				pc.Preopens = []preview1.Preopen{{GuestPath: "/work", HostPath: dir}}
-				out, diagnostic := preview1.NewBuffer(1<<20), preview1.NewBuffer(1<<20)
-				pc.Stdout, pc.Stderr = out, diagnostic
-				p, err := preview1.NewProcess(pc)
+		t.Run(tier, func(t *testing.T) {
+			e := nativeEngine
+			if tier == "interpreter" || e == nil {
+				cfg := vm.DefaultEngineConfig()
+				cfg.Profile, cfg.Features = "core3", wasm.Threads
+				cfg.Native.MaxCodeBytes = 256 << 20
+				if tier != "interpreter" {
+					cfg.Backend = "native"
+				}
+				e, err = vm.NewEngineWithConfig(cfg)
 				if err != nil {
 					t.Fatal(err)
 				}
-				defer p.Close()
-				cfg := DefaultConfig()
-				cfg.Execution = options
-				g, err := New(ctx, e, m, p, cfg)
-				if err != nil {
-					t.Fatal(err)
+				if tier == "interpreter" {
+					t.Cleanup(e.Close)
+				} else {
+					parent.Cleanup(e.Close)
+					nativeEngine = e
 				}
-				defer g.Close()
-				observer, err := e.NewStore(vm.DefaultStoreConfig())
-				if err != nil {
-					t.Fatal(err)
-				}
-				defer observer.Close()
-				memory, err := observer.ImportMemory(g.memories[[2]string{"env", "memory"}])
-				if err != nil {
-					t.Fatal(err)
-				}
-				initialPages, err := memory.MemoryPages()
-				if err != nil {
-					t.Fatal(err)
-				}
-				err = g.Run()
-				code, expected := uint32(0), uint32(0)
-				var exit *preview1.ExitError
-				if errors.As(err, &exit) {
-					code, err = exit.Code, nil
-				}
-				if mode == "exit" {
-					expected = 23
-				}
-				if mode == "panic" {
-					expected = 2
-				}
-				if err != nil || code != expected {
-					t.Fatalf("exit %d want %d: %v\n%s\n%s", code, expected, err, out.Bytes(), diagnostic.Bytes())
-				}
-				if mode == "all" && string(out.Bytes()) != "llgo-threads-ok 828\n" {
-					t.Fatal("guest output", string(out.Bytes()), string(diagnostic.Bytes()))
-				}
-				if mode == "panic" && !bytes.Contains(diagnostic.Bytes(), []byte("expected-worker-panic")) {
-					t.Fatal("guest panic missing", string(diagnostic.Bytes()))
-				}
-				if mode == "all" {
-					pages, err := memory.MemoryPages()
-					if err != nil || pages <= initialPages {
-						t.Fatal("guest did not grow shared memory", initialPages, pages, err)
-					}
-					entries, err := os.ReadDir(dir)
-					if err != nil || len(entries) != 8 {
-						t.Fatal("thread files", len(entries), err)
-					}
-				}
-				if err := g.WaitClosed(ctx); err != nil {
-					t.Fatal(err)
-				}
-			}) {
-				completed++
 			}
-		}
-		executionReport(t, "llgo-threaded-guest", 3, completed)
-	})
+			m := nativeModule
+			if tier == "interpreter" || m == nil {
+				ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+				m, err = e.Compile(ctx, b)
+				cancel()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if tier == "interpreter" {
+					t.Cleanup(m.Close)
+				} else {
+					// One native module contains both policy tiers. Each case
+					// still creates fresh process, Store, memory and thread state.
+					parent.Cleanup(m.Close)
+					nativeModule = m
+				}
+			}
+			options := vm.CallOptions{Metered: tier == "fuel", Fuel: 1 << 32}
+			completed := 0
+			for _, mode := range []string{"all", "exit", "panic"} {
+				if t.Run(mode, func(t *testing.T) {
+					ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+					defer cancel()
+					pc := preview1.DefaultConfig()
+					pc.Args = []string{"guest", mode}
+					dir := t.TempDir()
+					pc.Preopens = []preview1.Preopen{{GuestPath: "/work", HostPath: dir}}
+					out, diagnostic := preview1.NewBuffer(1<<20), preview1.NewBuffer(1<<20)
+					pc.Stdout, pc.Stderr = out, diagnostic
+					p, err := preview1.NewProcess(pc)
+					if err != nil {
+						t.Fatal(err)
+					}
+					defer p.Close()
+					cfg := DefaultConfig()
+					cfg.Execution = options
+					g, err := New(ctx, e, m, p, cfg)
+					if err != nil {
+						t.Fatal(err)
+					}
+					defer g.Close()
+					observer, err := e.NewStore(vm.DefaultStoreConfig())
+					if err != nil {
+						t.Fatal(err)
+					}
+					defer observer.Close()
+					memory, err := observer.ImportMemory(g.memories[[2]string{"env", "memory"}])
+					if err != nil {
+						t.Fatal(err)
+					}
+					initialPages, err := memory.MemoryPages()
+					if err != nil {
+						t.Fatal(err)
+					}
+					err = g.Run()
+					code, expected := uint32(0), uint32(0)
+					var exit *preview1.ExitError
+					if errors.As(err, &exit) {
+						code, err = exit.Code, nil
+					}
+					if mode == "exit" {
+						expected = 23
+					}
+					if mode == "panic" {
+						expected = 2
+					}
+					if err != nil || code != expected {
+						t.Fatalf("exit %d want %d: %v\n%s\n%s", code, expected, err, out.Bytes(), diagnostic.Bytes())
+					}
+					if mode == "all" && string(out.Bytes()) != "llgo-threads-ok 828\n" {
+						t.Fatal("guest output", string(out.Bytes()), string(diagnostic.Bytes()))
+					}
+					if mode == "panic" && !bytes.Contains(diagnostic.Bytes(), []byte("expected-worker-panic")) {
+						t.Fatal("guest panic missing", string(diagnostic.Bytes()))
+					}
+					if mode == "all" {
+						pages, err := memory.MemoryPages()
+						if err != nil || pages <= initialPages {
+							t.Fatal("guest did not grow shared memory", initialPages, pages, err)
+						}
+						entries, err := os.ReadDir(dir)
+						if err != nil || len(entries) != 8 {
+							t.Fatal("thread files", len(entries), err)
+						}
+					}
+					if err := g.WaitClosed(ctx); err != nil {
+						t.Fatal(err)
+					}
+				}) {
+					completed++
+				}
+			}
+			executionReport(t, "llgo-threaded-guest", 3, completed)
+		})
+	}
 }
