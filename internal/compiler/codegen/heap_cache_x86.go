@@ -17,7 +17,7 @@ func (e *functionEmitter) heapCachePrioritiesAMD64(config Config, frequencies []
 		if in.Op >= 0x10 && in.Op <= 0x15 {
 			return nil
 		}
-		if in.Dst != slots.NoSlot {
+		if in.Dst != slots.NoSlot && !(in.Op == 0x20 && in.Dst == slots.Slot(e.f.Sources[in.Source].Wasm.A)) {
 			written[in.Dst] = true
 		}
 		if in.Op == 0x21 || in.Op == 0x22 {

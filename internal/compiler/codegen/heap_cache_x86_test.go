@@ -11,7 +11,7 @@ import (
 )
 
 func TestHeapCacheAMD64ReuseHintsAndConservativeBoundaries(t *testing.T) {
-	for _, mode := range []string{"local", "copy", "immutable-global", "mutable-global", "mixed-roots", "changing-local", "join", "move", "select-same", "select-mixed", "loop-call", "handler", "prompt", "precise", "arm64", "no-loop"} {
+	for _, mode := range []string{"local", "same-slot-local", "copy", "immutable-global", "mutable-global", "mixed-roots", "changing-local", "join", "move", "select-same", "select-mixed", "loop-call", "handler", "prompt", "precise", "arm64", "no-loop"} {
 		f := &slots.Function{Slots: make([]wasm.ValueType, 8)}
 		e := functionEmitter{a: &assembler{arch: "amd64"}, f: f, unmetered: true, heapAccesses: map[uint32]heapAccess{}}
 		config := Config{Globals: []module.GlobalType{{Value: wasm.AnyRef}}}
@@ -34,6 +34,9 @@ func TestHeapCacheAMD64ReuseHintsAndConservativeBoundaries(t *testing.T) {
 			}
 			if mode == "mixed-roots" {
 				local = uint32(pass)
+			}
+			if mode == "same-slot-local" {
+				emit(0x20, 0, slots.NoSlot, slots.NoSlot, 0)
 			}
 			emit(op, 4, slots.NoSlot, slots.NoSlot, local)
 			if mode == "copy" {
