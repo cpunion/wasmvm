@@ -15,9 +15,14 @@
     "inputs": "component"
   },
   {
+    "name": "legacy",
+    "packages": "./pkg/wasi/preview1 ./pkg/wasi/threads",
+    "inputs": "preview1 wasi_threads"
+  },
+  {
     "name": "http",
-    "packages": "./pkg/wasi/preview1 ./pkg/wasi/preview2",
-    "inputs": "preview1 component"
+    "packages": "./pkg/wasi/preview2",
+    "inputs": "component"
   },
   {
     "name": "async",
@@ -26,7 +31,7 @@
   },
   {
     "name": "entry",
-    "packages": "./internal/cli ./pkg/wasi/threads",
+    "packages": "./internal/cli",
     "inputs": "core2 core3 core_extensions preview1 wasi_threads component"
   }
 ]
