@@ -16,16 +16,17 @@ integration. Competing runtimes are independent test and benchmark references;
 execution never silently switches to one of them.
 
 Performance acceptance remains open. The
-[latest scalar-forwarding study](docs/research/performance-mixed-scalar-forwarding-2026-11-06.md)
-shares existing GPR/frame instruction selection with copy/result forwarding.
-Local Go/LLGo qualification passes; final Linux execution and elapsed evidence
-remain required. The preceding FP-register allocation experiment is reverted
-after both Linux SHA cases regress by about 22% under LLGo. Its
-[complete adverse evidence](docs/research/performance-raw-integer-registers-2026-11-06.md)
-and the [last good comparison](docs/research/performance-frame-operands-2026-11-06.md)
-retain all 22 competitor/Go/LLGo/native-C workloads, separate phases and
-unresolved controls. Results remain dated and target-specific; controlled
-competitive/native acceptance and corrected-head CI remain open.
+[direct-memory operand study](docs/research/performance-direct-memory-operands-2026-11-07.md)
+reuses bounded region proofs and scalar x86 encoders. Local Go/LLGo semantic
+qualification and 35,328 independent encoding witnesses pass; actual x86
+execution and the 22-case Linux comparison remain required. The preceding
+[completed scalar-forwarding study](docs/research/performance-mixed-scalar-forwarding-2026-11-06.md)
+passes full four-profile semantic CI. Its Linux SHA cases observe LLGo around
+0.67–0.70× wazero time, 1.32–1.33× Wasmtime and 1.57–1.59× native C; these are
+advisory observations, with remaining deficits and a Rust head/base loss retained.
+The [rejected FP-register allocation](docs/research/performance-raw-integer-registers-2026-11-06.md)
+stays reverted after approximately 22% Linux SHA regressions. All source events,
+compiler profiles, lifecycle phases and unresolved controls remain separate.
 The [gap audit](docs/research/performance-gaps-2026-11-02.md) retains the broader
 portfolio and independently reproduced upstream compiler reports.
 

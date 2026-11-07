@@ -1,0 +1,577 @@
+{
+  "classification": "Exact-source local qualification passes; Linux x86 execution and full final-head CI remain required. Static reductions are not elapsed performance.",
+  "plan": {
+    "baseline": "2306caccfbd6083440d4eb6002b50dc9136a3740",
+    "baselineEngine": "96ea7fb32b6397e704aa11598e80a1d3c657ca03",
+    "mechanism": "Reuse bounded region proofs and scalar memory encoders to select x86 direct constant/indexed operands only for proven scalar accesses with known constant i32 addresses or canonical zero-extended i32 GPR inputs. Track local facts from region entry; preserve raw Lo/Hi and all cold PCs. Keep memory64, unknown upper bits, vectors, large displacements, unproven accesses and precise tier on the existing path. No new physical bank or ISA.",
+    "requirements": [
+      "Full memory load/store widths and signedness, typed FP homes, byte/word REX forms, source/destination/address aliases, shared minimum-length proofs and ordinary cold frames.",
+      "Constant, copy, arithmetic and select facts must expire on unknown writes and region boundaries. Forwarded consumers retain their original PC facts.",
+      "Go/LLGo release execution, exact package coverage, independent LLVM address encodings, actual publication/static inspection, final four-profile CI, source-pinned affected competitor/native/lifecycle comparison without favorable reruns.",
+      "Observe final-source CI42096193934 and benchmark42093658819; preserve earlier raw-FP rejection and do not restart live events due queue/observation timeouts. LLGo2983 remains with another contributor."
+    ],
+    "source": "d64119b222d186b8cc97ad34a9f9a7bff428805c",
+    "measurementBaseline": "96ea7fb32b6397e704aa11598e80a1d3c657ca03",
+    "measurementScope": "Inspect actual22ARM64publications and all22x86compiled modules, with private poll spans rather than dispatch data. Scope local measurements to changed guest images; retain full source-pinned22-case Linux lifecycle/competitor/native comparison and all adverse/inconclusive results.",
+    "baselineReuse": "Reuse exact-source96ea7fb candidate binaries from the completed mixed-forwarding event only after engine/harness/toolchain/profile/executable/library verification. Candidate source builds are fresh; flags and reference versions stay pinned."
+  },
+  "compilerPin": "3571c2523e010e6842c4dd8a5213554fdc72d2a3",
+  "llgoFlags": [
+    "-O3",
+    "-lto=full"
+  ],
+  "qualification": [
+    {
+      "compiler": "go",
+      "exit": 0,
+      "wallSeconds": 5.3447982501238585,
+      "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764"
+    },
+    {
+      "compiler": "llgo",
+      "exit": 0,
+      "wallSeconds": 37.02455366705544,
+      "compilerSHA256": "4ec6e101cc510011d56e8ef9dee4053abbde521f284963bd2b468b281d3fec0c"
+    },
+    {
+      "compiler": "vet",
+      "exit": 0,
+      "wallSeconds": 0.25163945904932916,
+      "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764"
+    }
+  ],
+  "coverage": {
+    "github.com/cpunion/wasmvm/internal/compiler/codegen": {
+      "covered": 8529,
+      "total": 8729,
+      "percent": 97.70878680261198
+    },
+    "github.com/cpunion/wasmvm/internal/engine/nativeexec": {
+      "covered": 459,
+      "total": 496,
+      "percent": 92.54032258064517
+    }
+  },
+  "scalarOpcodes": 23,
+  "encodingInstructionsMatched": 35328,
+  "encoderScope": "Individual scalar load/store instruction emission and independent LLVM assembler comparison only. Covers every data register, every representable index/no-index, all scalar widths/signs/FP forms and zero/disp8/disp32 boundaries. No x86 guest instruction executes on the ARM64 host; actual Linux semantic execution remains required.",
+  "frameExecutionsPerLocalCompiler": 5184,
+  "arm64": {
+    "actualPublicationWitnesses": 66,
+    "freshWitnesses": 44,
+    "reusedExactBaselineWitnesses": 22,
+    "workloads": 22,
+    "changedImages": 0,
+    "baseHeadEntriesIdentical": true,
+    "additionalWarmCampaign": false
+  },
+  "x86": {
+    "featureMask": 7,
+    "compiledWorkloads": 22,
+    "changedModules": 14,
+    "workloads": [
+      {
+        "workload": "core/call-control",
+        "moduleChanged": false,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              1475,
+              1475
+            ],
+            "directMemoryOperands": 0,
+            "privatePollSpans": []
+          }
+        ]
+      },
+      {
+        "workload": "core/integer-loop",
+        "moduleChanged": false,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              2197,
+              2197
+            ],
+            "directMemoryOperands": 0,
+            "privatePollSpans": [
+              {
+                "instructions": [
+                  12,
+                  12
+                ],
+                "frameReferences": [
+                  0,
+                  0
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "workload": "core/function-calls",
+        "moduleChanged": false,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              1723,
+              1723
+            ],
+            "directMemoryOperands": 0,
+            "privatePollSpans": []
+          },
+          {
+            "function": 1,
+            "codeBytes": [
+              2923,
+              2923
+            ],
+            "directMemoryOperands": 0,
+            "privatePollSpans": []
+          }
+        ]
+      },
+      {
+        "workload": "core/memory-load-store",
+        "moduleChanged": true,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              4522,
+              4468
+            ],
+            "directMemoryOperands": 18,
+            "privatePollSpans": []
+          }
+        ]
+      },
+      {
+        "workload": "memory/narrow-unaligned",
+        "moduleChanged": true,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              4334,
+              4320
+            ],
+            "directMemoryOperands": 3,
+            "privatePollSpans": [
+              {
+                "instructions": [
+                  26,
+                  22
+                ],
+                "frameReferences": [
+                  2,
+                  2
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "workload": "memory/dependent-address",
+        "moduleChanged": true,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              4023,
+              4020
+            ],
+            "directMemoryOperands": 1,
+            "privatePollSpans": [
+              {
+                "instructions": [
+                  14,
+                  13
+                ],
+                "frameReferences": [
+                  0,
+                  0
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "workload": "memory/float64-unaligned",
+        "moduleChanged": true,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              5450,
+              5396
+            ],
+            "directMemoryOperands": 18,
+            "privatePollSpans": []
+          }
+        ]
+      },
+      {
+        "workload": "runtime/simd-memory-full",
+        "moduleChanged": true,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              2775,
+              2767
+            ],
+            "directMemoryOperands": 1,
+            "privatePollSpans": [
+              {
+                "instructions": [
+                  21,
+                  19
+                ],
+                "frameReferences": [
+                  1,
+                  1
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "workload": "runtime/simd-memory-widen",
+        "moduleChanged": false,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              2546,
+              2546
+            ],
+            "directMemoryOperands": 0,
+            "privatePollSpans": [
+              {
+                "instructions": [
+                  22,
+                  22
+                ],
+                "frameReferences": [
+                  0,
+                  0
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "workload": "runtime/simd-memory-lanes",
+        "moduleChanged": true,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              3098,
+              3090
+            ],
+            "directMemoryOperands": 1,
+            "privatePollSpans": [
+              {
+                "instructions": [
+                  41,
+                  39
+                ],
+                "frameReferences": [
+                  1,
+                  1
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "workload": "gc/i31-roundtrip",
+        "moduleChanged": false,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              1464,
+              1464
+            ],
+            "directMemoryOperands": 0,
+            "privatePollSpans": []
+          }
+        ]
+      },
+      {
+        "workload": "gc/struct-access",
+        "moduleChanged": false,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              2282,
+              2282
+            ],
+            "directMemoryOperands": 0,
+            "privatePollSpans": []
+          }
+        ]
+      },
+      {
+        "workload": "gc/struct-allocation",
+        "moduleChanged": false,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              1969,
+              1969
+            ],
+            "directMemoryOperands": 0,
+            "privatePollSpans": []
+          }
+        ]
+      },
+      {
+        "workload": "gc/struct-indirect-access",
+        "moduleChanged": false,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              3943,
+              3943
+            ],
+            "directMemoryOperands": 0,
+            "privatePollSpans": []
+          }
+        ]
+      },
+      {
+        "workload": "threads/private-memory",
+        "moduleChanged": true,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              2336,
+              2323
+            ],
+            "directMemoryOperands": 4,
+            "privatePollSpans": [
+              {
+                "instructions": [
+                  10,
+                  8
+                ],
+                "frameReferences": [
+                  0,
+                  0
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "workload": "threads/shared-memory",
+        "moduleChanged": true,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              2480,
+              2467
+            ],
+            "directMemoryOperands": 4,
+            "privatePollSpans": [
+              {
+                "instructions": [
+                  10,
+                  8
+                ],
+                "frameReferences": [
+                  0,
+                  0
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "workload": "threads/atomic-rmw",
+        "moduleChanged": true,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              2206,
+              2199
+            ],
+            "directMemoryOperands": 2,
+            "privatePollSpans": []
+          }
+        ]
+      },
+      {
+        "workload": "threads/notify-empty",
+        "moduleChanged": true,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              2491,
+              2487
+            ],
+            "directMemoryOperands": 1,
+            "privatePollSpans": []
+          }
+        ]
+      },
+      {
+        "workload": "threads/wait-mismatch",
+        "moduleChanged": true,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              2575,
+              2571
+            ],
+            "directMemoryOperands": 1,
+            "privatePollSpans": []
+          }
+        ]
+      },
+      {
+        "workload": "threads/wait-timeout",
+        "moduleChanged": true,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              2564,
+              2560
+            ],
+            "directMemoryOperands": 1,
+            "privatePollSpans": []
+          }
+        ]
+      },
+      {
+        "workload": "applications/sha256-clang",
+        "moduleChanged": true,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              15892,
+              15868
+            ],
+            "directMemoryOperands": 4,
+            "privatePollSpans": []
+          },
+          {
+            "function": 1,
+            "codeBytes": [
+              10859,
+              10827
+            ],
+            "directMemoryOperands": 6,
+            "privatePollSpans": [
+              {
+                "instructions": [
+                  43,
+                  35
+                ],
+                "frameReferences": [
+                  0,
+                  0
+                ]
+              },
+              {
+                "instructions": [
+                  69,
+                  68
+                ],
+                "frameReferences": [
+                  20,
+                  20
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "workload": "applications/sha256-rust",
+        "moduleChanged": true,
+        "functions": [
+          {
+            "function": 0,
+            "codeBytes": [
+              10738,
+              10706
+            ],
+            "directMemoryOperands": 6,
+            "privatePollSpans": [
+              {
+                "instructions": [
+                  43,
+                  35
+                ],
+                "frameReferences": [
+                  0,
+                  0
+                ]
+              },
+              {
+                "instructions": [
+                  65,
+                  64
+                ],
+                "frameReferences": [
+                  18,
+                  18
+                ]
+              }
+            ]
+          },
+          {
+            "function": 1,
+            "codeBytes": [
+              16202,
+              16202
+            ],
+            "directMemoryOperands": 0,
+            "privatePollSpans": []
+          }
+        ]
+      }
+    ]
+  },
+  "hostedRun": "https://github.com/cpunion/wasmvm/actions/runs/42366175293",
+  "evidence": {
+    "path": "artifacts/memory-operands-20261106/local-evidence.tar.gz",
+    "sha256": "e8a05c67d607a21153a7b37aec03dde3e8dae7de9032aa8edbc1fbc7c6b3d732",
+    "bytes": 3203770,
+    "files": 473
+  },
+  "limitations": [
+    "The ARM64 counterpart executes locally; the newly selected x86 paths need actual execution in Linux final-head CI.",
+    "Unknown high bits, memory64, vectors, precise mode, unproven accesses and large displacements retain the established path.",
+    "Two fixed development failures are retained: non-memory fact classification and the complete-frame oracle return PC. Neither is a successful qualification result.",
+    "All22ARM64published images and entry lists are unchanged; do not collect another local warm campaign for identical guest code.",
+    "The22-case Linux source-pinned event retains all controls, adverse/inconclusive observations, competitor/native-C rows and nonoverlapping phases. It does not substitute for controlled milestone acceptance.",
+    "Full final-head CI, integration review, broader world/release and controlled competitive/native acceptance remain open. LLGo2983 stays with its existing contributor."
+  ]
+}
