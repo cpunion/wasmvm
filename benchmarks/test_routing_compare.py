@@ -1,5 +1,6 @@
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 import routing_compare as routing
 
@@ -18,6 +19,24 @@ class RoutingComparisonTests(unittest.TestCase):
         self.assertEqual(22, sum(map(len, routing.GROUPS.values())))
         self.assertEqual(3307539256, next(f['expectedChecksum'] for f in fixtures if f['id'] == 'applications/sha256-clang'))
         self.assertEqual({'sha256.c', 'sha256.rs'}, {f['producer']['source'] for f in fixtures if f['family'] == 'application'})
+
+    def test_sustained_gc_has_fixed_counts_without_mutating_original_cases(self):
+        root = Path(__file__).resolve().parent.parent
+        for kind in ['struct-allocation', 'struct-access', 'struct-indirect-access', 'i31-roundtrip']:
+            original = dict(id='gc/' + kind, family='gc', iterations=10_000,
+                            seed=17, expectedChecksum=99, wasmSha256='fixture')
+            with patch.object(routing, 'oracle', return_value=123) as oracle:
+                measured = routing.measurement_fixture(root, original, True)
+                count = 300_000 if kind == 'struct-allocation' else 1_000_000
+                self.assertEqual(count, measured['iterations'])
+                self.assertEqual(123, measured['expectedChecksum'])
+                oracle.assert_called_once_with(root, measured, 17, count)
+            self.assertEqual(10_000, original['iterations'])
+            self.assertEqual(99, original['expectedChecksum'])
+            self.assertEqual(original, routing.measurement_fixture(root, original))
+            self.assertEqual('fixture', measured['wasmSha256'])
+        with self.assertRaises(ValueError):
+            routing.measurement_fixture(root, dict(family='core'), True)
 
     def test_common_features_are_instrumentation_only_and_boundary_is_exact(self):
         source = 'config.Backend = args.backend\n"unmetered; bounded cancellation; checked Core 2.0"'

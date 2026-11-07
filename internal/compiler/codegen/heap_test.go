@@ -67,25 +67,53 @@ func heapFixture(field module.FieldType, array, signed bool) (*slots.Function, C
 	return f, Config{HeapTypes: []module.TypeDef{t}}
 }
 
+// A caller-supplied raw frame condition makes the loop repeat or finish. Zero
+// runs one pass; nonzero reaches the existing backedge cancellation poll.
+func addHeapFixtureLoop(f *slots.Function, target uint32) {
+	condition := slots.Slot(len(f.Slots))
+	f.Slots = append(f.Slots, wasm.I32)
+	f.LocalCount++
+	pc := len(f.Code) - 1
+	ret := f.Code[pc]
+	source := uint32(len(f.Sources))
+	f.Sources = append(f.Sources, ir.Source{})
+	first := uint32(len(f.Edges))
+	f.Edges = append(f.Edges, slots.Edge{PC: target}, slots.Edge{PC: uint32(pc + 1)})
+	f.Code[pc] = slots.Instruction{Op: slots.ControlBase + uint32(ir.If), Source: source, A: condition, B: slots.NoSlot, C: slots.NoSlot, Dst: slots.NoSlot, Extra: first, Count: 2}
+	f.Code = append(f.Code, ret)
+}
+
 func TestNativeHeapFieldsEveryWidthAndContinuation(t *testing.T) {
 	fields := []module.FieldType{{Value: wasm.I32, Packed: 8}, {Value: wasm.I32, Packed: 16},
 		{Value: wasm.I32}, {Value: wasm.I64}, {Value: wasm.F32}, {Value: wasm.F64}, {Value: wasm.AnyRef}, {Value: wasm.V128}}
 	for _, field := range fields {
 		for _, array := range []bool{false, true} {
 			for _, signed := range []bool{false, true} {
-				for _, unmetered := range []bool{false, true} {
+				for _, mode := range []struct{ loop, unmetered bool }{{}, {unmetered: true}, {loop: true}, {loop: true, unmetered: true}} {
+					loop, unmetered := mode.loop, mode.unmetered
 					f, config := heapFixture(field, array, signed)
+					heapOps := uint32(len(f.Code) - 1)
+					if loop {
+						addHeapFixtureLoop(f, 0)
+					}
 					config.Unmetered = unmetered
 					config.FunctionCount, config.TableCount, config.MemoryCount = 3, 3000, 2
 					for _, arch := range []string{"amd64", "arm64"} {
 						c, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), config)
-						if err != nil || c.Helpers != 0 || c.NativeHeap != uint32(len(f.Code)-1) || !c.UsesRuntimeData {
+						if err != nil || c.Helpers != 0 || c.NativeHeap != heapOps || !c.UsesRuntimeData {
 							t.Fatal(arch, field, array, signed, c, err)
 						}
-						if (c.HeapCaches != 0) != (unmetered && arch == "arm64") {
-							t.Fatal("heap cache policy", arch, unmetered, c.HeapCaches)
+						wantCaches := uint32(0)
+						if unmetered && (arch == "arm64" || loop) {
+							wantCaches = 1
 						}
-						if (c.ForwardedHeap == 1) != unmetered {
+						if unmetered && arch == "arm64" && loop && array {
+							wantCaches = 2
+						}
+						if c.HeapCaches != wantCaches {
+							t.Fatal("heap cache policy", arch, unmetered, loop, c.HeapCaches, wantCaches)
+						}
+						if !loop && (c.ForwardedHeap == 1) != unmetered {
 							t.Fatal("heap forwarding policy", arch, unmetered, c.ForwardedHeap)
 						}
 					}
@@ -132,6 +160,9 @@ func TestNativeHeapFieldsEveryWidthAndContinuation(t *testing.T) {
 						binary.LittleEndian.PutUint64(cell, initial.Lo)
 						binary.LittleEndian.PutUint64(cell[8:], initial.Hi)
 						want := []value.Value{{Lo: ref}, {Lo: 0x100000001}, argument, {}, {}, {}}
+						if loop {
+							want = append(want, value.Value{})
+						}
 						// i32 indices truncate even on cold continuations.
 						for i, v := range want {
 							writeSlot(t, ctx, 16, slots.Slot(i), v)
@@ -259,44 +290,119 @@ func TestNativeHeapCacheRechecksChangedReferences(t *testing.T) {
 	if !native.Available {
 		t.Skip("native platform unavailable")
 	}
-	f, config := heapFixture(module.FieldType{Value: wasm.I32}, false, false)
-	config.Unmetered = true
-	config.HeapTypes[0].Fields = config.HeapTypes[0].Fields[2:]
-	for i := range f.Sources {
-		f.Sources[i].Wasm.B = 0
-	}
-	f.Slots = append(f.Slots, wasm.AnyRef)
-	f.LocalCount++
-	source := uint32(len(f.Sources))
-	f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: 0x20, A: 6}})
-	move := slots.Instruction{Op: 0x20, Source: source, Dst: 0, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot}
-	f.Code = append(f.Code[:1:1], append([]slots.Instruction{move}, f.Code[1:]...)...)
-	_, lease, ctx := configuredContext(t, f, config)
-	storage, err := native.NewMemory(256, 256)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer storage.Close()
-	buffer, _ := storage.Buffer()
-	address := uint64(uintptr(unsafe.Pointer(unsafe.SliceData(buffer))))
-	words := unsafe.Slice((*uint64)(unsafe.Pointer(unsafe.SliceData(buffer))), len(buffer)/8)
-	words[0], words[1] = 3, address+16
-	first, second := uint64(0x8000000100000001), uint64(0x8000000100000002)
-	words[6], words[7], words[8] = first, address+128, 3
-	words[10], words[11], words[12] = second, address+192, 3
-	binary.LittleEndian.PutUint32(buffer[128:], 11)
-	binary.LittleEndian.PutUint32(buffer[192:], 22)
-	for i, v := range []value.Value{{Lo: first}, {}, {Lo: 777}, {}, {}, {}, {Lo: second}} {
-		writeSlot(t, ctx, 16, slots.Slot(i), v)
-	}
-	s := native.State{Used: 16, Depth: 1, Budget: 64}
-	s.Payload[2] = address
-	ctx.SetState(s)
-	if exit, err := ctx.Enter(lease, 0); exit != native.Return || err != nil {
-		t.Fatal(exit, err)
-	}
-	if readSlot(t, ctx, 16, 3).Lo != 11 || readSlot(t, ctx, 16, 4).Lo != 777 || binary.LittleEndian.Uint32(buffer[128:]) != 11 || binary.LittleEndian.Uint32(buffer[192:]) != 777 {
-		t.Fatal("changed handle reused a former object's payload")
+	for _, loop := range []bool{false, true} {
+		f, config := heapFixture(module.FieldType{Value: wasm.I32}, false, false)
+		config.Unmetered = true
+		config.HeapTypes[0].Fields = config.HeapTypes[0].Fields[2:]
+		for i := range f.Sources {
+			f.Sources[i].Wasm.B = 0
+		}
+		f.Slots = append(f.Slots, wasm.AnyRef)
+		f.LocalCount++
+		source := uint32(len(f.Sources))
+		f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: 0x20, A: 6}})
+		move := slots.Instruction{Op: 0x20, Source: source, Dst: 0, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot}
+		f.Code = append(f.Code[:1:1], append([]slots.Instruction{move}, f.Code[1:]...)...)
+		if loop {
+			addHeapFixtureLoop(f, 2)
+		}
+		compiled, lease, ctx := configuredContext(t, f, config)
+		if loop && runtime.GOARCH == "amd64" && compiled.HeapCaches != 1 {
+			t.Fatal("changed-reference cache not selected", compiled.HeapCaches)
+		}
+		storage, err := native.NewMemory(256, 256)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer storage.Close()
+		buffer, _ := storage.Buffer()
+		address := uint64(uintptr(unsafe.Pointer(unsafe.SliceData(buffer))))
+		words := unsafe.Slice((*uint64)(unsafe.Pointer(unsafe.SliceData(buffer))), len(buffer)/8)
+		words[0], words[1] = 3, address+16
+		first, second := uint64(0x8000000100000001), uint64(0x8000000100000002)
+		words[6], words[7], words[8] = first, address+128, 3
+		words[10], words[11], words[12] = second, address+192, 3
+		binary.LittleEndian.PutUint32(buffer[128:], 11)
+		binary.LittleEndian.PutUint32(buffer[192:], 22)
+		initial := []value.Value{{Lo: first}, {}, {Lo: 777}, {}, {}, {}, {Lo: second}}
+		if loop {
+			initial = append(initial, value.Value{})
+		}
+		for i, v := range initial {
+			writeSlot(t, ctx, 16, slots.Slot(i), v)
+		}
+		s := native.State{Used: 16, Depth: 1, Budget: 64}
+		s.Payload[2] = address
+		ctx.SetState(s)
+		if exit, err := ctx.Enter(lease, 0); exit != native.Return || err != nil {
+			t.Fatal(exit, err)
+		}
+		if readSlot(t, ctx, 16, 3).Lo != 11 || readSlot(t, ctx, 16, 4).Lo != 777 || binary.LittleEndian.Uint32(buffer[128:]) != 11 || binary.LittleEndian.Uint32(buffer[192:]) != 777 {
+			t.Fatal("changed handle reused a former object's payload")
+		}
+		if loop {
+			// Reentry must discard the old payload address for the same handle.
+			words[7], words[11] = address+192, address+128
+			binary.LittleEndian.PutUint32(buffer[128:], 33)
+			binary.LittleEndian.PutUint32(buffer[192:], 44)
+			writeSlot(t, ctx, 16, 0, value.Value{Lo: second})
+			s.Continuation = 2
+			ctx.SetState(s)
+			if exit, err := ctx.Enter(lease, 0); exit != native.Return || err != nil {
+				t.Fatal("moved payload", exit, err)
+			}
+			if binary.LittleEndian.Uint32(buffer[128:]) != 777 || binary.LittleEndian.Uint32(buffer[192:]) != 44 {
+				t.Fatal("former payload survived reentry")
+			}
+			for _, bad := range []struct {
+				ref  uint64
+				exit native.Exit
+			}{{0, native.Trap}, {second + 1<<32, native.BadState}, {second &^ (1 << 63), native.BadState}, {second + 1, native.BadState}} {
+				writeSlot(t, ctx, 16, 0, value.Value{Lo: first})
+				writeSlot(t, ctx, 16, 6, value.Value{Lo: bad.ref})
+				s.Continuation = 0
+				ctx.SetState(s)
+				if exit, err := ctx.Enter(lease, 0); exit != bad.exit || err != nil {
+					t.Fatal("warmed invalid handle", bad, exit, err)
+				}
+				state, _ := ctx.State()
+				if bad.exit == native.Trap && (state.Payload[0] != uint64(wasm.TrapNullReference) || state.Source != 101) {
+					t.Fatal("warmed null source", state)
+				}
+			}
+			writeSlot(t, ctx, 16, 0, value.Value{Lo: first})
+			writeSlot(t, ctx, 16, 6, value.Value{Lo: second})
+			writeSlot(t, ctx, 16, 7, value.Value{})
+			// Unmetered polling observes Control, not Budget. Patch the verified
+			// cold-PC poll load using the existing deterministic poll witness.
+			probe := *compiled
+			probe.PrivatePollOffsets = []uint32{compiled.Offsets[len(f.Code)-2]}
+			forced, err := native.Publish(forcePrivateLoopPoll(t, &probe, runtime.GOARCH), []uint32{0}, DefaultLimits().MaxCodeBytes)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer forced.Close()
+			pollLease, err := forced.Acquire()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer pollLease.Close()
+			s.Continuation, s.Budget, s.Fuel = 0, 37, 42
+			ctx.SetState(s)
+			if exit, err := ctx.Enter(pollLease, 0); exit != native.Poll || err != nil {
+				t.Fatal("cached loop did not poll", exit, err)
+			}
+			state, _ := ctx.State()
+			if state.Continuation != uint64(len(f.Code)-2) || state.Fuel != 42 || state.Budget != 37 {
+				t.Fatal("wrong poll PC or budget", state)
+			}
+			writeSlot(t, ctx, 16, 7, value.Value{})
+			s.Continuation, s.Budget = 2, 64
+			ctx.SetState(s)
+			if exit, err := ctx.Enter(lease, 0); exit != native.Return || err != nil {
+				t.Fatal("resume after cached poll", exit, err)
+			}
+		}
 	}
 }
 
