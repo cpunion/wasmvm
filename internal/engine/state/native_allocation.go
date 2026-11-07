@@ -103,8 +103,9 @@ func (s *Store) finishNativeAllocations(types []uint32) error {
 	h := s.nativeHeap
 	words := h.allocationWords
 	count, end := words[nativeabi.HeapAllocationCursor/8], words[nativeabi.HeapAllocationUsed/8]
-	committed := uint64(0)
-	defer func() { s.releaseNativeReservations(committed) }()
+	// Success releases reservations explicitly and disarms this fixed rollback
+	// through pendingCount, avoiding a captured mutable completion counter.
+	defer s.releaseNativeReservations(0)
 	if count > h.pendingCount || end < h.used || end > uint64(len(h.data)) {
 		return wasm.ErrInvalid
 	}
@@ -187,16 +188,19 @@ func (s *Store) finishNativeAllocations(types []uint32) error {
 	h.used = end
 	s.usage.HeapObjects += count
 	s.usage.HeapBytes += bytes
-	committed = count
 	if count != 0 {
 		h.allocationBatches++
 		h.allocatedObjects += count
 	}
+	s.releaseNativeReservations(count)
 	return nil
 }
 
 func (s *Store) releaseNativeReservations(committed uint64) {
 	h := s.nativeHeap
+	if h.pendingCount == 0 {
+		return
+	}
 	refs := h.allocationWords[nativeabi.HeapAllocationHeaderBytes/8:]
 	for _, ref := range refs[committed:h.pendingCount] {
 		index := uint32(ref)

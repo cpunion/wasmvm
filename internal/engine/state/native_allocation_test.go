@@ -239,3 +239,54 @@ func TestNativeAllocationRequestedBatchBoundsAndPartialRelease(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestNativeAllocationPublicationPanicReleasesReservations(t *testing.T) {
+	s, types := allocationStore(t)
+	old, err := s.allocateObject(types[0], 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := s.Usage()
+	oldObject, _ := s.heapObject(old)
+	oldSerial := oldObject.Serial
+	if _, err = s.PrepareNativeAllocations(64); err != nil {
+		t.Fatal(err)
+	}
+	ref := stagedAllocation(t, s, 0, 42, old)
+	// Fault injection after all native descriptors validate: the trusted host
+	// metadata page is truncated. Restore it immediately after catching panic.
+	page := &s.heapObjects[uint64(uint32(ref))/heapObjectsPerPage]
+	saved := page.objects
+	page.objects = saved[:0]
+	var caught any
+	func() {
+		defer func() { caught = recover() }()
+		_ = s.FinishNativeAllocations(types)
+	}()
+	page.objects = saved
+	if caught == nil {
+		t.Fatal("publication fault did not panic")
+	}
+	if s.nativeHeap.pendingCount != 0 || s.IsLiveReference(ref) || s.Usage() != before || !s.IsLiveReference(old) || oldObject.Serial != oldSerial {
+		t.Fatal("panic lost rollback or preexisting object", s.Usage(), s.nativeHeap.pendingCount)
+	}
+	for _, word := range s.nativeHeap.allocationWords {
+		if word != 0 {
+			t.Fatal("panic retained a native reservation word")
+		}
+	}
+	if _, err = s.PrepareNativeAllocations(64); err != nil {
+		t.Fatal("panic poisoned next reservation", err)
+	}
+	next := stagedAllocation(t, s, 0, 17, old)
+	if err = s.FinishNativeAllocations(types); err != nil {
+		t.Fatal(err)
+	}
+	if !s.IsLiveReference(next) || !s.IsLiveReference(old) || s.Usage().HeapObjects != before.HeapObjects+1 {
+		t.Fatal("next batch lost published roots")
+	}
+	s.CollectReferences([]ReferenceValue{{Type: wasm.AnyRef, Value: value.Value{Lo: next}}}, nil, nil)
+	if !s.IsLiveReference(old) || !s.IsLiveReference(next) {
+		t.Fatal("published reference chain was not traced")
+	}
+}
