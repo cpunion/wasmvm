@@ -578,3 +578,13 @@ Mixed-memory functions conservatively retain individual bounds checks and omit
 single-memory region proofs. Per-memory guard regions and descriptor/register
 caching are local optimization follow-ups. Both targets and fuel tiers use the
 same layout and checked address arithmetic.
+
+## Checked amd64 heap cache
+
+The existing heap cache contract also applies to one optional amd64 key/address
+pair selected through the common register allocator. The full non-null handle
+is compared on hits; misses retain index/tag/generation checks. The pair uses
+existing callee-saved GPRs and resets on every entry, including cold continuations
+and linked-call returns. It cannot retain addresses across a host call or GC
+relocation. Root hints determine profitability only. Precise mode retains the
+established path. See the [source-bound qualification](../research/performance-amd64-heap-cache-2026-11-07.md).

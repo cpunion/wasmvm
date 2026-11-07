@@ -1,0 +1,8 @@
+{
+  "archive": "../evidence/amd64-heap-cache-2026-11-07.json.xz",
+  "archiveSHA256": "dddd279710986bf00539dfcd0efbc904c7e8ad3eac67b692f6226dcbc7677287",
+  "archiveBytes": 28028,
+  "originalSHA256": "2dcefb17af11ae2963a54f65419327d1f9b5f46173df887373e19ba50e66a813",
+  "originalBytes": 281063,
+  "classification": "Local qualification and separate inactive-source evidence; source-pinned timing event and final PR CI are independent"
+}

@@ -16,20 +16,18 @@ integration. Competing runtimes are independent test and benchmark references;
 execution never silently switches to one of them.
 
 Performance acceptance remains open. The
-[direct-memory operand study](docs/research/performance-direct-memory-operands-2026-11-07.md)
-reuses bounded region proofs and scalar x86 encoders. Local Go/LLGo semantics,
-35,328 independent encoding witnesses and all 22 Linux benchmark cases pass.
-Linux Clang/Rust SHA observes about 5.7%/5.8% less LLGo elapsed time against the
-preceding engine, around 0.71–0.72× wazero time, 1.10–1.18× Wasmtime and
-1.51–1.55× native C. These are advisory observations; remaining deficits,
-adverse memory/control results and unresolved calibration remain explicit.
-The [preceding scalar-forwarding study](docs/research/performance-mixed-scalar-forwarding-2026-11-06.md)
-passes four-profile semantic CI. The
+[completed cumulative comparison](docs/research/performance-cumulative-native-2026-11-07.md)
+measures all 22 Linux cases against the preceding main. Clang/Rust SHA observes
+LLGo elapsed time at **0.209/0.222×** the baseline, **0.655/0.669×** wazero,
+**1.248/1.327×** Wasmtime and **1.498/1.569×** native C. These are hosted advisory
+results; adverse GC/atomic/control observations and unresolved calibration remain
+explicit. Final four-profile semantic CI passes all 21 required jobs, 240
+conformance reports and every package coverage gate; the longest job takes 8m46s.
+The same report preserves the rejected frame-immediate experiment. The
 [rejected FP-register allocation](docs/research/performance-raw-integer-registers-2026-11-06.md)
-stays reverted after approximately 22% Linux SHA regressions. All source events,
-compiler profiles and lifecycle phases stay separate. Final branch CI and the
-cumulative main-baseline comparison remain required.
-The [gap audit](docs/research/performance-gaps-2026-11-02.md) retains the broader
+stays reverted after approximately 22% Linux SHA regressions. Source events,
+compiler profiles and lifecycle phases stay separate. The
+[gap audit](docs/research/performance-gaps-2026-11-02.md) retains the broader
 portfolio and independently reproduced upstream compiler reports.
 
 ## Project status
@@ -278,8 +276,13 @@ records primary sources, feature flags and ambiguous entries.
 
 ### Measured performance
 
+The [completed 2026-11-07 cumulative Linux event](docs/research/performance-cumulative-native-2026-11-07.md)
+contains the latest main-baseline comparison, all 22 cases and independent
+compiler/backend/competitor/lifecycle summaries. Eight cases resolve all four
+A/A controls; controlled acceptance remains open.
+
 The [2026-11-05 source event](docs/research/performance-loop-invariant-literals-2026-11-05.md)
-provides the latest 22-case local arm64 table and published Go/LLGo code audit.
+provides a 22-case local arm64 table and published Go/LLGo code audit.
 Its A/A controls resolve **0/22** workloads, so no performance gate closes.
 The [preceding hosted comparison](docs/research/performance-loop-scratch-registers-hosted-2026-11-05.md)
 retains the independent amd64 cohort. Results from different sources/hosts

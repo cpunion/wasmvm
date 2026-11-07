@@ -1,0 +1,8 @@
+{
+  "archive": "../evidence/cumulative-native-2026-11-07.json.xz",
+  "archiveSHA256": "356ad0147cbafb91e69884807d4e1f86179651b13dce82fd046be23dd9c7f5b0",
+  "archiveBytes": 23960,
+  "originalSHA256": "be4ede861fd38024db6a9b2db8deb31a43a59d5dc7eb8eece23d470ccb21df94",
+  "originalBytes": 232823,
+  "classification": "Separate completed advisory and semantic source events; no performance acceptance"
+}
