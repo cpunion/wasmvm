@@ -1,5 +1,5 @@
 {
-  "classification": "Exact-source local qualification passes; Linux x86 execution and full final-head CI remain required. Static reductions are not elapsed performance.",
+  "classification": "Local Go/LLGo qualification and complete22-case actual Linux benchmark execution pass. Full final-head semantic CI, integration and controlled performance acceptance remain required.",
   "plan": {
     "baseline": "2306caccfbd6083440d4eb6002b50dc9136a3740",
     "baselineEngine": "96ea7fb32b6397e704aa11598e80a1d3c657ca03",
@@ -567,11 +567,326 @@
     "files": 473
   },
   "limitations": [
-    "The ARM64 counterpart executes locally; the newly selected x86 paths need actual execution in Linux final-head CI.",
+    "The newly selected x86 paths execute in all22 Linux benchmark fixtures under both compilers. Full cold-frame and official semantic matrices still require final-head CI.",
     "Unknown high bits, memory64, vectors, precise mode, unproven accesses and large displacements retain the established path.",
     "Two fixed development failures are retained: non-memory fact classification and the complete-frame oracle return PC. Neither is a successful qualification result.",
     "All22ARM64published images and entry lists are unchanged; do not collect another local warm campaign for identical guest code.",
     "The22-case Linux source-pinned event retains all controls, adverse/inconclusive observations, competitor/native-C rows and nonoverlapping phases. It does not substitute for controlled milestone acceptance.",
     "Full final-head CI, integration review, broader world/release and controlled competitive/native acceptance remain open. LLGo2983 stays with its existing contributor."
-  ]
+  ],
+  "completedHosted": {
+    "run": "https://github.com/cpunion/wasmvm/actions/runs/42366175293",
+    "sourceHead": "d64119b222d186b8cc97ad34a9f9a7bff428805c",
+    "sourceBase": "96ea7fb32b6397e704aa11598e80a1d3c657ca03",
+    "checkedAlternativeConfigurations": 362,
+    "expectedUnsupported": 12,
+    "resolvedWorkloads": 7,
+    "jobs": [
+      {
+        "id": 128384624902,
+        "name": "Build routing comparison once / linux-amd64",
+        "seconds": 383.0
+      },
+      {
+        "id": 128386007385,
+        "name": "Routing comparison / gc",
+        "seconds": 19.0
+      },
+      {
+        "id": 128386007389,
+        "name": "Routing comparison / core",
+        "seconds": 147.0
+      },
+      {
+        "id": 128386007440,
+        "name": "Routing comparison / memory-simd",
+        "seconds": 493.0
+      },
+      {
+        "id": 128386007450,
+        "name": "Routing comparison / applications",
+        "seconds": 166.0
+      },
+      {
+        "id": 128386007453,
+        "name": "Routing comparison / threads",
+        "seconds": 49.0
+      }
+    ],
+    "workloads": [
+      {
+        "workload": "core/call-control",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9865981684163503,
+          "llgoHeadBase": 1.1191892896987727,
+          "llgoGo": 1.3626896083314466,
+          "llgoWazero": 8.12280701754386,
+          "llgoWasmtime": 4.145316804407713,
+          "llgoWasmer": 2.452730236348818
+        }
+      },
+      {
+        "workload": "core/integer-loop",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 1.0017135537407877,
+          "llgoHeadBase": 0.9969442198382235,
+          "llgoGo": 0.9960543963538754,
+          "llgoWazero": 1.0058623473530273,
+          "llgoWasmtime": 1.006115606810165,
+          "llgoWasmer": 1.0000675427117192,
+          "llgoNativeC": 1.0087669032976259
+        }
+      },
+      {
+        "workload": "core/function-calls",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.0065564976557775,
+          "llgoHeadBase": 0.9889894693614151,
+          "llgoGo": 0.9894422369216502,
+          "llgoWazero": 0.5035868022882406,
+          "llgoWasmtime": 0.4941665562513997,
+          "llgoWasmer": 0.49156332101836164,
+          "llgoNativeC": 0.8197518641311695
+        }
+      },
+      {
+        "workload": "core/memory-load-store",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.0504292120679026,
+          "llgoHeadBase": 1.0423346227015113,
+          "llgoGo": 0.9973820616513177,
+          "llgoWazero": 0.7481962217663595,
+          "llgoWasmtime": 1.2248377524775784,
+          "llgoWasmer": 1.211351772266038,
+          "llgoNativeC": 1.685801015206702
+        }
+      },
+      {
+        "workload": "memory/narrow-unaligned",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.0425520181402532,
+          "llgoHeadBase": 1.0644274775952636,
+          "llgoGo": 1.000632536091896,
+          "llgoWazero": 0.869689366989235,
+          "llgoWasmtime": 1.315151989614778,
+          "llgoWasmer": 1.3068671720520124,
+          "llgoNativeC": 2.0770965453033896
+        }
+      },
+      {
+        "workload": "memory/dependent-address",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9722803105942713,
+          "llgoHeadBase": 0.975618765410678,
+          "llgoGo": 0.9900871944462978,
+          "llgoWazero": 0.964498942509574,
+          "llgoWasmtime": 1.3040344972845166,
+          "llgoWasmer": 1.2990512047988902,
+          "llgoNativeC": 1.5217723396483929
+        }
+      },
+      {
+        "workload": "memory/float64-unaligned",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9491597998065738,
+          "llgoHeadBase": 0.9543237981312062,
+          "llgoGo": 1.0056615579115264,
+          "llgoWazero": 0.6824879097527579,
+          "llgoWasmtime": 1.1307152744778,
+          "llgoWasmer": 1.1288587599988449,
+          "llgoNativeC": 1.149211498887069
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-full",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9812648015041721,
+          "llgoHeadBase": 0.9871226515479277,
+          "llgoGo": 0.9984870749380288,
+          "llgoWazero": 0.8581415368871267,
+          "llgoWasmtime": 1.0679693338275782,
+          "llgoWasmer": 1.0304972194479043,
+          "llgoNativeC": 0.88987324806265
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-widen",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9992251203306153,
+          "llgoHeadBase": 0.996138700299988,
+          "llgoGo": 0.9961001530838897,
+          "llgoWazero": 0.6768341069829348,
+          "llgoWasmtime": 1.523494040080018,
+          "llgoWasmer": 1.5046153306601513,
+          "llgoNativeC": 0.39395325133262626
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-lanes",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9869690134697708,
+          "llgoHeadBase": 0.9884195830596025,
+          "llgoGo": 0.9965769235786294,
+          "llgoWazero": 0.9371915513345254,
+          "llgoWasmtime": 1.1350874263815176,
+          "llgoWasmer": 1.139121938223051,
+          "llgoNativeC": 1.3156539061824004
+        }
+      },
+      {
+        "workload": "gc/i31-roundtrip",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.032520757930594,
+          "llgoHeadBase": 1.0175330351174867,
+          "llgoGo": 1.0201556781277386,
+          "llgoWasmtime": 0.9472978794696281
+        }
+      },
+      {
+        "workload": "gc/struct-access",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.136519078473722,
+          "llgoHeadBase": 0.9604805835657584,
+          "llgoGo": 0.8862142687465357,
+          "llgoWasmtime": 1.648184964288344
+        }
+      },
+      {
+        "workload": "gc/struct-allocation",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.1034961682748998,
+          "llgoHeadBase": 1.0192680786010644,
+          "llgoGo": 1.220599443415528,
+          "llgoWasmtime": 0.3082646704598384
+        }
+      },
+      {
+        "workload": "gc/struct-indirect-access",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.044898216027436,
+          "llgoHeadBase": 0.9614232604343834,
+          "llgoGo": 0.9616982836495032,
+          "llgoWasmtime": 1.558673531636612
+        }
+      },
+      {
+        "workload": "threads/private-memory",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.7729205276354518,
+          "llgoHeadBase": 0.9672774869109948,
+          "llgoGo": 1.4592383638928068,
+          "llgoWazero": 1.201207477069546,
+          "llgoWasmtime": 2.4082867783985105,
+          "llgoWasmer": 1.8185972930216208
+        }
+      },
+      {
+        "workload": "threads/shared-memory",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.8949588922544353,
+          "llgoHeadBase": 0.6616815476190476,
+          "llgoGo": 1.0749425843104075,
+          "llgoWazero": 0.999887564650326,
+          "llgoWasmtime": 1.734204368174727,
+          "llgoWasmer": 1.4369041848440782
+        }
+      },
+      {
+        "workload": "threads/atomic-rmw",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.0197040843448215,
+          "llgoHeadBase": 1.0090552002224693,
+          "llgoGo": 1.008862321233079,
+          "llgoWazero": 1.1517874856167916,
+          "llgoWasmtime": 1.138685129251167,
+          "llgoWasmer": 1.0861927034611787
+        }
+      },
+      {
+        "workload": "threads/notify-empty",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.0713398286797882,
+          "llgoHeadBase": 1.0903087163897478,
+          "llgoGo": 1.2696533203125,
+          "llgoWazero": 0.06217700210126106,
+          "llgoWasmtime": 0.15630142235646824,
+          "llgoWasmer": 0.13722812642245047
+        }
+      },
+      {
+        "workload": "threads/wait-mismatch",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9870472999097822,
+          "llgoHeadBase": 0.9485908593164659,
+          "llgoGo": 1.0745576810080304,
+          "llgoWazero": 0.044349178035314435,
+          "llgoWasmtime": 0.11178120521858424,
+          "llgoWasmer": 0.3787422049382148
+        }
+      },
+      {
+        "workload": "threads/wait-timeout",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.983086993868665,
+          "llgoHeadBase": 0.766060724524368,
+          "llgoGo": 0.708496535100934,
+          "llgoWazero": 0.005264364450283042,
+          "llgoWasmtime": 0.032454806182078154,
+          "llgoWasmer": 0.010970114543577457
+        }
+      },
+      {
+        "workload": "applications/sha256-clang",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9354179073289293,
+          "llgoHeadBase": 0.9427196211618586,
+          "llgoGo": 1.0040895408746973,
+          "llgoWazero": 0.7184289292558066,
+          "llgoWasmtime": 1.1834752217836504,
+          "llgoWasmer": 1.1745003259057585,
+          "llgoNativeC": 1.5488651741547093
+        }
+      },
+      {
+        "workload": "applications/sha256-rust",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9589821613364214,
+          "llgoHeadBase": 0.9417462517632391,
+          "llgoGo": 0.9882899642028653,
+          "llgoWazero": 0.712035911410452,
+          "llgoWasmtime": 1.0994166543453012,
+          "llgoWasmer": 1.10042070273366,
+          "llgoNativeC": 1.5138399989706943
+        }
+      }
+    ],
+    "evidence": {
+      "path": "artifacts/memory-operands-20261106/hosted-evidence.tar.gz",
+      "bytes": 2103812,
+      "sha256": "e322557bc34a8ca183d5f7ac472648e1904468485c7d326b58fdac51ef3084bd",
+      "files": 18
+    }
+  }
 }

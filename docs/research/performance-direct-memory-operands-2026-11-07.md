@@ -1,7 +1,7 @@
 # Direct scalar memory operands: 2026-11-07
 
-**Local qualification passes; actual x86 execution and final-head CI remain
-required.** Engine `d64119b` compares against `96ea7fb`, with the same pinned
+**Local qualification and actual Linux benchmark execution pass; final-head
+semantic CI remains required.** Engine `d64119b` compares against `96ea7fb`, with the same pinned
 Go 1.27.3, LLGo `3571c25` release profile and reference versions.
 
 ## Selection and safety
@@ -71,8 +71,33 @@ Static reductions establish no elapsed gain. The
 retains all 22 original-count workloads, both compilers/backends, four A/A
 controls, alternate checksum checks, competitors and applicable native C.
 Preparation, publication, first call, warm calls, shutdown and process intervals
-remain separate. Its results and actual-target final-head semantic CI are still
-required; controlled milestone acceptance remains open.
+remain separate. The event completes all six required jobs: 22 cases, 362 alternate checksum
+checks and 12 expected reference-GC rejections. Seven cases resolve all four A/A
+controls; both SHA cases do. Full actual-target final-head semantic CI remains
+required; controlled milestone acceptance stays open.
+
+## Completed Linux observations
+
+Ratios compare full warm-call intervals; lower is faster. These hosted results
+are advisory. The Rust/Clang SHA changes observe approximately 5.8%/5.7% less
+LLGo elapsed time against the exact `96ea7fb` baseline.
+
+| Workload | LLGo head/base | / Wasmtime | / native C | All four A/A |
+| --- | ---: | ---: | ---: | --- |
+| Clang SHA | 0.943 | 1.183 | 1.549 | Resolved |
+| Rust SHA | 0.942 | 1.099 | 1.514 | Resolved |
+| Dependent address | 0.976 | 1.304 | 1.522 | Resolved |
+| Float64 unaligned | 0.954 | 1.131 | 1.149 | Resolved |
+| Narrow unaligned | 1.064 | 1.315 | 2.077 | Inconclusive |
+| Core memory load/store | 1.042 | 1.225 | 1.686 | Inconclusive |
+
+The adverse narrow/core observations and tiny-call-control loss remain in the
+complete record. Unresolved controls do not become passes, and there is no
+favorable retry. Go/LLGo, interpreter/native, all competitors and applicable C
+rows retain independent preparation, first, warm, shutdown and process phases.
+Cross-event ratios are not pooled. Build takes 383 seconds; the longest group
+takes 493 seconds. The next main-baseline event measures the cumulative branch
+separately rather than extrapolating from these incremental measurements.
 
 The preceding mixed-forwarding event and the rejected raw-FP allocation event
 remain independent in the [completed study](performance-mixed-scalar-forwarding-2026-11-06.md).
@@ -85,3 +110,5 @@ pins all identities and complete static summaries. Immutable local archive:
 `artifacts/memory-operands-20261106/local-evidence.tar.gz`, 3203770 bytes,
 473 files; SHA-256
 `e8a05c67d607a21153a7b37aec03dde3e8dae7de9032aa8edbc1fbc7c6b3d732`.
+
+Completed hosted archive: `artifacts/memory-operands-20261106/hosted-evidence.tar.gz`, 2103812 bytes, 18 files; SHA-256 `e322557bc34a8ca183d5f7ac472648e1904468485c7d326b58fdac51ef3084bd`.

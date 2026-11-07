@@ -17,16 +17,18 @@ execution never silently switches to one of them.
 
 Performance acceptance remains open. The
 [direct-memory operand study](docs/research/performance-direct-memory-operands-2026-11-07.md)
-reuses bounded region proofs and scalar x86 encoders. Local Go/LLGo semantic
-qualification and 35,328 independent encoding witnesses pass; actual x86
-execution and the 22-case Linux comparison remain required. The preceding
-[completed scalar-forwarding study](docs/research/performance-mixed-scalar-forwarding-2026-11-06.md)
-passes full four-profile semantic CI. Its Linux SHA cases observe LLGo around
-0.67–0.70× wazero time, 1.32–1.33× Wasmtime and 1.57–1.59× native C; these are
-advisory observations, with remaining deficits and a Rust head/base loss retained.
-The [rejected FP-register allocation](docs/research/performance-raw-integer-registers-2026-11-06.md)
+reuses bounded region proofs and scalar x86 encoders. Local Go/LLGo semantics,
+35,328 independent encoding witnesses and all 22 Linux benchmark cases pass.
+Linux Clang/Rust SHA observes about 5.7%/5.8% less LLGo elapsed time against the
+preceding engine, around 0.71–0.72× wazero time, 1.10–1.18× Wasmtime and
+1.51–1.55× native C. These are advisory observations; remaining deficits,
+adverse memory/control results and unresolved calibration remain explicit.
+The [preceding scalar-forwarding study](docs/research/performance-mixed-scalar-forwarding-2026-11-06.md)
+passes four-profile semantic CI. The
+[rejected FP-register allocation](docs/research/performance-raw-integer-registers-2026-11-06.md)
 stays reverted after approximately 22% Linux SHA regressions. All source events,
-compiler profiles, lifecycle phases and unresolved controls remain separate.
+compiler profiles and lifecycle phases stay separate. Final branch CI and the
+cumulative main-baseline comparison remain required.
 The [gap audit](docs/research/performance-gaps-2026-11-02.md) retains the broader
 portfolio and independently reproduced upstream compiler reports.
 
