@@ -1,0 +1,968 @@
+{
+  "classification": "Rejected and reverted in4a744df. Completed Linux original-count SHA elapsed regresses under both Go and LLGo despite zero frame traffic; both SHA cases resolve all four advisory controls. All raw semantic/performance evidence remains separate.",
+  "plan": {
+    "baseline": "3bf4213dcee9f68c0001605f93d7c18bb82a7435",
+    "baselineEngine": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
+    "mechanism": "Retain nonresident integer Lo words as raw64 bits in spare FP/SIMD registers of fixed-map, nontrapping private loops. Share existing bit moves, slot loads/stores, register transitions and observable snapshots; preserve independent Hi words. Account for raw sources in mixed x86 arithmetic. Existing variable plans keep their typed banks.",
+    "requirements": [
+      "No physical overlap with FP/vector homes or literal constants; deterministic bounded selection; no raw home for a deferred-copy target",
+      "Both widths, full raw high bits, cross-bank copies/transitions, original cold PCs, forced private polls, late traps, shared memory and FP/V128 coexistence under Go/LLGo release execution",
+      "Precise fuel and existing unsupported/fallback paths unchanged; no new unsafe execution mode",
+      "Actual output and source-pinned affected lifecycle/competitor/native comparisons, preserving losses and unresolved controls without favorable retries or ISA/flag/alignment sweeps",
+      "Keep source-bound CI42083219131 and benchmark42078773487 live; do not restart due queue or observation timeout. LLGo2983 remains with its existing contributor."
+    ],
+    "source": "0e32719ab934ea2246e320da777303a808b363f7",
+    "measurementBaseline": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
+    "measurementScope": "Actual image inspection first. Original-count affected lifecycle/competitor/native events remain advisory; preserve all failures and unresolved controls without favorable retries.",
+    "baselineReuse": "Reuse exact source5099a76 candidate binaries only after engine/harness, toolchain/profile, binary and reference library checks; build candidate source fresh."
+  },
+  "qualification": [
+    {
+      "compiler": "go",
+      "exit": 0,
+      "wallSeconds": 4.921997167170048,
+      "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "source": "0e32719ab934ea2246e320da777303a808b363f7"
+    },
+    {
+      "compiler": "llgo",
+      "exit": 0,
+      "wallSeconds": 36.33482716581784,
+      "compilerSHA256": "4ec6e101cc510011d56e8ef9dee4053abbde521f284963bd2b468b281d3fec0c",
+      "source": "0e32719ab934ea2246e320da777303a808b363f7"
+    },
+    {
+      "compiler": "vet",
+      "exit": 0,
+      "wallSeconds": 0.38794983294792473,
+      "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "source": "0e32719ab934ea2246e320da777303a808b363f7"
+    }
+  ],
+  "coverage": {
+    "github.com/cpunion/wasmvm/internal/compiler/codegen": {
+      "covered": 8535,
+      "total": 8738,
+      "percent": 97.67681391622797
+    },
+    "github.com/cpunion/wasmvm/internal/engine/nativeexec": {
+      "covered": 459,
+      "total": 496,
+      "percent": 92.54032258064517
+    }
+  },
+  "publication": {
+    "classification": "Output-only actual arm64 publication diagnostic; no timing or causal attribution",
+    "publications": 66,
+    "fixtures": 22,
+    "freshWitnesses": 44,
+    "headGoLLGoImagesAndEntriesIdentical": true,
+    "changed": [
+      {
+        "workload": "applications/sha256-clang",
+        "headGoLLGoByteIdentical": true,
+        "sourceChangesPublishedBytes": true,
+        "baseBytes": 101332,
+        "headBytes": 101356,
+        "headPublishedSha256": "52cb700be0c4c09b6724b94b4ed1c4e28f803a941151378dcabcf038a31267f6"
+      }
+    ]
+  },
+  "encoding": {
+    "source": "0e32719ab934ea2246e320da777303a808b363f7",
+    "build": [
+      {
+        "role": "go",
+        "command": [
+          "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+          "test",
+          "-count=1",
+          "-timeout=2m",
+          "-run",
+          "^TestDiagnosticFrameBytes$",
+          "./internal/compiler/codegen"
+        ],
+        "exit": 0,
+        "seconds": 1.7419523750431836,
+        "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764"
+      },
+      {
+        "role": "llgo",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-3571c25",
+          "test",
+          "-O3",
+          "-lto=full",
+          "-count=1",
+          "-timeout=2m",
+          "-run",
+          "^TestDiagnosticFrameBytes$",
+          "./internal/compiler/codegen"
+        ],
+        "exit": 0,
+        "seconds": 29.107994332909584,
+        "compilerSHA256": "4ec6e101cc510011d56e8ef9dee4053abbde521f284963bd2b468b281d3fec0c"
+      }
+    ],
+    "referenceCommand": [
+      "/opt/homebrew/opt/llvm@22/bin/llvm-mc",
+      "-triple=x86_64-unknown-linux-gnu",
+      "-show-encoding"
+    ],
+    "referenceSHA256": "c68457d0bd100e2d2b0e502c1cf891bfca7e4ed40a528c87a40542dd905588a0",
+    "referenceVersion": "Homebrew LLVM version 22.1.8\n  Optimized build.\n\n  Registered Targets:\n    aarch64     - AArch64 (little endian)\n    aarch64_32  - AArch64 (little endian ILP32)\n    aarch64_be  - AArch64 (big endian)\n    amdgcn      - AMD GCN GPUs\n    arm         - ARM\n    arm64       - ARM64 (little endian)\n    arm64_32    - ARM64 (little endian ILP32)\n    armeb       - ARM (big endian)\n    avr         - Atmel AVR Microcontroller\n    bpf         - BPF (host endian)\n    bpfeb       - BPF (big endian)\n    bpfel       - BPF (little endian)\n    hexagon     - Hexagon\n    lanai       - Lanai\n    loongarch32 - 32-bit LoongArch\n    loongarch64 - 64-bit LoongArch\n    mips        - MIPS (32-bit big endian)\n    mips64      - MIPS (64-bit big endian)\n    mips64el    - MIPS (64-bit little endian)\n    mipsel      - MIPS (32-bit little endian)\n    msp430      - MSP430 [experimental]\n    nvptx       - NVIDIA PTX 32-bit\n    nvptx64     - NVIDIA PTX 64-bit\n    ppc32       - PowerPC 32\n    ppc32le     - PowerPC 32 LE\n    ppc64       - PowerPC 64\n    ppc64le     - PowerPC 64 LE\n    r600        - AMD GPUs HD2XXX-HD6XXX\n    riscv32     - 32-bit RISC-V\n    riscv32be   - 32-bit big endian RISC-V\n    riscv64     - 64-bit RISC-V\n    riscv64be   - 64-bit big endian RISC-V\n    sparc       - Sparc\n    sparcel     - Sparc LE\n    sparcv9     - Sparc V9\n    spirv       - SPIR-V Logical\n    spirv32     - SPIR-V 32-bit\n    spirv64     - SPIR-V 64-bit\n    systemz     - SystemZ\n    thumb       - Thumb\n    thumbeb     - Thumb (big endian)\n    ve          - VE\n    wasm32      - WebAssembly 32-bit\n    wasm64      - WebAssembly 64-bit\n    x86         - 32-bit X86: Pentium-Pro and above\n    x86-64      - 64-bit X86: EM64T and AMD64\n    xcore       - XCore\n",
+    "instructionsMatched": 280,
+    "fullResidencyAliasKernels": 1980,
+    "GoLLGoBytesIdentical": true,
+    "scope": "Code emission and independent LLVM assembler byte comparison only. No x86 guest code executes on the ARM64 host; actual amd64 execution remains required in CI."
+  },
+  "static": {
+    "x86CompressionInstructions": {
+      "clang": [
+        70,
+        68
+      ],
+      "rust": [
+        67,
+        67
+      ]
+    },
+    "x86CompressionFrameReferences": {
+      "clang": [
+        20,
+        0
+      ],
+      "rust": [
+        18,
+        0
+      ]
+    },
+    "x86FunctionBytes": {
+      "clang": [
+        10864,
+        11086
+      ],
+      "rust": [
+        10746,
+        10950
+      ]
+    },
+    "x86RawSlots": {
+      "clang": 8,
+      "rust": 7
+    },
+    "x86ScheduleInstructions": [
+      43,
+      43
+    ],
+    "arm64CompressionInstructions": {
+      "clang": [
+        45,
+        45
+      ],
+      "rust": [
+        39,
+        39
+      ]
+    },
+    "arm64CompressionFrameReferences": {
+      "clang": [
+        1,
+        0
+      ],
+      "rust": [
+        0,
+        0
+      ]
+    },
+    "arm64RawSlots": {
+      "clang": 1,
+      "rust": 0
+    },
+    "polls": 1
+  },
+  "local": {
+    "run": "local macOS ARM64 source-pinned application event",
+    "source": "0e32719ab934ea2246e320da777303a808b363f7",
+    "baseline": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
+    "cases": 2,
+    "alternateChecks": 34,
+    "expectedUnsupported": 0,
+    "allFourControlsResolvedCases": 2,
+    "jobs": [
+      {
+        "group": "applications",
+        "seconds": 103.50913354102522,
+        "startedAt": "2026-11-05T18:54:44.627615+00:00"
+      }
+    ],
+    "workloads": [
+      {
+        "workload": "applications/sha256-clang",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "headGoBaseGo": 1.0192919855487406,
+          "headLLGoBaseLLGo": 1.0150394752898735,
+          "LLGoGo": 0.9838472731899126,
+          "LLGoWazero": 0.6929987614932932,
+          "LLGoWasmtime": 1.0930339902582094,
+          "LLGoC": 1.253679981558929
+        },
+        "medianWarmCallNs": {
+          "aa-base-llgo-interpreter": 92645834,
+          "aa-base-llgo-native": 978292,
+          "aa-head-llgo-interpreter": 93076500,
+          "aa-head-llgo-native": 986292,
+          "base-go-interpreter": 101558458,
+          "base-go-native": 987042,
+          "base-llgo-interpreter": 93130209,
+          "base-llgo-native": 975167,
+          "head-go-interpreter": 104726583,
+          "head-go-native": 1006084,
+          "head-llgo-interpreter": 93931958,
+          "head-llgo-native": 989833,
+          "native-c": 789542,
+          "wasmedge-interpreter": 129119125,
+          "wasmer-cranelift": 1042625,
+          "wasmtime-cranelift": 905583,
+          "wazero-compiler": 1428333,
+          "wazero-interpreter": 201433583
+        },
+        "phasesNs": {
+          "base-go-native": {
+            "cleanup": 13833,
+            "compileValidate": 2181500,
+            "engineSetup": 5458,
+            "exportLookup": 333,
+            "firstCall": 980167,
+            "instantiate": 19459,
+            "load": 31000
+          },
+          "base-llgo-native": {
+            "cleanup": 10208,
+            "compileValidate": 4433167,
+            "engineSetup": 2750,
+            "exportLookup": 750,
+            "firstCall": 946458,
+            "instantiate": 22500,
+            "load": 44916
+          },
+          "head-go-native": {
+            "cleanup": 10959,
+            "compileValidate": 2264958,
+            "engineSetup": 5208,
+            "exportLookup": 334,
+            "firstCall": 999333,
+            "instantiate": 17500,
+            "load": 33959
+          },
+          "head-llgo-native": {
+            "cleanup": 9041,
+            "compileValidate": 4923041,
+            "engineSetup": 2792,
+            "exportLookup": 875,
+            "firstCall": 978000,
+            "instantiate": 21916,
+            "load": 46167
+          }
+        }
+      },
+      {
+        "workload": "applications/sha256-rust",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "headGoBaseGo": 1.0006783233532934,
+          "headLLGoBaseLLGo": 0.9993110327210801,
+          "LLGoGo": 0.9832056435012226,
+          "LLGoWazero": 0.6530473767885533,
+          "LLGoWasmtime": 1.1249261947145008,
+          "LLGoC": 1.3079662474128324
+        },
+        "medianWarmCallNs": {
+          "aa-base-llgo-interpreter": 92096500,
+          "aa-base-llgo-native": 1031625,
+          "aa-head-llgo-interpreter": 91719750,
+          "aa-head-llgo-native": 1028375,
+          "base-go-interpreter": 99289000,
+          "base-go-native": 1043750,
+          "base-llgo-interpreter": 91726666,
+          "base-llgo-native": 1027625,
+          "head-go-interpreter": 102787083,
+          "head-go-native": 1044458,
+          "head-llgo-interpreter": 91919792,
+          "head-llgo-native": 1026917,
+          "native-c": 785125,
+          "wasmedge-interpreter": 119853958,
+          "wasmer-cranelift": 918000,
+          "wasmtime-cranelift": 912875,
+          "wazero-compiler": 1572500,
+          "wazero-interpreter": 203554708
+        },
+        "phasesNs": {
+          "base-go-native": {
+            "cleanup": 16334,
+            "compileValidate": 2263292,
+            "engineSetup": 4916,
+            "exportLookup": 416,
+            "firstCall": 1048958,
+            "instantiate": 15625,
+            "load": 41542
+          },
+          "base-llgo-native": {
+            "cleanup": 15541,
+            "compileValidate": 4972750,
+            "engineSetup": 2958,
+            "exportLookup": 750,
+            "firstCall": 1021750,
+            "instantiate": 21542,
+            "load": 61875
+          },
+          "head-go-native": {
+            "cleanup": 17709,
+            "compileValidate": 2200333,
+            "engineSetup": 5625,
+            "exportLookup": 375,
+            "firstCall": 1028916,
+            "instantiate": 17292,
+            "load": 36458
+          },
+          "head-llgo-native": {
+            "cleanup": 11541,
+            "compileValidate": 5081333,
+            "engineSetup": 2917,
+            "exportLookup": 750,
+            "firstCall": 1002959,
+            "instantiate": 22334,
+            "load": 51958
+          }
+        }
+      }
+    ]
+  },
+  "precedingLinux": {
+    "run": "https://github.com/cpunion/wasmvm/actions/runs/42078773487",
+    "source": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
+    "baseline": "4054f1b96a707fa6f5334221574b8e393f8effc0",
+    "cases": 22,
+    "alternateChecks": 362,
+    "expectedUnsupported": 12,
+    "allFourControlsResolvedCases": 9,
+    "jobs": [
+      {
+        "id": 127425967190,
+        "name": "Build routing comparison once / linux-amd64",
+        "seconds": 395.0
+      },
+      {
+        "id": 127433961183,
+        "name": "Routing comparison / memory-simd",
+        "seconds": 329.0
+      },
+      {
+        "id": 127433961199,
+        "name": "Routing comparison / threads",
+        "seconds": 61.0
+      },
+      {
+        "id": 127433961236,
+        "name": "Routing comparison / gc",
+        "seconds": 22.0
+      },
+      {
+        "id": 127433961345,
+        "name": "Routing comparison / core",
+        "seconds": 172.0
+      },
+      {
+        "id": 127433961371,
+        "name": "Routing comparison / applications",
+        "seconds": 197.0
+      }
+    ],
+    "workloads": [
+      {
+        "workload": "core/call-control",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "headGoBaseGo": 0.949952335557674,
+          "headLLGoBaseLLGo": 0.9628804751299184,
+          "LLGoGo": 1.3015554440541897,
+          "LLGoWazero": 7.507959479015919,
+          "LLGoWasmtime": 3.9846390168970816
+        }
+      },
+      {
+        "workload": "core/integer-loop",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "headGoBaseGo": 1.0023271044464188,
+          "headLLGoBaseLLGo": 0.9988785026475284,
+          "LLGoGo": 0.9964874204129578,
+          "LLGoWazero": 1.0085832135901793,
+          "LLGoWasmtime": 1.0063206271867022,
+          "LLGoC": 1.0079117576311256
+        }
+      },
+      {
+        "workload": "core/function-calls",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "headGoBaseGo": 1.0068208837574835,
+          "headLLGoBaseLLGo": 0.9997173337981622,
+          "LLGoGo": 0.9933435224562496,
+          "LLGoWazero": 0.5120746425869598,
+          "LLGoWasmtime": 0.4980580957661852,
+          "LLGoC": 0.8242583968086883
+        }
+      },
+      {
+        "workload": "core/memory-load-store",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "headGoBaseGo": 1.004070039627334,
+          "headLLGoBaseLLGo": 0.9956656592969619,
+          "LLGoGo": 0.9946006372553192,
+          "LLGoWazero": 0.7134421594074493,
+          "LLGoWasmtime": 1.1632520325203253,
+          "LLGoC": 1.6081591708095098
+        }
+      },
+      {
+        "workload": "memory/narrow-unaligned",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "headGoBaseGo": 0.9445459393413754,
+          "headLLGoBaseLLGo": 0.9452249013512956,
+          "LLGoGo": 0.9942533415539243,
+          "LLGoWazero": 0.716113053401472,
+          "LLGoWasmtime": 0.919803503193396,
+          "LLGoC": 1.699103820096059
+        }
+      },
+      {
+        "workload": "memory/dependent-address",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "headGoBaseGo": 0.9963274019139549,
+          "headLLGoBaseLLGo": 1.0018323442567139,
+          "LLGoGo": 0.9950853784072081,
+          "LLGoWazero": 0.9040943879280485,
+          "LLGoWasmtime": 1.2759208698609465,
+          "LLGoC": 1.6595770075567093
+        }
+      },
+      {
+        "workload": "memory/float64-unaligned",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "headGoBaseGo": 1.0133362150206857,
+          "headLLGoBaseLLGo": 1.0010177846185262,
+          "LLGoGo": 0.9977318469261924,
+          "LLGoWazero": 0.6475126770875125,
+          "LLGoWasmtime": 1.3991412920700084,
+          "LLGoC": 1.6296215084490404
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-full",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "headGoBaseGo": 1.0016854455345403,
+          "headLLGoBaseLLGo": 0.9995364290956376,
+          "LLGoGo": 0.9952147003371682,
+          "LLGoWazero": 0.8993481949441091,
+          "LLGoWasmtime": 1.0513437543200332,
+          "LLGoC": 0.841411778975421
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-widen",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "headGoBaseGo": 1.0055698784432243,
+          "headLLGoBaseLLGo": 1.005420815576934,
+          "LLGoGo": 0.9965382304231215,
+          "LLGoWazero": 0.5982554241574072,
+          "LLGoWasmtime": 1.5119564879011995,
+          "LLGoC": 0.5142174348166952
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-lanes",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "headGoBaseGo": 1.0022170068893679,
+          "headLLGoBaseLLGo": 0.996911079635015,
+          "LLGoGo": 0.9919876081986212,
+          "LLGoWazero": 0.9714686803415926,
+          "LLGoWasmtime": 1.12248578438743,
+          "LLGoC": 1.3923436863635512
+        }
+      },
+      {
+        "workload": "gc/i31-roundtrip",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "headGoBaseGo": 0.969791797054283,
+          "headLLGoBaseLLGo": 1.0367230470203879,
+          "LLGoGo": 1.0785612872692854,
+          "LLGoWasmtime": 1.0181958490719305
+        }
+      },
+      {
+        "workload": "gc/struct-access",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "headGoBaseGo": 1.0506480108324199,
+          "headLLGoBaseLLGo": 0.9751914435795203,
+          "LLGoGo": 0.9456565098652919,
+          "LLGoWasmtime": 1.7563116202199807
+        }
+      },
+      {
+        "workload": "gc/struct-allocation",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "headGoBaseGo": 0.9815656638495486,
+          "headLLGoBaseLLGo": 0.9765026753184721,
+          "LLGoGo": 1.1294464573801275,
+          "LLGoWasmtime": 0.33070102944649776
+        }
+      },
+      {
+        "workload": "gc/struct-indirect-access",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "headGoBaseGo": 1.0377333401524063,
+          "headLLGoBaseLLGo": 0.9920166858457997,
+          "LLGoGo": 0.9516726792437952,
+          "LLGoWasmtime": 1.0303279300814223
+        }
+      },
+      {
+        "workload": "threads/private-memory",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "headGoBaseGo": 0.8670537010159651,
+          "headLLGoBaseLLGo": 1.0022321428571428,
+          "LLGoGo": 1.1273853364579847,
+          "LLGoWazero": 0.9149572069012363,
+          "LLGoWasmtime": 2.861695347355003
+        }
+      },
+      {
+        "workload": "threads/shared-memory",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "headGoBaseGo": 1.0077339520494972,
+          "headLLGoBaseLLGo": 0.9244912191720028,
+          "LLGoGo": 1.1191097467382962,
+          "LLGoWazero": 0.9891466558133225,
+          "LLGoWasmtime": 2.9470493128536783
+        }
+      },
+      {
+        "workload": "threads/atomic-rmw",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "headGoBaseGo": 1.005288766659615,
+          "headLLGoBaseLLGo": 1.008857395925598,
+          "LLGoGo": 1.0386503928170594,
+          "LLGoWazero": 1.3188741426917252,
+          "LLGoWasmtime": 1.3446851019388821
+        }
+      },
+      {
+        "workload": "threads/notify-empty",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "headGoBaseGo": 1.012710667545429,
+          "headLLGoBaseLLGo": 0.9473186379338707,
+          "LLGoGo": 1.0707976943101525,
+          "LLGoWazero": 0.0715217188809886,
+          "LLGoWasmtime": 0.3070841998613555
+        }
+      },
+      {
+        "workload": "threads/wait-mismatch",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "headGoBaseGo": 1.0021199915200338,
+          "headLLGoBaseLLGo": 0.9979204685311718,
+          "LLGoGo": 0.9948804738734927,
+          "LLGoWazero": 0.05472228104920444,
+          "LLGoWasmtime": 0.23373292777479573
+        }
+      },
+      {
+        "workload": "threads/wait-timeout",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "headGoBaseGo": 1.0214192002738007,
+          "headLLGoBaseLLGo": 0.8392365935966878,
+          "LLGoGo": 0.826347974199313,
+          "LLGoWazero": 0.005916348265278868,
+          "LLGoWasmtime": 0.04720448150676628
+        }
+      },
+      {
+        "workload": "applications/sha256-clang",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "headGoBaseGo": 0.9457082029440164,
+          "headLLGoBaseLLGo": 0.9700557169865698,
+          "LLGoGo": 1.0074942951351407,
+          "LLGoWazero": 0.7201749953244578,
+          "LLGoWasmtime": 1.3719352968275438,
+          "LLGoC": 1.649235178661584
+        }
+      },
+      {
+        "workload": "applications/sha256-rust",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "headGoBaseGo": 0.9075416524715693,
+          "headLLGoBaseLLGo": 0.9192659289468966,
+          "LLGoGo": 0.9923044987399846,
+          "LLGoWazero": 0.6590926968068102,
+          "LLGoWasmtime": 1.3201953016538925,
+          "LLGoC": 1.5746472301056784
+        }
+      }
+    ]
+  },
+  "precedingLinuxEvidence": {
+    "path": "artifacts/loop-frame-operands-20261106/hosted-evidence-final.tar.gz",
+    "bytes": 2106484,
+    "sha256": "2088852c440b1918313daaaedf4b51b168b6f5bef6cebbfb932ab2c737a0aeca",
+    "files": 16
+  },
+  "currentLinux": {
+    "run": "https://github.com/cpunion/wasmvm/actions/runs/42088602463",
+    "sourceHead": "0e32719ab934ea2246e320da777303a808b363f7",
+    "sourceBase": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
+    "checkedAlternativeConfigurations": 362,
+    "resolvedWorkloads": 9,
+    "jobs": [
+      {
+        "id": 127460334003,
+        "name": "Build routing comparison once / linux-amd64",
+        "seconds": 314.0
+      },
+      {
+        "id": 127463302866,
+        "name": "Routing comparison / core",
+        "seconds": 153.0
+      },
+      {
+        "id": 127463302872,
+        "name": "Routing comparison / applications",
+        "seconds": 204.0
+      },
+      {
+        "id": 127463303020,
+        "name": "Routing comparison / threads",
+        "seconds": 62.0
+      },
+      {
+        "id": 127463303293,
+        "name": "Routing comparison / memory-simd",
+        "seconds": 392.0
+      },
+      {
+        "id": 127463303325,
+        "name": "Routing comparison / gc",
+        "seconds": 26.0
+      }
+    ],
+    "status": "complete",
+    "cases": 22,
+    "expectedReferenceRejections": 12,
+    "evidence": {
+      "path": "artifacts/loop-raw-registers-20261106/hosted-evidence-final.tar.gz",
+      "bytes": 2112890,
+      "sha256": "62d5ae960295bd1ff14e9524103aceed593cb21cb54ab966f37432c4cf5325e3",
+      "files": 16
+    },
+    "workloads": [
+      {
+        "workload": "core/call-control",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9304308797127468,
+          "llgoHeadBase": 0.9169497923744809,
+          "llgoGo": 1.171731789676797,
+          "llgoWazero": 6.930099857346647,
+          "llgoWasmtime": 3.6199701937406856
+        }
+      },
+      {
+        "workload": "core/integer-loop",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9989332877946236,
+          "llgoHeadBase": 1.001145426420046,
+          "llgoGo": 1.001211716266975,
+          "llgoWazero": 1.0088989471206862,
+          "llgoWasmtime": 1.0074061287714293,
+          "llgoC": 1.0135108949985376
+        }
+      },
+      {
+        "workload": "core/function-calls",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.014423516096848,
+          "llgoHeadBase": 1.000200946918285,
+          "llgoGo": 0.9953864343628193,
+          "llgoWazero": 0.5097470615080006,
+          "llgoWasmtime": 0.4988059370859239,
+          "llgoC": 0.8274295246816726
+        }
+      },
+      {
+        "workload": "core/memory-load-store",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9990631074202648,
+          "llgoHeadBase": 1.0051721580232638,
+          "llgoGo": 1.0002554976953162,
+          "llgoWazero": 0.7174103670562876,
+          "llgoWasmtime": 1.1726586620545665,
+          "llgoC": 1.6117773708214334
+        }
+      },
+      {
+        "workload": "memory/narrow-unaligned",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 1.0098565700309214,
+          "llgoHeadBase": 1.0029256107298379,
+          "llgoGo": 0.9961899100939484,
+          "llgoWazero": 0.75263230341066,
+          "llgoWasmtime": 1.200825899505723,
+          "llgoC": 2.002913312636794
+        }
+      },
+      {
+        "workload": "memory/dependent-address",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9991889494438974,
+          "llgoHeadBase": 1.0026558806514996,
+          "llgoGo": 0.9947293035877842,
+          "llgoWazero": 0.9448788160497689,
+          "llgoWasmtime": 1.3384865226519806,
+          "llgoC": 1.7750967871521401
+        }
+      },
+      {
+        "workload": "memory/float64-unaligned",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9920929324482624,
+          "llgoHeadBase": 1.0005330526372611,
+          "llgoGo": 1.0062328867053238,
+          "llgoWazero": 0.6961195893663392,
+          "llgoWasmtime": 1.0137701118581233,
+          "llgoC": 1.02072414472569
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-full",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 1.0009855806510737,
+          "llgoHeadBase": 0.9989947580662357,
+          "llgoGo": 0.9967167921454189,
+          "llgoWazero": 0.8604713727267419,
+          "llgoWasmtime": 1.06199546157723,
+          "llgoC": 0.8436191026130582
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-widen",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9872984319356849,
+          "llgoHeadBase": 0.9863492606851971,
+          "llgoGo": 0.9976430901521494,
+          "llgoWazero": 0.6598671927452657,
+          "llgoWasmtime": 1.622964132539496,
+          "llgoC": 0.5754086692210373
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-lanes",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9997546384512261,
+          "llgoHeadBase": 0.9989712067735104,
+          "llgoGo": 0.9962059089792468,
+          "llgoWazero": 0.9526529562889409,
+          "llgoWasmtime": 1.0846641702767261,
+          "llgoC": 1.3601808743212431
+        }
+      },
+      {
+        "workload": "gc/i31-roundtrip",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9875288683602771,
+          "llgoHeadBase": 1.0185900185900185,
+          "llgoGo": 0.9994855004677269,
+          "llgoWasmtime": 0.9229074889867841
+        }
+      },
+      {
+        "workload": "gc/struct-access",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9664846915803692,
+          "llgoHeadBase": 1.10122616721687,
+          "llgoGo": 0.9518416072208473,
+          "llgoWasmtime": 2.250361396021202
+        }
+      },
+      {
+        "workload": "gc/struct-allocation",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.0219677374310963,
+          "llgoHeadBase": 1.0052639057188508,
+          "llgoGo": 1.2198708804302034,
+          "llgoWasmtime": 0.2985874299219282
+        }
+      },
+      {
+        "workload": "gc/struct-indirect-access",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.019199062825408,
+          "llgoHeadBase": 0.9966466347829724,
+          "llgoGo": 1.0142894645353087,
+          "llgoWasmtime": 2.9335946317539143
+        }
+      },
+      {
+        "workload": "threads/private-memory",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9761536361154092,
+          "llgoHeadBase": 1.0157049790600279,
+          "llgoGo": 1.0854390054390055,
+          "llgoWazero": 1.3253889943074004,
+          "llgoWasmtime": 4.863389500069628
+        }
+      },
+      {
+        "workload": "threads/shared-memory",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9783969559346999,
+          "llgoHeadBase": 0.9054489464229706,
+          "llgoGo": 0.9959540835528792,
+          "llgoWazero": 1.361531535394246,
+          "llgoWasmtime": 4.436295054484493
+        }
+      },
+      {
+        "workload": "threads/atomic-rmw",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9188880842071846,
+          "llgoHeadBase": 1.0367346084189148,
+          "llgoGo": 1.0691944765339063,
+          "llgoWazero": 1.1431341767476222,
+          "llgoWasmtime": 1.515200660964825
+        }
+      },
+      {
+        "workload": "threads/notify-empty",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9956835086907928,
+          "llgoHeadBase": 0.985897435897436,
+          "llgoGo": 1.071569576156377,
+          "llgoWazero": 0.06358086786368836,
+          "llgoWasmtime": 0.13575645828838195
+        }
+      },
+      {
+        "workload": "threads/wait-mismatch",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.0155306612351787,
+          "llgoHeadBase": 1.0195722966394736,
+          "llgoGo": 1.0877117581748506,
+          "llgoWazero": 0.04511771906680453,
+          "llgoWasmtime": 0.13703451356583027
+        }
+      },
+      {
+        "workload": "threads/wait-timeout",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.0640021213509148,
+          "llgoHeadBase": 1.0659397581000234,
+          "llgoGo": 0.9324618242783995,
+          "llgoWazero": 0.005954040311906822,
+          "llgoWasmtime": 0.04546529097255976
+        }
+      },
+      {
+        "workload": "applications/sha256-clang",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 1.2338464229645525,
+          "llgoHeadBase": 1.2172204992659412,
+          "llgoGo": 0.9872589847285392,
+          "llgoWazero": 0.8590521316679361,
+          "llgoWasmtime": 1.6300064429561938,
+          "llgoC": 1.9570604307867003
+        }
+      },
+      {
+        "workload": "applications/sha256-rust",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 1.2359449027335956,
+          "llgoHeadBase": 1.2183557656703436,
+          "llgoGo": 0.9842087747091433,
+          "llgoWazero": 0.8134682115383626,
+          "llgoWasmtime": 1.604367284991367,
+          "llgoC": 1.9112187041204094
+        }
+      }
+    ]
+  },
+  "ciFailure": {
+    "run": 42083219131,
+    "source": "3bf4213dcee9f68c0001605f93d7c18bb82a7435",
+    "job": 127441445902,
+    "test": "TestSourceReadWithIndependentContext",
+    "cause": "A five-millisecond deadline may expire before source startup; the old test then requires a worker that never started. The same job passed codegen on Linux amd64. Other original jobs are left live.",
+    "fix": "73427e0; startup gate followed by cancellation, no widened deadline. Both full component suites and 30 repetitions/compiler pass; Go race20 repetitions pass."
+  },
+  "limitations": [
+    "No x86 guest code executes locally. Complete1980-kernel numeric execution is required on Linux for both compilers.",
+    "Codegen and nativeexec percentages measure exact Go packages, not specification coverage.",
+    "Local five-block advisory controls are distinct from controlled milestone acceptance. Preserve the observed ARM64 loss and all preparation costs.",
+    "Original source-bound CI remains live; schedule final-head CI only after it terminates. No queue-based cancellation/restart.",
+    "The initial raw test fixtures lacked enough ARM64 pressure or expected a weight at the strict threshold. Full failure logs are preserved; corrected pressure fixtures execute raw mappings.",
+    "The first extra ARM64 compile-only diagnostic accidentally retained an x86-only feature mask and was correctly rejected before compilation. Both failed diagnostic snapshots and the corrected host-feature diagnostic are retained. It is not a production engine/compiler failure.",
+    "LLGo2983 is owned by another contributor; no duplicate work or issue. External LLGo2991 remains the single active contribution PR."
+  ],
+  "evidence": {
+    "path": "artifacts/loop-raw-registers-20261106/evidence.tar.gz",
+    "bytes": 3327140,
+    "sha256": "7b09e2b7d5cfd1bd1e840b18169103701177105b1f2c535fcc4c40002240e61f",
+    "files": 343
+  },
+  "decision": {
+    "productionEnabled": false,
+    "revert": "4a744df",
+    "nextSource": "96ea7fb",
+    "reason": "Linux SHA LLGo+21.7/+21.8percent and Go+23.4/+23.6percent; both SHA controls resolve. The local ARM64 Clang observation is adverse too."
+  }
+}

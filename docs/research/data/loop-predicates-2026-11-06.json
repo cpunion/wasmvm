@@ -1,0 +1,10 @@
+{
+  "classification": "Local dual-compiler semantics, actual ARM64 images, x86 static compilation, and a separate 18-case macOS arm64 advisory event. No controlled acceptance or x86 execution claim.",
+  "format": "lossless-evidence-pointer-v1",
+  "archive": "../evidence/loop-predicates-2026-11-06.json.xz",
+  "archiveSHA256": "6637bb95cdeaeade8fa7079145ed7fb93228a3de5e0009ce124c53b51b46555c",
+  "archiveBytes": 15940,
+  "originalSHA256": "2002426deee21a68e7879551bd18cad0024a28b523c02bbf64b5833903bb6d15",
+  "originalBytes": 143587,
+  "retention": "The archive preserves the complete original JSON byte for byte, including raw observations, failures, regressions, unresolved controls, lifecycle phases and provenance. No samples are removed or pooled."
+}

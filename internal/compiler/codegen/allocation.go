@@ -1,7 +1,8 @@
 package codegen
 
 import (
-	"sort"
+	"cmp"
+	"slices"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -20,7 +21,7 @@ func instructionFrequencies(f *slots.Function) []uint64 {
 	work := uint64(len(f.Code)+len(f.Edges)) * 4
 	found := false
 	for pc, in := range f.Code {
-		if in.Op < slots.ControlBase+uint32(ir.Jump) || in.Op > slots.ControlBase+uint32(ir.Table) && in.Op != slots.ControlBase+uint32(ir.IfNull) {
+		if !registerBranch(in.Op) {
 			continue
 		}
 		if uint64(in.Count) > work {
@@ -62,11 +63,15 @@ func frequency(weights []uint64, pc int) uint64 {
 
 func slotPriorities(f *slots.Function, regions map[int]memoryRegion, frequencies []uint64) []uint64 {
 	weights := make([]uint64, len(f.Slots))
-	use := func(s slots.Slot, w uint64) {
+	collectSlotPriorities(f, regions, frequencies, 0, len(f.Code), true, func(s slots.Slot, w uint64) {
 		if s != slots.NoSlot {
 			weights[s] += w
 		}
-	}
+	})
+	return weights
+}
+
+func collectSlotPriorities(f *slots.Function, regions map[int]memoryRegion, frequencies []uint64, start, end int, tuples bool, use func(slots.Slot, uint64)) {
 	move := func(dst, src slots.Slot, w uint64) {
 		if dst != slots.NoSlot && dst != src {
 			use(dst, w)
@@ -74,16 +79,22 @@ func slotPriorities(f *slots.Function, regions map[int]memoryRegion, frequencies
 		}
 	}
 	// Account for all tuples/moves once, including diagnostic-only entries.
-	for _, s := range f.Args {
-		use(s, 1)
+	if tuples {
+		for _, s := range f.Args {
+			use(s, 1)
+		}
+		for _, m := range f.Moves {
+			use(m.Src, 1)
+			use(m.Dst, 1)
+		}
 	}
-	for _, m := range f.Moves {
-		use(m.Src, 1)
-		use(m.Dst, 1)
+	work := uint64(end-start) * 8
+	if tuples {
+		work += uint64(len(f.Args)+len(f.Moves)+len(f.Edges)) * 8
 	}
-	work := uint64(len(f.Code)+len(f.Args)+len(f.Moves)+len(f.Edges)) * 8
 	region := memoryRegion{end: -1}
-	for pc, in := range f.Code {
+	for pc := start; pc < end; pc++ {
+		in := f.Code[pc]
 		if next, ok := regions[pc]; ok {
 			region = next
 		} else if pc > region.end {
@@ -146,7 +157,6 @@ func slotPriorities(f *slots.Function, regions map[int]memoryRegion, frequencies
 			}
 		}
 	}
-	return weights
 }
 
 type registerCandidate struct {
@@ -154,14 +164,32 @@ type registerCandidate struct {
 	key, weight uint64
 }
 
+func compareRegisterCandidates(a, b registerCandidate) int {
+	if n := cmp.Compare(b.weight, a.weight); n != 0 {
+		return n
+	}
+	if n := cmp.Compare(a.kind, b.kind); n != 0 {
+		return n
+	}
+	return cmp.Compare(a.key, b.key)
+}
+
 // All immutable integer words compete with scalar homes before the inventory
 // fills. Constants/metadata remain in ARM caller registers; FP/vector homes use
 // their separate shared physical pool. Every class is stable at every cold PC.
 func (e *functionEmitter) allocateRegisters(config Config, regions map[int]memoryRegion) {
+	e.selectRegisters(config, regions)
+	plan := e.currentRegisterPlan()
+	e.useRegisterPlan(nil)
+	e.transitionRegisters(plan)
+}
+
+func (e *functionEmitter) selectRegisters(config Config, regions map[int]memoryRegion) {
 	frequencies := instructionFrequencies(e.f)
 	e.prepareAllocationBatch(frequencies)
 	weights := slotPriorities(e.f, regions, frequencies)
 	e.immediateRegisterCosts(weights, frequencies, regions)
+	e.registerPriorities = weights
 	var candidates []registerCandidate
 	for s, w := range weights {
 		if w != 0 {
@@ -176,21 +204,9 @@ func (e *functionEmitter) allocateRegisters(config Config, regions map[int]memor
 			candidates = append(candidates, registerCandidate{2, bits, w})
 		}
 	}
-	sort.Slice(candidates, func(i, j int) bool {
-		a, b := candidates[i], candidates[j]
-		if a.weight != b.weight {
-			return a.weight > b.weight
-		}
-		if a.kind != b.kind {
-			return a.kind < b.kind
-		}
-		return a.key < b.key
-	})
+	slices.SortFunc(candidates, compareRegisterCandidates)
 	available := e.integerRegisterPool()
-	floatAvailable := []byte{3, 4, 5, 6, 7, 8, 9, 10}
-	if e.a.arch == "arm64" {
-		floatAvailable = []byte{8, 9, 10, 11, 12, 13, 14, 15, 16, 17}
-	}
+	floatAvailable := e.floatRegisterPool()
 	integers, floats, vectors := map[slots.Slot]byte{}, map[slots.Slot]byte{}, map[slots.Slot]byte{}
 	e.constantRegisters, e.runtimeRegisters = map[uint64]byte{}, map[uint32]byte{}
 	var used [32]bool
@@ -205,11 +221,8 @@ func (e *functionEmitter) allocateRegisters(config Config, regions map[int]memor
 				r := floatAvailable[0]
 				floatAvailable = floatAvailable[1:]
 				if t == wasm.V128 {
-					e.vectorMemory(s, r, false)
 					vectors[s] = r
 				} else {
-					e.slotLoad(s, 0, false, t == wasm.F64)
-					e.floatFromInteger(r, e.operandRegister(0), t == wasm.F64)
 					floats[s] = r
 				}
 				e.registerSlots = append(e.registerSlots, s)
@@ -230,8 +243,6 @@ func (e *functionEmitter) allocateRegisters(config Config, regions map[int]memor
 		switch candidate.kind {
 		case 0:
 			s := slots.Slot(candidate.key)
-			e.slotLoad(s, 0, false, true)
-			e.registerMove(reg, e.operandRegister(0), true)
 			integers[s] = reg
 			e.registerSlots = append(e.registerSlots, s)
 		case 1:
@@ -241,4 +252,5 @@ func (e *functionEmitter) allocateRegisters(config Config, regions map[int]memor
 		}
 	}
 	e.registers, e.floatRegisters, e.vectorRegisters = integers, floats, vectors
+	e.registerPlan = nil
 }

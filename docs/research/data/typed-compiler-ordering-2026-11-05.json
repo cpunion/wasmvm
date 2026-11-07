@@ -1,0 +1,1985 @@
+{
+  "baseline": "42ca45572c2c9fd0d3996b4347dd07482c4eefa2",
+  "baselineReuse": {
+    "baseline": "42ca45572c2c9fd0d3996b4347dd07482c4eefa2",
+    "priorSource": "68b2269cc662302bd77eb35cc93cfe415fc99173",
+    "sameEngineAndHarnessHashes": true,
+    "sameInstrumentation": true,
+    "sameToolchain": true,
+    "scope": "22 retained actual publications from the source-identical prior engine; fresh candidate Go/LLGo publications use low-count arguments. Publication clocks are not performance samples.",
+    "sourceDigest": "ef9fa4b224228ca2f69a51496d1c32f129c6c4d12862b63d4625faeaa4f7f5d1"
+  },
+  "classification": "Local macOS arm64 preparation-only diagnostic; not sustained warm or controlled acceptance",
+  "coverage": {
+    "github.com/cpunion/wasmvm/internal/compiler/codegen": {
+      "covered": 7674,
+      "percent": 97.65843726138966,
+      "total": 7858
+    },
+    "github.com/cpunion/wasmvm/internal/engine/nativeexec": {
+      "covered": 459,
+      "percent": 92.54032258064517,
+      "total": 496
+    }
+  },
+  "coverageScope": "Two packages cross-covered by complete codegen/nativeexec/public-vm tests on macOS arm64. Not the earlier single-package scope or full 30-package CI gate.",
+  "evidence": {
+    "bytes": 3447715,
+    "files": 206,
+    "path": "artifacts/typed-compiler-ordering-20261105/evidence.tar.gz",
+    "sha256": "1b127ac948d35b9c83a1a167b294822ba6bcc5ce91abe90bcb2c15300b907436"
+  },
+  "goHeapAllocationEvents": {
+    "cases": [
+      {
+        "baseAllocations": 479,
+        "difference": -22,
+        "headAllocations": 457,
+        "workload": "core/call-control"
+      },
+      {
+        "baseAllocations": 648,
+        "difference": -29,
+        "headAllocations": 619,
+        "workload": "core/integer-loop"
+      },
+      {
+        "baseAllocations": 1141,
+        "difference": -69,
+        "headAllocations": 1072,
+        "workload": "core/function-calls"
+      },
+      {
+        "baseAllocations": 798,
+        "difference": -36,
+        "headAllocations": 762,
+        "workload": "core/memory-load-store"
+      },
+      {
+        "baseAllocations": 906,
+        "difference": -35,
+        "headAllocations": 871,
+        "workload": "memory/narrow-unaligned"
+      },
+      {
+        "baseAllocations": 861,
+        "difference": -35,
+        "headAllocations": 826,
+        "workload": "memory/dependent-address"
+      },
+      {
+        "baseAllocations": 839,
+        "difference": -35,
+        "headAllocations": 804,
+        "workload": "memory/float64-unaligned"
+      },
+      {
+        "baseAllocations": 781,
+        "difference": -23,
+        "headAllocations": 758,
+        "workload": "runtime/simd-memory-full"
+      },
+      {
+        "baseAllocations": 751,
+        "difference": -21,
+        "headAllocations": 730,
+        "workload": "runtime/simd-memory-widen"
+      },
+      {
+        "baseAllocations": 778,
+        "difference": -23,
+        "headAllocations": 755,
+        "workload": "runtime/simd-memory-lanes"
+      },
+      {
+        "baseAllocations": 494,
+        "difference": -18,
+        "headAllocations": 476,
+        "workload": "gc/i31-roundtrip"
+      },
+      {
+        "baseAllocations": 598,
+        "difference": -31,
+        "headAllocations": 567,
+        "workload": "gc/struct-access"
+      },
+      {
+        "baseAllocations": 588,
+        "difference": -31,
+        "headAllocations": 557,
+        "workload": "gc/struct-allocation"
+      },
+      {
+        "baseAllocations": 829,
+        "difference": -54,
+        "headAllocations": 775,
+        "workload": "gc/struct-indirect-access"
+      },
+      {
+        "baseAllocations": 622,
+        "difference": -24,
+        "headAllocations": 598,
+        "workload": "threads/private-memory"
+      },
+      {
+        "baseAllocations": 627,
+        "difference": -26,
+        "headAllocations": 601,
+        "workload": "threads/shared-memory"
+      },
+      {
+        "baseAllocations": 559,
+        "difference": -26,
+        "headAllocations": 533,
+        "workload": "threads/atomic-rmw"
+      },
+      {
+        "baseAllocations": 551,
+        "difference": -25,
+        "headAllocations": 526,
+        "workload": "threads/notify-empty"
+      },
+      {
+        "baseAllocations": 568,
+        "difference": -25,
+        "headAllocations": 543,
+        "workload": "threads/wait-mismatch"
+      },
+      {
+        "baseAllocations": 567,
+        "difference": -25,
+        "headAllocations": 542,
+        "workload": "threads/wait-timeout"
+      },
+      {
+        "baseAllocations": 4531,
+        "difference": -133,
+        "headAllocations": 4398,
+        "workload": "applications/sha256-clang"
+      },
+      {
+        "baseAllocations": 4567,
+        "difference": -136,
+        "headAllocations": 4431,
+        "workload": "applications/sha256-rust"
+      }
+    ],
+    "classification": "Go heap allocation-event diagnostic only; no elapsed, LLGo allocation-counter, executable-memory or total-memory claim.",
+    "method": "testing.AllocsPerRun(5): one warmup, five fresh Engine/Compile/Close operations per identical module. Fixture file reading and result serialization are outside allocation counting. No Store/guest call."
+  },
+  "hostBinaryBytes": {
+    "base-go": 6495266,
+    "base-llgo": 4329376,
+    "head-go": 6560594,
+    "head-llgo": 4345840
+  },
+  "pending": [
+    "Contribution review; full exact-source CI 42018345234 passed",
+    "Elapsed-time and controlled performance acceptance",
+    "General SSA value allocation, splitting and rematerialization",
+    "Broader WASI-world and release qualification"
+  ],
+  "preparation": {
+    "calibrationMethod": "Five paired fresh-process log compileValidate ratios; fixed-seed 8000 bootstrap draws; marginal 95% interval within \u00b12.5%, advisory only. The existing warm calibration remains raw non-gating diagnostics.",
+    "cases": [
+      {
+        "calibration": [
+          {
+            "lower": 0.5405986549461734,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 1.297985367078455
+          },
+          {
+            "lower": 0.47939949327478537,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 2.358988700021716
+          },
+          {
+            "lower": 0.7056273666205185,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 1.0464106897063665
+          },
+          {
+            "lower": 0.4503752947745466,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 2.141843121031558
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 74541,
+          "aa-base-llgo-native": 482125,
+          "aa-head-llgo-interpreter": 77833,
+          "aa-head-llgo-native": 752250,
+          "base-go-interpreter": 72959,
+          "base-go-native": 354500,
+          "base-llgo-interpreter": 68125,
+          "base-llgo-native": 460209,
+          "head-go-interpreter": 71292,
+          "head-go-native": 277750,
+          "head-llgo-interpreter": 77041,
+          "head-llgo-native": 701708,
+          "wasmedge-interpreter": 40416,
+          "wasmer-cranelift": 2588291,
+          "wasmtime-cranelift": 4264209,
+          "wazero-compiler": 164959,
+          "wazero-interpreter": 54042
+        },
+        "group": "core",
+        "iterations": 1,
+        "workload": "core/call-control"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.6409466823929534,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 1.2517682428875192
+          },
+          {
+            "lower": 0.6003051713339855,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 1.7086174941968193
+          },
+          {
+            "lower": 0.27481380129153815,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 0.7237418181341418
+          },
+          {
+            "lower": 0.21119646770509837,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.1131956295539627
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 141875,
+          "aa-base-llgo-native": 385750,
+          "aa-head-llgo-interpreter": 96125,
+          "aa-head-llgo-native": 791500,
+          "base-go-interpreter": 82833,
+          "base-go-native": 435250,
+          "base-llgo-interpreter": 128042,
+          "base-llgo-native": 493292,
+          "head-go-interpreter": 85166,
+          "head-go-native": 440334,
+          "head-llgo-interpreter": 301458,
+          "head-llgo-native": 986000,
+          "wasmedge-interpreter": 44168,
+          "wasmer-cranelift": 2575541,
+          "wasmtime-cranelift": 2613375,
+          "wazero-compiler": 174208,
+          "wazero-interpreter": 77667
+        },
+        "group": "core",
+        "iterations": 17,
+        "workload": "core/integer-loop"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.7494061834149042,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 1.4260941009022214
+          },
+          {
+            "lower": 0.6099665707401516,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 1.1556218644698022
+          },
+          {
+            "lower": 0.6427574543424455,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 1.6428790269965323
+          },
+          {
+            "lower": 0.8708187823005067,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 4.968295814153063
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 103000,
+          "aa-base-llgo-native": 603084,
+          "aa-head-llgo-interpreter": 377833,
+          "aa-head-llgo-native": 1226792,
+          "base-go-interpreter": 104958,
+          "base-go-native": 462541,
+          "base-llgo-interpreter": 98125,
+          "base-llgo-native": 816083,
+          "head-go-interpreter": 94291,
+          "head-go-native": 532583,
+          "head-llgo-interpreter": 312625,
+          "head-llgo-native": 900875,
+          "wasmedge-interpreter": 49583,
+          "wasmer-cranelift": 2875541,
+          "wasmtime-cranelift": 3448375,
+          "wazero-compiler": 181334,
+          "wazero-interpreter": 66792
+        },
+        "group": "core",
+        "iterations": 17,
+        "workload": "core/function-calls"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 1.3383291425540995,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 5.281319287741964
+          },
+          {
+            "lower": 0.8974342827187238,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 1.5631911866894326
+          },
+          {
+            "lower": 0.46707620294329744,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 1.2787508939611296
+          },
+          {
+            "lower": 0.5808464840338465,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.0928434373810876
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 521959,
+          "aa-base-llgo-native": 829167,
+          "aa-head-llgo-interpreter": 531708,
+          "aa-head-llgo-native": 916125,
+          "base-go-interpreter": 118500,
+          "base-go-native": 481292,
+          "base-llgo-interpreter": 114958,
+          "base-llgo-native": 562458,
+          "head-go-interpreter": 123584,
+          "head-go-native": 443833,
+          "head-llgo-interpreter": 419666,
+          "head-llgo-native": 1147333,
+          "wasmedge-interpreter": 47000,
+          "wasmer-cranelift": 2126083,
+          "wasmtime-cranelift": 2154375,
+          "wazero-compiler": 258958,
+          "wazero-interpreter": 61750
+        },
+        "group": "core",
+        "iterations": 17,
+        "workload": "core/memory-load-store"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.2324993889430423,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 2.815823829926132
+          },
+          {
+            "lower": 0.8786928928537708,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 1.510398557487043
+          },
+          {
+            "lower": 1.0380584508892963,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 1.2930648811390066
+          },
+          {
+            "lower": 0.5773551796220381,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.2825051833379464
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 228750,
+          "aa-base-llgo-native": 864042,
+          "aa-head-llgo-interpreter": 408500,
+          "aa-head-llgo-native": 779167,
+          "base-go-interpreter": 122958,
+          "base-go-native": 507042,
+          "base-llgo-interpreter": 312625,
+          "base-llgo-native": 795000,
+          "head-go-interpreter": 121458,
+          "head-go-native": 466334,
+          "head-llgo-interpreter": 328292,
+          "head-llgo-native": 1095959,
+          "wasmedge-interpreter": 58001,
+          "wasmer-cranelift": 2713750,
+          "wasmtime-cranelift": 3300042,
+          "wazero-compiler": 208000,
+          "wazero-interpreter": 63542
+        },
+        "group": "memory-simd",
+        "iterations": 17,
+        "workload": "memory/narrow-unaligned"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.4404285015853877,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 5.759989931620808
+          },
+          {
+            "lower": 0.6998503508658879,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 3.3562729508577234
+          },
+          {
+            "lower": 0.8758855981485519,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 1.7940718356289092
+          },
+          {
+            "lower": 0.4803034830688865,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.230200799200912
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 172250,
+          "aa-base-llgo-native": 1060875,
+          "aa-head-llgo-interpreter": 475458,
+          "aa-head-llgo-native": 1007167,
+          "base-go-interpreter": 108000,
+          "base-go-native": 482750,
+          "base-llgo-interpreter": 181291,
+          "base-llgo-native": 526500,
+          "head-go-interpreter": 133375,
+          "head-go-native": 414084,
+          "head-llgo-interpreter": 524292,
+          "head-llgo-native": 1039209,
+          "wasmedge-interpreter": 53042,
+          "wasmer-cranelift": 2393750,
+          "wasmtime-cranelift": 2000958,
+          "wazero-compiler": 218584,
+          "wazero-interpreter": 66625
+        },
+        "group": "memory-simd",
+        "iterations": 17,
+        "workload": "memory/dependent-address"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.6470287338744781,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 4.454957417988561
+          },
+          {
+            "lower": 0.6807936776556416,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 1.4717897506315578
+          },
+          {
+            "lower": 0.6640562542210642,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 0.9997101819807139
+          },
+          {
+            "lower": 0.7506082263677986,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.474048444436113
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 345208,
+          "aa-base-llgo-native": 905667,
+          "aa-head-llgo-interpreter": 367458,
+          "aa-head-llgo-native": 891417,
+          "base-go-interpreter": 115750,
+          "base-go-native": 507334,
+          "base-llgo-interpreter": 179792,
+          "base-llgo-native": 1155167,
+          "head-go-interpreter": 111500,
+          "head-go-native": 466209,
+          "head-llgo-interpreter": 510292,
+          "head-llgo-native": 930750,
+          "wasmedge-interpreter": 50917,
+          "wasmer-cranelift": 3317167,
+          "wasmtime-cranelift": 2732625,
+          "wazero-compiler": 256417,
+          "wazero-interpreter": 102375
+        },
+        "group": "memory-simd",
+        "iterations": 17,
+        "workload": "memory/float64-unaligned"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.071386806284399,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 0.6876187309777599
+          },
+          {
+            "lower": 0.3958281482601117,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 1.2136128689166477
+          },
+          {
+            "lower": 0.061456038564741224,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 1.3123142774683851
+          },
+          {
+            "lower": 0.44826875754848095,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.6218391547923878
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 104541,
+          "aa-base-llgo-native": 432042,
+          "aa-head-llgo-interpreter": 509750,
+          "aa-head-llgo-native": 977708,
+          "base-go-interpreter": 126625,
+          "base-go-native": 537167,
+          "base-llgo-interpreter": 314083,
+          "base-llgo-native": 670667,
+          "head-go-interpreter": 120167,
+          "head-go-native": 612834,
+          "head-llgo-interpreter": 962166,
+          "head-llgo-native": 1242208,
+          "wasmedge-interpreter": 49791,
+          "wasmer-cranelift": 1871000,
+          "wasmtime-cranelift": 3151917,
+          "wazero-compiler": 183166,
+          "wazero-interpreter": 93708
+        },
+        "group": "memory-simd",
+        "iterations": 17,
+        "workload": "runtime/simd-memory-full"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.6689058740611453,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 2.354107358744643
+          },
+          {
+            "lower": 1.0157896660103294,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 3.208479977886996
+          },
+          {
+            "lower": 1.1074063171084156,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 4.3258321126730355
+          },
+          {
+            "lower": 0.6769623053929119,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 2.858153589586454
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 143291,
+          "aa-base-llgo-native": 544834,
+          "aa-head-llgo-interpreter": 614541,
+          "aa-head-llgo-native": 929625,
+          "base-go-interpreter": 134833,
+          "base-go-native": 391333,
+          "base-llgo-interpreter": 109000,
+          "base-llgo-native": 423167,
+          "head-go-interpreter": 99583,
+          "head-go-native": 356459,
+          "head-llgo-interpreter": 349209,
+          "head-llgo-native": 632458,
+          "wasmedge-interpreter": 51626,
+          "wasmer-cranelift": 1829209,
+          "wasmtime-cranelift": 2150541,
+          "wazero-compiler": 228833,
+          "wazero-interpreter": 76708
+        },
+        "group": "memory-simd",
+        "iterations": 17,
+        "workload": "runtime/simd-memory-widen"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.36974546179204976,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 2.9724224525329674
+          },
+          {
+            "lower": 0.6328730528753544,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 0.9773523848104676
+          },
+          {
+            "lower": 0.9229751698309457,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 2.3752002268676664
+          },
+          {
+            "lower": 1.0738095919780886,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.7834650799668483
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 114500,
+          "aa-base-llgo-native": 669166,
+          "aa-head-llgo-interpreter": 322667,
+          "aa-head-llgo-native": 956875,
+          "base-go-interpreter": 110000,
+          "base-go-native": 493667,
+          "base-llgo-interpreter": 106125,
+          "base-llgo-native": 662125,
+          "head-go-interpreter": 140667,
+          "head-go-native": 416792,
+          "head-llgo-interpreter": 326917,
+          "head-llgo-native": 668000,
+          "wasmedge-interpreter": 50751,
+          "wasmer-cranelift": 2841292,
+          "wasmtime-cranelift": 2005041,
+          "wazero-compiler": 182541,
+          "wazero-interpreter": 73167
+        },
+        "group": "memory-simd",
+        "iterations": 17,
+        "workload": "runtime/simd-memory-lanes"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.5048668146390598,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 1.6522925714537475
+          },
+          {
+            "lower": 0.3907219205761561,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 1.9646641470067923
+          },
+          {
+            "lower": 0.27685218303053055,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 1.0097957784043814
+          },
+          {
+            "lower": 0.8808604939560253,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.9433906220791222
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 78792,
+          "aa-base-llgo-native": 483125,
+          "aa-head-llgo-interpreter": 86667,
+          "aa-head-llgo-native": 727958,
+          "base-go-interpreter": 118667,
+          "base-go-native": 358000,
+          "base-llgo-interpreter": 88333,
+          "base-llgo-native": 507167,
+          "head-go-interpreter": 80166,
+          "head-go-native": 300208,
+          "head-llgo-interpreter": 85042,
+          "head-llgo-native": 848083,
+          "wasmedge-interpreter": 46625,
+          "wasmtime-cranelift": 4969000
+        },
+        "group": "gc",
+        "iterations": 17,
+        "workload": "gc/i31-roundtrip"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.6106816513166249,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 1.3525884871388514
+          },
+          {
+            "lower": 0.45543317270909855,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 0.9762724008140331
+          },
+          {
+            "lower": 0.8012760979690694,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 3.998365229535478
+          },
+          {
+            "lower": 0.9010112702239323,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.403117929688596
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 90250,
+          "aa-base-llgo-native": 497916,
+          "aa-head-llgo-interpreter": 250792,
+          "aa-head-llgo-native": 752292,
+          "base-go-interpreter": 177667,
+          "base-go-native": 418917,
+          "base-llgo-interpreter": 136792,
+          "base-llgo-native": 1043667,
+          "head-go-interpreter": 146917,
+          "head-go-native": 332625,
+          "head-llgo-interpreter": 296416,
+          "head-llgo-native": 593042,
+          "wasmedge-interpreter": 125000,
+          "wasmtime-cranelift": 1775208
+        },
+        "group": "gc",
+        "iterations": 17,
+        "workload": "gc/struct-access"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.8216227313223402,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 1.417816012354018
+          },
+          {
+            "lower": 0.15395570589323185,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 1.1923114289650443
+          },
+          {
+            "lower": 0.3246235873312887,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 2.1034761040640664
+          },
+          {
+            "lower": 0.5188366889393137,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.4799422138341658
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 104667,
+          "aa-base-llgo-native": 343209,
+          "aa-head-llgo-interpreter": 127834,
+          "aa-head-llgo-native": 938000,
+          "base-go-interpreter": 92542,
+          "base-go-native": 315542,
+          "base-llgo-interpreter": 93250,
+          "base-llgo-native": 470791,
+          "head-go-interpreter": 121875,
+          "head-go-native": 322750,
+          "head-llgo-interpreter": 163791,
+          "head-llgo-native": 845583,
+          "wasmedge-interpreter": 82501,
+          "wasmtime-cranelift": 2629167
+        },
+        "group": "gc",
+        "iterations": 17,
+        "workload": "gc/struct-allocation"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.39223128077334324,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 1.0146588075294296
+          },
+          {
+            "lower": 0.6187698747237718,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 1.2713071685033002
+          },
+          {
+            "lower": 0.8622778492193116,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 1.2379418232307164
+          },
+          {
+            "lower": 0.7667650497681596,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.5404684360003116
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 124958,
+          "aa-base-llgo-native": 493500,
+          "aa-head-llgo-interpreter": 392959,
+          "aa-head-llgo-native": 1045000,
+          "base-go-interpreter": 155208,
+          "base-go-native": 414166,
+          "base-llgo-interpreter": 170250,
+          "base-llgo-native": 486250,
+          "head-go-interpreter": 144542,
+          "head-go-native": 483625,
+          "head-llgo-interpreter": 466625,
+          "head-llgo-native": 995709,
+          "wasmedge-interpreter": 69209,
+          "wasmtime-cranelift": 6968959
+        },
+        "group": "gc",
+        "iterations": 17,
+        "workload": "gc/struct-indirect-access"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.9068928820341202,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 1.3687654720667308
+          },
+          {
+            "lower": 0.837486362246297,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 2.211815884147613
+          },
+          {
+            "lower": 0.4362543311480257,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 6.474427622534943
+          },
+          {
+            "lower": 0.4261837441817505,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 0.9228596520627965
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 79708,
+          "aa-base-llgo-native": 616750,
+          "aa-head-llgo-interpreter": 133125,
+          "aa-head-llgo-native": 775833,
+          "base-go-interpreter": 83042,
+          "base-go-native": 313750,
+          "base-llgo-interpreter": 82542,
+          "base-llgo-native": 460333,
+          "head-go-interpreter": 78125,
+          "head-go-native": 297250,
+          "head-llgo-interpreter": 102292,
+          "head-llgo-native": 1216250,
+          "wasmedge-interpreter": 45250,
+          "wasmer-cranelift": 2091291,
+          "wasmtime-cranelift": 1922167,
+          "wazero-compiler": 186833,
+          "wazero-interpreter": 55542
+        },
+        "group": "threads",
+        "iterations": 17,
+        "workload": "threads/private-memory"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.6675910820739279,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 0.9174647285341184
+          },
+          {
+            "lower": 1.0466059496295792,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 1.8486315746578723
+          },
+          {
+            "lower": 0.7305712713678035,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 1.2080060210296155
+          },
+          {
+            "lower": 0.7225341112859531,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.6325069086906963
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 75875,
+          "aa-base-llgo-native": 627041,
+          "aa-head-llgo-interpreter": 92416,
+          "aa-head-llgo-native": 1021292,
+          "base-go-interpreter": 83333,
+          "base-go-native": 362500,
+          "base-llgo-interpreter": 111291,
+          "base-llgo-native": 401458,
+          "head-go-interpreter": 82250,
+          "head-go-native": 456000,
+          "head-llgo-interpreter": 123583,
+          "head-llgo-native": 739833,
+          "wasmedge-interpreter": 45375,
+          "wasmer-cranelift": 1512834,
+          "wasmtime-cranelift": 1642458,
+          "wazero-compiler": 255667,
+          "wazero-interpreter": 67458
+        },
+        "group": "threads",
+        "iterations": 17,
+        "workload": "threads/shared-memory"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.584203505367379,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 1.4671450337780658
+          },
+          {
+            "lower": 0.4037291705695675,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 1.2230960333106393
+          },
+          {
+            "lower": 0.3857761222337392,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 1.0897428115953012
+          },
+          {
+            "lower": 0.7350150616989779,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.5495388434141102
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 109083,
+          "aa-base-llgo-native": 305000,
+          "aa-head-llgo-interpreter": 86334,
+          "aa-head-llgo-native": 604792,
+          "base-go-interpreter": 81333,
+          "base-go-native": 279000,
+          "base-llgo-interpreter": 126708,
+          "base-llgo-native": 429166,
+          "head-go-interpreter": 75459,
+          "head-go-native": 384459,
+          "head-llgo-interpreter": 93542,
+          "head-llgo-native": 590125,
+          "wasmedge-interpreter": 45709,
+          "wasmer-cranelift": 1787625,
+          "wasmtime-cranelift": 2206250,
+          "wazero-compiler": 242292,
+          "wazero-interpreter": 84209
+        },
+        "group": "threads",
+        "iterations": 17,
+        "workload": "threads/atomic-rmw"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.8316075742878187,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 1.0222109371388883
+          },
+          {
+            "lower": 0.793695781676881,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 2.1343699324178713
+          },
+          {
+            "lower": 0.42132889570036974,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 0.9701633480570733
+          },
+          {
+            "lower": 0.6698446790897035,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.2103270577295937
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 83958,
+          "aa-base-llgo-native": 652666,
+          "aa-head-llgo-interpreter": 105708,
+          "aa-head-llgo-native": 783625,
+          "base-go-interpreter": 113083,
+          "base-go-native": 304375,
+          "base-llgo-interpreter": 108750,
+          "base-llgo-native": 307042,
+          "head-go-interpreter": 86750,
+          "head-go-native": 403875,
+          "head-llgo-interpreter": 111458,
+          "head-llgo-native": 748167,
+          "wasmedge-interpreter": 48708,
+          "wasmer-cranelift": 1663833,
+          "wasmtime-cranelift": 1579083,
+          "wazero-compiler": 187708,
+          "wazero-interpreter": 77333
+        },
+        "group": "threads",
+        "iterations": 17,
+        "workload": "threads/notify-empty"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.8061599518604169,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 1.0327159490946969
+          },
+          {
+            "lower": 0.7762835145346004,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 1.2344901097806695
+          },
+          {
+            "lower": 0.12552150948188678,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 1.6288361214469105
+          },
+          {
+            "lower": 0.31645438566455225,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.1917540477570445
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 80709,
+          "aa-base-llgo-native": 576375,
+          "aa-head-llgo-interpreter": 85708,
+          "aa-head-llgo-native": 1090416,
+          "base-go-interpreter": 96708,
+          "base-go-native": 289125,
+          "base-llgo-interpreter": 86791,
+          "base-llgo-native": 482917,
+          "head-go-interpreter": 87833,
+          "head-go-native": 409250,
+          "head-llgo-interpreter": 80417,
+          "head-llgo-native": 899625,
+          "wasmedge-interpreter": 47833,
+          "wasmer-cranelift": 1862667,
+          "wasmtime-cranelift": 1861667,
+          "wazero-compiler": 193583,
+          "wazero-interpreter": 82542
+        },
+        "group": "threads",
+        "iterations": 17,
+        "workload": "threads/wait-mismatch"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.8296965898405381,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 1.356906887062748
+          },
+          {
+            "lower": 0.12877857285575783,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 1.0820001592142516
+          },
+          {
+            "lower": 0.18713789692684646,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 1.0582942578643468
+          },
+          {
+            "lower": 0.7391705399954286,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.2292496032734845
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 115583,
+          "aa-base-llgo-native": 344959,
+          "aa-head-llgo-interpreter": 89208,
+          "aa-head-llgo-native": 772166,
+          "base-go-interpreter": 86250,
+          "base-go-native": 330250,
+          "base-llgo-interpreter": 115583,
+          "base-llgo-native": 461416,
+          "head-go-interpreter": 85000,
+          "head-go-native": 341750,
+          "head-llgo-interpreter": 125833,
+          "head-llgo-native": 773959,
+          "wasmedge-interpreter": 46541,
+          "wasmer-cranelift": 2843791,
+          "wasmtime-cranelift": 2273500,
+          "wazero-compiler": 193792,
+          "wazero-interpreter": 57542
+        },
+        "group": "threads",
+        "iterations": 17,
+        "workload": "threads/wait-timeout"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 0.7111900538083691,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 1.416615600071988
+          },
+          {
+            "lower": 0.9697038126923598,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 1.5114299329093555
+          },
+          {
+            "lower": 0.8985350690848862,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 1.6390003897607774
+          },
+          {
+            "lower": 0.791835801833768,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.2773994821500727
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 778083,
+          "aa-base-llgo-native": 5503250,
+          "aa-head-llgo-interpreter": 1208375,
+          "aa-head-llgo-native": 7910625,
+          "base-go-interpreter": 370334,
+          "base-go-native": 3409542,
+          "base-llgo-interpreter": 755125,
+          "base-llgo-native": 5356916,
+          "head-go-interpreter": 357541,
+          "head-go-native": 3791584,
+          "head-llgo-interpreter": 966417,
+          "head-llgo-native": 6960250,
+          "wasmedge-interpreter": 165959,
+          "wasmer-cranelift": 2999500,
+          "wasmtime-cranelift": 2773208,
+          "wazero-compiler": 425917,
+          "wazero-interpreter": 115416
+        },
+        "group": "applications",
+        "iterations": 17,
+        "workload": "applications/sha256-clang"
+      },
+      {
+        "calibration": [
+          {
+            "lower": 1.1579893665962053,
+            "resolved": false,
+            "runtime": "aa-base-llgo-interpreter",
+            "upper": 1.7033206311610958
+          },
+          {
+            "lower": 0.3566042788885177,
+            "resolved": false,
+            "runtime": "aa-base-llgo-native",
+            "upper": 0.9509766089982329
+          },
+          {
+            "lower": 0.9066632903470269,
+            "resolved": false,
+            "runtime": "aa-head-llgo-interpreter",
+            "upper": 2.6949115538538173
+          },
+          {
+            "lower": 0.8743135857968273,
+            "resolved": false,
+            "runtime": "aa-head-llgo-native",
+            "upper": 1.72740354193697
+          }
+        ],
+        "compileValidateNs": {
+          "aa-base-llgo-interpreter": 1038292,
+          "aa-base-llgo-native": 6905250,
+          "aa-head-llgo-interpreter": 1283208,
+          "aa-head-llgo-native": 8595750,
+          "base-go-interpreter": 358833,
+          "base-go-native": 3254334,
+          "base-llgo-interpreter": 785792,
+          "base-llgo-native": 7674667,
+          "head-go-interpreter": 578959,
+          "head-go-native": 3391417,
+          "head-llgo-interpreter": 1270542,
+          "head-llgo-native": 8023458,
+          "wasmedge-interpreter": 184292,
+          "wasmer-cranelift": 4405083,
+          "wasmtime-cranelift": 5280875,
+          "wazero-compiler": 679875,
+          "wazero-interpreter": 121958
+        },
+        "group": "applications",
+        "iterations": 17,
+        "workload": "applications/sha256-rust"
+      }
+    ],
+    "checkedAlternativeConfigurations": 362,
+    "collectionWallTimes": [
+      {
+        "group": "core",
+        "seconds": 79.2253932079766,
+        "startedAt": "2026-11-05T10:59:34.437605+00:00"
+      },
+      {
+        "group": "memory-simd",
+        "seconds": 94.35715341707692,
+        "startedAt": "2026-11-05T11:00:53.663820+00:00"
+      },
+      {
+        "group": "gc",
+        "seconds": 57.43440079083666,
+        "startedAt": "2026-11-05T11:02:28.024603+00:00"
+      },
+      {
+        "group": "threads",
+        "seconds": 84.2369264580775,
+        "startedAt": "2026-11-05T11:03:25.462157+00:00"
+      },
+      {
+        "group": "applications",
+        "seconds": 35.79310462507419,
+        "startedAt": "2026-11-05T11:04:49.699973+00:00"
+      }
+    ],
+    "explicitUnsupported": [
+      {
+        "error": "embedded runner exit 1: compile/validate: invalid function[0] export[\"run\"]: invalid instruction 0xfb\n",
+        "runtime": "wazero-compiler",
+        "workload": "gc/i31-roundtrip"
+      },
+      {
+        "error": "embedded runner exit 1: compile/validate: invalid function[0] export[\"run\"]: invalid instruction 0xfb\n",
+        "runtime": "wazero-interpreter",
+        "workload": "gc/i31-roundtrip"
+      },
+      {
+        "error": "embedded runner exit 1: wasmer compile and validate: Validation error: gc support is not enabled (at offset 0x36)\ncompile and validate\n",
+        "runtime": "wasmer-cranelift",
+        "workload": "gc/i31-roundtrip"
+      },
+      {
+        "error": "embedded runner exit 1: compile/validate: section type: read 0-th type: invalid byte: 0x5f != 0x60\n",
+        "runtime": "wazero-compiler",
+        "workload": "gc/struct-access"
+      },
+      {
+        "error": "embedded runner exit 1: compile/validate: section type: read 0-th type: invalid byte: 0x5f != 0x60\n",
+        "runtime": "wazero-interpreter",
+        "workload": "gc/struct-access"
+      },
+      {
+        "error": "embedded runner exit 1: wasmer compile and validate: Validation error: struct indexed types not supported without the gc feature (at offset 0xb)\ncompile and validate\n",
+        "runtime": "wasmer-cranelift",
+        "workload": "gc/struct-access"
+      },
+      {
+        "error": "embedded runner exit 1: compile/validate: section type: read 0-th type: invalid byte: 0x5f != 0x60\n",
+        "runtime": "wazero-compiler",
+        "workload": "gc/struct-allocation"
+      },
+      {
+        "error": "embedded runner exit 1: compile/validate: section type: read 0-th type: invalid byte: 0x5f != 0x60\n",
+        "runtime": "wazero-interpreter",
+        "workload": "gc/struct-allocation"
+      },
+      {
+        "error": "embedded runner exit 1: wasmer compile and validate: Validation error: struct indexed types not supported without the gc feature (at offset 0xb)\ncompile and validate\n",
+        "runtime": "wasmer-cranelift",
+        "workload": "gc/struct-allocation"
+      },
+      {
+        "error": "embedded runner exit 1: compile/validate: section type: read 0-th type: invalid byte: 0x5f != 0x60\n",
+        "runtime": "wazero-compiler",
+        "workload": "gc/struct-indirect-access"
+      },
+      {
+        "error": "embedded runner exit 1: compile/validate: section type: read 0-th type: invalid byte: 0x5f != 0x60\n",
+        "runtime": "wazero-interpreter",
+        "workload": "gc/struct-indirect-access"
+      },
+      {
+        "error": "embedded runner exit 1: wasmer compile and validate: Validation error: struct indexed types not supported without the gc feature (at offset 0xb)\ncompile and validate\n",
+        "runtime": "wasmer-cranelift",
+        "workload": "gc/struct-indirect-access"
+      }
+    ],
+    "individualControls": 88,
+    "inputFiles": [
+      {
+        "bytes": 2317393,
+        "host": {
+          "GOMAXPROCS": "1",
+          "affinity": null,
+          "cachePolicy": "Fresh processes; disk compilation cache disabled; filesystem cache not flushed",
+          "cpu": "machdep.cpu.brand_string: Apple M4 Max\nhw.machine: arm64\nhw.ncpu: 16",
+          "loadAfter": [
+            43.9169921875,
+            49.11328125,
+            47.56689453125
+          ],
+          "loadBefore": [
+            39.79833984375,
+            48.97705078125,
+            47.302734375
+          ],
+          "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+          "powerPolicy": "Local macOS default; CPU affinity, physical frequency and neighbor isolation not controlled"
+        },
+        "path": "local-results/core/results.json",
+        "sha256": "90ac2b6ac7c3f4402fb15a249731863b727ed4b5be73f27a48cc55afc9707055"
+      },
+      {
+        "bytes": 3040806,
+        "host": {
+          "GOMAXPROCS": "1",
+          "affinity": null,
+          "cachePolicy": "Fresh processes; disk compilation cache disabled; filesystem cache not flushed",
+          "cpu": "machdep.cpu.brand_string: Apple M4 Max\nhw.machine: arm64\nhw.ncpu: 16",
+          "loadAfter": [
+            37.9912109375,
+            46.3291015625,
+            46.69287109375
+          ],
+          "loadBefore": [
+            43.9169921875,
+            49.11328125,
+            47.56689453125
+          ],
+          "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+          "powerPolicy": "Local macOS default; CPU affinity, physical frequency and neighbor isolation not controlled"
+        },
+        "path": "local-results/memory-simd/results.json",
+        "sha256": "2f4f0d640ec402f742891e6dce76f3c8a49c6383e7c559a22e0b3bffb8bd404e"
+      },
+      {
+        "bytes": 2078480,
+        "host": {
+          "GOMAXPROCS": "1",
+          "affinity": null,
+          "cachePolicy": "Fresh processes; disk compilation cache disabled; filesystem cache not flushed",
+          "cpu": "machdep.cpu.brand_string: Apple M4 Max\nhw.machine: arm64\nhw.ncpu: 16",
+          "loadAfter": [
+            26.1474609375,
+            41.65576171875,
+            44.931640625
+          ],
+          "loadBefore": [
+            37.9912109375,
+            46.3291015625,
+            46.69287109375
+          ],
+          "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+          "powerPolicy": "Local macOS default; CPU affinity, physical frequency and neighbor isolation not controlled"
+        },
+        "path": "local-results/gc/results.json",
+        "sha256": "36280565115e181e38c1e784b338fc89886c463c1022f8958498f395591fbdba"
+      },
+      {
+        "bytes": 2906406,
+        "host": {
+          "GOMAXPROCS": "1",
+          "affinity": null,
+          "cachePolicy": "Fresh processes; disk compilation cache disabled; filesystem cache not flushed",
+          "cpu": "machdep.cpu.brand_string: Apple M4 Max\nhw.machine: arm64\nhw.ncpu: 16",
+          "loadAfter": [
+            24.755859375,
+            37.33349609375,
+            42.95556640625
+          ],
+          "loadBefore": [
+            26.1474609375,
+            41.65576171875,
+            44.931640625
+          ],
+          "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+          "powerPolicy": "Local macOS default; CPU affinity, physical frequency and neighbor isolation not controlled"
+        },
+        "path": "local-results/threads/results.json",
+        "sha256": "63ab8d9939d18ed8f460250d630cdc045b04f60bd8db16b41012d73eb60b4bc9"
+      },
+      {
+        "bytes": 1602648,
+        "host": {
+          "GOMAXPROCS": "1",
+          "affinity": null,
+          "cachePolicy": "Fresh processes; disk compilation cache disabled; filesystem cache not flushed",
+          "cpu": "machdep.cpu.brand_string: Apple M4 Max\nhw.machine: arm64\nhw.ncpu: 16",
+          "loadAfter": [
+            23.7587890625,
+            35.66015625,
+            42.1162109375
+          ],
+          "loadBefore": [
+            24.755859375,
+            37.33349609375,
+            42.95556640625
+          ],
+          "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+          "powerPolicy": "Local macOS default; CPU affinity, physical frequency and neighbor isolation not controlled"
+        },
+        "path": "local-results/applications/results.json",
+        "sha256": "7f512a26fa232fced0bc8cc698a33308c2895436f98f33a1b308ac5045cd6da0"
+      }
+    ],
+    "resolvedIndividualControls": 0,
+    "resolvedWorkloads": 0
+  },
+  "publication": {
+    "classification": "Output-only actual arm64 publication diagnostic; no timing or causal attribution",
+    "comparisons": [
+      {
+        "baseBytes": 3420,
+        "headBytes": 3420,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "a0fa8b2c91e605d2096f695d31c91f9c931a01c023e865a69e259d39c12d0109",
+        "sourceChangesPublishedBytes": false,
+        "workload": "core/call-control"
+      },
+      {
+        "baseBytes": 5736,
+        "headBytes": 5736,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "920cb918fd2a3c6c146a134aa723b796147488c16188bc320a1e3078415f3a90",
+        "sourceChangesPublishedBytes": false,
+        "workload": "core/integer-loop"
+      },
+      {
+        "baseBytes": 11360,
+        "headBytes": 11360,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "ab08262350eab3e2e434e94a1a39604a5db259f2e1f8b362c914191b6d870246",
+        "sourceChangesPublishedBytes": false,
+        "workload": "core/function-calls"
+      },
+      {
+        "baseBytes": 10956,
+        "headBytes": 10956,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "ec6e88e780b9773b923d1f32e34d4ff1b56224d6a93a0a2e6f892b29ee9ffccd",
+        "sourceChangesPublishedBytes": false,
+        "workload": "core/memory-load-store"
+      },
+      {
+        "baseBytes": 11852,
+        "headBytes": 11852,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "fc351f11a5e29d1376962977ea59ad7878040c41adc2d4fa99167d83c053ee94",
+        "sourceChangesPublishedBytes": false,
+        "workload": "memory/narrow-unaligned"
+      },
+      {
+        "baseBytes": 10328,
+        "headBytes": 10328,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "602861154aa8731b9668c30214de5b5c249c52527ac8411a4e95c8ba80a0f9b7",
+        "sourceChangesPublishedBytes": false,
+        "workload": "memory/dependent-address"
+      },
+      {
+        "baseBytes": 12544,
+        "headBytes": 12544,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "0746fed2328dc0e35774fa29a33e1557ee426f461697003a078037c2a2fcfa37",
+        "sourceChangesPublishedBytes": false,
+        "workload": "memory/float64-unaligned"
+      },
+      {
+        "baseBytes": 7720,
+        "headBytes": 7720,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "fcd26a870fbf6cf8b638cec3acdffa781e29125280d888745f99e26889b6d8f9",
+        "sourceChangesPublishedBytes": false,
+        "workload": "runtime/simd-memory-full"
+      },
+      {
+        "baseBytes": 6832,
+        "headBytes": 6832,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "06f2100f486a0626d8084ec4e6f3f8a876262d274c842e8881f95603fcd930b2",
+        "sourceChangesPublishedBytes": false,
+        "workload": "runtime/simd-memory-widen"
+      },
+      {
+        "baseBytes": 8384,
+        "headBytes": 8384,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "f6fe2b2c602ac5aeb04eee9119b0933827478adb8e410974ffde3f6a59aa09e6",
+        "sourceChangesPublishedBytes": false,
+        "workload": "runtime/simd-memory-lanes"
+      },
+      {
+        "baseBytes": 4108,
+        "headBytes": 4108,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "c1de86b66d6f6c671dd4ef3b931fb2e42728c45136056556201be4b40a5cd265",
+        "sourceChangesPublishedBytes": false,
+        "workload": "gc/i31-roundtrip"
+      },
+      {
+        "baseBytes": 5536,
+        "headBytes": 5536,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "6c5afdcf4e0d8601b68ee7ae447f813a3d845cf425472d4b9fa0c1e33fd8d54e",
+        "sourceChangesPublishedBytes": false,
+        "workload": "gc/struct-access"
+      },
+      {
+        "baseBytes": 5216,
+        "headBytes": 5216,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "c84b4bc0da45dd14d9fdba78ba3644d6965ca895dba953072ac98fc0efe8e102",
+        "sourceChangesPublishedBytes": false,
+        "workload": "gc/struct-allocation"
+      },
+      {
+        "baseBytes": 10016,
+        "headBytes": 10016,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "f453a70dcb98a2bca419ec7384ff4a71349f03ee9f84ea8e1f57689b5c124504",
+        "sourceChangesPublishedBytes": false,
+        "workload": "gc/struct-indirect-access"
+      },
+      {
+        "baseBytes": 4860,
+        "headBytes": 4860,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "0666af058f56f95064392eb58f14687f6a2aa6a068c12532b976eac0e3f0efcb",
+        "sourceChangesPublishedBytes": false,
+        "workload": "threads/private-memory"
+      },
+      {
+        "baseBytes": 5104,
+        "headBytes": 5104,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "7a91d9b75e18fcc5015cfc7f181cfb4def4af8e837793ed5cf88be3baf2585b5",
+        "sourceChangesPublishedBytes": false,
+        "workload": "threads/shared-memory"
+      },
+      {
+        "baseBytes": 4732,
+        "headBytes": 4732,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "e771495531ab85a193988efa8928d63b3beb0810cba49d458be2c94e03ee78e3",
+        "sourceChangesPublishedBytes": false,
+        "workload": "threads/atomic-rmw"
+      },
+      {
+        "baseBytes": 4952,
+        "headBytes": 4952,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "2c505dc193b5145e497067fbee7463f2ecbbf550799105f1af7ca4b2ff201205",
+        "sourceChangesPublishedBytes": false,
+        "workload": "threads/notify-empty"
+      },
+      {
+        "baseBytes": 5348,
+        "headBytes": 5348,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "c0d8273db694e440f3f64990e3f1354f7730eb1f489c724e933ebfe59ce97b3a",
+        "sourceChangesPublishedBytes": false,
+        "workload": "threads/wait-mismatch"
+      },
+      {
+        "baseBytes": 5328,
+        "headBytes": 5328,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "832544458203e619257a7737232a3755336120f6690402ef1df46c29704ce6fb",
+        "sourceChangesPublishedBytes": false,
+        "workload": "threads/wait-timeout"
+      },
+      {
+        "baseBytes": 101308,
+        "headBytes": 101308,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "b7c0b375a2c232e058cdc6a8eae9f5298def7269f8048234fe589318092931a1",
+        "sourceChangesPublishedBytes": false,
+        "workload": "applications/sha256-clang"
+      },
+      {
+        "baseBytes": 101476,
+        "headBytes": 101476,
+        "headGoLLGoByteIdentical": true,
+        "headPublishedSha256": "b235a9910d370b0dd91b2811c961414aa69c458f9cee0320694dfaff526d4c69",
+        "sourceChangesPublishedBytes": false,
+        "workload": "applications/sha256-rust"
+      }
+    ],
+    "publications": 66
+  },
+  "qualification": [
+    {
+      "command": [
+        "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+        "test",
+        "-count=1",
+        "-timeout=4m",
+        "-coverpkg=./internal/compiler/codegen,./internal/engine/nativeexec",
+        "-coverprofile=/Users/lijie/source/goplus/wasmvm/artifacts/typed-compiler-ordering-20261105/go-coverage.out",
+        "./internal/compiler/codegen",
+        "./internal/engine/nativeexec",
+        "./pkg/vm"
+      ],
+      "compiler": "go",
+      "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "exit": 0,
+      "scope": "Complete codegen/nativeexec/public-vm tests on macOS arm64; full four-profile CI remains required.",
+      "source": "55976a42dbb4df4ef848446eb449b813f1c46fa7",
+      "wallSeconds": 10.542825292097405
+    },
+    {
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-3571c25",
+        "test",
+        "-O3",
+        "-lto=full",
+        "-count=1",
+        "-timeout=4m",
+        "./internal/compiler/codegen",
+        "./internal/engine/nativeexec",
+        "./pkg/vm"
+      ],
+      "compiler": "llgo",
+      "compilerSHA256": "4ec6e101cc510011d56e8ef9dee4053abbde521f284963bd2b468b281d3fec0c",
+      "exit": 0,
+      "scope": "Complete codegen/nativeexec/public-vm tests on macOS arm64; full four-profile CI remains required.",
+      "source": "55976a42dbb4df4ef848446eb449b813f1c46fa7",
+      "wallSeconds": 68.17139754188247
+    },
+    {
+      "command": [
+        "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+        "vet",
+        "./internal/compiler/codegen",
+        "./internal/engine/nativeexec"
+      ],
+      "compiler": "vet",
+      "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "exit": 0,
+      "scope": "Complete codegen/nativeexec/public-vm tests on macOS arm64; full four-profile CI remains required.",
+      "source": "55976a42dbb4df4ef848446eb449b813f1c46fa7",
+      "wallSeconds": 1.1938684999477118
+    }
+  ],
+  "source": "55976a42dbb4df4ef848446eb449b813f1c46fa7",
+  "finalCI": {
+    "passed": true,
+    "source": "97667b6949824fceff36d2d34063b1e060423b50",
+    "engine": "55976a42dbb4df4ef848446eb449b813f1c46fa7",
+    "run": 42018345234,
+    "attempt": 1,
+    "requiredSuccessfulJobs": 21,
+    "intentionalOptionalSkips": 1,
+    "testPackagesPerLLGoPlatform": 31,
+    "shardsPerLLGoPlatform": 7,
+    "profiles": 4,
+    "actualConformanceReports": 240,
+    "allManifestPinsAndCompilerIdentitiesChecked": true,
+    "stackSwitchingForcedCollectionAllProfiles": true,
+    "coveragePackages": 30,
+    "minimumCoverage": 90.7466788822721,
+    "coverage": {
+      "github.com/cpunion/wasmvm/internal/bench/phase": {
+        "covered": 240,
+        "total": 252,
+        "percent": 95.23809523809524
+      },
+      "github.com/cpunion/wasmvm/internal/binary": {
+        "covered": 78,
+        "total": 78,
+        "percent": 100.0
+      },
+      "github.com/cpunion/wasmvm/internal/cli": {
+        "covered": 582,
+        "total": 595,
+        "percent": 97.81512605042016
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/codegen": {
+        "covered": 7594,
+        "total": 7858,
+        "percent": 96.64036650547213
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/ir": {
+        "covered": 301,
+        "total": 311,
+        "percent": 96.78456591639872
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/lower": {
+        "covered": 324,
+        "total": 327,
+        "percent": 99.08256880733946
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/nativeabi": {
+        "covered": 34,
+        "total": 34,
+        "percent": 100.0
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/slots": {
+        "covered": 313,
+        "total": 314,
+        "percent": 99.68152866242038
+      },
+      "github.com/cpunion/wasmvm/internal/component/canonical": {
+        "covered": 1440,
+        "total": 1531,
+        "percent": 94.05617243631613
+      },
+      "github.com/cpunion/wasmvm/internal/component/decode": {
+        "covered": 353,
+        "total": 366,
+        "percent": 96.44808743169399
+      },
+      "github.com/cpunion/wasmvm/internal/component/validate": {
+        "covered": 2170,
+        "total": 2360,
+        "percent": 91.94915254237289
+      },
+      "github.com/cpunion/wasmvm/internal/core/constant": {
+        "covered": 8,
+        "total": 8,
+        "percent": 100.0
+      },
+      "github.com/cpunion/wasmvm/internal/core/decode": {
+        "covered": 527,
+        "total": 543,
+        "percent": 97.05340699815838
+      },
+      "github.com/cpunion/wasmvm/internal/core/module": {
+        "covered": 289,
+        "total": 294,
+        "percent": 98.29931972789116
+      },
+      "github.com/cpunion/wasmvm/internal/core/validate": {
+        "covered": 1093,
+        "total": 1168,
+        "percent": 93.57876712328768
+      },
+      "github.com/cpunion/wasmvm/internal/engine/execute": {
+        "covered": 1046,
+        "total": 1135,
+        "percent": 92.15859030837004
+      },
+      "github.com/cpunion/wasmvm/internal/engine/memory": {
+        "covered": 470,
+        "total": 508,
+        "percent": 92.51968503937007
+      },
+      "github.com/cpunion/wasmvm/internal/engine/nativeexec": {
+        "covered": 459,
+        "total": 496,
+        "percent": 92.54032258064517
+      },
+      "github.com/cpunion/wasmvm/internal/engine/numeric": {
+        "covered": 268,
+        "total": 268,
+        "percent": 100.0
+      },
+      "github.com/cpunion/wasmvm/internal/engine/simd": {
+        "covered": 303,
+        "total": 309,
+        "percent": 98.05825242718447
+      },
+      "github.com/cpunion/wasmvm/internal/engine/state": {
+        "covered": 1490,
+        "total": 1565,
+        "percent": 95.2076677316294
+      },
+      "github.com/cpunion/wasmvm/internal/platform/native": {
+        "covered": 419,
+        "total": 443,
+        "percent": 94.5823927765237
+      },
+      "github.com/cpunion/wasmvm/internal/wasi/host": {
+        "covered": 561,
+        "total": 606,
+        "percent": 92.57425742574257
+      },
+      "github.com/cpunion/wasmvm/pkg/component": {
+        "covered": 3152,
+        "total": 3421,
+        "percent": 92.13680210464777
+      },
+      "github.com/cpunion/wasmvm/pkg/vm": {
+        "covered": 1358,
+        "total": 1457,
+        "percent": 93.20521619766643
+      },
+      "github.com/cpunion/wasmvm/pkg/wasi/preview1": {
+        "covered": 1233,
+        "total": 1356,
+        "percent": 90.929203539823
+      },
+      "github.com/cpunion/wasmvm/pkg/wasi/preview2": {
+        "covered": 4832,
+        "total": 5315,
+        "percent": 90.91251175917215
+      },
+      "github.com/cpunion/wasmvm/pkg/wasi/preview3": {
+        "covered": 3962,
+        "total": 4366,
+        "percent": 90.7466788822721
+      },
+      "github.com/cpunion/wasmvm/pkg/wasi/threads": {
+        "covered": 224,
+        "total": 226,
+        "percent": 99.11504424778761
+      },
+      "github.com/cpunion/wasmvm/pkg/wasm": {
+        "covered": 169,
+        "total": 177,
+        "percent": 95.48022598870057
+      }
+    },
+    "longestSuccessfulJobSeconds": 499.0,
+    "jobs": [
+      {
+        "name": "llgo CLI / linux-amd64",
+        "seconds": 315.0
+      },
+      {
+        "name": "llgo / macos-arm64 / http",
+        "seconds": 389.0
+      },
+      {
+        "name": "llgo / macos-arm64 / component",
+        "seconds": 428.0
+      },
+      {
+        "name": "llgo / macos-arm64 / vm",
+        "seconds": 443.0
+      },
+      {
+        "name": "go / linux-amd64",
+        "seconds": 132.0
+      },
+      {
+        "name": "go / macos-arm64",
+        "seconds": 201.0
+      },
+      {
+        "name": "llgo / linux-amd64 / entry",
+        "seconds": 419.0
+      },
+      {
+        "name": "llgo / macos-arm64 / legacy",
+        "seconds": 499.0
+      },
+      {
+        "name": "llgo / macos-arm64 / core",
+        "seconds": 275.0
+      },
+      {
+        "name": "llgo / linux-amd64 / http",
+        "seconds": 419.0
+      },
+      {
+        "name": "llgo / linux-amd64 / async",
+        "seconds": 475.0
+      },
+      {
+        "name": "llgo / linux-amd64 / vm",
+        "seconds": 484.0
+      },
+      {
+        "name": "llgo / linux-amd64 / component",
+        "seconds": 468.0
+      },
+      {
+        "name": "llgo / linux-amd64 / legacy",
+        "seconds": 313.0
+      },
+      {
+        "name": "llgo / macos-arm64 / entry",
+        "seconds": 432.0
+      },
+      {
+        "name": "llgo CLI / macos-arm64",
+        "seconds": 361.0
+      },
+      {
+        "name": "llgo / macos-arm64 / async",
+        "seconds": 394.0
+      },
+      {
+        "name": "Go quality / linux-amd64",
+        "seconds": 162.0
+      },
+      {
+        "name": "llgo / linux-amd64 / core",
+        "seconds": 357.0
+      },
+      {
+        "name": "Go race / linux-amd64",
+        "seconds": 188.0
+      },
+      {
+        "name": "Verify semantic shard coverage",
+        "seconds": 18.0
+      }
+    ],
+    "scope": "Full pinned four-profile semantic CI for source 97667b6, typed native preparation engine 55976a4. Does not validate later uncommitted CFG value allocation. PR review, controlled performance, broader WASI-world acceptance and milestone completion remain open.",
+    "evidence": {
+      "path": "artifacts/typed-compiler-ordering-20261105/ci-artifacts-evidence.tar.gz",
+      "bytes": 5813140,
+      "sha256": "ce285149acc3ebadea541ad6ad991f53d6389c86fe9f4e8d7af872cc1f260762",
+      "files": 267
+    }
+  }
+}

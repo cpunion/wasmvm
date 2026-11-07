@@ -9,20 +9,30 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
-// Memory bases are stable only during one entry. The owner excludes growth and
-// concurrent access; every reentry refreshes the context and these registers.
+// Private bases are stable during one entry; shared bases remain stable across
+// growth. An entry length is a lower bound, never a current shared-size view.
+// Every reentry refreshes the context and these registers.
 // amd64 reserves r10/r11, arm64 x16/x17, outside the constrained scratch set.
 func (e *functionEmitter) prepareMemory() {
-	e.contextLoad(0, nativeabi.MemoryBaseOffset)
-	e.test(true)
-	e.branch(e.bad, "eq")
 	base, length := byte(10), byte(11)
 	if e.a.arch == "arm64" {
 		base, length = 16, 17
 	}
-	e.registerMove(base, e.operandRegister(0), true)
-	e.contextLoad(0, nativeabi.MemorySizeOffset)
-	e.registerMove(length, e.operandRegister(0), true)
+	if e.sharedDefaultMemory {
+		e.selectMemory(0)
+		e.registerMove(e.operandRegister(0), base, true)
+	} else {
+		e.contextLoad(0, nativeabi.MemoryBaseOffset)
+	}
+	e.test(true)
+	e.branch(e.bad, "eq")
+	if e.sharedDefaultMemory {
+		e.registerMove(e.operandRegister(0), length, true)
+	} else {
+		e.registerMove(base, e.operandRegister(0), true)
+		e.contextLoad(0, nativeabi.MemorySizeOffset)
+		e.registerMove(length, e.operandRegister(0), true)
+	}
 	if e.memoryMinimum != 0 {
 		e.constant(1, e.memoryMinimum)
 		e.compare(true)
@@ -32,11 +42,11 @@ func (e *functionEmitter) prepareMemory() {
 }
 
 func (e *functionEmitter) memoryInstruction(in slots.Instruction, proven bool) {
-	e.memoryAt(in, proven, e.f.Sources[in.Source].Wasm.MemoryOffset())
+	e.memoryAt(in, proven, e.f.Sources[in.Source].Wasm.MemoryOffset(), memoryOperand{})
 }
 
-func (e *functionEmitter) memoryAt(in slots.Instruction, proven bool, offset uint64) {
-	if e.memoryViews {
+func (e *functionEmitter) memoryAt(in slots.Instruction, proven bool, offset uint64, operand memoryOperand) {
+	if e.memoryViews && (!e.sharedDefaultMemory || !proven) {
 		index := e.f.Sources[in.Source].Wasm.Memory
 		if in.Op == 0x3f {
 			index = e.f.Sources[in.Source].Wasm.A
@@ -76,6 +86,18 @@ func (e *functionEmitter) memoryAt(in slots.Instruction, proven bool, offset uin
 	// Keep the i32 path zero-extended. The i64 path checks carry from both
 	// address+offset and the complete access end before comparing the length.
 	vector := nativeVectorMemoryOpcode(in.Op)
+	if e.unmetered && e.a.arch == "amd64" && proven && !wide && !vector && offset <= math.MaxInt32 {
+		if operand.constant && uint64(operand.bits)+offset <= math.MaxInt32 {
+			e.memoryAMD64At(in, load, size, 4, uint32(uint64(operand.bits)+offset))
+			e.directMemoryOperands++
+			return
+		}
+		if r, ok := e.registers[in.A]; ok && operand.canonical {
+			e.memoryAMD64At(in, load, size, r, uint32(offset))
+			e.directMemoryOperands++
+			return
+		}
+	}
 	if e.a.arch == "arm64" && proven {
 		if r, ok := e.registers[in.A]; ok {
 			if offset < 4096 && (!vector || vectorDirectMemory(in.Op)) {
@@ -247,6 +269,10 @@ func (e *functionEmitter) memoryARM64(in slots.Instruction, load bool, size uint
 }
 
 func (e *functionEmitter) memoryAMD64(in slots.Instruction, load bool, size uint32) {
+	e.memoryAMD64At(in, load, size, 0, 0)
+}
+
+func (e *functionEmitter) memoryAMD64At(in slots.Instruction, load bool, size uint32, index byte, offset uint32) {
 	slot := in.B
 	if load {
 		slot = in.Dst
@@ -257,12 +283,13 @@ func (e *functionEmitter) memoryAMD64(in slots.Instruction, load bool, size uint
 			prefix = 0xf2
 		}
 		e.a.bytes(prefix)
-		e.a.bytes(0x41 | (r>>3)<<2)
+		e.a.bytes(0x41 | (r>>3)<<2 | (index>>3)<<1)
 		opcode := byte(0x11)
 		if load {
 			opcode = 0x10
 		}
-		e.a.bytes(0x0f, opcode, (r&7)<<3|4, 2)
+		e.a.bytes(0x0f, opcode)
+		e.a.xmemoryAddress(r, index, offset)
 		return
 	}
 	r, cached := e.registers[slot]
@@ -275,7 +302,7 @@ func (e *functionEmitter) memoryAMD64(in slots.Instruction, load bool, size uint
 	if load {
 		signed := in.Op == 0x2c || in.Op == 0x2e || in.Op == 0x30 || in.Op == 0x32 || in.Op == 0x34
 		wide := size == 8 || signed && in.Op >= 0x30
-		rex := byte(0x41) | (r>>3)<<2
+		rex := byte(0x41) | (r>>3)<<2 | (index>>3)<<1
 		if wide {
 			rex |= 8
 		}
@@ -290,12 +317,13 @@ func (e *functionEmitter) memoryAMD64(in slots.Instruction, load bool, size uint
 			if signed {
 				opcode += 8
 			}
-			e.a.bytes(0x0f, opcode, (r&7)<<3|4, 2)
+			e.a.bytes(0x0f, opcode)
 		} else if signed {
-			e.a.bytes(0x63, (r&7)<<3|4, 2)
+			e.a.bytes(0x63)
 		} else {
-			e.a.bytes(0x8b, (r&7)<<3|4, 2)
+			e.a.bytes(0x8b)
 		}
+		e.a.xmemoryAddress(r, index, offset)
 		if !cached {
 			e.slotStore(slot, 1, false)
 		}
@@ -307,7 +335,7 @@ func (e *functionEmitter) memoryAMD64(in slots.Instruction, load bool, size uint
 		if size == 2 {
 			e.a.bytes(0x66)
 		}
-		rex := byte(0x41) | (r>>3)<<2
+		rex := byte(0x41) | (r>>3)<<2 | (index>>3)<<1
 		if size == 8 {
 			rex |= 8
 		}
@@ -318,7 +346,8 @@ func (e *functionEmitter) memoryAMD64(in slots.Instruction, load bool, size uint
 		if size == 1 {
 			opcode = 0x88
 		}
-		e.a.bytes(opcode, (r&7)<<3|4, 2)
+		e.a.bytes(opcode)
+		e.a.xmemoryAddress(r, index, offset)
 	}
 }
 

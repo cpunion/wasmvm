@@ -139,13 +139,25 @@ func (e *functionEmitter) overwrittenBeforeExit(pc int, slot slots.Slot) bool {
 		// Selection stops at remapped accesses; observation scans may cross
 		// proven accesses, but a later guard can expose the complete frame.
 		limit = e.regionEnd
+		if e.allocationLimit != 0 {
+			limit = min(limit, e.allocationLimit)
+		}
+		if e.frameCopyLimit != 0 {
+			limit = min(limit, e.frameCopyLimit)
+		}
 	}
 	for ; pc < limit && pc%256 != 0; pc++ {
 		if _, guard := e.guardPCs[pc]; guard {
 			return false
 		}
 		if e.elidedPCs[pc] {
-			continue
+			p := e.regionPredicate
+			// Recoverable definitions retain their logical read/write order.
+			// Their original words are restored before any observation, so
+			// earlier dead intermediates need not be kept physically alive.
+			if p == nil || pc != e.regionEnd-1 && (p.literal == nil || pc != e.regionEnd-2) {
+				continue
+			}
 		}
 		in := e.f.Code[pc]
 		op := in.Op
@@ -158,6 +170,10 @@ func (e *functionEmitter) overwrittenBeforeExit(pc int, slot slots.Slot) bool {
 			address = remap.local
 		}
 		in.A = address
+		in.A, in.B, in.C = e.frameRead(in.A), e.frameRead(in.B), e.frameRead(in.C)
+		if op == 0x20 {
+			local = e.frameRead(local)
+		}
 		read, write := scalarSlotUse(in, local, slot)
 		if read {
 			return false

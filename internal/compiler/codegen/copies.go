@@ -97,7 +97,7 @@ func (e *functionEmitter) combineScalarCopies(start int) (int, bool) {
 		if deferConstant {
 			e.literal(previous)
 		}
-		e.registerScalar(in)
+		e.registerScalar(in, pc)
 	}
 	if end != pc {
 		if !e.overwrittenBeforeExit(end+1, original.Dst) {
@@ -118,7 +118,11 @@ func (e *functionEmitter) canRegisterScalar(in slots.Instruction, pc int) bool {
 		return e.provenPCs[pc]
 	}
 	if isInteger(in.Op) {
-		return e.canRegisterInteger(in.Op, in.Dst, in.A, in.B)
+		if e.canRegisterInteger(in.Op, in.Dst, in.A, in.B) {
+			return true
+		}
+		opcode, _ := e.frameIntegerForm(in.Op, in.A, in.B)
+		return opcode != 0
 	}
 	if isFloat(in.Op) {
 		return e.canRegisterFloat(in) || e.canReinterpretRegister(in)
@@ -126,13 +130,13 @@ func (e *functionEmitter) canRegisterScalar(in slots.Instruction, pc int) bool {
 	return e.canRegisterConversion(in)
 }
 
-func (e *functionEmitter) registerScalar(in slots.Instruction) {
+func (e *functionEmitter) registerScalar(in slots.Instruction, pc int) {
 	if nativeVectorOpcode(in.Op) {
 		e.vectorInstruction(in)
 	} else if isMemoryAccess(in.Op) {
-		e.memoryInstruction(in, true)
+		e.memoryAt(in, true, e.f.Sources[in.Source].Wasm.MemoryOffset(), e.memoryOperands[pc])
 	} else if isInteger(in.Op) {
-		e.registerInteger(in.Op, in.Dst, in.A, in.B)
+		e.integer(in)
 	} else if isFloat(in.Op) {
 		e.floating(in)
 	} else {
@@ -159,7 +163,7 @@ func (e *functionEmitter) forwardScalarResult(pc int) bool {
 	if !e.canRegisterScalar(forwarded, pc) {
 		return false
 	}
-	e.registerScalar(forwarded)
+	e.registerScalar(forwarded, pc)
 	if !e.overwrittenBeforeExit(pc+2, in.Dst) {
 		e.move(in.Dst, dst)
 	}

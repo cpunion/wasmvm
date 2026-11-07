@@ -1,0 +1,10 @@
+{
+  "classification": "Development source events; no pooling, controlled performance or milestone acceptance. Initial ordinary mapping is rejected; costed follow-up retains stable blocks. Current four-profile CI/review pending.",
+  "format": "lossless-evidence-pointer-v1",
+  "archive": "../evidence/cfg-value-allocation-2026-11-05.json.xz",
+  "archiveSHA256": "1aab90b01e49f765fb571db91d00cf23468743a310621f372abf6be77d44339c",
+  "archiveBytes": 12124,
+  "originalSHA256": "740b63ac396661d68bd30fc0f9ea147ab1b8a7ad7643a3f8fa83c958c3607673",
+  "originalBytes": 97917,
+  "retention": "The archive preserves the complete original JSON byte for byte, including raw observations, failures, regressions, unresolved controls, lifecycle phases and provenance. No samples are removed or pooled."
+}

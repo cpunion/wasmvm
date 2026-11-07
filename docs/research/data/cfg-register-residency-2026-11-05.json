@@ -1,0 +1,11 @@
+{
+  "classification": "Local semantics, independent compiler diagnostics and retained adverse hosted evidence; final CI and performance acceptance remain open.",
+  "engineSource": "2be7d9f17b54b7ed5582faabd741f0f5fa9c01c7",
+  "format": "lossless-evidence-pointer-v1",
+  "archive": "../evidence/cfg-register-residency-2026-11-05.json.xz",
+  "archiveSHA256": "05175c6f85b4edb873f20dfd471ee927b7a9bff1e28a1b393d68502bb52006e8",
+  "archiveBytes": 16828,
+  "originalSHA256": "6f260b34a61eb0d2788f5b30a8a837350c6207a63ea32581100f8f950379741c",
+  "originalBytes": 204463,
+  "retention": "The archive preserves the complete original JSON byte for byte, including raw observations, failures, regressions, unresolved controls, lifecycle phases and provenance. No samples are removed or pooled."
+}

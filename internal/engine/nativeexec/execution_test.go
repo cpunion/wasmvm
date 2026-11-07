@@ -84,18 +84,33 @@ func TestExpandedEntrySelectionAndAggregateBudget(t *testing.T) {
 		metered       bool
 		wantPC        uint32
 	}{{2, 16, false, returnPC}, {1, 16, false, 0}, {2, 2, false, 0}, {2, 16, true, 0}} {
-		e.maxFrames, e.maximum, e.metered = test.frames, test.slots*16, test.metered
-		pc, fuel, err := e.Run(fn, 0, 1, 0, 10)
-		if err != nil || pc != test.wantPC {
-			t.Fatal(test, pc, err)
-		}
-		if !test.metered && fuel != 10 || test.metered && fuel != 9 {
-			t.Fatal("fuel changed across tier selection", test, fuel)
-		}
-		if pc == returnPC {
-			in := fn.Code.Code[pc]
-			if e.values[fn.Code.Args[in.Extra]].Lo != 42 {
-				t.Fatal(e.values)
+		for _, invocationLimits := range []bool{false, true} {
+			e.maxFrames, e.maximum, e.metered = test.frames, test.slots*16, test.metered
+			var pc uint32
+			var fuel uint64
+			var err error
+			if invocationLimits {
+				// The workspace can hold more than this invocation is allowed
+				// to use. Expansion must obey the current shared stack budget.
+				e.maxFrames, e.maximum = 64, 1024
+				packet := state.NativeFrames{Function: fn, Depth: 1, Fuel: 10, Values: e.values,
+					MaxFrames: uint32(test.frames), MaxSlots: uint32(test.slots)}
+				err = e.RunFrames(&packet)
+				pc, fuel = packet.PC, packet.Fuel
+			} else {
+				pc, fuel, err = e.Run(fn, 0, 1, 0, 10)
+			}
+			if err != nil || pc != test.wantPC {
+				t.Fatal(test, invocationLimits, pc, err)
+			}
+			if !test.metered && fuel != 10 || test.metered && fuel != 9 {
+				t.Fatal("fuel changed across tier selection", test, fuel)
+			}
+			if pc == returnPC {
+				in := fn.Code.Code[pc]
+				if e.values[fn.Code.Args[in.Extra]].Lo != 42 {
+					t.Fatal(e.values)
+				}
 			}
 		}
 	}

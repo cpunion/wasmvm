@@ -62,7 +62,7 @@ func (e *functionEmitter) bulkMemory(in slots.Instruction, pc uint32) {
 // Only scratch vectors v0/v1 are touched. No guest slot changes during a chunk.
 func (e *functionEmitter) bulkARM64(pc uint32, copying, backwards bool) {
 	outer, block, vector, tail, next, poll := e.a.label(), e.a.label(), e.a.label(), e.a.label(), e.a.label(), e.a.label()
-	e.pollExits = append(e.pollExits, pollExit{poll, pc})
+	e.pollExits = append(e.pollExits, pollExit{poll, pc, e.currentRegisterPlan(), nil})
 	e.a.mark(outer)
 	e.a.word(0xf940000d | uint32(nativeabi.ControlOffset/8)<<10) // ldr x13, [x0, control]
 	e.a.compareBranch(poll, 13, true, true)
@@ -188,7 +188,7 @@ func (e *functionEmitter) bulkAMD64(copying bool, pc uint32, trap, done int) {
 	}
 	e.registerMove(7, 8, true)
 	e.a.branch(poll, false, 0)
-	e.pollExits = append(e.pollExits, pollExit{poll, pc})
+	e.pollExits = append(e.pollExits, pollExit{poll, pc, e.currentRegisterPlan(), nil})
 	e.a.mark(cleanup)
 	e.a.bytes(0xfc)
 	if copying {

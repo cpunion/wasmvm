@@ -192,6 +192,11 @@ func (e *functionEmitter) emitMemoryUnroll(start int, r memoryRegion, pcs []int,
 	e.constant(1, uint64(u.copies))
 	e.compare(false)
 	e.branch(cold, "lo")
+	previous := e.currentRegisterPlan()
+	if plan := e.loopRegisterPlan(start, r); plan != nil {
+		e.transitionRegisters(plan)
+		out.RegisterRegions++
+	}
 	cmp := e.f.Code[r.end]
 	for i := 0; i < u.copies; i++ {
 		if i+1 == u.copies {
@@ -210,14 +215,19 @@ func (e *functionEmitter) emitMemoryUnroll(start int, r memoryRegion, pcs []int,
 			}
 		}
 	}
+	restoreMemory := e.loopBorrowedMemoryLength()
+	e.transitionRegisters(previous)
+	if restoreMemory {
+		e.prepareMemory()
+	}
 	e.slotLoad(cmp.Dst, 0, false, false)
 	e.test(false)
 	condition := "eq"
 	if !u.backYes {
 		condition = "ne"
 	}
-	e.branch(pcs[u.exit], condition)
-	e.a.branch(pcs[start], false, 0)
+	e.branch(e.targetPC(pcs, u.exit), condition)
+	e.a.branch(e.targetPC(pcs, start), false, 0)
 	e.a.mark(cold)
 	// Short remainders, unusual initial cursors and independent entries use
 	// the original one-iteration body and conditional branch.

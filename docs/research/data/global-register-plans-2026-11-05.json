@@ -1,0 +1,12 @@
+{
+  "classification": "Evidence index for local macOS arm64 semantics and static generated code, not controlled performance or final four-profile acceptance. Raw logs, phase responses, archives and scripts are in the checksummed local evidence bundle.",
+  "engineSource": "c1f00f55b9645ab10e413b7d2fc19b53a204231c",
+  "sourceBase": "f0aa74998abafdbd28db6c08efb713a2946da580",
+  "format": "lossless-evidence-pointer-v1",
+  "archive": "../evidence/global-register-plans-2026-11-05.json.xz",
+  "archiveSHA256": "5235fdede0ee8967af677028c8b5eb0c230408eabef8eb3510eec571c04eb1f2",
+  "archiveBytes": 21660,
+  "originalSHA256": "165396cd086e0bbcd2e1fee7d177782c01b683c5cf8520cbaaaefca17a1a55e7",
+  "originalBytes": 192208,
+  "retention": "The archive preserves the complete original JSON byte for byte, including raw observations, failures, regressions, unresolved controls, lifecycle phases and provenance. No samples are removed or pooled."
+}

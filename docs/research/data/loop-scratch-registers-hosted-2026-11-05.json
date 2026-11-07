@@ -1,0 +1,13 @@
+{
+  "classification": "Hosted advisory; controlled milestone acceptance remains open",
+  "engineSource": "2f8e44f493a127b6e9b2f82400b220626e9accbe",
+  "sourceHead": "11a3a18bb5d28072b8dc6d726ba0aa2df885be59",
+  "sourceBase": "9f19606e7e765287c5c11c0558317bdd2a1c7ca2",
+  "format": "lossless-evidence-pointer-v1",
+  "archive": "../evidence/loop-scratch-registers-hosted-2026-11-05.json.xz",
+  "archiveSHA256": "4270f962b44238db0e6eb20c78b58559ceb33897fe1988c889d4cac01f3e4de2",
+  "archiveBytes": 22504,
+  "originalSHA256": "b0e6a1b472d2631c2a64f9beef663fbcb0aa1be0d437610eeddd2f9d2b426352",
+  "originalBytes": 213105,
+  "retention": "The archive preserves the complete original JSON byte for byte, including raw observations, failures, regressions, unresolved controls, lifecycle phases and provenance. No samples are removed or pooled."
+}

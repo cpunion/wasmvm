@@ -2,6 +2,7 @@ package codegen
 
 import (
 	"math"
+	"slices"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
@@ -28,11 +29,25 @@ type CompiledFunction struct {
 	ReferenceSlots                []uint32
 	Helpers, Calls, EdgeCopies    uint32
 	FusedIntegers                 uint32
+	MixedIntegers                 uint32
 	ForwardedPredicates           uint32
 	UsesMemory                    bool
 	BoundsElided                  uint32
+	DirectMemoryOperands          uint32
 	MemoryGuards, GuardedAccesses uint32
 	LoopGuards                    uint32
+	RegisterRegions               uint32
+	AllocationBlocks              uint32
+	ValueVersions, ValuePhis      uint32
+	ValueLoops                    uint32
+	DeferredFrameCopies           uint32
+	DeferredPredicates            uint32
+	DeferredPredicateLiterals     uint32
+	// Generated private backedge polls, excluding header/guard/cold polls.
+	PrivatePollOffsets            []uint32
+	CoalescedSlotGroups           uint32
+	HoistedLiterals               uint32
+	NativeLoops                   uint32
 	UnrolledLoops, UnrolledCopies uint32
 	DeadScalarOps                 uint32
 	MemoryGrows                   uint32
@@ -51,6 +66,7 @@ type CompiledFunction struct {
 	NativeBulk                    uint32
 	NativeAllocations             uint32
 	NativeAllocationBatch         uint32
+	CallRelocations               []CallRelocation
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -104,6 +120,11 @@ type Config struct {
 	NativeAllocations bool
 	// NativeThreads requires stable shared views and machine atomic helpers.
 	NativeThreads bool
+	// LinkedCallees enables bounded native direct calls within this module.
+	// All linked bodies use the same sorted global binding layout. The caller
+	// must resolve CallRelocations before publishing any linked body.
+	LinkedCallees map[uint32]*slots.Function
+	LinkedGlobals []uint32
 }
 
 func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
@@ -168,6 +189,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	e.arm64Features = config.ARM64Features
 	e.nativeThreads = config.NativeThreads
 	e.sharedMemories = config.SharedMemories
+	e.sharedDefaultMemory = config.NativeThreads && len(config.SharedMemories) != 0 && config.SharedMemories[0]
 	e.nativeBulk = unmetered && config.MemoryCount == 1 && (len(config.SharedMemories) == 0 || !config.SharedMemories[0])
 	pcs := make([]int, len(f.Code))
 	for i := range pcs {
@@ -186,11 +208,17 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			if index != 0 && index >= config.MemoryCount {
 				return nil, wasm.ErrInvalid
 			}
+			if index != 0 {
+				e.sharedDefaultMemory = false
+			}
 			if in.Op != 0x40 && (index != 0 || config.NativeThreads && uint64(index) < uint64(len(config.SharedMemories)) && config.SharedMemories[index]) {
 				e.memoryViews = true
 			}
 		}
 	}
+	e.sharedDefaultMemory = e.sharedDefaultMemory && e.memoryViews
+	e.start = a.label()
+	a.mark(e.start)
 	e.header(uint64(len(f.Slots))*16, len(pcs))
 	e.prepareHeapAccesses(config)
 	if config.NativeAllocations && unmetered {
@@ -204,25 +232,54 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	globalIndices, usesRuntimeData := e.prepareRuntimeData(config)
 	e.memoryFunctions, e.memoryTables, e.memoryGlobals, e.memoryBindings = config.FunctionCount, config.TableCount, uint32(len(config.Globals)), uint32(len(globalIndices))
-	if e.usesMemory && !e.memoryViews {
+	if e.usesMemory && (!e.memoryViews || e.sharedDefaultMemory) {
 		e.prepareMemory()
 	}
-	regions := e.memoryRegions()
+	regions := e.addNativeLoops(e.memoryRegions())
 	if unmetered {
-		e.allocateRegisters(config, regions)
+		e.selectRegisters(config, regions)
 		e.prepareVectorConstants()
 		e.prepareConstants()
 		e.prepareRuntimeRegisters()
 		e.prepareHeapCaches()
+		e.prepareLinearScan(regions, 1<<18)
+		plan := e.currentRegisterPlan()
+		e.useRegisterPlan(nil)
+		if e.allocationPlans == nil {
+			e.transitionRegisters(plan)
+		}
 		e.contextLoad(0, nativeabi.PayloadOffset+24)
 		e.test(true)
 		e.branch(e.bad, "ne")
 		e.contextLoad(0, nativeabi.ContinuationOffset)
 	}
-	a.dispatch(pcs)
+	entryPCs := pcs
+	if e.allocationPlans != nil {
+		entryPCs = make([]int, len(pcs))
+		entries := map[*registerPlan]int{}
+		for pc, plan := range e.allocationPlans {
+			label, ok := entries[plan]
+			if !ok {
+				label = a.label()
+				entries[plan] = label
+				e.allocationEntries = append(e.allocationEntries, allocationEdge{label: label, from: e.currentRegisterPlan(), to: plan})
+			}
+			entryPCs[pc] = label
+		}
+	}
+	a.dispatch(entryPCs)
 	out = &CompiledFunction{Function: originalFunction, Offsets: make([]uint32, len(pcs)), UsesMemory: e.usesMemory, GlobalIndices: globalIndices, UsesRuntimeData: usesRuntimeData}
 	out.HeapCaches = uint32(len(e.heapCaches))
 	out.NativeAllocationBatch = e.allocationBatch
+	out.AllocationBlocks = uint32(len(e.allocationStarts))
+	if e.valueFlow != nil {
+		out.ValueVersions = uint32(len(e.valueFlow.nodes))
+		for _, node := range e.valueFlow.nodes {
+			if node.phi {
+				out.ValuePhis++
+			}
+		}
+	}
 	for _, in := range f.Code {
 		if nativeVectorOpcode(in.Op) || nativeVectorMemoryOpcode(in.Op) {
 			out.NativeVectors++
@@ -234,10 +291,94 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		}
 	}
 	var independentEntries []int
+	var regionStarts []int
+	for pc := range regions {
+		regionStarts = append(regionStarts, pc)
+	}
+	slices.Sort(regionStarts)
+	regionPosition := 0
 	combinedThrough := -1
+	allocationBlock := 0
 	for pc, in := range f.Code {
 		if pc <= combinedThrough {
 			continue
+		}
+		for regionPosition < len(regionStarts) && regionStarts[regionPosition] <= pc {
+			regionPosition++
+		}
+		e.nativeRegionLimit = 0
+		if regionPosition < len(regionStarts) {
+			e.nativeRegionLimit = regionStarts[regionPosition]
+		}
+		if edge, ok := e.loopBackedges[pc]; ok {
+			e.frameAliases = edge.aliases
+			e.pollSnapshot = edge.snapshot
+			if edge.branch != nil {
+				e.transitionRegisters(edge.branch)
+			}
+			poll := a.label()
+			a.mark(poll)
+			e.privatePollLabels = append(e.privatePollLabels, poll)
+			e.interrupt(uint32(pc))
+			e.pollSnapshot = nil
+			if edge.always {
+				a.branch(edge.header, false, 0)
+				if edge.registers != nil {
+					e.useRegisterPlan(edge.registers)
+				}
+				independentEntries = append(independentEntries, pc)
+				e.frameAliases = nil
+				continue
+			}
+			if edge.snapshot != nil && edge.snapshot.predicate != nil {
+				in := edge.snapshot.predicate.in
+				e.predicateFlags(edge.snapshot.predicate)
+				cc := x86IntegerCondition(in.Op)
+				if arch == "arm64" {
+					cc = armIntegerCondition(in.Op)
+				}
+				if !edge.yes {
+					cc ^= 1
+				}
+				a.branch(edge.header, true, cc)
+			} else if arch == "arm64" && edge.flags {
+				cc := armIntegerCondition(f.Code[pc-1].Op)
+				if !edge.yes {
+					cc ^= 1
+				}
+				a.branch(edge.header, true, cc)
+				out.ForwardedPredicates++
+			} else {
+				e.branchCondition(in.A, edge.header, edge.yes)
+			}
+			e.frameAliases = nil
+			e.materializeFrameSnapshot(edge.snapshot, true, !edge.yes)
+			restoreMemory := edge.restoreMemory || e.loopBorrowedMemoryLength()
+			if edge.registers != nil {
+				e.transitionRegisters(edge.registers)
+			}
+			if restoreMemory {
+				e.prepareMemory()
+			}
+			if edge.exit != pc+1 {
+				a.branch(e.targetPC(pcs, edge.exit), false, 0)
+			}
+			independentEntries = append(independentEntries, pc)
+			continue
+		}
+		if e.allocationPlans != nil {
+			for allocationBlock+1 < len(e.allocationStarts) && pc >= e.allocationStarts[allocationBlock+1] {
+				allocationBlock++
+			}
+			e.allocationLimit = len(f.Code)
+			if allocationBlock+1 < len(e.allocationStarts) {
+				e.allocationLimit = e.allocationStarts[allocationBlock+1]
+			}
+			if pc == 0 {
+				e.useRegisterPlan(e.allocationPlans[pc])
+			} else {
+				e.transitionRegisters(e.allocationPlans[pc])
+			}
 		}
 		// Only fallthrough from the preceding constant proves an immediate.
 		// Keep the original PC as a generic cold entry for branches/resumption.
@@ -248,24 +389,6 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				independentEntries = append(independentEntries, pc)
 				continue
 			}
-		}
-		if edge, ok := e.loopBackedges[pc]; ok {
-			e.interrupt(uint32(pc))
-			if arch == "arm64" {
-				cc := armIntegerCondition(f.Code[pc-1].Op)
-				if !edge.yes {
-					cc ^= 1
-				}
-				a.branch(edge.header, true, cc)
-				out.ForwardedPredicates++
-			} else {
-				e.branchCondition(in.A, edge.header, edge.yes)
-			}
-			if edge.exit != pc+1 {
-				a.branch(pcs[edge.exit], false, 0)
-			}
-			independentEntries = append(independentEntries, pc)
-			continue
 		}
 		if e.compareBranchFallthrough(pc, pcs) {
 			out.ForwardedPredicates++
@@ -290,80 +413,11 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			combinedThrough = region.end
 			continue
 		}
-		if end, ok := e.combineVectorAffine(pc); ok {
-			out.FusedVectors++
+		if end, ok := e.combinePlain(pc, 0, out); ok {
 			for entry := pc + 1; entry <= end; entry++ {
 				independentEntries = append(independentEntries, entry)
 			}
 			combinedThrough = end
-			continue
-		}
-		if end, ok := e.combineMaskShift(pc); ok {
-			out.FusedIntegers++
-			for entry := pc + 1; entry <= end; entry++ {
-				independentEntries = append(independentEntries, entry)
-			}
-			combinedThrough = end
-			continue
-		}
-		if end, ok := e.combineShiftedInteger(pc); ok {
-			out.FusedIntegers++
-			for entry := pc + 1; entry <= end; entry++ {
-				independentEntries = append(independentEntries, entry)
-			}
-			combinedThrough = end
-			continue
-		}
-		if e.logicalShift(pc, in) {
-			out.FusedIntegers++
-			independentEntries = append(independentEntries, pc+1, pc+2)
-			combinedThrough = pc + 2
-			continue
-		}
-		if end, ok := e.combineScalarCopies(pc); ok {
-			out.ForwardedScalars++
-			for entry := pc + 1; entry <= end; entry++ {
-				independentEntries = append(independentEntries, entry)
-			}
-			combinedThrough = end
-			continue
-		}
-		if end, ok := e.forwardHeapStoreLoad(pc); ok {
-			out.NativeHeap += 2
-			out.ForwardedHeap++
-			for entry := pc + 1; entry <= end; entry++ {
-				independentEntries = append(independentEntries, entry)
-			}
-			combinedThrough = end
-			continue
-		}
-
-		if end, ok := e.combineI31(pc); ok {
-			out.FusedIntegers++
-			independentEntries = append(independentEntries, pc+1)
-			combinedThrough = end
-			continue
-		}
-		if end, ok := e.combineMultiplyAdd(pc); ok {
-			out.FusedIntegers++
-			for entry := pc + 1; entry <= end; entry++ {
-				independentEntries = append(independentEntries, entry)
-			}
-			combinedThrough = end
-			continue
-		}
-		if end, ok := e.combineIntegerConstant(pc); ok {
-			out.FusedIntegers++
-			for entry := pc + 1; entry <= end; entry++ {
-				independentEntries = append(independentEntries, entry)
-			}
-			combinedThrough = end
-			continue
-		}
-		if e.forwardScalarResult(pc) {
-			out.ForwardedScalars++
-			independentEntries = append(independentEntries, pc+1)
-			combinedThrough = pc + 1
 			continue
 		}
 		if e.atomicInstruction(in, uint32(pc)) {
@@ -378,6 +432,10 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			kind := ir.TermKind(op - slots.ControlBase)
 			switch kind {
 			case ir.Return:
+				if config.LinkedCallees != nil {
+					e.linkedReturn(pc)
+					continue
+				}
 				e.leave(nativeabi.Return, uint64(pc), uint64(pc))
 			case ir.Trap:
 				e.trap(wasm.TrapUnreachable, uint64(src.Wasm.Offset))
@@ -465,6 +523,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				}
 				continue
 			}
+			if op == 0x10 && e.linkedCall(pc, config.LinkedCallees[src.Wasm.A]) {
+				continue
+			}
 			e.contextConst(nativeabi.SourceOffset, uint64(src.Wasm.Offset))
 			e.leave(nativeabi.Call, uint64(pc), uint64(pc+1))
 		case helperOpcode(op):
@@ -477,32 +538,34 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	// A validated function never falls through its final terminator.
 	for _, pc := range independentEntries {
+		if e.allocationPlans != nil {
+			e.useRegisterPlan(e.allocationPlans[pc])
+		}
 		a.mark(pcs[pc])
 		if f.Code[pc].Op == slots.ControlBase+uint32(ir.If) {
 			e.interrupt(uint32(pc))
 			e.conditionalEdges(f.Code[pc], pcs, -1)
+		} else if f.Code[pc].Op == slots.ControlBase+uint32(ir.Jump) {
+			e.interrupt(uint32(pc))
+			e.edge(f.Code[pc].Extra, pcs, -1)
 		} else {
 			if !e.heapInstruction(f.Code[pc]) {
 				e.plain(f.Code[pc], false)
 			}
-			a.branch(pcs[pc+1], false, 0)
+			a.branch(e.targetPC(pcs, pc+1), false, 0)
 		}
 	}
 	for _, fallback := range e.memoryFallbacks {
+		e.useRegisterPlan(fallback.registers)
 		a.mark(fallback.label)
 		e.plain(f.Code[fallback.pc], false)
-		a.branch(pcs[fallback.pc+1], false, 0)
+		a.branch(e.targetPC(pcs, fallback.pc+1), false, 0)
 	}
+	e.emitAllocationEdges()
+	e.emitAllocationEntries(pcs)
 	e.emitPollExits()
-	for _, call := range e.callExits {
-		a.mark(call.label)
-		e.contextConst(nativeabi.SourceOffset, call.source)
-		e.leave(nativeabi.Call, uint64(call.pc), uint64(call.pc+1))
-	}
-	for _, trap := range e.trapExits {
-		a.mark(trap.label)
-		e.trap(trap.code, trap.source)
-	}
+	e.emitCallExits()
+	e.emitTrapExits()
 	a.mark(e.bad)
 	e.rawStatus(nativeabi.BadState)
 	a.mark(e.zero)
@@ -511,7 +574,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	e.trapCode(wasm.TrapIntegerOverflow)
 	a.mark(e.exit)
 	out.EdgeCopies = e.edgeCopies
+	out.MixedIntegers = e.mixedIntegers
 	out.BoundsElided = e.boundsElided
+	out.DirectMemoryOperands = e.directMemoryOperands
 	out.AliasedVectorReads = e.aliasedVectorReads
 	body, err := a.finish()
 	if err != nil {
@@ -523,6 +588,12 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	for i, l := range pcs {
 		out.Offsets[i] = out.Entry.BodyOffset + uint32(a.labels[l])
+	}
+	for _, label := range e.privatePollLabels {
+		out.PrivatePollOffsets = append(out.PrivatePollOffsets, out.Entry.BodyOffset+uint32(a.labels[label]))
+	}
+	for _, call := range e.linkedRelocations {
+		out.CallRelocations = append(out.CallRelocations, CallRelocation{Offset: out.Entry.BodyOffset + uint32(a.labels[call.label]), Function: call.target})
 	}
 	return out, nil
 }

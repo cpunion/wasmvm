@@ -1,0 +1,11 @@
+{
+  "classification": "Full four-profile semantic CI and exact-source hosted comparison pass. Eight of 22 diagnostic controls resolve; controlled performance and integration acceptance remain open.",
+  "engineSource": "2f8e44f493a127b6e9b2f82400b220626e9accbe",
+  "format": "lossless-evidence-pointer-v1",
+  "archive": "../evidence/loop-scratch-registers-2026-11-05.json.xz",
+  "archiveSHA256": "1650aa2daae82a4c8efd7790d2aee333da872b07a5787e2ec7267e56ee93adf3",
+  "archiveBytes": 18016,
+  "originalSHA256": "85fa8113fce4f9efb6615ab5724fbca471c4f016a0572eb7e336815b166fef52",
+  "originalBytes": 130172,
+  "retention": "The archive preserves the complete original JSON byte for byte, including raw observations, failures, regressions, unresolved controls, lifecycle phases and provenance. No samples are removed or pooled."
+}

@@ -2,7 +2,7 @@ package codegen
 
 import (
 	"math"
-	"sort"
+	"slices"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 )
@@ -64,7 +64,7 @@ func (e *functionEmitter) prepareConstants() {
 	for value := range e.constantRegisters {
 		values = append(values, value)
 	}
-	sort.Slice(values, func(i, j int) bool { return values[i] < values[j] })
+	slices.Sort(values)
 	for _, value := range values {
 		e.a.aconst(uint32(e.constantRegisters[value]), value, value > math.MaxUint32)
 	}

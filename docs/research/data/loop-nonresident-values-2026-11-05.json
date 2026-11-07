@@ -1,0 +1,10 @@
+{
+  "classification": "Exact-source complete four-profile Go/LLGo CI and package coverage pass. Hosted elapsed comparison, contribution integration and controlled acceptance remain open.",
+  "format": "lossless-evidence-pointer-v1",
+  "archive": "../evidence/loop-nonresident-values-2026-11-05.json.xz",
+  "archiveSHA256": "c33ec506b0b614178ebd62cada7a56c8287fc2b8b36564bc63c3e8aff76fbd41",
+  "archiveBytes": 15720,
+  "originalSHA256": "49184fb2ca5752452325bc0fcd0d56fad6cc03e5d6dd19d680aa21a2acc0ee71",
+  "originalBytes": 117774,
+  "retention": "The archive preserves the complete original JSON byte for byte, including raw observations, failures, regressions, unresolved controls, lifecycle phases and provenance. No samples are removed or pooled."
+}

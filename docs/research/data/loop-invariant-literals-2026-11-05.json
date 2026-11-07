@@ -1,0 +1,9 @@
+{
+  "format": "lossless-evidence-pointer-v1",
+  "archive": "../evidence/loop-invariant-literals-2026-11-05.json.xz",
+  "archiveSHA256": "0d21bd0f4e42e49385ccf6baeef52d101d6cbc9b3a9036de19de437d0b316db2",
+  "archiveBytes": 24572,
+  "originalSHA256": "90306580be252b24f23d916d46655da5bc764da865d96e6d34c32d33124fd8b5",
+  "originalBytes": 224290,
+  "retention": "The archive preserves the complete original JSON byte for byte, including raw observations, failures, regressions, unresolved controls, lifecycle phases and provenance. No samples are removed or pooled."
+}

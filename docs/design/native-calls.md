@@ -1,0 +1,47 @@
+# Native guest calls
+
+Status: native direct call/return emission for amd64 and arm64 is implemented at engine `2e0c605`, with complete local Go/LLGo qualification on macOS arm64. All nine affected packages and 96 actual conformance reports pass; scoped coverage remains above 90%. Supplementary generated-code execution passes under emulated Linux amd64/Go 1.27.0; final pinned Linux Go/LLGo CI remains required. The [source comparison](../research/performance-native-calls-2026-11-05.md) records a large native improvement and interpreter regressions. Controlled performance acceptance and integration remain open.
+
+## Shared runtime boundary
+
+`state.NativeFrames` is a borrowed Go-side packet. `execute.FrameBackend` optionally executes it; existing backends keep their old boundary. A nonempty packet replaces the existing top frame with the complete root/child chain. `execute.adoptNativeFrames` validates all parents, PCs, direct targets, bases, tuple bounds and current invocation quotas before mutating the shared stack. The already charged final boundary is serviced once, after locals are refreshed; restarting the backend at that PC would double-charge fuel. Root destinations survive adoption. All references are spilled before any host, GC, exception or continuation operation. Packet references are cleared on success/error and Abort. A returned error preserves the current owned arena view for reuse even after relocation.
+
+The real native backend executes hidden native calls and publishes their complete parent chain before observable runtime work. It passes current invocation quotas into execution rather than relying on cached workspace capacity. Model tests establish the transfer contract; separate generated-code tests execute large mixed tuples, nested host boundaries, parent-only GC roots, self-recursion with large edge moves, metadata growth, quota exhaustion, cancellation and reuse. Metered tuple results/fuel are checked against the interpreter. Both host compilers execute the complete affected suites.
+
+## One hardware entry, bounded guest frames
+
+Ordinary same-instance direct calls and returns use machine branches. Existing per-function C ABI wrappers have the same fixed prologue/epilogue for an ISA. A call branches into the callee at `Entry.BodyOffset`, bypassing its prologue. Any callee's shared epilogue returns through the one original hardware frame. Caller callee-saved registers and the adapter FP/W^X contract stay preserved. The C adapter remains only an entry/platform boundary and implements no guest call semantics.
+
+`Payload[1]` is an optional trusted native call-view address, distinct from the Go-side packet. Existing raw probes and standalone codegen configurations keep their prior behavior when linking is disabled. The call view holds top/capacity/current frame and slot limits plus bounded parent records. Parent records contain caller function index, value-base byte offset, call PC, compiler-owned resume address and immutable destination-plan address. No Go pointer enters generated execution; the fixed record layout remains unchanged.
+
+Parent metadata starts at at most 16 records and doubles at idle boundaries up to the declared frame maximum. Its native allocation is **32 + 64 × reserved records bytes** (1056 bytes initially when 16 records are available), bounded by **32 + 64 × workspace maximum frames**. The Go materialization cache is separately bounded by the frame count. Exhaustion leaves an ordinary Call boundary before committing an extra frame; existing hidden parents are materialized before the common driver grows the arena or reports a limit. Current remaining limits can shrink after suspended parents redistribute budgets, independently of reserved capacity. Linking falls back to complete ordinary module compilation if additional code/metadata cannot fit the publication code budget.
+
+## Call emission
+
+Before changing live state, check metadata capacity, current depth, logical slot quota and the actual native arena capacity against the callee frame. Spill caller registers once and preserve complete 128-bit values. Clear callee storage and copy arguments into its slots. Native initialization uses x86 `rep stosq` or bounded arm64 vector blocks; it checks cancellation between at most 4 KiB chunks. Indexed large tuples also poll. A canceled partial initialization falls back to the already charged Call before publishing the child, using a raw typed exit because the caller was already spilled.
+
+Publish the parent record, new used/depth/function fields and continuation 0 only after preparation succeeds, then branch to the callee body header. Preserve the current source offset. Every original cold continuation remains valid. Metered calls use the metered callee; unmetered calls use its ordinary tier. Tail/imported/indirect/cross-instance calls retain existing checked typed exits until separately optimized; their complete semantics remain supported.
+
+Use cross-function PC-relative branch relocations recorded by compiler labels, whose final offsets are read after assembler branch compaction. Link all targets after module layout. Validate each target as the selected policy tier's known function body; enforce ISA alignment/range and total code budget. Avoid exposing arbitrary executable addresses or pinning an extra code lease for each call.
+
+At the call site, place a nearby compiler-owned resume stub and immutable result-destination index table. Save their PC-relative addresses in the parent record. The stub branches back to the caller's body header with the restored original continuation, reloading all register/constant/runtime state. Existing assembler ADR uses x13 and can address nearby metadata; x86 LEA uses a relative displacement. Large function headers use ordinary long branches, not a potentially out-of-range ADR.
+
+## Return emission
+
+If there are no hidden parents, leave through the existing Return boundary. Otherwise spill the callee once, read its selected return source tuple and the saved parent destination plan, and copy complete values into the disjoint parent frame. For large tuples, use a bounded loop and cancellation checks with immutable source/destination index tables rather than unbounded code expansion. Restore used/depth/function and the caller continuation, decrement metadata top, then branch to the saved resume stub. Do not overwrite caller state or discard live roots before all required copies are safe. Avoid in-place tuple permutations through the callee's argument slots.
+
+## Stable runtime views and observable exits
+
+Linked functions need one stable runtime descriptor layout. Current per-function global binding counts change memory/heap offsets. Compile linked tiers against a sorted module-wide union of required globals and bind that union once per entry; retain imported-global alias identity. Every callee uses the same function/table/global/memory/heap offsets. Bind the first memory if any reachable linked body can use it. Refresh views at each true runtime reentry after growth or host effects; no Go/world callback occurs while hidden frames exist.
+
+Audit native allocation batches: a callee must not assume that its caller reserved a compatible batch. Preserve checked reservation limits and the existing slow allocation boundary when no usable batch exists; never disable WasmGC capabilities or remove their safety checks. Shared-memory atomics/growth and table mutation must retain their current synchronization and ownership contracts.
+
+`nativeexec.run` resolves the active function against the same instance and module and selects its matching policy entry on resumption. The current value base is refreshed even when self-recursion leaves the function index unchanged; large Move exits use that current frame. Trap attribution and pending-helper opcode checks use the active function. At an observable boundary, remaining native parent records plus the current frame become `NativeFrames.Frames`, with the complete values slice exposed before the native top is cleared. Fuel/cancellation failures preserve consumed fuel, cleanup and invocation ownership.
+
+Before the common machine services any helper/host/GC/exception/stack-switching operation, adopt the full chain. This keeps the existing handler search, root tracing, stack traces, pending host destinations and continuation capture unchanged. Crossing a runtime boundary can deliberately end a linked region; a later return then uses the ordinary shared frame. No second interpreter or runtime driver is introduced.
+
+## Required qualification
+
+Keep both emitted ISAs and default/raw codegen tests valid. The complete affected package suites run direct recursion/mutual calls and nested helpers, multi-value/reference/SIMD tuples, frame/slot/metadata growth and overflow, memory/global updates, GC, host reentry, exceptions, Stack Switching, traps, exact fuel, cancellation and reuse/close under Go/LLGo. Final Linux execution/CI and review remain required. Complete same-cohort source comparisons over the original portfolio plus compiled C/Rust modules and pinned competitors/native C. Preserve all adverse rows and compilation/startup/first/warm/cleanup phases. Do not multiply improvements across independent cohorts or rerun to select favorable timing.
+
+The local frame-contract branch has no PR while the single external contribution remains open. #2983 belongs to another contributor. Do not duplicate it or change the production LLGo profile as part of this work.

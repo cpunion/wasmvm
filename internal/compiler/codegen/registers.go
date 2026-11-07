@@ -118,6 +118,7 @@ func (e *functionEmitter) spillRegisters() {
 // Common integer operations can name the allocated registers directly. The
 // remaining instructions retain the tested constrained-register lowering.
 func (e *functionEmitter) canRegisterInteger(op uint32, dst, left, right slots.Slot) bool {
+	left, right = e.frameRead(left), e.frameRead(right)
 	d, dok := e.registers[dst]
 	l, lok := e.registers[left]
 	r, rok := e.registers[right]
@@ -138,6 +139,7 @@ func (e *functionEmitter) canRegisterInteger(op uint32, dst, left, right slots.S
 }
 
 func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot) bool {
+	left, right = e.frameRead(left), e.frameRead(right)
 	if !e.canRegisterInteger(op, dst, left, right) {
 		return false
 	}
@@ -206,26 +208,40 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 		a.bytes(0xd3, 0xc0|ext<<3|d&7)
 		return true
 	}
-	var opcode byte
-	switch kind {
-	case 3:
-		opcode = 0x01
-	case 4:
-		opcode = 0x29
-	case 5:
-		opcode = 0xaf
-	case 10:
-		opcode = 0x21
-	case 11:
-		opcode = 0x09
-	case 12:
-		opcode = 0x31
-	default:
+	opcode := x86IntegerBinaryOpcode(kind)
+	if opcode == 0 {
 		return false
 	}
-	e.registerMove(d, l, wide)
+	// Every arithmetic/logical operation below writes its complete destination.
+	// A 32-bit result already clears the upper half, so no self-copy is needed.
+	if d != l {
+		e.registerMove(d, l, wide)
+	}
+	e.x86RegisterBinary(opcode, d, r, wide)
+	return true
+}
+
+func x86IntegerBinaryOpcode(kind uint32) byte {
+	switch kind {
+	case 3:
+		return 0x01
+	case 4:
+		return 0x29
+	case 5:
+		return 0xaf
+	case 10:
+		return 0x21
+	case 11:
+		return 0x09
+	case 12:
+		return 0x31
+	}
+	return 0
+}
+
+func (e *functionEmitter) x86RegisterBinary(opcode byte, d, r byte, wide bool) {
 	src, dest := r, d
-	if kind == 5 {
+	if opcode == 0xaf {
 		src, dest = d, r
 	}
 	rex := byte(0x40) | (src>>3)<<2 | dest>>3
@@ -233,18 +249,18 @@ func (e *functionEmitter) registerInteger(op uint32, dst, left, right slots.Slot
 		rex |= 8
 	}
 	if rex != 0x40 {
-		a.bytes(rex)
+		e.a.bytes(rex)
 	}
-	if kind == 5 {
-		a.bytes(0x0f)
+	if opcode == 0xaf {
+		e.a.bytes(0x0f)
 	}
-	a.bytes(opcode, 0xc0|(src&7)<<3|dest&7)
-	return true
+	e.a.bytes(opcode, 0xc0|(src&7)<<3|dest&7)
 }
 
 // Immediate shift selection is valid only along a proven constant fallthrough.
 // The original slot PC keeps the generic instruction for independent entry.
 func (e *functionEmitter) canRegisterImmediate(op uint32, dst, left slots.Slot, value uint64) bool {
+	left = e.frameRead(left)
 	d, dok := e.registers[dst]
 	l, lok := e.registers[left]
 	if !dok || !lok {
@@ -330,6 +346,7 @@ func armRegisterImmediate(op uint32, dst, left byte, value uint64) (uint32, bool
 }
 
 func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, value uint64) bool {
+	left = e.frameRead(left)
 	d, dok := e.registers[dst]
 	l, lok := e.registers[left]
 	if !dok || !lok {
@@ -366,7 +383,13 @@ func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, val
 		first, width = 0x86, 64
 	}
 	kind, count := op-first, uint32(value)&(width-1)
-	e.registerMove(d, l, wide)
+	if d != l || count == 0 {
+		// A zero-count shift may retain high bits; the copy canonicalizes i32.
+		e.registerMove(d, l, wide)
+	}
+	if count == 0 {
+		return true
+	}
 	rex := byte(0x40) | d>>3
 	if wide {
 		rex |= 8
@@ -380,41 +403,91 @@ func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, val
 }
 
 func (e *functionEmitter) registerCompare(dst, left, right byte, op uint32) {
+	e.registerCompareFlags(left, right, op)
 	a := e.a
-	wide := integerWide(op)
-	index := op - 0x45
-	if wide {
-		index = op - 0x50
-	}
 	if a.arch == "arm64" {
-		if index == 0 {
-			a.arm(wide, 0x7100001f|uint32(left)<<5)
-		} else {
-			a.arm(wide, 0x6b00001f|uint32(right)<<16|uint32(left)<<5)
-		}
 		cc := uint32(armIntegerCondition(op))
 		a.word(0x1a9f07e0 | ((cc ^ 1) << 12) | uint32(dst))
 		return
+	}
+	cc := x86IntegerCondition(op)
+	// REX selects low byte registers, including r12b-r15b, rather than AH-DH.
+	a.bytes(0x40|dst>>3, 0x0f, 0x90+cc, 0xc0|dst&7)
+	a.bytes(0x40|(dst>>3)<<2|dst>>3, 0x0f, 0xb6, 0xc0|(dst&7)<<3|dst&7)
+}
+
+func (e *functionEmitter) registerCompareFlags(left, right byte, op uint32) {
+	if op == 0x45 || op == 0x50 {
+		e.registerCompareImmediateFlags(left, op, 0)
+		return
+	}
+	a := e.a
+	wide := integerWide(op)
+	if a.arch == "arm64" {
+		a.arm(wide, 0x6b00001f|uint32(right)<<16|uint32(left)<<5)
+		return
+	}
+	rex := byte(0x40) | left>>3 | (right>>3)<<2
+	if wide {
+		rex |= 8
+	}
+	if rex != 0x40 {
+		a.bytes(rex)
+	}
+	a.bytes(0x39, 0xc0|(right&7)<<3|left&7)
+}
+
+// The same eligibility result is used before deleting a literal and while
+// emitting the comparison. ARM64 returns its shifted imm12 instruction field;
+// x86 returns the normalized value representable by a sign-extended imm32.
+func comparisonImmediate(arch string, wide bool, value uint64) (uint64, bool) {
+	if !wide {
+		value = uint64(uint32(value))
+	}
+	if arch == "arm64" {
+		if value < 4096 {
+			return value << 10, true
+		}
+		if value&4095 == 0 && value>>12 < 4096 {
+			return value>>12<<10 | 1<<22, true
+		}
+		return 0, false
+	}
+	return value, !wide || uint64(int64(int32(value))) == value
+}
+
+func (e *functionEmitter) registerCompareImmediateFlags(left byte, op uint32, value uint64) bool {
+	wide := integerWide(op)
+	bits, ok := comparisonImmediate(e.a.arch, wide, value)
+	if !ok {
+		return false
+	}
+	if e.a.arch == "arm64" {
+		e.a.arm(wide, 0x7100001f|uint32(bits)|uint32(left)<<5)
+		return true
 	}
 	rex := byte(0x40) | left>>3
 	if wide {
 		rex |= 8
 	}
-	if index != 0 {
-		rex |= (right >> 3) << 2
-	}
 	if rex != 0x40 {
-		a.bytes(rex)
+		e.a.bytes(rex)
 	}
-	if index == 0 {
-		a.bytes(0x83, 0xf8|left&7, 0)
+	if int32(bits) == int32(int8(bits)) {
+		e.a.bytes(0x83, 0xf8|left&7, byte(bits))
 	} else {
-		a.bytes(0x39, 0xc0|(right&7)<<3|left&7)
+		e.a.bytes(0x81, 0xf8|left&7)
+		e.a.word(uint32(bits))
 	}
-	cc := [...]byte{4, 4, 5, 12, 2, 15, 7, 14, 6, 13, 3}[index]
-	// REX selects low byte registers, including r12b-r15b, rather than AH-DH.
-	a.bytes(0x40|dst>>3, 0x0f, 0x90+cc, 0xc0|dst&7)
-	a.bytes(0x40|(dst>>3)<<2|dst>>3, 0x0f, 0xb6, 0xc0|(dst&7)<<3|dst&7)
+	return true
+}
+
+func x86IntegerCondition(op uint32) byte {
+	index := op - 0x45
+	if integerWide(op) {
+		index = op - 0x50
+	}
+	return [...]byte{4, 4, 5, 12, 2, 15, 7, 14, 6, 13, 3}[index]
 }
 
 func armIntegerCondition(op uint32) byte {

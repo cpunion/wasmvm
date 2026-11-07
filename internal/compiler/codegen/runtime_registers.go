@@ -1,7 +1,7 @@
 package codegen
 
 import (
-	"sort"
+	"slices"
 
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 )
@@ -61,7 +61,7 @@ func (e *functionEmitter) prepareRuntimeRegisters() {
 	for offset := range e.runtimeRegisters {
 		offsets = append(offsets, offset)
 	}
-	sort.Slice(offsets, func(i, j int) bool { return offsets[i] < offsets[j] })
+	slices.Sort(offsets)
 	if len(offsets) == 0 {
 		return
 	}

@@ -135,7 +135,7 @@ func TestMemoryLoopGuardEffectsColdPCsAndRebinding(t *testing.T) {
 }
 
 func TestMemoryLoopRejectsUnprovedRecurrencesAndControl(t *testing.T) {
-	for _, kind := range []string{"metered", "minimum", "term", "bound", "limit", "polarity", "cursor", "moves", "step", "updates", "base", "nonlinear", "trap", "groups", "overflow", "split", "prefix", "poll"} {
+	for _, kind := range []string{"metered", "minimum", "term", "bound", "limit", "polarity", "cursor", "moves", "step", "updates", "base", "nonlinear", "trap", "groups", "overflow", "split", "poll"} {
 		f := memoryLoopFixture(4, false, false)
 		config := Config{Unmetered: true, MemoryMinimumPages: 1}
 		switch kind {
@@ -157,7 +157,7 @@ func TestMemoryLoopRejectsUnprovedRecurrencesAndControl(t *testing.T) {
 			f.Edges[0].Count = 1
 			f.Moves = []slots.Move{{Dst: 0, Src: 0}}
 		case "step":
-			f.Sources[7].Wasm.Bits = 2
+			f.Sources[7].Wasm.Bits = 0
 		case "updates":
 			f.Code[0].Dst = 1
 		case "base":
@@ -167,7 +167,7 @@ func TestMemoryLoopRejectsUnprovedRecurrencesAndControl(t *testing.T) {
 		case "trap":
 			f.Code[7] = slots.Instruction{Op: 0x6d, Dst: 3, A: 0, B: 1, C: slots.NoSlot}
 		case "groups":
-			f.Code[5].A = 1
+			f.Code[5].A = 6
 		case "overflow":
 			f.Sources[5].Wasm.B = 0xffffffff
 			f.Code[5].Op = 0x36 // A four-byte access exceeds the entire memory32 span.

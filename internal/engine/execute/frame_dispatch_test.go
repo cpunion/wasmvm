@@ -3,7 +3,10 @@ package execute
 import (
 	"testing"
 
+	"github.com/cpunion/wasmvm/internal/compiler/ir"
+	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/module"
+	"github.com/cpunion/wasmvm/internal/engine/numeric"
 	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -24,10 +27,69 @@ func (b *movingFrameBackend) Resize(length, capacity int) ([]value.Value, error)
 	b.moves++
 	return next[:length], nil
 }
-func (b *movingFrameBackend) Run(_ *state.Function, _, _ int, pc uint32, fuel uint64) (uint32, uint64, error) {
-	return pc, fuel, nil
+
+// This bounded model implements the ordinary operations used by the frame
+// tests. It returns an already-charged runtime boundary, like a native backend;
+// production code never interprets arbitrary scalar instructions at that exit.
+func (b *movingFrameBackend) advance(out *state.NativeFrames, charge func(*state.NativeFrames, *state.Function, uint32) error) error {
+	fn := out.Function
+	code := fn.Code
+	for {
+		pc := out.PC
+		if charge != nil {
+			if err := charge(out, fn, pc); err != nil {
+				return err
+			}
+		}
+		in := code.Code[pc]
+		values := out.Values[out.Base : out.Base+len(code.Slots)]
+		var result value.Value
+		switch op := in.Op; op {
+		case 0x20:
+			result = values[in.Extra]
+		case 0x21, 0x22:
+			result = values[in.A]
+			values[in.Extra] = result
+		case 0x41:
+			result.Lo = uint64(in.Extra)
+		case slots.ControlBase + uint32(ir.Jump), slots.ControlBase + uint32(ir.If):
+			index := uint32(0)
+			if op == slots.ControlBase+uint32(ir.If) && uint32(values[in.A].Lo) == 0 {
+				index = 1
+			}
+			edge := code.Edges[in.Extra+index]
+			for _, move := range code.Moves[edge.Start : edge.Start+edge.Count] {
+				values[move.Dst] = values[move.Src]
+			}
+			out.PC = edge.PC
+			continue
+		default:
+			if op < 0x45 || op > 0xc4 {
+				return nil
+			}
+			var a, c uint64
+			if in.A != slots.NoSlot {
+				a = values[in.A].Lo
+			}
+			if in.B != slots.NoSlot {
+				c = values[in.B].Lo
+			}
+			var trap wasm.TrapCode
+			result.Lo, trap = numeric.Eval(op, a, c)
+			if trap != wasm.NoTrap {
+				return &wasm.Trap{Code: trap, Function: fn.Index, Offset: code.Sources[in.Source].Wasm.Offset}
+			}
+		}
+		if in.Dst != slots.NoSlot {
+			values[in.Dst] = result
+		}
+		out.PC++
+	}
 }
-func (b *movingFrameBackend) Close() { b.arena = nil }
+
+func (b *movingFrameBackend) RunFrames(out *state.NativeFrames) error { return b.advance(out, nil) }
+func (b *movingFrameBackend) Interrupt()                              {}
+func (b *movingFrameBackend) Close()                                  { b.arena = nil }
 
 func TestFrameDispatchAcrossArenaGrowth(t *testing.T) {
 	for _, owned := range []bool{false, true} {

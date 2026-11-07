@@ -92,7 +92,7 @@ func (e *functionEmitter) inlineIndirect(pc int, config Config) (int, uint32, bo
 			e.a.branch(done, false, 0)
 		}
 	}
-	e.callExits = append(e.callExits, nativeCallExit{fallback, pc, uint64(source.Wasm.Offset)})
+	e.callExits = append(e.callExits, nativeCallExit{fallback, pc, uint64(source.Wasm.Offset), e.currentRegisterPlan()})
 	e.a.mark(done)
 	return end, needed, true
 }

@@ -1,0 +1,12 @@
+{
+  "classification": "Hosted advisory; controlled milestone acceptance remains open",
+  "sourceHead": "9f19606e7e765287c5c11c0558317bdd2a1c7ca2",
+  "sourceBase": "747514e40729ea54d482a331dece171f4ba56769",
+  "format": "lossless-evidence-pointer-v1",
+  "archive": "../evidence/shared-default-memory-hosted-2026-11-05.json.xz",
+  "archiveSHA256": "77e94a5284d6cd42afbcb4f3dcd1849c21c8bad4551bbb5a4118d2c70c61ffa3",
+  "archiveBytes": 22060,
+  "originalSHA256": "0ef18ca069dd8990d877b895e3773f6b0cd7a822e8eb4efb8b4013a3b4f07068",
+  "originalBytes": 212116,
+  "retention": "The archive preserves the complete original JSON byte for byte, including raw observations, failures, regressions, unresolved controls, lifecycle phases and provenance. No samples are removed or pooled."
+}

@@ -1,0 +1,12 @@
+{
+  "classification": "Hosted advisory; controlled milestone acceptance remains open",
+  "sourceHead": "747514e40729ea54d482a331dece171f4ba56769",
+  "sourceBase": "a47055833582068b88e9aeb51d922ef84662db4f",
+  "format": "lossless-evidence-pointer-v1",
+  "archive": "../evidence/cfg-register-residency-hosted-2026-11-05.json.xz",
+  "archiveSHA256": "4e3f57ac8584a1f193bdcbb0ef34003c86e7df29124a9813d9594257a7611b95",
+  "archiveBytes": 21940,
+  "originalSHA256": "1bf568c20f96e35c67b51516af4495d17628f3350cef1cda5d6ba5db49e9c409",
+  "originalBytes": 212130,
+  "retention": "The archive preserves the complete original JSON byte for byte, including raw observations, failures, regressions, unresolved controls, lifecycle phases and provenance. No samples are removed or pooled."
+}

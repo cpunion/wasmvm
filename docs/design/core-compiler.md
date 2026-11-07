@@ -134,10 +134,10 @@ in the [validation record](../validation.md).
 
 ## Native compilation
 
-The complete native pipeline is: typed IR verification, optimization, legalization to target operations, instruction selection, register allocation, spill insertion, frame layout, branch resolution/relocations, code emission, and publication with trap/safepoint/source maps. Implement amd64 and arm64 emitters in Go. The baseline uses linear-scan allocation with separate integer/vector classes, fixed-register constraints, call clobbers, live-range splitting, parallel-move resolution, and verified spill reloads. Target tests check actual execution as well as encoding/disassembly.
+The complete native pipeline is: typed IR verification, optimization, legalization to target operations, instruction selection, register allocation, spill insertion, frame layout, branch resolution/relocations, code emission, and publication with trap/safepoint/source maps. Implement amd64 and arm64 emitters in Go. The target allocator requires linear scan with separate integer/vector classes, fixed-register constraints, call clobbers, live-range splitting, parallel-move resolution, and verified spill reloads. Target tests check actual execution as well as encoding/disassembly.
 
-The current development allocator assigns stable homes by bounded CFG loop-use
-priorities; global live-range splitting remains required work. Merged backward
+The conservative allocator assigns stable homes by bounded CFG loop-use
+priorities and also selects the immutable metadata inventory. Merged backward
 edge intervals provide capped frequency hints, including nested/overlapping
 spans. They do not prove reachability or justify removing a check. Tuple/move
 and expanded-leaf literal scans have separate work budgets and conservative
@@ -155,11 +155,171 @@ i32 condition bits and preserves source/destination aliases. The precise tier
 selects both input words; unmetered scalar storage follows its existing
 canonical-input contract. V128 retains its complete vector transfer path.
 
+Guarded loop regions can select a different integer/reference location plan
+using the same bounded slot-use priorities. Common homes keep their registers;
+every displaced word reaches the canonical frame before any replacement loads.
+Private backedges retain the local plan, while ordinary loop exits restore the
+enclosing plan. Deferred poll, trap and call exits capture the plan at their
+originating instruction, preserving complete snapshots and original PCs.
+Checked cold/interior entries retain an explicit mapping. Entry/exit transfer
+costs gate loop-region selection; FP/vector homes keep their incoming mapping
+within this local transform. See the [loop-plan evidence](../research/performance-loop-register-plans-2026-11-05.md).
+
+Bounded x86 integer loops and proven memory-unroll groups can also lend fixed
+registers that their complete bodies do not clobber. One shared constraint
+inventory retains RDX for scalar select and RDX/R8 for baseline popcount;
+unknown or floating/vector operations lend nothing. A proven default-memory
+body can reuse R11 because its accesses need no dynamic length observation.
+Normal exits and unroll backedges spill displaced words, restore the enclosing
+plan, and refresh the default memory view before any subsequent checked access
+or `memory.size`. Poll exits retain the complete borrowed-register snapshot;
+cold entries keep the ordinary inventory. Transfer costs gate both loop forms.
+Arithmetic writes and positive constant shifts omit redundant x86 self-copies;
+zero-count shifts retain i32 canonicalization. See the
+[constraint, frame and machine-code evidence](../research/performance-loop-scratch-registers-2026-11-05.md).
+
+The subsequent global slot-residency pass scans conservative first/last access
+intervals over basic blocks, with separate integer and shared FP/vector banks.
+Expiration and cost-based eviction split residency; a spilled slot can regain
+a register later. Eviction reuses the conservative allocator's existing access
+priorities, with deterministic endpoint and slot tie-breaks. An iterative CFG
+SCC traversal identifies actual cycles before residency spans are extended
+through their branch blocks. A backward layout edge to an earlier return block
+does not form a loop. Nested and crossing cyclic spans merge before endpoint
+extension, preventing repeated mapping transfers around a hot loop. Graph
+nodes/edges, tuples and materialized maps have explicit work bounds; sorting
+and endpoint lookup avoid a loop/slot Cartesian product.
+Every displaced word reaches its canonical frame before any
+replacement loads. Branch copies retain the existing typed move plans, while
+mapping transitions belong to their actual source edge. One shared cold-entry
+transition per distinct plan preserves every original continuation without
+duplicating the full spill/reload sequence at every PC. Poll, call and trap
+exits retain all value classes and original source identities. Mutable homes
+load for the chosen cold entry; immutable metadata remains function-wide.
+
+Tuple traversal and materialized map cells have independent work bounds;
+exhaustion retains the conservative allocator. The pass preserves dead frame
+words instead of treating its residency intervals as semantic liveness. It
+does not itself construct SSA value-version live ranges or split allocation
+inside a basic block. See the
+[global-plan validation and static comparison](../research/performance-global-register-plans-2026-11-05.md).
+
+Planning uses typed deterministic ordering instead of reflective slice sorting.
+Allocation, loop residency and bounded top-two heap-cache selection share the
+same complete priority order. Native module preparation indexes immutable
+structural type labels directly as integers. These preparation changes retain
+the existing register plans and guest code; they do not supply SSA allocation.
+See the [semantic, allocation-event and inconclusive timing evidence](../research/performance-typed-compiler-ordering-2026-11-05.md).
+
+A subsequent bounded loop pass versions each write, includes dead definition
+points and observes every final frame word. Copy-connected slots of the same
+storage type can share a physical home when all overlapping versions have
+identical bits. Nonresident copies participate in the same graph, but a group
+must reuse an already resident member's home. Memory-only groups acquire no
+registers. A distinct initial entry plan spills displaced words before loading
+shared homes, including a sole live-in that was previously uncached. The body
+retains complete integer/reference, scalar FP
+and V128 snapshots at its poll and ordinary exits. Pairwise interference work
+has a body-proportional bound; exhaustion keeps the incoming plan. Shared-home
+writes split instruction selection, while read-only sequences retain fusion.
+Vector aliases expire on every write to their physical source register.
+See the [nonresident-value evidence](../research/performance-loop-nonresident-values-2026-11-05.md).
+
+The same loop version graph now serves coalescing and invariant literal
+materialization. A literal moves before the private header only when its
+original entry word is unread and every write assigns identical typed bits.
+Slots sharing a physical home remain excluded. All six literal classes retain
+their exact representation, including floating-point signed zero and NaN bits.
+The private body omits those writes; original cold PCs and failed guards keep
+their checked sequence. Header polls, trapping bodies and unproved memory
+accesses reject the motion. Full-frame poll/exit publication uses the existing
+plans. See the [execution, static output and inconclusive elapsed comparison](../research/performance-loop-invariant-literals-2026-11-05.md).
+
+A bounded full-CFG value graph now reconstructs write versions and entry phis
+from slot operations, including ordered edge copies and opaque handler/prompt
+entries. Iterative predecessor resolution avoids recursive depth and fixed-point
+sweeps. Ordinary allocation rounds value ranges to structural block boundaries,
+keeps cyclic mappings stable and compares complete weighted access/transfer
+costs against the conservative slot plan. Private nontrapping loops may split
+unshared integer, FP and vector residency using the same banks, selector and
+backedge-transition stubs. Shared bundles remain pinned; every displaced raw
+word is stored. New mapping points bound both selection and observation scans.
+Rematerialization/frame reconstruction remains required. The initial ordinary
+fine-endpoint mapping regressed applications and was rejected; see the
+[semantic tests, retained regressions and costed correction](../research/performance-cfg-value-allocation-2026-11-05.md).
+
+Private-loop integer copies can now use bounded frame reconstruction. A
+copy-only nonresident word must have no read of its entry value and an independent
+materialized equal-version anchor throughout the body. Anchors may change with
+versions; reserved anchors prevent cycles. Selection/observation boundaries retain
+those identities. Ordinary exits and cold backedge polls materialize every raw
+word, while taken private backedges rely on the proven next-iteration overwrite.
+Shared homes and variable plans retain their existing contracts. Uncongested
+functions avoid optional full-CFG reconstruction. See the
+[execution models, x86 code, arm64 identity and allocation-event results](../research/performance-loop-frame-copies-2026-11-05.md).
+
+The same observable-frame snapshot now also covers a final integer comparison.
+Its entry result must be unread, and the existing private-body proof excludes
+traps, interior polls and header polls. The body omits the boolean write; the
+backedge polls first, then compares the preserved operands and branches on flags
+on both targets. A taken backedge needs no result word. Ordinary exit writes the
+known exit condition; a cold poll reconstructs deferred copies first and uses the
+original comparison emitter before publishing the original branch continuation.
+Register transitions retain every input word, including aliased destinations.
+Every original cold PC and precise-fuel instruction stays available. Comparison
+encodings are shared with ordinary emission. See the
+[complete-frame tests and source-pinned comparison](../research/performance-loop-predicates-2026-11-06.md).
+
+A final adjacent integer literal can also use the target's comparison immediate
+when its entry word is unread and it is neither shared, already hoisted nor a
+copy-reconstruction anchor. x86 imm8/imm32 sign extension and ARM64 shifted imm12
+eligibility share their encoder with eqz. Cold exits restore the literal before
+copies and the original comparison; ordinary exits retain only its final
+observable word when the result aliases it. Observation scans keep the logical
+uses and definitions of these recoverable operations, while physical selection
+still stops at omitted instructions. This preserves preceding arithmetic/local
+fusion without weakening any observation boundary. See the
+[rejected static interaction and corrected comparison](../research/performance-loop-compare-immediates-2026-11-06.md).
+
+Unmetered x86 integer arithmetic also selects mixed register/frame operands.
+Add, subtract, multiply, AND, OR and XOR share the existing binary opcode
+inventory. Nonresident inputs use direct frame operands; a missing destination
+uses the existing scratch accumulator and store. Commutative forms may exchange
+inputs; a right-aliased subtraction preserves its input until consumption.
+Read aliases are resolved first, and cached FP/vector inputs retain their
+existing path. The frame is already validated, execution-owned storage; guest
+linear-memory proofs, polls, original PCs and precise fuel stay unchanged. See
+the [assembler witnesses and source-pinned comparison](../research/performance-frame-operands-2026-11-06.md).
+
+Copy/result forwarding shares eligibility with fully resident and mixed GPR/frame
+integer operations. Both forms emit through the common scalar selector and
+retain original cold entries and every observable word. The experimental raw-FP
+allocation policy was reverted after substantial Linux SHA regressions under
+both compilers. The engine retains its established typed banks and GPR/frame
+forms; see the [shared-selector evidence](../research/performance-mixed-scalar-forwarding-2026-11-06.md).
+
+Ordinary emission and bounded native regions use one ordered instruction
+selector pipeline. Their callers retain mapping, guard, remapping, shared-write
+boundaries and all original-PC continuations. Logical shifts, live integer
+literal selection and i31 fusion therefore remain available inside a native
+loop without duplicating the selector inventory. Exact-frame models include
+live literal words and interrupted private backedges. See the
+[CFG residency correction and retained regressions](../research/performance-cfg-register-residency-2026-11-05.md).
+
+The private-loop emitter handles arithmetic and already-proven memory regions
+alongside the existing affine whole-loop proof. The memory proof is optional;
+helpers, traps, interior entries, edge copies and poll-window crossings remain
+ineligible. Both conditional polarities, copied boolean conditions and
+unconditional loops use the same bounded poll and cold-entry contracts. This
+is local copy coalescing; whole-function SSA allocation, more general live-range
+splitting/spills and performance acceptance remain required. See the
+[loop-value validation and actual machine-code comparison](../research/performance-loop-value-coalescing-2026-11-05.md).
+
 Use the platform's accepted baseline CPU feature set, with explicit detection and recorded features for optional instructions. Specialized artifacts cannot run on a weaker CPU. Floating-point/vector operations require correct Wasm NaNs, signed zero, rounding, conversions and lane behavior. Division and conversion instructions often need explicit prechecks; host instruction traps and language overflow behavior are not automatically Wasm semantics.
 
 Initially emit explicit memory/table/stack bounds checks and explicit trap exits. Signal-handler recovery is not the default safety mechanism. Eliminate checks only with validated range/effect proofs covering growth, calls, 64-bit overflow and aliases. Imported or mutable function/table targets cannot be treated as immutable without valid guards. Mark the entire profile supported only when each operation has verified native lowering or a documented runtime helper with the same semantics; helper use is reported in performance evidence. Native execution must never interpret an unsupported function silently.
 
-The unmetered backend groups at least three affine accesses anchored in unchanged
+The unmetered straight-line pass groups at least three affine accesses anchored in unchanged
 i32 locals within its existing <=256-instruction, positive-minimum-memory
 regions. Guards read the first access's existing address operand and validate
 the entire span against memory32 and the current binding. Failed guards enter
@@ -188,26 +348,78 @@ aliases and all original cold PCs. Rotate forms apply only to logical operands.
 Local versions invalidate stale facts; CFG/helper/growth/poll boundaries reset
 analysis. All memory operations still execute in order.
 
-A bounded loop analysis additionally recognizes one-block, literal-bounded i32
-+1 recurrences whose accesses share one affine root. The update follows every
-access, the root's base remains invariant, edges have no moves, and a pure
-local/copy/constant/add prefix contains at most 16 operations. Calls, growth, possible arithmetic traps,
-internal CFG entries, nonlinear addresses and unsupported recurrences retain
-ordinary checked code. The entire candidate, including its branch, stays within
-one 256-instruction interval.
+A bounded loop analysis also recognizes one-block, literal-bounded i32 equality
+exits with independent invariant bases and a nonzero unsigned stride. Calls,
+growth, possible arithmetic traps, internal CFG entries, mutated bases and
+nonlinear addresses retain ordinary checked code. The whole candidate,
+including its branch, stays within one 256-instruction interval; it does not
+require three accesses sharing a root.
 
-The original header executes its canonical prefix, then checks `i < limit` and
-`uint32(firstAddress - firstBias) + (limit - 1 - i) + span <= 2^32` and the bound
-memory length, using widened arithmetic. A failed check resumes the exact first
-checked access without replaying prefix effects or trapping early. A successful
-check enters a shared body with a private prefix/backedge and no repeated span
-check. Original dispatcher PCs and cold conditional branches always target
-checked original headers. Private backedges keep interruption polls; any return
-to the driver loses the proof. Warm-only dead temporary removal preserves all
-physical slots at every exit. This is conservative loop versioning; global
-live-range allocation and broader loop/range optimization remain required.
+At the original header, require `i < limit` and `(limit - i) % stride == 0`.
+For each affine group, compute its initial i32 origin with wrapping arithmetic,
+then check the widened origin plus its complete future displacement and
+nonwrapping access extent against memory32 and the current binding. A folded
+address additionally proves its canonical local anchor and whole folded offset.
+Guard work is bounded and polled. Failure enters the original checked header
+without effects or an early trap. Success enters the shared body with private
+backedges and no repeated span checks. All interior dispatcher PCs keep their
+checked originals; backedge interruption and physical-frame requirements stay
+intact, and driver returns lose the proof. The precise fuel tier is unchanged.
+See the [affine-loop comparison](../research/performance-affine-loop-spans-2026-11-05.md).
+Global live-range allocation and broader loop/range optimization remain required.
+
+The same bounded range and loop proofs also apply to a shared default memory
+when the function selects no other memory. Shared storage retains its base
+across growth. Entry atomically reads the shared length and validates that base
+and the declared minimum; that length remains a safe lower bound. Proven
+accesses reuse the reserved base registers without another descriptor load.
+Every access without a proof and `memory.size` still atomically refreshes the
+current shared length. A stale lower bound can only send a region to its checked
+fallback. Mixed memories, helpers and memory64 retain their existing paths;
+call/resume entries refresh the binding. This shares the private-memory proof
+pipeline rather than adding another execution framework.
+See the [shared-memory validation](../research/performance-shared-default-memory-2026-11-05.md).
 
 Use a private guest ABI with explicit VM frames: guest calls push checked logical frames and branch to native callee labels; returns branch to saved continuations. The initial backend keeps one bounded C entry frame, without hardware-stack switching or a native C/Go frame per guest call. Host interaction, collection, cancellation and traps leave through the explicit status protocol in the [native ABI](native-abi.md). Whole-function inlining and more advanced optimization follow correctness and profiling; both disabled and enabled optimizations must pass differential tests. A persistent AOT/cache file format is later work; generating native code in-process is required in M2.
+
+The retained backend-contract experiment requires `Resize`, `RunFrames`,
+`Interrupt` and `Close` together. Its shared driver validates explicit frame
+packets through one noninlined native bridge; it has no optional frame-capability
+assertion, capability cache or legacy single-frame fallback. Portable execution
+keeps a nil backend. Frame transfers, canonical state, roots, fuel, cancellation
+and owned storage retain the same runtime contracts. The low-level single-frame
+convenience entry is separate from this driver protocol. The experiment removes
+repeated LLGo method-table allocations without adding execution-state fields,
+but overall performance and final-head integration gates remain open. See the
+[source, semantic and performance evidence](../research/performance-native-backend-contract-2026-11-05.md).
+
+The subsequent [shared-slot dispatcher experiment](../research/performance-slot-dispatch-driver-2026-11-05.md)
+moves native transfer into the outer driver. Both backends retain one instruction
+handler; a native exit services exactly one already-charged boundary and publishes
+its continuation before reentry. Portable execution keeps its frame-local loop.
+This improves measured interpreter workloads but remains held for native/portable
+regressions and final acceptance. Native effect boundaries still enter the large
+slot-dispatch stack frame; a separate runtime-effect handler shared by both
+drivers motivates the next experiment, alongside global allocation and the other gates.
+
+The [runtime-effects experiment](../research/performance-runtime-effects-2026-11-05.md)
+removes the portable boundary mode. Native exits select shared call/return,
+exception, stack, GC and SIMD effects, with complete next-PC/frame publication.
+The portable scalar/local/CFG loop keeps its direct execution, sharing effect
+handlers and canonical state primitives. Ordinary scalar native exits fail
+instead of falling back to that loop. Smaller static frames still introduce
+extra transfers and do not establish throughput gains: GC, SIMD, atomic and
+public-call regressions keep this experiment held. Direct native leaf routing,
+portable primitive routing and adequately controlled measurements remain work.
+
+The [direct-routing follow-up](../research/performance-direct-runtime-routing-2026-11-05.md)
+selects native GC/SIMD/call/throw/return leaves in the outer driver, avoiding the
+general dispatcher prologue on those exits. Portable SIMD, GC access and atomic
+operand routing stays in its hot loop, calling the existing canonical state,
+memory and SIMD primitives. Complex effects still share their leaves and full
+PC/frame/fuel/root/cancellation contracts; scalar native fallback remains invalid.
+Local dual-compiler semantics pass. The hosted comparison and all final-head
+platform, coverage, review and controlled performance gates remain separate.
 
 ## Direct globals
 

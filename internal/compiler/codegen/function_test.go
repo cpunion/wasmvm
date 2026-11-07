@@ -19,14 +19,18 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
-func functionModule(t *testing.T, m *module.Module) *slots.Module {
+func functionModule(t *testing.T, m *module.Module, features ...wasm.Features) *slots.Module {
 	t.Helper()
 	for fi := range m.Functions {
 		for i := range m.Functions[fi].Body {
 			m.Functions[fi].Body[i].Offset = uint64(100 + i)
 		}
 	}
-	v, err := validate.Check(m, validate.DefaultLimits())
+	var enabled wasm.Features
+	if len(features) != 0 {
+		enabled = features[0]
+	}
+	v, err := validate.CheckWithFeatures(m, validate.DefaultLimits(), enabled)
 	if err != nil {
 		t.Fatal(err)
 	}

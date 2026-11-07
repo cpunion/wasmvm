@@ -1,0 +1,475 @@
+{
+  "classification": "Full exact-source Go/LLGo four-profile semantic qualification passes. All22-case Linux event is completed advisory; controlled competitive/native acceptance remains open.",
+  "plan": {
+    "baseline": "4a744df7c0b5907718f5909b99b58143b29b78a0",
+    "baselineEngine": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
+    "mechanism": "Expose existing nontrapping mixed integer forms to the shared scalar copy/result forwarding selectors. Share emission eligibility; do not add a bank, execution framework, opcode semantics, ISA requirement or guest fast path. Preserve every original cold PC, raw Lo/Hi, fuel/poll/trap boundary and deferred reconstruction.",
+    "requirements": [
+      "Both-width arithmetic, GPR/frame source and target combinations, source/destination aliasing, forwarded copies/literals and complete observable cold frames. Raw-FP production allocation is withdrawn as a separate failed experiment.",
+      "All existing Go/LLGo release suites and exact >=90% coverage, independent encoding witness and final Linux numeric execution.",
+      "Inspect actual publication and private loop spans before warm measurement. Preserve every losing/inconclusive observation and all separate preparation phases; no favorable repeat or flag/alignment sweep.",
+      "Keep current raw-source CI42091050950 and benchmark42088602463 live. Do not duplicate LLGo2983 or create another active contribution PR."
+    ],
+    "originalBaseline": "8dcd3346f9ba9e3f012ab85f81738d994e22ebf2",
+    "measurementBaseline": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
+    "rawDecision": "Rejected and reverted in4a744df after completed original-count Linux SHA LLGo head/base1.2172/1.2184, Go1.2338/1.2359; both all-four A/A controls resolved. Retain all raw-source evidence and source-bound CI8dcd334.",
+    "scopeCorrection": "Use the existing GPR/frame forms. No raw FP allocation remains in the production engine; the pending experimental forwarding patch was preserved before reverting the failed bank strategy.",
+    "source": "96ea7fb32b6397e704aa11598e80a1d3c657ca03",
+    "measurementScope": "Exact candidate against the last good frame-operand engine5099a76; the rejected raw-FP source remains an independent failed event. Inspect actual images before choosing local scope. Full22-case Linux comparison retains lifecycle/competitor/native/Go/LLGo rows.",
+    "baselineReuse": "Reuse exact-source5099a76 candidate binaries from the completed frame-operand event only after verifying all engine/harness/toolchain/profile/binary/library hashes. Current revert removes every production raw-FP change; component cancellation-test fix is separately retained.",
+    "originalRequirements": [
+      "Both-width arithmetic, raw/GPR/frame source and target combinations, source/destination aliasing, forwarded copies/literals and whole observable cold frames.",
+      "All existing Go/LLGo release suites and exact >=90% coverage, independent encoding witness and final Linux numeric execution.",
+      "Inspect actual publication and private loop spans before warm measurement. Preserve every losing/inconclusive observation and all separate preparation phases; no favorable repeat or flag/alignment sweep.",
+      "Keep current raw-source CI42091050950 and benchmark42088602463 live. Do not duplicate LLGo2983 or create another active contribution PR."
+    ]
+  },
+  "qualification": [
+    {
+      "compiler": "go",
+      "exit": 0,
+      "wallSeconds": 5.2746726660989225,
+      "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "source": "96ea7fb32b6397e704aa11598e80a1d3c657ca03"
+    },
+    {
+      "compiler": "llgo",
+      "exit": 0,
+      "wallSeconds": 35.729148749960586,
+      "compilerSHA256": "4ec6e101cc510011d56e8ef9dee4053abbde521f284963bd2b468b281d3fec0c",
+      "source": "96ea7fb32b6397e704aa11598e80a1d3c657ca03"
+    },
+    {
+      "compiler": "vet",
+      "exit": 0,
+      "wallSeconds": 0.24152899999171495,
+      "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "source": "96ea7fb32b6397e704aa11598e80a1d3c657ca03"
+    }
+  ],
+  "coverage": {
+    "github.com/cpunion/wasmvm/internal/compiler/codegen": {
+      "covered": 8460,
+      "total": 8660,
+      "percent": 97.6905311778291
+    },
+    "github.com/cpunion/wasmvm/internal/engine/nativeexec": {
+      "covered": 459,
+      "total": 496,
+      "percent": 92.54032258064517
+    }
+  },
+  "publication": {
+    "fixtures": 22,
+    "freshWitnesses": 44,
+    "reusedBaselineWitnesses": 22,
+    "changedImages": 0,
+    "baseHeadGoLLGoImagesAndEntryListsIdentical": true
+  },
+  "static": {
+    "target": "amd64",
+    "featureMask": 7,
+    "compressionInstructions": {
+      "clang": [
+        70,
+        69
+      ],
+      "rust": [
+        67,
+        65
+      ]
+    },
+    "frameReferences": {
+      "clang": [
+        20,
+        20
+      ],
+      "rust": [
+        18,
+        18
+      ]
+    },
+    "compressionFunctionBytes": {
+      "clang": [
+        10864,
+        10859
+      ],
+      "rust": [
+        10746,
+        10738
+      ]
+    },
+    "wrapperFunctionBytes": {
+      "clang": [
+        15868,
+        15892
+      ],
+      "rust": [
+        16178,
+        16202
+      ]
+    },
+    "scheduleInstructions": [
+      43,
+      43
+    ],
+    "scheduleFrameReferences": 0,
+    "pollsPerLoop": 1
+  },
+  "measurementDecision": "All22ARM64published images and entry lists match the exact5099a76baseline; do not repeat local warm measurements. Linux42093658819 retains all22original-count cases, five fresh blocks/seven interleaved calls, four A/A controls, alternate checks and lifecycle/competitor/native-C rows.",
+  "rejectedRaw": {
+    "source": "0e32719ab934ea2246e320da777303a808b363f7",
+    "baseline": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
+    "revert": "4a744df",
+    "completedLinuxRun": 42088602463,
+    "cases": 22,
+    "alternateChecks": 362,
+    "expectedUnsupported": 12,
+    "allFourResolvedCases": 9,
+    "shaGoHeadBase": {
+      "clang": 1.2338464229645525,
+      "rust": 1.2359449027335956
+    },
+    "shaLLGoHeadBase": {
+      "clang": 1.2172204992659412,
+      "rust": 1.2183557656703436
+    },
+    "bothSHAAllFourControlsResolved": true,
+    "evidence": {
+      "path": "artifacts/loop-raw-registers-20261106/hosted-evidence-final.tar.gz",
+      "bytes": 2112890,
+      "sha256": "62d5ae960295bd1ff14e9524103aceed593cb21cb54ab966f37432c4cf5325e3",
+      "files": 16
+    },
+    "localEvidence": {
+      "path": "artifacts/loop-raw-registers-20261106/evidence.tar.gz",
+      "bytes": 3327140,
+      "sha256": "7b09e2b7d5cfd1bd1e840b18169103701177105b1f2c535fcc4c40002240e61f",
+      "files": 343
+    },
+    "decision": "Reject and revert the production raw-FP bank strategy. Preserve its complete semantic and adverse performance evidence; do not pool it with the corrected source."
+  },
+  "currentLinuxRun": 42093658819,
+  "limitations": [
+    "Exact package coverage is not specification coverage.",
+    "The initial pressured-frame test has no forwarding opportunity across deferred-copy boundaries. Its failed count assertion is retained; separate direct selection and pressured ordinary-frame tests verify all twelve forms.",
+    "The first publication attempt ran before its build manifest existed; it emitted no guest code. Its startup failure is retained and the completed build precedes all44actual publication witnesses.",
+    "No new opcode encoder or ISA requirement; existing LLVM witnesses apply to the retained encoders, while new complete-frame semantic checks remain required.",
+    "The original raw-source CI and later final-head CI are separate events. Do not restart live jobs due queue or observation timeout.",
+    "General allocation/rematerialization, preparation costs, broader world/release conformance and controlled competitive/native acceptance remain open.",
+    "External LLGo2991 was merged by upstream. The pinned3571c25 compiler remains unchanged; LLGo2983 stays with its existing contributor."
+  ],
+  "evidence": {
+    "path": "artifacts/loop-mixed-forwarding-20261106/evidence.tar.gz",
+    "bytes": 1776913,
+    "sha256": "fff33ac681e8a72a2d65ed8d1eefc0d378ae6839b33fe200382758c57eec2c84",
+    "files": 246
+  },
+  "priorCI": {
+    "priorRun": 42091050950,
+    "priorSource": "8dcd3346f9ba9e3f012ab85f81738d994e22ebf2",
+    "classification": "Keep original source-bound jobs live. This run covers the rejected raw source, not the corrected selector source. Start final-head CI only after it is terminal."
+  },
+  "finalCI": {
+    "passed": true,
+    "source": "2306caccfbd6083440d4eb6002b50dc9136a3740",
+    "engine": "96ea7fb32b6397e704aa11598e80a1d3c657ca03",
+    "run": 42096193934,
+    "attempt": 1,
+    "requiredSuccessfulJobs": 21,
+    "intentionalOptionalSkips": 1,
+    "testPackagesPerLLGoPlatform": 31,
+    "shardsPerLLGoPlatform": 7,
+    "profiles": 4,
+    "actualConformanceReports": 240,
+    "allManifestPinsAndCompilerIdentitiesChecked": true,
+    "stackSwitchingForcedCollectionAllProfiles": true,
+    "coveragePackages": 30,
+    "minimumCoverage": 90.7466788822721,
+    "longestSuccessfulJobSeconds": 646.0,
+    "scope": "Full pinned four-profile semantic CI for 2306cac/engine96ea7fb, including seven complete LLGo shards and the two-minute required evidence-step timeout. Does not validate later direct-memory source d64119b. Review, controlled performance and broader world/release acceptance remain open."
+  },
+  "completedLinux": {
+    "run": "https://github.com/cpunion/wasmvm/actions/runs/42093658819",
+    "sourceBase": "5099a76ddad5910dd2cfff195ca8a4bca9be9cf0",
+    "sourceHead": "96ea7fb32b6397e704aa11598e80a1d3c657ca03",
+    "alternativeConfigurations": 362,
+    "expectedUnsupported": 12,
+    "resolvedWorkloads": 8,
+    "workloads": [
+      {
+        "workload": "core/call-control",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9674672117186169,
+          "llgoHeadBase": 1.0015918497293856,
+          "llgoGo": 1.1077464788732394,
+          "llgoWazero": 7.053811659192825,
+          "llgoWasmtime": 3.974731522425774,
+          "llgoWasmer": 2.2186177715091677
+        }
+      },
+      {
+        "workload": "core/integer-loop",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9990573071054754,
+          "llgoHeadBase": 0.9980839651172043,
+          "llgoGo": 0.9967519293970913,
+          "llgoWazero": 1.0028257591481107,
+          "llgoWasmtime": 1.0039670318661218,
+          "llgoWasmer": 1.0011115633242245,
+          "llgoNativeC": 1.0064739485081171
+        }
+      },
+      {
+        "workload": "core/function-calls",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9997844789805134,
+          "llgoHeadBase": 0.9978860853161147,
+          "llgoGo": 1.0000711682107075,
+          "llgoWazero": 0.3754965263967897,
+          "llgoWasmtime": 0.5117843038519884,
+          "llgoWasmer": 0.4973682550153452,
+          "llgoNativeC": 0.8220492668472524
+        }
+      },
+      {
+        "workload": "core/memory-load-store",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.0057663632724951,
+          "llgoHeadBase": 1.001802201296012,
+          "llgoGo": 0.998955457608849,
+          "llgoWazero": 0.6773902102617891,
+          "llgoWasmtime": 1.223969316919139,
+          "llgoWasmer": 1.2000880001122554,
+          "llgoNativeC": 1.51240698706945
+        }
+      },
+      {
+        "workload": "memory/narrow-unaligned",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9969000330869053,
+          "llgoHeadBase": 1.0027828437354767,
+          "llgoGo": 1.0017782593244775,
+          "llgoWazero": 0.8195457160479508,
+          "llgoWasmtime": 1.2371111130435286,
+          "llgoWasmer": 1.2365670093653989,
+          "llgoNativeC": 1.9515728556312686
+        }
+      },
+      {
+        "workload": "memory/dependent-address",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9975908054311575,
+          "llgoHeadBase": 0.9985428535355142,
+          "llgoGo": 0.9886935752303182,
+          "llgoWazero": 0.9999792063813603,
+          "llgoWasmtime": 1.3416913934570078,
+          "llgoWasmer": 1.3400168894094235,
+          "llgoNativeC": 1.571676920935999
+        }
+      },
+      {
+        "workload": "memory/float64-unaligned",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.009669272145099,
+          "llgoHeadBase": 1.0034194642370782,
+          "llgoGo": 0.9961152549941737,
+          "llgoWazero": 0.7066993630880669,
+          "llgoWasmtime": 1.1773312990949014,
+          "llgoWasmer": 1.1651377457121521,
+          "llgoNativeC": 1.1936463277107778
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-full",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.999860088281253,
+          "llgoHeadBase": 1.0057585900093127,
+          "llgoGo": 1.0005144756645026,
+          "llgoWazero": 0.8776819481813021,
+          "llgoWasmtime": 1.0887283139330803,
+          "llgoWasmer": 1.0514101970863412,
+          "llgoNativeC": 0.9077570836756454
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-widen",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.0085497494320097,
+          "llgoHeadBase": 1.0024722473550989,
+          "llgoGo": 0.9946161515453639,
+          "llgoWazero": 0.6794210764360018,
+          "llgoWasmtime": 1.5337597826912848,
+          "llgoWasmer": 1.5208767198115463,
+          "llgoNativeC": 0.3981804222483109
+        }
+      },
+      {
+        "workload": "runtime/simd-memory-lanes",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.9979289111320896,
+          "llgoHeadBase": 1.0011303851973943,
+          "llgoGo": 0.9933602973371214,
+          "llgoWazero": 0.9476589475493264,
+          "llgoWasmtime": 1.1452130320706642,
+          "llgoWasmer": 1.1529521827490523,
+          "llgoNativeC": 1.3311782963597933
+        }
+      },
+      {
+        "workload": "gc/i31-roundtrip",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.93903536087468,
+          "llgoHeadBase": 1.016515899122807,
+          "llgoGo": 1.0930729550478997,
+          "llgoWasmtime": 0.9086064318529862
+        }
+      },
+      {
+        "workload": "gc/struct-access",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.9234841489689135,
+          "llgoHeadBase": 0.9530938765019598,
+          "llgoGo": 0.988734835355286,
+          "llgoWasmtime": 1.4664359861591696
+        }
+      },
+      {
+        "workload": "gc/struct-allocation",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.0298496107812902,
+          "llgoHeadBase": 0.9996105809483219,
+          "llgoGo": 1.219021663135733,
+          "llgoWasmtime": 0.3225458987783595
+        }
+      },
+      {
+        "workload": "gc/struct-indirect-access",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.023387703889586,
+          "llgoHeadBase": 0.9791041911570665,
+          "llgoGo": 1.0007356186552891,
+          "llgoWasmtime": 1.3959979476654694
+        }
+      },
+      {
+        "workload": "threads/private-memory",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.0748599178184535,
+          "llgoHeadBase": 1.16153512575889,
+          "llgoGo": 1.11705011468687,
+          "llgoWazero": 0.9588330051906211,
+          "llgoWasmtime": 3.1635826771653544,
+          "llgoWasmer": 2.4159651232711967
+        }
+      },
+      {
+        "workload": "threads/shared-memory",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.0437732402635527,
+          "llgoHeadBase": 0.925905564718099,
+          "llgoGo": 0.947375,
+          "llgoWazero": 0.7648988242418125,
+          "llgoWasmtime": 2.687112214146428,
+          "llgoWasmer": 1.8771517027863778
+        }
+      },
+      {
+        "workload": "threads/atomic-rmw",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.059239863113139,
+          "llgoHeadBase": 0.9104890874400856,
+          "llgoGo": 0.9577550970457939,
+          "llgoWazero": 1.5056754780868828,
+          "llgoWasmtime": 1.5098583941042558,
+          "llgoWasmer": 1.3623102631945412
+        }
+      },
+      {
+        "workload": "threads/notify-empty",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 0.988458146401319,
+          "llgoHeadBase": 1.008204255319149,
+          "llgoGo": 1.1488866475289006,
+          "llgoWazero": 0.07292605451724903,
+          "llgoWasmtime": 0.3265630168706583,
+          "llgoWasmer": 0.21693842570210523
+        }
+      },
+      {
+        "workload": "threads/wait-mismatch",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.000732573898392,
+          "llgoHeadBase": 1.0010645327068497,
+          "llgoGo": 0.998169905933165,
+          "llgoWazero": 0.051481817787099246,
+          "llgoWasmtime": 0.20596187541538274,
+          "llgoWasmer": 0.5492316677743541
+        }
+      },
+      {
+        "workload": "threads/wait-timeout",
+        "allFourControlsResolved": false,
+        "ratios": {
+          "goHeadBase": 1.034594276754214,
+          "llgoHeadBase": 0.8890116790154464,
+          "llgoGo": 0.8382116131476746,
+          "llgoWazero": 0.005377741685778292,
+          "llgoWasmtime": 0.046337484977889025,
+          "llgoWasmer": 0.022568999442725012
+        }
+      },
+      {
+        "workload": "applications/sha256-clang",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 0.983434476621443,
+          "llgoHeadBase": 0.9783749531325029,
+          "llgoGo": 0.998435030961505,
+          "llgoWazero": 0.6959158706918009,
+          "llgoWasmtime": 1.3178347139461584,
+          "llgoWasmer": 1.2833909724091752,
+          "llgoNativeC": 1.5737623046509905
+        }
+      },
+      {
+        "workload": "applications/sha256-rust",
+        "allFourControlsResolved": true,
+        "ratios": {
+          "goHeadBase": 1.010744597685793,
+          "llgoHeadBase": 1.0112435626686183,
+          "llgoGo": 0.9971009276406365,
+          "llgoWazero": 0.6708747726664301,
+          "llgoWasmtime": 1.333627791077154,
+          "llgoWasmer": 1.264937553181485,
+          "llgoNativeC": 1.5850877821925422
+        }
+      }
+    ]
+  },
+  "completedEvidence": {
+    "path": "artifacts/loop-mixed-forwarding-20261106/completed-evidence.tar.gz",
+    "sha256": "d2ffad7b81ae80c63a1ea5e796cb981cf46fc7de61913c29d4869f15c02ddf3e",
+    "bytes": 8026921,
+    "files": 284
+  }
+}

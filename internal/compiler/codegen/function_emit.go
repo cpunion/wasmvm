@@ -19,6 +19,7 @@ type functionEmitter struct {
 	f                                                            *slots.Function
 	exit, bad, zero, overflow                                    int
 	edgeCopies                                                   uint32
+	mixedIntegers                                                uint32
 	unmetered                                                    bool
 	x86Features                                                  X86Features
 	arm64Features                                                ARM64Features
@@ -27,16 +28,21 @@ type functionEmitter struct {
 	nativeThreads                                                bool
 	sharedMemories                                               []bool
 	memoryViews                                                  bool
+	sharedDefaultMemory                                          bool
 	memoryFunctions, memoryTables, memoryGlobals, memoryBindings uint32
 	memoryMinimum                                                uint64
 	memoryPageSizes                                              []uint64
 	regionLimit                                                  int
 	regionEnd                                                    int
+	nativeRegionLimit                                            int
 	provenPCs                                                    map[int]bool
 	guardPCs                                                     map[int]memoryGuard
 	addresses                                                    map[int]memoryAddress
 	elidedPCs                                                    map[int]bool
+	regionPredicate                                              *loopPredicate
 	boundsElided                                                 uint32
+	directMemoryOperands                                         uint32
+	memoryOperands                                               map[int]memoryOperand
 	constantRegisters                                            map[uint64]byte
 	runtimeRegisters                                             map[uint32]byte
 	registers                                                    map[slots.Slot]byte
@@ -46,6 +52,20 @@ type functionEmitter struct {
 	vectorAliases                                                map[slots.Slot]slots.Slot
 	aliasedVectorReads                                           uint32
 	registerSlots                                                []slots.Slot
+	registerPriorities                                           []uint64
+	registerPlan                                                 *registerPlan
+	allocationPlans                                              []*registerPlan
+	allocationStarts                                             []int
+	allocationLimit                                              int
+	allocationEdges                                              []allocationEdge
+	allocationEntries                                            []allocationEdge
+	valueFlow                                                    *valueFlow
+	valueIntervals                                               []registerInterval
+	privatePollLabels                                            []int
+	frameAliases                                                 map[slots.Slot]slots.Slot
+	deferredFrameSlots                                           map[slots.Slot]bool
+	frameCopyLimit                                               int
+	pollSnapshot                                                 *frameSnapshot
 	pollExits                                                    []pollExit
 	trapExits                                                    []nativeTrapExit
 	callExits                                                    []nativeCallExit
@@ -57,18 +77,26 @@ type functionEmitter struct {
 	allocationTypes                                              []module.TypeDef
 	hasAllocations                                               bool
 	allocationBatch                                              uint32
+	start                                                        int
+	linkedRelocations                                            []linkedRelocation
 }
 
-type memoryFallback struct{ label, pc int }
+type memoryFallback struct {
+	label, pc int
+	registers *registerPlan
+}
 
 type nativeCallExit struct {
 	label, pc int
 	source    uint64
+	registers *registerPlan
 }
 
 type pollExit struct {
-	label int
-	pc    uint32
+	label     int
+	pc        uint32
+	registers *registerPlan
+	snapshot  *frameSnapshot
 }
 
 func (e *functionEmitter) integer(in slots.Instruction) {
@@ -80,15 +108,24 @@ func (e *functionEmitter) integer(in slots.Instruction) {
 	if e.registerInteger(op, in.Dst, in.A, in.B) {
 		return
 	}
+	if e.frameInteger(op, in.Dst, in.A, in.B) {
+		return
+	}
 	if op >= 0x6d && op <= 0x70 || op >= 0x7f && op <= 0x82 {
 		e.contextConst(nativeabi.SourceOffset, uint64(e.f.Sources[in.Source].Wasm.Offset))
 	}
 	e.slotLoad(in.A, 0, false, wide)
 	e.slotLoad(in.B, 1, false, wide)
+	zero, overflow := e.zero, e.overflow
+	if e.allocationPlans != nil && (op >= 0x6d && op <= 0x70 || op >= 0x7f && op <= 0x82) {
+		source := uint64(e.f.Sources[in.Source].Wasm.Offset)
+		zero = e.trapExit(wasm.TrapIntegerDivideByZero, source)
+		overflow = e.trapExit(wasm.TrapIntegerOverflow, source)
+	}
 	if e.a.arch == "amd64" {
-		integerAMD64Core(e.a, op, wide, e.zero, e.overflow)
+		integerAMD64Core(e.a, op, wide, zero, overflow)
 	} else {
-		integerARM64Core(e.a, op, wide, e.zero, e.overflow)
+		integerARM64Core(e.a, op, wide, zero, overflow)
 	}
 	e.slotStore(in.Dst, 0, false)
 	if !e.unmetered {
@@ -179,6 +216,7 @@ func (e *functionEmitter) decrement() {
 	}
 }
 func (e *functionEmitter) slotLoad(slot slots.Slot, reg byte, high, wide bool) {
+	slot = e.frameRead(slot)
 	if slot == slots.NoSlot {
 		e.constant(reg, 0)
 		return
@@ -260,6 +298,10 @@ func (e *functionEmitter) slotStore(slot slots.Slot, reg byte, high bool) {
 	a.word(0xf9000000 | uint32(reg+9) | base<<5 | (offset/8)<<10)
 }
 func (e *functionEmitter) move(dst, src slots.Slot) {
+	if e.deferredFrameSlots != nil && e.deferredFrameSlots[dst] {
+		return
+	}
+	src = e.frameRead(src)
 	if dst == slots.NoSlot || dst == src {
 		return
 	}
@@ -398,7 +440,7 @@ func (e *functionEmitter) edge(index uint32, pcs []int, next int) {
 		e.move(m.Dst, m.Src)
 	}
 	if int(edge.PC) != next {
-		e.a.branch(pcs[edge.PC], false, 0)
+		e.a.branch(e.targetPC(pcs, int(edge.PC)), false, 0)
 	}
 }
 
@@ -429,17 +471,21 @@ func (e *functionEmitter) interrupt(pc uint32) {
 		e.a.bytes(0)
 		e.branch(exit, "ne")
 	}
-	e.pollExits = append(e.pollExits, pollExit{exit, pc})
+	e.pollExits = append(e.pollExits, pollExit{exit, pc, e.currentRegisterPlan(), e.pollSnapshot})
 }
 
 func (e *functionEmitter) emitPollExits() {
+	baseline := e.currentRegisterPlan()
 	for _, exit := range e.pollExits {
+		e.useRegisterPlan(exit.registers)
 		e.a.mark(exit.label)
 		if e.a.arch == "arm64" {
 			e.a.word(0xd50339bf) // dmb ishld: acquire after the atomic load.
 		}
+		e.materializeFrameSnapshot(exit.snapshot, false, false)
 		e.leave(nativeabi.Poll, 0, uint64(exit.pc))
 	}
+	e.useRegisterPlan(baseline)
 }
 
 func (e *functionEmitter) literal(in slots.Instruction) {
@@ -504,13 +550,34 @@ func (e *functionEmitter) literal(in slots.Instruction) {
 // Keep source publication and register spills off successful conversion paths.
 // Each trap site retains its original instruction offset.
 type nativeTrapExit struct {
-	label  int
-	code   wasm.TrapCode
-	source uint64
+	label     int
+	code      wasm.TrapCode
+	source    uint64
+	registers *registerPlan
 }
 
 func (e *functionEmitter) trapExit(code wasm.TrapCode, source uint64) int {
 	label := e.a.label()
-	e.trapExits = append(e.trapExits, nativeTrapExit{label, code, source})
+	e.trapExits = append(e.trapExits, nativeTrapExit{label, code, source, e.currentRegisterPlan()})
 	return label
+}
+
+func (e *functionEmitter) emitCallExits() {
+	baseline := e.currentRegisterPlan()
+	for _, call := range e.callExits {
+		e.useRegisterPlan(call.registers)
+		e.a.mark(call.label)
+		e.contextConst(nativeabi.SourceOffset, call.source)
+		e.leave(nativeabi.Call, uint64(call.pc), uint64(call.pc+1))
+	}
+	e.useRegisterPlan(baseline)
+}
+func (e *functionEmitter) emitTrapExits() {
+	baseline := e.currentRegisterPlan()
+	for _, trap := range e.trapExits {
+		e.useRegisterPlan(trap.registers)
+		e.a.mark(trap.label)
+		e.trap(trap.code, trap.source)
+	}
+	e.useRegisterPlan(baseline)
 }

@@ -65,6 +65,7 @@ type Execution struct {
 	status       Status
 	err          error
 	fuel, steps  uint64
+	nativeFrames state.NativeFrames
 }
 
 func New(store *state.Store, ctx context.Context, config Config) *Execution {
@@ -168,6 +169,7 @@ func (e *Execution) clearGCArgs() {
 
 func (e *Execution) fail(err error) Status {
 	e.err, e.status = err, Failed
+	e.nativeFrames = state.NativeFrames{}
 	clear(e.frames)
 	e.frames = e.frames[:0]
 	clear(e.prompts)
@@ -234,9 +236,54 @@ func (e *Execution) Run() Status {
 		return e.fail(err)
 	}
 	backend := e.config.Backend
-	native := backend != nil
-	metered := e.config.Metered && !native
-frames:
+	if backend == nil {
+		return e.runSlots()
+	}
+	for {
+		f := &e.frames[len(e.frames)-1]
+		f.suspended = false
+		pc, err := e.runBackend(backend, f.function, f.base, f.pc)
+		if err != nil {
+			return e.fail(err)
+		}
+		// Transfer validation can replace frames or relocate their values.
+		// Publish the checked boundary before selecting the shared slot view.
+		f = &e.frames[len(e.frames)-1]
+		f.pc = pc
+		e.steps++
+		if e.steps&63 == 0 {
+			if err := e.poll(); err != nil {
+				return e.fail(err)
+			}
+		}
+		// Select shared leaves here so a common dispatcher does not save
+		// and restore another frame before each native runtime effect.
+		op := f.function.Code.Code[pc].Op
+		var status Status
+		switch {
+		case op>>16 == 0xfb:
+			status = e.runGC()
+		case op>>16 == 0xfd:
+			status = e.runSIMD()
+		case op == slots.ControlBase+uint32(ir.Return):
+			status = e.returnFrame()
+		case op >= 0x10 && op <= 0x15:
+			status = e.runCall()
+		case op == 8 || op == 10:
+			status = e.runThrow()
+		default:
+			status = e.runRuntime()
+		}
+		if status != Running {
+			return status
+		}
+	}
+}
+
+// runSlots keeps portable scalar/local/control execution in a frame-local loop.
+// Runtime effects share their handlers with validated native exits.
+func (e *Execution) runSlots() Status {
+	metered := e.config.Metered
 	for len(e.frames) > 0 {
 		fi := len(e.frames) - 1
 		f := &e.frames[fi]
@@ -249,13 +296,6 @@ frames:
 		pc := f.pc
 		values := e.values[base : base+len(code.Slots)]
 		for {
-			if native {
-				var err error
-				pc, e.fuel, err = backend.Run(fn, base, len(e.frames), pc, e.fuel)
-				if err != nil {
-					return e.fail(err)
-				}
-			}
 			// Instructions are immutable for the frame's lifetime. Read only the
 			// fields needed by the selected handler instead of copying the record.
 			in := &instructions[pc]
@@ -273,7 +313,7 @@ frames:
 					return e.fail(err)
 				}
 			}
-			for in.Count != 0 && (in.Op == 0x20 || in.Op == 0x41) && !native && !metered && e.steps&63 != 63 {
+			for in.Count != 0 && (in.Op == 0x20 || in.Op == 0x41) && !metered && e.steps&63 != 63 {
 				// Coalesced local reads already occupy their result slot.
 				// Commit constants before advancing, retaining every source
 				// step and stopping before the next polling boundary.
@@ -315,50 +355,41 @@ frames:
 					}
 					goto commit
 				case 0xfb:
-					var a, b, c value.Value
-					if in.A != slots.NoSlot {
-						a = values[int(in.A)]
-					}
-					if in.B != slots.NoSlot {
-						b = values[int(in.B)]
-					}
-					im := &code.Sources[in.Source].Wasm
-					var err error
+					// Field/array access is a canonical state primitive. Keep
+					// its operand routing in this loop; complex GC effects use
+					// the same shared leaf as native execution.
 					if n := state.GCAccessArity(in.Op); n != 0 {
-						// Slot lowering already supplies the first two operands.
+						var a, b, c value.Value
+						if in.A != slots.NoSlot {
+							a = values[int(in.A)]
+						}
+						if in.B != slots.NoSlot {
+							b = values[int(in.B)]
+						}
 						if n > 2 {
 							c = values[int(code.Args[in.Extra+2])]
 						}
-						result, err = e.store.GCAccess(instance, im, a, b, c)
+						var err error
+						result, err = e.store.GCAccess(instance, &code.Sources[in.Source].Wasm, a, b, c)
+						if err != nil {
+							var t *wasm.Trap
+							if errors.As(err, &t) {
+								t.Function = fn.Index
+							}
+							return e.fail(err)
+						}
+						if in.Dst != slots.NoSlot {
+							values[int(in.Dst)] = result
+						}
 					} else {
-						if int(in.Count) > cap(e.gcArgs) {
-							e.gcArgs = make([]value.Value, in.Count)
+						f.pc = pc
+						if status := e.runGC(); status != Running {
+							return status
 						}
-						e.gcArgs = e.gcArgs[:in.Count]
-						operands := e.gcArgs
-						for i, slot := range code.Args[in.Extra : in.Extra+in.Count] {
-							operands[i] = values[int(slot)]
-						}
-						if e.store.HeapSafepoint != nil {
-							result, err = e.store.GC(e.context, instance, im, operands)
-						} else {
-							result, err = e.store.GC(e.context, instance, im, operands, e.RetainedValues)
-						}
-						e.clearGCArgs()
-					}
-					if err != nil {
-						var t *wasm.Trap
-						if errors.As(err, &t) {
-							t.Function = fn.Index
-						}
-						return e.fail(err)
-					}
-					if in.Dst != slots.NoSlot {
-						values[int(in.Dst)] = result
 					}
 					pc++
 					f.pc = pc
-					continue
+					goto next
 				case 0xfc:
 					if module.IsWideArithmetic(in.Op) {
 						args := code.Args[in.Extra : in.Extra+in.Count+2]
@@ -389,23 +420,15 @@ frames:
 						values[args[in.Count]], values[args[in.Count+1]] = value.Value{Lo: lo}, value.Value{Lo: hi}
 						pc++
 						f.pc = pc
-						continue
+						goto next
 					}
 				default:
 					if in.Op <= 0xe6 {
-						im := &code.Sources[in.Source].Wasm
 						f.pc = pc
-						if err := e.stackInstruction(*in, im); err != nil {
-							var t *wasm.Trap
-							if errors.As(err, &t) {
-								t.Function, t.Offset = fn.Index, im.Offset
-							}
-							return e.fail(err)
+						if status := e.runRuntime(); status != Running {
+							return status
 						}
-						if e.status != Running {
-							return e.status
-						}
-						continue frames
+						goto transferred
 					}
 				}
 			}
@@ -553,57 +576,26 @@ frames:
 				goto write
 			}
 			switch op := in.Op; op {
-			case slots.ControlBase + uint32(ir.IfCast), slots.ControlBase + uint32(ir.IfNull), slots.ControlBase + uint32(ir.Jump), slots.ControlBase + uint32(ir.If), slots.ControlBase + uint32(ir.Table), slots.ControlBase + uint32(ir.Return), slots.ControlBase + uint32(ir.Trap):
+			case slots.ControlBase + uint32(ir.Return):
+				f.pc = pc
+				if status := e.returnFrame(); status != Running {
+					return status
+				}
+				goto transferred
+			case slots.ControlBase + uint32(ir.IfCast):
+				f.pc = pc
+				if status := e.runRuntime(); status != Running {
+					return status
+				}
+				goto transferred
+			case slots.ControlBase + uint32(ir.IfNull), slots.ControlBase + uint32(ir.Jump), slots.ControlBase + uint32(ir.If), slots.ControlBase + uint32(ir.Table), slots.ControlBase + uint32(ir.Trap):
 				kind := ir.TermKind(op - slots.ControlBase)
 				if kind == ir.Trap {
 					trap = wasm.TrapUnreachable
 					break
 				}
-				if kind == ir.Return {
-					e.trimPrompts(fi)
-					outputs := code.Args[in.Extra : in.Extra+in.Count]
-					if fi == 0 {
-						if len(outputs) > cap(e.result) {
-							e.result = make([]value.Value, len(outputs))
-						} else {
-							e.result = e.result[:len(outputs)]
-						}
-						for i, src := range outputs {
-							e.result[i] = values[int(src)]
-						}
-						clear(e.frames)
-						e.frames = e.frames[:0]
-						e.values = e.values[:0]
-						e.status = Done
-						return Done
-					}
-					parentBase := e.frames[fi-1].base
-					for i, src := range outputs {
-						e.values[parentBase+int(f.dest[i])] = values[int(src)]
-					}
-					e.frames[fi] = frame{}
-					e.frames = e.frames[:fi]
-					e.values = e.values[:base]
-					continue frames
-				}
 				index := uint32(0)
-				if kind == ir.IfCast {
-					im := &code.Sources[in.Source].Wasm
-					target := module.ResolveType(im.Types[1], instance.Types)
-					matched := false
-					if im.Op == 0xfb0025 || im.Op == 0xfb0026 {
-						var err error
-						matched, err = e.store.DescriptorEqual(a.Lo, b.Lo, target)
-						if err != nil {
-							return e.fail(&wasm.Trap{Code: wasm.TrapNullReference, Offset: im.Offset, Function: fn.Index})
-						}
-					} else {
-						matched = e.store.TestReference(a.Lo, target)
-					}
-					if !matched {
-						index = 1
-					}
-				} else if kind == ir.IfNull && a.Lo != 0 {
+				if kind == ir.IfNull && a.Lo != 0 {
 					index = 1
 				} else if kind == ir.If && uint32(a.Lo) == 0 {
 					index = 1
@@ -623,40 +615,14 @@ frames:
 					values[int(move.Dst)] = values[int(move.Src)]
 				}
 				pc = edge.PC
-				continue
+				goto next
 
 			case 8, 10:
 				f.pc = pc
-				var ex *state.Exception
-				if op == 8 {
-					im := &code.Sources[in.Source].Wasm
-					var local [8]value.Value
-					operands := local[:0]
-					if int(in.Count) > cap(operands) {
-						operands = make([]value.Value, in.Count)
-					} else {
-						operands = operands[:in.Count]
-					}
-					for i, s := range code.Args[in.Extra : in.Extra+in.Count] {
-						operands[i] = values[int(s)]
-					}
-					var err error
-					ex, err = e.store.NewException(instance.Tags[im.A], operands, e.RetainedValues)
-					if err != nil {
-						return e.fail(err)
-					}
-				} else {
-					ref := values[int(code.Args[in.Extra])].Lo
-					if ref == 0 {
-						trap = wasm.TrapNullReference
-						break
-					}
-					ex = &state.Exception{Owner: e.store, Ref: ref}
+				if status := e.runThrow(); status != Running {
+					return status
 				}
-				if e.raise(ex) {
-					continue frames
-				}
-				return Failed
+				goto transferred
 			case 1, 0x1a:
 			case 0x1b, 0x1c:
 				if in.C != slots.NoSlot {
@@ -734,106 +700,11 @@ frames:
 			case 0xd2:
 				result.Lo = instance.Functions[in.Extra]
 			case 0x10, 0x11, 0x12, 0x13, 0x14, 0x15:
-				im := &code.Sources[in.Source].Wasm
-				tail := module.IsTailCall(op)
-				count := in.Count
-				inputs := code.Args[in.Extra : in.Extra+count]
-				var target uint64
-				if op == 0x10 || op == 0x12 {
-					target = instance.Functions[im.A]
-				} else if op == 0x14 || op == 0x15 {
-					count--
-					target = values[int(inputs[count])].Lo
-					if target == 0 {
-						trap = wasm.TrapNullReference
-						break
-					}
-				} else {
-					count--
-					table := instance.Tables[im.B]
-					index := table.Type.Limits.Address(values[int(inputs[count])].Lo)
-					if index >= uint64(len(table.Values)) {
-						trap = wasm.TrapTableBounds
-						break
-					}
-					target = table.Values[index]
-					if target == 0 {
-						trap = wasm.TrapUninitializedElement
-						break
-					}
+				f.pc = pc
+				if status := e.runCall(); status != Running {
+					return status
 				}
-				callee, ok := e.store.Function(target)
-				if !ok {
-					return e.fail(state.ErrReference)
-				}
-				if (op == 0x11 || op == 0x13 || op == 0x14 || op == 0x15) && !e.store.FunctionSubtype(callee.TypeID, instance.Types[im.A]) {
-					trap = wasm.TrapIndirectCallType
-					break
-				}
-				var dest []slots.Slot
-				if tail {
-					dest = f.dest
-				} else {
-					dest = code.Args[in.Extra+in.Count : in.Extra+in.Count+uint32(len(callee.Signature.Results))]
-				}
-				if err := e.poll(); err != nil {
-					return e.fail(err)
-				}
-				if tail {
-					// Preserve the tuple before retiring/reusing the current frame.
-					// This supports overlapping/permuted arguments and a different
-					// callee signature without charging an additional guest frame.
-					if callee.Code != nil && uint64(base)+uint64(len(callee.Code.Slots)) > uint64(e.config.Limits.MaxSlots) {
-						return e.fail(&wasm.Error{Kind: wasm.ErrLimit, Detail: "guest frame slots"})
-					}
-					if int(count) > cap(e.tailArgs) {
-						e.tailArgs = make([]value.Value, count)
-					} else {
-						e.tailArgs = e.tailArgs[:count]
-					}
-					for i, src := range inputs[:count] {
-						e.tailArgs[i] = values[int(src)]
-					}
-					e.values = e.values[:base]
-					e.frames[fi] = frame{}
-					e.frames = e.frames[:fi]
-					if callee.Code == nil {
-						e.pending = &HostCall{Function: callee, Caller: instance, Args: append([]value.Value(nil), e.tailArgs...)}
-						e.pendingDest, e.status = dest, HostRequest
-						clear(e.tailArgs)
-						e.tailArgs = e.tailArgs[:0]
-						return HostRequest
-					}
-					if err := e.push(callee, dest); err != nil {
-						return e.fail(err)
-					}
-					copy(e.values[base:], e.tailArgs)
-					clear(e.tailArgs)
-					e.tailArgs = e.tailArgs[:0]
-					continue frames
-				}
-				// Publish the caller continuation before a host suspension or
-				// frame push. Straight-line execution keeps its PC local.
-				f.pc = pc + 1
-				f.callPC, f.suspended = pc, true
-				if callee.Code == nil {
-					args := make([]value.Value, count)
-					for i := range args {
-						args[i] = e.values[base+int(inputs[i])]
-					}
-					e.pending = &HostCall{Function: callee, Caller: instance, Args: args}
-					e.pendingDest = dest
-					e.status = HostRequest
-					return HostRequest
-				}
-				if err := e.push(callee, dest); err != nil {
-					return e.fail(err)
-				}
-				calleeBase := e.frames[len(e.frames)-1].base
-				for i := uint32(0); i < count; i++ {
-					e.values[calleeBase+int(i)] = e.values[base+int(inputs[i])]
-				}
-				continue frames
+				goto transferred
 			default:
 				if in.C != slots.NoSlot {
 					c = values[int(in.C)]
@@ -871,7 +742,9 @@ frames:
 				values[int(in.Dst)] = result
 			}
 			pc++
+		next:
 		}
+	transferred:
 	}
 	panic("interp: running without frames")
 }

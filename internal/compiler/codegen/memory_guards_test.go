@@ -44,14 +44,26 @@ func guardedMemoryFunction(t *testing.T, op uint32, lane byte, biases, offsets [
 	return functionModule(t, m).Functions[0]
 }
 
-func compareGuardedExecution(t *testing.T, f *slots.Function, addresses []uint64) {
+func compareGuardedExecution(t *testing.T, f *slots.Function, addresses []uint64, shared ...bool) {
 	t.Helper()
 	if !native.Available {
 		return
 	}
-	_, lease, ctx := configuredContext(t, f, Config{Unmetered: true, MemoryMinimumPages: 1})
-	_, refLease, refCtx := functionContext(t, f, true)
-	mem, refMem := bindMemory(t, ctx, 65536, 65536), bindMemory(t, refCtx, 65536, 65536)
+	config := Config{Unmetered: true, MemoryMinimumPages: 1}
+	if len(shared) != 0 && shared[0] {
+		config.NativeThreads, config.SharedMemories, config.MemoryCount = true, []bool{true}, 1
+	}
+	_, lease, ctx := configuredContext(t, f, config)
+	config.MemoryMinimumPages = 0
+	_, refLease, refCtx := configuredContext(t, f, config)
+	var mem, refMem *native.Memory
+	var views [2]uint64
+	if config.NativeThreads {
+		mem, views[0] = bindSharedTestMemory(t, ctx, 65536, 65536)
+		refMem, views[1] = bindSharedTestMemory(t, refCtx, 65536, 65536)
+	} else {
+		mem, refMem = bindMemory(t, ctx, 65536, 65536), bindMemory(t, refCtx, 65536, 65536)
+	}
 	initial := make([]byte, 65536)
 	for i := range initial {
 		initial[i] = byte(i*193 + 127)
@@ -69,9 +81,11 @@ func compareGuardedExecution(t *testing.T, f *slots.Function, addresses []uint64
 				writeSlot(t, refCtx, 16, slots.Slot(s), v)
 			}
 			state := native.State{Used: 16, Depth: 1, Continuation: uint64(pc)}
+			state.Payload[2] = views[0]
 			if err := ctx.SetState(state); err != nil {
 				t.Fatal(err)
 			}
+			state.Payload[2] = views[1]
 			if err := refCtx.SetState(state); err != nil {
 				t.Fatal(err)
 			}
@@ -85,6 +99,7 @@ func compareGuardedExecution(t *testing.T, f *slots.Function, addresses []uint64
 			}
 			gs, _ := ctx.State()
 			ws, _ := refCtx.State()
+			gs.Payload[2], ws.Payload[2] = 0, 0 // Different retained native views.
 			if got != want || gs != ws {
 				t.Fatal("state/trap order", pc, seed, got, want, gs, ws)
 			}

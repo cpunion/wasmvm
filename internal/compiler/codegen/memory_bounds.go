@@ -18,22 +18,36 @@ type memoryRegion struct {
 	guarded   uint32
 	addresses map[int]memoryAddress
 	elided    map[int]bool
-	loop      *memoryLoop
+	loop      *nativeLoop
 	unroll    *memoryUnroll
+	values    *loopValuePlans
+	copies    *loopFrameCopies
+	predicate *loopPredicate
+	operands  map[int]memoryOperand
 }
 
 func (e *functionEmitter) codeLimit() int {
+	limit := len(e.f.Code)
 	if e.regionLimit != 0 {
-		return e.regionLimit
+		limit = min(limit, e.regionLimit)
 	}
-	return len(e.f.Code)
+	if e.nativeRegionLimit != 0 {
+		limit = min(limit, e.nativeRegionLimit)
+	}
+	if e.frameCopyLimit != 0 {
+		limit = min(limit, e.frameCopyLimit)
+	}
+	if e.allocationLimit != 0 {
+		limit = min(limit, e.allocationLimit)
+	}
+	return limit
 }
 
 // A bounded local abstract interpretation, never a speculative loop invariant.
 // Facts start unknown at every CFG entry, helper, growth and poll boundary. Each
 // region has at most 256 instructions, so compiler work stays linear in input.
 func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
-	if !e.unmetered || !e.usesMemory || e.memoryMinimum == 0 || e.memoryViews {
+	if !e.unmetered || !e.usesMemory || e.memoryMinimum == 0 || e.memoryViews && !e.sharedDefaultMemory {
 		return nil
 	}
 	for _, in := range e.f.Code {
@@ -136,21 +150,23 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 		if candidates >= 3 {
 			guards, addresses, guarded = e.memoryGuards(start, end, proven)
 		}
-		if len(proven) != 0 {
-			r := memoryRegion{end: end - 1, proven: proven, guards: guards, guarded: guarded, addresses: addresses}
+		r := memoryRegion{end: end - 1, proven: proven, guards: guards, guarded: guarded, addresses: addresses}
+		if proof := e.memoryLoop(start, r); proof != nil {
+			r.loop = &nativeLoop{yes: proof.yes, exit: proof.exit, flags: true, memory: proof}
+			r.proven, r.guards, r.addresses = proof.proven, nil, proof.addresses
+			r.elided = e.deadAddressTemps(start, end, r)
+			r.guarded = uint32(len(r.proven))
+		} else {
 			if len(guards) != 0 {
 				r.elided = e.deadAddressTemps(start, end, r)
 			}
+			r.unroll = e.memoryUnroll(start, r)
+		}
+		r.operands = e.memoryOperandFacts(start, end, r)
+		if len(proven) != 0 || r.loop != nil {
 			regions[start] = r
 		}
 		start = end
-	}
-	for start := 0; start < len(e.f.Code); start++ {
-		if r, ok := regions[start]; ok {
-			r.loop = e.memoryLoop(start, r)
-			r.unroll = e.memoryUnroll(start, r)
-			regions[start] = r
-		}
 	}
 	return regions
 }
@@ -165,7 +181,7 @@ func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, pcs []int,
 		return
 	}
 	if r.loop != nil {
-		e.emitMemoryLoop(start, r, pcs, out)
+		e.emitNativeLoop(start, r, pcs, out)
 		return
 	}
 	out.DeadScalarOps += uint32(len(r.elided))
@@ -173,23 +189,50 @@ func (e *functionEmitter) emitMemoryRegion(start int, r memoryRegion, pcs []int,
 }
 
 func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, pcs []int, out *CompiledFunction) {
+	previousLimit := e.allocationLimit
 	e.regionLimit = end + 1
 	e.regionEnd = r.end + 1
 	e.provenPCs = r.proven
+	e.memoryOperands = r.operands
 	e.guardPCs = r.guards
 	e.addresses, e.elidedPCs = r.addresses, r.elided
+	e.regionPredicate = r.predicate
 	e.vectorAliases = map[slots.Slot]slots.Slot{}
 	defer func() {
+		e.frameAliases, e.deferredFrameSlots = nil, nil
+		e.frameCopyLimit = 0
+		e.allocationLimit = previousLimit
 		e.regionLimit = 0
 		e.regionEnd = 0
 		e.provenPCs = nil
+		e.memoryOperands = nil
 		e.guardPCs = nil
 		e.vectorAliases = nil
 		e.addresses = nil
 		e.elidedPCs = nil
+		e.regionPredicate = nil
 	}()
 	var boundaries []int
+	coalesced := e.coalescedRegisterSlots()
 	for pc := start; pc <= end; pc++ {
+		if r.copies != nil && r.copies.boundary[pc-r.copies.first] {
+			boundaries = append(boundaries, pc)
+		}
+		if r.values != nil && pc > start && r.values.at(pc) != r.values.at(pc-1) {
+			boundaries = append(boundaries, pc)
+		}
+		in := e.f.Code[pc]
+		local := slots.NoSlot
+		if in.Op == 0x21 || in.Op == 0x22 {
+			local = slots.Slot(e.f.Sources[in.Source].Wasm.A)
+		}
+		// Selectors may extend copy reads or advance a following local write.
+		// Split at every shared-home write. Read-only sequences may still fuse:
+		// their inputs cannot change physical value before the next boundary.
+		if coalesced[in.Dst] || coalesced[local] {
+			boundaries = append(boundaries, pc, pc+1)
+			continue
+		}
 		_, guard := r.guards[pc]
 		_, address := r.addresses[pc]
 		// Every remapped access must reach memoryAt; earlier copy/vector
@@ -200,11 +243,20 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 	}
 	next := 0
 	for pc := start; pc <= end; pc++ {
+		if r.copies != nil {
+			e.frameAliases = r.copies.aliases[pc-r.copies.first]
+			e.deferredFrameSlots = r.copies.deferred
+			e.frameCopyLimit = min(end+1, r.copies.next[pc-r.copies.first])
+		}
+		if r.values != nil {
+			e.transitionRegisters(r.values.at(pc))
+			e.allocationLimit = min(end+1, r.values.next[pc-r.values.first])
+		}
 		if guard, ok := r.guards[pc]; ok {
-			cold := pcs[pc]
+			cold := e.targetPC(pcs, pc)
 			if pc == start {
 				cold = e.a.label()
-				e.memoryFallbacks = append(e.memoryFallbacks, memoryFallback{cold, pc})
+				e.memoryFallbacks = append(e.memoryFallbacks, memoryFallback{cold, pc, e.currentRegisterPlan()})
 			}
 			e.emitMemoryGuard(guard, cold)
 			out.MemoryGuards++
@@ -222,48 +274,15 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 		}
 		if address, ok := r.addresses[pc]; ok {
 			in.A = address.local
-			e.memoryAt(in, true, address.offset)
+			e.memoryAt(in, true, address.offset, r.operands[pc])
 			continue
 		}
-		if end, ok := e.combineVectorAffine(pc); ok {
-			out.FusedVectors++
+		if end, ok := e.combinePlain(pc, start, out); ok {
 			pc = end
 			continue
 		}
-		if end, ok := e.combineMaskShift(pc); ok {
-			out.FusedIntegers++
-			pc = end
-			continue
-		}
-		if end, ok := e.combineShiftedInteger(pc); ok {
-			out.FusedIntegers++
-			pc = end
-			continue
-		}
-		if end, ok := e.combineDeadImmediate(pc); ok {
-			out.ForwardedScalars++
-			pc = end
-			continue
-		}
-		if pc > start {
-			prev := e.f.Code[pc-1]
-			if (prev.Op == 0x41 || prev.Op == 0x42) && prev.Dst == in.B && in.B != slots.NoSlot && e.registerImmediate(in.Op, in.Dst, in.A, e.f.Sources[prev.Source].Wasm.Bits) {
-				continue
-			}
-		}
-		if end, ok := e.combineScalarCopies(pc); ok {
-			out.ForwardedScalars++
-			pc = end
-			continue
-		}
-		if end, ok := e.combineMultiplyAdd(pc); ok {
-			out.FusedIntegers++
-			pc = end
-			continue
-		}
-		if e.forwardScalarResult(pc) {
-			out.ForwardedScalars++
-			pc++
+		if isMemoryAccess(in.Op) {
+			e.memoryAt(in, r.proven[pc], e.f.Sources[in.Source].Wasm.MemoryOffset(), r.operands[pc])
 			continue
 		}
 		e.plain(in, r.proven[pc])

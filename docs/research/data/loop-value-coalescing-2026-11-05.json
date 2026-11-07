@@ -1,0 +1,12 @@
+{
+  "classification": "Local semantic and static native-code evidence; no throughput or controlled milestone acceptance.",
+  "engineSource": "8b5ec48a77abb155a98ef009add078a1d34a3447",
+  "baseEngine": "c1f00f55b9645ab10e413b7d2fc19b53a204231c",
+  "format": "lossless-evidence-pointer-v1",
+  "archive": "../evidence/loop-value-coalescing-2026-11-05.json.xz",
+  "archiveSHA256": "632a00ff425595fb3a380667256438eab58f691cd0298768efada4c4eec8b671",
+  "archiveBytes": 23264,
+  "originalSHA256": "a89e489f3470b78388659b2a1cec8bdef82531dbb84692494ee2c1108ebcec12",
+  "originalBytes": 201747,
+  "retention": "The archive preserves the complete original JSON byte for byte, including raw observations, failures, regressions, unresolved controls, lifecycle phases and provenance. No samples are removed or pooled."
+}
