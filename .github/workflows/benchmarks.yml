@@ -307,7 +307,8 @@ jobs:
     timeout-minutes: 10
     strategy:
       fail-fast: false
-      max-parallel: 1
+      # Each group has an independent runner and source-pinned A/A controls.
+      max-parallel: 5
       matrix:
         group: [core, memory-simd, gc, threads, applications]
     steps:
