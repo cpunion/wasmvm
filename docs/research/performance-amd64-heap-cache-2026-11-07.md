@@ -65,6 +65,45 @@ same already-built executables. Counts, samples and source events are never pool
 The PR body links the complete event and records its final observations; hosted
 results do not close controlled performance acceptance.
 
+The completed event passes all six jobs. Original22 retains 362 alternate
+checks and 12 explicit reference-GC rejections; the separate four-case long
+cohort retains 56 checks and its own 12 rejections. All four controls resolve
+8/22 original and 2/4 sustained cases. Build takes 371 seconds; the longest
+measurement group takes 251 seconds. Ratios below use full warm-call medians.
+
+| Workload/cohort | Go head/base | LLGo head/base | LLGo / Go native | LLGo / Wasmtime | All four A/A |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Struct, original count | 0.771 | 0.736 | 1.003 | 1.618 | Inconclusive |
+| Struct, 1,000,000 | 0.885 | 0.950 | 0.995 | 1.256 | Inconclusive |
+| Allocation, 300,000 | 1.002 | 0.998 | 1.156 | 2.858 | Inconclusive |
+| Indirect struct, 1,000,000 | 0.996 | 0.997 | 0.998 | 2.744 | Resolved, advisory |
+
+The changed workload observes lower elapsed time in both cohorts, but unresolved
+controls do not establish a reliable speedup. The long candidate native control
+resolves; its baseline native control does not. Allocation and indirect access
+retain material competitor deficits. wazero/Wasmer reject these GC fixtures;
+there is no equivalent native C GC row. Other 21 x86 images are unchanged; all
+original runtime/interpreter/competitor/lifecycle observations remain in the
+complete event. No cross-event extrapolation is used.
+
+## Corrected CI execution cost
+
+The first PR head `51c9a47` passes 20 required jobs, but its macOS legacy job
+exceeds the 12-minute job limit. It serially links/runs P1 and legacy-thread
+packages, and recompiles the large LLGo guest for both native policies. The
+unchanged guest assertions executed so far pass; cancellation occurs during
+the second compilation, not a reported semantic failure. The incomplete trace
+and reports remain retained as a failed CI attempt, never counted as acceptance.
+
+P1 and threads now have separate LLGo shards. All 31 test packages remain once
+per target across eight shards; the required matrix expands to 23 jobs. The
+large threaded guest compiles once per backend; its native artifact already
+contains both policy tiers. Every mode still receives independent process,
+Store, memory and thread state. Interpreter, unmetered native and fuel executions
+remain separate, including their three original reports. Compiler/profile and
+job limits are unchanged. The final PR checks/audit supply actual completion
+and duration evidence; the incomplete first attempt cannot authorize merging.
+
 The preceding source `cd0dd65` treated same-slot reads as mutations and enabled
 no cache in any benchmark module. Its complete
 [event 42374722485](https://github.com/cpunion/wasmvm/actions/runs/42374722485)

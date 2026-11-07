@@ -21,9 +21,11 @@ measures all 22 Linux cases against the preceding main. Clang/Rust SHA observes
 LLGo elapsed time at **0.209/0.222×** the baseline, **0.655/0.669×** wazero,
 **1.248/1.327×** Wasmtime and **1.498/1.569×** native C. These are hosted advisory
 results; adverse GC/atomic/control observations and unresolved calibration remain
-explicit. Final four-profile semantic CI passes all 21 required jobs, 240
+explicit. The cumulative integration's four-profile semantic CI passes all 21 required jobs, 240
 conformance reports and every package coverage gate; the longest job takes 8m46s.
-The same report preserves the rejected frame-immediate experiment. The
+The same report preserves the rejected frame-immediate experiment. An
+[amd64 checked heap cache follow-up](docs/research/performance-amd64-heap-cache-2026-11-07.md)
+retains original-count and sustained GC cohorts independently. The
 [rejected FP-register allocation](docs/research/performance-raw-integer-registers-2026-11-06.md)
 stays reverted after approximately 22% Linux SHA regressions. Source events,
 compiler profiles and lifecycle phases stay separate. The
@@ -51,7 +53,8 @@ their integration and final CI evidence.
 | macOS arm64 native | Yes; C compiler/cgo required | Yes; pinned release profile | CI target |
 | Other native OS/architecture combinations | Not validated | Not validated | No native support claim |
 
-CI runs Go and LLGo on both targets. Shared Go checks include race detection,
+CI runs Go and LLGo on both targets; eight LLGo shards execute all 31 test
+packages exactly once per target. Shared Go checks include race detection,
 native pointer ownership, fuzz smoke checks and a **90% statement-coverage gate
 for each executable package**. The coverage badge states this policy, not an
 aggregate measurement. The CI badge tracks PR runs; merging requires the final
