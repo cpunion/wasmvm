@@ -96,22 +96,22 @@ func TestHeapCacheAMD64ReuseHintsAndConservativeBoundaries(t *testing.T) {
 }
 
 func TestHeapCacheAMD64PairBudgetAndReset(t *testing.T) {
-	for occupied := 0; occupied <= 5; occupied++ {
+	for occupied := 0; occupied <= 8; occupied++ {
 		e := functionEmitter{a: &assembler{arch: "amd64"}, unmetered: true, registers: map[slots.Slot]byte{}}
 		used := [32]bool{}
-		saved := []byte{3, 12, 13, 14, 15}
-		for _, r := range saved[:occupied] {
+		pool := []byte{3, 12, 13, 14, 15, 9, 10, 11}
+		for _, r := range pool[:occupied] {
 			used[r] = true
 		}
-		available := []byte{9, 10, 11, 3, 12, 13, 14, 15}
+		available := pool
 		e.selectHeapCacheAMD64(17, available, &used)
-		if occupied > 3 {
+		if occupied > 6 {
 			if len(e.heapCaches) != 0 {
 				t.Fatal(occupied, e.heapCaches)
 			}
 			continue
 		}
-		want := heapCache{saved[occupied], saved[occupied+1]}
+		want := heapCache{pool[occupied], pool[occupied+1]}
 		if e.heapCaches[17] != want {
 			t.Fatal(occupied, e.heapCaches, want)
 		}
