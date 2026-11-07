@@ -19,6 +19,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"sync/atomic"
@@ -28,6 +29,7 @@ import (
 	"github.com/cpunion/wasmvm/pkg/component"
 	"github.com/cpunion/wasmvm/pkg/wasi/preview2"
 	"github.com/cpunion/wasmvm/pkg/wasm"
+	"golang.org/x/sys/unix"
 )
 
 type upstreamWASIPins struct {
@@ -162,6 +164,13 @@ func testUpstreamWASIConsumer(t *testing.T, root, name, backend string, scenario
 		t.Fatal(err)
 	}
 	cfg := WorldConfig{Environment: env, IO: IOConfig{Stdin: NewBytesInput(input), Stdout: output, Stderr: diagnostic}, FileSystem: FileSystemConfig{Preopens: []FileSystemPreopen{{GuestPath: ".", HostPath: dir}}}, Sockets: SocketsConfig{AllowBind: allow, AllowConnect: allow, AllowSend: allow, AllowReceive: allow, AllowNameLookup: true, Resolve: resolve}, HTTP: HTTPConfig{AllowRequest: func(context.Context, *url.URL) error { return nil }, AllowConnect: allow, ForbiddenHeaders: []string{"custom-forbidden-header"}}}
+	if name == "p3_sockets_tcp_busy_poll" {
+		// Sequential connections must reclaim their physical sockets without
+		// depending on a separately scheduled cleanup worker.
+		cfg.Sockets.MaxSockets = 8
+		previous := runtime.GOMAXPROCS(1)
+		defer runtime.GOMAXPROCS(previous)
+	}
 	if name == "p3_cli_deny_listen" {
 		cfg.Sockets = SocketsConfig{}
 	}
@@ -202,6 +211,9 @@ func testUpstreamWASIConsumer(t *testing.T, root, name, backend string, scenario
 			t.Error(err)
 		}
 	}()
+	if name == "p3_http_outbound_request_timeout" {
+		pinUpstreamRefusedConnection(t, w3.HTTP())
+	}
 	imports := w2.Imports()
 	for key, instance := range w3.Imports().Instances {
 		imports.Instances[key] = instance
@@ -383,4 +395,45 @@ func testUpstreamWASIConsumer(t *testing.T, root, name, backend string, scenario
 	if name == "p3_http_forbidden_headers" && !intercepted.Load() {
 		t.Fatal("outbound interceptor was not called")
 	}
+}
+
+// The unchanged upstream guest accepts either a connect timeout or refusal for
+// TEST-NET-3. A transparent host proxy may instead accept that TCP connection and
+// leave HTTP waiting for headers. Reserve a non-listening loopback port so the
+// real dial/error path deterministically produces the permitted refusal.
+func pinUpstreamRefusedConnection(t *testing.T, p *HTTP) {
+	t.Helper()
+	fd, err := unix.Socket(unix.AF_INET, unix.SOCK_STREAM, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = unix.Close(fd) })
+	if err = unix.Bind(fd, &unix.SockaddrInet4{Addr: [4]byte{127, 0, 0, 1}}); err != nil {
+		t.Fatal(err)
+	}
+	address, err := unix.Getsockname(fd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	target := fmt.Sprintf("127.0.0.1:%d", address.(*unix.SockaddrInet4).Port)
+	timeouts := p.defaultTimeouts()
+	timeouts[0] = 200 * time.Millisecond // Pinned, unchanged upstream request option.
+	transport, err := p.transportFor(timeouts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dial := transport.DialContext
+	var attempts atomic.Uint32
+	transport.DialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
+		if address != "203.0.113.12:80" {
+			return nil, fmt.Errorf("unexpected upstream timeout target: %s", address)
+		}
+		attempts.Add(1)
+		return dial(ctx, network, target)
+	}
+	t.Cleanup(func() {
+		if got := attempts.Load(); got != 1 {
+			t.Errorf("upstream refusal dial attempts: %d, want 1", got)
+		}
+	})
 }
