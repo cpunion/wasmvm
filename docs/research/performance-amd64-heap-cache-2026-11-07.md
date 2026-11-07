@@ -78,10 +78,13 @@ measurement group takes 251 seconds. Ratios below use full warm-call medians.
 | Allocation, 300,000 | 1.002 | 0.998 | 1.156 | 2.858 | Inconclusive |
 | Indirect struct, 1,000,000 | 0.996 | 0.997 | 0.998 | 2.744 | Resolved, advisory |
 
+Allocation rows above use warm medians. The [throughput correction](performance-gc-cache-throughput-2026-11-08.md)
+re-reduces the same samples with every observed pause included per process;
+2.858 is a latency diagnostic rather than a sustained allocation deficit.
+
 The changed workload observes lower elapsed time in both cohorts, but unresolved
 controls do not establish a reliable speedup. The long candidate native control
-resolves; its baseline native control does not. Allocation and indirect access
-retain material competitor deficits. wazero/Wasmer reject these GC fixtures;
+resolves; its baseline native control does not. Indirect access retains a material competitor deficit. wazero/Wasmer reject these GC fixtures;
 there is no equivalent native C GC row. Other 21 x86 images are unchanged; all
 original runtime/interpreter/competitor/lifecycle observations remain in the
 complete event. No cross-event extrapolation is used.

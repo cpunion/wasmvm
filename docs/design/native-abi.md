@@ -584,7 +584,9 @@ same layout and checked address arithmetic.
 The existing heap cache contract also applies to one optional amd64 key/address
 pair selected through the common register allocator. The full non-null handle
 is compared on hits; misses retain index/tag/generation checks. The pair uses
-existing callee-saved GPRs and resets on every entry, including cold continuations
+the existing guest GPR pool, including its caller registers, and resets on every
+entry, including cold continuations
 and linked-call returns. It cannot retain addresses across a host call or GC
-relocation. Root hints determine profitability only. Precise mode retains the
+relocation. Calls, polls and runtime helpers cannot carry cached addresses across reentry.
+Root hints determine profitability only. Precise mode retains the
 established path. See the [source-bound qualification](../research/performance-amd64-heap-cache-2026-11-07.md).
