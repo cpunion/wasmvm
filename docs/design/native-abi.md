@@ -336,6 +336,14 @@ and enters through the same C ABI under Go and LLGo. Cancellation uses a
 lock-free release/acquire control word; the adapter normalizes and restores
 the host floating-point environment. Every field offset is checked against C.
 
+On ARM64, the adapter snapshots FPCR and FPSR directly, establishes zeroed
+registers for nearest-even rounding, gradual underflow and masked exceptions,
+and restores both complete registers after every guest exit. This also isolates
+sticky exception and SIMD saturation flags. Instruction synchronization follows
+the register writes. amd64 retains the libc environment operations for both
+MXCSR and x87 state. Admission rejection and cancellation leave host state
+intact; the ABI probes exercise all exit codes under a non-default environment.
+
 Linux mappings transition RW to RX. Darwin uses a shared, bounded 1-GiB virtual
 MAP_JIT arena with thread write protection and instruction-cache invalidation;
 pages are populated on publication, independently of each module's code quota;
