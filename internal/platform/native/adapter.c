@@ -167,17 +167,42 @@ void wasmvm_unreserve(void *p, size_t maximum) {
 }
 void wasmvm_cancel(struct wasmvm_record *ctx) { __atomic_store_n(&ctx->control, 1, __ATOMIC_RELEASE); }
 
+#ifdef __aarch64__
+struct wasmvm_fp_environment { uint64_t control, status; };
+static inline struct wasmvm_fp_environment wasmvm_fp_read(void) {
+    struct wasmvm_fp_environment env;
+    __asm__ volatile ("mrs %0, fpcr\n\tmrs %1, fpsr"
+                      : "=r"(env.control), "=r"(env.status) : : "memory");
+    return env;
+}
+static inline void wasmvm_fp_write(struct wasmvm_fp_environment env) {
+    __asm__ volatile ("msr fpcr, %0\n\tmsr fpsr, %1\n\tisb"
+                      : : "r"(env.control), "r"(env.status) : "memory");
+}
+#endif
+
 uint32_t wasmvm_enter(const void *entry, struct wasmvm_record *ctx) {
     if (ctx->version != 2 || ctx->used > ctx->capacity || ctx->depth > ctx->max_depth) return 0;
     if (__atomic_load_n(&ctx->control, __ATOMIC_ACQUIRE)) return 6; /* Poll */
+#ifdef __aarch64__
+    /* FPCR=0 gives nearest-even, gradual underflow and masked exceptions.
+       Preserve FPSR too: guest exceptions and SIMD saturation cannot leak. */
+    struct wasmvm_fp_environment saved = wasmvm_fp_read();
+    wasmvm_fp_write((struct wasmvm_fp_environment){0, 0});
+#else
     fenv_t saved;
     if (fegetenv(&saved) != 0) return 0;
     if (fesetenv(FE_DFL_ENV) != 0) { fesetenv(&saved); return 0; }
+#endif
 #ifdef __APPLE__
     pthread_jit_write_protect_np(1);
 #endif
     uint32_t result = ((uint32_t (*)(struct wasmvm_record *))entry)(ctx);
+#ifdef __aarch64__
+    wasmvm_fp_write(saved);
+#else
     fesetenv(&saved);
+#endif
     return result;
 }
 
@@ -197,13 +222,29 @@ uint64_t wasmvm_layout(uint32_t field) {
     return field < sizeof(offsets)/sizeof(offsets[0]) ? offsets[field] : UINT64_MAX;
 }
 
-uint32_t wasmvm_probe_fp(const void *entry, struct wasmvm_record *ctx) {
+uint32_t wasmvm_probe_fp(const void *entry, struct wasmvm_record *ctx, uint32_t expected_status) {
     fenv_t original;
-    if (fegetenv(&original) != 0 || fesetround(FE_DOWNWARD) != 0) return 0;
+    if (feholdexcept(&original) != 0) return 0;
+    if (fesetround(FE_DOWNWARD) != 0 || feraiseexcept(FE_INVALID | FE_INEXACT) != 0) {
+        fesetenv(&original);
+        return 0;
+    }
+#ifdef __aarch64__
+    struct wasmvm_fp_environment expected = wasmvm_fp_read();
+    /* Include flush-to-zero, default NaNs and cumulative SIMD saturation. */
+    expected.control |= (1u << 24) | (1u << 25);
+    expected.status |= 1u << 27;
+    wasmvm_fp_write(expected);
+#endif
     uint32_t status = wasmvm_enter(entry, ctx);
-    int restored = fegetround() == FE_DOWNWARD;
+    int restored = fegetround() == FE_DOWNWARD &&
+                   fetestexcept(FE_ALL_EXCEPT) == (FE_INVALID | FE_INEXACT);
+#ifdef __aarch64__
+    struct wasmvm_fp_environment actual = wasmvm_fp_read();
+    restored = restored && actual.control == expected.control && actual.status == expected.status;
+#endif
     fesetenv(&original);
-    return status == 1 && restored;
+    return status == expected_status && restored;
 }
 
 uint32_t wasmvm_probe_registers(const void *entry, struct wasmvm_record *ctx) {

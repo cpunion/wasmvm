@@ -289,8 +289,11 @@ func TestMultipleEntriesAndFloatingEnvironment(t *testing.T) {
 		// stmxcsr [rdi+result_lo]; fnstcw [rdi+result_hi]; mov eax,1; ret
 		fp = []byte{0x0f, 0xae, 0x5f, 0x60, 0xd9, 0x7f, 0x68, 0xb8, 1, 0, 0, 0, 0xc3}
 	} else {
-		// mrs x1,fpcr; str x1,[x0,#result_lo]; mov w0,1; ret
-		fp = armWords(0xd53b4401, 0xf9003001, 0x52800020, 0xd65f03c0)
+		// Snapshot both registers, then contaminate the guest FP state.
+		// mrs x1,fpcr; str x1,[x0,#result_lo]; mrs x1,fpsr;
+		// str x1,[x0,#result_hi]; mov x1,#1; msr fpsr,x1; mov w0,1; ret
+		fp = armWords(0xd53b4401, 0xf9003001, 0xd53b4421, 0xf9003401,
+			0xd2800021, 0xd51b4421, 0x52800020, 0xd65f03c0)
 	}
 	bytes := append(addProbe(), fp...)
 	code, err := Publish(bytes, []uint32{0, uint32(len(addProbe()))}, 1024)
@@ -315,7 +318,7 @@ func TestMultipleEntriesAndFloatingEnvironment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	good := probeFP(entry, unsafe.Pointer(ctx.record))
+	good := probeFP(entry, unsafe.Pointer(ctx.record), Return)
 	lease.end()
 	if !good {
 		t.Fatal("host floating-point environment was not restored")
@@ -328,8 +331,56 @@ func TestMultipleEntriesAndFloatingEnvironment(t *testing.T) {
 		if state.ResultLo&0xe040 != 0 || state.ResultHi&0xc00 != 0 {
 			t.Fatalf("non-default MXCSR/x87: %+v", state)
 		}
-	} else if state.ResultLo&0x3c80000 != 0 {
-		t.Fatalf("non-default FPCR: %+v", state)
+	} else if state.ResultLo != 0 || state.ResultHi != 0 {
+		t.Fatalf("non-default FPCR/FPSR: %+v", state)
+	}
+}
+
+func TestFloatingEnvironmentRestoredOnEveryExit(t *testing.T) {
+	if !Available {
+		return
+	}
+	var body []byte
+	if runtime.GOARCH == "amd64" {
+		// Reset the guest MXCSR/x87, then return payload[0].
+		body = []byte{0x0f, 0xae, 0x57, 0x78, 0xdb, 0xe3, 0x8b, 0x47, 0x70, 0xc3}
+	} else {
+		// Set guest FZ and invalid-operation status, then return payload[0].
+		body = armWords(0xd2a02001, 0xd51b4401, 0xd2800021, 0xd51b4421,
+			0xb9407000, 0xd65f03c0)
+	}
+	_, lease, ctx := makeProbe(t, body)
+	entry, err := lease.begin(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lease.end()
+	ctx.record.Payload[1] = 0x1f80
+	for status := Exit(0); status <= Move; status++ {
+		ctx.record.Payload[0] = uint64(status)
+		if !probeFP(entry, unsafe.Pointer(ctx.record), status) {
+			t.Fatal("floating environment leaked on exit", status)
+		}
+	}
+	// Rejected admission must also leave the entire host environment intact.
+	ctx.record.Version = 0
+	if !probeFP(entry, unsafe.Pointer(ctx.record), 0) {
+		t.Fatal("invalid-version entry changed floating environment")
+	}
+	ctx.record.Version = ABIVersion
+	ctx.record.Used = ctx.record.Capacity + 1
+	if !probeFP(entry, unsafe.Pointer(ctx.record), 0) {
+		t.Fatal("invalid-arena entry changed floating environment")
+	}
+	ctx.record.Used = 0
+	ctx.record.Depth = ctx.record.MaxDepth + 1
+	if !probeFP(entry, unsafe.Pointer(ctx.record), 0) {
+		t.Fatal("invalid-depth entry changed floating environment")
+	}
+	ctx.record.Depth = 0
+	ctx.Cancel()
+	if !probeFP(entry, unsafe.Pointer(ctx.record), Poll) {
+		t.Fatal("cancelled entry changed floating environment")
 	}
 }
 
