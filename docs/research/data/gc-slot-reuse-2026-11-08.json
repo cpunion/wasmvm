@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "encoding": "xz",
+  "path": "../evidence/gc-slot-reuse-2026-11-08.json.xz",
+  "sha256": "2bf510d84cc94d170c4a08bad7a4752f6771819b1d87db90072950774d353fab",
+  "uncompressedSha256": "e4a692a7baac4e93de69a0c4f349aab8e05c9317943d2d461960a92bba4f2a58",
+  "scope": "Separate local ARM64 GC advisory cohorts; no controlled or cross-host acceptance; all adverse and inconclusive observations retained"
+}

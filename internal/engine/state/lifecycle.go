@@ -79,7 +79,9 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 			return
 		}
 		if v.Lo&heapTag != 0 {
-			if o, ok := s.heapObject(v.Lo); ok && s.markObject(o) {
+			if slot := s.heapSlot(v.Lo); slot != nil && slot.Next&heapMarked == 0 {
+				slot.Next |= heapMarked
+				o := slot.Object
 				if pending == len(objects) {
 					objects = appendValue(objects, o)
 				} else {
@@ -196,7 +198,7 @@ func (s *Store) CollectReferences(roots []ReferenceValue, active []*Instance, ex
 				continue
 			}
 			if slot.Next&heapMarked == 0 {
-				s.releaseHeapObject(uint32(i), o)
+				s.releaseHeapObject(uint32(i), slot)
 			} else {
 				slot.Next &^= heapMarked
 			}

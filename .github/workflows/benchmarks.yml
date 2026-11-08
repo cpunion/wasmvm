@@ -10,6 +10,11 @@ on:
         type: choice
         options: [pr, full, native-simd, survey, routing]
         default: full
+      routing_scope:
+        description: Routing groups to measure (routing suite only)
+        type: choice
+        options: [all, gc]
+        default: all
       baseline:
         description: Baseline commit or ref in this repository
         default: main
@@ -310,7 +315,7 @@ jobs:
       # Each group has an independent runner and source-pinned A/A controls.
       max-parallel: 5
       matrix:
-        group: [core, memory-simd, gc, threads, applications]
+        group: ${{ fromJSON(inputs.routing_scope == 'gc' && '["gc"]' || '["core","memory-simd","gc","threads","applications"]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:

@@ -95,23 +95,6 @@ const (
 	heapHasExtra
 )
 
-func (s *Store) markObject(o *heapObject) bool {
-	slot := &s.heap[uint32(o.Ref)]
-	if slot.Next&heapMarked != 0 {
-		return false
-	}
-	slot.Next |= heapMarked
-	return true
-}
-
-func (s *Store) objectMarked(o *heapObject) bool {
-	return o.Ref != 0 && s.heap[uint32(o.Ref)].Next&heapMarked != 0
-}
-
-func (s *Store) clearObjectMark(o *heapObject) {
-	s.heap[uint32(o.Ref)].Next &^= heapMarked
-}
-
 // Handle-indexed pages keep object addresses stable without allocating a host
 // object for every guest allocation. Pages are lazy and bounded by the handle
 // quota; a recycled generation reuses its cleared metadata cell.
@@ -158,13 +141,26 @@ func (s *Store) materializeObjectSlabs(page uint64) error {
 	return nil
 }
 
-func (s *Store) heapObject(ref uint64) (*heapObject, bool) {
+// A checked slot borrows the current heap slice. Callers use it only within
+// a serialized operation that cannot grow the heap or invoke a host callback.
+func (s *Store) heapSlot(ref uint64) *heapSlot {
 	index := uint32(ref)
 	if ref&heapTag == 0 || index == 0 || uint64(index) >= uint64(len(s.heap)) {
-		return nil, false
+		return nil
 	}
 	slot := &s.heap[index]
-	return slot.Object, slot.Object != nil && slot.Generation == uint32(ref>>32)&0x7fffffff
+	if slot.Object == nil || slot.Generation != uint32(ref>>32)&0x7fffffff {
+		return nil
+	}
+	return slot
+}
+
+func (s *Store) heapObject(ref uint64) (*heapObject, bool) {
+	slot := s.heapSlot(ref)
+	if slot == nil {
+		return nil, false
+	}
+	return slot.Object, true
 }
 func (s *Store) allocateObject(typ uint32, length uint32, extra ...uint64) (uint64, error) {
 	layout, err := s.layout(typ)
@@ -252,13 +248,13 @@ func (s *Store) releaseObject(index uint32) {
 	if obj == nil {
 		return
 	}
-	s.releaseHeapObject(index, obj)
+	s.releaseHeapObject(index, slot)
 }
 
 // The collector already has a live cell. Clearing its identity also removes it
 // from the empty-object inventory, including individual release and rollback.
-func (s *Store) releaseHeapObject(index uint32, obj *heapObject) {
-	slot := &s.heap[index]
+func (s *Store) releaseHeapObject(index uint32, slot *heapSlot) {
+	obj := slot.Object
 	s.usage.HeapObjects--
 	layout := s.heapLayouts[obj.Type]
 	bytes := layout.payloadSize(obj.Length) + layout.overhead
