@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "encoding": "xz",
+  "path": "../evidence/performance-llgo-interface-upgrade-2026-11-08.json.xz",
+  "sha256": "bfbd9a54b4485900f0ce823d6fd6e27f2b76795bb39cdfaf453c6a1181dd8c8d",
+  "uncompressedSha256": "91dd407a5d28937f5d32bc1dcfd93e62fdd203e497acbd9832e51d4a9a758c13",
+  "scope": "Separate ARM64 old/new compiler event and five-host Linux new-compiler snapshot. No cross-event pooling, timing subtraction, retry selection or controlled-acceptance claim."
+}

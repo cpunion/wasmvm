@@ -17,21 +17,22 @@ integration. Competing runtimes are independent test and benchmark references;
 execution never silently switches to one of them.
 
 Performance acceptance remains open. The
-[latest complete integrated-main comparison](docs/research/performance-main-inventory-2026-11-08.md)
-retains all 22 Linux workloads and a separate sustained GC cohort against
-wazero, Wasmtime, Wasmer, WasmEdge and native C where applicable. LLGo native
-integer/function/private-memory loops observe **0.998/0.434/0.588×** wazero
-elapsed time; widening SIMD and public-call latency remain behind competitors.
-These are hosted advisory results: original controls resolve 7/22, sustained
-GC 2/4, and group hosts are kept separate. Setup, compilation, instantiation,
-first call, warmed calls, cleanup and process intervals are recorded separately.
+[latest compiler baseline and complete comparison](docs/research/performance-llgo-interface-upgrade-2026-11-08.md)
+retains all 22 Linux workloads, sustained GC and an independent ARM64 old/new
+LLGo event against wazero, Wasmtime, Wasmer, WasmEdge and native C where applicable.
+The LLGo pin includes upstream static-interface and concurrent-lookup fixes;
+Go 1.27.3, LLVM 22.1.8 and `-O3 -lto=full` remain fixed. No broad VM speedup
+is established. Public-call latency, memory/SIMD, GC, Threads and native-C gaps
+remain explicit, alongside adverse and unsupported observations.
 
-The integrated main passes all 23 required CI jobs, 240 conformance reports
-and 30 per-package coverage gates; its longest job takes 8m49s. The comparison
-retains adverse and unsupported results alongside the raw evidence. Existing
-[LLGo compatibility/performance findings](docs/research/performance-gaps-2026-11-02.md)
-and [rejected optimization experiments](docs/research/performance-raw-integer-registers-2026-11-06.md)
-remain explicit. Source events and compiler profiles are never pooled.
+Linux controls resolve 6/22 original cases and 3/4 sustained GC cases; ARM64
+resolves 2/22 and 0/4. Hosts and compiler events stay separate. Setup, compilation,
+instantiation, first call, warmed calls, cleanup and process intervals are
+recorded separately. Merging requires all 23 semantic CI jobs, 240 conformance
+reports and 30 per-package coverage gates. Jobs target 5–10 minutes. Historical
+[main results](docs/research/performance-main-inventory-2026-11-08.md),
+[native-entry investigation](docs/research/performance-native-entry-2026-11-08.md)
+and rejected experiments retain their original source/compiler identities.
 
 ## Project status
 

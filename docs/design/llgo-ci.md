@@ -31,7 +31,7 @@ retains its separate `8e45ed5` → `983465e` evidence.
 
 The workflow runs complete Go semantics on both platforms. LLGo uses eight
 package groups per platform: core, VM/codegen, component, HTTP/P1, P3, legacy
-threads, Core Threads, and entry/CLI tests. The last two are separate after the measured combined
+threads, Core Threads, and entry/CLI tests. P3 and legacy threads were separated after their measured combined
 job exceeded its budget; their full-LTO links and semantic tests remain intact. The checked [plan](../../.github/llgo-shards.json) assigns all
 31 test packages exactly once; [validation](../../scripts/ci_shards.py) rejects
 missing, duplicate or unlisted packages before the matrix starts. Each shard
