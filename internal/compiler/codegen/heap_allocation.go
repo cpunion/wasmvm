@@ -204,7 +204,7 @@ func (e *functionEmitter) allocationField(width, offset uint32, vector byte) {
 		if width == 16 {
 			e.a.word(0x3d800000 | uint32(base)<<5 | uint32(vector))
 		} else {
-			e.heapStore(width, base)
+			e.heapStore(width, base, 0)
 		}
 		return
 	}

@@ -197,12 +197,10 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 	}
 	base := e.operandRegister(2)
 	if cached && !bounded {
-		if e.a.arch == "amd64" {
-			e.registerMove(2, cache.address, true)
-		} else if !a.array && a.offset == 0 {
+		if !a.array {
 			base = cache.address
 		} else {
-			e.registerMove(11, cache.address, true)
+			e.registerMove(base, cache.address, true)
 		}
 	}
 	if a.length {
@@ -239,16 +237,17 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 		} else {
 			e.a.word(0x8b09016b | shift<<10) // add x11,x11,x9,lsl #stride
 		}
-	} else {
-		if a.offset != 0 {
-			if e.a.arch == "amd64" {
-				e.a.bytes(0x48, 0x81, 0xc2)
-				e.a.word(a.offset)
-			} else {
-				e.constant(0, uint64(a.offset))
-				e.a.word(0x8b09016b)
-			}
-		}
+	}
+	offset := uint32(0)
+	if !a.array {
+		offset = a.offset
+	}
+	// Struct caches retain the payload base. Encode its field displacement in
+	// the access itself; large unaligned ARM64 fields use the scratch fallback.
+	if e.a.arch == "arm64" && offset > 255 && (offset%a.width != 0 || offset/a.width >= 4096) {
+		e.constant(0, uint64(offset))
+		e.a.word(0x8b09000b | uint32(base)<<5) // add x11,base,x9
+		base, offset = 11, 0
 	}
 	if a.width == 16 {
 		slot := in.Dst
@@ -266,20 +265,19 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 		}
 		if e.a.arch == "amd64" {
 			e.a.bytes(0xf3)
-			if reg >= 8 {
-				e.a.bytes(0x44)
-			}
+			e.a.xheapPrefix(false, reg, base)
 			op := byte(0x6f)
 			if a.store {
 				op = 0x7f
 			}
-			e.a.bytes(0x0f, op, (reg&7)<<3|2) // movdqu xmm,[rdx] / [rdx],xmm
+			e.a.bytes(0x0f, op)
+			e.a.xheapAddress(reg, base, offset) // movdqu xmm,[base+offset] / store
 		} else {
 			op := uint32(0x3dc00000)
 			if a.store {
 				op = 0x3d800000
 			}
-			e.a.word(op | uint32(base)<<5 | uint32(reg))
+			e.a.word(heapAddressARM64(op, reg, base, offset, a.width))
 		}
 		if !a.store {
 			e.vectorStore(slot, reg)
@@ -290,9 +288,9 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 			operand = e.f.Args[in.Extra+2]
 		}
 		e.slotLoad(operand, 0, false, true)
-		e.heapStore(a.width, base)
+		e.heapStore(a.width, base, offset)
 	} else {
-		e.heapLoad(a.width, a.signed, base)
+		e.heapLoad(a.width, a.signed, base, offset)
 		e.heapResult(in.Dst)
 	}
 	return true
@@ -316,12 +314,11 @@ func (e *functionEmitter) heapResult(dst slots.Slot) {
 	}
 }
 
-func (e *functionEmitter) heapLoad(width uint32, signed bool, base byte) {
+func (e *functionEmitter) heapLoad(width uint32, signed bool, base byte, offset uint32) {
 	if e.a.arch == "amd64" {
-		if width >= 8 {
-			e.a.bytes(0x48, 0x8b, 0x02)
-		} else if width == 4 {
-			e.a.bytes(0x8b, 0x02)
+		e.a.xheapPrefix(width == 8, 0, base)
+		if width >= 4 {
+			e.a.bytes(0x8b)
 		} else {
 			op := byte(0xb6)
 			if width == 2 {
@@ -330,30 +327,74 @@ func (e *functionEmitter) heapLoad(width uint32, signed bool, base byte) {
 			if signed {
 				op += 8
 			}
-			e.a.bytes(0x0f, op, 0x02)
+			e.a.bytes(0x0f, op)
 		}
+		e.a.xheapAddress(0, base, offset)
 	} else {
-		op := uint32(0x39400009) | uint32(base)<<5 | uint32(bits.TrailingZeros32(width))<<30
+		op := uint32(0x39400000) | uint32(bits.TrailingZeros32(width))<<30
 		if signed && width < 4 {
 			op |= 1 << 23
 		}
-		e.a.word(op)
+		e.a.word(heapAddressARM64(op, 9, base, offset, width))
 	}
 }
 
-func (e *functionEmitter) heapStore(width uint32, base byte) {
+func (e *functionEmitter) heapStore(width uint32, base byte, offset uint32) {
 	if e.a.arch == "amd64" {
 		if width == 2 {
 			e.a.bytes(0x66)
-		} else if width == 8 {
-			e.a.bytes(0x48)
 		}
+		e.a.xheapPrefix(width == 8, 0, base)
 		op := byte(0x89)
 		if width == 1 {
 			op = 0x88
 		}
-		e.a.bytes(op, 0x02)
+		e.a.bytes(op)
+		e.a.xheapAddress(0, base, offset)
 	} else {
-		e.a.word(0x39000009 | uint32(base)<<5 | uint32(bits.TrailingZeros32(width))<<30)
+		op := uint32(0x39000000) | uint32(bits.TrailingZeros32(width))<<30
+		e.a.word(heapAddressARM64(op, 9, base, offset, width))
+	}
+}
+
+// Scaled imm12 covers aligned fields; unscaled imm9 also admits small packed
+// fields at arbitrary byte offsets. The caller normalizes other addresses.
+func heapAddressARM64(op uint32, reg, base byte, offset, width uint32) uint32 {
+	if offset%width == 0 {
+		op |= offset / width << 10
+	} else {
+		op = op&^0x01000000 | offset<<12
+	}
+	return op | uint32(base)<<5 | uint32(reg)
+}
+
+// A checked heap payload can occupy any guest GPR, including a SIB base or
+// RBP/R13, whose zero displacement still requires the disp8 encoding.
+func (a *assembler) xheapAddress(reg, base byte, offset uint32) {
+	mode := byte(0)
+	if offset != 0 || base&7 == 5 {
+		mode = 0x40
+		if offset >= 128 {
+			mode = 0x80
+		}
+	}
+	a.bytes(mode | (reg&7)<<3 | base&7)
+	if base&7 == 4 {
+		a.bytes(0x24)
+	}
+	if mode == 0x40 {
+		a.bytes(byte(offset))
+	} else if mode == 0x80 {
+		a.word(offset)
+	}
+}
+
+func (a *assembler) xheapPrefix(wide bool, reg, base byte) {
+	prefix := byte(0x40) | reg>>3<<2 | base>>3
+	if wide {
+		prefix |= 8
+	}
+	if prefix != 0x40 {
+		a.bytes(prefix)
 	}
 }
