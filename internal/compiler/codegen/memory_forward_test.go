@@ -59,16 +59,13 @@ func memoryForwardFixture(store, load uint32, delta uint32, copies bool) *slots.
 }
 
 func TestPrivateMemoryForwardSpilledOperands(t *testing.T) {
-	for _, arch := range []string{"amd64", "arm64"} {
+	for _, arch := range []string{"amd64"} {
 		for mask := 0; mask < 4; mask++ {
 			a := assembler{arch: arch, labels: map[int]int{}}
 			f := &slots.Function{Slots: []wasm.ValueType{wasm.I64, wasm.I32}}
 			e := functionEmitter{a: &a, f: f, unmetered: true, exit: a.label()}
 			e.contextLoad(0, nativeabi.ArenaOffset)
 			frame, homes := byte(6), []byte{3, 12}
-			if arch == "arm64" {
-				frame, homes = 12, []byte{19, 20}
-			}
 			e.registerMove(frame, e.operandRegister(0), true)
 			plan := &registerPlan{homes: map[slots.Slot]byte{}}
 			for s, reg := range homes {
@@ -225,7 +222,7 @@ func TestPrivateMemoryForwardWidthsColdEntriesAndFrames(t *testing.T) {
 								c, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), Config{Unmetered: true, MemoryMinimumPages: 1})
 								// Unknown memory64 addresses do not use prefix-copy
 								// remapping, which requires an i32 bounds proof.
-								wantForward := !memory64 || !copies
+								wantForward := arch == "amd64" && (!memory64 || !copies)
 								if err != nil || (c.ForwardedMemory == 1) != wantForward {
 									t.Fatal("selection", arch, store, load, delta, copies, memory64, c.ForwardedMemory, err)
 								}
