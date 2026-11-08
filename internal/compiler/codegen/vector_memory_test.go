@@ -3,6 +3,7 @@ package codegen
 import (
 	"bytes"
 	"errors"
+	"runtime"
 	"testing"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -69,92 +70,102 @@ func TestNativeVectorMemoryBoundsLanesAndSpills(t *testing.T) {
 		for lane := uint32(0); lane < lanes; lane++ {
 			for _, offset := range []uint32{0, 1, 16, 4095, 4096, 8193, 65535, 0xffffffff} {
 				for mode := 0; mode < 4; mode++ {
-					fast, bounded, pressure := mode != 0, mode >= 2, mode == 3
-					f, pc := vectorMemoryFunction(t, op, offset, byte(lane), bounded, pressure)
-					in := f.Code[pc]
-					config := Config{Unmetered: fast}
-					if bounded {
-						config.MemoryMinimumPages = 1
+					profiles := []X86Features{0}
+					if runtime.GOARCH == "amd64" && op >= 0xfd0001 && op <= 0xfd000a {
+						for _, profile := range []X86Features{X86SSE41, X86AVX2} {
+							if profile&^X86Features(native.CPUFeatures()) == 0 {
+								profiles = append(profiles, profile)
+							}
+						}
 					}
-					compiled, lease, c := configuredContext(t, f, config)
-					if compiled.NativeVectors != 1 || compiled.Helpers != 0 || !compiled.UsesMemory {
-						t.Fatal("vector access escaped", op, compiled)
-					}
-					if bounded && uint64(offset)+8191+uint64(size) <= 65536 && compiled.BoundsElided != 1 {
-						t.Fatal("missing bounded vector proof", op, compiled.BoundsElided)
-					}
-					mem := bindMemory(t, c, 65536, 131072)
-					ref, err := enginememory.New(module.Limits{Min: 1}, 2)
-					if err != nil {
-						t.Fatal(err)
-					}
-					for _, address := range []uint64{0, 1, 9, 65536 - uint64(size), 65537 - uint64(size), 65536, 0xffffffff, 1 << 32} {
-						if err := mem.Write(0, initial); err != nil || !ref.Write(0, initial) {
+					for _, profile := range profiles {
+						fast, bounded, pressure := mode != 0, mode >= 2, mode == 3
+						f, pc := vectorMemoryFunction(t, op, offset, byte(lane), bounded, pressure)
+						in := f.Code[pc]
+						config := Config{Unmetered: fast, X86Features: profile}
+						if bounded {
+							config.MemoryMinimumPages = 1
+						}
+						compiled, lease, c := configuredContext(t, f, config)
+						if compiled.NativeVectors != 1 || compiled.Helpers != 0 || !compiled.UsesMemory {
+							t.Fatal("vector access escaped", op, compiled)
+						}
+						if bounded && uint64(offset)+8191+uint64(size) <= 65536 && compiled.BoundsElided != 1 {
+							t.Fatal("missing bounded vector proof", op, compiled.BoundsElided)
+						}
+						mem := bindMemory(t, c, 65536, 131072)
+						ref, err := enginememory.New(module.Limits{Min: 1}, 2)
+						if err != nil {
 							t.Fatal(err)
 						}
-						input := value.Value{Lo: 0xfff123458001abcd, Hi: 0x9876543210fedcba}
-						args := []value.Value{{Lo: address}, input}
-						if pressure {
-							for i := uint64(2); i < 14; i++ {
-								args = append(args, value.Value{Lo: input.Lo + i, Hi: input.Hi - i})
+						for _, address := range []uint64{0, 1, 9, 65536 - uint64(size), 65537 - uint64(size), 65536, 0xffffffff, 1 << 32} {
+							if err := mem.Write(0, initial); err != nil || !ref.Write(0, initial) {
+								t.Fatal(err)
+							}
+							input := value.Value{Lo: 0xfff123458001abcd, Hi: 0x9876543210fedcba}
+							args := []value.Value{{Lo: address}, input}
+							if pressure {
+								for i := uint64(2); i < 14; i++ {
+									args = append(args, value.Value{Lo: input.Lo + i, Hi: input.Hi - i})
+								}
+							}
+							actual := uint32(address)
+							if bounded {
+								actual &= 8191
+							}
+							var want value.Value
+							var trap wasm.TrapCode
+							if load {
+								want, trap = ref.Load(op, uint64(actual), uint64(offset), byte(lane), input)
+							} else {
+								trap = ref.Store(op, uint64(actual), uint64(offset), byte(lane), input)
+							}
+							out, exit, state := runFunction(t, compiled, lease, c, args, 1000, !fast, 256)
+							if trap != wasm.NoTrap {
+								if exit != native.Trap || state.Payload[0] != uint64(trap) || state.Source != f.Sources[in.Source].Wasm.Offset {
+									t.Fatal(op, lane, offset, address, mode, exit, state)
+								}
+							} else if exit != native.Return || load && (len(out) != 1 || out[0] != want) {
+								t.Fatal(op, lane, offset, address, mode, exit, out, want)
+							}
+							for i, want := range args {
+								if got := readSlot(t, c, 16, slots.Slot(i)); got != want {
+									t.Fatal("input clobbered", op, mode, i, got, want)
+								}
+							}
+							got, wantBytes := make([]byte, 65536), make([]byte, 65536)
+							mem.Read(0, got)
+							ref.Read(0, wantBytes)
+							if !bytes.Equal(got, wantBytes) {
+								t.Fatal("partial or incorrect store", op, lane, offset, address, mode)
+							}
+							cost := 2 // Address local.get and the access itself.
+							if !load || op >= 0xfd0054 && op <= 0xfd0057 {
+								cost++ // Vector local.get.
+							}
+							if bounded {
+								cost += 2 // Constant and mask.
+							}
+							if pressure && exit == native.Return {
+								cost += 72 // Twelve vectors, three get/drop pairs each.
+							}
+							if !fast && state.Fuel != 1000-uint64(cost) {
+								t.Fatal("vector access fuel", op, state.Fuel, cost)
+							}
+							// Every original access must check a new address on resumption.
+							writeSlot(t, c, 16, in.A, value.Value{Lo: 0xffffffff})
+							if err := c.SetState(native.State{Used: 16, Depth: 1, Continuation: uint64(pc), Budget: 256}); err != nil {
+								t.Fatal(err)
+							}
+							if exit, err := c.Enter(lease, 0); err != nil || exit != native.Trap {
+								t.Fatal("unchecked cold vector access", op, mode, exit, err)
 							}
 						}
-						actual := uint32(address)
-						if bounded {
-							actual &= 8191
-						}
-						var want value.Value
-						var trap wasm.TrapCode
-						if load {
-							want, trap = ref.Load(op, uint64(actual), uint64(offset), byte(lane), input)
-						} else {
-							trap = ref.Store(op, uint64(actual), uint64(offset), byte(lane), input)
-						}
-						out, exit, state := runFunction(t, compiled, lease, c, args, 1000, !fast, 256)
-						if trap != wasm.NoTrap {
-							if exit != native.Trap || state.Payload[0] != uint64(trap) || state.Source != f.Sources[in.Source].Wasm.Offset {
-								t.Fatal(op, lane, offset, address, mode, exit, state)
-							}
-						} else if exit != native.Return || load && (len(out) != 1 || out[0] != want) {
-							t.Fatal(op, lane, offset, address, mode, exit, out, want)
-						}
-						for i, want := range args {
-							if got := readSlot(t, c, 16, slots.Slot(i)); got != want {
-								t.Fatal("input clobbered", op, mode, i, got, want)
-							}
-						}
-						got, wantBytes := make([]byte, 65536), make([]byte, 65536)
-						mem.Read(0, got)
-						ref.Read(0, wantBytes)
-						if !bytes.Equal(got, wantBytes) {
-							t.Fatal("partial or incorrect store", op, lane, offset, address, mode)
-						}
-						cost := 2 // Address local.get and the access itself.
-						if !load || op >= 0xfd0054 && op <= 0xfd0057 {
-							cost++ // Vector local.get.
-						}
-						if bounded {
-							cost += 2 // Constant and mask.
-						}
-						if pressure && exit == native.Return {
-							cost += 72 // Twelve vectors, three get/drop pairs each.
-						}
-						if !fast && state.Fuel != 1000-uint64(cost) {
-							t.Fatal("vector access fuel", op, state.Fuel, cost)
-						}
-						// Every original access must check a new address on resumption.
-						writeSlot(t, c, 16, in.A, value.Value{Lo: 0xffffffff})
-						if err := c.SetState(native.State{Used: 16, Depth: 1, Continuation: uint64(pc), Budget: 256}); err != nil {
-							t.Fatal(err)
-						}
-						if exit, err := c.Enter(lease, 0); err != nil || exit != native.Trap {
-							t.Fatal("unchecked cold vector access", op, mode, exit, err)
-						}
+						ref.Release()
+						c.Close()
+						lease.Close()
+						mem.Close()
 					}
-					ref.Release()
-					c.Close()
-					lease.Close()
-					mem.Close()
 				}
 			}
 		}
@@ -314,6 +325,33 @@ func TestVectorAliasesPreserveEverySlotAndColdEntry(t *testing.T) {
 			for i := range f.Slots {
 				if got, want := readSlot(t, fc, 16, slots.Slot(i)), readSlot(t, sc, 16, slots.Slot(i)); got != want {
 					t.Fatal(bi, pc, i, got, want)
+				}
+			}
+		}
+	}
+}
+
+func TestVectorWidenAndSplatMemoryProfilesAndCodeLimits(t *testing.T) {
+	for op := uint32(0xfd0001); op <= 0xfd000a; op++ {
+		for _, profile := range []X86Features{0, X86SSE41, X86AVX2, X86SSE41 | X86AVX2} {
+			for _, pressure := range []bool{false, true} {
+				f, _ := vectorMemoryFunction(t, op, 1, 0, true, pressure)
+				cfg := Config{Unmetered: true, MemoryMinimumPages: 1, X86Features: profile}
+				body, err := CompileFunctionWithConfig("amd64", f, DefaultLimits(), cfg)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if body.Helpers != 0 || body.NativeVectors != 1 || body.BoundsElided != 1 {
+					t.Fatal(op, profile, pressure, body.Helpers, body.NativeVectors, body.BoundsElided)
+				}
+				limit := DefaultLimits()
+				limit.MaxCodeBytes = uint64(len(body.Entry.Code))
+				if _, err := CompileFunctionWithConfig("amd64", f, limit, cfg); err != nil {
+					t.Fatal(err)
+				}
+				limit.MaxCodeBytes--
+				if _, err := CompileFunctionWithConfig("amd64", f, limit, cfg); !errors.Is(err, wasm.ErrLimit) {
+					t.Fatal("code limit", op, profile, err)
 				}
 			}
 		}

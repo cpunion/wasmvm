@@ -282,6 +282,12 @@ records primary sources, feature flags and ambiguous entries.
 
 ### Measured performance
 
+The [native memory instruction-selection record](docs/research/performance-memory-instruction-selection-2026-11-08.md)
+documents direct SSE4.1/AVX2 widening loads, AVX2 memory broadcasts and scalar
+byte extraction, including
+all preceding measurements and unresolved controls. An all-22 compilation audit
+limits changed amd64 module images to the narrow-integer and SIMD-widening cases.
+
 The [private-memory forwarding evaluation](docs/research/performance-private-memory-forwarding-2026-11-08.md)
 retains two rejected arm64 implementations, a separate amd64 pilot and the final
 unchanged-code arm64 event. The selected optimization enables amd64 only;

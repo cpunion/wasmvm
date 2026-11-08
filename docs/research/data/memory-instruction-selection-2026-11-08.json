@@ -1,0 +1,510 @@
+{
+  "events": [
+    {
+      "event": "store-forward-linux",
+      "sha256": "e480c3573409fc7cf5c653b0dc969a4c1c2f27be1a9ca12e877cc434b7d059fa",
+      "head": "e7660b0a7b85abe835f6b834afe5c573f9d9bbd3",
+      "base": "d386c5890dbde7762a7f9c964f9c86db8c5a053a",
+      "host": {
+        "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+        "cpu": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           48 bits physical, 48 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  4\nOn-line CPU(s) list:                     0-3\nVendor ID:                               AuthenticAMD\nModel name:                              AMD EPYC 7763 64-Core Processor\nCPU family:                              25\nModel:                                   1\nThread(s) per core:                      2\nCore(s) per socket:                      2\nSocket(s):                               1\nStepping:                                1\nBogoMIPS:                                4890.86\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl tsc_reliable nonstop_tsc cpuid extd_apicid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves user_shstk clzero xsaveerptr rdpru arat npt nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload umip vaes vpclmulqdq rdpid fsrm\nVirtualization:                          AMD-V\nHypervisor vendor:                       Microsoft\nVirtualization type:                     full\nL1d cache:                               64 KiB (2 instances)\nL1i cache:                               64 KiB (2 instances)\nL2 cache:                                1 MiB (2 instances)\nL3 cache:                                32 MiB (1 instance)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0-3\nVulnerability Gather data sampling:      Not affected\nVulnerability Ghostwrite:                Not affected\nVulnerability Indirect target selection: Not affected\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Not affected\nVulnerability Mds:                       Not affected\nVulnerability Meltdown:                  Not affected\nVulnerability Mmio stale data:           Not affected\nVulnerability Old microcode:             Not affected\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Not affected\nVulnerability Spec rstack overflow:      Vulnerable: Safe RET, no microcode\nVulnerability Spec store bypass:         Vulnerable\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; Retpolines; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Vulnerable: No microcode\nVulnerability Tsx async abort:           Not affected\nVulnerability Vmscape:                   Not affected",
+        "affinity": [
+          0
+        ],
+        "GOMAXPROCS": "1",
+        "loadBefore": [
+          0.7939453125,
+          0.19189453125,
+          0.06396484375
+        ],
+        "powerPolicy": "Hosted VM default; physical frequency/neighbor isolation not controlled",
+        "cachePolicy": "Fresh processes; disk compilation cache disabled; filesystem cache not flushed",
+        "loadAfter": [
+          1.0478515625,
+          0.974609375,
+          0.53271484375
+        ]
+      }
+    },
+    {
+      "event": "byte-extract-linux",
+      "sha256": "7ea47909adf86312efb1c91fe0cdec6d3188b3546a2f8dd826d94c19b568e59d",
+      "head": "6cf7e1f986ff08a08e9f93177972601cffec0ded",
+      "base": "04a0d6ea5cd8fc107bb83430e62fe7ea27c4f015",
+      "host": {
+        "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+        "cpu": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           48 bits physical, 48 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  4\nOn-line CPU(s) list:                     0-3\nVendor ID:                               AuthenticAMD\nModel name:                              AMD EPYC 7763 64-Core Processor\nCPU family:                              25\nModel:                                   1\nThread(s) per core:                      2\nCore(s) per socket:                      2\nSocket(s):                               1\nStepping:                                1\nBogoMIPS:                                4890.86\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl tsc_reliable nonstop_tsc cpuid extd_apicid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves user_shstk clzero xsaveerptr rdpru arat npt nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload umip vaes vpclmulqdq rdpid fsrm\nVirtualization:                          AMD-V\nHypervisor vendor:                       Microsoft\nVirtualization type:                     full\nL1d cache:                               64 KiB (2 instances)\nL1i cache:                               64 KiB (2 instances)\nL2 cache:                                1 MiB (2 instances)\nL3 cache:                                32 MiB (1 instance)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0-3\nVulnerability Gather data sampling:      Not affected\nVulnerability Ghostwrite:                Not affected\nVulnerability Indirect target selection: Not affected\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Not affected\nVulnerability Mds:                       Not affected\nVulnerability Meltdown:                  Not affected\nVulnerability Mmio stale data:           Not affected\nVulnerability Old microcode:             Not affected\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Not affected\nVulnerability Spec rstack overflow:      Vulnerable: Safe RET, no microcode\nVulnerability Spec store bypass:         Vulnerable\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; Retpolines; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Vulnerable: No microcode\nVulnerability Tsx async abort:           Not affected\nVulnerability Vmscape:                   Not affected",
+        "affinity": [
+          0
+        ],
+        "GOMAXPROCS": "1",
+        "loadBefore": [
+          0.5771484375,
+          0.14404296875,
+          0.04833984375
+        ],
+        "powerPolicy": "Hosted VM default; physical frequency/neighbor isolation not controlled",
+        "cachePolicy": "Fresh processes; disk compilation cache disabled; filesystem cache not flushed",
+        "loadAfter": [
+          1.234375,
+          1.0224609375,
+          0.54150390625
+        ]
+      }
+    },
+    {
+      "event": "byte-extract-arm64",
+      "sha256": "1a351af0f83c2818bc4d502899786a86b20178a9952cc933c33e5a54c4c66e05",
+      "head": "6cf7e1f986ff08a08e9f93177972601cffec0ded",
+      "base": "04a0d6ea5cd8fc107bb83430e62fe7ea27c4f015",
+      "host": {
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "cpu": "Apple M4 Max",
+        "affinity": null,
+        "affinityScope": "Darwin exposes no sched affinity API; not pinned",
+        "GOMAXPROCS": "1",
+        "loadBefore": [
+          3.77978515625,
+          3.81201171875,
+          4.8125
+        ],
+        "powerPolicy": "Workstation default; physical frequency/power/background isolation not controlled",
+        "cachePolicy": "Fresh processes; disk compilation cache disabled; filesystem cache not flushed",
+        "loadAfter": [
+          3.83837890625,
+          3.830078125,
+          4.6005859375
+        ]
+      }
+    },
+    {
+      "event": "widen-only-linux",
+      "sha256": "a287c4f4a4f47f1264a377befc2dd8cf6ff6dfce28e309a94da52d7298d62c10",
+      "head": "398a6add9134939a8d3f4bb4c2e1fddbd0eed79a",
+      "base": "04a0d6ea5cd8fc107bb83430e62fe7ea27c4f015",
+      "host": {
+        "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+        "cpu": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           46 bits physical, 57 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  4\nOn-line CPU(s) list:                     0-3\nVendor ID:                               GenuineIntel\nModel name:                              Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz\nCPU family:                              6\nModel:                                   106\nThread(s) per core:                      2\nCore(s) per socket:                      2\nSocket(s):                               1\nStepping:                                6\nCPU(s) scaling MHz:                      77%\nCPU max MHz:                             2800.0000\nCPU min MHz:                             800.0000\nBogoMIPS:                                5586.87\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology tsc_reliable nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq vmx ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch tpr_shadow ept vpid ept_ad fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves vnmi avx512vbmi umip avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq la57 rdpid fsrm arch_capabilities\nVirtualization:                          VT-x\nHypervisor vendor:                       Microsoft\nVirtualization type:                     full\nL1d cache:                               96 KiB (2 instances)\nL1i cache:                               64 KiB (2 instances)\nL2 cache:                                2.5 MiB (2 instances)\nL3 cache:                                48 MiB (1 instance)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0-3\nVulnerability Gather data sampling:      Not affected\nVulnerability Ghostwrite:                Not affected\nVulnerability Indirect target selection: Mitigation; Aligned branch/return thunks\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Not affected\nVulnerability Mds:                       Not affected\nVulnerability Meltdown:                  Not affected\nVulnerability Mmio stale data:           Vulnerable: Clear CPU buffers attempted, no microcode; SMT Host state unknown\nVulnerability Old microcode:             Not affected\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Vulnerable\nVulnerability Spec rstack overflow:      Not affected\nVulnerability Spec store bypass:         Vulnerable\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; Retpolines; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI Retpoline\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Not affected\nVulnerability Tsx async abort:           Not affected\nVulnerability Vmscape:                   Not affected",
+        "affinity": [
+          0
+        ],
+        "GOMAXPROCS": "1",
+        "loadBefore": [
+          0.68115234375,
+          0.1650390625,
+          0.05078125
+        ],
+        "powerPolicy": "Hosted VM default; physical frequency/neighbor isolation not controlled",
+        "cachePolicy": "Fresh processes; disk compilation cache disabled; filesystem cache not flushed",
+        "loadAfter": [
+          1.16357421875,
+          0.9052734375,
+          0.44921875
+        ]
+      }
+    },
+    {
+      "event": "widen-only-arm64",
+      "sha256": "18fcf5f5dd2b4818ed6c7547d3c44144010ccc8556ea4184e529a6163c466dc4",
+      "head": "398a6add9134939a8d3f4bb4c2e1fddbd0eed79a",
+      "base": "04a0d6ea5cd8fc107bb83430e62fe7ea27c4f015",
+      "host": {
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "cpu": "Apple M4 Max",
+        "affinity": null,
+        "affinityScope": "Darwin exposes no sched affinity API; not pinned",
+        "GOMAXPROCS": "1",
+        "loadBefore": [
+          4.30126953125,
+          4.1162109375,
+          4.47216796875
+        ],
+        "powerPolicy": "Workstation default; physical frequency/power/background isolation not controlled",
+        "cachePolicy": "Fresh processes; disk compilation cache disabled; filesystem cache not flushed",
+        "loadAfter": [
+          3.3271484375,
+          3.65185546875,
+          4.1865234375
+        ]
+      }
+    }
+  ],
+  "archive": "memory-instruction-selection-2026-11-08.json.xz",
+  "bytes": 451812,
+  "sha256": "176ec8b069f6d437c443dbd37c4dc93cfd343578e939a404a7e5eeedff7aed7b",
+  "compilationScope": {
+    "target": "amd64",
+    "featureMask": 7,
+    "source": "ea4a8565281b50dc12c6ff49168098b1664870cd",
+    "baseline": "04a0d6ea5cd8fc107bb83430e62fe7ea27c4f015",
+    "compiledWorkloads": 22,
+    "unchangedModules": 20,
+    "modules": [
+      {
+        "workload": "core/call-control",
+        "baseBytes": 4172,
+        "headBytes": 4172,
+        "baseSHA256": "45d6c945e650df8be7f11db836b98a30de0ced2809e5193268ec26bdc101f1e2",
+        "headSHA256": "45d6c945e650df8be7f11db836b98a30de0ced2809e5193268ec26bdc101f1e2",
+        "unchanged": true
+      },
+      {
+        "workload": "core/integer-loop",
+        "baseBytes": 7317,
+        "headBytes": 7317,
+        "baseSHA256": "76c98b3de5dccf1b967259ca7451e569639f8f4c6c9b462437061d7c98e73ace",
+        "headSHA256": "76c98b3de5dccf1b967259ca7451e569639f8f4c6c9b462437061d7c98e73ace",
+        "unchanged": true
+      },
+      {
+        "workload": "core/function-calls",
+        "baseBytes": 14306,
+        "headBytes": 14306,
+        "baseSHA256": "fd194a985c7a4f76c49b89d799309e0c3718e718f32674dfe3aff69542b02f7a",
+        "headSHA256": "fd194a985c7a4f76c49b89d799309e0c3718e718f32674dfe3aff69542b02f7a",
+        "unchanged": true
+      },
+      {
+        "workload": "core/memory-load-store",
+        "baseBytes": 13982,
+        "headBytes": 13982,
+        "baseSHA256": "8ef4307b0086f2b06efe9b465ef7df8271c21b586e84f2c9db051fd372fd95e5",
+        "headSHA256": "8ef4307b0086f2b06efe9b465ef7df8271c21b586e84f2c9db051fd372fd95e5",
+        "unchanged": true
+      },
+      {
+        "workload": "memory/narrow-unaligned",
+        "baseBytes": 15409,
+        "headBytes": 15405,
+        "baseSHA256": "618bb3faec2be6d76bca4815fd8c9034c7e0cb1c3a9680f09efafa905b43ae0c",
+        "headSHA256": "4b453462e5e6defa24119ec61ee5e83a8669c9ce102fc3b5e809aa3735c3046f",
+        "unchanged": false
+      },
+      {
+        "workload": "memory/dependent-address",
+        "baseBytes": 13585,
+        "headBytes": 13585,
+        "baseSHA256": "fbe0ec8bb6f2fb0bfdbec7ae524630a411387c224cb944fe29dd586f02bb12fa",
+        "headSHA256": "fbe0ec8bb6f2fb0bfdbec7ae524630a411387c224cb944fe29dd586f02bb12fa",
+        "unchanged": true
+      },
+      {
+        "workload": "memory/float64-unaligned",
+        "baseBytes": 15829,
+        "headBytes": 15829,
+        "baseSHA256": "ce319c5e449dbfb39f4fa665fc8433cbead225526286ca6070e7258808970cf4",
+        "headSHA256": "ce319c5e449dbfb39f4fa665fc8433cbead225526286ca6070e7258808970cf4",
+        "unchanged": true
+      },
+      {
+        "workload": "runtime/simd-memory-full",
+        "baseBytes": 10253,
+        "headBytes": 10253,
+        "baseSHA256": "243b81137bd440ac885ac6e733d311daf0fe03b64f199f2439cdde234282b5c7",
+        "headSHA256": "243b81137bd440ac885ac6e733d311daf0fe03b64f199f2439cdde234282b5c7",
+        "unchanged": true
+      },
+      {
+        "workload": "runtime/simd-memory-widen",
+        "baseBytes": 9258,
+        "headBytes": 9171,
+        "baseSHA256": "ab5345fe0f4ee5116bb22fc4753244993305592ee99eb2b1883839ba5b504d8c",
+        "headSHA256": "a92dc1ed1ab56c72bec793b9832ee2437c69b658f643936f2e6f7fd59e40446c",
+        "unchanged": false
+      },
+      {
+        "workload": "runtime/simd-memory-lanes",
+        "baseBytes": 11310,
+        "headBytes": 11310,
+        "baseSHA256": "c8f1608cb9a9dd732c10d17bffe6c6303c329fc1451a074175a2a51638d09606",
+        "headSHA256": "c8f1608cb9a9dd732c10d17bffe6c6303c329fc1451a074175a2a51638d09606",
+        "unchanged": true
+      },
+      {
+        "workload": "gc/i31-roundtrip",
+        "baseBytes": 5124,
+        "headBytes": 5124,
+        "baseSHA256": "558170be6bec9870ea8fc0339574c16621eece3898a4d25661ed1e110beaa260",
+        "headSHA256": "558170be6bec9870ea8fc0339574c16621eece3898a4d25661ed1e110beaa260",
+        "unchanged": true
+      },
+      {
+        "workload": "gc/struct-access",
+        "baseBytes": 7173,
+        "headBytes": 7173,
+        "baseSHA256": "7acf6d2d54b1dfa61d294a72625961c4fbcd33cefcbc03fa199097a1dbce5ddd",
+        "headSHA256": "7acf6d2d54b1dfa61d294a72625961c4fbcd33cefcbc03fa199097a1dbce5ddd",
+        "unchanged": true
+      },
+      {
+        "workload": "gc/struct-allocation",
+        "baseBytes": 6488,
+        "headBytes": 6488,
+        "baseSHA256": "20422485b1d364dac315f290066b3729cad0ed5defa7736ca19d2a04b9ee21cc",
+        "headSHA256": "20422485b1d364dac315f290066b3729cad0ed5defa7736ca19d2a04b9ee21cc",
+        "unchanged": true
+      },
+      {
+        "workload": "gc/struct-indirect-access",
+        "baseBytes": 13639,
+        "headBytes": 13639,
+        "baseSHA256": "8937d160d480759321f1f21a9ccbba723f7bddfff894b8e523122671dc152e8c",
+        "headSHA256": "8937d160d480759321f1f21a9ccbba723f7bddfff894b8e523122671dc152e8c",
+        "unchanged": true
+      },
+      {
+        "workload": "threads/private-memory",
+        "baseBytes": 6341,
+        "headBytes": 6341,
+        "baseSHA256": "34c12c2716389e52df4aa873d9affd35d54bb5df300436151de6b0f0287b078a",
+        "headSHA256": "34c12c2716389e52df4aa873d9affd35d54bb5df300436151de6b0f0287b078a",
+        "unchanged": true
+      },
+      {
+        "workload": "threads/shared-memory",
+        "baseBytes": 6629,
+        "headBytes": 6629,
+        "baseSHA256": "78d7ae4ba967c4845ca6889474db868e9cb55fec5333002e9c2529d72fc3fd4d",
+        "headSHA256": "78d7ae4ba967c4845ca6889474db868e9cb55fec5333002e9c2529d72fc3fd4d",
+        "unchanged": true
+      },
+      {
+        "workload": "threads/atomic-rmw",
+        "baseBytes": 5992,
+        "headBytes": 5992,
+        "baseSHA256": "198c9f953ed9c4935087aed2bde92ccdbb1ea8e8d78dfc5ec84de0ff4fdbf88b",
+        "headSHA256": "198c9f953ed9c4935087aed2bde92ccdbb1ea8e8d78dfc5ec84de0ff4fdbf88b",
+        "unchanged": true
+      },
+      {
+        "workload": "threads/notify-empty",
+        "baseBytes": 6413,
+        "headBytes": 6413,
+        "baseSHA256": "52cef57ddb63045bf8292d0c41ff23d50bd293a9af505bfe938f6f963e81e3bf",
+        "headSHA256": "52cef57ddb63045bf8292d0c41ff23d50bd293a9af505bfe938f6f963e81e3bf",
+        "unchanged": true
+      },
+      {
+        "workload": "threads/wait-mismatch",
+        "baseBytes": 7014,
+        "headBytes": 7014,
+        "baseSHA256": "64bc992f5d44af0c8fbaad4da72913a2460e8de00706b54239a242240d036935",
+        "headSHA256": "64bc992f5d44af0c8fbaad4da72913a2460e8de00706b54239a242240d036935",
+        "unchanged": true
+      },
+      {
+        "workload": "threads/wait-timeout",
+        "baseBytes": 6974,
+        "headBytes": 6974,
+        "baseSHA256": "1d2c909f648d260989ab1210485348e4e448f2dbbb488e93226bfb4bf15f27a4",
+        "headSHA256": "1d2c909f648d260989ab1210485348e4e448f2dbbb488e93226bfb4bf15f27a4",
+        "unchanged": true
+      },
+      {
+        "workload": "applications/sha256-clang",
+        "baseBytes": 129001,
+        "headBytes": 129001,
+        "baseSHA256": "0a710f65a6c8a6fa7c9830babdbf813b9a73fae0fde3921b916621c2702056f8",
+        "headSHA256": "0a710f65a6c8a6fa7c9830babdbf813b9a73fae0fde3921b916621c2702056f8",
+        "unchanged": true
+      },
+      {
+        "workload": "applications/sha256-rust",
+        "baseBytes": 129222,
+        "headBytes": 129222,
+        "baseSHA256": "0a0328fe11863d07f5f20bd88422d3a0db06226df61b0e92dbf98027e671a497",
+        "headSHA256": "0a0328fe11863d07f5f20bd88422d3a0db06226df61b0e92dbf98027e671a497",
+        "unchanged": true
+      }
+    ],
+    "scope": "Exact compile/link only; no guest execution, publication or timing acceptance."
+  },
+  "qualification": "Independent advisory events; no pooling or controlled M2 acceptance. Final combined-source timing and semantic evidence is recorded in the contribution PR.",
+  "precedingCompilationScope": {
+    "target": "amd64",
+    "featureMask": 7,
+    "baseline": "04a0d6ea5cd8fc107bb83430e62fe7ea27c4f015",
+    "head": "398a6add9134939a8d3f4bb4c2e1fddbd0eed79a",
+    "compiledWorkloads": 22,
+    "unchangedModules": 20,
+    "modules": [
+      {
+        "workload": "core/call-control",
+        "baseBytes": 4172,
+        "headBytes": 4172,
+        "baseSHA256": "45d6c945e650df8be7f11db836b98a30de0ced2809e5193268ec26bdc101f1e2",
+        "headSHA256": "45d6c945e650df8be7f11db836b98a30de0ced2809e5193268ec26bdc101f1e2",
+        "unchanged": true
+      },
+      {
+        "workload": "core/integer-loop",
+        "baseBytes": 7317,
+        "headBytes": 7317,
+        "baseSHA256": "76c98b3de5dccf1b967259ca7451e569639f8f4c6c9b462437061d7c98e73ace",
+        "headSHA256": "76c98b3de5dccf1b967259ca7451e569639f8f4c6c9b462437061d7c98e73ace",
+        "unchanged": true
+      },
+      {
+        "workload": "core/function-calls",
+        "baseBytes": 14306,
+        "headBytes": 14306,
+        "baseSHA256": "fd194a985c7a4f76c49b89d799309e0c3718e718f32674dfe3aff69542b02f7a",
+        "headSHA256": "fd194a985c7a4f76c49b89d799309e0c3718e718f32674dfe3aff69542b02f7a",
+        "unchanged": true
+      },
+      {
+        "workload": "core/memory-load-store",
+        "baseBytes": 13982,
+        "headBytes": 13982,
+        "baseSHA256": "8ef4307b0086f2b06efe9b465ef7df8271c21b586e84f2c9db051fd372fd95e5",
+        "headSHA256": "8ef4307b0086f2b06efe9b465ef7df8271c21b586e84f2c9db051fd372fd95e5",
+        "unchanged": true
+      },
+      {
+        "workload": "memory/narrow-unaligned",
+        "baseBytes": 15409,
+        "headBytes": 15405,
+        "baseSHA256": "618bb3faec2be6d76bca4815fd8c9034c7e0cb1c3a9680f09efafa905b43ae0c",
+        "headSHA256": "4b453462e5e6defa24119ec61ee5e83a8669c9ce102fc3b5e809aa3735c3046f",
+        "unchanged": false
+      },
+      {
+        "workload": "memory/dependent-address",
+        "baseBytes": 13585,
+        "headBytes": 13585,
+        "baseSHA256": "fbe0ec8bb6f2fb0bfdbec7ae524630a411387c224cb944fe29dd586f02bb12fa",
+        "headSHA256": "fbe0ec8bb6f2fb0bfdbec7ae524630a411387c224cb944fe29dd586f02bb12fa",
+        "unchanged": true
+      },
+      {
+        "workload": "memory/float64-unaligned",
+        "baseBytes": 15829,
+        "headBytes": 15829,
+        "baseSHA256": "ce319c5e449dbfb39f4fa665fc8433cbead225526286ca6070e7258808970cf4",
+        "headSHA256": "ce319c5e449dbfb39f4fa665fc8433cbead225526286ca6070e7258808970cf4",
+        "unchanged": true
+      },
+      {
+        "workload": "runtime/simd-memory-full",
+        "baseBytes": 10253,
+        "headBytes": 10253,
+        "baseSHA256": "243b81137bd440ac885ac6e733d311daf0fe03b64f199f2439cdde234282b5c7",
+        "headSHA256": "243b81137bd440ac885ac6e733d311daf0fe03b64f199f2439cdde234282b5c7",
+        "unchanged": true
+      },
+      {
+        "workload": "runtime/simd-memory-widen",
+        "baseBytes": 9258,
+        "headBytes": 9213,
+        "baseSHA256": "ab5345fe0f4ee5116bb22fc4753244993305592ee99eb2b1883839ba5b504d8c",
+        "headSHA256": "e212a5c0cc2b1c634ba47cdd83ffd51f8a43c28840c43c3f593f4a22ff7d3ddd",
+        "unchanged": false
+      },
+      {
+        "workload": "runtime/simd-memory-lanes",
+        "baseBytes": 11310,
+        "headBytes": 11310,
+        "baseSHA256": "c8f1608cb9a9dd732c10d17bffe6c6303c329fc1451a074175a2a51638d09606",
+        "headSHA256": "c8f1608cb9a9dd732c10d17bffe6c6303c329fc1451a074175a2a51638d09606",
+        "unchanged": true
+      },
+      {
+        "workload": "gc/i31-roundtrip",
+        "baseBytes": 5124,
+        "headBytes": 5124,
+        "baseSHA256": "558170be6bec9870ea8fc0339574c16621eece3898a4d25661ed1e110beaa260",
+        "headSHA256": "558170be6bec9870ea8fc0339574c16621eece3898a4d25661ed1e110beaa260",
+        "unchanged": true
+      },
+      {
+        "workload": "gc/struct-access",
+        "baseBytes": 7173,
+        "headBytes": 7173,
+        "baseSHA256": "7acf6d2d54b1dfa61d294a72625961c4fbcd33cefcbc03fa199097a1dbce5ddd",
+        "headSHA256": "7acf6d2d54b1dfa61d294a72625961c4fbcd33cefcbc03fa199097a1dbce5ddd",
+        "unchanged": true
+      },
+      {
+        "workload": "gc/struct-allocation",
+        "baseBytes": 6488,
+        "headBytes": 6488,
+        "baseSHA256": "20422485b1d364dac315f290066b3729cad0ed5defa7736ca19d2a04b9ee21cc",
+        "headSHA256": "20422485b1d364dac315f290066b3729cad0ed5defa7736ca19d2a04b9ee21cc",
+        "unchanged": true
+      },
+      {
+        "workload": "gc/struct-indirect-access",
+        "baseBytes": 13639,
+        "headBytes": 13639,
+        "baseSHA256": "8937d160d480759321f1f21a9ccbba723f7bddfff894b8e523122671dc152e8c",
+        "headSHA256": "8937d160d480759321f1f21a9ccbba723f7bddfff894b8e523122671dc152e8c",
+        "unchanged": true
+      },
+      {
+        "workload": "threads/private-memory",
+        "baseBytes": 6341,
+        "headBytes": 6341,
+        "baseSHA256": "34c12c2716389e52df4aa873d9affd35d54bb5df300436151de6b0f0287b078a",
+        "headSHA256": "34c12c2716389e52df4aa873d9affd35d54bb5df300436151de6b0f0287b078a",
+        "unchanged": true
+      },
+      {
+        "workload": "threads/shared-memory",
+        "baseBytes": 6629,
+        "headBytes": 6629,
+        "baseSHA256": "78d7ae4ba967c4845ca6889474db868e9cb55fec5333002e9c2529d72fc3fd4d",
+        "headSHA256": "78d7ae4ba967c4845ca6889474db868e9cb55fec5333002e9c2529d72fc3fd4d",
+        "unchanged": true
+      },
+      {
+        "workload": "threads/atomic-rmw",
+        "baseBytes": 5992,
+        "headBytes": 5992,
+        "baseSHA256": "198c9f953ed9c4935087aed2bde92ccdbb1ea8e8d78dfc5ec84de0ff4fdbf88b",
+        "headSHA256": "198c9f953ed9c4935087aed2bde92ccdbb1ea8e8d78dfc5ec84de0ff4fdbf88b",
+        "unchanged": true
+      },
+      {
+        "workload": "threads/notify-empty",
+        "baseBytes": 6413,
+        "headBytes": 6413,
+        "baseSHA256": "52cef57ddb63045bf8292d0c41ff23d50bd293a9af505bfe938f6f963e81e3bf",
+        "headSHA256": "52cef57ddb63045bf8292d0c41ff23d50bd293a9af505bfe938f6f963e81e3bf",
+        "unchanged": true
+      },
+      {
+        "workload": "threads/wait-mismatch",
+        "baseBytes": 7014,
+        "headBytes": 7014,
+        "baseSHA256": "64bc992f5d44af0c8fbaad4da72913a2460e8de00706b54239a242240d036935",
+        "headSHA256": "64bc992f5d44af0c8fbaad4da72913a2460e8de00706b54239a242240d036935",
+        "unchanged": true
+      },
+      {
+        "workload": "threads/wait-timeout",
+        "baseBytes": 6974,
+        "headBytes": 6974,
+        "baseSHA256": "1d2c909f648d260989ab1210485348e4e448f2dbbb488e93226bfb4bf15f27a4",
+        "headSHA256": "1d2c909f648d260989ab1210485348e4e448f2dbbb488e93226bfb4bf15f27a4",
+        "unchanged": true
+      },
+      {
+        "workload": "applications/sha256-clang",
+        "baseBytes": 129001,
+        "headBytes": 129001,
+        "baseSHA256": "0a710f65a6c8a6fa7c9830babdbf813b9a73fae0fde3921b916621c2702056f8",
+        "headSHA256": "0a710f65a6c8a6fa7c9830babdbf813b9a73fae0fde3921b916621c2702056f8",
+        "unchanged": true
+      },
+      {
+        "workload": "applications/sha256-rust",
+        "baseBytes": 129222,
+        "headBytes": 129222,
+        "baseSHA256": "0a0328fe11863d07f5f20bd88422d3a0db06226df61b0e92dbf98027e671a497",
+        "headSHA256": "0a0328fe11863d07f5f20bd88422d3a0db06226df61b0e92dbf98027e671a497",
+        "unchanged": true
+      }
+    ],
+    "scope": "Compile/link-only exact production sources under Go on ARM64 with diagnostic target selection. No guest execution, publication or timing evidence."
+  }
+}

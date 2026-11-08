@@ -61,59 +61,66 @@ func memoryForwardFixture(store, load uint32, delta uint32, copies bool) *slots.
 func TestPrivateMemoryForwardSpilledOperands(t *testing.T) {
 	for _, arch := range []string{"amd64"} {
 		for mask := 0; mask < 4; mask++ {
-			a := assembler{arch: arch, labels: map[int]int{}}
-			f := &slots.Function{Slots: []wasm.ValueType{wasm.I64, wasm.I32}}
-			e := functionEmitter{a: &a, f: f, unmetered: true, exit: a.label()}
-			e.contextLoad(0, nativeabi.ArenaOffset)
-			frame, homes := byte(6), []byte{3, 12}
-			e.registerMove(frame, e.operandRegister(0), true)
-			plan := &registerPlan{homes: map[slots.Slot]byte{}}
-			for s, reg := range homes {
-				if mask&(1<<s) != 0 {
-					plan.homes[slots.Slot(s)] = reg
-					plan.slots = append(plan.slots, slots.Slot(s))
-				}
-			}
-			e.transitionRegisters(plan)
-			e.forwardMemoryValue(0, 1, 40, 1, true)
-			e.leave(nativeabi.Return, 1, 1)
-			a.mark(e.exit)
-			body, err := a.finish()
-			if err != nil {
-				t.Fatal(err)
-			}
-			entry, err := nativeabi.Wrap(arch, body, 1<<16)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !native.Available || runtime.GOARCH != arch {
-				continue
-			}
-			code, err := native.Publish(entry.Code, []uint32{0}, 1<<16)
-			if err != nil {
-				t.Fatal(err)
-			}
-			t.Cleanup(code.Close)
-			lease, err := code.Acquire()
-			if err != nil {
-				t.Fatal(err)
-			}
-			t.Cleanup(lease.Close)
-			ctx, err := native.NewContext(32, 32, 1)
-			if err != nil {
-				t.Fatal(err)
-			}
-			t.Cleanup(ctx.Close)
-			for _, bits := range []uint64{0, ^uint64(0), 1 << 63, 0x0000800000000000, 0x00007f0000000000, 0x0123abcd567889ef} {
-				writeSlot(t, ctx, 0, 0, value.Value{Lo: bits, Hi: 123})
-				writeSlot(t, ctx, 0, 1, value.Value{Lo: ^bits, Hi: 456})
-				if err := ctx.SetState(native.State{Depth: 1}); err != nil {
-					t.Fatal(err)
-				}
-				exit, err := ctx.Enter(lease, 0)
-				want := uint64(uint32(int32(int8(bits >> 40))))
-				if err != nil || exit != native.Return || readSlot(t, ctx, 0, 0) != (value.Value{Lo: bits, Hi: 123}) || readSlot(t, ctx, 0, 1) != (value.Value{Lo: want, Hi: 456}) {
-					t.Fatal(arch, mask, bits, exit, err, readSlot(t, ctx, 0, 0), readSlot(t, ctx, 0, 1))
+			for _, shift := range []uint32{8, 40} {
+				for _, signed := range []bool{false, true} {
+					a := assembler{arch: arch, labels: map[int]int{}}
+					f := &slots.Function{Slots: []wasm.ValueType{wasm.I64, wasm.I32}}
+					e := functionEmitter{a: &a, f: f, unmetered: true, exit: a.label()}
+					e.contextLoad(0, nativeabi.ArenaOffset)
+					frame, homes := byte(6), []byte{3, 12}
+					e.registerMove(frame, e.operandRegister(0), true)
+					plan := &registerPlan{homes: map[slots.Slot]byte{}}
+					for s, reg := range homes {
+						if mask&(1<<s) != 0 {
+							plan.homes[slots.Slot(s)] = reg
+							plan.slots = append(plan.slots, slots.Slot(s))
+						}
+					}
+					e.transitionRegisters(plan)
+					e.forwardMemoryValue(0, 1, shift, 1, signed)
+					e.leave(nativeabi.Return, 1, 1)
+					a.mark(e.exit)
+					body, err := a.finish()
+					if err != nil {
+						t.Fatal(err)
+					}
+					entry, err := nativeabi.Wrap(arch, body, 1<<16)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if !native.Available || runtime.GOARCH != arch {
+						continue
+					}
+					code, err := native.Publish(entry.Code, []uint32{0}, 1<<16)
+					if err != nil {
+						t.Fatal(err)
+					}
+					t.Cleanup(code.Close)
+					lease, err := code.Acquire()
+					if err != nil {
+						t.Fatal(err)
+					}
+					t.Cleanup(lease.Close)
+					ctx, err := native.NewContext(32, 32, 1)
+					if err != nil {
+						t.Fatal(err)
+					}
+					t.Cleanup(ctx.Close)
+					for _, bits := range []uint64{0, ^uint64(0), 1 << 63, 0x0000800000000000, 0x00007f0000000000, 0x0123abcd567889ef} {
+						writeSlot(t, ctx, 0, 0, value.Value{Lo: bits, Hi: 123})
+						writeSlot(t, ctx, 0, 1, value.Value{Lo: ^bits, Hi: 456})
+						if err := ctx.SetState(native.State{Depth: 1}); err != nil {
+							t.Fatal(err)
+						}
+						exit, err := ctx.Enter(lease, 0)
+						want := uint64(uint8(bits >> shift))
+						if signed {
+							want = uint64(uint32(int32(int8(bits >> shift))))
+						}
+						if err != nil || exit != native.Return || readSlot(t, ctx, 0, 0) != (value.Value{Lo: bits, Hi: 123}) || readSlot(t, ctx, 0, 1) != (value.Value{Lo: want, Hi: 456}) {
+							t.Fatal(arch, mask, bits, exit, err, readSlot(t, ctx, 0, 0), readSlot(t, ctx, 0, 1))
+						}
+					}
 				}
 			}
 		}
