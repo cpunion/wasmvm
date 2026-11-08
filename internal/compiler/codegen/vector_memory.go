@@ -77,13 +77,29 @@ func (e *functionEmitter) vectorMemoryAMD64(in slots.Instruction, load bool, siz
 		}
 		e.vectorAccessAMD64(0xf3, code, d)
 	} else if op >= 1 && op <= 6 {
-		e.vectorAccessAMD64(0xf3, 0x7e, d) // MOVQ loads exactly eight bytes.
-		e.vectorZero(11)
-		width := (op - 1) / 2
-		if op%2 == 1 {
-			e.a.xvector(0x64+byte(width), 11, d) // Sign mask from zero > input.
+		if e.x86Features&(X86SSE41|X86AVX2) != 0 {
+			code := [...]byte{0x20, 0x23, 0x25}[(op-1)/2] // PMOVSXBW/WD/DQ.
+			if op%2 == 0 {
+				code += 0x10 // PMOVZXBW/WD/DQ.
+			}
+			if e.x86Features&X86AVX2 != 0 {
+				second := byte(0xc2) // 0F38 map, RAX index, R10 base.
+				if d >= 8 {
+					second &^= 0x80
+				}
+				e.a.bytes(0xc4, second, 0x79, code, (d&7)<<3|4, 2)
+			} else {
+				e.a.bytes(0x66, 0x41|(d>>3)<<2, 0x0f, 0x38, code, (d&7)<<3|4, 2)
+			}
+		} else {
+			e.vectorAccessAMD64(0xf3, 0x7e, d) // MOVQ loads exactly eight bytes.
+			e.vectorZero(11)
+			width := (op - 1) / 2
+			if op%2 == 1 {
+				e.a.xvector(0x64+byte(width), 11, d) // Sign mask from zero > input.
+			}
+			e.a.xvector(0x60+byte(width), d, 11) // Widen each low-half lane.
 		}
-		e.a.xvector(0x60+byte(width), d, 11) // Widen each low-half lane.
 	} else if op == 92 || op == 93 {
 		prefix, code := byte(0x66), byte(0x6e) // MOVD, with zeroed upper bits.
 		if op == 93 {
