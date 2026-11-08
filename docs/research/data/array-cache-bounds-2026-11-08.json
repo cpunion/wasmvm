@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "encoding": "xz",
+  "path": "../evidence/array-cache-bounds-2026-11-08.json.xz",
+  "sha256": "bf579da5ef217921569696f2a465e965597783918629e2779d2857ed2a880e19",
+  "uncompressedSha256": "e1f45fbdc0ec938fdcce94e6dc642d829c973c6a4cd2ce585a58b6f1ad58623d",
+  "scope": "Independent local ARM64 original and sustained advisory cohorts, exact source/build/fixtures and publication audits. No source-induced guest kernel change on this host; no controlled acceptance. All adverse and unresolved observations retained."
+}

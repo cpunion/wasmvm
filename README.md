@@ -1,5 +1,6 @@
 # wasmvm
 
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![CI](https://github.com/cpunion/wasmvm/actions/workflows/ci.yml/badge.svg?event=pull_request)](https://github.com/cpunion/wasmvm/actions/workflows/ci.yml)
 [![Go module](https://img.shields.io/badge/Go_module-source_only-blue)](pkg/README.md)
 [![API](https://img.shields.io/badge/API-experimental-orange)](docs/embedding.md)
@@ -285,10 +286,16 @@ records primary sources, feature flags and ambiguous entries.
 
 ### Measured performance
 
-The [completed 2026-11-07 cumulative Linux event](docs/research/performance-cumulative-native-2026-11-07.md)
-contains the latest main-baseline comparison, all 22 cases and independent
-compiler/backend/competitor/lifecycle summaries. Eight cases resolve all four
-A/A controls; controlled acceptance remains open.
+The [2026-11-08 Linux comparison](docs/research/performance-reference-kind-filter-2026-11-08.md)
+contains the latest completed full 22-case source comparison. The subsequent
+[checked-slot GC event](docs/research/performance-gc-slot-reuse-2026-11-08.md)
+compares the affected four GC cases with main, including a separate sustained
+cohort. Its [hosted results](https://github.com/cpunion/wasmvm/pull/127#issuecomment-6716307382)
+resolve 2/4 sustained controls. Both records retain independent Go/LLGo,
+backend, competitor and lifecycle results; controlled acceptance remains open.
+The [guarded array-cache follow-up](docs/research/performance-array-cache-bounds-2026-11-08.md)
+records subsequent compiler changes, preserved adverse pilots and separate
+AMD64 measurements linked from its PR.
 
 The [2026-11-05 source event](docs/research/performance-loop-invariant-literals-2026-11-05.md)
 provides a 22-case local arm64 table and published Go/LLGo code audit.
@@ -428,7 +435,7 @@ comparisons; then satisfy performance and release gates. The
 
 ## License and provenance
 
-A license for project-owned source has not yet been selected. Test inputs retain
-their upstream licenses, notices and immutable manifests; those notices do not
-license the rest of the project. See each inventory, including the
+Project code is licensed under the [MIT License](LICENSE). Third-party code,
+fixtures and conformance corpora retain their respective upstream licenses,
+notices and immutable manifests. See each inventory, including the
 [Core 2 provenance](testdata/core2/README.md#provenance-and-notices).

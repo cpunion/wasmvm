@@ -15,6 +15,23 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
+func TestUnknownBranchConditionsFailBeforeEmission(t *testing.T) {
+	for _, arch := range []string{"amd64", "arm64"} {
+		for _, condition := range []string{"hi", "ls", "always", ""} {
+			t.Run(arch+"/"+condition, func(t *testing.T) {
+				a := assembler{arch: arch}
+				e := functionEmitter{a: &a}
+				defer func() {
+					if recover() == nil || len(a.code) != 0 {
+						t.Fatal("unknown condition silently encoded", condition, a.code)
+					}
+				}()
+				e.branch(1, condition)
+			})
+		}
+	}
+}
+
 func TestAllocatedConditionUsesLow32Bits(t *testing.T) {
 	for _, arch := range []string{"amd64", "arm64"} {
 		registers := []byte{3, 9, 10, 11, 12, 13, 14, 15}

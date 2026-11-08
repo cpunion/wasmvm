@@ -122,6 +122,7 @@ func (e *functionEmitter) prepareHeapAccesses(config Config) {
 		}
 		e.heapAccesses[in.Source] = a
 	}
+	e.prepareHeapIndexBounds()
 }
 
 func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
@@ -134,21 +135,27 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 	}
 	e.slotLoad(in.A, 0, false, true)
 	cache, cached := e.heapCaches[a.cacheClass]
+	bound, bounded := e.heapIndexBounds[a.cacheClass]
+	bounded = bounded && cached && a.array && !a.length
 	ready := 0
 	if cached {
 		ready = e.a.label()
-		// Null must miss even when an entry's cache key is initially zero.
-		// ARM CCMP combines the non-null and complete-handle checks.
-		e.test(true)
-		if e.a.arch == "amd64" {
-			miss := e.a.label()
-			e.branch(miss, "eq") // A null handle must never hit the initial zero key.
-			e.registerCompareFlags(0, cache.key, 0x51)
-			e.branch(ready, "eq")
-			e.a.mark(miss)
+		if bounded {
+			e.arrayCacheHit(in, cache, bound, ready)
 		} else {
-			e.a.word(0xfa401120 | uint32(cache.key)<<16) // ccmp x9,key,#0,ne
-			e.branch(ready, "eq")
+			// Null must miss even when an entry's cache key is initially zero.
+			// ARM CCMP combines the non-null and complete-handle checks.
+			e.test(true)
+			if e.a.arch == "amd64" {
+				miss := e.a.label()
+				e.branch(miss, "eq") // A null handle must never hit the initial zero key.
+				e.registerCompareFlags(0, cache.key, 0x51)
+				e.branch(ready, "eq")
+				e.a.mark(miss)
+			} else {
+				e.a.word(0xfa401120 | uint32(cache.key)<<16) // ccmp x9,key,#0,ne
+				e.branch(ready, "eq")
+			}
 		}
 	}
 	e.test(true)
@@ -183,13 +190,13 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 	if !a.array {
 		e.pointerLoad(2, 2, 8)
 	}
-	if cached {
+	if cached && !bounded {
 		e.registerMove(cache.address, e.operandRegister(2), true)
 		e.registerMove(cache.key, e.operandRegister(0), true)
 		e.a.mark(ready)
 	}
 	base := e.operandRegister(2)
-	if cached {
+	if cached && !bounded {
 		if e.a.arch == "amd64" {
 			e.registerMove(2, cache.address, true)
 		} else if !a.array && a.offset == 0 {
@@ -209,6 +216,20 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 		e.compare(true)
 		e.branch(e.trapExit(wasm.TrapArrayBounds, e.f.Sources[in.Source].Wasm.Offset), "hs")
 		e.pointerLoad(2, 2, 8)
+		if bounded {
+			// Only an actual successful access can promote a payload. Length
+			// is immutable, and the entry cannot relocate this object.
+			skip := e.a.label()
+			e.constant(0, uint64(bound))
+			e.compare(false) // bound versus the zero-extended length in operand 1.
+			e.branch(skip, "hs")
+			e.registerMove(cache.address, e.operandRegister(2), true)
+			e.slotLoad(in.A, 0, false, true)
+			e.registerMove(cache.key, e.operandRegister(0), true)
+			e.a.mark(skip)
+			e.slotLoad(in.B, 0, false, false)
+			e.a.mark(ready)
+		}
 		shift := uint32(bits.TrailingZeros32(a.width))
 		if e.a.arch == "amd64" {
 			if shift != 0 {

@@ -74,6 +74,7 @@ type functionEmitter struct {
 	heapAccesses                                                 map[uint32]heapAccess
 	heapPair                                                     uint32
 	heapCaches                                                   map[uint64]heapCache
+	heapIndexBounds                                              map[uint64]uint32
 	allocationTypes                                              []module.TypeDef
 	hasAllocations                                               bool
 	allocationBatch                                              uint32
@@ -179,6 +180,8 @@ func (e *functionEmitter) branch(label int, condition string) {
 			cc = 2
 		case "hs":
 			cc = 3
+		default:
+			panic("unknown native branch condition: " + condition)
 		}
 	} else {
 		switch condition {
@@ -190,6 +193,8 @@ func (e *functionEmitter) branch(label int, condition string) {
 			cc = 3
 		case "hs":
 			cc = 2
+		default:
+			panic("unknown native branch condition: " + condition)
 		}
 	}
 	e.a.branch(label, true, cc)

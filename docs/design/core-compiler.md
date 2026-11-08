@@ -479,6 +479,20 @@ forwarding on both emitters. Cache keys reset at every entry and remain separate
 from guest register homes. Forwarding preserves all original cold PCs and
 checks, packed/vector bits, poll intervals and precise-tier behavior.
 
+Unmetered array caches may retain a payload instead of its header. The shared
+bounded i32 transfer computes one conservative index hint per concrete array
+class; any unknown access disables that class's payload specialization. An
+ordinary successful access promotes the payload only if the immutable actual
+length exceeds the class hint. Every hit still checks a non-null complete
+handle and the actual unsigned index against that hint. A mismatch reloads the
+reference and takes the original identity, length and bounds checks. Hints are
+profitability information, not frame validity assumptions: arbitrary interior
+continuations and unexpected raw values remain checked. Cache keys reset at
+every entry, and collection/relocation cannot occur inside an entry. The same
+two registers and ordinary precise tier remain; no runtime field or ABI changes.
+Differential tests cover every element width, packed signs, full vectors,
+short/empty arrays, cold PCs and identity changes after cache promotion.
+
 Adjacent `ref.i31` and `i31.get_s/u` operations also forward their integer
 payload in the unmetered tier. Preserve a boxed slot that later exits can
 observe, while extracting from the original integer to avoid extending its

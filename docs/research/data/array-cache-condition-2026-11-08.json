@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "encoding": "xz",
+  "path": "../evidence/array-cache-condition-2026-11-08.json.xz",
+  "sha256": "e14331315925e1ed98ae933eaeb7b53c62e459a252d3be48e7fdf11d7886df9c",
+  "uncompressedSha256": "ca23b989d4190f9d747d1460bc6a52f7e6a3074bd6da4ede94dabf70d0132103",
+  "scope": "All three distinct Linux source events, original and sustained observations, adverse and inconclusive results, alternate checks, unsupported references and exact source/toolchain audits. No cross-source/host pooling or controlled acceptance."
+}
