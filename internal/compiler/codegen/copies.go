@@ -97,6 +97,9 @@ func (e *functionEmitter) combineScalarCopies(start int) (int, bool) {
 		if deferConstant {
 			e.literal(previous)
 		}
+		if end, ok := e.forwardMemoryStoreLoad(pc, in); ok {
+			return end, true
+		}
 		e.registerScalar(in, pc)
 	}
 	if end != pc {

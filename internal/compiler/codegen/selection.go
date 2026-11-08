@@ -44,6 +44,9 @@ func (e *functionEmitter) combinePlain(pc, start int, out *CompiledFunction) (in
 		out.ForwardedHeap++
 		return end, true
 	}
+	if end, ok := e.forwardMemoryStoreLoad(pc, in); ok {
+		return end, true
+	}
 	if end, ok := e.combineI31(pc); ok {
 		out.FusedIntegers++
 		return end, true

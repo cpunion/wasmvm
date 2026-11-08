@@ -1,0 +1,113 @@
+{
+  "events": [
+    {
+      "event": "scratch-arm64",
+      "head": "8dc5d27e83250dac1fb1f6cbd38f26a1c62d4221",
+      "base": "d386c5890dbde7762a7f9c964f9c86db8c5a053a",
+      "group": "memory-simd",
+      "host": {
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "cpu": "Apple M4 Max",
+        "affinity": null,
+        "affinityScope": "Darwin exposes no sched affinity API; not pinned",
+        "GOMAXPROCS": "1",
+        "loadBefore": [
+          8.64453125,
+          8.31787109375,
+          6.42236328125
+        ],
+        "powerPolicy": "Workstation default; physical frequency/power/background isolation not controlled",
+        "cachePolicy": "Fresh processes; disk compilation cache disabled; filesystem cache not flushed",
+        "loadAfter": [
+          8.677734375,
+          7.5185546875,
+          6.427734375
+        ]
+      },
+      "rawSHA256": "2a92421d725df149914c2b9756ac2c3cd172669f37ddf2a82c8ca47c13f9ec28"
+    },
+    {
+      "event": "scratch-amd64",
+      "head": "8dc5d27e83250dac1fb1f6cbd38f26a1c62d4221",
+      "base": "d386c5890dbde7762a7f9c964f9c86db8c5a053a",
+      "group": "memory-simd",
+      "host": {
+        "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+        "cpu": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           48 bits physical, 48 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  4\nOn-line CPU(s) list:                     0-3\nVendor ID:                               AuthenticAMD\nModel name:                              AMD EPYC 9V74 80-Core Processor\nCPU family:                              25\nModel:                                   17\nThread(s) per core:                      2\nCore(s) per socket:                      2\nSocket(s):                               1\nStepping:                                1\nBogoMIPS:                                5192.26\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology tsc_reliable nonstop_tsc cpuid extd_apicid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves user_shstk avx512_bf16 clzero xsaveerptr rdpru arat npt nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload avx512vbmi umip avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid fsrm\nVirtualization:                          AMD-V\nHypervisor vendor:                       Microsoft\nVirtualization type:                     full\nL1d cache:                               64 KiB (2 instances)\nL1i cache:                               64 KiB (2 instances)\nL2 cache:                                2 MiB (2 instances)\nL3 cache:                                32 MiB (1 instance)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0-3\nVulnerability Gather data sampling:      Not affected\nVulnerability Ghostwrite:                Not affected\nVulnerability Indirect target selection: Not affected\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Not affected\nVulnerability Mds:                       Not affected\nVulnerability Meltdown:                  Not affected\nVulnerability Mmio stale data:           Not affected\nVulnerability Old microcode:             Not affected\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Not affected\nVulnerability Spec rstack overflow:      Vulnerable: Safe RET, no microcode\nVulnerability Spec store bypass:         Vulnerable\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; Retpolines; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Vulnerable: No microcode\nVulnerability Tsx async abort:           Not affected\nVulnerability Vmscape:                   Not affected",
+        "affinity": [
+          0
+        ],
+        "GOMAXPROCS": "1",
+        "loadBefore": [
+          0.99365234375,
+          0.26513671875,
+          0.09033203125
+        ],
+        "powerPolicy": "Hosted VM default; physical frequency/neighbor isolation not controlled",
+        "cachePolicy": "Fresh processes; disk compilation cache disabled; filesystem cache not flushed",
+        "loadAfter": [
+          1.09375,
+          0.90625,
+          0.46044921875
+        ]
+      },
+      "rawSHA256": "4b0745f119d8202e325b4c1a1085b4c5cd42ae7d2fe8b1b74678abf7231767c2"
+    },
+    {
+      "event": "direct-bitfield-arm64",
+      "head": "fe9135f1acde9d9524e9502cb98c30666101c734",
+      "base": "d386c5890dbde7762a7f9c964f9c86db8c5a053a",
+      "group": "memory-simd",
+      "host": {
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "cpu": "Apple M4 Max",
+        "affinity": null,
+        "affinityScope": "Darwin exposes no sched affinity API; not pinned",
+        "GOMAXPROCS": "1",
+        "loadBefore": [
+          28.08349609375,
+          20.79052734375,
+          13.38037109375
+        ],
+        "powerPolicy": "Workstation default; physical frequency/power/background isolation not controlled",
+        "cachePolicy": "Fresh processes; disk compilation cache disabled; filesystem cache not flushed",
+        "loadAfter": [
+          6.7255859375,
+          14.4609375,
+          12.41552734375
+        ]
+      },
+      "rawSHA256": "6a4581603c7f407ea490a28e765f0b717d3725e49d7a04f13cb394d82e749da4"
+    },
+    {
+      "event": "final-arm64",
+      "head": "e7660b0a7b85abe835f6b834afe5c573f9d9bbd3",
+      "base": "d386c5890dbde7762a7f9c964f9c86db8c5a053a",
+      "group": "memory-simd",
+      "host": {
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "cpu": "Apple M4 Max",
+        "affinity": null,
+        "affinityScope": "Darwin exposes no sched affinity API; not pinned",
+        "GOMAXPROCS": "1",
+        "loadBefore": [
+          7.75048828125,
+          9.173828125,
+          10.486328125
+        ],
+        "powerPolicy": "Workstation default; physical frequency/power/background isolation not controlled",
+        "cachePolicy": "Fresh processes; disk compilation cache disabled; filesystem cache not flushed",
+        "loadAfter": [
+          9.63623046875,
+          10.822265625,
+          11.07763671875
+        ]
+      },
+      "rawSHA256": "a2f2dc8e9bdd62cd0dece928ba9994ad125c8e247c0b7a2b98b596bc7101e8c5"
+    }
+  ],
+  "archive": "private-memory-forwarding-2026-11-08.json.xz",
+  "bytes": 384244,
+  "sha256": "7166808c6142a7936ed7f7f1df7e4c9faea594d33ad97700fed3fdfc25341ba7",
+  "scope": "Four independent six-case events. No cross-event/host pooling. Fixed compilers, profile, inputs, sample counts and timing boundaries. Final Linux source qualification remains separate in the contribution PR."
+}

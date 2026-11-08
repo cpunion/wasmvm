@@ -42,6 +42,7 @@ type functionEmitter struct {
 	regionPredicate                                              *loopPredicate
 	boundsElided                                                 uint32
 	directMemoryOperands                                         uint32
+	forwardedMemory                                              uint32
 	memoryOperands                                               map[int]memoryOperand
 	constantRegisters                                            map[uint64]byte
 	runtimeRegisters                                             map[uint32]byte
