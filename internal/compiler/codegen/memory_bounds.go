@@ -90,8 +90,7 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 		for pc := start; pc < end; pc++ {
 			in := e.f.Code[pc]
 			src := e.f.Sources[in.Source].Wasm
-			a, b := get(in.A), get(in.B)
-			v := boundedValue{max: math.MaxUint32}
+			a := get(in.A)
 			if isMemoryAccess(in.Op) {
 				_, size := memoryAccess(in.Op)
 				if a.max+uint64(src.B)+uint64(size) <= e.memoryMinimum {
@@ -100,49 +99,7 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 					candidates++
 				}
 			}
-			switch in.Op {
-			case 0x20:
-				v = get(slots.Slot(src.A))
-			case 0x21, 0x22:
-				v = a
-				values[slots.Slot(src.A)] = v
-			case 0x41:
-				v = boundedValue{uint64(uint32(src.Bits)), true}
-			case 0x6a:
-				if a.max+b.max <= math.MaxUint32 {
-					v = boundedValue{a.max + b.max, a.constant && b.constant}
-				}
-			case 0x6c:
-				if a.max*b.max <= math.MaxUint32 {
-					v = boundedValue{a.max * b.max, a.constant && b.constant}
-				}
-			case 0x71:
-				if a.constant && b.constant {
-					v = boundedValue{a.max & b.max, true}
-				} else {
-					v.max = min(a.max, b.max)
-				}
-			case 0x74:
-				if b.constant {
-					n := b.max & 31
-					if a.max <= math.MaxUint32>>n {
-						v = boundedValue{a.max << n, a.constant}
-					}
-				}
-			case 0x76:
-				if b.constant {
-					v = boundedValue{a.max >> (b.max & 31), a.constant}
-				}
-			case 0x2d:
-				v.max = 255
-			case 0x2f:
-				v.max = 65535
-			case 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f:
-				v.max = 1
-			}
-			if in.Dst != slots.NoSlot {
-				values[in.Dst] = v
-			}
+			updateI32Bounds(e.f, &e.f.Code[pc], values)
 		}
 		var guards map[int]memoryGuard
 		var addresses map[int]memoryAddress
@@ -326,4 +283,66 @@ func (e *functionEmitter) combineDeadImmediate(pc int) (int, bool) {
 		e.move(e.f.Code[end].Dst, dst)
 	}
 	return end, true
+}
+
+// Both memory proofs and guarded heap-cache hints use the same i32 transfer.
+// The caller owns CFG/helper boundaries. Pass the existing instruction by
+// address rather than creating an aggregate argument for each compiler step.
+func updateI32Bounds(f *slots.Function, in *slots.Instruction, values map[slots.Slot]boundedValue) {
+	src := f.Sources[in.Source].Wasm
+	a, ok := values[in.A]
+	if !ok {
+		a = boundedValue{max: math.MaxUint32}
+	}
+	b, ok := values[in.B]
+	if !ok {
+		b = boundedValue{max: math.MaxUint32}
+	}
+	v := boundedValue{max: math.MaxUint32}
+	switch in.Op {
+	case 0x20:
+		v, ok = values[slots.Slot(src.A)]
+		if !ok {
+			v = boundedValue{max: math.MaxUint32}
+		}
+	case 0x21, 0x22:
+		v = a
+		values[slots.Slot(src.A)] = v
+	case 0x41:
+		v = boundedValue{uint64(uint32(src.Bits)), true}
+	case 0x6a:
+		if a.max+b.max <= math.MaxUint32 {
+			v = boundedValue{a.max + b.max, a.constant && b.constant}
+		}
+	case 0x6c:
+		if a.max*b.max <= math.MaxUint32 {
+			v = boundedValue{a.max * b.max, a.constant && b.constant}
+		}
+	case 0x71:
+		if a.constant && b.constant {
+			v = boundedValue{a.max & b.max, true}
+		} else {
+			v.max = min(a.max, b.max)
+		}
+	case 0x74:
+		if b.constant {
+			n := b.max & 31
+			if a.max <= math.MaxUint32>>n {
+				v = boundedValue{a.max << n, a.constant}
+			}
+		}
+	case 0x76:
+		if b.constant {
+			v = boundedValue{a.max >> (b.max & 31), a.constant}
+		}
+	case 0x2d:
+		v.max = 255
+	case 0x2f:
+		v.max = 65535
+	case 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f:
+		v.max = 1
+	}
+	if in.Dst != slots.NoSlot {
+		values[in.Dst] = v
+	}
 }

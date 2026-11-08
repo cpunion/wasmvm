@@ -74,6 +74,7 @@ type functionEmitter struct {
 	heapAccesses                                                 map[uint32]heapAccess
 	heapPair                                                     uint32
 	heapCaches                                                   map[uint64]heapCache
+	heapIndexBounds                                              map[uint64]uint32
 	allocationTypes                                              []module.TypeDef
 	hasAllocations                                               bool
 	allocationBatch                                              uint32
