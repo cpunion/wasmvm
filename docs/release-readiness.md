@@ -75,6 +75,15 @@ A minor update may change experimental APIs, with migration notes. Proposal
 snapshot changes remain explicit feature/version events. No v1 stability
 commitment or production release is implied by this policy.
 
+## Candidate packaging
+
+The existing semantic CI also builds verified CLI candidate packages for both
+platforms/host compilers, plus portable Go interpreter variants. Archives retain
+source/tree, compiler/profile, binary/module/license hashes, actual loader
+requirements and extracted-binary Core/P1/P2/P3 smoke records. See the
+[package contract](cli-packages.md). They remain unversioned CI artifacts;
+controlled performance acceptance and production publication are still open.
+
 ## Gates still requiring evidence
 
 - Full controlled performance acceptance: complete pinned portfolio, production
