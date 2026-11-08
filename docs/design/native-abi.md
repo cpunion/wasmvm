@@ -164,6 +164,10 @@ the Store-owned GC handle view. Each shared 32-byte object header contains the
 complete handle, payload address, packed low 32-bit length/high 32-bit canonical
 type, and full 64-bit allocation epoch. Constructors stage local types and zero
 epochs; the driver validates the complete batch before canonical publication.
+Publication keeps a fixed deferred rollback while reservations remain pending.
+Successful commit explicitly releases unused handles and clears that pending
+state; the deferred release then observes an idle batch. This preserves unwind
+cleanup without a captured mutable completion counter.
 Generated field accesses read only the low 32-bit length and
 check the index and complete identity before dereferencing a payload; null and
 array-bounds traps preserve their original source offsets. The typed collector
