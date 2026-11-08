@@ -65,7 +65,7 @@ def complete_report(native=False):
             for number in range(own_cli.ROUNDS):
                 production["observations"].append({"runtime": runtime["id"], "workload": workload["id"],
                     "round": number, "processWallNs": 10000, "exitCode": 0, "wasmSha256": workload["wasmSha256"],
-                    "result": {"backend": "interpreter", "profile": "core2", "export": "run", "results": [
+                    "result": {"backend": "interpreter", "profile": "core2", "features": 0, "export": "run", "results": [
                         {"type": "i32", "bits": f"0x{checksum:08x}", "value": str(signed)}]}})
     report["productionCLI"] = production
     return report

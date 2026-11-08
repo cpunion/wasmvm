@@ -48,8 +48,9 @@ indexed `pkg/vm`. The package badge describes source availability rather than
 a published package. Pin a commit when depending on the module.
 
 The declared Core and WASI implementations are present, with the conformance
-boundaries below. Expanded WASI world conformance and performance acceptance
-remain open. Separately gated experimental snapshots cover the settled non-JS
+boundaries below. The stable world inventory executes 92 P2 and 60 P3
+consumers; this is not exhaustive WASI certification. Performance and production
+release acceptance remain open; see the [release contract](docs/release-readiness.md). Separately gated experimental snapshots cover the settled non-JS
 Phase 3–4 extensions; [PR #87](https://github.com/cpunion/wasmvm/pull/87) records
 their integration and final CI evidence.
 

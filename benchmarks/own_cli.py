@@ -66,6 +66,18 @@ def summarize(series, builds, fixtures):
         signed = checksum if checksum < 2**31 else checksum - 2**32
         wanted = {"backend": "interpreter", "profile": "core2", "export": "run",
                   "results": [{"type": "i32", "bits": f"0x{checksum:08x}", "value": str(signed)}]}
+        if type(result) is not dict:
+            raise ValueError("invalid production CLI result schema")
+        if "features" in result:
+            # Core 2 comparisons request no optional extensions. Python's
+            # bool/float equality must not turn another JSON type into zero.
+            if type(result["features"]) is not int or result["features"] != 0:
+                raise ValueError("production CLI feature policy mismatch")
+            wanted["features"] = 0
+        elif not item["runtime"].startswith("base-"):
+            # Historical baselines predate this field; current candidates
+            # must publish their policy. No other field is optional.
+            raise ValueError("head production CLI feature policy is missing")
         if type(item["exitCode"]) is not int or item["exitCode"] != 0 or result != wanted or item["wasmSha256"] != workload["wasmSha256"]:
             raise ValueError("production CLI correctness or fixture identity failure")
         if type(item["processWallNs"]) is not int or item["processWallNs"] <= 0:
