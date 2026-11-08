@@ -65,9 +65,10 @@ func (e *functionEmitter) arrayCacheHit(in slots.Instruction, cache heapCache, b
 		e.constant(1, uint64(bound))
 		e.compare(false)
 	}
-	e.branch(miss, "hi")
+	// Moves preserve the index comparison flags. Branch directly to the hit
+	// continuation rather than adding a miss branch and another hot jump.
 	e.registerMove(e.operandRegister(2), cache.address, true)
-	e.branch(ready, "always")
+	e.branch(ready, "ls")
 	e.a.mark(miss)
 	// A failed index hint may have replaced the reference operand.
 	e.slotLoad(in.A, 0, false, true)
