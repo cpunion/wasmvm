@@ -83,11 +83,7 @@ func (e *functionEmitter) vectorMemoryAMD64(in slots.Instruction, load bool, siz
 				code += 0x10 // PMOVZXBW/WD/DQ.
 			}
 			if e.x86Features&X86AVX2 != 0 {
-				second := byte(0xc2) // 0F38 map, RAX index, R10 base.
-				if d >= 8 {
-					second &^= 0x80
-				}
-				e.a.bytes(0xc4, second, 0x79, code, (d&7)<<3|4, 2)
+				e.vectorAccessVEXAMD64(code, d)
 			} else {
 				e.a.bytes(0x66, 0x41|(d>>3)<<2, 0x0f, 0x38, code, (d&7)<<3|4, 2)
 			}
@@ -100,6 +96,9 @@ func (e *functionEmitter) vectorMemoryAMD64(in slots.Instruction, load bool, siz
 			}
 			e.a.xvector(0x60+byte(width), d, 11) // Widen each low-half lane.
 		}
+	} else if op >= 7 && op <= 10 && e.x86Features&X86AVX2 != 0 {
+		// Broadcast the exact scalar width without a GPR/vector round trip.
+		e.vectorAccessVEXAMD64([...]byte{0x78, 0x79, 0x58, 0x59}[op-7], d)
 	} else if op == 92 || op == 93 {
 		prefix, code := byte(0x66), byte(0x6e) // MOVD, with zeroed upper bits.
 		if op == 93 {
@@ -146,6 +145,15 @@ func (e *functionEmitter) vectorMemoryAMD64(in slots.Instruction, load bool, siz
 	if load {
 		e.vectorStore(in.Dst, d)
 	}
+}
+
+// Unary VEX.128.66.0F38 memory forms share the checked R10+RAX address.
+func (e *functionEmitter) vectorAccessVEXAMD64(opcode, reg byte) {
+	second := byte(0xc2)
+	if reg >= 8 {
+		second &^= 0x80
+	}
+	e.a.bytes(0xc4, second, 0x79, opcode, (reg&7)<<3|4, 2)
 }
 
 func (e *functionEmitter) vectorAccessAMD64(prefix, opcode, reg byte) {

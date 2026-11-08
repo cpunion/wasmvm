@@ -71,7 +71,7 @@ func TestNativeVectorMemoryBoundsLanesAndSpills(t *testing.T) {
 			for _, offset := range []uint32{0, 1, 16, 4095, 4096, 8193, 65535, 0xffffffff} {
 				for mode := 0; mode < 4; mode++ {
 					profiles := []X86Features{0}
-					if runtime.GOARCH == "amd64" && op >= 0xfd0001 && op <= 0xfd0006 {
+					if runtime.GOARCH == "amd64" && op >= 0xfd0001 && op <= 0xfd000a {
 						for _, profile := range []X86Features{X86SSE41, X86AVX2} {
 							if profile&^X86Features(native.CPUFeatures()) == 0 {
 								profiles = append(profiles, profile)
@@ -331,8 +331,8 @@ func TestVectorAliasesPreserveEverySlotAndColdEntry(t *testing.T) {
 	}
 }
 
-func TestVectorWidenMemoryProfilesAndCodeLimits(t *testing.T) {
-	for op := uint32(0xfd0001); op <= 0xfd0006; op++ {
+func TestVectorWidenAndSplatMemoryProfilesAndCodeLimits(t *testing.T) {
+	for op := uint32(0xfd0001); op <= 0xfd000a; op++ {
 		for _, profile := range []X86Features{0, X86SSE41, X86AVX2, X86SSE41 | X86AVX2} {
 			for _, pressure := range []bool{false, true} {
 				f, _ := vectorMemoryFunction(t, op, 1, 0, true, pressure)
