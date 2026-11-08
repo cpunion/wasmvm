@@ -40,11 +40,14 @@ func (t ValueType) referenceEncoding() bool {
 	return byte(t) == byte(FuncRef) || byte(t) == byte(StructRef) || byte(t) == byte(ArrayRef) || byte(t) == byte(ContRef)
 }
 
+// Reject other families before checking extended metadata. Tracing calls these
+// predicates for every edge, while full encoding validation is only needed for
+// a matching family. Malformed encodings still fail IsReference.
 func (t ValueType) IsFunctionReference() bool {
-	return t.IsReference() && (byte(t) == byte(FuncRef) || byte(t) == byte(NoFuncRef))
+	return (byte(t) == byte(FuncRef) || byte(t) == byte(NoFuncRef)) && t.IsReference()
 }
 func (t ValueType) IsExternalReference() bool {
-	return t.IsReference() && (byte(t) == byte(ExternRef) || byte(t) == byte(NoExternRef))
+	return (byte(t) == byte(ExternRef) || byte(t) == byte(NoExternRef)) && t.IsReference()
 }
 func (t ValueType) Nullable() bool {
 	return t.IsReference() && (t&referenceExtended == 0 || t&referenceNullable != 0)
@@ -155,10 +158,10 @@ func (t ValueType) IsInternalReference() bool {
 	return t.IsReference() && !t.IsFunctionReference() && !t.IsExternalReference() && !t.IsExceptionReference() && !t.IsContinuationReference()
 }
 func (t ValueType) IsContinuationReference() bool {
-	return t.IsReference() && (byte(t) == byte(ContRef) || byte(t) == byte(NoContRef))
+	return (byte(t) == byte(ContRef) || byte(t) == byte(NoContRef)) && t.IsReference()
 }
 func (t ValueType) IsExceptionReference() bool {
-	return t.IsReference() && (byte(t) == byte(ExnRef) || byte(t) == byte(NoExnRef))
+	return (byte(t) == byte(ExnRef) || byte(t) == byte(NoExnRef)) && t.IsReference()
 }
 func (t ValueType) IsGCReference() bool {
 	return t.IsReference() && !t.IsExceptionReference() && !t.IsContinuationReference() && (byte(t) != byte(FuncRef) && byte(t) != byte(ExternRef))

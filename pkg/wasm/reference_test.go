@@ -74,9 +74,9 @@ func TestTypedReferenceDomainsAndNullability(t *testing.T) {
 			t.Fatal(typ)
 		}
 	}
-	for _, typ := range []wasm.ValueType{1<<48 | wasm.FuncRef, 1<<9 | wasm.FuncRef, 1<<12 | wasm.FuncRef, 1<<8 | 1<<16 | wasm.FuncRef, 1<<8 | 1<<11 | wasm.ExternRef, 1<<8 | 1<<9 | wasm.ExternRef} {
-		if typ.Valid() {
-			t.Fatal("malformed packed type", typ)
+	for _, typ := range []wasm.ValueType{1<<48 | wasm.FuncRef, 1<<9 | wasm.FuncRef, 1<<12 | wasm.FuncRef, 1<<8 | 1<<16 | wasm.FuncRef, 1<<8 | 1<<11 | wasm.ExternRef, 1<<8 | 1<<9 | wasm.ExternRef, 1<<48 | wasm.ContRef, 1<<8 | 1<<16 | wasm.ExnRef, 1<<8 | 1<<9 | wasm.NoContRef, 1<<8 | 1<<11 | wasm.NoExnRef} {
+		if typ.Valid() || typ.IsFunctionReference() || typ.IsExternalReference() || typ.IsExceptionReference() || typ.IsContinuationReference() || typ.Storage() != typ {
+			t.Fatal("malformed packed type classified as a reference", typ)
 		}
 	}
 	labels := []uint32{0, 0, 2}
