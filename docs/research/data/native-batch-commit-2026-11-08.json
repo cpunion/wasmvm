@@ -1,0 +1,8 @@
+{
+  "archive": "../evidence/native-batch-commit-2026-11-08.json.xz",
+  "archiveSHA256": "51740dcc50f86e3ce9dbef26d68861ca8a3de214d2c922e0bdc25f803e22ce6b",
+  "archiveBytes": 181480,
+  "originalSHA256": "ba0404c748e9428aab935c5d6e1fd595058a0b77ed935dd539f1f96b61adf6b0",
+  "originalBytes": 4392716,
+  "classification": "Local qualification/observations with contaminated sustained cohort explicitly excluded; independent Linux/final CI remain separate. No controlled performance acceptance."
+}

@@ -29,6 +29,9 @@ retains original-count and sustained GC cohorts independently. The
 [register reuse and allocation-throughput correction](docs/research/performance-gc-cache-throughput-2026-11-08.md)
 keeps GC pauses in process means beside the original latency medians; median
 allocation ratios alone do not describe sustained throughput. The
+[batch rollback follow-up](docs/research/performance-native-batch-commit-2026-11-08.md)
+removes mutable captures, preserving unwind cleanup; measured elapsed benefit
+remains unestablished. The
 [rejected FP-register allocation](docs/research/performance-raw-integer-registers-2026-11-06.md)
 stays reverted after approximately 22% Linux SHA regressions. Source events,
 compiler profiles and lifecycle phases stay separate. The
