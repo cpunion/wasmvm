@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "encoding": "gzip",
+  "path": "../evidence/closeout-2026-11-08.json.gz",
+  "sha256": "f0fc22572ad86525b19a41846d9bac7bdae8937237c4c421314c95f3813676e4",
+  "uncompressedSha256": "4519cc5f474a1abe778377f98fe1dd5d3d2c3070c80a376e5404d0a082a9a520",
+  "scope": "Exact unchanged production Go sources from 43afd278; CLI schema repair, retained failed-data replay, fresh two-compiler CLI correctness, bounded fuzz and declared stable-world log audit. No performance or production release acceptance."
+}

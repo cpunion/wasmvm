@@ -6,6 +6,35 @@ from test_phase_ci import complete_report
 
 
 class ProductionCLIIntegrityTests(unittest.TestCase):
+    def test_historical_baselines_may_omit_only_the_feature_field(self):
+        report = complete_report()
+        series = report["productionCLI"]
+        for row in series["observations"]:
+            if row["runtime"].startswith("base-"):
+                del row["result"]["features"]
+        self.assertEqual(len(own_cli.summarize(series, report["ownBuilds"], report["fixtures"])), 24)
+        for row in series["observations"]:
+            if row["runtime"] == "base-go":
+                row["result"]["extra"] = 0
+                break
+        with self.assertRaises(ValueError):
+            own_cli.summarize(series, report["ownBuilds"], report["fixtures"])
+
+    def test_cli_features_are_explicit_exact_integer_zero(self):
+        for runtime in ("base-go", "base-llgo", "head-go", "head-llgo"):
+            for invalid in (False, True, 0.0, "0", None, 1, -1):
+                with self.subTest(runtime=runtime, invalid=invalid), self.assertRaises(ValueError):
+                    report = complete_report()
+                    row = next(r for r in report["productionCLI"]["observations"] if r["runtime"] == runtime)
+                    row["result"]["features"] = invalid
+                    own_cli.summarize(report["productionCLI"], report["ownBuilds"], report["fixtures"])
+        for runtime in ("head-go", "head-llgo"):
+            with self.subTest(runtime=runtime), self.assertRaises(ValueError):
+                report = complete_report()
+                row = next(r for r in report["productionCLI"]["observations"] if r["runtime"] == runtime)
+                del row["result"]["features"]
+                own_cli.summarize(report["productionCLI"], report["ownBuilds"], report["fixtures"])
+
     def test_complete_checked_cli_matrix(self):
         report = complete_report()
         rows = own_cli.summarize(report["productionCLI"], report["ownBuilds"], report["fixtures"])
@@ -26,6 +55,7 @@ class ProductionCLIIntegrityTests(unittest.TestCase):
             "bits": lambda s: s["observations"][0]["result"]["results"][0].update(bits="0x00000000"),
             "backend": lambda s: s["observations"][0]["result"].update(backend="compiler"),
             "fixture": lambda s: s["observations"][0].update(wasmSha256="0" * 64),
+            "schema": lambda s: s["observations"][0].update(result=[]),
         }
         for name, mutate in mutations.items():
             with self.subTest(name=name), self.assertRaises(ValueError):

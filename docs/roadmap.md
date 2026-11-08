@@ -1,6 +1,6 @@
 # Development Plan and Acceptance Gates
 
-Plan date: **2026-10-26**. M0 candidate evaluation and benchmark infrastructure are complete through PRs [#1](https://github.com/cpunion/wasmvm/pull/1), [#2](https://github.com/cpunion/wasmvm/pull/2), and [#3](https://github.com/cpunion/wasmvm/pull/3). The owner has selected a [project-owned core](design/own-core.md). **M1 acceptance remains open; M2 executes the complete Core 2.0 profile but has unmet performance gates; M3–M6 are in progress; M7 is not implemented.** This plan prioritizes complete core execution and compilation before WASI integration. Design approval does not close an implementation or performance gate.
+Plan date: **2026-10-26**. M0 candidate evaluation and benchmark infrastructure are complete through PRs [#1](https://github.com/cpunion/wasmvm/pull/1), [#2](https://github.com/cpunion/wasmvm/pull/2), and [#3](https://github.com/cpunion/wasmvm/pull/3). The owner has selected a [project-owned core](design/own-core.md). **The declared M1–M6 functional scope is integrated on both backends; milestone performance and production-release acceptance remain open. Optional M7 features are separately selected.** This plan prioritizes complete core execution and compilation before WASI integration. Design approval does not close an implementation or performance gate.
 
 Implement functional stages in dependency order. Local performance follow-ups may continue alongside later capabilities under the current integration decision. Independent work within a stage can proceed in parallel after agreeing on shared contracts. Small implementation PRs may merge while the stage remains in progress; every required deliverable, supported-platform result, and exit gate must pass before that stage is complete. Do not replace full profiles with convenient instruction subsets or quietly move failing requirements to a later stage.
 
@@ -47,14 +47,17 @@ readiness, stream ownership, resource retirement, socket closure, HTTP forwardin
 and body-size failures. PR #83 merged after the exact final head passed all four
 target jobs and its 180 execution reports, artifact digests and review state
 were audited. A subsequent inventory adds all 92 stable P2 consumers, retaining
-the three excluded draft interfaces explicitly. Its final target validation
-and review remain required.
-Expanded WASI world conformance and all applicable performance acceptance remain
-open. Optional M7 proposals are outside this implemented scope.
+the three excluded draft interfaces explicitly. The current exact-head CI
+passes all four compiler/platform profiles. A raw-log review verifies every
+stable P2/P3 consumer under LLGo on both backends/platforms: 608 actual pass
+events. Go full-package execution also passes. These are declared-scope results,
+not exhaustive WASI certification. Performance and production-release acceptance
+remain open; see the [release contract](release-readiness.md). Optional M7
+proposals are outside this implemented scope.
 
-Functional closeout proceeds through the remaining final-head semantic checks,
-coverage/review/artifact audit and declared-world conformance review. Only then
-resume phase-separated performance comparisons and optimization. The historical
+Functional closeout retains exact-head semantic, coverage, review and artifact
+audits. Declared-world review and phase-separated performance work now proceed
+against that implemented scope. The historical
 increment notes below preserve requirements that were open at each increment;
 they are not a second list of unimplemented providers. No milestone is marked
 complete merely because its implementation exists.
@@ -723,7 +726,7 @@ deferred performance gates remain open.
 
 ## M7 — Further optimization and experimental features
 
-Potential items include better register allocation/optimization, tiering, persistent AOT artifacts, a cgo-free native bridge, improved GC/shared-memory strategies, more platforms, stack switching, Shared-Everything Threads, component threading, legacy EH or WASIX. These are individual decisions with dependencies and evidence, not a bundled commitment. Basic interpreter and native performance are already mandatory in M2.
+Potential items include better register allocation/optimization, tiering, persistent AOT artifacts, a cgo-free native bridge, improved GC/shared-memory strategies, more platforms, Shared-Everything Threads, component threading, legacy EH or WASIX. These are individual decisions with dependencies and evidence, not a bundled commitment. Basic interpreter and native performance are already mandatory in M2.
 
 **Exit gate per item:** a scoped design, feature/backend flag, pinned specification, full affected conformance/lifecycle matrix and performance evidence. Preserve default-path portability and previously accepted behavior. No experimental proposal silently changes a stable profile.
 
