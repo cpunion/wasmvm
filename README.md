@@ -282,6 +282,12 @@ records primary sources, feature flags and ambiguous entries.
 
 ### Measured performance
 
+The [private-memory forwarding evaluation](docs/research/performance-private-memory-forwarding-2026-11-08.md)
+retains two rejected arm64 implementations, a separate amd64 pilot and the final
+unchanged-code arm64 event. The selected optimization enables amd64 only;
+all original safety and cold-entry contracts remain. Full performance acceptance
+and the recorded competitor/native-C deficits remain open.
+
 The [2026-11-08 Linux comparison](docs/research/performance-reference-kind-filter-2026-11-08.md)
 contains the latest completed full 22-case source comparison. The subsequent
 [checked-slot GC event](docs/research/performance-gc-slot-reuse-2026-11-08.md)
