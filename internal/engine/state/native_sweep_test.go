@@ -129,7 +129,7 @@ func TestNativeSweepIncludesEmptySlowAndBatchObjects(t *testing.T) {
 		}
 		if keep {
 			o, _ := s.heapObject(ref)
-			if s.objectMarked(o) {
+			if s.heap[uint32(o.Ref)].Next&heapMarked != 0 {
 				t.Fatal("mark survived collection")
 			}
 		}
@@ -181,7 +181,7 @@ func TestNativeEmptyPayloadMaintenanceBoundsRollbackPages(t *testing.T) {
 			t.Fatal(err)
 		}
 		o, _ := s.heapObject(ref)
-		s.markObject(o)
+		s.heap[uint32(o.Ref)].Next |= heapMarked
 		if local == 0 {
 			s.setObject(o, 0, value.Value{Lo: 42})
 		}
@@ -192,10 +192,10 @@ func TestNativeEmptyPayloadMaintenanceBoundsRollbackPages(t *testing.T) {
 		if o == nil {
 			continue
 		}
-		if !s.objectMarked(o) || int(s.objectSize(o)) != 0 && s.getObject(o, 0).Lo != 42 {
+		if s.heap[uint32(o.Ref)].Next&heapMarked == 0 || int(s.objectSize(o)) != 0 && s.getObject(o, 0).Lo != 42 {
 			t.Fatal("capacity maintenance altered live object")
 		}
-		s.clearObjectMark(o)
+		s.heap[uint32(o.Ref)].Next &^= heapMarked
 	}
 	s.CollectReferences(nil, nil, nil)
 	checkNativeInventory(t, s)

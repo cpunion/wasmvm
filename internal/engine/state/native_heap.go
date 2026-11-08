@@ -108,16 +108,17 @@ func (s *Store) compactNativeHeap(sweep bool) {
 	var used uint64
 	var runFrom, runTo, runBytes uint64
 	for _, a := range h.objects {
-		o, ok := s.heapObject(a.handle)
-		if !ok {
+		slot := s.heapSlot(a.handle)
+		if slot == nil {
 			continue
 		}
+		o := slot.Object
 		if sweep {
-			if !s.objectMarked(o) {
-				s.releaseHeapObject(uint32(a.handle), o)
+			if slot.Next&heapMarked == 0 {
+				s.releaseHeapObject(uint32(a.handle), slot)
 				continue
 			}
-			s.clearObjectMark(o)
+			slot.Next &^= heapMarked
 		}
 		size := s.objectSize(o)
 		if size != 0 && a.offset != used {
@@ -162,14 +163,18 @@ func (s *Store) sweepNativeEmpty() {
 		for cell := range p.objects {
 			o := &p.objects[cell]
 			index := uint64(page)*heapObjectsPerPage + uint64(cell)
-			if index >= uint64(len(s.heap)) || s.heap[index].Object != o || o.Data != nil {
+			if index >= uint64(len(s.heap)) {
 				continue
 			}
-			if s.objectMarked(o) {
-				s.clearObjectMark(o)
+			slot := &s.heap[index]
+			if slot.Object != o || o.Data != nil {
+				continue
+			}
+			if slot.Next&heapMarked != 0 {
+				slot.Next &^= heapMarked
 				p.hasEmpty = true
 			} else {
-				s.releaseHeapObject(uint32(page*heapObjectsPerPage+cell), o)
+				s.releaseHeapObject(uint32(index), slot)
 			}
 		}
 	}

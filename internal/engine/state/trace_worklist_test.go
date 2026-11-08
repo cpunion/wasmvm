@@ -140,3 +140,58 @@ func TestTracePackedFieldsArraysAndFunctionOwners(t *testing.T) {
 		}
 	}
 }
+
+func TestTraceStaleAndInvalidRootsDoNotRetainReusedSlots(t *testing.T) {
+	for _, offheap := range []bool{false, true} {
+		s, _ := compactStore(t, offheap)
+		types, ok := s.registry.InternModule(&module.Module{Types: []module.FuncType{{}}, TypeDefs: []module.TypeDef{{
+			Kind: module.StructKind, Fields: []module.FieldType{{Value: wasm.I32}, {Value: wasm.AnyRef}},
+		}}}, s.limits.MaxTypes)
+		if !ok {
+			t.Fatal("type registry")
+		}
+		allocate := func(bits uint64) uint64 {
+			ref, err := s.allocateObject(types[0], 2)
+			if err != nil {
+				t.Fatal(err)
+			}
+			o, _ := s.heapObject(ref)
+			s.setObject(o, 0, value.Value{Lo: bits})
+			return ref
+		}
+		retired := allocate(17)
+		s.releaseObject(uint32(retired))
+		replacement, kept := allocate(29), allocate(41)
+		if uint32(retired) != uint32(replacement) || retired == replacement {
+			t.Fatal("fixture did not recycle a generation")
+		}
+		o, _ := s.heapObject(kept)
+		serial := o.Serial
+		roots := []ReferenceValue{
+			{wasm.AnyRef, value.Value{Lo: retired}},
+			{wasm.AnyRef, value.Value{Lo: uint64(uint32(replacement))}},
+			{wasm.AnyRef, value.Value{Lo: heapTag}},
+			{wasm.AnyRef, value.Value{Lo: heapTag | uint64(len(s.heap))}},
+			{wasm.FuncRef, value.Value{Lo: replacement}},
+			{wasm.AnyRef, value.Value{Lo: kept}},
+			{wasm.AnyRef, value.Value{Lo: kept}},
+		}
+		s.CollectReferences(roots, nil, nil)
+		o, ok = s.heapObject(kept)
+		if !ok || s.Usage().HeapObjects != 1 || s.IsLiveReference(retired) || s.IsLiveReference(replacement) || o.Serial != serial || s.getObject(o, 0).Lo != 41 || s.heap[uint32(kept)].Next&heapMarked != 0 {
+			t.Fatal("invalid root retained a replacement or changed a survivor", offheap, s.Usage())
+		}
+		if offheap {
+			checkNativeInventory(t, s)
+		}
+		s.CollectReferences(nil, nil, nil)
+		again := allocate(53)
+		s.CollectReferences(roots, nil, nil)
+		if s.IsLiveReference(again) || s.Usage().HeapObjects != 0 || s.Usage().HeapBytes != 0 {
+			t.Fatal("old root retained another reused generation", offheap, s.Usage())
+		}
+		if offheap {
+			checkNativeInventory(t, s)
+		}
+	}
+}

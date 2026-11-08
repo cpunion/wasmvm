@@ -58,7 +58,7 @@ func TestObjectMetadataReusesGenerationsAcrossPagesAndRelocation(t *testing.T) {
 				}
 				extra.Tag = &Tag{}
 				s.objectExtras(old).Descriptor = handles[0]
-				s.markObject(objects[i])
+				s.heap[uint32(objects[i].Ref)].Next |= heapMarked
 				s.releaseObject(uint32(old))
 				if *extra != (heapObjectExtra{}) {
 					t.Fatal("optional page retained host references")

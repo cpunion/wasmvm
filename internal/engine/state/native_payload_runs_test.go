@@ -58,7 +58,7 @@ func TestNativePayloadRunsAcrossDeadGapsAndReusedHandles(t *testing.T) {
 		checkNativeInventory(t, s)
 		for i, r := range roots {
 			o, ok := s.heapObject(r.Value.Lo)
-			if !ok || string(s.objectData(o)) != string(expected[i]) || s.objectMarked(o) {
+			if !ok || string(s.objectData(o)) != string(expected[i]) || s.heap[uint32(o.Ref)].Next&heapMarked != 0 {
 				t.Fatal("run relocation changed a survivor", round, i)
 			}
 		}
