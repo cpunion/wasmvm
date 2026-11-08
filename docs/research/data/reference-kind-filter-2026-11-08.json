@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "encoding": "xz",
+  "path": "../evidence/reference-kind-filter-2026-11-08.json.xz",
+  "sha256": "e5753bf67c002682aff2867dd3268d75fb5b41713300a03f488f361c53814ebd",
+  "uncompressedSha256": "4da6d0900d33c8de6ffaef2e549de691ae4f4b51229b2d9fc99b012ebcf1c449",
+  "scope": "Separate local ARM64 advisory cohorts; all controls unresolved; all raw adverse results retained; no controlled or cross-host acceptance"
+}
