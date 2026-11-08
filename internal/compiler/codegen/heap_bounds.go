@@ -61,14 +61,16 @@ func (e *functionEmitter) arrayCacheHit(in slots.Instruction, cache heapCache, b
 	e.registerCompareFlags(e.operandRegister(0), cache.key, 0x51)
 	e.branch(miss, "ne")
 	e.slotLoad(in.B, 0, false, false)
-	if !e.registerCompareImmediateFlags(e.operandRegister(0), 0x49, uint64(bound)) {
-		e.constant(1, uint64(bound))
+	// MaxUint32 hints are excluded, so the exclusive limit cannot wrap.
+	limit := uint64(bound) + 1
+	if !e.registerCompareImmediateFlags(e.operandRegister(0), 0x49, limit) {
+		e.constant(1, limit)
 		e.compare(false)
 	}
 	// Moves preserve the index comparison flags. Branch directly to the hit
 	// continuation rather than adding a miss branch and another hot jump.
 	e.registerMove(e.operandRegister(2), cache.address, true)
-	e.branch(ready, "ls")
+	e.branch(ready, "lo")
 	e.a.mark(miss)
 	// A failed index hint may have replaced the reference operand.
 	e.slotLoad(in.A, 0, false, true)

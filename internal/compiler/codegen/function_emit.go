@@ -180,6 +180,8 @@ func (e *functionEmitter) branch(label int, condition string) {
 			cc = 2
 		case "hs":
 			cc = 3
+		default:
+			panic("unknown native branch condition: " + condition)
 		}
 	} else {
 		switch condition {
@@ -191,6 +193,8 @@ func (e *functionEmitter) branch(label int, condition string) {
 			cc = 3
 		case "hs":
 			cc = 2
+		default:
+			panic("unknown native branch condition: " + condition)
 		}
 	}
 	e.a.branch(label, true, cc)

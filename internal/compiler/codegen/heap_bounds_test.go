@@ -89,6 +89,7 @@ func TestNativeBoundedArrayCacheAgainstCheckedAccess(t *testing.T) {
 					{ref, ref, uint64(mask + 2), mask + 4}, // Unexpected but valid indices use ordinary checks.
 					{ref, ref, 0x100000001, mask + 4},
 					{ref, ref, 0xffffffff, mask + 4},
+					{ref, ref, 0x80000000, mask + 4}, {ref, ref, 0x80000001, mask + 4},
 					{ref, 0, 0, mask + 4}, {ref, ref + 1<<32, 0, mask + 4},
 					{ref, ref + 1, 0, mask + 4}, {ref, ref &^ (1 << 63), 0, mask + 4},
 					{0, ref, 0, mask + 4}, {ref + 1<<32, ref, 0, mask + 4},
