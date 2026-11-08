@@ -293,6 +293,9 @@ compares the affected four GC cases with main, including a separate sustained
 cohort. Its [hosted results](https://github.com/cpunion/wasmvm/pull/127#issuecomment-6716307382)
 resolve 2/4 sustained controls. Both records retain independent Go/LLGo,
 backend, competitor and lifecycle results; controlled acceptance remains open.
+The [guarded array-cache follow-up](docs/research/performance-array-cache-bounds-2026-11-08.md)
+records subsequent compiler changes, preserved adverse pilots and separate
+AMD64 measurements linked from its PR.
 
 The [2026-11-05 source event](docs/research/performance-loop-invariant-literals-2026-11-05.md)
 provides a 22-case local arm64 table and published Go/LLGo code audit.
