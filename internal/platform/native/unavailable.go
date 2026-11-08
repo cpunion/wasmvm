@@ -26,5 +26,5 @@ func sharedFence()                                                              
 func cancel(unsafe.Pointer)                                                      {}
 func enter(unsafe.Pointer, unsafe.Pointer) Exit                                  { return 0 }
 func layout(uint32) uint64                                                       { return 0 }
-func probeFP(unsafe.Pointer, unsafe.Pointer) bool                                { return false }
+func probeFP(unsafe.Pointer, unsafe.Pointer, Exit) bool                          { return false }
 func probeRegisters(unsafe.Pointer, unsafe.Pointer) bool                         { return false }

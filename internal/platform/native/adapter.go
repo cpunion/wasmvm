@@ -49,8 +49,8 @@ func enter(p, ctx unsafe.Pointer) Exit {
 	return Exit(C.wasmvm_enter(p, (*C.struct_wasmvm_record)(ctx)))
 }
 func layout(field uint32) uint64 { return uint64(C.wasmvm_layout(C.uint32_t(field))) }
-func probeFP(entry, record unsafe.Pointer) bool {
-	return C.wasmvm_probe_fp(entry, (*C.struct_wasmvm_record)(record)) != 0
+func probeFP(entry, record unsafe.Pointer, expected Exit) bool {
+	return C.wasmvm_probe_fp(entry, (*C.struct_wasmvm_record)(record), C.uint32_t(expected)) != 0
 }
 func probeRegisters(entry, record unsafe.Pointer) bool {
 	return C.wasmvm_probe_registers(entry, (*C.struct_wasmvm_record)(record)) != 0

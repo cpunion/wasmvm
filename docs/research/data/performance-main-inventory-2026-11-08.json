@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "encoding": "xz",
+  "path": "../evidence/performance-main-inventory-2026-11-08.json.xz",
+  "sha256": "0c6d049ce40c334ac36c1505012b4405f9b1bb241ccbbc63c5bc55396f0ea585",
+  "uncompressedSha256": "05fbe3fd9d61345297a467f50d1f38d7f3f6bae6cbd983792a247835cb7c7426",
+  "scope": "All22 original hosted main cases plus four independent sustained GC cases; per-group host/compiler/reference/phase identities, all adverse and unresolved raw samples, checks and source audits. No cross-host pooling or controlled acceptance."
+}

@@ -40,6 +40,6 @@ uint64_t wasmvm_layout(uint32_t field);
 void wasmvm_cpu_probe(uint32_t *ecx1, uint32_t *ebx7, uint32_t *ecx7, uint64_t *xcr0);
 uint32_t wasmvm_arm64_features(void);
 /* ABI diagnostic: invoke an entry under a non-default host FP environment. */
-uint32_t wasmvm_probe_fp(const void *entry, struct wasmvm_record *ctx);
+uint32_t wasmvm_probe_fp(const void *entry, struct wasmvm_record *ctx, uint32_t expected_status);
 uint32_t wasmvm_probe_registers(const void *entry, struct wasmvm_record *ctx);
 #endif

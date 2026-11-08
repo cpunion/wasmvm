@@ -17,27 +17,21 @@ integration. Competing runtimes are independent test and benchmark references;
 execution never silently switches to one of them.
 
 Performance acceptance remains open. The
-[completed cumulative comparison](docs/research/performance-cumulative-native-2026-11-07.md)
-measures all 22 Linux cases against the preceding main. Clang/Rust SHA observes
-LLGo elapsed time at **0.209/0.222×** the baseline, **0.655/0.669×** wazero,
-**1.248/1.327×** Wasmtime and **1.498/1.569×** native C. These are hosted advisory
-results; adverse GC/atomic/control observations and unresolved calibration remain
-explicit. The cumulative integration's four-profile semantic CI passes all 21 required jobs, 240
-conformance reports and every package coverage gate; the longest job takes 8m46s.
-The same report preserves the rejected frame-immediate experiment. An
-[amd64 checked heap cache follow-up](docs/research/performance-amd64-heap-cache-2026-11-07.md)
-retains original-count and sustained GC cohorts independently. The
-[register reuse and allocation-throughput correction](docs/research/performance-gc-cache-throughput-2026-11-08.md)
-keeps GC pauses in process means beside the original latency medians; median
-allocation ratios alone do not describe sustained throughput. The
-[batch rollback follow-up](docs/research/performance-native-batch-commit-2026-11-08.md)
-removes mutable captures, preserving unwind cleanup; measured elapsed benefit
-remains unestablished. The
-[rejected FP-register allocation](docs/research/performance-raw-integer-registers-2026-11-06.md)
-stays reverted after approximately 22% Linux SHA regressions. Source events,
-compiler profiles and lifecycle phases stay separate. The
-[gap audit](docs/research/performance-gaps-2026-11-02.md) retains the broader
-portfolio and independently reproduced upstream compiler reports.
+[latest complete integrated-main comparison](docs/research/performance-main-inventory-2026-11-08.md)
+retains all 22 Linux workloads and a separate sustained GC cohort against
+wazero, Wasmtime, Wasmer, WasmEdge and native C where applicable. LLGo native
+integer/function/private-memory loops observe **0.998/0.434/0.588×** wazero
+elapsed time; widening SIMD and public-call latency remain behind competitors.
+These are hosted advisory results: original controls resolve 7/22, sustained
+GC 2/4, and group hosts are kept separate. Setup, compilation, instantiation,
+first call, warmed calls, cleanup and process intervals are recorded separately.
+
+The integrated main passes all 23 required CI jobs, 240 conformance reports
+and 30 per-package coverage gates; its longest job takes 8m49s. The comparison
+retains adverse and unsupported results alongside the raw evidence. Existing
+[LLGo compatibility/performance findings](docs/research/performance-gaps-2026-11-02.md)
+and [rejected optimization experiments](docs/research/performance-raw-integer-registers-2026-11-06.md)
+remain explicit. Source events and compiler profiles are never pooled.
 
 ## Project status
 
