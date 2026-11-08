@@ -13,7 +13,7 @@ on:
       routing_scope:
         description: Routing groups to measure (routing suite only)
         type: choice
-        options: [all, gc]
+        options: [all, core, memory-simd, gc, threads, applications]
         default: all
       baseline:
         description: Baseline commit or ref in this repository
@@ -315,7 +315,7 @@ jobs:
       # Each group has an independent runner and source-pinned A/A controls.
       max-parallel: 5
       matrix:
-        group: ${{ fromJSON(inputs.routing_scope == 'gc' && '["gc"]' || '["core","memory-simd","gc","threads","applications"]') }}
+        group: ${{ fromJSON(inputs.routing_scope == 'all' && '["core","memory-simd","gc","threads","applications"]' || format('["{0}"]', inputs.routing_scope)) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:

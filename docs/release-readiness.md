@@ -81,10 +81,12 @@ commitment or production release is implied by this policy.
   fuel/cancellation policy, preparation/first/warm/cleanup, allocations and peak
   owned-memory evidence. Preserve all named competitors and native C where
   applicable. Hosted advisory results do not close this gate.
-- Fixed Linux amd64 and macOS arm64 acceptance machines. The repository had
-  **zero self-hosted runners** at this review. Record CPU/microcode, image,
-  affinity, power/frequency and background-load policy before controlled runs;
-  the current shared workstation/hosted runners do not supply that evidence.
+- Reproducible Linux amd64 and macOS arm64 acceptance measurements. GitHub-hosted
+  `ubuntu-24.04` and `macos-15` already execute these targets; self-hosted runners
+  are not a prerequisite. The runner API inventories self-hosted machines only.
+  Record CPU/microcode, image, affinity, power/frequency and background-load
+  policy, including controls the host does not expose. Keep independent samples
+  and A/A calibration; unresolved noise is not performance acceptance.
 - Final packaging and version publication after the applicable gates pass:
   exact source/toolchain/profile, dependency notices, actual platform/loader
   requirements, checksums and an accurate release body. MIT is selected and
