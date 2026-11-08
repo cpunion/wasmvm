@@ -29,7 +29,7 @@ const (
 )
 
 func (t ValueType) IsReference() bool {
-	return t.referenceEncoding() && (byte(t) >= byte(ContRef) && byte(t) <= byte(NoContRef))
+	return byte(t) >= byte(ContRef) && byte(t) <= byte(NoContRef) && t.referenceEncoding()
 }
 func (t ValueType) Valid() bool { return t >= V128 && t <= I32 || t.IsReference() }
 func (t ValueType) String() string {
