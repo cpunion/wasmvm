@@ -283,7 +283,8 @@ records primary sources, feature flags and ambiguous entries.
 ### Measured performance
 
 The [native memory instruction-selection record](docs/research/performance-memory-instruction-selection-2026-11-08.md)
-documents direct SSE4.1/AVX2 widening loads and scalar byte extraction, including
+documents direct SSE4.1/AVX2 widening loads, AVX2 memory broadcasts and scalar
+byte extraction, including
 all preceding measurements and unresolved controls. An all-22 compilation audit
 limits changed amd64 module images to the narrow-integer and SIMD-widening cases.
 

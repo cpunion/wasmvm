@@ -1,6 +1,6 @@
 # Native memory instruction selection
 
-Engine candidate `398a6ad` builds on integrated main `04a0d6e`. It adds no
+Engine implementation `ea4a856` builds on integrated main `04a0d6e`. It adds no
 feature flags or execution-policy exceptions. Both host compilers select from
 the same existing hardware-feature inventory.
 
@@ -22,6 +22,21 @@ metering and cancellation points. They do not read a 16-byte source. Legacy
 and VEX encodings for all six operations and low/high destinations were checked
 against the pinned LLVM 22.1.8 assembler before execution qualification.
 
+## Scalar memory broadcasts
+
+All four `v128.load8/16/32/64_splat` operations use direct AVX2 memory broadcasts
+when the already-advertised AVX2 profile is available. They read exactly 1/2/4/8
+bytes and eliminate the scalar-load/GPR/vector round trip. Baseline and SSE4.1
+profiles retain their existing complete sequences. The unary widening and
+broadcast forms share one small checked-address encoder. LLVM additionally
+verifies all four broadcasts at low/high vector destinations.
+
+The preceding widening-only source `398a6ad` observes 1.410 → 1.437 ns/iteration
+for LLGo native SIMD widening; the affected controls are unresolved, so no gain
+is accepted. Its exact workload also contains a halfword broadcast. The new
+source completes that memory path; the failed/inconclusive event remains in the
+raw archive rather than being replaced or pooled with another measurement.
+
 ## Scalar byte extraction
 
 A contained unsigned byte load at stored-byte offset one can use AH/CH/DH/BH.
@@ -39,7 +54,7 @@ feature mask 7 cover all 22 portfolio workloads. Only two linked modules change:
 | Workload | Base bytes | Candidate bytes |
 | --- | ---: | ---: |
 | Narrow unaligned integers | 15,409 | 15,405 |
-| SIMD widening memory | 9,258 | 9,213 |
+| SIMD widening memory | 9,258 | 9,171 |
 
 The other 20 module images are byte-identical. These are compiler diagnostics
 on ARM64, **not amd64 guest execution or timing evidence**. The
@@ -63,7 +78,7 @@ controls. No ARM64 improvement follows from that noisy unchanged-code event.
 ## Qualification contract
 
 The [raw archive](data/memory-instruction-selection-2026-11-08.json.xz) retains
-all three preceding six-case events: each has 102 alternative-input checks,
+all five preceding six-case events: each has 102 alternative-input checks,
 510 ordinary/A/A process observations and 30 unchecked native-C observations.
 Source, binary and fixture hashes, separate API phases, seven interleaved warm
 calls after two warmups, and five independent process blocks remain explicit.
@@ -75,7 +90,8 @@ Go 1.27.3, LLGo `38de1e218b8146ba73f9c6f2e60e3c31f29d96b6`, LLVM 22.1.8
 and LLGo `-O3 -lto=full` stay fixed. The local Go/LLGo codegen/native/VM suites
 pass; local execution is ARM64, with amd64 emission checked separately. Codegen
 statement coverage is 96.7%. The widening tests additionally execute baseline,
-SSE4.1 and AVX2 profiles on capable amd64 hosts, covering all six forms, register
+SSE4.1 and AVX2 profiles on capable amd64 hosts, covering all six widening and
+four broadcast forms, register
 pressure, unaligned/end-of-memory addresses, traps, cold entries and exact fuel.
 Exact code-size quotas are checked for both allocated and spilled destinations.
 
