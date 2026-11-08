@@ -1,5 +1,6 @@
 # wasmvm
 
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![CI](https://github.com/cpunion/wasmvm/actions/workflows/ci.yml/badge.svg?event=pull_request)](https://github.com/cpunion/wasmvm/actions/workflows/ci.yml)
 [![Go module](https://img.shields.io/badge/Go_module-source_only-blue)](pkg/README.md)
 [![API](https://img.shields.io/badge/API-experimental-orange)](docs/embedding.md)
@@ -428,7 +429,7 @@ comparisons; then satisfy performance and release gates. The
 
 ## License and provenance
 
-A license for project-owned source has not yet been selected. Test inputs retain
-their upstream licenses, notices and immutable manifests; those notices do not
-license the rest of the project. See each inventory, including the
+Project code is licensed under the [MIT License](LICENSE). Third-party code,
+fixtures and conformance corpora retain their respective upstream licenses,
+notices and immutable manifests. See each inventory, including the
 [Core 2 provenance](testdata/core2/README.md#provenance-and-notices).
