@@ -3,12 +3,20 @@
 Initial design date: 2026-10-26. The historical research below is retained with
 its original evidence; the current implementation/CI contract is recorded here.
 
-## Current implementation and CI (2026-11-04)
+## Current implementation and CI (2026-11-08)
 
 The owned Core 2/3 interpreter and native compiler execute on Linux amd64 and
-macOS arm64 with Go 1.27.3 and LLGo `3571c2523e010e6842c4dd8a5213554fdc72d2a3`.
+macOS arm64 with Go 1.27.3 and LLGo `38de1e218b8146ba73f9c6f2e60e3c31f29d96b6`.
 LLGo semantics and CLI retain `-O3 -lto=full`. The root module declares Go 1.26;
 older-toolchain assumptions in the initial survey are historical.
+
+The current pin upgrade from `3571c25` incorporates merged LLGo static-interface
+lowering (#2704) and concurrent itab lookup (#3005). It is an explicit compiler
+baseline event: Go 1.27.3, LLVM 22.1.8, `-O3 -lto=full`, VM source, fixtures and
+policies remain fixed. The exact old/new compiler comparison and final-head
+semantic qualification are recorded separately; historical measurements retain
+their original compiler identities. No performance milestone closes merely by
+upgrading the compiler.
 
 The [Cgo compiler study](../research/performance-llgo-cgo-upgrade-2026-11-04.md)
 compares the prior `983465e` pin with the five-commit `3571c25` checking-closure
@@ -21,9 +29,9 @@ PR source-base/head measurements use the selected compiler on both sources.
 The earlier [named-result migration](../research/performance-llgo-result-upgrade-2026-11-03.md)
 retains its separate `8e45ed5` → `983465e` evidence.
 
-The workflow runs complete Go semantics on both platforms. LLGo uses six
-package groups per platform: core, VM/codegen, component/CLI tests, HTTP/P1,
-P3, and legacy threads. The last two are separate after the measured combined
+The workflow runs complete Go semantics on both platforms. LLGo uses eight
+package groups per platform: core, VM/codegen, component, HTTP/P1, P3, legacy
+threads, Core Threads, and entry/CLI tests. The last two are separate after the measured combined
 job exceeded its budget; their full-LTO links and semantic tests remain intact. The checked [plan](../../.github/llgo-shards.json) assigns all
 31 test packages exactly once; [validation](../../scripts/ci_shards.py) rejects
 missing, duplicate or unlisted packages before the matrix starts. Each shard
