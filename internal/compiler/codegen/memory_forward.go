@@ -67,6 +67,22 @@ func (e *functionEmitter) forwardMemoryStoreLoad(start int, store slots.Instruct
 
 func (e *functionEmitter) forwardMemoryValue(source, dst slots.Slot, shift, width uint32, signed bool) {
 	wide := e.f.Slots[dst] == wasm.I64
+	// Legacy GPR high bytes encode this extraction without shifting a scratch
+	// copy. A 64-bit sign extension needs REX.W, which disables high-byte names.
+	if shift == 8 && width == 1 && (!signed || !wide) {
+		r, ok := e.registers[e.frameRead(source)]
+		if !ok || r >= 4 {
+			e.slotLoad(source, 0, false, e.f.Slots[source] == wasm.I64)
+			r = 0 // Scratch RAX exposes AH even when the source needs REX.
+		}
+		op := byte(0xb6)
+		if signed {
+			op = 0xbe
+		}
+		e.a.bytes(0x0f, op, 0xc4|r) // movzx/movsx eax, ah/ch/dh/bh.
+		e.slotStore(dst, 0, false)
+		return
+	}
 	e.slotLoad(source, 0, false, e.f.Slots[source] == wasm.I64)
 	if shift != 0 {
 		e.a.bytes(0x48, 0xc1, 0xe8, byte(shift))
