@@ -36,6 +36,8 @@ and rejected experiments retain their original source/compiler identities.
 
 ## Project status
 
+Verified CLI candidate archives are available from successful Go/LLGo CI runs; see [download, checksums and runtime requirements](docs/cli-packages.md).
+
 **Experimental; no tagged release or stable API commitment yet.** The module
 path is `github.com/cpunion/wasmvm`; public packages are available from source.
 As of 2026-11-01, the Go proxy lists no tagged versions and pkg.go.dev has not

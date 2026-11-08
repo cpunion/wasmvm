@@ -71,7 +71,16 @@ jobs:
         run: |
           mkdir -p artifacts/cli
           CGO_ENABLED=0 go build -o artifacts/cli/wasmvm ./cmd/wasmvm
-          python3 scripts/cli_smoke.py artifacts/cli/wasmvm --native unavailable
+          python3 scripts/package_cli.py artifacts/cli/wasmvm --compiler go --native unavailable --output artifacts/cli-packages
+          CGO_ENABLED=1 go build -o artifacts/cli/wasmvm-native ./cmd/wasmvm
+          python3 scripts/package_cli.py artifacts/cli/wasmvm-native --compiler go --native available --output artifacts/cli-packages
+      - name: Preserve verified Go CLI candidate packages
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cli-go-${{ matrix.platform.name }}
+          path: artifacts/cli-packages/
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Enforce per-package core coverage
         if: matrix.platform.name == 'linux-amd64'
@@ -272,7 +281,14 @@ jobs:
         run: |
           mkdir -p artifacts/cli
           llgo build -O3 -lto=full -o artifacts/cli/wasmvm ./cmd/wasmvm
-          python3 scripts/cli_smoke.py artifacts/cli/wasmvm --native available
+          python3 scripts/package_cli.py artifacts/cli/wasmvm --compiler llgo --native available --output artifacts/cli-packages
+      - name: Preserve verified LLGo CLI candidate packages
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cli-llgo-${{ matrix.platform.name }}
+          path: artifacts/cli-packages/
+          if-no-files-found: error
+          retention-days: 30
 
   race:
     name: Go race / linux-amd64
