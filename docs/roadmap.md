@@ -740,4 +740,6 @@ until capability coverage is complete; existing deficits and M1/M2 performance
 acceptance remain open. Correct, bounded execution and compact shared runtime
 contracts remain integration requirements.
 
-Before production release, select a project license, define public API compatibility, resolve isolation/lifecycle failures, review parser/validator/compiler/memory/filesystem boundaries, and publish actual supported platforms. A stage completion is not a security-audit claim or permission to publish a release.
+The owner selected MIT on 2026-11-08; the root `LICENSE` covers project-owned
+source, while imported material retains its upstream notices. Before production
+release, define public API compatibility, resolve isolation/lifecycle failures, review parser/validator/compiler/memory/filesystem boundaries, and publish actual supported platforms. A stage completion is not a security-audit claim or permission to publish a release.

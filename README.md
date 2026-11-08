@@ -286,10 +286,13 @@ records primary sources, feature flags and ambiguous entries.
 
 ### Measured performance
 
-The [completed 2026-11-07 cumulative Linux event](docs/research/performance-cumulative-native-2026-11-07.md)
-contains the latest main-baseline comparison, all 22 cases and independent
-compiler/backend/competitor/lifecycle summaries. Eight cases resolve all four
-A/A controls; controlled acceptance remains open.
+The [2026-11-08 Linux comparison](docs/research/performance-reference-kind-filter-2026-11-08.md)
+contains the latest completed full 22-case source comparison. The subsequent
+[checked-slot GC event](docs/research/performance-gc-slot-reuse-2026-11-08.md)
+compares the affected four GC cases with main, including a separate sustained
+cohort. Its [hosted results](https://github.com/cpunion/wasmvm/pull/127#issuecomment-6716307382)
+resolve 2/4 sustained controls. Both records retain independent Go/LLGo,
+backend, competitor and lifecycle results; controlled acceptance remains open.
 
 The [2026-11-05 source event](docs/research/performance-loop-invariant-literals-2026-11-05.md)
 provides a 22-case local arm64 table and published Go/LLGo code audit.
