@@ -48,6 +48,15 @@ MaxStreams bounds active operations across Stores, read/write limits bound each
 batch and at most twice MaxStreams external workers may be active. Store task,
 resource, fuel and value budgets also apply.
 
+External-I/O goroutines are reused within one IO owner. `MaxIdleWorkers` bounds
+idle retention (default four, capped by twice `MaxStreams`); accepted active
+work still uses the original twice-`MaxStreams` quota. A busy worker never queues
+another accepted operation behind a blocking read or write. Idle workers clear
+their completed closure, and excess idle workers retire. Close rejects admission,
+wakes idle workers and cancels active operations; WaitClosed joins both running
+and idle goroutines. Reuse avoids per-operation goroutine/thread creation while
+preserving independent Store ownership and the existing component task scheduler.
+
 Stdin returns independent readable streams and persistent completion futures.
 EOF resolves success, input failures resolve the declared error-code, and dropping
 the stream resolves success. Short reads and zero-length readiness are supported.
