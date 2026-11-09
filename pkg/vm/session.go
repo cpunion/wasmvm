@@ -33,7 +33,7 @@ func (s *Store) withCaller(ctx context.Context, options CallOptions, fn func(*Ca
 		return 0, err
 	}
 	defer op.finish()
-	caller := &Caller{active: true, op: op}
+	caller := op.newCaller(nil)
 	defer func() {
 		// A capability may still be executing on another goroutine. Cancel
 		// before waiting for its lock, including on normal return and panic.

@@ -9,7 +9,9 @@ import (
 
 // A background invocation needs only a sticky cancellation bit until a channel,
 // value or public context is observed. This state belongs to one operation and
-// is never rebound. Cancelable/custom parents retain ordinary WithCancel.
+// is never rebound once observed. A completed, entirely private invocation may
+// reuse its Store's one idle operation. Cancelable/custom parents retain
+// ordinary WithCancel and are never cached.
 type operationContext struct {
 	parent   context.Context
 	canceled atomic.Bool
@@ -68,6 +70,7 @@ func (op *operation) cancelContext() {
 	}
 }
 func (op *operation) publicContext() context.Context {
+	op.exposed.Store(true)
 	if op.cancelParent != nil {
 		return op.ctx
 	}
