@@ -48,9 +48,9 @@ type report struct {
 func parse(args []string, stderr io.Writer) (out options, err error) {
 	f := flag.NewFlagSet("service-reference", flag.ContinueOnError)
 	f.SetOutput(stderr)
-	f.StringVar(&out.engine, "engine", "wazero", "wazero or native-c")
-	f.StringVar(&out.backend, "backend", "compiler", "wazero: compiler/interpreter; native-c: native")
-	f.StringVar(&out.path, "wasm", "", "pure Core module for wazero")
+	f.StringVar(&out.engine, "engine", "wazero", "wazero, wasmtime, wasmer, wasmedge or native-c")
+	f.StringVar(&out.backend, "backend", "compiler", "compiler/interpreter, or native for native-c")
+	f.StringVar(&out.path, "wasm", "", "pure Core module for the selected engine")
 	f.BoolVar(&out.termination, "termination-checks", false, "enable wazero context termination checks")
 	f.IntVar(&out.Workers, "workers", 1, "independent workers")
 	f.IntVar(&out.Clients, "clients", 64, "clients with one outstanding request each")
@@ -72,6 +72,14 @@ func parse(args []string, stderr io.Writer) (out options, err error) {
 	if out.engine == "wazero" {
 		if out.path == "" || (out.backend != "compiler" && out.backend != "interpreter") {
 			return out, errors.New("wazero requires --wasm and backend compiler/interpreter")
+		}
+	} else if out.engine == "wasmtime" || out.engine == "wasmer" || out.engine == "wasmedge" {
+		backend := "compiler"
+		if out.engine == "wasmedge" {
+			backend = "interpreter"
+		}
+		if out.path == "" || out.backend != backend || out.termination {
+			return out, errors.New("SDK engine requires a Wasm path, its declared backend and default termination policy")
 		}
 	} else if out.engine != "native-c" || out.backend != "native" || out.termination || out.path != "" || *iterations > 65536 {
 		return out, errors.New("native-c requires backend native, iterations <=65536, no Wasm path or termination policy")
@@ -95,9 +103,11 @@ func benchmark(ctx context.Context, args options, beforeSample func(int) error) 
 	if args.engine == "native-c" {
 		out.Policy = "ordinary scalar C SHA-256 through the host C bridge; shared admission driver; no VM safety, cancellation, fuel, JIT or Wasm lifecycle"
 		calls, release, err = nativeKernels(args)
-	} else {
+	} else if args.engine == "wazero" {
 		out.Policy = fmt.Sprintf("wazero independent instances sharing one compiled module; context termination checks=%t", args.termination)
 		calls, release, err = wazeroKernels(ctx, args, &out)
+	} else {
+		calls, release, err = sdkKernels(args, &out)
 	}
 	if release != nil {
 		defer func() {

@@ -20,8 +20,11 @@ Performance acceptance remains open. The
 [current compiler baseline](docs/research/performance-llgo-escape-upgrade-2026-11-09.md)
 uses LLGo `3d92a58`, including upstream escape/defer fixes; Go 1.27.3, LLVM
 22.1.8 and `-O3 -lto=full` remain fixed. Its ARM64 event retains all 22 original
-workloads plus separate sustained GC/Threads comparisons. The independently
-queued Linux event and the earlier [two-platform comparison](docs/research/performance-llgo-interface-upgrade-2026-11-08.md)
+workloads plus separate sustained GC/Threads comparisons. The independent
+[Linux snapshot](docs/research/performance-linux-routing-2026-11-09.md)
+retains 32 complete cohort-cases and its original timed-out partial case;
+both source roles use the new compiler. It and the earlier
+[two-platform comparison](docs/research/performance-llgo-interface-upgrade-2026-11-08.md)
 retain their distinct source/compiler identities. The
 [invocation cleanup](docs/research/performance-invocation-cleanup-2026-11-09.md)
 narrows local LLGo/Go short-call gaps, without establishing a controlled win.
@@ -32,6 +35,10 @@ The [concurrent service comparison](docs/research/performance-service-references
 uses one admission driver for Go/LLGo, wazero and native C. All 54 A/A controls
 remain unresolved; its throughput, request/API latency and separate resource
 observations do not establish a controlled ranking.
+Optional pinned Wasmtime/Wasmer/WasmEdge C bridges now use the
+[same concurrent driver](benchmarks/service/README.md), with actual independent
+worker/lifecycle tests. Adapter correctness is separate from their pending
+concurrent performance evidence.
 
 Hosts and compiler events stay separate. Setup, compilation, instantiation,
 first call, warmed calls, cleanup and process intervals are recorded separately.

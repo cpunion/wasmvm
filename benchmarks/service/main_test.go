@@ -99,6 +99,21 @@ func TestFlagsKeepReferencePoliciesExplicit(t *testing.T) {
 	if _, err := parse([]string{"--expected", "1", "--wasm", "unused"}, io.Discard); err != nil {
 		t.Fatal(err)
 	}
+	for _, name := range []string{"wasmtime", "wasmer", "wasmedge"} {
+		backend := "compiler"
+		if name == "wasmedge" {
+			backend = "interpreter"
+		}
+		args := []string{"--engine", name, "--backend", backend, "--wasm", "unused", "--expected", "1"}
+		if _, err := parse(args, io.Discard); err != nil {
+			t.Fatal(name, err)
+		}
+		for _, extra := range [][]string{{"--wasm", ""}, {"--backend", "native"}, {"--termination-checks"}} {
+			if _, err := parse(append(append([]string{}, args...), extra...), io.Discard); err == nil {
+				t.Fatal(name, extra)
+			}
+		}
+	}
 }
 
 type failedWriter struct{}

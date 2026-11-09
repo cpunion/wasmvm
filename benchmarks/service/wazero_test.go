@@ -8,10 +8,42 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/cpunion/wasmvm/internal/bench/service"
 )
 
 func referenceFixture(name string) string {
 	return filepath.Join("..", "embedded", "wazero", "testdata", name+".wasm")
+}
+
+func checkIndependentWorkerState(t *testing.T, calls []service.Call) {
+	t.Helper()
+	// Every worker starts with zero. Later calls must retain its own state;
+	// the fixed checksum callback deliberately reports the changed value.
+	for round := range 3 {
+		for _, call := range calls {
+			_, value, err := call()
+			if value != uint32(round*2) || (err == nil) != (round == 0) {
+				t.Fatal("worker state is shared or reset", round, value, err)
+			}
+		}
+	}
+}
+
+func TestWazeroWorkersOwnMemoryAndGlobals(t *testing.T) {
+	for _, backend := range []string{"compiler", "interpreter"} {
+		args := nativeOptions()
+		args.engine, args.backend, args.path, args.Expected = "wazero", backend, filepath.Join("testdata", "worker-state.wasm"), 0
+		out := report{Phases: make(map[string]int64)}
+		calls, release, err := wazeroKernels(context.Background(), args, &out)
+		if release != nil {
+			defer release()
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		checkIndependentWorkerState(t, calls)
+	}
 }
 
 func TestWazeroSharedCompilationIndependentInstances(t *testing.T) {
