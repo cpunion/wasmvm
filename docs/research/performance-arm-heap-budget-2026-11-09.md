@@ -62,3 +62,29 @@ unchanged sources, sweep counts/profiles/ISA or pool cohorts/hosts. Preserve
 all phases, raw samples/orders, allocation means including every pause and all
 adverse/unresolved A/A intervals. These advisory runs do not close M1–M6
 controlled acceptance or authorize a production-performance claim.
+
+## Cross-target qualification correction
+
+Revision1178f72 placed the ARM64 profitability helper in a filename ending
+`_arm64.go`, but the target-neutral planner references it on every host. Local
+ARM64 tests passed; amd64 CI correctly rejected the missing method. Move that
+unchanged helper body into the shared heap source and verify a Linux amd64
+cgo-free build of every package before final CI. This is a project source-layout
+error, not an LLGo compatibility defect. Original failed jobs/logs remain.
+
+The earlier ARM64 event belongs to revision1178f72, not to the corrected final
+head. Retain its roughly3% observed indirect-access reduction, unresolved A/A
+controls and adverse allocation samples with that identity. Do not retime the
+unchanged ARM64 algorithm or relabel those observations as final-head results.
+The failed hosted build produced no Linux runtime samples; its HTTP504 input
+download outcome remains distinct from the amd64 compilation failure. Run one
+fresh final-source Linux GC comparison and the required full semantic matrix.
+
+The same failed campaign exposed transient HTTP504 while opening pinned corpus
+and competitor SDK downloads. Share a small opener that retries only HTTP
+502/503/504, at most three opens with1s/2s delays, before returning a stream.
+Keep the original URL, size/digest checks, extraction rules and all terminal
+content/test failures. Do not retry partially consumed streams, permission/rate
+failures, guest execution or measurement. Added tests check successful retry,
+closed failed responses, terminal exhaustion and non-retriable errors; existing
+corpus/installer tests retain transport/content/integrity rejection coverage.
