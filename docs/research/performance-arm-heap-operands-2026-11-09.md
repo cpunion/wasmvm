@@ -1,9 +1,10 @@
 # ARM64 checked heap operands in allocated homes
 
-Prepared follow-up to shared caller-budget revision
-`1178f72be66bc45009f696a3b07762a2cfbb1921` (PR #139).
-That PR remains subject to final required CI and hosted comparison; this branch
-is not a second active contribution PR or an accepted performance result.
+Follow-up to the shared caller-budget implementation in merged PR #139,
+baseline `281f2cb1a5e63356c237e21ff2125157473e937f`. Its final source passed
+all required CI and the Linux comparison; controlled performance acceptance
+remains open. This follow-up requires its own final-head qualification and
+scoped comparison before integration.
 
 ## Mechanism
 
@@ -32,9 +33,8 @@ build log remains diagnostic evidence, never an execution result.
 
 ## Measurement boundary
 
-Do not time this follow-up while PR #139 or local preparation is active.
-Preserve one active PR. Once its dependency is resolved, rebase and freeze this
-source, then finish all builds/tests/probes before one predeclared event.
+Preserve one active PR. Freeze this source after rebasing on the merged
+dependency, then finish all local builds/tests/probes before one predeclared event.
 First audit all22 fixed-profile module/function/tier images for both targets.
 Scope measurement to all changed families before timing; retain original and
 sustained GC cohorts independently. Reuse pinned profiles, fixtures, references,
@@ -76,3 +76,15 @@ contributions, a new benchmark, or permission to remove checks. The original
 identity trace has75% struct-cache hits and an alternating store-hit pattern;
 do not assume unpredictable branches or add a two-way cache on that premise.
 Preserve raw SDK/image hashes, disassembly and source traces separately.
+
+## CI package balance
+
+The final PR #139 Linux core shard took608 seconds, with477 seconds in its
+compile/link/test step. Individual overlapping LTO links included phase.test
+at169.936 seconds; its actual tests took0.169 seconds. Move only
+internal/bench/phase from core to component, whose observed total was319
+seconds. Both shards then contain nine packages. Phase uses committed fixtures
+and does not require an extra corpus input. Keep all31 packages exactly once
+per platform, eight shards, the pinned release profile, every semantic report
+and every coverage gate. This is a scheduling change; a shorter final CI job
+must be observed rather than assumed from overlapping link durations.

@@ -1,7 +1,7 @@
 [
   {
     "name": "core",
-    "packages": "./internal/binary ./internal/core/constant ./internal/core/decode ./internal/core/module ./internal/core/validate ./internal/compiler/lower ./internal/compiler/slots ./internal/engine/execute ./pkg/wasm ./internal/bench/phase",
+    "packages": "./internal/binary ./internal/core/constant ./internal/core/decode ./internal/core/module ./internal/core/validate ./internal/compiler/lower ./internal/compiler/slots ./internal/engine/execute ./pkg/wasm",
     "inputs": "core2 core3 core_extensions"
   },
   {
@@ -11,7 +11,7 @@
   },
   {
     "name": "component",
-    "packages": "./internal/component/canonical ./internal/component/decode ./internal/component/validate ./pkg/component ./internal/compiler/nativeabi ./internal/compiler/ir ./internal/compat ./internal/wasi/host",
+    "packages": "./internal/component/canonical ./internal/component/decode ./internal/component/validate ./pkg/component ./internal/compiler/nativeabi ./internal/compiler/ir ./internal/compat ./internal/wasi/host ./internal/bench/phase",
     "inputs": "component"
   },
   {
