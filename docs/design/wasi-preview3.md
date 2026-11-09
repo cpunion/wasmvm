@@ -210,8 +210,12 @@ length independently. Broader outbound wire-protocol support remains explicit
 future work, not a silent loss of trailers. The server-facing HTTPHandler uses
 the embedding server's standard HTTP protocol support.
 
-Guest byte batches enter a zero-buffer pipe through the existing scheduler;
-network goroutines never enter guest code. Physical message readers are closed
+Guest byte batches enter a single-batch pipe through the existing scheduler;
+the writer waits for complete consumption before the next batch can enter.
+Partial external reads copy directly from the owned immutable snapshot without
+a mutable staging copy or a writer wakeup per fragment. Reader/writer errors,
+partial counts, concurrent readers and close wakeups preserve pipe semantics.
+Network goroutines never enter guest code. Physical message readers are closed
 by a bounded reclaimer. Operation completion retains a separate late-result
 lease through publication or abandonment. Provider Close revokes endpoints;
 WaitClosed joins admitted work and physical cleanup. Close/wait instances and
