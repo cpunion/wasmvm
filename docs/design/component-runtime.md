@@ -562,6 +562,13 @@ reads are invalid. No Caller or guest execution stack escapes to a worker.
 the existing scheduler. `Function.CallWithResult` transfers an async result to
 a scoped consumer as soon as task.return resolves it, permitting consumption
 while the guest producer is still parked. It then drains background tasks.
+`Function.CallWithResultPrepared` also creates arguments inside that same lease.
+Rejected Store admission never invokes preparation; its Caller expires before
+starting the guest, and failed preparation or argument acceptance reclaims newly
+created capabilities. HTTP uses this to publish the incoming request atomically
+with guest admission, avoiding resource retention when another call wins the
+Store. `ByteStreamType` supplies the structural `stream<u8>` type for host byte
+sources; ordinary Store ownership and transfer limits still apply.
 Ordinary Call retains its existing completion behavior. `Instance.WithCaller`
 provides the same scoped lease for embedding work without a guest entry.
 

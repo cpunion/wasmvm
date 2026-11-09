@@ -289,27 +289,35 @@ throughput processes and72 separate resource processes.35/72 controls resolve;
 all six owned LLGo native controls remain unresolved. These point estimates do
 not establish a controlled ranking.
 
-The latest [P3 readiness comparison](docs/research/performance-p3-read-ahead-2026-11-10.md)
-measures complete 64 KiB bodies, metadata and trailers. HTTP fixture, four
-workers; native-Go rows are ordinary host/application controls:
+The latest [P3 complete-response comparison](docs/research/performance-p3-store-local-2026-11-10.md)
+uses the same physical Go/LLGo binaries for streaming and bounded Store-local
+collection. Complete 64 KiB HTTP fixture, four workers; native-Go rows are
+ordinary application controls:
 
 | Runtime / host compiler | req/s | Complete API us |
 | --- | ---: | ---: |
-| wasmvm native / LLGo | 2666 | 1468.4 |
-| wasmvm native / Go | 11734 | 329.1 |
-| Wasmtime 48 / Go C-Rust bridge | 56524 | 66.1 |
-| Native-Go application / LLGo | 8803 | 411.0 |
-| Native-Go application / Go | 44387 | 77.5 |
+| wasmvm streaming native / LLGo | 2841 | 1374.4 |
+| wasmvm buffered native / LLGo | 3489 | 1127.4 |
+| wasmvm buffered native / Go | 13785 | 278.6 |
+| Wasmtime 48 / Go C-Rust bridge | 58529 | 63.8 |
+| Native-Go application / LLGo | 8874 | 402.1 |
+| Native-Go application / Go | 43821 | 78.8 |
 
-**All 40 timing controls are unresolved in this noisy event.** These observations
-establish no stable speed win or ranking. Separate direct counters agree under
-Go and LLGo: bounded input read-ahead reduces external reads 15 -> 2 and task
-resumes 80 -> 41 per request. Task creation remains 24, and the streaming output
-adapter retains 14 response reads. The same-event LLGo native baseline observes
-1971 -> 2666 req/s and 938625 -> 848551 accounted B/request; the large reference
-and host-runtime gaps remain. The owned streaming adapter and reference's
-Store-local body collection retain distinct topology; further attribution is
-required. Startup, compilation, instantiation and cleanup remain separate.
+**Only 2/40 timing controls resolve; no owned mode pair resolves both controls.**
+These are observations, not a stable win or ranking. LLGo streaming -> buffered
+accounted allocation falls 846187 -> 561068 B/request and between-batch threads
+61 -> 57; peak RSS rises 160.1 -> 176.2 MiB. Large competitor and host-runtime
+gaps remain. `CallIncomingBuffered` keeps an explicit body limit, complete
+trailers, cancellation, fuel and joined guest work. Atomic request preparation
+also fixes a reproduced Busy-Store resource leak. Startup, compilation,
+instantiation and cleanup stay separate in the full record.
+
+The separate [readiness study](docs/research/performance-p3-read-ahead-2026-11-10.md)
+retains all 40 unresolved controls. Independent Go/LLGo counters show bounded
+input read-ahead reduces external reads 15 -> 2 and task resumes 80 -> 41;
+those counts are not a full latency attribution. A separate
+[LLGo append diagnostic](docs/research/performance-llgo-zero-append-2026-11-10.md)
+reports exact duplicate allocation as [#3040](https://github.com/xgo-dev/llgo/issues/3040).
 Earlier [transfer-buffer](docs/research/performance-p3-io-buffers-2026-11-10.md),
 [worker-reuse](docs/research/performance-p3-worker-reuse-2026-11-10.md),
 [immutable-copy](docs/research/performance-immutable-memory-2026-11-10.md) and
