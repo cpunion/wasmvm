@@ -1,4 +1,4 @@
-//go:build !p3reference || llgo
+//go:build !p3reference || llgo || p3host
 
 package main
 

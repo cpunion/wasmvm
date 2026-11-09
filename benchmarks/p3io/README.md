@@ -66,6 +66,8 @@ shared driver from the owned root module. Go adapter coverage is not coverage
 of C, Rust, Wasmtime or the specification. The reference executable accepts
 `--engine wasmtime --backend compiler` with the same workload arguments.
 Use `--engine native-go --backend host` without `--wasm` for the native control.
+The `p3host` build tag excludes both the owned VM and Rust bridge from a
+standalone Go/LLGo host control; its only owned dependency is the shared driver.
 
 The static bridge avoids a macOS27 LINKEDIT validation failure observed while
 linking the initial Rust dylib into Go. The initial failure is retained as

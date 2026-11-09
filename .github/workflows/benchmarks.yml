@@ -214,7 +214,7 @@ jobs:
   native_arm64:
     # Sustained native acceptance is explicit; ordinary PR phase comparisons
     # already include both owned backends and all compiled references.
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite != 'pr' && inputs.suite != 'survey' && inputs.suite != 'routing' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.suite == 'full' || inputs.suite == 'native-simd') }}
     name: Native feature and competitors / ${{ matrix.platform.name }}
     runs-on: ${{ matrix.platform.runner }}
     strategy:
