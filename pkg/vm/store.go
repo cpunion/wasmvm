@@ -59,7 +59,8 @@ type Store struct {
 type operation struct {
 	store         *Store
 	ctx           context.Context
-	cancelContext context.CancelFunc
+	cancelParent  context.CancelFunc
+	background    operationContext
 	stopInterrupt func() bool
 	options       CallOptions
 	fuel          uint64
@@ -101,10 +102,15 @@ func (s *Store) begin(ctx context.Context, options CallOptions) (*operation, err
 		return nil, err
 	}
 	watch := s.engine.config.Backend == "native" && ctx.Done() != nil
-	ctx, cancel := context.WithCancel(ctx)
-	op := &operation{store: s, ctx: ctx, cancelContext: cancel, options: options, fuel: options.Fuel}
+	op := &operation{store: s, options: options, fuel: options.Fuel}
+	if ctx == context.Background() || ctx == context.TODO() {
+		op.background.parent = ctx
+		op.ctx = &op.background
+	} else {
+		op.ctx, op.cancelParent = context.WithCancel(ctx)
+	}
 	if watch {
-		op.stopInterrupt = context.AfterFunc(ctx, op.interrupt)
+		op.stopInterrupt = context.AfterFunc(op.ctx, op.interrupt)
 	}
 	s.active = op
 	return op, nil

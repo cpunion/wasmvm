@@ -38,7 +38,7 @@ func (c *Caller) enter() error {
 	}
 	return nil
 }
-func (c *Caller) Context() context.Context { return c.op.ctx }
+func (c *Caller) Context() context.Context { return c.op.publicContext() }
 func (c *Caller) Store() *Store            { return c.op.store }
 
 // NewExternRef creates a callback-scoped root, valid through result handoff.

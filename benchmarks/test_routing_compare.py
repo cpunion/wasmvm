@@ -38,6 +38,26 @@ class RoutingComparisonTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             routing.measurement_fixture(root, dict(family='core'), True)
 
+    def test_sustained_threads_keeps_original_counts_and_independent_oracles(self):
+        root = Path(__file__).resolve().parent.parent
+        fixtures = routing.fixtures(root)
+        threads = 0
+        for original in fixtures:
+            snapshot = dict(original)
+            if original['family'] == 'threads':
+                threads += 1
+                measured = routing.measurement_fixture(root, original, sustained_threads=True)
+                self.assertEqual(100_000, measured['iterations'])
+                self.assertEqual(routing.oracle(root, original, original['seed'], 100_000), measured['expectedChecksum'])
+                self.assertEqual(10_000, original['iterations'])
+                self.assertEqual(original['wasmSha256'], measured['wasmSha256'])
+            self.assertEqual(snapshot, original)
+        self.assertEqual(6, threads)
+        with self.assertRaises(ValueError):
+            routing.measurement_fixture(root, dict(family='core'), sustained_threads=True)
+        with self.assertRaises(ValueError):
+            routing.measurement_fixture(root, dict(family='threads'), True, True)
+
     def test_common_features_are_instrumentation_only_and_boundary_is_exact(self):
         source = 'config.Backend = args.backend\n"unmetered; bounded cancellation; checked Core 2.0"'
         patched = routing.instrument_own(source)
