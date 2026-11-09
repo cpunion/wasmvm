@@ -274,7 +274,7 @@ def measurement_fixture(root, fixture, sustained_gc=False, sustained_threads=Fal
     if sustained_threads:
         if result['family'] != 'threads':
             raise ValueError('sustained Threads requires a Threads fixture')
-        result['iterations'] = 1_000_000
+        result['iterations'] = 100_000
         result['expectedChecksum'] = oracle(root, result, result['seed'], result['iterations'])
     return result
 
@@ -303,7 +303,7 @@ def measure(args):
             raise ValueError('built binary identity changed')
         if 'sourceHashes' in row and own_build.hashes(Path(row['binary']).parent, own_build.ENGINE_PATHS, own_build.HARNESS) != row['sourceHashes']:
             raise ValueError('archived engine identity changed')
-    report = dict(status='running', classification='Hosted advisory; controlled milestone acceptance remains open', build=b, group=args.group, cohort='gc-sustained-v1' if sustained_gc else 'threads-sustained-v1' if sustained_threads else 'original22-v1', host=dict(platform=platform.platform(), cpu=ci.capture(['lscpu']), affinity=sorted(os.sched_getaffinity(0)), GOMAXPROCS='1', loadBefore=os.getloadavg(), powerPolicy='Hosted VM default; physical frequency/neighbor isolation not controlled', cachePolicy='Fresh processes; disk compilation cache disabled; filesystem cache not flushed'), cases=[], checks=[], unsupported=[])
+    report = dict(status='running', classification='Hosted advisory; controlled milestone acceptance remains open', build=b, group=args.group, cohort='gc-sustained-v1' if sustained_gc else 'threads-sustained-v2' if sustained_threads else 'original22-v1', host=dict(platform=platform.platform(), cpu=ci.capture(['lscpu']), affinity=sorted(os.sched_getaffinity(0)), GOMAXPROCS='1', loadBefore=os.getloadavg(), powerPolicy='Hosted VM default; physical frequency/neighbor isolation not controlled', cachePolicy='Fresh processes; disk compilation cache disabled; filesystem cache not flushed'), cases=[], checks=[], unsupported=[])
     rng = random.Random(SEED)
     try:
         for f in b['fixtures']:
@@ -371,7 +371,7 @@ def measure(args):
     finally:
         report['host']['loadAfter'] = os.getloadavg()
         save(out / 'results.json', report)
-        lines = ['## Runtime routing comparison: ' + args.group + (' / sustained GC (300000 allocation, 1000000 other iterations)' if sustained_gc else ' / sustained Threads (1000000 iterations)' if sustained_threads else ' / original22'), '', '**Hosted advisory; controlled milestone acceptance remains open.** Five fresh blocks, two warmups/seven interleaved samples; pinned source/compiler/reference identities, one inherited CPU affinity and GOMAXPROCS=1. Physical CPU power and neighbor contention remain uncontrolled. Each marginal 95% paired A/A interval must lie within ±2.5% for this diagnostic calibration; this is not the controlled native feature equivalence gate.', '', 'Base `' + b['base'] + '`; head `' + b['head'] + '`.', '', '| Workload / statistic | Go native head/base | LLGo native head/base | Go interpreter head/base | LLGo interpreter head/base | LLGo native / Wasmtime | / Native C | A/A within ±2.5% |', '| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |']
+        lines = ['## Runtime routing comparison: ' + args.group + (' / sustained GC (300000 allocation, 1000000 other iterations)' if sustained_gc else ' / sustained Threads (100000 iterations)' if sustained_threads else ' / original22'), '', '**Hosted advisory; controlled milestone acceptance remains open.** Five fresh blocks, two warmups/seven interleaved samples; pinned source/compiler/reference identities, one inherited CPU affinity and GOMAXPROCS=1. Physical CPU power and neighbor contention remain uncontrolled. Each marginal 95% paired A/A interval must lie within ±2.5% for this diagnostic calibration; this is not the controlled native feature equivalence gate.', '', 'Base `' + b['base'] + '`; head `' + b['head'] + '`.', '', '| Workload / statistic | Go native head/base | LLGo native head/base | Go interpreter head/base | LLGo interpreter head/base | LLGo native / Wasmtime | / Native C | A/A within ±2.5% |', '| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |']
         for case in report['cases']:
             values = warm_values(case)
             def ratio(a, c):
@@ -399,7 +399,7 @@ def main():
     for name in ['head-dir', 'build-dir', 'output-dir']:
         runner.add_argument('--' + name, type=Path, required=True)
     runner.add_argument('--group', choices=GROUPS, required=True)
-    runner.add_argument('--threads-sustained', action='store_true', help='Separate fixed million-iteration Threads cohort; original22 is unchanged')
+    runner.add_argument('--threads-sustained', action='store_true', help='Separate fixed 100000-iteration Threads cohort; original22 is unchanged')
     runner.add_argument('--gc-sustained', action='store_true', help='Separate fixed long GC cohort; never replaces the original22 cases')
     args = parser.parse_args()
     (build if args.action == 'build' else measure)(args)

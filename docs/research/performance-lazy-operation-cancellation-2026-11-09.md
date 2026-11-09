@@ -39,8 +39,8 @@ coverage and all six verified CLI packages remain merge requirements.
 Keep Go1.27.3, LLGo38de1e218 `-O3 -lto=full`, LLVM22.1.8, named references,
 source/fixture hashes and the five-block/two-warmup/seven-call protocol fixed.
 The full Linux original22 portfolio and separate sustained GC cohort remain.
-An additional **threads-sustained-v1** cohort runs all six unchanged Threads
-binaries at exactly1,000,000 iterations, with independent checksums and all
+An additional **threads-sustained-v2** cohort runs all six unchanged Threads
+binaries at exactly100,000 iterations, with independent checksums and all
 native/interpreter references. It does not replace the original10,000 cases or
 subtract empty-call costs. A separate measurement job reuses the shared build,
 keeping ordinary semantic jobs unchanged. Local arm64 covers Core/Threads and
@@ -53,3 +53,15 @@ retiming or platform/cohort pooling is permitted. Final source-specific results
 belong in the contribution PR; five-block diagnostics do not close the required
 controlled performance gate. Go-host callbacks and live-parent boundary
 controls are measured separately from sustained guest execution.
+
+## Setup correction before local timing
+
+The first hosted million-iteration Threads event (run42551167100) completed
+five cases, then the wait-timeout interleaved block exceeded its existing
+180-second deadline. Preserve that entire event, including the failed sixth
+case. It is not a complete cohort or an accepted performance result. Before
+local timing, uniformly reduce this additional cohort to100,000 iterations
+for all six unchanged binaries and label it threads-sustained-v2. The existing
+original22, process protocol, references and timeout remain unchanged. This
+single correction bounds CI work; do not sweep counts or select favorable
+samples. Report both hosted events separately. The engine sources are unchanged.

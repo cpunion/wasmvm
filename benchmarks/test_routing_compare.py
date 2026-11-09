@@ -47,8 +47,8 @@ class RoutingComparisonTests(unittest.TestCase):
             if original['family'] == 'threads':
                 threads += 1
                 measured = routing.measurement_fixture(root, original, sustained_threads=True)
-                self.assertEqual(1_000_000, measured['iterations'])
-                self.assertEqual(routing.oracle(root, original, original['seed'], 1_000_000), measured['expectedChecksum'])
+                self.assertEqual(100_000, measured['iterations'])
+                self.assertEqual(routing.oracle(root, original, original['seed'], 100_000), measured['expectedChecksum'])
                 self.assertEqual(10_000, original['iterations'])
                 self.assertEqual(original['wasmSha256'], measured['wasmSha256'])
             self.assertEqual(snapshot, original)
