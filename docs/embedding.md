@@ -50,6 +50,25 @@ StoreConfig bounds frames, slots, memories, tables, heap objects and roots.
 Failed instantiation reclaims unescaped state while preserving externally
 visible effects on imported objects.
 
+For repeated numeric calls, `function.Scalar()` binds an I32/I64/F32/F64-only
+signature once and reuses private argument storage. Supply a caller-owned stack
+with length exactly max(parameter count, result count):
+
+```go
+scalar, err := function.Scalar()
+// Check err. This example assumes (i32, i32) -> i32.
+stack := []uint64{17, 64}
+fuel, err := scalar.Call(ctx, stack, vm.CallOptions{})
+// Check err before consuming stack[0]; fuel is separate policy metadata.
+```
+
+Parameters occupy the prefix on entry; only the result prefix is replaced on
+success. I32/F32 use low32 bits; I64/F64 preserve all bits. Calls share the
+ordinary Store execution/fuel/cancellation rules. A binding or Store cannot run
+two calls concurrently; use Caller.Call for controlled host reentry. References
+and V128 use typed Values. `Store.NewScalarFunction` defines an independent raw
+numeric host callback; its callback stack is separate from this caller buffer.
+
 ## Shared linear memory and modern core
 
 Enable `wasm.Threads`, create shared memory with an explicit maximum, and use
@@ -106,7 +125,7 @@ until workers have joined. `group.Close()` requests cancellation;
 `group.WaitClosed(cleanupContext)` joins Stores and Process resources. The
 per-thread Store/fuel and process thread quotas are explicit in Config.
 See [thread group ownership](design/wasi-threads.md). Component/WASI 0.2/0.3
-execution remains subsequent scope.
+embedding follows below.
 
 
 ## Component host modules

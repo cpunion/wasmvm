@@ -1,8 +1,9 @@
 # Reusable scalar public calls
 
-Prepared after the bounded-service benchmark. Preserve one active contribution
-PR; this branch requires dependency resolution, final source qualification,
-affected API comparisons and the full semantic matrix before integration.
+Prepared after merged PR #141, baseline
+`9f04e1a3785303532a8ab77e0f3ba383dd2e0b71`. Preserve one active contribution
+PR. Final source qualification, affected API comparisons and the full semantic
+matrix remain required before integration.
 
 The typed Value API constructs raw argument and public result slices for every
 invocation. `Extern.Scalar` captures a numeric signature once and keeps private
@@ -39,7 +40,17 @@ reentry and retained context expiry on both backends and host compilers.
 
 ## Measurement boundary
 
-No performance result is claimed yet. Keep the ordinary typed API as a distinct
+No timing result is claimed yet. A separate allocation-only diagnostic at
+source49d02bd retains all three rounds and zero-call controls: Go ordinary
+calls264B/four allocations versus stack calls200B/two; pinned LLGo ordinary
+about976 versus stack about912 collector bytes. LLGo Mallocs is unavailable,
+and collector bytes are not equivalent Go object accounting. These original
+source records are not relabelled after the documentation-only rebase.
+A minimal literal/field-assignment control finds no sustained per-call LLGo
+allocation, so it does not justify a compiler issue or rewriting the ordinary
+struct literal. Remaining allocation sites still require investigation.
+
+Keep the ordinary typed API as a distinct
 row; a faster numeric interface cannot erase an ordinary API regression. Compare
 equivalent reusable numeric-stack interfaces in pinned references, explicitly
 retaining their termination/metering policies. The existing10000-call batch
