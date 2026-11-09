@@ -24,7 +24,7 @@ type heapCache struct{ key, address byte }
 // Full handle equality is
 // checked on every hit; each miss uses the ordinary null/index/generation
 // checks. Entry resets prevent a moved address surviving a safepoint.
-func (e *functionEmitter) prepareHeapCaches() {
+func (e *functionEmitter) prepareHeapCaches(config Config) {
 	if e.unmetered && e.a.arch == "amd64" {
 		for _, cache := range e.heapCaches {
 			e.a.xconst(cache.key, 0)
@@ -44,6 +44,11 @@ func (e *functionEmitter) prepareHeapCaches() {
 		if access, ok := e.heapAccesses[in.Source]; ok && in.Op>>16 == 0xfb {
 			weights[access.cacheClass] += frequency(frequencies, pc)
 		}
+	}
+	// Prefer complete-handle reuse to alternating identities when the fixed
+	// caller register budget cannot cache every equally frequent type.
+	for class, weight := range e.heapCacheReusePriorities(config, frequencies) {
+		weights[class] += weight
 	}
 	var classes [2]registerCandidate
 	for class, weight := range weights {

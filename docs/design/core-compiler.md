@@ -791,3 +791,12 @@ Every original store and backedge poll remains; cold PCs use ordinary checked
 memory. The register is absent from every loop mapping and is discarded at
 entry boundaries. Shared/view memories and other effects decline the proof.
 See the [qualification and declared measurement](../research/performance-private-loop-value-2026-11-09.md).
+
+### Heap-cache reuse priorities
+
+ARM64 adds the shared conservative identity-reuse hint to type access frequency
+when selecting its fixed caller-register cache pairs. Stable local/immutable
+global roots can precede changing identities under pressure; uncertain cases
+retain frequency priorities. Full-handle comparisons, miss checks and entry
+resets remain mandatory. The same analysis retains amd64's existing weighting.
+See the [qualification and comparison scope](../research/performance-arm-heap-reuse-2026-11-09.md).

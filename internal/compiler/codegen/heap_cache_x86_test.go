@@ -124,7 +124,7 @@ func TestHeapCacheAMD64PairBudgetAndReset(t *testing.T) {
 				t.Fatal("cache overlaps slot bank", r)
 			}
 		}
-		e.prepareHeapCaches()
+		e.prepareHeapCaches(Config{})
 		reference := assembler{arch: "amd64"}
 		reference.xconst(want.key, 0)
 		if !reflect.DeepEqual(e.a.code, reference.code) {
