@@ -214,14 +214,18 @@ jobs:
           read -ra packages <<< "$TEST_PACKAGES"
           llgo test -O3 -lto=full -json -debug-trace "artifacts/ci/llgo-${SHARD}.json" -count=1 -timeout=8m "${packages[@]}"
       - name: Execute native service reference under LLGo
-        if: matrix.shard == 'component'
+        if: matrix.shard == 'threads'
         working-directory: benchmarks/service
         run: llgo test -O3 -lto=full -json -debug-trace "$GITHUB_WORKSPACE/artifacts/ci/llgo-service-reference.json" -count=1 -timeout=2m ./...
       - name: Execute complete P3 HTTP measurement under LLGo
-        if: matrix.shard == 'component'
+        if: matrix.shard == 'legacy'
         working-directory: benchmarks/p3io
         run: |
           llgo test -O3 -lto=full -json -debug-trace "$GITHUB_WORKSPACE/artifacts/ci/llgo-p3io.json" -count=1 -timeout=2m ./...
+      - name: Execute bare P3 host control under LLGo
+        if: matrix.shard == 'threads'
+        working-directory: benchmarks/p3io
+        run: |
           llgo test -O3 -lto=full -tags=p3host -json -debug-trace "$GITHUB_WORKSPACE/artifacts/ci/llgo-p3host.json" -count=1 -timeout=2m ./...
       - name: Preserve shard execution and timing evidence
         if: always()

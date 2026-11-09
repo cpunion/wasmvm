@@ -77,6 +77,14 @@ reference with a ten-minute budget and cached locked dependencies. Normal
 semantic CI executes the owned measurement tests under both compilers and
 platforms; it does not rebuild a Rust runtime on every PR.
 
+CI distributes nested measurement tests across the existing eight shards.
+The prior Linux component job spent509s in root tests plus100s in the native
+reference, reaching11m49s overall. Root phase tests now run with the entry
+shard, the shared driver/native reference/bare host control with threads, and
+owned P3 tests with legacy. Every root package still executes exactly once per
+platform with the same release flags; no extra job or reduced test inventory
+is introduced. The next final-head run measures the resulting job durations.
+
 This addition supplies execution/measurement mechanisms. Complete fixed
 comparisons, controls, both-target evidence and performance/release acceptance
 remain separate deliverables; passing tests supplies no performance ranking.

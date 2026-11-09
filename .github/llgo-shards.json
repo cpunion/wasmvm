@@ -11,7 +11,7 @@
   },
   {
     "name": "component",
-    "packages": "./internal/component/canonical ./internal/component/decode ./internal/component/validate ./pkg/component ./internal/compiler/nativeabi ./internal/compiler/ir ./internal/compat ./internal/wasi/host ./internal/bench/phase ./internal/bench/service",
+    "packages": "./internal/component/canonical ./internal/component/decode ./internal/component/validate ./pkg/component ./internal/compiler/nativeabi ./internal/compiler/ir ./internal/compat ./internal/wasi/host",
     "inputs": "component"
   },
   {
@@ -21,7 +21,7 @@
   },
   {
     "name": "threads",
-    "packages": "./pkg/wasi/threads",
+    "packages": "./pkg/wasi/threads ./internal/bench/service",
     "inputs": "wasi_threads"
   },
   {
@@ -36,7 +36,7 @@
   },
   {
     "name": "entry",
-    "packages": "./internal/cli",
+    "packages": "./internal/cli ./internal/bench/phase",
     "inputs": "core2 core3 core_extensions preview1 wasi_threads component"
   }
 ]
