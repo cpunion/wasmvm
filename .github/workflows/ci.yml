@@ -222,11 +222,6 @@ jobs:
         working-directory: benchmarks/p3io
         run: |
           llgo test -O3 -lto=full -json -debug-trace "$GITHUB_WORKSPACE/artifacts/ci/llgo-p3io.json" -count=1 -timeout=2m ./...
-      - name: Execute bare P3 host control under LLGo
-        if: matrix.shard == 'threads'
-        working-directory: benchmarks/p3io
-        run: |
-          llgo test -O3 -lto=full -tags=p3host -json -debug-trace "$GITHUB_WORKSPACE/artifacts/ci/llgo-p3host.json" -count=1 -timeout=2m ./...
       - name: Preserve shard execution and timing evidence
         if: always()
         timeout-minutes: 2

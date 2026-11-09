@@ -77,13 +77,27 @@ reference with a ten-minute budget and cached locked dependencies. Normal
 semantic CI executes the owned measurement tests under both compilers and
 platforms; it does not rebuild a Rust runtime on every PR.
 
-CI distributes nested measurement tests across the existing eight shards.
-The prior Linux component job spent509s in root tests plus100s in the native
-reference, reaching11m49s overall. Root phase tests now run with the entry
-shard, the shared driver/native reference/bare host control with threads, and
-owned P3 tests with legacy. Every root package still executes exactly once per
-platform with the same release flags; no extra job or reduced test inventory
-is introduced. The next final-head run measures the resulting job durations.
+Normal CI runs the complete owned P3 measurement tests under Go and LLGo on
+both platforms, including all shared native-host, failure, flag and protocol
+tests. The former additional LLGo p3host test build reran those same shared
+cases and spent another273s on Linux in run42700641953. That duplicate full-LTO
+test executable is removed; Go quality still checks the tagged build, and
+standalone control executables retain their independent build/source/library
+qualification in benchmark events. All32 root test packages still execute once
+per LLGo platform across the same eight shards; no unique shared semantic test
+is removed. Native service reference tests remain with threads and owned P3
+measurement tests with legacy. The remaining longest P3 package link was321s
+and its tests98s on macOS, so the5–10 minute job target remains open pending the
+next measured run.
+
+The owned `--response-mode streaming|buffered` selector keeps the ordinary
+streaming API separate from bounded Store-local collection. Buffered mode uses
+CallIncomingBuffered with a response-length limit equal to the declared expected
+payload, and validates every byte/status/header/trailer after the complete API
+timer. Request construction is outside API time and inside request wall in
+both owned modes. The reference continues its own Store-local body collection;
+its existing source/build identity remains separately recorded. The native-go
+controls accept the default selector only.
 
 This addition supplies execution/measurement mechanisms. Complete fixed
 comparisons, controls, both-target evidence and performance/release acceptance

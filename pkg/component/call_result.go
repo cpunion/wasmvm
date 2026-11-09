@@ -13,6 +13,21 @@ import (
 // while its producer continues. The call then drains background tasks. The
 // callback receives ownership and a fresh Caller which expires on return.
 func (f *Function) CallWithResult(ctx context.Context, args []Value, options CallOptions, consume func(*Caller, *Value) error) (uint64, error) {
+	return f.callWithResult(ctx, args, options, nil, consume)
+}
+
+// CallWithResultPrepared creates arguments and consumes the result in the same
+// Store lease as guest execution. A rejected Store admission never calls prepare.
+// The preparation Caller expires before the guest starts; newly created
+// capabilities are reclaimed if preparation or argument acceptance fails.
+func (f *Function) CallWithResultPrepared(ctx context.Context, options CallOptions, prepare func(*Caller) ([]Value, error), consume func(*Caller, *Value) error) (uint64, error) {
+	if prepare == nil {
+		return 0, vm.ErrType
+	}
+	return f.callWithResult(ctx, nil, options, prepare, consume)
+}
+
+func (f *Function) callWithResult(ctx context.Context, args []Value, options CallOptions, prepare func(*Caller) ([]Value, error), consume func(*Caller, *Value) error) (uint64, error) {
 	if f == nil || f.instance == nil {
 		return 0, vm.ErrReference
 	}
@@ -24,6 +39,19 @@ func (f *Function) CallWithResult(ctx context.Context, args []Value, options Cal
 	return in.store.WithCallerCleanup(ctx, options, func(c *vm.Caller) (err error) {
 		complete := false
 		defer in.finishTasks(c, &err, &complete)
+		if prepare != nil {
+			factory := &hostCall{function: f, codec: in.codec(c, f.scope, nil)}
+			factory.limit()
+			defer factory.finishDeferred(c, &complete, &err)
+			defer factory.account()
+			_, err = factory.invoke(c, func(fresh *Caller) (*Value, error) {
+				args, err = prepare(fresh)
+				return nil, err
+			})
+			if err != nil {
+				return err
+			}
+		}
 		if f.start == nil {
 			result, err = f.call(c, args)
 		} else {

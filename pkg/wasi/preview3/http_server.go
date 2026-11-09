@@ -55,6 +55,10 @@ func (r *httpReply) abandon() {
 // scheduler supplies bounded batches while the invocation owns the Store.
 // Close the returned Body before closing the request-scoped provider/instance.
 func (p *HTTP) CallIncoming(ctx context.Context, in *component.Instance, request *http.Request, options component.CallOptions) (*http.Response, error) {
+	return p.callIncoming(ctx, in, request, options, nil)
+}
+
+func (p *HTTP) callIncoming(ctx context.Context, in *component.Instance, request *http.Request, options component.CallOptions, collector *httpCollector) (*http.Response, error) {
 	if in == nil || request == nil {
 		return nil, vm.ErrReference
 	}
@@ -139,27 +143,25 @@ func (p *HTTP) CallIncoming(ctx context.Context, in *component.Instance, request
 		}
 	}
 	path := request.URL.RequestURI()
-	var input component.Value
-	if _, err = in.WithCaller(callCtx, options, func(c *component.Caller) error {
-		var failed error
-		input, failed = p.publish(c, &httpEntry{kind: "request", message: &httpMessage{headers: fields, method: request.Method, path: &path, scheme: &scheme, authority: &authority, body: body}})
-		return failed
-	}); err != nil {
-		return nil, err
-	}
 	reply := &httpReply{done: make(chan struct{})}
 	callDone := make(chan struct{})
-	if err = p.worker(func() {
+	run := func() {
 		defer close(callDone)
 		defer func() {
 			if recover() != nil {
 				body.dispose(nil, httpErr("internal-error"))
 				reply.set(nil, httpErr("internal-error"))
+				if collector != nil {
+					collector.failure = httpErr("internal-error")
+				}
 				cancel()
 			}
 		}()
 		defer p.releaseRequest()
-		_, failed := function.CallWithResult(callCtx, []component.Value{input}, options, func(c *component.Caller, v *component.Value) error {
+		fuel, failed := function.CallWithResultPrepared(callCtx, options, func(c *component.Caller) ([]component.Value, error) {
+			input, failed := p.publish(c, &httpEntry{kind: "request", message: &httpMessage{headers: fields, method: request.Method, path: &path, scheme: &scheme, authority: &authority, body: body}})
+			return []component.Value{input}, failed
+		}, func(c *component.Caller, v *component.Value) error {
 			if v == nil {
 				return vm.ErrType
 			}
@@ -187,7 +189,13 @@ func (p *HTTP) CallIncoming(ctx context.Context, in *component.Instance, request
 				return failed
 			}
 			response := &http.Response{StatusCode: int(message.status), Header: httpHeader(message.headers), Trailer: http.Header{}, ContentLength: -1}
-			stream, failed := message.body.pump(c, response.Trailer, length)
+			var stream io.ReadCloser
+			if collector == nil {
+				stream, failed = message.body.pump(c, response.Trailer, length)
+			} else {
+				collector.data, failed = message.body.collect(c, response.Trailer, length, collector.limit)
+				stream = http.NoBody
+			}
 			if failed != nil {
 				return failed
 			}
@@ -197,6 +205,9 @@ func (p *HTTP) CallIncoming(ctx context.Context, in *component.Instance, request
 			reply.set(response, nil)
 			return nil
 		})
+		if collector != nil {
+			collector.fuel, collector.failure = fuel, failed
+		}
 		if failed != nil {
 			body.dispose(nil, failed)
 			reply.set(nil, failed)
@@ -204,12 +215,22 @@ func (p *HTTP) CallIncoming(ctx context.Context, in *component.Instance, request
 		} else {
 			reply.set(nil, httpErr("HTTP-response-incomplete"))
 		}
-	}); err != nil {
-		_, _ = in.DropResource(nil, input.Resource, component.CallOptions{})
-		return nil, err
+	}
+	if collector != nil {
+		run()
+	} else {
+		if err = p.worker(run); err != nil {
+			return nil, err
+		}
 	}
 	reserved = false
 	accepted = true
+	if collector != nil && collector.failure != nil {
+		reply.abandon()
+		stop()
+		cancel()
+		return nil, collector.failure
+	}
 	select {
 	case <-reply.done:
 		reply.mu.Lock()

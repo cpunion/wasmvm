@@ -23,25 +23,27 @@ import (
 
 type options struct {
 	engine, backend, path string
+	responseMode          string
 	payload               []byte
 	service.Options
 }
 
 type report struct {
-	SchemaVersion int              `json:"schemaVersion"`
-	Engine        string           `json:"engine"`
-	Backend       string           `json:"backend"`
-	HostCompiler  string           `json:"hostCompiler"`
-	Mode          string           `json:"mode"`
-	Policy        string           `json:"policy"`
-	PayloadBytes  int              `json:"payloadBytes"`
-	Result        uint32           `json:"result"`
-	Phases        map[string]int64 `json:"phasesNs"`
-	WarmCallNs    []int64          `json:"warmCallNs"`
-	WarmupCallNs  []int64          `json:"warmupCallNs"`
-	WarmResults   []uint32         `json:"warmResults"`
-	WarmupResults []uint32         `json:"warmupResults"`
-	Service       *service.Report  `json:"service"`
+	SchemaVersion     int              `json:"schemaVersion"`
+	Engine            string           `json:"engine"`
+	Backend           string           `json:"backend"`
+	HostCompiler      string           `json:"hostCompiler"`
+	Mode              string           `json:"mode"`
+	Policy            string           `json:"policy"`
+	PayloadBytes      int              `json:"payloadBytes"`
+	OwnedResponseMode string           `json:"ownedResponseMode,omitempty"`
+	Result            uint32           `json:"result"`
+	Phases            map[string]int64 `json:"phasesNs"`
+	WarmCallNs        []int64          `json:"warmCallNs"`
+	WarmupCallNs      []int64          `json:"warmupCallNs"`
+	WarmResults       []uint32         `json:"warmResults"`
+	WarmupResults     []uint32         `json:"warmupResults"`
+	Service           *service.Report  `json:"service"`
 }
 
 func parse(args []string, diagnostic io.Writer) (out options, err error) {
@@ -50,6 +52,7 @@ func parse(args []string, diagnostic io.Writer) (out options, err error) {
 	f.StringVar(&out.engine, "engine", "wasmvm", "wasmvm, native-go or wasmtime")
 	f.StringVar(&out.backend, "backend", "native", "interpreter/native, host, or compiler")
 	f.StringVar(&out.path, "wasm", "", "pinned P3 HTTP echo component")
+	f.StringVar(&out.responseMode, "response-mode", "streaming", "owned API: streaming or bounded buffered collection")
 	size := f.Int("payload-bytes", 65536, "positive byte count, multiple of16, <=1MiB")
 	expected := f.Uint64("expected", 0, "required unsigned CRC32 of the complete expected body")
 	f.IntVar(&out.Workers, "workers", 1, "independent stores/workers")
@@ -82,6 +85,9 @@ func parse(args []string, diagnostic io.Writer) (out options, err error) {
 	default:
 		return out, errors.New("unknown engine")
 	}
+	if err = validateResponseMode(out); err != nil {
+		return out, err
+	}
 	out.Expected = uint32(*expected)
 	if err = out.Options.Validate(); err != nil {
 		return out, err
@@ -91,6 +97,16 @@ func parse(args []string, diagnostic io.Writer) (out options, err error) {
 		return out, errors.New("expected CRC32 does not match the independently declared payload")
 	}
 	return out, nil
+}
+
+func validateResponseMode(args options) error {
+	if args.responseMode != "" && args.responseMode != "streaming" && args.responseMode != "buffered" {
+		return errors.New("unknown owned response mode")
+	}
+	if args.responseMode == "buffered" && args.engine != "wasmvm" {
+		return errors.New("response-mode applies to the owned VM API")
+	}
+	return nil
 }
 
 func checkReply(args options, data []byte, status int, guest, trailer string) error {
@@ -156,6 +172,9 @@ func nativeKernels(ctx context.Context, args options) []service.Call {
 }
 
 func benchmark(ctx context.Context, args options, beforeSample func(int) error) (out report, err error) {
+	if err = validateResponseMode(args); err != nil {
+		return out, err
+	}
 	if err = args.Options.Validate(); err != nil {
 		return out, err
 	}
@@ -166,6 +185,12 @@ func benchmark(ctx context.Context, args options, beforeSample func(int) error) 
 		ctx = context.Background()
 	}
 	out = report{SchemaVersion: 1, Engine: args.engine, Backend: args.backend, HostCompiler: runtime.Compiler, Mode: "p3-http-service", PayloadBytes: len(args.payload), Phases: map[string]int64{}, WarmCallNs: []int64{}, WarmupCallNs: []int64{}, WarmResults: []uint32{}, WarmupResults: []uint32{}}
+	if args.engine == "wasmvm" {
+		out.OwnedResponseMode = args.responseMode
+		if out.OwnedResponseMode == "" {
+			out.OwnedResponseMode = "streaming"
+		}
+	}
 	var calls []service.Call
 	var release func() error
 	var stop func()

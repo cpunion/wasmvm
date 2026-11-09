@@ -170,6 +170,21 @@ func TestFlagsPreserveWorkloadAndPolicy(t *testing.T) {
 	}
 }
 
+func TestOwnedResponseModeFlags(t *testing.T) {
+	base := []string{"--engine", "wasmvm", "--backend", "native", "--wasm", "unused", "--payload-bytes", "16", "--expected", "1757737011"}
+	for _, mode := range []string{"streaming", "buffered"} {
+		args, err := parse(append(append([]string{}, base...), "--response-mode", mode), io.Discard)
+		if err != nil || args.responseMode != mode {
+			t.Fatal(mode, args.responseMode, err)
+		}
+	}
+	for _, extra := range [][]string{{"--response-mode", "unknown"}, {"--engine", "native-go", "--backend", "host", "--response-mode", "buffered"}, {"--engine", "wasmtime", "--backend", "compiler", "--response-mode", "buffered"}} {
+		if _, err := parse(append(append([]string{}, base...), extra...), io.Discard); err == nil {
+			t.Fatal(extra)
+		}
+	}
+}
+
 type failedWriter struct{}
 
 func (failedWriter) Write([]byte) (int, error) { return 0, io.ErrClosedPipe }
