@@ -80,3 +80,9 @@ platforms; it does not rebuild a Rust runtime on every PR.
 This addition supplies execution/measurement mechanisms. Complete fixed
 comparisons, controls, both-target evidence and performance/release acceptance
 remain separate deliverables; passing tests supplies no performance ranking.
+
+The [fixed 2026-11-10 event](../../docs/research/performance-p3io-2026-11-10.md)
+now retains all 36 profiles,360 throughput and36 separate resource processes,
+including 161,280 completely checked warm responses. Only 6/36 throughput
+controls resolve. The observed P3 deficit remains open; no controlled win or
+release gate is claimed.
