@@ -1,0 +1,18 @@
+[package]
+name = "wasmvm-p3-reference"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "wasmvm_p3_reference"
+crate-type = ["staticlib"]
+
+[dependencies]
+wasmtime = { version = "=48.0.1", default-features = false, features = ["cranelift", "component-model", "component-model-async", "runtime", "std"] }
+wasmtime-wasi = { version = "=48.0.1", default-features = false, features = ["p3"] }
+wasmtime-wasi-http = { version = "=48.0.1", default-features = false, features = ["p3"] }
+bytes = "=1.12.1"
+hyper = { version = "=1.12.0", default-features = false }
+http-body-util = "=0.1.5"
+tokio = { version = "=1.54.1", features = ["rt-multi-thread"] }
