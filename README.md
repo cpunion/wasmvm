@@ -289,27 +289,28 @@ throughput processes and72 separate resource processes.35/72 controls resolve;
 all six owned LLGo native controls remain unresolved. These point estimates do
 not establish a controlled ranking.
 
-The subsequent [P3 worker comparison](docs/research/performance-p3-worker-reuse-2026-11-10.md)
-uses the same toolchain and measures complete64KiB bodies, metadata and trailers.
-HTTP fixture,4 workers; the native-Go rows are ordinary host/application controls:
+The latest [P3 transfer-buffer comparison](docs/research/performance-p3-io-buffers-2026-11-10.md)
+measures complete 64 KiB bodies, metadata and trailers. HTTP fixture, four
+workers; the native-Go rows are ordinary host/application controls:
 
 | Runtime / host compiler | req/s | Complete API us |
 | --- | ---: | ---: |
-| wasmvm native / LLGo | 2084 | 1886.3 |
-| wasmvm native / Go | 7699 | 502.6 |
-| Wasmtime48 / Go C-Rust bridge | 59833 | 62.3 |
-| Native-Go application / LLGo | 9041 | 389.2 |
-| Native-Go application / Go | 44784 | 76.4 |
+| wasmvm native / LLGo | 2248 | 1753.6 |
+| wasmvm native / Go | 8324 | 465.3 |
+| Wasmtime 48 / Go C-Rust bridge | 59662 | 62.7 |
+| Native-Go application / LLGo | 8657 | 422.5 |
+| Native-Go application / Go | 46319 | 74.9 |
 
-Bounded worker reuse observes LLGo native1470 ->2084req/s against its own
-baseline, with warm-time ratio0.7019[0.6796,0.7230].17/40 A/A controls resolve;
-that4-worker comparison's controls remain unresolved. Between-batch OS threads
-rise49 ->61 and observed peak RSS159.7 ->177.0MiB. The preceding
-[immutable-copy event](docs/research/performance-immutable-memory-2026-11-10.md)
-reduces allocation by about64KiB/request, with mixed timings and an adverse LLGo
-case retained. Each event preserves all40 profiles and separate resources;
-neither closes controlled acceptance. The original
-[P3 baseline](docs/research/performance-p3io-2026-11-10.md) remains separate.
+Bounded transfer buffers observe LLGo native 2131 -> 2248 req/s and save about
+257 KiB/request. The warm-time ratio is 0.9669 [0.9479,0.9873], with both controls
+resolved for this comparison; 32/40 individual A/A controls resolve overall.
+Observed peak RSS rises 176.1 -> 191.9 MiB. The 27.1x paired warm-time gap to
+Wasmtime remains; this event does not close controlled acceptance.
+The earlier [worker-reuse](docs/research/performance-p3-worker-reuse-2026-11-10.md),
+[immutable-copy](docs/research/performance-immutable-memory-2026-11-10.md),
+[rejected pipe](docs/research/performance-p3-body-pipe-evaluation-2026-11-10.md)
+and [original P3](docs/research/performance-p3io-2026-11-10.md) events retain their
+own complete portfolios, adverse timings, resource tradeoffs and controls.
 
 The [Linux routing snapshot](docs/research/performance-linux-routing-2026-11-09.md)
 retains32 complete cohort-cases, original partial/timed-out observations and all
