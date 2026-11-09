@@ -67,6 +67,17 @@ late returns. HTTP body backpressure and close/error behavior continue to use
 the standard library pipe. Packed Canonical stream-buffer writes share the
 existing immutable-memory copy primitive and its post-copy cancellation check.
 
+External HTTP body sources read ahead at most `MaxReadBytes` into one immutable
+batch per live source. Positive guest reads take the requested prefix; cached
+tails use the existing `Prompt` contract without another worker dispatch or
+forced guest suspension. Actual external reads remain on bounded IO workers.
+Zero-length probes do not fetch bytes. EOF accompanies only the final cached
+fragment, including data-plus-EOF; source close clears the batch and rejects
+late delivery. Aggregate read-ahead retention is bounded by `MaxMessages` and
+`MaxReadBytes`, independently of guest logical transfer budgets and the idle
+scratch-buffer cache.
+
+
 Stdin returns independent readable streams and persistent completion futures.
 EOF resolves success, input failures resolve the declared error-code, and dropping
 the stream resolves success. Short reads and zero-length readiness are supported.

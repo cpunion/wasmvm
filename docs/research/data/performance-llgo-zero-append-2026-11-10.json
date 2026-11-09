@@ -1,0 +1,105 @@
+{
+  "issue": "https://github.com/xgo-dev/llgo/issues/3040",
+  "source": "package main\nimport(\"encoding/json\";\"fmt\";\"os\";\"runtime\";\"time\")\nvar sink []byte\n//go:noinline\nfunc direct(size int) []byte { return make([]byte,size) }\n//go:noinline\nfunc appended(size int) []byte { return append([]byte(nil),make([]byte,size)...) }\ntype row struct { Compiler,Kind string;Size,Iterations int;Bytes uint64;Nanoseconds int64 }\nfunc main(){\n rows:=make([]row,0,4)\n for _,size:=range []int{4096,65536}{\n  for _,kind:=range []string{\"direct\",\"append-make\"}{\n   for range 8{sink=direct(size);sink=appended(size)}\n   runtime.GC();var before,after runtime.MemStats;runtime.ReadMemStats(&before);start:=time.Now()\n   for range 4096{if kind==\"direct\"{sink=direct(size)}else{sink=appended(size)};if len(sink)!=size||sink[0]!=0||sink[size-1]!=0{panic(\"incorrect zero slice\")}}\n   ns:=time.Since(start).Nanoseconds();runtime.ReadMemStats(&after)\n   rows=append(rows,row{runtime.Compiler,kind,size,4096,after.TotalAlloc-before.TotalAlloc,ns})\n  }\n }\n if err:=json.NewEncoder(os.Stdout).Encode(rows);err!=nil{fmt.Fprintln(os.Stderr,err);os.Exit(1)}\n}\n",
+  "goModule": "module example.com/append-zero-diagnostic\n\ngo 1.27.3\n",
+  "go": [
+    {
+      "Compiler": "gc",
+      "Kind": "direct",
+      "Size": 4096,
+      "Iterations": 4096,
+      "Bytes": 16782568,
+      "Nanoseconds": 1799250
+    },
+    {
+      "Compiler": "gc",
+      "Kind": "append-make",
+      "Size": 4096,
+      "Iterations": 4096,
+      "Bytes": 16777216,
+      "Nanoseconds": 1421542
+    },
+    {
+      "Compiler": "gc",
+      "Kind": "direct",
+      "Size": 65536,
+      "Iterations": 4096,
+      "Bytes": 268442488,
+      "Nanoseconds": 11760625
+    },
+    {
+      "Compiler": "gc",
+      "Kind": "append-make",
+      "Size": 65536,
+      "Iterations": 4096,
+      "Bytes": 268436800,
+      "Nanoseconds": 10439292
+    }
+  ],
+  "llgo": [
+    {
+      "Compiler": "llgo",
+      "Kind": "direct",
+      "Size": 4096,
+      "Iterations": 4096,
+      "Bytes": 16842752,
+      "Nanoseconds": 4800042
+    },
+    {
+      "Compiler": "llgo",
+      "Kind": "append-make",
+      "Size": 4096,
+      "Iterations": 4096,
+      "Bytes": 33685504,
+      "Nanoseconds": 14532709
+    },
+    {
+      "Compiler": "llgo",
+      "Kind": "direct",
+      "Size": 65536,
+      "Iterations": 4096,
+      "Bytes": 268500992,
+      "Nanoseconds": 104196083
+    },
+    {
+      "Compiler": "llgo",
+      "Kind": "append-make",
+      "Size": 65536,
+      "Iterations": 4096,
+      "Bytes": 537001984,
+      "Nanoseconds": 198243542
+    }
+  ],
+  "provenance": {
+    "sourceSHA256": "ef70510d1d56759262b91bd1219cd821c371622ffe07d7b7e1513d538f384c37",
+    "llgoRevision": "3d92a58e09bd8971899c6eaf63437fbecd18d432",
+    "profile": [
+      "-O3",
+      "-lto=full"
+    ],
+    "go": "go1.27.3",
+    "llvm": "22.1.8",
+    "scope": "Independent allocation/code-generation diagnostic; timing retained but not a performance acceptance claim.",
+    "files": {
+      "go.mod": "30e117748470a3d17ea84f2b6dc4eebd0b4649f1b75b3ca583bc666ee95586b0",
+      "llgo.json": "881727efe0246c758cebeee824afaa8a39f72d1835eca3ab664bf3eedd4795e3",
+      "issue-body.md": "829853e79e070b4a2a511c7047b6b8170ca81a962182da712c857634bc75e8e9",
+      "go-appended-disassembly.txt": "9560f1a6bcffc283b9e8818932795bc14556c49f068ee7c868047e11be6c208c",
+      "go.json": "f467d179ac752544861f1b3bb67255f3c372815cad11530b34a5258f443529a0",
+      "go-runner": "228264a2b5188b224b651f3d470333e842a2e2235ffc3c560271987ee97644bc",
+      "llgo-runner": "9841ee53c6eace09f8d64658d63d193c1aa02c5677e139ce35c6bdd9d1d57ca9",
+      "disassembly.txt": "0a5b4d03a86e796f13f0ad816225afa50fed1763f5d40eebca4259d3acbc184d",
+      "indirect-symbols.txt": "eab835aaafe1924b1fa47c5f9ab3ca5e4495d5f102bffdc8c1213ccf066646c6",
+      "slice-append-disassembly.txt": "7c1ad01e9894bfaf47058c179a1bb0e21e61c62aad0848f29a1d5f64d742f768",
+      "main.go": "ef70510d1d56759262b91bd1219cd821c371622ffe07d7b7e1513d538f384c37"
+    }
+  },
+  "llgoFunctions": "\nartifacts/llgo-append-zero-20261110/llgo-runner:\tfile format mach-o arm64\n\nDisassembly of section __TEXT,__text:\n\n0000000100004500 <_main.direct>:\n100004500:     \tstp\tx22, x21, [sp, #-0x30]!\n100004504:     \tstp\tx20, x19, [sp, #0x10]\n100004508:     \tstp\tx29, x30, [sp, #0x20]\n10000450c:     \tadd\tx29, sp, #0x20\n100004510:     \tmov\tx19, x0\n100004514:     \tmov\tx0, x1\n100004518:     \tmov\tx20, x1\n10000451c:     \tbl\t0x10011143c <dyld_stub_binder+0x10011143c>\n100004520:     \tcbz\tx0, 0x10000454c <_main.direct+0x4c>\n100004524:     \tmov\tx21, x0\n100004528:     \tmov\tx0, x20\n10000452c:     \tbl\t0x1000fc4dc <_github.com/xgo-dev/llgo/runtime/internal/runtime.recordMemProfileAlloc>\n100004530:     \tdup.2d\tv0, x20\n100004534:     \tstr\tx21, [x19]\n100004538:     \tldp\tx29, x30, [sp, #0x20]\n10000453c:     \tstur\tq0, [x19, #0x8]\n100004540:     \tldp\tx20, x19, [sp, #0x10]\n100004544:     \tldp\tx22, x21, [sp], #0x30\n100004548:     \tret\n10000454c:     \tadrp\tx0, 0x1001e9000 <_[8]*_llgo_github.com/xgo-dev/llgo/runtime/internal/runtime.SynctestBubble+0x18>\n100004550:     \tadd\tx0, x0, #0x760\n100004554:     \tadrp\tx1, 0x1001e1000 <_map[_llgo_int]_llgo_int+0x30>\n100004558:     \tadd\tx1, x1, #0x5c8\n10000455c:     \tbl\t0x1000fc2f0 <_github.com/xgo-dev/llgo/runtime/internal/runtime.Panic>\n100004560:     \tbrk\t#0x1\n\n0000000100004564 <_main.appended>:\n100004564:     \tsub\tsp, sp, #0x60\n100004568:     \tstp\tx22, x21, [sp, #0x30]\n10000456c:     \tstp\tx20, x19, [sp, #0x40]\n100004570:     \tstp\tx29, x30, [sp, #0x50]\n100004574:     \tadd\tx29, sp, #0x50\n100004578:     \tmov\tx19, x0\n10000457c:     \tmov\tx0, x1\n100004580:     \tmov\tx20, x1\n100004584:     \tbl\t0x10011143c <dyld_stub_binder+0x10011143c>\n100004588:     \tcbz\tx0, 0x1000045dc <_main.appended+0x78>\n10000458c:     \tmov\tx21, x0\n100004590:     \tmov\tx0, x20\n100004594:     \tbl\t0x1000fc4dc <_github.com/xgo-dev/llgo/runtime/internal/runtime.recordMemProfileAlloc>\n100004598:     \tmov\tx0, sp\n10000459c:     \tadd\tx1, sp, #0x18\n1000045a0:     \tmov\tx2, x21\n1000045a4:     \tmov\tx3, x20\n1000045a8:     \tmov\tw4, #0x1                ; =1\n1000045ac:     \tstp\txzr, xzr, [sp, #0x18]\n1000045b0:     \tstr\txzr, [sp, #0x28]\n1000045b4:     \tbl\t0x1000ffbcc <_github.com/xgo-dev/llgo/runtime/internal/runtime.SliceAppend>\n1000045b8:     \tldr\tx8, [sp]\n1000045bc:     \tldur\tq0, [sp, #0x8]\n1000045c0:     \tldp\tx29, x30, [sp, #0x50]\n1000045c4:     \tstr\tx8, [x19]\n1000045c8:     \tldp\tx22, x21, [sp, #0x30]\n1000045cc:     \tstur\tq0, [x19, #0x8]\n1000045d0:     \tldp\tx20, x19, [sp, #0x40]\n1000045d4:     \tadd\tsp, sp, #0x60\n1000045d8:     \tret\n1000045dc:     \tadrp\tx0, 0x1001e9000 <_[8]*_llgo_github.com/xgo-dev/llgo/runtime/internal/runtime.SynctestBubble+0x18>\n1000045e0:     \tadd\tx0, x0, #0x760\n1000045e4:     \tadrp\tx1, 0x1001e1000 <_map[_llgo_int]_llgo_int+0x30>\n1000045e8:     \tadd\tx1, x1, #0x5c8\n1000045ec:     \tbl\t0x1000fc2f0 <_github.com/xgo-dev/llgo/runtime/internal/runtime.Panic>\n1000045f0:     \tbrk\t#0x1\n",
+  "llgoSliceAppend": "\nartifacts/llgo-append-zero-20261110/llgo-runner:\tfile format mach-o arm64\n\nDisassembly of section __TEXT,__text:\n\n00000001000ffbcc <_github.com/xgo-dev/llgo/runtime/internal/runtime.SliceAppend>:\n1000ffbcc:     \tstp\tx28, x27, [sp, #-0x60]!\n1000ffbd0:     \tstp\tx26, x25, [sp, #0x10]\n1000ffbd4:     \tstp\tx24, x23, [sp, #0x20]\n1000ffbd8:     \tstp\tx22, x21, [sp, #0x30]\n1000ffbdc:     \tstp\tx20, x19, [sp, #0x40]\n1000ffbe0:     \tstp\tx29, x30, [sp, #0x50]\n1000ffbe4:     \tadd\tx29, sp, #0x50\n1000ffbe8:     \tldr\tx27, [x1, #0x8]\n1000ffbec:     \tadds\tx26, x27, x3\n1000ffbf0:     \tb.mi\t0x1000ffce8 <_github.com/xgo-dev/llgo/runtime/internal/runtime.SliceAppend+0x11c>\n1000ffbf4:     \tldr\tx8, [x1, #0x10]\n1000ffbf8:     \tldr\tx23, [x1]\n1000ffbfc:     \tmov\tx21, x4\n1000ffc00:     \tmov\tx22, x3\n1000ffc04:     \tmov\tx20, x2\n1000ffc08:     \tmov\tx19, x0\n1000ffc0c:     \tcmp\tx26, x8\n1000ffc10:     \tb.le\t0x1000ffc8c <_github.com/xgo-dev/llgo/runtime/internal/runtime.SliceAppend+0xc0>\n1000ffc14:     \tlsl\tx9, x8, #1\n1000ffc18:     \tmov\tx28, x26\n1000ffc1c:     \tcmp\tx26, x9\n1000ffc20:     \tb.gt\t0x1000ffc48 <_github.com/xgo-dev/llgo/runtime/internal/runtime.SliceAppend+0x7c>\n1000ffc24:     \tcmp\tx8, #0x100\n1000ffc28:     \tmov\tx28, x9\n1000ffc2c:     \tb.lt\t0x1000ffc48 <_github.com/xgo-dev/llgo/runtime/internal/runtime.SliceAppend+0x7c>\n1000ffc30:     \tadd\tx9, x8, #0x300\n1000ffc34:     \tadd\tx8, x8, x9, asr #2\n1000ffc38:     \tcmp\tx8, x26\n1000ffc3c:     \tb.lo\t0x1000ffc30 <_github.com/xgo-dev/llgo/runtime/internal/runtime.SliceAppend+0x64>\n1000ffc40:     \tcmp\tx8, #0x1\n1000ffc44:     \tcsel\tx28, x26, x8, lt\n1000ffc48:     \tumulh\tx8, x21, x28\n1000ffc4c:     \tcmp\txzr, x8\n1000ffc50:     \tb.ne\t0x1000ffce8 <_github.com/xgo-dev/llgo/runtime/internal/runtime.SliceAppend+0x11c>\n1000ffc54:     \tmul\tx25, x21, x28\n1000ffc58:     \tmov\tx8, #0x1                ; =1\n1000ffc5c:     \tmovk\tx8, #0x1, lsl #48\n1000ffc60:     \tcmp\tx25, x8\n1000ffc64:     \tb.hs\t0x1000ffce8 <_github.com/xgo-dev/llgo/runtime/internal/runtime.SliceAppend+0x11c>\n1000ffc68:     \tcbz\tx25, 0x1000ffc98 <_github.com/xgo-dev/llgo/runtime/internal/runtime.SliceAppend+0xcc>\n1000ffc6c:     \tmov\tx0, x25\n1000ffc70:     \tbl\t0x10011143c <dyld_stub_binder+0x10011143c>\n1000ffc74:     \tcbz\tx0, 0x1000ffcec <_github.com/xgo-dev/llgo/runtime/internal/runtime.SliceAppend+0x120>\n1000ffc78:     \tmov\tx24, x0\n1000ffc7c:     \tmov\tx0, x25\n1000ffc80:     \tbl\t0x1000fc4dc <_github.com/xgo-dev/llgo/runtime/internal/runtime.recordMemProfileAlloc>\n1000ffc84:     \tcbnz\tx27, 0x1000ffca4 <_github.com/xgo-dev/llgo/runtime/internal/runtime.SliceAppend+0xd8>\n1000ffc88:     \tb\t0x1000ffcb4 <_github.com/xgo-dev/llgo/runtime/internal/runtime.SliceAppend+0xe8>\n1000ffc8c:     \tmov\tx24, x23\n1000ffc90:     \tmov\tx28, x8\n1000ffc94:     \tb\t0x1000ffcb4 <_github.com/xgo-dev/llgo/runtime/internal/runtime.SliceAppend+0xe8>\n1000ffc98:     \tadrp\tx24, 0x10021a000 <_runtime.funcForPCCacheNext+0xe50>\n1000ffc9c:     \tadd\tx24, x24, #0x838\n1000ffca0:     \tcbz\tx27, 0x1000ffcb4 <_github.com/xgo-dev/llgo/runtime/internal/runtime.SliceAppend+0xe8>\n1000ffca4:     \tmul\tx2, x27, x21\n1000ffca8:     \tmov\tx0, x24\n1000ffcac:     \tmov\tx1, x23\n1000ffcb0:     \tbl\t0x1001112b0 <dyld_stub_binder+0x1001112b0>\n1000ffcb4:     \tmadd\tx0, x27, x21, x24\n1000ffcb8:     \tmov\tx1, x20\n1000ffcbc:     \tmul\tx2, x21, x22\n1000ffcc0:     \tbl\t0x1001112b0 <dyld_stub_binder+0x1001112b0>\n1000ffcc4:     \tstp\tx24, x26, [x19]\n1000ffcc8:     \tldp\tx29, x30, [sp, #0x50]\n1000ffccc:     \tstr\tx28, [x19, #0x10]\n1000ffcd0:     \tldp\tx20, x19, [sp, #0x40]\n1000ffcd4:     \tldp\tx22, x21, [sp, #0x30]\n1000ffcd8:     \tldp\tx24, x23, [sp, #0x20]\n1000ffcdc:     \tldp\tx26, x25, [sp, #0x10]\n1000ffce0:     \tldp\tx28, x27, [sp], #0x60\n1000ffce4:     \tret\n1000ffce8:     \tbl\t0x1000ffec0 <_github.com/xgo-dev/llgo/runtime/internal/runtime.panicgrowslicelen>\n1000ffcec:     \tadr\tx0, 0x1001e9760 <__llgo_string>\n1000ffcf0:     \tnop\n1000ffcf4:     \tadr\tx1, 0x1001e15c8 <__llgo_ifacebox$J-z3qHHRvAVlnjuh3C_QVo_QRdGC40oEhCK7MTuFaR0>\n1000ffcf8:     \tnop\n1000ffcfc:     \tbl\t0x1000fc2f0 <_github.com/xgo-dev/llgo/runtime/internal/runtime.Panic>\n1000ffd00:     \tbrk\t#0x1\n",
+  "goAppended": "TEXT main.appended(SB) /Users/lijie/source/goplus/wasmvm/artifacts/llgo-append-zero-20261110/main.go\n  main.go:7\t\t0x100106e90\t\tf9400b90\t\tMOVD 16(R28), R16\t\t\t\n  main.go:7\t\t0x100106e94\t\teb3063ff\t\tCMP R16, RSP\t\t\t\t\n  main.go:7\t\t0x100106e98\t\t540004a9\t\tBLS 37(PC)\t\t\t\t\n  main.go:7\t\t0x100106e9c\t\tf81b0ffe\t\tMOVD.W R30, -80(RSP)\t\t\t\n  main.go:7\t\t0x100106ea0\t\tf81f83fd\t\tMOVD R29, -8(RSP)\t\t\t\n  main.go:7\t\t0x100106ea4\t\td10023fd\t\tSUB $8, RSP, R29\t\t\t\n  main.go:7\t\t0x100106ea8\t\tb7f803e0\t\tTBNZ $63, R0, 31(PC)\t\t\t\n  main.go:7\t\t0x100106eac\t\tb40002a0\t\tCBZ R0, 21(PC)\t\t\t\t\n  main.go:7\t\t0x100106eb0\t\tf9002fe0\t\tMOVD R0, 88(RSP)\t\t\t\n  main.go:7\t\t0x100106eb4\t\taa0003e1\t\tMOVD R0, R1\t\t\t\t\n  main.go:7\t\t0x100106eb8\t\taa1f03e2\t\tMOVD ZR, R2\t\t\t\t\n  main.go:7\t\t0x100106ebc\t\taa0103e3\t\tMOVD R1, R3\t\t\t\t\n  main.go:7\t\t0x100106ec0\t\tb0000924\t\tADRP 1200128(PC), R4\t\t\t\n  main.go:7\t\t0x100106ec4\t\t91094084\t\tADD $592, R4, R4\t\t\t\n  main.go:7\t\t0x100106ec8\t\taa1f03e0\t\tMOVD ZR, R0\t\t\t\t\n  main.go:7\t\t0x100106ecc\t\t97fdc059\t\tCALL runtime.growslice(SB)\t\t\n  main.go:7\t\t0x100106ed0\t\tf90023e0\t\tMOVD R0, 64(RSP)\t\t\t\n  main.go:7\t\t0x100106ed4\t\tf9001fe1\t\tMOVD R1, 56(RSP)\t\t\t\n  main.go:7\t\t0x100106ed8\t\tf9001be2\t\tMOVD R2, 48(RSP)\t\t\t\n  main.go:7\t\t0x100106edc\t\tf9402fe5\t\tMOVD 88(RSP), R5\t\t\t\n  main.go:7\t\t0x100106ee0\t\tcb050026\t\tSUB R5, R1, R6\t\t\t\t\n  main.go:7\t\t0x100106ee4\t\t8b060000\t\tADD R6, R0, R0\t\t\t\t\n  main.go:7\t\t0x100106ee8\t\taa0503e1\t\tMOVD R5, R1\t\t\t\t\n  main.go:7\t\t0x100106eec\t\t97fdd215\t\tCALL runtime.memclrNoHeapPointers(SB)\t\n  main.go:7\t\t0x100106ef0\t\tf9401be0\t\tMOVD 48(RSP), R0\t\t\t\n  main.go:7\t\t0x100106ef4\t\tf9401fe1\t\tMOVD 56(RSP), R1\t\t\t\n  main.go:7\t\t0x100106ef8\t\tf94023e2\t\tMOVD 64(RSP), R2\t\t\t\n  main.go:7\t\t0x100106efc\t\t14000004\t\tJMP 4(PC)\t\t\t\t\n  main.go:7\t\t0x100106f00\t\taa1f03e0\t\tMOVD ZR, R0\t\t\t\t\n  main.go:7\t\t0x100106f04\t\taa1f03e1\t\tMOVD ZR, R1\t\t\t\t\n  main.go:7\t\t0x100106f08\t\taa1f03e2\t\tMOVD ZR, R2\t\t\t\t\n  main.go:7\t\t0x100106f0c\t\taa0003e3\t\tMOVD R0, R3\t\t\t\t\n  main.go:7\t\t0x100106f10\t\taa0203e0\t\tMOVD R2, R0\t\t\t\t\n  main.go:7\t\t0x100106f14\t\taa0303e2\t\tMOVD R3, R2\t\t\t\t\n  main.go:7\t\t0x100106f18\t\tf85f83fd\t\tMOVD -8(RSP), R29\t\t\t\n  main.go:7\t\t0x100106f1c\t\tf84507fe\t\tMOVD.P 80(RSP), R30\t\t\t\n  main.go:7\t\t0x100106f20\t\td65f03c0\t\tRET\t\t\t\t\t\n  main.go:7\t\t0x100106f24\t\t97fd493b\t\tCALL runtime.panicmakeslicelen(SB)\t\n  main.go:7\t\t0x100106f28\t\td503201f\t\tNOOP\t\t\t\t\t\n  main.go:7\t\t0x100106f2c\t\tf90007e0\t\tMOVD R0, 8(RSP)\t\t\t\t\n  main.go:7\t\t0x100106f30\t\taa1e03e3\t\tMOVD R30, R3\t\t\t\t\n  main.go:7\t\t0x100106f34\t\t97fdc9a7\t\tCALL runtime.morestack_noctxt.abi0(SB)\t\n  main.go:7\t\t0x100106f38\t\tf94007e0\t\tMOVD 8(RSP), R0\t\t\t\t\n  main.go:7\t\t0x100106f3c\t\t17ffffd5\t\tJMP main.appended(SB)\t\t\t\n",
+  "indirectBindings": [
+    "0x00000001001112b0 16231 _memcpy",
+    "0x000000010011143c 16329 _GC_malloc"
+  ],
+  "scope": "Independent pinned-compiler allocation/code-generation diagnostic after the fixed P3 event. Not a controlled latency comparison, not a complete attribution of P3 overhead; Mallocs not used. Latest upstream main not rebuilt, no compiler patch."
+}

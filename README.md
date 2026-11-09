@@ -289,28 +289,32 @@ throughput processes and72 separate resource processes.35/72 controls resolve;
 all six owned LLGo native controls remain unresolved. These point estimates do
 not establish a controlled ranking.
 
-The latest [P3 transfer-buffer comparison](docs/research/performance-p3-io-buffers-2026-11-10.md)
+The latest [P3 readiness comparison](docs/research/performance-p3-read-ahead-2026-11-10.md)
 measures complete 64 KiB bodies, metadata and trailers. HTTP fixture, four
-workers; the native-Go rows are ordinary host/application controls:
+workers; native-Go rows are ordinary host/application controls:
 
 | Runtime / host compiler | req/s | Complete API us |
 | --- | ---: | ---: |
-| wasmvm native / LLGo | 2248 | 1753.6 |
-| wasmvm native / Go | 8324 | 465.3 |
-| Wasmtime 48 / Go C-Rust bridge | 59662 | 62.7 |
-| Native-Go application / LLGo | 8657 | 422.5 |
-| Native-Go application / Go | 46319 | 74.9 |
+| wasmvm native / LLGo | 2666 | 1468.4 |
+| wasmvm native / Go | 11734 | 329.1 |
+| Wasmtime 48 / Go C-Rust bridge | 56524 | 66.1 |
+| Native-Go application / LLGo | 8803 | 411.0 |
+| Native-Go application / Go | 44387 | 77.5 |
 
-Bounded transfer buffers observe LLGo native 2131 -> 2248 req/s and save about
-257 KiB/request. The warm-time ratio is 0.9669 [0.9479,0.9873], with both controls
-resolved for this comparison; 32/40 individual A/A controls resolve overall.
-Observed peak RSS rises 176.1 -> 191.9 MiB. The 27.1x paired warm-time gap to
-Wasmtime remains; this event does not close controlled acceptance.
-The earlier [worker-reuse](docs/research/performance-p3-worker-reuse-2026-11-10.md),
-[immutable-copy](docs/research/performance-immutable-memory-2026-11-10.md),
-[rejected pipe](docs/research/performance-p3-body-pipe-evaluation-2026-11-10.md)
-and [original P3](docs/research/performance-p3io-2026-11-10.md) events retain their
-own complete portfolios, adverse timings, resource tradeoffs and controls.
+**All 40 timing controls are unresolved in this noisy event.** These observations
+establish no stable speed win or ranking. Separate direct counters agree under
+Go and LLGo: bounded input read-ahead reduces external reads 15 -> 2 and task
+resumes 80 -> 41 per request. Task creation remains 24, and the streaming output
+adapter retains 14 response reads. The same-event LLGo native baseline observes
+1971 -> 2666 req/s and 938625 -> 848551 accounted B/request; the large reference
+and host-runtime gaps remain. The owned streaming adapter and reference's
+Store-local body collection retain distinct topology; further attribution is
+required. Startup, compilation, instantiation and cleanup remain separate.
+Earlier [transfer-buffer](docs/research/performance-p3-io-buffers-2026-11-10.md),
+[worker-reuse](docs/research/performance-p3-worker-reuse-2026-11-10.md),
+[immutable-copy](docs/research/performance-immutable-memory-2026-11-10.md) and
+[rejected-pipe](docs/research/performance-p3-body-pipe-evaluation-2026-11-10.md)
+events retain all profiles, adverse results and resource tradeoffs independently.
 
 The [Linux routing snapshot](docs/research/performance-linux-routing-2026-11-09.md)
 retains32 complete cohort-cases, original partial/timed-out observations and all
