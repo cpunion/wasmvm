@@ -214,9 +214,19 @@ jobs:
           read -ra packages <<< "$TEST_PACKAGES"
           llgo test -O3 -lto=full -json -debug-trace "artifacts/ci/llgo-${SHARD}.json" -count=1 -timeout=8m "${packages[@]}"
       - name: Execute native service reference under LLGo
-        if: matrix.shard == 'component'
+        if: matrix.shard == 'threads'
         working-directory: benchmarks/service
         run: llgo test -O3 -lto=full -json -debug-trace "$GITHUB_WORKSPACE/artifacts/ci/llgo-service-reference.json" -count=1 -timeout=2m ./...
+      - name: Execute complete P3 HTTP measurement under LLGo
+        if: matrix.shard == 'legacy'
+        working-directory: benchmarks/p3io
+        run: |
+          llgo test -O3 -lto=full -json -debug-trace "$GITHUB_WORKSPACE/artifacts/ci/llgo-p3io.json" -count=1 -timeout=2m ./...
+      - name: Execute bare P3 host control under LLGo
+        if: matrix.shard == 'threads'
+        working-directory: benchmarks/p3io
+        run: |
+          llgo test -O3 -lto=full -tags=p3host -json -debug-trace "$GITHUB_WORKSPACE/artifacts/ci/llgo-p3host.json" -count=1 -timeout=2m ./...
       - name: Preserve shard execution and timing evidence
         if: always()
         timeout-minutes: 2
@@ -335,6 +345,12 @@ jobs:
           go -C benchmarks/service vet ./...
           go -C benchmarks/service test -race -count=1 -timeout=2m -coverprofile="$GITHUB_WORKSPACE/artifacts/benchmark-reference/coverage.out" ./...
           python3 scripts/check_coverage.py artifacts/benchmark-reference/coverage.out --minimum 90 --require github.com/cpunion/wasmvm/benchmarks/service
+      - name: Check complete P3 HTTP measurement
+        run: |
+          go -C benchmarks/p3io vet ./...
+          go -C benchmarks/p3io test -race -count=1 -timeout=2m -coverprofile="$GITHUB_WORKSPACE/artifacts/benchmark-reference/p3io.out" ./...
+          go -C benchmarks/p3io test -tags=p3host -race -count=1 -timeout=2m ./...
+          python3 scripts/check_coverage.py artifacts/benchmark-reference/p3io.out --minimum 90 --require github.com/cpunion/wasmvm/benchmarks/p3io
       - name: Fuzz bounded binary inputs
         run: |
           go test -run '^$' -fuzz '^FuzzReader$' -fuzztime=10s -parallel=2 ./internal/binary

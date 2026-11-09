@@ -8,7 +8,7 @@ on:
       suite:
         description: Benchmark scope (PR families, sustained gates, or diagnostic survey)
         type: choice
-        options: [pr, full, native-simd, survey, routing]
+        options: [pr, full, native-simd, survey, routing, p3io]
         default: full
       routing_scope:
         description: Routing groups to measure (routing suite only)
@@ -31,9 +31,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  p3_reference:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'p3io' }}
+    name: Independent P3 HTTP reference / linux-amd64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: head
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - run: bash head/scripts/setup_linux_llgo.sh
+      - name: Install pinned Rust
+        run: rustup toolchain install 1.98.0 --profile minimal
+      - name: Restore exact Rust dependency/profile cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            p3-rust-target
+          key: p3-reference-linux-amd64-rust1.98.0-llvm22-release-${{ hashFiles('head/benchmarks/p3io/rust/Cargo.lock') }}
+      - name: Build and actually execute the independent P3 provider
+        env:
+          CC: /usr/lib/llvm-22/bin/clang
+        run: |
+          python3 head/benchmarks/p3io/check_reference.py \
+            --output-dir "$GITHUB_WORKSPACE/p3-reference-results" \
+            --rust-target-dir "$GITHUB_WORKSPACE/p3-rust-target"
+      - name: Preserve every build/test outcome
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: p3-reference-validation-linux-amd64
+          path: p3-reference-results/
+          if-no-files-found: error
+          retention-days: 30
+
   benchmark:
     # Capability completion takes priority; measurements are opt-in until then.
-    if: ${{ inputs.suite != 'native-simd' && inputs.suite != 'routing' && (github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks')) }}
+    if: ${{ inputs.suite != 'native-simd' && inputs.suite != 'routing' && inputs.suite != 'p3io' && (github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks')) }}
     name: Runtime performance / linux-amd64
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && inputs.suite != 'pr' && 90 || 10 }}
@@ -173,7 +214,7 @@ jobs:
   native_arm64:
     # Sustained native acceptance is explicit; ordinary PR phase comparisons
     # already include both owned backends and all compiled references.
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite != 'pr' && inputs.suite != 'survey' && inputs.suite != 'routing' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.suite == 'full' || inputs.suite == 'native-simd') }}
     name: Native feature and competitors / ${{ matrix.platform.name }}
     runs-on: ${{ matrix.platform.runner }}
     strategy:

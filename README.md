@@ -42,6 +42,12 @@ profiles remain visible; 35 throughput controls resolve, while all six owned
 LLGo native controls remain unresolved. VM/compiler and host-service gaps stay
 separate. SDK tests execute on both targets; controlled acceptance stays open.
 
+The [P3 HTTP I/O comparison](docs/research/performance-p3io-2026-11-10.md)
+measures complete 64KiB bodies, trailers and composed-component ownership.
+All 36 profiles and 161,280 checked warm responses are retained. P3 currently
+shows substantial component/IO and host-runtime overhead against Wasmtime;
+only 6/36 controls resolve. This remains required performance work.
+
 Hosts and compiler events stay separate. Setup, compilation, instantiation,
 first call, warmed calls, cleanup and process intervals are recorded separately.
 Merging requires all 23 semantic CI jobs, 240 conformance
