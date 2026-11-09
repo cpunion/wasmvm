@@ -24,6 +24,7 @@ type memoryRegion struct {
 	copies    *loopFrameCopies
 	predicate *loopPredicate
 	operands  map[int]memoryOperand
+	cache     *loopMemoryValue
 }
 
 func (e *functionEmitter) codeLimit() int {
@@ -190,6 +191,9 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 			boundaries = append(boundaries, pc, pc+1)
 			continue
 		}
+		if r.cache != nil && (pc == r.cache.load || pc == r.cache.store) {
+			boundaries = append(boundaries, pc, pc+1)
+		}
 		_, guard := r.guards[pc]
 		_, address := r.addresses[pc]
 		// Every remapped access must reach memoryAt; earlier copy/vector
@@ -227,6 +231,15 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 		}
 		in := e.f.Code[pc]
 		if r.elided[pc] {
+			continue
+		}
+		if r.cache != nil && pc == r.cache.load {
+			e.loadLoopMemoryValue(in, r.cache)
+			continue
+		}
+		if r.cache != nil && pc == r.cache.store {
+			e.memoryAt(in, true, e.f.Sources[in.Source].Wasm.MemoryOffset(), r.operands[pc])
+			e.storeLoopMemoryValue(in, r.cache)
 			continue
 		}
 		if address, ok := r.addresses[pc]; ok {

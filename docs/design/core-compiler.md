@@ -782,3 +782,12 @@ normalization and four data-count encoder corrections retain before/after
 hashes. Generic Core 3.0 data/table declaration cases requiring unimplemented
 GC/typed-reference constant contexts remain in that later capability scope;
 the complete pinned Core 2.0 corpus remains independently required.
+
+### One private word across a bounded loop
+
+A nontrapping native loop with one proven constant-address integer load/store
+pair may retain the last stored bits in an otherwise unused existing register.
+Every original store and backedge poll remains; cold PCs use ordinary checked
+memory. The register is absent from every loop mapping and is discarded at
+entry boundaries. Shared/view memories and other effects decline the proof.
+See the [qualification and declared measurement](../research/performance-private-loop-value-2026-11-09.md).

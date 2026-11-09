@@ -269,6 +269,14 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 		out.DeferredPredicates++
 	}
 	warm.predicate = predicate
+	candidate = warm
+	candidate.loop = loop
+	warm.cache = e.planLoopMemoryValue(start, candidate)
+	if warm.cache != nil {
+		e.initializeLoopMemoryValue(warm.cache)
+		e.forwardedMemory++
+		restoreMemory = restoreMemory || e.a.arch == "amd64" && warm.cache.register == 11
+	}
 	header := e.a.label()
 	e.a.mark(header)
 	if start%256 == 0 {
