@@ -205,7 +205,7 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 		return nil, resourceLimit("host reentry depth")
 	}
 	op.depth++
-	defer func() { op.depth-- }()
+	defer op.leaveCall()
 	limits, err := op.executionLimits(nil)
 	if err != nil {
 		return nil, err
@@ -219,9 +219,7 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 		op.releaseWorkspace(w)
 		return nil, err
 	}
-	defer func() {
-		op.releaseWorkspace(w)
-	}()
+	defer op.releaseWorkspace(w)
 	if err := e.Start(ref, args); err != nil {
 		return nil, err
 	}
@@ -256,6 +254,8 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 		}
 	}
 }
+func (op *operation) leaveCall() { op.depth-- }
+
 func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]value.Value, error) {
 	s := op.store
 	scalar, isScalar := request.Function.Host.(ScalarHostFunction)

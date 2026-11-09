@@ -167,10 +167,8 @@ func (op *operation) finish() {
 	if len(op.frames) != 0 {
 		op.interrupt()
 	}
-	for call := range op.continuations {
-		call.mu.Lock()
-		call.abort()
-		call.mu.Unlock()
+	if len(op.continuations) != 0 {
+		op.finishContinuations()
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -188,6 +186,14 @@ func (op *operation) finish() {
 		op.pending = nil
 		op.options, op.fuel, op.collect = CallOptions{}, 0, false
 		s.idleOperation = op
+	}
+}
+
+func (op *operation) finishContinuations() {
+	for call := range op.continuations {
+		call.mu.Lock()
+		call.abort()
+		call.mu.Unlock()
 	}
 }
 
