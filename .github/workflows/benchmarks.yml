@@ -315,7 +315,7 @@ jobs:
       # Each group has an independent runner and source-pinned A/A controls.
       max-parallel: 5
       matrix:
-        group: ${{ fromJSON(inputs.routing_scope == 'all' && '["core","memory-simd","gc","threads","applications"]' || format('["{0}"]', inputs.routing_scope)) }}
+        group: ${{ fromJSON(inputs.routing_scope == 'all' && '["core","memory-simd","gc","threads","applications","threads-sustained"]' || inputs.routing_scope == 'threads' && '["threads","threads-sustained"]' || format('["{0}"]', inputs.routing_scope)) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -338,9 +338,15 @@ jobs:
           PY
       - name: Measure only this group on one inherited CPU
         run: |
+          routing_group="${{ matrix.group }}"
+          routing_flags=()
+          if [[ "$routing_group" == threads-sustained ]]; then
+            routing_group=threads
+            routing_flags+=(--threads-sustained)
+          fi
           python3 -u head/benchmarks/routing_compare.py measure \
             --head-dir "$GITHUB_WORKSPACE/head" --build-dir "$GITHUB_WORKSPACE/routing-build" \
-            --group "${{ matrix.group }}" --output-dir "$GITHUB_WORKSPACE/routing-results"
+            --group "$routing_group" "${routing_flags[@]}" --output-dir "$GITHUB_WORKSPACE/routing-results"
       - name: Measure the separately declared sustained GC cohort
         if: matrix.group == 'gc'
         run: |
