@@ -408,7 +408,9 @@ func (b *httpBody) byteSource(c *component.Caller, t component.ValueType) (compo
 	b.mu.Unlock()
 	b.acquire()
 	signal := component.NewCancellation()
+	buffered := &httpReadBuffer{}
 	source := component.AsyncSource{Cancel: signal, Close: func() {
+		buffered.close()
 		b.mu.Lock()
 		done := b.bodyDone
 		b.mu.Unlock()
@@ -435,8 +437,13 @@ func (b *httpBody) byteSource(c *component.Caller, t component.ValueType) (compo
 			})
 		}
 	} else {
+		source.Prompt = true
 		source.Read = func(c *component.Caller, limit uint32) (*component.ReadCompletion, error) {
 			completion := component.NewReadCompletion()
+			if result, ready := buffered.take(limit); ready {
+				completion.Resolve(func(*component.Caller) (component.ReadResult, error) { return result, nil })
+				return completion, nil
+			}
 			ctx := c.Context()
 			b.mu.Lock()
 			reader, failure := b.reader, b.failure
@@ -465,8 +472,9 @@ func (b *httpBody) byteSource(c *component.Caller, t component.ValueType) (compo
 					}
 					closed := err != nil
 
-					r := component.ReadResult{Bytes: data, Closed: closed}
-					completion.Resolve(func(*component.Caller) (component.ReadResult, error) { return r, nil })
+					completion.Resolve(func(*component.Caller) (component.ReadResult, error) {
+						return buffered.deliver(data, closed, limit), nil
+					})
 				}()
 				if limit == 0 {
 					return
@@ -475,7 +483,7 @@ func (b *httpBody) byteSource(c *component.Caller, t component.ValueType) (compo
 					err = joint.Err()
 					return
 				}
-				buffer := b.owner.network.io.acquireTransferBuffer(int(min(limit, b.owner.network.io.config.MaxReadBytes)))
+				buffer := b.owner.network.io.acquireTransferBuffer(int(b.owner.network.io.config.MaxReadBytes))
 				defer b.owner.network.io.releaseTransferBuffer(buffer)
 				n, failed := b.readExternal(buffer[:len(buffer):len(buffer)])
 				if n < 0 || n > len(buffer) {

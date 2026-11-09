@@ -170,3 +170,34 @@ A standard-library-only reproduction is recorded in
 for eventual completion without changing the request's protocol timeout values
 or weakening typed failure assertions. This compatibility/latency deficit remains
 open; successful eventual cleanup does not establish prompt cancellation parity.
+
+
+## Preview 3 bounded complete responses
+
+The async P3 provider exposes `CallIncomingBuffered(ctx, instance, request,
+maxBodyBytes, options)` alongside the existing streaming `CallIncoming` API.
+It returns a `BufferedResponse` with owned body bytes, headers, trailers and
+remaining fuel after joining background guest work. The positive caller-supplied
+body limit is mandatory; invalid limits or excess response bytes return
+`wasm.ErrLimit`. Streaming remains appropriate when the application cannot
+materialize the entire response.
+
+Both APIs prepare incoming resources and execute the handler under one Store
+admission. The buffered API consumes typed guest streams directly in the same
+component scheduler and Store lease. It avoids the streaming response's Store
+worker and `io.Pipe` handoff, while retaining the common request quota, timeout,
+content-length checks, trailer validation, cancellation and resource cleanup.
+Each canonical read is bounded by the existing IO/body settings and remaining
+materialization budget. The one-byte excess probe detects overflow without
+retaining that excess byte. External forwarded bodies use the same typed byte
+source contract. A late guest failure discards the collected response; successful
+return includes guest completion rather than stopping at the first result.
+
+The P3 measurement harness explicitly selects `--response-mode streaming` or
+`--response-mode buffered`. Both check every response byte, status, header and
+trailer. Request construction stays outside the complete public API timer;
+validation stays inside the request and batch wall clocks. Mode comparisons use
+the same physical Go or LLGo binary and never replace the streaming baseline
+silently. The pinned reference collects its complete body within its Store;
+ordinary native-Go controls retain their application implementation. Source,
+compiler, API topology and host-runtime differences remain distinct evidence.

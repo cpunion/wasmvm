@@ -80,10 +80,19 @@ func ownedKernels(ctx context.Context, args options, out *report) ([]service.Cal
 		if err != nil {
 			return nil, release, err
 		}
-		calls[i] = httpKernel(ctx, args, func(ctx context.Context, r *http.Request) (*http.Response, error) {
-			return world.HTTP().CallIncoming(ctx, in, r, component.CallOptions{})
-		})
+		if args.responseMode == "buffered" {
+			calls[i] = bufferedKernel(ctx, args, func(ctx context.Context, r *http.Request) (*preview3.BufferedResponse, error) {
+				return world.HTTP().CallIncomingBuffered(ctx, in, r, uint64(len(args.payload)), component.CallOptions{})
+			})
+		} else {
+			calls[i] = httpKernel(ctx, args, func(ctx context.Context, r *http.Request) (*http.Response, error) {
+				return world.HTTP().CallIncoming(ctx, in, r, component.CallOptions{})
+			})
+		}
 	}
 	out.Policy = "owned P3 HTTP CallIncoming, body collection and close; one World/Store per worker sharing compiled code; fuel off, cancellation/logical limits retained; per-call handler lookup/signature check included; no network socket"
+	if args.responseMode == "buffered" {
+		out.Policy = "owned P3 HTTP CallIncomingBuffered; bounded complete body/trailer collection and guest join inside one Store lease; one World/Store per worker sharing compiled code; fuel off, cancellation/logical limits retained; per-call handler lookup/signature check included; no network socket"
+	}
 	return calls, release, nil
 }
