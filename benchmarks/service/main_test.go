@@ -120,6 +120,9 @@ func TestCLIHandshakeAndInterleavedBatches(t *testing.T) {
 	if err := json.Unmarshal([]byte(lines[2]), &result); err != nil || result.Result != 3381501185 {
 		t.Fatal(err, result)
 	}
+	if result.WarmupCallNs == nil || result.WarmupResults == nil || len(result.WarmupCallNs) != 0 || len(result.WarmupResults) != 0 {
+		t.Fatal("zero warmups must use empty JSON arrays", lines[2])
+	}
 	for _, input := range []string{"", "wrong\n", "run\n", "run\nwrong\n"} {
 		if code := run(args, strings.NewReader(input), io.Discard, io.Discard); code != 1 {
 			t.Fatal(input, code)

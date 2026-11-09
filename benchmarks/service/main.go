@@ -81,9 +81,14 @@ func parse(args []string, stderr io.Writer) (out options, err error) {
 }
 
 func benchmark(ctx context.Context, args options, beforeSample func(int) error) (out report, err error) {
+	if err = args.Options.Validate(); err != nil {
+		return out, err
+	}
 	out = report{SchemaVersion: 1, Engine: args.engine, Backend: args.backend, HostCompiler: runtime.Compiler,
 		Mode: "service", Seed: args.seed, Iterations: args.iterations, Samples: args.Samples, Warmups: args.Warmups,
-		Phases: make(map[string]int64)}
+		Phases: make(map[string]int64), WarmCallNs: make([]int64, 0, args.Samples),
+		WarmupCallNs: make([]int64, 0, args.Warmups), WarmResults: make([]uint32, 0, args.Samples),
+		WarmupResults: make([]uint32, 0, args.Warmups)}
 	var calls []service.Call
 	var release func() error
 	var stop func()
