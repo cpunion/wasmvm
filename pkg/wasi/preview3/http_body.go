@@ -453,7 +453,7 @@ func (b *httpBody) byteSource(c *component.Caller, t component.ValueType) (compo
 				defer stop()
 				b.readerMu.Lock()
 				defer b.readerMu.Unlock()
-				var data []byte
+				var data string
 				var err error
 				defer func() {
 					if recover() != nil {
@@ -465,7 +465,7 @@ func (b *httpBody) byteSource(c *component.Caller, t component.ValueType) (compo
 					}
 					closed := err != nil
 
-					r := component.ReadResult{Bytes: string(data), Closed: closed}
+					r := component.ReadResult{Bytes: data, Closed: closed}
 					completion.Resolve(func(*component.Caller) (component.ReadResult, error) { return r, nil })
 				}()
 				if limit == 0 {
@@ -475,13 +475,16 @@ func (b *httpBody) byteSource(c *component.Caller, t component.ValueType) (compo
 					err = joint.Err()
 					return
 				}
-				buffer := make([]byte, min(limit, b.owner.network.io.config.MaxReadBytes))
-				n, failed := b.readExternal(buffer)
+				buffer := b.owner.network.io.acquireTransferBuffer(int(min(limit, b.owner.network.io.config.MaxReadBytes)))
+				defer b.owner.network.io.releaseTransferBuffer(buffer)
+				n, failed := b.readExternal(buffer[:len(buffer):len(buffer)])
 				if n < 0 || n > len(buffer) {
 					err = httpErr("internal-error")
 					return
 				}
-				data = buffer[:n]
+				// Snapshot before returning the mutable buffer to its owner;
+				// completion publication may run after another worker reuses it.
+				data = string(buffer[:n])
 				err = failed
 				if n == 0 && err == nil {
 					err = io.ErrNoProgress

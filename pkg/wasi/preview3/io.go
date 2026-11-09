@@ -41,6 +41,7 @@ type IOConfig struct {
 	MaxStreams, MaxReadBytes, MaxWriteBytes uint32
 	// MaxIdleWorkers bounds reusable external-I/O goroutines. Zero selects four,
 	// capped by the existing twice-MaxStreams active-operation limit.
+	// At most this many size-bounded transfer buffers are also retained.
 	MaxIdleWorkers                                uint32
 	StdinTerminal, StdoutTerminal, StderrTerminal bool
 }
@@ -58,6 +59,7 @@ type IO struct {
 	workers               sync.WaitGroup
 	activeWorkers         uint64
 	idleWorkers           []chan func()
+	idleBuffers           [][]byte
 	operations            map[*ioOperation]struct{}
 	cleanupErr            error
 	inputType, outputType *component.HostResourceType
@@ -108,6 +110,7 @@ func (p *IO) Close() {
 		close(jobs)
 	}
 	p.idleWorkers = nil
+	p.idleBuffers = nil
 	ops := make([]*ioOperation, 0, len(p.operations))
 	for op := range p.operations {
 		ops = append(ops, op)

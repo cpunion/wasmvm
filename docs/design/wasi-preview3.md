@@ -57,6 +57,16 @@ wakes idle workers and cancels active operations; WaitClosed joins both running
 and idle goroutines. Reuse avoids per-operation goroutine/thread creation while
 preserving independent Store ownership and the existing component task scheduler.
 
+The owner also caches at most `MaxIdleWorkers` mutable transfer buffers, each
+bounded by its configured read/write size. A worker keeps exclusive ownership
+until a read is copied into an immutable snapshot or a standard writer has
+consumed it. Reader slices have capacity limited to the requested range.
+Completed reads publish immutable strings after the mutable buffer is reusable;
+no completion retains a pooled byte slice. Close drops idle buffers and rejects
+late returns. HTTP body backpressure and close/error behavior continue to use
+the standard library pipe. Packed Canonical stream-buffer writes share the
+existing immutable-memory copy primitive and its post-copy cancellation check.
+
 Stdin returns independent readable streams and persistent completion futures.
 EOF resolves success, input failures resolve the declared error-code, and dropping
 the stream resolves success. Short reads and zero-length readiness are supported.
