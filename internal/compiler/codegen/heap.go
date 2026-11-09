@@ -163,8 +163,13 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 	if !ok {
 		return false
 	}
-	e.slotLoad(in.A, 0, false, true)
 	cache, cached := e.heapCaches[a.cacheClass]
+	reference := e.operandRegister(0)
+	if r, ok := e.registers[e.frameRead(in.A)]; ok && e.unmetered && e.a.arch == "arm64" && cached && !a.array {
+		reference = r
+	} else {
+		e.slotLoad(in.A, 0, false, true)
+	}
 	bound, bounded := e.heapIndexBounds[a.cacheClass]
 	bounded = bounded && cached && a.array && !a.length
 	ready := 0
@@ -175,18 +180,24 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 		} else {
 			// Null must miss even when an entry's cache key is initially zero.
 			// ARM CCMP combines the non-null and complete-handle checks.
-			e.test(true)
 			if e.a.arch == "amd64" {
+				e.test(true)
 				miss := e.a.label()
 				e.branch(miss, "eq") // A null handle must never hit the initial zero key.
 				e.registerCompareFlags(0, cache.key, 0x51)
 				e.branch(ready, "eq")
 				e.a.mark(miss)
 			} else {
-				e.a.word(0xfa401120 | uint32(cache.key)<<16) // ccmp x9,key,#0,ne
+				e.a.word(0xf100001f | uint32(reference)<<5)                         // cmp reference,#0
+				e.a.word(0xfa401000 | uint32(cache.key)<<16 | uint32(reference)<<5) // ccmp reference,key,#0,ne
 				e.branch(ready, "eq")
 			}
 		}
+	}
+	if reference != e.operandRegister(0) {
+		// Only the miss path needs the constrained resolver operand. A hit
+		// compares the complete reference directly in its allocated home.
+		e.slotLoad(in.A, 0, false, true)
 	}
 	e.test(true)
 	e.branch(e.trapExit(wasm.TrapNullReference, e.f.Sources[in.Source].Wasm.Offset), "eq")
@@ -317,11 +328,22 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 		if a.array {
 			operand = e.f.Args[in.Extra+2]
 		}
-		e.slotLoad(operand, 0, false, true)
-		e.heapStore(a.width, base, offset)
+		reg, direct := e.registers[e.frameRead(operand)]
+		if !e.unmetered || e.a.arch != "arm64" || !direct {
+			e.slotLoad(operand, 0, false, true)
+			reg = e.operandRegister(0)
+		}
+		e.heapStore(a.width, base, offset, reg)
 	} else {
-		e.heapLoad(a.width, a.signed, base, offset)
-		e.heapResult(in.Dst)
+		reg, direct := e.registers[in.Dst]
+		direct = direct && e.unmetered && e.a.arch == "arm64"
+		if !direct {
+			reg = e.operandRegister(0)
+		}
+		e.heapLoad(a.width, a.signed, base, offset, reg)
+		if !direct {
+			e.heapResult(in.Dst)
+		}
 	}
 	return true
 }
@@ -344,7 +366,7 @@ func (e *functionEmitter) heapResult(dst slots.Slot) {
 	}
 }
 
-func (e *functionEmitter) heapLoad(width uint32, signed bool, base byte, offset uint32) {
+func (e *functionEmitter) heapLoad(width uint32, signed bool, base byte, offset uint32, reg byte) {
 	if e.a.arch == "amd64" {
 		e.a.xheapPrefix(width == 8, 0, base)
 		if width >= 4 {
@@ -365,11 +387,11 @@ func (e *functionEmitter) heapLoad(width uint32, signed bool, base byte, offset 
 		if signed && width < 4 {
 			op |= 1 << 23
 		}
-		e.a.word(heapAddressARM64(op, 9, base, offset, width))
+		e.a.word(heapAddressARM64(op, reg, base, offset, width))
 	}
 }
 
-func (e *functionEmitter) heapStore(width uint32, base byte, offset uint32) {
+func (e *functionEmitter) heapStore(width uint32, base byte, offset uint32, reg byte) {
 	if e.a.arch == "amd64" {
 		if width == 2 {
 			e.a.bytes(0x66)
@@ -383,7 +405,7 @@ func (e *functionEmitter) heapStore(width uint32, base byte, offset uint32) {
 		e.a.xheapAddress(0, base, offset)
 	} else {
 		op := uint32(0x39000000) | uint32(bits.TrailingZeros32(width))<<30
-		e.a.word(heapAddressARM64(op, 9, base, offset, width))
+		e.a.word(heapAddressARM64(op, reg, base, offset, width))
 	}
 }
 

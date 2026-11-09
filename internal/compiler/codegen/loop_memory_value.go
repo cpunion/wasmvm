@@ -111,7 +111,7 @@ func (e *functionEmitter) initializeLoopMemoryValue(cache *loopMemoryValue) {
 	if e.a.arch == "arm64" {
 		base = 16
 	}
-	e.heapLoad(cache.width, false, base, cache.address)
+	e.heapLoad(cache.width, false, base, cache.address, e.operandRegister(0))
 	e.registerMove(cache.register, e.operandRegister(0), cache.width == 8)
 }
 
