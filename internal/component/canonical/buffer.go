@@ -20,13 +20,7 @@ func (c *Codec) StoreBuffer(t *model.Type, ptr uint64, v Value) error {
 		if err := c.byteValues(n, 0); err != nil {
 			return err
 		}
-		if err := c.Transfer.rangeCheck(ptr, n, 1); err != nil {
-			return err
-		}
-		if err := c.Transfer.charge(n); err != nil {
-			return err
-		}
-		return c.Transfer.Memory.Write(ptr, []byte(v.Text))
+		return c.storeBytes(ptr, v.Text)
 	}
 	n := uint64(len(v.Elements))
 	if n > c.MaxValues-c.values || n > MaxStringBytes/l.Size {

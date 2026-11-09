@@ -187,7 +187,7 @@ func (p *httpPump) scheduleWrite(c *component.Caller, refs []*component.Resource
 				}
 			}()
 			if len(batch.Bytes) != 0 {
-				_, failure = p.writer.Write([]byte(batch.Bytes))
+				_, failure = p.body.owner.network.io.writeTransferString(p.writer, batch.Bytes)
 			}
 			if failure == nil && batch.Closed {
 				p.body.end(nil)
