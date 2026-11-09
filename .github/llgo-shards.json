@@ -11,7 +11,7 @@
   },
   {
     "name": "component",
-    "packages": "./internal/component/canonical ./internal/component/decode ./internal/component/validate ./pkg/component ./internal/compiler/nativeabi ./internal/compiler/ir ./internal/compat ./internal/wasi/host ./internal/bench/phase",
+    "packages": "./internal/component/canonical ./internal/component/decode ./internal/component/validate ./pkg/component ./internal/compiler/nativeabi ./internal/compiler/ir ./internal/compat ./internal/wasi/host ./internal/bench/phase ./internal/bench/service",
     "inputs": "component"
   },
   {

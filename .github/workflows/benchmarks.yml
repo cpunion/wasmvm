@@ -96,6 +96,12 @@ jobs:
           mkdir -p benchmark-results
           cp "$RUNNER_TEMP/wasm-runtime-tools/installation.json" benchmark-results/tool-installation.json
 
+      - name: Build and execute independent concurrent SDK references
+        run: |
+          python3 head/benchmarks/service/check_sdks.py \
+            --tools-dir "$RUNNER_TEMP/wasm-runtime-tools" \
+            --output-dir "$GITHUB_WORKSPACE/benchmark-results/service-sdk-checks"
+
       - name: Measure interleaved baseline, candidate, and competitor cases
         if: env.BENCHMARK_SUITE == 'full'
         shell: bash
@@ -283,6 +289,11 @@ jobs:
         run: |
           python3 head/benchmarks/install_tools.py --sdk \
             --destination "$GITHUB_WORKSPACE/routing-build/tools" --github-env
+      - name: Build and execute independent concurrent SDK references
+        run: |
+          python3 head/benchmarks/service/check_sdks.py \
+            --tools-dir "$GITHUB_WORKSPACE/routing-build/tools" \
+            --output-dir "$GITHUB_WORKSPACE/routing-build/service-sdk-checks"
       - name: Build exact base/head and reference binaries
         shell: bash
         run: |

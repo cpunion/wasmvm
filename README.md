@@ -17,19 +17,35 @@ integration. Competing runtimes are independent test and benchmark references;
 execution never silently switches to one of them.
 
 Performance acceptance remains open. The
-[latest compiler baseline and complete comparison](docs/research/performance-llgo-interface-upgrade-2026-11-08.md)
-retains all 22 Linux workloads, sustained GC and an independent ARM64 old/new
-LLGo event against wazero, Wasmtime, Wasmer, WasmEdge and native C where applicable.
-The LLGo pin includes upstream static-interface and concurrent-lookup fixes;
-Go 1.27.3, LLVM 22.1.8 and `-O3 -lto=full` remain fixed. No broad VM speedup
-is established. Public-call latency, memory/SIMD, GC, Threads and native-C gaps
-remain explicit, alongside adverse and unsupported observations.
+[current compiler baseline](docs/research/performance-llgo-escape-upgrade-2026-11-09.md)
+uses LLGo `3d92a58`, including upstream escape/defer fixes; Go 1.27.3, LLVM
+22.1.8 and `-O3 -lto=full` remain fixed. Its ARM64 event retains all 22 original
+workloads plus separate sustained GC/Threads comparisons. The independent
+[Linux snapshot](docs/research/performance-linux-routing-2026-11-09.md)
+retains 32 complete cohort-cases and its original timed-out partial case;
+both source roles use the new compiler. It and the earlier
+[two-platform comparison](docs/research/performance-llgo-interface-upgrade-2026-11-08.md)
+retain their distinct source/compiler identities. The
+[invocation cleanup](docs/research/performance-invocation-cleanup-2026-11-09.md)
+narrows local LLGo/Go short-call gaps, without establishing a controlled win.
+Public-call latency, memory/SIMD, GC, Threads and native-C gaps remain explicit,
+alongside adverse and unsupported observations.
 
-Linux controls resolve 6/22 original cases and 3/4 sustained GC cases; ARM64
-resolves 2/22 and 0/4. Hosts and compiler events stay separate. Setup, compilation,
-instantiation, first call, warmed calls, cleanup and process intervals are
-recorded separately. Merging requires all 23 semantic CI jobs, 240 conformance
-reports and 30 per-package coverage gates. Jobs target 5–10 minutes. Historical
+The [concurrent service comparison](docs/research/performance-service-references-2026-11-09.md)
+uses one admission driver for Go/LLGo, wazero and native C. All 54 A/A controls
+remain unresolved; its throughput, request/API latency and separate resource
+observations do not establish a controlled ranking.
+The [complete concurrent comparison](docs/research/performance-service-all-runtimes-2026-11-10.md)
+adds Wasmtime/Wasmer/WasmEdge through the same driver: 720 throughput processes,
+72 separate resource processes and 5,160,960 checked warm requests. All 72
+profiles remain visible; 35 throughput controls resolve, while all six owned
+LLGo native controls remain unresolved. VM/compiler and host-service gaps stay
+separate. SDK tests execute on both targets; controlled acceptance stays open.
+
+Hosts and compiler events stay separate. Setup, compilation, instantiation,
+first call, warmed calls, cleanup and process intervals are recorded separately.
+Merging requires all 23 semantic CI jobs, 240 conformance
+reports and 31 per-package coverage gates. Jobs target 5–10 minutes. Historical
 [main results](docs/research/performance-main-inventory-2026-11-08.md),
 [native-entry investigation](docs/research/performance-native-entry-2026-11-08.md)
 and rejected experiments retain their original source/compiler identities.
@@ -58,7 +74,7 @@ their integration and final CI evidence.
 | macOS arm64 native | Yes; C compiler/cgo required | Yes; pinned release profile | CI target |
 | Other native OS/architecture combinations | Not validated | Not validated | No native support claim |
 
-CI runs Go and LLGo on both targets; eight LLGo shards execute all 31 test
+CI runs Go and LLGo on both targets; eight LLGo shards execute all 32 test
 packages exactly once per target. Shared Go checks include race detection,
 native pointer ownership, fuzz smoke checks and a **90% statement-coverage gate
 for each executable package**. The coverage badge states this policy, not an
@@ -393,7 +409,7 @@ go test -count=1 -timeout=10m ./...
 llgo test -O3 -lto=full -count=1 -timeout=10m ./...
 ```
 
-CI distributes all 31 test packages once across eight LLGo shards per platform,
+CI distributes all 32 test packages once across eight LLGo shards per platform,
 retaining `-O3 -lto=full`, with a separate CLI build, and separates Go semantics, race and quality work. It
 caches compiler-specific package objects and records LLGo build traces; the
 target is 5–10 minutes per job, subject to measured final-run acceptance.

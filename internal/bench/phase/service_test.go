@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync/atomic"
 	"testing"
 
 	"github.com/cpunion/wasmvm/internal/platform/native"
@@ -64,39 +63,6 @@ func TestServiceSharedModuleIndependentStoresAndEveryReply(t *testing.T) {
 		if _, err := benchmark(context.Background(), args); err == nil {
 			t.Fatal("invalid service capacity accepted")
 		}
-	}
-}
-
-func TestServiceCancellationDrainsAllClientsAndJoinsWorkers(t *testing.T) {
-	args := options{mode: "service", workers: 4, clients: 8, requests: 16, samples: 1, expected: 7}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	var count, active atomic.Int32
-	calls := make([]kernel, args.workers)
-	for i := range calls {
-		var entered atomic.Bool
-		calls[i] = func() (int64, uint32, error) {
-			if !entered.CompareAndSwap(false, true) {
-				t.Error("one Store invoked concurrently")
-			}
-			if active.Add(1) > int32(args.workers) {
-				t.Error("admission limit exceeded")
-			}
-			if count.Add(1) == 7 {
-				cancel()
-			}
-			runtime.Gosched()
-			active.Add(-1)
-			entered.Store(false)
-			return 17, 7, ctx.Err()
-		}
-	}
-	var out report
-	call, stop := boundedService(calls, args, &out)
-	_, _, err := call()
-	stop()
-	if !errors.Is(err, context.Canceled) || count.Load() != 128 || active.Load() != 0 || len(out.Service.Batches[0].RequestNs) != 128 {
-		t.Fatal(err, count.Load(), active.Load(), out.Service)
 	}
 }
 

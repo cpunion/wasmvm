@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/cpunion/wasmvm/internal/bench/service"
 	"github.com/cpunion/wasmvm/internal/compiler/codegen"
 	"github.com/cpunion/wasmvm/internal/compiler/lower"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -127,7 +128,7 @@ func parseOptions(args []string, stderr io.Writer) (options, error) {
 
 // A kernel times the actual call and stops its clock before inspecting results.
 // Public API marshalling remains inside its timer; dispatch is a separate row.
-type kernel func() (elapsed int64, result uint32, err error)
+type kernel = service.Call
 
 func checkResult(result, expected uint32) error {
 	if result != expected {

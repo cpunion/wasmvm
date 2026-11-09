@@ -65,11 +65,27 @@ one event and all adverse/failed outcomes. Resource cohorts retain the same
 workloads/capacities and use first+one measured batch without warmup. These are
 separate diagnostics, never retimed replacements for a failed throughput run.
 
-This mode initially investigates the two Go-compatible host runtimes. Named
-competitor service adapters, ordinary native controls and P3 I/O application
-measurements remain required follow-ups; existing serial reference results do
-not establish their concurrent service rates. This addition changes no engine
-source or accepted proposal inventory and closes no performance/release gate.
+The shared driver now lives in `internal/bench/service`, without a dependency
+on the owned VM. The [independent reference module](../service/README.md) supplies
+wazero interpreter/compiler with explicit termination policies, and the ordinary
+C SHA-256 algorithm under both Go and LLGo admission/scheduling. The owned engine
+keeps one Store per worker and the original public typed call boundary. All use
+the same broadcast barrier and raw batch/request/API intervals. The common
+harness overlay includes this driver when comparing historical engine revisions.
+
+The initial strict-C11 Cgo build fails under LLGo while the identical Go build
+succeeds: LLGo emits unqualified GNU `typeof` in its wrapper. The standalone
+four-way C11/GNU11 build/run reproduction is reported in
+[llgo #3034](https://github.com/xgo-dev/llgo/issues/3034). Both native reference
+builds use the same GNU11 policy; no failed build is relabeled as execution.
+
+Wasmtime/Wasmer/WasmEdge adapters now use the same driver. The complete fixed
+[72-profile event](../../docs/research/performance-service-all-runtimes-2026-11-10.md)
+retains every throughput/resource process and independent control, separately
+from the earlier 54-profile event. P3 I/O applications and controlled acceptance
+remain open. Existing serial results do not establish concurrent service rates;
+passing adapter tests alone supplies no throughput result. This addition changes
+no engine source or accepted proposal inventory and closes no release gate.
 
 Go's M:N scheduling and LLGo's pthread/BDWGC choices remain explicit runtime
 policies. Application workers bound CPU admission for both. GOMAXPROCS is
