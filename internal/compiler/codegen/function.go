@@ -241,7 +241,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		e.selectRegisters(config, regions)
 		e.prepareVectorConstants()
 		e.prepareConstants()
-		e.prepareRuntimeRegisters()
+		e.prepareRuntimeRegisters(config)
 		e.prepareHeapCaches()
 		e.prepareLinearScan(regions, 1<<18)
 		plan := e.currentRegisterPlan()

@@ -4,9 +4,10 @@ import (
 	"slices"
 
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
+	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
-// Metadata is immutable within one native entry; elements remain live loads.
+// Metadata is immutable within one native entry; mutable elements remain loads.
 func (e *functionEmitter) runtimePriorities(config Config, frequencies []uint64) map[uint32]uint64 {
 	weights := map[uint32]uint64{}
 	for pc, in := range e.f.Code {
@@ -56,7 +57,7 @@ func (e *functionEmitter) runtimePriorities(config Config, frequencies []uint64)
 
 // Reload the planned words on every entry. Indirect-only missing views install
 // zeros for checked fallback; direct operations have already validated the view.
-func (e *functionEmitter) prepareRuntimeRegisters() {
+func (e *functionEmitter) prepareRuntimeRegisters(config Config) {
 	offsets := make([]uint32, 0, len(e.runtimeRegisters))
 	for offset := range e.runtimeRegisters {
 		offsets = append(offsets, offset)
@@ -65,6 +66,20 @@ func (e *functionEmitter) prepareRuntimeRegisters() {
 	if len(offsets) == 0 {
 		return
 	}
+	if e.unmetered && e.a.arch == "arm64" {
+		for _, in := range e.f.Code {
+			offset, typ, ok := globalCell(e.f, in, config)
+			if !ok || in.Op != 0x23 || typ == wasm.V128 || config.Globals[e.f.Sources[in.Source].Wasm.A].Mutable {
+				continue
+			}
+			if _, cached := e.runtimeRegisters[offset]; cached {
+				if e.runtimeGlobalValues == nil {
+					e.runtimeGlobalValues = map[uint32]bool{}
+				}
+				e.runtimeGlobalValues[offset] = true
+			}
+		}
+	}
 	missing, done := e.a.label(), e.a.label()
 	e.contextLoad(0, nativeabi.RuntimeDataOffset)
 	e.test(true)
@@ -72,6 +87,11 @@ func (e *functionEmitter) prepareRuntimeRegisters() {
 	e.registerMove(e.operandRegister(2), e.operandRegister(0), true)
 	for _, offset := range offsets {
 		e.pointerLoad(0, 2, offset)
+		if e.runtimeGlobalValues[offset] {
+			// Binding guarantees a live cell; immutable imports match actual
+			// mutability. Retain its complete value in the same planned word.
+			e.pointerLoad(0, 0, 0)
+		}
 		e.registerMove(e.runtimeRegisters[offset], e.operandRegister(0), true)
 	}
 	e.a.branch(done, false, 0)

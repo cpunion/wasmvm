@@ -84,6 +84,20 @@ func (e *functionEmitter) globalInstruction(in slots.Instruction, config Config)
 	if !ok {
 		return false
 	}
+	if e.runtimeGlobalValues[offset] {
+		// Only immutable, non-vector global.get candidates can reach here.
+		// Every independent entry reloads the trusted cell before dispatch.
+		source := e.runtimeRegisters[offset]
+		if reg, allocated := e.floatRegisters[in.Dst]; allocated {
+			e.floatFromInteger(reg, source, typ == wasm.F64)
+		} else if reg, allocated := e.registers[in.Dst]; allocated {
+			e.registerMove(reg, source, true)
+		} else {
+			e.registerMove(e.operandRegister(0), source, true)
+			e.slotStore(in.Dst, 0, false)
+		}
+		return true
+	}
 	base := e.runtimeBase(offset)
 	if typ == wasm.V128 {
 		reg := byte(0)

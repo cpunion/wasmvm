@@ -46,6 +46,7 @@ type functionEmitter struct {
 	memoryOperands                                               map[int]memoryOperand
 	constantRegisters                                            map[uint64]byte
 	runtimeRegisters                                             map[uint32]byte
+	runtimeGlobalValues                                          map[uint32]bool
 	registers                                                    map[slots.Slot]byte
 	floatRegisters                                               map[slots.Slot]byte
 	vectorRegisters                                              map[slots.Slot]byte
