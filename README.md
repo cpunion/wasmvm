@@ -35,10 +35,12 @@ The [concurrent service comparison](docs/research/performance-service-references
 uses one admission driver for Go/LLGo, wazero and native C. All 54 A/A controls
 remain unresolved; its throughput, request/API latency and separate resource
 observations do not establish a controlled ranking.
-Optional pinned Wasmtime/Wasmer/WasmEdge C bridges now use the
-[same concurrent driver](benchmarks/service/README.md), with actual independent
-worker/lifecycle tests. Adapter correctness is separate from their pending
-concurrent performance evidence.
+The [complete concurrent comparison](docs/research/performance-service-all-runtimes-2026-11-10.md)
+adds Wasmtime/Wasmer/WasmEdge through the same driver: 720 throughput processes,
+72 separate resource processes and 5,160,960 checked warm requests. All 72
+profiles remain visible; 35 throughput controls resolve, while all six owned
+LLGo native controls remain unresolved. VM/compiler and host-service gaps stay
+separate. SDK tests execute on both targets; controlled acceptance stays open.
 
 Hosts and compiler events stay separate. Setup, compilation, instantiation,
 first call, warmed calls, cleanup and process intervals are recorded separately.

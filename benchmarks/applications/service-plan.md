@@ -79,11 +79,13 @@ four-way C11/GNU11 build/run reproduction is reported in
 [llgo #3034](https://github.com/xgo-dev/llgo/issues/3034). Both native reference
 builds use the same GNU11 policy; no failed build is relabeled as execution.
 
-Wasmtime/Wasmer service adapters, complete concurrent competitive measurements
-and P3 I/O applications remain required follow-ups. Existing serial reference
-results do not establish concurrent service rates. This addition changes no
-engine source or accepted proposal inventory and closes no performance/release
-gate.
+Wasmtime/Wasmer/WasmEdge adapters now use the same driver. The complete fixed
+[72-profile event](../../docs/research/performance-service-all-runtimes-2026-11-10.md)
+retains every throughput/resource process and independent control, separately
+from the earlier 54-profile event. P3 I/O applications and controlled acceptance
+remain open. Existing serial results do not establish concurrent service rates;
+passing adapter tests alone supplies no throughput result. This addition changes
+no engine source or accepted proposal inventory and closes no release gate.
 
 Go's M:N scheduling and LLGo's pthread/BDWGC choices remain explicit runtime
 policies. Application workers bound CPU admission for both. GOMAXPROCS is

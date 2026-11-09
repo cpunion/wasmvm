@@ -97,4 +97,6 @@ retains all 54 profiles and all unresolved A/A controls. Owned callbacks use
 typed `Function.Call`, whereas wazero reuses raw stack storage; this policy
 difference is explicit. The standalone channel-waiter allocation finding is
 reported in [llgo #3035](https://github.com/xgo-dev/llgo/issues/3035), separately
-from any throughput or scheduler claim.
+from any throughput or scheduler claim. The subsequent
+[complete event](../../docs/research/performance-service-all-runtimes-2026-11-10.md)
+includes all three SDKs, 72 profiles and every lifecycle/resource/control outcome.
