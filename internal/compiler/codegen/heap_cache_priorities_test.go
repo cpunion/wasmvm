@@ -2,6 +2,7 @@ package codegen
 
 import (
 	"math"
+	"slices"
 	"testing"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
@@ -38,7 +39,20 @@ func TestHeapCachePriorityAndCallerRegisterBudget(t *testing.T) {
 							e.heapAccesses[source] = heapAccess{cacheClass: class}
 						}
 					}
-					e.prepareHeapCaches(Config{})
+					weights := e.heapCachePrioritiesARM64(instructionFrequencies(f))
+					var candidates []registerCandidate
+					for class, weight := range weights {
+						candidates = append(candidates, registerCandidate{kind: 3, key: class, weight: weight})
+					}
+					slices.SortFunc(candidates, compareRegisterCandidates)
+					var used [32]bool
+					for _, r := range e.registers {
+						used[r] = true
+					}
+					for _, candidate := range candidates {
+						e.selectHeapCache(candidate.key, []byte{1, 2, 3, 4, 5, 6, 7, 8}, &used)
+					}
+					e.prepareHeapCaches()
 					want := min(len(tc.want), (8-occupied)/2, 2)
 					if arch != "arm64" || !unmetered {
 						want = 0
@@ -59,76 +73,68 @@ func TestHeapCachePriorityAndCallerRegisterBudget(t *testing.T) {
 	}
 }
 
-// Equal-frequency types can have very different hit rates. An invariant array
-// root must win the last register pair over freshly loaded object identities.
-func TestARMHeapCachePrefersInvariantIdentityWithinTheCallerBudget(t *testing.T) {
-	for _, mode := range []string{"immutable-global", "local", "mutable-global", "mixed-roots", "changing-local", "move", "join", "loop-call", "handler", "prompt", "no-loop"} {
-		for _, occupied := range []int{4, 6} {
-			f := &slots.Function{}
-			e := functionEmitter{a: &assembler{arch: "arm64"}, f: f, unmetered: true, heapAccesses: map[uint32]heapAccess{}, registers: map[slots.Slot]byte{}}
-			for i := 1; i <= occupied; i++ {
-				e.registers[slots.Slot(i)] = byte(i)
-			}
-			cfg := Config{Globals: []module.GlobalType{{Value: wasm.AnyRef}, {Value: wasm.AnyRef}}}
-			emit := func(op uint32, dst, a, b slots.Slot, index uint32) {
-				source := uint32(len(f.Sources))
-				f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: op, A: index}})
-				f.Code = append(f.Code, slots.Instruction{Op: op, Source: source, Dst: dst, A: a, B: b, C: slots.NoSlot})
-				if op == 0xfb000b {
-					e.heapAccesses[source] = heapAccess{array: true, cacheClass: 1}
-				} else if op == 0xfb0002 {
-					e.heapAccesses[source] = heapAccess{cacheClass: 0}
-				}
-			}
-			for pass := range 2 {
-				op, index := uint32(0x23), uint32(0)
-				if mode == "local" || mode == "changing-local" || mode == "move" {
-					op = 0x20
-				}
-				if mode == "mixed-roots" {
-					index = uint32(pass)
-				}
-				emit(op, 10, slots.NoSlot, slots.NoSlot, index)
-				emit(0xfb000b, 11, 10, slots.NoSlot, 0)
-				emit(0xfb0002, 12, 11, slots.NoSlot, 0)
-			}
-			switch mode {
-			case "mutable-global":
-				cfg.Globals[0].Mutable = true
-			case "changing-local":
-				emit(0x21, slots.NoSlot, 11, slots.NoSlot, 0)
-			case "move":
-				f.Moves = []slots.Move{{Dst: 0, Src: 11}}
-			case "join":
-				f.Edges = append(f.Edges, slots.Edge{PC: 1})
-			case "loop-call":
-				emit(0x10, slots.NoSlot, slots.NoSlot, slots.NoSlot, 0)
-			case "handler":
-				f.Handlers = []slots.Handler{{}}
-			case "prompt":
-				f.Prompts = map[uint32][]slots.Catch{0: {}}
-			}
-			emit(slots.ControlBase+uint32(ir.Jump), slots.NoSlot, slots.NoSlot, slots.NoSlot, 0)
-			f.Code[len(f.Code)-1].Extra = uint32(len(f.Edges))
-			f.Code[len(f.Code)-1].Count = 1
-			f.Edges = append(f.Edges, slots.Edge{PC: 0})
-			if mode == "no-loop" {
-				f.Code[len(f.Code)-1].Count = 0
-				f.Edges = nil
-			}
-			e.prepareHeapCaches(cfg)
-			first := uint64(0)
-			if mode == "immutable-global" || mode == "local" {
-				first = 1
-			}
-			if len(e.heapCaches) != (8-occupied)/2 || e.heapCaches[first] != (heapCache{byte(occupied + 1), byte(occupied + 2)}) {
-				t.Fatal(mode, occupied, "identity priority or budget", e.heapCaches)
-			}
-			for _, cache := range e.heapCaches {
-				if cache.key <= byte(occupied) || cache.address > 8 {
-					t.Fatal("caller budget overlap", e.heapCaches)
-				}
-			}
+func TestARMHeapCacheCompetesWithLiteralsInTheSharedCallerBudget(t *testing.T) {
+	f, config := heapFixture(module.FieldType{Value: wasm.I32}, false, false)
+	config.HeapTypes = append(config.HeapTypes, config.HeapTypes[0])
+	ret := f.Code[len(f.Code)-1]
+	f.Code = f.Code[:len(f.Code)-1]
+	for _, in := range slices.Clone(f.Code) {
+		src := f.Sources[in.Source]
+		src.Wasm.A = 1
+		in.Source = uint32(len(f.Sources))
+		f.Sources = append(f.Sources, src)
+		f.Code = append(f.Code, in)
+	}
+	// Independent, expensive literals would otherwise consume every caller
+	// word before either checked cache was considered.
+	for i := range 8 {
+		s := slots.Slot(len(f.Slots))
+		f.Slots = append(f.Slots, wasm.I64)
+		source := uint32(len(f.Sources))
+		f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: 0x42, Bits: 0x123456789abcdef0 + uint64(i)}})
+		f.Code = append(f.Code, slots.Instruction{Op: 0x42, Source: source, Dst: s, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot})
+	}
+	f.Code = append(f.Code, ret)
+	addHeapFixtureLoop(f, 0)
+	e := functionEmitter{a: &assembler{arch: "arm64"}, f: f, unmetered: true}
+	e.prepareHeapAccesses(config)
+	e.selectRegisters(config, nil)
+	if len(e.heapCaches) != 2 || len(e.constantRegisters) == 0 || len(e.constantRegisters) >= 8 {
+		t.Fatal("cache/literal opportunity cost was not considered", e.heapCaches, e.constantRegisters)
+	}
+	used := map[byte]bool{}
+	claim := func(r byte, caller bool) {
+		if used[r] || caller && (r < 1 || r > 8) {
+			t.Fatal("overlapping or out-of-budget register", r)
 		}
+		used[r] = true
+	}
+	for _, r := range e.registers {
+		claim(r, false)
+	}
+	for _, r := range e.constantRegisters {
+		claim(r, true)
+	}
+	for _, r := range e.runtimeRegisters {
+		claim(r, true)
+	}
+	for _, cache := range e.heapCaches {
+		claim(cache.key, true)
+		claim(cache.address, true)
+	}
+	// Reset code is stable despite randomized Go map iteration, and neither
+	// pair survives an independent native entry.
+	var first []byte
+	for range 8 {
+		e.a.code = nil
+		e.prepareHeapCaches()
+		if first == nil {
+			first = slices.Clone(e.a.code)
+		} else if !slices.Equal(first, e.a.code) {
+			t.Fatal("non-deterministic cache reset")
+		}
+	}
+	if len(first) != 8 {
+		t.Fatal("both cache keys must reset", first)
 	}
 }

@@ -104,7 +104,7 @@ func TestHeapCacheAMD64PairBudgetAndReset(t *testing.T) {
 			used[r] = true
 		}
 		available := pool
-		e.selectHeapCacheAMD64(17, available, &used)
+		e.selectHeapCache(17, available, &used)
 		if occupied > 6 {
 			if len(e.heapCaches) != 0 {
 				t.Fatal(occupied, e.heapCaches)
@@ -115,7 +115,7 @@ func TestHeapCacheAMD64PairBudgetAndReset(t *testing.T) {
 		if e.heapCaches[17] != want {
 			t.Fatal(occupied, e.heapCaches, want)
 		}
-		e.selectHeapCacheAMD64(19, available, &used)
+		e.selectHeapCache(19, available, &used)
 		if len(e.heapCaches) != 1 || !used[want.key] || !used[want.address] {
 			t.Fatal(occupied, e.heapCaches, used)
 		}
@@ -124,7 +124,7 @@ func TestHeapCacheAMD64PairBudgetAndReset(t *testing.T) {
 				t.Fatal("cache overlaps slot bank", r)
 			}
 		}
-		e.prepareHeapCaches(Config{})
+		e.prepareHeapCaches()
 		reference := assembler{arch: "amd64"}
 		reference.xconst(want.key, 0)
 		if !reflect.DeepEqual(e.a.code, reference.code) {
