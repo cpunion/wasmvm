@@ -88,3 +88,41 @@ and does not require an extra corpus input. Keep all31 packages exactly once
 per platform, eight shards, the pinned release profile, every semantic report
 and every coverage gate. This is a scheduling change; a shorter final CI job
 must be observed rather than assumed from overlapping link durations.
+
+## Final observed event
+
+Measured head `da8d9f5261a6e4ec9c901d42b83928e94008e736`, baseline
+`281f2cb1a5e63356c237e21ff2125157473e937f`; merged as
+`9852f63db2e506abcc7e0e7ff4606aeffd4704db`. The merged tree equals the tested
+head. [PR #140 results](https://github.com/cpunion/wasmvm/pull/140#issuecomment-6735033151)
+retain every original/sustained native/interpreter row and diagnostic control.
+On Apple M4 the sustained indirect call observes1.6207ns/iteration,
+0.3680×base and0.6384×Wasmtime, with2/4 resolved controls. Sustained struct
+access remains1.2512×Wasmtime; original i31/struct access observe+2.42%/+1.35%
+and sustained allocation+0.40% against base. No controlled acceptance is claimed.
+
+The [Linux event](https://github.com/cpunion/wasmvm/actions/runs/42580414038)
+uses workflow controller d704e94 and the separately pinned measured head above.
+Only verified SDK inputs were restored; all adapters and engines were rebuilt.
+Thirteen actual binary/library identities and all exact source/compiler/profile
+identities pass independent audits. AMD64 native images remain unchanged.
+Original indirect access observes+6.07% against base with unresolved controls;
+the independently declared sustained cohort is0.9943×base. All four sustained
+Linux cases resolve the diagnostic A/A controls; they remain a five-block
+hosted advisory series, not the controlled milestone protocol. Allocation uses
+process means including all measured pauses. No retiming or host/cohort pooling.
+
+[Semantic CI](https://github.com/cpunion/wasmvm/actions/runs/42580302535) passes
+23 required jobs after rerunning only three pre-test input HTTP504 failures.
+Audits verify240 actual reports,31 LLGo packages/platform,30 coverage gates
+(minimum90.8612%),608 stable-world passes and6 CLI packages/96 actual smokes.
+All20 prior successful execution intervals were retained. Core/component each
+run nine packages after the move. Longest jobs are631s/core,630s/HTTP and
+597s/component: this run does not establish a CI speedup, and the10-minute
+job target remains open. Overlapping LTO intervals are not additive durations.
+
+Evidence: artifacts/arm-heap-operands-final-20261109, with source bundle/archive,
+all raw local and hosted data, source/fixture/SDK/binary checks, effective-attempt
+proof, semantic/coverage/world/package audits and original failed logs. No new
+LLGo compiler/runtime defect is demonstrated. Full quantitative performance,
+Go-runtime application metrics and production release gates remain open.
