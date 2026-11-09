@@ -48,9 +48,23 @@ func (c *Codec) loadBytes(at, n uint64, depth uint32) (Value, error) {
 	if err := c.Transfer.rangeCheck(at, n, 1); err != nil {
 		return Value{}, err
 	}
-	// Account for scratch and the immutable result, independently of value count.
+	// Preserve the logical scratch/output budget even when StringMemory avoids
+	// allocating the scratch slice. Limits do not depend on the memory adapter.
 	if err := c.Transfer.charge(2 * n); err != nil {
 		return Value{}, err
+	}
+	if memory, ok := c.Transfer.Memory.(StringMemory); ok {
+		data, err := memory.ReadString(at, n)
+		if err != nil {
+			return Value{}, err
+		}
+		if err := c.Transfer.check(); err != nil {
+			return Value{}, err
+		}
+		if uint64(len(data)) != n {
+			return Value{}, invalid("incomplete byte-list snapshot")
+		}
+		return Value{Text: data}, nil
 	}
 	data := make([]byte, int(n))
 	if err := c.Transfer.Memory.Read(at, data); err != nil {
@@ -69,7 +83,13 @@ func (c *Codec) storeBytes(at uint64, data string) error {
 	if err := c.Transfer.charge(uint64(len(data))); err != nil {
 		return err
 	}
-	if err := c.Transfer.Memory.Write(at, []byte(data)); err != nil {
+	var err error
+	if memory, ok := c.Transfer.Memory.(StringMemory); ok {
+		err = memory.WriteString(at, data)
+	} else {
+		err = c.Transfer.Memory.Write(at, []byte(data))
+	}
+	if err != nil {
 		return err
 	}
 	return c.Transfer.check()

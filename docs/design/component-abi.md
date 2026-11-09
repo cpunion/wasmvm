@@ -38,6 +38,17 @@ precedes memory writes and realloc. Realloc can reenter Core code; no borrowed
 memory pointer crosses it. Guest allocator/memory failures can preserve earlier
 allocation effects; the runtime must retain instance ownership through cleanup.
 
+Packed byte transfers optionally use `canonical.StringMemory`: an immutable
+snapshot on read and a direct immutable-byte copy on write. The VM Caller
+adapter applies the same active, nonconcurrent, same-Store capability checks as
+slice transfers. Private memory copies directly into the final string or guest
+buffer; no guest view escapes mutation, growth, reentry or close. Domain-backed
+shared memory retains its lock, and native shared memory retains its existing
+byte-wise synchronized transfer implementation. Slice-only memory adapters
+remain supported. Logical transfer charges, value limits, complete-range
+prechecks and post-copy cancellation checks remain identical for both paths,
+even when the immutable path avoids scratch allocation.
+
 ## Resource state
 
 `Resources` holds nominal resource declarations and owned/borrowed handles.
