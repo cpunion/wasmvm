@@ -322,7 +322,7 @@ func (call *Continuation) resumeHost(request *execute.HostCall, fn func(*Caller)
 		}
 	}
 	in := call.work.execution.Host().Caller
-	caller := &Caller{active: true, op: op, instance: in}
+	caller := op.newCaller(in)
 	panicked := true
 	defer func() {
 		if panicked {

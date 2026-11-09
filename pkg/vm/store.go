@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/engine/execute"
@@ -50,6 +51,7 @@ type Store struct {
 	closing       bool
 	closed        chan struct{}
 	active        *operation
+	idleOperation *operation
 	roots         map[*reference]struct{}
 	externs       map[uint64]any
 	nextExtern    uint64
@@ -68,6 +70,7 @@ type operation struct {
 	pending       []*state.Instance
 	depth         uint32
 	collect       bool
+	exposed       atomic.Bool
 	continuations map[*Continuation]struct{}
 }
 
@@ -102,9 +105,15 @@ func (s *Store) begin(ctx context.Context, options CallOptions) (*operation, err
 		return nil, err
 	}
 	watch := s.engine.config.Backend == "native" && ctx.Done() != nil
-	op := &operation{store: s, options: options, fuel: options.Fuel}
+	op := s.idleOperation
+	s.idleOperation = nil
+	if op == nil || op.exposed.Load() {
+		op = &operation{store: s}
+	}
+	op.options, op.fuel = options, options.Fuel
 	if ctx == context.Background() || ctx == context.TODO() {
 		op.background.parent = ctx
+		op.background.canceled.Store(false)
 		op.ctx = &op.background
 	} else {
 		op.ctx, op.cancelParent = context.WithCancel(ctx)
@@ -171,6 +180,15 @@ func (op *operation) finish() {
 	} else if op.collect {
 		s.collectLocked(nil)
 	}
+	// Only private background operations can return to this one-slot cache.
+	// No Caller, continuation, published context/channel or parent watcher may
+	// retain them. Their frames have synchronously left and quiesced already.
+	if !s.closing && !op.exposed.Load() && op.cancelParent == nil &&
+		op.background.child.Load() == nil && len(op.frames) == 0 && op.depth == 0 {
+		op.pending = nil
+		op.options, op.fuel, op.collect = CallOptions{}, 0, false
+		s.idleOperation = op
+	}
 }
 
 // Close requests cancellation and returns without waiting for user callbacks.
@@ -190,6 +208,7 @@ func (s *Store) Close() {
 	}
 }
 func (s *Store) closeLocked() {
+	s.idleOperation = nil
 	if s.workspace != nil {
 		s.workspace.execution.Close()
 		s.workspace = nil

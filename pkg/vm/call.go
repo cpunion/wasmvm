@@ -24,6 +24,12 @@ type Caller struct {
 	temporary []Value
 }
 
+func (op *operation) newCaller(instance *state.Instance) *Caller {
+	// Even an expired Caller can expose its original Context or Store later.
+	op.exposed.Store(true)
+	return &Caller{active: true, op: op, instance: instance}
+}
+
 func (c *Caller) enter() error {
 	if !c.mu.TryLock() {
 		return ErrBusy
@@ -263,7 +269,7 @@ func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]valu
 			return nil, err
 		}
 	}
-	caller := &Caller{active: true, op: op, instance: in}
+	caller := op.newCaller(in)
 	panicked := true
 	// Invalidate the capability and drain an in-flight capability operation
 	// before touching the suspended continuation, including on host panic.
