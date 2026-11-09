@@ -12,11 +12,12 @@ import (
 	"github.com/cpunion/wasmvm/pkg/component"
 )
 
-// The external reader consumes one bounded immutable batch at a time. The
-// existing task scheduler acknowledges it only after complete consumption.
+// The external reader owns the blocking half of an unbuffered pipe. One
+// bounded guest batch is retained by the existing task scheduler per message.
 type httpPump struct {
 	body      *httpBody
-	pipe      *httpBodyPipe
+	reader    *io.PipeReader
+	writer    *io.PipeWriter
 	trailer   http.Header
 	fields    *host.HTTPFields
 	expected  *uint64
@@ -27,7 +28,7 @@ type httpPump struct {
 }
 
 func (p *httpPump) Read(data []byte) (int, error) {
-	n, err := p.pipe.Read(data)
+	n, err := p.reader.Read(data)
 	if err == io.EOF {
 		p.readOnce.Do(func() {
 			if p.fields != nil {
@@ -49,7 +50,7 @@ func (p *httpPump) Close() error {
 		if !done {
 			p.body.dispose(nil, httpErr("connection-terminated"))
 		}
-		p.pipe.CloseRead(nil)
+		p.reader.Close()
 		p.body.release()
 	})
 	return nil
@@ -65,9 +66,9 @@ func (b *httpBody) pump(c *component.Caller, trailer http.Header, expected *uint
 	if err := b.watchTrailers(c); err != nil {
 		return nil, err
 	}
-	pipe := newHTTPBodyPipe()
-	pump := &httpPump{body: b, pipe: pipe, trailer: trailer, expected: expected}
-	context.AfterFunc(b.ctx, func() { _ = pipe.CloseRead(httpErr("connection-terminated")) })
+	reader, writer := io.Pipe()
+	pump := &httpPump{body: b, reader: reader, writer: writer, trailer: trailer, expected: expected}
+	context.AfterFunc(b.ctx, func() { _ = reader.CloseWithError(httpErr("connection-terminated")) })
 	b.mu.Lock()
 	original, trailing, anchor := b.original, b.trailers, b.anchor
 	b.mu.Unlock()
@@ -84,7 +85,7 @@ func (b *httpBody) pump(c *component.Caller, trailer http.Header, expected *uint
 		release.Do(func() {
 			if !pump.finished {
 				b.dispose(nil, httpErr("connection-terminated"))
-				pipe.CloseWrite(httpErr("connection-terminated"))
+				writer.CloseWithError(httpErr("connection-terminated"))
 			}
 			b.release()
 		})
@@ -108,7 +109,7 @@ func (p *httpPump) fail(err error) {
 	}
 	p.finished = true
 	p.body.dispose(nil, err)
-	p.pipe.CloseWrite(err)
+	p.writer.CloseWithError(err)
 }
 func (p *httpPump) schedule(c *component.Caller, refs []*component.Resource, hasBody bool, cleanup func()) error {
 	var next []*component.Resource
@@ -176,7 +177,7 @@ func (p *httpPump) scheduleWrite(c *component.Caller, refs []*component.Resource
 					failure = httpErr("internal-error")
 				}
 				if failure != nil {
-					p.pipe.CloseWrite(failure)
+					p.writer.CloseWithError(failure)
 					p.body.dispose(nil, failure)
 				}
 				if ctx.Err() != nil {
@@ -186,7 +187,7 @@ func (p *httpPump) scheduleWrite(c *component.Caller, refs []*component.Resource
 				}
 			}()
 			if len(batch.Bytes) != 0 {
-				_, failure = p.pipe.WriteString(batch.Bytes)
+				_, failure = p.writer.Write([]byte(batch.Bytes))
 			}
 			if failure == nil && batch.Closed {
 				p.body.end(nil)
@@ -209,7 +210,7 @@ func (p *httpPump) scheduleWrite(c *component.Caller, refs []*component.Resource
 				}
 				p.body.mu.Unlock()
 				if failure == nil {
-					failure = p.pipe.CloseWrite(nil)
+					failure = p.writer.Close()
 				}
 			}
 		}); err != nil {
