@@ -26,19 +26,23 @@ func (s *Store) NewScalarFunction(signature FunctionType, callback ScalarHostFun
 }
 
 func (s *Store) newScalarFunction(signature FunctionType, callback ScalarHostFunction, referenceType ...wasm.ValueType) (Extern, error) {
-	if callback == nil {
+	if callback == nil || !scalarSignature(signature) {
 		return Extern{}, ErrType
 	}
+	return s.newHostFunction(signature, callback, referenceType...)
+}
+
+func scalarSignature(signature FunctionType) bool {
 	for _, types := range [][]wasm.ValueType{signature.Params, signature.Results} {
 		for _, typ := range types {
 			switch typ {
 			case wasm.I32, wasm.I64, wasm.F32, wasm.F64:
 			default:
-				return Extern{}, ErrType
+				return false
 			}
 		}
 	}
-	return s.newHostFunction(signature, callback, referenceType...)
+	return true
 }
 
 // NewScalarFunction defines a function in the current callback's Store.
