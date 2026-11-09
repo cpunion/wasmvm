@@ -14,6 +14,8 @@ import tarfile
 import tempfile
 import urllib.request
 
+from http_download import open_pinned
+
 
 ROOT = Path(__file__).resolve().parent.parent
 RECORDS = ROOT / "testdata/core2"
@@ -50,7 +52,7 @@ def fetch(pin, cache):
         with tempfile.NamedTemporaryFile(dir=cache, delete=False) as stream:
             temporary = Path(stream.name)
             try:
-                with urllib.request.urlopen(request, timeout=60) as response:
+                with open_pinned(request, timeout=60) as response:
                     if not response.url.startswith("https://"):
                         raise ValueError("archive redirected away from HTTPS")
                     size = 0

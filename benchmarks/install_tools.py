@@ -11,12 +11,16 @@ import posixpath
 import re
 import shutil
 import subprocess
+import sys
 import tarfile
 import tempfile
 import urllib.request
 
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent / "scripts"))
+from http_download import open_pinned
+
 MANIFEST = HERE / "tools-linux-amd64.json"
 DEFAULT_DESTINATION = HERE.parent / "artifacts/benchmark-tools/linux"
 
@@ -34,7 +38,7 @@ def download(tool, destination):
     if not tool["url"].startswith("https://"):
         raise ValueError("release downloads require HTTPS")
     request = urllib.request.Request(tool["url"], headers={"User-Agent": "wasmvm-benchmarks"})
-    with urllib.request.urlopen(request, timeout=60) as response, destination.open("wb") as output:
+    with open_pinned(request, timeout=60) as response, destination.open("wb") as output:
         if not response.url.startswith("https://"):
             raise ValueError("release download redirected away from HTTPS")
         size = 0

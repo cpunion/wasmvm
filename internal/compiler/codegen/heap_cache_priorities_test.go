@@ -2,9 +2,13 @@ package codegen
 
 import (
 	"math"
+	"slices"
 	"testing"
 
+	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
+	"github.com/cpunion/wasmvm/internal/core/module"
+	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
 func TestHeapCachePriorityAndCallerRegisterBudget(t *testing.T) {
@@ -35,6 +39,19 @@ func TestHeapCachePriorityAndCallerRegisterBudget(t *testing.T) {
 							e.heapAccesses[source] = heapAccess{cacheClass: class}
 						}
 					}
+					weights := e.heapCachePrioritiesARM64(instructionFrequencies(f))
+					var candidates []registerCandidate
+					for class, weight := range weights {
+						candidates = append(candidates, registerCandidate{kind: 3, key: class, weight: weight})
+					}
+					slices.SortFunc(candidates, compareRegisterCandidates)
+					var used [32]bool
+					for _, r := range e.registers {
+						used[r] = true
+					}
+					for _, candidate := range candidates {
+						e.selectHeapCache(candidate.key, []byte{1, 2, 3, 4, 5, 6, 7, 8}, &used)
+					}
 					e.prepareHeapCaches()
 					want := min(len(tc.want), (8-occupied)/2, 2)
 					if arch != "arm64" || !unmetered {
@@ -53,5 +70,71 @@ func TestHeapCachePriorityAndCallerRegisterBudget(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestARMHeapCacheCompetesWithLiteralsInTheSharedCallerBudget(t *testing.T) {
+	f, config := heapFixture(module.FieldType{Value: wasm.I32}, false, false)
+	config.HeapTypes = append(config.HeapTypes, config.HeapTypes[0])
+	ret := f.Code[len(f.Code)-1]
+	f.Code = f.Code[:len(f.Code)-1]
+	for _, in := range slices.Clone(f.Code) {
+		src := f.Sources[in.Source]
+		src.Wasm.A = 1
+		in.Source = uint32(len(f.Sources))
+		f.Sources = append(f.Sources, src)
+		f.Code = append(f.Code, in)
+	}
+	// Independent, expensive literals would otherwise consume every caller
+	// word before either checked cache was considered.
+	for i := range 8 {
+		s := slots.Slot(len(f.Slots))
+		f.Slots = append(f.Slots, wasm.I64)
+		source := uint32(len(f.Sources))
+		f.Sources = append(f.Sources, ir.Source{Wasm: module.Instr{Op: 0x42, Bits: 0x123456789abcdef0 + uint64(i)}})
+		f.Code = append(f.Code, slots.Instruction{Op: 0x42, Source: source, Dst: s, A: slots.NoSlot, B: slots.NoSlot, C: slots.NoSlot})
+	}
+	f.Code = append(f.Code, ret)
+	addHeapFixtureLoop(f, 0)
+	e := functionEmitter{a: &assembler{arch: "arm64"}, f: f, unmetered: true}
+	e.prepareHeapAccesses(config)
+	e.selectRegisters(config, nil)
+	if len(e.heapCaches) != 2 || len(e.constantRegisters) == 0 || len(e.constantRegisters) >= 8 {
+		t.Fatal("cache/literal opportunity cost was not considered", e.heapCaches, e.constantRegisters)
+	}
+	used := map[byte]bool{}
+	claim := func(r byte, caller bool) {
+		if used[r] || caller && (r < 1 || r > 8) {
+			t.Fatal("overlapping or out-of-budget register", r)
+		}
+		used[r] = true
+	}
+	for _, r := range e.registers {
+		claim(r, false)
+	}
+	for _, r := range e.constantRegisters {
+		claim(r, true)
+	}
+	for _, r := range e.runtimeRegisters {
+		claim(r, true)
+	}
+	for _, cache := range e.heapCaches {
+		claim(cache.key, true)
+		claim(cache.address, true)
+	}
+	// Reset code is stable despite randomized Go map iteration, and neither
+	// pair survives an independent native entry.
+	var first []byte
+	for range 8 {
+		e.a.code = nil
+		e.prepareHeapCaches()
+		if first == nil {
+			first = slices.Clone(e.a.code)
+		} else if !slices.Equal(first, e.a.code) {
+			t.Fatal("non-deterministic cache reset")
+		}
+	}
+	if len(first) != 8 {
+		t.Fatal("both cache keys must reset", first)
 	}
 }

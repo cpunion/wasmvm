@@ -791,3 +791,14 @@ Every original store and backedge poll remains; cold PCs use ordinary checked
 memory. The register is absent from every loop mapping and is discarded at
 entry boundaries. Shared/view memories and other effects decline the proof.
 See the [qualification and declared measurement](../research/performance-private-loop-value-2026-11-09.md).
+
+## Shared ARM64 caller-budget selection
+
+ARM64 checked heap-cache pairs now compete with constants and runtime metadata
+in the existing register planner. Both words are charged to the same eight
+caller registers, with at most two pairs; slot residency and cold-entry
+reconstruction continue to exclude them. Complete handle checks and ordinary
+miss validation are unchanged. Keys reset in deterministic register order on
+every entry. The amd64 pair limit and reuse scoring are unchanged.
+See the [experiment and measurement plan](../research/performance-arm-heap-budget-2026-11-09.md),
+including the rejected reuse-only revision and its adverse measurements.

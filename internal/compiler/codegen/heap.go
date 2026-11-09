@@ -3,6 +3,7 @@ package codegen
 import (
 	"math"
 	"math/bits"
+	"slices"
 
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -19,56 +20,85 @@ type heapAccess struct {
 
 type heapCache struct{ key, address byte }
 
+// Charge both words of a checked cache to the ordinary caller budget, instead
+// of assigning caches only after all literal/metadata candidates have won.
+// Four saved instructions per repeated access is a conservative potential
+// saving, or two per cache word. Frequency is a profitability hint, never a
+// claim about actual identity reuse; every hit still checks the full handle.
+func (e *functionEmitter) heapCachePrioritiesARM64(frequencies []uint64) map[uint64]uint64 {
+	if !e.unmetered || e.a.arch != "arm64" || len(e.heapAccesses) == 0 {
+		return nil
+	}
+	weights := map[uint64]uint64{}
+	for pc, in := range e.f.Code {
+		if access, ok := e.heapAccesses[in.Source]; ok && in.Op>>16 == 0xfb {
+			weights[access.cacheClass] += frequency(frequencies, pc)
+		}
+	}
+	for class, weight := range weights {
+		if weight < 2 {
+			delete(weights, class)
+		} else {
+			weights[class] = 2 * weight
+		}
+	}
+	return weights
+}
+
+// Both cache words compete with other candidates in the existing inventory.
+// ARM64 permits two pairs, restricted to its caller register budget; amd64
+// retains one pair and its original reuse priorities.
+func (e *functionEmitter) selectHeapCache(class uint64, available []byte, used *[32]bool) {
+	limit := 1
+	if e.a.arch == "arm64" {
+		limit = 2
+	}
+	if len(e.heapCaches) >= limit {
+		return
+	}
+	var pair [2]byte
+	n := 0
+	for _, r := range available {
+		if !used[r] && (e.a.arch != "arm64" || r >= 1 && r <= 8) {
+			pair[n] = r
+			n++
+			if n == 2 {
+				break
+			}
+		}
+	}
+	if n != 2 {
+		return
+	}
+	used[pair[0]], used[pair[1]] = true, true
+	if e.heapCaches == nil {
+		e.heapCaches = map[uint64]heapCache{}
+	}
+	e.heapCaches[class] = heapCache{pair[0], pair[1]}
+}
+
 // Cache only within one native entry. No host call, reclamation or relocation
 // can occur during that interval; bounded bump allocations preserve addresses.
 // Full handle equality is
 // checked on every hit; each miss uses the ordinary null/index/generation
 // checks. Entry resets prevent a moved address surviving a safepoint.
 func (e *functionEmitter) prepareHeapCaches() {
-	if e.unmetered && e.a.arch == "amd64" {
-		for _, cache := range e.heapCaches {
-			e.a.xconst(cache.key, 0)
-		}
+	if !e.unmetered {
 		return
 	}
-	if !e.unmetered || e.a.arch != "arm64" || len(e.heapAccesses) == 0 {
-		return
+	keys := make([]byte, 0, len(e.heapCaches))
+	for _, cache := range e.heapCaches {
+		keys = append(keys, cache.key)
 	}
-	free := e.spareCallerRegisters()
-	if len(free) < 2 {
-		return
-	}
-	weights := map[uint64]uint64{}
-	frequencies := instructionFrequencies(e.f)
-	for pc, in := range e.f.Code {
-		if access, ok := e.heapAccesses[in.Source]; ok && in.Op>>16 == 0xfb {
-			weights[access.cacheClass] += frequency(frequencies, pc)
-		}
-	}
-	var classes [2]registerCandidate
-	for class, weight := range weights {
-		if weight < 2 {
-			continue
-		}
-		candidate := registerCandidate{key: class, weight: weight}
-		if compareRegisterCandidates(candidate, classes[0]) < 0 {
-			classes[1], classes[0] = classes[0], candidate
-		} else if compareRegisterCandidates(candidate, classes[1]) < 0 {
-			classes[1] = candidate
-		}
-	}
-	for _, candidate := range classes {
-		if candidate.weight == 0 || len(free) < 2 {
-			break
-		}
-		if e.heapCaches == nil {
-			e.heapCaches = map[uint64]heapCache{}
-		}
-		e.heapCaches[candidate.key] = heapCache{free[0], free[1]}
+	slices.Sort(keys)
+	for _, key := range keys {
 		// A non-null reference cannot match this initial key. The address is
 		// written only after all miss checks succeed, before installing a key.
-		e.a.aconst(uint32(free[0]), 0, false)
-		free = free[2:]
+		if e.a.arch == "amd64" {
+			e.a.xconst(key, 0)
+		} else {
+			e.a.aconst(uint32(key), 0, false)
+		}
 	}
 }
 
