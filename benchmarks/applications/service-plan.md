@@ -4,7 +4,10 @@ The existing phase adapter now has an opt-in `service` mode. It compiles one
 pure Core module once, instantiates one independent Store per worker, and keeps
 workers and clients alive across the first, warmup and measured batches. The
 queue capacity equals the worker count. Clients have at most one outstanding
-request each. Every reply must pass the existing signature/checksum oracle.
+request each. Each batch waits for an actual ready acknowledgement from every
+client, then broadcasts one shared start gate. First-request arrival time is
+the common release epoch, so scheduler wakeup is included. Worker readiness is
+joined during setup. Every reply must pass the existing signature/checksum oracle.
 This is an embedding application, not a new VM scheduler or production API.
 
 Use the existing ready/run and optional sampleReady/sample protocol. Existing
@@ -35,7 +38,8 @@ three different observations without subtraction:
   remains outside that API interval and inside the complete service request.
 
 Setup/load/prepare/instantiate/lookup, worker setup and completed cleanup remain
-separate. Sample allocation, MemStats queries and result reduction stay outside
+separate. Per-batch readiness has its own directly measured interval.
+Sample allocation, the readiness barrier, MemStats queries and reduction stay outside
 the batch timer. Report first/warmup separately; derive per-process warm means,
 throughput and nearest-rank p50/p99 from the retained raw request samples before
 comparing independent processes. Requests within one process are not independent

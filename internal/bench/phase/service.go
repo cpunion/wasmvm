@@ -38,6 +38,8 @@ type serviceReport struct {
 
 type serviceBatch struct {
 	WallNs, TotalAllocBytes uint64
+	ReadinessNs             int64
+	ReadyClients            int
 	Mallocs                 *uint64 `json:",omitempty"`
 	HeapBefore, HeapAfter   uint64
 	GCBefore, GCAfter       uint32
@@ -73,29 +75,46 @@ func boundedService(calls []kernel, args options, out *report) (kernel, func()) 
 		ns  int64
 		err error
 	}
+	type gate struct {
+		start chan struct{}
+		epoch time.Time
+	}
 	jobs := make(chan int, len(calls))
 	replies := make([]chan response, args.clients)
-	gates := make([]chan struct{}, args.clients)
+	gates := make([]chan *gate, args.clients)
+	ready := make(chan int, args.clients)
+	workerReady := make(chan struct{}, len(calls))
 	finished := make(chan int, args.clients)
 	var workers, clients sync.WaitGroup
 	for _, call := range calls {
 		workers.Go(func() {
+			workerReady <- struct{}{}
 			for client := range jobs {
 				ns, _, err := call()
 				replies[client] <- response{ns, err}
 			}
 		})
 	}
+	for range calls {
+		<-workerReady
+	}
 	var batch serviceBatch
 	requestErrors := make([]error, args.clients*args.requests)
 	for client := range args.clients {
 		replies[client] = make(chan response, 1)
-		gates[client] = make(chan struct{})
+		gates[client] = make(chan *gate)
 		clients.Go(func() {
-			for range gates[client] {
+			for next := range gates[client] {
+				ready <- client
+				<-next.start
 				for request := range args.requests {
 					index := client*args.requests + request
 					start := time.Now()
+					if request == 0 {
+						// All initial arrivals share the release epoch. Scheduling
+						// delay after broadcast belongs to first-request latency.
+						start = next.epoch
+					}
 					jobs <- client
 					r := <-replies[client]
 					batch.RequestNs[index] = time.Since(start).Nanoseconds()
@@ -121,13 +140,22 @@ func boundedService(calls []kernel, args options, out *report) (kernel, func()) 
 				out.Service.ResourceSnapshots = append(out.Service.ResourceSnapshots, snapshot)
 			}
 			batch = serviceBatch{RequestNs: make([]int64, len(requestErrors)), PublicAPINs: make([]int64, len(requestErrors))}
+			next := &gate{start: make(chan struct{})}
+			prepare := time.Now()
+			for _, gate := range gates {
+				gate <- next
+			}
+			for range gates {
+				<-ready
+				batch.ReadyClients++
+			}
+			batch.ReadinessNs = time.Since(prepare).Nanoseconds()
 			var before, after runtime.MemStats
 			runtime.ReadMemStats(&before)
 			batch.GoroutinesBefore = runtime.NumGoroutine()
 			start := time.Now()
-			for _, gate := range gates {
-				gate <- struct{}{}
-			}
+			next.epoch = start
+			close(next.start)
 			for range gates {
 				<-finished
 			}
