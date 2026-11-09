@@ -16,45 +16,10 @@ wasmvm owns decoding, validation, compilation, execution, guest GC and host
 integration. Competing runtimes are independent test and benchmark references;
 execution never silently switches to one of them.
 
-Performance acceptance remains open. The
-[current compiler baseline](docs/research/performance-llgo-escape-upgrade-2026-11-09.md)
-uses LLGo `3d92a58`, including upstream escape/defer fixes; Go 1.27.3, LLVM
-22.1.8 and `-O3 -lto=full` remain fixed. Its ARM64 event retains all 22 original
-workloads plus separate sustained GC/Threads comparisons. The independent
-[Linux snapshot](docs/research/performance-linux-routing-2026-11-09.md)
-retains 32 complete cohort-cases and its original timed-out partial case;
-both source roles use the new compiler. It and the earlier
-[two-platform comparison](docs/research/performance-llgo-interface-upgrade-2026-11-08.md)
-retain their distinct source/compiler identities. The
-[invocation cleanup](docs/research/performance-invocation-cleanup-2026-11-09.md)
-narrows local LLGo/Go short-call gaps, without establishing a controlled win.
-Public-call latency, memory/SIMD, GC, Threads and native-C gaps remain explicit,
-alongside adverse and unsupported observations.
-
-The [concurrent service comparison](docs/research/performance-service-references-2026-11-09.md)
-uses one admission driver for Go/LLGo, wazero and native C. All 54 A/A controls
-remain unresolved; its throughput, request/API latency and separate resource
-observations do not establish a controlled ranking.
-The [complete concurrent comparison](docs/research/performance-service-all-runtimes-2026-11-10.md)
-adds Wasmtime/Wasmer/WasmEdge through the same driver: 720 throughput processes,
-72 separate resource processes and 5,160,960 checked warm requests. All 72
-profiles remain visible; 35 throughput controls resolve, while all six owned
-LLGo native controls remain unresolved. VM/compiler and host-service gaps stay
-separate. SDK tests execute on both targets; controlled acceptance stays open.
-
-The [P3 HTTP I/O comparison](docs/research/performance-p3io-2026-11-10.md)
-measures complete 64KiB bodies, trailers and composed-component ownership.
-All 36 profiles and 161,280 checked warm responses are retained. P3 currently
-shows substantial component/IO and host-runtime overhead against Wasmtime;
-only 6/36 controls resolve. This remains required performance work.
-
-Hosts and compiler events stay separate. Setup, compilation, instantiation,
-first call, warmed calls, cleanup and process intervals are recorded separately.
-Merging requires all 23 semantic CI jobs, 240 conformance
-reports and 31 per-package coverage gates. Jobs target 5–10 minutes. Historical
-[main results](docs/research/performance-main-inventory-2026-11-08.md),
-[native-entry investigation](docs/research/performance-native-entry-2026-11-08.md)
-and rejected experiments retain their original source/compiler identities.
+The source APIs and proposal snapshots are experimental. Performance and
+production-release acceptance remain open; see [current measurements](#measured-performance)
+and the [release contract](docs/release-readiness.md). Supported builds pin
+Go1.27.3, LLGo `3d92a58`, LLVM22.1.8 and the LLGo `-O3 -lto=full` profile.
 
 ## Project status
 
@@ -306,69 +271,52 @@ records primary sources, feature flags and ambiguous entries.
 
 ### Measured performance
 
-The [native memory instruction-selection record](docs/research/performance-memory-instruction-selection-2026-11-08.md)
-documents direct SSE4.1/AVX2 widening loads, AVX2 memory broadcasts and scalar
-byte extraction, including
-all preceding measurements and unresolved controls. An all-22 compilation audit
-limits changed amd64 module images to the narrow-integer and SIMD-widening cases.
+These are dated advisory events with exact source/toolchain identities. Hosts,
+compiler versions, lifecycle phases and sampling cohorts remain separate.
+**Performance parity is not achieved.** Full process arrays, unresolved controls,
+adverse results and unsupported references remain in the linked records.
 
-The [private-memory forwarding evaluation](docs/research/performance-private-memory-forwarding-2026-11-08.md)
-retains two rejected arm64 implementations, a separate amd64 pilot and the final
-unchanged-code arm64 event. The selected optimization enables amd64 only;
-all original safety and cold-entry contracts remain. Full performance acceptance
-and the recorded competitor/native-C deficits remain open.
+The [complete service comparison](docs/research/performance-service-all-runtimes-2026-11-10.md)
+uses one bounded driver for all runtimes. M4 Max, Go1.27.3/LLGo3d92a58,
+C SHA,64 blocks/request,4 workers; throughput in req/s:
 
-The [2026-11-08 Linux comparison](docs/research/performance-reference-kind-filter-2026-11-08.md)
-contains the latest completed full 22-case source comparison. The subsequent
-[checked-slot GC event](docs/research/performance-gc-slot-reuse-2026-11-08.md)
-compares the affected four GC cases with main, including a separate sustained
-cohort. Its [hosted results](https://github.com/cpunion/wasmvm/pull/127#issuecomment-6716307382)
-resolve 2/4 sustained controls. Both records retain independent Go/LLGo,
-backend, competitor and lifecycle results; controlled acceptance remains open.
-The [guarded array-cache follow-up](docs/research/performance-array-cache-bounds-2026-11-08.md)
-records subsequent compiler changes, preserved adverse pilots and separate
-AMD64 measurements linked from its PR.
+| wasmvm LLGo | wasmvm Go | wazero1.12 | Wasmtime48 | Wasmer7.3 | Native C/LLGo | Native C/Go |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 135706 | 263847 | 221635 | 304512 | 300650 | 133541 | 318452 |
 
-The [2026-11-05 source event](docs/research/performance-loop-invariant-literals-2026-11-05.md)
-provides a 22-case local arm64 table and published Go/LLGo code audit.
-Its A/A controls resolve **0/22** workloads, so no performance gate closes.
-The [preceding hosted comparison](docs/research/performance-loop-scratch-registers-hosted-2026-11-05.md)
-retains the independent amd64 cohort. Results from different sources/hosts
-must be read separately.
+All72 profiles include both producers, interpreters and policy variants,720
+throughput processes and72 separate resource processes.35/72 controls resolve;
+all six owned LLGo native controls remain unresolved. These point estimates do
+not establish a controlled ranking.
 
-**Performance parity is not achieved.** The 2026-11-01 audit measures engine
-`4ad69c2` on Apple M4 Max, macOS arm64, Go 1.27.3 and LLGo `8e45ed5` with
-`-O3 -lto=full`. It includes 68 Core fixtures, nine configurations, three fresh
-processes per pair and seven warm samples. These are diagnostic workstation
-results, not controlled release benchmarks or measurements of the new extensions.
+The subsequent [P3 worker comparison](docs/research/performance-p3-worker-reuse-2026-11-10.md)
+uses the same toolchain and measures complete64KiB bodies, metadata and trailers.
+HTTP fixture,4 workers; the native-Go rows are ordinary host/application controls:
 
-Representative warm medians, **ns per source iteration; lower is better**.
-All columns below use native execution:
+| Runtime / host compiler | req/s | Complete API us |
+| --- | ---: | ---: |
+| wasmvm native / LLGo | 2084 | 1886.3 |
+| wasmvm native / Go | 7699 | 502.6 |
+| Wasmtime48 / Go C-Rust bridge | 59833 | 62.3 |
+| Native-Go application / LLGo | 9041 | 389.2 |
+| Native-Go application / Go | 44784 | 76.4 |
 
-| Workload | wasmvm / Go | wasmvm / LLGo | wazero | Wasmtime | Wasmer |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Integer loop | 1.545 | 1.551 | 1.589 | 1.534 | 1.549 |
-| Function calls | 0.949 | 0.852 | 1.499 | 0.927 | 0.820 |
-| Memory loop | 0.512 | 0.507 | 0.831 | 0.470 | 0.520 |
-| SIMD shuffle | 2.312 | 2.346 | 1.654 | 1.800 | 1.900 |
-| 8-KiB fill + overlapping copy | 2,597 | 3,388 | 184.58 | 155.00 | 159.00 |
-| GC mutable struct access | 288.57 | 1,342 | Unsupported | 1.600 | Unsupported |
-| Shared-memory access | 251.09 | 870.67 | 2.179 | 1.500 | 1.800 |
-| P1 argument-size host call | 454.32 | 1,808 | 22.33 | 51.70 | 41.40 |
+Bounded worker reuse observes LLGo native1470 ->2084req/s against its own
+baseline, with warm-time ratio0.7019[0.6796,0.7230].17/40 A/A controls resolve;
+that4-worker comparison's controls remain unresolved. Between-batch OS threads
+rise49 ->61 and observed peak RSS159.7 ->177.0MiB. The preceding
+[immutable-copy event](docs/research/performance-immutable-memory-2026-11-10.md)
+reduces allocation by about64KiB/request, with mixed timings and an adverse LLGo
+case retained. Each event preserves all40 profiles and separate resources;
+neither closes controlled acceptance. The original
+[P3 baseline](docs/research/performance-p3io-2026-11-10.md) remains separate.
 
-Scalar native loops are competitive in these cases; bulk memory, guest GC,
-shared memory and host/component boundaries have large gaps. Across measured
-families, LLGo interpreter time is **1.27–3.13x** WasmEdge interpreter time and
-**0.81–1.68x** wazero interpreter time. Family averages do not establish parity
-for every case; tiny near-parity differences are not statistically calibrated.
-
-Startup, load, validate/compile, instantiate, first call, warm calls and cleanup
-are measured separately. Startup is excluded from warm rows; no empty-call
-median is subtracted. Component/P2/async paths use Wasmtime as their reference
-and retain substantial deficits in resources, canonical transfer, HTTP and
-async boundaries. See the [full audit](docs/research/performance-2026-11-01.md),
-[all 68 Core cases](docs/research/performance-2026-11-01-core.md) and
-[raw evidence](docs/research/evidence/performance-2026-11-01.json).
+The [Linux routing snapshot](docs/research/performance-linux-routing-2026-11-09.md)
+retains32 complete cohort-cases, original partial/timed-out observations and all
+controls. Native memory/SIMD, shared-memory, native-C and public-call gaps remain
+open. The [compiler baseline](docs/research/performance-llgo-escape-upgrade-2026-11-09.md)
+and [invocation cleanup](docs/research/performance-invocation-cleanup-2026-11-09.md)
+retain their own source/compiler comparisons.
 
 The latest targeted [GC comparison (PR #140)](https://github.com/cpunion/wasmvm/pull/140#issuecomment-6735033151)
 uses source `da8d9f5` (merged as `9852f63`), Go1.27.3 and LLGo38de1e218
@@ -393,16 +341,22 @@ have no equivalent ordinary C control. Startup, preparation, first/warm calls,
 cleanup and interpreter rows remain separate; this targeted event does not
 replace the full portfolio or establish controlled acceptance.
 
-Earlier [native/bulk](docs/research/performance-native-bulk-2026-11-02.md),
-[allocation](docs/research/performance-native-allocation-2026-11-02.md),
-[Threads](docs/research/performance-native-threads-2026-11-02.md), and
-[interpreter/native/reference gap](docs/research/performance-interpreter-dispatch-2026-11-02.md)
-records preserve historical comparisons and open regressions.
+The [historical complete Core baseline](docs/research/performance-2026-11-01-core.md)
+and [original full audit](docs/research/performance-2026-11-01.md) preserve all68
+Core cases at their original2026-11-01 source. Later
+[memory selection](docs/research/performance-memory-instruction-selection-2026-11-08.md),
+[private-memory forwarding](docs/research/performance-private-memory-forwarding-2026-11-08.md),
+[GC slot reuse](docs/research/performance-gc-slot-reuse-2026-11-08.md),
+[Threads](docs/research/performance-native-threads-2026-11-02.md) and
+[interpreter](docs/research/performance-interpreter-dispatch-2026-11-02.md)
+records retain their distinct events, rejected experiments and remaining gaps.
 
+Startup, preparation, first/warm calls, cleanup, request wall and complete API
+intervals are measured separately; no empty-call or phase median is subtracted.
 Benchmark CI is opt-in through the `run-benchmarks` PR label or
 [workflow dispatch](https://github.com/cpunion/wasmvm/actions/workflows/benchmarks.yml).
-It compares exact base/head sources and pinned competitors and posts results
-to the PR. See [benchmark commands and methodology](benchmarks/README.md).
+It compares pinned base/head/reference sources and posts results to the PR.
+See [commands and methodology](benchmarks/README.md).
 
 ## Development
 
@@ -415,7 +369,8 @@ go test -count=1 -timeout=10m ./...
 llgo test -O3 -lto=full -count=1 -timeout=10m ./...
 ```
 
-CI distributes all 32 test packages once across eight LLGo shards per platform,
+Merging requires all23 required CI jobs,240 execution reports and31 per-package
+coverage gates. CI distributes all32 root test packages once across eight LLGo shards per platform,
 retaining `-O3 -lto=full`, with a separate CLI build, and separates Go semantics, race and quality work. It
 caches compiler-specific package objects and records LLGo build traces; the
 target is 5–10 minutes per job, subject to measured final-run acceptance.

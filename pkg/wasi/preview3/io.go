@@ -36,9 +36,12 @@ func NewBytesInput(data []byte) *preview2.BytesInput        { return preview2.Ne
 func NewOutputBuffer(maximum uint32) *preview2.OutputBuffer { return preview2.NewOutputBuffer(maximum) }
 
 type IOConfig struct {
-	Stdin                                         InputSource
-	Stdout, Stderr                                OutputSource
-	MaxStreams, MaxReadBytes, MaxWriteBytes       uint32
+	Stdin                                   InputSource
+	Stdout, Stderr                          OutputSource
+	MaxStreams, MaxReadBytes, MaxWriteBytes uint32
+	// MaxIdleWorkers bounds reusable external-I/O goroutines. Zero selects four,
+	// capped by the existing twice-MaxStreams active-operation limit.
+	MaxIdleWorkers                                uint32
 	StdinTerminal, StdoutTerminal, StderrTerminal bool
 }
 
@@ -54,6 +57,7 @@ type IO struct {
 	done                  chan struct{}
 	workers               sync.WaitGroup
 	activeWorkers         uint64
+	idleWorkers           []chan func()
 	operations            map[*ioOperation]struct{}
 	cleanupErr            error
 	inputType, outputType *component.HostResourceType
@@ -62,6 +66,12 @@ type IO struct {
 func NewIO(config IOConfig) (*IO, error) {
 	if config.MaxStreams == 0 {
 		config.MaxStreams = 1024
+	}
+	if config.MaxIdleWorkers == 0 {
+		config.MaxIdleWorkers = uint32(min(uint64(4), uint64(config.MaxStreams)*2))
+	}
+	if uint64(config.MaxIdleWorkers) > uint64(config.MaxStreams)*2 {
+		return nil, wasm.ErrLimit
 	}
 	if config.MaxReadBytes == 0 {
 		config.MaxReadBytes = 64 << 10
@@ -94,6 +104,10 @@ func (p *IO) Close() {
 		return
 	}
 	p.closed = true
+	for _, jobs := range p.idleWorkers {
+		close(jobs)
+	}
+	p.idleWorkers = nil
 	ops := make([]*ioOperation, 0, len(p.operations))
 	for op := range p.operations {
 		ops = append(ops, op)
@@ -139,22 +153,6 @@ func (p *IO) WaitClosed(ctx context.Context) error {
 		defer p.mu.Unlock()
 		return p.cleanupErr
 	}
-}
-func (p *IO) worker(fn func()) error {
-	p.mu.Lock()
-	if p.closed {
-		p.mu.Unlock()
-		return wasm.ErrClosed
-	}
-	if p.activeWorkers >= uint64(p.config.MaxStreams)*2 {
-		p.mu.Unlock()
-		return wasm.ErrLimit
-	}
-	p.activeWorkers++
-	p.workers.Add(1)
-	p.mu.Unlock()
-	go func() { defer p.workers.Done(); defer func() { p.mu.Lock(); p.activeWorkers--; p.mu.Unlock() }(); fn() }()
-	return nil
 }
 func (p *IO) operation() (*ioOperation, error) {
 	return p.operationFor(cliError, cliCompletionValue, 3)

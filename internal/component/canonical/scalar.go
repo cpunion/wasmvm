@@ -28,6 +28,15 @@ type Memory interface {
 	Write(uint64, []byte) error
 }
 
+// StringMemory optionally copies packed immutable bytes without a scratch
+// slice. ReadString must return exactly the requested bytes in an independent
+// immutable snapshot. It must never expose a guest-memory view.
+type StringMemory interface {
+	Memory
+	ReadString(uint64, uint64) (string, error)
+	WriteString(uint64, string) error
+}
+
 func scalarInfo(kind model.Kind) (size uint64, flat wasm.ValueType, signed bool, err error) {
 	switch kind {
 	case model.Bool, model.U8:

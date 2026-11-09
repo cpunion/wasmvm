@@ -183,6 +183,12 @@ func (m memory) Read(at uint64, bytes []byte) error {
 func (m memory) Write(at uint64, bytes []byte) error {
 	return m.caller.WriteExternalMemory(m.extern, at, bytes)
 }
+func (m memory) ReadString(at, n uint64) (string, error) {
+	return m.caller.ReadExternalMemoryString(m.extern, at, n)
+}
+func (m memory) WriteString(at uint64, data string) error {
+	return m.caller.WriteExternalMemoryString(m.extern, at, data)
+}
 
 func (in *Instance) codec(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) *canonical.Codec {
 	transfer := &canonical.Transfer{Context: caller.Context(), MaxBytes: in.config.MaxBytes}

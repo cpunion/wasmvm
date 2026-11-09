@@ -144,6 +144,41 @@ func (m *Memory) writeLocked(at uint64, p []byte) bool {
 	defer m.domain.mu.Unlock()
 	return m.writeBytes(at, p)
 }
+
+// ReadString returns an immutable snapshot, never a view of guest storage.
+// Native shared memory retains its byte-wise synchronized transfer path.
+func (m *Memory) ReadString(at, n uint64) (string, bool) {
+	if m.domain != nil && m.sharedSize == nil {
+		m.domain.mu.Lock()
+		defer m.domain.mu.Unlock()
+	}
+	if !m.rangeBytes(at, n) {
+		return "", false
+	}
+	if m.sharedSize != nil {
+		data := make([]byte, int(n))
+		m.readBytes(at, data)
+		return string(data), true
+	}
+	return string(m.bytes[int(at):int(at+n)]), true
+}
+
+// WriteString copies immutable host bytes without an intermediate byte slice
+// for private memory. Rejected ranges leave memory unchanged.
+func (m *Memory) WriteString(at uint64, data string) bool {
+	if m.domain != nil && m.sharedSize == nil {
+		m.domain.mu.Lock()
+		defer m.domain.mu.Unlock()
+	}
+	if !m.rangeBytes(at, uint64(len(data))) {
+		return false
+	}
+	if m.sharedSize != nil {
+		return m.writeBytes(at, []byte(data))
+	}
+	copy(m.bytes[int(at):], data)
+	return true
+}
 func (m *Memory) Fill(at uint64, b byte, n uint64) bool {
 	if m.domain == nil || m.sharedSize != nil {
 		return m.fill(at, b, n)

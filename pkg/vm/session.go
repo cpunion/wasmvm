@@ -100,6 +100,47 @@ func (c *Caller) WriteExternalMemory(memory Extern, offset uint64, src []byte) e
 	return nil
 }
 
+// ReadExternalMemoryString snapshots a same-Store memory as immutable bytes.
+// The result remains valid after guest writes, growth, reentry and Store close.
+// Its contents need not be UTF-8. The full range is checked before allocation.
+func (c *Caller) ReadExternalMemoryString(memory Extern, offset, size uint64) (string, error) {
+	if err := c.enter(); err != nil {
+		return "", err
+	}
+	defer c.mu.Unlock()
+	if memory.store != c.op.store || memory.store == nil {
+		return "", ErrReference
+	}
+	if memory.Kind() != MemoryKind {
+		return "", ErrType
+	}
+	data, ok := memory.external.Memory.ReadString(offset, size)
+	if !ok {
+		return "", &wasm.Trap{Code: wasm.TrapMemoryBounds}
+	}
+	return data, nil
+}
+
+// WriteExternalMemoryString copies immutable host bytes into a same-Store
+// memory. The callback-scoped capability and full-range checks match the slice
+// variant. No host or guest backing storage escapes.
+func (c *Caller) WriteExternalMemoryString(memory Extern, offset uint64, src string) error {
+	if err := c.enter(); err != nil {
+		return err
+	}
+	defer c.mu.Unlock()
+	if memory.store != c.op.store || memory.store == nil {
+		return ErrReference
+	}
+	if memory.Kind() != MemoryKind {
+		return ErrType
+	}
+	if !memory.external.Memory.WriteString(offset, src) {
+		return &wasm.Trap{Code: wasm.TrapMemoryBounds}
+	}
+	return nil
+}
+
 func (c *Caller) NewFunction(signature FunctionType, callback HostFunction, referenceType ...wasm.ValueType) (Extern, error) {
 	if err := c.enter(); err != nil {
 		return Extern{}, err
