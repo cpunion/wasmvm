@@ -309,6 +309,42 @@ func testP2World(t *testing.T, root, name, backend, mode string) {
 		}
 	}()
 	imports := world.Imports()
+	if name == "p2_http_outbound_request_timeout" {
+		// The upstream guest permits connection-refused as well as timeout.
+		// Some host networks accept TEST-NET addresses, so reserve a local
+		// non-listening endpoint and retain the actual HTTP connect failure.
+		fd, err := unix.Socket(unix.AF_INET, unix.SOCK_STREAM, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer unix.Close(fd)
+		if err := unix.Bind(fd, &unix.SockaddrInet4{Addr: [4]byte{127, 0, 0, 1}}); err != nil {
+			t.Fatal(err)
+		}
+		address, err := unix.Getsockname(fd)
+		if err != nil {
+			t.Fatal(err)
+		}
+		authority := fmt.Sprintf("127.0.0.1:%d", address.(*unix.SockaddrInet4).Port)
+		types := imports.Instances[w.HTTPTypesInterface]
+		key := "[method]outgoing-request.set-authority"
+		original := types.Functions[key]
+		var routed atomic.Bool
+		types.Functions[key] = func(c *component.Caller, args []component.Value) (*component.Value, error) {
+			if len(args) != 2 || args[1].Case != 1 || len(args[1].Elements) != 1 || args[1].Elements[0].Text != "203.0.113.12:80" {
+				return nil, fmt.Errorf("unexpected upstream timeout authority: %v", args)
+			}
+			local := append([]component.Value(nil), args...)
+			local[1] = component.Value{Case: 1, Elements: []component.Value{{Text: authority}}}
+			routed.Store(true)
+			return original(c, local)
+		}
+		defer func() {
+			if !routed.Load() {
+				t.Error("timeout consumer did not reach its reserved local endpoint")
+			}
+		}()
+	}
 	if name == "p2_cli_http_headers" {
 		p3, err := preview3.NewWorld(preview3.WorldConfig{IO: preview3.IOConfig{Stdout: output, Stderr: diagnostic}})
 		if err != nil {
