@@ -28,6 +28,11 @@ narrows local LLGo/Go short-call gaps, without establishing a controlled win.
 Public-call latency, memory/SIMD, GC, Threads and native-C gaps remain explicit,
 alongside adverse and unsupported observations.
 
+The [concurrent service comparison](docs/research/performance-service-references-2026-11-09.md)
+uses one admission driver for Go/LLGo, wazero and native C. All 54 A/A controls
+remain unresolved; its throughput, request/API latency and separate resource
+observations do not establish a controlled ranking.
+
 Hosts and compiler events stay separate. Setup, compilation, instantiation,
 first call, warmed calls, cleanup and process intervals are recorded separately.
 Merging requires all 23 semantic CI jobs, 240 conformance

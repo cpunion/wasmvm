@@ -48,5 +48,12 @@ Use both committed C/Rust Wasm producers, independent checksum checks, fixed
 capacities and order, fresh processes and identical-binary controls. Complete
 builds/tests/probes before timing. Preserve failed and adverse outcomes; do not
 subtract phases, mix scheduler policies, pool separate cohorts or reuse serial
-numbers as concurrent service results. Wasmtime/Wasmer service adapters and
-WASI P3 I/O application comparisons remain separate deliverables.
+numbers as concurrent service results. Wasmtime/Wasmer/WasmEdge service adapters
+and WASI P3 I/O application comparisons remain separate deliverables.
+
+The [fixed 2026-11-09 event](../../docs/research/performance-service-references-2026-11-09.md)
+retains all 54 profiles and all unresolved A/A controls. Owned callbacks use
+typed `Function.Call`, whereas wazero reuses raw stack storage; this policy
+difference is explicit. The standalone channel-waiter allocation finding is
+reported in [llgo #3035](https://github.com/xgo-dev/llgo/issues/3035), separately
+from any throughput or scheduler claim.
