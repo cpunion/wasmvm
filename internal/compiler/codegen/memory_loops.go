@@ -271,6 +271,19 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 	warm.predicate = predicate
 	candidate = warm
 	candidate.loop = loop
+	countdown := e.planLoopCountdown(start, candidate)
+	if countdown != nil {
+		elided := make(map[int]bool, len(warm.elided)+3)
+		for pc, skip := range warm.elided {
+			elided[pc] = skip
+		}
+		for pc := countdown.first; pc <= countdown.last; pc++ {
+			elided[pc] = true
+		}
+		warm.elided = elided
+		e.initializeLoopCountdown(countdown, start)
+		out.DeferredLoopCounters++
+	}
 	warm.cache = e.planLoopMemoryValue(start, candidate)
 	if warm.cache != nil {
 		e.initializeLoopMemoryValue(warm.cache)
@@ -288,7 +301,7 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 	}
 	edge := loopBackedge{header: header, yes: loop.yes, always: loop.always, flags: loop.flags, exit: loop.exit, restoreMemory: restoreMemory}
 	if predicate != nil || warm.copies != nil {
-		edge.snapshot = &frameSnapshot{predicate: predicate}
+		edge.snapshot = &frameSnapshot{predicate: predicate, countdown: countdown}
 	}
 	if warm.copies != nil {
 		edge.snapshot.copies = warm.copies.final

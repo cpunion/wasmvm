@@ -8,6 +8,7 @@ import "github.com/cpunion/wasmvm/internal/compiler/slots"
 type frameSnapshot struct {
 	copies    []loopSlotCopy
 	predicate *loopPredicate
+	countdown *loopCountdown
 }
 
 type loopPredicate struct {
@@ -85,6 +86,9 @@ func (e *functionEmitter) predicateFlags(p *loopPredicate) {
 func (e *functionEmitter) materializeFrameSnapshot(s *frameSnapshot, known, condition bool) {
 	if s == nil {
 		return
+	}
+	if s.countdown != nil {
+		e.restoreLoopCountdown(s.countdown, !known)
 	}
 	// A deferred literal can feed a copy recipe, so restore it before copies.
 	// When it aliases the comparison result, only cold recomputation needs it.

@@ -43,6 +43,7 @@ type CompiledFunction struct {
 	ValueLoops                    uint32
 	DeferredFrameCopies           uint32
 	DeferredPredicates            uint32
+	DeferredLoopCounters          uint32
 	DeferredPredicateLiterals     uint32
 	// Generated private backedge polls, excluding header/guard/cold polls.
 	PrivatePollOffsets            []uint32
@@ -331,7 +332,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				e.frameAliases = nil
 				continue
 			}
-			if edge.snapshot != nil && edge.snapshot.predicate != nil {
+			if edge.snapshot != nil && edge.snapshot.countdown != nil {
+				e.countdownBackedge(edge.snapshot.countdown, edge.header)
+			} else if edge.snapshot != nil && edge.snapshot.predicate != nil {
 				in := edge.snapshot.predicate.in
 				e.predicateFlags(edge.snapshot.predicate)
 				cc := x86IntegerCondition(in.Op)

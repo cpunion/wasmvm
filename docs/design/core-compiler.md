@@ -791,3 +791,13 @@ Every original store and backedge poll remains; cold PCs use ordinary checked
 memory. The register is absent from every loop mapping and is discarded at
 entry boundaries. Shared/view memories and other effects decline the proof.
 See the [qualification and declared measurement](../research/performance-private-loop-value-2026-11-09.md).
+
+### Deferred loop induction
+
+A bounded loop whose i32 counter is used only for +1 and unsigned comparison may
+hold bound-counter in the counter's exclusive existing home. A checked entry
+requires counter<bound; other cases use the ordinary path. The backedge retains
+its interrupt check and then decrements/branches on flags. Existing frame
+snapshots restore the original counter before cold-poll and ordinary-exit
+publication. Moving/aliased homes and other counter uses decline the proof. See
+the [qualification and comparison scope](../research/performance-loop-countdown-2026-11-09.md).
