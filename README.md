@@ -348,58 +348,34 @@ async boundaries. See the [full audit](docs/research/performance-2026-11-01.md),
 [all 68 Core cases](docs/research/performance-2026-11-01-core.md) and
 [raw evidence](docs/research/evidence/performance-2026-11-01.json).
 
-The [2026-11-02 GC follow-up](docs/research/performance-gc-2026-11-02.md) measures
-direct native field access against merged PR #87. LLGo struct access improves
-from 1303 to **4.75 ns/iteration** and indirect access from 3376 to **15.26**;
-Wasmtime measures 1.70 and 3.10 on the same run. Allocation and interpreter
-deficits remain open. This targeted update does not replace the dated full audit.
+The latest targeted [GC comparison (PR #140)](https://github.com/cpunion/wasmvm/pull/140#issuecomment-6735033151)
+uses source `da8d9f5` (merged as `9852f63`), Go1.27.3 and LLGo38de1e218
+`-O3 -lto=full`. Sustained native public-call time in ns/source iteration:
 
-A [further heap-traffic comparison](docs/research/performance-gc-followup-2026-11-02.md)
-uses separately declared million-iteration loops: LLGo struct access reaches
-1.31 ns/iteration versus Wasmtime's 1.04, and indirect access reaches 4.55 versus
-2.53. Allocation, interpreter and full-portfolio performance acceptance remain open.
+| GC workload | M4 ARM64 LLGo | / Go | / Wasmtime | EPYC7763 amd64 LLGo | / Go | / Wasmtime |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| i31 roundtrip | 1.321 | 0.985× | 0.745× | 1.589 | 0.992× | 0.722× |
+| Struct access | 1.272 | 0.979× | 1.251× | 1.601 | 0.996× | 1.261× |
+| Allocation, including pauses | 30.161 | 0.947× | 0.613× | 80.195 | 1.107× | 0.706× |
+| Indirect struct access | 1.621 | 0.981× | 0.638× | 4.422 | 0.987× | 0.933× |
 
-The [bulk-fill follow-up](docs/research/performance-bulk-2026-11-02.md) reduces the
-8-KiB fill plus overlapping-copy workload from 2,638 to 431 ns/iteration under
-the LLGo interpreter and from 3,261 to 1,208 under LLGo native. Wasmtime measures
-155; native runtime-helper transitions and competitive acceptance remain open.
+ARM64 indirect access observes a63.2% reduction against its own baseline;
+struct access and Linux LLGo/Go allocation remain gaps. Five independent
+process blocks are advisory: only one ARM64 case resolves all diagnostic A/A
+controls, versus all four Linux sustained cases. Original short-case adverse
+results remain explicit in the [full record](docs/research/performance-arm-heap-operands-2026-11-09.md).
+Wazero1.12.0 compiler/interpreter and Wasmer7.3.0 lack this GC profile; their
+unsupported probes are retained. Wasmtime48.0.1 Cranelift and WasmEdge0.17.1
+interpreter are independently measured supported references. These GC cases
+have no equivalent ordinary C control. Startup, preparation, first/warm calls,
+cleanup and interpreter rows remain separate; this targeted event does not
+replace the full portfolio or establish controlled acceptance.
 
-The [direct native bulk comparison](docs/research/performance-native-bulk-2026-11-02.md)
-removes those private fill/copy helper transitions. With 100,000 iterations,
-LLGo measures 142.6 ns/iteration versus Wasmtime's 146.9 and a separate native
-C/libc loop's 146.2. These shared-host results do not establish controlled
-superiority or full-portfolio acceptance.
-
-The [native allocation follow-up](docs/research/performance-native-allocation-2026-11-02.md)
-uses 63 warm calls of 100,000 linked allocations and includes every GC stall.
-LLGo improves from 582.3 to 60.2 ns/object versus Wasmtime's 60.17; Go reaches
-43.5. These are process-mean diagnostics, with raw latency distributions retained.
-Interpreter, shared-memory and full-portfolio performance acceptance remain open.
-
-The [GC interpreter follow-up](docs/research/performance-gc-interpreter-2026-11-02.md)
-reduces LLGo i31, struct and indirect access from 552/591/1,200 to
-62/78/129 ns/iteration; WasmEdge measures 45/55/95. Linked allocation including
-all GC pauses improves from 588 to 171 ns/object versus WasmEdge's 104.
-These targeted workstation results retain the remaining interpreter deficit.
-
-The [native Threads follow-up](docs/research/performance-native-threads-2026-11-02.md)
-adds direct shared accesses, all atomic widths and checked wait/notify paths on
-amd64 and arm64, with stable shared growth and concurrent-entry ownership.
-Targeted comparisons retain baseline and interpreter regressions; controlled
-full-portfolio acceptance remains open.
-
-The [interpreter memory follow-up](docs/research/performance-interpreter-memory-2026-11-02.md)
-removes an unconditional LLGo result allocation and reduces scalar frame storage.
-Private reads/writes improve from 90 to 59 ns/iteration and SIMD widening from
-163 to 129; WasmEdge measures 40 and 63. Remaining deficits and both comparison
-campaigns are retained.
-
-The [dispatch and three-way gap audit](docs/research/performance-interpreter-dispatch-2026-11-02.md)
-compares named engines, Go versus LLGo, and six ordinary native C kernels.
-Reusable frames and cancellation polling reduce LLGo guest calls from 133 to
-93 ns/iteration; WasmEdge remains faster at 62. Memory/compiler gaps, empty-call
-regressions and rejected experiments remain recorded, with independent LLGo
-reproductions reported upstream.
+Earlier [native/bulk](docs/research/performance-native-bulk-2026-11-02.md),
+[allocation](docs/research/performance-native-allocation-2026-11-02.md),
+[Threads](docs/research/performance-native-threads-2026-11-02.md), and
+[interpreter/native/reference gap](docs/research/performance-interpreter-dispatch-2026-11-02.md)
+records preserve historical comparisons and open regressions.
 
 Benchmark CI is opt-in through the `run-benchmarks` PR label or
 [workflow dispatch](https://github.com/cpunion/wasmvm/actions/workflows/benchmarks.yml).
@@ -417,7 +393,7 @@ go test -count=1 -timeout=10m ./...
 llgo test -O3 -lto=full -count=1 -timeout=10m ./...
 ```
 
-CI distributes all 31 test packages once across seven LLGo shards per platform,
+CI distributes all 31 test packages once across eight LLGo shards per platform,
 retaining `-O3 -lto=full`, with a separate CLI build, and separates Go semantics, race and quality work. It
 caches compiler-specific package objects and records LLGo build traces; the
 target is 5–10 minutes per job, subject to measured final-run acceptance.

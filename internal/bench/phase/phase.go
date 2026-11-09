@@ -38,6 +38,8 @@ type options struct {
 	path, backend, mode        string
 	iterations, seed, expected uint32
 	samples, warmups           int
+	workers, clients, requests int
+	resources                  bool
 }
 type phases struct {
 	Load            int64 `json:"load"`
@@ -73,6 +75,7 @@ type report struct {
 	WarmupResults     []uint32         `json:"warmupResults"`
 	WarmResults       []uint32         `json:"warmResults"`
 	TimerPairNs       []int64          `json:"timerPairNs"`
+	Service           *serviceReport   `json:"service,omitempty"`
 }
 
 func parseOptions(args []string, stderr io.Writer) (options, error) {
@@ -87,6 +90,10 @@ func parseOptions(args []string, stderr io.Writer) (options, error) {
 	expected := flags.Uint64("expected", 0, "")
 	flags.IntVar(&out.samples, "samples", 7, "")
 	flags.IntVar(&out.warmups, "warmups", 2, "")
+	flags.IntVar(&out.workers, "workers", 0, "bounded service workers, one Store per worker")
+	flags.IntVar(&out.clients, "clients", 0, "concurrent service clients")
+	flags.IntVar(&out.requests, "requests", 0, "requests per client per service batch")
+	flags.BoolVar(&out.resources, "service-resources", false, "separate instrumented service resource pass")
 	if err := flags.Parse(args); err != nil {
 		return out, err
 	}
@@ -102,14 +109,17 @@ func parseOptions(args []string, stderr io.Writer) (options, error) {
 	if out.backend != "interpreter" && out.backend != "native" {
 		return out, wasm.ErrUnsupported
 	}
-	if out.mode != "api" && out.mode != "dispatch" {
-		return out, errors.New("mode must be api or dispatch")
+	if out.mode != "api" && out.mode != "dispatch" && out.mode != "service" {
+		return out, errors.New("mode must be api, dispatch or service")
 	}
 	if *iterations == 0 || *iterations > math.MaxInt32 || *seed > math.MaxUint32 || *expected > math.MaxUint32 {
 		return out, errors.New("invalid i32 workload arguments")
 	}
 	if out.samples < 1 || out.samples > 10000 || out.warmups < 0 || out.warmups > 10000 {
 		return out, errors.New("samples must be 1..10000 and warmups 0..10000")
+	}
+	if err := serviceOptions(out); err != nil {
+		return out, err
 	}
 	out.iterations, out.seed, out.expected = uint32(*iterations), uint32(*seed), uint32(*expected)
 	return out, nil
@@ -139,6 +149,16 @@ func pure(imports int, start bool) error {
 }
 
 func publicKernel(ctx context.Context, input []byte, args options, out *report) (call kernel, close func(), err error) {
+	calls, close, err := publicKernels(ctx, input, args, out, 1)
+	if err != nil {
+		return nil, close, err
+	}
+	return calls[0], close, nil
+}
+
+// Compile once and instantiate independent Stores. Both the serial API and the
+// bounded service use this setup and the same timed public function boundary.
+func publicKernels(ctx context.Context, input []byte, args options, out *report, count int) (calls []kernel, close func(), err error) {
 	start := time.Now()
 	config := vm.DefaultEngineConfig()
 	config.Backend = args.backend
@@ -146,14 +166,22 @@ func publicKernel(ctx context.Context, input []byte, args options, out *report) 
 	if err != nil {
 		return nil, func() {}, err
 	}
-	store, err := engine.NewStore(vm.DefaultStoreConfig())
+	stores := make([]*vm.Store, count)
+	for i := range stores {
+		stores[i], err = engine.NewStore(vm.DefaultStoreConfig())
+		if err != nil {
+			break
+		}
+	}
 	out.Phases.EngineSetup = time.Since(start).Nanoseconds()
 	var compiled *vm.CompiledModule
 	close = func() {
 		start := time.Now()
-		if store != nil {
-			store.Close()
-			_ = store.WaitClosed(context.Background())
+		for _, store := range stores {
+			if store != nil {
+				store.Close()
+				_ = store.WaitClosed(context.Background())
+			}
 		}
 		if compiled != nil {
 			compiled.Close()
@@ -177,25 +205,38 @@ func publicKernel(ctx context.Context, input []byte, args options, out *report) 
 	if err = pure(len(info.Imports), info.HasStart); err != nil {
 		return nil, close, err
 	}
-	linker := vm.NewLinker(store)
-	start = time.Now()
-	instance, err := linker.Instantiate(ctx, compiled, vm.CallOptions{})
-	out.Phases.Instantiate = time.Since(start).Nanoseconds()
-	if err != nil {
-		return nil, close, err
+	instances := make([]*vm.Instance, count)
+	for i, store := range stores {
+		start = time.Now()
+		instances[i], err = vm.NewLinker(store).Instantiate(ctx, compiled, vm.CallOptions{})
+		out.Phases.Instantiate += time.Since(start).Nanoseconds()
+		if err != nil {
+			return nil, close, err
+		}
 	}
-	start = time.Now()
-	fn, err := instance.Export("run")
-	out.Phases.ExportLookup = time.Since(start).Nanoseconds()
-	if err != nil {
-		return nil, close, err
+	for _, instance := range instances {
+		start = time.Now()
+		fn, lookupErr := instance.Export("run")
+		out.Phases.ExportLookup += time.Since(start).Nanoseconds()
+		if lookupErr != nil {
+			return nil, close, lookupErr
+		}
+		call, callErr := publicCall(ctx, fn, args)
+		if callErr != nil {
+			return nil, close, callErr
+		}
+		calls = append(calls, call)
 	}
+	return calls, close, nil
+}
+
+func publicCall(ctx context.Context, fn vm.Extern, args options) (kernel, error) {
 	typ, err := fn.FunctionType()
 	if err != nil {
-		return nil, close, err
+		return nil, err
 	}
 	if err = signature(typ); err != nil {
-		return nil, close, err
+		return nil, err
 	}
 	arguments := []vm.Value{vm.I32(args.seed), vm.I32(args.iterations)}
 	return func() (int64, uint32, error) {
@@ -210,7 +251,7 @@ func publicKernel(ctx context.Context, input []byte, args options, out *report) 
 			return elapsed, 0, err
 		}
 		return elapsed, uint32(lo), checkResult(uint32(lo), args.expected)
-	}, close, nil
+	}, nil
 }
 
 func dispatchKernel(ctx context.Context, input []byte, args options, out *report) (call kernel, close func(), err error) {
@@ -341,7 +382,9 @@ func benchmark(ctx context.Context, args options, beforeSample ...func(int) erro
 	}
 	var call kernel
 	var close func()
-	if args.mode == "api" {
+	if args.mode == "service" {
+		call, close, err = serviceKernel(ctx, input, args, &out)
+	} else if args.mode == "api" {
 		call, close, err = publicKernel(ctx, input, args, &out)
 	} else {
 		call, close, err = dispatchKernel(ctx, input, args, &out)
