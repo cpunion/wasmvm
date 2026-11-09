@@ -15,7 +15,7 @@ class ShardsTest(unittest.TestCase):
         self.shards = json.loads((ROOT / '.github/llgo-shards.json').read_text())
 
     def test_complete_repository_plan(self):
-        self.assertEqual(validate(self.shards), 31)
+        self.assertEqual(validate(self.shards), 32)
 
     def test_missing_duplicate_and_unknown_packages(self):
         for mode in ('missing', 'duplicate', 'unknown'):

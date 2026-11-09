@@ -89,6 +89,7 @@ jobs:
           python3 scripts/check_coverage.py artifacts/core/coverage.out --minimum 90 \
             --require github.com/cpunion/wasmvm/internal/binary \
             --require github.com/cpunion/wasmvm/internal/bench/phase \
+            --require github.com/cpunion/wasmvm/internal/bench/service \
             --require github.com/cpunion/wasmvm/internal/cli \
             --require github.com/cpunion/wasmvm/internal/component/canonical \
             --require github.com/cpunion/wasmvm/internal/component/decode \
@@ -212,6 +213,10 @@ jobs:
           mkdir -p artifacts/ci
           read -ra packages <<< "$TEST_PACKAGES"
           llgo test -O3 -lto=full -json -debug-trace "artifacts/ci/llgo-${SHARD}.json" -count=1 -timeout=8m "${packages[@]}"
+      - name: Execute native service reference under LLGo
+        if: matrix.shard == 'component'
+        working-directory: benchmarks/service
+        run: llgo test -O3 -lto=full -json -debug-trace "$GITHUB_WORKSPACE/artifacts/ci/llgo-service-reference.json" -count=1 -timeout=2m ./...
       - name: Preserve shard execution and timing evidence
         if: always()
         timeout-minutes: 2
@@ -324,6 +329,12 @@ jobs:
           go vet ./...
           python3 -m unittest discover -s scripts -p 'test_*.py'
           python3 -m unittest discover -s benchmarks -p 'test_*.py'
+      - name: Check independent service references
+        run: |
+          mkdir -p artifacts/benchmark-reference
+          go -C benchmarks/service vet ./...
+          go -C benchmarks/service test -race -count=1 -timeout=2m -coverprofile="$GITHUB_WORKSPACE/artifacts/benchmark-reference/coverage.out" ./...
+          python3 scripts/check_coverage.py artifacts/benchmark-reference/coverage.out --minimum 90 --require github.com/cpunion/wasmvm/benchmarks/service
       - name: Fuzz bounded binary inputs
         run: |
           go test -run '^$' -fuzz '^FuzzReader$' -fuzztime=10s -parallel=2 ./internal/binary

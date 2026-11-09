@@ -15,7 +15,7 @@ MODULE = "github.com/cpunion/wasmvm"
 LLGO_REVISION = "3d92a58e09bd8971899c6eaf63437fbecd18d432"
 LLGO_BUILD_FLAGS = ["-O3", "-lto=full"]
 GO_VERSION = "go1.27.3"
-HARNESS = ("internal/bench/phase", "benchmarks/embedded/wasmvm")
+HARNESS = ("internal/bench/phase", "internal/bench/service", "benchmarks/embedded/wasmvm")
 ENGINE_PATHS = ("go.mod", "go.sum", "internal", "pkg", "cmd")
 
 
@@ -106,7 +106,7 @@ def prepare(head, checkout, revision, target):
     for path in HARNESS:
         if (target / path).exists():
             shutil.rmtree(target / path)
-    # Only these two instrumentation directories come from head. No core or
+    # Only the declared instrumentation directories come from head. No core or
     # public VM implementation file is ever copied over the baseline.
     archive(head, ci.capture(["git", "-C", str(head), "rev-parse", "HEAD"]), target, HARNESS)
     # The optional profile is diagnostic metadata. Old engines predate the
