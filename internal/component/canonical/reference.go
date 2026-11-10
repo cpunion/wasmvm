@@ -28,6 +28,10 @@ func NewReference(table *Resources, typeID *ResourceType, id uint32, owner any, 
 	return &Reference{state: &referenceState{valid: true, table: table, typeID: typeID, id: id, owner: owner, scope: scope}}
 }
 
+// Affine cleanup commonly inspects aliases invalidated by a successful move.
+// This immutable diagnostic carries no per-reference or per-call state.
+var errExpiredReference = scalarTrap("expired resource capability")
+
 // ReferenceInfo is internal binding machinery; it is deliberately not a method
 // exposed by the public opaque capability alias.
 func ReferenceInfo(r *Reference) (*Resources, *ResourceType, uint32, any, bool, error) {
@@ -38,7 +42,7 @@ func ReferenceInfo(r *Reference) (*Resources, *ResourceType, uint32, any, bool, 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.valid || s.scope != nil && !s.scope.Active() {
-		return nil, nil, 0, nil, false, scalarTrap("expired resource capability")
+		return nil, nil, 0, nil, false, errExpiredReference
 	}
 	return s.table, s.typeID, s.id, s.owner, s.scope != nil, nil
 }
