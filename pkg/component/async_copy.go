@@ -21,8 +21,32 @@ type guestBuffer struct {
 	typ              *model.Type
 	ptr, stride      uint64
 	length, progress uint32
-	check            func(ReadResult) error
+	hooks            *readBufferHooks
 	rejected         error
+}
+
+// Ordinary guest transfers keep their existing buffer footprint. Checked reads
+// and caller destinations add callback state only to their own host buffer.
+type readBufferHooks struct {
+	check func(ReadResult) error
+	into  ByteDestination
+}
+type hostReadBuffer struct {
+	buffer guestBuffer
+	hooks  readBufferHooks
+}
+
+func (in *Instance) hostReadBuffer(e *asyncEnd, batch *model.Type, limit uint32, check func(ReadResult) error, into ByteDestination) *guestBuffer {
+	var b *guestBuffer
+	var hooks *readBufferHooks
+	if check != nil || into != nil {
+		state := &hostReadBuffer{hooks: readBufferHooks{check: check, into: into}}
+		b, hooks = &state.buffer, &state.hooks
+	} else {
+		b = &guestBuffer{}
+	}
+	*b = guestBuffer{in: in, scope: e.scope, typ: e.typ.Element, batch: batch, length: limit, hooks: hooks}
+	return b
 }
 
 func (b *guestBuffer) remain() uint32 { return b.length - b.progress }
@@ -65,14 +89,26 @@ func copyGuestBuffers(c *vm.Caller, src, dst *guestBuffer, count uint32) (err er
 		guard.finish()
 	}()
 
-	values, err := read.LoadBuffer(src.typ, src.ptr, uint64(count))
+	if dst.hooks != nil && dst.hooks.into != nil {
+		err = read.ReadBufferInto(src.ptr, uint64(count), func() ([]byte, error) {
+			var target []byte
+			write, target, err = dst.prepareInto(c, uint64(count))
+			if err != nil {
+				return nil, err
+			}
+			return target[dst.progress : dst.progress+count], nil
+		})
+	} else {
+		var values Value
+		values, err = read.LoadBuffer(src.typ, src.ptr, uint64(count))
+		if err == nil {
+			write, err = dst.store(c, values)
+		}
+	}
 	if err != nil {
 		return err
 	}
-	write, err = dst.store(c, values)
-	if err != nil {
-		return err
-	}
+
 	src.ptr += uint64(count) * src.stride
 	dst.ptr += uint64(count) * dst.stride
 	src.progress += count
@@ -85,7 +121,7 @@ func copyGuestBuffers(c *vm.Caller, src, dst *guestBuffer, count uint32) (err er
 type bufferRejection struct{ error }
 
 func (b *guestBuffer) store(c *vm.Caller, values Value) (*canonical.Codec, error) {
-	if b.check != nil {
+	if b.hooks != nil && b.hooks.check != nil {
 		data := values.Text
 		if values.Elements != nil {
 			var err error
@@ -95,11 +131,22 @@ func (b *guestBuffer) store(c *vm.Caller, values Value) (*canonical.Codec, error
 			}
 		}
 		result := ReadResult{Bytes: data, Count: uint32(len(data))}
-		if err := b.check(result); err != nil {
+		if err := b.hooks.check(result); err != nil {
 			b.rejected = err
 			return nil, &bufferRejection{err}
 		}
 	}
+	if b.hooks != nil && b.hooks.into != nil {
+		if values.Elements != nil {
+			return nil, vm.ErrType
+		}
+		codec, target, err := b.prepareInto(c, uint64(len(values.Text)))
+		if err == nil {
+			copy(target[b.progress:], values.Text)
+		}
+		return codec, err
+	}
+
 	n, plan := b.n, b.plan
 	if n == nil {
 		n = b.scope
@@ -130,4 +177,23 @@ func (b *guestBuffer) store(c *vm.Caller, values Value) (*canonical.Codec, error
 		}
 	}
 	return codec, err
+}
+
+func (b *guestBuffer) prepareInto(c *vm.Caller, count uint64) (*canonical.Codec, []byte, error) {
+	total := uint64(b.progress) + count
+	if b.n != nil || b.typ == nil || b.typ.Kind != model.U8 || total > uint64(b.length) {
+		return nil, nil, wasm.ErrTrap
+	}
+	if b.progress != 0 && total > b.in.config.MaxBytes-b.in.heldBytes {
+		return nil, nil, wasm.ErrLimit
+	}
+	codec := b.in.codec(c, b.scope, nil)
+	if err := codec.ReserveByteBuffer(b.batch, total); err != nil {
+		return codec, nil, err
+	}
+	target, err := b.hooks.into(uint32(total))
+	if err == nil && uint64(len(target)) < total {
+		err = vm.ErrType
+	}
+	return codec, target, err
 }

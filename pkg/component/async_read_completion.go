@@ -51,7 +51,7 @@ func (c *Caller) awaitRead(ctx context.Context, ref *Resource, limit uint32, che
 	if err != nil {
 		return nil, err
 	}
-	b := &guestBuffer{in: in, scope: e.scope, typ: e.typ.Element, batch: batch, length: limit, check: check}
+	b := in.hostReadBuffer(e, batch, limit, check, nil)
 	state := &pendingHostRead{in: in, end: e, buffer: b}
 	completion := NewHostCompletion()
 	resolve := func() {

@@ -41,3 +41,41 @@ func (c *Codec) StoreBuffer(t *model.Type, ptr uint64, v Value) error {
 	}
 	return nil
 }
+
+// ReadBufferInto copies packed bytes into caller-owned storage. Source bounds
+// and the same logical charges as LoadBuffer are checked before destination is
+// invoked, so an invalid read cannot cause destination allocation or effects.
+func (c *Codec) ReadBufferInto(ptr, length uint64, destination func() ([]byte, error)) error {
+	if err := c.prepareReadBytes(ptr, length, 0); err != nil {
+		return err
+	}
+	dst, err := destination()
+	if err != nil {
+		return err
+	}
+	if uint64(len(dst)) < length {
+		return invalid("short byte buffer")
+	}
+	if err := c.Transfer.Memory.Read(ptr, dst[:int(length)]); err != nil {
+		return err
+	}
+	return c.Transfer.check()
+}
+
+// ReserveByteBuffer charges a host list<u8> snapshot without materializing an
+// intermediate string. The reservation includes all earlier writes in a batch.
+func (c *Codec) ReserveByteBuffer(t *model.Type, length uint64) error {
+	if err := c.visit(0); err != nil {
+		return err
+	}
+	if t == nil || t.Kind != model.List || t.Element == nil || t.Element.Kind != model.U8 {
+		return invalid("byte buffer type")
+	}
+	if _, err := c.Layouts.Build(t); err != nil {
+		return err
+	}
+	if err := c.byteValues(length, 0); err != nil {
+		return err
+	}
+	return c.Transfer.charge(length)
+}

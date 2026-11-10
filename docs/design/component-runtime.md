@@ -702,3 +702,44 @@ explicit type declarations. Only instance containers are copied: exporter binder
 bookkeeping must not mutate the immutable imported interface. The earlier full
 grammar/type controls, including private-name rejection and re-exported resource
 binders, remain required regression evidence.
+
+
+## Caller-owned byte-stream destinations
+
+`Instance.ReadAsyncInto` and `Caller.ReadAsyncInto` read a `stream<u8>` into
+storage supplied by a `ByteDestination` callback. The callback receives the
+actual cumulative batch length, runs inside the existing Store lease, and must
+preserve any previously written prefix when it grows the buffer. Empty batches
+and EOF do not request storage. The result reports `Count` and `Closed`, with
+empty `Bytes` and `Values`; existing `ReadAsync` keeps its immutable snapshot
+contract. The callback must not reenter the VM, and neither it nor its storage
+is retained after the operation. A failed operation may have modified storage.
+
+Source bounds and logical copy quotas are checked before requesting a
+destination. Guest memory is copied directly into the supplied buffer through
+the checked memory capability. Packed-byte value and logical scratch/output
+budgets remain equivalent to snapshot reads; the optimization does not change
+resource identities, endpoint ownership, cancellation or joined cleanup.
+Per-call Canonical ABI state is allocated together, with separate fresh budgets
+and resource bookkeeping for every call. Optional host-read callbacks do not
+enlarge ordinary guest transfer buffers.
+
+For a fixed host buffer:
+
+```go
+storage := make([]byte, 64<<10)
+result, err := instance.ReadAsyncInto(ctx, stream, uint32(len(storage)),
+    func(size uint32) ([]byte, error) { return storage[:size], nil },
+    component.CallOptions{})
+if err == nil {
+    consume(storage[:result.Count], result.Closed)
+}
+```
+
+WASI P3 buffered HTTP uses a destination that grows only the final response.
+It checks the materialization limit and declared content length before growth,
+and preserves data from earlier reads and writes. EOF probing does not allocate
+another body buffer. The authored two-write fixtures cover Memory32 and
+Memory64 under both owned backends. The pinned wasm-tools producer validates
+the Memory32 fixture and rejects the forward Memory64 stream ABI; the exact
+producer error and all fixture hashes remain in `host-sources.json`.

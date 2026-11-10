@@ -1,7 +1,10 @@
 {
   "componentModelCommit": "d095e2f60ddae1f9a1e9b1e2fb547ec1114da677",
   "producer": "wasm-tools 1.258.0",
-  "generatorSHA256": "6678a18783950c3d77dd483a53944064b4dc71c4da3cf068727bca9ddef81ce6",
+  "generatorSHA256": "a188f818aa0f1afe5ed85c423bf40a5277ea568b42250ec79110d4080547d6e5",
+  "producerRejections": {
+    "host-result-bytes-memory64": "error: type mismatch for export `write` of module instantiation argument `env`\nexpected: (func (param i32 i64 i64) (result i64))\nfound:    (func (param i32 i32 i32) (result i32)) (at offset 0x1b6)"
+  },
   "sha256": {
     "host-source-future-u32": {
       "wat": "e269b250fb1831258133b1c7edb95a271f10484f44b0a91a942cba804f984587",
@@ -34,6 +37,14 @@
     "host-source-future-owned": {
       "wat": "232d0ca1b620302a91fec0306926c4692e062b03454e7639cd7df5980facfd14",
       "wasm": "e9fd93ed98a727b24ea6954a846d36326349b12c4a6249693c843857aa170734"
+    },
+    "host-result-bytes": {
+      "wat": "2f53954636dda309c52fe2aecf49eac8aef306264676cfc0242cf57c9db07373",
+      "wasm": "23a4d3128aae355632462fab7f7161688a1f7a372a526a9fa0874266c921ce1d"
+    },
+    "host-result-bytes-memory64": {
+      "wat": "776eda48e20865164e6436489b767503608f4acd98ba0be124c6926253d202e2",
+      "wasm": "9cd5a235b1f6056c90836df63371d25a4ca2b8011f7f64f69181742b90a0b2a4"
     }
   }
 }

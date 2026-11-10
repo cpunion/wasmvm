@@ -41,16 +41,20 @@ func (c *Codec) byteValues(n uint64, depth uint32) error {
 	return nil
 }
 
-func (c *Codec) loadBytes(at, n uint64, depth uint32) (Value, error) {
+func (c *Codec) prepareReadBytes(at, n uint64, depth uint32) error {
 	if err := c.byteValues(n, depth); err != nil {
-		return Value{}, err
+		return err
 	}
 	if err := c.Transfer.rangeCheck(at, n, 1); err != nil {
-		return Value{}, err
+		return err
 	}
-	// Preserve the logical scratch/output budget even when StringMemory avoids
-	// allocating the scratch slice. Limits do not depend on the memory adapter.
-	if err := c.Transfer.charge(2 * n); err != nil {
+	// Logical scratch/output limits are independent of the memory adapter or
+	// whether the destination was allocated by the caller.
+	return c.Transfer.charge(2 * n)
+}
+
+func (c *Codec) loadBytes(at, n uint64, depth uint32) (Value, error) {
+	if err := c.prepareReadBytes(at, n, depth); err != nil {
 		return Value{}, err
 	}
 	if memory, ok := c.Transfer.Memory.(StringMemory); ok {

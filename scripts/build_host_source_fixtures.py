@@ -86,11 +86,52 @@ owned=owned.replace(' (core module $code\n', ' (core module $code\n (import "env
 owned=owned.replace('i32.const 64 i32.load))','i32.const 64 i32.load call $drop-resource i32.const 42))',1)
 fixtures['host-source-future-owned']=owned
 
+for wide in [False, True]:
+ addr='i64' if wide else 'i32'
+ memory='i64 1' if wide else '1'
+ name='host-result-bytes'+('-memory64' if wide else '')
+ fixtures[name]=f'''(component
+ (type $t (stream u8)) (export "endpoint-type" (type $t))
+ (core module $memory (memory (export "memory") {memory}))
+ (core instance $memory (instantiate $memory))
+ (alias core export $memory "memory" (core memory $mem))
+ (core func $new (canon stream.new $t))
+ (core func $return (canon task.return (result $t) (memory $mem)))
+ (core func $write (canon stream.write $t (memory $mem)))
+ (core func $drop (canon stream.drop-writable $t))
+ (core instance $env (export "memory" (memory $mem)) (export "new" (func $new))
+  (export "return" (func $return)) (export "write" (func $write)) (export "drop" (func $drop)))
+ (core module $code
+  (import "env" "memory" (memory {memory}))
+  (import "env" "new" (func $new (result i64)))
+  (import "env" "return" (func $return (param i32)))
+  (import "env" "write" (func $write (param i32 {addr} {addr}) (result {addr})))
+  (import "env" "drop" (func $drop (param i32)))
+  (data ({addr}.const 32) "\\80\\ff")
+  (func (export "run") (local $pair i64) (local $w i32) (local $status {addr})
+   call $new local.tee $pair i64.const 32 i64.shr_u i32.wrap_i64 local.set $w
+   local.get $pair i32.wrap_i64 call $return
+   local.get $w {addr}.const 32 {addr}.const 1 call $write local.tee $status {addr}.const 15 {addr}.and {addr}.const 1 {addr}.eq
+   if local.get $w call $drop return end
+   local.get $status {addr}.const 16 {addr}.ne if unreachable end
+   local.get $w {addr}.const 33 {addr}.const 1 call $write local.tee $status {addr}.const 16 {addr}.ne
+   if local.get $status {addr}.const 15 {addr}.and {addr}.const 1 {addr}.ne if unreachable end end
+   local.get $w call $drop))
+ (core instance $code (instantiate $code (with "env" (instance $env))))
+ (func (export "run") async (result $t) (canon lift (core func $code "run") (memory $mem) async)))'''
+
+
 pins={}
+rejections={}
 for name,text in fixtures.items():
  path=OUT/(name+'.wat');path.write_text(text+'\n')
  subprocess.run(['wasm-tools','parse',str(path),'-o',str(path.with_suffix('.wasm'))],check=True)
- subprocess.run(['wasm-tools','validate','--features','all',str(path.with_suffix('.wasm'))],check=True)
+ result=subprocess.run(['wasm-tools','validate','--features','all',str(path.with_suffix('.wasm'))],capture_output=True,text=True)
+ if name.endswith('-memory64'):
+  assert result.returncode != 0 and 'type mismatch' in result.stderr,result.stderr
+  rejections[name]=result.stderr.strip()
+ else:
+  assert result.returncode == 0,result.stderr
  pins[name]={ext:hashlib.sha256((OUT/(name+'.'+ext)).read_bytes()).hexdigest() for ext in ['wat','wasm']}
-(OUT/'host-sources.json').write_text(json.dumps({'componentModelCommit':'d095e2f60ddae1f9a1e9b1e2fb547ec1114da677','producer':'wasm-tools 1.258.0','generatorSHA256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'sha256':pins},indent=2)+'\n')
-print('Built',len(pins),'producer-validated host-source consumers')
+(OUT/'host-sources.json').write_text(json.dumps({'componentModelCommit':'d095e2f60ddae1f9a1e9b1e2fb547ec1114da677','producer':'wasm-tools 1.258.0','generatorSHA256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'producerRejections':rejections,'sha256':pins},indent=2)+'\n')
+print('Built',len(pins),'host-source fixtures; producer rejections:',len(rejections))
