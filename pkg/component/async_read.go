@@ -27,11 +27,32 @@ func (in *Instance) readable(ref *Resource) (*asyncEnd, error) {
 // driving the existing component tasks in the same Store lease. Futures require
 // limit=1; unit endpoints return Count without allocating Values.
 func (in *Instance) ReadAsync(ctx context.Context, ref *Resource, limit uint32, options CallOptions) (result ReadResult, err error) {
+	return in.readAsyncCall(ctx, ref, limit, options, nil)
+}
+
+// ByteDestination supplies storage for a ReadAsyncInto batch after its actual
+// size is known. Repeated calls request the cumulative size and must preserve
+// the already written prefix. The callback runs under the Store lease and must
+// not reenter the VM. It and its storage are not retained after the read returns.
+type ByteDestination func(uint32) ([]byte, error)
+
+// ReadAsyncInto reads a stream<u8> batch into destination's caller-owned buffer.
+// Count and Closed describe the result; Bytes and Values are empty. No buffer is
+// requested for an empty batch. On failure previously supplied storage may have
+// changed. Logical copy limits still apply.
+func (in *Instance) ReadAsyncInto(ctx context.Context, ref *Resource, limit uint32, destination ByteDestination, options CallOptions) (ReadResult, error) {
+	if destination == nil {
+		return ReadResult{}, vm.ErrType
+	}
+	return in.readAsyncCall(ctx, ref, limit, options, destination)
+}
+
+func (in *Instance) readAsyncCall(ctx context.Context, ref *Resource, limit uint32, options CallOptions, into ByteDestination) (result ReadResult, err error) {
 	var buffer *guestBuffer
 	_, err = in.store.WithCallerCleanup(ctx, options, func(c *vm.Caller) (err error) {
 		complete := false
 		defer in.finishTasks(c, &err, &complete)
-		result, buffer, err = in.readAsync(c, ref, limit, c.Context())
+		result, buffer, err = in.readAsync(c, ref, limit, c.Context(), into)
 		complete = err == nil
 		return err
 	}, func(c *vm.Caller) error {
@@ -52,6 +73,20 @@ func (c *Caller) ReadAsync(ref *Resource, limit uint32) (ReadResult, error) {
 // ReadAsyncContext adds a cancellable operation context without extending the
 // callback lifetime. A nil context uses the callback context.
 func (c *Caller) ReadAsyncContext(ctx context.Context, ref *Resource, limit uint32) (ReadResult, error) {
+	return c.readAsyncContext(ctx, ref, limit, nil)
+}
+
+// ReadAsyncInto uses the callback's Store lease to read stream<u8> into storage
+// supplied by destination. A nil context uses the callback context. It shares
+// the size, ownership and cancellation contracts of Instance.ReadAsyncInto.
+func (c *Caller) ReadAsyncInto(ctx context.Context, ref *Resource, limit uint32, destination ByteDestination) (ReadResult, error) {
+	if destination == nil {
+		return ReadResult{}, vm.ErrType
+	}
+	return c.readAsyncContext(ctx, ref, limit, destination)
+}
+
+func (c *Caller) readAsyncContext(ctx context.Context, ref *Resource, limit uint32, into ByteDestination) (ReadResult, error) {
 	if err := c.enter(); err != nil {
 		return ReadResult{}, err
 	}
@@ -72,7 +107,13 @@ func (c *Caller) ReadAsyncContext(ctx context.Context, ref *Resource, limit uint
 		}
 		ctx = joint
 	}
-	result, b, err := c.instance.readAsync(c.core, ref, limit, ctx)
+	result, b, err := c.instance.readAsync(c.core, ref, limit, ctx, into)
+	// AfterFunc propagates cancellation asynchronously. A destination can
+	// cancel its operation while a batch is being copied; never report that
+	// batch as successful merely because the joined context has not fired yet.
+	if err == nil && operationContext != nil {
+		err = operationContext.Err()
+	}
 	if err == nil {
 		err = ctx.Err()
 	}
@@ -93,10 +134,13 @@ func (c *Caller) ReadAsyncContext(ctx context.Context, ref *Resource, limit uint
 	}
 	return result, nil
 }
-func (in *Instance) readAsync(c *vm.Caller, ref *Resource, limit uint32, ctx context.Context) (result ReadResult, b *guestBuffer, err error) {
+func (in *Instance) readAsync(c *vm.Caller, ref *Resource, limit uint32, ctx context.Context, into ByteDestination) (result ReadResult, b *guestBuffer, err error) {
 	e, err := in.readable(ref)
 	if err != nil {
 		return result, nil, err
+	}
+	if into != nil && (e.typ.Kind != KindStream || e.typ.Element == nil || e.typ.Element.Kind != KindU8) {
+		return result, nil, vm.ErrType
 	}
 	if e.state != endIdle || limit >= 1<<28 || e.typ.Kind == KindFuture && limit != 1 {
 		return result, nil, wasm.ErrTrap
@@ -105,7 +149,12 @@ func (in *Instance) readAsync(c *vm.Caller, ref *Resource, limit uint32, ctx con
 	if err != nil {
 		return result, nil, err
 	}
-	b = &guestBuffer{in: in, scope: e.scope, typ: e.typ.Element, batch: batch, length: limit}
+	b = in.hostReadBuffer(e, batch, limit, nil, into)
+	defer func() {
+		if b.hooks != nil {
+			b.hooks.into = nil
+		}
+	}()
 	complete := false
 	e.waitable.syncWaiter = true
 	defer func() {

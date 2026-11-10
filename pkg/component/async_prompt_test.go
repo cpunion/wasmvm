@@ -22,6 +22,9 @@ func TestPromptSourceAndWorkRejectBlockingReentry(t *testing.T) {
 				if _, err := c.ReadAsync(nil, 1); !errors.Is(err, vm.ErrType) {
 					t.Fatal("prompt blocking read", err)
 				}
+				if _, err := c.ReadAsyncInto(nil, nil, 1, func(uint32) ([]byte, error) { t.Fatal("prompt destination invoked"); return nil, nil }); !errors.Is(err, vm.ErrType) {
+					t.Fatal("prompt destination read", err)
+				}
 			}
 			_, err := in.WithCaller(nil, CallOptions{}, func(c *Caller) error {
 				value, err := c.NewSource(typ, AsyncSource{Prompt: true, Read: func(c *Caller, _ uint32) (*ReadCompletion, error) {

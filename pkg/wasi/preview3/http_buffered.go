@@ -78,28 +78,47 @@ func (b *httpBody) collect(c *component.Caller, trailer http.Header, expected *u
 		}
 		stream = value.Resource
 	}
+	var reserved uint32
+	destination := func(count uint32) ([]byte, error) {
+		remaining := limit - uint64(len(data))
+		if uint64(count) > remaining {
+			return nil, wasm.ErrLimit
+		}
+		size := uint64(len(data)) + uint64(count)
+		if expected != nil && size > *expected {
+			return nil, httpSizeError(b.sizeFailure, size)
+		}
+		if size > uint64(cap(data)) {
+			capacity := min(max(size, 2*uint64(cap(data))), limit)
+			grown := make([]byte, len(data), int(capacity))
+			// A single read may accept several guest writes before its event
+			// is observed. Preserve the current batch as well as prior reads.
+			copy(grown[:len(data)+int(reserved)], data[:len(data)+int(reserved)])
+			data = grown
+		}
+		reserved = count
+		return data[len(data):int(size)], nil
+	}
 	for stream != nil {
-		// One extra byte detects an oversized body even when the accepted
-		// prefix exactly reaches the limit. The extra byte is never appended
-		// to the materialized response.
+		// The extra byte detects overflow without materializing an invalid
+		// suffix. Empty/EOF batches never invoke the destination callback.
 		remaining := limit - uint64(len(data))
 		next := min(remaining+1, uint64(b.owner.network.io.config.MaxWriteBytes), uint64(b.owner.config.BodyBufferBytes))
-		r, failed := c.ReadAsyncContext(b.ctx, stream, uint32(next))
+		reserved = 0
+		r, failed := c.ReadAsyncInto(b.ctx, stream, uint32(next), destination)
 		if failed != nil {
 			return nil, failed
 		}
-		if uint64(len(r.Bytes)) > remaining {
-			return nil, wasm.ErrLimit
-		}
-		size := uint64(len(data)) + uint64(len(r.Bytes))
-		if expected != nil && (size > *expected || r.Closed && size != *expected) {
+		size := uint64(len(data)) + uint64(r.Count)
+		if expected != nil && r.Closed && size != *expected {
 			return nil, httpSizeError(b.sizeFailure, size)
 		}
-		data = append(data, r.Bytes...)
+		data = data[:int(size)]
 		if r.Closed {
 			break
 		}
 	}
+
 	if expected != nil && uint64(len(data)) != *expected {
 		return nil, httpSizeError(b.sizeFailure, uint64(len(data)))
 	}
