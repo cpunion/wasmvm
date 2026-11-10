@@ -26,7 +26,7 @@ func equalityChain(size int, cycle bool) *model.Type {
 }
 
 func TestEqualityResolvedGraphBudgetAndCycles(t *testing.T) {
-	for _, size := range []int{1, 16, 17, 64, 129} {
+	for _, size := range []int{1, 16, 17, 31, 32, 33, 64, 129} {
 		for _, cycle := range []bool{false, true} {
 			t.Run(fmt.Sprintf("nodes-%d/cycle-%v", size, cycle), func(t *testing.T) {
 				a, b := equalityChain(size, cycle), equalityChain(size, cycle)

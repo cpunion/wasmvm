@@ -66,7 +66,7 @@ func (c *equality) typ(a, b *Type) (bool, error) {
 
 type pair struct{ a, b *model.Type }
 
-const inlineEqualityPairs = 16
+const inlineEqualityPairs = 32
 
 type equality struct {
 	remaining uint32
