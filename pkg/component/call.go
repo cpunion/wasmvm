@@ -190,8 +190,30 @@ func (m memory) WriteString(at uint64, data string) error {
 	return m.caller.WriteExternalMemoryString(m.extern, at, data)
 }
 
+// Each state belongs to one call; grouping its objects does not reuse budgets
+// or resource ownership across callers.
+type codecState struct {
+	codec    canonical.Codec
+	transfer canonical.Transfer
+}
+type resourceCodecState struct {
+	codecState
+	resources resourceCodec
+}
+
 func (in *Instance) codec(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) *canonical.Codec {
-	transfer := &canonical.Transfer{Context: caller.Context(), MaxBytes: in.config.MaxBytes}
+	var codec *canonical.Codec
+	var transfer *canonical.Transfer
+	if n != nil && (len(n.resources) != 0 || n.handles != nil) {
+		state := &resourceCodecState{}
+		codec, transfer = &state.codec, &state.transfer
+		state.resources = resourceCodec{in: in, n: n, core: caller}
+		codec.Resources = &state.resources
+	} else {
+		state := &codecState{}
+		codec, transfer = &state.codec, &state.transfer
+	}
+	*transfer = canonical.Transfer{Context: caller.Context(), MaxBytes: in.config.MaxBytes}
 	if plan != nil {
 		transfer.Memory64, transfer.Encoding = plan.Memory64, plan.Encoding
 		if plan.Memory != nil {
@@ -231,10 +253,7 @@ func (in *Instance) codec(caller *vm.Caller, n *namespace, plan *validate.Canoni
 		}
 		layouts = n.lowerLayouts[index]
 	}
-	codec := &canonical.Codec{Transfer: transfer, Layouts: layouts, MaxValues: in.config.MaxValues}
-	if n != nil && (len(n.resources) != 0 || n.handles != nil) {
-		codec.Resources = &resourceCodec{in: in, n: n, core: caller}
-	}
+	codec.Transfer, codec.Layouts, codec.MaxValues = transfer, layouts, in.config.MaxValues
 	return codec
 }
 
