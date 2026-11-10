@@ -130,9 +130,28 @@ of the general native guest-call ABI.
 
 Indirect calls may expand up to four eligible same-module leaves per structural
 signature. Native code checks the current table's unsigned index and compares
-the live reference with the instance's immutable function identity. A miss uses
-the original checked call, preserving bounds/null/type traps, imported and
-cross-instance calls. This is guarded expansion, not a static-table assumption.
+the live reference with the instance's immutable function identity. A miss enters
+the general linked-call path before the shared checked dispatcher. Bounds, null
+and type traps retain their original checked behavior.
+
+Both native tiers link ordinary same-instance `call_indirect` and `call_ref`
+through compiler-generated dispatch rows. Each emitted function shares one
+32-byte-per-definition table across its indirect call sites. Rows contain slot
+counts, module function indices, validated structural type identities and
+relocated branches to native bodies. A live target lookup checks its unsigned
+table index, Store identity range, actual instance identity and exact structural
+type before using a row. A different identity allocation layout retains shared
+dispatch. Valid structural subtypes, imports, cross-instance targets and tail
+calls also retain that path.
+
+The linked path shares direct-call frame setup, return copies and continuation
+metadata. Dynamic frame zeroing polls cancellation for every slot. Native frame
+adoption validates the selected same-instance callee and its function subtype
+before publishing the transferred stack. Logical slot/depth limits and exact
+metered fuel remain enforced. `Payload[0]` temporarily holds the trusted dispatch
+row during frame setup, and every exit publishes its normal instruction payload.
+The existing module code budget includes dispatch data and linked bodies.
+
 Entries using indirect expansion, direct globals or table/reference operations
 use `Payload[2]`
 for an execution-owned native word array: function handles in module order,
