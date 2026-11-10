@@ -106,7 +106,7 @@ func TestRegisterPlanDeferredPollsAndTransitionsKeepEveryWord(t *testing.T) {
 			e.transitionRegisters(old)
 			e.leave(nativeabi.Return, 0, 33)
 			e.emitPollExits()
-			e.emitCallExits()
+			e.emitCallExits(Config{})
 			e.emitTrapExits()
 			a.mark(e.exit)
 			body, err := a.finish()

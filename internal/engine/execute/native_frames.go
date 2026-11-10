@@ -26,8 +26,8 @@ func (e *Execution) runBackend(backend Backend, fn *state.Function, base int, pc
 }
 
 // adoptNativeFrames validates the whole transfer before changing the shared
-// stack. Native execution may only coalesce ordinary same-instance direct calls;
-// imported, indirect and tail calls remain explicit runtime boundaries. The
+// stack. Native execution coalesces ordinary same-instance direct, indirect and reference
+// calls; imports, cross-instance targets and tail calls retain runtime boundaries. The
 // existing root destination belongs to its earlier caller and must survive.
 func (e *Execution) adoptNativeFrames(batch *state.NativeFrames) error {
 	if len(e.frames) == 0 {
@@ -67,16 +67,35 @@ func (e *Execution) adoptNativeFrames(batch *state.NativeFrames) error {
 			return wasm.ErrInvalid
 		}
 		call := code.Code[f.CallPC]
-		if call.Op != 0x10 || uint64(call.Source) >= uint64(len(code.Sources)) {
+		if uint64(call.Source) >= uint64(len(code.Sources)) {
 			return wasm.ErrInvalid
 		}
-		index := code.Sources[call.Source].Wasm.A
+		source := code.Sources[call.Source].Wasm
 		instance := f.Function.Instance
-		if uint64(index) >= uint64(len(instance.Functions)) {
+		callee := frames[i+1].Function
+		if callee == nil || callee.Instance != instance {
 			return wasm.ErrInvalid
 		}
-		callee, ok := e.store.Function(instance.Functions[index])
-		if !ok || callee != frames[i+1].Function || uint64(call.Count) != uint64(len(callee.Signature.Params)) ||
+		count := call.Count
+		switch call.Op {
+		case 0x10:
+			if uint64(source.A) >= uint64(len(instance.Functions)) {
+				return wasm.ErrInvalid
+			}
+			target, ok := e.store.Function(instance.Functions[source.A])
+			if !ok || target != callee {
+				return wasm.ErrInvalid
+			}
+		case 0x11, 0x14:
+			if count == 0 || uint64(source.A) >= uint64(len(instance.Types)) ||
+				!e.store.FunctionSubtype(callee.TypeID, instance.Types[source.A]) {
+				return wasm.ErrInvalid
+			}
+			count--
+		default:
+			return wasm.ErrInvalid
+		}
+		if uint64(count) != uint64(len(callee.Signature.Params)) ||
 			uint64(call.Extra)+uint64(call.Count)+uint64(len(callee.Signature.Results)) > uint64(len(code.Args)) {
 			return wasm.ErrInvalid
 		}

@@ -99,14 +99,19 @@ func (e *functionEmitter) callPlan(label int, indices []slots.Slot) {
 }
 
 func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
-	if callee == nil {
-		return false
-	}
 	in := e.f.Code[pc]
-	if int(in.Count) != len(callee.Signature.Params) {
+	indirect := in.Op == 0x11 || in.Op == 0x14
+	count := in.Count
+	if indirect {
+		count--
+	} else if callee == nil || int(count) != len(callee.Signature.Params) {
 		return false
 	}
-	end := uint64(in.Extra) + uint64(in.Count) + uint64(len(callee.Signature.Results))
+	resultsCount := len(e.f.Sources[in.Source].Outputs)
+	if callee != nil {
+		resultsCount = len(callee.Signature.Results)
+	}
+	end := uint64(in.Extra) + uint64(in.Count) + uint64(resultsCount)
 	if end > uint64(len(e.f.Args)) {
 		return false
 	}
@@ -125,7 +130,15 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	e.callCompare(0, 1)
 	e.branch(fallback, "hs")
 	e.callLoad(0, e.callContext(), uint32(nativeabi.UsedOffset))
-	e.callConst(1, uint64(len(e.f.Slots)+len(callee.Slots))*16)
+	if indirect {
+		e.callLoad(1, e.callContext(), uint32(nativeabi.PayloadOffset))
+		e.callMemory(1, e.callReg(1), 0, false, true)
+		e.callConst(7, uint64(len(e.f.Slots)))
+		e.callAdd(1, 1, 7)
+		e.callShift(1, 4)
+	} else {
+		e.callConst(1, uint64(len(e.f.Slots)+len(callee.Slots))*16)
+	}
 	e.callAdd(0, 0, 1)
 	e.callLoad(1, e.callReg(2), nativeabi.CallSlotsOffset)
 	e.callCompare(1, 0)
@@ -133,14 +146,22 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	e.callLoad(1, e.callContext(), uint32(nativeabi.CapacityOffset))
 	e.callCompare(1, 0)
 	e.branch(fallback, "lo")
-	e.spillRegisters()
+	if !indirect {
+		e.spillRegisters()
+	}
 	e.callLoad(0, e.callContext(), uint32(nativeabi.UsedOffset))
 	e.callConst(1, uint64(len(e.f.Slots))*16)
 	e.callAdd(0, 0, 1)
 	e.callLoad(4, e.callContext(), uint32(nativeabi.ArenaOffset))
 	e.callAdd(4, 4, 0)
-	e.callZero(uint32(len(callee.Slots)), cancelled)
-	args := e.f.Args[in.Extra : in.Extra+in.Count]
+	if indirect {
+		e.callLoad(5, e.callContext(), uint32(nativeabi.PayloadOffset))
+		e.callMemory(5, e.callReg(5), 0, false, true)
+		e.callZeroDynamic(cancelled)
+	} else {
+		e.callZero(uint32(len(callee.Slots)), cancelled)
+	}
+	args := e.f.Args[in.Extra : in.Extra+count]
 	if len(args) <= 8 {
 		for i, slot := range args {
 			e.callLoad(0, e.callFrame(), uint32(slot)*16)
@@ -151,7 +172,7 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	} else {
 		e.callAddress(inputs, 6)
 		e.callAddress(parameters, 7)
-		e.callCopy(in.Count, cancelled)
+		e.callCopy(count, cancelled)
 	}
 	e.callMeta(false)
 	e.callLoad(0, e.callContext(), uint32(nativeabi.FunctionOffset))
@@ -174,13 +195,21 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	e.callLoad(0, e.callContext(), uint32(nativeabi.DepthOffset))
 	e.callAdvance(0, 1)
 	e.callStore(0, e.callContext(), uint32(nativeabi.DepthOffset))
-	target := e.f.Sources[in.Source].Wasm.A
-	e.contextConst(nativeabi.FunctionOffset, uint64(target))
 	e.contextConst(nativeabi.ContinuationOffset, 0)
-	jump := a.label()
-	a.mark(jump)
-	a.branch(e.start, false, 0)
-	e.linkedRelocations = append(e.linkedRelocations, linkedRelocation{jump, target})
+	if indirect {
+		e.callLoad(1, e.callContext(), uint32(nativeabi.PayloadOffset))
+		e.callMemory(0, e.callReg(1), 4, false, true)
+		e.callStore(0, e.callContext(), uint32(nativeabi.FunctionOffset))
+		e.callAdvance(1, 16)
+		e.callJump(1)
+	} else {
+		target := e.f.Sources[in.Source].Wasm.A
+		e.contextConst(nativeabi.FunctionOffset, uint64(target))
+		jump := a.label()
+		a.mark(jump)
+		a.branch(e.start, false, 0)
+		e.linkedRelocations = append(e.linkedRelocations, linkedRelocation{jump, target})
+	}
 	a.mark(resume)
 	a.branch(e.start, false, 0)
 	e.callPlan(results, e.f.Args[in.Extra+in.Count:uint32(end)])
@@ -199,7 +228,11 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	e.callRawLeave(nativeabi.Call, uint64(pc), uint64(pc+1))
 	a.mark(fallback)
 	e.contextConst(nativeabi.SourceOffset, e.f.Sources[in.Source].Wasm.Offset)
-	e.leave(nativeabi.Call, uint64(pc), uint64(pc+1))
+	if indirect {
+		e.callRawLeave(nativeabi.Call, uint64(pc), uint64(pc+1))
+	} else {
+		e.leave(nativeabi.Call, uint64(pc), uint64(pc+1))
+	}
 	return true
 }
 

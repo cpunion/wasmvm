@@ -82,6 +82,8 @@ type functionEmitter struct {
 	allocationBatch                                              uint32
 	start                                                        int
 	linkedRelocations                                            []linkedRelocation
+	linkedDispatch                                               int
+	hasLinkedDispatch                                            bool
 }
 
 type memoryFallback struct {
@@ -569,11 +571,14 @@ func (e *functionEmitter) trapExit(code wasm.TrapCode, source uint64) int {
 	return label
 }
 
-func (e *functionEmitter) emitCallExits() {
+func (e *functionEmitter) emitCallExits(config Config) {
 	baseline := e.currentRegisterPlan()
 	for _, call := range e.callExits {
 		e.useRegisterPlan(call.registers)
 		e.a.mark(call.label)
+		if e.linkedIndirect(call.pc, config) {
+			continue
+		}
 		e.contextConst(nativeabi.SourceOffset, call.source)
 		e.leave(nativeabi.Call, uint64(call.pc), uint64(call.pc+1))
 	}

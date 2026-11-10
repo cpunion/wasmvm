@@ -20,9 +20,13 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
-func callSlots(t *testing.T, d *module.Module) *slots.Module {
+func callSlots(t *testing.T, d *module.Module, features ...wasm.Features) *slots.Module {
 	t.Helper()
-	v, err := validate.Check(d, validate.DefaultLimits())
+	feature := wasm.Features(0)
+	if len(features) != 0 {
+		feature = features[0]
+	}
+	v, err := validate.CheckWithFeatures(d, validate.DefaultLimits(), feature)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,108 +80,128 @@ func TestGeneratedCallsPreserveLargeMixedTuplesAndHostRoots(t *testing.T) {
 		results[i], results[len(results)-1-i] = results[len(results)-1-i], results[i]
 	}
 	args := []value.Value{{Lo: 7}, {Lo: 0xfedcba9876543210}, {Lo: 0x7f812345}, {Lo: 0x8000000000000000}, {Lo: 7, Hi: 19}, {Lo: 99}, {Lo: 11}, {Lo: 17}, {Lo: 0xff812345}, {Lo: 0x7ff123456789abcd}, {Lo: 37, Hi: 41}, {Lo: 101}}
-	for _, hostBoundary := range []bool{false, true} {
-		d := &module.Module{Types: []module.FuncType{{Params: types, Results: results}}}
-		if hostBoundary {
-			d.Imports = []module.Import{{Kind: 0}}
-		}
-		for f := 0; f < 3; f++ {
-			var body module.Expr
-			for i := range types {
-				index := i
-				if f == 2 && !hostBoundary {
-					index = len(types) - 1 - i
-				}
-				body = append(body, module.Instr{Op: 0x20, A: uint32(index)})
-			}
-			if f < 2 {
-				target := uint32(f + 1)
-				if hostBoundary {
-					target++
-				}
-				body = append(body, module.Instr{Op: 0x10, A: target})
-			} else if hostBoundary {
-				body = append(body, module.Instr{Op: 0x10})
-			}
-			body = append(body, module.Instr{Op: 0xb})
-			d.Functions = append(d.Functions, module.Function{Body: body})
-		}
-		m := callSlots(t, d)
-		for _, metered := range []bool{false, true} {
-			s := state.NewNative(state.DefaultLimits())
-			t.Cleanup(s.Close)
-			var resolve state.Resolver
+	for _, callKind := range []uint32{0x10, 0x11, 0x14} {
+		for _, hostBoundary := range []bool{false, true} {
+			d := &module.Module{Types: []module.FuncType{{Params: types, Results: results}}}
 			if hostBoundary {
-				host, err := s.NewHost(d.Types[0], "tuple")
+				d.Imports = []module.Import{{Kind: 0}}
+			}
+			for f := 0; f < 3; f++ {
+				var body module.Expr
+				for i := range types {
+					index := i
+					if f == 2 && !hostBoundary {
+						index = len(types) - 1 - i
+					}
+					body = append(body, module.Instr{Op: 0x20, A: uint32(index)})
+				}
+				if f < 2 {
+					target := uint32(f + 1)
+					if hostBoundary {
+						target++
+					}
+					switch callKind {
+					case 0x10:
+						body = append(body, module.Instr{Op: callKind, A: target})
+					case 0x11:
+						body = append(body, module.Instr{Op: 0x41, Bits: uint64(target)}, module.Instr{Op: callKind})
+					case 0x14:
+						body = append(body, module.Instr{Op: 0xd2, A: target}, module.Instr{Op: callKind})
+					}
+				} else if hostBoundary {
+					body = append(body, module.Instr{Op: 0x10})
+				}
+				body = append(body, module.Instr{Op: 0xb})
+				d.Functions = append(d.Functions, module.Function{Body: body})
+			}
+			if callKind != 0x10 {
+				d.Tables = []module.TableType{{Element: wasm.FuncRef, Limits: module.Limits{Min: uint64(len(d.Functions) + len(d.Imports))}}}
+				elements := module.Element{Type: wasm.FuncRef, Offset: module.Expr{{Op: 0x41}, {Op: 0xb}}}
+				for i := 0; i < len(d.Functions)+len(d.Imports); i++ {
+					elements.Functions = append(elements.Functions, uint32(i))
+				}
+				d.Elements = []module.Element{elements}
+			}
+			m := callSlots(t, d, wasm.Core3Features)
+			for _, metered := range []bool{false, true} {
+				s := state.NewNative(state.DefaultLimits())
+				t.Cleanup(s.Close)
+				var resolve state.Resolver
+				if hostBoundary {
+					host, err := s.NewHost(d.Types[0], "tuple")
+					if err != nil {
+						t.Fatal(err)
+					}
+					resolve = func(string, string) (state.Extern, bool) { return host, true }
+				}
+				in, err := s.Allocate(m, resolve)
 				if err != nil {
 					t.Fatal(err)
 				}
-				resolve = func(string, string) (state.Extern, bool) { return host, true }
-			}
-			in, err := s.Allocate(m, resolve)
-			if err != nil {
-				t.Fatal(err)
-			}
-			e, n := callExecution(t, s, m, in, metered, execute.Limits{MaxFrames: 128, MaxSlots: 2048})
-			index := 0
-			if hostBoundary {
-				index++
-			}
-			for repeat := 0; repeat < 2; repeat++ {
-				args[0].Lo = uint64(7 + repeat)
-				want := append([]value.Value(nil), args...)
-				for i := 0; i < len(want)/2; i++ {
-					want[i], want[len(want)-1-i] = want[len(want)-1-i], want[i]
+				if callKind != 0x10 {
+					copy(in.Tables[0].Values, in.Functions)
 				}
-				if err := e.Start(in.Functions[index], args); err != nil {
-					t.Fatal(err)
-				}
-				status := e.Run()
+				e, n := callExecution(t, s, m, in, metered, execute.Limits{MaxFrames: 128, MaxSlots: 2048})
+				index := 0
 				if hostBoundary {
-					if status != execute.HostRequest || !reflect.DeepEqual(e.Host().Args, args) || e.Footprint().MaxFrames != 3 {
-						t.Fatal("lost native callers at host boundary", status, e.Err(), e.Footprint())
+					index++
+				}
+				for repeat := 0; repeat < 2; repeat++ {
+					args[0].Lo = uint64(7 + repeat)
+					want := append([]value.Value(nil), args...)
+					for i := 0; i < len(want)/2; i++ {
+						want[i], want[len(want)-1-i] = want[len(want)-1-i], want[i]
 					}
-					roots := 0
-					e.RetainedValues(func(typ wasm.ValueType, v value.Value) {
-						if typ == wasm.ExternRef && v.Lo == 99 {
-							roots++
+					if err := e.Start(in.Functions[index], args); err != nil {
+						t.Fatal(err)
+					}
+					status := e.Run()
+					if hostBoundary {
+						if status != execute.HostRequest || !reflect.DeepEqual(e.Host().Args, args) || e.Footprint().MaxFrames != 3 {
+							t.Fatal("lost native callers at host boundary", status, e.Err(), e.Footprint())
 						}
-					})
-					if roots < 4 {
-						t.Fatal("missing native caller roots", roots)
+						roots := 0
+						e.RetainedValues(func(typ wasm.ValueType, v value.Value) {
+							if typ == wasm.ExternRef && v.Lo == 99 {
+								roots++
+							}
+						})
+						if roots < 4 {
+							t.Fatal("missing native caller roots", roots)
+						}
+						if err := e.ResumeHost(want, nil); err != nil {
+							t.Fatal(err)
+						}
+						status = e.Run()
 					}
-					if err := e.ResumeHost(want, nil); err != nil {
+					if status != execute.Done || !reflect.DeepEqual(e.Results(), want) {
+						t.Fatal("native tuple return", hostBoundary, metered, status, e.Err(), e.Results(), want)
+					}
+					if len(n.callWords) == 0 || n.callWords[nativeabi.CallHeaderBytes/8+nativeabi.CallResumeOffset/8] == 0 {
+						t.Fatal("no generated native push executed")
+					}
+					if n.callWords[0] != 0 {
+						t.Fatal("retained native parents")
+					}
+					oracle := execute.New(s, nil, execute.Config{Limits: execute.Limits{MaxFrames: 128, MaxSlots: 2048}, Metered: metered, Fuel: 1000})
+					if err := oracle.Start(in.Functions[index], args); err != nil {
 						t.Fatal(err)
 					}
-					status = e.Run()
-				}
-				if status != execute.Done || !reflect.DeepEqual(e.Results(), want) {
-					t.Fatal("native tuple return", hostBoundary, metered, status, e.Err(), e.Results(), want)
-				}
-				if len(n.callWords) == 0 || n.callWords[nativeabi.CallHeaderBytes/8+nativeabi.CallResumeOffset/8] == 0 {
-					t.Fatal("no generated native push executed")
-				}
-				if n.callWords[0] != 0 {
-					t.Fatal("retained native parents")
-				}
-				oracle := execute.New(s, nil, execute.Config{Limits: execute.Limits{MaxFrames: 128, MaxSlots: 2048}, Metered: metered, Fuel: 1000})
-				if err := oracle.Start(in.Functions[index], args); err != nil {
-					t.Fatal(err)
-				}
-				oracleStatus := oracle.Run()
-				if hostBoundary {
-					if oracleStatus != execute.HostRequest {
-						t.Fatal(oracleStatus, oracle.Err())
+					oracleStatus := oracle.Run()
+					if hostBoundary {
+						if oracleStatus != execute.HostRequest {
+							t.Fatal(oracleStatus, oracle.Err())
+						}
+						if err := oracle.ResumeHost(want, nil); err != nil {
+							t.Fatal(err)
+						}
+						oracleStatus = oracle.Run()
 					}
-					if err := oracle.ResumeHost(want, nil); err != nil {
-						t.Fatal(err)
+					if oracleStatus != execute.Done || oracle.Fuel() != e.Fuel() || !reflect.DeepEqual(oracle.Results(), e.Results()) {
+						t.Fatal("native calls changed exact fuel", metered, oracleStatus, oracle.Err(), oracle.Fuel(), e.Fuel())
 					}
-					oracleStatus = oracle.Run()
+					oracle.Close()
 				}
-				if oracleStatus != execute.Done || oracle.Fuel() != e.Fuel() || !reflect.DeepEqual(oracle.Results(), e.Results()) {
-					t.Fatal("native calls changed exact fuel", metered, oracleStatus, oracle.Err(), oracle.Fuel(), e.Fuel())
-				}
-				oracle.Close()
 			}
 		}
 	}
