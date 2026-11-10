@@ -289,6 +289,19 @@ throughput processes and72 separate resource processes.35/72 controls resolve;
 all six owned LLGo native controls remain unresolved. These point estimates do
 not establish a controlled ranking.
 
+The latest [project-source optimization](docs/research/performance-component-type-comparison32-2026-11-10.md)
+keeps 32 component type-comparison pairs on the stack, selected after measuring
+actual 2/17/19-node schemas. On M4 Max/macOS with production LLGo `3d92a58`,
+the 17-node kernel observes 1178 -> 169 ns/call and 2239 -> 0 B/call.
+Buffered HTTP with four workers observes native LLGo 3394 -> 4717 req/s
+and 561015 -> 478805 B/request. Same-event Go native observes 15150 req/s,
+Wasmtime 48 observes 58196, and the ordinary Go host control observes 43819.
+Only **8/40 timing controls resolve**, with no source pair resolving both;
+service timing is advisory and concurrent external build load is recorded.
+The earlier [16-pair event](docs/research/performance-component-type-comparison-2026-11-10.md)
+is retained separately. Both reports keep all profiles, resources and separate
+startup/compile/call phases; controlled performance acceptance remains open.
+
 The latest [compiler-source comparison](docs/research/performance-llgo-merged-2026-11-10.md)
 evaluates the full merged LLGo #3012 integration, `3d92a58` -> `717fbe442`,
 on identical wasmvm sources. **Production remains pinned to `3d92a58`.**

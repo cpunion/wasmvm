@@ -7,20 +7,20 @@ import "github.com/cpunion/wasmvm/pkg/wasm"
 // aliases. Nominal identities are local to their compilation pool. Interface
 // width subtyping and binder substitution belong to component linking.
 func Equal(a, b *Type, maxNodes uint32) (bool, error) {
-	c := equality{remaining: maxNodes, visited: map[pair]bool{}}
+	c := equality{remaining: maxNodes}
 	return c.typ(a, b)
 }
 
 // EqualValue compares resolved schemas. A nonnil resources predicate resolves
 // distinct static resource IDs to their instantiated nominal identities.
 func EqualValue(a, b *model.Type, maxNodes uint32, resources func(uint64, uint64) bool) (bool, error) {
-	c := equality{remaining: maxNodes, visited: map[pair]bool{}, resources: resources}
+	c := equality{remaining: maxNodes, resources: resources}
 	return c.value(a, b)
 }
 
 func (p *TypePool) equal(a, b *Type) (bool, error) {
 	budget := p.limits.MaxNodes - p.nodes
-	c := equality{remaining: budget, visited: map[pair]bool{}}
+	c := equality{remaining: budget}
 	ok, err := c.typ(a, b)
 	if charge := p.charge(uint64(budget - c.remaining)); charge != nil {
 		return false, charge
@@ -65,10 +65,45 @@ func (c *equality) typ(a, b *Type) (bool, error) {
 }
 
 type pair struct{ a, b *model.Type }
+
+const inlineEqualityPairs = 32
+
 type equality struct {
 	remaining uint32
+	inline    [inlineEqualityPairs]pair
+	count     uint8
 	visited   map[pair]bool
 	resources func(uint64, uint64) bool
+}
+
+// Small schemas need no hashing or map-key temporaries. The per-comparison
+// table spills once for larger/shared graphs; no nominal result survives a call.
+func (c *equality) seen(k pair) bool {
+	if c.visited != nil {
+		return c.visited[k]
+	}
+	for i := uint8(0); i < c.count; i++ {
+		p := c.inline[i]
+		if p.a == k.a && p.b == k.b {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *equality) remember(k pair) {
+	if c.visited == nil {
+		if c.count < inlineEqualityPairs {
+			c.inline[c.count] = k
+			c.count++
+			return
+		}
+		c.visited = make(map[pair]bool, int(c.count)+1)
+		for _, p := range c.inline {
+			c.visited[p] = true
+		}
+	}
+	c.visited[k] = true
 }
 
 func (c *equality) charge() bool {
@@ -97,13 +132,13 @@ func (c *equality) value(a, b *model.Type) (bool, error) {
 		return false, nil
 	}
 	k := pair{a, b}
-	if c.visited[k] {
+	if c.seen(k) {
 		return true, nil
 	}
 	if !c.charge() {
 		return false, limit("type comparison")
 	}
-	c.visited[k] = true
+	c.remember(k)
 	for i, name := range a.Labels {
 		if !c.charge() {
 			return false, limit("type comparison")
