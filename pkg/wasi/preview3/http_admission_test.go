@@ -13,6 +13,28 @@ import (
 	"github.com/cpunion/wasmvm/pkg/vm"
 )
 
+func TestHTTPReplyAbandonPreservesPublishedFailure(t *testing.T) {
+	reply := &httpReply{done: make(chan struct{})}
+	reply.set(nil, vm.ErrBusy)
+	if err := reply.abandon(); !errors.Is(err, vm.ErrBusy) {
+		t.Fatal(err)
+	}
+	// A later cancellation cannot replace the already committed failure.
+	reply.set(nil, context.Canceled)
+	if err := reply.abandon(); !errors.Is(err, vm.ErrBusy) {
+		t.Fatal(err)
+	}
+
+	unfinished := &httpReply{done: make(chan struct{})}
+	if err := unfinished.abandon(); err != nil {
+		t.Fatal(err)
+	}
+	unfinished.set(nil, vm.ErrBusy)
+	if err := unfinished.abandon(); err != nil {
+		t.Fatal("late failure published after abandonment", err)
+	}
+}
+
 func TestHTTPIncomingBusyStoreDoesNotRetainRequest(t *testing.T) {
 	backends(t, func(t *testing.T, backend string) {
 		w := worldOwnerForTest(t, WorldConfig{})
