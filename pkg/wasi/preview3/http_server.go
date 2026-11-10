@@ -145,6 +145,8 @@ func (p *HTTP) callIncoming(ctx context.Context, in *component.Instance, request
 	path := request.URL.RequestURI()
 	reply := &httpReply{done: make(chan struct{})}
 	callDone := make(chan struct{})
+	// The receiver cancels callCtx after consuming a published failure. Doing
+	// so in the worker would race reply.done and hide the error as cancellation.
 	run := func() {
 		defer close(callDone)
 		defer func() {
@@ -154,7 +156,6 @@ func (p *HTTP) callIncoming(ctx context.Context, in *component.Instance, request
 				if collector != nil {
 					collector.failure = httpErr("internal-error")
 				}
-				cancel()
 			}
 		}()
 		defer p.releaseRequest()
@@ -211,7 +212,6 @@ func (p *HTTP) callIncoming(ctx context.Context, in *component.Instance, request
 		if failed != nil {
 			body.dispose(nil, failed)
 			reply.set(nil, failed)
-			cancel()
 		} else {
 			reply.set(nil, httpErr("HTTP-response-incomplete"))
 		}
