@@ -289,25 +289,23 @@ throughput processes and72 separate resource processes.35/72 controls resolve;
 all six owned LLGo native controls remain unresolved. These point estimates do
 not establish a controlled ranking.
 
-The latest [resource-inspection comparison](docs/research/performance-reference-inspection-atomic-2026-11-10.md)
-removes repeated construction of an immutable expired-capability diagnostic.
-Per expired/ended-borrow inspection, Go drops 128 -> 0 B and 3 -> 0 mallocs;
-LLGo drops 160 -> 0 B (its malloc counter is unavailable). Locks and ownership
-checks remain intact. On M4 Max/macOS with production LLGo `3d92a58`, 16-byte
-HTTP/native/four-worker requests observe Go 1321 -> 1270 mallocs/request and
-LLGo 158609 -> 155893 runtime B/request. For 64-KiB HTTP/native/four-worker
-requests, LLGo observes 4376 -> 4216 req/s; Go 14989 -> 15729; same-event
-Wasmtime 48 observes 51831, ordinary Go/LLGo applications 40701/8409.
-Only **2/40 timing controls resolve**, with 0/16 source pairs resolving both.
-Timings remain advisory; every adverse/unresolved profile, resource cohort and
-separate lifecycle interval is retained. Performance parity remains open.
-The initial [inspection event](docs/research/performance-reference-inspection-2026-11-10.md)
-is retained separately; its CI found an HTTP failure-publication/cancellation
-race, fixed before the final source event. The earlier
-[caller-destination](docs/research/performance-byte-destination-2026-11-10.md),
-[32-pair](docs/research/performance-component-type-comparison32-2026-11-10.md)
-and [16-pair](docs/research/performance-component-type-comparison-2026-11-10.md)
-events remain independently retained.
+The latest [component allocation comparison](docs/research/performance-component-buffer-state-2026-11-10.md)
+coallocates capability headers/state and avoids unused codec/resource state in
+layout queries and known leaf buffers. Go reference creation/move drops from
+2 to 1 malloc (80 B unchanged); LLGo creation observes 112 -> 96 B.
+On M4 Max/macOS, 16-byte HTTP/native/four-worker requests observe Go
+1270 -> 1207 mallocs/request and LLGo 155822 -> 150977 runtime B/request.
+For 64-KiB HTTP/native/four-worker requests, LLGo observes 5105 -> 5266 req/s
+and 409436 -> 397866 B/request; its paired warm-time ratio is
+0.9658 [0.9428,0.9854], with both A/A controls resolved. Same-event Wasmtime 48
+observes 65554 req/s; ordinary Go/LLGo applications 43701/9361.
+Go native observes 16588 -> 16378 req/s in that case, an adverse point estimate
+with unresolved controls. **29/40 controls resolve**, with 11/16 source pairs
+resolving both. Timings remain advisory and performance parity remains open.
+All source/compiler/reference comparisons, resources and separate lifecycle
+phases are retained. Every participant now uses 64 requests/client instead of 4;
+the [earlier inspection event](docs/research/performance-reference-inspection-atomic-2026-11-10.md)
+and other shorter events remain independent.
 
 The latest [compiler-source comparison](docs/research/performance-llgo-merged-2026-11-10.md)
 evaluates the full merged LLGo #3012 integration, `3d92a58` -> `717fbe442`,
