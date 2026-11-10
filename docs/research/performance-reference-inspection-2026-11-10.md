@@ -2,6 +2,8 @@
 
 [Complete machine record](data/performance-reference-inspection-2026-11-10.json).
 
+This is the initial, independently retained source event. [Initial CI](https://github.com/cpunion/wasmvm/actions/runs/42809492665) failed its HTTP busy-Store admission test because internal cancellation could hide an already published failure. The [corrected-source event](performance-reference-inspection-corrected-2026-11-10.md) measures the follow-up fix; these observations are not pooled or replaced.
+
 ## Change and evidence
 
 Normal affine cleanup inspects aliases invalidated by successful moves. `ReferenceInfo` previously formatted the same expired-capability error for each inspection. It now reuses one private immutable diagnostic, created during package initialization. The error message, `errors.Is(wasm.ErrTrap)`, mutexes, resource validity and active borrow-scope checks are unchanged. Live references and invalid nil references keep their existing results. No capability, caller or per-call mutable state is cached.

@@ -289,19 +289,22 @@ throughput processes and72 separate resource processes.35/72 controls resolve;
 all six owned LLGo native controls remain unresolved. These point estimates do
 not establish a controlled ranking.
 
-The latest [resource-inspection comparison](docs/research/performance-reference-inspection-2026-11-10.md)
+The latest [resource-inspection comparison](docs/research/performance-reference-inspection-corrected-2026-11-10.md)
 removes repeated construction of an immutable expired-capability diagnostic.
 Per expired/ended-borrow inspection, Go drops 128 -> 0 B and 3 -> 0 mallocs;
 LLGo drops 160 -> 0 B (its malloc counter is unavailable). Locks and ownership
 checks remain intact. On M4 Max/macOS with production LLGo `3d92a58`, 16-byte
 HTTP/native/four-worker requests observe Go 1321 -> 1270 mallocs/request and
-LLGo 158634 -> 155949 runtime B/request. For 64-KiB HTTP/native/four-worker
-requests, LLGo observes 4458 -> 4792 req/s; Go 15425 -> 16392; same-event
-Wasmtime 48 observes 59092, ordinary Go/LLGo applications 43943/9221.
-Only **11/80 timing controls resolve**, with 1/32 source pairs resolving both.
+LLGo 158658 -> 155916 runtime B/request. For 64-KiB HTTP/native/four-worker
+requests, LLGo observes 4452 -> 4414 req/s; Go 15282 -> 15064; same-event
+Wasmtime 48 observes 58146, ordinary Go/LLGo applications 41441/9365.
+Only **22/80 timing controls resolve**, with 8/32 source pairs resolving both.
 Timings remain advisory; every adverse/unresolved profile, resource cohort and
 separate lifecycle interval is retained. Performance parity remains open.
-The earlier [caller-destination](docs/research/performance-byte-destination-2026-11-10.md),
+The initial [inspection event](docs/research/performance-reference-inspection-2026-11-10.md)
+is retained separately; its CI found an HTTP failure-publication/cancellation
+race, fixed before the final source event. The earlier
+[caller-destination](docs/research/performance-byte-destination-2026-11-10.md),
 [32-pair](docs/research/performance-component-type-comparison32-2026-11-10.md)
 and [16-pair](docs/research/performance-component-type-comparison-2026-11-10.md)
 events remain independently retained.
