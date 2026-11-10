@@ -202,9 +202,26 @@ type resourceCodecState struct {
 }
 
 func (in *Instance) codec(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) *canonical.Codec {
+	return in.newCodec(caller, n, plan, true)
+}
+
+func (in *Instance) bufferCodec(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, element *model.Type) *canonical.Codec {
+	resourceValues := element != nil
+	if element != nil {
+		switch element.Kind {
+		case model.Bool, model.S8, model.U8, model.S16, model.U16, model.S32, model.U32,
+			model.S64, model.U64, model.F32, model.F64, model.Char, model.String, model.Flags, model.Enum:
+			// These leaf types cannot carry a resource or endpoint capability.
+			resourceValues = false
+		}
+	}
+	return in.newCodec(caller, n, plan, resourceValues)
+}
+
+func (in *Instance) newCodec(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, resourceValues bool) *canonical.Codec {
 	var codec *canonical.Codec
 	var transfer *canonical.Transfer
-	if n != nil && (len(n.resources) != 0 || n.handles != nil) {
+	if resourceValues && n != nil && (len(n.resources) != 0 || n.handles != nil) {
 		state := &resourceCodecState{}
 		codec, transfer = &state.codec, &state.transfer
 		state.resources = resourceCodec{in: in, n: n, core: caller}
@@ -242,19 +259,23 @@ func (in *Instance) codec(caller *vm.Caller, n *namespace, plan *validate.Canoni
 			}
 		}
 	}
+	codec.Transfer, codec.Layouts, codec.MaxValues = transfer, in.canonicalLayouts(n, plan), in.config.MaxValues
+	return codec
+}
+
+func (in *Instance) canonicalLayouts(n *namespace, plan *validate.CanonicalFunction) *canonical.Builder {
+	wide := plan != nil && plan.Memory64
 	index := 0
-	if transfer.Memory64 {
+	if wide {
 		index = 1
 	}
-	layouts := in.layouts[index]
 	if plan != nil && plan.Definition.Op == 0 && n.wideResources {
 		if n.lowerLayouts[index] == nil {
-			n.lowerLayouts[index] = canonical.NewLoweringBuilder(transfer.Memory64, canonical.Limits{MaxNodes: in.config.Validate.MaxNodes, MaxDepth: in.config.MaxNesting, MaxBytes: in.config.MaxBytes}, n.borrowRepresentation)
+			n.lowerLayouts[index] = canonical.NewLoweringBuilder(wide, canonical.Limits{MaxNodes: in.config.Validate.MaxNodes, MaxDepth: in.config.MaxNesting, MaxBytes: in.config.MaxBytes}, n.borrowRepresentation)
 		}
-		layouts = n.lowerLayouts[index]
+		return n.lowerLayouts[index]
 	}
-	codec.Transfer, codec.Layouts, codec.MaxValues = transfer, layouts, in.config.MaxValues
-	return codec
+	return in.layouts[index]
 }
 
 func vmValues(slots []canonical.Slot) []vm.Value {

@@ -35,7 +35,10 @@ existing Core stack/reentry policy. Caller memory operations accept only
 same-Store capabilities and copy bytes; a borrowed guest slice never survives
 allocation or reentry. Component callback capabilities expire at callback
 return and bound pure host reentry too. Codecs retain aggregate byte/value
-budgets; each instance caches its immutable type layouts.
+budgets; each instance caches its immutable type layouts. Layout-only buffer
+queries use that same builder directly. Actual transfers retain fresh codecs
+and budgets; known leaf payloads omit unused resource-binding state, while
+aggregate and resource-containing payloads keep the full binding path.
 
 Arguments are validated before guest allocation effects. Host aggregates,
 literals, start results and exported values use type-directed copies so host
@@ -118,6 +121,10 @@ these same transfers. The local cm64 borrow ABI remains rejected; these call con
 
 
 ## Ownership across calls
+
+Opaque capability headers and affine state share an allocation. Copied headers
+retain its interior state pointer, preserving identity and ownership invalidation
+through host collections. Mutable capability state and Callers are never reused.
 
 `Value.Resource` carries an opaque `Resource`; numeric Bits and zero tokens do
 not grant ownership. Copies of a token share one move state. Passing own moves
