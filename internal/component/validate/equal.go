@@ -98,7 +98,7 @@ func (c *equality) remember(k pair) {
 			c.count++
 			return
 		}
-		c.visited = make(map[pair]bool, inlineEqualityPairs*2)
+		c.visited = make(map[pair]bool, int(c.count)+1)
 		for _, p := range c.inline {
 			c.visited[p] = true
 		}
