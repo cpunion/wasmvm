@@ -2,6 +2,8 @@
 
 [Complete machine record](data/performance-reference-inspection-corrected-2026-11-10.json).
 
+This intermediate source event predates the final cancellation review. Its receiver-cancellation approach was replaced because the worker must still interrupt an already published response after a later guest failure. The [final atomic-abandonment event](performance-reference-inspection-atomic-2026-11-10.md) preserves that behavior while retaining the committed failure. These measurements remain historical and are not pooled with final-source results.
+
 The [initial source event](performance-reference-inspection-2026-11-10.md) is retained independently. Initial CI failed because a worker cancelled its internal context immediately after publishing a specific Store-busy failure; the receiver could nondeterministically report `context canceled`. The receiver now owns cancellation after consuming a published failure. Error cleanup and real external cancellation remain enforced. This new fixed event measures that corrected production source, without pooling or replacing initial observations.
 
 ## Change and evidence
