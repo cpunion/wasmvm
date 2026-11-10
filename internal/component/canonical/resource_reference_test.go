@@ -106,3 +106,44 @@ func TestConcurrentReferenceMoveHasOneOwner(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// Keep live and nil controls next to invalid-reference inspection: normal
+// affine cleanup frequently examines aliases invalidated by a successful move.
+func BenchmarkReferenceInspection(b *testing.B) {
+	for _, name := range []string{"live", "expired", "ended-borrow", "nil"} {
+		b.Run(name, func(b *testing.B) {
+			ref := NewReference(nil, nil, 1, nil, nil)
+			switch name {
+			case "expired":
+				InvalidateReference(ref)
+			case "ended-borrow":
+				scope := NewBorrowScope(1)
+				ref = NewReference(nil, nil, 1, nil, scope)
+				if err := scope.End(); err != nil {
+					b.Fatal(err)
+				}
+			case "nil":
+				ref = nil
+			}
+			b.ReportAllocs()
+			b.ResetTimer()
+			for range b.N {
+				_, _, _, _, _, err := ReferenceInfo(ref)
+				switch name {
+				case "live":
+					if err != nil {
+						b.Fatal(err)
+					}
+				case "nil":
+					if !errors.Is(err, wasm.ErrInvalid) {
+						b.Fatal(err)
+					}
+				default:
+					if !errors.Is(err, wasm.ErrTrap) {
+						b.Fatal(err)
+					}
+				}
+			}
+		})
+	}
+}
