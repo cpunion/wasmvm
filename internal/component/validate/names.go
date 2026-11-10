@@ -138,7 +138,7 @@ func (n *nameSet) add(name model.Name, sort model.Sort, t *Type, pool *TypePool)
 				return invalid("setter signature or preceding getter")
 			}
 			budget := pool.limits.MaxNodes - pool.nodes
-			c := equality{remaining: budget, visited: map[pair]bool{}}
+			c := equality{remaining: budget}
 			ok, err := c.value(t.Parameters[len(t.Parameters)-1].Type, propertyType(getter.Type.Result))
 			if err != nil {
 				return err
