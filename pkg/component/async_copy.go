@@ -56,8 +56,7 @@ func (in *Instance) guestBuffer(c *vm.Caller, n *namespace, p *validate.Canonica
 	}
 	b := &guestBuffer{in: in, n: n, plan: p, typ: p.Type.Value.Element, ptr: ptr, length: uint32(length)}
 	if b.typ != nil {
-		codec := in.codec(c, n, p)
-		l, err := codec.Layouts.Build(b.typ)
+		l, err := in.canonicalLayouts(n, p).Build(b.typ)
 		if err != nil {
 			return nil, err
 		}
@@ -77,7 +76,7 @@ func copyGuestBuffers(c *vm.Caller, src, dst *guestBuffer, count uint32) (err er
 		dst.progress += count
 		return nil
 	}
-	read := src.in.codec(c, src.n, src.plan)
+	read := src.in.bufferCodec(c, src.n, src.plan, src.typ)
 	complete := false
 	var write *canonical.Codec
 	defer func() {
@@ -151,7 +150,7 @@ func (b *guestBuffer) store(c *vm.Caller, values Value) (*canonical.Codec, error
 	if n == nil {
 		n = b.scope
 	}
-	codec := b.in.codec(c, n, plan)
+	codec := b.in.bufferCodec(c, n, plan, b.typ)
 	var err error
 	if b.n != nil {
 		err = codec.StoreBuffer(b.typ, b.ptr, values)
@@ -187,7 +186,7 @@ func (b *guestBuffer) prepareInto(c *vm.Caller, count uint64) (*canonical.Codec,
 	if b.progress != 0 && total > b.in.config.MaxBytes-b.in.heldBytes {
 		return nil, nil, wasm.ErrLimit
 	}
-	codec := b.in.codec(c, b.scope, nil)
+	codec := b.in.bufferCodec(c, b.scope, nil, b.typ)
 	if err := codec.ReserveByteBuffer(b.batch, total); err != nil {
 		return codec, nil, err
 	}

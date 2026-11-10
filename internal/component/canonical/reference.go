@@ -24,8 +24,17 @@ type referenceState struct {
 	scope  *BorrowScope
 }
 
+// The header and its affine state share storage. Copied headers retain the
+// interior state pointer, so every alias still observes the same lifetime.
+type referenceAllocation struct {
+	reference Reference
+	state     referenceState
+}
+
 func NewReference(table *Resources, typeID *ResourceType, id uint32, owner any, scope *BorrowScope) *Reference {
-	return &Reference{state: &referenceState{valid: true, table: table, typeID: typeID, id: id, owner: owner, scope: scope}}
+	allocation := &referenceAllocation{state: referenceState{valid: true, table: table, typeID: typeID, id: id, owner: owner, scope: scope}}
+	allocation.reference.state = &allocation.state
+	return &allocation.reference
 }
 
 // Affine cleanup commonly inspects aliases invalidated by a successful move.
