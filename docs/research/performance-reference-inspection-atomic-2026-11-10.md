@@ -59,6 +59,8 @@ The initial identical checked-in benchmark ran 50000 inspections per case on eac
 
 **2/40 A/A controls resolve** within ±2.5%; 0/16 source pairs resolve both. Default-workstation timings are advisory; neither a controlled ranking nor release-performance acceptance is established. Every adverse, unchanged and unresolved result is retained below.
 
+Adverse pointwise warm-time intervals remain visible: composed Go native/16B is 1.0203 [1.0005,1.0436], composed Go native/64KiB is 1.0376 [1.0154,1.0659], and plain HTTP LLGo native/64KiB is 1.0427 [1.0207,1.0652]. Every pair has unresolved A/A controls; no stable speedup, parity or controlled regression conclusion is established.
+
 Go managed bytes and LLGo collector accounting differ; Go counters exclude Rust/JIT allocation. Native-Go is an ordinary application control, not an optimized native lower bound. Resource instrumentation runs separately. Throughput medians and paired geometric warm-time ratios summarize different reductions.
 
 ## All source comparisons
