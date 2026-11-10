@@ -39,15 +39,17 @@ func (r *httpReply) set(response *http.Response, err error) {
 	close(r.done)
 	r.mu.Unlock()
 }
-func (r *httpReply) abandon() {
+func (r *httpReply) abandon() error {
 	r.mu.Lock()
 	r.abandoned = true
 	response := r.response
+	failure := r.failure
 	r.response = nil
 	r.mu.Unlock()
 	if response != nil {
 		response.Body.(*httpCallBody).discard()
 	}
+	return failure
 }
 
 // CallIncoming invokes the pinned async handler on an idle Store. Response
@@ -243,9 +245,14 @@ func (p *HTTP) callIncoming(ctx context.Context, in *component.Instance, request
 		}
 		return response, nil
 	case <-callCtx.Done():
-		reply.abandon()
+		// Worker failure publishes before cancelling, so both cases can be
+		// ready. Preserve that failure while atomically abandoning the reply.
+		failure := reply.abandon()
 		stop()
 		cancel()
+		if failure != nil {
+			return nil, failure
+		}
 		return nil, callCtx.Err()
 	}
 }
