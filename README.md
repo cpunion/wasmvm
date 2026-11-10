@@ -289,35 +289,37 @@ throughput processes and72 separate resource processes.35/72 controls resolve;
 all six owned LLGo native controls remain unresolved. These point estimates do
 not establish a controlled ranking.
 
-The latest [P3 complete-response comparison](docs/research/performance-p3-store-local-2026-11-10.md)
-uses the same physical Go/LLGo binaries for streaming and bounded Store-local
-collection. Complete 64 KiB HTTP fixture, four workers; native-Go rows are
-ordinary application controls:
+The latest [compiler-source comparison](docs/research/performance-llgo-merged-2026-11-10.md)
+evaluates the full merged LLGo #3012 integration, `3d92a58` -> `717fbe442`,
+on identical wasmvm sources. **Production remains pinned to `3d92a58`.**
+HTTP fixture, 64 KiB, four workers:
 
-| Runtime / host compiler | req/s | Complete API us |
-| --- | ---: | ---: |
-| wasmvm streaming native / LLGo | 2841 | 1374.4 |
-| wasmvm buffered native / LLGo | 3489 | 1127.4 |
-| wasmvm buffered native / Go | 13785 | 278.6 |
-| Wasmtime 48 / Go C-Rust bridge | 58529 | 63.8 |
-| Native-Go application / LLGo | 8874 | 402.1 |
-| Native-Go application / Go | 43821 | 78.8 |
+| Path | Old LLGo req/s | Candidate req/s | Old / candidate B/request |
+| --- | ---: | ---: | ---: |
+| wasmvm streaming native | 2696 | 3920 | 846277 / 754768 |
+| wasmvm buffered native | 3226 | 5506 | 561018 / 474806 |
+| Ordinary native-Go host control | 8854 | 7985 | 732584 / 732057 |
 
-**Only 2/40 timing controls resolve; no owned mode pair resolves both controls.**
-These are observations, not a stable win or ranking. LLGo streaming -> buffered
-accounted allocation falls 846187 -> 561068 B/request and between-batch threads
-61 -> 57; peak RSS rises 160.1 -> 176.2 MiB. Large competitor and host-runtime
-gaps remain. `CallIncomingBuffered` keeps an explicit body limit, complete
-trailers, cancellation, fuel and joined guest work. Atomic request preparation
-also fixes a reproduced Busy-Store resource leak. Startup, compilation,
-instantiation and cleanup stay separate in the full record.
+Only **5/50 P3 timing controls resolve**, with no old/new pair resolving both;
+these are advisory observations. Buffered peak RSS rises 159.4 -> 175.8 MiB.
+Same-event buffered Go native observes 12798 req/s and Wasmtime 48 observes
+56515; substantial gaps remain. The original22 core portfolio is mostly flat,
+with an adverse short-batch GC allocation interpreter ratio
+**1.0643 [1.0434,1.0856]**, both controls resolved, reported as
+[LLGo #3045](https://github.com/xgo-dev/llgo/issues/3045).
 
-The separate [readiness study](docs/research/performance-p3-read-ahead-2026-11-10.md)
-retains all 40 unresolved controls. Independent Go/LLGo counters show bounded
-input read-ahead reduces external reads 15 -> 2 and task resumes 80 -> 41;
-those counts are not a full latency attribution. A separate
-[LLGo append diagnostic](docs/research/performance-llgo-zero-append-2026-11-10.md)
-reports exact duplicate allocation as [#3040](https://github.com/xgo-dev/llgo/issues/3040).
+Independent probes confirm channel blocking-exchange allocation about416 ->0
+B/round-trip and map-key/range temporaries ->0. Existing typed VM calls stay
+near96 LLGo B/call; reusable scalar calls remain0. The opt-in frontend cache
+reduces SSA events92 ->24 but does not improve this warm-build median;
+default persistence stays disabled. [#3040](https://github.com/xgo-dev/llgo/issues/3040)
+fresh-zero-slice append duplication remains reproducible. Candidate macOS
+semantics pass all32 root packages and both measurement modules; candidate
+Linux acceptance and the GC investigation remain required before adoption.
+
+The earlier [Store-local API](docs/research/performance-p3-store-local-2026-11-10.md)
+and [readiness](docs/research/performance-p3-read-ahead-2026-11-10.md) studies
+retain their own compiler/source cohorts, counters and unresolved controls.
 Earlier [transfer-buffer](docs/research/performance-p3-io-buffers-2026-11-10.md),
 [worker-reuse](docs/research/performance-p3-worker-reuse-2026-11-10.md),
 [immutable-copy](docs/research/performance-immutable-memory-2026-11-10.md) and
