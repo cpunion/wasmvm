@@ -2,11 +2,41 @@ package canonical
 
 import (
 	"errors"
+	"runtime"
 	"sync"
 	"testing"
 
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
+
+//go:noinline
+func retainedReferenceAlias() Reference {
+	return *NewReference(NewResources(1), &ResourceType{}, 42, &[]byte{7, 11, 19}, nil)
+}
+
+func TestReferenceAliasSurvivesCollection(t *testing.T) {
+	alias := retainedReferenceAlias()
+	runtime.GC()
+	runtime.GC()
+	table, typ, id, owner, borrowed, err := ReferenceInfo(&alias)
+	if err != nil || table == nil || typ == nil || id != 42 || borrowed {
+		t.Fatal(err, id, borrowed)
+	}
+	if data, ok := owner.(*[]byte); !ok || len(*data) != 3 || (*data)[2] != 19 {
+		t.Fatal("reference owner was not retained")
+	}
+	moved, err := MoveReference(&alias)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runtime.GC()
+	if _, _, _, _, _, err := ReferenceInfo(&alias); !errors.Is(err, wasm.ErrTrap) {
+		t.Fatal("move did not invalidate the retained alias", err)
+	}
+	if got, _, _, _, _, err := ReferenceInfo(moved); err != nil || got != table {
+		t.Fatal("moved capability did not survive collection", err)
+	}
+}
 
 func TestOpaqueReferencesShareMoveState(t *testing.T) {
 	table := NewResources(2)
@@ -143,6 +173,39 @@ func BenchmarkReferenceInspection(b *testing.B) {
 						b.Fatal(err)
 					}
 				}
+			}
+		})
+	}
+}
+
+var referenceCreationSink *Reference
+
+func BenchmarkReferenceCreation(b *testing.B) {
+	for _, name := range []string{"create", "move"} {
+		b.Run(name, func(b *testing.B) {
+			var refs []*Reference
+			if name == "move" {
+				refs = make([]*Reference, b.N)
+				for i := range refs {
+					refs[i] = NewReference(nil, nil, 42, nil, nil)
+				}
+			}
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := range b.N {
+				if name == "create" {
+					referenceCreationSink = NewReference(nil, nil, 42, nil, nil)
+				} else {
+					var err error
+					referenceCreationSink, err = MoveReference(refs[i])
+					if err != nil {
+						b.Fatal(err)
+					}
+				}
+			}
+			b.StopTimer()
+			if _, _, id, _, _, err := ReferenceInfo(referenceCreationSink); err != nil || id != 42 {
+				b.Fatal(err, id)
 			}
 		})
 	}
