@@ -33,10 +33,19 @@ func (e *Execution) bindScalarStorage(in *state.Instance) (uint64, error) {
 	changed := e.scalarInstance != in
 	if changed {
 		e.resetScalarStorage()
-		words := uint64(len(in.Functions)) * 2
+		// Only imports can be accessor targets. Defined functions have native
+		// bodies; neither scan them nor reserve descriptor rows for them.
+		imports := len(in.Functions)
+		if in.Compiled != nil {
+			imports -= len(in.Compiled.Functions)
+		}
+		if imports < 0 {
+			return 0, wasm.ErrInvalid
+		}
+		words := uint64(imports) * 2
 		bindings := map[*state.ScalarStorage]int{}
 		if in.Owner != nil {
-			for i, ref := range in.Functions {
+			for i, ref := range in.Functions[:imports] {
 				fn, ok := in.Owner.Function(ref)
 				if !ok {
 					return 0, wasm.ErrInvalid

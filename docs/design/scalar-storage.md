@@ -24,7 +24,7 @@ existing host driver. Imported accessors remain valid function-reference targets
 The compiler emits a guarded load/store at direct integer import call sites.
 The runtime view appends a scalar-view pointer after the heap/allocation views,
 preserving existing function, table, global, memory and heap offsets. The scalar
-view contains a value address and validity address for each function index.
+view contains a value address and validity address for each imported function.
 Ordinary imports have zero addresses and take the original checked exit.
 Native cells and metadata belong to the execution workspace; no Go address
 crosses the machine ABI. All accessors for one storage object share its cells.

@@ -38,15 +38,6 @@ func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.
 		if n.failed || task == nil {
 			return nil, wasm.ErrTrap
 		}
-		switch plan.Definition.Op {
-		case 0x0c:
-			if n.blocked {
-				return nil, wasm.ErrTrap
-			}
-			// With no other ready threads, the pinned nondeterministic ABI
-			// permits yielding directly back to the current implicit thread.
-			return []vm.Value{vm.I32(0)}, nil
-		}
 		if n.blocked || task.plan == nil || !task.plan.Async || task.resolved || task.plan.Encoding != plan.Encoding {
 			return nil, wasm.ErrTrap
 		}
