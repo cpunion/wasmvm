@@ -57,6 +57,8 @@ type Instance struct {
 	tasks                 *taskScheduler
 	heldValues, heldBytes uint64
 	bufferTypes           map[*model.Type]*model.Type
+	schemaMatches         []schemaMatch
+	schemaNominalPairs    int
 	work                  uint64
 	bindings              map[any]Value
 	resourceTables        []*canonical.Resources
@@ -92,7 +94,17 @@ func (in *Instance) Close() {
 	components := in.components
 	in.components = nil
 	in.mu.Unlock()
-	defer func() { go func() { defer close(in.shutdown); in.store.WaitClosed(nil); in.flushSourceCleanup(nil) }() }()
+	defer func() {
+		go func() {
+			defer func() {
+				in.schemaMatches = nil
+				in.schemaNominalPairs = 0
+				close(in.shutdown)
+			}()
+			in.store.WaitClosed(nil)
+			in.flushSourceCleanup(nil)
+		}()
+	}()
 	in.store.Close()
 	var panicked any
 	for source := range sources {

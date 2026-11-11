@@ -3,17 +3,13 @@ package component
 import (
 	"github.com/cpunion/wasmvm/internal/component/canonical"
 	"github.com/cpunion/wasmvm/internal/component/model"
-	"github.com/cpunion/wasmvm/internal/component/validate"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
 func asyncValueType(t *model.Type) bool { return t.Kind == model.Future || t.Kind == model.Stream }
 func (e *asyncEnd) matches(t *model.Type, n *namespace) error {
-	equal, err := validate.EqualValue(e.typ, t, e.in.config.Validate.MaxNodes, func(a, b uint64) bool {
-		left, right := e.scope.resources[a], n.resources[b]
-		return left != nil && right != nil && left.identity == right.identity
-	})
+	equal, err := e.in.matchSchema(e.typ, t, e.scope, n)
 	if err != nil {
 		return err
 	}
