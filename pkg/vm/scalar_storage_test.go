@@ -13,8 +13,14 @@ func TestScalarStorageWidthsAliasesRebindingAndFallback(t *testing.T) {
 	withBackends(t, func(t *testing.T, newEngine func() *Engine) {
 		e, s, l := setupWithEngine(t, newEngine)
 		first, second := []uint64{0, 17}, []uint64{0, 29}
-		current, valid := first, true
-		storage, err := NewScalarStorage(2, func() ([]uint64, bool) { return current, valid })
+		current, valid, panicBinding := first, true, false
+		sentinel := errors.New("binding panic")
+		storage, err := NewScalarStorage(2, func() ([]uint64, bool) {
+			if panicBinding {
+				panic(sentinel)
+			}
+			return current, valid
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -122,6 +128,20 @@ func TestScalarStorageWidthsAliasesRebindingAndFallback(t *testing.T) {
 		cancel()
 		if _, err := export(t, in, "tail").Call(ctx, nil, CallOptions{}); !errors.Is(err, context.Canceled) {
 			t.Fatal("cancelled accessor", err)
+		}
+		get := export(t, in, "get")
+		panicBinding = true
+		func() {
+			defer func() {
+				if got := recover(); got != sentinel {
+					t.Fatal("binding panic was not propagated", got)
+				}
+			}()
+			get.Call(nil, nil, CallOptions{})
+		}()
+		panicBinding, valid = false, true
+		if result, err := get.Call(nil, nil, CallOptions{}); err != nil || bits(t, result.Values[0]) != first[0] {
+			t.Fatal("binding panic retained active workspace", result, err)
 		}
 	})
 }

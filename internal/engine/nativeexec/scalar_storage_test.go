@@ -86,6 +86,12 @@ func TestScalarStorageGeneratedAccessAndExitPublication(t *testing.T) {
 					}
 				}
 			}
+			if metered {
+				cells[1], n.values[0].Lo = 0, 123
+				if _, _, err := n.Run(fn, 0, 1, 0, 2); !errors.Is(err, wasm.ErrLimit) || cells[1] != 123 {
+					t.Fatal("fuel exhaustion lost preceding write", cells, err)
+				}
+			}
 			valid = false
 			pc, _, err := n.Run(fn, 0, 1, 0, 100)
 			if err != nil || fn.Code.Code[pc].Op != 0x10 {
