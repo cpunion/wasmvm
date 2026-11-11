@@ -47,10 +47,7 @@ func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.
 		if plan.Memory != nil && (task.plan.Memory == nil || n.items[model.CoreMemorySort][*plan.Memory].core != n.items[model.CoreMemorySort][*task.plan.Memory].core) {
 			return nil, wasm.ErrTrap
 		}
-		equal, err := validate.EqualValue(plan.Type.Result, task.plan.Type.Result, in.config.Validate.MaxNodes, func(a, b uint64) bool {
-			left, right := n.resources[a], n.resources[b]
-			return left != nil && right != nil && left.identity == right.identity
-		})
+		equal, err := in.matchValue(plan.Type.Result, task.plan.Type.Result, n, n)
 		if err != nil {
 			return nil, err
 		}

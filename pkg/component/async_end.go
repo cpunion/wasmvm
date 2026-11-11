@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/cpunion/wasmvm/internal/component/canonical"
 	"github.com/cpunion/wasmvm/internal/component/model"
-	"github.com/cpunion/wasmvm/internal/component/validate"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -136,10 +135,7 @@ func (in *Instance) end(n *namespace, id uint32, t *model.Type, read bool) (*asy
 	if !ok || e.n != n || e.id != id || e.read != read {
 		return nil, wasm.ErrTrap
 	}
-	equal, err := validate.EqualValue(e.typ, t, in.config.Validate.MaxNodes, func(a, b uint64) bool {
-		left, right := e.scope.resources[a], n.resources[b]
-		return left != nil && right != nil && left.identity == right.identity
-	})
+	equal, err := in.matchValue(e.typ, t, e.scope, n)
 	if err != nil {
 		return nil, err
 	}
