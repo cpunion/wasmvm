@@ -276,15 +276,17 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
-The latest [Go HTTP comparison](docs/research/performance-http-snapshot-2026-11-11.md)
-adds an explicit immutable request-body API. Ordinary Reader / snapshot Go
-observes 35,401 / 39,894 req/s at 16 B and 23,014 / 27,532 at 64 KiB, versus
-Wasmtime 75,858 / 66,118. Snapshot throughput improves 12.7% / 19.6% over the
-ordinary path; remaining throughput gaps are 1.90× / 2.40×. All 24 timing A/A
-controls resolve within ±2.5%; local three-round results remain advisory.
-Mutable input that changes each request has a separate snapshot cost. JIT
-symbolization localizes most payload-dependent overhead to host work; checked
-Canonical ABI conversion and VM/host state transitions remain priorities.
+The latest [ready-byte comparison](docs/research/performance-ready-bytes-2026-11-12.md)
+removes asynchronous invocation overhead for already available byte batches.
+Ordinary Reader / snapshot Go observes 37,248 / 43,341 req/s at 16 B and
+26,201 / 31,848 at 64 KiB, versus Wasmtime 77,164 / 67,259. At 64 KiB,
+source-matched Reader / snapshot throughput points improve 8.0% / 10.1%;
+snapshot gaps remain 1.78× / 2.11× at the two sizes. Only 24/30 timing A/A
+controls resolve within ±2.5%; results remain advisory. Small-request gains
+are near timing resolution. The
+[immutable-input API](docs/research/performance-http-snapshot-2026-11-11.md)
+keeps preparation separate; changing mutable input still pays its snapshot cost.
+Canonical conversion, owned forwarding and VM/host transitions remain priorities.
 
 The preceding [Go-priority comparison](docs/research/performance-go-frame-plans-2026-11-11.md)
 retains bounded host-request storage, saving 82 allocations/request. A frame-plan
