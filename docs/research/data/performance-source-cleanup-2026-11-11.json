@@ -1,0 +1,3434 @@
+{
+  "date": "2026-11-11",
+  "status": "Local candidate. Allocation reduction verified. Stable throughput gain and full release acceptance remain open.",
+  "source": {
+    "base": "4ce75302c8def7dfd85680a33d2e7a55593c8dfa",
+    "head": "93a60f11e5ffd7b886c17f2feaa15c293fe9e23f",
+    "baselineEquivalentImplementation": "0aaab1adfdb5a14d88a108bea06017fe0698a675",
+    "branch": "perf/source-cleanup-drain",
+    "scope": "Empty source-cleanup queue avoids deferred drain ownership state; existing queued cleanup state machine remains shared. Pinned production and experimental current compiler/runtime series are separate.",
+    "plannedTriage": {
+      "blocks": 3,
+      "aliases": [
+        "primary",
+        "aa"
+      ],
+      "workers": 4,
+      "clients": 16,
+      "requests": 256,
+      "samples": 7,
+      "warmups": 2,
+      "payloadBytes": 16,
+      "orderSeed": 2026111186
+    },
+    "status": "Predeclared fixed experiment, before timing. All unfavorable results retained."
+  },
+  "builds": {
+    "base-go": {
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/head-go-runner",
+      "binarySHA256": "27edab13338d4db4d9dd5d65566aabc708f3d97823979aa68de1c392389bdc61",
+      "source": "0aaab1adfdb5a14d88a108bea06017fe0698a675",
+      "exactImplementationEquivalent": true,
+      "provenance": "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/build.json"
+    },
+    "base-llgo": {
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/head-llgo-runner",
+      "binarySHA256": "9f17deda90dac9932f156b49fdb849f33f5613908cbb7db42e47e2314be090bc",
+      "source": "0aaab1adfdb5a14d88a108bea06017fe0698a675",
+      "exactImplementationEquivalent": true,
+      "provenance": "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/build.json"
+    },
+    "base-sharded": {
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/schema-matches-20261111/base-sharded-runner",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/llgo-memprofile-shards-20261111/llgo-e2cca2c",
+        "build",
+        "-O3",
+        "-lto=full",
+        "-o",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/schema-matches-20261111/base-sharded-runner",
+        "."
+      ],
+      "compilerBinarySHA256": "22856212fe44a30c945907dc218a393b4d2a4d4702552a026e655be80b9eb1dd",
+      "sdk": "/Users/lijie/source/goplus/llgo-memprofile-shards",
+      "source": "4ce75302c8def7dfd85680a33d2e7a55593c8dfa",
+      "binarySHA256": "b53cbd4720b4e21acdbd9ee03a7fdbe580c7fa9a3d5ac0bf68869fbdd8e566f5",
+      "buildWallNs": 166269762958
+    },
+    "wasmtime": {
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/p3io-service-20261110/reference-build/wasmtime-p3-reference",
+      "binarySHA256": "561370163342e51593964bc6615ca28ebf1831c22132412ce9c6c44981c54f08",
+      "source": null,
+      "exactImplementationEquivalent": false,
+      "provenance": "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/build.json"
+    },
+    "go-host": {
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/p3io-service-20261110/go-host-runner",
+      "binarySHA256": "803f6b464c45be6f19f73c6904b8bbb9e56f6280318f5b937966869a149a433f",
+      "source": null,
+      "exactImplementationEquivalent": false,
+      "provenance": "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/build.json"
+    },
+    "llgo-host": {
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/p3io-service-20261110/llgo-host-runner",
+      "binarySHA256": "60b3e706c2ef300d7d52f0e65ea7dc4e5710184f9076e9f6d31242a01fc4c076",
+      "source": null,
+      "exactImplementationEquivalent": false,
+      "provenance": "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/build.json"
+    },
+    "head-go": {
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-go-runner",
+      "command": [
+        "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+        "build",
+        "-o",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-go-runner",
+        "."
+      ],
+      "compilerBinarySHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "sdk": "None",
+      "source": "93a60f11e5ffd7b886c17f2feaa15c293fe9e23f",
+      "binarySHA256": "0eee6032382317f4583fddab5f9931855c6659f0df0fbf2fe18ebc5165a39a0d",
+      "buildWallNs": 2883684000
+    },
+    "allocation-head-go": {
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-go-allocation",
+      "command": [
+        "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+        "test",
+        "-c",
+        "-o",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-go-allocation",
+        "."
+      ],
+      "compilerBinarySHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+      "sdk": "None",
+      "source": "93a60f11e5ffd7b886c17f2feaa15c293fe9e23f",
+      "binarySHA256": "eca0817a64bcb533389493aca006eabc6ca48f32f3d58dd1a4fe286f8cd62e1c",
+      "buildWallNs": 2903315958
+    },
+    "head-llgo": {
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-llgo-runner",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-3d92a58",
+        "build",
+        "-O3",
+        "-lto=full",
+        "-o",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-llgo-runner",
+        "."
+      ],
+      "compilerBinarySHA256": "a3a19f669022e8818a6aef13fc3813cb50025eefcc4a713128e8a5a8e1e3d69f",
+      "sdk": "/Users/lijie/source/goplus/wasmvm/artifacts/toolchains/llgo-3d92a58",
+      "source": "93a60f11e5ffd7b886c17f2feaa15c293fe9e23f",
+      "binarySHA256": "2a15316a2fa77fda3eb7c70ce78d0783d3c72cbf2e72853779d1c214fa4ed52a",
+      "buildWallNs": 57565883125
+    },
+    "allocation-head-llgo": {
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-llgo-allocation",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-3d92a58",
+        "test",
+        "-c",
+        "-O3",
+        "-lto=full",
+        "-o",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-llgo-allocation",
+        "."
+      ],
+      "compilerBinarySHA256": "a3a19f669022e8818a6aef13fc3813cb50025eefcc4a713128e8a5a8e1e3d69f",
+      "sdk": "/Users/lijie/source/goplus/wasmvm/artifacts/toolchains/llgo-3d92a58",
+      "source": "93a60f11e5ffd7b886c17f2feaa15c293fe9e23f",
+      "binarySHA256": "ca3477d4a939763e43fe4eec07e9a676cfb21e1ef2ff17389bff02c56b4e90b3",
+      "buildWallNs": 65595745541
+    },
+    "head-sharded": {
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-sharded-runner",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/llgo-memprofile-shards-20261111/llgo-e2cca2c",
+        "build",
+        "-O3",
+        "-lto=full",
+        "-o",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-sharded-runner",
+        "."
+      ],
+      "compilerBinarySHA256": "22856212fe44a30c945907dc218a393b4d2a4d4702552a026e655be80b9eb1dd",
+      "sdk": "/Users/lijie/source/goplus/llgo-memprofile-shards",
+      "source": "93a60f11e5ffd7b886c17f2feaa15c293fe9e23f",
+      "binarySHA256": "fea851835255c72922820c00e4f64d86c0eb6b5be57fcaa10fa192b56e6de435",
+      "buildWallNs": 68140500625
+    },
+    "allocation-head-sharded": {
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-sharded-allocation",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/llgo-memprofile-shards-20261111/llgo-e2cca2c",
+        "test",
+        "-c",
+        "-O3",
+        "-lto=full",
+        "-o",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-sharded-allocation",
+        "."
+      ],
+      "compilerBinarySHA256": "22856212fe44a30c945907dc218a393b4d2a4d4702552a026e655be80b9eb1dd",
+      "sdk": "/Users/lijie/source/goplus/llgo-memprofile-shards",
+      "source": "93a60f11e5ffd7b886c17f2feaa15c293fe9e23f",
+      "binarySHA256": "ef93c24ca0f26798e5281c8f73563ceb78e279092444fe30a3dfa6d000cfa71f",
+      "buildWallNs": 76899097500
+    }
+  },
+  "fixtures": [
+    {
+      "id": "world-rust-http",
+      "path": "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+      "sha256": "1d583dc670704a021f06d8437bc8834c8adb9feaf1a654cb16faa7e1de3bbdd2"
+    },
+    {
+      "id": "world-rust-composed-http",
+      "path": "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-composed-http.wasm",
+      "sha256": "bd3c03635b5d76855d54636877cce15d773451a729a1550efa788f44cf188a55"
+    }
+  ],
+  "summary": {
+    "scope": "Fixed native16B HTTP diagnosis of empty source-cleanup queue separation. Pinned production Go/LLGo series and current-compiler sharded-runtime series are separate paired source comparisons. Wasmtime and ordinary host controls are independent. All observations retained. Three workstation blocks are advisory. Preparation/first/warm/cleanup stay separate.",
+    "checkedWarmResponses": 1720320,
+    "rows": {
+      "wasmtime": {
+        "requestsPerSecond": 73817.87414758917,
+        "meanPublicAPIUs": 53.763689208984374,
+        "aaWarmRatios": [
+          1.1128121423519446,
+          1.0183290718649445,
+          0.9920222808308221
+        ],
+        "phasesMs": {
+          "cleanup": 0.247792,
+          "compileValidate": 52.636458,
+          "engineSetup": 0.136958,
+          "executorSetup": 0.049332,
+          "exportLookup": 0.007875,
+          "firstCall": 60.437459,
+          "instantiate": 0.191917,
+          "load": 0.069375,
+          "providerSetup": 0.22379
+        }
+      },
+      "base-llgo": {
+        "requestsPerSecond": 6414.17549822762,
+        "meanPublicAPIUs": 632.3912472446987,
+        "aaWarmRatios": [
+          0.9180487181644789,
+          1.0450171917407713,
+          0.9879520847247188
+        ],
+        "phasesMs": {
+          "cleanup": 0.584,
+          "compileValidate": 243.98225,
+          "engineSetup": 0.00025,
+          "exportLookup": 0.001042,
+          "firstCall": 671.296,
+          "instantiate": 0.746627,
+          "load": 0.064791,
+          "providerSetup": 0.225126
+        }
+      },
+      "sharded-host": {
+        "requestsPerSecond": 128257.18370959668,
+        "meanPublicAPIUs": 2.1340972028459824,
+        "aaWarmRatios": [
+          1.0319063504528323,
+          0.9199151061015035,
+          0.9999621741508982
+        ],
+        "phasesMs": {
+          "cleanup": 0.090084,
+          "firstCall": 31.270417
+        }
+      },
+      "base-go": {
+        "requestsPerSecond": 25755.14124431337,
+        "meanPublicAPIUs": 154.11640973772322,
+        "aaWarmRatios": [
+          0.938747469480864,
+          1.0347978372720599,
+          0.9986376247099654
+        ],
+        "phasesMs": {
+          "cleanup": 0.054083,
+          "compileValidate": 163.869834,
+          "engineSetup": 0.000417,
+          "exportLookup": 0.000626,
+          "firstCall": 156.908625,
+          "instantiate": 0.473792,
+          "load": 0.064333,
+          "providerSetup": 0.050376
+        }
+      },
+      "base-sharded": {
+        "requestsPerSecond": 12501.139744720072,
+        "meanPublicAPIUs": 330.234251953125,
+        "aaWarmRatios": [
+          1.0265876314506448,
+          0.9822174400208149,
+          1.0423813591733955
+        ],
+        "phasesMs": {
+          "cleanup": 0.553417,
+          "compileValidate": 227.670084,
+          "engineSetup": 0.000167,
+          "exportLookup": 0.002,
+          "firstCall": 343.527334,
+          "instantiate": 0.743583,
+          "load": 0.0775,
+          "providerSetup": 0.185083
+        }
+      },
+      "head-llgo": {
+        "requestsPerSecond": 6306.632279918395,
+        "meanPublicAPIUs": 634.1076884765625,
+        "aaWarmRatios": [
+          1.0185801347242003,
+          0.9275920190550363,
+          1.13585822853559
+        ],
+        "phasesMs": {
+          "cleanup": 0.583333,
+          "compileValidate": 241.762916,
+          "engineSetup": 0.000291,
+          "exportLookup": 0.001334,
+          "firstCall": 675.573875,
+          "instantiate": 0.7195,
+          "load": 0.074542,
+          "providerSetup": 0.199375
+        }
+      },
+      "llgo-host": {
+        "requestsPerSecond": 122737.16462466805,
+        "meanPublicAPIUs": 2.0491142578125,
+        "aaWarmRatios": [
+          0.9649657610955251,
+          0.9757116313638052,
+          0.9416898951927332
+        ],
+        "phasesMs": {
+          "cleanup": 0.106709,
+          "firstCall": 35.794167
+        }
+      },
+      "go-host": {
+        "requestsPerSecond": 1597659.6782057532,
+        "meanPublicAPIUs": 0.72176025390625,
+        "aaWarmRatios": [
+          0.27857431919561626,
+          0.9266699171136031,
+          1.064130972125622
+        ],
+        "phasesMs": {
+          "cleanup": 0.008667,
+          "firstCall": 2.394917
+        }
+      },
+      "head-sharded": {
+        "requestsPerSecond": 12045.536869945894,
+        "meanPublicAPIUs": 324.21524494280135,
+        "aaWarmRatios": [
+          0.9730176314017068,
+          0.936395533483168,
+          1.0401977927136494
+        ],
+        "phasesMs": {
+          "cleanup": 0.513833,
+          "compileValidate": 227.866708,
+          "engineSetup": 0.000125,
+          "exportLookup": 0.002917,
+          "firstCall": 322.593333,
+          "instantiate": 0.772708,
+          "load": 0.088583,
+          "providerSetup": 0.193166
+        }
+      },
+      "head-go": {
+        "requestsPerSecond": 25303.57260066641,
+        "meanPublicAPIUs": 158.61201112583706,
+        "aaWarmRatios": [
+          0.9393513766462419,
+          0.9420329180735943,
+          0.98506775127639
+        ],
+        "phasesMs": {
+          "cleanup": 0.053083,
+          "compileValidate": 161.915125,
+          "engineSetup": 0.000375,
+          "exportLookup": 0.000749,
+          "firstCall": 161.2835,
+          "instantiate": 0.516666,
+          "load": 0.06425,
+          "providerSetup": 0.056834
+        }
+      }
+    },
+    "pairedSourceRatios": {
+      "go": {
+        "blockWarmRatios": [
+          0.9739242707783938,
+          1.0066125069251557,
+          0.9797571039681192
+        ],
+        "headOverBaseWarmRatio": 0.98666254930371
+      },
+      "llgo": {
+        "blockWarmRatios": [
+          0.9594299727249266,
+          1.0207923926357563,
+          0.9948003776304415
+        ],
+        "headOverBaseWarmRatio": 0.9913542726224527
+      },
+      "sharded": {
+        "blockWarmRatios": [
+          0.9936897996683196,
+          1.0133262541986208,
+          0.9853313667560697
+        ],
+        "headOverBaseWarmRatio": 0.9973803590984196
+      }
+    }
+  },
+  "observations": [
+    {
+      "block": 0,
+      "id": "wasmtime",
+      "alias": "aa",
+      "warmCallNs": [
+        72234500,
+        62194792,
+        67140542,
+        59470791,
+        64671959,
+        69669250,
+        55697875
+      ],
+      "meanPublicAPINs": 61639.239501953125,
+      "phasesNs": {
+        "cleanup": 240875,
+        "compileValidate": 51988291,
+        "engineSetup": 150958,
+        "executorSetup": 39626,
+        "exportLookup": 8542,
+        "firstCall": 84424625,
+        "instantiate": 191042,
+        "load": 69333,
+        "providerSetup": 223625
+      },
+      "processReadyNs": 6147167,
+      "processWallNs": 757652458
+    },
+    {
+      "block": 0,
+      "id": "wasmtime",
+      "alias": "primary",
+      "warmCallNs": [
+        63513625,
+        58115792,
+        66605583,
+        53447542,
+        59016584,
+        55466041,
+        56261833
+      ],
+      "meanPublicAPINs": 56354.41008649553,
+      "phasesNs": {
+        "cleanup": 259625,
+        "compileValidate": 52636458,
+        "engineSetup": 136958,
+        "executorSetup": 49332,
+        "exportLookup": 7875,
+        "firstCall": 62348084,
+        "instantiate": 201459,
+        "load": 69375,
+        "providerSetup": 223790
+      },
+      "processReadyNs": 6182166,
+      "processWallNs": 663240625
+    },
+    {
+      "block": 0,
+      "id": "base-llgo",
+      "alias": "primary",
+      "warmCallNs": [
+        724980125,
+        741725917,
+        636330083,
+        814852459,
+        713040000,
+        640350792,
+        551312500
+      ],
+      "meanPublicAPINs": 665693.5818219866,
+      "phasesNs": {
+        "cleanup": 536834,
+        "compileValidate": 243982250,
+        "engineSetup": 250,
+        "exportLookup": 1167,
+        "firstCall": 671296000,
+        "instantiate": 820249,
+        "load": 85583,
+        "providerSetup": 270541
+      },
+      "processReadyNs": 9266208,
+      "processWallNs": 7149035291
+    },
+    {
+      "block": 0,
+      "id": "sharded-host",
+      "alias": "aa",
+      "warmCallNs": [
+        32861875,
+        29216250,
+        34164417,
+        31363458,
+        30877959,
+        41176041,
+        36583792
+      ],
+      "meanPublicAPINs": 2247.151053292411,
+      "phasesNs": {
+        "cleanup": 123541,
+        "firstCall": 30172625
+      },
+      "processReadyNs": 9104167,
+      "processWallNs": 347997833
+    },
+    {
+      "block": 0,
+      "id": "base-go",
+      "alias": "primary",
+      "warmCallNs": [
+        176622875,
+        160924084,
+        170724334,
+        166261833,
+        163447625,
+        171814542,
+        160654625
+      ],
+      "meanPublicAPINs": 162121.16535295759,
+      "phasesNs": {
+        "cleanup": 60000,
+        "compileValidate": 201191291,
+        "engineSetup": 417,
+        "exportLookup": 501,
+        "firstCall": 176950125,
+        "instantiate": 473792,
+        "load": 64333,
+        "providerSetup": 50332
+      },
+      "processReadyNs": 7545625,
+      "processWallNs": 1915133792
+    },
+    {
+      "block": 0,
+      "id": "base-sharded",
+      "alias": "primary",
+      "warmCallNs": [
+        375819083,
+        352430041,
+        336792916,
+        333060291,
+        340756792,
+        424288959,
+        336811625
+      ],
+      "meanPublicAPINs": 341734.01625279017,
+      "phasesNs": {
+        "cleanup": 553417,
+        "compileValidate": 228602500,
+        "engineSetup": 292,
+        "exportLookup": 1584,
+        "firstCall": 352214000,
+        "instantiate": 743583,
+        "load": 78333,
+        "providerSetup": 185083
+      },
+      "processReadyNs": 9059375,
+      "processWallNs": 3779376625
+    },
+    {
+      "block": 0,
+      "id": "base-sharded",
+      "alias": "aa",
+      "warmCallNs": [
+        330699542,
+        448411750,
+        349816708,
+        332216542,
+        448292625,
+        356130042,
+        328014084
+      ],
+      "meanPublicAPINs": 354766.24654715403,
+      "phasesNs": {
+        "cleanup": 496417,
+        "compileValidate": 225250375,
+        "engineSetup": 250,
+        "exportLookup": 1666,
+        "firstCall": 339548334,
+        "instantiate": 747541,
+        "load": 71333,
+        "providerSetup": 174459
+      },
+      "processReadyNs": 9176959,
+      "processWallNs": 3841673500
+    },
+    {
+      "block": 0,
+      "id": "head-llgo",
+      "alias": "primary",
+      "warmCallNs": [
+        634199792,
+        649475000,
+        652136625,
+        639513958,
+        627368250,
+        668700791,
+        725052666
+      ],
+      "meanPublicAPINs": 634107.6884765625,
+      "phasesNs": {
+        "cleanup": 493708,
+        "compileValidate": 241762916,
+        "engineSetup": 167,
+        "exportLookup": 1459,
+        "firstCall": 640737667,
+        "instantiate": 740042,
+        "load": 72375,
+        "providerSetup": 195374
+      },
+      "processReadyNs": 9301333,
+      "processWallNs": 6830821791
+    },
+    {
+      "block": 0,
+      "id": "base-go",
+      "alias": "aa",
+      "warmCallNs": [
+        156028666,
+        153210708,
+        153587166,
+        156077875,
+        157650083,
+        159914250,
+        160428750
+      ],
+      "meanPublicAPINs": 151973.85246930804,
+      "phasesNs": {
+        "cleanup": 66708,
+        "compileValidate": 162992791,
+        "engineSetup": 541,
+        "exportLookup": 543,
+        "firstCall": 158500084,
+        "instantiate": 467334,
+        "load": 68417,
+        "providerSetup": 61000
+      },
+      "processReadyNs": 6039375,
+      "processWallNs": 1741852291
+    },
+    {
+      "block": 0,
+      "id": "sharded-host",
+      "alias": "primary",
+      "warmCallNs": [
+        31379625,
+        31191125,
+        29681542,
+        35280125,
+        37080916,
+        32628750,
+        31845792
+      ],
+      "meanPublicAPINs": 2240.3789411272323,
+      "phasesNs": {
+        "cleanup": 109916,
+        "firstCall": 64571208
+      },
+      "processReadyNs": 26354250,
+      "processWallNs": 397600000
+    },
+    {
+      "block": 0,
+      "id": "llgo-host",
+      "alias": "primary",
+      "warmCallNs": [
+        26943291,
+        31175708,
+        33419959,
+        33372125,
+        31686208,
+        33429375,
+        36434584
+      ],
+      "meanPublicAPINs": 2395.2824358258927,
+      "phasesNs": {
+        "cleanup": 106709,
+        "firstCall": 39561000
+      },
+      "processReadyNs": 8846666,
+      "processWallNs": 347689125
+    },
+    {
+      "block": 0,
+      "id": "go-host",
+      "alias": "aa",
+      "warmCallNs": [
+        3492125,
+        2712583,
+        2824542,
+        3454958,
+        3114458,
+        3348916,
+        3495167
+      ],
+      "meanPublicAPINs": 811.5741141183036,
+      "phasesNs": {
+        "cleanup": 5708,
+        "firstCall": 3329792
+      },
+      "processReadyNs": 5383625,
+      "processWallNs": 40155584
+    },
+    {
+      "block": 0,
+      "id": "llgo-host",
+      "alias": "aa",
+      "warmCallNs": [
+        32202958,
+        33034625,
+        28428375,
+        27251834,
+        29059125,
+        51801833,
+        35732709
+      ],
+      "meanPublicAPINs": 2437.3442731584823,
+      "phasesNs": {
+        "cleanup": 199250,
+        "firstCall": 34360334
+      },
+      "processReadyNs": 9839875,
+      "processWallNs": 358936291
+    },
+    {
+      "block": 0,
+      "id": "go-host",
+      "alias": "primary",
+      "warmCallNs": [
+        24116291,
+        15059083,
+        4005458,
+        7862959,
+        18827125,
+        12021625,
+        7186292
+      ],
+      "meanPublicAPINs": 4281.105608258928,
+      "phasesNs": {
+        "cleanup": 13583,
+        "firstCall": 2767042
+      },
+      "processReadyNs": 7757708,
+      "processWallNs": 119782667
+    },
+    {
+      "block": 0,
+      "id": "head-sharded",
+      "alias": "aa",
+      "warmCallNs": [
+        342953125,
+        331031875,
+        330957708,
+        327039208,
+        338418208,
+        462372417,
+        352562709
+      ],
+      "meanPublicAPINs": 340021.18216378347,
+      "phasesNs": {
+        "cleanup": 565667,
+        "compileValidate": 227294083,
+        "engineSetup": 250,
+        "exportLookup": 2834,
+        "firstCall": 344625000,
+        "instantiate": 761083,
+        "load": 74500,
+        "providerSetup": 197083
+      },
+      "processReadyNs": 9518291,
+      "processWallNs": 3748240583
+    },
+    {
+      "block": 0,
+      "id": "head-go",
+      "alias": "primary",
+      "warmCallNs": [
+        170539875,
+        158448667,
+        160783250,
+        171817250,
+        160964958,
+        161874375,
+        166257917
+      ],
+      "meanPublicAPINs": 159523.2850516183,
+      "phasesNs": {
+        "cleanup": 48458,
+        "compileValidate": 161915125,
+        "engineSetup": 375,
+        "exportLookup": 749,
+        "firstCall": 160696291,
+        "instantiate": 446791,
+        "load": 60292,
+        "providerSetup": 56707
+      },
+      "processReadyNs": 6153125,
+      "processWallNs": 1826975417
+    },
+    {
+      "block": 0,
+      "id": "head-llgo",
+      "alias": "aa",
+      "warmCallNs": [
+        717665167,
+        641861500,
+        617552125,
+        570804334,
+        667312292,
+        684953292,
+        661542333
+      ],
+      "meanPublicAPINs": 628863.566859654,
+      "phasesNs": {
+        "cleanup": 581708,
+        "compileValidate": 240399209,
+        "engineSetup": 416,
+        "exportLookup": 1333,
+        "firstCall": 646956500,
+        "instantiate": 797625,
+        "load": 87792,
+        "providerSetup": 248667
+      },
+      "processReadyNs": 20939417,
+      "processWallNs": 6703864417
+    },
+    {
+      "block": 0,
+      "id": "base-llgo",
+      "alias": "aa",
+      "warmCallNs": [
+        745743917,
+        745131500,
+        671176958,
+        642854875,
+        654605458,
+        641637250,
+        643214334
+      ],
+      "meanPublicAPINs": 654606.199672154,
+      "phasesNs": {
+        "cleanup": 14116375,
+        "compileValidate": 241288542,
+        "engineSetup": 250,
+        "exportLookup": 1124,
+        "firstCall": 619828500,
+        "instantiate": 700209,
+        "load": 56542,
+        "providerSetup": 201168
+      },
+      "processReadyNs": 9186917,
+      "processWallNs": 7012424458
+    },
+    {
+      "block": 0,
+      "id": "head-sharded",
+      "alias": "primary",
+      "warmCallNs": [
+        317436875,
+        329238250,
+        350076750,
+        413836791,
+        330100417,
+        347802750,
+        465165292
+      ],
+      "meanPublicAPINs": 349405.64512416295,
+      "phasesNs": {
+        "cleanup": 494958,
+        "compileValidate": 228917667,
+        "engineSetup": 292,
+        "exportLookup": 2666,
+        "firstCall": 320798958,
+        "instantiate": 772708,
+        "load": 128083,
+        "providerSetup": 193166
+      },
+      "processReadyNs": 19113584,
+      "processWallNs": 3775273042
+    },
+    {
+      "block": 0,
+      "id": "head-go",
+      "alias": "aa",
+      "warmCallNs": [
+        152398958,
+        150434000,
+        156072209,
+        148018041,
+        152056917,
+        162474916,
+        148004958
+      ],
+      "meanPublicAPINs": 148109.40607561384,
+      "phasesNs": {
+        "cleanup": 52792,
+        "compileValidate": 164942000,
+        "engineSetup": 333,
+        "exportLookup": 1042,
+        "firstCall": 162069792,
+        "instantiate": 512417,
+        "load": 60416,
+        "providerSetup": 60166
+      },
+      "processReadyNs": 5947666,
+      "processWallNs": 1722060583
+    },
+    {
+      "block": 1,
+      "id": "base-sharded",
+      "alias": "aa",
+      "warmCallNs": [
+        309350833,
+        327906542,
+        336677125,
+        308174000,
+        321228250,
+        438873750,
+        321823667
+      ],
+      "meanPublicAPINs": 323615.2111816406,
+      "phasesNs": {
+        "cleanup": 669625,
+        "compileValidate": 228438958,
+        "engineSetup": 166,
+        "exportLookup": 1584,
+        "firstCall": 332614334,
+        "instantiate": 730833,
+        "load": 80417,
+        "providerSetup": 240249
+      },
+      "processReadyNs": 9406666,
+      "processWallNs": 3608823125
+    },
+    {
+      "block": 1,
+      "id": "base-go",
+      "alias": "aa",
+      "warmCallNs": [
+        164099125,
+        160714000,
+        156219625,
+        156027541,
+        160238875,
+        159582167,
+        159264000
+      ],
+      "meanPublicAPINs": 154608.69513811384,
+      "phasesNs": {
+        "cleanup": 51417,
+        "compileValidate": 161075333,
+        "engineSetup": 291,
+        "exportLookup": 542,
+        "firstCall": 167016917,
+        "instantiate": 452041,
+        "load": 57500,
+        "providerSetup": 49625
+      },
+      "processReadyNs": 5710750,
+      "processWallNs": 1812159125
+    },
+    {
+      "block": 1,
+      "id": "go-host",
+      "alias": "aa",
+      "warmCallNs": [
+        2618459,
+        2819167,
+        2263583,
+        2269958,
+        2621792,
+        2375750,
+        2265042
+      ],
+      "meanPublicAPINs": 688.7318638392857,
+      "phasesNs": {
+        "cleanup": 8209,
+        "firstCall": 2329875
+      },
+      "processReadyNs": 5306041,
+      "processWallNs": 32602125
+    },
+    {
+      "block": 1,
+      "id": "wasmtime",
+      "alias": "primary",
+      "warmCallNs": [
+        58160709,
+        55388541,
+        55487916,
+        56621333,
+        62439041,
+        53825667,
+        53257417
+      ],
+      "meanPublicAPINs": 53763.689208984375,
+      "phasesNs": {
+        "cleanup": 226084,
+        "compileValidate": 53455166,
+        "engineSetup": 128000,
+        "executorSetup": 49792,
+        "exportLookup": 8459,
+        "firstCall": 58688625,
+        "instantiate": 191917,
+        "load": 53459,
+        "providerSetup": 232501
+      },
+      "processReadyNs": 6523167,
+      "processWallNs": 634737750
+    },
+    {
+      "block": 1,
+      "id": "go-host",
+      "alias": "primary",
+      "warmCallNs": [
+        2563750,
+        2845125,
+        2803375,
+        2853166,
+        2191250,
+        2163459,
+        2489750
+      ],
+      "meanPublicAPINs": 719.4624720982143,
+      "phasesNs": {
+        "cleanup": 6875,
+        "firstCall": 1996250
+      },
+      "processReadyNs": 5577875,
+      "processWallNs": 32414041
+    },
+    {
+      "block": 1,
+      "id": "base-sharded",
+      "alias": "primary",
+      "warmCallNs": [
+        323417958,
+        327650125,
+        338019791,
+        323269500,
+        317064417,
+        448149125,
+        332849667
+      ],
+      "meanPublicAPINs": 330234.251953125,
+      "phasesNs": {
+        "cleanup": 527167,
+        "compileValidate": 227670084,
+        "engineSetup": 167,
+        "exportLookup": 2000,
+        "firstCall": 343527334,
+        "instantiate": 744792,
+        "load": 69875,
+        "providerSetup": 264834
+      },
+      "processReadyNs": 9715709,
+      "processWallNs": 3674690000
+    },
+    {
+      "block": 1,
+      "id": "head-sharded",
+      "alias": "aa",
+      "warmCallNs": [
+        320140417,
+        314639500,
+        317406708,
+        310052291,
+        318414708,
+        361160667,
+        410300458
+      ],
+      "meanPublicAPINs": 321679.2790527344,
+      "phasesNs": {
+        "cleanup": 509625,
+        "compileValidate": 226436500,
+        "engineSetup": 167,
+        "exportLookup": 2375,
+        "firstCall": 440076375,
+        "instantiate": 809083,
+        "load": 67792,
+        "providerSetup": 224500
+      },
+      "processReadyNs": 9370292,
+      "processWallNs": 3726460084
+    },
+    {
+      "block": 1,
+      "id": "llgo-host",
+      "alias": "primary",
+      "warmCallNs": [
+        31703292,
+        38952375,
+        35192500,
+        33637500,
+        32316208,
+        33478083,
+        34906584
+      ],
+      "meanPublicAPINs": 1942.504847935268,
+      "phasesNs": {
+        "cleanup": 128625,
+        "firstCall": 33664792
+      },
+      "processReadyNs": 9228083,
+      "processWallNs": 355184958
+    },
+    {
+      "block": 1,
+      "id": "wasmtime",
+      "alias": "aa",
+      "warmCallNs": [
+        58989209,
+        57050750,
+        53278500,
+        56504958,
+        54561125,
+        68991541,
+        53138583
+      ],
+      "meanPublicAPINs": 54817.26743861607,
+      "phasesNs": {
+        "cleanup": 238292,
+        "compileValidate": 53157042,
+        "engineSetup": 140000,
+        "executorSetup": 41667,
+        "exportLookup": 8041,
+        "firstCall": 59508417,
+        "instantiate": 184792,
+        "load": 71500,
+        "providerSetup": 220417
+      },
+      "processReadyNs": 6330667,
+      "processWallNs": 651654625
+    },
+    {
+      "block": 1,
+      "id": "head-llgo",
+      "alias": "aa",
+      "warmCallNs": [
+        627873709,
+        608475583,
+        692507125,
+        661680292,
+        639948250,
+        728139750,
+        641312000
+      ],
+      "meanPublicAPINs": 634240.6200125559,
+      "phasesNs": {
+        "cleanup": 543917,
+        "compileValidate": 246283625,
+        "engineSetup": 208,
+        "exportLookup": 876,
+        "firstCall": 636945791,
+        "instantiate": 709042,
+        "load": 70125,
+        "providerSetup": 183085
+      },
+      "processReadyNs": 9532709,
+      "processWallNs": 6827229542
+    },
+    {
+      "block": 1,
+      "id": "head-go",
+      "alias": "primary",
+      "warmCallNs": [
+        162263625,
+        163207875,
+        166111667,
+        162699375,
+        159650708,
+        169433792,
+        162006125
+      ],
+      "meanPublicAPINs": 158612.01112583705,
+      "phasesNs": {
+        "cleanup": 53083,
+        "compileValidate": 170386792,
+        "engineSetup": 291,
+        "exportLookup": 626,
+        "firstCall": 190887750,
+        "instantiate": 516666,
+        "load": 83459,
+        "providerSetup": 56834
+      },
+      "processReadyNs": 6256333,
+      "processWallNs": 1853286208
+    },
+    {
+      "block": 1,
+      "id": "base-llgo",
+      "alias": "primary",
+      "warmCallNs": [
+        618593125,
+        710752084,
+        638104375,
+        756678000,
+        644244417,
+        593067250,
+        619005416
+      ],
+      "meanPublicAPINs": 632391.2472446987,
+      "phasesNs": {
+        "cleanup": 627500,
+        "compileValidate": 244302667,
+        "engineSetup": 334,
+        "exportLookup": 1042,
+        "firstCall": 696783417,
+        "instantiate": 713542,
+        "load": 64791,
+        "providerSetup": 188042
+      },
+      "processReadyNs": 9999958,
+      "processWallNs": 6865952708
+    },
+    {
+      "block": 1,
+      "id": "head-sharded",
+      "alias": "primary",
+      "warmCallNs": [
+        340042959,
+        342790542,
+        340821833,
+        325275750,
+        346312000,
+        339864583,
+        334924375
+      ],
+      "meanPublicAPINs": 324215.24494280136,
+      "phasesNs": {
+        "cleanup": 513833,
+        "compileValidate": 227866708,
+        "engineSetup": 125,
+        "exportLookup": 3084,
+        "firstCall": 442488250,
+        "instantiate": 748375,
+        "load": 68334,
+        "providerSetup": 245458
+      },
+      "processReadyNs": 9688416,
+      "processWallNs": 3743421958
+    },
+    {
+      "block": 1,
+      "id": "sharded-host",
+      "alias": "primary",
+      "warmCallNs": [
+        35607375,
+        35704000,
+        32681166,
+        32991792,
+        31735792,
+        36210375,
+        34027416
+      ],
+      "meanPublicAPINs": 2134.0972028459823,
+      "phasesNs": {
+        "cleanup": 82583,
+        "firstCall": 30881875
+      },
+      "processReadyNs": 9945584,
+      "processWallNs": 354803125
+    },
+    {
+      "block": 1,
+      "id": "sharded-host",
+      "alias": "aa",
+      "warmCallNs": [
+        31315833,
+        31302334,
+        29837833,
+        30940958,
+        32050375,
+        28835667,
+        31460875
+      ],
+      "meanPublicAPINs": 1839.304443359375,
+      "phasesNs": {
+        "cleanup": 94083,
+        "firstCall": 30044209
+      },
+      "processReadyNs": 9435750,
+      "processWallNs": 327097375
+    },
+    {
+      "block": 1,
+      "id": "base-llgo",
+      "alias": "aa",
+      "warmCallNs": [
+        627134250,
+        759780083,
+        666830042,
+        769125500,
+        650477500,
+        628004292,
+        737409167
+      ],
+      "meanPublicAPINs": 667780.3093959263,
+      "phasesNs": {
+        "cleanup": 567417,
+        "compileValidate": 240613875,
+        "engineSetup": 209,
+        "exportLookup": 916,
+        "firstCall": 642427583,
+        "instantiate": 687251,
+        "load": 70250,
+        "providerSetup": 216249
+      },
+      "processReadyNs": 9948542,
+      "processWallNs": 7160572583
+    },
+    {
+      "block": 1,
+      "id": "llgo-host",
+      "alias": "aa",
+      "warmCallNs": [
+        31865709,
+        32820500,
+        32452166,
+        32917167,
+        31741417,
+        33407375,
+        34581792
+      ],
+      "meanPublicAPINs": 1904.16357421875,
+      "phasesNs": {
+        "cleanup": 91083,
+        "firstCall": 37052125
+      },
+      "processReadyNs": 9524833,
+      "processWallNs": 351385542
+    },
+    {
+      "block": 1,
+      "id": "head-go",
+      "alias": "aa",
+      "warmCallNs": [
+        152156750,
+        153268167,
+        161926625,
+        158171542,
+        153073334,
+        151204833,
+        157015542
+      ],
+      "meanPublicAPINs": 150493.80981445312,
+      "phasesNs": {
+        "cleanup": 46791,
+        "compileValidate": 164838542,
+        "engineSetup": 458,
+        "exportLookup": 626,
+        "firstCall": 152803125,
+        "instantiate": 538875,
+        "load": 85625,
+        "providerSetup": 52000
+      },
+      "processReadyNs": 6464667,
+      "processWallNs": 1737173667
+    },
+    {
+      "block": 1,
+      "id": "head-llgo",
+      "alias": "primary",
+      "warmCallNs": [
+        599555584,
+        589711333,
+        691372917,
+        753811541,
+        615248791,
+        759833750,
+        700558417
+      ],
+      "meanPublicAPINs": 649972.8820800781,
+      "phasesNs": {
+        "cleanup": 676875,
+        "compileValidate": 246514250,
+        "engineSetup": 291,
+        "exportLookup": 1334,
+        "firstCall": 675573875,
+        "instantiate": 719500,
+        "load": 102458,
+        "providerSetup": 276917
+      },
+      "processReadyNs": 9632417,
+      "processWallNs": 6976909208
+    },
+    {
+      "block": 1,
+      "id": "base-go",
+      "alias": "primary",
+      "warmCallNs": [
+        154639208,
+        152805000,
+        158387250,
+        154043000,
+        153371583,
+        154215791,
+        162405000
+      ],
+      "meanPublicAPINs": 150742.27622767858,
+      "phasesNs": {
+        "cleanup": 54083,
+        "compileValidate": 161507917,
+        "engineSetup": 417,
+        "exportLookup": 708,
+        "firstCall": 155202875,
+        "instantiate": 486208,
+        "load": 58416,
+        "providerSetup": 57000
+      },
+      "processReadyNs": 5755042,
+      "processWallNs": 1740064792
+    },
+    {
+      "block": 2,
+      "id": "head-llgo",
+      "alias": "aa",
+      "warmCallNs": [
+        628459792,
+        667290750,
+        770271292,
+        683338125,
+        782540417,
+        672953500,
+        619932417
+      ],
+      "meanPublicAPINs": 665195.2985839844,
+      "phasesNs": {
+        "cleanup": 662459,
+        "compileValidate": 239995583,
+        "engineSetup": 291,
+        "exportLookup": 791,
+        "firstCall": 641140375,
+        "instantiate": 693874,
+        "load": 80750,
+        "providerSetup": 279625
+      },
+      "processReadyNs": 10277667,
+      "processWallNs": 7073679500
+    },
+    {
+      "block": 2,
+      "id": "head-sharded",
+      "alias": "aa",
+      "warmCallNs": [
+        321140875,
+        303579083,
+        338608958,
+        411674125,
+        335333416,
+        338407833,
+        312329875
+      ],
+      "meanPublicAPINs": 322481.442452567,
+      "phasesNs": {
+        "cleanup": 491375,
+        "compileValidate": 235888542,
+        "engineSetup": 125,
+        "exportLookup": 2500,
+        "firstCall": 344236291,
+        "instantiate": 763959,
+        "load": 77375,
+        "providerSetup": 240708
+      },
+      "processReadyNs": 9838833,
+      "processWallNs": 3587219541
+    },
+    {
+      "block": 2,
+      "id": "head-llgo",
+      "alias": "primary",
+      "warmCallNs": [
+        585589167,
+        592462583,
+        578942208,
+        612407250,
+        609287416,
+        588939500,
+        610952000
+      ],
+      "meanPublicAPINs": 576510.9818638393,
+      "phasesNs": {
+        "cleanup": 583333,
+        "compileValidate": 241456584,
+        "engineSetup": 292,
+        "exportLookup": 834,
+        "firstCall": 753009500,
+        "instantiate": 707668,
+        "load": 74542,
+        "providerSetup": 199375
+      },
+      "processReadyNs": 9375042,
+      "processWallNs": 6533173333
+    },
+    {
+      "block": 2,
+      "id": "head-go",
+      "alias": "aa",
+      "warmCallNs": [
+        153854542,
+        153241875,
+        170471333,
+        159712167,
+        154543750,
+        152680208,
+        154852042
+      ],
+      "meanPublicAPINs": 152272.33461216517,
+      "phasesNs": {
+        "cleanup": 53542,
+        "compileValidate": 163024209,
+        "engineSetup": 333,
+        "exportLookup": 749,
+        "firstCall": 154473750,
+        "instantiate": 467333,
+        "load": 75250,
+        "providerSetup": 53250
+      },
+      "processReadyNs": 6139250,
+      "processWallNs": 1733839792
+    },
+    {
+      "block": 2,
+      "id": "head-go",
+      "alias": "primary",
+      "warmCallNs": [
+        159584291,
+        156729334,
+        159561000,
+        158985833,
+        156886417,
+        153321833,
+        153646541
+      ],
+      "meanPublicAPINs": 152200.83098493304,
+      "phasesNs": {
+        "cleanup": 58625,
+        "compileValidate": 161224500,
+        "engineSetup": 459,
+        "exportLookup": 1084,
+        "firstCall": 161283500,
+        "instantiate": 566291,
+        "load": 64250,
+        "providerSetup": 58042
+      },
+      "processReadyNs": 6339292,
+      "processWallNs": 1742900834
+    },
+    {
+      "block": 2,
+      "id": "wasmtime",
+      "alias": "primary",
+      "warmCallNs": [
+        52004208,
+        56207375,
+        57356250,
+        54721666,
+        53913625,
+        53630084,
+        54516459
+      ],
+      "meanPublicAPINs": 52130.099609375,
+      "phasesNs": {
+        "cleanup": 247792,
+        "compileValidate": 51637166,
+        "engineSetup": 143208,
+        "executorSetup": 42875,
+        "exportLookup": 7709,
+        "firstCall": 60437459,
+        "instantiate": 183917,
+        "load": 83875,
+        "providerSetup": 220792
+      },
+      "processReadyNs": 6860083,
+      "processWallNs": 614413750
+    },
+    {
+      "block": 2,
+      "id": "head-sharded",
+      "alias": "primary",
+      "warmCallNs": [
+        324253792,
+        334467708,
+        337759666,
+        322374666,
+        318745667,
+        321881958,
+        319649958
+      ],
+      "meanPublicAPINs": 311796.14195033483,
+      "phasesNs": {
+        "cleanup": 569417,
+        "compileValidate": 224314792,
+        "engineSetup": 125,
+        "exportLookup": 2917,
+        "firstCall": 322593333,
+        "instantiate": 780167,
+        "load": 88583,
+        "providerSetup": 188750
+      },
+      "processReadyNs": 10032792,
+      "processWallNs": 3484644542
+    },
+    {
+      "block": 2,
+      "id": "base-sharded",
+      "alias": "aa",
+      "warmCallNs": [
+        394685792,
+        336946667,
+        340682542,
+        338287792,
+        327077333,
+        356194584,
+        369087167
+      ],
+      "meanPublicAPINs": 337122.4217703683,
+      "phasesNs": {
+        "cleanup": 560041,
+        "compileValidate": 227955167,
+        "engineSetup": 209,
+        "exportLookup": 1792,
+        "firstCall": 338183333,
+        "instantiate": 773291,
+        "load": 90916,
+        "providerSetup": 179292
+      },
+      "processReadyNs": 9885041,
+      "processWallNs": 3705085791
+    },
+    {
+      "block": 2,
+      "id": "base-llgo",
+      "alias": "aa",
+      "warmCallNs": [
+        634850959,
+        651779250,
+        613683291,
+        622912250,
+        712223959,
+        630891958,
+        629950791
+      ],
+      "meanPublicAPINs": 620548.6095842634,
+      "phasesNs": {
+        "cleanup": 582583,
+        "compileValidate": 273170375,
+        "engineSetup": 250,
+        "exportLookup": 792,
+        "firstCall": 739131375,
+        "instantiate": 649167,
+        "load": 86750,
+        "providerSetup": 235249
+      },
+      "processReadyNs": 10517958,
+      "processWallNs": 6840696833
+    },
+    {
+      "block": 2,
+      "id": "wasmtime",
+      "alias": "aa",
+      "warmCallNs": [
+        54909541,
+        53442708,
+        54081542,
+        53669958,
+        53331500,
+        54723583,
+        55607458
+      ],
+      "meanPublicAPINs": 51717.81204659598,
+      "phasesNs": {
+        "cleanup": 246750,
+        "compileValidate": 51072708,
+        "engineSetup": 140333,
+        "executorSetup": 39792,
+        "exportLookup": 8250,
+        "firstCall": 57263125,
+        "instantiate": 186208,
+        "load": 69250,
+        "providerSetup": 231749
+      },
+      "processReadyNs": 6512750,
+      "processWallNs": 613541250
+    },
+    {
+      "block": 2,
+      "id": "sharded-host",
+      "alias": "aa",
+      "warmCallNs": [
+        31206083,
+        30305666,
+        32540500,
+        33726792,
+        34382875,
+        31934625,
+        31225875
+      ],
+      "meanPublicAPINs": 1549.451695033482,
+      "phasesNs": {
+        "cleanup": 94042,
+        "firstCall": 30160958
+      },
+      "processReadyNs": 10451833,
+      "processWallNs": 337022791
+    },
+    {
+      "block": 2,
+      "id": "go-host",
+      "alias": "primary",
+      "warmCallNs": [
+        2213709,
+        2647959,
+        2261625,
+        2499459,
+        2929167,
+        2336375,
+        2163458
+      ],
+      "meanPublicAPINs": 721.76025390625,
+      "phasesNs": {
+        "cleanup": 8667,
+        "firstCall": 2394917
+      },
+      "processReadyNs": 5590792,
+      "processWallNs": 31722792
+    },
+    {
+      "block": 2,
+      "id": "base-go",
+      "alias": "primary",
+      "warmCallNs": [
+        160206667,
+        159277042,
+        157786375,
+        162693167,
+        159036208,
+        154906208,
+        158910250
+      ],
+      "meanPublicAPINs": 154116.4097377232,
+      "phasesNs": {
+        "cleanup": 52125,
+        "compileValidate": 163869834,
+        "engineSetup": 667,
+        "exportLookup": 626,
+        "firstCall": 156908625,
+        "instantiate": 467417,
+        "load": 65959,
+        "providerSetup": 50376
+      },
+      "processReadyNs": 6255250,
+      "processWallNs": 1756943542
+    },
+    {
+      "block": 2,
+      "id": "base-sharded",
+      "alias": "primary",
+      "warmCallNs": [
+        316959417,
+        322643250,
+        355186417,
+        321080917,
+        326831000,
+        355790500,
+        342149333
+      ],
+      "meanPublicAPINs": 320365.0226702009,
+      "phasesNs": {
+        "cleanup": 567042,
+        "compileValidate": 224786167,
+        "engineSetup": 125,
+        "exportLookup": 2041,
+        "firstCall": 320584959,
+        "instantiate": 729833,
+        "load": 77500,
+        "providerSetup": 158125
+      },
+      "processReadyNs": 9779916,
+      "processWallNs": 3555848333
+    },
+    {
+      "block": 2,
+      "id": "llgo-host",
+      "alias": "aa",
+      "warmCallNs": [
+        30453459,
+        32145542,
+        31915417,
+        30514250,
+        30997625,
+        31139292,
+        32135041
+      ],
+      "meanPublicAPINs": 1680.1156180245537,
+      "phasesNs": {
+        "cleanup": 97708,
+        "firstCall": 35678000
+      },
+      "processReadyNs": 9513291,
+      "processWallNs": 332715000
+    },
+    {
+      "block": 2,
+      "id": "sharded-host",
+      "alias": "primary",
+      "warmCallNs": [
+        33151334,
+        32026917,
+        31935833,
+        29213166,
+        29884250,
+        31494583,
+        32966625
+      ],
+      "meanPublicAPINs": 1954.6878487723213,
+      "phasesNs": {
+        "cleanup": 90084,
+        "firstCall": 31270417
+      },
+      "processReadyNs": 10424333,
+      "processWallNs": 333102833
+    },
+    {
+      "block": 2,
+      "id": "llgo-host",
+      "alias": "primary",
+      "warmCallNs": [
+        31681500,
+        33320792,
+        32296500,
+        34073625,
+        30336000,
+        33067459,
+        33385583
+      ],
+      "meanPublicAPINs": 2049.1142578125,
+      "phasesNs": {
+        "cleanup": 78250,
+        "firstCall": 35794167
+      },
+      "processReadyNs": 9818625,
+      "processWallNs": 343978000
+    },
+    {
+      "block": 2,
+      "id": "go-host",
+      "alias": "aa",
+      "warmCallNs": [
+        2565958,
+        2604083,
+        2486209,
+        2242375,
+        2409125,
+        2874458,
+        2166625
+      ],
+      "meanPublicAPINs": 642.3511090959821,
+      "phasesNs": {
+        "cleanup": 7500,
+        "firstCall": 2330875
+      },
+      "processReadyNs": 5960833,
+      "processWallNs": 32666667
+    },
+    {
+      "block": 2,
+      "id": "base-llgo",
+      "alias": "primary",
+      "warmCallNs": [
+        643903667,
+        646135750,
+        598120083,
+        642335167,
+        638585583,
+        591880125,
+        623669542
+      ],
+      "meanPublicAPINs": 605338.5143694197,
+      "phasesNs": {
+        "cleanup": 584000,
+        "compileValidate": 242874375,
+        "engineSetup": 250,
+        "exportLookup": 1041,
+        "firstCall": 600915750,
+        "instantiate": 746627,
+        "load": 61708,
+        "providerSetup": 225126
+      },
+      "processReadyNs": 9961333,
+      "processWallNs": 6517229125
+    },
+    {
+      "block": 2,
+      "id": "base-go",
+      "alias": "aa",
+      "warmCallNs": [
+        159187042,
+        157022500,
+        161784083,
+        159585459,
+        158819541,
+        156809625,
+        155791000
+      ],
+      "meanPublicAPINs": 153640.70242745537,
+      "phasesNs": {
+        "cleanup": 48375,
+        "compileValidate": 160763250,
+        "engineSetup": 292,
+        "exportLookup": 499,
+        "firstCall": 158362750,
+        "instantiate": 463750,
+        "load": 58083,
+        "providerSetup": 50376
+      },
+      "processReadyNs": 5908000,
+      "processWallNs": 1753163583
+    }
+  ],
+  "allocationDiagnostics": [
+    {
+      "id": "base-sharded",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/schema-matches-20261111/allocation-base-sharded.test",
+        "-test.run=^$",
+        "-test.bench=^BenchmarkOwnedP3Complete$",
+        "-test.benchtime=20000x",
+        "-test.count=1"
+      ],
+      "record": {
+        "GOMAXPROCS": 4,
+        "backend": "native",
+        "compiler": "llgo",
+        "emptyObserverEvents": 0,
+        "managedAllocationEvents": 49075197,
+        "requests": 20000,
+        "eventsPerRequest": 2453.75985
+      },
+      "scope": "Diagnostic allocation events, all request results checked. Observer timings excluded from performance results."
+    },
+    {
+      "id": "base-llgo",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/core-gap-20261111/managed-allocation-counts/llgo.test",
+        "-test.run=^$",
+        "-test.bench=^BenchmarkOwnedP3Complete$",
+        "-test.benchtime=20000x",
+        "-test.count=1"
+      ],
+      "record": {
+        "GOMAXPROCS": 4,
+        "backend": "native",
+        "compiler": "llgo",
+        "emptyObserverEvents": 0,
+        "managedAllocationEvents": 70573171,
+        "requests": 20000,
+        "eventsPerRequest": 3528.65855
+      },
+      "scope": "Diagnostic allocation events, all request results checked. Observer timings excluded from performance results."
+    },
+    {
+      "id": "head-llgo",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-llgo-allocation",
+        "-test.run=^$",
+        "-test.bench=^BenchmarkOwnedP3Complete$",
+        "-test.benchtime=20000x",
+        "-test.count=1"
+      ],
+      "record": {
+        "GOMAXPROCS": 4,
+        "backend": "native",
+        "compiler": "llgo",
+        "emptyObserverEvents": 0,
+        "managedAllocationEvents": 66620281,
+        "requests": 20000,
+        "eventsPerRequest": 3331.01405
+      },
+      "scope": "Diagnostic allocation events, all request results checked. Observer timings excluded from performance results."
+    },
+    {
+      "id": "head-go",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-go-allocation",
+        "-test.run=^$",
+        "-test.bench=^BenchmarkOwnedP3Complete$",
+        "-test.benchtime=20000x",
+        "-test.count=1"
+      ],
+      "record": {
+        "GOMAXPROCS": 4,
+        "backend": "native",
+        "compiler": "gc",
+        "emptyObserverEvents": 0,
+        "managedAllocationEvents": 24140134,
+        "requests": 20000,
+        "eventsPerRequest": 1207.0067
+      },
+      "scope": "Diagnostic allocation events, all request results checked. Observer timings excluded from performance results."
+    },
+    {
+      "id": "base-go",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/core-gap-20261111/managed-allocation-counts/go.test",
+        "-test.run=^$",
+        "-test.bench=^BenchmarkOwnedP3Complete$",
+        "-test.benchtime=20000x",
+        "-test.count=1"
+      ],
+      "record": {
+        "GOMAXPROCS": 4,
+        "backend": "native",
+        "compiler": "gc",
+        "emptyObserverEvents": 0,
+        "managedAllocationEvents": 24140143,
+        "requests": 20000,
+        "eventsPerRequest": 1207.00715
+      },
+      "scope": "Diagnostic allocation events, all request results checked. Observer timings excluded from performance results."
+    },
+    {
+      "id": "head-sharded",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-sharded-allocation",
+        "-test.run=^$",
+        "-test.bench=^BenchmarkOwnedP3Complete$",
+        "-test.benchtime=20000x",
+        "-test.count=1"
+      ],
+      "record": {
+        "GOMAXPROCS": 4,
+        "backend": "native",
+        "compiler": "llgo",
+        "emptyObserverEvents": 0,
+        "managedAllocationEvents": 45120541,
+        "requests": 20000,
+        "eventsPerRequest": 2256.02705
+      },
+      "scope": "Diagnostic allocation events, all request results checked. Observer timings excluded from performance results."
+    }
+  ],
+  "siteDiagnostic": {
+    "plan": {
+      "compiler": "e2cca2cb87860af43a588ba1cebc13984cda0897",
+      "runtime": "f2e4cb42675d13451b59c9e713e9aad4dce8e326",
+      "wasmvm": "4ce75302c8def7dfd85680a33d2e7a55593c8dfa",
+      "unchangedProductionFiles": 332,
+      "source": "/Users/lijie/source/goplus/wasmvm/artifacts/schema-matches-20261111/source-site-profile",
+      "sdk": "/Users/lijie/source/goplus/wasmvm/artifacts/schema-matches-20261111/site-profile-sdk",
+      "scope": "Allocation diagnostic only. First return PC of noinline allocation recorder, bounded 16384-site table, exact event and requested-byte sums. No timing acceptance. Observer disabled during symbolization. All requests checked.",
+      "instrumentedFiles": {
+        "runtime/internal/runtime/memprofile.go": "763ddeb0377bffc6194284ff441475a4bedba0f247352814e30ae0c517ebb181",
+        "runtime/internal/runtime/site_profile_diagnostic.go": "0002df9b4775d3bb7bb3bdb933b31ad2eae59a66e4ae0b0c81a9113668dd06e9"
+      },
+      "compilerBinarySHA256": "22856212fe44a30c945907dc218a393b4d2a4d4702552a026e655be80b9eb1dd",
+      "macroBinarySHA256": "8726eb52db908730c43350eb538667427e2006708c211bfdf9a0221e13e9b076",
+      "control": {
+        "emptyEvents": 0,
+        "objects": 10000,
+        "overflow": 0,
+        "requestedBytes": 160000,
+        "sites": 1
+      },
+      "macroResult": {
+        "requests": 1000,
+        "siteObjects": 2452778,
+        "managedAllocationEvents": 2452778,
+        "siteOverflow": 0,
+        "emptyObserverEvents": 0,
+        "siteBytes": 95028320,
+        "sites": 294
+      },
+      "siteAttributionLimit": "First return PC of the allocation recorder. Non-inlined runtime allocator wrappers retain their own names. Per-site counts are allocation event attribution, not CPU shares or timing."
+    },
+    "topFunctions": [
+      {
+        "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.AllocZ",
+        "objectsPerRequest": 270.0,
+        "bytesPerRequest": 12592.0,
+        "shareOfEvents": 0.11007926522498164
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).flushSourceCleanup",
+        "objectsPerRequest": 202.76,
+        "bytesPerRequest": 2264.512,
+        "shareOfEvents": 0.08266545117413807
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/vm.(*operation).host",
+        "objectsPerRequest": 192.0,
+        "bytesPerRequest": 5184.0,
+        "shareOfEvents": 0.07827858860443139
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*hostCall).finish",
+        "objectsPerRequest": 117.0,
+        "bytesPerRequest": 1097.0,
+        "shareOfEvents": 0.047701014930825375
+      },
+      {
+        "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.allocAligned",
+        "objectsPerRequest": 108.003,
+        "bytesPerRequest": 7169.008,
+        "shareOfEvents": 0.0440329291929396
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*componentTask).resume",
+        "objectsPerRequest": 100.0,
+        "bytesPerRequest": 825.0,
+        "shareOfEvents": 0.040770098231474684
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).newCodec",
+        "objectsPerRequest": 98.0,
+        "bytesPerRequest": 10336.0,
+        "shareOfEvents": 0.03995469626684519
+      },
+      {
+        "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.SliceAppend",
+        "objectsPerRequest": 88.0,
+        "bytesPerRequest": 3112.0,
+        "shareOfEvents": 0.03587768644369772
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/vm.(*Store).encodeValuesLocked",
+        "objectsPerRequest": 74.0,
+        "bytesPerRequest": 4064.0,
+        "shareOfEvents": 0.030169872691291264
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Function).hostCall",
+        "objectsPerRequest": 70.0,
+        "bytesPerRequest": 3728.0,
+        "shareOfEvents": 0.02853906876203228
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).startSourceRead",
+        "objectsPerRequest": 66.0,
+        "bytesPerRequest": 2646.0,
+        "shareOfEvents": 0.02690826483277329
+      },
+      {
+        "function": "context.(*cancelCtx).propagateCancel",
+        "objectsPerRequest": 60.0,
+        "bytesPerRequest": 960.0,
+        "shareOfEvents": 0.02446205893888481
+      },
+      {
+        "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.AllocU",
+        "objectsPerRequest": 57.0,
+        "bytesPerRequest": 1128.0,
+        "shareOfEvents": 0.02323895599194057
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/vm.(*Store).decodeValuesLocked",
+        "objectsPerRequest": 45.0,
+        "bytesPerRequest": 1072.0,
+        "shareOfEvents": 0.018346544204163606
+      },
+      {
+        "function": "context.WithCancel",
+        "objectsPerRequest": 34.0,
+        "bytesPerRequest": 1496.0,
+        "shareOfEvents": 0.013861833398701392
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*hostCall).invoke",
+        "objectsPerRequest": 34.0,
+        "bytesPerRequest": 1904.0,
+        "shareOfEvents": 0.013861833398701392
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/vm.(*Continuation).resumeHost",
+        "objectsPerRequest": 34.0,
+        "bytesPerRequest": 969.0,
+        "shareOfEvents": 0.013861833398701392
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*resourceCodec).Finish",
+        "objectsPerRequest": 33.0,
+        "bytesPerRequest": 528.0,
+        "shareOfEvents": 0.013454132416386645
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*asyncEnd).matches",
+        "objectsPerRequest": 30.0,
+        "bytesPerRequest": 480.0,
+        "shareOfEvents": 0.012231029469442404
+      },
+      {
+        "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.AllocAtomicU",
+        "objectsPerRequest": 26.0,
+        "bytesPerRequest": 33.0,
+        "shareOfEvents": 0.010600225540183417
+      },
+      {
+        "function": "context.AfterFunc",
+        "objectsPerRequest": 24.0,
+        "bytesPerRequest": 1440.0,
+        "shareOfEvents": 0.009784823575553924
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/component/canonical.MoveReference",
+        "objectsPerRequest": 23.0,
+        "bytesPerRequest": 1840.0,
+        "shareOfEvents": 0.009377122593239176
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*resourceCodec).Accept",
+        "objectsPerRequest": 22.0,
+        "bytesPerRequest": 1152.0,
+        "shareOfEvents": 0.00896942161092443
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).readAsync",
+        "objectsPerRequest": 20.0,
+        "bytesPerRequest": 192.0,
+        "shareOfEvents": 0.008154019646294936
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).startSourceRead.func4",
+        "objectsPerRequest": 18.0,
+        "bytesPerRequest": 150.0,
+        "shareOfEvents": 0.007338617681665443
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).asyncValueBuiltin.func1",
+        "objectsPerRequest": 17.0,
+        "bytesPerRequest": 208.0,
+        "shareOfEvents": 0.006930916699350696
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/component/canonical.(*Resources).AddOpaque",
+        "objectsPerRequest": 17.0,
+        "bytesPerRequest": 1360.0,
+        "shareOfEvents": 0.006930916699350696
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*hostCall).start",
+        "objectsPerRequest": 16.0,
+        "bytesPerRequest": 896.0,
+        "shareOfEvents": 0.0065232157170359495
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).finishSourceCleanup",
+        "objectsPerRequest": 16.0,
+        "bytesPerRequest": 256.0,
+        "shareOfEvents": 0.0065232157170359495
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*resourceType).destroyHost",
+        "objectsPerRequest": 16.0,
+        "bytesPerRequest": 484.0,
+        "shareOfEvents": 0.0065232157170359495
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).allocateEnds",
+        "objectsPerRequest": 16.0,
+        "bytesPerRequest": 2944.0,
+        "shareOfEvents": 0.0065232157170359495
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/wasi/preview3.(*httpBody).byteSource.func3",
+        "objectsPerRequest": 16.0,
+        "bytesPerRequest": 500.0,
+        "shareOfEvents": 0.0065232157170359495
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).canonical.func4",
+        "objectsPerRequest": 14.0,
+        "bytesPerRequest": 119.0,
+        "shareOfEvents": 0.005707813752406456
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*hostCall).accept",
+        "objectsPerRequest": 13.0,
+        "bytesPerRequest": 832.0,
+        "shareOfEvents": 0.005300112770091708
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).taskBuiltin.func1",
+        "objectsPerRequest": 13.0,
+        "bytesPerRequest": 416.0,
+        "shareOfEvents": 0.005300112770091708
+      },
+      {
+        "function": "context.AfterFunc.func1",
+        "objectsPerRequest": 12.0,
+        "bytesPerRequest": 12.0,
+        "shareOfEvents": 0.004892411787776962
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/wasi/preview3.(*httpBody).readExternal",
+        "objectsPerRequest": 12.0,
+        "bytesPerRequest": 120.0,
+        "shareOfEvents": 0.004892411787776962
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/vm.(*Caller).Poll",
+        "objectsPerRequest": 12.0,
+        "bytesPerRequest": 96.0,
+        "shareOfEvents": 0.004892411787776962
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.copyGuestBuffers",
+        "objectsPerRequest": 12.0,
+        "bytesPerRequest": 99.0,
+        "shareOfEvents": 0.004892411787776962
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/component/canonical.(*Resources).New",
+        "objectsPerRequest": 12.0,
+        "bytesPerRequest": 960.0,
+        "shareOfEvents": 0.004892411787776962
+      }
+    ]
+  },
+  "cpuDiagnostic": {
+    "metadata": {
+      "scope": "Time Profiler on-CPU sample weights, waiting threads disabled. Whole process including GC marker CPU. Window from first to last observed invocation of the actual owned kernel closure, including first/warmup and30 measured batches. All traced timings excluded from uninstrumented results.",
+      "rows": 47295,
+      "windowRows": 46852,
+      "startNs": 1337593625,
+      "endNs": 12154593291,
+      "sampledCPUWeightNs": 46852000000,
+      "states": {
+        "Running": 46852
+      },
+      "exclusiveCategories": [
+        {
+          "function": "Other process CPU",
+          "sampledCPUMs": 28241.0,
+          "share": 0.6027704260223683
+        },
+        {
+          "function": "GC marker threads",
+          "sampledCPUMs": 9868.0,
+          "share": 0.21062067787927943
+        },
+        {
+          "function": "Mutator allocator paths",
+          "sampledCPUMs": 8743.0,
+          "share": 0.18660889609835227
+        }
+      ]
+    },
+    "leaf": [
+      {
+        "function": "GC_mark_from",
+        "sampledCPUMs": 7207.0,
+        "share": 0.15382481004012635
+      },
+      {
+        "function": "__psynch_cvwait",
+        "sampledCPUMs": 4222.0,
+        "share": 0.09011354904806625
+      },
+      {
+        "function": "__psynch_mutexwait",
+        "sampledCPUMs": 4143.0,
+        "share": 0.08842738837189448
+      },
+      {
+        "function": "__psynch_mutexdrop",
+        "sampledCPUMs": 2470.0,
+        "share": 0.05271920088790233
+      },
+      {
+        "function": "__psynch_cvsignal",
+        "sampledCPUMs": 2332.0,
+        "share": 0.049773755656108594
+      },
+      {
+        "function": "wasmvm_enter",
+        "sampledCPUMs": 1675.0,
+        "share": 0.03575087509604713
+      },
+      {
+        "function": "GC_malloc_kind",
+        "sampledCPUMs": 1094.0,
+        "share": 0.02335012379407496
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/component/validate.(*equality).value",
+        "sampledCPUMs": 1037.0,
+        "share": 0.022133526850507984
+      },
+      {
+        "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.getg",
+        "sampledCPUMs": 919.0,
+        "share": 0.019614957739264065
+      },
+      {
+        "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.recordMemProfileAlloc",
+        "sampledCPUMs": 872.0,
+        "share": 0.018611798855971997
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/component/validate.(*equality).seen",
+        "sampledCPUMs": 629.0,
+        "share": 0.013425253991291727
+      },
+      {
+        "function": "_platform_memset",
+        "sampledCPUMs": 577.0,
+        "share": 0.012315376077862204
+      },
+      {
+        "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.typehashImpl",
+        "sampledCPUMs": 519.0,
+        "share": 0.011077435328267736
+      },
+      {
+        "function": "_tlv_get_addr",
+        "sampledCPUMs": 464.0,
+        "share": 0.009903525996755742
+      },
+      {
+        "function": "pthread_jit_write_protect_np",
+        "sampledCPUMs": 443.0,
+        "share": 0.009455306070178434
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/engine/nativeexec.(*Execution).run",
+        "sampledCPUMs": 414.0,
+        "share": 0.0088363356953812
+      },
+      {
+        "function": "GC_push_contents_hdr",
+        "sampledCPUMs": 390.0,
+        "share": 0.008324084350721421
+      },
+      {
+        "function": "GC_reclaim_generic",
+        "sampledCPUMs": 388.0,
+        "share": 0.008281396738666439
+      },
+      {
+        "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.mapaccess1_fast64",
+        "sampledCPUMs": 381.0,
+        "share": 0.008131990096474003
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/engine/nativeexec.(*Execution).bindRuntimeGlobals",
+        "sampledCPUMs": 336.0,
+        "share": 0.007171518825236916
+      },
+      {
+        "function": "GC_mark_local",
+        "sampledCPUMs": 320.0,
+        "share": 0.006830017928797063
+      },
+      {
+        "function": "_platform_memmove",
+        "sampledCPUMs": 265.0,
+        "share": 0.005656108597285068
+      },
+      {
+        "function": "pthread_mutex_lock",
+        "sampledCPUMs": 260.0,
+        "share": 0.005549389567147614
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/platform/native.(*Context).run",
+        "sampledCPUMs": 246.0,
+        "share": 0.005250576282762742
+      },
+      {
+        "function": "pthread_mutex_unlock",
+        "sampledCPUMs": 242.0,
+        "share": 0.005165201058652779
+      },
+      {
+        "function": "GC_build_fl",
+        "sampledCPUMs": 234.0,
+        "share": 0.004994450610432853
+      },
+      {
+        "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.MapAccess2Fast64",
+        "sampledCPUMs": 222.0,
+        "share": 0.004738324938102963
+      },
+      {
+        "function": "_setjmp",
+        "sampledCPUMs": 222.0,
+        "share": 0.004738324938102963
+      },
+      {
+        "function": "context.(*cancelCtx).Done",
+        "sampledCPUMs": 210.0,
+        "share": 0.004482199265773073
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/vm.(*operation).host",
+        "sampledCPUMs": 183.0,
+        "share": 0.0039059165030308203
+      },
+      {
+        "function": "DYLD-STUB$$GC_malloc",
+        "sampledCPUMs": 179.0,
+        "share": 0.003820541278920857
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).adoptNativeFrames",
+        "sampledCPUMs": 174.0,
+        "share": 0.003713822248783403
+      },
+      {
+        "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.MapAccess1Fast32",
+        "sampledCPUMs": 166.0,
+        "share": 0.0035430718005634767
+      },
+      {
+        "function": "sync.(*Mutex).Unlock",
+        "sampledCPUMs": 163.0,
+        "share": 0.003479040382481004
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).runCall",
+        "sampledCPUMs": 162.0,
+        "share": 0.003457696576453513
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/platform/native.(*Memory).Buffer",
+        "sampledCPUMs": 162.0,
+        "share": 0.003457696576453513
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/vm.(*Caller).Poll",
+        "sampledCPUMs": 151.0,
+        "share": 0.003222914710151114
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/engine/nativeexec.(*Execution).runFrames",
+        "sampledCPUMs": 144.0,
+        "share": 0.0030735080679586786
+      },
+      {
+        "function": "mach_absolute_time",
+        "sampledCPUMs": 134.0,
+        "share": 0.00286007000768377
+      },
+      {
+        "function": "GC_header_cache_miss",
+        "sampledCPUMs": 133.0,
+        "share": 0.0028387262016562795
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/component/canonical.(*Codec).validate",
+        "sampledCPUMs": 132.0,
+        "share": 0.0028173823956287886
+      },
+      {
+        "function": "DYLD-STUB$$sigsetjmp",
+        "sampledCPUMs": 132.0,
+        "share": 0.0028173823956287886
+      },
+      {
+        "function": "GC_allochblk_nth",
+        "sampledCPUMs": 131.0,
+        "share": 0.0027960385896012977
+      },
+      {
+        "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.SliceAppend",
+        "sampledCPUMs": 130.0,
+        "share": 0.002774694783573807
+      },
+      {
+        "function": "_pthread_mutex_firstfit_lock_slow",
+        "sampledCPUMs": 129.0,
+        "share": 0.002753350977546316
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).Run",
+        "sampledCPUMs": 129.0,
+        "share": 0.002753350977546316
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*componentTask).resume",
+        "sampledCPUMs": 126.0,
+        "share": 0.0026893195594638437
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/platform/native.(*Context).BindMemory",
+        "sampledCPUMs": 123.0,
+        "share": 0.002625288141381371
+      },
+      {
+        "function": "context.(*cancelCtx).Err",
+        "sampledCPUMs": 123.0,
+        "share": 0.002625288141381371
+      },
+      {
+        "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.MatchesClosure",
+        "sampledCPUMs": 117.0,
+        "share": 0.0024972253052164264
+      }
+    ],
+    "inclusive": [
+      {
+        "function": "thread_start",
+        "sampledCPUMs": 46846.0,
+        "share": 0.999871937163835
+      },
+      {
+        "function": "_pthread_start",
+        "sampledCPUMs": 46846.0,
+        "share": 0.999871937163835
+      },
+      {
+        "function": "GC_start_routine",
+        "sampledCPUMs": 36978.0,
+        "share": 0.7892512592845556
+      },
+      {
+        "function": "GC_inner_start_routine",
+        "sampledCPUMs": 36978.0,
+        "share": 0.7892512592845556
+      },
+      {
+        "function": "sync._llgo_routine$1",
+        "sampledCPUMs": 33321.0,
+        "share": 0.7111969606420216
+      },
+      {
+        "function": "sync.(*WaitGroup).Go$1",
+        "sampledCPUMs": 33321.0,
+        "share": 0.7111969606420216
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/bench/service.Start$1",
+        "sampledCPUMs": 32196.0,
+        "share": 0.6871851788610945
+      },
+      {
+        "function": "main.bufferedKernel$1",
+        "sampledCPUMs": 31595.0,
+        "share": 0.6743575514385726
+      },
+      {
+        "function": "main.ownedKernels$2",
+        "sampledCPUMs": 31454.0,
+        "share": 0.6713480747886963
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/wasi/preview3.(*HTTP).CallIncomingBuffered",
+        "sampledCPUMs": 31453.0,
+        "share": 0.6713267309826688
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/wasi/preview3.(*HTTP).callIncoming",
+        "sampledCPUMs": 31028.0,
+        "share": 0.6622556134209853
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/wasi/preview3.(*HTTP).callIncoming$5",
+        "sampledCPUMs": 30331.0,
+        "share": 0.6473789806198241
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Function).callWithResult",
+        "sampledCPUMs": 30298.0,
+        "share": 0.6466746350209169
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/vm.(*Store).withCaller",
+        "sampledCPUMs": 30270.0,
+        "share": 0.6460770084521472
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Function).callWithResult$1",
+        "sampledCPUMs": 30055.0,
+        "share": 0.6414880901562366
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*componentTask).resume",
+        "sampledCPUMs": 26696.0,
+        "share": 0.569794245709895
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/vm.(*Caller).Poll",
+        "sampledCPUMs": 22363.0,
+        "share": 0.4773115341927773
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).awaitTasksContext",
+        "sampledCPUMs": 22296.0,
+        "share": 0.47588149918893535
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).stepTasks",
+        "sampledCPUMs": 21257.0,
+        "share": 0.4537052847263724
+      },
+      {
+        "function": "GC_mark_local",
+        "sampledCPUMs": 10347.0,
+        "share": 0.22084436096644755
+      },
+      {
+        "function": "GC_mark_thread",
+        "sampledCPUMs": 9868.0,
+        "share": 0.21062067787927943
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*hostCall).invoke",
+        "sampledCPUMs": 9743.0,
+        "share": 0.20795270212584308
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).Run",
+        "sampledCPUMs": 9586.0,
+        "share": 0.20460172457952702
+      },
+      {
+        "function": "GC_malloc_kind",
+        "sampledCPUMs": 8717.0,
+        "share": 0.1860539571416375
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).runBackend",
+        "sampledCPUMs": 8550.0,
+        "share": 0.18248954153504654
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/engine/nativeexec.(*Execution).RunFrames",
+        "sampledCPUMs": 8290.0,
+        "share": 0.17694015196789892
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/vm.(*operation).host",
+        "sampledCPUMs": 8270.0,
+        "share": 0.1765132758473491
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Function).callWithResult$1$3",
+        "sampledCPUMs": 8032.0,
+        "share": 0.17143345001280627
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/wasi/preview3.(*HTTP).callIncoming$5$3",
+        "sampledCPUMs": 8029.0,
+        "share": 0.17136941859472382
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/engine/nativeexec.(*Execution).runFrames",
+        "sampledCPUMs": 8019.0,
+        "share": 0.17115598053444891
+      },
+      {
+        "function": "GC_mark_from",
+        "sampledCPUMs": 7686.0,
+        "share": 0.16404849312729447
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/wasi/preview3.(*httpBody).collect",
+        "sampledCPUMs": 7576.0,
+        "share": 0.16170067446427047
+      },
+      {
+        "function": "GC_generic_malloc_many",
+        "sampledCPUMs": 7417.0,
+        "share": 0.15830700930589942
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Caller).readAsyncContext",
+        "sampledCPUMs": 7363.0,
+        "share": 0.15715444378041493
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/engine/nativeexec.(*Execution).run",
+        "sampledCPUMs": 7207.0,
+        "share": 0.15382481004012635
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).readAsync",
+        "sampledCPUMs": 6841.0,
+        "share": 0.1460129770340647
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).canonical$4",
+        "sampledCPUMs": 6288.0,
+        "share": 0.1342098523008623
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/internal/platform/native.(*Context).run",
+        "sampledCPUMs": 5827.0,
+        "share": 0.12437035772218902
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).beginAsyncCall",
+        "sampledCPUMs": 5632.0,
+        "share": 0.12020831554682831
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).canonical$1",
+        "sampledCPUMs": 5584.0,
+        "share": 0.11918381285750874
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).startTask",
+        "sampledCPUMs": 5582.0,
+        "share": 0.11914112524545377
+      },
+      {
+        "function": "wasmvm_enter",
+        "sampledCPUMs": 5420.0,
+        "share": 0.11568342866900026
+      },
+      {
+        "function": "_pthread_cond_wait",
+        "sampledCPUMs": 4449.0,
+        "share": 0.09495859301630667
+      },
+      {
+        "function": "_pthread_mutex_firstfit_lock_slow",
+        "sampledCPUMs": 4305.0,
+        "share": 0.09188508494834799
+      },
+      {
+        "function": "__psynch_cvwait",
+        "sampledCPUMs": 4222.0,
+        "share": 0.09011354904806625
+      },
+      {
+        "function": "__psynch_mutexwait",
+        "sampledCPUMs": 4143.0,
+        "share": 0.08842738837189448
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*componentTask).resumeHost",
+        "sampledCPUMs": 4048.0,
+        "share": 0.08639972679928284
+      },
+      {
+        "function": "github.com/cpunion/wasmvm/pkg/component.(*Function).call",
+        "sampledCPUMs": 4039.0,
+        "share": 0.08620763254503543
+      },
+      {
+        "function": "_pthread_mutex_firstfit_lock_wait",
+        "sampledCPUMs": 4005.0,
+        "share": 0.08548194314010074
+      },
+      {
+        "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.(*chanSignal).park",
+        "sampledCPUMs": 3521.0,
+        "share": 0.07515154102279518
+      }
+    ],
+    "qualification": {
+      "exitCode": 0,
+      "measuredBatches": 30,
+      "checkedMeasuredWarmResponses": 122880,
+      "scope": "Trace result correctness only. Timings excluded from performance."
+    }
+  },
+  "collectorDiscovery": {
+    "plan": {
+      "config": {
+        "id": "head-sharded",
+        "engine": "wasmvm",
+        "compiler": "llgo",
+        "backend": "native",
+        "workers": 4,
+        "requests": 256,
+        "samples": 7,
+        "warmups": 2,
+        "payloadBytes": 16,
+        "expected": 1757737011,
+        "resources": false,
+        "build": {
+          "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-sharded-runner",
+          "command": [
+            "/Users/lijie/source/goplus/wasmvm/artifacts/llgo-memprofile-shards-20261111/llgo-e2cca2c",
+            "build",
+            "-O3",
+            "-lto=full",
+            "-o",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-sharded-runner",
+            "."
+          ],
+          "compilerBinarySHA256": "22856212fe44a30c945907dc218a393b4d2a4d4702552a026e655be80b9eb1dd",
+          "sdk": "/Users/lijie/source/goplus/llgo-memprofile-shards",
+          "source": "93a60f11e5ffd7b886c17f2feaa15c293fe9e23f",
+          "binarySHA256": "fea851835255c72922820c00e4f64d86c0eb6b5be57fcaa10fa192b56e6de435",
+          "buildWallNs": 68140500625
+        },
+        "responseMode": "buffered",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/source-cleanup-drain-20261111/head-sharded-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2"
+        ]
+      },
+      "settings": [
+        [
+          "default",
+          null
+        ],
+        [
+          "2",
+          "2"
+        ],
+        [
+          "1",
+          "1"
+        ]
+      ],
+      "blocks": 2,
+      "aliases": [
+        "primary",
+        "aa"
+      ],
+      "seed": 2026111188,
+      "scope": "Collector heap/collection-budget diagnostic using identical current-compiler/sharded-runtime binary. Process environment only. Default settings preserved in production. Two workstation blocks are discovery evidence, no release acceptance. Requested resource snapshots and GC counts are independent instrumented processes."
+    },
+    "summary": {
+      "default": {
+        "requestsPerSecond": 12550.448701751451,
+        "aaRatios": [
+          0.9642957763354895,
+          1.0272319360270457
+        ],
+        "resourceSnapshots": [
+          {
+            "RSSBytes": 174915584,
+            "PeakRSSBytes": 174931968,
+            "OSThreads": 49,
+            "Scope": "ps instantaneous RSS/OS threads at idle batch boundaries; getrusage process-lifetime peak RSS. Instrumented process only; no throughput acceptance or peak thread claim."
+          },
+          {
+            "RSSBytes": 158597120,
+            "PeakRSSBytes": 185647104,
+            "OSThreads": 57,
+            "Scope": "ps instantaneous RSS/OS threads at idle batch boundaries; getrusage process-lifetime peak RSS. Instrumented process only; no throughput acceptance or peak thread claim."
+          },
+          {
+            "RSSBytes": 151191552,
+            "PeakRSSBytes": 185647104,
+            "OSThreads": 57,
+            "Scope": "ps instantaneous RSS/OS threads at idle batch boundaries; getrusage process-lifetime peak RSS. Instrumented process only; no throughput acceptance or peak thread claim."
+          }
+        ],
+        "batchGCCounts": [
+          {
+            "gcBefore": 11,
+            "gcAfter": 26,
+            "heapBefore": 53919744,
+            "heapAfter": 45297664,
+            "totalAllocBytes": 498942768
+          },
+          {
+            "gcBefore": 26,
+            "gcAfter": 41,
+            "heapBefore": 45535232,
+            "heapAfter": 45735936,
+            "totalAllocBytes": 498287056
+          }
+        ]
+      },
+      "2": {
+        "requestsPerSecond": 12479.801292313892,
+        "aaRatios": [
+          0.9217498537766396,
+          0.9097770634655595
+        ],
+        "resourceSnapshots": [
+          {
+            "RSSBytes": 209960960,
+            "PeakRSSBytes": 209977344,
+            "OSThreads": 49,
+            "Scope": "ps instantaneous RSS/OS threads at idle batch boundaries; getrusage process-lifetime peak RSS. Instrumented process only; no throughput acceptance or peak thread claim."
+          },
+          {
+            "RSSBytes": 170934272,
+            "PeakRSSBytes": 221609984,
+            "OSThreads": 57,
+            "Scope": "ps instantaneous RSS/OS threads at idle batch boundaries; getrusage process-lifetime peak RSS. Instrumented process only; no throughput acceptance or peak thread claim."
+          },
+          {
+            "RSSBytes": 170950656,
+            "PeakRSSBytes": 221609984,
+            "OSThreads": 57,
+            "Scope": "ps instantaneous RSS/OS threads at idle batch boundaries; getrusage process-lifetime peak RSS. Instrumented process only; no throughput acceptance or peak thread claim."
+          }
+        ],
+        "batchGCCounts": [
+          {
+            "gcBefore": 8,
+            "gcAfter": 18,
+            "heapBefore": 54587392,
+            "heapAfter": 45330432,
+            "totalAllocBytes": 498955776
+          },
+          {
+            "gcBefore": 18,
+            "gcAfter": 28,
+            "heapBefore": 45584384,
+            "heapAfter": 44834816,
+            "totalAllocBytes": 498290736
+          }
+        ]
+      },
+      "1": {
+        "requestsPerSecond": 13548.75483039903,
+        "aaRatios": [
+          0.9326544580373258,
+          1.0572772290234664
+        ],
+        "resourceSnapshots": [
+          {
+            "RSSBytes": 238469120,
+            "PeakRSSBytes": 238501888,
+            "OSThreads": 49,
+            "Scope": "ps instantaneous RSS/OS threads at idle batch boundaries; getrusage process-lifetime peak RSS. Instrumented process only; no throughput acceptance or peak thread claim."
+          },
+          {
+            "RSSBytes": 253394944,
+            "PeakRSSBytes": 253411328,
+            "OSThreads": 57,
+            "Scope": "ps instantaneous RSS/OS threads at idle batch boundaries; getrusage process-lifetime peak RSS. Instrumented process only; no throughput acceptance or peak thread claim."
+          },
+          {
+            "RSSBytes": 253394944,
+            "PeakRSSBytes": 253427712,
+            "OSThreads": 57,
+            "Scope": "ps instantaneous RSS/OS threads at idle batch boundaries; getrusage process-lifetime peak RSS. Instrumented process only; no throughput acceptance or peak thread claim."
+          }
+        ],
+        "batchGCCounts": [
+          {
+            "gcBefore": 5,
+            "gcAfter": 10,
+            "heapBefore": 73490432,
+            "heapAfter": 60985344,
+            "totalAllocBytes": 498947392
+          },
+          {
+            "gcBefore": 10,
+            "gcAfter": 15,
+            "heapBefore": 61243392,
+            "heapAfter": 59129856,
+            "totalAllocBytes": 498316496
+          }
+        ]
+      }
+    },
+    "observations": [
+      {
+        "block": 0,
+        "setting": "default",
+        "alias": "primary",
+        "warmCallNs": [
+          343223875,
+          323081875,
+          346619625,
+          322772792,
+          347640000,
+          374678208,
+          316208750
+        ],
+        "phasesNs": {
+          "cleanup": 520833,
+          "compileValidate": 230232833,
+          "engineSetup": 250,
+          "exportLookup": 2666,
+          "firstCall": 333648708,
+          "instantiate": 786083,
+          "load": 347750,
+          "providerSetup": 249459
+        }
+      },
+      {
+        "block": 0,
+        "setting": "2",
+        "alias": "primary",
+        "warmCallNs": [
+          384691167,
+          318861500,
+          320527208,
+          303588500,
+          299986000,
+          288266500,
+          417630500
+        ],
+        "phasesNs": {
+          "cleanup": 623583,
+          "compileValidate": 221588500,
+          "engineSetup": 167,
+          "exportLookup": 3083,
+          "firstCall": 303142791,
+          "instantiate": 750250,
+          "load": 66958,
+          "providerSetup": 212167
+        }
+      },
+      {
+        "block": 0,
+        "setting": "2",
+        "alias": "aa",
+        "warmCallNs": [
+          310560208,
+          314738916,
+          293663750,
+          277468875,
+          297317500,
+          293910541,
+          277240042
+        ],
+        "phasesNs": {
+          "cleanup": 470500,
+          "compileValidate": 227138000,
+          "engineSetup": 250,
+          "exportLookup": 2333,
+          "firstCall": 312260708,
+          "instantiate": 752877,
+          "load": 79250,
+          "providerSetup": 184875
+        }
+      },
+      {
+        "block": 0,
+        "setting": "1",
+        "alias": "primary",
+        "warmCallNs": [
+          313813041,
+          298514292,
+          300412666,
+          312973125,
+          301262583,
+          328278167,
+          312517583
+        ],
+        "phasesNs": {
+          "cleanup": 482541,
+          "compileValidate": 222917292,
+          "engineSetup": 166,
+          "exportLookup": 2416,
+          "firstCall": 292923333,
+          "instantiate": 776749,
+          "load": 128458,
+          "providerSetup": 193709
+        }
+      },
+      {
+        "block": 0,
+        "setting": "1",
+        "alias": "aa",
+        "warmCallNs": [
+          281906959,
+          292195791,
+          302104417,
+          290655917,
+          282734625,
+          392302500,
+          291470917
+        ],
+        "phasesNs": {
+          "cleanup": 443375,
+          "compileValidate": 220273000,
+          "engineSetup": 166,
+          "exportLookup": 2583,
+          "firstCall": 313447125,
+          "instantiate": 713126,
+          "load": 64334,
+          "providerSetup": 225417
+        }
+      },
+      {
+        "block": 0,
+        "setting": "default",
+        "alias": "aa",
+        "warmCallNs": [
+          330969333,
+          321152250,
+          412223042,
+          306471834,
+          336476750,
+          420155542,
+          323641833
+        ],
+        "phasesNs": {
+          "cleanup": 565708,
+          "compileValidate": 226306167,
+          "engineSetup": 125,
+          "exportLookup": 2583,
+          "firstCall": 332585667,
+          "instantiate": 763000,
+          "load": 66500,
+          "providerSetup": 211792
+        }
+      },
+      {
+        "block": 1,
+        "setting": "default",
+        "alias": "aa",
+        "warmCallNs": [
+          291281250,
+          311381667,
+          317930125,
+          409239125,
+          364915834,
+          331629083,
+          317045041
+        ],
+        "phasesNs": {
+          "cleanup": 571750,
+          "compileValidate": 227127000,
+          "engineSetup": 125,
+          "exportLookup": 2459,
+          "firstCall": 321609084,
+          "instantiate": 763792,
+          "load": 75917,
+          "providerSetup": 201124
+        }
+      },
+      {
+        "block": 1,
+        "setting": "2",
+        "alias": "aa",
+        "warmCallNs": [
+          313635500,
+          310277958,
+          307103625,
+          316833917,
+          296711500,
+          305820958,
+          292218500
+        ],
+        "phasesNs": {
+          "cleanup": 540667,
+          "compileValidate": 221224917,
+          "engineSetup": 166,
+          "exportLookup": 2292,
+          "firstCall": 316565708,
+          "instantiate": 710126,
+          "load": 79500,
+          "providerSetup": 217251
+        }
+      },
+      {
+        "block": 1,
+        "setting": "1",
+        "alias": "primary",
+        "warmCallNs": [
+          291355375,
+          316801084,
+          292113625,
+          280582500,
+          285696250,
+          307344458,
+          378903667
+        ],
+        "phasesNs": {
+          "cleanup": 510250,
+          "compileValidate": 219568708,
+          "engineSetup": 125,
+          "exportLookup": 2501,
+          "firstCall": 288093875,
+          "instantiate": 720958,
+          "load": 94041,
+          "providerSetup": 184165
+        }
+      },
+      {
+        "block": 1,
+        "setting": "1",
+        "alias": "aa",
+        "warmCallNs": [
+          307160417,
+          294842125,
+          311726250,
+          308845084,
+          329667417,
+          333962250,
+          290937708
+        ],
+        "phasesNs": {
+          "cleanup": 570583,
+          "compileValidate": 220036333,
+          "engineSetup": 125,
+          "exportLookup": 2375,
+          "firstCall": 292288291,
+          "instantiate": 748626,
+          "load": 78333,
+          "providerSetup": 226875
+        }
+      },
+      {
+        "block": 1,
+        "setting": "default",
+        "alias": "primary",
+        "warmCallNs": [
+          326306042,
+          305102458,
+          317070916,
+          309031208,
+          422973416,
+          306071791,
+          309501792
+        ],
+        "phasesNs": {
+          "cleanup": 478916,
+          "compileValidate": 233817000,
+          "engineSetup": 208,
+          "exportLookup": 2416,
+          "firstCall": 329843417,
+          "instantiate": 792543,
+          "load": 71125,
+          "providerSetup": 251499
+        }
+      },
+      {
+        "block": 1,
+        "setting": "2",
+        "alias": "primary",
+        "warmCallNs": [
+          286360917,
+          279361542,
+          293400208,
+          442476416,
+          340845584,
+          355951458,
+          337559208
+        ],
+        "phasesNs": {
+          "cleanup": 596833,
+          "compileValidate": 225348250,
+          "engineSetup": 208,
+          "exportLookup": 2833,
+          "firstCall": 412103583,
+          "instantiate": 790792,
+          "load": 63333,
+          "providerSetup": 201750
+        }
+      }
+    ]
+  },
+  "validation": {
+    "Go": {
+      "GoFullPackages": 32,
+      "coveragePackages": 31,
+      "minimumCoverage": {
+        "percentage": 90.929203539823,
+        "package": "github.com/cpunion/wasmvm/pkg/wasi/preview1",
+        "covered": 1233,
+        "total": 1356
+      },
+      "component": {
+        "covered": 3240,
+        "total": 3506
+      },
+      "initialAttempt": "Unprepared root artifact layouts caused missing corpus fixtures. Initial log retained, final run uses all six verified pinned corpora in an isolated test-artifacts directory. No source/test skips."
+    },
+    "GoRace": "component package passed",
+    "GoPortability": "CGO_ENABLED=0 whole-module build passed",
+    "GoVet": "whole-module vet passed",
+    "macOSLLGo": "Pinned3dO3/fullLTO full component/VM/P3 packages passed",
+    "linuxAMD64": "LocalDocker Go/pinnedLLGo source and cleanup lifecycle plus actual Rust HTTP, both backends, four package pass groups",
+    "fullHostedMatrix": "pending if proposed, no new PR while external3057 active"
+  },
+  "qualificationLimits": {
+    "status": "diagnostic-only",
+    "machine": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "architecture": "arm64",
+    "cpus": 16,
+    "loadAverage": [
+      16.05908203125,
+      11.69482421875,
+      10.279296875
+    ],
+    "busyProcesses": [
+      "614     1  38.2 28-18:54:17 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer",
+      "2169     1 122.1 05-15:32:51 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd",
+      "13957     1  48.3 02-00:21:05 /System/Applications/Preview.app/Contents/MacOS/Preview",
+      "13998     1  48.2 02-00:21:02 /usr/libexec/ptpcamerad",
+      "23830 23332  63.0       00:57 /var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build3147295476/b426/executionapi.test",
+      "23916 23332  97.0       00:55 /var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build3147295476/b442/authority.test",
+      "26225 26210  34.6       00:01 /var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build3919382018/b001/authority.test",
+      "26244 24536 422.3       00:01 /Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/head-llgo-runner",
+      "26271 12031  28.7       00:00 postgres: kernel_test postgres 127.0.0.1(53912) idle",
+      "46854     1  33.5 05-15:10:22 /Applications/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper"
+    ],
+    "ownedWork": "Owned builds, tests, Docker validation, allocation diagnostics and9 successful loader probes completed before the original throughput controller started.",
+    "metadataFailure": "The initial assertion looked for a leading newline before an ok log line. The one-line race log was valid. The outer shell continued and started the original fixed measurement despite that metadata assertion. Corrected validation uses anchored multiline regex. This snapshot was captured after measurement start, and does not establish pre-start host quiescence. Original event retained without restarting.",
+    "qualification": "Workstation diagnostic only. Unrelated active test and system processes may affect timing. Fixed three blocks, no selective rerun. A/A2.5% controls reported for every profile."
+  },
+  "checksums": {
+    "build.json": "3dacbb30d374cf44eabf4e5bdafe0e77b5d17196d930a8fabbf1c18e18ca584d",
+    "source-plan.json": "8e930c6667ff4ebe6d73c75a64ca678383228c84a2d0859899faf188b5c4f3a6",
+    "measurement-plan.json": "b1681bfc5d2e207ab07a9bf3b1ef4ba28b4c2c6d836d58a549087d2dada491c1",
+    "measure.py": "054e05214964ed96607ba265c49a6c27d2a4f0ea15a98e278f1771e07cdf087d",
+    "results.json": "2abe0052de8b225e116da12d112d4a6473cb112a6e827906ab59b500c6fa6011",
+    "observations.jsonl": "c974e4a8266ef64776abd184072323f834a8f8dc4730c8aca09809f445829eaf",
+    "summary.json": "0618d1a9663a14ba1585eab2f75ce08bb1d29b8964f8260a4470ad20c8686b94",
+    "qualifications.json": "d1ee9ea0f3c722478d79dfc9c3c45e871707094716362a4bc41b7d8221796e99",
+    "resources.json": "c308feadf3558cefcb7e28e50515c58578cb0542436222c8fb1d5cccfac2ddc8",
+    "allocation-counts.json": "a591c94947477035138adccc99739d3a167caf4159e5e6aa6969b4ba095b4c82",
+    "loader-probes.json": "1ec7ac8b317925ca09cdb909adc9d1eb1fc94772b5f66ba1378004ae893a1d23",
+    "go-final-coverage.out": "d3b4608a2ead165d52a5695e4fb265b37dfae8a2b3640d666177f4dbc2ccaaa6",
+    "linux-semantics.log": "3902ea1e217b6936ed604fc8f905eaeb024cb60b2e3b05e934254e993920a87d",
+    "go-final-full.log": "466b245b193d618eec3ec72b8fa8903a288bdcb4c1eb8250e92a057fdfe7f47f",
+    "go-final-race.log": "0610c4b0597449ebd0c3a8f11fd8f519ca57ef6155e6e42e8762c508a76fed8b",
+    "llgo-final-affected.log": "ae69a3b8f870d16d9be0db727327b1799885863f9e5ddeb888498d60dfa84a4b",
+    "cpu-time/samples.xml": "8eb38309e1b4e21c67e9f16fdb2dc093aec54d0cffcdfb9b90ba8815e092bfab",
+    "cpu-time/toc.xml": "77860fc27b581c83365cf2591dad7f581d19d9551ab941d2a2f181dba785cb1b",
+    "cpu-time/summary.json": "bb0d1421d88bfa18526f1a69abd0cc98640e010e3cbd0662924264b0d3e25f7f",
+    "cpu-time/target-qualification.json": "a7f1d50e91e9bd2ce89cfaf342e784dffd51198e8ab18700240045289e5e2070",
+    "gc-budget-discovery/plan.json": "f32f9a380d3ffe735c346bf4bb6a502a8d8417ce5ec74f4d152e0c63588dc4fc",
+    "gc-budget-discovery/results.json": "a0521d9a0d4b848518f6fc89b9dc36a4ff7246c75692df5024ce595018dac9e0",
+    "gc-budget-discovery/observations.jsonl": "74d94317f87ccf27266126c1eca15ba666efab19f8a94c55bcb5a742cbf7ff0d",
+    "gc-budget-discovery/resources.json": "8771f04014b151b6f505bcf30d1a4a644a77f0c7bc56dddfdad0b3d2d35103a7",
+    "qualification-limits.json": "cf31f3e87c5663e76bfcb67f8454d741f434c017aa43afdb18a23e8a584b0645"
+  }
+}
