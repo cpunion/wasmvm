@@ -276,14 +276,15 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
-The latest [ready-byte comparison](docs/research/performance-ready-bytes-2026-11-12.md)
-removes asynchronous invocation overhead for already available byte batches.
-Ordinary Reader / snapshot Go observes 37,248 / 43,341 req/s at 16 B and
-26,201 / 31,848 at 64 KiB, versus Wasmtime 77,164 / 67,259. At 64 KiB,
-source-matched Reader / snapshot throughput points improve 8.0% / 10.1%;
-snapshot gaps remain 1.78× / 2.11× at the two sizes. Only 24/30 timing A/A
-controls resolve within ±2.5%; results remain advisory. Small-request gains
-are near timing resolution. The
+The latest [scalar-carrier comparison](docs/research/performance-canonical-scalars-2026-11-12.md)
+connects component callbacks to the existing VM scalar ABI. Snapshot Go observes
+40,691 / 31,579 req/s at 16 B / 64 KiB, versus Wasmtime 70,554 / 65,420;
+primary throughput gaps remain 1.73× / 2.07×. Instructions fall 2.57–2.75%
+across matched Reader/snapshot configurations, saving 26–40 allocations/request.
+Only 12/30 timing A/A controls resolve within ±2.5%, so these points do not
+prove a throughput gain; adverse controls and all separate phase costs remain
+visible. The earlier [ready-byte event](docs/research/performance-ready-bytes-2026-11-12.md)
+removes immediate-source invocation overhead. The
 [immutable-input API](docs/research/performance-http-snapshot-2026-11-11.md)
 keeps preparation separate; changing mutable input still pays its snapshot cost.
 Canonical conversion, owned forwarding and VM/host transitions remain priorities.
