@@ -5,6 +5,10 @@ of transparent cross-instance forwarding bodies. The marginal LLGo throughput
 result is approximately flat despite fewer instructions. Performance and release
 acceptance remain open; the full hosted final-head matrix is pending.
 
+The subsequent [compiled-schema comparison](performance-value-comparison-plans-2026-11-11.md)
+adds resource-aware validation programs and retains a fresh complete matched
+cohort. The numbers below remain this earlier stage's independent observations.
+
 ## Implementation and structural result
 
 Previous candidate `f3531b0074b9123754fc808071bdef89d3909981` includes task

@@ -276,16 +276,17 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
-The latest [call-veneer comparison and residual profile](docs/research/performance-call-veneers-2026-11-11.md)
-reduces native entries/request from 142 to 106 after task-context lowering
-(main: 186). Host callbacks remain 44 (main: 81), with logical frames, live
-table checks and quotas preserved. Marginal LLGo throughput is approximately
-flat despite 3.2–3.6% fewer instructions. The complete candidate retires about
-10% fewer instructions than main; throughput points improve 15.5% Go / 10.0%
-pinned LLGo / 8.7% experimental LLGo, with only 5/9 timing controls resolving.
-Experimental LLGo still has a 5.31× P3 throughput gap to Wasmtime. Allocation/
-collector paths occupy about 39% of the post-change CPU samples; Canonical ABI,
-task execution and channel scheduling remain priorities. Acceptance stays open.
+The latest [compiled-schema comparison](docs/research/performance-value-comparison-plans-2026-11-11.md)
+reuses structural validation with exact budgets and current resource identities.
+Relative to the previous candidate, instructions fall 20.2% Go / 10.8% pinned
+LLGo / 10.1% experimental LLGo; throughput points improve 13.4% / 6.6% / 0.9%.
+Only 6/9 timing controls resolve; the experimental throughput change remains
+unresolved. This complete branch reduces instructions about 20% on both LLGo
+profiles versus main. Experimental LLGo still has a 5.47× P3 throughput gap to
+Wasmtime. Separate allocation observers show fewer events, but Canonical ABI
+conversion, temporary ownership and scheduling remain priorities. The
+[earlier call-veneer stage](docs/research/performance-call-veneers-2026-11-11.md)
+reduces native entries/request from 186 to 106. Performance acceptance stays open.
 
 The [complete service comparison](docs/research/performance-service-all-runtimes-2026-11-10.md)
 uses one bounded driver for all runtimes. M4 Max, Go1.27.3/LLGo3d92a58,
