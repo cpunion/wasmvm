@@ -8,6 +8,7 @@ import (
 
 	"github.com/cpunion/wasmvm/internal/component/canonical"
 	"github.com/cpunion/wasmvm/internal/component/model"
+	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -63,6 +64,9 @@ func TestSchemaMatchRechecksNominalBindingsAndBudgets(t *testing.T) {
 
 func TestSchemaMatchCacheDrainsAfterActiveCallsAndSourceCleanup(t *testing.T) {
 	for _, backend := range []string{"interpreter", "native"} {
+		if backend == "native" && !native.Available {
+			continue
+		}
 		t.Run(backend, func(t *testing.T) {
 			in, typ := sourceType(t, backend, "host-source-stream-u8")
 			var cleaned, retainedDuringSourceCleanup bool
@@ -77,6 +81,13 @@ func TestSchemaMatchCacheDrainsAfterActiveCallsAndSourceCleanup(t *testing.T) {
 				t.Fatal(err)
 			}
 			entered, release := make(chan struct{}), make(chan struct{})
+			defer func() {
+				select {
+				case <-release:
+				default:
+					close(release)
+				}
+			}()
 			done := make(chan error, 1)
 			go func() {
 				_, err := in.WithCaller(nil, CallOptions{}, func(*Caller) error {
