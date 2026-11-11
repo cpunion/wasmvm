@@ -276,7 +276,12 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
-The source-cleanup study verifies about 198 fewer managed allocation events per HTTP request under LLGo. Its 60-process throughput event has unresolved A/A controls. A separate Time Profiler trace attributes 39.7% of process CPU sample weight to collector marker threads and mutator allocator paths. Stable source gains and performance acceptance remain open. [Measurements and validation](docs/research/performance-source-cleanup-2026-11-11.md)
+The P3 request cost study records about 206,000 retired instructions/request for
+Wasmtime, 1.89 million for wasmvm/Go and 2.54 million for experimental LLGo. Each
+owned request enters native code 186 times. Its 81 host callbacks include 37
+canonical task context accesses. Native context intrinsics and canonical/runtime
+specialization are the selected next targets. Performance acceptance remains open.
+[Cost attribution](docs/research/performance-p3-cost-attribution-2026-11-11.md)
 
 The [complete service comparison](docs/research/performance-service-all-runtimes-2026-11-10.md)
 uses one bounded driver for all runtimes. M4 Max, Go1.27.3/LLGo3d92a58,
