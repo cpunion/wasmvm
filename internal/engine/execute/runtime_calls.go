@@ -60,6 +60,21 @@ func (e *Execution) runCall() Status {
 	if err := e.poll(); err != nil {
 		return e.fail(err)
 	}
+	if access, ok := callee.Host.(*state.ScalarAccess); ok && !tail {
+		var bits uint64
+		if access.Write {
+			bits = values[int(inputs[0])].Lo
+		}
+		bits, err := access.Access(bits)
+		if err != nil {
+			return e.fail(err)
+		}
+		if !access.Write {
+			values[int(dest[0])] = value.Value{Lo: bits}
+		}
+		f.pc = pc + 1
+		return Running
+	}
 	if tail {
 		// Preserve the tuple before retiring/reusing the current frame.
 		// This supports overlapping/permuted arguments and a different

@@ -30,6 +30,11 @@ type Execution struct {
 	runtimeInstance *state.Instance
 	runtimeFunction *slots.Function
 	runtimeGlobals  []globalBinding
+	scalarData      *native.Memory
+	scalarWords     []uint64
+	scalarInstance  *state.Instance
+	scalarBindings  []scalarBinding
+	scalarAccesses  []scalarAccess
 	entryState      native.State
 	callData        *native.Memory
 	callWords       []uint64
@@ -114,6 +119,7 @@ func (e *Execution) Suspend() bool {
 	e.entryState = native.State{}
 	e.resetCalls()
 	e.resetRuntimeGlobals()
+	e.resetScalarStorage()
 	e.reusable = e.native.BindMemory(nil) == nil && stopped
 	return e.reusable
 }
@@ -160,6 +166,12 @@ func (e *Execution) Close() {
 	}
 	e.runtimeWords, e.runtimeInstance = nil, nil
 	e.resetRuntimeGlobals()
+	e.resetScalarStorage()
+	if e.scalarData != nil {
+		e.scalarData.Close()
+		e.scalarData = nil
+	}
+	e.scalarWords = nil
 }
 
 func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uint64) (uint32, uint64, error) {
@@ -291,7 +303,7 @@ func (e *Execution) run(module *Lease, entries functionEntries, fn *state.Functi
 				return 0, s.Fuel, finishErr
 			}
 		}
-		if len(entries.globals) != 0 {
+		if len(entries.globals) != 0 || len(e.scalarBindings) != 0 {
 			e.flushRuntimeGlobals()
 		}
 		if err != nil {

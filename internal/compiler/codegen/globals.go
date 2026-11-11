@@ -35,6 +35,9 @@ func (e *functionEmitter) prepareRuntimeData(config Config) ([]uint32, bool) {
 	seen := map[uint32]bool{}
 	needed := e.memoryViews || len(e.heapAccesses) != 0 || e.hasAllocations
 	for _, in := range e.f.Code {
+		if _, _, ok := scalarStorageCall(e.f, in, config); ok {
+			needed = true
+		}
 		if _, _, ok := globalCell(e.f, in, config); ok {
 			seen[e.f.Sources[in.Source].Wasm.A] = true
 			needed = true

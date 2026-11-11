@@ -228,23 +228,24 @@ type closure struct {
 }
 
 type namespace struct {
-	lowerLayouts  [2]*canonical.Builder
-	wideResources bool
-	task          *callTask
-	taskOps       bool
-	parent        *namespace
-	plan          *validate.Component
-	resources     map[uint64]*resourceType
-	host          *namespace
-	handles       *canonical.Resources
-	items         map[model.Sort][]item
-	exports       map[string]item
-	failed        bool
-	blocked       bool
-	entered       bool
-	exclusive     *componentTask
-	backpressure  uint32
-	waitingEnter  uint32
+	contextStorage *vm.ScalarStorage
+	lowerLayouts   [2]*canonical.Builder
+	wideResources  bool
+	task           *callTask
+	taskOps        bool
+	parent         *namespace
+	plan           *validate.Component
+	resources      map[uint64]*resourceType
+	host           *namespace
+	handles        *canonical.Resources
+	items          map[model.Sort][]item
+	exports        map[string]item
+	failed         bool
+	blocked        bool
+	entered        bool
+	exclusive      *componentTask
+	backpressure   uint32
+	waitingEnter   uint32
 }
 
 func (n *namespace) at(index model.SortIndex) item {

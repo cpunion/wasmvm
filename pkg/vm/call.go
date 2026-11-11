@@ -257,6 +257,17 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 func (op *operation) leaveCall() { op.depth-- }
 
 func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]value.Value, error) {
+	if access, ok := request.Function.Host.(*state.ScalarAccess); ok {
+		var bits uint64
+		if access.Write {
+			bits = request.Args[0].Lo
+		}
+		bits, err := access.Access(bits)
+		if err != nil || access.Write {
+			return nil, err
+		}
+		return []value.Value{{Lo: bits}}, nil
+	}
 	s := op.store
 	scalar, isScalar := request.Function.Host.(ScalarHostFunction)
 	var args []Value

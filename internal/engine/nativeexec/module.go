@@ -159,7 +159,7 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 			bounded.MaxCodeBytes = min(limits.MaxCodeBytes, uint64(math.MaxUint32)) - uint64(len(code))
 			config := codegen.Config{Unmetered: tier != 1, NativeAllocations: tier != 1, NativeThreads: true, MemoryMinimumPages: minimum, X86Features: features, ARM64Features: armFeatures,
 				MemoryPageSizes: pageSizes, HeapTypes: definition.TypeDefs,
-				FunctionCount: importedFunctions + uint32(len(m.Functions)), TableCount: tables, MemoryCount: memories, SharedMemories: shared, Globals: globals}
+				FunctionCount: importedFunctions + uint32(len(m.Functions)), ScalarImports: importedFunctions, TableCount: tables, MemoryCount: memories, SharedMemories: shared, Globals: globals}
 			config.LinkedCallees, config.LinkedGlobals = linkedCallees, linkedGlobals
 			if linkedCallees != nil {
 				config.LinkedSignatures, config.LinkedTypeLabels = linkedSignatures, keys

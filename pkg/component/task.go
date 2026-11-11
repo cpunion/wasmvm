@@ -30,22 +30,15 @@ func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.
 	if plan.Definition.Op == 0x0c {
 		return in.yieldBuiltin(caller, n, plan)
 	}
+	if plan.Definition.Op == 0x0a || plan.Definition.Op == 0x0b {
+		return in.contextBuiltin(caller, n, plan)
+	}
 	fn, err := caller.NewFunction(plan.Signature, func(c *vm.Caller, args []vm.Value) ([]vm.Value, error) {
 		task := n.task
 		if n.failed || task == nil {
 			return nil, wasm.ErrTrap
 		}
 		switch plan.Definition.Op {
-		case 0x0a:
-			bits := task.storage[plan.Definition.Index]
-			if plan.Definition.CoreValue == wasm.I64 {
-				return []vm.Value{vm.I64(bits)}, nil
-			}
-			return []vm.Value{vm.I32(uint32(bits))}, nil
-		case 0x0b:
-			bits, _, _ := args[0].Bits()
-			task.storage[plan.Definition.Index] = bits
-			return nil, nil
 		case 0x0c:
 			if n.blocked {
 				return nil, wasm.ErrTrap
@@ -106,6 +99,26 @@ func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.
 		}
 		return nil, nil
 	})
+	if err == nil {
+		n.add(item{sort: model.CoreFunctionSort, core: fn})
+	}
+	return err
+}
+
+func (in *Instance) contextBuiltin(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
+	if n.contextStorage == nil {
+		storage, err := vm.NewScalarStorage(2, func() ([]uint64, bool) {
+			if n.failed || n.task == nil {
+				return nil, false
+			}
+			return n.task.storage[:], true
+		})
+		if err != nil {
+			return err
+		}
+		n.contextStorage = storage
+	}
+	fn, err := caller.NewScalarStorageFunction(n.contextStorage, plan.Definition.Index, plan.Definition.CoreValue, plan.Definition.Op == 0x0b)
 	if err == nil {
 		n.add(item{sort: model.CoreFunctionSort, core: fn})
 	}
