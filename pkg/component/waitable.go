@@ -168,27 +168,27 @@ func (in *Instance) waitableBuiltin(caller *vm.Caller, n *namespace, plan *valid
 	if plan.Definition.Op == 6 {
 		return in.subtaskCancel(caller, n, plan)
 	}
-	fn, err := caller.NewFunction(plan.Signature, func(c *vm.Caller, args []vm.Value) ([]vm.Value, error) {
+	fn, err := caller.NewScalarFunction(plan.Signature, func(c *vm.Caller, words []uint64) error {
 		if n.failed || n.blocked {
-			return nil, wasm.ErrTrap
+			return wasm.ErrTrap
 		}
 		op := plan.Definition.Op
 		if op == 5 {
 			t := n.task
 			if t == nil || t.plan == nil || !t.plan.Async || t.runtime == nil || t.resolved || !t.runtime.cancelDelivered {
-				return nil, wasm.ErrTrap
+				return wasm.ErrTrap
 			}
 			if err := returnBorrows(t.parameters); err != nil {
-				return nil, err
+				return err
 			}
 			t.resolved = true
-			return nil, t.runtime.resolve(c, nil, true)
+			return t.runtime.resolve(c, nil, true)
 		}
 		if op == 0x1f {
 			s := &waitableSet{n: n}
 			id, err := n.handles.AddOpaque(s)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			if in.tasks == nil {
 				in.tasks = &taskScheduler{}
@@ -198,59 +198,61 @@ func (in *Instance) waitableBuiltin(caller *vm.Caller, n *namespace, plan *valid
 				s.next.previous = s
 			}
 			in.tasks.sets = s
-			return []vm.Value{vm.I32(id)}, nil
+			words[0] = uint64(id)
+			return nil
 		}
-		bits, _, _ := args[0].Bits()
+		bits := words[0]
 		id := uint32(bits)
 		if op == 0x21 || op == 0x22 {
 			s, err := in.waitableSet(n, id)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			if op == 0x22 {
 				if s.head != nil || s.waiters != 0 {
-					return nil, wasm.ErrTrap
+					return wasm.ErrTrap
 				}
 				s.unlink()
-				return nil, n.handles.RemoveOpaque(id)
+				return n.handles.RemoveOpaque(id)
 			}
-			ptr, _, _ := args[1].Bits()
-			result, err := in.eventMemory(c, n, plan, s, ptr)
-			return result.Values, err
+			ptr := words[1]
+			bits, err := in.eventBits(c, n, plan, s, ptr)
+			words[0] = uint64(bits)
+			return err
 		}
 
 		if op == 0x23 {
 			w, err := in.waitable(n, id)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			if w.syncWaiter {
-				return nil, wasm.ErrTrap
+				return wasm.ErrTrap
 			}
 			var set *waitableSet
-			other, _, _ := args[1].Bits()
+			other := words[1]
 			if other != 0 {
 				set, err = in.waitableSet(n, uint32(other))
 				if err != nil {
-					return nil, err
+					return err
 				}
 			}
 			w.join(set)
-			return nil, nil
+			return nil
 		}
 		s, err := in.subtask(n, id)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		switch op {
 		case 0x0d:
 			if !s.delivered || s.waitable.syncWaiter {
-				return nil, wasm.ErrTrap
+				return wasm.ErrTrap
 			}
 			s.waitable.join(nil)
-			return nil, n.handles.RemoveOpaque(id)
+			return n.handles.RemoveOpaque(id)
 		default:
-			return nil, wasm.ErrTrap
+			return wasm.ErrTrap
 		}
 	})
 	if err == nil {
@@ -260,20 +262,28 @@ func (in *Instance) waitableBuiltin(caller *vm.Caller, n *namespace, plan *valid
 }
 
 func (in *Instance) eventMemory(c *vm.Caller, n *namespace, plan *validate.CanonicalFunction, s *waitableSet, ptr uint64) (vm.HostResult, error) {
-	event, err := s.poll(c)
+	bits, err := in.eventBits(c, n, plan, s, ptr)
 	if err != nil {
 		return vm.HostResult{}, err
 	}
+	return vm.HostResult{Values: []vm.Value{vm.I32(uint32(bits))}}, nil
+}
+
+func (in *Instance) eventBits(c *vm.Caller, n *namespace, plan *validate.CanonicalFunction, s *waitableSet, ptr uint64) (uint32, error) {
+	event, err := s.poll(c)
+	if err != nil {
+		return 0, err
+	}
 	if ptr&3 != 0 {
-		return vm.HostResult{}, wasm.ErrTrap
+		return 0, wasm.ErrTrap
 	}
 	var bytes [8]byte
 	binary.LittleEndian.PutUint32(bytes[:4], event[1])
 	binary.LittleEndian.PutUint32(bytes[4:], event[2])
 	if err := c.WriteExternalMemory(n.items[model.CoreMemorySort][*plan.Memory].core, ptr, bytes[:]); err != nil {
-		return vm.HostResult{}, err
+		return 0, err
 	}
-	return vm.HostResult{Values: []vm.Value{vm.I32(event[0])}}, nil
+	return event[0], nil
 }
 
 func (in *Instance) waitableWait(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {

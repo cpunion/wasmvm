@@ -33,26 +33,26 @@ func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.
 	if plan.Definition.Op == 0x0a || plan.Definition.Op == 0x0b {
 		return in.contextBuiltin(caller, n, plan)
 	}
-	fn, err := caller.NewFunction(plan.Signature, func(c *vm.Caller, args []vm.Value) ([]vm.Value, error) {
+	fn, err := caller.NewScalarFunction(plan.Signature, func(c *vm.Caller, words []uint64) error {
 		task := n.task
 		if n.failed || task == nil {
-			return nil, wasm.ErrTrap
+			return wasm.ErrTrap
 		}
 		if n.blocked || task.plan == nil || !task.plan.Async || task.resolved || task.plan.Encoding != plan.Encoding {
-			return nil, wasm.ErrTrap
+			return wasm.ErrTrap
 		}
 		// A return without a memory option needs no result memory under static
 		// validation. The official cross-ABI corpus and Wasmtime permit this
 		// when the lift's memory was needed only for spilled parameters.
 		if plan.Memory != nil && (task.plan.Memory == nil || n.items[model.CoreMemorySort][*plan.Memory].core != n.items[model.CoreMemorySort][*task.plan.Memory].core) {
-			return nil, wasm.ErrTrap
+			return wasm.ErrTrap
 		}
 		equal, err := in.matchValue(plan.Type.Result, task.plan.Type.Result, n, n)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if !equal {
-			return nil, wasm.ErrTrap
+			return wasm.ErrTrap
 		}
 		codec := in.codec(c, n, plan)
 		if r, ok := codec.Resources.(*resourceCodec); ok {
@@ -64,28 +64,31 @@ func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.
 		if plan.Type.Result != nil {
 			var value Value
 			if plan.ABI.ParameterMemory != nil {
-				ptr, _, _ := args[0].Bits()
+				ptr := words[0]
 				value, err = codec.Load(plan.Type.Result, ptr)
 			} else {
-				var slots []canonical.Slot
-				slots, err = flatValues(args)
-				if err == nil {
-					value, err = codec.LiftFlat(plan.Type.Result, slots)
+				var local [canonical.MaxFlatParams]canonical.Slot
+				if len(plan.Signature.Params) > len(local) {
+					return vm.ErrType
 				}
+				for i, typ := range plan.Signature.Params {
+					local[i] = canonical.Slot{Type: typ, Bits: words[i]}
+				}
+				value, err = codec.LiftFlat(plan.Type.Result, local[:len(plan.Signature.Params)])
 			}
 			if err != nil {
-				return nil, err
+				return err
 			}
 			task.result = &value
 		}
 		if err := returnBorrows(task.parameters); err != nil {
-			return nil, err
+			return err
 		}
 		task.resolved = true
 		if task.runtime != nil {
-			return nil, task.runtime.resolve(c, task.result, false)
+			return task.runtime.resolve(c, task.result, false)
 		}
-		return nil, nil
+		return nil
 	})
 	if err == nil {
 		n.add(item{sort: model.CoreFunctionSort, core: fn})

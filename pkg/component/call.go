@@ -434,32 +434,32 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 		}
 		return err
 	}
-	core, err := caller.NewFunction(plan.Signature, func(caller *vm.Caller, flat []vm.Value) (result []vm.Value, err error) {
+	core, err := caller.NewScalarFunction(plan.Signature, func(caller *vm.Caller, words []uint64) (err error) {
 		if n.failed || n.blocked {
-			return nil, wasm.ErrTrap
+			return wasm.ErrTrap
 		}
 		codec := in.codec(caller, n, plan)
 		complete := false
 		defer cleanupCanonical(n, codec, &complete, &err)
-		args, err := liftArguments(codec, plan, flat)
+		args, err := liftScalarArguments(codec, plan, words)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		v, err := callee.call(caller, args)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		result, err = lowerResult(codec, plan, flat, v)
+		err = lowerScalarResult(codec, plan, words, v)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		complete = true
 		if plan.Async {
 			// Every admitted callee runs to completion in the current profile.
 			// Eager resolution returns RETURNED without allocating a subtask.
-			result = []vm.Value{vm.I32(2)}
+			words[0] = 2
 		}
-		return result, nil
+		return nil
 	})
 	if err != nil {
 		return err
