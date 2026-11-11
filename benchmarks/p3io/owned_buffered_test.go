@@ -29,6 +29,32 @@ func TestOwnedBufferedCompleteBothFixturesAndBackends(t *testing.T) {
 	}
 }
 
+func TestOwnedSnapshotRequestsAndModeGuards(t *testing.T) {
+	for _, backend := range []string{"interpreter", "native"} {
+		args := nativeOptions()
+		args.engine, args.backend, args.path = "wasmvm", backend, p3Fixture("world-rust-http")
+		args.requestMode, args.responseMode = "snapshot", "buffered"
+		out, err := benchmark(nil, args, nil)
+		if err != nil {
+			t.Fatal(backend, err)
+		}
+		checkBatches(t, out, args)
+		if out.OwnedRequestMode != "snapshot" {
+			t.Fatal(out.OwnedRequestMode)
+		}
+		for _, mode := range []string{"unknown", "snapshot"} {
+			args.requestMode, args.responseMode = mode, "streaming"
+			if err := validateResponseMode(args); err == nil {
+				t.Fatal("invalid input contract accepted", mode)
+			}
+		}
+		args.engine, args.responseMode = "native-go", "buffered"
+		if err := validateResponseMode(args); err == nil {
+			t.Fatal("native control accepted owned request selector")
+		}
+	}
+}
+
 func TestBufferedKernelChecksCompleteResponseAndContext(t *testing.T) {
 	args := nativeOptions()
 	for _, mode := range []string{"ok", "nil", "error", "body", "status", "header", "trailer"} {

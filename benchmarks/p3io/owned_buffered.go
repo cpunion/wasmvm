@@ -14,8 +14,18 @@ import (
 )
 
 func bufferedKernel(ctx context.Context, args options, call func(context.Context, *http.Request) (*preview3.BufferedResponse, error)) service.Call {
+	var snapshot string
+	if args.requestMode == "snapshot" {
+		snapshot = string(args.payload)
+	}
 	return func() (int64, uint32, error) {
-		request, err := http.NewRequestWithContext(ctx, "POST", "http://localhost/echo", bytes.NewReader(args.payload))
+		var request *http.Request
+		var err error
+		if args.requestMode == "snapshot" {
+			request, err = preview3.NewSnapshotRequest(ctx, "POST", "http://localhost/echo", snapshot)
+		} else {
+			request, err = http.NewRequestWithContext(ctx, "POST", "http://localhost/echo", bytes.NewReader(args.payload))
+		}
 		if err != nil {
 			return 0, 0, err
 		}
