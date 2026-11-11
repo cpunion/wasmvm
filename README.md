@@ -289,7 +289,14 @@ throughput processes and72 separate resource processes.35/72 controls resolve;
 all six owned LLGo native controls remain unresolved. These point estimates do
 not establish a controlled ranking.
 
-The latest [native indirect-call comparison](docs/research/performance-native-indirect-calls-2026-11-11.md)
+A local schema-cache experiment observes Go native 26626 -> 29767 req/s,
+pinned LLGo 6996 -> 6561 and an experimental newer LLGo/sharded-runtime
+profile 12753 -> 13376 on plain16-byte P3 HTTP with four workers.
+Same-event Wasmtime 48 observes 74994 req/s. Several A/A controls exceed the
+2.5% band. The candidate remains under local qualification, with the adverse
+pinned-LLGo result retained. [Schema-cache study](docs/research/performance-component-schema-cache-2026-11-11.md)
+
+The [native indirect-call comparison](docs/research/performance-native-indirect-calls-2026-11-11.md)
 keeps ordinary same-instance indirect/reference calls in native frames.
 Counter diagnostics on both compilers observe approximately 317 -> 186 native
 entries per 16-byte HTTP request, a 41.3% reduction. Core execution boundaries
