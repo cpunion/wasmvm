@@ -6,6 +6,10 @@ instructions fall by 5.1–5.6% in the measured P3 workload. Throughput points
 improve, with unresolved timing controls. Performance and release acceptance
 remain open; the full hosted final-head matrix is pending.
 
+The [next increment](performance-call-veneers-2026-11-11.md) lowers transparent
+cross-instance call veneers and records the complete candidate against main.
+This report retains its original context-only source comparison.
+
 ## Implementation and semantics
 
 Source base `93a60f11e5ffd7b886c17f2feaa15c293fe9e23f` already includes the
