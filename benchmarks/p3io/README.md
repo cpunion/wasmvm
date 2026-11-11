@@ -99,6 +99,16 @@ both owned modes. The reference continues its own Store-local body collection;
 its existing source/build identity remains separately recorded. The native-go
 controls accept the default selector only.
 
+For an already available immutable input, add `--request-mode snapshot
+--response-mode buffered`. The owned provider uses
+`preview3.NewSnapshotRequest(ctx, method, url, body string)`; binary strings are
+supported. Ordinary `reader` mode remains the default. Snapshot conversion is
+reported separately in `requestPreparation`, once per worker. HTTP construction
+is still charged per request inside batch wall time. Mutable input that changes
+each request must pay its own snapshot cost. The
+[snapshot comparison](../../docs/research/performance-http-snapshot-2026-11-11.md)
+reports both contracts separately against the retained source and reference.
+
 This addition supplies execution/measurement mechanisms. Complete fixed
 comparisons, controls, both-target evidence and performance/release acceptance
 remain separate deliverables; passing tests supplies no performance ranking.

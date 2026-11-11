@@ -276,16 +276,21 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
-The latest [Go-priority comparison](docs/research/performance-go-frame-plans-2026-11-11.md)
-retains bounded host-request storage, saving 82 allocations/request. Go native
-observes 34,290 / 22,072 req/s for 16-byte / 64-KiB P3 responses, versus Wasmtime
-74,382 / 65,573: throughput gaps remain 2.17× / 2.97×. The complete retained
-branch retires 29.6% / 23.0% fewer instructions than main. Only 5/12 timing A/A
-controls resolve; no controlled ranking is established. A further frame-plan
-expansion reduced native entries but failed to show throughput gains and was
-reverted. Go performance now takes priority; LLGo semantic compatibility remains
-required. Checked Canonical ABI conversion and VM/host state transitions are
-the next focus. [Earlier schema](docs/research/performance-value-comparison-plans-2026-11-11.md)
+The latest [Go HTTP comparison](docs/research/performance-http-snapshot-2026-11-11.md)
+adds an explicit immutable request-body API. Ordinary Reader / snapshot Go
+observes 35,401 / 39,894 req/s at 16 B and 23,014 / 27,532 at 64 KiB, versus
+Wasmtime 75,858 / 66,118. Snapshot throughput improves 12.7% / 19.6% over the
+ordinary path; remaining throughput gaps are 1.90× / 2.40×. All 24 timing A/A
+controls resolve within ±2.5%; local three-round results remain advisory.
+Mutable input that changes each request has a separate snapshot cost. JIT
+symbolization localizes most payload-dependent overhead to host work; checked
+Canonical ABI conversion and VM/host state transitions remain priorities.
+
+The preceding [Go-priority comparison](docs/research/performance-go-frame-plans-2026-11-11.md)
+retains bounded host-request storage, saving 82 allocations/request. A frame-plan
+expansion reduced native entries but failed to establish throughput gains and
+was reverted. Go performance takes priority; LLGo semantic compatibility remains
+required. [Earlier schema](docs/research/performance-value-comparison-plans-2026-11-11.md)
 and [call-veneer](docs/research/performance-call-veneers-2026-11-11.md) events
 retain their distinct source/toolchain cohorts. Performance acceptance stays open.
 
