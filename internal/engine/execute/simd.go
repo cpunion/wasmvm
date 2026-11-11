@@ -29,7 +29,7 @@ func (e *Execution) runSIMD() Status {
 	if in.C != slots.NoSlot {
 		c = values[int(in.C)]
 	}
-	im := &code.Sources[in.Source].Wasm
+	im := &code.ReadSource(in.Source, &e.source).Wasm
 	sub := op & 0xffff
 	switch {
 	case sub <= 10 || sub >= 84 && sub <= 87 || sub == 92 || sub == 93:

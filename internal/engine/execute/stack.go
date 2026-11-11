@@ -195,7 +195,7 @@ func (e *Execution) stackInstruction(in slots.Instruction, im *module.Instr) err
 	fi := len(e.frames) - 1
 	f := &e.frames[fi]
 	owner, code, pc, base := f.function.Instance, f.function.Code, f.pc, f.base
-	outputs := len(code.Sources[in.Source].Outputs)
+	outputs := code.SourceOutputs(in.Source)
 	tuple := code.Args[in.Extra : in.Extra+in.Count+uint32(outputs)]
 	args := make([]value.Value, in.Count)
 	for i, slot := range tuple[:in.Count] {
@@ -316,7 +316,7 @@ func (e *Execution) stackInstruction(in slots.Instruction, im *module.Instr) err
 		e.detach(pi, true)
 		caller := &e.frames[p.owner]
 		resume := caller.function.Code.Code[caller.callPC]
-		resumeOutputs := len(caller.function.Code.Sources[resume.Source].Outputs)
+		resumeOutputs := caller.function.Code.SourceOutputs(resume.Source)
 		resumeDest := caller.function.Code.Args[resume.Extra+resume.Count : resume.Extra+resume.Count+uint32(resumeOutputs)]
 		args[len(args)-1] = value.Value{Lo: ref}
 		return e.restore(c, args, resumeDest, nil)

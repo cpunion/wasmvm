@@ -381,7 +381,8 @@ func sharedMemoryBoundary(fn *state.Function, in slots.Instruction) bool {
 	if !memoryAccess {
 		return false
 	}
-	source := fn.Code.Sources[in.Source].Wasm
+	var scratch ir.Source
+	source := fn.Code.ReadSource(in.Source, &scratch).Wasm
 	index := source.Memory
 	if op == 0x3f || op == 0x40 {
 		index = source.A

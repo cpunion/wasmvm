@@ -67,10 +67,10 @@ func (e *Execution) adoptNativeFrames(batch *state.NativeFrames) error {
 			return wasm.ErrInvalid
 		}
 		call := code.Code[f.CallPC]
-		if uint64(call.Source) >= uint64(len(code.Sources)) {
+		if uint64(call.Source) >= uint64(code.SourceCount()) {
 			return wasm.ErrInvalid
 		}
-		source := code.Sources[call.Source].Wasm
+		source := code.ReadSource(call.Source, &e.source).Wasm
 		instance := f.Function.Instance
 		callee := frames[i+1].Function
 		if callee == nil || callee.Instance != instance {

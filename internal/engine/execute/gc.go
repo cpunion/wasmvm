@@ -26,7 +26,7 @@ func (e *Execution) runGC() Status {
 	if in.B != slots.NoSlot {
 		b = values[int(in.B)]
 	}
-	im := &code.Sources[in.Source].Wasm
+	im := &code.ReadSource(in.Source, &e.source).Wasm
 	var err error
 	if n := state.GCAccessArity(in.Op); n != 0 {
 		// Slot lowering already supplies the first two operands.

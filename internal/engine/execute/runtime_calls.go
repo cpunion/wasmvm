@@ -19,7 +19,7 @@ func (e *Execution) runCall() Status {
 	values := e.values[base : base+len(code.Slots)]
 	instance := fn.Instance
 	op := in.Op
-	im := &code.Sources[in.Source].Wasm
+	im := &code.ReadSource(in.Source, &e.source).Wasm
 	tail := module.IsTailCall(op)
 	count := in.Count
 	inputs := code.Args[in.Extra : in.Extra+count]
@@ -144,7 +144,7 @@ func (e *Execution) runThrow() Status {
 	f.pc = pc
 	var ex *state.Exception
 	if op == 8 {
-		im := &code.Sources[in.Source].Wasm
+		im := &code.ReadSource(in.Source, &e.source).Wasm
 		var local [8]value.Value
 		operands := local[:0]
 		if int(in.Count) > cap(operands) {

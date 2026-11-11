@@ -68,6 +68,7 @@ type Execution struct {
 	err          error
 	fuel, steps  uint64
 	nativeFrames state.NativeFrames
+	source       ir.Source
 }
 
 func New(store *state.Store, ctx context.Context, config Config) *Execution {
@@ -173,6 +174,7 @@ func (e *Execution) clearGCArgs() {
 func (e *Execution) fail(err error) Status {
 	e.err, e.status = err, Failed
 	e.nativeFrames = state.NativeFrames{}
+	e.source = ir.Source{}
 	clear(e.frames)
 	e.frames = e.frames[:0]
 	clear(e.prompts)
