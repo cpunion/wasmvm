@@ -276,12 +276,15 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
-The P3 request cost study records about 206,000 retired instructions/request for
-Wasmtime, 1.89 million for wasmvm/Go and 2.54 million for experimental LLGo. Each
-owned request enters native code 186 times. Its 81 host callbacks include 37
-canonical task context accesses. Native context intrinsics and canonical/runtime
-specialization are the selected next targets. Performance acceptance remains open.
-[Cost attribution](docs/research/performance-p3-cost-attribution-2026-11-11.md)
+The latest [task-context implementation and comparison](docs/research/performance-task-context-2026-11-11.md)
+reduces native entries/request from 186 to 142 and host callbacks from 81 to 44.
+Checked interpreter/native scalar accessors remove 37 canonical context calls
+from host dispatch. Instructions/request fall 5.1–5.6% across the three compiler
+profiles. Throughput points improve 6.5% for Go, 11.5% for pinned LLGo and 5.8%
+for experimental LLGo, with only 6/9 timing controls resolving. Experimental
+LLGo still has a 5.39× P3 throughput gap and an 11.43× instruction gap to
+Wasmtime in this fixture. The [cost study](docs/research/performance-p3-cost-attribution-2026-11-11.md)
+guides the remaining cross-instance, Canonical ABI and task-runtime work.
 
 The [complete service comparison](docs/research/performance-service-all-runtimes-2026-11-10.md)
 uses one bounded driver for all runtimes. M4 Max, Go1.27.3/LLGo3d92a58,

@@ -2,6 +2,10 @@
 
 **Diagnostic study.** The largest gaps include native execution boundaries, component runtime work and host-runtime scheduling. Performance and release acceptance remain open. The selected next optimization is compiler lowering of canonical task context access.
 
+The [follow-up implementation](performance-task-context-2026-11-11.md) now
+provides checked context accessors in both backends. The measurements below
+retain their original base-source scope.
+
 ## Exact process counters
 
 M4 Max/macOS arm64. Main source `4ce75302c8def7dfd85680a33d2e7a55593c8dfa`, Go 1.27.3, experimental LLGo compiler e2cca2c with sharded runtime f2e4cb426, and the independent Wasmtime 48.0.1 reference. Every LLGo binary uses `-O3 -lto=full`. The retained executables have the same implementation as the earlier main-source HTTP event.
@@ -96,7 +100,9 @@ The ordinary HTTP controls expose further host-runtime cost. In the long counter
 3. Specialize canonical conversions and type handling from checked plans. Preserve dynamic nominal identities, validation budgets and public host-function ownership contracts. Measure conversion/copy work as well as allocation counts.
 4. Isolate LLGo channel/synchronization costs before filing an additional runtime issue. Existing allocation-counter and capture-placement contributions retain their separate scope.
 
-Native context intrinsics require implementation and full validation. Performance parity and cross-target release acceptance remain open.
+The follow-up context implementation passes local dual-compiler/platform
+validation; its full hosted matrix remains pending. Performance parity and
+cross-target release acceptance remain open.
 
 ## Evidence handling
 
