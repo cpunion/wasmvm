@@ -438,6 +438,24 @@ func (b *httpBody) byteSource(c *component.Caller, t component.ValueType) (compo
 		}
 	} else {
 		source.Prompt = true
+		source.ReadBytes = func(limit uint32) (component.ReadResult, bool, error) {
+			if result, ready := buffered.take(limit); ready {
+				return result, true, nil
+			}
+			b.mu.Lock()
+			reader, failure := b.reader, b.failure
+			b.mu.Unlock()
+			if reader == nil || failure != nil {
+				b.end(failure)
+				return component.ReadResult{Closed: true}, true, nil
+			}
+			if limit != 0 && b.ctx.Err() == nil {
+				if data, failed, ready := b.readSnapshot(reader); ready {
+					return buffered.deliver(data, failed != nil, limit), true, nil
+				}
+			}
+			return component.ReadResult{}, false, nil
+		}
 		source.Read = func(c *component.Caller, limit uint32) (*component.ReadCompletion, error) {
 			completion := component.NewReadCompletion()
 			if result, ready := buffered.take(limit); ready {
