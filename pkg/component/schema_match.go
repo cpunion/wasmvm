@@ -31,6 +31,11 @@ func (in *Instance) matchSchema(a, b *model.Type, left, right *namespace) (bool,
 			return true, nil
 		}
 	}
+	return in.matchSchemaUncached(a, b, left, right)
+}
+
+// Keep capturing closures in the miss path so cache lookup stays allocation-free.
+func (in *Instance) matchSchemaUncached(a, b *model.Type, left, right *namespace) (bool, error) {
 	matches := func(a, b uint64) bool {
 		l, r := left.resources[a], right.resources[b]
 		return l != nil && r != nil && l.identity == r.identity
