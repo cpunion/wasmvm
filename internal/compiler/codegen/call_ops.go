@@ -99,6 +99,35 @@ func (e *functionEmitter) callAdvance(n byte, delta int) {
 		e.a.word(op | uint32(imm)<<10 | uint32(r)<<5 | uint32(r))
 	}
 }
+
+// Subtract one work register from another after caller registers are spilled.
+func (e *functionEmitter) callSubtract(left, right byte) {
+	l, r := e.callReg(left), e.callReg(right)
+	if e.a.arch == "amd64" {
+		e.a.bytes(0x48|(r>>3)<<2|l>>3, 0x29, 0xc0|(r&7)<<3|l&7)
+	} else {
+		e.a.word(0xcb000000 | uint32(r)<<16 | uint32(l)<<5 | uint32(l))
+	}
+}
+
+// The row supplies the callee's slot count in register 5. Poll every slot so
+// even a large dynamically selected frame has bounded cancellation latency.
+func (e *functionEmitter) callZeroDynamic(cancelled int) {
+	done, loop := e.a.label(), e.a.label()
+	e.callTest(5)
+	e.branch(done, "eq")
+	e.callMove(6, 4)
+	e.callConst(1, 0)
+	e.a.mark(loop)
+	e.callStore(1, e.callReg(6), 0)
+	e.callStore(1, e.callReg(6), 8)
+	e.callCancelled(cancelled)
+	e.callAdvance(6, 16)
+	e.callAdvance(5, -1)
+	e.callTest(5)
+	e.branch(loop, "ne")
+	e.a.mark(done)
+}
 func (e *functionEmitter) callShift(n, bits byte) {
 	r := e.callReg(n)
 	if e.a.arch == "amd64" {

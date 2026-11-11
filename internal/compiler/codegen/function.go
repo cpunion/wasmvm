@@ -126,6 +126,10 @@ type Config struct {
 	// must resolve CallRelocations before publishing any linked body.
 	LinkedCallees map[uint32]*slots.Function
 	LinkedGlobals []uint32
+	// LinkedSignatures follows defined-function order. LinkedTypeLabels maps
+	// module type indices to the same validated structural identities.
+	LinkedSignatures []uint32
+	LinkedTypeLabels []uint32
 }
 
 func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
@@ -524,6 +528,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 				}
 				continue
 			}
+			if (op == 0x11 || op == 0x14) && e.linkedIndirect(pc, config) {
+				continue
+			}
 			if op == 0x10 && e.linkedCall(pc, config.LinkedCallees[src.Wasm.A]) {
 				continue
 			}
@@ -565,8 +572,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	e.emitAllocationEdges()
 	e.emitAllocationEntries(pcs)
 	e.emitPollExits()
-	e.emitCallExits()
+	e.emitCallExits(config)
 	e.emitTrapExits()
+	e.emitLinkedDispatch(config)
 	a.mark(e.bad)
 	e.rawStatus(nativeabi.BadState)
 	a.mark(e.zero)

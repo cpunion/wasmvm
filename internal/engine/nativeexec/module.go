@@ -106,7 +106,7 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 		seen := map[uint32]bool{}
 		for _, f := range m.Functions {
 			for _, in := range f.Code {
-				if in.Op == 0x10 && callees[f.Sources[in.Source].Wasm.A] != nil {
+				if in.Op == 0x11 || in.Op == 0x14 || in.Op == 0x10 && callees[f.Sources[in.Source].Wasm.A] != nil {
 					linkedCallees = callees
 				}
 				if in.Op == 0x23 || in.Op == 0x24 {
@@ -137,6 +137,10 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 	for i, key := range keys {
 		indirect[uint32(i)] = bySignature[key]
 	}
+	linkedSignatures := make([]uint32, len(m.Functions))
+	for i, f := range definition.Functions {
+		linkedSignatures[i] = keys[f.Type]
+	}
 	wantExpansion := map[*slots.Function]bool{}
 	features := codegen.X86Features(native.CPUFeatures())
 	armFeatures := codegen.ARM64Features(native.ARM64CPUFeatures())
@@ -157,6 +161,9 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 				MemoryPageSizes: pageSizes, HeapTypes: definition.TypeDefs,
 				FunctionCount: importedFunctions + uint32(len(m.Functions)), TableCount: tables, MemoryCount: memories, SharedMemories: shared, Globals: globals}
 			config.LinkedCallees, config.LinkedGlobals = linkedCallees, linkedGlobals
+			if linkedCallees != nil {
+				config.LinkedSignatures, config.LinkedTypeLabels = linkedSignatures, keys
+			}
 			if tier == 2 {
 				config.DirectCallees = callees
 				config.IndirectCallees = indirect
