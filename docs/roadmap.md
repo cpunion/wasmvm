@@ -29,6 +29,11 @@ functional conformance does not close performance acceptance. The README serves 
 project entry point with source-package/release status, usage and dated
 competitor comparisons; no versioned release is claimed.
 
+The 2026-11-11 owner decision prioritizes Go-compiled performance against
+independent competitors before dedicated LLGo tuning. Keep the full LLGo semantic
+matrix and production pin. The [Go comparison](research/performance-go-frame-plans-2026-11-11.md)
+records retained improvements, rejected experiments and unresolved acceptance.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and

@@ -276,17 +276,18 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
-The latest [compiled-schema comparison](docs/research/performance-value-comparison-plans-2026-11-11.md)
-reuses structural validation with exact budgets and current resource identities.
-Relative to the previous candidate, instructions fall 20.2% Go / 10.8% pinned
-LLGo / 10.1% experimental LLGo; throughput points improve 13.4% / 6.6% / 0.9%.
-Only 6/9 timing controls resolve; the experimental throughput change remains
-unresolved. This complete branch reduces instructions about 20% on both LLGo
-profiles versus main. Experimental LLGo still has a 5.47× P3 throughput gap to
-Wasmtime. Separate allocation observers show fewer events, but Canonical ABI
-conversion, temporary ownership and scheduling remain priorities. The
-[earlier call-veneer stage](docs/research/performance-call-veneers-2026-11-11.md)
-reduces native entries/request from 186 to 106. Performance acceptance stays open.
+The latest [Go-priority comparison](docs/research/performance-go-frame-plans-2026-11-11.md)
+retains bounded host-request storage, saving 82 allocations/request. Go native
+observes 34,290 / 22,072 req/s for 16-byte / 64-KiB P3 responses, versus Wasmtime
+74,382 / 65,573: throughput gaps remain 2.17× / 2.97×. The complete retained
+branch retires 29.6% / 23.0% fewer instructions than main. Only 5/12 timing A/A
+controls resolve; no controlled ranking is established. A further frame-plan
+expansion reduced native entries but failed to show throughput gains and was
+reverted. Go performance now takes priority; LLGo semantic compatibility remains
+required. Checked Canonical ABI conversion and VM/host state transitions are
+the next focus. [Earlier schema](docs/research/performance-value-comparison-plans-2026-11-11.md)
+and [call-veneer](docs/research/performance-call-veneers-2026-11-11.md) events
+retain their distinct source/toolchain cohorts. Performance acceptance stays open.
 
 The [complete service comparison](docs/research/performance-service-all-runtimes-2026-11-10.md)
 uses one bounded driver for all runtimes. M4 Max, Go1.27.3/LLGo3d92a58,

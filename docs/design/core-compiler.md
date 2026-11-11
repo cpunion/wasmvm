@@ -707,6 +707,14 @@ the removed frame's locals do not. Host reentry sees the released frame quota.
 Each tail instruction consumes one fuel unit, and all transfers poll cancellation.
 Native direct tail-entry optimizations remain local follow-up work.
 
+The internal host request and its copied tuple belong to the suspended execution.
+They remain stable until host resume, abort or quiescence; nested reentry uses
+an independent execution. Public callback values and Caller capabilities keep
+their separate ownership and expiry contracts. Request retirement follows result
+handoff and clears argument bits, function and Caller roots on success, failure
+and exception delivery. An idle execution retains at most 64 argument slots
+(1 KiB); larger valid tuples are released after use. Close releases the buffer.
+
 ## Multiple memories
 
 `wasm.MultiMemory` enables multiple imports/definitions and indexed scalar,
