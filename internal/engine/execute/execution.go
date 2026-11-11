@@ -60,6 +60,8 @@ type Execution struct {
 	result       []value.Value
 	tailArgs     []value.Value
 	gcArgs       []value.Value // Synchronous scratch; cleared after each checked operation.
+	hostRequest  HostCall
+	hostArgs     []value.Value
 	pending      *HostCall
 	pendingDest  []slots.Slot
 	status       Status
@@ -80,7 +82,8 @@ func (e *Execution) Footprint() Limits   { return Limits{uint32(len(e.frames)), 
 func (e *Execution) Err() error          { return e.err }
 
 // Results are borrowed until the next Start. Host calls expose copied input
-// values that remain stable while the driver services the request.
+// values borrowed until ResumeHost, Abort or Quiesce. They remain stable while
+// the driver services a suspended request, including nested host reentry.
 func (e *Execution) Results() []value.Value { return e.result }
 func (e *Execution) Host() *HostCall        { return e.pending }
 func (e *Execution) Start(ref uint64, args []value.Value) error {
@@ -99,7 +102,7 @@ func (e *Execution) Start(ref uint64, args []value.Value) error {
 	e.fuel = e.config.Fuel
 	e.steps = 0
 	if fn.Code == nil {
-		e.pending = &HostCall{Function: fn, Args: append([]value.Value(nil), args...)}
+		copy(e.prepareHost(fn, nil, len(args)), args)
 		e.status = HostRequest
 		return nil
 	}
@@ -176,7 +179,7 @@ func (e *Execution) fail(err error) Status {
 	e.prompts = e.prompts[:0]
 	e.transferring = nil
 	e.values = e.values[:0]
-	e.pending = nil
+	e.clearHost()
 	e.pendingDest = nil
 	clear(e.tailArgs)
 	e.tailArgs = e.tailArgs[:0]
@@ -198,7 +201,7 @@ func (e *Execution) ResumeHost(results []value.Value, err error) error {
 
 	if err != nil {
 		if ex, ok := e.store.ExceptionError(err); ok {
-			e.pending = nil
+			e.clearHost()
 			e.pendingDest = nil
 			if e.raise(ex) {
 				e.status = Running
@@ -224,7 +227,7 @@ func (e *Execution) ResumeHost(results []value.Value, err error) error {
 		}
 		e.status = Running
 	}
-	e.pending = nil
+	e.clearHost()
 	e.pendingDest = nil
 	return nil
 }

@@ -127,7 +127,7 @@ func (e *Execution) restore(c *continuationBody, args []value.Value, dest []slot
 		}
 		if c.function.Code == nil {
 			caller := e.frames[len(e.frames)-1].function.Instance
-			e.pending = &HostCall{Function: c.function, Caller: caller, Args: all}
+			copy(e.prepareHost(c.function, caller, len(all)), all)
 			e.pendingDest, e.status = dest, HostRequest
 			return nil
 		}

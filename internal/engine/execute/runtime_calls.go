@@ -94,7 +94,7 @@ func (e *Execution) runCall() Status {
 		e.frames[fi] = frame{}
 		e.frames = e.frames[:fi]
 		if callee.Code == nil {
-			e.pending = &HostCall{Function: callee, Caller: instance, Args: append([]value.Value(nil), e.tailArgs...)}
+			copy(e.prepareHost(callee, instance, len(e.tailArgs)), e.tailArgs)
 			e.pendingDest, e.status = dest, HostRequest
 			clear(e.tailArgs)
 			e.tailArgs = e.tailArgs[:0]
@@ -113,11 +113,10 @@ func (e *Execution) runCall() Status {
 	f.pc = pc + 1
 	f.callPC, f.suspended = pc, true
 	if callee.Code == nil {
-		args := make([]value.Value, count)
+		args := e.prepareHost(callee, instance, int(count))
 		for i := range args {
 			args[i] = e.values[base+int(inputs[i])]
 		}
-		e.pending = &HostCall{Function: callee, Caller: instance, Args: args}
 		e.pendingDest = dest
 		e.status = HostRequest
 		return HostRequest
