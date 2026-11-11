@@ -180,3 +180,51 @@ func TestScalarStorageRegistrationContracts(t *testing.T) {
 		}
 	})
 }
+
+func TestScalarStorageOrdinaryImportKeepsDirectCallIdentity(t *testing.T) {
+	withBackends(t, func(t *testing.T, newEngine func() *Engine) {
+		e, s, l := setupWithEngine(t, newEngine)
+		var calls int
+		var received uint64
+		plain, err := s.NewFunction(FunctionType{Params: []wasm.ValueType{wasm.I64}}, func(_ *Caller, args []Value) ([]Value, error) {
+			calls++
+			received = bits(t, args[0])
+			return nil, nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		storage, err := NewScalarStorage(1, func() ([]uint64, bool) { return []uint64{0}, true })
+		if err != nil {
+			t.Fatal(err)
+		}
+		get, err := s.NewScalarStorageFunction(storage, 0, wasm.I64, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for name, fn := range map[string]Extern{"plain": plain, "get": get} {
+			if err := l.Define("h", name, fn); err != nil {
+				t.Fatal(err)
+			}
+		}
+		d := &module.Module{Types: []module.FuncType{{Params: []wasm.ValueType{wasm.I64}}, {Results: []wasm.ValueType{wasm.I64}}},
+			Imports:   []module.Import{{Module: "h", Name: "plain", Kind: 0}, {Module: "h", Name: "get", Kind: 0, Type: 1}},
+			Functions: []module.Function{{Body: module.Expr{{Op: 0xb}}}, {Body: module.Expr{{Op: 0x20}, {Op: 0x10}, {Op: 0x20}, {Op: 0x10, A: 2}, {Op: 0xb}}}},
+			Exports:   []module.Export{{Name: "noop", Index: 2}, {Name: "run", Index: 3}}}
+		in := instantiate(t, l, compileDefinition(t, e, d))
+		// The integer argument deliberately equals a same-signature guest
+		// function identity. A direct import must never dispatch through it.
+		identity := export(t, in, "noop").external.Function
+		for _, options := range []CallOptions{{}, {Metered: true, Fuel: 100}} {
+			if _, err := export(t, in, "run").Call(nil, []Value{I64(identity)}, options); err != nil {
+				t.Fatal(err)
+			}
+			if received != identity {
+				t.Fatal("ordinary import lost its integer argument", received)
+			}
+		}
+		if calls != 2 {
+			t.Fatal("ordinary import was dispatched as an indirect call", calls)
+		}
+	})
+}

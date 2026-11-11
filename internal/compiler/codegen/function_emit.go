@@ -576,7 +576,8 @@ func (e *functionEmitter) emitCallExits(config Config) {
 	for _, call := range e.callExits {
 		e.useRegisterPlan(call.registers)
 		e.a.mark(call.label)
-		if e.linkedIndirect(call.pc, config) {
+		if len(config.LinkedSignatures) != 0 &&
+			(e.f.Code[call.pc].Op == 0x11 || e.f.Code[call.pc].Op == 0x14) && e.linkedIndirect(call.pc, config) {
 			continue
 		}
 		e.contextConst(nativeabi.SourceOffset, call.source)
