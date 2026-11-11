@@ -242,6 +242,12 @@ func (e *Execution) Run() Status {
 	for {
 		f := &e.frames[len(e.frames)-1]
 		f.suspended = false
+		if status, handled := e.runVeneer(backend); handled {
+			if status != Running {
+				return status
+			}
+			continue
+		}
 		pc, err := e.runBackend(backend, f.function, f.base, f.pc)
 		if err != nil {
 			return e.fail(err)

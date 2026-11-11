@@ -95,6 +95,12 @@ func (l *Lease) Close() {
 	}
 }
 
+// IsClosed reports whether this lease rejects new admissions. Retiring the
+// original Code does not close an independently held lease.
+func (l *Lease) IsClosed() bool {
+	return l == nil || l.state.Load()&leaseClosed != 0
+}
+
 // Admission pins the immutable code through this lease. Closing prevents new
 // admissions; only the last departing entry may drop a closed lease's pin.
 func (l *Lease) begin(entry uint32) (unsafe.Pointer, error) {

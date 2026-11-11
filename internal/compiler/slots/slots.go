@@ -56,6 +56,7 @@ type Catch struct {
 }
 type ProtectedBlock struct{ Start, End, Handler uint32 }
 type Function struct {
+	Veneer     *CallVeneer
 	Handlers   []Handler
 	Prompts    map[uint32][]Catch
 	Protected  []ProtectedBlock
@@ -428,5 +429,9 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 		}
 	}
 	cachePrefixes(out, budget)
+	out.Veneer = callVeneer(out)
+	if out.Veneer != nil {
+		budget.charge(1)
+	}
 	return out
 }
