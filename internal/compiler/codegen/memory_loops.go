@@ -57,15 +57,30 @@ func (e *functionEmitter) memoryLoop(start int, r memoryRegion) *memoryLoop {
 	outside := func(pc uint32) bool { return int(pc) < start || int(pc) > end }
 	backYes := int(yes.PC) == start && outside(no.PC)
 	backNo := int(no.PC) == start && outside(yes.PC)
-	if yes.Count != 0 || no.Count != 0 || !(backYes && cmp.Op == 0x47 || backNo && cmp.Op == 0x46) {
+	if yes.Count != 0 || no.Count != 0 || !(backYes || backNo) {
 		return nil
 	}
+	op := cmp.Op
 	cursor := cmp.A
 	if cmp.B != bound.Dst {
 		if cmp.A != bound.Dst {
 			return nil
 		}
 		cursor = cmp.B
+		switch op {
+		case 0x4b: // limit > cursor
+			op = 0x49
+		case 0x4d: // limit <= cursor
+			op = 0x4f
+		case 0x49, 0x4f:
+			return nil
+		}
+	}
+	// The progress guard proves an exact positive-stride landing at limit,
+	// without wrapping. Unsigned ordered exits then share the equality proof;
+	// all other initial cursors take the original fully checked loop.
+	if !(backYes && (op == 0x47 || op == 0x49) || backNo && (op == 0x46 || op == 0x4f)) {
+		return nil
 	}
 	if cursor >= slots.Slot(e.f.LocalCount) || e.f.Slots[cursor] != wasm.I32 {
 		return nil

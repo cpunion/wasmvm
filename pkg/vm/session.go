@@ -34,15 +34,16 @@ func (s *Store) withCaller(ctx context.Context, options CallOptions, fn func(*Ca
 	}
 	defer op.finish()
 	caller := op.newCaller(nil)
+	guard := caller.callerState
 	defer func() {
 		// A capability may still be executing on another goroutine. Cancel
 		// before waiting for its lock, including on normal return and panic.
 		op.stopWatcher()
 		op.cancel()
-		caller.mu.Lock()
-		caller.active = false
-		caller.mu.Unlock()
-		for _, v := range caller.temporary {
+		guard.mu.Lock()
+		guard.active = false
+		guard.mu.Unlock()
+		for _, v := range guard.temporary {
 			v.Release()
 		}
 		fuel = op.fuel

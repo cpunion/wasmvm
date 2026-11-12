@@ -1,0 +1,283 @@
+{
+  "plan": {
+    "blocks": 20,
+    "seed": 2026111607,
+    "variants": [
+      [
+        "base",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/compile-cost/base-go-runner",
+        4
+      ],
+      [
+        "head",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/dense-labels/source-phase-go-runner",
+        4
+      ]
+    ],
+    "scope": "Exact-source compile-phase comparison. base f500707 compiler (merged158compiler equivalent), headd7e513d948e20906e850f5569436a65405106c05 (bounded4workers/prune/bitset/denselabels). Same runtime/guest/publicCompile marker harness, Go1.27.3 Clang22.1.8 GOMAXPROCS4, production checks/fuelpolicies unchanged. PublicCompile+bounded marker CPU excludes startup/load/instantiate/firstcall/cleanup. Wasmtime48.0.1 Rustinternalcompilewall only, isolatedreferenceCPU unavailable.20randomized freshprocessblocks withindependentA/Aaliases,2fullycheckedHTTPresponses everyprocess. No owned overlappingbuild/test/profile/pruning; record controls, not all-target fullportfolio acceptance."
+  },
+  "summary": {
+    "base": {
+      "compileMs": 179.0103745,
+      "cpuMs": 210.30614583333332,
+      "instructions": 2849574610.5
+    },
+    "base-aa": {
+      "compileMs": 178.1421875,
+      "cpuMs": 209.6663125,
+      "instructions": 2849578317.5
+    },
+    "head": {
+      "compileMs": 73.947333,
+      "cpuMs": 136.47991666666667,
+      "instructions": 1727550589.5
+    },
+    "head-aa": {
+      "compileMs": 73.1969585,
+      "cpuMs": 136.01522916666664,
+      "instructions": 1736965341.5
+    },
+    "wasmtime": {
+      "compileMs": 57.722417
+    },
+    "wasmtime-aa": {
+      "compileMs": 57.2058955
+    }
+  },
+  "source": {
+    "baseCompiler": "f500707903bcec80c9bff4592530f7203da04645",
+    "baseCompilerEquivalentMain": "d83417def7f52372a1e313fd7acf08a17b4b4bbd",
+    "head": "d7e513d948e20906e850f5569436a65405106c05",
+    "binarySHA256": {
+      "base": "c6a038b8a46c4947c2be2f814a5cfc95069ad85be2dc8979708922c3e5053444",
+      "head": "0ccab1b60bb9ba49a9d04c53c3a342390eea72a4185ab71a6e8c5aac5ef7366f",
+      "wasmtime": "561370163342e51593964bc6615ca28ebf1831c22132412ce9c6c44981c54f08"
+    },
+    "harnessSHA256": {
+      "owned.go": "77b6438512b19b19cf721340f684f425116cf847c04fe94b7994df8997cb11c1",
+      "compile_barrier.go": "34efb85aac80dfc1cb0dfe659dc323a49e16744227f4f8390a90b650f7b88f24",
+      "measure.py": "c2fa66e64d2682e920d9b6d8a6c4f75d1f5612dff2d6a7a07df6959faf7bdb6b"
+    }
+  },
+  "controls": {
+    "head/base:compileMs": {
+      "geometricRatio": 0.41190758875516204,
+      "ci95": [
+        0.4052360833897019,
+        0.41949741947937835
+      ],
+      "maxAbsBlockDeviation": 0.6080298989684654
+    },
+    "head/base:cpuMs": {
+      "geometricRatio": 0.6484082499660853,
+      "ci95": [
+        0.6402771698731627,
+        0.6581267802820003
+      ],
+      "maxAbsBlockDeviation": 0.37241600443974354
+    },
+    "head/base:instructions": {
+      "geometricRatio": 0.6065162298484382,
+      "ci95": [
+        0.6040979173645104,
+        0.6090434726209164
+      ],
+      "maxAbsBlockDeviation": 0.4000400555236304
+    },
+    "head/wasmtime:compileMs": {
+      "geometricRatio": 1.268007707260542,
+      "ci95": [
+        1.2226201360420852,
+        1.3065092151597424
+      ],
+      "maxAbsBlockDeviation": 0.393500931603987
+    },
+    "base-aa/base:compileMs": {
+      "geometricRatio": 0.999195937509985,
+      "ci95": [
+        0.9833096883615169,
+        1.0169118791017409
+      ],
+      "maxAbsBlockDeviation": 0.08849084351125724
+    },
+    "base-aa/base:cpuMs": {
+      "geometricRatio": 0.9971155996539188,
+      "ci95": [
+        0.9866901573083277,
+        1.0085083642732162
+      ],
+      "maxAbsBlockDeviation": 0.06031744507470371
+    },
+    "base-aa/base:instructions": {
+      "geometricRatio": 0.9986011932270996,
+      "ci95": [
+        0.9956312036138094,
+        1.0014904989372135
+      ],
+      "maxAbsBlockDeviation": 0.01884513417140976
+    },
+    "head-aa/head:compileMs": {
+      "geometricRatio": 0.9883706670654189,
+      "ci95": [
+        0.965327879548429,
+        1.008873283785132
+      ],
+      "maxAbsBlockDeviation": 0.1352663548628159
+    },
+    "head-aa/head:cpuMs": {
+      "geometricRatio": 0.9934345547744459,
+      "ci95": [
+        0.9762239474366524,
+        1.0083204269508523
+      ],
+      "maxAbsBlockDeviation": 0.09989713600222994
+    },
+    "head-aa/head:instructions": {
+      "geometricRatio": 1.0000650675059,
+      "ci95": [
+        0.9945229404882845,
+        1.0058286851836984
+      ],
+      "maxAbsBlockDeviation": 0.026720154028020526
+    },
+    "wasmtime-aa/wasmtime:compileMs": {
+      "geometricRatio": 0.9835718243454021,
+      "ci95": [
+        0.9466417431986993,
+        1.0140837018552256
+      ],
+      "maxAbsBlockDeviation": 0.24648741757854897
+    }
+  },
+  "toolchain": {
+    "Go": "1.27.3",
+    "Clang": "22.1.8",
+    "LLGoSemanticProfile": "3d92a58 -O3 -lto=full",
+    "host": "macOS arm64 M4 Max",
+    "GOMAXPROCS": 4,
+    "reference": "Wasmtime48.0.1 Cranelift",
+    "OS": "macOS27.0.1"
+  },
+  "coverage": {
+    "internal/compiler/codegen": 97.82,
+    "internal/component/canonical": 94.27,
+    "internal/engine/nativeexec": 92.96,
+    "pkg/component": 92.44,
+    "pkg/vm": 93.29,
+    "pkg/wasi/preview2": 90.87,
+    "pkg/wasi/preview3": 91.28
+  },
+  "validation": {
+    "Go/macOS": "full7affectedpackages,97.82/94.27/92.96/92.44/93.29/90.87/91.28%scope; codegen/nativeexec/vm fullrace passed",
+    "LLGo/macOS": "full5compilerconsumingpackages pass on d7e513d; canonical/P2 also pass on preceding62ed4d2",
+    "Go/Linux": "full7affectedpackages pass on62ed4d2 before dense labels",
+    "LLGo/Linux": "codegen/canonical pass on62ed4d2; emulated remaining LTO links stopped to avoid duplicating required native CI, not a testpass; final fullmatrix pendingCI",
+    "P3FullRace": "62ed4d2 passes completecomponent/P3 race195.631sec; finalhead sharedCIrequired",
+    "failureEvidence": "Initial pool panic test incorrectly used nilFunctions, which compiler correctly rejects withErrInvalid. Fixed diagnostic by injecting panicking context onlyafter childcontext construction. Initial dense-label fixture adaptations failed; productioncold-offset default preserved via labelAt lookup beforepromotion. No testskips added."
+  },
+  "layoutDiagnostics": {
+    "plan": {
+      "blocks": 8,
+      "seed": 2026111567,
+      "variants": [
+        [
+          "prune",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/compile-cost/prune-go-runner",
+          4
+        ],
+        [
+          "linear",
+          "linear",
+          4
+        ],
+        [
+          "block",
+          "block",
+          4
+        ],
+        [
+          "word",
+          "word",
+          4
+        ],
+        [
+          "byte",
+          "byte",
+          4
+        ]
+      ],
+      "scope": "Compile-phase diagnostic only. Same f500707 runtime, guest, harness, Go1.27.3 Clang22.1.8. All variants prune unpublished futileexpansion. Layout alternatives replace only arm64 compact: original Search/maps, linear int prefix, block bitset/popcount, word uint32 prefix, byte block precomputed rank. GOMAXPROCS4 throughout. Phase excludes startup/instantiate/firstcall/cleanup. Reference Wasmtime48 Rustcompile wall only, no isolatedCPU estimate. Two fullycheckedHTTPresponses per process; eight randomized A/A blocks. No owned overlapping build/test/profile/pruning."
+    },
+    "summary": {
+      "prune": {
+        "compileMs": 145.989625,
+        "cpuMs": 171.4923125,
+        "instructions": 2198731504.0
+      },
+      "prune-aa": {
+        "compileMs": 144.928229,
+        "cpuMs": 169.82458333333335,
+        "instructions": 2186319119.5
+      },
+      "linear": {
+        "compileMs": 116.79314600000001,
+        "cpuMs": 143.16472916666663,
+        "instructions": 1988741223.5
+      },
+      "linear-aa": {
+        "compileMs": 122.06533300000001,
+        "cpuMs": 148.2685833333333,
+        "instructions": 1994459330.0
+      },
+      "block": {
+        "compileMs": 115.72972949999999,
+        "cpuMs": 142.18079166666666,
+        "instructions": 1951466793.0
+      },
+      "block-aa": {
+        "compileMs": 118.99175,
+        "cpuMs": 143.91883333333334,
+        "instructions": 1948659650.0
+      },
+      "word": {
+        "compileMs": 117.2750415,
+        "cpuMs": 142.5321875,
+        "instructions": 1980004542.0
+      },
+      "word-aa": {
+        "compileMs": 118.78577100000001,
+        "cpuMs": 143.9368125,
+        "instructions": 1971187864.0
+      },
+      "byte": {
+        "compileMs": 117.78372949999999,
+        "cpuMs": 143.0732708333333,
+        "instructions": 1985043679.0
+      },
+      "byte-aa": {
+        "compileMs": 119.549812,
+        "cpuMs": 144.02862499999998,
+        "instructions": 1985574698.0
+      },
+      "wasmtime": {
+        "compileMs": 60.78993749999999
+      },
+      "wasmtime-aa": {
+        "compileMs": 61.401458500000004
+      }
+    }
+  },
+  "rawEvidence": {
+    "compiler-final": 120,
+    "layout-candidates": 96,
+    "ordered-memory": 48,
+    "unresolved-macro": 72
+  },
+  "evidenceNote": "RequestNs and PublicAPINs latency arrays are replaced by count/SHA256; full originals stay in localartifacts. Warm timing arrays/counters/phases/commands and returned checksums retained. Initial invalid-backend setup attempt is not pooled with corrected ordered-memory cohort.",
+  "lifecycleFollowup": {
+    "CIOriginalFailure": "131019006868 Go race/linux: TestHTTPCallerOutputCancellationClosesExternalReader/interpreter requests1; no data race or timeout reported. Fixed cleanup/admission/publication ordering, not retried as noise.",
+    "localValidation": "1,000 cancellation repetitions (both backends) pass; whole P3 LLGo/mac pass31.696sec. Shared CoreCaller guard actual VM/component/P3 Go semantics+coverage93.34/92.44/91.30 and LLGo/mac1.194/1.797/25.587sec pass; full final source race and CI pending.",
+    "confirmedCoreBug": "Header copies had separate active booleans; both interpreter/native expired copies could create externrefs inside still-live Store session. Shared fresh guard and captured cleanup state fix expiry, including host header replacement. No callback state pooling in production.",
+    "linuxCompiler": "Final compiler codegen/nativeexec pass Go13.503/.265sec and LLGo10.477/.639sec in localLinuxamd64Docker; timings are semantic test durations, not native performance evidence."
+  }
+}

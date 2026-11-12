@@ -39,7 +39,7 @@ func TestAllocatedConditionUsesLow32Bits(t *testing.T) {
 			registers = []byte{19, 20, 21, 22, 23, 24, 25, 26, 27, 28}
 		}
 		for _, reg := range registers {
-			a := assembler{arch: arch, labels: map[int]int{}, longBranches: true}
+			a := assembler{arch: arch, longBranches: true}
 			e := functionEmitter{a: &a, exit: a.label(), registers: map[slots.Slot]byte{0: reg}}
 			zero, done := a.label(), a.label()
 			e.contextLoad(0, nativeabi.ResultLoOffset)
@@ -107,16 +107,16 @@ func TestARMConditionalRelaxation(t *testing.T) {
 			for _, wide := range []bool{false, true} {
 				for _, nonzero := range []bool{false, true} {
 					for _, flags := range []bool{false, true} {
-						a := assembler{arch: "arm64", labels: map[int]int{}, longBranches: true}
+						a := assembler{arch: "arm64", longBranches: true}
 						if known {
-							a.labels[1] = target
+							a.labels = []int{0, target + 1}
 						}
 						if flags {
 							a.branch(1, true, 10)
 						} else {
 							a.compareBranch(1, 28, wide, nonzero)
 						}
-						a.labels[1] = target
+						a.labels = []int{0, target + 1}
 						code, err := a.finish()
 						if err != nil {
 							t.Fatal(err)

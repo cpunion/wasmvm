@@ -121,7 +121,7 @@ func TestIntegerNativeSemantics(t *testing.T) {
 func TestBranchRelocations(t *testing.T) {
 	for _, arch := range []string{"amd64", "arm64"} {
 		for _, conditional := range []bool{false, true} {
-			a := assembler{arch: arch, labels: map[int]int{}}
+			a := assembler{arch: arch}
 			start, end := a.label(), a.label()
 			a.mark(start)
 			a.branch(end, conditional, 1)
@@ -140,11 +140,11 @@ func TestBranchRelocations(t *testing.T) {
 				} else {
 					target = r.position + int(int32(word<<6)>>6)*4
 				}
-				if target != a.labels[r.label] {
-					t.Fatalf("%s branch target %d, want %d", arch, target, a.labels[r.label])
+				if target != (a.labels[r.label] - 1) {
+					t.Fatalf("%s branch target %d, want %d", arch, target, (a.labels[r.label] - 1))
 				}
 			}
-			delete(a.labels, start)
+			a.labels[start] = 0
 			if _, err := a.finish(); err != wasm.ErrInvalid {
 				t.Fatal(err)
 			}
@@ -159,7 +159,7 @@ func TestBranchRelocations(t *testing.T) {
 		{"amd64", false, 1 << 32, wasm.ErrLimit}, {"arm64", false, 1 << 28, wasm.ErrLimit},
 		{"arm64", true, 1 << 21, wasm.ErrLimit}, {"arm64", false, 3, wasm.ErrInvalid},
 	} {
-		a := assembler{arch: tt.arch, labels: map[int]int{1: tt.target}}
+		a := assembler{arch: tt.arch, labels: []int{0, tt.target + 1}}
 		a.branch(1, tt.conditional, 0)
 		if _, err := a.finish(); err != tt.err {
 			t.Fatal(tt, err)

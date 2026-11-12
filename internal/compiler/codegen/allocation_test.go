@@ -86,7 +86,7 @@ func allocationLoopFixture() (*slots.Function, Config, slots.Slot) {
 func TestSharedAllocationKeepsHotMetadataAndOperandsAheadOfColdTail(t *testing.T) {
 	f, config, condition := allocationLoopFixture()
 	for _, arch := range []string{"amd64", "arm64"} {
-		e := functionEmitter{a: &assembler{arch: arch, labels: map[int]int{}}, f: f, unmetered: true}
+		e := functionEmitter{a: &assembler{arch: arch}, f: f, unmetered: true}
 		e.allocateRegisters(config, nil)
 		for _, slot := range []slots.Slot{0, 1, 2, 3, 4, condition} {
 			if _, ok := e.registers[slot]; !ok {

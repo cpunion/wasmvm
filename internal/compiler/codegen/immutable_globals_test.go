@@ -44,7 +44,7 @@ func TestImmutableGlobalValueResidencyEligibility(t *testing.T) {
 					cfg.Globals[0].Mutable = true
 					cfg.Globals[1].Mutable = true
 				}
-				e := functionEmitter{a: &assembler{arch: arch, labels: map[int]int{}}, f: f, unmetered: mode != "precise"}
+				e := functionEmitter{a: &assembler{arch: arch}, f: f, unmetered: mode != "precise"}
 				e.selectRegisters(cfg, nil)
 				if mode == "uncached" {
 					e.runtimeRegisters = nil

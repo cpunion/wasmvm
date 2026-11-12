@@ -64,16 +64,18 @@ func (b *ResourceBudget) release(count uint32) { b.live.Add(0 - count) }
 // Resources is a bounded handle domain. Guest domains reuse freed indices in
 // ABI-mandated LIFO order; private host capability domains never reuse IDs.
 type Resources struct {
-	mu         sync.Mutex
-	order      uint64
-	entries    map[uint32]*resourceEntry
-	next       uint32
-	generation uint64
-	free       []uint32
-	reuse      bool
-	budget     *ResourceBudget
-	closed     bool
-	errorCount uint32
+	mu           sync.Mutex
+	order        uint64
+	entries      map[uint32]*resourceEntry
+	guestEntries []*resourceEntry
+	count        uint32
+	next         uint32
+	generation   uint64
+	free         []uint32
+	reuse        bool
+	budget       *ResourceBudget
+	closed       bool
+	errorCount   uint32
 }
 
 func NewResources(maximum uint32) *Resources {
@@ -92,6 +94,7 @@ func NewResourceTable(budget *ResourceBudget) *Resources {
 func NewGuestResourceTable(budget *ResourceBudget) *Resources {
 	r := NewResourceTable(budget)
 	r.reuse = true
+	r.entries = nil
 	return r
 }
 
@@ -111,11 +114,54 @@ func (r *Resources) indexLocked() uint32 {
 	return i
 }
 
-func (r *Resources) removeLocked(id uint32) {
-	delete(r.entries, id)
+func (r *Resources) entryLocked(id uint32) *resourceEntry {
 	if r.reuse {
-		r.free = append(r.free, id)
+		if uint64(id) >= uint64(len(r.guestEntries)) {
+			return nil
+		}
+		return r.guestEntries[id]
 	}
+	return r.entries[id]
+}
+func (r *Resources) insertLocked(id uint32, e *resourceEntry) {
+	if r.reuse {
+		if int(id) >= len(r.guestEntries) {
+			wanted := max(16, len(r.guestEntries)*2, int(id)+1)
+			r.guestEntries = append(r.guestEntries, make([]*resourceEntry, wanted-len(r.guestEntries))...)
+		}
+		r.guestEntries[id] = e
+	} else {
+		r.entries[id] = e
+	}
+	r.count++
+}
+func (r *Resources) removeLocked(id uint32) {
+	if r.reuse {
+		r.guestEntries[id] = nil
+		r.free = append(r.free, id)
+	} else {
+		delete(r.entries, id)
+	}
+	r.count--
+}
+
+// Guest indices are densely allocated and reused in the ABI's LIFO order.
+// Host IDs remain nonreusing sparse keys. Entry objects retain stable identity
+// across growth, borrowing and cross-domain opaque transfers.
+func visitResourceEntries(entries map[uint32]*resourceEntry, guest []*resourceEntry, visit func(*resourceEntry) error) error {
+	for _, e := range entries {
+		if err := visit(e); err != nil {
+			return err
+		}
+	}
+	for _, e := range guest {
+		if e != nil {
+			if err := visit(e); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // EntryGeneration identifies one publication across index reuse and transfers.
@@ -124,7 +170,7 @@ func (r *Resources) EntryGeneration(id uint32) uint64 {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if !r.closed {
-		if entry := r.entries[id]; entry != nil {
+		if entry := r.entryLocked(id); entry != nil {
 			return entry.generation
 		}
 	}
@@ -143,7 +189,7 @@ func (r *Resources) addLocked(e *resourceEntry) (uint32, error) {
 	}
 	i := r.indexLocked()
 	e.id, e.generation = i, r.generation
-	r.entries[i] = e
+	r.insertLocked(i, e)
 	return i, nil
 }
 
@@ -160,7 +206,7 @@ func (r *Resources) getLocked(t *ResourceType, id uint32) (*resourceEntry, error
 	if r.closed {
 		return nil, wasm.ErrClosed
 	}
-	e := r.entries[id]
+	e := r.entryLocked(id)
 	if e == nil || t == nil || e.typeID != t {
 		return nil, scalarTrap("invalid resource handle or type")
 	}
@@ -320,7 +366,7 @@ func (s *BorrowScope) End() error {
 	escaped := false
 	for e, borrow := range s.borrows {
 		borrow.table.mu.Lock()
-		if borrow.table.entries[e.id] == e {
+		if borrow.table.entryLocked(e.id) == e {
 			borrow.table.removeLocked(e.id)
 			borrow.table.budget.release(1)
 			escaped = true
@@ -356,31 +402,39 @@ func (s *BorrowScope) CheckReturned() error {
 // every destructor even if one fails and returns the first error.
 func (r *Resources) Drain(ctx context.Context) error {
 	r.mu.Lock()
-	for _, e := range r.entries {
+	if err := visitResourceEntries(r.entries, r.guestEntries, func(e *resourceEntry) error {
 		if e.lends != 0 || !e.owned {
-			r.mu.Unlock()
 			return scalarTrap("cannot drain active resource borrows")
 		}
+		return nil
+	}); err != nil {
+		r.mu.Unlock()
+		return err
 	}
-	entries := r.entries
-	r.budget.release(uint32(len(entries)))
-	r.entries = map[uint32]*resourceEntry{}
+	entries, guest := r.entries, r.guestEntries
+	r.budget.release(r.count)
+	r.count = 0
+	r.guestEntries = nil
 	if r.reuse {
 		r.next = 1
 		r.free = nil
+	} else {
+		r.entries = map[uint32]*resourceEntry{}
 	}
+
 	r.mu.Unlock()
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	var first error
-	for _, e := range entries {
+	visitResourceEntries(entries, guest, func(e *resourceEntry) error {
 		if e.typeID != nil && e.typeID.Drop != nil {
 			if err := e.typeID.Drop(ctx, e.rep); err != nil && first == nil {
 				first = err
 			}
 		}
-	}
+		return nil
+	})
 	return first
 }
 
@@ -391,14 +445,17 @@ func (r *Resources) Close() {
 	defer r.mu.Unlock()
 	r.closed = true
 	if r.errorCount != 0 {
-		for _, e := range r.entries {
+		visitResourceEntries(r.entries, r.guestEntries, func(e *resourceEntry) error {
 			if e.errorContext != nil {
 				r.budget.releaseError(e.errorContext)
 			}
-		}
+			return nil
+		})
 		r.errorCount = 0
 	}
-	r.budget.release(uint32(len(r.entries)))
+	r.budget.release(r.count)
+	r.count = 0
+	r.guestEntries = nil
 	r.entries = nil
 	r.free = nil
 }

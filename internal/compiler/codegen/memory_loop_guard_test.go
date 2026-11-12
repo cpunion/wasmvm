@@ -18,7 +18,7 @@ func TestRemainingLoopSpanArithmeticAndOriginalOperands(t *testing.T) {
 			for _, interval := range [][2]uint64{{0, 1}, {33, 34}, {4096, 17}, {0, 1 << 32}, {(1 << 32) - 1, 1}} {
 				for _, limit := range []uint32{2, 30, 65536, 0xffffffff} {
 					for _, stride := range []uint32{1, 3, 4, 0xffffffff} {
-						a := assembler{arch: arch, labels: map[int]int{}, longBranches: true}
+						a := assembler{arch: arch, longBranches: true}
 						e := functionEmitter{a: &a, f: &slots.Function{Slots: []wasm.ValueType{wasm.I32, wasm.I32}}, unmetered: true, exit: a.label()}
 						cold, done := a.label(), a.label()
 						e.contextLoad(0, nativeabi.ArenaOffset)

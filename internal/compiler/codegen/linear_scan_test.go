@@ -99,7 +99,7 @@ func TestLinearScanBudgetsRetainConservativeAllocation(t *testing.T) {
 				f.Code = append(f.Code, slots.Instruction{Op: slots.ControlBase + uint32(ir.Table), A: 0, B: slots.NoSlot, C: slots.NoSlot, Dst: slots.NoSlot, Count: 20})
 			}
 		}
-		a := assembler{arch: "arm64", labels: map[int]int{}}
+		a := assembler{arch: "arm64"}
 		e := functionEmitter{a: &a, f: f, unmetered: true}
 		e.prepareRegisters()
 		baseline := e.currentRegisterPlan()
@@ -111,7 +111,7 @@ func TestLinearScanBudgetsRetainConservativeAllocation(t *testing.T) {
 	// A planner with no previously initialized homes still partitions both
 	// banks; reserved immutable words must never appear in the integer bank.
 	f := globalRegisterFixture("return")
-	a := assembler{arch: "arm64", labels: map[int]int{}}
+	a := assembler{arch: "arm64"}
 	e := functionEmitter{a: &a, f: f, unmetered: true, constantRegisters: map[uint64]byte{1: 1, 2: 2}}
 	e.prepareLinearScan(nil, 1<<18)
 	if len(e.allocationPlans) != len(f.Code) {

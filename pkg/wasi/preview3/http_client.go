@@ -144,10 +144,34 @@ func (p *HTTP) send(handler bool) component.AsyncHostFunction {
 		request = request.WithContext(ctx)
 		completion = component.NewHostCompletionWithCleanup(job.close)
 		if failed = p.worker(func() {
-			defer p.releaseRequest()
 			var response *http.Response
 			var result *httpBody
 			var failure error
+			// Publish only after request cleanup and admission release. A ready
+			// consumer can otherwise finish before the worker's final defer runs.
+			defer func() {
+				if recover() != nil {
+					failure = httpErr("internal-error")
+				}
+				if callCtx.Err() != nil {
+					completion.Cancelled()
+					return
+				}
+				completion.Resolve(func(fresh *component.Caller) (*component.Value, error) {
+					if failure != nil {
+						v := httpErrorResult(failure)
+						return &v, nil
+					}
+					stop()
+					value, err := p.publish(fresh, &httpEntry{kind: "response", message: &httpMessage{headers: result.responseHeaders, method: message.method, status: uint16(response.StatusCode), body: result}})
+					if err != nil {
+						return nil, err
+					}
+					v := httpOK(value)
+					return &v, nil
+				})
+			}()
+			defer p.releaseRequest()
 			defer func() {
 				if recover() != nil {
 					failure = httpErr("internal-error")
@@ -173,23 +197,6 @@ func (p *HTTP) send(handler bool) component.AsyncHostFunction {
 				} else {
 					body.handled()
 				}
-				if callCtx.Err() != nil {
-					completion.Cancelled()
-					return
-				}
-				completion.Resolve(func(fresh *component.Caller) (*component.Value, error) {
-					if failure != nil {
-						v := httpErrorResult(failure)
-						return &v, nil
-					}
-					stop()
-					value, err := p.publish(fresh, &httpEntry{kind: "response", message: &httpMessage{headers: result.responseHeaders, method: message.method, status: uint16(response.StatusCode), body: result}})
-					if err != nil {
-						return nil, err
-					}
-					v := httpOK(value)
-					return &v, nil
-				})
 			}()
 			timeouts := p.defaultTimeouts()
 			if message.options != nil {

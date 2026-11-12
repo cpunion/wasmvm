@@ -105,7 +105,7 @@ func TestVectorImmediateExpansionAndRawFallback(t *testing.T) {
 		}
 		// Batch independent native-ABI probes into one publication. The ordinary
 		// compiler tests separately cover pool ownership, aliases and cold entries.
-		a := assembler{arch: runtime.GOARCH, labels: map[int]int{}}
+		a := assembler{arch: runtime.GOARCH}
 		e := functionEmitter{a: &a, exit: a.label()}
 		dst := []byte{0, 2, 12, 15}[i%4]
 		if runtime.GOARCH == "arm64" {

@@ -133,10 +133,14 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 	// independently of map iteration order and table contents at instantiation.
 	keys := m.IR.Validated.TypeLabels()
 	bySignature := map[uint32][]uint32{}
+	leafCandidates := map[uint32]bool{}
 	for i, f := range m.Functions {
 		key := keys[definition.Functions[i].Type]
-		if len(bySignature[key]) < 4 && codegen.CanExpandLeaf(f) {
-			bySignature[key] = append(bySignature[key], importedFunctions+uint32(i))
+		if codegen.CanExpandLeaf(f) {
+			leafCandidates[importedFunctions+uint32(i)] = true
+			if len(bySignature[key]) < 4 {
+				bySignature[key] = append(bySignature[key], importedFunctions+uint32(i))
+			}
 		}
 	}
 	indirect := map[uint32][]uint32{}
@@ -153,6 +157,21 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 	// Publish all required ordinary tiers before spending spare code budget
 	// on optional expansion, including when later functions are large.
 	for tier := 0; tier < 3; tier++ {
+		bounded := limits
+		bounded.MaxCodeBytes = min(limits.MaxCodeBytes, uint64(math.MaxUint32)) - uint64(len(code))
+		config := codegen.Config{Unmetered: tier != 1, NativeAllocations: tier != 1, NativeThreads: true, MemoryMinimumPages: minimum, X86Features: features, ARM64Features: armFeatures,
+			MemoryPageSizes: pageSizes, HeapTypes: definition.TypeDefs,
+			FunctionCount: importedFunctions + uint32(len(m.Functions)), ScalarImports: importedFunctions, TableCount: tables, MemoryCount: memories, SharedMemories: shared, Globals: globals}
+		config.LinkedCallees, config.LinkedGlobals = linkedCallees, linkedGlobals
+		if linkedCallees != nil {
+			config.LinkedSignatures, config.LinkedTypeLabels = linkedSignatures, keys
+		}
+		if tier == 2 {
+			config.DirectCallees = callees
+			config.IndirectCallees = indirect
+		}
+		compiler := newFunctionCompiler(ctx, m.Functions, bounded, config, tier == 2, wantExpansion)
+		defer compiler.close()
 		for functionIndex, f := range m.Functions {
 			row := functionIndex
 			indexes := out.entries[row]
@@ -163,20 +182,15 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 			if err := ctx.Err(); err != nil {
 				return nil, err
 			}
-			bounded := limits
-			bounded.MaxCodeBytes = min(limits.MaxCodeBytes, uint64(math.MaxUint32)) - uint64(len(code))
-			config := codegen.Config{Unmetered: tier != 1, NativeAllocations: tier != 1, NativeThreads: true, MemoryMinimumPages: minimum, X86Features: features, ARM64Features: armFeatures,
-				MemoryPageSizes: pageSizes, HeapTypes: definition.TypeDefs,
-				FunctionCount: importedFunctions + uint32(len(m.Functions)), ScalarImports: importedFunctions, TableCount: tables, MemoryCount: memories, SharedMemories: shared, Globals: globals}
-			config.LinkedCallees, config.LinkedGlobals = linkedCallees, linkedGlobals
-			if linkedCallees != nil {
-				config.LinkedSignatures, config.LinkedTypeLabels = linkedSignatures, keys
+			remaining := min(limits.MaxCodeBytes, uint64(math.MaxUint32)) - uint64(len(code))
+			result := compiler.next(remaining)
+			if result.panicked {
+				panic(result.panicValue)
 			}
-			if tier == 2 {
-				config.DirectCallees = callees
-				config.IndirectCallees = indirect
+			body, err := result.body, result.err
+			if err == nil && uint64(len(body.Entry.Code)) > remaining {
+				err = wasm.ErrLimit
 			}
-			body, err := codegen.CompileFunctionWithConfig(runtime.GOARCH, f, bounded, config)
 			if tier == 2 && errors.Is(err, wasm.ErrLimit) {
 				// The optional expansion cannot consume the ordinary tiers'
 				// code budget or make an otherwise valid module unavailable.
@@ -195,7 +209,15 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 				indexes.globals = body.GlobalIndices
 				indexes.directRuntimeData = body.UsesRuntimeData
 				indexes.allocationBatch = body.NativeAllocationBatch
-				wantExpansion[f] = body.Calls != 0
+				if body.Calls != 0 {
+					for _, instruction := range f.Code {
+						source := f.Sources[instruction.Source].Wasm
+						if instruction.Op == 0x10 && leafCandidates[source.A] || instruction.Op == 0x11 && len(indirect[source.A]) != 0 {
+							wantExpansion[f] = true
+							break
+						}
+					}
+				}
 			case 1:
 				indexes.metered = index
 			case 2:
@@ -219,6 +241,7 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 			code = append(code, body.Entry.Code...)
 			out.entries[row] = indexes
 		}
+		compiler.close()
 	}
 	for policy := range relocations {
 		if err := codegen.LinkCalls(runtime.GOARCH, code, relocations[policy], targets[policy]); err != nil {
