@@ -16,7 +16,9 @@ type HostFunction func(caller *Caller, args []Value) ([]Value, error)
 // Caller is a capability for the duration of one synchronous host callback.
 // Reentry shares fuel and frame quotas with its suspended parent. Concurrent
 // use returns ErrBusy; retaining Caller past the callback returns ErrClosed.
-type Caller struct {
+type Caller struct{ *callerState }
+
+type callerState struct {
 	mu        sync.Mutex
 	active    bool
 	op        *operation
@@ -24,13 +26,26 @@ type Caller struct {
 	temporary []Value
 }
 
+// Header copies share one guard. No callback state is ever rebound.
+type callerAllocation struct {
+	caller Caller
+	state  callerState
+}
+
 func (op *operation) newCaller(instance *state.Instance) *Caller {
-	// Even an expired Caller can expose its original Context or Store later.
 	op.exposed.Store(true)
-	return &Caller{active: true, op: op, instance: instance}
+	allocation := &callerAllocation{}
+	allocation.state.active = true
+	allocation.state.op = op
+	allocation.state.instance = instance
+	allocation.caller.callerState = &allocation.state
+	return &allocation.caller
 }
 
 func (c *Caller) enter() error {
+	if c == nil || c.callerState == nil {
+		return wasm.ErrClosed
+	}
 	if !c.mu.TryLock() {
 		return ErrBusy
 	}
@@ -283,6 +298,7 @@ func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]valu
 		}
 	}
 	caller := op.newCaller(in)
+	guard := caller.callerState
 	panicked := true
 	// Invalidate the capability and drain an in-flight capability operation
 	// before touching the suspended continuation, including on host panic.
@@ -290,13 +306,13 @@ func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]valu
 		if panicked {
 			op.cancel()
 		}
-		caller.mu.Lock()
-		caller.active = false
-		caller.mu.Unlock()
+		guard.mu.Lock()
+		guard.active = false
+		guard.mu.Unlock()
 		for _, v := range args {
 			v.Release()
 		}
-		for _, v := range caller.temporary {
+		for _, v := range guard.temporary {
 			v.Release()
 		}
 	}()
@@ -308,9 +324,9 @@ func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]valu
 		if err != nil {
 			return nil, op.hostError(err)
 		}
-		caller.mu.Lock()
-		caller.active = false
-		caller.mu.Unlock()
+		guard.mu.Lock()
+		guard.active = false
+		guard.mu.Unlock()
 		return scalarResults(request.Args, stack, signature.Results), nil
 	}
 	var results []Value
@@ -331,9 +347,9 @@ func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]valu
 	if err != nil {
 		return nil, op.hostError(err)
 	}
-	caller.mu.Lock()
-	caller.active = false
-	caller.mu.Unlock()
+	guard.mu.Lock()
+	guard.active = false
+	guard.mu.Unlock()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.decodeValuesLocked(results, request.Function.Signature.Results)

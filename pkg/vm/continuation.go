@@ -182,6 +182,9 @@ func (call *Continuation) abort() {
 // Abort releases a parked call even after cancellation. It does not execute
 // guest code and cannot interrupt a concurrently running Poll.
 func (c *Caller) Abort(call *Continuation) error {
+	if c == nil || c.callerState == nil {
+		return wasm.ErrClosed
+	}
 	if !c.mu.TryLock() {
 		return ErrBusy
 	}
@@ -323,15 +326,16 @@ func (call *Continuation) resumeHost(request *execute.HostCall, fn func(*Caller)
 	}
 	in := call.work.execution.Host().Caller
 	caller := op.newCaller(in)
+	guard := caller.callerState
 	panicked := true
 	defer func() {
 		if panicked {
 			op.cancel()
 		}
-		caller.mu.Lock()
-		caller.active = false
-		caller.mu.Unlock()
-		call.temporary = append(call.temporary, caller.temporary...)
+		guard.mu.Lock()
+		guard.active = false
+		guard.mu.Unlock()
+		call.temporary = append(call.temporary, guard.temporary...)
 	}()
 	step, err = fn(caller)
 	panicked = false

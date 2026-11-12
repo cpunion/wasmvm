@@ -277,8 +277,8 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 adverse results and unsupported references remain in the linked records.
 
 The [native compiler update](docs/research/performance-compiler-layout-2026-11-12.md)
-reduces compilation of the P3 HTTP component from **179.0 to73.9ms**, with CPU
-**210.3 to136.5ms**; Wasmtime48 observes **57.7ms** in that separate cohort.
+reduces compilation of the P3 HTTP component from **179.0 to 73.9 ms**, with CPU
+**210.3 to 136.5 ms**; Wasmtime 48 observes **57.7 ms** in that separate cohort.
 Bounded workers, indexed labels and bitmap relocation preserve both policy
 tiers and checks. This preparation improvement does not close execution gaps.
 

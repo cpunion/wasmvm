@@ -273,5 +273,11 @@
     "ordered-memory": 48,
     "unresolved-macro": 72
   },
-  "evidenceNote": "RequestNs and PublicAPINs latency arrays are replaced by count/SHA256; full originals stay in localartifacts. Warm timing arrays/counters/phases/commands and returned checksums retained. Initial invalid-backend setup attempt is not pooled with corrected ordered-memory cohort."
+  "evidenceNote": "RequestNs and PublicAPINs latency arrays are replaced by count/SHA256; full originals stay in localartifacts. Warm timing arrays/counters/phases/commands and returned checksums retained. Initial invalid-backend setup attempt is not pooled with corrected ordered-memory cohort.",
+  "lifecycleFollowup": {
+    "CIOriginalFailure": "131019006868 Go race/linux: TestHTTPCallerOutputCancellationClosesExternalReader/interpreter requests1; no data race or timeout reported. Fixed cleanup/admission/publication ordering, not retried as noise.",
+    "localValidation": "1,000 cancellation repetitions (both backends) pass; whole P3 LLGo/mac pass31.696sec. Shared CoreCaller guard actual VM/component/P3 Go semantics+coverage93.34/92.44/91.30 and LLGo/mac1.194/1.797/25.587sec pass; full final source race and CI pending.",
+    "confirmedCoreBug": "Header copies had separate active booleans; both interpreter/native expired copies could create externrefs inside still-live Store session. Shared fresh guard and captured cleanup state fix expiry, including host header replacement. No callback state pooling in production.",
+    "linuxCompiler": "Final compiler codegen/nativeexec pass Go13.503/.265sec and LLGo10.477/.639sec in localLinuxamd64Docker; timings are semantic test durations, not native performance evidence."
+  }
 }
