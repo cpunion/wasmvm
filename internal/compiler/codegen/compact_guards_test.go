@@ -23,7 +23,7 @@ func TestMemoryGuardNormalizedIntervalsAndFullMemory32End(t *testing.T) {
 			}
 			for _, interval := range [][2]uint64{{0, 1}, {0, 4095}, {0, 4096}, {33, 34}, {4095, 1}, {0, 4097}, {4096, 1}, {65536, 17}, {0, 1 << 32}, {(1 << 32) - 1, 1}} {
 				g := memoryGuard{address: 0, before: interval[0], after: interval[1]}
-				a := assembler{arch: arch, labels: map[int]int{}, longBranches: true}
+				a := assembler{arch: arch, longBranches: true}
 				e := functionEmitter{a: &a, f: &slots.Function{Slots: []wasm.ValueType{wasm.I32}}, unmetered: true, exit: a.label()}
 				cold, done := a.label(), a.label()
 				e.contextLoad(0, nativeabi.ArenaOffset)

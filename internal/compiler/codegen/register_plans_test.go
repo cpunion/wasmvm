@@ -60,7 +60,7 @@ func TestLoopRegisterPlansPressureColdEntriesAndCanonicalTuples(t *testing.T) {
 func TestRegisterPlanDeferredPollsAndTransitionsKeepEveryWord(t *testing.T) {
 	for _, arch := range []string{"amd64", "arm64"} {
 		for _, where := range []string{"before", "inside", "return", "trap", "call"} {
-			a := assembler{arch: arch, labels: map[int]int{}, longBranches: true}
+			a := assembler{arch: arch, longBranches: true}
 			f := &slots.Function{Slots: []wasm.ValueType{wasm.I64, wasm.I64, wasm.I64, wasm.I64, wasm.I64, wasm.V128}}
 			e := functionEmitter{a: &a, f: f, unmetered: true, exit: a.label()}
 			e.contextLoad(0, nativeabi.ArenaOffset)

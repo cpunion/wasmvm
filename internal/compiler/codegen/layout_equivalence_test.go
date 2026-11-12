@@ -7,7 +7,7 @@ import (
 
 func TestBitmapLayoutMatchesIndependentSearchRelocations(t *testing.T) {
 	for seed := 0; seed < 64; seed++ {
-		a := assembler{arch: "arm64", labels: map[int]int{}, longBranches: true, compactBranches: true}
+		a := assembler{arch: "arm64", longBranches: true, compactBranches: true}
 		var labels [8]int
 		for i := range labels {
 			labels[i] = a.label()
@@ -39,10 +39,7 @@ func TestBitmapLayoutMatchesIndependentSearchRelocations(t *testing.T) {
 		}
 		b := a
 		b.code = append([]byte(nil), a.code...)
-		b.labels = map[int]int{}
-		for k, v := range a.labels {
-			b.labels[k] = v
-		}
+		b.labels = append([]int(nil), a.labels...)
 		b.fixups = append([]relocation(nil), a.fixups...)
 		b.conditionalBranches = append([]conditionalRelocation(nil), a.conditionalBranches...)
 		b.addresses = append([]addressRelocation(nil), a.addresses...)

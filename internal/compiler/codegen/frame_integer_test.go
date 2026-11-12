@@ -15,7 +15,7 @@ import (
 
 func frameIntegerKernel(t *testing.T, op uint32, dst slots.Slot, mask int, aliases bool) nativeabi.Entry {
 	t.Helper()
-	a := assembler{arch: "amd64", labels: map[int]int{}}
+	a := assembler{arch: "amd64"}
 	f := &slots.Function{Slots: []wasm.ValueType{wasm.I64, wasm.I64, wasm.I64, wasm.I64, wasm.I64}}
 	e := functionEmitter{a: &a, f: f, unmetered: true, exit: a.label()}
 	e.contextLoad(0, nativeabi.ArenaOffset)

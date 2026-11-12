@@ -20,7 +20,7 @@ func Integer(arch string, op uint32, maxBytes uint64) (nativeabi.Entry, error) {
 		return nativeabi.Entry{}, wasm.ErrUnsupported
 	}
 	wide := op >= 0x50 && op <= 0x5a || op >= 0x79 && op <= 0x8a || op == 0xac || op == 0xad || op >= 0xc2
-	a := assembler{arch: arch, labels: map[int]int{}}
+	a := assembler{arch: arch}
 	switch arch {
 	case "amd64":
 		integerAMD64(&a, op, wide)
@@ -43,7 +43,7 @@ type relocation struct {
 type assembler struct {
 	arch                string
 	code                []byte
-	labels              map[int]int
+	labels              []int
 	fixups              []relocation
 	next                int
 	bounded             bool
@@ -75,8 +75,27 @@ func (a *assembler) imm64(w uint64) {
 	a.reserve(8)
 	a.code = binary.LittleEndian.AppendUint64(a.code, w)
 }
-func (a *assembler) label() int     { a.next++; return a.next }
-func (a *assembler) mark(label int) { a.labels[label] = len(a.code) }
+
+// Label IDs are dense; zero marks an unbound slot and positions are stored +1.
+func (a *assembler) label() int {
+	a.next++
+	for len(a.labels) <= a.next {
+		a.labels = append(a.labels, 0)
+	}
+	return a.next
+}
+func (a *assembler) mark(label int) {
+	for len(a.labels) <= label {
+		a.labels = append(a.labels, 0)
+	}
+	a.labels[label] = len(a.code) + 1
+}
+func (a *assembler) labelAt(label int) (int, bool) {
+	if label < 0 || label >= len(a.labels) || a.labels[label] == 0 {
+		return 0, false
+	}
+	return a.labels[label] - 1, true
+}
 func (a *assembler) branch(label int, conditional bool, cc byte) {
 	if a.arch == "amd64" {
 		if conditional {
@@ -88,7 +107,7 @@ func (a *assembler) branch(label int, conditional bool, cc byte) {
 		a.word(0)
 	} else {
 		if conditional && a.longBranches {
-			if target, ok := a.labels[label]; ok {
+			if target, ok := a.labelAt(label); ok {
 				delta := int64(target) - int64(len(a.code))
 				if delta%4 == 0 && delta >= -(1<<20) && delta < 1<<20 {
 					a.fixups = append(a.fixups, relocation{len(a.code), label, true})
@@ -119,7 +138,7 @@ func (a *assembler) compareBranch(label int, register byte, wide, nonzero bool) 
 	if nonzero {
 		ins |= 1 << 24
 	}
-	if target, ok := a.labels[label]; ok {
+	if target, ok := a.labelAt(label); ok {
 		delta := int64(target) - int64(len(a.code))
 		if delta%4 == 0 && delta >= -(1<<20) && delta < 1<<20 {
 			a.fixups = append(a.fixups, relocation{len(a.code), label, true})
@@ -144,7 +163,7 @@ func (a *assembler) finish() ([]byte, error) {
 		}
 	}
 	for _, r := range a.fixups {
-		target, ok := a.labels[r.label]
+		target, ok := a.labelAt(r.label)
 		if !ok {
 			return nil, wasm.ErrInvalid
 		}
@@ -181,7 +200,7 @@ func (a *assembler) finish() ([]byte, error) {
 	// Keep their reserved size so continuation, dispatch and source offsets remain
 	// stable. A near cold exit then has no taken branch on the normal path.
 	for _, r := range a.conditionalBranches {
-		delta := int64(a.labels[r.label]) - int64(r.position)
+		delta := int64(a.labels[r.label]-1) - int64(r.position)
 		if delta%4 == 0 && delta >= -(1<<20) && delta < 1<<20 {
 			ins := r.instruction | (uint32(delta/4)&0x7ffff)<<5
 			binary.LittleEndian.PutUint32(a.code[r.position:], ins)
@@ -189,8 +208,8 @@ func (a *assembler) finish() ([]byte, error) {
 		}
 	}
 	for _, r := range a.tables {
-		target, ok := a.labels[r.label]
-		base, bok := a.labels[r.base]
+		target, ok := a.labelAt(r.label)
+		base, bok := a.labelAt(r.base)
 		if !ok || !bok {
 			return nil, wasm.ErrInvalid
 		}
@@ -201,7 +220,7 @@ func (a *assembler) finish() ([]byte, error) {
 		binary.LittleEndian.PutUint32(a.code[r.position:], uint32(delta))
 	}
 	for _, r := range a.addresses {
-		target, ok := a.labels[r.label]
+		target, ok := a.labelAt(r.label)
 		if !ok {
 			return nil, wasm.ErrInvalid
 		}

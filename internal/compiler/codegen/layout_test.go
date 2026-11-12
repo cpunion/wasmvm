@@ -11,7 +11,7 @@ import (
 
 func TestCompactedRelocationsAndExactLimit(t *testing.T) {
 	for _, limit := range []uint64{19, 20, 24} {
-		a := assembler{arch: "arm64", labels: map[int]int{}, longBranches: true, compactBranches: true, bounded: true, limit: limit}
+		a := assembler{arch: "arm64", longBranches: true, compactBranches: true, bounded: true, limit: limit}
 		start, target, base := a.label(), a.label(), a.label()
 		a.mark(start)
 		a.branch(target, true, 10)
@@ -30,7 +30,7 @@ func TestCompactedRelocationsAndExactLimit(t *testing.T) {
 			}
 			continue
 		}
-		if err != nil || len(code) != 20 || a.labels[target] != 16 || a.labels[base] != 8 {
+		if err != nil || len(code) != 20 || (a.labels[target]-1) != 16 || (a.labels[base]-1) != 8 {
 			t.Fatal(len(code), a.labels, err)
 		}
 		branch := binary.LittleEndian.Uint32(code)
@@ -58,7 +58,7 @@ func TestCompactedRelocationsAndExactLimit(t *testing.T) {
 
 func TestCompactionNearAndLongBranches(t *testing.T) {
 	for _, distance := range []int{(1 << 20) - 4, 1 << 20, (1 << 20) + 16} {
-		a := assembler{arch: "arm64", labels: map[int]int{}, longBranches: true, compactBranches: true}
+		a := assembler{arch: "arm64", longBranches: true, compactBranches: true}
 		far, near := a.label(), a.label()
 		a.compareBranch(far, 28, true, true)
 		a.compareBranch(near, 27, false, false)
@@ -73,12 +73,12 @@ func TestCompactionNearAndLongBranches(t *testing.T) {
 		first := binary.LittleEndian.Uint32(code)
 		at := int(int32(first<<8)>>13) * 4
 		if first&(1<<24) != 0 {
-			if at != a.labels[far] {
+			if at != (a.labels[far] - 1) {
 				t.Fatal("short destination", distance, at, a.labels)
 			}
 		} else {
 			jump := binary.LittleEndian.Uint32(code[4:])
-			if at != 8 || 4+int(int32(jump<<6)>>6)*4 != a.labels[far] {
+			if at != 8 || 4+int(int32(jump<<6)>>6)*4 != (a.labels[far]-1) {
 				t.Fatal("long destination", distance, at, a.labels)
 			}
 		}
@@ -91,10 +91,10 @@ func TestCompactionNearAndLongBranches(t *testing.T) {
 
 func TestCompactionRejectsInvalidLabels(t *testing.T) {
 	for _, kind := range []string{"missing", "interior", "target"} {
-		a := assembler{arch: "arm64", labels: map[int]int{}, longBranches: true, compactBranches: true}
+		a := assembler{arch: "arm64", longBranches: true, compactBranches: true}
 		a.branch(1, true, 0)
 		if kind == "interior" {
-			a.labels[1] = 4
+			a.labels = []int{0, 5}
 		}
 		if kind == "target" {
 			a.arch = "amd64"

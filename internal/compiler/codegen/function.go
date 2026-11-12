@@ -190,7 +190,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	if err != nil {
 		return nil, err
 	}
-	a := assembler{arch: arch, labels: map[int]int{}, bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true, compactBranches: arch == "arm64"}
+	a := assembler{arch: arch, labels: make([]int, 1, len(f.Code)+8), bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true, compactBranches: arch == "arm64"}
 	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered, memoryMinimum: uint64(config.MemoryMinimumPages) * pageSize, memoryPageSizes: config.MemoryPageSizes}
 	e.x86Features = config.X86Features
 	e.arm64Features = config.ARM64Features
@@ -602,13 +602,16 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		return nil, err
 	}
 	for i, l := range pcs {
-		out.Offsets[i] = out.Entry.BodyOffset + uint32(a.labels[l])
+		position, _ := a.labelAt(l)
+		out.Offsets[i] = out.Entry.BodyOffset + uint32(position)
 	}
 	for _, label := range e.privatePollLabels {
-		out.PrivatePollOffsets = append(out.PrivatePollOffsets, out.Entry.BodyOffset+uint32(a.labels[label]))
+		position, _ := a.labelAt(label)
+		out.PrivatePollOffsets = append(out.PrivatePollOffsets, out.Entry.BodyOffset+uint32(position))
 	}
 	for _, call := range e.linkedRelocations {
-		out.CallRelocations = append(out.CallRelocations, CallRelocation{Offset: out.Entry.BodyOffset + uint32(a.labels[call.label]), Function: call.target})
+		position, _ := a.labelAt(call.label)
+		out.CallRelocations = append(out.CallRelocations, CallRelocation{Offset: out.Entry.BodyOffset + uint32(position), Function: call.target})
 	}
 	return out, nil
 }

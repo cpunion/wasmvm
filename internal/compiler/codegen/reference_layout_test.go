@@ -17,12 +17,14 @@ func (a *assembler) referenceCompact() error {
 	}
 	labels := make(map[int]bool, len(a.labels))
 	for _, position := range a.labels {
-		labels[position] = true
+		if position != 0 {
+			labels[position-1] = true
+		}
 	}
 	removed := make([]int, 0, len(a.conditionalBranches))
 	short := make(map[int]conditionalRelocation)
 	for _, r := range a.conditionalBranches {
-		target, ok := a.labels[r.label]
+		target, ok := a.labelAt(r.label)
 		if !ok {
 			return wasm.ErrInvalid
 		}
@@ -55,7 +57,9 @@ func (a *assembler) referenceCompact() error {
 	}
 	a.conditionalBranches = remaining
 	for label, old := range a.labels {
-		a.labels[label] = position(old)
+		if old != 0 {
+			a.labels[label] = position(old-1) + 1
+		}
 	}
 	for i := range a.tables {
 		a.tables[i].position = position(a.tables[i].position)

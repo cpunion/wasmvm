@@ -205,7 +205,7 @@ func coalescedNonresidentLoopFixture(literals bool) *slots.Function {
 func TestLoopValueCoalescingBudgetsAndUnsafeObservations(t *testing.T) {
 	for _, kind := range []string{"accept", "precise", "header-poll", "trap", "unproved", "budget", "no-mapping"} {
 		f := coalescedValueLoopFixture(false)
-		a := assembler{arch: "arm64", labels: map[int]int{}}
+		a := assembler{arch: "arm64"}
 		e := functionEmitter{a: &a, f: f, unmetered: true, usesMemory: true, memoryMinimum: 65536}
 		regions := e.memoryRegions()
 		r, ok := regions[1]
@@ -258,7 +258,7 @@ func TestLoopValueCoalescingIncludesNonresidentEntryValues(t *testing.T) {
 		kind           byte
 	}{{2, 3, 1}, {4, 5, 2}, {6, 7, 2}, {8, 9, 3}, {10, 11, 1}} {
 		f := coalescedValueLoopFixture(false)
-		e := functionEmitter{a: &assembler{arch: "arm64", labels: map[int]int{}}, f: f, unmetered: true, usesMemory: true, memoryMinimum: 65536}
+		e := functionEmitter{a: &assembler{arch: "arm64"}, f: f, unmetered: true, usesMemory: true, memoryMinimum: 65536}
 		r := e.memoryRegions()[1]
 		old := &registerPlan{homes: map[slots.Slot]byte{}, floats: map[slots.Slot]byte{}, vectors: map[slots.Slot]byte{}, slots: []slots.Slot{test.source}}
 		setRegisterHome(old, test.source, test.kind, 4)
@@ -285,7 +285,7 @@ func TestLoopValueCoalescingIncludesNonresidentEntryValues(t *testing.T) {
 		}
 	}
 	f := coalescedValueLoopFixture(false)
-	e := functionEmitter{a: &assembler{arch: "arm64", labels: map[int]int{}}, f: f, unmetered: true, usesMemory: true, memoryMinimum: 65536}
+	e := functionEmitter{a: &assembler{arch: "arm64"}, f: f, unmetered: true, usesMemory: true, memoryMinimum: 65536}
 	// The address never joins any copied-value group. Uncached groups must
 	// remain in the frame when none has a resident member to supply a home.
 	e.useRegisterPlan(&registerPlan{homes: map[slots.Slot]byte{0: 4}, slots: []slots.Slot{0}})

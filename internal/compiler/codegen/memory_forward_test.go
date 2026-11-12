@@ -63,7 +63,7 @@ func TestPrivateMemoryForwardSpilledOperands(t *testing.T) {
 		for mask := 0; mask < 4; mask++ {
 			for _, shift := range []uint32{8, 40} {
 				for _, signed := range []bool{false, true} {
-					a := assembler{arch: arch, labels: map[int]int{}}
+					a := assembler{arch: arch}
 					f := &slots.Function{Slots: []wasm.ValueType{wasm.I64, wasm.I32}}
 					e := functionEmitter{a: &a, f: f, unmetered: true, exit: a.label()}
 					e.contextLoad(0, nativeabi.ArenaOffset)
@@ -185,7 +185,7 @@ func TestPrivateMemoryForwardBarriers(t *testing.T) {
 			}},
 		} {
 			t.Run(fmt.Sprintf("%s/%s", arch, tc.name), func(t *testing.T) {
-				a := assembler{arch: arch, labels: map[int]int{}}
+				a := assembler{arch: arch}
 				e := functionEmitter{a: &a, f: memoryForwardFixture(0x36, 0x28, 0, false), unmetered: true, start: 2}
 				tc.edit(&e)
 				if _, ok := e.forwardMemoryStoreLoad(e.start, e.f.Code[e.start]); ok || len(a.code) != 0 {

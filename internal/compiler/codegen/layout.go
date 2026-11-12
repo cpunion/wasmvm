@@ -19,13 +19,17 @@ func (a *assembler) compact() error {
 		return wasm.ErrInvalid
 	}
 	blocks := make([]branchLayoutBlock, len(a.code)/256+1)
-	for _, at := range a.labels {
+	for _, encoded := range a.labels {
+		if encoded == 0 {
+			continue
+		}
+		at := encoded - 1
 		if at >= 0 && at <= len(a.code) && at%4 == 0 {
 			blocks[at/256].prefix |= uint64(1) << ((at / 4) % 64)
 		}
 	}
 	for _, r := range a.conditionalBranches {
-		target, ok := a.labels[r.label]
+		target, ok := a.labelAt(r.label)
 		if !ok {
 			return wasm.ErrInvalid
 		}
@@ -80,7 +84,9 @@ func (a *assembler) compact() error {
 	}
 	a.conditionalBranches = remaining
 	for label, old := range a.labels {
-		a.labels[label] = position(old)
+		if old != 0 {
+			a.labels[label] = position(old-1) + 1
+		}
 	}
 	for i := range a.tables {
 		a.tables[i].position = position(a.tables[i].position)
