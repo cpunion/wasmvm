@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cpunion/wasmvm/internal/core/module"
+	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
@@ -147,6 +148,57 @@ func TestCallWorkspaceCancellationPanicAndReentry(t *testing.T) {
 		usage, err := s.Usage()
 		if err != nil || usage.ExternRefs != 0 || usage.HostRoots != 0 || s.workspace != workspace {
 			t.Fatal(usage, err)
+		}
+	})
+}
+
+func TestConcurrentContinuationsDoNotOverwriteIdleWorkspace(t *testing.T) {
+	withBackends(t, func(t *testing.T, newEngine func() *Engine) {
+		e, s, l := setupWithEngine(t, newEngine)
+		m, err := e.Compile(nil, addBinary)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer m.Close()
+		add := export(t, instantiate(t, l, m), "add")
+		_, err = s.WithCaller(nil, CallOptions{}, func(c *Caller) error {
+			a, err := c.Start(add, []Value{I32(17), I32(25)})
+			if err != nil {
+				return err
+			}
+			b, err := c.Start(add, []Value{I32(1), I32(2)})
+			if err != nil {
+				return err
+			}
+			wa, wb := a.work, b.work
+			if wa == wb {
+				t.Fatal("live continuations share a workspace")
+			}
+			for i, call := range []*Continuation{a, b} {
+				result, done, err := c.Poll(call)
+				if err != nil || !done {
+					t.Fatal(done, err)
+				}
+				want := uint64(42)
+				if i == 1 {
+					want = 3
+				}
+				if bits(t, result.Values[0]) != want {
+					t.Fatal(result)
+				}
+				if s.workspace != wa {
+					t.Fatal("completed continuation overwrote an idle workspace")
+				}
+			}
+			if wb.native != nil {
+				if _, err := wb.native.Resize(0, 0); !errors.Is(err, native.ErrClosed) {
+					t.Fatal("uncached native workspace was not closed", err)
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			t.Fatal(err)
 		}
 	})
 }
