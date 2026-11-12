@@ -9,6 +9,9 @@ import (
 // above the selected target. Caller continuations may already be outside a try;
 // their saved call PCs, rather than their return PCs, determine protection.
 func (e *Execution) raise(ex *state.Exception) bool {
+	for i := range e.frames {
+		e.frames[i].nativeResume = 0
+	}
 	tag, args, err := e.store.Exception(ex.Ref)
 	if err != nil || ex.Owner != e.store {
 		e.fail(state.ErrReference)

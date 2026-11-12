@@ -71,7 +71,7 @@ func (rt *resourceType) destroyHost(core *vm.Caller, rep uint64) error {
 	if rt.host.destructor == nil {
 		return nil
 	}
-	c := &Caller{callerState: &callerState{core: core, instance: rt.instance, active: true}}
+	c := newCallbackCaller(core, rt.instance, nil, false)
 	complete := false
 	defer func() {
 		c.mu.Lock()

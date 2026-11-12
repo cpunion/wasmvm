@@ -40,7 +40,7 @@ func (e *Execution) bindRuntimeGlobals(in *state.Instance, f *slots.Function, in
 		words += uint64(len(in.Memories)) * 2
 	}
 	heapBase := words
-	words += 3
+	words += 4
 	if words > uint64(^uint(0)>>1)/8 {
 		return 0, wasm.ErrLimit
 	}
@@ -150,6 +150,11 @@ func (e *Execution) bindRuntimeGlobals(in *state.Instance, f *slots.Function, in
 		e.runtimeWords[heapBase], e.runtimeWords[heapBase+1] = 0, 0
 	}
 	e.runtimeWords[heapBase+2] = e.allocationView
+	view, err := e.bindScalarStorage(in)
+	if err != nil {
+		return 0, err
+	}
+	e.runtimeWords[heapBase+3] = view
 	return address, nil
 }
 
@@ -162,4 +167,5 @@ func (e *Execution) flushRuntimeGlobals() {
 		binding.global.Value.Lo = e.runtimeWords[binding.word]
 		binding.global.Value.Hi = e.runtimeWords[binding.word+1]
 	}
+	e.flushScalarStorage()
 }

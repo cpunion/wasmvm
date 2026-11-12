@@ -1,0 +1,5788 @@
+{
+  "source": {
+    "base": "3c32bbeaa0bc54faa90faf8ad8d218e60f4c0f39",
+    "head": "457921f6857abb91b483c684c69ecf5906342012",
+    "archiveSHA256": "16a0264c73bbd483ecad2bd48d010cebc7416929f806f2bb40f5be2233383d22",
+    "binarySHA256": "6713d840ea77dfa644b3df3fa63326689c026d82599ab9c2b2370439628b0b48",
+    "compiler": "Go1.27.3",
+    "scope": "Explicit immutable request-body API; generic Reader stays scheduled. Ordinary and immutable inputs measured separately against retained production source and Wasmtime."
+  },
+  "plan": {
+    "seed": 2026111241,
+    "blocks": 3,
+    "samples": 30,
+    "requestsPerBatch": 4096,
+    "payloadBytes": [
+      16,
+      65536
+    ],
+    "participants": [
+      {
+        "id": "base",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/host-requests-20261111/head-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "base-aa",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/host-requests-20261111/head-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "reader",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/http-snapshot-20261111/go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "reader"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "reader-aa",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/http-snapshot-20261111/go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "reader"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "snapshot",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/http-snapshot-20261111/go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "snapshot"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "snapshot-aa",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/http-snapshot-20261111/go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "snapshot"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "wasmtime",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/p3io-service-20261110/reference-build/wasmtime-p3-reference",
+          "--engine",
+          "wasmtime",
+          "--backend",
+          "compiler",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "wasmtime-aa",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/p3io-service-20261110/reference-build/wasmtime-p3-reference",
+          "--engine",
+          "wasmtime",
+          "--backend",
+          "compiler",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2"
+        ],
+        "environment": {}
+      }
+    ],
+    "source": {
+      "base": "3c32bbeaa0bc54faa90faf8ad8d218e60f4c0f39",
+      "head": "457921f6857abb91b483c684c69ecf5906342012",
+      "archiveSHA256": "16a0264c73bbd483ecad2bd48d010cebc7416929f806f2bb40f5be2233383d22",
+      "binarySHA256": "6713d840ea77dfa644b3df3fa63326689c026d82599ab9c2b2370439628b0b48",
+      "compiler": "Go1.27.3",
+      "scope": "Explicit immutable request-body API; generic Reader stays scheduled. Ordinary and immutable inputs measured separately against retained production source and Wasmtime."
+    },
+    "scope": "Randomized complete production request lifetimes; immutable snapshot is an explicit input contract distinct from generic Reader. Same payload, guest, 4 stores, 16 clients, response checks, process controls. Includes HTTP request construction in batch wall/CPU counters; one-time string preparation recorded separately. No profiling or diagnostic shortcuts."
+  },
+  "analysis": {
+    "summary": {
+      "16": {
+        "base": {
+          "throughput": 34889.32927581337,
+          "cpuUs": 113.3937135893723,
+          "instructions": 1331515.4463648302,
+          "allocsPerRequest": 929.0008138020834,
+          "bytesPerRequest": 71624.13645833333,
+          "phasesMs": {
+            "cleanup": 0.061417,
+            "compileValidate": 164.164375,
+            "engineSetup": 0.000333,
+            "exportLookup": 0.000667,
+            "firstCall": 122.685833,
+            "instantiate": 0.505708,
+            "load": 0.068792,
+            "providerSetup": 0.053542
+          },
+          "peakFootprintMiB": 112.1257553100586,
+          "medianRequestNs": 408322.75,
+          "medianAPINs": 100166.5
+        },
+        "reader": {
+          "throughput": 35400.53746243727,
+          "cpuUs": 112.00225935311153,
+          "instructions": 1332273.4517443427,
+          "allocsPerRequest": 929.0004475911459,
+          "bytesPerRequest": 71624.14244791666,
+          "phasesMs": {
+            "cleanup": 0.056292,
+            "compileValidate": 163.537041,
+            "engineSetup": 0.0005,
+            "exportLookup": 0.000667,
+            "firstCall": 115.756917,
+            "instantiate": 0.476333,
+            "load": 0.067583,
+            "providerSetup": 0.051417,
+            "requestPreparation": 0.000499
+          },
+          "peakFootprintMiB": 113.0475845336914,
+          "medianRequestNs": 402979.25,
+          "medianAPINs": 98926.75
+        },
+        "snapshot": {
+          "throughput": 39893.6104806865,
+          "cpuUs": 99.12313421841326,
+          "instructions": 1175106.7682937095,
+          "allocsPerRequest": 874.0007893880208,
+          "bytesPerRequest": 68336.1806640625,
+          "phasesMs": {
+            "cleanup": 0.06,
+            "compileValidate": 165.168667,
+            "engineSetup": 0.000375,
+            "exportLookup": 0.000625,
+            "firstCall": 103.929417,
+            "instantiate": 0.483084,
+            "load": 0.067666,
+            "providerSetup": 0.055875,
+            "requestPreparation": 0.000584
+          },
+          "peakFootprintMiB": 113.04767608642578,
+          "medianRequestNs": 351604.25,
+          "medianAPINs": 86291.5
+        },
+        "wasmtime": {
+          "throughput": 75858.49579177494,
+          "cpuUs": 23.841895794046337,
+          "instructions": 206448.52684705012,
+          "allocsPerRequest": 1.0001383463541667,
+          "bytesPerRequest": 32.03736979166667,
+          "phasesMs": {
+            "cleanup": 0.266,
+            "compileValidate": 49.716834,
+            "engineSetup": 0.130167,
+            "executorSetup": 0.054083,
+            "exportLookup": 0.007998,
+            "firstCall": 58.625209,
+            "instantiate": 0.187333,
+            "load": 0.064834,
+            "providerSetup": 0.231166
+          },
+          "peakFootprintMiB": 21.45397186279297,
+          "medianRequestNs": 55094.0,
+          "medianAPINs": 53489.75
+        }
+      },
+      "65536": {
+        "base": {
+          "throughput": 22680.63593391216,
+          "cpuUs": 172.54619835162984,
+          "instructions": 2058302.833933863,
+          "allocsPerRequest": 1277.0008056640625,
+          "bytesPerRequest": 230024.25149739583,
+          "phasesMs": {
+            "cleanup": 0.056708,
+            "compileValidate": 162.818209,
+            "engineSetup": 0.0005,
+            "exportLookup": 0.000626,
+            "firstCall": 182.6495,
+            "instantiate": 0.477666,
+            "load": 0.063375,
+            "providerSetup": 0.054292
+          },
+          "peakFootprintMiB": 117.79765319824219,
+          "medianRequestNs": 589823.0,
+          "medianAPINs": 141177.25
+        },
+        "reader": {
+          "throughput": 23013.544355773596,
+          "cpuUs": 170.3442891438802,
+          "instructions": 2059479.7361681708,
+          "allocsPerRequest": 1277.0009765625,
+          "bytesPerRequest": 230024.25032552084,
+          "phasesMs": {
+            "cleanup": 0.060125,
+            "compileValidate": 164.366125,
+            "engineSetup": 0.000459,
+            "exportLookup": 0.000749,
+            "firstCall": 179.458541,
+            "instantiate": 0.500375,
+            "load": 0.063916,
+            "providerSetup": 0.055376,
+            "requestPreparation": 0.000459
+          },
+          "peakFootprintMiB": 117.45394897460938,
+          "medianRequestNs": 575125.0,
+          "medianAPINs": 137593.75
+        },
+        "snapshot": {
+          "throughput": 27531.91989524723,
+          "cpuUs": 143.169930644419,
+          "instructions": 1762756.8739476698,
+          "allocsPerRequest": 1222.0011067708333,
+          "bytesPerRequest": 161216.26848958334,
+          "phasesMs": {
+            "cleanup": 0.0545,
+            "compileValidate": 163.751958,
+            "engineSetup": 0.000375,
+            "exportLookup": 0.000708,
+            "firstCall": 152.678875,
+            "instantiate": 0.493583,
+            "load": 0.074417,
+            "providerSetup": 0.053376,
+            "requestPreparation": 0.0075
+          },
+          "peakFootprintMiB": 117.7507553100586,
+          "medianRequestNs": 490510.25,
+          "medianAPINs": 117270.75
+        },
+        "wasmtime": {
+          "throughput": 66118.1704911748,
+          "cpuUs": 32.54378149975305,
+          "instructions": 297667.97307718213,
+          "allocsPerRequest": 1.0000325520833333,
+          "bytesPerRequest": 32.00364583333333,
+          "phasesMs": {
+            "cleanup": 0.251417,
+            "compileValidate": 50.928667,
+            "engineSetup": 0.141125,
+            "executorSetup": 0.041125,
+            "exportLookup": 0.008125,
+            "firstCall": 69.114625,
+            "instantiate": 0.193585,
+            "load": 0.05475,
+            "providerSetup": 0.226042
+          },
+          "peakFootprintMiB": 22.985267639160156,
+          "medianRequestNs": 63854.5,
+          "medianAPINs": 59073.0
+        }
+      }
+    },
+    "controls": [
+      {
+        "payloadBytes": 16,
+        "block": 0,
+        "id": "base",
+        "throughputRatio": 0.9833766226511136,
+        "instructionRatio": 0.9980594595130541,
+        "cpuRatio": 1.0150865676431557
+      },
+      {
+        "payloadBytes": 16,
+        "block": 1,
+        "id": "base",
+        "throughputRatio": 1.0128227906029685,
+        "instructionRatio": 1.0005202812166538,
+        "cpuRatio": 0.9823683158886618
+      },
+      {
+        "payloadBytes": 16,
+        "block": 2,
+        "id": "base",
+        "throughputRatio": 1.011886725487477,
+        "instructionRatio": 1.0010682277867187,
+        "cpuRatio": 0.9923007533150559
+      },
+      {
+        "payloadBytes": 16,
+        "block": 0,
+        "id": "reader",
+        "throughputRatio": 1.014139659423952,
+        "instructionRatio": 1.0006485245717895,
+        "cpuRatio": 0.9868873359072935
+      },
+      {
+        "payloadBytes": 16,
+        "block": 1,
+        "id": "reader",
+        "throughputRatio": 0.9885805556849124,
+        "instructionRatio": 0.999857095259413,
+        "cpuRatio": 1.014527756607617
+      },
+      {
+        "payloadBytes": 16,
+        "block": 2,
+        "id": "reader",
+        "throughputRatio": 0.9881661626288198,
+        "instructionRatio": 0.9989023162584496,
+        "cpuRatio": 1.0090663189687228
+      },
+      {
+        "payloadBytes": 16,
+        "block": 0,
+        "id": "snapshot",
+        "throughputRatio": 0.9873469997690955,
+        "instructionRatio": 1.0015965886348988,
+        "cpuRatio": 1.0087285633822443
+      },
+      {
+        "payloadBytes": 16,
+        "block": 1,
+        "id": "snapshot",
+        "throughputRatio": 1.0145060103266892,
+        "instructionRatio": 1.0010275092766439,
+        "cpuRatio": 0.990003705723217
+      },
+      {
+        "payloadBytes": 16,
+        "block": 2,
+        "id": "snapshot",
+        "throughputRatio": 0.9886302501559922,
+        "instructionRatio": 0.9994264029857943,
+        "cpuRatio": 1.0174495333188156
+      },
+      {
+        "payloadBytes": 16,
+        "block": 0,
+        "id": "wasmtime",
+        "throughputRatio": 0.9995479981256833,
+        "instructionRatio": 0.9967061689568522,
+        "cpuRatio": 0.9929885830949224
+      },
+      {
+        "payloadBytes": 16,
+        "block": 1,
+        "id": "wasmtime",
+        "throughputRatio": 1.011900246052043,
+        "instructionRatio": 0.9909274303863548,
+        "cpuRatio": 0.9578096529617046
+      },
+      {
+        "payloadBytes": 16,
+        "block": 2,
+        "id": "wasmtime",
+        "throughputRatio": 1.0064739757608,
+        "instructionRatio": 0.9999772718283977,
+        "cpuRatio": 0.9958386966463059
+      },
+      {
+        "payloadBytes": 65536,
+        "block": 0,
+        "id": "base",
+        "throughputRatio": 1.0128469062255594,
+        "instructionRatio": 1.0012896404117146,
+        "cpuRatio": 0.990827333967897
+      },
+      {
+        "payloadBytes": 65536,
+        "block": 1,
+        "id": "base",
+        "throughputRatio": 1.0034333144973733,
+        "instructionRatio": 1.000858376362637,
+        "cpuRatio": 0.9985771689170104
+      },
+      {
+        "payloadBytes": 65536,
+        "block": 2,
+        "id": "base",
+        "throughputRatio": 1.010217594183517,
+        "instructionRatio": 1.0003809086617472,
+        "cpuRatio": 0.9898220063038136
+      },
+      {
+        "payloadBytes": 65536,
+        "block": 0,
+        "id": "reader",
+        "throughputRatio": 0.9981044123853922,
+        "instructionRatio": 1.0000175125709934,
+        "cpuRatio": 0.9990993538211882
+      },
+      {
+        "payloadBytes": 65536,
+        "block": 1,
+        "id": "reader",
+        "throughputRatio": 0.9991096266546167,
+        "instructionRatio": 1.0011991934411426,
+        "cpuRatio": 1.0017230782771127
+      },
+      {
+        "payloadBytes": 65536,
+        "block": 2,
+        "id": "reader",
+        "throughputRatio": 0.9898735588424944,
+        "instructionRatio": 0.9990582932478781,
+        "cpuRatio": 1.0104650068225545
+      },
+      {
+        "payloadBytes": 65536,
+        "block": 0,
+        "id": "snapshot",
+        "throughputRatio": 0.9917931888794852,
+        "instructionRatio": 0.9994152744708202,
+        "cpuRatio": 1.0075085035191513
+      },
+      {
+        "payloadBytes": 65536,
+        "block": 1,
+        "id": "snapshot",
+        "throughputRatio": 1.002494385891243,
+        "instructionRatio": 0.9989685897946441,
+        "cpuRatio": 0.9966541907242336
+      },
+      {
+        "payloadBytes": 65536,
+        "block": 2,
+        "id": "snapshot",
+        "throughputRatio": 1.0033993710744846,
+        "instructionRatio": 0.9986381465016111,
+        "cpuRatio": 0.9945423941238197
+      },
+      {
+        "payloadBytes": 65536,
+        "block": 0,
+        "id": "wasmtime",
+        "throughputRatio": 1.0081049524727783,
+        "instructionRatio": 0.994850550974066,
+        "cpuRatio": 0.9649950172795357
+      },
+      {
+        "payloadBytes": 65536,
+        "block": 1,
+        "id": "wasmtime",
+        "throughputRatio": 1.0092769854875805,
+        "instructionRatio": 0.9893899112913439,
+        "cpuRatio": 0.9786159903517635
+      },
+      {
+        "payloadBytes": 65536,
+        "block": 2,
+        "id": "wasmtime",
+        "throughputRatio": 1.0019339160336227,
+        "instructionRatio": 0.9959006308547107,
+        "cpuRatio": 1.0041346770233268
+      }
+    ],
+    "resolvedTimingControls": 24,
+    "resolvedInstructionControls": 24
+  },
+  "screen": {
+    "plan": {
+      "seed": 2026111231,
+      "blocks": 3,
+      "samples": 12,
+      "requestsPerBatch": 1024,
+      "payloadBytes": [
+        16,
+        65536
+      ],
+      "participants": [
+        {
+          "id": "control",
+          "command": [
+            "/Users/lijie/source/goplus/wasmvm/artifacts/go-path-breakdown-20261111/diagnostic-go-runner",
+            "--engine",
+            "wasmvm",
+            "--backend",
+            "native",
+            "--wasm",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+            "--response-mode",
+            "buffered",
+            "--payload-bytes",
+            "16",
+            "--expected",
+            "1757737011",
+            "--workers",
+            "4",
+            "--clients",
+            "16",
+            "--requests",
+            "256",
+            "--samples",
+            "7",
+            "--warmups",
+            "2"
+          ],
+          "environment": {
+            "WASMVM_DIAGNOSTIC_PREPARED": "0",
+            "WASMVM_DIAGNOSTIC_INLINE": "0"
+          }
+        },
+        {
+          "id": "aa",
+          "command": [
+            "/Users/lijie/source/goplus/wasmvm/artifacts/go-path-breakdown-20261111/diagnostic-go-runner",
+            "--engine",
+            "wasmvm",
+            "--backend",
+            "native",
+            "--wasm",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+            "--response-mode",
+            "buffered",
+            "--payload-bytes",
+            "16",
+            "--expected",
+            "1757737011",
+            "--workers",
+            "4",
+            "--clients",
+            "16",
+            "--requests",
+            "256",
+            "--samples",
+            "7",
+            "--warmups",
+            "2"
+          ],
+          "environment": {
+            "WASMVM_DIAGNOSTIC_PREPARED": "0",
+            "WASMVM_DIAGNOSTIC_INLINE": "0"
+          }
+        },
+        {
+          "id": "prepared",
+          "command": [
+            "/Users/lijie/source/goplus/wasmvm/artifacts/go-path-breakdown-20261111/diagnostic-go-runner",
+            "--engine",
+            "wasmvm",
+            "--backend",
+            "native",
+            "--wasm",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+            "--response-mode",
+            "buffered",
+            "--payload-bytes",
+            "16",
+            "--expected",
+            "1757737011",
+            "--workers",
+            "4",
+            "--clients",
+            "16",
+            "--requests",
+            "256",
+            "--samples",
+            "7",
+            "--warmups",
+            "2"
+          ],
+          "environment": {
+            "WASMVM_DIAGNOSTIC_PREPARED": "1",
+            "WASMVM_DIAGNOSTIC_INLINE": "0"
+          }
+        },
+        {
+          "id": "inline",
+          "command": [
+            "/Users/lijie/source/goplus/wasmvm/artifacts/go-path-breakdown-20261111/diagnostic-go-runner",
+            "--engine",
+            "wasmvm",
+            "--backend",
+            "native",
+            "--wasm",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+            "--response-mode",
+            "buffered",
+            "--payload-bytes",
+            "16",
+            "--expected",
+            "1757737011",
+            "--workers",
+            "4",
+            "--clients",
+            "16",
+            "--requests",
+            "256",
+            "--samples",
+            "7",
+            "--warmups",
+            "2"
+          ],
+          "environment": {
+            "WASMVM_DIAGNOSTIC_PREPARED": "0",
+            "WASMVM_DIAGNOSTIC_INLINE": "1"
+          }
+        },
+        {
+          "id": "both",
+          "command": [
+            "/Users/lijie/source/goplus/wasmvm/artifacts/go-path-breakdown-20261111/diagnostic-go-runner",
+            "--engine",
+            "wasmvm",
+            "--backend",
+            "native",
+            "--wasm",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+            "--response-mode",
+            "buffered",
+            "--payload-bytes",
+            "16",
+            "--expected",
+            "1757737011",
+            "--workers",
+            "4",
+            "--clients",
+            "16",
+            "--requests",
+            "256",
+            "--samples",
+            "7",
+            "--warmups",
+            "2"
+          ],
+          "environment": {
+            "WASMVM_DIAGNOSTIC_PREPARED": "1",
+            "WASMVM_DIAGNOSTIC_INLINE": "1"
+          }
+        },
+        {
+          "id": "original",
+          "command": [
+            "/Users/lijie/source/goplus/wasmvm/artifacts/host-requests-20261111/head-go-runner",
+            "--engine",
+            "wasmvm",
+            "--backend",
+            "native",
+            "--wasm",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+            "--response-mode",
+            "buffered",
+            "--payload-bytes",
+            "16",
+            "--expected",
+            "1757737011",
+            "--workers",
+            "4",
+            "--clients",
+            "16",
+            "--requests",
+            "256",
+            "--samples",
+            "7",
+            "--warmups",
+            "2"
+          ],
+          "environment": {}
+        },
+        {
+          "id": "wasmtime",
+          "command": [
+            "/Users/lijie/source/goplus/wasmvm/artifacts/p3io-service-20261110/reference-build/wasmtime-p3-reference",
+            "--engine",
+            "wasmtime",
+            "--backend",
+            "compiler",
+            "--wasm",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+            "--payload-bytes",
+            "16",
+            "--expected",
+            "1757737011",
+            "--workers",
+            "4",
+            "--clients",
+            "16",
+            "--requests",
+            "256",
+            "--samples",
+            "7",
+            "--warmups",
+            "2"
+          ],
+          "environment": {}
+        },
+        {
+          "id": "wasmtime-aa",
+          "command": [
+            "/Users/lijie/source/goplus/wasmvm/artifacts/p3io-service-20261110/reference-build/wasmtime-p3-reference",
+            "--engine",
+            "wasmtime",
+            "--backend",
+            "compiler",
+            "--wasm",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+            "--payload-bytes",
+            "16",
+            "--expected",
+            "1757737011",
+            "--workers",
+            "4",
+            "--clients",
+            "16",
+            "--requests",
+            "256",
+            "--samples",
+            "7",
+            "--warmups",
+            "2"
+          ],
+          "environment": {}
+        }
+      ],
+      "scope": "Two-factor causal screening only, same diagnostic executable. Preparedhandler vs inlineknownnonblockingHTTPReader. Originalsource and independentaliases control observer cost/noise. Full body/header/status/trailer/CRC checks retained. No JIT dumping/profiling. Not release or production-semantics acceptance."
+    },
+    "summary": {
+      "16": {
+        "control": {
+          "cpuUs": 110.98334665009469,
+          "instructions": 1334450.8905362217,
+          "throughput": 35620.20499080118,
+          "bytesPerRequest": 71624.45638020833
+        },
+        "aa": {
+          "cpuUs": 112.08150227864581,
+          "instructions": 1336338.311878551,
+          "throughput": 35255.840513870404,
+          "bytesPerRequest": 71624.29036458333
+        },
+        "prepared": {
+          "cpuUs": 113.72780909682764,
+          "instructions": 1327787.1560724431,
+          "throughput": 34824.42876544067,
+          "bytesPerRequest": 71624.748046875
+        },
+        "inline": {
+          "cpuUs": 101.39069528290719,
+          "instructions": 1201897.4130859375,
+          "throughput": 39219.3480687267,
+          "bytesPerRequest": 69920.31575520833
+        },
+        "both": {
+          "cpuUs": 99.21293871330492,
+          "instructions": 1192128.357421875,
+          "throughput": 39896.55726607283,
+          "bytesPerRequest": 69920.25651041667
+        },
+        "original": {
+          "cpuUs": 111.52825372869317,
+          "instructions": 1339772.535777699,
+          "throughput": 35804.74351661848,
+          "bytesPerRequest": 71624.416015625
+        },
+        "wasmtime": {
+          "cpuUs": 23.90839177911932,
+          "instructions": 207698.29163707385,
+          "throughput": 75612.06359461891,
+          "bytesPerRequest": 32.0
+        },
+        "wasmtime-aa": {
+          "cpuUs": 22.98131584398674,
+          "instructions": 207272.9189453125,
+          "throughput": 76444.65181383413,
+          "bytesPerRequest": 32.0
+        }
+      },
+      "65536": {
+        "control": {
+          "cpuUs": 167.7594290068655,
+          "instructions": 2073627.125,
+          "throughput": 23424.7332951713,
+          "bytesPerRequest": 230024.982421875
+        },
+        "aa": {
+          "cpuUs": 167.03255578243372,
+          "instructions": 2069154.9644886365,
+          "throughput": 23372.75869595299,
+          "bytesPerRequest": 230024.421875
+        },
+        "prepared": {
+          "cpuUs": 169.66573449337122,
+          "instructions": 2063840.5598366477,
+          "throughput": 23111.60289472375,
+          "bytesPerRequest": 230024.798828125
+        },
+        "inline": {
+          "cpuUs": 155.62680886008525,
+          "instructions": 1930789.8526278408,
+          "throughput": 25257.082382498116,
+          "bytesPerRequest": 228320.55598958334
+        },
+        "both": {
+          "cpuUs": 155.47957356770831,
+          "instructions": 1920426.089399858,
+          "throughput": 25153.640783779094,
+          "bytesPerRequest": 228320.97265625
+        },
+        "original": {
+          "cpuUs": 167.2126982717803,
+          "instructions": 2072934.8418856533,
+          "throughput": 23564.369821383112,
+          "bytesPerRequest": 230024.55729166666
+        },
+        "wasmtime": {
+          "cpuUs": 30.47589666193182,
+          "instructions": 294201.81383167615,
+          "throughput": 66625.55054728921,
+          "bytesPerRequest": 32.0
+        },
+        "wasmtime-aa": {
+          "cpuUs": 30.409283262310606,
+          "instructions": 294525.15491832385,
+          "throughput": 66712.27075800515,
+          "bytesPerRequest": 32.0
+        }
+      }
+    }
+  },
+  "JITProfiles": {
+    "16": {
+      "totalSampleNs": 15197000000,
+      "requests": 135168,
+      "mappedJITSampleNs": 2770000000,
+      "unknownSampleNs": 1000000,
+      "hotFunctions": [
+        {
+          "module": "e41621b16023",
+          "index": 147,
+          "tier": 0,
+          "start": 481038360320,
+          "end": 481038441980,
+          "sampleUs": 2.5449810606060606,
+          "share": 0.022636046588142396,
+          "instructions": 612,
+          "slots": 20,
+          "ops": [
+            [
+              "0x20",
+              157
+            ],
+            [
+              "0x41",
+              88
+            ],
+            [
+              "0x28",
+              60
+            ],
+            [
+              "0xb",
+              42
+            ],
+            [
+              "0x21",
+              37
+            ],
+            [
+              "0x2",
+              36
+            ],
+            [
+              "0xd",
+              36
+            ],
+            [
+              "0x36",
+              34
+            ],
+            [
+              "0x6a",
+              30
+            ],
+            [
+              "0x22",
+              21
+            ],
+            [
+              "0x10",
+              21
+            ],
+            [
+              "0x45",
+              16
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70001f4b6d",
+              0.09617660984848485
+            ],
+            [
+              "0x70001f2379",
+              0.09617660984848485
+            ],
+            [
+              "0x70001edf31",
+              0.07398200757575758
+            ],
+            [
+              "0x70001f4ca1",
+              0.07398200757575758
+            ],
+            [
+              "0x70001f4b05",
+              0.059185606060606064
+            ],
+            [
+              "0x70001f2249",
+              0.059185606060606064
+            ],
+            [
+              "0x70001f4bcd",
+              0.051787405303030304
+            ],
+            [
+              "0x70001f3595",
+              0.051787405303030304
+            ],
+            [
+              "0x70001f2a3d",
+              0.051787405303030304
+            ],
+            [
+              "0x70001f1af9",
+              0.044389204545454544
+            ],
+            [
+              "0x70001efd9d",
+              0.044389204545454544
+            ],
+            [
+              "0x70001ef2a5",
+              0.03699100378787879
+            ]
+          ],
+          "name": "_RNvMNtNtCsgY8IbwwiBz1_11wit_bindgen2rt13async_supportNtB2_11FutureState8callback",
+          "demangled": "<wit_bindgen::rt::async_support::FutureState>::callback"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 91,
+          "tier": 0,
+          "start": 481037723704,
+          "end": 481037845976,
+          "sampleUs": 1.1541193181818183,
+          "share": 0.010265183917878529,
+          "instructions": 1083,
+          "slots": 28,
+          "ops": [
+            [
+              "0x20",
+              333
+            ],
+            [
+              "0x41",
+              136
+            ],
+            [
+              "0xb",
+              64
+            ],
+            [
+              "0x2",
+              60
+            ],
+            [
+              "0x28",
+              60
+            ],
+            [
+              "0x21",
+              58
+            ],
+            [
+              "0x6a",
+              48
+            ],
+            [
+              "0xd",
+              47
+            ],
+            [
+              "0x36",
+              42
+            ],
+            [
+              "0x37",
+              38
+            ],
+            [
+              "0x29",
+              36
+            ],
+            [
+              "0x22",
+              32
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x7000152839",
+              0.044389204545454544
+            ],
+            [
+              "0x700015e31d",
+              0.03699100378787879
+            ],
+            [
+              "0x700015d39d",
+              0.029592803030303032
+            ],
+            [
+              "0x700015ea1d",
+              0.029592803030303032
+            ],
+            [
+              "0x70001542fd",
+              0.022194602272727272
+            ],
+            [
+              "0x700015e115",
+              0.022194602272727272
+            ],
+            [
+              "0x700015ec85",
+              0.022194602272727272
+            ],
+            [
+              "0x700015e2b5",
+              0.022194602272727272
+            ],
+            [
+              "0x700015eb65",
+              0.022194602272727272
+            ],
+            [
+              "0x7000154659",
+              0.022194602272727272
+            ],
+            [
+              "0x700015d899",
+              0.022194602272727272
+            ],
+            [
+              "0x700015ed55",
+              0.022194602272727272
+            ]
+          ],
+          "name": "_RNCNCNvXCsjQaZf4ng38o_26wasmvm_preview3_http_guestNtB6_7ServiceNtNtNtNtNtB6_7exports4wasi4http7handler5Guest6handle0s0_0B6_.llvm.18407908385824253366",
+          "demangled": "<wasmvm_preview3_http_guest::Service as wasmvm_preview3_http_guest::exports::wasi::http::handler::Guest>::handle::{closure#0}::{closure#2} (.llvm.18407908385824253366)"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 46,
+          "tier": 2,
+          "start": 481045225412,
+          "end": 481045367292,
+          "sampleUs": 1.0875355113636362,
+          "share": 0.009672961768770152,
+          "instructions": 1317,
+          "slots": 22,
+          "ops": [
+            [
+              "0x20",
+              274
+            ],
+            [
+              "0x41",
+              257
+            ],
+            [
+              "0x21",
+              172
+            ],
+            [
+              "0xb",
+              92
+            ],
+            [
+              "0x2",
+              90
+            ],
+            [
+              "0x28",
+              78
+            ],
+            [
+              "0xd",
+              49
+            ],
+            [
+              "0xc",
+              45
+            ],
+            [
+              "0x36",
+              43
+            ],
+            [
+              "0x10",
+              37
+            ],
+            [
+              "0x22",
+              32
+            ],
+            [
+              "0x6a",
+              29
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x7000879fc5",
+              0.059185606060606064
+            ],
+            [
+              "0x700087da95",
+              0.051787405303030304
+            ],
+            [
+              "0x700088633d",
+              0.044389204545454544
+            ],
+            [
+              "0x700087fdfd",
+              0.03699100378787879
+            ],
+            [
+              "0x700087fe15",
+              0.022194602272727272
+            ],
+            [
+              "0x700087b6e1",
+              0.022194602272727272
+            ],
+            [
+              "0x700087e23d",
+              0.022194602272727272
+            ],
+            [
+              "0x700087c4b9",
+              0.022194602272727272
+            ],
+            [
+              "0x700087f6b1",
+              0.022194602272727272
+            ],
+            [
+              "0x7000886011",
+              0.022194602272727272
+            ],
+            [
+              "0x7000884a05",
+              0.022194602272727272
+            ],
+            [
+              "0x70008816d9",
+              0.022194602272727272
+            ]
+          ],
+          "name": "_RNCINvNtNtNtNtCsjQaZf4ng38o_26wasmvm_preview3_http_guest7exports4wasi4http7handler19__export_handle_cabiNtBc_7ServiceE0Bc_.llvm.796540852320957748",
+          "demangled": "wasmvm_preview3_http_guest::exports::wasi::http::handler::_export_handle_cabi::<wasmvm_preview3_http_guest::Service>::{closure#0} (.llvm.796540852320957748)"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 157,
+          "tier": 0,
+          "start": 481038496112,
+          "end": 481038554536,
+          "sampleUs": 0.9025804924242424,
+          "share": 0.008027900243469105,
+          "instructions": 630,
+          "slots": 15,
+          "ops": [
+            [
+              "0x20",
+              157
+            ],
+            [
+              "0x41",
+              76
+            ],
+            [
+              "0x28",
+              59
+            ],
+            [
+              "0x21",
+              55
+            ],
+            [
+              "0xb",
+              49
+            ],
+            [
+              "0xd",
+              40
+            ],
+            [
+              "0x2",
+              37
+            ],
+            [
+              "0x6a",
+              33
+            ],
+            [
+              "0x22",
+              28
+            ],
+            [
+              "0x10",
+              22
+            ],
+            [
+              "0x36",
+              19
+            ],
+            [
+              "0xc",
+              18
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70002147f1",
+              0.051787405303030304
+            ],
+            [
+              "0x700020f1a1",
+              0.051787405303030304
+            ],
+            [
+              "0x700020fc89",
+              0.03699100378787879
+            ],
+            [
+              "0x700020fc49",
+              0.029592803030303032
+            ],
+            [
+              "0x700020f231",
+              0.029592803030303032
+            ],
+            [
+              "0x7000213e71",
+              0.029592803030303032
+            ],
+            [
+              "0x70002104ad",
+              0.029592803030303032
+            ],
+            [
+              "0x700020f1d1",
+              0.029592803030303032
+            ],
+            [
+              "0x700020fea5",
+              0.029592803030303032
+            ],
+            [
+              "0x7000214451",
+              0.022194602272727272
+            ],
+            [
+              "0x7000211b65",
+              0.022194602272727272
+            ],
+            [
+              "0x700020f1b9",
+              0.022194602272727272
+            ]
+          ],
+          "name": "_RNvNtNtCsgY8IbwwiBz1_11wit_bindgen2rt13async_support8callback",
+          "demangled": "wit_bindgen::rt::async_support::callback"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 191,
+          "tier": 0,
+          "start": 481038987084,
+          "end": 481039121224,
+          "sampleUs": 0.6806344696969697,
+          "share": 0.00605382641310785,
+          "instructions": 2055,
+          "slots": 17,
+          "ops": [
+            [
+              "0x20",
+              493
+            ],
+            [
+              "0x41",
+              427
+            ],
+            [
+              "0x36",
+              201
+            ],
+            [
+              "0x22",
+              145
+            ],
+            [
+              "0x6a",
+              110
+            ],
+            [
+              "0x28",
+              102
+            ],
+            [
+              "0xb",
+              88
+            ],
+            [
+              "0xd",
+              86
+            ],
+            [
+              "0x2",
+              78
+            ],
+            [
+              "0x21",
+              78
+            ],
+            [
+              "0xc",
+              44
+            ],
+            [
+              "0x71",
+              44
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x7000289445",
+              0.059185606060606064
+            ],
+            [
+              "0x700028b18d",
+              0.03699100378787879
+            ],
+            [
+              "0x7000286f7d",
+              0.022194602272727272
+            ],
+            [
+              "0x70002891ed",
+              0.022194602272727272
+            ],
+            [
+              "0x7000289229",
+              0.014796401515151516
+            ],
+            [
+              "0x70002914cd",
+              0.014796401515151516
+            ],
+            [
+              "0x7000289675",
+              0.014796401515151516
+            ],
+            [
+              "0x7000291dbd",
+              0.014796401515151516
+            ],
+            [
+              "0x7000286fad",
+              0.014796401515151516
+            ],
+            [
+              "0x7000289049",
+              0.014796401515151516
+            ],
+            [
+              "0x7000286fc9",
+              0.014796401515151516
+            ],
+            [
+              "0x700028918d",
+              0.014796401515151516
+            ]
+          ],
+          "name": "_RNvMs0_NtCshLrrydh1LUZ_8dlmalloc8dlmallocINtB5_8DlmallocNtNtB7_3sys6SystemE6mallocCs3HZVvw3jX5q_3std",
+          "demangled": "<dlmalloc::dlmalloc::Dlmalloc<dlmalloc::sys::System>>::malloc"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 72,
+          "tier": 0,
+          "start": 481037156516,
+          "end": 481037203040,
+          "sampleUs": 0.5918560606060607,
+          "share": 0.005264196880963348,
+          "instructions": 338,
+          "slots": 15,
+          "ops": [
+            [
+              "0x20",
+              96
+            ],
+            [
+              "0x41",
+              45
+            ],
+            [
+              "0x28",
+              26
+            ],
+            [
+              "0xb",
+              21
+            ],
+            [
+              "0x2",
+              20
+            ],
+            [
+              "0xd",
+              18
+            ],
+            [
+              "0x6a",
+              14
+            ],
+            [
+              "0x10",
+              13
+            ],
+            [
+              "0x22",
+              12
+            ],
+            [
+              "0x21",
+              11
+            ],
+            [
+              "0x29",
+              11
+            ],
+            [
+              "0x36",
+              11
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70000d244d",
+              0.03699100378787879
+            ],
+            [
+              "0x70000c8185",
+              0.029592803030303032
+            ],
+            [
+              "0x70000c80d5",
+              0.029592803030303032
+            ],
+            [
+              "0x70000c95e5",
+              0.029592803030303032
+            ],
+            [
+              "0x70000c8105",
+              0.022194602272727272
+            ],
+            [
+              "0x70000c8939",
+              0.022194602272727272
+            ],
+            [
+              "0x70000c8cad",
+              0.022194602272727272
+            ],
+            [
+              "0x70000c81f5",
+              0.022194602272727272
+            ],
+            [
+              "0x70000ca07d",
+              0.014796401515151516
+            ],
+            [
+              "0x70000ca145",
+              0.014796401515151516
+            ],
+            [
+              "0x70000cba41",
+              0.014796401515151516
+            ],
+            [
+              "0x70000ca33d",
+              0.014796401515151516
+            ]
+          ],
+          "name": "_RNvMNtNtNtCsgY8IbwwiBz1_11wit_bindgen2rt13async_support8waitableINtB2_17WaitableOperationINtNtB4_14stream_support12StreamReadOpRINtB1s_12StreamVtablehEEE23poll_complete_with_codeCsjQaZf4ng38o_26wasmvm_preview3_http_guest.llvm.5276118706922170114",
+          "demangled": "<wit_bindgen::rt::async_support::waitable::WaitableOperation<wit_bindgen::rt::async_support::stream_support::StreamReadOp<&wit_bindgen::rt::async_support::stream_support::StreamVtable<u8>>>>::poll_complete_with_code (.llvm.5276118706922170114)"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 146,
+          "tier": 2,
+          "start": 481045483536,
+          "end": 481045502276,
+          "sampleUs": 0.5770596590909092,
+          "share": 0.0051325919589392645,
+          "instructions": 235,
+          "slots": 18,
+          "ops": [
+            [
+              "0x20",
+              70
+            ],
+            [
+              "0x41",
+              34
+            ],
+            [
+              "0x36",
+              17
+            ],
+            [
+              "0x21",
+              16
+            ],
+            [
+              "0x6a",
+              15
+            ],
+            [
+              "0xb",
+              14
+            ],
+            [
+              "0x2",
+              11
+            ],
+            [
+              "0xd",
+              9
+            ],
+            [
+              "0x22",
+              8
+            ],
+            [
+              "0x28",
+              8
+            ],
+            [
+              "0x10",
+              8
+            ],
+            [
+              "0x45",
+              6
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70008ba0e1",
+              0.07398200757575758
+            ],
+            [
+              "0x70008ba489",
+              0.03699100378787879
+            ],
+            [
+              "0x70008b9df5",
+              0.022194602272727272
+            ],
+            [
+              "0x70008ba511",
+              0.022194602272727272
+            ],
+            [
+              "0x70008b9011",
+              0.022194602272727272
+            ],
+            [
+              "0x70008b9d2d",
+              0.022194602272727272
+            ],
+            [
+              "0x70008bb385",
+              0.022194602272727272
+            ],
+            [
+              "0x70008b9eb1",
+              0.014796401515151516
+            ],
+            [
+              "0x70008b9081",
+              0.014796401515151516
+            ],
+            [
+              "0x70008ba125",
+              0.014796401515151516
+            ],
+            [
+              "0x70008b9d89",
+              0.014796401515151516
+            ],
+            [
+              "0x70008bb0fd",
+              0.014796401515151516
+            ]
+          ],
+          "name": "_RNvNtNtCsgY8IbwwiBz1_11wit_bindgen2rt13async_support17waitable_register",
+          "demangled": "wit_bindgen::rt::async_support::waitable_register"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 46,
+          "tier": 0,
+          "start": 481036412520,
+          "end": 481036555584,
+          "sampleUs": 0.41429924242424243,
+          "share": 0.0036849378166743437,
+          "instructions": 1317,
+          "slots": 22,
+          "ops": [
+            [
+              "0x20",
+              274
+            ],
+            [
+              "0x41",
+              257
+            ],
+            [
+              "0x21",
+              172
+            ],
+            [
+              "0xb",
+              92
+            ],
+            [
+              "0x2",
+              90
+            ],
+            [
+              "0x28",
+              78
+            ],
+            [
+              "0xd",
+              49
+            ],
+            [
+              "0xc",
+              45
+            ],
+            [
+              "0x36",
+              43
+            ],
+            [
+              "0x10",
+              37
+            ],
+            [
+              "0x22",
+              32
+            ],
+            [
+              "0x6a",
+              29
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x7000014419",
+              0.022194602272727272
+            ],
+            [
+              "0x700001e60d",
+              0.022194602272727272
+            ],
+            [
+              "0x70000147e5",
+              0.014796401515151516
+            ],
+            [
+              "0x7000016789",
+              0.014796401515151516
+            ],
+            [
+              "0x7000016d45",
+              0.014796401515151516
+            ],
+            [
+              "0x7000013d69",
+              0.014796401515151516
+            ],
+            [
+              "0x70000184bd",
+              0.014796401515151516
+            ],
+            [
+              "0x7000016645",
+              0.014796401515151516
+            ],
+            [
+              "0x70000166f9",
+              0.014796401515151516
+            ],
+            [
+              "0x7000014119",
+              0.014796401515151516
+            ],
+            [
+              "0x7000014c3d",
+              0.014796401515151516
+            ],
+            [
+              "0x7000016785",
+              0.014796401515151516
+            ]
+          ],
+          "name": "_RNCINvNtNtNtNtCsjQaZf4ng38o_26wasmvm_preview3_http_guest7exports4wasi4http7handler19__export_handle_cabiNtBc_7ServiceE0Bc_.llvm.796540852320957748",
+          "demangled": "wasmvm_preview3_http_guest::exports::wasi::http::handler::_export_handle_cabi::<wasmvm_preview3_http_guest::Service>::{closure#0} (.llvm.796540852320957748)"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 194,
+          "tier": 0,
+          "start": 481039125884,
+          "end": 481039147604,
+          "sampleUs": 0.39950284090909094,
+          "share": 0.00355333289465026,
+          "instructions": 366,
+          "slots": 8,
+          "ops": [
+            [
+              "0x20",
+              87
+            ],
+            [
+              "0x41",
+              67
+            ],
+            [
+              "0x36",
+              28
+            ],
+            [
+              "0x28",
+              25
+            ],
+            [
+              "0x22",
+              23
+            ],
+            [
+              "0xd",
+              22
+            ],
+            [
+              "0xb",
+              21
+            ],
+            [
+              "0x6a",
+              17
+            ],
+            [
+              "0x2",
+              17
+            ],
+            [
+              "0x21",
+              15
+            ],
+            [
+              "0x71",
+              11
+            ],
+            [
+              "0x72",
+              6
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70002aa3dd",
+              0.03699100378787879
+            ],
+            [
+              "0x70002a8ddd",
+              0.029592803030303032
+            ],
+            [
+              "0x70002a8dad",
+              0.029592803030303032
+            ],
+            [
+              "0x70002aa1b1",
+              0.022194602272727272
+            ],
+            [
+              "0x70002a9499",
+              0.014796401515151516
+            ],
+            [
+              "0x70002a94a5",
+              0.014796401515151516
+            ],
+            [
+              "0x70002a9601",
+              0.014796401515151516
+            ],
+            [
+              "0x70002aa465",
+              0.014796401515151516
+            ],
+            [
+              "0x70002a9989",
+              0.014796401515151516
+            ],
+            [
+              "0x70002a9561",
+              0.014796401515151516
+            ],
+            [
+              "0x70002aa401",
+              0.007398200757575758
+            ],
+            [
+              "0x70002a997d",
+              0.007398200757575758
+            ]
+          ],
+          "name": "_RNvMs0_NtCshLrrydh1LUZ_8dlmalloc8dlmallocINtB5_8DlmallocNtNtB7_3sys6SystemE4freeCs3HZVvw3jX5q_3std",
+          "demangled": "<dlmalloc::dlmalloc::Dlmalloc<dlmalloc::sys::System>>::free"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 71,
+          "tier": 0,
+          "start": 481037136652,
+          "end": 481037156516,
+          "sampleUs": 0.35511363636363635,
+          "share": 0.003158518128578009,
+          "instructions": 234,
+          "slots": 16,
+          "ops": [
+            [
+              "0x20",
+              70
+            ],
+            [
+              "0x41",
+              30
+            ],
+            [
+              "0x28",
+              14
+            ],
+            [
+              "0xb",
+              14
+            ],
+            [
+              "0x2",
+              13
+            ],
+            [
+              "0x21",
+              12
+            ],
+            [
+              "0x6a",
+              11
+            ],
+            [
+              "0x29",
+              10
+            ],
+            [
+              "0x37",
+              10
+            ],
+            [
+              "0x22",
+              9
+            ],
+            [
+              "0x10",
+              8
+            ],
+            [
+              "0xd",
+              8
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70000c5a51",
+              0.03699100378787879
+            ],
+            [
+              "0x70000c4791",
+              0.022194602272727272
+            ],
+            [
+              "0x70000c5ddd",
+              0.014796401515151516
+            ],
+            [
+              "0x70000c5a79",
+              0.014796401515151516
+            ],
+            [
+              "0x70000c427d",
+              0.014796401515151516
+            ],
+            [
+              "0x70000c3c0d",
+              0.014796401515151516
+            ],
+            [
+              "0x70000c398d",
+              0.007398200757575758
+            ],
+            [
+              "0x70000c56d9",
+              0.007398200757575758
+            ],
+            [
+              "0x70000c4131",
+              0.007398200757575758
+            ],
+            [
+              "0x70000c407d",
+              0.007398200757575758
+            ],
+            [
+              "0x70000c336d",
+              0.007398200757575758
+            ],
+            [
+              "0x70000c8089",
+              0.007398200757575758
+            ]
+          ],
+          "name": "_RNvMNtNtNtCsgY8IbwwiBz1_11wit_bindgen2rt13async_support8waitableINtB2_17WaitableOperationINtNtB4_14stream_support12StreamReadOpRINtB1s_12StreamVtablehEEE13poll_completeCsjQaZf4ng38o_26wasmvm_preview3_http_guest",
+          "demangled": "<wit_bindgen::rt::async_support::waitable::WaitableOperation<wit_bindgen::rt::async_support::stream_support::StreamReadOp<&wit_bindgen::rt::async_support::stream_support::StreamVtable<u8>>>>::poll_complete"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 174,
+          "tier": 0,
+          "start": 481038893436,
+          "end": 481038911800,
+          "sampleUs": 0.3477154356060606,
+          "share": 0.003092715667565967,
+          "instructions": 127,
+          "slots": 8,
+          "ops": [
+            [
+              "0x20",
+              38
+            ],
+            [
+              "0x28",
+              19
+            ],
+            [
+              "0x41",
+              9
+            ],
+            [
+              "0xb",
+              9
+            ],
+            [
+              "0x2",
+              8
+            ],
+            [
+              "0x21",
+              7
+            ],
+            [
+              "0x22",
+              6
+            ],
+            [
+              "0x36",
+              6
+            ],
+            [
+              "0xd",
+              6
+            ],
+            [
+              "0x11",
+              4
+            ],
+            [
+              "0x24",
+              2
+            ],
+            [
+              "0x1b",
+              2
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70002701b1",
+              0.03699100378787879
+            ],
+            [
+              "0x70002701dd",
+              0.029592803030303032
+            ],
+            [
+              "0x7000270bd1",
+              0.022194602272727272
+            ],
+            [
+              "0x70002701ad",
+              0.014796401515151516
+            ],
+            [
+              "0x700027028d",
+              0.014796401515151516
+            ],
+            [
+              "0x70002705d5",
+              0.014796401515151516
+            ],
+            [
+              "0x70002704f9",
+              0.014796401515151516
+            ],
+            [
+              "0x7000270981",
+              0.014796401515151516
+            ],
+            [
+              "0x7000270d6d",
+              0.007398200757575758
+            ],
+            [
+              "0x7000273815",
+              0.007398200757575758
+            ],
+            [
+              "0x70002709ad",
+              0.007398200757575758
+            ],
+            [
+              "0x7000270bc9",
+              0.007398200757575758
+            ]
+          ],
+          "name": "_RNvMNtNtNtCscukiA3MIxUJ_12futures_core4task10___internal12atomic_wakerNtB2_11AtomicWaker8register",
+          "demangled": "<futures_core::task::__internal::atomic_waker::AtomicWaker>::register"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 54,
+          "tier": 0,
+          "start": 481036662188,
+          "end": 481036682740,
+          "sampleUs": 0.34031723484848486,
+          "share": 0.003026913206553925,
+          "instructions": 134,
+          "slots": 13,
+          "ops": [
+            [
+              "0x20",
+              45
+            ],
+            [
+              "0x41",
+              13
+            ],
+            [
+              "0x36",
+              12
+            ],
+            [
+              "0x28",
+              10
+            ],
+            [
+              "0xb",
+              8
+            ],
+            [
+              "0x2",
+              7
+            ],
+            [
+              "0x6a",
+              6
+            ],
+            [
+              "0x22",
+              4
+            ],
+            [
+              "0x21",
+              4
+            ],
+            [
+              "0x37",
+              3
+            ],
+            [
+              "0x10",
+              3
+            ],
+            [
+              "0xd",
+              3
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x700004f5dd",
+              0.022194602272727272
+            ],
+            [
+              "0x7000050339",
+              0.022194602272727272
+            ],
+            [
+              "0x70000504a9",
+              0.014796401515151516
+            ],
+            [
+              "0x700004f665",
+              0.014796401515151516
+            ],
+            [
+              "0x7000052f31",
+              0.014796401515151516
+            ],
+            [
+              "0x700004f62d",
+              0.014796401515151516
+            ],
+            [
+              "0x700005047d",
+              0.014796401515151516
+            ],
+            [
+              "0x70000500d1",
+              0.014796401515151516
+            ],
+            [
+              "0x700004f5d9",
+              0.014796401515151516
+            ],
+            [
+              "0x700004fc79",
+              0.014796401515151516
+            ],
+            [
+              "0x7000053151",
+              0.007398200757575758
+            ],
+            [
+              "0x700004f5e1",
+              0.007398200757575758
+            ]
+          ],
+          "name": "_RNvXsi_NtNtNtCsgY8IbwwiBz1_11wit_bindgen2rt13async_support14future_supportINtB5_12FutureReadOpRINtB5_12FutureVtableINtNtCskGMzdWn1DGZ_4core6result6ResultINtNtB1U_6option6OptionNtNtNtNtCsjQaZf4ng38o_26wasmvm_preview3_http_guest4wasi4http5types6FieldsENtB2Q_9ErrorCodeEEENtNtB7_8waitable10WaitableOp18in_progress_updateB2W_",
+          "demangled": "<wit_bindgen::rt::async_support::future_support::FutureReadOp<&wit_bindgen::rt::async_support::future_support::FutureVtable<core::result::Result<core::option::Option<wasmvm_preview3_http_guest::wasi::http::types::Fields>, wasmvm_preview3_http_guest::wasi::http::types::ErrorCode>>> as wit_bindgen::rt::async_support::waitable::WaitableOp>::in_progress_update"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 189,
+          "tier": 0,
+          "start": 481038974740,
+          "end": 481038976944,
+          "sampleUs": 0.33291903409090906,
+          "share": 0.0029611107455418833,
+          "instructions": 13,
+          "slots": 4,
+          "ops": [
+            [
+              "0x20",
+              4
+            ],
+            [
+              "0x10",
+              2
+            ],
+            [
+              "0xb",
+              2
+            ],
+            [
+              "0x2",
+              1
+            ],
+            [
+              "0x41",
+              1
+            ],
+            [
+              "0x49",
+              1
+            ],
+            [
+              "0xd",
+              1
+            ],
+            [
+              "0xf",
+              1
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x7000283f95",
+              0.051787405303030304
+            ],
+            [
+              "0x7000283f75",
+              0.051787405303030304
+            ],
+            [
+              "0x7000283f45",
+              0.022194602272727272
+            ],
+            [
+              "0x7000283fb5",
+              0.022194602272727272
+            ],
+            [
+              "0x7000283f49",
+              0.022194602272727272
+            ],
+            [
+              "0x7000283f91",
+              0.022194602272727272
+            ],
+            [
+              "0x7000284009",
+              0.014796401515151516
+            ],
+            [
+              "0x7000284239",
+              0.014796401515151516
+            ],
+            [
+              "0x700028421d",
+              0.014796401515151516
+            ],
+            [
+              "0x700028433d",
+              0.014796401515151516
+            ],
+            [
+              "0x7000284015",
+              0.007398200757575758
+            ],
+            [
+              "0x700028429d",
+              0.007398200757575758
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 74,
+          "tier": 0,
+          "start": 481037229084,
+          "end": 481037296012,
+          "sampleUs": 0.33291903409090906,
+          "share": 0.0029611107455418833,
+          "instructions": 552,
+          "slots": 25,
+          "ops": [
+            [
+              "0x20",
+              172
+            ],
+            [
+              "0x41",
+              59
+            ],
+            [
+              "0x28",
+              43
+            ],
+            [
+              "0x21",
+              37
+            ],
+            [
+              "0xb",
+              37
+            ],
+            [
+              "0x2",
+              34
+            ],
+            [
+              "0xd",
+              32
+            ],
+            [
+              "0x36",
+              26
+            ],
+            [
+              "0x6a",
+              19
+            ],
+            [
+              "0x45",
+              17
+            ],
+            [
+              "0x22",
+              15
+            ],
+            [
+              "0x10",
+              14
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70000e07f1",
+              0.022194602272727272
+            ],
+            [
+              "0x70000d9c7d",
+              0.014796401515151516
+            ],
+            [
+              "0x70000dc0cd",
+              0.014796401515151516
+            ],
+            [
+              "0x70000e07b1",
+              0.014796401515151516
+            ],
+            [
+              "0x70000db5cd",
+              0.014796401515151516
+            ],
+            [
+              "0x70000e08d9",
+              0.014796401515151516
+            ],
+            [
+              "0x70000dc7e5",
+              0.007398200757575758
+            ],
+            [
+              "0x70000dc7a5",
+              0.007398200757575758
+            ],
+            [
+              "0x70000e08f5",
+              0.007398200757575758
+            ],
+            [
+              "0x70000d9c4d",
+              0.007398200757575758
+            ],
+            [
+              "0x70000de335",
+              0.007398200757575758
+            ],
+            [
+              "0x70000dc269",
+              0.007398200757575758
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 65,
+          "tier": 0,
+          "start": 481036858228,
+          "end": 481036902088,
+          "sampleUs": 0.33291903409090906,
+          "share": 0.0029611107455418833,
+          "instructions": 293,
+          "slots": 15,
+          "ops": [
+            [
+              "0x20",
+              81
+            ],
+            [
+              "0x41",
+              42
+            ],
+            [
+              "0x28",
+              26
+            ],
+            [
+              "0xb",
+              17
+            ],
+            [
+              "0x2",
+              16
+            ],
+            [
+              "0xd",
+              14
+            ],
+            [
+              "0x22",
+              11
+            ],
+            [
+              "0x6a",
+              11
+            ],
+            [
+              "0x10",
+              11
+            ],
+            [
+              "0x29",
+              10
+            ],
+            [
+              "0x37",
+              10
+            ],
+            [
+              "0x36",
+              9
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x700007f455",
+              0.029592803030303032
+            ],
+            [
+              "0x700007febd",
+              0.029592803030303032
+            ],
+            [
+              "0x700007f3a5",
+              0.022194602272727272
+            ],
+            [
+              "0x700007f44d",
+              0.022194602272727272
+            ],
+            [
+              "0x700007f4c5",
+              0.014796401515151516
+            ],
+            [
+              "0x7000082635",
+              0.014796401515151516
+            ],
+            [
+              "0x700007fb49",
+              0.014796401515151516
+            ],
+            [
+              "0x7000081fb5",
+              0.014796401515151516
+            ],
+            [
+              "0x70000807f9",
+              0.014796401515151516
+            ],
+            [
+              "0x700008127d",
+              0.014796401515151516
+            ],
+            [
+              "0x700008108d",
+              0.014796401515151516
+            ],
+            [
+              "0x700008113d",
+              0.007398200757575758
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 170,
+          "tier": 0,
+          "start": 481038877228,
+          "end": 481038878948,
+          "sampleUs": 0.33291903409090906,
+          "share": 0.0029611107455418833,
+          "instructions": 12,
+          "slots": 6,
+          "ops": [
+            [
+              "0x20",
+              3
+            ],
+            [
+              "0x23",
+              1
+            ],
+            [
+              "0x41",
+              1
+            ],
+            [
+              "0x6a",
+              1
+            ],
+            [
+              "0x22",
+              1
+            ],
+            [
+              "0x28",
+              1
+            ],
+            [
+              "0x21",
+              1
+            ],
+            [
+              "0x36",
+              1
+            ],
+            [
+              "0xb",
+              1
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x700026c28d",
+              0.10357481060606061
+            ],
+            [
+              "0x700026c25d",
+              0.051787405303030304
+            ],
+            [
+              "0x700026c259",
+              0.029592803030303032
+            ],
+            [
+              "0x700026c3f9",
+              0.014796401515151516
+            ],
+            [
+              "0x700026c2dd",
+              0.014796401515151516
+            ],
+            [
+              "0x700026c381",
+              0.014796401515151516
+            ],
+            [
+              "0x700026c261",
+              0.014796401515151516
+            ],
+            [
+              "0x700026c33d",
+              0.014796401515151516
+            ],
+            [
+              "0x700026c319",
+              0.007398200757575758
+            ],
+            [
+              "0x700026c345",
+              0.007398200757575758
+            ],
+            [
+              "0x700026c3c1",
+              0.007398200757575758
+            ],
+            [
+              "0x700026c2c1",
+              0.007398200757575758
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 70,
+          "tier": 0,
+          "start": 481037090540,
+          "end": 481037136652,
+          "sampleUs": 0.3255208333333333,
+          "share": 0.0028953082845298416,
+          "instructions": 309,
+          "slots": 17,
+          "ops": [
+            [
+              "0x20",
+              95
+            ],
+            [
+              "0x41",
+              37
+            ],
+            [
+              "0x28",
+              24
+            ],
+            [
+              "0xb",
+              18
+            ],
+            [
+              "0x2",
+              17
+            ],
+            [
+              "0x36",
+              17
+            ],
+            [
+              "0x21",
+              12
+            ],
+            [
+              "0xd",
+              10
+            ],
+            [
+              "0x37",
+              10
+            ],
+            [
+              "0x10",
+              10
+            ],
+            [
+              "0x6a",
+              9
+            ],
+            [
+              "0x22",
+              8
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70000b7f9d",
+              0.022194602272727272
+            ],
+            [
+              "0x70000b91a1",
+              0.014796401515151516
+            ],
+            [
+              "0x70000b9f3d",
+              0.014796401515151516
+            ],
+            [
+              "0x70000b8aa9",
+              0.014796401515151516
+            ],
+            [
+              "0x70000b7fad",
+              0.014796401515151516
+            ],
+            [
+              "0x70000b9ebd",
+              0.014796401515151516
+            ],
+            [
+              "0x70000baf65",
+              0.007398200757575758
+            ],
+            [
+              "0x70000b92b1",
+              0.007398200757575758
+            ],
+            [
+              "0x70000b7ff5",
+              0.007398200757575758
+            ],
+            [
+              "0x70000b98fd",
+              0.007398200757575758
+            ],
+            [
+              "0x70000b8039",
+              0.007398200757575758
+            ],
+            [
+              "0x70000b9439",
+              0.007398200757575758
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 162,
+          "tier": 0,
+          "start": 481038571076,
+          "end": 481038591448,
+          "sampleUs": 0.3255208333333333,
+          "share": 0.0028953082845298416,
+          "instructions": 300,
+          "slots": 13,
+          "ops": [
+            [
+              "0x20",
+              79
+            ],
+            [
+              "0x41",
+              35
+            ],
+            [
+              "0x28",
+              28
+            ],
+            [
+              "0x6a",
+              26
+            ],
+            [
+              "0x21",
+              23
+            ],
+            [
+              "0x22",
+              20
+            ],
+            [
+              "0x36",
+              15
+            ],
+            [
+              "0xb",
+              15
+            ],
+            [
+              "0xd",
+              13
+            ],
+            [
+              "0x2",
+              9
+            ],
+            [
+              "0x2f",
+              9
+            ],
+            [
+              "0x74",
+              8
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x7000221ead",
+              0.044389204545454544
+            ],
+            [
+              "0x7000221c45",
+              0.044389204545454544
+            ],
+            [
+              "0x7000221c79",
+              0.029592803030303032
+            ],
+            [
+              "0x7000221671",
+              0.029592803030303032
+            ],
+            [
+              "0x70002216a5",
+              0.029592803030303032
+            ],
+            [
+              "0x700022170d",
+              0.014796401515151516
+            ],
+            [
+              "0x7000221fc5",
+              0.014796401515151516
+            ],
+            [
+              "0x70002216c1",
+              0.014796401515151516
+            ],
+            [
+              "0x7000222021",
+              0.014796401515151516
+            ],
+            [
+              "0x70002216c5",
+              0.014796401515151516
+            ],
+            [
+              "0x7000221f25",
+              0.007398200757575758
+            ],
+            [
+              "0x7000221efd",
+              0.007398200757575758
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 165,
+          "tier": 0,
+          "start": 481038701176,
+          "end": 481038796144,
+          "sampleUs": 0.31812263257575757,
+          "share": 0.0028295058235177995,
+          "instructions": 1083,
+          "slots": 26,
+          "ops": [
+            [
+              "0x20",
+              329
+            ],
+            [
+              "0x41",
+              156
+            ],
+            [
+              "0x6a",
+              96
+            ],
+            [
+              "0x22",
+              70
+            ],
+            [
+              "0x21",
+              63
+            ],
+            [
+              "0x36",
+              53
+            ],
+            [
+              "0xb",
+              48
+            ],
+            [
+              "0x2",
+              42
+            ],
+            [
+              "0xd",
+              42
+            ],
+            [
+              "0x74",
+              39
+            ],
+            [
+              "0x28",
+              33
+            ],
+            [
+              "0x3b",
+              21
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x7000243dd5",
+              0.051787405303030304
+            ],
+            [
+              "0x7000242c05",
+              0.03699100378787879
+            ],
+            [
+              "0x70002412a9",
+              0.022194602272727272
+            ],
+            [
+              "0x70002437bd",
+              0.022194602272727272
+            ],
+            [
+              "0x7000244309",
+              0.014796401515151516
+            ],
+            [
+              "0x7000249ab5",
+              0.014796401515151516
+            ],
+            [
+              "0x70002488ad",
+              0.014796401515151516
+            ],
+            [
+              "0x70002446bd",
+              0.007398200757575758
+            ],
+            [
+              "0x700024255d",
+              0.007398200757575758
+            ],
+            [
+              "0x700024321d",
+              0.007398200757575758
+            ],
+            [
+              "0x7000242929",
+              0.007398200757575758
+            ],
+            [
+              "0x7000248705",
+              0.007398200757575758
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 129,
+          "tier": 0,
+          "start": 481038250676,
+          "end": 481038265916,
+          "sampleUs": 0.3107244318181818,
+          "share": 0.0027637033625057578,
+          "instructions": 185,
+          "slots": 14,
+          "ops": [
+            [
+              "0x20",
+              50
+            ],
+            [
+              "0x41",
+              27
+            ],
+            [
+              "0x21",
+              14
+            ],
+            [
+              "0x6a",
+              12
+            ],
+            [
+              "0x28",
+              11
+            ],
+            [
+              "0xb",
+              10
+            ],
+            [
+              "0x36",
+              10
+            ],
+            [
+              "0x22",
+              8
+            ],
+            [
+              "0xd",
+              8
+            ],
+            [
+              "0x2",
+              7
+            ],
+            [
+              "0x45",
+              5
+            ],
+            [
+              "0x10",
+              4
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70001d3d7d",
+              0.044389204545454544
+            ],
+            [
+              "0x70001d3315",
+              0.022194602272727272
+            ],
+            [
+              "0x70001d32fd",
+              0.022194602272727272
+            ],
+            [
+              "0x70001d32e1",
+              0.022194602272727272
+            ],
+            [
+              "0x70001d3b3d",
+              0.014796401515151516
+            ],
+            [
+              "0x70001d3d91",
+              0.014796401515151516
+            ],
+            [
+              "0x70001d3db5",
+              0.014796401515151516
+            ],
+            [
+              "0x70001d3b79",
+              0.014796401515151516
+            ],
+            [
+              "0x70001d3345",
+              0.007398200757575758
+            ],
+            [
+              "0x70001d3a41",
+              0.007398200757575758
+            ],
+            [
+              "0x70001d3e09",
+              0.007398200757575758
+            ],
+            [
+              "0x70001d3911",
+              0.007398200757575758
+            ]
+          ]
+        }
+      ],
+      "totalSampleUsPerRequest": 112.43045691287878,
+      "mappedJITUsPerRequest": 20.493016098484848,
+      "unknownUsPerRequest": 0.007398200757575758
+    },
+    "65536": {
+      "totalSampleNs": 22509000000,
+      "requests": 135168,
+      "mappedJITSampleNs": 3317000000,
+      "unknownSampleNs": 4000000,
+      "hotFunctions": [
+        {
+          "module": "e41621b16023",
+          "index": 147,
+          "tier": 0,
+          "start": 481038360320,
+          "end": 481038441980,
+          "sampleUs": 2.655954071969697,
+          "share": 0.015949175885201474,
+          "instructions": 612,
+          "slots": 20,
+          "ops": [
+            [
+              "0x20",
+              157
+            ],
+            [
+              "0x41",
+              88
+            ],
+            [
+              "0x28",
+              60
+            ],
+            [
+              "0xb",
+              42
+            ],
+            [
+              "0x21",
+              37
+            ],
+            [
+              "0x2",
+              36
+            ],
+            [
+              "0xd",
+              36
+            ],
+            [
+              "0x36",
+              34
+            ],
+            [
+              "0x6a",
+              30
+            ],
+            [
+              "0x22",
+              21
+            ],
+            [
+              "0x10",
+              21
+            ],
+            [
+              "0x45",
+              16
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70001f2379",
+              0.10357481060606061
+            ],
+            [
+              "0x70001f4c45",
+              0.09617660984848485
+            ],
+            [
+              "0x70001f4b6d",
+              0.07398200757575758
+            ],
+            [
+              "0x70001f4b05",
+              0.07398200757575758
+            ],
+            [
+              "0x70001edf61",
+              0.06658380681818181
+            ],
+            [
+              "0x70001f0041",
+              0.06658380681818181
+            ],
+            [
+              "0x70001edf31",
+              0.06658380681818181
+            ],
+            [
+              "0x70001f4bcd",
+              0.059185606060606064
+            ],
+            [
+              "0x70001f2131",
+              0.059185606060606064
+            ],
+            [
+              "0x70001f4ca1",
+              0.051787405303030304
+            ],
+            [
+              "0x70001f3595",
+              0.051787405303030304
+            ],
+            [
+              "0x70001f1af9",
+              0.044389204545454544
+            ]
+          ],
+          "name": "_RNvMNtNtCsgY8IbwwiBz1_11wit_bindgen2rt13async_supportNtB2_11FutureState8callback",
+          "demangled": "<wit_bindgen::rt::async_support::FutureState>::callback"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 46,
+          "tier": 2,
+          "start": 481045225412,
+          "end": 481045367292,
+          "sampleUs": 1.5758167613636362,
+          "share": 0.009462881514061043,
+          "instructions": 1317,
+          "slots": 22,
+          "ops": [
+            [
+              "0x20",
+              274
+            ],
+            [
+              "0x41",
+              257
+            ],
+            [
+              "0x21",
+              172
+            ],
+            [
+              "0xb",
+              92
+            ],
+            [
+              "0x2",
+              90
+            ],
+            [
+              "0x28",
+              78
+            ],
+            [
+              "0xd",
+              49
+            ],
+            [
+              "0xc",
+              45
+            ],
+            [
+              "0x36",
+              43
+            ],
+            [
+              "0x10",
+              37
+            ],
+            [
+              "0x22",
+              32
+            ],
+            [
+              "0x6a",
+              29
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x700088633d",
+              0.06658380681818181
+            ],
+            [
+              "0x7000886339",
+              0.044389204545454544
+            ],
+            [
+              "0x700087e591",
+              0.044389204545454544
+            ],
+            [
+              "0x700087da95",
+              0.044389204545454544
+            ],
+            [
+              "0x7000885d29",
+              0.044389204545454544
+            ],
+            [
+              "0x700087e719",
+              0.044389204545454544
+            ],
+            [
+              "0x700087a055",
+              0.03699100378787879
+            ],
+            [
+              "0x700087eb2d",
+              0.03699100378787879
+            ],
+            [
+              "0x7000879fc5",
+              0.03699100378787879
+            ],
+            [
+              "0x700087e1d5",
+              0.029592803030303032
+            ],
+            [
+              "0x7000884b9d",
+              0.029592803030303032
+            ],
+            [
+              "0x700087e2f9",
+              0.029592803030303032
+            ]
+          ],
+          "name": "_RNCINvNtNtNtNtCsjQaZf4ng38o_26wasmvm_preview3_http_guest7exports4wasi4http7handler19__export_handle_cabiNtBc_7ServiceE0Bc_.llvm.796540852320957748",
+          "demangled": "wasmvm_preview3_http_guest::exports::wasi::http::handler::_export_handle_cabi::<wasmvm_preview3_http_guest::Service>::{closure#0} (.llvm.796540852320957748)"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 91,
+          "tier": 0,
+          "start": 481037723704,
+          "end": 481037845976,
+          "sampleUs": 1.0209517045454546,
+          "share": 0.006130880980940957,
+          "instructions": 1083,
+          "slots": 28,
+          "ops": [
+            [
+              "0x20",
+              333
+            ],
+            [
+              "0x41",
+              136
+            ],
+            [
+              "0xb",
+              64
+            ],
+            [
+              "0x2",
+              60
+            ],
+            [
+              "0x28",
+              60
+            ],
+            [
+              "0x21",
+              58
+            ],
+            [
+              "0x6a",
+              48
+            ],
+            [
+              "0xd",
+              47
+            ],
+            [
+              "0x36",
+              42
+            ],
+            [
+              "0x37",
+              38
+            ],
+            [
+              "0x29",
+              36
+            ],
+            [
+              "0x22",
+              32
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x700015d39d",
+              0.051787405303030304
+            ],
+            [
+              "0x700015e2b5",
+              0.03699100378787879
+            ],
+            [
+              "0x7000152839",
+              0.03699100378787879
+            ],
+            [
+              "0x7000154071",
+              0.029592803030303032
+            ],
+            [
+              "0x700015e31d",
+              0.029592803030303032
+            ],
+            [
+              "0x7000159939",
+              0.022194602272727272
+            ],
+            [
+              "0x700015d519",
+              0.022194602272727272
+            ],
+            [
+              "0x700015286d",
+              0.022194602272727272
+            ],
+            [
+              "0x7000155745",
+              0.022194602272727272
+            ],
+            [
+              "0x700015eb65",
+              0.022194602272727272
+            ],
+            [
+              "0x7000155979",
+              0.014796401515151516
+            ],
+            [
+              "0x70001542fd",
+              0.014796401515151516
+            ]
+          ],
+          "name": "_RNCNCNvXCsjQaZf4ng38o_26wasmvm_preview3_http_guestNtB6_7ServiceNtNtNtNtNtB6_7exports4wasi4http7handler5Guest6handle0s0_0B6_.llvm.18407908385824253366",
+          "demangled": "<wasmvm_preview3_http_guest::Service as wasmvm_preview3_http_guest::exports::wasi::http::handler::Guest>::handle::{closure#0}::{closure#2} (.llvm.18407908385824253366)"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 72,
+          "tier": 0,
+          "start": 481037156516,
+          "end": 481037203040,
+          "sampleUs": 0.9765625,
+          "share": 0.00586432093829135,
+          "instructions": 338,
+          "slots": 15,
+          "ops": [
+            [
+              "0x20",
+              96
+            ],
+            [
+              "0x41",
+              45
+            ],
+            [
+              "0x28",
+              26
+            ],
+            [
+              "0xb",
+              21
+            ],
+            [
+              "0x2",
+              20
+            ],
+            [
+              "0xd",
+              18
+            ],
+            [
+              "0x6a",
+              14
+            ],
+            [
+              "0x10",
+              13
+            ],
+            [
+              "0x22",
+              12
+            ],
+            [
+              "0x21",
+              11
+            ],
+            [
+              "0x29",
+              11
+            ],
+            [
+              "0x36",
+              11
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70000c80d5",
+              0.10357481060606061
+            ],
+            [
+              "0x70000c8105",
+              0.03699100378787879
+            ],
+            [
+              "0x70000c817d",
+              0.03699100378787879
+            ],
+            [
+              "0x70000c8cad",
+              0.03699100378787879
+            ],
+            [
+              "0x70000c875d",
+              0.029592803030303032
+            ],
+            [
+              "0x70000ca2e5",
+              0.029592803030303032
+            ],
+            [
+              "0x70000c8121",
+              0.029592803030303032
+            ],
+            [
+              "0x70000ca1a9",
+              0.022194602272727272
+            ],
+            [
+              "0x70000c9905",
+              0.022194602272727272
+            ],
+            [
+              "0x70000ca38d",
+              0.022194602272727272
+            ],
+            [
+              "0x70000c8185",
+              0.022194602272727272
+            ],
+            [
+              "0x70000c81f5",
+              0.022194602272727272
+            ]
+          ],
+          "name": "_RNvMNtNtNtCsgY8IbwwiBz1_11wit_bindgen2rt13async_support8waitableINtB2_17WaitableOperationINtNtB4_14stream_support12StreamReadOpRINtB1s_12StreamVtablehEEE23poll_complete_with_codeCsjQaZf4ng38o_26wasmvm_preview3_http_guest.llvm.5276118706922170114",
+          "demangled": "<wit_bindgen::rt::async_support::waitable::WaitableOperation<wit_bindgen::rt::async_support::stream_support::StreamReadOp<&wit_bindgen::rt::async_support::stream_support::StreamVtable<u8>>>>::poll_complete_with_code (.llvm.5276118706922170114)"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 157,
+          "tier": 0,
+          "start": 481038496112,
+          "end": 481038554536,
+          "sampleUs": 0.9025804924242424,
+          "share": 0.005420054200542005,
+          "instructions": 630,
+          "slots": 15,
+          "ops": [
+            [
+              "0x20",
+              157
+            ],
+            [
+              "0x41",
+              76
+            ],
+            [
+              "0x28",
+              59
+            ],
+            [
+              "0x21",
+              55
+            ],
+            [
+              "0xb",
+              49
+            ],
+            [
+              "0xd",
+              40
+            ],
+            [
+              "0x2",
+              37
+            ],
+            [
+              "0x6a",
+              33
+            ],
+            [
+              "0x22",
+              28
+            ],
+            [
+              "0x10",
+              22
+            ],
+            [
+              "0x36",
+              19
+            ],
+            [
+              "0xc",
+              18
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x7000214451",
+              0.059185606060606064
+            ],
+            [
+              "0x700020f1d1",
+              0.044389204545454544
+            ],
+            [
+              "0x700020fc49",
+              0.03699100378787879
+            ],
+            [
+              "0x700020f171",
+              0.03699100378787879
+            ],
+            [
+              "0x700020f1a1",
+              0.03699100378787879
+            ],
+            [
+              "0x700020fc89",
+              0.029592803030303032
+            ],
+            [
+              "0x70002101e1",
+              0.022194602272727272
+            ],
+            [
+              "0x7000213e71",
+              0.022194602272727272
+            ],
+            [
+              "0x70002104ad",
+              0.022194602272727272
+            ],
+            [
+              "0x7000214679",
+              0.022194602272727272
+            ],
+            [
+              "0x70002147f1",
+              0.022194602272727272
+            ],
+            [
+              "0x7000211b65",
+              0.014796401515151516
+            ]
+          ],
+          "name": "_RNvNtNtCsgY8IbwwiBz1_11wit_bindgen2rt13async_support8callback",
+          "demangled": "wit_bindgen::rt::async_support::callback"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 71,
+          "tier": 0,
+          "start": 481037136652,
+          "end": 481037156516,
+          "sampleUs": 0.7102272727272727,
+          "share": 0.004264960682393709,
+          "instructions": 234,
+          "slots": 16,
+          "ops": [
+            [
+              "0x20",
+              70
+            ],
+            [
+              "0x41",
+              30
+            ],
+            [
+              "0x28",
+              14
+            ],
+            [
+              "0xb",
+              14
+            ],
+            [
+              "0x2",
+              13
+            ],
+            [
+              "0x21",
+              12
+            ],
+            [
+              "0x6a",
+              11
+            ],
+            [
+              "0x29",
+              10
+            ],
+            [
+              "0x37",
+              10
+            ],
+            [
+              "0x22",
+              9
+            ],
+            [
+              "0x10",
+              8
+            ],
+            [
+              "0xd",
+              8
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70000c333d",
+              0.06658380681818181
+            ],
+            [
+              "0x70000c336d",
+              0.03699100378787879
+            ],
+            [
+              "0x70000c427d",
+              0.03699100378787879
+            ],
+            [
+              "0x70000c41c5",
+              0.029592803030303032
+            ],
+            [
+              "0x70000c4791",
+              0.029592803030303032
+            ],
+            [
+              "0x70000c33c5",
+              0.029592803030303032
+            ],
+            [
+              "0x70000c5dd9",
+              0.022194602272727272
+            ],
+            [
+              "0x70000c33e5",
+              0.022194602272727272
+            ],
+            [
+              "0x70000c3b69",
+              0.022194602272727272
+            ],
+            [
+              "0x70000c5ddd",
+              0.014796401515151516
+            ],
+            [
+              "0x70000c5a51",
+              0.014796401515151516
+            ],
+            [
+              "0x70000c3941",
+              0.014796401515151516
+            ]
+          ],
+          "name": "_RNvMNtNtNtCsgY8IbwwiBz1_11wit_bindgen2rt13async_support8waitableINtB2_17WaitableOperationINtNtB4_14stream_support12StreamReadOpRINtB1s_12StreamVtablehEEE13poll_completeCsjQaZf4ng38o_26wasmvm_preview3_http_guest",
+          "demangled": "<wit_bindgen::rt::async_support::waitable::WaitableOperation<wit_bindgen::rt::async_support::stream_support::StreamReadOp<&wit_bindgen::rt::async_support::stream_support::StreamVtable<u8>>>>::poll_complete"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 191,
+          "tier": 0,
+          "start": 481038987084,
+          "end": 481039121224,
+          "sampleUs": 0.673236268939394,
+          "share": 0.004042827313519037,
+          "instructions": 2055,
+          "slots": 17,
+          "ops": [
+            [
+              "0x20",
+              493
+            ],
+            [
+              "0x41",
+              427
+            ],
+            [
+              "0x36",
+              201
+            ],
+            [
+              "0x22",
+              145
+            ],
+            [
+              "0x6a",
+              110
+            ],
+            [
+              "0x28",
+              102
+            ],
+            [
+              "0xb",
+              88
+            ],
+            [
+              "0xd",
+              86
+            ],
+            [
+              "0x2",
+              78
+            ],
+            [
+              "0x21",
+              78
+            ],
+            [
+              "0xc",
+              44
+            ],
+            [
+              "0x71",
+              44
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x7000286fad",
+              0.07398200757575758
+            ],
+            [
+              "0x7000286f7d",
+              0.051787405303030304
+            ],
+            [
+              "0x700028b18d",
+              0.03699100378787879
+            ],
+            [
+              "0x70002891ed",
+              0.029592803030303032
+            ],
+            [
+              "0x700028b125",
+              0.029592803030303032
+            ],
+            [
+              "0x7000286f81",
+              0.029592803030303032
+            ],
+            [
+              "0x7000291dbd",
+              0.022194602272727272
+            ],
+            [
+              "0x7000289c61",
+              0.014796401515151516
+            ],
+            [
+              "0x700028d57d",
+              0.014796401515151516
+            ],
+            [
+              "0x7000289235",
+              0.014796401515151516
+            ],
+            [
+              "0x7000286f79",
+              0.014796401515151516
+            ],
+            [
+              "0x700028b241",
+              0.014796401515151516
+            ]
+          ],
+          "name": "_RNvMs0_NtCshLrrydh1LUZ_8dlmalloc8dlmallocINtB5_8DlmallocNtNtB7_3sys6SystemE6mallocCs3HZVvw3jX5q_3std",
+          "demangled": "<dlmalloc::dlmalloc::Dlmalloc<dlmalloc::sys::System>>::malloc"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 46,
+          "tier": 0,
+          "start": 481036412520,
+          "end": 481036555584,
+          "sampleUs": 0.6584398674242424,
+          "share": 0.003953973965969168,
+          "instructions": 1317,
+          "slots": 22,
+          "ops": [
+            [
+              "0x20",
+              274
+            ],
+            [
+              "0x41",
+              257
+            ],
+            [
+              "0x21",
+              172
+            ],
+            [
+              "0xb",
+              92
+            ],
+            [
+              "0x2",
+              90
+            ],
+            [
+              "0x28",
+              78
+            ],
+            [
+              "0xd",
+              49
+            ],
+            [
+              "0xc",
+              45
+            ],
+            [
+              "0x36",
+              43
+            ],
+            [
+              "0x10",
+              37
+            ],
+            [
+              "0x22",
+              32
+            ],
+            [
+              "0x6a",
+              29
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x700001e7f5",
+              0.029592803030303032
+            ],
+            [
+              "0x700001d5ed",
+              0.029592803030303032
+            ],
+            [
+              "0x700001ee7d",
+              0.022194602272727272
+            ],
+            [
+              "0x700001e841",
+              0.022194602272727272
+            ],
+            [
+              "0x700001e60d",
+              0.014796401515151516
+            ],
+            [
+              "0x7000014419",
+              0.014796401515151516
+            ],
+            [
+              "0x7000035515",
+              0.014796401515151516
+            ],
+            [
+              "0x7000016d45",
+              0.014796401515151516
+            ],
+            [
+              "0x7000016789",
+              0.014796401515151516
+            ],
+            [
+              "0x7000012711",
+              0.014796401515151516
+            ],
+            [
+              "0x7000014119",
+              0.014796401515151516
+            ],
+            [
+              "0x7000017d71",
+              0.014796401515151516
+            ]
+          ],
+          "name": "_RNCINvNtNtNtNtCsjQaZf4ng38o_26wasmvm_preview3_http_guest7exports4wasi4http7handler19__export_handle_cabiNtBc_7ServiceE0Bc_.llvm.796540852320957748",
+          "demangled": "wasmvm_preview3_http_guest::exports::wasi::http::handler::_export_handle_cabi::<wasmvm_preview3_http_guest::Service>::{closure#0} (.llvm.796540852320957748)"
+        },
+        {
+          "module": "e41621b16023",
+          "index": 146,
+          "tier": 2,
+          "start": 481045483536,
+          "end": 481045502276,
+          "sampleUs": 0.6436434659090908,
+          "share": 0.003865120618419299,
+          "instructions": 235,
+          "slots": 18,
+          "ops": [
+            [
+              "0x20",
+              70
+            ],
+            [
+              "0x41",
+              34
+            ],
+            [
+              "0x36",
+              17
+            ],
+            [
+              "0x21",
+              16
+            ],
+            [
+              "0x6a",
+              15
+            ],
+            [
+              "0xb",
+              14
+            ],
+            [
+              "0x2",
+              11
+            ],
+            [
+              "0xd",
+              9
+            ],
+            [
+              "0x22",
+              8
+            ],
+            [
+              "0x28",
+              8
+            ],
+            [
+              "0x10",
+              8
+            ],
+            [
+              "0x45",
+              6
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70008ba0e1",
+              0.07398200757575758
+            ],
+            [
+              "0x70008b9d2d",
+              0.03699100378787879
+            ],
+            [
+              "0x70008b9081",
+              0.029592803030303032
+            ],
+            [
+              "0x70008ba489",
+              0.029592803030303032
+            ],
+            [
+              "0x70008b9011",
+              0.022194602272727272
+            ],
+            [
+              "0x70008ba581",
+              0.022194602272727272
+            ],
+            [
+              "0x70008bd919",
+              0.022194602272727272
+            ],
+            [
+              "0x70008b9e75",
+              0.022194602272727272
+            ],
+            [
+              "0x70008bb0bd",
+              0.022194602272727272
+            ],
+            [
+              "0x70008b9d89",
+              0.014796401515151516
+            ],
+            [
+              "0x70008baccd",
+              0.014796401515151516
+            ],
+            [
+              "0x70008bb17d",
+              0.014796401515151516
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 194,
+          "tier": 0,
+          "start": 481039125884,
+          "end": 481039147604,
+          "sampleUs": 0.6362452651515151,
+          "share": 0.0038206939446443645,
+          "instructions": 366,
+          "slots": 8,
+          "ops": [
+            [
+              "0x20",
+              87
+            ],
+            [
+              "0x41",
+              67
+            ],
+            [
+              "0x36",
+              28
+            ],
+            [
+              "0x28",
+              25
+            ],
+            [
+              "0x22",
+              23
+            ],
+            [
+              "0xd",
+              22
+            ],
+            [
+              "0xb",
+              21
+            ],
+            [
+              "0x6a",
+              17
+            ],
+            [
+              "0x2",
+              17
+            ],
+            [
+              "0x21",
+              15
+            ],
+            [
+              "0x71",
+              11
+            ],
+            [
+              "0x72",
+              6
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70002a8ddd",
+              0.06658380681818181
+            ],
+            [
+              "0x70002a8df9",
+              0.044389204545454544
+            ],
+            [
+              "0x70002a8dad",
+              0.029592803030303032
+            ],
+            [
+              "0x70002a9a91",
+              0.029592803030303032
+            ],
+            [
+              "0x70002a9959",
+              0.022194602272727272
+            ],
+            [
+              "0x70002a8e7d",
+              0.022194602272727272
+            ],
+            [
+              "0x70002a9971",
+              0.014796401515151516
+            ],
+            [
+              "0x70002a9de1",
+              0.014796401515151516
+            ],
+            [
+              "0x70002a9b41",
+              0.014796401515151516
+            ],
+            [
+              "0x70002a951d",
+              0.014796401515151516
+            ],
+            [
+              "0x70002a9601",
+              0.014796401515151516
+            ],
+            [
+              "0x70002a9a3d",
+              0.014796401515151516
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 122,
+          "tier": 0,
+          "start": 481038186736,
+          "end": 481038222572,
+          "sampleUs": 0.6362452651515151,
+          "share": 0.0038206939446443645,
+          "instructions": 242,
+          "slots": 16,
+          "ops": [
+            [
+              "0x20",
+              77
+            ],
+            [
+              "0x28",
+              23
+            ],
+            [
+              "0x41",
+              18
+            ],
+            [
+              "0xb",
+              15
+            ],
+            [
+              "0x2",
+              13
+            ],
+            [
+              "0x36",
+              12
+            ],
+            [
+              "0xd",
+              11
+            ],
+            [
+              "0x22",
+              10
+            ],
+            [
+              "0x37",
+              10
+            ],
+            [
+              "0x6a",
+              10
+            ],
+            [
+              "0x29",
+              9
+            ],
+            [
+              "0x21",
+              8
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70001c3921",
+              0.07398200757575758
+            ],
+            [
+              "0x70001c3951",
+              0.051787405303030304
+            ],
+            [
+              "0x70001c3a55",
+              0.029592803030303032
+            ],
+            [
+              "0x70001c4eb9",
+              0.022194602272727272
+            ],
+            [
+              "0x70001c396d",
+              0.022194602272727272
+            ],
+            [
+              "0x70001c3e29",
+              0.022194602272727272
+            ],
+            [
+              "0x70001c403d",
+              0.014796401515151516
+            ],
+            [
+              "0x70001c4ead",
+              0.014796401515151516
+            ],
+            [
+              "0x70001c4425",
+              0.014796401515151516
+            ],
+            [
+              "0x70001c4269",
+              0.014796401515151516
+            ],
+            [
+              "0x70001c391d",
+              0.014796401515151516
+            ],
+            [
+              "0x70001c3e41",
+              0.014796401515151516
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 195,
+          "tier": 0,
+          "start": 481039147604,
+          "end": 481039183568,
+          "sampleUs": 0.5992542613636364,
+          "share": 0.003598560575769692,
+          "instructions": 448,
+          "slots": 15,
+          "ops": [
+            [
+              "0x20",
+              126
+            ],
+            [
+              "0x41",
+              73
+            ],
+            [
+              "0x22",
+              30
+            ],
+            [
+              "0xd",
+              28
+            ],
+            [
+              "0xb",
+              21
+            ],
+            [
+              "0x2",
+              20
+            ],
+            [
+              "0x72",
+              20
+            ],
+            [
+              "0x36",
+              20
+            ],
+            [
+              "0x6a",
+              19
+            ],
+            [
+              "0x71",
+              16
+            ],
+            [
+              "0x28",
+              15
+            ],
+            [
+              "0x49",
+              10
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70002ae285",
+              0.07398200757575758
+            ],
+            [
+              "0x70002ae2b5",
+              0.051787405303030304
+            ],
+            [
+              "0x70002aeaad",
+              0.022194602272727272
+            ],
+            [
+              "0x70002ae375",
+              0.022194602272727272
+            ],
+            [
+              "0x70002b11e5",
+              0.014796401515151516
+            ],
+            [
+              "0x70002b0851",
+              0.014796401515151516
+            ],
+            [
+              "0x70002b013d",
+              0.014796401515151516
+            ],
+            [
+              "0x70002ae38d",
+              0.014796401515151516
+            ],
+            [
+              "0x70002af265",
+              0.014796401515151516
+            ],
+            [
+              "0x70002b0009",
+              0.014796401515151516
+            ],
+            [
+              "0x70002ae281",
+              0.014796401515151516
+            ],
+            [
+              "0x70002afcb9",
+              0.007398200757575758
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 123,
+          "tier": 0,
+          "start": 481038222572,
+          "end": 481038242944,
+          "sampleUs": 0.48828125,
+          "share": 0.002932160469145675,
+          "instructions": 134,
+          "slots": 15,
+          "ops": [
+            [
+              "0x20",
+              39
+            ],
+            [
+              "0x41",
+              15
+            ],
+            [
+              "0x28",
+              15
+            ],
+            [
+              "0x22",
+              7
+            ],
+            [
+              "0xb",
+              7
+            ],
+            [
+              "0x2",
+              6
+            ],
+            [
+              "0x21",
+              6
+            ],
+            [
+              "0x36",
+              6
+            ],
+            [
+              "0xd",
+              5
+            ],
+            [
+              "0x6a",
+              5
+            ],
+            [
+              "0x6b",
+              3
+            ],
+            [
+              "0x10",
+              3
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70001cc51d",
+              0.059185606060606064
+            ],
+            [
+              "0x70001cc54d",
+              0.051787405303030304
+            ],
+            [
+              "0x70001cc4ed",
+              0.029592803030303032
+            ],
+            [
+              "0x70001cd2f5",
+              0.029592803030303032
+            ],
+            [
+              "0x70001cce41",
+              0.029592803030303032
+            ],
+            [
+              "0x70001cc569",
+              0.022194602272727272
+            ],
+            [
+              "0x70001ccb19",
+              0.022194602272727272
+            ],
+            [
+              "0x70001d1479",
+              0.022194602272727272
+            ],
+            [
+              "0x70001ccb61",
+              0.022194602272727272
+            ],
+            [
+              "0x70001cc56d",
+              0.022194602272727272
+            ],
+            [
+              "0x70001cc5cd",
+              0.014796401515151516
+            ],
+            [
+              "0x70001cc805",
+              0.014796401515151516
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 129,
+          "tier": 0,
+          "start": 481038250676,
+          "end": 481038265916,
+          "sampleUs": 0.4438920454545454,
+          "share": 0.0026656004264960682,
+          "instructions": 185,
+          "slots": 14,
+          "ops": [
+            [
+              "0x20",
+              50
+            ],
+            [
+              "0x41",
+              27
+            ],
+            [
+              "0x21",
+              14
+            ],
+            [
+              "0x6a",
+              12
+            ],
+            [
+              "0x28",
+              11
+            ],
+            [
+              "0xb",
+              10
+            ],
+            [
+              "0x36",
+              10
+            ],
+            [
+              "0x22",
+              8
+            ],
+            [
+              "0xd",
+              8
+            ],
+            [
+              "0x2",
+              7
+            ],
+            [
+              "0x45",
+              5
+            ],
+            [
+              "0x10",
+              4
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70001d38c9",
+              0.051787405303030304
+            ],
+            [
+              "0x70001d32e1",
+              0.029592803030303032
+            ],
+            [
+              "0x70001d3709",
+              0.022194602272727272
+            ],
+            [
+              "0x70001d3e09",
+              0.014796401515151516
+            ],
+            [
+              "0x70001d3a41",
+              0.014796401515151516
+            ],
+            [
+              "0x70001d39f9",
+              0.014796401515151516
+            ],
+            [
+              "0x70001d3315",
+              0.014796401515151516
+            ],
+            [
+              "0x70001d3db5",
+              0.014796401515151516
+            ],
+            [
+              "0x70001d32fd",
+              0.014796401515151516
+            ],
+            [
+              "0x70001d3d7d",
+              0.014796401515151516
+            ],
+            [
+              "0x70001d3cad",
+              0.014796401515151516
+            ],
+            [
+              "0x70001d3975",
+              0.014796401515151516
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 165,
+          "tier": 0,
+          "start": 481038701176,
+          "end": 481038796144,
+          "sampleUs": 0.4290956439393939,
+          "share": 0.0025767470789461993,
+          "instructions": 1083,
+          "slots": 26,
+          "ops": [
+            [
+              "0x20",
+              329
+            ],
+            [
+              "0x41",
+              156
+            ],
+            [
+              "0x6a",
+              96
+            ],
+            [
+              "0x22",
+              70
+            ],
+            [
+              "0x21",
+              63
+            ],
+            [
+              "0x36",
+              53
+            ],
+            [
+              "0xb",
+              48
+            ],
+            [
+              "0x2",
+              42
+            ],
+            [
+              "0xd",
+              42
+            ],
+            [
+              "0x74",
+              39
+            ],
+            [
+              "0x28",
+              33
+            ],
+            [
+              "0x3b",
+              21
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70002412a9",
+              0.044389204545454544
+            ],
+            [
+              "0x7000242c05",
+              0.029592803030303032
+            ],
+            [
+              "0x7000242f01",
+              0.029592803030303032
+            ],
+            [
+              "0x70002425d9",
+              0.022194602272727272
+            ],
+            [
+              "0x7000242bc9",
+              0.022194602272727272
+            ],
+            [
+              "0x7000243dd5",
+              0.014796401515151516
+            ],
+            [
+              "0x7000242475",
+              0.014796401515151516
+            ],
+            [
+              "0x7000249445",
+              0.014796401515151516
+            ],
+            [
+              "0x7000248989",
+              0.014796401515151516
+            ],
+            [
+              "0x7000242bed",
+              0.014796401515151516
+            ],
+            [
+              "0x70002437bd",
+              0.014796401515151516
+            ],
+            [
+              "0x70002412d9",
+              0.014796401515151516
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 174,
+          "tier": 0,
+          "start": 481038893436,
+          "end": 481038911800,
+          "sampleUs": 0.39950284090909094,
+          "share": 0.0023990403838464614,
+          "instructions": 127,
+          "slots": 8,
+          "ops": [
+            [
+              "0x20",
+              38
+            ],
+            [
+              "0x28",
+              19
+            ],
+            [
+              "0x41",
+              9
+            ],
+            [
+              "0xb",
+              9
+            ],
+            [
+              "0x2",
+              8
+            ],
+            [
+              "0x21",
+              7
+            ],
+            [
+              "0x22",
+              6
+            ],
+            [
+              "0x36",
+              6
+            ],
+            [
+              "0xd",
+              6
+            ],
+            [
+              "0x11",
+              4
+            ],
+            [
+              "0x24",
+              2
+            ],
+            [
+              "0x1b",
+              2
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70002704a9",
+              0.051787405303030304
+            ],
+            [
+              "0x7000270961",
+              0.029592803030303032
+            ],
+            [
+              "0x70002701dd",
+              0.022194602272727272
+            ],
+            [
+              "0x70002701b1",
+              0.022194602272727272
+            ],
+            [
+              "0x7000270671",
+              0.022194602272727272
+            ],
+            [
+              "0x7000270da9",
+              0.022194602272727272
+            ],
+            [
+              "0x70002704c1",
+              0.022194602272727272
+            ],
+            [
+              "0x7000270a91",
+              0.022194602272727272
+            ],
+            [
+              "0x7000270651",
+              0.014796401515151516
+            ],
+            [
+              "0x7000270c35",
+              0.014796401515151516
+            ],
+            [
+              "0x7000270d71",
+              0.014796401515151516
+            ],
+            [
+              "0x7000273815",
+              0.007398200757575758
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 189,
+          "tier": 0,
+          "start": 481038974740,
+          "end": 481038976944,
+          "sampleUs": 0.3847064393939394,
+          "share": 0.0023101870362965925,
+          "instructions": 13,
+          "slots": 4,
+          "ops": [
+            [
+              "0x20",
+              4
+            ],
+            [
+              "0x10",
+              2
+            ],
+            [
+              "0xb",
+              2
+            ],
+            [
+              "0x2",
+              1
+            ],
+            [
+              "0x41",
+              1
+            ],
+            [
+              "0x49",
+              1
+            ],
+            [
+              "0xd",
+              1
+            ],
+            [
+              "0xf",
+              1
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x7000283f95",
+              0.08138020833333333
+            ],
+            [
+              "0x7000283f75",
+              0.03699100378787879
+            ],
+            [
+              "0x7000283f41",
+              0.029592803030303032
+            ],
+            [
+              "0x7000283f45",
+              0.022194602272727272
+            ],
+            [
+              "0x7000283fc9",
+              0.022194602272727272
+            ],
+            [
+              "0x7000284239",
+              0.022194602272727272
+            ],
+            [
+              "0x7000283fb5",
+              0.022194602272727272
+            ],
+            [
+              "0x7000284009",
+              0.022194602272727272
+            ],
+            [
+              "0x700028433d",
+              0.014796401515151516
+            ],
+            [
+              "0x7000283f91",
+              0.014796401515151516
+            ],
+            [
+              "0x70002840b9",
+              0.014796401515151516
+            ],
+            [
+              "0x7000283f49",
+              0.014796401515151516
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 120,
+          "tier": 0,
+          "start": 481038172160,
+          "end": 481038182728,
+          "sampleUs": 0.3847064393939394,
+          "share": 0.0023101870362965925,
+          "instructions": 134,
+          "slots": 13,
+          "ops": [
+            [
+              "0x20",
+              37
+            ],
+            [
+              "0x21",
+              15
+            ],
+            [
+              "0x41",
+              12
+            ],
+            [
+              "0xb",
+              12
+            ],
+            [
+              "0x2",
+              11
+            ],
+            [
+              "0xd",
+              8
+            ],
+            [
+              "0xc",
+              7
+            ],
+            [
+              "0x36",
+              6
+            ],
+            [
+              "0x22",
+              5
+            ],
+            [
+              "0x28",
+              4
+            ],
+            [
+              "0x6a",
+              4
+            ],
+            [
+              "0x10",
+              3
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70001c0061",
+              0.06658380681818181
+            ],
+            [
+              "0x70001c00c9",
+              0.044389204545454544
+            ],
+            [
+              "0x70001c0031",
+              0.03699100378787879
+            ],
+            [
+              "0x70001c0131",
+              0.029592803030303032
+            ],
+            [
+              "0x70001c0369",
+              0.022194602272727272
+            ],
+            [
+              "0x70001c0c3d",
+              0.014796401515151516
+            ],
+            [
+              "0x70001c077d",
+              0.014796401515151516
+            ],
+            [
+              "0x70001c0535",
+              0.014796401515151516
+            ],
+            [
+              "0x70001c0731",
+              0.014796401515151516
+            ],
+            [
+              "0x70001c0c61",
+              0.014796401515151516
+            ],
+            [
+              "0x70001c0c95",
+              0.007398200757575758
+            ],
+            [
+              "0x70001c0485",
+              0.007398200757575758
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 119,
+          "tier": 0,
+          "start": 481038164540,
+          "end": 481038172160,
+          "sampleUs": 0.3625118371212121,
+          "share": 0.002176907014971789,
+          "instructions": 86,
+          "slots": 12,
+          "ops": [
+            [
+              "0x20",
+              25
+            ],
+            [
+              "0x41",
+              14
+            ],
+            [
+              "0x22",
+              6
+            ],
+            [
+              "0x28",
+              5
+            ],
+            [
+              "0x10",
+              4
+            ],
+            [
+              "0xb",
+              4
+            ],
+            [
+              "0x1b",
+              4
+            ],
+            [
+              "0x2",
+              3
+            ],
+            [
+              "0xd",
+              3
+            ],
+            [
+              "0x0",
+              3
+            ],
+            [
+              "0x6a",
+              3
+            ],
+            [
+              "0x24",
+              2
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x70001be2b9",
+              0.051787405303030304
+            ],
+            [
+              "0x70001be26d",
+              0.051787405303030304
+            ],
+            [
+              "0x70001beb79",
+              0.029592803030303032
+            ],
+            [
+              "0x70001be505",
+              0.022194602272727272
+            ],
+            [
+              "0x70001be29d",
+              0.022194602272727272
+            ],
+            [
+              "0x70001be9dd",
+              0.014796401515151516
+            ],
+            [
+              "0x70001be4dd",
+              0.014796401515151516
+            ],
+            [
+              "0x70001be365",
+              0.014796401515151516
+            ],
+            [
+              "0x70001be269",
+              0.014796401515151516
+            ],
+            [
+              "0x70001be959",
+              0.007398200757575758
+            ],
+            [
+              "0x70001be5a9",
+              0.007398200757575758
+            ],
+            [
+              "0x70001be2cd",
+              0.007398200757575758
+            ]
+          ]
+        },
+        {
+          "module": "e41621b16023",
+          "index": 150,
+          "tier": 0,
+          "start": 481038462352,
+          "end": 481038466868,
+          "sampleUs": 0.3625118371212121,
+          "share": 0.002176907014971789,
+          "instructions": 66,
+          "slots": 10,
+          "ops": [
+            [
+              "0x41",
+              14
+            ],
+            [
+              "0x20",
+              13
+            ],
+            [
+              "0xb",
+              6
+            ],
+            [
+              "0x2",
+              5
+            ],
+            [
+              "0x21",
+              5
+            ],
+            [
+              "0x36",
+              3
+            ],
+            [
+              "0xc",
+              3
+            ],
+            [
+              "0x6a",
+              3
+            ],
+            [
+              "0x24",
+              2
+            ],
+            [
+              "0xad",
+              2
+            ],
+            [
+              "0x23",
+              1
+            ],
+            [
+              "0x6b",
+              1
+            ]
+          ],
+          "exports": [],
+          "hotPCs": [
+            [
+              "0x7000206df1",
+              0.11837121212121213
+            ],
+            [
+              "0x7000206e0d",
+              0.029592803030303032
+            ],
+            [
+              "0x7000206dbd",
+              0.022194602272727272
+            ],
+            [
+              "0x7000207569",
+              0.022194602272727272
+            ],
+            [
+              "0x7000206ff9",
+              0.014796401515151516
+            ],
+            [
+              "0x7000206fe1",
+              0.014796401515151516
+            ],
+            [
+              "0x70002070f1",
+              0.014796401515151516
+            ],
+            [
+              "0x7000207189",
+              0.014796401515151516
+            ],
+            [
+              "0x7000206eb9",
+              0.014796401515151516
+            ],
+            [
+              "0x7000206dc1",
+              0.014796401515151516
+            ],
+            [
+              "0x7000207565",
+              0.007398200757575758
+            ],
+            [
+              "0x7000207069",
+              0.007398200757575758
+            ]
+          ]
+        }
+      ],
+      "totalSampleUsPerRequest": 166.52610085227275,
+      "mappedJITUsPerRequest": 24.53983191287879,
+      "unknownUsPerRequest": 0.029592803030303032
+    }
+  },
+  "environment": {
+    "os": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0.1\nBuildVersion:\t\t26A434",
+    "machine": "arm64",
+    "cpu": "Apple M4 Max",
+    "memory": "137438953472",
+    "load": "22:51  up 29 days,  5:17, 49 users, load averages: 5.52 5.84 5.66",
+    "cpuProcesses": [
+      {
+        "pid": 32820,
+        "cpuPercent": 146.3,
+        "executable": "/Users/lijie/source/goplus/wasmvm/artifacts/p3io-service-20261110/reference-build/wasmtime-p3-reference"
+      },
+      {
+        "pid": 29926,
+        "cpuPercent": 37.1,
+        "executable": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.81/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)"
+      },
+      {
+        "pid": 614,
+        "cpuPercent": 34.2,
+        "executable": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon"
+      },
+      {
+        "pid": 1582,
+        "cpuPercent": 32.0,
+        "executable": "/Applications/iTerm.app/Contents/MacOS/iTerm2"
+      },
+      {
+        "pid": 83487,
+        "cpuPercent": 11.1,
+        "executable": "/Applications/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper vmgr -build-id macho:05775f98b4bb3d75b88520220872c248 -handoff"
+      },
+      {
+        "pid": 32851,
+        "cpuPercent": 6.9,
+        "executable": "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -"
+      },
+      {
+        "pid": 1593,
+        "cpuPercent": 6.8,
+        "executable": "/Applications/Surge.app/Contents/MacOS/Surge"
+      },
+      {
+        "pid": 7550,
+        "cpuPercent": 6.3,
+        "executable": "codex"
+      },
+      {
+        "pid": 54515,
+        "cpuPercent": 5.2,
+        "executable": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.81/Helpers/Google Chrome Helper (Aperitif).app/Contents/MacOS/Google Chrome Helper (Aperitif)"
+      },
+      {
+        "pid": 45221,
+        "cpuPercent": 4.8,
+        "executable": "/Users/lijie/Library/Android/sdk/emulator/qemu/darwin-aarch64/qemu-system-aarch64-headless -avd DastAIReviewAPI35 -no-snapshot-save -no-audio -no-boot-anim -no-window -memory 4096 -cores 4"
+      },
+      {
+        "pid": 67946,
+        "cpuPercent": 4.3,
+        "executable": "/Applications/ego lite.app/Contents/MacOS/ego lite"
+      },
+      {
+        "pid": 74240,
+        "cpuPercent": 3.6,
+        "executable": "/System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine"
+      }
+    ],
+    "qualification": "Local diagnostic event, default scheduler/power/cache; no affinity or controlled host isolation. No concurrent owned tests/builds during measured batches; raw A/A controls retained."
+  },
+  "metadata": {
+    "base": {
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/host-requests-20261111/head-go-runner",
+      "SHA256": "39a87417656b2c7ccc77b2fc61ef2215b23f4b9ec5016acc10aee27d7920dab6",
+      "GoBuild": "/Users/lijie/source/goplus/wasmvm/artifacts/host-requests-20261111/head-go-runner: go1.27.3\n\tpath\tgithub.com/cpunion/wasmvm/benchmarks/p3io\n\tmod\tgithub.com/cpunion/wasmvm/benchmarks/p3io\tv0.0.0-20261111005536-4ce75302c8de\t\n\tdep\tgithub.com/cpunion/wasmvm\tv0.0.0\n\t=>\t../..\t(devel)\t\n\t\n\tdep\tgolang.org/x/net\tv0.61.0\th1:RR+6j/BTBCrggOLugxa+66R8FvoN6MHlzDlZIbN9YFw=\n\tdep\tgolang.org/x/sys\tv0.49.0\th1:XbzkgYJHdqh/8m2Uu0W/dQv8nktxx4BFHp1M0gROTXA=\n\tdep\tgolang.org/x/text\tv0.43.0\th1:1QivrlhwAsnMOcqgOdl9my7s9OyZl8O5/UGUTJVXoWc=\n\tbuild\t-buildmode=exe\n\tbuild\t-compiler=gc\n\tbuild\tCGO_ENABLED=1\n\tbuild\tCGO_CFLAGS=\n\tbuild\tCGO_CPPFLAGS=\n\tbuild\tCGO_CXXFLAGS=\n\tbuild\tCGO_LDFLAGS=\n\tbuild\tGOARCH=arm64\n\tbuild\tGOOS=darwin\n\tbuild\tGOARM64=v8.0\n\tbuild\tvcs=git\n\tbuild\tvcs.revision=4ce75302c8def7dfd85680a33d2e7a55593c8dfa\n\tbuild\tvcs.time=2026-11-11T00:55:36Z\n\tbuild\tvcs.modified=false\n",
+      "libraries": "/Users/lijie/source/goplus/wasmvm/artifacts/host-requests-20261111/head-go-runner:\n\t/usr/lib/libresolv.9.dylib (compatibility version 1.0.0, current version 1.0.0)\n\t/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 5027.0.69)\n\t/System/Library/Frameworks/Security.framework/Versions/A/Security (compatibility version 1.0.0, current version 62460.1.2)\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.0.0)\n"
+    },
+    "reader": {
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/http-snapshot-20261111/go-runner",
+      "SHA256": "6713d840ea77dfa644b3df3fa63326689c026d82599ab9c2b2370439628b0b48",
+      "GoBuild": "/Users/lijie/source/goplus/wasmvm/artifacts/http-snapshot-20261111/go-runner: go1.27.3\n\tpath\tgithub.com/cpunion/wasmvm/benchmarks/p3io\n\tmod\tgithub.com/cpunion/wasmvm/benchmarks/p3io\tv0.0.0-20261111144945-457921f6857a\t\n\tdep\tgithub.com/cpunion/wasmvm\tv0.0.0\n\t=>\t../..\t(devel)\t\n\t\n\tdep\tgolang.org/x/net\tv0.61.0\th1:RR+6j/BTBCrggOLugxa+66R8FvoN6MHlzDlZIbN9YFw=\n\tdep\tgolang.org/x/sys\tv0.49.0\th1:XbzkgYJHdqh/8m2Uu0W/dQv8nktxx4BFHp1M0gROTXA=\n\tdep\tgolang.org/x/text\tv0.43.0\th1:1QivrlhwAsnMOcqgOdl9my7s9OyZl8O5/UGUTJVXoWc=\n\tbuild\t-buildmode=exe\n\tbuild\t-compiler=gc\n\tbuild\tCGO_ENABLED=1\n\tbuild\tCGO_CFLAGS=\n\tbuild\tCGO_CPPFLAGS=\n\tbuild\tCGO_CXXFLAGS=\n\tbuild\tCGO_LDFLAGS=\n\tbuild\tGOARCH=arm64\n\tbuild\tGOOS=darwin\n\tbuild\tGOARM64=v8.0\n\tbuild\tvcs=git\n\tbuild\tvcs.revision=457921f6857abb91b483c684c69ecf5906342012\n\tbuild\tvcs.time=2026-11-11T14:49:45Z\n\tbuild\tvcs.modified=false\n",
+      "libraries": "/Users/lijie/source/goplus/wasmvm/artifacts/http-snapshot-20261111/go-runner:\n\t/usr/lib/libresolv.9.dylib (compatibility version 1.0.0, current version 1.0.0)\n\t/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 5027.0.69)\n\t/System/Library/Frameworks/Security.framework/Versions/A/Security (compatibility version 1.0.0, current version 62460.1.2)\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.0.0)\n"
+    },
+    "snapshot": {
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/http-snapshot-20261111/go-runner",
+      "SHA256": "6713d840ea77dfa644b3df3fa63326689c026d82599ab9c2b2370439628b0b48",
+      "GoBuild": "/Users/lijie/source/goplus/wasmvm/artifacts/http-snapshot-20261111/go-runner: go1.27.3\n\tpath\tgithub.com/cpunion/wasmvm/benchmarks/p3io\n\tmod\tgithub.com/cpunion/wasmvm/benchmarks/p3io\tv0.0.0-20261111144945-457921f6857a\t\n\tdep\tgithub.com/cpunion/wasmvm\tv0.0.0\n\t=>\t../..\t(devel)\t\n\t\n\tdep\tgolang.org/x/net\tv0.61.0\th1:RR+6j/BTBCrggOLugxa+66R8FvoN6MHlzDlZIbN9YFw=\n\tdep\tgolang.org/x/sys\tv0.49.0\th1:XbzkgYJHdqh/8m2Uu0W/dQv8nktxx4BFHp1M0gROTXA=\n\tdep\tgolang.org/x/text\tv0.43.0\th1:1QivrlhwAsnMOcqgOdl9my7s9OyZl8O5/UGUTJVXoWc=\n\tbuild\t-buildmode=exe\n\tbuild\t-compiler=gc\n\tbuild\tCGO_ENABLED=1\n\tbuild\tCGO_CFLAGS=\n\tbuild\tCGO_CPPFLAGS=\n\tbuild\tCGO_CXXFLAGS=\n\tbuild\tCGO_LDFLAGS=\n\tbuild\tGOARCH=arm64\n\tbuild\tGOOS=darwin\n\tbuild\tGOARM64=v8.0\n\tbuild\tvcs=git\n\tbuild\tvcs.revision=457921f6857abb91b483c684c69ecf5906342012\n\tbuild\tvcs.time=2026-11-11T14:49:45Z\n\tbuild\tvcs.modified=false\n",
+      "libraries": "/Users/lijie/source/goplus/wasmvm/artifacts/http-snapshot-20261111/go-runner:\n\t/usr/lib/libresolv.9.dylib (compatibility version 1.0.0, current version 1.0.0)\n\t/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 5027.0.69)\n\t/System/Library/Frameworks/Security.framework/Versions/A/Security (compatibility version 1.0.0, current version 62460.1.2)\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.0.0)\n"
+    },
+    "wasmtime": {
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/p3io-service-20261110/reference-build/wasmtime-p3-reference",
+      "SHA256": "561370163342e51593964bc6615ca28ebf1831c22132412ce9c6c44981c54f08",
+      "GoBuild": "/Users/lijie/source/goplus/wasmvm/artifacts/p3io-service-20261110/reference-build/wasmtime-p3-reference: go1.27.3\n\tpath\tgithub.com/cpunion/wasmvm/benchmarks/p3io\n\tmod\tgithub.com/cpunion/wasmvm/benchmarks/p3io\t(devel)\t\n\tdep\tgithub.com/cpunion/wasmvm\tv0.0.0\n\t=>\t../..\t(devel)\t\n\t\n\tbuild\t-buildmode=exe\n\tbuild\t-compiler=gc\n\tbuild\t-tags=p3reference\n\tbuild\tCGO_ENABLED=1\n\tbuild\tCGO_CFLAGS=\n\tbuild\tCGO_CPPFLAGS=\n\tbuild\tCGO_CXXFLAGS=\n\tbuild\tCGO_LDFLAGS=\"/Users/lijie/source/goplus/wasmvm/artifacts/p3io-next-20261110/rust-target/release/libwasmvm_p3_reference.a -liconv -lSystem -lc -lm\"\n\tbuild\tGOARCH=arm64\n\tbuild\tGOOS=darwin\n\tbuild\tGOARM64=v8.0\n\tbuild\tvcs=git\n\tbuild\tvcs.revision=2affa88f01727db9694664c53540656c26286f84\n\tbuild\tvcs.time=2026-11-09T17:13:34Z\n\tbuild\tvcs.modified=false\n",
+      "libraries": "/Users/lijie/source/goplus/wasmvm/artifacts/p3io-service-20261110/reference-build/wasmtime-p3-reference:\n\t/usr/lib/libiconv.2.dylib (compatibility version 7.0.0, current version 7.0.0)\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.0.0)\n\t/usr/lib/libresolv.9.dylib (compatibility version 1.0.0, current version 1.0.0)\n\t/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 5027.0.69)\n\t/System/Library/Frameworks/Security.framework/Versions/A/Security (compatibility version 1.0.0, current version 62460.1.2)\n"
+    }
+  },
+  "counts": {
+    "productionProcesses": 48,
+    "measuredResponses": 5898240,
+    "counterWindowResponses": 5701632,
+    "screenProcesses": 48,
+    "screenMeasuredResponses": 589824
+  },
+  "checksums": {
+    "artifacts/http-snapshot-20261111/source.tar": "16a0264c73bbd483ecad2bd48d010cebc7416929f806f2bb40f5be2233383d22",
+    "artifacts/http-snapshot-20261111/source-plan.json": "72508afac0004a4612f3509c3893dd8f1c73112320194140150078d427b6c9b9",
+    "artifacts/http-snapshot-20261111/measure.py": "be0e72ed13e512395cf097b70c3c7b7450557ccbae4370b79a3f8870dc575e1b",
+    "artifacts/http-snapshot-20261111/screen-plan.json": "11bc3467748fae0ad31c56c4fc2e44c2da5919c421ce980c16d47a391aec6712",
+    "artifacts/http-snapshot-20261111/screen-rows.jsonl": "a34b96637b55a094aee0df8aa2c664ff96a33c71365ea9e4ad855404fe1b7c46",
+    "artifacts/http-snapshot-20261111/environment.json": "cb86ae4f40c889f66ac3b2eaff5723847bf3015a41a29cf7c47e621dc0927561",
+    "artifacts/http-snapshot-20261111/go-runner": "6713d840ea77dfa644b3df3fa63326689c026d82599ab9c2b2370439628b0b48",
+    "artifacts/go-path-breakdown-20261111/source-plan.json": "e93412ee63bd5eb6989b03bef758bbfa8c358d1ed5af6731da8106194e159789",
+    "artifacts/go-path-breakdown-20261111/screen.py": "9e263522ae3cd9fa92fcb26e120beb772378eb38221c9c81c5a7536756a9fc19",
+    "artifacts/go-path-breakdown-20261111/screen-rows.jsonl": "f1a27843f960942a374430af58beb7d8b1078b415d6840202953d678b42261bd",
+    "artifacts/go-path-breakdown-20261111/jit-profile/jit-attribution.json": "fe07de44d67ec7df7619f83ab6be5e96cf12db7034e0e96831a6f4cc76f5edd6",
+    "artifacts/go-path-breakdown-20261111/jit-large-profile/jit-attribution.json": "894f1a503a05f63686ac97bd5651470db3414c99cc6fbcd37bebd36f4367c2fa",
+    "artifacts/go-path-breakdown-20261111/function-names.json": "1e1e4e716b76f5500b469dfa43955937b7ada88547f5256c0d0cef43e51c8253",
+    "artifacts/go-path-breakdown-20261111/source/internal/engine/nativeexec/diagnostic_map.go": "b30e53b00ce103ae9fd388ca363fccda3d9aaff0757c8b6b7e496d36845d5d4e",
+    "artifacts/go-path-breakdown-20261111/source/internal/platform/native/diagnostic_map.go": "8b2fe90b3caf1daaa8379b7df5bce1456e36febae058984849fc72a39273e7b8",
+    "artifacts/go-path-breakdown-20261111/source/pkg/wasi/preview3/diagnostic_http.go": "ee16fe2e11c903c9e75e32591f7fa546d33061fbeda4bbb9e2758b7e67413377",
+    "publishedEvidence": "da68a05c3d8a1ea165b13ab62d91268130aa8c0c0332f494fa7eec895055e7f6",
+    "artifacts/http-snapshot-20261111/go-semantics.log": "1f420ebd61226a6dd73d96aaf03734cc56de0836dbcc642f07f3f88c31c33e78",
+    "artifacts/http-snapshot-20261111/go-race.log": "b36f07ca5b30ce1026db87e7cdcb83a829c48679c4d044da60c8e8ed18f5aeba",
+    "artifacts/http-snapshot-20261111/p3io-tests.log": "e5f8e9d8068733a78416aca1e503189d214246385bed3b8df41c2f962a04c3e1",
+    "artifacts/http-snapshot-20261111/go-vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "artifacts/http-snapshot-20261111/go-nocgo.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "artifacts/http-snapshot-20261111/llgo-semantics.log": "cab8d7fb0cb9058a5da48b02aaaf0cd374608df89cde5291b0e2b5f297060b09",
+    "artifacts/http-snapshot-20261111/llgo-p3io.log": "46fce710cb6693f89c015d5f1778d84274bbaa1c581fc908cde6da9ec7487c8c",
+    "artifacts/http-snapshot-20261111/coverage.out": "ef6cf0c79fa5f7c8345e332017ceb9a21a88e837fccecbb28c86caf5161e99d2",
+    "artifacts/http-snapshot-20261111/p3io-coverage.out": "3c317252801d8937ff0239014a0ef733adc93f11bff388306243ccd37c90731b",
+    "artifacts/http-snapshot-20261111/coverage-check.log": "57811efd3c55739c38b09de4ecccc96deac14bf9ddceed3f40f7fb7ef747cb68",
+    "artifacts/http-snapshot-20261111/p3io-coverage-check.log": "a94a4064c46d5b437c47312568bc73d57463535c8d8ce5d7d2014d95a34a4248",
+    "artifacts/http-snapshot-20261111/linux-semantics.sh": "d0271fd2fa5e559a4173af342b58236ce497e549c74b5e786874523e45ee57ef",
+    "artifacts/http-snapshot-20261111/linux-semantics.log": "5db144ec706ac5fb6a1d71174a9e475950500ca894ea085ac222a2862831f7fd",
+    "artifacts/http-snapshot-20261111/linux-validation.json": "96e1f9b8d72ad6cb8bfda74e2115c92e12db73a7a090dee232bde7b1189523ee",
+    "artifacts/http-snapshot-20261111/go-validation.py": "95295bff4b2dff8cca354c23780244455e0f0df1a6e04cf87d0977a87f11f720",
+    "artifacts/http-snapshot-20261111/llgo-validation.py": "8adb4161698f63416965f47cf479e2ab7329fafdc02ae9f8f58c24cf76a7a05a"
+  },
+  "qualification": "Three fixed randomized rounds on a local default-scheduled host, no concurrent owned builds/tests while timing. A/A is an advisory stability check, not full controlled milestone acceptance. Immutable input is explicit, ordinary Readers remain scheduled. Reference Go allocation counters exclude Rust/native allocations. Running-only JIT profiles are single diagnostic observations, not engine-paired causal subtraction.",
+  "validation": {
+    "go-validation.json": [
+      {
+        "log": "go-semantics.log",
+        "command": [
+          "go",
+          "test",
+          "-count=1",
+          "-timeout=8m",
+          "-coverpkg=./internal/...,./pkg/...",
+          "-coverprofile=/Users/lijie/source/goplus/wasmvm/artifacts/http-snapshot-20261111/coverage.out",
+          "./internal/...",
+          "./pkg/..."
+        ],
+        "exitCode": 0,
+        "wallNs": 55534364250
+      },
+      {
+        "log": "go-race.log",
+        "command": [
+          "go",
+          "test",
+          "-race",
+          "-count=1",
+          "-timeout=3m",
+          "-run",
+          "TestSnapshot|TestHTTP|TestWorldIndependentRustHTTPService",
+          "./pkg/wasi/preview3"
+        ],
+        "exitCode": 0,
+        "wallNs": 25267777042
+      },
+      {
+        "log": "p3io-tests.log",
+        "command": [
+          "go",
+          "-C",
+          "benchmarks/p3io",
+          "test",
+          "-count=1",
+          "-timeout=3m",
+          "-coverprofile=/Users/lijie/source/goplus/wasmvm/artifacts/http-snapshot-20261111/p3io-coverage.out",
+          "./..."
+        ],
+        "exitCode": 0,
+        "wallNs": 4651449416
+      },
+      {
+        "log": "go-vet.log",
+        "command": [
+          "go",
+          "vet",
+          "./..."
+        ],
+        "exitCode": 0,
+        "wallNs": 1860428041
+      },
+      {
+        "log": "go-nocgo.log",
+        "command": [
+          "go",
+          "build",
+          "./..."
+        ],
+        "exitCode": 0,
+        "wallNs": 1696673708
+      }
+    ],
+    "llgo-validation.json": {
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-3d92a58",
+        "test",
+        "-O3",
+        "-lto=full",
+        "-count=1",
+        "-timeout=8m",
+        "./pkg/wasi/preview3"
+      ],
+      "exitCode": 0,
+      "wallNs": 105328491125
+    },
+    "llgo-p3io-validation.json": {
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-3d92a58",
+        "test",
+        "-O3",
+        "-lto=full",
+        "-count=1",
+        "-timeout=3m",
+        "./..."
+      ],
+      "exitCode": 0,
+      "wallNs": 60555142166
+    },
+    "coverage-check.log": [
+      "github.com/cpunion/wasmvm/internal/bench/phase: 95.30% (284/298 statements)",
+      "github.com/cpunion/wasmvm/internal/bench/service: 95.04% (115/121 statements)",
+      "github.com/cpunion/wasmvm/internal/binary: 100.00% (78/78 statements)",
+      "github.com/cpunion/wasmvm/internal/cli: 97.82% (582/595 statements)",
+      "github.com/cpunion/wasmvm/internal/compiler/codegen: 98.04% (9105/9287 statements)",
+      "github.com/cpunion/wasmvm/internal/compiler/ir: 96.78% (301/311 statements)",
+      "github.com/cpunion/wasmvm/internal/compiler/lower: 99.08% (324/327 statements)",
+      "github.com/cpunion/wasmvm/internal/compiler/nativeabi: 100.00% (34/34 statements)",
+      "github.com/cpunion/wasmvm/internal/compiler/slots: 98.58% (348/353 statements)",
+      "github.com/cpunion/wasmvm/internal/component/canonical: 94.37% (1474/1562 statements)",
+      "github.com/cpunion/wasmvm/internal/component/decode: 96.45% (353/366 statements)",
+      "github.com/cpunion/wasmvm/internal/component/validate: 92.12% (2221/2411 statements)",
+      "github.com/cpunion/wasmvm/internal/core/constant: 100.00% (8/8 statements)",
+      "github.com/cpunion/wasmvm/internal/core/decode: 97.05% (527/543 statements)",
+      "github.com/cpunion/wasmvm/internal/core/module: 98.30% (289/294 statements)",
+      "github.com/cpunion/wasmvm/internal/core/validate: 93.58% (1093/1168 statements)",
+      "github.com/cpunion/wasmvm/internal/engine/execute: 92.31% (1104/1196 statements)",
+      "github.com/cpunion/wasmvm/internal/engine/memory: 92.79% (489/527 statements)",
+      "github.com/cpunion/wasmvm/internal/engine/nativeexec: 92.47% (540/584 statements)",
+      "github.com/cpunion/wasmvm/internal/engine/numeric: 100.00% (268/268 statements)",
+      "github.com/cpunion/wasmvm/internal/engine/simd: 98.06% (303/309 statements)",
+      "github.com/cpunion/wasmvm/internal/engine/state: 95.26% (1507/1582 statements)",
+      "github.com/cpunion/wasmvm/internal/platform/native: 95.05% (422/444 statements)",
+      "github.com/cpunion/wasmvm/internal/wasi/host: 93.68% (578/617 statements)",
+      "github.com/cpunion/wasmvm/pkg/component: 92.46% (3251/3516 statements)",
+      "github.com/cpunion/wasmvm/pkg/vm: 93.67% (1479/1579 statements)",
+      "github.com/cpunion/wasmvm/pkg/wasi/preview1: 90.93% (1233/1356 statements)",
+      "github.com/cpunion/wasmvm/pkg/wasi/preview2: 90.87% (4830/5315 statements)",
+      "github.com/cpunion/wasmvm/pkg/wasi/preview3: 91.46% (4189/4580 statements)",
+      "github.com/cpunion/wasmvm/pkg/wasi/threads: 99.12% (224/226 statements)",
+      "github.com/cpunion/wasmvm/pkg/wasm: 95.48% (169/177 statements)"
+    ],
+    "p3io-coverage-check.log": [
+      "github.com/cpunion/wasmvm/benchmarks/p3io: 96.18% (252/262 statements)"
+    ],
+    "linux": {
+      "exitCode": 0,
+      "compilerProfile": "Go1.27.3 and LLGo3d92a58 -O3 -lto=full",
+      "platform": "linux/amd64 Docker",
+      "command": "docker run --rm --platform linux/amd64 ... llgo-wails-ubuntu24-amd64:go1.27-llvm22 bash /out/linux-semantics.sh",
+      "groups": [
+        "Go HTTP/snapshot/Rust guest provider tests",
+        "LLGo HTTP/snapshot/Rust guest provider tests",
+        "Go full p3io module",
+        "LLGo full p3io module"
+      ],
+      "log": "go version go1.27.3 linux/amd64\n22.1.8\nx86_64\nok  \tgithub.com/cpunion/wasmvm/pkg/wasi/preview3\t4.099s\nok  \tgithub.com/cpunion/wasmvm/pkg/wasi/preview3\t5.081s\nok  \tgithub.com/cpunion/wasmvm/benchmarks/p3io\t2.626s\nok  \tgithub.com/cpunion/wasmvm/benchmarks/p3io\t3.360s\n",
+      "scriptSHA256": "d0271fd2fa5e559a4173af342b58236ce497e549c74b5e786874523e45ee57ef"
+    },
+    "frozenBuildInputs": 912,
+    "ciShards": "32 root packages, exactly once across eight LLGo shards"
+  },
+  "fixture": {
+    "path": "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+    "SHA256": "1d583dc670704a021f06d8437bc8834c8adb9feaf1a654cb16faa7e1de3bbdd2",
+    "candidateAndReferenceIdentical": true
+  }
+}

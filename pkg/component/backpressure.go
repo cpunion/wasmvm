@@ -8,22 +8,22 @@ import (
 )
 
 func (in *Instance) backpressureBuiltin(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
-	fn, err := caller.NewFunction(plan.Signature, func(*vm.Caller, []vm.Value) ([]vm.Value, error) {
+	fn, err := caller.NewScalarFunction(plan.Signature, func(*vm.Caller, []uint64) error {
 		if n.failed {
-			return nil, wasm.ErrTrap
+			return wasm.ErrTrap
 		}
 		if plan.Definition.Op == 0x24 {
 			n.backpressure++
 			if n.backpressure == 1<<16 {
-				return nil, wasm.ErrTrap
+				return wasm.ErrTrap
 			}
 		} else {
 			if n.backpressure == 0 {
-				return nil, wasm.ErrTrap
+				return wasm.ErrTrap
 			}
 			n.backpressure--
 		}
-		return nil, nil
+		return nil
 	})
 	if err == nil {
 		n.add(item{sort: model.CoreFunctionSort, core: fn})

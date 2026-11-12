@@ -167,7 +167,11 @@ func liftArguments(codec *canonical.Codec, plan *validate.CanonicalFunction, fla
 	if err != nil {
 		return nil, err
 	}
-	var args []Value
+	return liftFlatArguments(codec, plan, slots)
+}
+
+func liftFlatArguments(codec *canonical.Codec, plan *validate.CanonicalFunction, slots []canonical.Slot) ([]Value, error) {
+	args := make([]Value, 0, min(len(plan.Type.Parameters), canonical.MaxFlatParams))
 	for _, p := range plan.Type.Parameters {
 		layout, err := codec.Layouts.Build(p.Type)
 		if err != nil {

@@ -19,13 +19,13 @@ func (e *Execution) runCall() Status {
 	values := e.values[base : base+len(code.Slots)]
 	instance := fn.Instance
 	op := in.Op
-	im := &code.Sources[in.Source].Wasm
+	indexA, indexB := code.SourceIndices(in.Source)
 	tail := module.IsTailCall(op)
 	count := in.Count
 	inputs := code.Args[in.Extra : in.Extra+count]
 	var target uint64
 	if op == 0x10 || op == 0x12 {
-		target = instance.Functions[im.A]
+		target = instance.Functions[indexA]
 	} else if op == 0x14 || op == 0x15 {
 		count--
 		target = values[int(inputs[count])].Lo
@@ -34,7 +34,7 @@ func (e *Execution) runCall() Status {
 		}
 	} else {
 		count--
-		table := instance.Tables[im.B]
+		table := instance.Tables[indexB]
 		index := table.Type.Limits.Address(values[int(inputs[count])].Lo)
 		if index >= uint64(len(table.Values)) {
 			return e.failTrap(fn, in.Source, wasm.TrapTableBounds)
@@ -48,7 +48,7 @@ func (e *Execution) runCall() Status {
 	if !ok {
 		return e.fail(state.ErrReference)
 	}
-	if (op == 0x11 || op == 0x13 || op == 0x14 || op == 0x15) && !e.store.FunctionSubtype(callee.TypeID, instance.Types[im.A]) {
+	if (op == 0x11 || op == 0x13 || op == 0x14 || op == 0x15) && !e.store.FunctionSubtype(callee.TypeID, instance.Types[indexA]) {
 		return e.failTrap(fn, in.Source, wasm.TrapIndirectCallType)
 	}
 	var dest []slots.Slot
@@ -59,6 +59,21 @@ func (e *Execution) runCall() Status {
 	}
 	if err := e.poll(); err != nil {
 		return e.fail(err)
+	}
+	if access, ok := callee.Host.(*state.ScalarAccess); ok && !tail {
+		var bits uint64
+		if access.Write {
+			bits = values[int(inputs[0])].Lo
+		}
+		bits, err := access.Access(bits)
+		if err != nil {
+			return e.fail(err)
+		}
+		if !access.Write {
+			values[int(dest[0])] = value.Value{Lo: bits}
+		}
+		f.pc = pc + 1
+		return Running
 	}
 	if tail {
 		// Preserve the tuple before retiring/reusing the current frame.
@@ -79,7 +94,7 @@ func (e *Execution) runCall() Status {
 		e.frames[fi] = frame{}
 		e.frames = e.frames[:fi]
 		if callee.Code == nil {
-			e.pending = &HostCall{Function: callee, Caller: instance, Args: append([]value.Value(nil), e.tailArgs...)}
+			copy(e.prepareHost(callee, instance, len(e.tailArgs)), e.tailArgs)
 			e.pendingDest, e.status = dest, HostRequest
 			clear(e.tailArgs)
 			e.tailArgs = e.tailArgs[:0]
@@ -95,14 +110,14 @@ func (e *Execution) runCall() Status {
 	}
 	// Publish the caller continuation before a host suspension or
 	// frame push. Straight-line execution keeps its PC local.
+	f.nativeResume = e.nativeResume
 	f.pc = pc + 1
 	f.callPC, f.suspended = pc, true
 	if callee.Code == nil {
-		args := make([]value.Value, count)
+		args := e.prepareHost(callee, instance, int(count))
 		for i := range args {
 			args[i] = e.values[base+int(inputs[i])]
 		}
-		e.pending = &HostCall{Function: callee, Caller: instance, Args: args}
 		e.pendingDest = dest
 		e.status = HostRequest
 		return HostRequest
@@ -130,7 +145,7 @@ func (e *Execution) runThrow() Status {
 	f.pc = pc
 	var ex *state.Exception
 	if op == 8 {
-		im := &code.Sources[in.Source].Wasm
+		im := &code.ReadSource(in.Source, &e.source).Wasm
 		var local [8]value.Value
 		operands := local[:0]
 		if int(in.Count) > cap(operands) {

@@ -113,6 +113,26 @@ func (e *Engine) Compile(ctx context.Context, input []byte) (*CompiledModule, er
 			return nil, err
 		}
 	}
+	// SSA blocks and slot-allocation maps belong to compilation. Runtime code
+	// retains its validated definition, source/fuel metadata and frame layout.
+	code.IR.Functions = nil
+	for i := range code.IR.Validated.Definition().Functions {
+		definition := &code.IR.Validated.Definition().Functions[i]
+		definition.Body, definition.Locals = nil, nil
+	}
+	for _, function := range code.Functions {
+		function.ValueSlots, function.BlockPC = nil, nil
+		if e.config.Backend == "native" {
+			if err := function.FreezeSources(ctx); err != nil {
+				out.Close()
+				return nil, err
+			}
+		}
+	}
+	if err := e.check(ctx); err != nil {
+		out.Close()
+		return nil, err
+	}
 	return out, nil
 }
 

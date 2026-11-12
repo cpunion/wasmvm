@@ -34,7 +34,7 @@ func TestDirectTablesBindBothTiersAndRejectNonNativeStorage(t *testing.T) {
 		t.Fatal(err)
 	}
 	e, fn, lease := prepare(t, m)
-	if !lease.entries[fn.Code].directRuntimeData || lease.entries[fn.Code].hasExpansion {
+	if !lease.entries[fn.Index-lease.first].directRuntimeData || lease.entries[fn.Index-lease.first].hasExpansion {
 		t.Fatal("ordinary table entry missing its runtime view")
 	}
 	original := fn.Instance.Tables[0]

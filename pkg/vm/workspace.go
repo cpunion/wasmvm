@@ -60,7 +60,7 @@ func (op *operation) releaseWorkspace(w *callWorkspace) {
 	if w.native != nil {
 		reusable = w.native.Suspend()
 	}
-	cached := op.depth == 1 && reusable && !s.closing
+	cached := op.depth == 1 && reusable && !s.closing && s.workspace == nil
 	if cached {
 		s.workspace = w
 	}

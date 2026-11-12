@@ -98,7 +98,7 @@ func TestCanceledWorkspaceCannotBeReused(t *testing.T) {
 		if err := e.native.SetState(native.State{Depth: 1, Budget: 64}); err != nil {
 			t.Fatal(err)
 		}
-		exit, err := e.native.Enter(lease.code, lease.entries[fn.Code].ordinary)
+		exit, err := e.native.Enter(lease.code, lease.entries[fn.Index-lease.first].ordinary)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -146,7 +146,7 @@ func TestOwnedInvocationCancellationAndRebinding(t *testing.T) {
 	}
 	cancel()
 	e.Interrupt()
-	if exit, err := e.native.Enter(lease.code, lease.entries[fn.Code].ordinary); err != nil || exit != native.Poll {
+	if exit, err := e.native.Enter(lease.code, lease.entries[fn.Index-lease.first].ordinary); err != nil || exit != native.Poll {
 		t.Fatal("owned interrupt did not reach native control", exit, err)
 	}
 	if _, _, err := e.Run(fn, 0, 1, 0, 0); !errors.Is(err, context.Canceled) {

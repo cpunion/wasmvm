@@ -1,0 +1,3367 @@
+{
+  "date": "2026-11-11",
+  "status": "Diagnostic attribution complete. Native canonical context intrinsic optimization selected for the next implementation. Performance/release acceptance open.",
+  "source": "4ce75302c8def7dfd85680a33d2e7a55593c8dfa",
+  "profiles": {
+    "base-go": {
+      "id": "base-go",
+      "engine": "wasmvm",
+      "compiler": "go",
+      "backend": "native",
+      "workers": 4,
+      "requests": 256,
+      "samples": 7,
+      "warmups": 2,
+      "payloadBytes": 16,
+      "expected": 1757737011,
+      "resources": false,
+      "build": {
+        "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/head-go-runner",
+        "binarySHA256": "27edab13338d4db4d9dd5d65566aabc708f3d97823979aa68de1c392389bdc61",
+        "source": "0aaab1adfdb5a14d88a108bea06017fe0698a675",
+        "exactImplementationEquivalent": true,
+        "provenance": "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/build.json"
+      },
+      "responseMode": "buffered",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/head-go-runner",
+        "--engine",
+        "wasmvm",
+        "--backend",
+        "native",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+        "--response-mode",
+        "buffered",
+        "--payload-bytes",
+        "16",
+        "--expected",
+        "1757737011",
+        "--workers",
+        "4",
+        "--clients",
+        "16",
+        "--requests",
+        "256",
+        "--samples",
+        "7",
+        "--warmups",
+        "2"
+      ]
+    },
+    "base-sharded": {
+      "id": "base-sharded",
+      "engine": "wasmvm",
+      "compiler": "llgo",
+      "backend": "native",
+      "workers": 4,
+      "requests": 256,
+      "samples": 7,
+      "warmups": 2,
+      "payloadBytes": 16,
+      "expected": 1757737011,
+      "resources": false,
+      "build": {
+        "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/schema-matches-20261111/base-sharded-runner",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/llgo-memprofile-shards-20261111/llgo-e2cca2c",
+          "build",
+          "-O3",
+          "-lto=full",
+          "-o",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/schema-matches-20261111/base-sharded-runner",
+          "."
+        ],
+        "compilerBinarySHA256": "22856212fe44a30c945907dc218a393b4d2a4d4702552a026e655be80b9eb1dd",
+        "sdk": "/Users/lijie/source/goplus/llgo-memprofile-shards",
+        "source": "4ce75302c8def7dfd85680a33d2e7a55593c8dfa",
+        "binarySHA256": "b53cbd4720b4e21acdbd9ee03a7fdbe580c7fa9a3d5ac0bf68869fbdd8e566f5",
+        "buildWallNs": 166269762958
+      },
+      "responseMode": "buffered",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/schema-matches-20261111/base-sharded-runner",
+        "--engine",
+        "wasmvm",
+        "--backend",
+        "native",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+        "--response-mode",
+        "buffered",
+        "--payload-bytes",
+        "16",
+        "--expected",
+        "1757737011",
+        "--workers",
+        "4",
+        "--clients",
+        "16",
+        "--requests",
+        "256",
+        "--samples",
+        "7",
+        "--warmups",
+        "2"
+      ]
+    },
+    "wasmtime": {
+      "id": "wasmtime",
+      "engine": "wasmtime",
+      "compiler": "go",
+      "backend": "compiler",
+      "workers": 4,
+      "requests": 256,
+      "samples": 7,
+      "warmups": 2,
+      "payloadBytes": 16,
+      "expected": 1757737011,
+      "resources": false,
+      "build": {
+        "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/p3io-service-20261110/reference-build/wasmtime-p3-reference",
+        "binarySHA256": "561370163342e51593964bc6615ca28ebf1831c22132412ce9c6c44981c54f08",
+        "source": null,
+        "exactImplementationEquivalent": false,
+        "provenance": "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/build.json"
+      },
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/p3io-service-20261110/reference-build/wasmtime-p3-reference",
+        "--engine",
+        "wasmtime",
+        "--backend",
+        "compiler",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+        "--payload-bytes",
+        "16",
+        "--expected",
+        "1757737011",
+        "--workers",
+        "4",
+        "--clients",
+        "16",
+        "--requests",
+        "256",
+        "--samples",
+        "7",
+        "--warmups",
+        "2"
+      ]
+    }
+  },
+  "counterUnits": {
+    "machTimebaseNumer": 125,
+    "machTimebaseDenom": 3,
+    "nanosecondsPerTick": 41.666666666666664,
+    "calibrationRusageSeconds": 0.02885,
+    "calibrationConvertedProcPidRusageSeconds": 0.028823041666666663,
+    "scope": "ri_user_time andri_system_time are Mach absolute ticks. Convert using installed timebase. Instructions andcycles retain hardware-counter units. Initial unconverted derivedCPUus fields retained asdiagnostic input andcorrected without rerunning workloads."
+  },
+  "counterSummary": {
+    "base-go": {
+      "cpuUsPerRequest": {
+        "median": 136.63563309592763,
+        "values": [
+          136.5794088429418,
+          138.37238495925376,
+          136.63563309592763
+        ]
+      },
+      "userUsPerRequest": {
+        "median": 136.0204004748114,
+        "values": [
+          135.86330720748023,
+          137.59978020328214,
+          136.0204004748114
+        ]
+      },
+      "systemUsPerRequest": {
+        "median": 0.7161016354615661,
+        "values": [
+          0.7161016354615661,
+          0.7726047559716235,
+          0.6152326211161997
+        ]
+      },
+      "instructionsPerRequest": {
+        "median": 1894736.8719103583,
+        "values": [
+          1894736.8719103583,
+          1895081.4578226025,
+          1894348.358600485
+        ]
+      },
+      "cyclesPerRequest": {
+        "median": 534583.6525373787,
+        "values": [
+          534549.0650845232,
+          540386.1321474273,
+          534583.6525373787
+        ]
+      }
+    },
+    "base-sharded": {
+      "cpuUsPerRequest": {
+        "median": 357.92369588216144,
+        "values": [
+          356.082903982579,
+          367.02975639255567,
+          357.92369588216144
+        ]
+      },
+      "userUsPerRequest": {
+        "median": 265.2083754265445,
+        "values": [
+          265.2083754265445,
+          276.2001644441451,
+          264.7515016753098
+        ]
+      },
+      "systemUsPerRequest": {
+        "median": 90.87452855603446,
+        "values": [
+          90.87452855603446,
+          90.82959194841055,
+          93.17219420685164
+        ]
+      },
+      "instructionsPerRequest": {
+        "median": 2537098.525180159,
+        "values": [
+          2537098.525180159,
+          2534017.3135775863,
+          2553908.8398269126
+        ]
+      },
+      "cyclesPerRequest": {
+        "median": 1244401.382551522,
+        "values": [
+          1239006.1038607894,
+          1277649.058080213,
+          1244401.382551522
+        ]
+      }
+    },
+    "go-host": {
+      "cpuUsPerRequest": {
+        "median": 1.7796792216684625,
+        "values": [
+          1.6705834399694683,
+          1.7829800309806034,
+          1.7796792216684625
+        ]
+      },
+      "userUsPerRequest": {
+        "median": 1.5037042025862069,
+        "values": [
+          1.4403542704965877,
+          1.5037042025862069,
+          1.509858230064655
+        ]
+      },
+      "systemUsPerRequest": {
+        "median": 0.26982099160380746,
+        "values": [
+          0.23022916947288072,
+          0.2792758283943965,
+          0.26982099160380746
+        ]
+      },
+      "instructionsPerRequest": {
+        "median": 17816.855519261855,
+        "values": [
+          17762.503106478987,
+          17816.855519261855,
+          17901.84855704472
+        ]
+      },
+      "cyclesPerRequest": {
+        "median": 6426.105174097522,
+        "values": [
+          6317.207073343211,
+          6658.971081963901,
+          6426.105174097522
+        ]
+      }
+    },
+    "sharded-host": {
+      "cpuUsPerRequest": {
+        "median": 50.71505877615392,
+        "values": [
+          50.86825491368085,
+          50.71505877615392,
+          50.69485964720276
+        ]
+      },
+      "userUsPerRequest": {
+        "median": 6.420735677083333,
+        "values": [
+          6.727789166329921,
+          6.420735677083333,
+          6.1555196827855605
+        ]
+      },
+      "systemUsPerRequest": {
+        "median": 44.29432309907058,
+        "values": [
+          44.14046574735093,
+          44.29432309907058,
+          44.5393399644172
+        ]
+      },
+      "instructionsPerRequest": {
+        "median": 95538.7043625404,
+        "values": [
+          97445.06954640355,
+          95538.7043625404,
+          94941.28929822198
+        ]
+      },
+      "cyclesPerRequest": {
+        "median": 177432.90996262123,
+        "values": [
+          177363.72478616648,
+          177432.90996262123,
+          177990.72247945852
+        ]
+      }
+    },
+    "wasmtime": {
+      "cpuUsPerRequest": {
+        "median": 22.7562238320537,
+        "values": [
+          23.10991905475485,
+          22.7562238320537,
+          22.643218292587104
+        ]
+      },
+      "userUsPerRequest": {
+        "median": 17.031579379377693,
+        "values": [
+          17.15761066305226,
+          16.93153469041846,
+          17.031579379377693
+        ]
+      },
+      "systemUsPerRequest": {
+        "median": 5.824689141635236,
+        "values": [
+          5.952308391702585,
+          5.824689141635236,
+          5.611638913209411
+        ]
+      },
+      "instructionsPerRequest": {
+        "median": 206158.12526939655,
+        "values": [
+          206302.46826171875,
+          206158.12526939655,
+          205494.5994746767
+        ]
+      },
+      "cyclesPerRequest": {
+        "median": 84950.77312601023,
+        "values": [
+          85396.95922009698,
+          84950.77312601023,
+          84879.0837233971
+        ]
+      }
+    }
+  },
+  "counterObservations": [
+    {
+      "block": 0,
+      "id": "sharded-host",
+      "windowRequests": 118784,
+      "emptyCounterDelta": {
+        "ri_user_time": 0,
+        "ri_system_time": 0,
+        "ri_instructions": 0,
+        "ri_cycles": 0,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_phys_footprint": 0,
+        "ri_lifetime_max_phys_footprint": 0,
+        "ri_runnable_time": 0
+      },
+      "totals": {
+        "ri_user_time": 19179689,
+        "ri_system_time": 125836346,
+        "ri_instructions": 11574915141,
+        "ri_cycles": 21067972685,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_runnable_time": 181259075
+      },
+      "cpuUsPerRequest": 50.86825491368085,
+      "userUsPerRequest": 6.727789166329921,
+      "systemUsPerRequest": 44.14046574735093,
+      "instructionsPerRequest": 97445.06954640355,
+      "cyclesPerRequest": 177363.72478616648,
+      "wallNs": 880063294
+    },
+    {
+      "block": 0,
+      "id": "wasmtime",
+      "windowRequests": 118784,
+      "emptyCounterDelta": {
+        "ri_user_time": 0,
+        "ri_system_time": 0,
+        "ri_instructions": 0,
+        "ri_cycles": 0,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_phys_footprint": 0,
+        "ri_lifetime_max_phys_footprint": 0,
+        "ri_runnable_time": 0
+      },
+      "totals": {
+        "ri_user_time": 48913191,
+        "ri_system_time": 16968936,
+        "ri_instructions": 24505432390,
+        "ri_cycles": 10143792404,
+        "ri_pkg_idle_wkups": 709,
+        "ri_interrupt_wkups": 315744,
+        "ri_runnable_time": 75958798
+      },
+      "cpuUsPerRequest": 23.10991905475485,
+      "userUsPerRequest": 17.15761066305226,
+      "systemUsPerRequest": 5.952308391702585,
+      "instructionsPerRequest": 206302.46826171875,
+      "cyclesPerRequest": 85396.95922009698,
+      "wallNs": 1541723163
+    },
+    {
+      "block": 0,
+      "id": "base-sharded",
+      "windowRequests": 118784,
+      "emptyCounterDelta": {
+        "ri_user_time": 0,
+        "ri_system_time": 0,
+        "ri_instructions": 0,
+        "ri_cycles": 0,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_phys_footprint": 0,
+        "ri_lifetime_max_phys_footprint": 0,
+        "ri_runnable_time": 0
+      },
+      "totals": {
+        "ri_user_time": 756060280,
+        "ri_system_time": 259066560,
+        "ri_instructions": 301366711215,
+        "ri_cycles": 147174101041,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_runnable_time": 1176914056
+      },
+      "cpuUsPerRequest": 356.082903982579,
+      "userUsPerRequest": 265.2083754265445,
+      "systemUsPerRequest": 90.87452855603446,
+      "instructionsPerRequest": 2537098.525180159,
+      "cyclesPerRequest": 1239006.1038607894,
+      "wallNs": 8611399247
+    },
+    {
+      "block": 0,
+      "id": "base-go",
+      "windowRequests": 118784,
+      "emptyCounterDelta": {
+        "ri_user_time": 0,
+        "ri_system_time": 0,
+        "ri_instructions": 0,
+        "ri_cycles": 0,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_phys_footprint": 0,
+        "ri_lifetime_max_phys_footprint": 0,
+        "ri_runnable_time": 0
+      },
+      "totals": {
+        "ri_user_time": 387321290,
+        "ri_system_time": 2041474,
+        "ri_instructions": 225064424593,
+        "ri_cycles": 63495876147,
+        "ri_pkg_idle_wkups": 18,
+        "ri_interrupt_wkups": 5557,
+        "ri_runnable_time": 390308324
+      },
+      "cpuUsPerRequest": 136.5794088429418,
+      "userUsPerRequest": 135.86330720748023,
+      "systemUsPerRequest": 0.7161016354615661,
+      "instructionsPerRequest": 1894736.8719103583,
+      "cyclesPerRequest": 534549.0650845232,
+      "wallNs": 4088297290
+    },
+    {
+      "block": 0,
+      "id": "go-host",
+      "windowRequests": 118784,
+      "emptyCounterDelta": {
+        "ri_user_time": 0,
+        "ri_system_time": 0,
+        "ri_instructions": 0,
+        "ri_cycles": 0,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_phys_footprint": 0,
+        "ri_lifetime_max_phys_footprint": 0,
+        "ri_runnable_time": 0
+      },
+      "totals": {
+        "ri_user_time": 4106185,
+        "ri_system_time": 656341,
+        "ri_instructions": 2109901169,
+        "ri_cycles": 750383125,
+        "ri_pkg_idle_wkups": 19,
+        "ri_interrupt_wkups": 3623,
+        "ri_runnable_time": 5085089
+      },
+      "cpuUsPerRequest": 1.6705834399694683,
+      "userUsPerRequest": 1.4403542704965877,
+      "systemUsPerRequest": 0.23022916947288072,
+      "instructionsPerRequest": 17762.503106478987,
+      "cyclesPerRequest": 6317.207073343211,
+      "wallNs": 61710207
+    },
+    {
+      "block": 1,
+      "id": "wasmtime",
+      "windowRequests": 118784,
+      "emptyCounterDelta": {
+        "ri_user_time": 0,
+        "ri_system_time": 0,
+        "ri_instructions": 0,
+        "ri_cycles": 0,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_phys_footprint": 0,
+        "ri_lifetime_max_phys_footprint": 0,
+        "ri_runnable_time": 0
+      },
+      "totals": {
+        "ri_user_time": 48268690,
+        "ri_system_time": 16605117,
+        "ri_instructions": 24488286752,
+        "ri_cycles": 10090792635,
+        "ri_pkg_idle_wkups": 570,
+        "ri_interrupt_wkups": 315958,
+        "ri_runnable_time": 74604466
+      },
+      "cpuUsPerRequest": 22.7562238320537,
+      "userUsPerRequest": 16.93153469041846,
+      "systemUsPerRequest": 5.824689141635236,
+      "instructionsPerRequest": 206158.12526939655,
+      "cyclesPerRequest": 84950.77312601023,
+      "wallNs": 1531715375
+    },
+    {
+      "block": 1,
+      "id": "base-go",
+      "windowRequests": 118784,
+      "emptyCounterDelta": {
+        "ri_user_time": 0,
+        "ri_system_time": 0,
+        "ri_instructions": 0,
+        "ri_cycles": 0,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_phys_footprint": 0,
+        "ri_lifetime_max_phys_footprint": 0,
+        "ri_runnable_time": 0
+      },
+      "totals": {
+        "ri_user_time": 392271655,
+        "ri_system_time": 2202554,
+        "ri_instructions": 225105355886,
+        "ri_cycles": 64189226321,
+        "ri_pkg_idle_wkups": 9,
+        "ri_interrupt_wkups": 5264,
+        "ri_runnable_time": 399145589
+      },
+      "cpuUsPerRequest": 138.37238495925376,
+      "userUsPerRequest": 137.59978020328214,
+      "systemUsPerRequest": 0.7726047559716235,
+      "instructionsPerRequest": 1895081.4578226025,
+      "cyclesPerRequest": 540386.1321474273,
+      "wallNs": 4174963455
+    },
+    {
+      "block": 1,
+      "id": "go-host",
+      "windowRequests": 118784,
+      "emptyCounterDelta": {
+        "ri_user_time": 0,
+        "ri_system_time": 0,
+        "ri_instructions": 0,
+        "ri_cycles": 0,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_phys_footprint": 0,
+        "ri_lifetime_max_phys_footprint": 0,
+        "ri_runnable_time": 0
+      },
+      "totals": {
+        "ri_user_time": 4286784,
+        "ri_system_time": 796164,
+        "ri_instructions": 2116357366,
+        "ri_cycles": 790979221,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 5040,
+        "ri_runnable_time": 5580979
+      },
+      "cpuUsPerRequest": 1.7829800309806034,
+      "userUsPerRequest": 1.5037042025862069,
+      "systemUsPerRequest": 0.2792758283943965,
+      "instructionsPerRequest": 17816.855519261855,
+      "cyclesPerRequest": 6658.971081963901,
+      "wallNs": 65124209
+    },
+    {
+      "block": 1,
+      "id": "base-sharded",
+      "windowRequests": 118784,
+      "emptyCounterDelta": {
+        "ri_user_time": 0,
+        "ri_system_time": 0,
+        "ri_instructions": 0,
+        "ri_cycles": 0,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_phys_footprint": 0,
+        "ri_lifetime_max_phys_footprint": 0,
+        "ri_runnable_time": 0
+      },
+      "totals": {
+        "ri_user_time": 787395848,
+        "ri_system_time": 258938454,
+        "ri_instructions": 301000712576,
+        "ri_cycles": 151764265715,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_runnable_time": 1206572444
+      },
+      "cpuUsPerRequest": 367.02975639255567,
+      "userUsPerRequest": 276.2001644441451,
+      "systemUsPerRequest": 90.82959194841055,
+      "instructionsPerRequest": 2534017.3135775863,
+      "cyclesPerRequest": 1277649.058080213,
+      "wallNs": 8866560624
+    },
+    {
+      "block": 1,
+      "id": "sharded-host",
+      "windowRequests": 118784,
+      "emptyCounterDelta": {
+        "ri_user_time": 0,
+        "ri_system_time": 0,
+        "ri_instructions": 0,
+        "ri_cycles": 0,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_phys_footprint": 0,
+        "ri_lifetime_max_phys_footprint": 0,
+        "ri_runnable_time": 0
+      },
+      "totals": {
+        "ri_user_time": 18304336,
+        "ri_system_time": 126274965,
+        "ri_instructions": 11348469459,
+        "ri_cycles": 21076190777,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_runnable_time": 181535503
+      },
+      "cpuUsPerRequest": 50.71505877615392,
+      "userUsPerRequest": 6.420735677083333,
+      "systemUsPerRequest": 44.29432309907058,
+      "instructionsPerRequest": 95538.7043625404,
+      "cyclesPerRequest": 177432.90996262123,
+      "wallNs": 889114334
+    },
+    {
+      "block": 2,
+      "id": "sharded-host",
+      "windowRequests": 118784,
+      "emptyCounterDelta": {
+        "ri_user_time": 0,
+        "ri_system_time": 0,
+        "ri_instructions": 0,
+        "ri_cycles": 0,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_phys_footprint": 0,
+        "ri_lifetime_max_phys_footprint": 0,
+        "ri_runnable_time": 0
+      },
+      "totals": {
+        "ri_user_time": 17548254,
+        "ri_system_time": 126973463,
+        "ri_instructions": 11277506108,
+        "ri_cycles": 21142449979,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_runnable_time": 182216942
+      },
+      "cpuUsPerRequest": 50.69485964720276,
+      "userUsPerRequest": 6.1555196827855605,
+      "systemUsPerRequest": 44.5393399644172,
+      "instructionsPerRequest": 94941.28929822198,
+      "cyclesPerRequest": 177990.72247945852,
+      "wallNs": 881608374
+    },
+    {
+      "block": 2,
+      "id": "base-sharded",
+      "windowRequests": 118784,
+      "emptyCounterDelta": {
+        "ri_user_time": 0,
+        "ri_system_time": 0,
+        "ri_instructions": 0,
+        "ri_cycles": 0,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_phys_footprint": 0,
+        "ri_lifetime_max_phys_footprint": 0,
+        "ri_runnable_time": 0
+      },
+      "totals": {
+        "ri_user_time": 754757817,
+        "ri_system_time": 265616782,
+        "ri_instructions": 303363507630,
+        "ri_cycles": 147814973825,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_runnable_time": 1184930701
+      },
+      "cpuUsPerRequest": 357.92369588216144,
+      "userUsPerRequest": 264.7515016753098,
+      "systemUsPerRequest": 93.17219420685164,
+      "instructionsPerRequest": 2553908.8398269126,
+      "cyclesPerRequest": 1244401.382551522,
+      "wallNs": 8661904876
+    },
+    {
+      "block": 2,
+      "id": "base-go",
+      "windowRequests": 118784,
+      "emptyCounterDelta": {
+        "ri_user_time": 0,
+        "ri_system_time": 0,
+        "ri_instructions": 0,
+        "ri_cycles": 0,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_phys_footprint": 0,
+        "ri_lifetime_max_phys_footprint": 0,
+        "ri_runnable_time": 0
+      },
+      "totals": {
+        "ri_user_time": 387769134,
+        "ri_system_time": 1753915,
+        "ri_instructions": 225018275428,
+        "ri_cycles": 63499984583,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 4657,
+        "ri_runnable_time": 390620535
+      },
+      "cpuUsPerRequest": 136.63563309592763,
+      "userUsPerRequest": 136.0204004748114,
+      "systemUsPerRequest": 0.6152326211161997,
+      "instructionsPerRequest": 1894348.358600485,
+      "cyclesPerRequest": 534583.6525373787,
+      "wallNs": 4092968790
+    },
+    {
+      "block": 2,
+      "id": "go-host",
+      "windowRequests": 118784,
+      "emptyCounterDelta": {
+        "ri_user_time": 0,
+        "ri_system_time": 0,
+        "ri_instructions": 0,
+        "ri_cycles": 0,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_phys_footprint": 0,
+        "ri_lifetime_max_phys_footprint": 0,
+        "ri_runnable_time": 0
+      },
+      "totals": {
+        "ri_user_time": 4304328,
+        "ri_system_time": 769210,
+        "ri_instructions": 2126453179,
+        "ri_cycles": 763318477,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 5065,
+        "ri_runnable_time": 5536173
+      },
+      "cpuUsPerRequest": 1.7796792216684625,
+      "userUsPerRequest": 1.509858230064655,
+      "systemUsPerRequest": 0.26982099160380746,
+      "instructionsPerRequest": 17901.84855704472,
+      "cyclesPerRequest": 6426.105174097522,
+      "wallNs": 65097417
+    },
+    {
+      "block": 2,
+      "id": "wasmtime",
+      "windowRequests": 118784,
+      "emptyCounterDelta": {
+        "ri_user_time": 0,
+        "ri_system_time": 0,
+        "ri_instructions": 0,
+        "ri_cycles": 0,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 0,
+        "ri_phys_footprint": 0,
+        "ri_lifetime_max_phys_footprint": 0,
+        "ri_runnable_time": 0
+      },
+      "totals": {
+        "ri_user_time": 48553899,
+        "ri_system_time": 15997750,
+        "ri_instructions": 24409470504,
+        "ri_cycles": 10082277081,
+        "ri_pkg_idle_wkups": 0,
+        "ri_interrupt_wkups": 313771,
+        "ri_runnable_time": 74130031
+      },
+      "cpuUsPerRequest": 22.643218292587104,
+      "userUsPerRequest": 17.031579379377693,
+      "systemUsPerRequest": 5.611638913209411,
+      "instructionsPerRequest": 205494.5994746767,
+      "cyclesPerRequest": 84879.0837233971,
+      "wallNs": 1535750792
+    }
+  ],
+  "cpuAttribution": {
+    "base-go": {
+      "scope": "Exclusive attribution from first-to-last actual kernel call sample, first/two warmups/30 measured batches. Approximate CPU sample weights normalized by135168 checked calls. Allocation/collector paths take priority. Anonymous/JIT leaves kept unresolved. Other samples use nearest owned semantic frame, or native Rust component frame. Separate exact process instruction/CPU counter series validates total work and remains independent.",
+      "windowStartNs": 1031031291,
+      "windowEndNs": 6082030541,
+      "rows": 19926,
+      "sampleWeightNs": 19926000000,
+      "sampleUsPerRequest": 147.41654829545456,
+      "categories": [
+        {
+          "function": "Core execution/native backend",
+          "sampleWeightMs": 3707.0,
+          "share": 0.18603834186490012,
+          "normalizedSampleUsPerRequest": 27.425130208333332
+        },
+        {
+          "function": "Anonymous/JIT/unresolved leaf",
+          "sampleWeightMs": 2959.0,
+          "share": 0.14849944795744255,
+          "normalizedSampleUsPerRequest": 21.891276041666668
+        },
+        {
+          "function": "Allocation/free/accounting paths",
+          "sampleWeightMs": 2486.0,
+          "share": 0.12476161798655024,
+          "normalizedSampleUsPerRequest": 18.391927083333332
+        },
+        {
+          "function": "Component calls/tasks/lifetimes",
+          "sampleWeightMs": 2265.0,
+          "share": 0.11367058115025595,
+          "normalizedSampleUsPerRequest": 16.756924715909093
+        },
+        {
+          "function": "Component type comparison",
+          "sampleWeightMs": 1889.0,
+          "share": 0.09480076282244304,
+          "normalizedSampleUsPerRequest": 13.975201231060606
+        },
+        {
+          "function": "Native entry/fiber switch",
+          "sampleWeightMs": 1611.0,
+          "share": 0.08084914182475159,
+          "normalizedSampleUsPerRequest": 11.918501420454547
+        },
+        {
+          "function": "Canonical values/resources",
+          "sampleWeightMs": 1251.0,
+          "share": 0.06278229448961156,
+          "normalizedSampleUsPerRequest": 9.255149147727272
+        },
+        {
+          "function": "Collector paths",
+          "sampleWeightMs": 1170.0,
+          "share": 0.05871725383920506,
+          "normalizedSampleUsPerRequest": 8.655894886363637
+        },
+        {
+          "function": "Other host/runtime/system",
+          "sampleWeightMs": 853.0,
+          "share": 0.04280839104687343,
+          "normalizedSampleUsPerRequest": 6.310665246212121
+        },
+        {
+          "function": "VM API/marshalling/lifetimes",
+          "sampleWeightMs": 828.0,
+          "share": 0.04155374887082204,
+          "normalizedSampleUsPerRequest": 6.125710227272727
+        },
+        {
+          "function": "P3 HTTP/provider",
+          "sampleWeightMs": 744.0,
+          "share": 0.03733815115928937,
+          "normalizedSampleUsPerRequest": 5.504261363636364
+        },
+        {
+          "function": "HTTP harness/host runtime",
+          "sampleWeightMs": 82.0,
+          "share": 0.00411522633744856,
+          "normalizedSampleUsPerRequest": 0.6066524621212122
+        },
+        {
+          "function": "Service harness/host scheduling",
+          "sampleWeightMs": 81.0,
+          "share": 0.0040650406504065045,
+          "normalizedSampleUsPerRequest": 0.5992542613636364
+        }
+      ],
+      "leaf": [
+        {
+          "function": "github.com/cpunion/wasmvm/internal/component/validate.(*equality).value",
+          "sampleWeightMs": 1739.0,
+          "share": 0.0872729097661347,
+          "normalizedSampleUsPerRequest": 12.865471117424242
+        },
+        {
+          "function": "wasmvm_enter",
+          "sampleWeightMs": 1611.0,
+          "share": 0.08084914182475159,
+          "normalizedSampleUsPerRequest": 11.918501420454547
+        },
+        {
+          "function": "pthread_jit_write_protect_np",
+          "sampleWeightMs": 439.0,
+          "share": 0.02203151661146241,
+          "normalizedSampleUsPerRequest": 3.2478101325757573
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/internal/engine/nativeexec.(*Execution).run",
+          "sampleWeightMs": 384.0,
+          "share": 0.019271303824149353,
+          "normalizedSampleUsPerRequest": 2.840909090909091
+        },
+        {
+          "function": "runtime.tryDeferToSpanScan",
+          "sampleWeightMs": 379.0,
+          "share": 0.019020375388939074,
+          "normalizedSampleUsPerRequest": 2.803918087121212
+        },
+        {
+          "function": "runtime.memclrNoHeapPointers",
+          "sampleWeightMs": 370.0,
+          "share": 0.018568704205560574,
+          "normalizedSampleUsPerRequest": 2.7373342803030303
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/internal/engine/nativeexec.(*Execution).bindRuntimeGlobals",
+          "sampleWeightMs": 328.0,
+          "share": 0.01646090534979424,
+          "normalizedSampleUsPerRequest": 2.4266098484848486
+        },
+        {
+          "function": "runtime.scanObject",
+          "sampleWeightMs": 273.0,
+          "share": 0.01370069256248118,
+          "normalizedSampleUsPerRequest": 2.0197088068181817
+        },
+        {
+          "function": "runtime.mapaccess2_fast64",
+          "sampleWeightMs": 264.0,
+          "share": 0.01324902137910268,
+          "normalizedSampleUsPerRequest": 1.953125
+        },
+        {
+          "function": "runtime.mallocgc",
+          "sampleWeightMs": 238.0,
+          "share": 0.011944193516009234,
+          "normalizedSampleUsPerRequest": 1.7607717803030303
+        },
+        {
+          "function": "runtime.(*mspan).writeHeapBitsSmall",
+          "sampleWeightMs": 208.0,
+          "share": 0.010438622904747567,
+          "normalizedSampleUsPerRequest": 1.5388257575757576
+        },
+        {
+          "function": "runtime.memmove",
+          "sampleWeightMs": 208.0,
+          "share": 0.010438622904747567,
+          "normalizedSampleUsPerRequest": 1.5388257575757576
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/internal/platform/native.(*Context).run",
+          "sampleWeightMs": 207.0,
+          "share": 0.01038843721770551,
+          "normalizedSampleUsPerRequest": 1.5314275568181817
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).adoptNativeFrames",
+          "sampleWeightMs": 180.0,
+          "share": 0.009033423667570008,
+          "normalizedSampleUsPerRequest": 1.3316761363636362
+        },
+        {
+          "function": "runtime.mallocgcSmallScanNoHeader",
+          "sampleWeightMs": 179.0,
+          "share": 0.008983237980527954,
+          "normalizedSampleUsPerRequest": 1.3242779356060606
+        },
+        {
+          "function": "runtime.mallocgcSmallScanNoHeaderSC6",
+          "sampleWeightMs": 174.0,
+          "share": 0.008732309545317675,
+          "normalizedSampleUsPerRequest": 1.2872869318181817
+        },
+        {
+          "function": "runtime.typePointers.next",
+          "sampleWeightMs": 170.0,
+          "share": 0.008531566797149453,
+          "normalizedSampleUsPerRequest": 1.2576941287878787
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).runBackend",
+          "sampleWeightMs": 165.0,
+          "share": 0.008280638361939175,
+          "normalizedSampleUsPerRequest": 1.220703125
+        },
+        {
+          "function": "runtime.mallocgcSmallScanNoHeaderSC5",
+          "sampleWeightMs": 148.0,
+          "share": 0.00742748168222423,
+          "normalizedSampleUsPerRequest": 1.094933712121212
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).runCall",
+          "sampleWeightMs": 138.0,
+          "share": 0.006925624811803674,
+          "normalizedSampleUsPerRequest": 1.0209517045454546
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/internal/engine/nativeexec.(*Execution).runFrames",
+          "sampleWeightMs": 134.0,
+          "share": 0.006724882063635451,
+          "normalizedSampleUsPerRequest": 0.9913589015151515
+        },
+        {
+          "function": "runtime.reentersyscall",
+          "sampleWeightMs": 125.0,
+          "share": 0.006273210880256951,
+          "normalizedSampleUsPerRequest": 0.9247750946969697
+        },
+        {
+          "function": "context.(*cancelCtx).Err",
+          "sampleWeightMs": 118.0,
+          "share": 0.0059219110709625615,
+          "normalizedSampleUsPerRequest": 0.8729876893939393
+        },
+        {
+          "function": "runtime.(*sweepLocked).sweep",
+          "sampleWeightMs": 115.0,
+          "share": 0.005771354009836395,
+          "normalizedSampleUsPerRequest": 0.8507930871212122
+        },
+        {
+          "function": "runtime.mallocgcSmallScanNoHeaderSC7",
+          "sampleWeightMs": 114.0,
+          "share": 0.0057211683227943394,
+          "normalizedSampleUsPerRequest": 0.8433948863636364
+        }
+      ],
+      "equalityCallers": [
+        {
+          "function": "github.com/cpunion/wasmvm/pkg/component.(*asyncEnd).matches",
+          "sampleWeightMs": 1152.0,
+          "share": 0.057813911472448055,
+          "normalizedSampleUsPerRequest": 8.522727272727272
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).end",
+          "sampleWeightMs": 678.0,
+          "share": 0.0340258958145137,
+          "normalizedSampleUsPerRequest": 5.015980113636364
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).taskBuiltin.func1",
+          "sampleWeightMs": 58.0,
+          "share": 0.0029107698484392252,
+          "normalizedSampleUsPerRequest": 0.4290956439393939
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).end.func1",
+          "sampleWeightMs": 9.0,
+          "share": 0.00045167118337850043,
+          "normalizedSampleUsPerRequest": 0.06658380681818181
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/pkg/component.(*asyncEnd).matches.func1",
+          "sampleWeightMs": 5.0,
+          "share": 0.000250928435210278,
+          "normalizedSampleUsPerRequest": 0.03699100378787879
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).taskBuiltin.func1.1",
+          "sampleWeightMs": 1.0,
+          "share": 5.018568704205561e-05,
+          "normalizedSampleUsPerRequest": 0.007398200757575758
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/pkg/component.(*resourceCodec).asyncReference",
+          "sampleWeightMs": 1.0,
+          "share": 5.018568704205561e-05,
+          "normalizedSampleUsPerRequest": 0.007398200757575758
+        }
+      ],
+      "pthreadSystemLeafCategories": [
+        {
+          "function": "Other host/runtime/system",
+          "sampleWeightMs": 465.0,
+          "share": 0.02333634447455586,
+          "normalizedSampleUsPerRequest": 3.4401633522727275
+        }
+      ]
+    },
+    "base-sharded": {
+      "scope": "Exclusive attribution from first-to-last actual kernel call sample, first/two warmups/30 measured batches. Approximate CPU sample weights normalized by135168 checked calls. Allocation/collector paths take priority. Anonymous/JIT leaves kept unresolved. Other samples use nearest owned semantic frame, or native Rust component frame. Separate exact process instruction/CPU counter series validates total work and remains independent.",
+      "windowStartNs": 944101958,
+      "windowEndNs": 11470104250,
+      "rows": 48404,
+      "sampleWeightNs": 48404000000,
+      "sampleUsPerRequest": 358.10250946969694,
+      "categories": [
+        {
+          "function": "Collector paths",
+          "sampleWeightMs": 11627.0,
+          "share": 0.2402074208743079,
+          "normalizedSampleUsPerRequest": 86.01888020833333
+        },
+        {
+          "function": "Allocation/free/accounting paths",
+          "sampleWeightMs": 9431.0,
+          "share": 0.194839269481861,
+          "normalizedSampleUsPerRequest": 69.77243134469697
+        },
+        {
+          "function": "Component calls/tasks/lifetimes",
+          "sampleWeightMs": 5111.0,
+          "share": 0.10559044707049005,
+          "normalizedSampleUsPerRequest": 37.812204071969695
+        },
+        {
+          "function": "Core execution/native backend",
+          "sampleWeightMs": 4658.0,
+          "share": 0.09623171638707545,
+          "normalizedSampleUsPerRequest": 34.46081912878788
+        },
+        {
+          "function": "P3 HTTP/provider",
+          "sampleWeightMs": 4644.0,
+          "share": 0.09594248409222378,
+          "normalizedSampleUsPerRequest": 34.35724431818181
+        },
+        {
+          "function": "Anonymous/JIT/unresolved leaf",
+          "sampleWeightMs": 3569.0,
+          "share": 0.07373357573754236,
+          "normalizedSampleUsPerRequest": 26.40417850378788
+        },
+        {
+          "function": "Canonical values/resources",
+          "sampleWeightMs": 2264.0,
+          "share": 0.04677299396744071,
+          "normalizedSampleUsPerRequest": 16.749526515151516
+        },
+        {
+          "function": "Component type comparison",
+          "sampleWeightMs": 1793.0,
+          "share": 0.0370423931906454,
+          "normalizedSampleUsPerRequest": 13.264973958333334
+        },
+        {
+          "function": "Native entry/fiber switch",
+          "sampleWeightMs": 1781.0,
+          "share": 0.03679447979505826,
+          "normalizedSampleUsPerRequest": 13.176195549242424
+        },
+        {
+          "function": "Service harness/host scheduling",
+          "sampleWeightMs": 1612.0,
+          "share": 0.033303032807206014,
+          "normalizedSampleUsPerRequest": 11.925899621212121
+        },
+        {
+          "function": "VM API/marshalling/lifetimes",
+          "sampleWeightMs": 1557.0,
+          "share": 0.03216676307743162,
+          "normalizedSampleUsPerRequest": 11.518998579545453
+        },
+        {
+          "function": "Other host/runtime/system",
+          "sampleWeightMs": 309.0,
+          "share": 0.006383769936368895,
+          "normalizedSampleUsPerRequest": 2.286044034090909
+        },
+        {
+          "function": "HTTP harness/host runtime",
+          "sampleWeightMs": 48.0,
+          "share": 0.0009916535823485662,
+          "normalizedSampleUsPerRequest": 0.35511363636363635
+        }
+      ],
+      "leaf": [
+        {
+          "function": "GC_mark_from",
+          "sampleWeightMs": 8550.0,
+          "share": 0.17663829435583836,
+          "normalizedSampleUsPerRequest": 63.25461647727273
+        },
+        {
+          "function": "__psynch_cvwait",
+          "sampleWeightMs": 4105.0,
+          "share": 0.08480704074043467,
+          "normalizedSampleUsPerRequest": 30.369614109848484
+        },
+        {
+          "function": "__psynch_mutexwait",
+          "sampleWeightMs": 4079.0,
+          "share": 0.08426989504999587,
+          "normalizedSampleUsPerRequest": 30.177260890151516
+        },
+        {
+          "function": "__psynch_mutexdrop",
+          "sampleWeightMs": 2206.0,
+          "share": 0.04557474588876952,
+          "normalizedSampleUsPerRequest": 16.32043087121212
+        },
+        {
+          "function": "__psynch_cvsignal",
+          "sampleWeightMs": 2057.0,
+          "share": 0.042496487893562515,
+          "normalizedSampleUsPerRequest": 15.218098958333334
+        },
+        {
+          "function": "wasmvm_enter",
+          "sampleWeightMs": 1781.0,
+          "share": 0.03679447979505826,
+          "normalizedSampleUsPerRequest": 13.176195549242424
+        },
+        {
+          "function": "GC_malloc_kind",
+          "sampleWeightMs": 1192.0,
+          "share": 0.02462606396165606,
+          "normalizedSampleUsPerRequest": 8.818655303030305
+        },
+        {
+          "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.getg",
+          "sampleWeightMs": 1150.0,
+          "share": 0.023758367077101068,
+          "normalizedSampleUsPerRequest": 8.507930871212121
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/internal/component/validate.(*equality).value",
+          "sampleWeightMs": 1026.0,
+          "share": 0.021196595322700604,
+          "normalizedSampleUsPerRequest": 7.590553977272727
+        },
+        {
+          "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.recordMemProfileAlloc",
+          "sampleWeightMs": 885.0,
+          "share": 0.01828361292455169,
+          "normalizedSampleUsPerRequest": 6.547407670454545
+        },
+        {
+          "function": "_platform_memset",
+          "sampleWeightMs": 564.0,
+          "share": 0.011651929592595653,
+          "normalizedSampleUsPerRequest": 4.172585227272727
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/internal/component/validate.(*equality).seen",
+          "sampleWeightMs": 558.0,
+          "share": 0.011527972894802082,
+          "normalizedSampleUsPerRequest": 4.128196022727273
+        },
+        {
+          "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.typehashImpl",
+          "sampleWeightMs": 539.0,
+          "share": 0.011135443351789108,
+          "normalizedSampleUsPerRequest": 3.9876302083333335
+        },
+        {
+          "function": "_tlv_get_addr",
+          "sampleWeightMs": 480.0,
+          "share": 0.009916535823485662,
+          "normalizedSampleUsPerRequest": 3.5511363636363633
+        },
+        {
+          "function": "pthread_jit_write_protect_np",
+          "sampleWeightMs": 466.0,
+          "share": 0.009627303528633998,
+          "normalizedSampleUsPerRequest": 3.447561553030303
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/internal/engine/nativeexec.(*Execution).run",
+          "sampleWeightMs": 415.0,
+          "share": 0.008573671597388645,
+          "normalizedSampleUsPerRequest": 3.0702533143939394
+        },
+        {
+          "function": "github.com/xgo-dev/llgo/runtime/internal/runtime.mapaccess1_fast64",
+          "sampleWeightMs": 399.0,
+          "share": 0.008243120403272457,
+          "normalizedSampleUsPerRequest": 2.9518821022727275
+        },
+        {
+          "function": "GC_push_contents_hdr",
+          "sampleWeightMs": 378.0,
+          "share": 0.007809271960994959,
+          "normalizedSampleUsPerRequest": 2.7965198863636367
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/internal/platform/native.(*Context).run",
+          "sampleWeightMs": 374.0,
+          "share": 0.007726634162465912,
+          "normalizedSampleUsPerRequest": 2.7669270833333335
+        },
+        {
+          "function": "GC_reclaim_generic",
+          "sampleWeightMs": 334.0,
+          "share": 0.00690025617717544,
+          "normalizedSampleUsPerRequest": 2.470999053030303
+        },
+        {
+          "function": "_platform_memmove",
+          "sampleWeightMs": 332.0,
+          "share": 0.006858937277910916,
+          "normalizedSampleUsPerRequest": 2.4562026515151514
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/internal/engine/nativeexec.(*Execution).bindRuntimeGlobals",
+          "sampleWeightMs": 325.0,
+          "share": 0.006714321130485084,
+          "normalizedSampleUsPerRequest": 2.404415246212121
+        },
+        {
+          "function": "GC_mark_local",
+          "sampleWeightMs": 322.0,
+          "share": 0.006652342781588299,
+          "normalizedSampleUsPerRequest": 2.382220643939394
+        },
+        {
+          "function": "GC_build_fl",
+          "sampleWeightMs": 304.0,
+          "share": 0.006280472688207586,
+          "normalizedSampleUsPerRequest": 2.2490530303030303
+        },
+        {
+          "function": "pthread_mutex_lock",
+          "sampleWeightMs": 285.0,
+          "share": 0.005887943145194612,
+          "normalizedSampleUsPerRequest": 2.108487215909091
+        }
+      ],
+      "equalityCallers": [
+        {
+          "function": "github.com/cpunion/wasmvm/pkg/component.(*asyncEnd).matches",
+          "sampleWeightMs": 1054.0,
+          "share": 0.021775059912403933,
+          "normalizedSampleUsPerRequest": 7.797703598484848
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).end",
+          "sampleWeightMs": 676.0,
+          "share": 0.013965787951408975,
+          "normalizedSampleUsPerRequest": 5.001183712121212
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).taskBuiltin$1",
+          "sampleWeightMs": 57.0,
+          "share": 0.0011775886290389223,
+          "normalizedSampleUsPerRequest": 0.4216974431818182
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/pkg/component.(*asyncEnd).matches$1",
+          "sampleWeightMs": 7.0,
+          "share": 0.00014461614742583258,
+          "normalizedSampleUsPerRequest": 0.051787405303030304
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/pkg/component.(*resourceCodec).asyncReference",
+          "sampleWeightMs": 5.0,
+          "share": 0.00010329724816130898,
+          "normalizedSampleUsPerRequest": 0.03699100378787879
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).end$1",
+          "sampleWeightMs": 4.0,
+          "share": 8.263779852904718e-05,
+          "normalizedSampleUsPerRequest": 0.029592803030303032
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/pkg/component.(*Instance).taskBuiltin$1$1",
+          "sampleWeightMs": 1.0,
+          "share": 2.0659449632261795e-05,
+          "normalizedSampleUsPerRequest": 0.007398200757575758
+        },
+        {
+          "function": "github.com/cpunion/wasmvm/pkg/component.(*resourceCodec).liftAsync",
+          "sampleWeightMs": 1.0,
+          "share": 2.0659449632261795e-05,
+          "normalizedSampleUsPerRequest": 0.007398200757575758
+        }
+      ],
+      "pthreadSystemLeafCategories": [
+        {
+          "function": "Allocation/free/accounting paths",
+          "sampleWeightMs": 4626.0,
+          "share": 0.09557061399884308,
+          "normalizedSampleUsPerRequest": 34.22407670454545
+        },
+        {
+          "function": "P3 HTTP/provider",
+          "sampleWeightMs": 3129.0,
+          "share": 0.06464341789934716,
+          "normalizedSampleUsPerRequest": 23.148970170454543
+        },
+        {
+          "function": "Collector paths",
+          "sampleWeightMs": 2822.0,
+          "share": 0.05830096686224279,
+          "normalizedSampleUsPerRequest": 20.87772253787879
+        },
+        {
+          "function": "Service harness/host scheduling",
+          "sampleWeightMs": 1468.0,
+          "share": 0.03032807206016032,
+          "normalizedSampleUsPerRequest": 10.860558712121213
+        },
+        {
+          "function": "Component calls/tasks/lifetimes",
+          "sampleWeightMs": 1324.0,
+          "share": 0.027353111313114617,
+          "normalizedSampleUsPerRequest": 9.795217803030305
+        },
+        {
+          "function": "Core execution/native backend",
+          "sampleWeightMs": 473.0,
+          "share": 0.00977191967605983,
+          "normalizedSampleUsPerRequest": 3.4993489583333335
+        },
+        {
+          "function": "Other host/runtime/system",
+          "sampleWeightMs": 277.0,
+          "share": 0.005722667548136518,
+          "normalizedSampleUsPerRequest": 2.049301609848485
+        },
+        {
+          "function": "VM API/marshalling/lifetimes",
+          "sampleWeightMs": 17.0,
+          "share": 0.00035121064374845056,
+          "normalizedSampleUsPerRequest": 0.12576941287878787
+        }
+      ]
+    },
+    "wasmtime": {
+      "scope": "Exclusive attribution from first-to-last actual kernel call sample, first/two warmups/30 measured batches. Approximate CPU sample weights normalized by135168 checked calls. Allocation/collector paths take priority. Anonymous/JIT leaves kept unresolved. Other samples use nearest owned semantic frame, or native Rust component frame. Separate exact process instruction/CPU counter series validates total work and remains independent.",
+      "windowStartNs": 756010125,
+      "windowEndNs": 2541010333,
+      "rows": 2990,
+      "sampleWeightNs": 2990000000,
+      "sampleUsPerRequest": 22.120620265151516,
+      "categories": [
+        {
+          "function": "Other host/runtime/system",
+          "sampleWeightMs": 987.0,
+          "share": 0.33010033444816056,
+          "normalizedSampleUsPerRequest": 7.302024147727273
+        },
+        {
+          "function": "Component calls/tasks/lifetimes",
+          "sampleWeightMs": 917.0,
+          "share": 0.3066889632107023,
+          "normalizedSampleUsPerRequest": 6.78415009469697
+        },
+        {
+          "function": "Anonymous/JIT/unresolved leaf",
+          "sampleWeightMs": 412.0,
+          "share": 0.13779264214046824,
+          "normalizedSampleUsPerRequest": 3.048058712121212
+        },
+        {
+          "function": "Allocation/free/accounting paths",
+          "sampleWeightMs": 328.0,
+          "share": 0.1096989966555184,
+          "normalizedSampleUsPerRequest": 2.4266098484848486
+        },
+        {
+          "function": "Native entry/fiber switch",
+          "sampleWeightMs": 159.0,
+          "share": 0.053177257525083614,
+          "normalizedSampleUsPerRequest": 1.1763139204545454
+        },
+        {
+          "function": "Canonical values/resources",
+          "sampleWeightMs": 91.0,
+          "share": 0.030434782608695653,
+          "normalizedSampleUsPerRequest": 0.673236268939394
+        },
+        {
+          "function": "Core execution/native backend",
+          "sampleWeightMs": 49.0,
+          "share": 0.016387959866220735,
+          "normalizedSampleUsPerRequest": 0.3625118371212121
+        },
+        {
+          "function": "Service harness/host scheduling",
+          "sampleWeightMs": 45.0,
+          "share": 0.015050167224080268,
+          "normalizedSampleUsPerRequest": 0.33291903409090906
+        },
+        {
+          "function": "HTTP harness/host runtime",
+          "sampleWeightMs": 1.0,
+          "share": 0.00033444816053511704,
+          "normalizedSampleUsPerRequest": 0.007398200757575758
+        },
+        {
+          "function": "Collector paths",
+          "sampleWeightMs": 1.0,
+          "share": 0.00033444816053511704,
+          "normalizedSampleUsPerRequest": 0.007398200757575758
+        }
+      ],
+      "leaf": [
+        {
+          "function": "kevent",
+          "sampleWeightMs": 272.0,
+          "share": 0.09096989966555184,
+          "normalizedSampleUsPerRequest": 2.012310606060606
+        },
+        {
+          "function": "wasmtime_internal_fiber::stackswitch::aarch64::wasmtime_fiber_switch_",
+          "sampleWeightMs": 128.0,
+          "share": 0.04280936454849498,
+          "normalizedSampleUsPerRequest": 0.946969696969697
+        },
+        {
+          "function": "_xzm_free_tc",
+          "sampleWeightMs": 93.0,
+          "share": 0.031103678929765885,
+          "normalizedSampleUsPerRequest": 0.6880326704545455
+        },
+        {
+          "function": "mach_absolute_time",
+          "sampleWeightMs": 87.0,
+          "share": 0.029096989966555183,
+          "normalizedSampleUsPerRequest": 0.6436434659090908
+        },
+        {
+          "function": "_xzm_malloc_tc",
+          "sampleWeightMs": 83.0,
+          "share": 0.027759197324414717,
+          "normalizedSampleUsPerRequest": 0.6140506628787878
+        },
+        {
+          "function": "_xzm_xzone_malloc_tiny",
+          "sampleWeightMs": 70.0,
+          "share": 0.023411371237458192,
+          "normalizedSampleUsPerRequest": 0.517874053030303
+        },
+        {
+          "function": "wasmtime::runtime::component::concurrent::handle_guest_call",
+          "sampleWeightMs": 65.0,
+          "share": 0.021739130434782608,
+          "normalizedSampleUsPerRequest": 0.48088304924242425
+        },
+        {
+          "function": "<deduplicated_symbol>",
+          "sampleWeightMs": 62.0,
+          "share": 0.02073578595317726,
+          "normalizedSampleUsPerRequest": 0.458688446969697
+        },
+        {
+          "function": "<wasmtime::runtime::store::Store<wasmvm_p3_reference::State>>::run_concurrent::<core::result::Result<(bytes::bytes::Bytes, u32, bool, bool), wasmtime_internal_core::error::error::Error>, wasmvm_p3_reference::invoke::{closure#0}>::{closure#0}",
+          "sampleWeightMs": 46.0,
+          "share": 0.015384615384615385,
+          "normalizedSampleUsPerRequest": 0.34031723484848486
+        },
+        {
+          "function": "__xzm_xzone_free_to_freelist_chunk",
+          "sampleWeightMs": 44.0,
+          "share": 0.01471571906354515,
+          "normalizedSampleUsPerRequest": 0.3255208333333333
+        },
+        {
+          "function": "__psynch_cvwait",
+          "sampleWeightMs": 42.0,
+          "share": 0.014046822742474917,
+          "normalizedSampleUsPerRequest": 0.3107244318181818
+        },
+        {
+          "function": "<wasmtime::runtime::store::StoreOpaque>::resume_fiber::{closure#0}",
+          "sampleWeightMs": 36.0,
+          "share": 0.012040133779264214,
+          "normalizedSampleUsPerRequest": 0.26633522727272724
+        },
+        {
+          "function": "wasmtime::runtime::fiber::resume_fiber",
+          "sampleWeightMs": 31.0,
+          "share": 0.01036789297658863,
+          "normalizedSampleUsPerRequest": 0.2293442234848485
+        },
+        {
+          "function": "_free",
+          "sampleWeightMs": 30.0,
+          "share": 0.010033444816053512,
+          "normalizedSampleUsPerRequest": 0.2219460227272727
+        },
+        {
+          "function": "<wasmtime::runtime::store::StoreOpaque>::set_task_may_block",
+          "sampleWeightMs": 29.0,
+          "share": 0.009698996655518394,
+          "normalizedSampleUsPerRequest": 0.21454782196969696
+        },
+        {
+          "function": "wasmvm_p3_reference::invoke::{closure#0}::{closure#0}::<i32>",
+          "sampleWeightMs": 26.0,
+          "share": 0.008695652173913044,
+          "normalizedSampleUsPerRequest": 0.1923532196969697
+        },
+        {
+          "function": "__psynch_cvsignal",
+          "sampleWeightMs": 25.0,
+          "share": 0.008361204013377926,
+          "normalizedSampleUsPerRequest": 0.18495501893939395
+        },
+        {
+          "function": "_malloc_zone_malloc",
+          "sampleWeightMs": 25.0,
+          "share": 0.008361204013377926,
+          "normalizedSampleUsPerRequest": 0.18495501893939395
+        },
+        {
+          "function": "<wasmtime::runtime::store::StoreOpaque>::set_thread::<wasmtime::runtime::component::concurrent::QualifiedThreadId>",
+          "sampleWeightMs": 24.0,
+          "share": 0.008026755852842809,
+          "normalizedSampleUsPerRequest": 0.17755681818181818
+        },
+        {
+          "function": "<wasmtime::runtime::component::resource_table::ResourceTable>::push_",
+          "sampleWeightMs": 20.0,
+          "share": 0.006688963210702341,
+          "normalizedSampleUsPerRequest": 0.14796401515151517
+        },
+        {
+          "function": "<wasmtime::runtime::store::StoreOpaque>::concurrent_state_mut",
+          "sampleWeightMs": 18.0,
+          "share": 0.006020066889632107,
+          "normalizedSampleUsPerRequest": 0.13316761363636362
+        },
+        {
+          "function": "<wasmtime::runtime::component::resource_table::ResourceTable>::delete_entry",
+          "sampleWeightMs": 17.0,
+          "share": 0.00568561872909699,
+          "normalizedSampleUsPerRequest": 0.12576941287878787
+        },
+        {
+          "function": "<tokio::task::coop::RestoreOnPending as core::ops::drop::Drop>::drop",
+          "sampleWeightMs": 16.0,
+          "share": 0.005351170568561873,
+          "normalizedSampleUsPerRequest": 0.11837121212121213
+        },
+        {
+          "function": "__rustc::__rdl_alloc",
+          "sampleWeightMs": 16.0,
+          "share": 0.005351170568561873,
+          "normalizedSampleUsPerRequest": 0.11837121212121213
+        },
+        {
+          "function": "<wasmtime::runtime::fiber::FiberFuture as core::future::future::Future>::poll",
+          "sampleWeightMs": 16.0,
+          "share": 0.005351170568561873,
+          "normalizedSampleUsPerRequest": 0.11837121212121213
+        }
+      ],
+      "equalityCallers": [],
+      "pthreadSystemLeafCategories": [
+        {
+          "function": "Other host/runtime/system",
+          "sampleWeightMs": 78.0,
+          "share": 0.02608695652173913,
+          "normalizedSampleUsPerRequest": 0.5770596590909092
+        }
+      ]
+    }
+  },
+  "gcCounterfactual": {
+    "plan": {
+      "blocks": 3,
+      "seed": 2026111193,
+      "samples": 12,
+      "warmups": 2,
+      "requestsPerClient": 16,
+      "clients": 16,
+      "workers": 4,
+      "requestsPerBatch": 256,
+      "configs": [
+        [
+          "go-default",
+          "base-go",
+          {}
+        ],
+        [
+          "go-gc-off",
+          "base-go",
+          {
+            "GOGC": "off"
+          }
+        ],
+        [
+          "llgo-default",
+          "base-sharded",
+          {}
+        ],
+        [
+          "llgo-gc-off",
+          "base-sharded",
+          {
+            "GC_DONT_GC": "1"
+          }
+        ],
+        [
+          "wasmtime",
+          "wasmtime",
+          {}
+        ]
+      ],
+      "scope": "Finite process collector counterfactuals, all existing allocation and request semantics retained. Existing exact executables. ProcessCPU/instructions between12 interleaved readiness markers after preparation/first/two warmups. Memory grows until process exit in collector-disabled configurations. Diagnostic timings excluded from release acceptance."
+    },
+    "summary": {
+      "go-default": {
+        "cpuUsPerRequest": {
+          "median": 150.8362334280303,
+          "values": [
+            150.8362334280303,
+            145.67095762310606,
+            152.9118134469697
+          ]
+        },
+        "systemUsPerRequest": {
+          "median": 1.5592743844696968,
+          "values": [
+            1.5592743844696968,
+            1.5565222537878785,
+            1.7488162878787878
+          ]
+        },
+        "instructionsPerRequest": {
+          "median": 1901892.8799715908,
+          "values": [
+            1901892.8799715908,
+            1910652.2634943181,
+            1900668.5745738635
+          ]
+        },
+        "cyclesPerRequest": {
+          "median": 588722.9115767046,
+          "values": [
+            588722.9115767046,
+            568344.1573153409,
+            595375.2674005682
+          ]
+        },
+        "gcCollections": {
+          "median": 7,
+          "values": [
+            8,
+            7,
+            7
+          ]
+        },
+        "peakPhysicalBytes": {
+          "median": 117883720,
+          "values": [
+            124273504,
+            117588808,
+            117883720
+          ]
+        }
+      },
+      "go-gc-off": {
+        "cpuUsPerRequest": {
+          "median": 145.37621330492422,
+          "values": [
+            141.58577473958331,
+            145.37621330492422,
+            148.87949810606057
+          ]
+        },
+        "systemUsPerRequest": {
+          "median": 10.407359730113637,
+          "values": [
+            9.586529356060606,
+            10.407359730113637,
+            10.632531368371213
+          ]
+        },
+        "instructionsPerRequest": {
+          "median": 1767198.4055397727,
+          "values": [
+            1767151.6942471592,
+            1767198.4055397727,
+            1768673.9897017046
+          ]
+        },
+        "cyclesPerRequest": {
+          "median": 568204.7652698864,
+          "values": [
+            552312.8430397727,
+            568204.7652698864,
+            578189.1573153409
+          ]
+        },
+        "gcCollections": {
+          "median": 0,
+          "values": [
+            0,
+            0,
+            0
+          ]
+        },
+        "peakPhysicalBytes": {
+          "median": 687883464,
+          "values": [
+            687883464,
+            687949024,
+            687801568
+          ]
+        }
+      },
+      "llgo-default": {
+        "cpuUsPerRequest": {
+          "median": 364.9132043087121,
+          "values": [
+            367.4107333096591,
+            364.9132043087121,
+            344.5230379971591
+          ]
+        },
+        "systemUsPerRequest": {
+          "median": 103.11359197443183,
+          "values": [
+            109.22718394886363,
+            103.11359197443183,
+            97.50807883522728
+          ]
+        },
+        "instructionsPerRequest": {
+          "median": 2537487.8338068184,
+          "values": [
+            2588379.48046875,
+            2537487.8338068184,
+            2496178.815696023
+          ]
+        },
+        "cyclesPerRequest": {
+          "median": 1302952.0269886365,
+          "values": [
+            1385377.4087357954,
+            1302952.0269886365,
+            1243919.2787642046
+          ]
+        },
+        "gcCollections": {
+          "median": 11,
+          "values": [
+            12,
+            11,
+            11
+          ]
+        },
+        "peakPhysicalBytes": {
+          "median": 187597496,
+          "values": [
+            191152848,
+            187597496,
+            169706192
+          ]
+        }
+      },
+      "llgo-gc-off": {
+        "cpuUsPerRequest": {
+          "median": 302.8990589488636,
+          "values": [
+            295.7486239346591,
+            302.8990589488636,
+            303.75384706439394
+          ]
+        },
+        "systemUsPerRequest": {
+          "median": 96.6337890625,
+          "values": [
+            96.6337890625,
+            97.19813861268939,
+            92.00659919507575
+          ]
+        },
+        "instructionsPerRequest": {
+          "median": 2270385.940340909,
+          "values": [
+            2280538.9783380684,
+            2270385.940340909,
+            2261415.987215909
+          ]
+        },
+        "cyclesPerRequest": {
+          "median": 1071480.5923295454,
+          "values": [
+            1098443.6793323865,
+            1067169.0230823865,
+            1071480.5923295454
+          ]
+        },
+        "gcCollections": {
+          "median": 0,
+          "values": [
+            0,
+            0,
+            0
+          ]
+        },
+        "peakPhysicalBytes": {
+          "median": 953353464,
+          "values": [
+            953353464,
+            953435360,
+            953205960
+          ]
+        }
+      },
+      "wasmtime": {
+        "cpuUsPerRequest": {
+          "median": 25.464399857954543,
+          "values": [
+            24.672318892045457,
+            25.464399857954543,
+            26.434037642045457
+          ]
+        },
+        "systemUsPerRequest": {
+          "median": 5.371138139204545,
+          "values": [
+            5.184881036931818,
+            5.371138139204545,
+            5.774562026515151
+          ]
+        },
+        "instructionsPerRequest": {
+          "median": 215333.51882102274,
+          "values": [
+            214776.83664772726,
+            215333.51882102274,
+            215820.33771306818
+          ]
+        },
+        "cyclesPerRequest": {
+          "median": 93047.63032670454,
+          "values": [
+            91284.00958806818,
+            93047.63032670454,
+            98142.49183238637
+          ]
+        },
+        "gcCollections": {
+          "median": 0,
+          "values": [
+            0,
+            0,
+            0
+          ]
+        },
+        "peakPhysicalBytes": {
+          "median": 15074168,
+          "values": [
+            15057736,
+            15778680,
+            15074168
+          ]
+        }
+      }
+    },
+    "observations": [
+      {
+        "block": 0,
+        "id": "llgo-gc-off",
+        "profile": "base-sharded",
+        "overrides": {
+          "GC_DONT_GC": "1"
+        },
+        "windowRequests": 2816,
+        "counterDelta": {
+          "ri_user_time": 13456977,
+          "ri_system_time": 6530898,
+          "ri_instructions": 6421997763,
+          "ri_cycles": 3093217401
+        },
+        "cpuUsPerRequest": 295.7486239346591,
+        "systemUsPerRequest": 96.6337890625,
+        "instructionsPerRequest": 2280538.9783380684,
+        "cyclesPerRequest": 1098443.6793323865,
+        "gcCollections": 0,
+        "peakPhysicalBytes": 953353464
+      },
+      {
+        "block": 0,
+        "id": "llgo-default",
+        "profile": "base-sharded",
+        "overrides": {},
+        "windowRequests": 2816,
+        "counterDelta": {
+          "ri_user_time": 17449077,
+          "ri_system_time": 7382010,
+          "ri_instructions": 7288876617,
+          "ri_cycles": 3901222783
+        },
+        "cpuUsPerRequest": 367.4107333096591,
+        "systemUsPerRequest": 109.22718394886363,
+        "instructionsPerRequest": 2588379.48046875,
+        "cyclesPerRequest": 1385377.4087357954,
+        "gcCollections": 12,
+        "peakPhysicalBytes": 191152848
+      },
+      {
+        "block": 0,
+        "id": "go-gc-off",
+        "profile": "base-go",
+        "overrides": {
+          "GOGC": "off"
+        },
+        "windowRequests": 2816,
+        "counterDelta": {
+          "ri_user_time": 8921037,
+          "ri_system_time": 647896,
+          "ri_instructions": 4976299171,
+          "ri_cycles": 1555312966
+        },
+        "cpuUsPerRequest": 141.58577473958331,
+        "systemUsPerRequest": 9.586529356060606,
+        "instructionsPerRequest": 1767151.6942471592,
+        "cyclesPerRequest": 552312.8430397727,
+        "gcCollections": 0,
+        "peakPhysicalBytes": 687883464
+      },
+      {
+        "block": 0,
+        "id": "go-default",
+        "profile": "base-go",
+        "overrides": {},
+        "windowRequests": 2816,
+        "counterDelta": {
+          "ri_user_time": 10088734,
+          "ri_system_time": 105382,
+          "ri_instructions": 5355730350,
+          "ri_cycles": 1657843719
+        },
+        "cpuUsPerRequest": 150.8362334280303,
+        "systemUsPerRequest": 1.5592743844696968,
+        "instructionsPerRequest": 1901892.8799715908,
+        "cyclesPerRequest": 588722.9115767046,
+        "gcCollections": 8,
+        "peakPhysicalBytes": 124273504
+      },
+      {
+        "block": 0,
+        "id": "wasmtime",
+        "profile": "wasmtime",
+        "overrides": {},
+        "windowRequests": 2816,
+        "counterDelta": {
+          "ri_user_time": 1317039,
+          "ri_system_time": 350415,
+          "ri_instructions": 604811572,
+          "ri_cycles": 257055771
+        },
+        "cpuUsPerRequest": 24.672318892045457,
+        "systemUsPerRequest": 5.184881036931818,
+        "instructionsPerRequest": 214776.83664772726,
+        "cyclesPerRequest": 91284.00958806818,
+        "gcCollections": 0,
+        "peakPhysicalBytes": 15057736
+      },
+      {
+        "block": 1,
+        "id": "go-gc-off",
+        "profile": "base-go",
+        "overrides": {
+          "GOGC": "off"
+        },
+        "windowRequests": 2816,
+        "counterDelta": {
+          "ri_user_time": 9121735,
+          "ri_system_time": 703371,
+          "ri_instructions": 4976430710,
+          "ri_cycles": 1600064619
+        },
+        "cpuUsPerRequest": 145.37621330492422,
+        "systemUsPerRequest": 10.407359730113637,
+        "instructionsPerRequest": 1767198.4055397727,
+        "cyclesPerRequest": 568204.7652698864,
+        "gcCollections": 0,
+        "peakPhysicalBytes": 687949024
+      },
+      {
+        "block": 1,
+        "id": "go-default",
+        "profile": "base-go",
+        "overrides": {},
+        "windowRequests": 2816,
+        "counterDelta": {
+          "ri_user_time": 9739830,
+          "ri_system_time": 105196,
+          "ri_instructions": 5380396774,
+          "ri_cycles": 1600457147
+        },
+        "cpuUsPerRequest": 145.67095762310606,
+        "systemUsPerRequest": 1.5565222537878785,
+        "instructionsPerRequest": 1910652.2634943181,
+        "cyclesPerRequest": 568344.1573153409,
+        "gcCollections": 7,
+        "peakPhysicalBytes": 117588808
+      },
+      {
+        "block": 1,
+        "id": "llgo-gc-off",
+        "profile": "base-sharded",
+        "overrides": {
+          "GC_DONT_GC": "1"
+        },
+        "windowRequests": 2816,
+        "counterDelta": {
+          "ri_user_time": 13902091,
+          "ri_system_time": 6569039,
+          "ri_instructions": 6393406808,
+          "ri_cycles": 3005147969
+        },
+        "cpuUsPerRequest": 302.8990589488636,
+        "systemUsPerRequest": 97.19813861268939,
+        "instructionsPerRequest": 2270385.940340909,
+        "cyclesPerRequest": 1067169.0230823865,
+        "gcCollections": 0,
+        "peakPhysicalBytes": 953435360
+      },
+      {
+        "block": 1,
+        "id": "wasmtime",
+        "profile": "wasmtime",
+        "overrides": {},
+        "windowRequests": 2816,
+        "counterDelta": {
+          "ri_user_time": 1357983,
+          "ri_system_time": 363003,
+          "ri_instructions": 606379189,
+          "ri_cycles": 262022127
+        },
+        "cpuUsPerRequest": 25.464399857954543,
+        "systemUsPerRequest": 5.371138139204545,
+        "instructionsPerRequest": 215333.51882102274,
+        "cyclesPerRequest": 93047.63032670454,
+        "gcCollections": 0,
+        "peakPhysicalBytes": 15778680
+      },
+      {
+        "block": 1,
+        "id": "llgo-default",
+        "profile": "base-sharded",
+        "overrides": {},
+        "windowRequests": 2816,
+        "counterDelta": {
+          "ri_user_time": 17693465,
+          "ri_system_time": 6968829,
+          "ri_instructions": 7145565740,
+          "ri_cycles": 3669112908
+        },
+        "cpuUsPerRequest": 364.9132043087121,
+        "systemUsPerRequest": 103.11359197443183,
+        "instructionsPerRequest": 2537487.8338068184,
+        "cyclesPerRequest": 1302952.0269886365,
+        "gcCollections": 11,
+        "peakPhysicalBytes": 187597496
+      },
+      {
+        "block": 2,
+        "id": "go-gc-off",
+        "profile": "base-go",
+        "overrides": {
+          "GOGC": "off"
+        },
+        "windowRequests": 2816,
+        "counterDelta": {
+          "ri_user_time": 9343283,
+          "ri_system_time": 718589,
+          "ri_instructions": 4980585955,
+          "ri_cycles": 1628180667
+        },
+        "cpuUsPerRequest": 148.87949810606057,
+        "systemUsPerRequest": 10.632531368371213,
+        "instructionsPerRequest": 1768673.9897017046,
+        "cyclesPerRequest": 578189.1573153409,
+        "gcCollections": 0,
+        "peakPhysicalBytes": 687801568
+      },
+      {
+        "block": 2,
+        "id": "wasmtime",
+        "profile": "wasmtime",
+        "overrides": {},
+        "windowRequests": 2816,
+        "counterDelta": {
+          "ri_user_time": 1396250,
+          "ri_system_time": 390268,
+          "ri_instructions": 607750071,
+          "ri_cycles": 276369257
+        },
+        "cpuUsPerRequest": 26.434037642045457,
+        "systemUsPerRequest": 5.774562026515151,
+        "instructionsPerRequest": 215820.33771306818,
+        "cyclesPerRequest": 98142.49183238637,
+        "gcCollections": 0,
+        "peakPhysicalBytes": 15074168
+      },
+      {
+        "block": 2,
+        "id": "llgo-gc-off",
+        "profile": "base-sharded",
+        "overrides": {
+          "GC_DONT_GC": "1"
+        },
+        "windowRequests": 2816,
+        "counterDelta": {
+          "ri_user_time": 14310726,
+          "ri_system_time": 6218174,
+          "ri_instructions": 6368147420,
+          "ri_cycles": 3017289348
+        },
+        "cpuUsPerRequest": 303.75384706439394,
+        "systemUsPerRequest": 92.00659919507575,
+        "instructionsPerRequest": 2261415.987215909,
+        "cyclesPerRequest": 1071480.5923295454,
+        "gcCollections": 0,
+        "peakPhysicalBytes": 953205960
+      },
+      {
+        "block": 2,
+        "id": "llgo-default",
+        "profile": "base-sharded",
+        "overrides": {},
+        "windowRequests": 2816,
+        "counterDelta": {
+          "ri_user_time": 16694259,
+          "ri_system_time": 6589986,
+          "ri_instructions": 7029239545,
+          "ri_cycles": 3502876689
+        },
+        "cpuUsPerRequest": 344.5230379971591,
+        "systemUsPerRequest": 97.50807883522728,
+        "instructionsPerRequest": 2496178.815696023,
+        "cyclesPerRequest": 1243919.2787642046,
+        "gcCollections": 11,
+        "peakPhysicalBytes": 169706192
+      },
+      {
+        "block": 2,
+        "id": "go-default",
+        "profile": "base-go",
+        "overrides": {},
+        "windowRequests": 2816,
+        "counterDelta": {
+          "ri_user_time": 10216200,
+          "ri_system_time": 118192,
+          "ri_instructions": 5352282706,
+          "ri_cycles": 1676576753
+        },
+        "cpuUsPerRequest": 152.9118134469697,
+        "systemUsPerRequest": 1.7488162878787878,
+        "instructionsPerRequest": 1900668.5745738635,
+        "cyclesPerRequest": 595375.2674005682,
+        "gcCollections": 7,
+        "peakPhysicalBytes": 117883720
+      }
+    ]
+  },
+  "boundaries": {
+    "go-boundaries": {
+      "GOMAXPROCS": 4,
+      "backend": "native",
+      "calls": [
+        {
+          "count": 2000,
+          "host": false,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 2
+        },
+        {
+          "count": 13000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 33
+        },
+        {
+          "count": 1000,
+          "host": false,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 6
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 271
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 16
+        },
+        {
+          "count": 1000,
+          "host": false,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 4
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 31
+        },
+        {
+          "count": 5000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 281
+        },
+        {
+          "count": 1000,
+          "host": false,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 8
+        },
+        {
+          "count": 12000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 32
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 278
+        },
+        {
+          "count": 5000,
+          "host": false,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 11
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 275
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 30
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 36
+        },
+        {
+          "count": 1000,
+          "host": false,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 1
+        },
+        {
+          "count": 2000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 272
+        },
+        {
+          "count": 1000,
+          "host": false,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 5
+        },
+        {
+          "count": 24000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 34
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 276
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 26
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 273
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 35
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 27
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 25
+        },
+        {
+          "count": 1000,
+          "host": false,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 7
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 22
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 17
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 280
+        },
+        {
+          "count": 3000,
+          "host": false,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 9
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 274
+        },
+        {
+          "count": 1000,
+          "host": false,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 3
+        },
+        {
+          "count": 3000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 279
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 13
+        },
+        {
+          "count": 2000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 15
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 21
+        },
+        {
+          "count": 1000,
+          "host": false,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 10
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 277
+        }
+      ],
+      "compiler": "gc",
+      "coreRuns": 93000,
+      "nativeEntries": 186000,
+      "nativeExits": [
+        0,
+        87000,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        99000,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "requests": 1000,
+      "taskCreates": 9000
+    },
+    "llgo-boundaries": {
+      "GOMAXPROCS": 4,
+      "backend": "native",
+      "calls": [
+        {
+          "count": 24000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 34
+        },
+        {
+          "count": 5000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 281
+        },
+        {
+          "count": 1000,
+          "host": false,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 8
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 277
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 280
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 273
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 274
+        },
+        {
+          "count": 3000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 279
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 26
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 25
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 278
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 275
+        },
+        {
+          "count": 12000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 32
+        },
+        {
+          "count": 1000,
+          "host": false,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 1
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 35
+        },
+        {
+          "count": 1000,
+          "host": false,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 3
+        },
+        {
+          "count": 1000,
+          "host": false,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 4
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 21
+        },
+        {
+          "count": 2000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 272
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 276
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 22
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 30
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 36
+        },
+        {
+          "count": 5000,
+          "host": false,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 11
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 13
+        },
+        {
+          "count": 3000,
+          "host": false,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 9
+        },
+        {
+          "count": 2000,
+          "host": false,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 2
+        },
+        {
+          "count": 1000,
+          "host": false,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 7
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 16
+        },
+        {
+          "count": 1000,
+          "host": false,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 6
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 31
+        },
+        {
+          "count": 1000,
+          "host": false,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 10
+        },
+        {
+          "count": 1000,
+          "host": false,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 5
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 17,
+          "sameInstance": false,
+          "target": 271
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 27
+        },
+        {
+          "count": 1000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 17
+        },
+        {
+          "count": 2000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 15
+        },
+        {
+          "count": 13000,
+          "host": true,
+          "opcode": 16,
+          "sameInstance": false,
+          "target": 33
+        }
+      ],
+      "compiler": "llgo",
+      "coreRuns": 93000,
+      "nativeEntries": 186000,
+      "nativeExits": [
+        0,
+        87000,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        99000,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "requests": 1000,
+      "taskCreates": 9000
+    }
+  },
+  "taskOperations": {
+    "GOMAXPROCS": 4,
+    "backend": "native",
+    "calls": [
+      {
+        "count": 1000,
+        "host": false,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 4
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 280
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 16,
+        "sameInstance": false,
+        "target": 35
+      },
+      {
+        "count": 24000,
+        "host": true,
+        "opcode": 16,
+        "sameInstance": false,
+        "target": 34
+      },
+      {
+        "count": 1000,
+        "host": false,
+        "opcode": 16,
+        "sameInstance": false,
+        "target": 5
+      },
+      {
+        "count": 1000,
+        "host": false,
+        "opcode": 16,
+        "sameInstance": false,
+        "target": 10
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 16,
+        "sameInstance": false,
+        "target": 27
+      },
+      {
+        "count": 1000,
+        "host": false,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 8
+      },
+      {
+        "count": 1000,
+        "host": false,
+        "opcode": 16,
+        "sameInstance": false,
+        "target": 1
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 277
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 274
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 271
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 26
+      },
+      {
+        "count": 3000,
+        "host": false,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 9
+      },
+      {
+        "count": 12000,
+        "host": true,
+        "opcode": 16,
+        "sameInstance": false,
+        "target": 32
+      },
+      {
+        "count": 1000,
+        "host": false,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 7
+      },
+      {
+        "count": 13000,
+        "host": true,
+        "opcode": 16,
+        "sameInstance": false,
+        "target": 33
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 276
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 16,
+        "sameInstance": false,
+        "target": 17
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 30
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 16,
+        "sameInstance": false,
+        "target": 16
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 275
+      },
+      {
+        "count": 3000,
+        "host": true,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 279
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 16,
+        "sameInstance": false,
+        "target": 13
+      },
+      {
+        "count": 2000,
+        "host": true,
+        "opcode": 16,
+        "sameInstance": false,
+        "target": 15
+      },
+      {
+        "count": 2000,
+        "host": true,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 272
+      },
+      {
+        "count": 5000,
+        "host": true,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 281
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 22
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 273
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 21
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 31
+      },
+      {
+        "count": 5000,
+        "host": false,
+        "opcode": 16,
+        "sameInstance": false,
+        "target": 11
+      },
+      {
+        "count": 1000,
+        "host": false,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 6
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 278
+      },
+      {
+        "count": 2000,
+        "host": false,
+        "opcode": 16,
+        "sameInstance": false,
+        "target": 2
+      },
+      {
+        "count": 1000,
+        "host": false,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 3
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 17,
+        "sameInstance": false,
+        "target": 25
+      },
+      {
+        "count": 1000,
+        "host": true,
+        "opcode": 16,
+        "sameInstance": false,
+        "target": 36
+      }
+    ],
+    "compiler": "gc",
+    "coreRuns": 93000,
+    "hostTargetLabels": {
+      "13": "github.com/cpunion/wasmvm/pkg/component.(*Instance).asyncValueBuiltin.func1",
+      "15": "github.com/cpunion/wasmvm/pkg/component.(*Instance).canonical.func4",
+      "16": "github.com/cpunion/wasmvm/pkg/component.(*Instance).asyncValueBuiltin.func1",
+      "17": "github.com/cpunion/wasmvm/pkg/component.(*Instance).canonical.func4",
+      "21": "github.com/cpunion/wasmvm/pkg/component.(*Instance).asyncValueBuiltin.func1",
+      "22": "github.com/cpunion/wasmvm/pkg/component.(*Instance).asyncValueBuiltin.func1",
+      "25": "github.com/cpunion/wasmvm/pkg/component.(*Instance).asyncValueBuiltin.func1",
+      "26": "github.com/cpunion/wasmvm/pkg/component.(*Instance).asyncValueBuiltin.func1",
+      "27": "github.com/cpunion/wasmvm/pkg/component.(*Instance).asyncValueBuiltin.func1",
+      "271": "github.com/cpunion/wasmvm/pkg/component.(*Instance).canonical.func4",
+      "272": "github.com/cpunion/wasmvm/pkg/component.(*Instance).canonical.func4",
+      "273": "github.com/cpunion/wasmvm/pkg/component.(*Instance).asyncValueBuiltin.func1",
+      "274": "github.com/cpunion/wasmvm/pkg/component.(*Instance).asyncValueBuiltin.func1",
+      "275": "github.com/cpunion/wasmvm/pkg/component.(*Instance).canonical.func4",
+      "276": "github.com/cpunion/wasmvm/pkg/component.(*Instance).asyncValueBuiltin.func1",
+      "277": "github.com/cpunion/wasmvm/pkg/component.(*Instance).asyncValueBuiltin.func1",
+      "278": "github.com/cpunion/wasmvm/pkg/component.(*Instance).asyncValueBuiltin.func1",
+      "279": "github.com/cpunion/wasmvm/pkg/component.(*Instance).asyncValueBuiltin.func1",
+      "280": "github.com/cpunion/wasmvm/pkg/component.(*Instance).taskBuiltin.func1",
+      "281": "github.com/cpunion/wasmvm/pkg/component.(*Instance).waitableBuiltin.func1",
+      "30": "github.com/cpunion/wasmvm/pkg/component.(*Instance).asyncValueBuiltin.func1",
+      "31": "github.com/cpunion/wasmvm/pkg/component.(*Instance).asyncValueBuiltin.func1",
+      "32": "github.com/cpunion/wasmvm/pkg/component.(*Instance).waitableBuiltin.func1",
+      "33": "github.com/cpunion/wasmvm/pkg/component.(*Instance).taskBuiltin.func1",
+      "34": "github.com/cpunion/wasmvm/pkg/component.(*Instance).taskBuiltin.func1",
+      "35": "github.com/cpunion/wasmvm/pkg/component.(*Instance).waitableBuiltin.func1",
+      "36": "github.com/cpunion/wasmvm/pkg/component.(*Instance).waitableBuiltin.func1"
+    },
+    "nativeEntries": 186000,
+    "nativeExits": [
+      0,
+      87000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      99000,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "requests": 1000,
+    "resourceOperations": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "taskCreates": 9000,
+    "taskOperations": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1000,
+      13000,
+      24000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "validation": {
+    "counterProcesses": 15,
+    "counterCheckedMeasuredResponses": 1843200,
+    "counterWindowRequests": 1781760,
+    "collectorProcesses": 15,
+    "collectorCheckedMeasuredResponses": 46080,
+    "collectorWindowRequests": 42240,
+    "profileProcesses": 3,
+    "profileCheckedMeasuredResponses": 368640,
+    "boundaryCompilerProfiles": 2,
+    "boundaryRequestsPerProfile": 1000,
+    "taskOpcodeCheckedRequests": 1000,
+    "productionChanges": "none in this diagnostic study"
+  },
+  "primarySourceVerification": {
+    "cranelift": {
+      "url": "https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/cranelift/src/compiler/component.rs",
+      "gitBlobSHA": "3d49e8daac8607f09a4d76fd8136ed59da1fff00"
+    },
+    "translation": {
+      "url": "https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/environ/src/component/translate/inline.rs",
+      "gitBlobSHA": "d5e8c41379e1785d00be7cd069d8d64a9e0da164"
+    },
+    "verification": "GitHub tag file blobs match the installed Cargo source bytes exactly."
+  },
+  "limitations": [
+    "Fixed workstation diagnostics, hostfrequency/load uncontrolled. Source performance acceptance open.",
+    "CPU counter interval contains existing batch stats/readiness bookkeeping. Startup, first/warmup and cleanup occur outside the29-interval window.",
+    "Profile sample weights and exact process-counter observations are separate cohorts. Phase attribution uses nearest semantic frames after memory-management priority and preserves anonymous/JIT leaves.",
+    "Collector-disabled runs retain allocations andgrowuntilprocess exit. They arefinite diagnostics withverifiedzeroGC andmeasuredphysicalfootprint.",
+    "Original raw CPU labels omitted theMach125/3timebase factor. Raw counters retained. Corrected CPU values validated againstresource.getrusage; instructions/cycles use hardwareunits.",
+    "Initial xctrace-managed stdout capture produced a ready line andno complete result despiteexit0. That trace remains unqualified. Finalthree traces use exec+directfile output, verifytargetexit0 andall responses."
+  ],
+  "checksums": {
+    "plan.json": "2d89c5b2c857ef9017f85e62c56ddd9e25f2f7f23dd6df50564e222166bb58d2",
+    "profile.py": "2ab479d7f63a90cbf0d33ba2e8a190fef37933e9d3baf2402483163dd8e509bc",
+    "cpu-counter-plan.json": "86ae936722bfea7b747cbda4be5692eb7c42d22ef8ce78b38f007223461c7c95",
+    "cpu-counters.py": "c4949e0c716b51d69a9ede27438990ca0f117c488053091a50d44491bd7b9cb4",
+    "cpu-counters-original-raw-ticks.py": "19dbb5be35f303fb7f44407eb8e142421e428baa2035b6f2411debd594ad6d26",
+    "cpu-counters.jsonl": "82f50855d565348273c03f2e06cf776953a4a578e73ecad97a6975bc06f113de",
+    "cpu-counters-corrected.json": "b8960bd145ae3747a5d2629c0c28209700d711cfe1670f04335e3e8f66452dc1",
+    "correct-counter-units.py": "8a143aa606e4fbb1bee4313ec14120f33dbdebd114f49402cfbc40753c19eaee",
+    "counter-unit-validation.json": "f2b2078735c306910613c9d6cff6917e512f669f82f24b0854a1701040f3eea4",
+    "cpu-counter-summary-corrected.json": "859b0f805a4ca90c42189f48a1de3b30dc46fc01c80cdfe36bcf966d4a7344b2",
+    "gc-counterfactual.py": "7a12de7a693b7c2ae5fa99e4983ffdc0f3f8abbfab67cde2bd971e6bb7a5de34",
+    "gc-counterfactual-plan.json": "32ed2be82becd1c1831f9c44eaee42c873c33db76373f5644d6b9d42015ae267",
+    "gc-counterfactual.jsonl": "18e2659153656805de9dc6d1ffd2e2a2ee4d77d0289e44cefbb195bf9f35969d",
+    "gc-counterfactual-summary.json": "5afbcc020a1bc47c172c5bb5e12710c41de2d731142d734e49794c3dba95c274",
+    "attribution.json": "c27cf976725a0d53d1e8d5519d99558be7c878fb1774acba9b3f0fcc8e48cf2c",
+    "attribute.py": "b41fce97333b85f7d0f292a748a55946cfcde3e1a9e985cc03adaa7beb06d317",
+    "boundary-plan.json": "a673d30d9d2bd4fd0127403f0062722e6da5301939591d956449a8d5638f40b2",
+    "boundary-counts.log": "64e08c79ca3d3de4e535405497cd4666d2356976404297df2a39305810880b63",
+    "go-boundaries/gc-native-p4-n1000.json": "212a62dc71269121cb9c2b916f346dea6285f6b802d2d981750d2fe54a9f9d14",
+    "llgo-boundaries/llgo-native-p4-n1000.json": "ec4ac45aace4cb22618453e7664d29a23112529911fcb14d5f00c5707902d3f9",
+    "task-ops/gc-native-p4-n1000.json": "f31cc013f6a4bf3531084ba6f0df826073dd0603924af8d0514571a7f53d989d",
+    "base-go-samples.xml": "fc79b7ab420e10205e18aec819b1410e8adeed946439194d1772586f5880ee37",
+    "base-go-toc.xml": "aaa3397305732f7ea4cc3866fa32b499b0fc51a9d9efdc263cbcf37d2162b77c",
+    "base-go-target.log": "d2cd07091f7f3cf3c6f5c52ff1768c5c9258a8a79e3d3897da9e76af444f14e9",
+    "base-go-qualification.json": "3052be900cc10904a17b8793f5ddb32774647dbccde53c924646eb8213a0ccfa",
+    "base-sharded-samples.xml": "e86aef03438c180b98c5f3b787c4c53d179a0edea4df582950b8f48c23f8a3f7",
+    "base-sharded-toc.xml": "d45ec1a1dd3840f1f02221efdbf206119aed09abb258808240987d25f6a80c71",
+    "base-sharded-target.log": "f77e781c249d6324f8dd684f70b3cce44fdf954a830ca683ed9c32e6ba5759aa",
+    "base-sharded-qualification.json": "c800544cc89b40dc90a3ed5682c03da3b1bb4f680cb2bf093a8f297687279b5b",
+    "wasmtime-samples.xml": "529f853bbe1f62ce2e00d3439efc6fecfbde580d4f0b1f617bfb17ad8115b189",
+    "wasmtime-toc.xml": "df3a18a75d62063e348c26d1b35197fe292e8334b4e642400361d6a79a9d586f",
+    "wasmtime-target.log": "7efd36285046f08b72de0016702ac08cf7e073a276559875dd3431f80cd5cd1a",
+    "wasmtime-qualification.json": "7b5c5abad2e5e345c25605ea1c29b01e5a134e797de3a7dfd5e8d76f88850e7d"
+  }
+}

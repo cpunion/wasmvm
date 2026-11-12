@@ -1,7 +1,7 @@
 package canonical
 
 import (
-	"sync"
+	"sync/atomic"
 
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -15,8 +15,9 @@ type Reference struct {
 }
 
 type referenceState struct {
-	mu     sync.Mutex
-	valid  bool
+	// The binding never changes. Moving or invalidating any alias only clears
+	// this shared affine bit; a successful move publishes a fresh binding.
+	valid  atomic.Bool
 	table  *Resources
 	typeID *ResourceType
 	id     uint32
@@ -32,7 +33,8 @@ type referenceAllocation struct {
 }
 
 func NewReference(table *Resources, typeID *ResourceType, id uint32, owner any, scope *BorrowScope) *Reference {
-	allocation := &referenceAllocation{state: referenceState{valid: true, table: table, typeID: typeID, id: id, owner: owner, scope: scope}}
+	allocation := &referenceAllocation{state: referenceState{table: table, typeID: typeID, id: id, owner: owner, scope: scope}}
+	allocation.state.valid.Store(true)
 	allocation.reference.state = &allocation.state
 	return &allocation.reference
 }
@@ -48,9 +50,7 @@ func ReferenceInfo(r *Reference) (*Resources, *ResourceType, uint32, any, bool, 
 		return nil, nil, 0, nil, false, wasm.ErrInvalid
 	}
 	s := r.state
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if !s.valid || s.scope != nil && !s.scope.Active() {
+	if !s.valid.Load() || s.scope != nil && !s.scope.Active() {
 		return nil, nil, 0, nil, false, errExpiredReference
 	}
 	return s.table, s.typeID, s.id, s.owner, s.scope != nil, nil
@@ -68,20 +68,15 @@ func MoveReference(r *Reference) (*Reference, error) {
 		return nil, wasm.ErrInvalid
 	}
 	s := r.state
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if !s.valid || s.scope != nil {
+	if s.scope != nil || !s.valid.CompareAndSwap(true, false) {
 		return nil, scalarTrap("cannot move expired or borrowed resource")
 	}
-	s.valid = false
 	return NewReference(s.table, s.typeID, s.id, s.owner, nil), nil
 }
 
 func InvalidateReference(r *Reference) {
 	if r != nil && r.state != nil {
-		r.state.mu.Lock()
-		r.state.valid = false
-		r.state.mu.Unlock()
+		r.state.valid.Store(false)
 	}
 }
 
@@ -101,7 +96,5 @@ func (r *Resources) CheckOwn(t *ResourceType, id uint32) error {
 }
 
 func (s *BorrowScope) Active() bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	return !s.ended
 }

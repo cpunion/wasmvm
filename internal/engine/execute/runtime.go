@@ -12,7 +12,7 @@ import (
 )
 
 func (e *Execution) failTrap(fn *state.Function, source uint32, trap wasm.TrapCode) Status {
-	return e.fail(&wasm.Trap{Code: trap, Function: fn.Index, Offset: fn.Code.Sources[source].Wasm.Offset})
+	return e.fail(&wasm.Trap{Code: trap, Function: fn.Index, Offset: fn.Code.SourceOffset(source)})
 }
 
 // runRuntime services one already-charged boundary. It publishes the complete
@@ -37,7 +37,7 @@ func (e *Execution) runRuntime() Status {
 	switch op := in.Op; op {
 	case slots.ControlBase + uint32(ir.IfCast):
 		index := uint32(0)
-		im := &code.Sources[in.Source].Wasm
+		im := &code.ReadSource(in.Source, &e.source).Wasm
 		target := module.ResolveType(im.Types[1], instance.Types)
 		matched := false
 		if im.Op == 0xfb0025 || im.Op == 0xfb0026 {
@@ -85,11 +85,11 @@ func (e *Execution) runRuntime() Status {
 		}
 	case 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
 		0x30, 0x31, 0x32, 0x33, 0x34, 0x35:
-		im := &code.Sources[in.Source].Wasm
+		im := &code.ReadSource(in.Source, &e.source).Wasm
 		result, trap = instance.Memories[im.Memory].Load(op, a.Lo, im.MemoryOffset(), 0, value.Value{})
 	case 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d,
 		0x3e:
-		im := &code.Sources[in.Source].Wasm
+		im := &code.ReadSource(in.Source, &e.source).Wasm
 		trap = instance.Memories[im.Memory].Store(op, a.Lo, im.MemoryOffset(), 0, b)
 	case 0x3f:
 		result.Lo = uint64(instance.Memories[in.Extra].Pages())
@@ -107,7 +107,7 @@ func (e *Execution) runRuntime() Status {
 	case 0xd2:
 		result.Lo = instance.Functions[in.Extra]
 	case 0xe0, 0xe1, 0xe2, 0xe3, 0xe4, 0xe5, 0xe6:
-		im := &code.Sources[in.Source].Wasm
+		im := &code.ReadSource(in.Source, &e.source).Wasm
 		f.pc = pc
 		if err := e.stackInstruction(*in, im); err != nil {
 			var t *wasm.Trap
@@ -131,14 +131,14 @@ func (e *Execution) runRuntime() Status {
 				e.store.Domain.Fence()
 				break
 			}
-			im := &code.Sources[in.Source].Wasm
+			im := &code.ReadSource(in.Source, &e.source).Wasm
 			var err error
 			result, trap, err = instance.Memories[im.Memory].Atomic(e.context, e.store.Domain, op&0xffff, a.Lo, im.MemoryOffset(), b.Lo, c.Lo)
 			if err != nil {
 				return e.fail(err)
 			}
 		case op >= 0xfc0008 && op <= 0xfc0011:
-			im := &code.Sources[in.Source].Wasm
+			im := &code.ReadSource(in.Source, &e.source).Wasm
 			var err error
 			result, trap, err = e.bulk(instance, *im, a, b, c)
 			if err != nil {

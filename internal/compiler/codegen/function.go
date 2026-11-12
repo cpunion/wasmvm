@@ -110,9 +110,11 @@ type Config struct {
 	// is checked against the current instance's function reference at runtime.
 	IndirectCallees map[uint32][]uint32
 	FunctionCount   uint32
-	TableCount      uint32
-	SharedMemories  []bool
-	MemoryCount     uint32
+	// ScalarImports enables guarded integer-storage accessors among imports.
+	ScalarImports  uint32
+	TableCount     uint32
+	SharedMemories []bool
+	MemoryCount    uint32
 	// Globals follows validated imported-then-defined global index order.
 	Globals []module.GlobalType
 	// HeapTypes contains the validated module-local aggregate definitions.
@@ -505,6 +507,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			e.leave(nativeabi.Call, uint64(pc), uint64(pc))
 		case op == 0x10 || op == 0x11 || op == 0x14:
 			out.Calls++
+			if op == 0x10 && e.scalarStorageCall(pc, config, uint32(len(globalIndices))) {
+				continue
+			}
 			var end int
 			var expanded bool
 			if op == 0x10 {

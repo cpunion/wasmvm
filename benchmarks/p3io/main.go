@@ -24,6 +24,7 @@ import (
 type options struct {
 	engine, backend, path string
 	responseMode          string
+	requestMode           string
 	payload               []byte
 	service.Options
 }
@@ -37,6 +38,7 @@ type report struct {
 	Policy            string           `json:"policy"`
 	PayloadBytes      int              `json:"payloadBytes"`
 	OwnedResponseMode string           `json:"ownedResponseMode,omitempty"`
+	OwnedRequestMode  string           `json:"ownedRequestMode,omitempty"`
 	Result            uint32           `json:"result"`
 	Phases            map[string]int64 `json:"phasesNs"`
 	WarmCallNs        []int64          `json:"warmCallNs"`
@@ -53,6 +55,7 @@ func parse(args []string, diagnostic io.Writer) (out options, err error) {
 	f.StringVar(&out.backend, "backend", "native", "interpreter/native, host, or compiler")
 	f.StringVar(&out.path, "wasm", "", "pinned P3 HTTP echo component")
 	f.StringVar(&out.responseMode, "response-mode", "streaming", "owned API: streaming or bounded buffered collection")
+	f.StringVar(&out.requestMode, "request-mode", "reader", "owned input: reader or immutable snapshot")
 	size := f.Int("payload-bytes", 65536, "positive byte count, multiple of16, <=1MiB")
 	expected := f.Uint64("expected", 0, "required unsigned CRC32 of the complete expected body")
 	f.IntVar(&out.Workers, "workers", 1, "independent stores/workers")
@@ -100,6 +103,15 @@ func parse(args []string, diagnostic io.Writer) (out options, err error) {
 }
 
 func validateResponseMode(args options) error {
+	if args.requestMode != "" && args.requestMode != "reader" && args.requestMode != "snapshot" {
+		return errors.New("unknown owned request mode")
+	}
+	if args.requestMode == "snapshot" && args.engine != "wasmvm" {
+		return errors.New("snapshot request mode applies to the owned VM API")
+	}
+	if args.requestMode == "snapshot" && args.responseMode != "buffered" {
+		return errors.New("snapshot benchmark requests require the buffered owned API")
+	}
 	if args.responseMode != "" && args.responseMode != "streaming" && args.responseMode != "buffered" {
 		return errors.New("unknown owned response mode")
 	}
@@ -186,6 +198,10 @@ func benchmark(ctx context.Context, args options, beforeSample func(int) error) 
 	}
 	out = report{SchemaVersion: 1, Engine: args.engine, Backend: args.backend, HostCompiler: runtime.Compiler, Mode: "p3-http-service", PayloadBytes: len(args.payload), Phases: map[string]int64{}, WarmCallNs: []int64{}, WarmupCallNs: []int64{}, WarmResults: []uint32{}, WarmupResults: []uint32{}}
 	if args.engine == "wasmvm" {
+		out.OwnedRequestMode = args.requestMode
+		if out.OwnedRequestMode == "" {
+			out.OwnedRequestMode = "reader"
+		}
 		out.OwnedResponseMode = args.responseMode
 		if out.OwnedResponseMode == "" {
 			out.OwnedResponseMode = "streaming"

@@ -43,6 +43,9 @@ type frame struct {
 	suspended bool
 	base      int
 	dest      []slots.Slot
+	// Optional backend state belongs to this execution, never to a captured
+	// Wasm continuation. A stale token always selects the ordinary entry path.
+	nativeResume uint64
 }
 type HostCall struct {
 	Function *state.Function
@@ -60,12 +63,16 @@ type Execution struct {
 	result       []value.Value
 	tailArgs     []value.Value
 	gcArgs       []value.Value // Synchronous scratch; cleared after each checked operation.
+	hostRequest  HostCall
+	hostArgs     []value.Value
 	pending      *HostCall
 	pendingDest  []slots.Slot
 	status       Status
 	err          error
 	fuel, steps  uint64
 	nativeFrames state.NativeFrames
+	source       ir.Source
+	nativeResume uint64
 }
 
 func New(store *state.Store, ctx context.Context, config Config) *Execution {
@@ -80,7 +87,8 @@ func (e *Execution) Footprint() Limits   { return Limits{uint32(len(e.frames)), 
 func (e *Execution) Err() error          { return e.err }
 
 // Results are borrowed until the next Start. Host calls expose copied input
-// values that remain stable while the driver services the request.
+// values borrowed until ResumeHost, Abort or Quiesce. They remain stable while
+// the driver services a suspended request, including nested host reentry.
 func (e *Execution) Results() []value.Value { return e.result }
 func (e *Execution) Host() *HostCall        { return e.pending }
 func (e *Execution) Start(ref uint64, args []value.Value) error {
@@ -99,7 +107,7 @@ func (e *Execution) Start(ref uint64, args []value.Value) error {
 	e.fuel = e.config.Fuel
 	e.steps = 0
 	if fn.Code == nil {
-		e.pending = &HostCall{Function: fn, Args: append([]value.Value(nil), args...)}
+		copy(e.prepareHost(fn, nil, len(args)), args)
 		e.status = HostRequest
 		return nil
 	}
@@ -170,13 +178,15 @@ func (e *Execution) clearGCArgs() {
 func (e *Execution) fail(err error) Status {
 	e.err, e.status = err, Failed
 	e.nativeFrames = state.NativeFrames{}
+	e.nativeResume = 0
+	e.source = ir.Source{}
 	clear(e.frames)
 	e.frames = e.frames[:0]
 	clear(e.prompts)
 	e.prompts = e.prompts[:0]
 	e.transferring = nil
 	e.values = e.values[:0]
-	e.pending = nil
+	e.clearHost()
 	e.pendingDest = nil
 	clear(e.tailArgs)
 	e.tailArgs = e.tailArgs[:0]
@@ -197,8 +207,9 @@ func (e *Execution) ResumeHost(results []value.Value, err error) error {
 	}
 
 	if err != nil {
+		e.nativeResume = 0
 		if ex, ok := e.store.ExceptionError(err); ok {
-			e.pending = nil
+			e.clearHost()
 			e.pendingDest = nil
 			if e.raise(ex) {
 				e.status = Running
@@ -224,7 +235,7 @@ func (e *Execution) ResumeHost(results []value.Value, err error) error {
 		}
 		e.status = Running
 	}
-	e.pending = nil
+	e.clearHost()
 	e.pendingDest = nil
 	return nil
 }
@@ -242,6 +253,13 @@ func (e *Execution) Run() Status {
 	for {
 		f := &e.frames[len(e.frames)-1]
 		f.suspended = false
+		if status, handled := e.runVeneer(backend); handled {
+			e.nativeResume = 0
+			if status != Running {
+				return status
+			}
+			continue
+		}
 		pc, err := e.runBackend(backend, f.function, f.base, f.pc)
 		if err != nil {
 			return e.fail(err)
@@ -273,6 +291,9 @@ func (e *Execution) Run() Status {
 			status = e.runThrow()
 		default:
 			status = e.runRuntime()
+		}
+		if status != HostRequest || op != 0x10 && op != 0x11 && op != 0x14 {
+			e.nativeResume = 0
 		}
 		if status != Running {
 			return status

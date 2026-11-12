@@ -276,6 +276,28 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
+The latest [native runtime and transaction comparison](docs/research/performance-native-runtime-image-2026-11-12.md)
+reduces native entries from 122 to 58 per complete P3 request and retains a
+smaller runtime metadata image. Snapshot Go observes **51,170 / 38,338 req/s**
+at 16 B / 64 KiB, versus Wasmtime **75,733 / 66,238**; throughput gaps remain
+**1.48× / 1.73×**. Matched head/base throughput improves about 20% for snapshots
+and 22% for Reader input. All 36 timing A/A controls stay within ±2.5%; 34/36
+CPU controls do. These local measurements leave performance acceptance open.
+The [scalar-carrier event](docs/research/performance-canonical-scalars-2026-11-12.md)
+and [ready-byte event](docs/research/performance-ready-bytes-2026-11-12.md)
+retain their separate source cohorts and adverse controls. The
+[immutable-input API](docs/research/performance-http-snapshot-2026-11-11.md)
+keeps preparation separate; changing mutable input still pays its snapshot cost.
+Canonical conversion, owned forwarding and VM/host transitions remain priorities.
+
+The preceding [Go-priority comparison](docs/research/performance-go-frame-plans-2026-11-11.md)
+retains bounded host-request storage, saving 82 allocations/request. A frame-plan
+expansion reduced native entries but failed to establish throughput gains and
+was reverted. Go performance takes priority; LLGo semantic compatibility remains
+required. [Earlier schema](docs/research/performance-value-comparison-plans-2026-11-11.md)
+and [call-veneer](docs/research/performance-call-veneers-2026-11-11.md) events
+retain their distinct source/toolchain cohorts. Performance acceptance stays open.
+
 The [complete service comparison](docs/research/performance-service-all-runtimes-2026-11-10.md)
 uses one bounded driver for all runtimes. M4 Max, Go1.27.3/LLGo3d92a58,
 C SHA,64 blocks/request,4 workers; throughput in req/s:

@@ -71,6 +71,7 @@ func (e *Execution) Close() {
 	e.values = nil
 	e.tailArgs = nil
 	e.gcArgs = nil
+	e.hostArgs = nil
 	if e.config.Backend != nil {
 		e.config.Backend.Close()
 	}

@@ -2,7 +2,6 @@ package component
 
 import (
 	"context"
-	"errors"
 	"github.com/cpunion/wasmvm/internal/component/canonical"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -94,31 +93,18 @@ func (c *Caller) readAsyncContext(ctx context.Context, ref *Resource, limit uint
 	if c.prompt {
 		return ReadResult{}, vm.ErrType
 	}
-	operationContext := ctx
+	parent := c.Context()
 	if ctx == nil {
-		ctx = c.Context()
-	} else {
-		joint, cancel := context.WithCancel(c.Context())
-		stop := context.AfterFunc(ctx, cancel)
-		defer cancel()
-		defer stop()
-		if ctx.Err() != nil {
-			cancel()
-		}
-		ctx = joint
+		ctx, parent = parent, nil
 	}
-	result, b, err := c.instance.readAsync(c.core, ref, limit, ctx, into)
-	// AfterFunc propagates cancellation asynchronously. A destination can
-	// cancel its operation while a batch is being copied; never report that
-	// batch as successful merely because the joined context has not fired yet.
-	if err == nil && operationContext != nil {
-		err = operationContext.Err()
-	}
+	result, b, err := c.instance.readAsyncContexts(c.core, ref, limit, ctx, parent, into)
+	// Both contexts are checked synchronously at publication. No asynchronous
+	// cancellation bridge is needed: the scheduler waits on both Done channels.
 	if err == nil {
 		err = ctx.Err()
 	}
-	if errors.Is(err, context.Canceled) && operationContext != nil && c.Context().Err() == nil && operationContext.Err() != nil {
-		err = operationContext.Err()
+	if err == nil && parent != nil {
+		err = parent.Err()
 	}
 	if b != nil {
 		canonical.VisitReferences(b.batch, &b.data, func(ref *Resource) {
@@ -135,6 +121,10 @@ func (c *Caller) readAsyncContext(ctx context.Context, ref *Resource, limit uint
 	return result, nil
 }
 func (in *Instance) readAsync(c *vm.Caller, ref *Resource, limit uint32, ctx context.Context, into ByteDestination) (result ReadResult, b *guestBuffer, err error) {
+	return in.readAsyncContexts(c, ref, limit, ctx, nil, into)
+}
+
+func (in *Instance) readAsyncContexts(c *vm.Caller, ref *Resource, limit uint32, ctx, parent context.Context, into ByteDestination) (result ReadResult, b *guestBuffer, err error) {
 	e, err := in.readable(ref)
 	if err != nil {
 		return result, nil, err
@@ -183,7 +173,7 @@ func (in *Instance) readAsync(c *vm.Caller, ref *Resource, limit uint32, ctx con
 	if err := e.copy(c, b); err != nil {
 		return result, b, err
 	}
-	if err := in.awaitTasksContext(c, ctx, func() bool { return e.waitable.pending }); err != nil {
+	if err := in.awaitTasksContexts(c, ctx, parent, func() bool { return e.waitable.pending }); err != nil {
 		return result, b, err
 	}
 	event, err := e.waitable.poll(c)

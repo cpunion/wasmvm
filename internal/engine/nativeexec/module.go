@@ -13,22 +13,26 @@ import (
 	"github.com/cpunion/wasmvm/internal/compiler/codegen"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/module"
+	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
 type Module struct {
 	code    *native.Code
-	entries map[*slots.Function]functionEntries
+	entries []functionEntries
+	first   uint32
 	linked  bool
 }
 type Lease struct {
 	code    *native.Lease
-	entries map[*slots.Function]functionEntries
+	entries []functionEntries
+	first   uint32
 	linked  bool
 }
 
 type functionEntries struct {
+	function                    *slots.Function
 	ordinary, metered, expanded uint32
 	inlineSlots                 uint32
 	hasExpansion                bool
@@ -55,7 +59,7 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 }
 
 func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, allowLink bool) (*Module, error) {
-	out := &Module{entries: make(map[*slots.Function]functionEntries, len(m.Functions))}
+	out := &Module{}
 	var code []byte
 	var entries []uint32
 	definition := m.IR.Validated.Definition()
@@ -96,6 +100,8 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 	if len(definition.Memories) != 0 && memories == uint32(len(definition.Memories)) && !definition.Memories[0].Index64 {
 		minimum = uint32(definition.Memories[0].Min)
 	}
+	out.first = importedFunctions
+	out.entries = make([]functionEntries, len(m.Functions))
 	callees := make(map[uint32]*slots.Function, len(m.Functions))
 	for i, f := range m.Functions {
 		callees[importedFunctions+uint32(i)] = f
@@ -148,7 +154,9 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 	// on optional expansion, including when later functions are large.
 	for tier := 0; tier < 3; tier++ {
 		for functionIndex, f := range m.Functions {
-			indexes := out.entries[f]
+			row := functionIndex
+			indexes := out.entries[row]
+			indexes.function = f
 			if tier == 2 && !wantExpansion[f] {
 				continue
 			}
@@ -159,7 +167,7 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 			bounded.MaxCodeBytes = min(limits.MaxCodeBytes, uint64(math.MaxUint32)) - uint64(len(code))
 			config := codegen.Config{Unmetered: tier != 1, NativeAllocations: tier != 1, NativeThreads: true, MemoryMinimumPages: minimum, X86Features: features, ARM64Features: armFeatures,
 				MemoryPageSizes: pageSizes, HeapTypes: definition.TypeDefs,
-				FunctionCount: importedFunctions + uint32(len(m.Functions)), TableCount: tables, MemoryCount: memories, SharedMemories: shared, Globals: globals}
+				FunctionCount: importedFunctions + uint32(len(m.Functions)), ScalarImports: importedFunctions, TableCount: tables, MemoryCount: memories, SharedMemories: shared, Globals: globals}
 			config.LinkedCallees, config.LinkedGlobals = linkedCallees, linkedGlobals
 			if linkedCallees != nil {
 				config.LinkedSignatures, config.LinkedTypeLabels = linkedSignatures, keys
@@ -209,7 +217,7 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 			}
 			entries = append(entries, uint32(len(code)))
 			code = append(code, body.Entry.Code...)
-			out.entries[f] = indexes
+			out.entries[row] = indexes
 		}
 	}
 	for policy := range relocations {
@@ -236,7 +244,7 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 	return out, nil
 }
 func (m *Module) Acquire() (*Lease, error) {
-	l := &Lease{entries: m.entries, linked: m.linked}
+	l := &Lease{entries: m.entries, linked: m.linked, first: m.first}
 	if m.code != nil {
 		var err error
 		l.code, err = m.code.Acquire()
@@ -255,4 +263,13 @@ func (l *Lease) Close() {
 	if l.code != nil {
 		l.code.Close()
 	}
+}
+
+func (l *Lease) function(fn *state.Function) (*functionEntries, bool) {
+	index := uint64(fn.Index) - uint64(l.first)
+	if index >= uint64(len(l.entries)) {
+		return nil, false
+	}
+	entry := &l.entries[index]
+	return entry, fn.Code != nil && entry.function == fn.Code
 }

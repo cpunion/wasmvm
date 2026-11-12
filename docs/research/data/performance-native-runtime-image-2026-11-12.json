@@ -1,0 +1,1485 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "baseRuntime": "d469ce2afe29ad72f04c0404993194255018f4af",
+    "baseDocs": "9831c3014970d81c0b4db5309c8abda96ca47fdf",
+    "head": "57ffbf5e9dc25d6e9cf3317738930e8711779e7e",
+    "binarySHA256": {
+      "base-reader": "140a349fcc78f76a6594fbdd4d535a740fced815c9461ffdaa4bf3dc31e03412",
+      "head-reader": "da29fe0d36192f3670f93f1aa374242c6e8c8c29aa56dc869973cb6562902d0e",
+      "base": "140a349fcc78f76a6594fbdd4d535a740fced815c9461ffdaa4bf3dc31e03412",
+      "head": "da29fe0d36192f3670f93f1aa374242c6e8c8c29aa56dc869973cb6562902d0e",
+      "dense": "ed3381cebc6cb723e103037f308747d79a53b80740e5102d5cca0ba3602aab16",
+      "wasmtime": "561370163342e51593964bc6615ca28ebf1831c22132412ce9c6c44981c54f08"
+    },
+    "denseOverlay": {
+      "Replace": {
+        "/Users/lijie/source/goplus/wasmvm-source-cleanup/internal/component/canonical/resource.go": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/dense-handles/resource.go",
+        "/Users/lijie/source/goplus/wasmvm-source-cleanup/internal/component/canonical/opaque.go": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/dense-handles/opaque.go",
+        "/Users/lijie/source/goplus/wasmvm-source-cleanup/internal/component/canonical/error_context.go": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/dense-handles/error_context.go"
+      }
+    },
+    "archiveSHA256": "25d8897b84376d068e1cba4a9c7af056c664e455ce5d9f6925d350401eac9ccf",
+    "compiler": "Go1.27.3",
+    "clang": "22.1.8",
+    "llgo": "3d92a58 -O3 -lto=full",
+    "platform": "M4Max/macOSarm64",
+    "scope": "Complete source57ffbf5, no unchecked mode or competitor fallback. Dense prototype is an independent overlay and is not retained in production."
+  },
+  "plan": {
+    "seed": 2026111493,
+    "blocks": 3,
+    "samples": 30,
+    "requestsPerBatch": 4096,
+    "payloadBytes": [
+      16,
+      65536
+    ],
+    "participants": [
+      {
+        "id": "base-reader",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/final-comparison/base-reader-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "reader"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "base-reader-aa",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/final-comparison/base-reader-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "reader"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "head-reader",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/final-comparison/head-reader-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "reader"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "head-reader-aa",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/final-comparison/head-reader-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "reader"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "base",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/final-comparison/base-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "snapshot"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "base-aa",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/final-comparison/base-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "snapshot"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "head",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/final-comparison/head-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "snapshot"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "head-aa",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/final-comparison/head-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "snapshot"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "dense",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/final-comparison/dense-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "snapshot"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "dense-aa",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/final-comparison/dense-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "snapshot"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "wasmtime",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/final-comparison/wasmtime-go-runner",
+          "--engine",
+          "wasmtime",
+          "--backend",
+          "compiler",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "wasmtime-aa",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/final-comparison/wasmtime-go-runner",
+          "--engine",
+          "wasmtime",
+          "--backend",
+          "compiler",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2"
+        ],
+        "environment": {}
+      }
+    ],
+    "scope": "Matched complete P3 HTTP calls: exactd469ce2 runtime/base9831c30 docs, final57ffbf5 source with compact immutable native image, validated persistent native return chains and shared canonical handoffs; normal mutableReader and immutableSnapshot inputs separately. Independent denseguesthandle prototype (three Go semantic groups pass, no LLGo qualification yet) is diagnostic only. Pinned Wasmtime48.0.1. Fixed cohort and seed, all body/status/headers/trailers/CRC checked. First and warmups separate,30measured4096requestbatches perprocess. No owned local builds/tests/profiling/pruning overlap timing. Production bounds, normal cancellation and logicallimits retained; advisory, performanceparity not assumed."
+  },
+  "summary": {
+    "16": {
+      "base-reader": {
+        "cpuUs": 110.2252519980244,
+        "instructions": 1285354.7837334995,
+        "throughput": 35975.3592678902,
+        "bytesPerRequest": 65864.13430989583,
+        "allocsPerRequest": 882.0006998697917,
+        "phasesMs": {
+          "cleanup": 0.060458,
+          "compileValidate": 161.483084,
+          "engineSetup": 0.000375,
+          "exportLookup": 0.0005,
+          "firstCall": 114.376542,
+          "instantiate": 0.501249,
+          "load": 0.074959,
+          "providerSetup": 0.054083,
+          "requestPreparation": 0.000541
+        },
+        "observedPeakMiB": 112.29767608642578
+      },
+      "base-reader-aa": {
+        "cpuUs": 107.89330809143766,
+        "instructions": 1285345.1042396282,
+        "throughput": 36807.831304640866,
+        "bytesPerRequest": 65864.12955729167,
+        "allocsPerRequest": 882.0008626302083,
+        "phasesMs": {
+          "cleanup": 0.058959,
+          "compileValidate": 161.832209,
+          "engineSetup": 0.000333,
+          "exportLookup": 0.000667,
+          "firstCall": 115.405333,
+          "instantiate": 0.487125,
+          "load": 0.062667,
+          "providerSetup": 0.054,
+          "requestPreparation": 0.000583
+        },
+        "observedPeakMiB": 112.5476303100586
+      },
+      "head-reader": {
+        "cpuUs": 89.74112219097968,
+        "instructions": 1059090.457805765,
+        "throughput": 43886.80181633715,
+        "bytesPerRequest": 61920.122395833336,
+        "allocsPerRequest": 795.0004557291667,
+        "phasesMs": {
+          "cleanup": 0.05,
+          "compileValidate": 166.440209,
+          "engineSetup": 0.000417,
+          "exportLookup": 0.000583,
+          "firstCall": 95.712916,
+          "instantiate": 0.500083,
+          "load": 0.061625,
+          "providerSetup": 0.051543,
+          "requestPreparation": 0.000374
+        },
+        "observedPeakMiB": 110.68827819824219
+      },
+      "head-reader-aa": {
+        "cpuUs": 89.18281888413703,
+        "instructions": 1058313.6674299568,
+        "throughput": 44128.84657882498,
+        "bytesPerRequest": 61920.16119791667,
+        "allocsPerRequest": 795.0008138020834,
+        "phasesMs": {
+          "cleanup": 0.0475,
+          "compileValidate": 163.547666,
+          "engineSetup": 0.000417,
+          "exportLookup": 0.000625,
+          "firstCall": 94.474625,
+          "instantiate": 0.487875,
+          "load": 0.062167,
+          "providerSetup": 0.050083,
+          "requestPreparation": 0.000501
+        },
+        "observedPeakMiB": 111.93827819824219
+      },
+      "base": {
+        "cpuUs": 93.10728682594736,
+        "instructions": 1109067.306127088,
+        "throughput": 42475.407428701954,
+        "bytesPerRequest": 59760.08639322917,
+        "allocsPerRequest": 789.0004720052083,
+        "phasesMs": {
+          "cleanup": 0.05875,
+          "compileValidate": 164.432,
+          "engineSetup": 0.000292,
+          "exportLookup": 0.000707,
+          "firstCall": 96.155958,
+          "instantiate": 0.483625,
+          "load": 0.060334,
+          "providerSetup": 0.053542,
+          "requestPreparation": 0.000583
+        },
+        "observedPeakMiB": 113.5788803100586
+      },
+      "base-aa": {
+        "cpuUs": 92.94813484981142,
+        "instructions": 1110437.1029094828,
+        "throughput": 42607.61894233836,
+        "bytesPerRequest": 59760.09388020833,
+        "allocsPerRequest": 789.000439453125,
+        "phasesMs": {
+          "cleanup": 0.053292,
+          "compileValidate": 166.494334,
+          "engineSetup": 0.000375,
+          "exportLookup": 0.000583,
+          "firstCall": 98.322292,
+          "instantiate": 0.499041,
+          "load": 0.058458,
+          "providerSetup": 0.047333,
+          "requestPreparation": 0.000708
+        },
+        "observedPeakMiB": 113.64140319824219
+      },
+      "head": {
+        "cpuUs": 76.5914096174569,
+        "instructions": 912041.9922380119,
+        "throughput": 51169.96451008169,
+        "bytesPerRequest": 55480.17473958333,
+        "allocsPerRequest": 705.00068359375,
+        "phasesMs": {
+          "cleanup": 0.047291,
+          "compileValidate": 164.663875,
+          "engineSetup": 0.000334,
+          "exportLookup": 0.000541,
+          "firstCall": 82.830625,
+          "instantiate": 0.5,
+          "load": 0.054791,
+          "providerSetup": 0.051791,
+          "requestPreparation": 0.000666
+        },
+        "observedPeakMiB": 111.3757553100586
+      },
+      "head-aa": {
+        "cpuUs": 76.34609248720368,
+        "instructions": 912190.6404145339,
+        "throughput": 51346.71231927596,
+        "bytesPerRequest": 55480.12897135417,
+        "allocsPerRequest": 705.0006184895833,
+        "phasesMs": {
+          "cleanup": 0.0525,
+          "compileValidate": 165.027417,
+          "engineSetup": 0.000583,
+          "exportLookup": 0.000501,
+          "firstCall": 81.775542,
+          "instantiate": 0.483749,
+          "load": 0.069625,
+          "providerSetup": 0.051917,
+          "requestPreparation": 0.00079
+        },
+        "observedPeakMiB": 111.1882553100586
+      },
+      "dense": {
+        "cpuUs": 75.10151409280711,
+        "instructions": 904870.416040881,
+        "throughput": 52434.91063864204,
+        "bytesPerRequest": 55480.12884114583,
+        "allocsPerRequest": 705.0006266276042,
+        "phasesMs": {
+          "cleanup": 0.058833,
+          "compileValidate": 164.386959,
+          "engineSetup": 0.000333,
+          "exportLookup": 0.000624,
+          "firstCall": 81.204917,
+          "instantiate": 0.573458,
+          "load": 0.063125,
+          "providerSetup": 0.056792,
+          "requestPreparation": 0.000459
+        },
+        "observedPeakMiB": 111.61015319824219
+      },
+      "dense-aa": {
+        "cpuUs": 75.44793069773708,
+        "instructions": 904484.8742423222,
+        "throughput": 52103.21708362724,
+        "bytesPerRequest": 55480.18020833333,
+        "allocsPerRequest": 705.0007405598958,
+        "phasesMs": {
+          "cleanup": 0.055458,
+          "compileValidate": 165.00425,
+          "engineSetup": 0.000292,
+          "exportLookup": 0.000708,
+          "firstCall": 81.26475,
+          "instantiate": 0.482416,
+          "load": 0.059916,
+          "providerSetup": 0.052458,
+          "requestPreparation": 0.000584
+        },
+        "observedPeakMiB": 114.50080108642578
+      },
+      "wasmtime": {
+        "cpuUs": 24.356347445783943,
+        "instructions": 208033.20742692618,
+        "throughput": 75732.96372097055,
+        "bytesPerRequest": 32.040104166666666,
+        "allocsPerRequest": 1.0001627604166667,
+        "phasesMs": {
+          "cleanup": 0.263292,
+          "compileValidate": 51.140375,
+          "engineSetup": 0.131875,
+          "executorSetup": 0.040833,
+          "exportLookup": 0.008708,
+          "firstCall": 59.64,
+          "instantiate": 0.200124,
+          "load": 0.055542,
+          "providerSetup": 0.22471
+        },
+        "observedPeakMiB": 21.766494750976562
+      },
+      "wasmtime-aa": {
+        "cpuUs": 24.397436383126795,
+        "instructions": 207154.5790173761,
+        "throughput": 75654.07668438325,
+        "bytesPerRequest": 32.036458333333336,
+        "allocsPerRequest": 1.0001302083333334,
+        "phasesMs": {
+          "cleanup": 0.272792,
+          "compileValidate": 51.535375,
+          "engineSetup": 0.210708,
+          "executorSetup": 0.046,
+          "exportLookup": 0.008293,
+          "firstCall": 59.268792,
+          "instantiate": 0.206499,
+          "load": 0.068125,
+          "providerSetup": 0.233458
+        },
+        "observedPeakMiB": 21.500823974609375
+      }
+    },
+    "65536": {
+      "base-reader": {
+        "cpuUs": 154.8101508480379,
+        "instructions": 1857002.302667026,
+        "throughput": 25397.560253688764,
+        "bytesPerRequest": 203912.27239583334,
+        "allocsPerRequest": 978.0015787760417,
+        "phasesMs": {
+          "cleanup": 0.0575,
+          "compileValidate": 163.969958,
+          "engineSetup": 0.000375,
+          "exportLookup": 0.000501,
+          "firstCall": 161.2665,
+          "instantiate": 0.479126,
+          "load": 0.068125,
+          "providerSetup": 0.051332,
+          "requestPreparation": 0.000501
+        },
+        "observedPeakMiB": 116.39140319824219
+      },
+      "base-reader-aa": {
+        "cpuUs": 153.9431019048581,
+        "instructions": 1856556.2870841192,
+        "throughput": 25515.06266867852,
+        "bytesPerRequest": 203912.22740885417,
+        "allocsPerRequest": 978.0012613932291,
+        "phasesMs": {
+          "cleanup": 0.060291,
+          "compileValidate": 162.639083,
+          "engineSetup": 0.000291,
+          "exportLookup": 0.000542,
+          "firstCall": 162.046958,
+          "instantiate": 0.482875,
+          "load": 0.051292,
+          "providerSetup": 0.052041,
+          "requestPreparation": 0.000459
+        },
+        "observedPeakMiB": 117.01640319824219
+      },
+      "head-reader": {
+        "cpuUs": 124.0677016685749,
+        "instructions": 1481860.8570009428,
+        "throughput": 31001.615732157425,
+        "bytesPerRequest": 199776.30677083333,
+        "allocsPerRequest": 879.0011800130209,
+        "phasesMs": {
+          "cleanup": 0.048958,
+          "compileValidate": 163.914917,
+          "engineSetup": 0.000375,
+          "exportLookup": 0.000667,
+          "firstCall": 137.267791,
+          "instantiate": 0.490708,
+          "load": 0.0625,
+          "providerSetup": 0.049958,
+          "requestPreparation": 0.002042
+        },
+        "observedPeakMiB": 117.70392608642578
+      },
+      "head-reader-aa": {
+        "cpuUs": 124.5038280267825,
+        "instructions": 1482133.4643554688,
+        "throughput": 31109.11668120166,
+        "bytesPerRequest": 199776.35305989583,
+        "allocsPerRequest": 879.0013509114583,
+        "phasesMs": {
+          "cleanup": 0.044375,
+          "compileValidate": 165.452041,
+          "engineSetup": 0.000459,
+          "exportLookup": 0.000749,
+          "firstCall": 137.811459,
+          "instantiate": 0.498418,
+          "load": 0.067583,
+          "providerSetup": 0.056541,
+          "requestPreparation": 0.000665
+        },
+        "observedPeakMiB": 114.18830108642578
+      },
+      "base": {
+        "cpuUs": 123.61772243455908,
+        "instructions": 1542389.2279684131,
+        "throughput": 31940.273186341845,
+        "bytesPerRequest": 132288.16419270833,
+        "allocsPerRequest": 885.00068359375,
+        "phasesMs": {
+          "cleanup": 0.059375,
+          "compileValidate": 163.356041,
+          "engineSetup": 0.000375,
+          "exportLookup": 0.000624,
+          "firstCall": 131.994625,
+          "instantiate": 0.509666,
+          "load": 0.076292,
+          "providerSetup": 0.0535,
+          "requestPreparation": 0.007083
+        },
+        "observedPeakMiB": 117.3132553100586
+      },
+      "base-aa": {
+        "cpuUs": 125.03185473913433,
+        "instructions": 1540899.1117406385,
+        "throughput": 31566.839580658274,
+        "bytesPerRequest": 132288.20286458332,
+        "allocsPerRequest": 885.0009033203125,
+        "phasesMs": {
+          "cleanup": 0.088292,
+          "compileValidate": 165.537875,
+          "engineSetup": 0.000417,
+          "exportLookup": 0.000709,
+          "firstCall": 132.510083,
+          "instantiate": 0.501709,
+          "load": 0.07675,
+          "providerSetup": 0.054167,
+          "requestPreparation": 0.008042
+        },
+        "observedPeakMiB": 117.71955108642578
+      },
+      "head": {
+        "cpuUs": 101.14313901703933,
+        "instructions": 1235941.139564251,
+        "throughput": 38337.56667364749,
+        "bytesPerRequest": 127816.2658203125,
+        "allocsPerRequest": 789.00126953125,
+        "phasesMs": {
+          "cleanup": 0.059166,
+          "compileValidate": 165.9095,
+          "engineSetup": 0.0005,
+          "exportLookup": 0.000584,
+          "firstCall": 111.934166,
+          "instantiate": 0.530959,
+          "load": 0.070916,
+          "providerSetup": 0.048459,
+          "requestPreparation": 0.007417
+        },
+        "observedPeakMiB": 113.67265319824219
+      },
+      "head-aa": {
+        "cpuUs": 100.95420188465337,
+        "instructions": 1236010.8147730334,
+        "throughput": 38583.505321631856,
+        "bytesPerRequest": 127816.234765625,
+        "allocsPerRequest": 789.0009114583333,
+        "phasesMs": {
+          "cleanup": 0.051375,
+          "compileValidate": 162.755417,
+          "engineSetup": 0.000375,
+          "exportLookup": 0.000582,
+          "firstCall": 109.121208,
+          "instantiate": 0.495583,
+          "load": 0.065667,
+          "providerSetup": 0.054209,
+          "requestPreparation": 0.007624
+        },
+        "observedPeakMiB": 113.57890319824219
+      },
+      "dense": {
+        "cpuUs": 99.17324443247125,
+        "instructions": 1228134.4521316001,
+        "throughput": 39095.075190228534,
+        "bytesPerRequest": 127816.26640625,
+        "allocsPerRequest": 789.00126953125,
+        "phasesMs": {
+          "cleanup": 0.051083,
+          "compileValidate": 163.920625,
+          "engineSetup": 0.000375,
+          "exportLookup": 0.00075,
+          "firstCall": 107.632292,
+          "instantiate": 0.475334,
+          "load": 0.068875,
+          "providerSetup": 0.055084,
+          "requestPreparation": 0.007
+        },
+        "observedPeakMiB": 112.61015319824219
+      },
+      "dense-aa": {
+        "cpuUs": 99.39071304496676,
+        "instructions": 1228934.0047144396,
+        "throughput": 39048.00617744034,
+        "bytesPerRequest": 127816.24772135417,
+        "allocsPerRequest": 789.0011311848958,
+        "phasesMs": {
+          "cleanup": 0.052792,
+          "compileValidate": 166.851459,
+          "engineSetup": 0.000375,
+          "exportLookup": 0.000833,
+          "firstCall": 107.991292,
+          "instantiate": 0.50925,
+          "load": 0.069583,
+          "providerSetup": 0.053709,
+          "requestPreparation": 0.007791
+        },
+        "observedPeakMiB": 112.93827819824219
+      },
+      "wasmtime": {
+        "cpuUs": 32.36565951643319,
+        "instructions": 297926.3618079876,
+        "throughput": 66238.39190779021,
+        "bytesPerRequest": 32.008203125,
+        "allocsPerRequest": 1.0000732421875,
+        "phasesMs": {
+          "cleanup": 0.259541,
+          "compileValidate": 51.718875,
+          "engineSetup": 0.138958,
+          "executorSetup": 0.039835,
+          "exportLookup": 0.009001,
+          "firstCall": 65.49825,
+          "instantiate": 0.193375,
+          "load": 0.062417,
+          "providerSetup": 0.232501
+        },
+        "observedPeakMiB": 22.68834686279297
+      },
+      "wasmtime-aa": {
+        "cpuUs": 32.198760635551366,
+        "instructions": 296570.1609307651,
+        "throughput": 65890.57881672264,
+        "bytesPerRequest": 32.00729166666667,
+        "allocsPerRequest": 1.0000651041666666,
+        "phasesMs": {
+          "cleanup": 0.256291,
+          "compileValidate": 51.059792,
+          "engineSetup": 0.142791,
+          "executorSetup": 0.041458,
+          "exportLookup": 0.008709,
+          "firstCall": 68.481209,
+          "instantiate": 0.199001,
+          "load": 0.065834,
+          "providerSetup": 0.228126
+        },
+        "observedPeakMiB": 22.31334686279297
+      }
+    }
+  },
+  "checkedProcesses": 72,
+  "measuredRequests": 8847360,
+  "cpuWindowRequests": 8552448,
+  "controls": [
+    {
+      "block": 0,
+      "id": "base",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 1.1439559609455419,
+        "instructions": 0.03714353780468471,
+        "throughput": 1.1691622156921877
+      }
+    },
+    {
+      "block": 0,
+      "id": "base",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 2.0813324762343655,
+        "instructions": 0.1893692468829311,
+        "throughput": 2.09000008057576
+      }
+    },
+    {
+      "block": 0,
+      "id": "base-reader",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 1.9431045708563577,
+        "instructions": 0.02408251802002992,
+        "throughput": 1.623728030157734
+      }
+    },
+    {
+      "block": 0,
+      "id": "base-reader",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 0.9809955019342342,
+        "instructions": 0.058479754474272116,
+        "throughput": 0.8942411423355168
+      }
+    },
+    {
+      "block": 0,
+      "id": "dense",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 0.3490112296719028,
+        "instructions": 0.04318715534299411,
+        "throughput": 0.7057225563731118
+      }
+    },
+    {
+      "block": 0,
+      "id": "wasmtime",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 0.1686990934675725,
+        "instructions": 0.19152739013764686,
+        "throughput": 0.1041647292161274
+      }
+    },
+    {
+      "block": 0,
+      "id": "head",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 1.3833915215302084,
+        "instructions": 0.07913959141421234,
+        "throughput": 1.982652889918679
+      }
+    },
+    {
+      "block": 0,
+      "id": "head-reader",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 1.287666852202629,
+        "instructions": 0.044873659641631036,
+        "throughput": 1.742124681656465
+      }
+    },
+    {
+      "block": 0,
+      "id": "dense",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 0.4243068440267672,
+        "instructions": 0.12579645178367738,
+        "throughput": 0.48212180459255016
+      }
+    },
+    {
+      "block": 0,
+      "id": "head",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 0.3039345417614969,
+        "instructions": 0.01388972582507808,
+        "throughput": 0.5362306070661238
+      }
+    },
+    {
+      "block": 0,
+      "id": "head-reader",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 0.132254552845823,
+        "instructions": 0.06665105073221378,
+        "throughput": 0.21283312550448574
+      }
+    },
+    {
+      "block": 0,
+      "id": "wasmtime",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 0.5156665533019189,
+        "instructions": 0.17547611123109874,
+        "throughput": 0.5250928971098134
+      }
+    },
+    {
+      "block": 1,
+      "id": "base-reader",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 0.7083334212869774,
+        "instructions": 0.011465536970067802,
+        "throughput": 0.46265237218088284
+      }
+    },
+    {
+      "block": 1,
+      "id": "base-reader",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 1.569138838822015,
+        "instructions": 0.0270149507224815,
+        "throughput": 1.7635592612127438
+      }
+    },
+    {
+      "block": 1,
+      "id": "wasmtime",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 2.2423719780599427,
+        "instructions": 0.3773763592786472,
+        "throughput": 1.672172198601074
+      }
+    },
+    {
+      "block": 1,
+      "id": "base",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 1.5371819863403857,
+        "instructions": 0.036777480367167215,
+        "throughput": 1.0416891986530508
+      }
+    },
+    {
+      "block": 1,
+      "id": "head",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 0.08689524435034901,
+        "instructions": 0.07925545647813337,
+        "throughput": 0.5496049490766985
+      }
+    },
+    {
+      "block": 1,
+      "id": "head-reader",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 0.49508861325322506,
+        "instructions": 0.07334504527758412,
+        "throughput": 0.4334140092539518
+      }
+    },
+    {
+      "block": 1,
+      "id": "head-reader",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 1.3180362554867653,
+        "instructions": 0.20129118886011987,
+        "throughput": 1.3083806369186712
+      }
+    },
+    {
+      "block": 1,
+      "id": "dense",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 0.7215786954737236,
+        "instructions": 0.09611691065105621,
+        "throughput": 0.9523586849778276
+      }
+    },
+    {
+      "block": 1,
+      "id": "head",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 0.0017073660975919225,
+        "instructions": 0.025939519335538286,
+        "throughput": 0.34541319480385635
+      }
+    },
+    {
+      "block": 1,
+      "id": "base",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 0.7199477948248045,
+        "instructions": 0.01694287326812205,
+        "throughput": 0.3872468264162654
+      }
+    },
+    {
+      "block": 1,
+      "id": "dense",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 0.12246626233149982,
+        "instructions": 0.05374363763666068,
+        "throughput": 0.004800969016161005
+      }
+    },
+    {
+      "block": 1,
+      "id": "wasmtime",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 1.0016548762866062,
+        "instructions": 0.14194509776241926,
+        "throughput": 0.8321803882594514
+      }
+    },
+    {
+      "block": 2,
+      "id": "head",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 1.3874028312569342,
+        "instructions": 0.05338867517016288,
+        "throughput": 1.298619058329753
+      }
+    },
+    {
+      "block": 2,
+      "id": "wasmtime",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 4.098622222590665,
+        "instructions": 1.0032723697919854,
+        "throughput": 1.9244976222277277
+      }
+    },
+    {
+      "block": 2,
+      "id": "base",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 2.2586878753508177,
+        "instructions": 0.2041049144267948,
+        "throughput": 2.293060461922225
+      }
+    },
+    {
+      "block": 2,
+      "id": "head-reader",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 1.2609093218661993,
+        "instructions": 0.06972748938782747,
+        "throughput": 1.5669874215649582
+      }
+    },
+    {
+      "block": 2,
+      "id": "base-reader",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 2.1156167614191923,
+        "instructions": 0.14504601921978555,
+        "throughput": 2.405608865713482
+      }
+    },
+    {
+      "block": 2,
+      "id": "head",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 0.12459783698980376,
+        "instructions": 0.0056374212777488,
+        "throughput": 0.12679991213545572
+      }
+    },
+    {
+      "block": 2,
+      "id": "dense",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 1.043333026690263,
+        "instructions": 0.03620906354953046,
+        "throughput": 0.9531434939713312
+      }
+    },
+    {
+      "block": 2,
+      "id": "dense",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 1.7368124361332837,
+        "instructions": 0.10728201229823764,
+        "throughput": 1.1957334350392812
+      }
+    },
+    {
+      "block": 2,
+      "id": "head-reader",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 1.223668389040522,
+        "instructions": 0.06403902437190911,
+        "throughput": 1.42019530030284
+      }
+    },
+    {
+      "block": 2,
+      "id": "base",
+      "payloadBytes": 16,
+      "deviationPercent": {
+        "cpuUs": 0.17093396399086025,
+        "instructions": 0.04929744249854151,
+        "throughput": 0.31126602813247306
+      }
+    },
+    {
+      "block": 2,
+      "id": "wasmtime",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 2.777346804060654,
+        "instructions": 0.4552134524089535,
+        "throughput": 0.31670980498030854
+      }
+    },
+    {
+      "block": 2,
+      "id": "base-reader",
+      "payloadBytes": 65536,
+      "deviationPercent": {
+        "cpuUs": 0.7522393965671226,
+        "instructions": 0.024018041456719263,
+        "throughput": 0.8050659316879982
+      }
+    }
+  ],
+  "controlSummary": {
+    "cpuUs": {
+      "within2_5Percent": 34,
+      "total": 36,
+      "worstPercent": 4.098622222590665
+    },
+    "instructions": {
+      "within2_5Percent": 36,
+      "total": 36,
+      "worstPercent": 1.0032723697919854
+    },
+    "throughput": {
+      "within2_5Percent": 36,
+      "total": 36,
+      "worstPercent": 2.405608865713482
+    }
+  },
+  "validation": {
+    "goPackageGroups": 32,
+    "coveragePackages": 31,
+    "minimumCoverage": 90.85545722713864,
+    "coverage": {
+      "github.com/cpunion/wasmvm/internal/bench/phase": {
+        "covered": 284,
+        "total": 298,
+        "percent": 95.30201342281879
+      },
+      "github.com/cpunion/wasmvm/internal/bench/service": {
+        "covered": 115,
+        "total": 121,
+        "percent": 95.0413223140496
+      },
+      "github.com/cpunion/wasmvm/internal/binary": {
+        "covered": 78,
+        "total": 78,
+        "percent": 100.0
+      },
+      "github.com/cpunion/wasmvm/internal/cli": {
+        "covered": 582,
+        "total": 595,
+        "percent": 97.81512605042016
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/codegen": {
+        "covered": 9105,
+        "total": 9287,
+        "percent": 98.04027134704425
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/ir": {
+        "covered": 301,
+        "total": 311,
+        "percent": 96.78456591639872
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/lower": {
+        "covered": 324,
+        "total": 327,
+        "percent": 99.08256880733946
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/nativeabi": {
+        "covered": 34,
+        "total": 34,
+        "percent": 100.0
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/slots": {
+        "covered": 410,
+        "total": 418,
+        "percent": 98.08612440191388
+      },
+      "github.com/cpunion/wasmvm/internal/component/canonical": {
+        "covered": 1468,
+        "total": 1556,
+        "percent": 94.34447300771208
+      },
+      "github.com/cpunion/wasmvm/internal/component/decode": {
+        "covered": 353,
+        "total": 366,
+        "percent": 96.44808743169399
+      },
+      "github.com/cpunion/wasmvm/internal/component/validate": {
+        "covered": 2221,
+        "total": 2411,
+        "percent": 92.11945250933222
+      },
+      "github.com/cpunion/wasmvm/internal/core/constant": {
+        "covered": 8,
+        "total": 8,
+        "percent": 100.0
+      },
+      "github.com/cpunion/wasmvm/internal/core/decode": {
+        "covered": 527,
+        "total": 543,
+        "percent": 97.05340699815838
+      },
+      "github.com/cpunion/wasmvm/internal/core/module": {
+        "covered": 289,
+        "total": 294,
+        "percent": 98.29931972789116
+      },
+      "github.com/cpunion/wasmvm/internal/core/validate": {
+        "covered": 1093,
+        "total": 1168,
+        "percent": 93.57876712328768
+      },
+      "github.com/cpunion/wasmvm/internal/engine/execute": {
+        "covered": 1131,
+        "total": 1219,
+        "percent": 92.78096800656276
+      },
+      "github.com/cpunion/wasmvm/internal/engine/memory": {
+        "covered": 489,
+        "total": 527,
+        "percent": 92.78937381404174
+      },
+      "github.com/cpunion/wasmvm/internal/engine/nativeexec": {
+        "covered": 571,
+        "total": 616,
+        "percent": 92.6948051948052
+      },
+      "github.com/cpunion/wasmvm/internal/engine/numeric": {
+        "covered": 268,
+        "total": 268,
+        "percent": 100.0
+      },
+      "github.com/cpunion/wasmvm/internal/engine/simd": {
+        "covered": 303,
+        "total": 309,
+        "percent": 98.05825242718447
+      },
+      "github.com/cpunion/wasmvm/internal/engine/state": {
+        "covered": 1507,
+        "total": 1582,
+        "percent": 95.25916561314791
+      },
+      "github.com/cpunion/wasmvm/internal/platform/native": {
+        "covered": 422,
+        "total": 444,
+        "percent": 95.04504504504504
+      },
+      "github.com/cpunion/wasmvm/internal/wasi/host": {
+        "covered": 577,
+        "total": 617,
+        "percent": 93.51701782820098
+      },
+      "github.com/cpunion/wasmvm/pkg/component": {
+        "covered": 3386,
+        "total": 3662,
+        "percent": 92.46313489896232
+      },
+      "github.com/cpunion/wasmvm/pkg/vm": {
+        "covered": 1490,
+        "total": 1594,
+        "percent": 93.47553324968632
+      },
+      "github.com/cpunion/wasmvm/pkg/wasi/preview1": {
+        "covered": 1232,
+        "total": 1356,
+        "percent": 90.85545722713864
+      },
+      "github.com/cpunion/wasmvm/pkg/wasi/preview2": {
+        "covered": 4831,
+        "total": 5315,
+        "percent": 90.89369708372531
+      },
+      "github.com/cpunion/wasmvm/pkg/wasi/preview3": {
+        "covered": 4192,
+        "total": 4593,
+        "percent": 91.26932288264751
+      },
+      "github.com/cpunion/wasmvm/pkg/wasi/threads": {
+        "covered": 224,
+        "total": 226,
+        "percent": 99.11504424778761
+      },
+      "github.com/cpunion/wasmvm/pkg/wasm": {
+        "covered": 169,
+        "total": 177,
+        "percent": 95.48022598870057
+      }
+    },
+    "affectedLLGoPlatforms": [
+      "macOSarm64",
+      "Linuxamd64(Docker, semantic-only)"
+    ],
+    "affectedLLGoPackages": [
+      "canonical",
+      "component",
+      "preview3"
+    ],
+    "profile": "-O3 -lto=full",
+    "previousQualifiedNativeBridgePackages": [
+      "slots",
+      "execute",
+      "nativeexec",
+      "vm",
+      "component",
+      "preview3"
+    ],
+    "race": "Full execute/vm/component/P3 on532244b; atomicreference canonical/component/P3 overlay race; final focused reference-move/invalidation and independent-read-cancellation races pass.",
+    "vet": "Affected canonical/component/P3 pass; nativeexec/execute/vm passed on532244b",
+    "noCgo": "Whole-module portable build passes on final57ffbf5. Final PR CI still requires the complete4combination semantic matrix."
+  },
+  "diagnostics": {
+    "nativeEntriesPerRequest": {
+      "base": 122,
+      "persistentHost": 106,
+      "foreignVeneer": 58,
+      "hostCallbacks": 50,
+      "ordinaryGuestBoundaries": 28
+    },
+    "retainedFourStoreHeap": {
+      "base": {
+        "liveBytes": 32658224,
+        "scanBytes": 29220544,
+        "objects": 61942
+      },
+      "packed": {
+        "liveBytes": 16389688,
+        "scanBytes": 9338016,
+        "objects": 8903
+      }
+    },
+    "profile": {
+      "source": "9e354fa",
+      "sampledRunningCPUusPerRequest": 75.47045510912699,
+      "nativeInclusiveUs": 16.892,
+      "scope": "258048checked64KiB requests after ready handshake, not timing acceptance. Native component residual cost includes17us native execution; allocation/GC remain material."
+    }
+  },
+  "experiments": {
+    "numeric-calls": "Rejected: whole-request instruction reduction below0.2%, CPU differences within controls; no publicAPI retained. Focused scalar test and full3Go package tests pass.",
+    "arm-pairs": "Parked: no stable whole-request CPU benefit; full adapted codegen and4affected Go package tests pass.",
+    "cfg-polls": "Rejected for promotion: less than1%whole-request instruction reduction and adverse CPU controls;3 codegen exact-poll-site tests fail under new512bound prototype; no claims of semantic qualification. Source remains artifact overlay only.",
+    "host-results+caller-coallocation": "Retained in contribution: shared private result scratch/fresh coallocatedCaller remove41/53 allocations per16B/64KiB request in matched screen; no general throughput claim.",
+    "reference-set": "Retained:20fewer allocations and about1.4%instruction reduction in both aliases; no broadCPUclaim. Existing13-reference atomic rejection test extended to first/lateridentities.",
+    "layout-hit": "Retained:about2.1%instruction reduction with no allocation increase; immutable public layoutcachehit avoids recursivebuilder entry. Performance acceptance remains open.",
+    "scalar-invocation": "Rejected:38/50 fewer allocations but no repeatable whole-requestCPU benefit; source/test overlay archived locally.",
+    "borrow-inline": "Rejected:12 fewer allocations, no stable large-case CPU benefit.",
+    "ready-read-watch": "Rejected: no observed workloadallocation/CPU benefit.",
+    "atomic-reference": "Retained: immutable binding plusatomic affine bit, single-winner move and copied-header invalidation; about1%screeninstruction saving, no standaloneCPUclaim.",
+    "read-contexts": "Retained:23fewerallocations, about1.5%instruction saving; scheduler independently observes operation, componentcallback andVMlease cancellation without constructing childcontext.",
+    "dense-handles": "Prototype only:about1.8-2.5%advisorythroughput gain in finalcohort, unchangedper-requestallocs;3Go semantic groups pass, LLGo/coldcleanup/limitsqualification pending. Not in production57ffbf5."
+  },
+  "evidence": {
+    "path": "docs/research/evidence/performance-native-runtime-image-2026-11-12.jsonl.gz",
+    "records": 360,
+    "uncompressedBytes": 6627767,
+    "compressedBytes": 1543731,
+    "sha256": "d9fcd471c55e7c4da0c5812deb88e6fb106e5df61b254d10a32f562e28865ff4",
+    "scope": "All360process records and everybatch retained across5cohorts, including30warm-batchtimings/per-process CPUwindows/allocations/phases. RequestNs/PublicAPINs arrays use count,min,max,sum,p50/p95/p99 andSHA256oforiginalcompactJSON; all originalarraysremaininlocalrawartifact. No per-requestlatencyacceptanceclaim.",
+    "summarizedRequestArrays": 13392,
+    "individualArrayObservations": 28311552,
+    "localUnmodifiedArchiveSHA256": "f170c4d8c342c70f74d56825d968d9f67cf204d99e67d638c26bcf562f82accf"
+  }
+}

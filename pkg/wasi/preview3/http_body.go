@@ -438,6 +438,24 @@ func (b *httpBody) byteSource(c *component.Caller, t component.ValueType) (compo
 		}
 	} else {
 		source.Prompt = true
+		source.ReadBytes = func(limit uint32) (component.ReadResult, bool, error) {
+			if result, ready := buffered.take(limit); ready {
+				return result, true, nil
+			}
+			b.mu.Lock()
+			reader, failure := b.reader, b.failure
+			b.mu.Unlock()
+			if reader == nil || failure != nil {
+				b.end(failure)
+				return component.ReadResult{Closed: true}, true, nil
+			}
+			if limit != 0 && b.ctx.Err() == nil {
+				if data, failed, ready := b.readSnapshot(reader); ready {
+					return buffered.deliver(data, failed != nil, limit), true, nil
+				}
+			}
+			return component.ReadResult{}, false, nil
+		}
 		source.Read = func(c *component.Caller, limit uint32) (*component.ReadCompletion, error) {
 			completion := component.NewReadCompletion()
 			if result, ready := buffered.take(limit); ready {
@@ -452,6 +470,14 @@ func (b *httpBody) byteSource(c *component.Caller, t component.ValueType) (compo
 				b.end(failure)
 				completion.Resolve(func(*component.Caller) (component.ReadResult, error) { return component.ReadResult{Closed: true}, nil })
 				return completion, nil
+			}
+			if limit != 0 && ctx.Err() == nil && b.ctx.Err() == nil {
+				if data, failed, ready := b.readSnapshot(reader); ready {
+					completion.Resolve(func(*component.Caller) (component.ReadResult, error) {
+						return buffered.deliver(data, failed != nil, limit), nil
+					})
+					return completion, nil
+				}
 			}
 			joint, cancel := context.WithCancel(ctx)
 			stop := context.AfterFunc(b.ctx, cancel)
@@ -642,44 +668,51 @@ func (b *httpBody) readExternal(data []byte) (n int, err error) {
 			n = 0
 			err = httpErr("internal-error")
 		}
-		if n < 0 || n > len(data) {
-			n = 0
-			err = httpErr("internal-error")
-		}
-		if uint64(n) > ^uint64(0)-b.received {
-			err = httpErr(b.sizeFailure)
-		} else {
-			b.received += uint64(n)
-		}
-		if b.expected != nil && (b.received > *b.expected || err == io.EOF && b.received != *b.expected) {
-			err = httpSizeError(b.sizeFailure, b.received)
-		}
-		if n == 0 && err == nil {
-			err = io.ErrNoProgress
-		}
-		if err != nil {
-			failure := err
-			if errors.Is(err, io.EOF) {
-				failure = nil
-				if b.trailerSnapshot != nil {
-					fields, failed := b.trailerSnapshot()
-					failure = failed
-					b.mu.Lock()
-					b.trailersValue = fields
-					b.mu.Unlock()
-				}
-			}
-			if failure != nil {
-				failure = httpTransportError(failure, "HTTP-protocol-error")
-			}
-			b.end(failure)
-			b.closeReader()
-			if failure != nil {
-				err = failure
-			}
-		}
+		n, err = b.finishExternalRead(n, len(data), err)
 	}()
 	return reader.Read(data)
+}
+
+// Both scheduled external reads and immutable snapshots share byte accounting,
+// EOF/trailer publication and exactly-once reader closure. readerMu is held.
+func (b *httpBody) finishExternalRead(n, limit int, err error) (int, error) {
+	if n < 0 || n > limit {
+		n = 0
+		err = httpErr("internal-error")
+	}
+	if uint64(n) > ^uint64(0)-b.received {
+		err = httpErr(b.sizeFailure)
+	} else {
+		b.received += uint64(n)
+	}
+	if b.expected != nil && (b.received > *b.expected || err == io.EOF && b.received != *b.expected) {
+		err = httpSizeError(b.sizeFailure, b.received)
+	}
+	if n == 0 && err == nil {
+		err = io.ErrNoProgress
+	}
+	if err != nil {
+		failure := err
+		if errors.Is(err, io.EOF) {
+			failure = nil
+			if b.trailerSnapshot != nil {
+				fields, failed := b.trailerSnapshot()
+				failure = failed
+				b.mu.Lock()
+				b.trailersValue = fields
+				b.mu.Unlock()
+			}
+		}
+		if failure != nil {
+			failure = httpTransportError(failure, "HTTP-protocol-error")
+		}
+		b.end(failure)
+		b.closeReader()
+		if failure != nil {
+			err = failure
+		}
+	}
+	return n, err
 }
 
 // Observe trailers concurrently with the body. A producer can signal an error

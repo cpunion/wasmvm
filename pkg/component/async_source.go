@@ -30,6 +30,11 @@ type AsyncSource struct {
 	// and its Caller rejects guest reentry and blocking endpoint reads.
 	Prompt bool
 	Read   func(*Caller, uint32) (*ReadCompletion, error)
+	// ReadBytes optionally probes packed stream<u8> data without an asynchronous
+	// invocation. It must not block or enter the VM. A false readiness result
+	// supplies no data and delegates to Read/ReadOwned, which remains required.
+	// Ready batches obey the same count, budget, copy and close rules as Read.
+	ReadBytes func(uint32) (ReadResult, bool, error)
 	// Owned capabilities move on successful construction. ReadOwned receives
 	// their moved references; source closure reclaims them in the Store session.
 	Owned     []*Resource
@@ -85,6 +90,9 @@ func (r *ReadCompletion) Cancelled() error {
 
 func (in *Instance) newSource(t ValueType, source AsyncSource) (Value, error) {
 	if !t.Valid() || !asyncValueType(t.typ) || (source.Read == nil) == (source.ReadOwned == nil) {
+		return Value{}, vm.ErrType
+	}
+	if source.ReadBytes != nil && (t.typ.Kind != model.Stream || t.typ.Element == nil || t.typ.Element.Kind != model.U8) {
 		return Value{}, vm.ErrType
 	}
 	for _, rt := range t.resources {
@@ -239,6 +247,9 @@ func (w *asyncEnd) closeSource() {
 func (in *Instance) startSourceRead(c *vm.Caller, r, w *asyncEnd, b *guestBuffer) error {
 	batch, err := in.bufferType(r.typ.Element)
 	if err != nil {
+		return err
+	}
+	if handled, err := in.readSourceBytes(c, r, w, b, batch); handled {
 		return err
 	}
 	unit := r.typ.Element == nil

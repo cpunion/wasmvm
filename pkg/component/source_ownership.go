@@ -5,10 +5,20 @@ import "github.com/cpunion/wasmvm/pkg/vm"
 // Source Close may run off-Store during shutdown. Queue affine cleanup rather
 // than entering the VM from that callback. An active session drains the queue;
 // shutdown drains remaining ownership only after the Core Store has joined.
-func (in *Instance) flushSourceCleanup(c *vm.Caller) (err error) {
+func (in *Instance) flushSourceCleanup(c *vm.Caller) error {
 	if in.drainingSources {
 		return nil
 	}
+	in.mu.Lock()
+	pending := in.sourceCleanup != nil
+	in.mu.Unlock()
+	if !pending {
+		return nil
+	}
+	return in.drainSourceCleanup(c)
+}
+
+func (in *Instance) drainSourceCleanup(c *vm.Caller) (err error) {
 	in.drainingSources = true
 	defer func() { in.drainingSources = false }()
 	guard := cleanupGuard{}

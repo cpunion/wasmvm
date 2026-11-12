@@ -57,6 +57,7 @@ type Instance struct {
 	tasks                 *taskScheduler
 	heldValues, heldBytes uint64
 	bufferTypes           map[*model.Type]*model.Type
+	comparisons           validate.ValueComparisons
 	work                  uint64
 	bindings              map[any]Value
 	resourceTables        []*canonical.Resources
@@ -92,7 +93,7 @@ func (in *Instance) Close() {
 	components := in.components
 	in.components = nil
 	in.mu.Unlock()
-	defer func() { go func() { defer close(in.shutdown); in.store.WaitClosed(nil); in.flushSourceCleanup(nil) }() }()
+	defer func() { go in.finishShutdown() }()
 	in.store.Close()
 	var panicked any
 	for source := range sources {
@@ -112,6 +113,13 @@ func (in *Instance) Close() {
 	if panicked != nil {
 		panic(panicked)
 	}
+}
+
+func (in *Instance) finishShutdown() {
+	defer close(in.shutdown)
+	defer in.comparisons.Clear()
+	in.store.WaitClosed(nil)
+	in.flushSourceCleanup(nil)
 }
 
 func (in *Instance) WaitClosed(ctx context.Context) error {
@@ -228,23 +236,24 @@ type closure struct {
 }
 
 type namespace struct {
-	lowerLayouts  [2]*canonical.Builder
-	wideResources bool
-	task          *callTask
-	taskOps       bool
-	parent        *namespace
-	plan          *validate.Component
-	resources     map[uint64]*resourceType
-	host          *namespace
-	handles       *canonical.Resources
-	items         map[model.Sort][]item
-	exports       map[string]item
-	failed        bool
-	blocked       bool
-	entered       bool
-	exclusive     *componentTask
-	backpressure  uint32
-	waitingEnter  uint32
+	contextStorage *vm.ScalarStorage
+	lowerLayouts   [2]*canonical.Builder
+	wideResources  bool
+	task           *callTask
+	taskOps        bool
+	parent         *namespace
+	plan           *validate.Component
+	resources      map[uint64]*resourceType
+	host           *namespace
+	handles        *canonical.Resources
+	items          map[model.Sort][]item
+	exports        map[string]item
+	failed         bool
+	blocked        bool
+	entered        bool
+	exclusive      *componentTask
+	backpressure   uint32
+	waitingEnter   uint32
 }
 
 func (n *namespace) at(index model.SortIndex) item {

@@ -20,7 +20,7 @@ type resourceCodec struct {
 	scope   *canonical.BorrowScope
 	created []*Resource
 	escaped []*Resource
-	seen    map[any]model.Kind
+	seen    referenceSet
 	borrows uint32
 	lowered []ownedHandle
 }
@@ -159,24 +159,10 @@ func (r *resourceCodec) Accept(t *model.Type, v Value, commit bool) (Value, erro
 		return Value{}, err
 	}
 	if !commit {
-		if t.Kind == model.Own {
-			if r.seen == nil {
-				r.seen = map[any]model.Kind{}
-			}
-			key := canonical.ReferenceKey(v.Resource)
-			if r.seen[key] != 0 {
-				return Value{}, vm.ErrType
-			}
-			r.seen[key] = model.Own
-		} else {
-			key := canonical.ReferenceKey(v.Resource)
-			if r.seen == nil {
-				r.seen = map[any]model.Kind{}
-			}
-			if r.seen[key] == model.Own {
-				return Value{}, vm.ErrType
-			}
-			r.seen[key] = model.Borrow
+		if !r.seen.add(canonical.ReferenceKey(v.Resource), t.Kind) {
+			return Value{}, vm.ErrType
+		}
+		if t.Kind == model.Borrow {
 			if r.borrows >= r.in.config.MaxResources {
 				return Value{}, wasm.ErrLimit
 			}
@@ -200,7 +186,8 @@ func (r *resourceCodec) Accept(t *model.Type, v Value, commit bool) (Value, erro
 
 func (r *resourceCodec) Finish(err error) error {
 	scope, created, lowered, escaped := r.scope, r.created, r.lowered, r.escaped
-	r.scope, r.created, r.lowered, r.escaped, r.seen = nil, nil, nil, nil, nil
+	r.scope, r.created, r.lowered, r.escaped = nil, nil, nil, nil
+	r.seen = referenceSet{}
 	guard := cleanupGuard{}
 	if scope != nil {
 		if ended := scope.End(); err == nil {
@@ -355,3 +342,33 @@ func (in *Instance) cleanupRepresentation(core *vm.Caller, rt *resourceType, rep
 // Only accepted host parameters can escape through a successful imported effect.
 // Results remain unpublished until the caller's canonical handoff succeeds.
 func (r *resourceCodec) ParametersAccepted() { r.escaped = append(r.escaped, r.created...) }
+
+// Most ownership transactions contain one capability. Keep that identity in
+// the transaction itself; additional identities retain the ordinary map and
+// its duplicate-own / mixed-own-borrow checks. Repeated borrows remain legal.
+type referenceSet struct {
+	first any
+	kind  model.Kind
+	rest  map[any]model.Kind
+}
+
+func (s *referenceSet) add(key any, kind model.Kind) bool {
+	if s.first == nil {
+		s.first, s.kind = key, kind
+		return true
+	}
+	var previous model.Kind
+	if s.first == key {
+		previous = s.kind
+	} else if s.rest != nil {
+		previous = s.rest[key]
+	}
+	if previous != 0 {
+		return previous == model.Borrow && kind == model.Borrow
+	}
+	if s.rest == nil {
+		s.rest = map[any]model.Kind{}
+	}
+	s.rest[key] = kind
+	return true
+}
