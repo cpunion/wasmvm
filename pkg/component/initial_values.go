@@ -38,7 +38,7 @@ func (in *Instance) initializeValues(core *vm.Caller, scope *namespace) error {
 		v.validated = true
 		// Each import is a separate occurrence. Live leases and moved tokens
 		// enforce cross-value conflicts; duplicate checks span one shape.
-		in.initializing.Resources.(*resourceCodec).seen = nil
+		in.initializing.Resources.(*resourceCodec).seen = referenceSet{}
 		if literal, ok := v.expected.LiteralValue(); ok {
 			literal, err = in.initializing.Clone(v.typ, literal)
 			if err != nil {
@@ -58,7 +58,7 @@ func (in *Instance) initializeValues(core *vm.Caller, scope *namespace) error {
 }
 
 func (in *Instance) createInitialValue(core *vm.Caller, factory ValueFactory) (Value, error) {
-	c := &Caller{callerState: &callerState{core: core, instance: in, active: true}}
+	c := newCallbackCaller(core, in, nil, false)
 	defer func() {
 		c.mu.Lock()
 		c.active = false

@@ -715,13 +715,17 @@ func TestResourceContainersAndDuplicateArguments(t *testing.T) {
 				{Elements: []Value{refs[12]}},
 			}}
 			echo, _ := in.Function("echo")
-			input.Elements[4].Elements[1] = refs[4]
-			if _, err := echo.Call(nil, []Value{input}, CallOptions{}); err == nil {
-				t.Fatal("duplicate ownership accepted")
-			}
-			for i, v := range refs {
-				if rep, err := in.ResourceRep(nil, typ, v.Resource); err != nil || rep != uint32(i+1) {
-					t.Fatal("validation consumed an argument", rep, err)
+			// Reject aliases of both the first identity and later identities,
+			// including a conflict encountered after the larger tuple is walked.
+			for _, duplicate := range []Value{refs[0], refs[4], refs[12]} {
+				input.Elements[4].Elements[1] = duplicate
+				if _, err := echo.Call(nil, []Value{input}, CallOptions{}); err == nil {
+					t.Fatal("duplicate ownership accepted")
+				}
+				for i, v := range refs {
+					if rep, err := in.ResourceRep(nil, typ, v.Resource); err != nil || rep != uint32(i+1) {
+						t.Fatal("validation consumed an argument", rep, err)
+					}
 				}
 			}
 			input.Elements[4].Elements[1] = refs[5]

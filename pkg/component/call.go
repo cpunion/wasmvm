@@ -67,6 +67,24 @@ func (f *Function) Call(ctx context.Context, args []Value, options vm.CallOption
 // session's cancellation, fuel and stack quotas.
 type Caller struct{ *callerState }
 
+// Header copies keep the same guard while a callback's header and state share
+// one allocation. No public capability is reused for a later invocation.
+type callbackCallerAllocation struct {
+	caller Caller
+	state  callerState
+}
+
+func newCallbackCaller(core *vm.Caller, in *Instance, f *Function, prompt bool) *Caller {
+	allocation := &callbackCallerAllocation{}
+	allocation.state.active = true
+	allocation.state.core = core
+	allocation.state.instance = in
+	allocation.state.function = f
+	allocation.state.prompt = prompt
+	allocation.caller.callerState = &allocation.state
+	return &allocation.caller
+}
+
 type callerState struct {
 	mu       sync.Mutex
 	active   bool

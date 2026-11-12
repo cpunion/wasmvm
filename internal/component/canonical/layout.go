@@ -66,7 +66,12 @@ func invalid(detail string) error { return fmt.Errorf("%w: canonical %s", wasm.E
 func exhausted() error            { return fmt.Errorf("%w: canonical layout", wasm.ErrLimit) }
 
 // Build returns builder-owned immutable layout metadata.
-func (b *Builder) Build(t *model.Type) (*Layout, error) { return b.build(t, 0) }
+func (b *Builder) Build(t *model.Type) (*Layout, error) {
+	if cached := b.cache[t]; cached != nil {
+		return cached, nil
+	}
+	return b.build(t, 0)
+}
 
 func (b *Builder) build(t *model.Type, depth uint32) (*Layout, error) {
 	if t == nil {

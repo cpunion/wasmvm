@@ -124,3 +124,46 @@ func TestHostRequestReentryAndFailureRetirement(t *testing.T) {
 		t.Fatal("closed execution retained argument storage")
 	}
 }
+
+func TestHostResultStorageHandlesAsymmetricSignatures(t *testing.T) {
+	s := state.New(state.DefaultLimits())
+	defer s.Close()
+	e := New(s, nil, Config{Limits: DefaultLimits()})
+	defer e.Close()
+	for _, counts := range [][2]int{{0, 1}, {1, 0}, {1, 66}, {65, 1}, {0, 0}, {1, 3}} {
+		params, results := make([]wasm.ValueType, counts[0]), make([]wasm.ValueType, counts[1])
+		for i := range params {
+			params[i] = wasm.I64
+		}
+		for i := range results {
+			results[i] = wasm.V128
+		}
+		fn, err := s.NewHost(module.FuncType{Params: params, Results: results}, "asymmetric")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := e.Start(fn.Function, make([]value.Value, len(params))); err != nil || e.Run() != HostRequest {
+			t.Fatal(err, e.Err())
+		}
+		request := e.Host()
+		if len(request.Args) != len(params) || cap(request.Args) < len(results) {
+			t.Fatal("invalid argument view or insufficient private result storage", counts)
+		}
+		returned := request.Args[:len(results)]
+		for i := range returned {
+			returned[i] = value.Value{Lo: uint64(i + 1), Hi: ^uint64(i)}
+		}
+		if err := e.ResumeHost(returned, nil); err != nil || e.Run() != Done {
+			t.Fatal(err, e.Err())
+		}
+		assertHostRetired(t, e)
+		if max(counts[0], counts[1]) > maxCachedHostArgs && cap(e.hostArgs) != 0 {
+			t.Fatal("oversized result storage retained after handoff")
+		}
+		for i, v := range e.Results() {
+			if v != (value.Value{Lo: uint64(i + 1), Hi: ^uint64(i)}) {
+				t.Fatal("result storage cleared before handoff", counts, i, v)
+			}
+		}
+	}
+}

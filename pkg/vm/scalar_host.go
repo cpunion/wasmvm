@@ -66,14 +66,14 @@ func scalarStack(args []value.Value, signature FunctionType) []uint64 {
 	return stack
 }
 
-func scalarResults(stack []uint64, types []wasm.ValueType) []value.Value {
-	results := make([]value.Value, len(types))
+func scalarResults(storage []value.Value, stack []uint64, types []wasm.ValueType) []value.Value {
+	results := storage[:len(types)]
 	for i, typ := range types {
 		bits := stack[i]
 		if typ == wasm.I32 || typ == wasm.F32 {
 			bits = uint64(uint32(bits))
 		}
-		results[i].Lo = bits
+		results[i] = value.Value{Lo: bits}
 	}
 	return results
 }

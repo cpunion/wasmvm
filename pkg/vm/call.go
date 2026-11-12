@@ -266,7 +266,9 @@ func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]valu
 		if err != nil || access.Write {
 			return nil, err
 		}
-		return []value.Value{{Lo: bits}}, nil
+		results := request.Args[:1]
+		results[0] = value.Value{Lo: bits}
+		return results, nil
 	}
 	s := op.store
 	scalar, isScalar := request.Function.Host.(ScalarHostFunction)
@@ -309,7 +311,7 @@ func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]valu
 		caller.mu.Lock()
 		caller.active = false
 		caller.mu.Unlock()
-		return scalarResults(stack, signature.Results), nil
+		return scalarResults(request.Args, stack, signature.Results), nil
 	}
 	var results []Value
 	var errResult error

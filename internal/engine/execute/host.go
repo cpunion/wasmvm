@@ -11,14 +11,16 @@ import (
 const maxCachedHostArgs = 64
 
 func (e *Execution) prepareHost(fn *state.Function, caller *state.Instance, count int) []value.Value {
-	if count > cap(e.hostArgs) {
-		e.hostArgs = make([]value.Value, count)
+	capacity := max(count, len(fn.Signature.Results))
+	if capacity > cap(e.hostArgs) {
+		e.hostArgs = make([]value.Value, capacity)
 	} else {
-		e.hostArgs = e.hostArgs[:count]
+		e.hostArgs = e.hostArgs[:capacity]
 	}
-	e.hostRequest = HostCall{Function: fn, Caller: caller, Args: e.hostArgs}
+	args := e.hostArgs[:count]
+	e.hostRequest = HostCall{Function: fn, Caller: caller, Args: args}
 	e.pending = &e.hostRequest
-	return e.hostArgs
+	return args
 }
 
 func (e *Execution) clearHost() {

@@ -72,14 +72,9 @@ func (r *resourceCodec) acceptAsync(t *model.Type, v Value, commit bool) (Value,
 		return Value{}, err
 	}
 	if !commit {
-		if r.seen == nil {
-			r.seen = map[any]model.Kind{}
-		}
-		key := canonical.ReferenceKey(v.Resource)
-		if r.seen[key] != 0 {
+		if !r.seen.add(canonical.ReferenceKey(v.Resource), model.Own) {
 			return Value{}, vm.ErrType
 		}
-		r.seen[key] = model.Own
 		return v, nil
 	}
 	ref, err := canonical.MoveReference(v.Resource)
