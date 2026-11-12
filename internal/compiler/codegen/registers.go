@@ -268,6 +268,9 @@ func (e *functionEmitter) canRegisterImmediate(op uint32, dst, left slots.Slot, 
 		_, ok := armRegisterImmediate(op, d, l, value)
 		return ok
 	}
+	if _, ok := x86MultiplyShift(op, value); ok {
+		return true
+	}
 	_, arithmetic := x86ImmediateGroup(op, value)
 	return op >= 0x74 && op <= 0x78 || op >= 0x86 && op <= 0x8a || arithmetic
 }
@@ -357,21 +360,19 @@ func (e *functionEmitter) registerImmediate(op uint32, dst, left slots.Slot, val
 		}
 		return ok
 	}
+	if count, ok := x86MultiplyShift(op, value); ok {
+		shift := uint32(0x74)
+		if integerWide(op) {
+			shift = 0x86
+		}
+		return e.registerImmediate(shift, dst, left, count)
+	}
 	if e.x86ArithmeticImmediate(op, d, l, value) {
 		return true
 	}
 	wide := integerWide(op)
 	if !wide {
 		value = uint64(uint32(value))
-	}
-	if op == 0x6c || op == 0x7e {
-		if value != 0 && value&(value-1) == 0 {
-			shift := uint32(0x74)
-			if wide {
-				shift = 0x86
-			}
-			return e.registerImmediate(shift, dst, left, uint64(bits.TrailingZeros64(value)))
-		}
 	}
 	if !(op >= 0x74 && op <= 0x78 || op >= 0x86 && op <= 0x8a) {
 		return false
@@ -494,4 +495,19 @@ func armIntegerCondition(op uint32) byte {
 		index = op - 0x50
 	}
 	return [...]byte{0, 0, 1, 11, 3, 12, 8, 13, 9, 10, 2}[index]
+}
+
+// Modular multiplication by a single set bit is an immediate shift. Select
+// it before generic IMUL, including constants outside sign-extended imm32.
+func x86MultiplyShift(op uint32, value uint64) (uint64, bool) {
+	if op != 0x6c && op != 0x7e {
+		return 0, false
+	}
+	if !integerWide(op) {
+		value = uint64(uint32(value))
+	}
+	if value == 0 || value&(value-1) != 0 {
+		return 0, false
+	}
+	return uint64(bits.TrailingZeros64(value)), true
 }
