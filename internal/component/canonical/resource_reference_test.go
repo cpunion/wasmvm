@@ -137,6 +137,39 @@ func TestConcurrentReferenceMoveHasOneOwner(t *testing.T) {
 	}
 }
 
+func TestReferenceInspectionDuringInvalidation(t *testing.T) {
+	table, typ := NewResources(1), &ResourceType{}
+	id, _ := table.New(typ, 42)
+	defer table.Close()
+	for range 32 {
+		ref := NewReference(table, typ, id, "immutable owner", nil)
+		alias := *ref
+		start := make(chan struct{})
+		var wg sync.WaitGroup
+		for range 8 {
+			wg.Go(func() {
+				<-start
+				for range 32 {
+					r, rt, gotID, owner, borrowed, err := ReferenceInfo(&alias)
+					if err != nil {
+						if !errors.Is(err, wasm.ErrTrap) {
+							t.Error(err)
+						}
+					} else if r != table || rt != typ || gotID != id || owner != "immutable owner" || borrowed {
+						t.Error("inspection observed a partial binding")
+					}
+				}
+			})
+		}
+		close(start)
+		InvalidateReference(ref)
+		wg.Wait()
+		if _, _, _, _, _, err := ReferenceInfo(&alias); !errors.Is(err, wasm.ErrTrap) {
+			t.Fatal("invalidation did not reach copied header", err)
+		}
+	}
+}
+
 // Keep live and nil controls next to invalid-reference inspection: normal
 // affine cleanup frequently examines aliases invalidated by a successful move.
 func BenchmarkReferenceInspection(b *testing.B) {

@@ -18,6 +18,60 @@ func sourceType(t *testing.T, backend, name string) (*Instance, ValueType) {
 	}})
 	return in, typ
 }
+
+func TestEmbeddingReadWaitsForBothCancellationSources(t *testing.T) {
+	for _, backend := range []string{"interpreter", "native"} {
+		if backend == "native" && !native.Available {
+			continue
+		}
+		for _, cancelParent := range []bool{false, true} {
+			in, typ := sourceType(t, backend, "host-source-future-u32")
+			started, stopped := make(chan struct{}), make(chan struct{})
+			closes := 0
+			value, err := in.NewSource(nil, typ, AsyncSource{
+				Prompt: true,
+				Read: func(*Caller, uint32) (*ReadCompletion, error) {
+					close(started)
+					return NewReadCompletion(), nil
+				},
+				Close: func() { closes++ },
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = in.WithCaller(nil, CallOptions{}, func(c *Caller) error {
+				original := c.ctx
+				parent, stopParent := context.WithCancel(c.Context())
+				defer stopParent()
+				operation, stopOperation := context.WithCancel(context.Background())
+				defer stopOperation()
+				// An asynchronous host callback may have a cancellation scope
+				// narrower than the enclosing VM Store lease.
+				c.ctx = parent
+				go func() {
+					defer close(stopped)
+					<-started
+					if cancelParent {
+						stopParent()
+					} else {
+						stopOperation()
+					}
+				}()
+				_, failed := c.ReadAsyncContext(operation, value.Resource, 1)
+				<-stopped
+				c.ctx = original
+				if !errors.Is(failed, context.Canceled) || c.core.Context().Err() != nil {
+					t.Fatal("read cancellation escaped its scope", backend, cancelParent, failed, c.core.Context().Err())
+				}
+				return c.DropAsync(value.Resource)
+			})
+			if err != nil || closes != 1 {
+				t.Fatal(backend, cancelParent, err, closes)
+			}
+		}
+	}
+}
+
 func TestHostSourceEmbeddingRead(t *testing.T) {
 	for _, backend := range []string{"interpreter", "native"} {
 		if backend == "native" && !native.Available {
