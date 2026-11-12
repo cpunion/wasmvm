@@ -41,6 +41,9 @@ type Execution struct {
 	callFrames      []state.NativeFrame
 	callEnabled     bool
 	callGrow        bool
+	resumeToken     uint64
+	nextResume      uint64
+	resumeDepth     int
 }
 
 func New(ctx context.Context, modules map[*slots.Module]*Lease, maxSlots, maxFrames uint32, metered bool) (*Execution, error) {
@@ -183,17 +186,34 @@ func (e *Execution) Run(fn *state.Function, base, depth int, pc uint32, fuel uin
 // the workspace's original capacity after a suspended parent shares its quota.
 // Frame transfer is handled by the common machine before runtime effects.
 func (e *Execution) RunFrames(frames *state.NativeFrames) error {
-	e.resetCalls()
+	resume := e.resumeCalls(frames)
+	if !resume {
+		e.resetCalls()
+	}
+	e.resumeToken = 0
+	frames.Resume, frames.Parents = 0, 0
 	e.callEnabled = true
+	fn, base, depth := frames.Function, frames.Base, frames.Depth
+	if resume {
+		frames.Parents = uint32(len(e.callFrames) - 1)
+		frames.Function, frames.Base, frames.Depth = e.callFrames[0].Function, e.callFrames[0].Base, depth-int(frames.Parents)
+	}
 	var err error
-	frames.PC, frames.Fuel, err = e.runFrames(frames.Function, frames.Base, frames.Depth, frames.PC, frames.Fuel,
+	frames.PC, frames.Fuel, err = e.runFrames(fn, base, depth, frames.PC, frames.Fuel,
 		min(e.maximum/16, uint64(frames.MaxSlots)), min(e.maxFrames, uint64(frames.MaxFrames)))
-	if err == nil && len(e.callWords) != 0 && e.callWords[0] != 0 {
+	if err == nil && len(e.callWords) != 0 && (e.callWords[0] != 0 || resume) {
 		err = e.publishCallFrames(frames)
 	}
 	if len(e.callWords) != 0 {
 		e.callGrow = e.callWords[0] == e.callWords[1]
-		e.callWords[0] = 0
+		if err == nil && e.callWords[0] != 0 && e.nextResume != ^uint64(0) {
+			e.nextResume++
+			e.resumeToken, frames.Resume = e.nextResume, e.nextResume
+			e.resumeDepth = frames.Depth + len(e.callFrames) - 1
+		}
+	}
+	if err != nil {
+		e.resetCalls()
 	}
 	e.callEnabled = false
 	return err

@@ -15,8 +15,10 @@ type NativeFrame struct {
 
 // NativeFrames is borrowed by a native backend for one synchronous run. Inputs
 // describe the existing top frame and current invocation's remaining limits.
-// A backend may update PC, Fuel and Values. Frames, when nonempty, replaces that
-// top frame with a complete same-instance direct-call chain, including its root.
+// A backend may update PC, Fuel and Values. Frames, when nonempty, replaces the
+// top frame and Parents existing parents with a complete same-instance chain,
+// including its root. Parents is zero unless Resume authenticates a previously
+// published chain that survived an ordinary host return without stack changes.
 // Every live value must be spilled before publishing the chain. The common frame
 // machine validates and adopts it before servicing any runtime effect or GC.
 // Values must still expose the original live prefix when an error is returned,
@@ -30,4 +32,9 @@ type NativeFrames struct {
 	MaxFrames, MaxSlots uint32
 	Values              []value.Value
 	Frames              []NativeFrame
+	// Resume is an execution-local token for a previously validated native
+	// chain. Only an ordinary host return with unchanged frames may return it.
+	// Parents reports how many existing parents this run replaces on success.
+	Resume  uint64
+	Parents uint32
 }

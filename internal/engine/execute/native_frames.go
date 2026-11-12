@@ -11,7 +11,8 @@ import (
 //go:noinline
 func (e *Execution) runBackend(backend Backend, fn *state.Function, base int, pc uint32) (uint32, error) {
 	e.nativeFrames = state.NativeFrames{Function: fn, Base: base, Depth: len(e.frames), PC: pc, Fuel: e.fuel,
-		MaxFrames: e.config.Limits.MaxFrames, MaxSlots: e.config.Limits.MaxSlots, Values: e.values}
+		MaxFrames: e.config.Limits.MaxFrames, MaxSlots: e.config.Limits.MaxSlots, Values: e.values, Resume: e.nativeResume}
+	e.nativeResume = 0
 	err := backend.RunFrames(&e.nativeFrames)
 	if err == nil {
 		err = e.adoptNativeFrames(&e.nativeFrames)
@@ -21,6 +22,9 @@ func (e *Execution) runBackend(backend Backend, fn *state.Function, base int, pc
 		e.values = e.nativeFrames.Values[:len(e.values)]
 	}
 	pc, e.fuel = e.nativeFrames.PC, e.nativeFrames.Fuel
+	if err == nil {
+		e.nativeResume = e.nativeFrames.Resume
+	}
 	e.nativeFrames = state.NativeFrames{}
 	return pc, err
 }
@@ -33,11 +37,14 @@ func (e *Execution) adoptNativeFrames(batch *state.NativeFrames) error {
 	if len(e.frames) == 0 {
 		return wasm.ErrInvalid
 	}
-	rootIndex := len(e.frames) - 1
+	if uint64(batch.Parents) >= uint64(len(e.frames)) {
+		return wasm.ErrInvalid
+	}
+	rootIndex := len(e.frames) - 1 - int(batch.Parents)
 	root := e.frames[rootIndex]
 	frames := batch.Frames
 	if len(frames) == 0 {
-		if len(batch.Values) != len(e.values) || uint64(batch.PC) >= uint64(len(root.function.Code.Code)) {
+		if batch.Parents != 0 || len(batch.Values) != len(e.values) || uint64(batch.PC) >= uint64(len(root.function.Code.Code)) {
 			return wasm.ErrInvalid
 		}
 		e.values = batch.Values
@@ -104,6 +111,10 @@ func (e *Execution) adoptNativeFrames(batch *state.NativeFrames) error {
 		return wasm.ErrInvalid
 	}
 	needed := rootIndex + len(frames)
+	if needed < len(e.frames) {
+		e.trimPrompts(needed)
+		clear(e.frames[needed:])
+	}
 	if needed > cap(e.frames) {
 		grown := make([]frame, needed)
 		copy(grown, e.frames[:rootIndex])

@@ -10,12 +10,22 @@ import (
 )
 
 func (e *Execution) resetCalls() {
+	e.resumeToken, e.resumeDepth = 0, 0
 	clear(e.callFrames)
 	e.callFrames = e.callFrames[:0]
 	e.callEnabled = false
 	if len(e.callWords) != 0 {
 		e.callWords[0] = 0
 	}
+}
+
+func (e *Execution) resumeCalls(in *state.NativeFrames) bool {
+	if in.Resume == 0 || in.Resume != e.resumeToken || len(e.callFrames) < 2 ||
+		in.Depth != e.resumeDepth || len(e.callWords) == 0 || e.callWords[0] != uint64(len(e.callFrames)-1) {
+		return false
+	}
+	top := e.callFrames[len(e.callFrames)-1]
+	return in.Function == top.Function && in.Base == top.Base && in.PC == top.PC+1
 }
 
 func (e *Execution) prepareCalls(maxSlots, maxFrames uint64) (uint64, error) {
@@ -40,17 +50,19 @@ func (e *Execution) prepareCalls(maxSlots, maxFrames uint64) (uint64, error) {
 			data.Close()
 			return 0, err
 		}
+		words := unsafe.Slice((*uint64)(unsafe.Pointer(unsafe.SliceData(buffer))), len(buffer)/8)
+		copy(words, e.callWords)
 		if e.callData != nil {
 			e.callData.Close()
 		}
 		e.callData = data
-		e.callWords = unsafe.Slice((*uint64)(unsafe.Pointer(unsafe.SliceData(buffer))), len(buffer)/8)
+		e.callWords = words
 		e.callWords[1] = wanted
 	}
 	if len(e.callWords) == 0 {
 		return 0, wasm.ErrLimit
 	}
-	e.callWords[0], e.callWords[2], e.callWords[3] = 0, maxSlots*16, maxFrames
+	e.callWords[2], e.callWords[3] = maxSlots*16, maxFrames
 	e.callGrow = false
 	return uint64(uintptr(unsafe.Pointer(unsafe.SliceData(e.callWords)))), nil
 }
@@ -73,6 +85,9 @@ func (e *Execution) publishCallFrames(out *state.NativeFrames) error {
 	if cap(e.callFrames) < count {
 		e.callFrames = make([]state.NativeFrame, count)
 	} else {
+		if count < len(e.callFrames) {
+			clear(e.callFrames[count:])
+		}
 		e.callFrames = e.callFrames[:count]
 	}
 	for i := uint64(0); i < top; i++ {

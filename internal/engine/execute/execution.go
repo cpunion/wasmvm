@@ -69,6 +69,7 @@ type Execution struct {
 	fuel, steps  uint64
 	nativeFrames state.NativeFrames
 	source       ir.Source
+	nativeResume uint64
 }
 
 func New(store *state.Store, ctx context.Context, config Config) *Execution {
@@ -174,6 +175,7 @@ func (e *Execution) clearGCArgs() {
 func (e *Execution) fail(err error) Status {
 	e.err, e.status = err, Failed
 	e.nativeFrames = state.NativeFrames{}
+	e.nativeResume = 0
 	e.source = ir.Source{}
 	clear(e.frames)
 	e.frames = e.frames[:0]
@@ -202,6 +204,7 @@ func (e *Execution) ResumeHost(results []value.Value, err error) error {
 	}
 
 	if err != nil {
+		e.nativeResume = 0
 		if ex, ok := e.store.ExceptionError(err); ok {
 			e.clearHost()
 			e.pendingDest = nil
@@ -248,6 +251,7 @@ func (e *Execution) Run() Status {
 		f := &e.frames[len(e.frames)-1]
 		f.suspended = false
 		if status, handled := e.runVeneer(backend); handled {
+			e.nativeResume = 0
 			if status != Running {
 				return status
 			}
@@ -284,6 +288,9 @@ func (e *Execution) Run() Status {
 			status = e.runThrow()
 		default:
 			status = e.runRuntime()
+		}
+		if status != HostRequest || op != 0x10 && op != 0x11 && op != 0x14 {
+			e.nativeResume = 0
 		}
 		if status != Running {
 			return status
