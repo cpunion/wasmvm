@@ -276,6 +276,12 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
+The [native compiler update](docs/research/performance-compiler-layout-2026-11-12.md)
+reduces compilation of the P3 HTTP component from **179.0 to73.9ms**, with CPU
+**210.3 to136.5ms**; Wasmtime48 observes **57.7ms** in that separate cohort.
+Bounded workers, indexed labels and bitmap relocation preserve both policy
+tiers and checks. This preparation improvement does not close execution gaps.
+
 The latest [native runtime and transaction comparison](docs/research/performance-native-runtime-image-2026-11-12.md)
 reduces native entries from 122 to 58 per complete P3 request and retains a
 smaller runtime metadata image. Snapshot Go observes **51,170 / 38,338 req/s**
