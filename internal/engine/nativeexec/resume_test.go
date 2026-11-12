@@ -175,7 +175,9 @@ func TestParentNativeChainSurvivesForeignVeneerAndRejectsStaleChildren(t *testin
 				t.Fatal(err)
 			}
 			other.Tables[0].Values[0] = host.Function
-			in, err := s.Allocate(parent, func(string, string) (state.Extern, bool) { return state.Extern{Owner: s, Function: other.Functions[1]}, true })
+			in, err := s.Allocate(parent, func(string, string) (state.Extern, bool) {
+				return state.Extern{Owner: s, Function: other.Functions[1]}, true
+			})
 			if err != nil {
 				t.Fatal(err)
 			}
