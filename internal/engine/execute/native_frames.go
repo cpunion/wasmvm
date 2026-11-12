@@ -10,8 +10,10 @@ import (
 //
 //go:noinline
 func (e *Execution) runBackend(backend Backend, fn *state.Function, base int, pc uint32) (uint32, error) {
+	resume := e.frames[len(e.frames)-1].nativeResume
+	e.frames[len(e.frames)-1].nativeResume = 0
 	e.nativeFrames = state.NativeFrames{Function: fn, Base: base, Depth: len(e.frames), PC: pc, Fuel: e.fuel,
-		MaxFrames: e.config.Limits.MaxFrames, MaxSlots: e.config.Limits.MaxSlots, Values: e.values, Resume: e.nativeResume}
+		MaxFrames: e.config.Limits.MaxFrames, MaxSlots: e.config.Limits.MaxSlots, Values: e.values, Resume: resume}
 	e.nativeResume = 0
 	err := backend.RunFrames(&e.nativeFrames)
 	if err == nil {

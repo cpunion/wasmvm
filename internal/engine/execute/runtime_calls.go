@@ -110,6 +110,7 @@ func (e *Execution) runCall() Status {
 	}
 	// Publish the caller continuation before a host suspension or
 	// frame push. Straight-line execution keeps its PC local.
+	f.nativeResume = e.nativeResume
 	f.pc = pc + 1
 	f.callPC, f.suspended = pc, true
 	if callee.Code == nil {

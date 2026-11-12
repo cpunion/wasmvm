@@ -91,6 +91,8 @@ func (e *Execution) capture(pi int, typ uint32, inputs []wasm.ValueType, dest []
 		prompts: append([]prompt(nil), e.prompts[pi+1:]...), inputs: inputs, dest: dest, throwPC: pc}
 	for i := range c.frames {
 		c.frames[i].base -= base
+		// Captured guest state may move to a different execution/backend.
+		c.frames[i].nativeResume = 0
 	}
 	for i := range c.prompts {
 		c.prompts[i].base -= p.base
@@ -160,6 +162,7 @@ func (e *Execution) restore(c *continuationBody, args []value.Value, dest []slot
 	copy(e.values[valueBase:], c.values)
 	for _, f := range c.frames {
 		f.base += valueBase
+		f.nativeResume = 0
 		e.frames = append(e.frames, f)
 	}
 	e.frames[frameBase].dest = dest

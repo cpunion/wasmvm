@@ -132,3 +132,88 @@ func TestResumeTokenChecksAndRetirement(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestParentNativeChainSurvivesForeignVeneerAndRejectsStaleChildren(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	sig := module.FuncType{Params: []wasm.ValueType{wasm.I32}, Results: []wasm.ValueType{wasm.I32}}
+	for _, foreignNative := range []bool{false, true} {
+		d := &module.Module{Types: []module.FuncType{sig}, Imports: []module.Import{{Kind: 0}}, Tables: []module.TableType{{Element: wasm.FuncRef, Limits: module.Limits{Min: 1}}}, Functions: []module.Function{{Body: module.Expr{{Op: 0x20}, {Op: 0x41}, {Op: 0x11}, {Op: 0xb}}}}}
+		if foreignNative {
+			d.Functions[0].Body = module.Expr{{Op: 0x20}, {Op: 0x10}, {Op: 0x41, Bits: 1}, {Op: 0x6a}, {Op: 0xb}}
+		}
+		foreign := callSlots(t, d)
+		d = &module.Module{Types: []module.FuncType{sig}, Imports: []module.Import{{Kind: 0}}}
+		for _, target := range []uint32{2, 3, 0} {
+			d.Functions = append(d.Functions, module.Function{Body: module.Expr{{Op: 0x20}, {Op: 0x10, A: target}, {Op: 0x41, Bits: 1}, {Op: 0x6a}, {Op: 0xb}}})
+		}
+		parent := callSlots(t, d)
+		leases := map[*slots.Module]*Lease{}
+		for _, m := range []*slots.Module{parent, foreign} {
+			compiled, err := Compile(context.Background(), m, codegen.DefaultLimits())
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(compiled.Close)
+			lease, err := compiled.Acquire()
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(lease.Close)
+			leases[m] = lease
+		}
+		for _, metered := range []bool{false, true} {
+			s := state.NewNative(state.DefaultLimits())
+			t.Cleanup(s.Close)
+			host, err := s.NewHost(sig, "echo")
+			if err != nil {
+				t.Fatal(err)
+			}
+			other, err := s.Allocate(foreign, func(string, string) (state.Extern, bool) { return host, true })
+			if err != nil {
+				t.Fatal(err)
+			}
+			other.Tables[0].Values[0] = host.Function
+			in, err := s.Allocate(parent, func(string, string) (state.Extern, bool) { return state.Extern{Owner: s, Function: other.Functions[1]}, true })
+			if err != nil {
+				t.Fatal(err)
+			}
+			n, err := New(context.Background(), leases, 2048, 128, metered)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := n.Resize(0, 2048); err != nil {
+				t.Fatal(err)
+			}
+			b := &resumeCountingBackend{Execution: n}
+			e := execute.New(s, nil, execute.Config{Limits: execute.Limits{MaxFrames: 128, MaxSlots: 2048}, Backend: b, Metered: metered, Fuel: 100})
+			t.Cleanup(e.Close)
+			for round := 0; round < 2; round++ {
+				before := b.runs
+				if err := e.Start(in.Functions[1], []value.Value{{Lo: 10}}); err != nil || e.Run() != execute.HostRequest || e.Host().Args[0].Lo != 10 {
+					t.Fatal(err, e.Err())
+				}
+				want, fuel := uint64(23), uint64(100)
+				if foreignNative {
+					want++
+				}
+				if metered {
+					fuel -= 15
+					if foreignNative {
+						fuel--
+					}
+				}
+				if err := e.ResumeHost([]value.Value{{Lo: 20}}, nil); err != nil || e.Run() != execute.Done || e.Results()[0].Lo != want || e.Fuel() != fuel {
+					t.Fatal(foreignNative, metered, err, e.Err(), e.Results(), e.Fuel())
+				}
+				if !foreignNative && (b.runs-before != 2 || b.parents != (round+1)*2) {
+					t.Fatal("parent chain was lost across the foreign veneer", b.runs-before, b.parents)
+				}
+				if foreignNative && b.runs-before <= 2 {
+					t.Fatal("stale chain bypassed the foreign native child")
+				}
+			}
+		}
+	}
+}

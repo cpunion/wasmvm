@@ -43,6 +43,9 @@ type frame struct {
 	suspended bool
 	base      int
 	dest      []slots.Slot
+	// Optional backend state belongs to this execution, never to a captured
+	// Wasm continuation. A stale token always selects the ordinary entry path.
+	nativeResume uint64
 }
 type HostCall struct {
 	Function *state.Function
