@@ -4,7 +4,6 @@ import (
 	"math/bits"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
-	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
 // Assign fixed registers to the most frequently referenced scalar slots. The
@@ -106,11 +105,10 @@ func (e *functionEmitter) spillRegisters() {
 			continue
 		}
 		if r, ok := registers[s]; ok {
-			e.registerMove(e.operandRegister(0), r, true)
+			e.frameRegister(s, r, false, true)
 		} else {
-			e.floatToInteger(e.operandRegister(0), floats[s], e.f.Slots[s] == wasm.F64)
+			e.frameRegister(s, floats[s], true, true)
 		}
-		e.slotStore(s, 0, false)
 	}
 	e.registers, e.floatRegisters = registers, floats
 }

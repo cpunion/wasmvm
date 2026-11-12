@@ -69,11 +69,9 @@ func (e *functionEmitter) transitionRegisters(next *registerPlan) {
 			}
 			switch kind {
 			case 1:
-				e.registerMove(e.operandRegister(0), r, true)
-				e.slotStore(s, 0, false)
+				e.frameRegister(s, r, false, true)
 			case 2:
-				e.floatToInteger(e.operandRegister(0), r, e.f.Slots[s] == wasm.F64)
-				e.slotStore(s, 0, false)
+				e.frameRegister(s, r, true, true)
 			case 3:
 				e.vectorMemory(s, r, true)
 			}
@@ -88,11 +86,9 @@ func (e *functionEmitter) transitionRegisters(next *registerPlan) {
 			}
 			switch kind {
 			case 1:
-				e.slotLoad(s, 0, false, true)
-				e.registerMove(r, e.operandRegister(0), true)
+				e.frameRegister(s, r, false, false)
 			case 2:
-				e.slotLoad(s, 0, false, e.f.Slots[s] == wasm.F64)
-				e.floatFromInteger(r, e.operandRegister(0), e.f.Slots[s] == wasm.F64)
+				e.frameRegister(s, r, true, false)
 			case 3:
 				e.vectorMemory(s, r, false)
 			}

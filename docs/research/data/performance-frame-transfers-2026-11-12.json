@@ -1,0 +1,230 @@
+{
+  "source": {
+    "sourceBase": "df70fc94169f274ef91b10dff782106ea1bd3ed8",
+    "sourceFiles": {
+      "internal/compiler/codegen/frame_registers.go": "392fe7eab3d628b39a73057a5467f53c770d748b1407654d4b4808bbce6a2b56",
+      "internal/compiler/codegen/registers.go": "6be58a95a95346d554c9a3aee8effb04534770b72a85da28c8a778f7ed3d89de",
+      "internal/compiler/codegen/register_plans.go": "8b5a284436abc8ae3ec57d9fab920823aa663879cfbdc83b220a1d18445465cd"
+    },
+    "binaries": {
+      "base": "3900e31da93d61f69e2b2e3befa5abf3f06168538339fd7000df5c8702550361",
+      "head": "8267a18d89f7295773db49994226f426567006f6ce2540e11314d7faea5ebb95",
+      "wasmtime": "561370163342e51593964bc6615ca28ebf1831c22132412ce9c6c44981c54f08"
+    },
+    "toolchains": "Go1.27.3 Clang22.1.8 Wasmtime48.0.1 macOS27.0.1 M4Max arm64; GOMAXPROCS4",
+    "sourceEquivalence": "All three production implementation files exactly match the timed candidate. Only the validation test adds explicit F64 NaN cases after timing; test files are absent from the timed embedding executable.",
+    "validationFiles": {
+      "internal/compiler/codegen/frame_registers_test.go": "f7578fc97a3656ed776e36078abb40035901619146445d47494dc5a9519c955f"
+    }
+  },
+  "compile": {
+    "plan": {
+      "blocks": 20,
+      "seed": 2026112451,
+      "variants": [
+        [
+          "base",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/runtime-continuations/phase-base-go-runner",
+          4
+        ],
+        [
+          "head",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/direct-frame-registers/go-runner",
+          4
+        ]
+      ],
+      "scope": "Exact-source df70fc9 versus directphysical frameregisterloads/stores preservingallrawslotwords. Full validation/limits/checks retained. All compile and preparation separated from warm execution. Same runtime/guest/publicCompile marker harness, Go1.27.3 Clang22.1.8 GOMAXPROCS4, production checks/fuelpolicies unchanged. PublicCompile+bounded marker CPU excludes startup/load/instantiate/firstcall/cleanup. Wasmtime48.0.1 Rustinternalcompilewall only, isolatedreferenceCPU unavailable.20randomized freshprocessblocks withindependentA/Aaliases,2fullycheckedHTTPresponses everyprocess. No owned overlappingbuild/test/profile/pruning; record controls, not all-target fullportfolio acceptance."
+    },
+    "summary": {
+      "base": {
+        "compileMs": 72.4460415,
+        "cpuMs": 133.42504166666666,
+        "instructions": 1724922150.0
+      },
+      "base-aa": {
+        "compileMs": 72.6394375,
+        "cpuMs": 133.60868749999997,
+        "instructions": 1729977894.5
+      },
+      "head": {
+        "compileMs": 71.189479,
+        "cpuMs": 127.9395625,
+        "instructions": 1654751781.0
+      },
+      "head-aa": {
+        "compileMs": 70.9018335,
+        "cpuMs": 128.263125,
+        "instructions": 1649749414.5
+      },
+      "wasmtime": {
+        "compileMs": 57.670854
+      },
+      "wasmtime-aa": {
+        "compileMs": 57.1440835
+      }
+    }
+  },
+  "compileControls": {
+    "head/base:compileMs": {
+      "geometricRatio": 0.9881531090266026,
+      "ci95": [
+        0.9685025738307945,
+        1.0071171578633908
+      ],
+      "maxAbsBlockDeviation": 0.10814371874643502
+    },
+    "head/base:cpuMs": {
+      "geometricRatio": 0.9648991181092099,
+      "ci95": [
+        0.9521914823744128,
+        0.9776148360790328
+      ],
+      "maxAbsBlockDeviation": 0.08395483802891224
+    },
+    "head/base:instructions": {
+      "geometricRatio": 0.9593541542569676,
+      "ci95": [
+        0.9530319114504936,
+        0.9654064046593042
+      ],
+      "maxAbsBlockDeviation": 0.07798886740284616
+    },
+    "head/wasmtime:compileMs": {
+      "geometricRatio": 1.2292154807073976,
+      "ci95": [
+        1.183121933915437,
+        1.267971322620929
+      ],
+      "maxAbsBlockDeviation": 0.3632904087603921
+    },
+    "base-aa/base:compileMs": {
+      "geometricRatio": 0.9968354382041619,
+      "ci95": [
+        0.9725128694687349,
+        1.0208241596469392
+      ],
+      "maxAbsBlockDeviation": 0.10208538041790538
+    },
+    "base-aa/base:cpuMs": {
+      "geometricRatio": 1.0014598570196174,
+      "ci95": [
+        0.9869969778563361,
+        1.0158145985875258
+      ],
+      "maxAbsBlockDeviation": 0.07573539751735425
+    },
+    "base-aa/base:instructions": {
+      "geometricRatio": 0.9992834262414836,
+      "ci95": [
+        0.9932074713798323,
+        1.0047490340787306
+      ],
+      "maxAbsBlockDeviation": 0.03766023760435666
+    },
+    "head-aa/head:compileMs": {
+      "geometricRatio": 0.9889370361351433,
+      "ci95": [
+        0.9680293514637186,
+        1.011216197023272
+      ],
+      "maxAbsBlockDeviation": 0.10826656816167524
+    },
+    "head-aa/head:cpuMs": {
+      "geometricRatio": 0.9933020497120579,
+      "ci95": [
+        0.9803605753074535,
+        1.0070136836056431
+      ],
+      "maxAbsBlockDeviation": 0.06473015042399788
+    },
+    "head-aa/head:instructions": {
+      "geometricRatio": 0.9974607763982308,
+      "ci95": [
+        0.9897838282311255,
+        1.004874396441585
+      ],
+      "maxAbsBlockDeviation": 0.04134139558787986
+    },
+    "wasmtime-aa/wasmtime:compileMs": {
+      "geometricRatio": 0.9804856716194361,
+      "ci95": [
+        0.9471034532512662,
+        1.007736148879984
+      ],
+      "maxAbsBlockDeviation": 0.2364120417858201
+    }
+  },
+  "warm": {
+    "plan": {
+      "blocks": 4,
+      "samples": 20,
+      "batchRequests": 4096,
+      "seed": 2026112453,
+      "payloadBytes": 16,
+      "variants": {
+        "base": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/runtime-continuations/phase-base-go-runner",
+        "frame": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/direct-frame-registers/go-runner",
+        "wasmtime": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/output-screen/wasmtime-go-runner"
+      },
+      "source": "df70fc9 vs direct physical frame register loads/stores; every raw slot preserved, no semantic liveness elision.",
+      "scope": "Diagnostic warm-call batch interleave fixed4blocks3variants2AA=24freshprocesses. Ordinary public Caller-based callbacks and retained-stack contract unchanged. Allguestvalidation/tabletypes/IDs/state/quotas/cancellation/fuel/cleanup retained. Same20measured4096requestbatches plusfinaluntimedflush,4Stores16clients256requests/client,GOMAXPROCS4; everyresponsechecked. first+2warmups/100mssettle separate; one selectedchild runsothersSIGSTOP;100msfinalbackgroundtailincluded. No ownedbuild/test/profiler/pruning overlap; allAAretained, hostcontention recorded, not releaseacceptance."
+    },
+    "summary": {
+      "base": {
+        "cpuUs": 90.81578038533527,
+        "instructions": 914039.9567810058,
+        "throughput": 40939.05858517287,
+        "allocsPerRequest": 705.0007568359375,
+        "bytesPerRequest": 55480.15180664063
+      },
+      "base-aa": {
+        "cpuUs": 90.85908686319986,
+        "instructions": 914373.0059692382,
+        "throughput": 40872.64947743023,
+        "allocsPerRequest": 705.0010070800781,
+        "bytesPerRequest": 55480.172265625
+      },
+      "frame": {
+        "cpuUs": 90.38074467976887,
+        "instructions": 900460.362072754,
+        "throughput": 40519.814470168305,
+        "allocsPerRequest": 705.0010803222656,
+        "bytesPerRequest": 55480.18149414063
+      },
+      "frame-aa": {
+        "cpuUs": 89.85138473510742,
+        "instructions": 900882.1025695801,
+        "throughput": 41462.50545126933,
+        "allocsPerRequest": 705.0007934570312,
+        "bytesPerRequest": 55480.151123046875
+      },
+      "wasmtime": {
+        "cpuUs": 43.1399040222168,
+        "instructions": 229276.57282104495,
+        "throughput": 51921.73994604366,
+        "allocsPerRequest": 1.0001708984375,
+        "bytesPerRequest": 32.051953125
+      },
+      "wasmtime-aa": {
+        "cpuUs": 42.76371434529622,
+        "instructions": 228250.3709350586,
+        "throughput": 52957.346850329355,
+        "allocsPerRequest": 1.000128173828125,
+        "bytesPerRequest": 32.03076171875
+      }
+    }
+  },
+  "validation": {
+    "scope": "Actual-source standalone codegen coverage; full affected macOS Go semantics; pinned macOS LLGo codegen/nativeexec/VM; Go race codegen/nativeexec/VM. Final-head full matrix remains required.",
+    "codegenStatementCoveragePercent": 95.2,
+    "llgo": "3d92a58e09bd8971899c6eaf63437fbecd18d432 -O3 -lto=full",
+    "linuxDocker": {
+      "image": "llgo-wails-ubuntu24-amd64:go1.27-llvm22",
+      "imageID": "sha256:df1aa4fb6d2a3b05ba649a432db0b139f3313a0430e732a44750eca7f8546c9d",
+      "Go": "codegen14.081s, nativeexec0.285s; all native boundary regressions executed",
+      "LLGo": "3d92a58 -O3 -lto=full codegen10.123s, nativeexec0.418s",
+      "scope": "Scoped emulated Linux amd64 semantic checks only. No Docker performance claim. Full final-head native hosted matrix remains required."
+    }
+  },
+  "interpretation": "Diagnostic compile CPU improvement; no resolved compile-wall or warm throughput win. External Chrome and StorageManagement load present. Both A/A aliases retained, every response checked. Full-portfolio Go parity remains open. Rust reference CPU compilation unavailable; reference Go allocation counters only cover adapter."
+}
