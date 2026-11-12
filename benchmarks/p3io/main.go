@@ -54,7 +54,7 @@ func parse(args []string, diagnostic io.Writer) (out options, err error) {
 	f.StringVar(&out.engine, "engine", "wasmvm", "wasmvm, native-go or wasmtime")
 	f.StringVar(&out.backend, "backend", "native", "interpreter/native, host, or compiler")
 	f.StringVar(&out.path, "wasm", "", "pinned P3 HTTP echo component")
-	f.StringVar(&out.responseMode, "response-mode", "streaming", "owned API: streaming or bounded buffered collection")
+	f.StringVar(&out.responseMode, "response-mode", "streaming", "owned API: streaming, buffered or caller-buffer collection")
 	f.StringVar(&out.requestMode, "request-mode", "reader", "owned input: reader or immutable snapshot")
 	size := f.Int("payload-bytes", 65536, "positive byte count, multiple of16, <=1MiB")
 	expected := f.Uint64("expected", 0, "required unsigned CRC32 of the complete expected body")
@@ -109,13 +109,13 @@ func validateResponseMode(args options) error {
 	if args.requestMode == "snapshot" && args.engine != "wasmvm" {
 		return errors.New("snapshot request mode applies to the owned VM API")
 	}
-	if args.requestMode == "snapshot" && args.responseMode != "buffered" {
-		return errors.New("snapshot benchmark requests require the buffered owned API")
+	if args.requestMode == "snapshot" && args.responseMode != "buffered" && args.responseMode != "caller-buffer" {
+		return errors.New("snapshot benchmark requests require complete buffered collection")
 	}
-	if args.responseMode != "" && args.responseMode != "streaming" && args.responseMode != "buffered" {
+	if args.responseMode != "" && args.responseMode != "streaming" && args.responseMode != "buffered" && args.responseMode != "caller-buffer" {
 		return errors.New("unknown owned response mode")
 	}
-	if args.responseMode == "buffered" && args.engine != "wasmvm" {
+	if (args.responseMode == "buffered" || args.responseMode == "caller-buffer") && args.engine != "wasmvm" {
 		return errors.New("response-mode applies to the owned VM API")
 	}
 	return nil

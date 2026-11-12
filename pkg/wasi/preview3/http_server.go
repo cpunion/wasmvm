@@ -195,7 +195,7 @@ func (p *HTTP) callIncoming(ctx context.Context, in *component.Instance, request
 			if collector == nil {
 				stream, failed = message.body.pump(c, response.Trailer, length)
 			} else {
-				collector.data, failed = message.body.collect(c, response.Trailer, length, collector.limit)
+				collector.data, failed = message.body.collect(c, response.Trailer, length, collector.limit, collector.data)
 				stream = http.NoBody
 			}
 			if failed != nil {

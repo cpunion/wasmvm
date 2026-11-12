@@ -90,7 +90,7 @@ measurement tests with legacy. The remaining longest P3 package link was321s
 and its tests98s on macOS, so the5–10 minute job target remains open pending the
 next measured run.
 
-The owned `--response-mode streaming|buffered` selector keeps the ordinary
+The owned `--response-mode streaming|buffered|caller-buffer` selector keeps the ordinary
 streaming API separate from bounded Store-local collection. Buffered mode uses
 CallIncomingBuffered with a response-length limit equal to the declared expected
 payload, and validates every byte/status/header/trailer after the complete API
@@ -98,6 +98,14 @@ timer. Request construction is outside API time and inside request wall in
 both owned modes. The reference continues its own Store-local body collection;
 its existing source/build identity remains separately recorded. The native-go
 controls accept the default selector only.
+
+`caller-buffer` calls `HTTP.CallIncomingInto` with one exclusive output buffer
+per serialized Store worker. Its allocation is charged to `requestPreparation`;
+the complete body/status/header/trailer/CRC checks still run after every API
+call. The returned body aliases that buffer and is checked before reuse.
+Ordinary `buffered` mode retains independently owned response bodies. Keep both
+contracts separately labeled when comparing performance; caller storage does
+not remove guest copies, logical copy budgets, cancellation or guest join.
 
 For an already available immutable input, add `--request-mode snapshot
 --response-mode buffered`. The owned provider uses

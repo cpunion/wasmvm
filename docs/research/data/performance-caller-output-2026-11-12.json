@@ -1,0 +1,391 @@
+{
+  "source": {
+    "head": "166e38c06a18de2ad43eddfd65a5cd63aeade813",
+    "baseRuntime": "57ffbf5e9dc25d6e9cf3317738930e8711779e7e",
+    "baseMerged": "0dfbb1b78edf08f7c31d2e289ff278170eafc283",
+    "binarySHA256": {
+      "base": "da29fe0d36192f3670f93f1aa374242c6e8c8c29aa56dc869973cb6562902d0e",
+      "head": "03e338d6bbf5f1fda4360390fbf24737a11f019422f03602a5ab3fa5a71f2bcb",
+      "into": "03e338d6bbf5f1fda4360390fbf24737a11f019422f03602a5ab3fa5a71f2bcb",
+      "wasmtime": "561370163342e51593964bc6615ca28ebf1831c22132412ce9c6c44981c54f08"
+    }
+  },
+  "plan": {
+    "seed": 2026111517,
+    "blocks": 3,
+    "samples": 12,
+    "requestsPerBatch": 1024,
+    "payloadBytes": [
+      16,
+      65536
+    ],
+    "participants": [
+      {
+        "id": "base",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/caller-output/comparison/base-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "snapshot"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "base-aa",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/caller-output/comparison/base-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "snapshot"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "head",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/caller-output/comparison/head-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "snapshot"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "head-aa",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/caller-output/comparison/head-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "buffered",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "snapshot"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "into",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/caller-output/comparison/into-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "caller-buffer",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "snapshot"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "into-aa",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/caller-output/comparison/into-go-runner",
+          "--engine",
+          "wasmvm",
+          "--backend",
+          "native",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--response-mode",
+          "caller-buffer",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2",
+          "--request-mode",
+          "snapshot"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "wasmtime",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/caller-output/comparison/wasmtime-go-runner",
+          "--engine",
+          "wasmtime",
+          "--backend",
+          "compiler",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2"
+        ],
+        "environment": {}
+      },
+      {
+        "id": "wasmtime-aa",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/caller-output/comparison/wasmtime-go-runner",
+          "--engine",
+          "wasmtime",
+          "--backend",
+          "compiler",
+          "--wasm",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/native-indirect-20261111/source-head/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+          "--payload-bytes",
+          "16",
+          "--expected",
+          "1757737011",
+          "--workers",
+          "4",
+          "--clients",
+          "16",
+          "--requests",
+          "256",
+          "--samples",
+          "7",
+          "--warmups",
+          "2"
+        ],
+        "environment": {}
+      }
+    ],
+    "scope": "Exact166e38c Go public caller-owned output vs ordinary fresh API; base57ffbf5 runtime is equivalent to merged0dfbb1b. NewAPI shares normal collection/fuel/bounds/cancel/cleanup/guestjoin. Four Stores,16clients,64requests/client,12samples,2warmups. Explicit immutableSnapshot inputs in both source revisions; into uses exclusive serialized per-Store output buffer allocated in requestPreparation; ordinary fresh API stays primary. Independent pinned Wasmtime48.0.1 ordinary adapter. All status/header/body/trailer/CRC checks retained. Compiler Go1.27.3 Clang22.1.8 fixed, no owned local concurrent builds/tests/profiles/pruning, no thermal stabilization or release acceptance. Startup/compile/instantiate/firstcall/requestpreparation/cleanup phases separate. Warm shared adapter unchanged across revisions, cold options/policy text extended. P3 whole Linux capturedLLGObinary retry and macOSLLGo semantics pass, final CI qualification pending."
+  },
+  "summary": {
+    "16": {
+      "base": {
+        "cpuUs": 101.69040009469695,
+        "instructions": 926088.1915838068,
+        "throughput": 36297.89798305625,
+        "bytesPerRequest": 55480.332682291664
+      },
+      "base-aa": {
+        "cpuUs": 101.6132960464015,
+        "instructions": 925183.2683771307,
+        "throughput": 36772.00541482144,
+        "bytesPerRequest": 55480.35546875
+      },
+      "head": {
+        "cpuUs": 99.35380785392992,
+        "instructions": 926131.2614524148,
+        "throughput": 36980.4421672742,
+        "bytesPerRequest": 55480.323567708336
+      },
+      "head-aa": {
+        "cpuUs": 103.10511363636363,
+        "instructions": 924955.4847301136,
+        "throughput": 35309.203366270485,
+        "bytesPerRequest": 55480.779296875
+      },
+      "into": {
+        "cpuUs": 100.25531930634469,
+        "instructions": 924230.2931463068,
+        "throughput": 36292.05492490628,
+        "bytesPerRequest": 55464.419921875
+      },
+      "into-aa": {
+        "cpuUs": 103.38282359730113,
+        "instructions": 926682.9889914773,
+        "throughput": 36120.46011187431,
+        "bytesPerRequest": 55464.393229166664
+      },
+      "wasmtime": {
+        "cpuUs": 40.98935029000947,
+        "instructions": 214575.97008167615,
+        "throughput": 53489.16929204551,
+        "bytesPerRequest": 32.0
+      },
+      "wasmtime-aa": {
+        "cpuUs": 42.914462002840914,
+        "instructions": 218432.9560546875,
+        "throughput": 50250.06522939375,
+        "bytesPerRequest": 32.0
+      }
+    },
+    "65536": {
+      "base": {
+        "cpuUs": 144.43504749644885,
+        "instructions": 1264078.4197443181,
+        "throughput": 23329.681653393676,
+        "bytesPerRequest": 127816.4609375
+      },
+      "base-aa": {
+        "cpuUs": 135.93715968276513,
+        "instructions": 1256640.122425426,
+        "throughput": 27058.271732165387,
+        "bytesPerRequest": 127816.794921875
+      },
+      "head": {
+        "cpuUs": 149.00419477982956,
+        "instructions": 1260287.1856356533,
+        "throughput": 24191.5715430764,
+        "bytesPerRequest": 127816.95963541667
+      },
+      "head-aa": {
+        "cpuUs": 135.73417154947916,
+        "instructions": 1257561.5125177556,
+        "throughput": 27073.115562109328,
+        "bytesPerRequest": 127816.44791666667
+      },
+      "into": {
+        "cpuUs": 122.24444765033144,
+        "instructions": 1161559.0878018467,
+        "throughput": 30099.05690748445,
+        "bytesPerRequest": 62280.747395833336
+      },
+      "into-aa": {
+        "cpuUs": 134.99867942116475,
+        "instructions": 1166852.2778764204,
+        "throughput": 26995.987839942,
+        "bytesPerRequest": 62280.427083333336
+      },
+      "wasmtime": {
+        "cpuUs": 51.70086115056819,
+        "instructions": 304125.7871981534,
+        "throughput": 45691.635717722784,
+        "bytesPerRequest": 32.0
+      },
+      "wasmtime-aa": {
+        "cpuUs": 52.06690562855114,
+        "instructions": 305810.4873934659,
+        "throughput": 44486.199492496744,
+        "bytesPerRequest": 32.0
+      }
+    }
+  },
+  "controls": {
+    "total": 24,
+    "within2.5Percent": {
+      "throughput": 3,
+      "cpuUs": 3,
+      "instructions": 21
+    },
+    "worstFraction": {
+      "throughput": 0.92490334738204,
+      "cpuUs": 0.47998287117281,
+      "instructions": 0.05120988734508902
+    }
+  },
+  "validation": {
+    "componentCoverage": 92.44,
+    "preview3Coverage": 91.28,
+    "measurementCoverage": 96.3,
+    "macOSLLGo": "Whole P3 and measurement pass",
+    "linuxLLGo": "Captured whole P3 test binary passes on bounded retry; first nonverbose run stalled and was terminated after19minutes; new cases and upstream group pass independently. Full native CI still required.",
+    "race": "Caller-output/ordinary cancellation tests pass"
+  },
+  "evidenceSHA256": "a74e7cd52449182488c7cccab8d2df8253e781908c5ac9b55d03bb8dd396697f",
+  "scope": "Advisory mixed-load developer-machine event; A/A timing controls unresolved. No throughput improvement or competitive acceptance claim. Per-request arrays summarized; raw originals retained locally; complete process/batch phases retained."
+}

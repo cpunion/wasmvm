@@ -10,8 +10,9 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
-// BufferedResponse owns the complete response, including trailers. Body remains
-// independent of the guest and may be retained or changed after the call.
+// BufferedResponse contains the complete response, including trailers. Body is
+// independent of the guest. CallIncomingBuffered allocates its owned body;
+// CallIncomingInto uses the caller-provided storage described by that method.
 type BufferedResponse struct {
 	StatusCode    int
 	Header        http.Header
@@ -35,7 +36,24 @@ func (p *HTTP) CallIncomingBuffered(ctx context.Context, in *component.Instance,
 	if maxBodyBytes == 0 || maxBodyBytes > uint64(^uint(0)>>1) {
 		return nil, wasm.ErrLimit
 	}
-	collector := &httpCollector{limit: maxBodyBytes}
+	return p.collectIncoming(ctx, in, request, options, &httpCollector{limit: maxBodyBytes})
+}
+
+// CallIncomingInto consumes and joins the complete response using dst as its
+// body storage. len(dst) is the positive materialization limit; an oversized
+// response fails with ErrLimit. The returned Body aliases dst, so a later reuse
+// changes that view. dst must remain exclusive to this call until it returns.
+// On failure its already written prefix may have changed. Header/trailer,
+// ownership, cancellation, fuel, copy budgets and guest join match the ordinary
+// buffered API; no destination is retained by the VM after return.
+func (p *HTTP) CallIncomingInto(ctx context.Context, in *component.Instance, request *http.Request, dst []byte, options component.CallOptions) (*BufferedResponse, error) {
+	if len(dst) == 0 {
+		return nil, wasm.ErrLimit
+	}
+	return p.collectIncoming(ctx, in, request, options, &httpCollector{limit: uint64(len(dst)), data: dst[:0:len(dst)]})
+}
+
+func (p *HTTP) collectIncoming(ctx context.Context, in *component.Instance, request *http.Request, options component.CallOptions, collector *httpCollector) (*BufferedResponse, error) {
 	response, err := p.callIncoming(ctx, in, request, options, collector)
 	if err != nil {
 		return nil, err
@@ -46,7 +64,8 @@ func (p *HTTP) CallIncomingBuffered(ctx context.Context, in *component.Instance,
 	return &BufferedResponse{StatusCode: response.StatusCode, Header: response.Header, Trailer: response.Trailer, Body: collector.data, FuelRemaining: collector.fuel}, nil
 }
 
-func (b *httpBody) collect(c *component.Caller, trailer http.Header, expected *uint64, limit uint64) (data []byte, err error) {
+func (b *httpBody) collect(c *component.Caller, trailer http.Header, expected *uint64, limit uint64, storage []byte) (data []byte, err error) {
+	data = storage[:0:cap(storage)]
 	if expected != nil && *expected > limit {
 		return nil, wasm.ErrLimit
 	}
