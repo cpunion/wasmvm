@@ -182,6 +182,14 @@ body limit is mandatory; invalid limits or excess response bytes return
 `wasm.ErrLimit`. Streaming remains appropriate when the application cannot
 materialize the entire response.
 
+`CallIncomingInto(ctx, instance, request, dst, options)` shares the bounded
+collector and joins the same guest work. The positive `len(dst)` is its body
+limit. Returned body bytes alias the exclusive caller storage, which the VM
+does not retain after return. Reusing the buffer changes earlier response
+views; failure may change an already written prefix. Headers and trailers keep
+the ordinary complete-response contract. This explicit ownership choice is
+measured separately from fresh owned responses with `--response-mode caller-buffer`.
+
 Both APIs prepare incoming resources and execute the handler under one Store
 admission. The buffered API consumes typed guest streams directly in the same
 component scheduler and Store lease. It avoids the streaming response's Store

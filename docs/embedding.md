@@ -351,6 +351,12 @@ factory supplying a fresh instance and request-scoped providers, and streams the
 response while the guest continues producing it. Factory cleanup closes/joins
 these owners and the instance. Close HTTP before Sockets and IO.
 
+Use `HTTP.CallIncomingBuffered` for a complete owned response with a positive
+body limit. `HTTP.CallIncomingInto` instead writes the complete body into an
+exclusive caller buffer: its positive length is the limit, and the returned
+`Body` aliases that storage. Reuse changes the previous view; failure may change
+an already written prefix. Both calls join guest work before returning.
+
 `component.AsyncSource.Owned` moves readable/resource capabilities into a source;
 `ReadOwned` receives their current references. EOF/drop/failure/shutdown reclaims
 remaining ownership inside the serialized Store. `NewOwnedSource` also returns

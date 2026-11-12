@@ -15,15 +15,17 @@ import (
 func TestOwnedBufferedCompleteBothFixturesAndBackends(t *testing.T) {
 	for _, backend := range []string{"interpreter", "native"} {
 		for _, fixture := range []string{"world-rust-http", "world-rust-composed-http"} {
-			args := largeOptions()
-			args.engine, args.backend, args.path, args.responseMode = "wasmvm", backend, p3Fixture(fixture), "buffered"
-			out, err := benchmark(nil, args, nil)
-			if err != nil {
-				t.Fatal(backend, fixture, err)
-			}
-			checkBatches(t, out, args)
-			if out.OwnedResponseMode != "buffered" {
-				t.Fatal(out.OwnedResponseMode)
+			for _, mode := range []string{"buffered", "caller-buffer"} {
+				args := largeOptions()
+				args.engine, args.backend, args.path, args.responseMode = "wasmvm", backend, p3Fixture(fixture), mode
+				out, err := benchmark(nil, args, nil)
+				if err != nil {
+					t.Fatal(backend, fixture, err)
+				}
+				checkBatches(t, out, args)
+				if out.OwnedResponseMode != mode {
+					t.Fatal(out.OwnedResponseMode)
+				}
 			}
 		}
 	}

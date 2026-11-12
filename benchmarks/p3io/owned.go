@@ -81,7 +81,12 @@ func ownedKernels(ctx context.Context, args options, out *report) ([]service.Cal
 			return nil, release, err
 		}
 		start = time.Now()
-		if args.responseMode == "buffered" {
+		if args.responseMode == "caller-buffer" {
+			destination := make([]byte, max(1, len(args.payload)))
+			calls[i] = bufferedKernel(ctx, args, func(ctx context.Context, r *http.Request) (*preview3.BufferedResponse, error) {
+				return world.HTTP().CallIncomingInto(ctx, in, r, destination, component.CallOptions{})
+			})
+		} else if args.responseMode == "buffered" {
 			calls[i] = bufferedKernel(ctx, args, func(ctx context.Context, r *http.Request) (*preview3.BufferedResponse, error) {
 				return world.HTTP().CallIncomingBuffered(ctx, in, r, uint64(len(args.payload)), component.CallOptions{})
 			})
@@ -95,6 +100,9 @@ func ownedKernels(ctx context.Context, args options, out *report) ([]service.Cal
 	out.Policy = "owned P3 HTTP CallIncoming, body collection and close; one World/Store per worker sharing compiled code; fuel off, cancellation/logical limits retained; per-call handler lookup/signature check included; no network socket"
 	if args.responseMode == "buffered" {
 		out.Policy = "owned P3 HTTP CallIncomingBuffered; bounded complete body/trailer collection and guest join inside one Store lease; one World/Store per worker sharing compiled code; fuel off, cancellation/logical limits retained; per-call handler lookup/signature check included; no network socket"
+	}
+	if args.responseMode == "caller-buffer" {
+		out.Policy = "owned P3 HTTP complete caller-buffer response; one independent prepared output buffer per serialized Store worker; allocation is charged to requestPreparation; same full response checks, copies, cancellation/logical limits and guest join; no network socket"
 	}
 	if args.requestMode == "snapshot" {
 		out.Policy += "; explicit immutable request body, prepared once per worker in requestPreparation; per-request HTTP construction remains inside batch timing"
