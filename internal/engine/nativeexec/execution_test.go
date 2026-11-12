@@ -69,7 +69,7 @@ func TestExpandedEntrySelectionAndAggregateBudget(t *testing.T) {
 		t.Fatal(err)
 	}
 	e, fn, lease := prepare(t, m)
-	if !lease.entries[fn.Code].hasExpansion {
+	if !lease.entries[fn.Index-lease.first].hasExpansion {
 		t.Fatalf("eligible leaf call was not expanded: caller=%+v callee=%+v", m.Functions[0], m.Functions[1])
 	}
 	returnPC := uint32(0)
@@ -195,7 +195,7 @@ func TestNativeRejectsStaleOrMismatchedArtifacts(t *testing.T) {
 	if !native.Available {
 		t.Skip("native platform unavailable")
 	}
-	for _, kind := range []string{"module", "function", "lease", "arena", "frame", "pc", "exit", "edge", "go-memory", "retired-memory"} {
+	for _, kind := range []string{"module", "function", "function-index", "function-before-first", "lease", "arena", "frame", "pc", "exit", "edge", "go-memory", "retired-memory"} {
 		t.Run(kind, func(t *testing.T) {
 			m := fixture(t, true)
 			e, fn, l := prepare(t, m)
@@ -205,7 +205,11 @@ func TestNativeRejectsStaleOrMismatchedArtifacts(t *testing.T) {
 				delete(e.modules, m)
 				want = wasm.ErrUnsupported
 			case "function":
-				delete(l.entries, fn.Code)
+				l.entries[fn.Index-l.first] = functionEntries{}
+			case "function-index":
+				fn.Index = ^uint32(0)
+			case "function-before-first":
+				l.first = fn.Index + 1
 			case "lease":
 				l.Close()
 				want = native.ErrClosed
@@ -298,7 +302,7 @@ func TestIndirectExpansionQuotasAndRuntimeView(t *testing.T) {
 		t.Fatal(err)
 	}
 	e, fn, lease := prepare(t, m)
-	if !lease.entries[fn.Code].usesRuntimeData {
+	if !lease.entries[fn.Index-lease.first].usesRuntimeData {
 		t.Fatal("canonical type alias not indexed")
 	}
 	fn.Instance.Tables[0].Values[0] = fn.Instance.Functions[1]

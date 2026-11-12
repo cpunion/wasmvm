@@ -19,13 +19,13 @@ func (e *Execution) runCall() Status {
 	values := e.values[base : base+len(code.Slots)]
 	instance := fn.Instance
 	op := in.Op
-	im := &code.ReadSource(in.Source, &e.source).Wasm
+	indexA, indexB := code.SourceIndices(in.Source)
 	tail := module.IsTailCall(op)
 	count := in.Count
 	inputs := code.Args[in.Extra : in.Extra+count]
 	var target uint64
 	if op == 0x10 || op == 0x12 {
-		target = instance.Functions[im.A]
+		target = instance.Functions[indexA]
 	} else if op == 0x14 || op == 0x15 {
 		count--
 		target = values[int(inputs[count])].Lo
@@ -34,7 +34,7 @@ func (e *Execution) runCall() Status {
 		}
 	} else {
 		count--
-		table := instance.Tables[im.B]
+		table := instance.Tables[indexB]
 		index := table.Type.Limits.Address(values[int(inputs[count])].Lo)
 		if index >= uint64(len(table.Values)) {
 			return e.failTrap(fn, in.Source, wasm.TrapTableBounds)
@@ -48,7 +48,7 @@ func (e *Execution) runCall() Status {
 	if !ok {
 		return e.fail(state.ErrReference)
 	}
-	if (op == 0x11 || op == 0x13 || op == 0x14 || op == 0x15) && !e.store.FunctionSubtype(callee.TypeID, instance.Types[im.A]) {
+	if (op == 0x11 || op == 0x13 || op == 0x14 || op == 0x15) && !e.store.FunctionSubtype(callee.TypeID, instance.Types[indexA]) {
 		return e.failTrap(fn, in.Source, wasm.TrapIndirectCallType)
 	}
 	var dest []slots.Slot

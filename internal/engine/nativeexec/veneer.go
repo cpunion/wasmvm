@@ -13,6 +13,6 @@ func (e *Execution) CanRunVeneer(fn *state.Function) bool {
 	if module == nil || module.code.IsClosed() {
 		return false
 	}
-	_, ok := module.entries[fn.Code]
+	_, ok := module.function(fn)
 	return ok
 }

@@ -2,10 +2,11 @@ package slots
 
 import (
 	"context"
+	"math"
+
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/pkg/wasm"
-	"math"
 )
 
 type sourceSpan struct{ start, count uint32 }
@@ -102,6 +103,17 @@ func (f *Function) SourceOutputs(index uint32) int {
 		return int(f.image.records[index].outputs.count)
 	}
 	return len(f.Sources[index].Outputs)
+}
+
+// SourceIndices reads the common call/type/table immediates without rebuilding
+// the slice-bearing compiler view on every native call boundary.
+func (f *Function) SourceIndices(index uint32) (uint32, uint32) {
+	if f.image != nil {
+		r := &f.image.records[index]
+		return r.a, r.b
+	}
+	r := &f.Sources[index].Wasm
+	return r.A, r.B
 }
 
 func (f *Function) ReadSource(index uint32, scratch *ir.Source) *ir.Source {

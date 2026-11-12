@@ -236,7 +236,7 @@ func (e *Execution) runFrames(fn *state.Function, base, depth int, pc uint32, fu
 	if module == nil {
 		return 0, fuel, wasm.ErrUnsupported
 	}
-	entries, ok := module.entries[fn.Code]
+	entries, ok := module.function(fn)
 	if !ok {
 		return 0, fuel, wasm.ErrInvalid
 	}
@@ -270,7 +270,7 @@ func (e *Execution) runFrames(fn *state.Function, base, depth int, pc uint32, fu
 
 // Only allocating entries need an unwind frame. It still covers every error
 // and panic after reservation, including binding and pre-entry cancellation.
-func (e *Execution) runAllocations(module *Lease, entries functionEntries, fn *state.Function, base, depth int, pc uint32, fuel, maxSlots, maxFrames uint64) (uint32, uint64, error) {
+func (e *Execution) runAllocations(module *Lease, entries *functionEntries, fn *state.Function, base, depth int, pc uint32, fuel, maxSlots, maxFrames uint64) (uint32, uint64, error) {
 	var err error
 	e.allocationView, err = fn.Instance.Owner.PrepareNativeAllocations(entries.allocationBatch)
 	if err != nil {
@@ -280,7 +280,7 @@ func (e *Execution) runAllocations(module *Lease, entries functionEntries, fn *s
 	return e.run(module, entries, fn, base, depth, pc, fuel, maxSlots, maxFrames)
 }
 
-func (e *Execution) run(module *Lease, entries functionEntries, fn *state.Function, base, depth int, pc uint32, fuel, maxSlots, maxFrames uint64) (uint32, uint64, error) {
+func (e *Execution) run(module *Lease, entries *functionEntries, fn *state.Function, base, depth int, pc uint32, fuel, maxSlots, maxFrames uint64) (uint32, uint64, error) {
 	entry := entries.ordinary
 	needsData := entries.directRuntimeData
 	e.entryState = native.State{Used: uint64(base) * 16, Depth: uint64(depth), Function: uint64(fn.Index), Continuation: uint64(pc), Fuel: fuel, Budget: 64}
@@ -344,7 +344,7 @@ func (e *Execution) run(module *Lease, entries functionEntries, fn *state.Functi
 				return 0, s.Fuel, wasm.ErrInvalid
 			}
 			base = int(s.Used / 16)
-			active, exists := module.entries[fn.Code]
+			active, exists := module.function(fn)
 			if !exists {
 				return 0, s.Fuel, wasm.ErrInvalid
 			}

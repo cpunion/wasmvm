@@ -77,7 +77,7 @@ func (e *Execution) adoptNativeFrames(batch *state.NativeFrames) error {
 		if uint64(call.Source) >= uint64(code.SourceCount()) {
 			return wasm.ErrInvalid
 		}
-		source := code.ReadSource(call.Source, &e.source).Wasm
+		index, _ := code.SourceIndices(call.Source)
 		instance := f.Function.Instance
 		callee := frames[i+1].Function
 		if callee == nil || callee.Instance != instance {
@@ -86,16 +86,16 @@ func (e *Execution) adoptNativeFrames(batch *state.NativeFrames) error {
 		count := call.Count
 		switch call.Op {
 		case 0x10:
-			if uint64(source.A) >= uint64(len(instance.Functions)) {
+			if uint64(index) >= uint64(len(instance.Functions)) {
 				return wasm.ErrInvalid
 			}
-			target, ok := e.store.Function(instance.Functions[source.A])
+			target, ok := e.store.Function(instance.Functions[index])
 			if !ok || target != callee {
 				return wasm.ErrInvalid
 			}
 		case 0x11, 0x14:
-			if count == 0 || uint64(source.A) >= uint64(len(instance.Types)) ||
-				!e.store.FunctionSubtype(callee.TypeID, instance.Types[source.A]) {
+			if count == 0 || uint64(index) >= uint64(len(instance.Types)) ||
+				!e.store.FunctionSubtype(callee.TypeID, instance.Types[index]) {
 				return wasm.ErrInvalid
 			}
 			count--

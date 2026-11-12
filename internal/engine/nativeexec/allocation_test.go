@@ -105,7 +105,7 @@ func TestNativeAllocationPublicationOnTrapAndCancellation(t *testing.T) {
 			t.Fatal(err)
 		}
 		e, fn, lease := prepare(t, m)
-		if lease.entries[fn.Code].allocationBatch != nativeabi.HeapAllocationBatch {
+		if lease.entries[fn.Index-lease.first].allocationBatch != nativeabi.HeapAllocationBatch {
 			t.Fatal("constructor was not lowered")
 		}
 		if canceled {

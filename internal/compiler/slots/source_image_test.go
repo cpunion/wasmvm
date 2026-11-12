@@ -14,6 +14,9 @@ import (
 func TestSourceImagePreservesMetadataAndIndependentReaders(t *testing.T) {
 	source := ir.Source{Wasm: module.Instr{Op: 0xe6, Offset: 1 << 40, A: 3, B: 7, Memory: 2, MemoryOffsetHigh: 9, Block: -64, Bits: 0xfff8000000001234, Vector: [16]byte{0xff, 3, 7}, Lane: 15, Labels: []uint32{3, 8, 0}, Types: []wasm.ValueType{wasm.I64, wasm.FuncRef}, Catches: []module.Catch{{Kind: 1, Tag: 3, Label: 2}}, On: []module.Catch{{Kind: 0, Tag: 7, Label: 9}}}, Inputs: []wasm.ValueType{wasm.V128, wasm.I32}, Outputs: []wasm.ValueType{wasm.F64}, Effects: ir.MayCallHost | ir.MayTrap}
 	f := &Function{Sources: []ir.Source{source, {Wasm: module.Instr{Op: 0xb, Offset: 77}}}}
+	if a, b := f.SourceIndices(0); a != 3 || b != 7 {
+		t.Fatal("rich source indices", a, b)
+	}
 	var before ir.Source
 	if got := f.ReadSource(0, &before); got != &f.Sources[0] || f.SourceCount() != 2 || f.SourceOffset(0) != source.Wasm.Offset || f.SourceOutputs(0) != 1 {
 		t.Fatal("rich source view changed")
@@ -23,6 +26,9 @@ func TestSourceImagePreservesMetadataAndIndependentReaders(t *testing.T) {
 	}
 	if f.Sources != nil || f.SourceCount() != 2 || f.SourceOffset(0) != source.Wasm.Offset || f.SourceOutputs(0) != 1 {
 		t.Fatal("source image metadata")
+	}
+	if a, b := f.SourceIndices(0); a != 3 || b != 7 {
+		t.Fatal("packed source indices", a, b)
 	}
 	var first, second ir.Source
 	if got := f.ReadSource(0, &first); got != &first || !reflect.DeepEqual(first, source) || first.Fuel() != 1 {
