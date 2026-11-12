@@ -95,7 +95,7 @@ func (r *Resources) errorEntry(id uint32) (*resourceEntry, error) {
 	if r.closed {
 		return nil, wasm.ErrClosed
 	}
-	e := r.entries[id]
+	e := r.entryLocked(id)
 	if e == nil || e.errorContext == nil {
 		return nil, scalarTrap("invalid error-context handle")
 	}

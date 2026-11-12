@@ -14,7 +14,7 @@ func (r *Resources) AddOpaque(value any) (uint32, error) {
 func (r *Resources) Opaque(id uint32) (any, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	e := r.entries[id]
+	e := r.entryLocked(id)
 	if r.closed || e == nil || e.opaque == nil {
 		return nil, scalarTrap("invalid async handle")
 	}
@@ -24,7 +24,7 @@ func (r *Resources) Opaque(id uint32) (any, error) {
 func (r *Resources) RemoveOpaque(id uint32) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	e := r.entries[id]
+	e := r.entryLocked(id)
 	if r.closed || e == nil || e.opaque == nil {
 		return scalarTrap("invalid async handle")
 	}
@@ -48,7 +48,7 @@ func (r *Resources) MoveOpaque(id uint32, dst *Resources) (uint32, error) {
 	defer first.mu.Unlock()
 	second.mu.Lock()
 	defer second.mu.Unlock()
-	e := r.entries[id]
+	e := r.entryLocked(id)
 	if r.closed || dst.closed || e == nil || e.opaque == nil {
 		return 0, scalarTrap("invalid async handle")
 	}
@@ -57,7 +57,7 @@ func (r *Resources) MoveOpaque(id uint32, dst *Resources) (uint32, error) {
 	}
 	next := dst.indexLocked()
 	e.id, e.generation = next, dst.generation
-	dst.entries[next] = e
+	dst.insertLocked(next, e)
 	r.removeLocked(id)
 	return next, nil
 }
