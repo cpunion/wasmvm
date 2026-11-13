@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"math/bits"
+	"sync/atomic"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -70,6 +71,7 @@ type Execution struct {
 	status       Status
 	err          error
 	fuel, steps  uint64
+	cancelFlag   *atomic.Bool
 	nativeFrames state.NativeFrames
 	source       ir.Source
 	nativeResume uint64
@@ -197,7 +199,16 @@ func (e *Execution) fail(err error) Status {
 // Abort releases every active frame and pending host request. Host drivers use
 // it in deferred panic cleanup before propagating the original host panic.
 func (e *Execution) Abort(err error) { e.fail(err) }
+
+// SetCancellationFlag binds an owner-controlled signal while the execution is
+// idle. A false flag guarantees that the current context has no error. A true
+// flag still calls Err, preserving the context's cancellation publication.
+func (e *Execution) SetCancellationFlag(flag *atomic.Bool) { e.cancelFlag = flag }
+
 func (e *Execution) poll() error {
+	if e.cancelFlag != nil && !e.cancelFlag.Load() {
+		return nil
+	}
 	return e.context.Err()
 }
 

@@ -69,6 +69,14 @@ func (op *operation) cancelContext() {
 		op.background.cancel()
 	}
 }
+
+func (op *operation) cancellationFlag() *atomic.Bool {
+	if op.cancelParent == nil {
+		return &op.background.canceled
+	}
+	return nil
+}
+
 func (op *operation) publicContext() context.Context {
 	op.exposed.Store(true)
 	if op.cancelParent != nil {
