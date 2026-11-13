@@ -27,6 +27,11 @@ on:
         description: Temporary diagnostic - reuse frozen alignment variants on two new hosts
         type: boolean
         default: false
+      llgo_diagnostic_runner:
+        description: Temporary native alignment diagnostic runner image
+        type: choice
+        options: [ubuntu-24.04, ubuntu-22.04]
+        default: ubuntu-24.04
 
 permissions:
   contents: read
@@ -559,7 +564,7 @@ jobs:
     if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.suite == 'llgo-layout' && (inputs.reuse_llgo_alignment || needs.llgo_layout_build.result == 'success') }}
     name: LLGo layout causal comparison / ${{ matrix.cohort }}
     needs: llgo_layout_build
-    runs-on: ubuntu-24.04
+    runs-on: ${{ inputs.llgo_diagnostic_runner || 'ubuntu-24.04' }}
     timeout-minutes: 10
     permissions:
       contents: read
