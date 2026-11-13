@@ -34,7 +34,7 @@ type Lease struct {
 type functionEntries struct {
 	function                    *slots.Function
 	ordinary, metered, expanded uint32
-	inlineSlots                 uint32
+	inlineSlots, inlineFrames   uint32
 	hasExpansion                bool
 	directRuntimeData           bool
 	usesRuntimeData             bool
@@ -136,7 +136,7 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 	leafCandidates := map[uint32]bool{}
 	for i, f := range m.Functions {
 		key := keys[definition.Functions[i].Type]
-		if codegen.CanExpandLeaf(f) {
+		if codegen.CanExpandLeaf(f, callees) {
 			leafCandidates[importedFunctions+uint32(i)] = true
 			if len(bySignature[key]) < 4 {
 				bySignature[key] = append(bySignature[key], importedFunctions+uint32(i))
@@ -222,6 +222,7 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 				indexes.metered = index
 			case 2:
 				indexes.expanded, indexes.inlineSlots, indexes.hasExpansion = index, body.InlineSlots, true
+				indexes.inlineFrames = body.InlineFrames
 				indexes.usesRuntimeData = body.UsesRuntimeData
 			}
 			indexes.nativeMemory = indexes.nativeMemory || body.UsesMemory

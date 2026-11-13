@@ -1,0 +1,832 @@
+{
+  "schemaVersion": 1,
+  "status": "Scoped diagnostic; overall performance and release acceptance remain open.",
+  "identity": {
+    "base": "c0dacbe3e2686dd4f3e7b848724b03c7d291f66e",
+    "head": "21237ca9b4746148d17aea19b0bbca76651d953c",
+    "hostProfiles": {
+      "go": "Go1.27.3 /Clang22.1.8",
+      "llgo": "56fa9aedc957cf3c9656c1a70f82c5424ab3b1c5 -O3 -lto=full /LLVM22.1.8"
+    },
+    "runtimeBlobs": {
+      "internal/compiler/codegen/constants.go": {
+        "baseSHA256": "9a732894198278e17518b3355620c043e5a4e6241f659a9265612fb528d5fe1a",
+        "headSHA256": "ffeccbf146a4f7f7559706d8362b4e8f2a727698babdac41a00a5fc72ea295a2"
+      },
+      "internal/compiler/codegen/function.go": {
+        "baseSHA256": "4ee13080f74185dbf6f9836819408fb66bf70501b9ff884686fc1ddfb526fe18",
+        "headSHA256": "04ee969915d3a0202087f2d1a8f783851b2b92fa1c3ab7f2ca75ffe8cdb96e46"
+      },
+      "internal/compiler/codegen/function_emit.go": {
+        "baseSHA256": "f33521b250fba1a77cb46938b10f753a15b948abaa5e0f7386d1b9ec70125653",
+        "headSHA256": "be6c210d19207d367c935eddd83e3519e266f65df34984fc9a596a65e90ce38b"
+      },
+      "internal/compiler/codegen/indirect.go": {
+        "baseSHA256": "d780d49e17f1a0567db8089a9067de14590481572ce522d45a3073fb0ed7571c",
+        "headSHA256": "82f05c6b793ad7e870c39a857291b906cc40dbdd90584ea84eab7508eaf6f894"
+      },
+      "internal/compiler/codegen/inline.go": {
+        "baseSHA256": "64e8611ac17698197f0b2dd09eefc3b896fbf8c971075dffc14104edd7fb7ffe",
+        "headSHA256": "46c86381c4e6fcc4ce4bf829d6cf31e359126b33ae33d93cee5bf4024f9519d0"
+      },
+      "internal/engine/nativeexec/execution.go": {
+        "baseSHA256": "0f197ab964bdf5880f77ebf6a7a6f70841c57a275053ca856648c08332648fe0",
+        "headSHA256": "a63e61afe7538dba801963d928832c2de10ed0bc50db16b1168860a158260711"
+      },
+      "internal/engine/nativeexec/module.go": {
+        "baseSHA256": "7d4c9f6d3a58a63dfa614cc5a7b0ebfaaf9cf4d9015dc8fb0b432e0fd79f1558",
+        "headSHA256": "176ebb61c4d52cf28b96bd61b593d4dddd8d57c4d57a1529417341a44ed7cdda"
+      }
+    },
+    "qualification": "One existing working tree; only7 changed runtime files are overlaid from Git for the baseline. Head uses actual checked-in production sources. Generated harness init records identities; no full source snapshots.",
+    "fixture": {
+      "path": "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/native/runtime-fixtures/nested-calls.wasm",
+      "sha256": "fac7bc1728d851df2a24def1431df2a136deba0c05898804bf93ba8464b9b8cd",
+      "generator": "wasm-tools1.258.0; owned runtime_fixtures.py; independent affine exponentiation oracle"
+    },
+    "binaries": {
+      "base-go": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/transitive-leaves/base-go-phase",
+        "sha256": "4697d33208158f7e89b6bd56b6bb0e0764a00619cd85f01d7e42bafcfee7e5e9"
+      },
+      "head-go": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/transitive-leaves/head-go-phase",
+        "sha256": "9d9797c7091846789ee8f230a4c03f35dae6607b87e3bc72918637fb00bce7b1"
+      },
+      "head-llgo": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/transitive-leaves/head-llgo-phase",
+        "sha256": "2cc3366a8ac07a207e32d73336756e143165083c7dd4e7aac14f3db205c3b7d6"
+      },
+      "wazero": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-home/long-calls/wazero-phase",
+        "sha256": "6fe6aaf935e69ecdf08de9a23f7feccc5b4facaaf7e2a1253a4425c51f727c68"
+      },
+      "wasmtime": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmtime-phase",
+        "sha256": "459b281138ba710ed6ee93f6a9c0c7028f553d65ef39a31fb7902531f8bfc7ff"
+      },
+      "wasmer": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmer-phase",
+        "sha256": "df7df63877b13bb33a943bcd6e5a62ed7bd898098e4b37feef19871eb664e2ae"
+      },
+      "native-llvm": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/transitive-leaves/native-llvm-control",
+        "sha256": "374412af21d3fa7ca88b41e963ed2b124634cc9446ac9ae1e38a323461eb3682"
+      }
+    },
+    "p3Head": {
+      "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/transitive-leaves/head-go-runner",
+      "sha256": "f5c8fe061aa2068e5ca59e720e2282f1cd1b5e07edd69bfbd4f963cad4324551"
+    },
+    "nativeControl": {
+      "compiler": "Clang22.1.8 -O3 -std=gnu11",
+      "source": "#include <stdint.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <time.h>\nstatic uint64_t now(void) { struct timespec t; if (clock_gettime(CLOCK_MONOTONIC_RAW, &t)) exit(2); return (uint64_t)t.tv_sec*1000000000+t.tv_nsec; }\n__attribute__((noinline)) static uint32_t run(uint32_t x, uint32_t n) {\n    __asm__ volatile(\"\" : \"+r\"(x), \"+r\"(n) : : \"memory\");\n    for (uint32_t i=0;i<n;++i) x=x*UINT32_C(1664525)+UINT32_C(1013904223);\n    return x;\n}\nint main(int argc, char **argv) {\n    if (argc != 4) return 2;\n    uint32_t count=(uint32_t)strtoul(argv[1],0,10), seed=(uint32_t)strtoul(argv[2],0,10), expected=(uint32_t)strtoul(argv[3],0,10);\n    if (!count || count>INT32_MAX) return 2;\n    char line[32]; uint64_t warm[7], first=0;\n    puts(\"{\\\"ready\\\":true}\"); fflush(stdout);\n    if (!fgets(line,sizeof line,stdin) || strcmp(line,\"run\\n\")) return 2;\n    for (int i=-3;i<7;++i) {\n        if (i>=0) { printf(\"{\\\"sampleReady\\\":%d}\\n\",i); fflush(stdout); if (!fgets(line,sizeof line,stdin) || strcmp(line,\"sample\\n\")) return 2; }\n        uint64_t start=now(); uint32_t result=run(seed,count); uint64_t elapsed=now()-start;\n        if (result != expected) return 3;\n        if (i==-3) first=elapsed;\n        if (i>=0) warm[i]=elapsed;\n    }\n    printf(\"{\\\"engine\\\":\\\"native-llvm-control\\\",\\\"iterations\\\":%u,\\\"seed\\\":%u,\\\"result\\\":%u,\\\"warmCallNs\\\":[\",count,seed,expected);\n    for(int i=0;i<7;++i) printf(\"%s%llu\",i?\",\":\"\",(unsigned long long)warm[i]);\n    printf(\"],\\\"warmResults\\\":[\"); for(int i=0;i<7;++i)printf(\"%s%u\",i?\",\":\"\",expected);\n    printf(\"],\\\"warmupResults\\\":[%u,%u],\\\"phasesNs\\\":{\\\"firstCall\\\":%llu}}\\n\",expected,expected,(unsigned long long)first);\n    return 0;\n}\n",
+      "sha256": "4613b1c701f99ac2aa1f2c3cebed36cdd9a1e213cb1c89a0cea32e503e73d7e3",
+      "scope": "No Wasm/VM/safety/fuel/cancellation/isolation. Native arithmetic control only. Empty volatile inline assembly at function entry prevents cross-timer CSE without changing instructions in the timed recurrence loop. Initial pure-function smoke was rejected after detecting hoisting; no zero-time observation enters this cohort."
+    },
+    "P3BaseQualification": "Frozen6fb26a6 runner, runtime-equivalent to c0dacbe3 (PR163 squash). Same current driver/counters, Go1.27.3 normalGC; head actual source21237ca9.",
+    "emissionHashes": {
+      "owned-nested.bin": "33aef5881920c98c6a9fc745dbf656ebdc54b58a18174e58b8b7f87e6a56eae1",
+      "owned-nested.asm": "f6d11cd3a8e9c6047a241131cc1a9259125a55b643bb5334cc00539fc62cfab4",
+      "wasmtime-nested.elf": "3ecb50ccd6a69dd5c8dea4df57d747ce3438a3a3745506e39e23238936556ae0",
+      "wasmtime-nested.asm": "4898527763460fcb437c058b9bcb7b3cb2fcde6682dfb17d4d909a10f347c304"
+    },
+    "emission": {
+      "scope": "Separate diagnostic root compilation from the same committed fixture/planner, outside measurement; not a sampled timed image. Wasmtime uses the same48.0.1 C SDK and Cranelift speed config and actually executes/checks the serialized module.",
+      "ownedRoot": {
+        "codeBytes": 1272,
+        "originalCallSites": 1,
+        "expandedCallSites": 1,
+        "originalExtraFrames": 3,
+        "originalExtraSlots": 10,
+        "callRelocations": [],
+        "hotExcerpt": "     268: f9404809     \tldr\tx9, [x0, #0x90]\n     26c: b5000829     \tcbnz\tx9, 0x370 <owned_nested+0x370>\n     270: 1b010a94     \tmadd\tw20, w20, w1, w2\n     274: 110006b5     \tadd\tw21, w21, #0x1\n     278: 6b1702bf     \tcmp\tw21, w23\n     27c: 1a9f27f3     \tcset\tw19, lo\n     280: f9404809     \tldr\tx9, [x0, #0x90]\n     284: b5000909     \tcbnz\tx9, 0x3a4 <owned_nested+0x3a4>\n     288: 54ffff03     \tb.lo\t0x268 <owned_nested+0x268>"
+      },
+      "wasmtimeExcerpt": "      48: 910003fd     \tmov\tx29, sp\n      4c: f8408050     \tldur\tx16, [x2, #0x8]\n      50: f8418210     \tldur\tx16, [x16, #0x18]\n      54: 91004210     \tadd\tx16, x16, #0x10\n      58: eb3063ff     \tcmp\tsp, x16\n      5c: 540000c3     \tb.lo\t0x74 <wasm[0]::function[1]::wrap1+0x34>\n      60: aa0203e3     \tmov\tx3, x2\n      64: 97ffffe7     \tbl\t0x0 <wasm[0]::function[0]::step>\n      68: a8c17bfd     \tldp\tx29, x30, [sp], #0x10\n      6c: d50323df     \tautibz\n      70: d65f03c0     \tret\n      74: 0000c11f     \tudf\t#0xc11f\n\t\t...\n\n0000000000000080 <wasm[0]::function[2]::wrap2>:\n      80: d503235f     \tpacibz\n      84: a9bf7bfd     \tstp\tx29, x30, [sp, #-0x10]!\n      88: 910003fd     \tmov\tx29, sp\n      8c: f8408050     \tldur\tx16, [x2, #0x8]\n      90: f8418210     \tldur\tx16, [x16, #0x18]\n      94: 91004210     \tadd\tx16, x16, #0x10\n      98: eb3063ff     \tcmp\tsp, x16\n      9c: 540000c3     \tb.lo\t0xb4 <wasm[0]::function[2]::wrap2+0x34>\n      a0: aa0203e3     \tmov\tx3, x2\n      a4: 97ffffe7     \tbl\t0x40 <wasm[0]::function[1]::wrap1>\n      a8: a8c17bfd     \tldp\tx29, x30, [sp], #0x10\n      ac: d50323df     \tautibz\n      b0: d65f03c0     \tret\n      b4: 0000c11f     \tudf\t#0xc11f\n\t\t...\n\n00000000000000c0 <wasm[0]::function[3]>:\n      c0: d503235f     \tpacibz\n      c4: a9bf7bfd     \tstp\tx29, x30, [sp, #-0x10]!\n      c8: 910003fd     \tmov\tx29, sp\n      cc: f8408050     \tldur\tx16, [x2, #0x8]\n      d0: f8418210     \tldur\tx16, [x16, #0x18]\n      d4: 9100c210     \tadd\tx16, x16, #0x30\n      d8: eb3063ff     \tcmp\tsp, x16\n      dc: 540002a3     \tb.lo\t0x130 <wasm[0]::function[3]+0x70>\n      e0: f81f0ff5     \tstr\tx21, [sp, #-0x10]!\n      e4: a9bf53f3     \tstp\tx19, x20, [sp, #-0x10]!\n      e8: aa0503f4     \tmov\tx20, x5\n      ec: aa0203f5     \tmov\tx21, x2\n      f0: 52800013     \tmov\tw19, #0x0               // =0\n      f4: aa1503e2     \tmov\tx2, x21\n      f8: aa1503e3     \tmov\tx3, x21\n      fc: 97ffffe1     \tbl\t0x80 <wasm[0]::function[2]::wrap2>\n     100: 11000673     \tadd\tw19, w19, #0x1\n     104: aa1403e5     \tmov\tx5, x20\n     108: 6b05027f     \tcmp\tw19, w5\n     10c: 54000082     \tb.hs\t0x11c <wasm[0]::function[3]+0x5c>\n     110: aa0203e4     \tmov\tx4, x2\n     114: aa0503f4     \tmov\tx20, x5\n     118: 17fffff7     \tb\t0xf4 <wasm[0]::function[3]+0x34>\n     11c: a8c153f3     \tldp\tx19, x20, [sp], #0x10\n     120: f84107f5     \tldr\tx21, [sp], #0x10\n     124: a8c17bfd     \tldp\tx29, x30, [sp], #0x10\n     128: d50323df     \tautibz\n     12c: d65f03c0     \tret\n     130: 0000c11f     \tudf\t#0xc11f\n\n0000000000000134 <wasm[0]::array_to_wasm_trampoline[3]>:\n     134: d503237f     \tpacibsp\n     138: a9bf7bfd     \tstp\tx29, x30, [sp, #-0x10]!\n     13c: 910003fd     \tmov\tx29, sp\n     140: a9bf73fb     \tstp\tx27, x28, [sp, #-0x10]!\n     144: a9bf6bf9     \tstp\tx25, x26, [sp, #-0x10]!\n     148: a9bf63f7     \tstp\tx23, x24, [sp, #-0x10]!\n     14c: a9bf5bf5     \tstp\tx21, x22, [sp, #-0x10]!"
+    }
+  },
+  "plan": {
+    "blocks": 20,
+    "samples": 7,
+    "warmups": 2,
+    "iterations": 20000000,
+    "seed": 17,
+    "expected": 605861137,
+    "randomSeed": 2026120307,
+    "commands": {
+      "base-go": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/transitive-leaves/base-go-phase",
+        "--backend",
+        "native",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/native/runtime-fixtures/nested-calls.wasm",
+        "--iterations",
+        "20000000",
+        "--seed",
+        "17",
+        "--expected",
+        "605861137",
+        "--samples",
+        "7",
+        "--warmups",
+        "2",
+        "--mode",
+        "api"
+      ],
+      "base-go-aa": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/transitive-leaves/base-go-phase",
+        "--backend",
+        "native",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/native/runtime-fixtures/nested-calls.wasm",
+        "--iterations",
+        "20000000",
+        "--seed",
+        "17",
+        "--expected",
+        "605861137",
+        "--samples",
+        "7",
+        "--warmups",
+        "2",
+        "--mode",
+        "api"
+      ],
+      "head-go": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/transitive-leaves/head-go-phase",
+        "--backend",
+        "native",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/native/runtime-fixtures/nested-calls.wasm",
+        "--iterations",
+        "20000000",
+        "--seed",
+        "17",
+        "--expected",
+        "605861137",
+        "--samples",
+        "7",
+        "--warmups",
+        "2",
+        "--mode",
+        "api"
+      ],
+      "head-go-aa": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/transitive-leaves/head-go-phase",
+        "--backend",
+        "native",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/native/runtime-fixtures/nested-calls.wasm",
+        "--iterations",
+        "20000000",
+        "--seed",
+        "17",
+        "--expected",
+        "605861137",
+        "--samples",
+        "7",
+        "--warmups",
+        "2",
+        "--mode",
+        "api"
+      ],
+      "head-llgo": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/transitive-leaves/head-llgo-phase",
+        "--backend",
+        "native",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/native/runtime-fixtures/nested-calls.wasm",
+        "--iterations",
+        "20000000",
+        "--seed",
+        "17",
+        "--expected",
+        "605861137",
+        "--samples",
+        "7",
+        "--warmups",
+        "2",
+        "--mode",
+        "api"
+      ],
+      "head-llgo-aa": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/transitive-leaves/head-llgo-phase",
+        "--backend",
+        "native",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/native/runtime-fixtures/nested-calls.wasm",
+        "--iterations",
+        "20000000",
+        "--seed",
+        "17",
+        "--expected",
+        "605861137",
+        "--samples",
+        "7",
+        "--warmups",
+        "2",
+        "--mode",
+        "api"
+      ],
+      "wazero": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-home/long-calls/wazero-phase",
+        "--backend",
+        "compiler",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/native/runtime-fixtures/nested-calls.wasm",
+        "--iterations",
+        "20000000",
+        "--seed",
+        "17",
+        "--expected",
+        "605861137",
+        "--samples",
+        "7",
+        "--warmups",
+        "2"
+      ],
+      "wazero-aa": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-home/long-calls/wazero-phase",
+        "--backend",
+        "compiler",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/native/runtime-fixtures/nested-calls.wasm",
+        "--iterations",
+        "20000000",
+        "--seed",
+        "17",
+        "--expected",
+        "605861137",
+        "--samples",
+        "7",
+        "--warmups",
+        "2"
+      ],
+      "wasmtime": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmtime-phase",
+        "--backend",
+        "compiler",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/native/runtime-fixtures/nested-calls.wasm",
+        "--iterations",
+        "20000000",
+        "--seed",
+        "17",
+        "--expected",
+        "605861137",
+        "--samples",
+        "7",
+        "--warmups",
+        "2"
+      ],
+      "wasmtime-aa": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmtime-phase",
+        "--backend",
+        "compiler",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/native/runtime-fixtures/nested-calls.wasm",
+        "--iterations",
+        "20000000",
+        "--seed",
+        "17",
+        "--expected",
+        "605861137",
+        "--samples",
+        "7",
+        "--warmups",
+        "2"
+      ],
+      "wasmer": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmer-phase",
+        "--backend",
+        "compiler",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/native/runtime-fixtures/nested-calls.wasm",
+        "--iterations",
+        "20000000",
+        "--seed",
+        "17",
+        "--expected",
+        "605861137",
+        "--samples",
+        "7",
+        "--warmups",
+        "2"
+      ],
+      "wasmer-aa": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmer-phase",
+        "--backend",
+        "compiler",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/native/runtime-fixtures/nested-calls.wasm",
+        "--iterations",
+        "20000000",
+        "--seed",
+        "17",
+        "--expected",
+        "605861137",
+        "--samples",
+        "7",
+        "--warmups",
+        "2"
+      ],
+      "native-llvm": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/transitive-leaves/native-llvm-control",
+        "20000000",
+        "17",
+        "605861137"
+      ],
+      "native-llvm-aa": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/transitive-leaves/native-llvm-control",
+        "20000000",
+        "17",
+        "605861137"
+      ]
+    },
+    "scope": "Fixed20blocks/280freshprocesses;20Miterations/call,7individuallyinterleaved warm calls after first+2warmups, every result checked. Separate real public VM APIs and native Clang arithmetic control. Sourcebasec0dacbe3 vs head21237ca9, Go1.27.3/LLGo56fa9ae -O3 -lto=full, normalGC, GOMAXPROCS1; wazero1.12/Wasmtime48.0.1/Wasmer7.3.0. Original logical stack quotas, all ordinary cold entry checks and bounded cancellation retained. Source/fixture/binary hashes in final-identity.json. No owned builds/tests/profilers/pruning overlap. Predeclared AA margin2.5percent,20fixedblocks noextension; unresolved controls stay unresolved. New nested-call diagnostic broadens survey68->69cases within8families and fixedSIMDregressions42->43; no historical aggregate pooling, full-portfolio acceptance remains open."
+  },
+  "medianNsPerIteration": {
+    "base-go": 29.488769775,
+    "base-go-aa": 29.37094585,
+    "head-go": 1.1185687500000001,
+    "head-go-aa": 1.119885425,
+    "head-llgo": 1.113329175,
+    "head-llgo-aa": 1.1107718750000002,
+    "wazero": 3.421211475,
+    "wazero-aa": 3.42669165,
+    "wasmtime": 1.9551406500000001,
+    "wasmtime-aa": 1.94049585,
+    "wasmer": 1.9429021,
+    "wasmer-aa": 1.939678125,
+    "native-llvm": 1.1104427000000001,
+    "native-llvm-aa": 1.10632605
+  },
+  "paired": {
+    "method": "20independent process blocks, geometric mean of paired log ratios, seeded percentile bootstrap20000, individual diagnostic95%intervals; no full-portfolio or simultaneous acceptance claim. All records retained, no repeat/extension.",
+    "AA": {
+      "base-go": {
+        "ratio": 0.9835629388948073,
+        "ci95": [
+          0.9370026503366571,
+          1.0179579242026011
+        ],
+        "resolves2_5Percent": false
+      },
+      "head-go": {
+        "ratio": 0.9969764386022572,
+        "ci95": [
+          0.9865629193830091,
+          1.0067757618888395
+        ],
+        "resolves2_5Percent": true
+      },
+      "head-llgo": {
+        "ratio": 0.9964970466698967,
+        "ci95": [
+          0.9788466486349708,
+          1.0141547403967766
+        ],
+        "resolves2_5Percent": true
+      },
+      "wazero": {
+        "ratio": 1.0017698709245926,
+        "ci95": [
+          0.9916880621078439,
+          1.0146221268566387
+        ],
+        "resolves2_5Percent": true
+      },
+      "wasmtime": {
+        "ratio": 0.99980588892215,
+        "ci95": [
+          0.9850664808808893,
+          1.0179203162826667
+        ],
+        "resolves2_5Percent": true
+      },
+      "wasmer": {
+        "ratio": 1.0028525063668026,
+        "ci95": [
+          0.9937791949238709,
+          1.0133569520096308
+        ],
+        "resolves2_5Percent": true
+      },
+      "native-llvm": {
+        "ratio": 0.9900065393449985,
+        "ci95": [
+          0.9793431210512265,
+          0.9992258066806583
+        ],
+        "resolves2_5Percent": true
+      }
+    },
+    "headGoOver": {
+      "base-go": {
+        "ratio": 0.03604340739892636,
+        "ci95": [
+          0.032367135581998274,
+          0.03814395988183879
+        ]
+      },
+      "head-llgo": {
+        "ratio": 1.0018641289226782,
+        "ci95": [
+          0.98646547107128,
+          1.015680334800516
+        ]
+      },
+      "wazero": {
+        "ratio": 0.32378536097511074,
+        "ci95": [
+          0.3193396761329114,
+          0.3273247048916502
+        ]
+      },
+      "wasmtime": {
+        "ratio": 0.5707045871244986,
+        "ci95": [
+          0.5647481789021804,
+          0.5757985986509497
+        ]
+      },
+      "wasmer": {
+        "ratio": 0.575102957113398,
+        "ci95": [
+          0.5692408941917697,
+          0.5809851952444965
+        ]
+      },
+      "native-llvm": {
+        "ratio": 0.9977142092952807,
+        "ci95": [
+          0.9845416029787308,
+          1.0103154104370287
+        ]
+      }
+    }
+  },
+  "rawEvidence": "../evidence/performance-nested-scalar-calls-2026-11-13.jsonl.gz",
+  "P3": {
+    "16": {
+      "summary": {
+        "plan": {
+          "blocks": 4,
+          "samples": 20,
+          "batchRequests": 512,
+          "seed": 2026120433,
+          "payloadBytes": 16,
+          "variants": {
+            "base": "/Users/lijie/source/goplus/wasmvm/artifacts/llgo-main-20261113/p3-go",
+            "head": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/transitive-leaves/head-go-runner",
+            "wasmtime": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/output-screen/wasmtime-go-runner"
+          },
+          "source": "Go1.27.3 base6fb26a6/c0dacbe3 versus same source versus exact committed21237ca9 transitive leaf expansion, Clang22.1.8 normal GC, same checked public API and frozen Wasmtime48 P3 reference.",
+          "scope": "Fixed4blocks/24freshprocesses per payload,4Stores/16clients/32requests,20measured512request batches plusfinalflush. Separate16B/64KiB cohorts not pooled. Balanced individual batch order,one active child othersSIGSTOP,first+2warmups/100mssettle separate,100msfinalbackgroundtail included. Complete body/status/headers/trailers/CRC checked. CPU/instructions bracket complete batches; warm API intervals separately retained. All A/A controls reported; reference managed events cover only Go shim. No other owned builds/tests/profiles/pruning overlap. Diagnostic only, no full-portfolio acceptance."
+        },
+        "summary": {
+          "base": {
+            "cpuUs": 96.55600179036458,
+            "instructions": 905524.855859375,
+            "throughput": 37573.25060997752,
+            "allocsPerRequest": 705.004150390625,
+            "bytesPerRequest": 55480.775
+          },
+          "base-aa": {
+            "cpuUs": 96.9543436686198,
+            "instructions": 905688.384765625,
+            "throughput": 37977.3331808833,
+            "allocsPerRequest": 705.0040039062501,
+            "bytesPerRequest": 55480.977734375
+          },
+          "head": {
+            "cpuUs": 96.31966552734374,
+            "instructions": 906114.2625,
+            "throughput": 37947.91526067209,
+            "allocsPerRequest": 705.002978515625,
+            "bytesPerRequest": 55480.421875
+          },
+          "head-aa": {
+            "cpuUs": 96.30973510742189,
+            "instructions": 904260.5212402344,
+            "throughput": 38235.41674437007,
+            "allocsPerRequest": 705.0030761718749,
+            "bytesPerRequest": 55480.686328125
+          },
+          "wasmtime": {
+            "cpuUs": 45.49336751302083,
+            "instructions": 229937.89003906248,
+            "throughput": 50025.674187544326,
+            "allocsPerRequest": 1.000390625,
+            "bytesPerRequest": 32.277734375
+          },
+          "wasmtime-aa": {
+            "cpuUs": 43.245513916015625,
+            "instructions": 224933.27314453124,
+            "throughput": 50928.672140076,
+            "allocsPerRequest": 1.0,
+            "bytesPerRequest": 32.0
+          }
+        }
+      },
+      "paired": {
+        "method": "Fixed4block24process screening event;20batches512checkedrequests per process; paired log-ratio bootstrap20000 seedrecorded. Diagnostic only; no precision/full-portfolio acceptance.",
+        "headOverBase": {
+          "cpuUs": {
+            "ratio": 1.0015700021231824,
+            "ci95": [
+              0.9975542670117863,
+              1.0056019028999643
+            ]
+          },
+          "instructions": {
+            "ratio": 0.9994029444414768,
+            "ci95": [
+              0.9973579739710168,
+              1.0018720731765278
+            ]
+          },
+          "throughput": {
+            "ratio": 1.0198629155998915,
+            "ci95": [
+              0.9966550281230769,
+              1.0546828981801413
+            ]
+          }
+        },
+        "AA": {
+          "cpuUs": {
+            "base": {
+              "ratio": 1.0003841381580645,
+              "ci95": [
+                0.9943531958147477,
+                1.0076119770119447
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9848661390402763,
+              "ci95": [
+                0.9637174666983175,
+                1.004819575841093
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9599940623937583,
+              "ci95": [
+                0.9234280374005592,
+                0.998008033658512
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "instructions": {
+            "base": {
+              "ratio": 0.9992869738815682,
+              "ci95": [
+                0.9964829264013213,
+                1.002228724627934
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9985647303687168,
+              "ci95": [
+                0.996721101365751,
+                1.0004117695211177
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9828692405973384,
+              "ci95": [
+                0.964117805919039,
+                1.0058244198954858
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "throughput": {
+            "base": {
+              "ratio": 1.0148317884291624,
+              "ci95": [
+                0.9815571254274112,
+                1.0620682353950002
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0039108670054,
+              "ci95": [
+                0.9899385118790449,
+                1.0210591315837723
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 1.0105294935408162,
+              "ci95": [
+                0.9931874597644845,
+                1.021522099210409
+              ],
+              "resolves2_5Percent": true
+            }
+          }
+        },
+        "compileWallMs": {
+          "base": 74.9239585,
+          "base-aa": 69.9905835,
+          "head": 72.5294375,
+          "head-aa": 71.888729,
+          "wasmtime": 66.50274999999999,
+          "wasmtime-aa": 59.598396
+        }
+      },
+      "rawEvidence": "../evidence/performance-nested-scalar-calls-2026-11-13-p3-16.jsonl.gz"
+    },
+    "65536": {
+      "summary": {
+        "plan": {
+          "blocks": 4,
+          "samples": 20,
+          "batchRequests": 512,
+          "seed": 2026178553,
+          "payloadBytes": 65536,
+          "variants": {
+            "base": "/Users/lijie/source/goplus/wasmvm/artifacts/llgo-main-20261113/p3-go",
+            "head": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/transitive-leaves/head-go-runner",
+            "wasmtime": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/output-screen/wasmtime-go-runner"
+          },
+          "source": "Go1.27.3 base6fb26a6/c0dacbe3 versus same source versus exact committed21237ca9 transitive leaf expansion, Clang22.1.8 normal GC, same checked public API and frozen Wasmtime48 P3 reference.",
+          "scope": "Fixed4blocks/24freshprocesses per payload,4Stores/16clients/32requests,20measured512request batches plusfinalflush. Separate16B/64KiB cohorts not pooled. Balanced individual batch order,one active child othersSIGSTOP,first+2warmups/100mssettle separate,100msfinalbackgroundtail included. Complete body/status/headers/trailers/CRC checked. CPU/instructions bracket complete batches; warm API intervals separately retained. All A/A controls reported; reference managed events cover only Go shim. No other owned builds/tests/profiles/pruning overlap. Diagnostic only, no full-portfolio acceptance."
+        },
+        "summary": {
+          "base": {
+            "cpuUs": 128.75665283203125,
+            "instructions": 1227944.5403320314,
+            "throughput": 27933.804126404786,
+            "allocsPerRequest": 789.005078125,
+            "bytesPerRequest": 127817.412109375
+          },
+          "base-aa": {
+            "cpuUs": 131.29134724934895,
+            "instructions": 1232378.3459960937,
+            "throughput": 27200.476718462163,
+            "allocsPerRequest": 789.00439453125,
+            "bytesPerRequest": 127816.8921875
+          },
+          "head": {
+            "cpuUs": 129.3783203125,
+            "instructions": 1226453.9727050783,
+            "throughput": 27844.05568244622,
+            "allocsPerRequest": 789.004052734375,
+            "bytesPerRequest": 127817.08203125
+          },
+          "head-aa": {
+            "cpuUs": 129.25385538736978,
+            "instructions": 1230282.558203125,
+            "throughput": 28089.29560779176,
+            "allocsPerRequest": 789.003857421875,
+            "bytesPerRequest": 127816.6171875
+          },
+          "wasmtime": {
+            "cpuUs": 57.63112996419271,
+            "instructions": 324953.31376953126,
+            "throughput": 43893.01323290833,
+            "allocsPerRequest": 1.00009765625,
+            "bytesPerRequest": 32.0109375
+          },
+          "wasmtime-aa": {
+            "cpuUs": 59.280375162760414,
+            "instructions": 327479.4053710938,
+            "throughput": 43047.6507786382,
+            "allocsPerRequest": 1.0004394531249998,
+            "bytesPerRequest": 32.283203125
+          }
+        }
+      },
+      "paired": {
+        "method": "Fixed4block24process screening event;20batches512checkedrequests per process; paired log-ratio bootstrap20000 seedrecorded. Diagnostic only; no precision/full-portfolio acceptance.",
+        "headOverBase": {
+          "cpuUs": {
+            "ratio": 0.9993741796374619,
+            "ci95": [
+              0.9911165543509036,
+              1.0124122194236864
+            ]
+          },
+          "instructions": {
+            "ratio": 0.99955768578598,
+            "ci95": [
+              0.998508725755335,
+              1.0010788381825246
+            ]
+          },
+          "throughput": {
+            "ratio": 0.9999772528908292,
+            "ci95": [
+              0.9885474727915784,
+              1.0100413888704403
+            ]
+          }
+        },
+        "AA": {
+          "cpuUs": {
+            "base": {
+              "ratio": 1.0152832715235742,
+              "ci95": [
+                0.997450382668003,
+                1.038718277978899
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.006721366420979,
+              "ci95": [
+                0.9949194493934055,
+                1.0162981742752888
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 1.021811342437222,
+              "ci95": [
+                0.9528834087792519,
+                1.0973177313380242
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "instructions": {
+            "base": {
+              "ratio": 1.00382925241553,
+              "ci95": [
+                1.0013166227667771,
+                1.006567550845247
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0021497388651996,
+              "ci95": [
+                0.9994976275668157,
+                1.0056116773038495
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 1.0051363618840352,
+              "ci95": [
+                0.9728256666991975,
+                1.035495955931154
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "throughput": {
+            "base": {
+              "ratio": 0.9796024327290256,
+              "ci95": [
+                0.951356386964068,
+                1.0086871117467666
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9994044633341078,
+              "ci95": [
+                0.979101635756418,
+                1.022415209086777
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9846064674554277,
+              "ci95": [
+                0.9704279125630377,
+                1.0017770105752988
+              ],
+              "resolves2_5Percent": false
+            }
+          }
+        },
+        "compileWallMs": {
+          "base": 69.6224165,
+          "base-aa": 65.6391045,
+          "head": 65.298479,
+          "head-aa": 66.355062,
+          "wasmtime": 58.2736875,
+          "wasmtime-aa": 56.434478999999996
+        }
+      },
+      "rawEvidence": "../evidence/performance-nested-scalar-calls-2026-11-13-p3-65536.jsonl.gz"
+    }
+  },
+  "validation": {
+    "Go": "All32 executable root packages pass; CI-equivalent cross-package coverage>=90% everywhere. codegen98.01%,nativeexec93.27%,VM93.52%.",
+    "race": "Go codegen/nativeexec/VM pass.",
+    "LLGo": "Pinned56fa9ae -O3 -lto=full executes codegen/nativeexec/VM on macOS arm64. Full final hosted target matrix remains a merge requirement.",
+    "benchmarks": "Nested fixture added to existing runtime generator, fixed-SIMD regression subset43cases, survey69cases/8families. Existing results remain dated, not pooled."
+  }
+}

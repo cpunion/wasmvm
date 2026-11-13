@@ -14,6 +14,17 @@
       "wasmSha256": "650da102903f90d120b1f16a88e3a6dfb48c9c82378a5b8a63bdda60e0297154"
     },
     {
+      "id": "nested-calls",
+      "seed": 305419896,
+      "iterations": 15000,
+      "expectedChecksum": 3975648752,
+      "unit": "ns/source iteration",
+      "wat": "nested-calls.wat",
+      "wasm": "nested-calls.wasm",
+      "watSha256": "7f9990fff52d9fce4e165ea6e18c9d1a3821d4107ac401251e0ac6ad1f9a5cf9",
+      "wasmSha256": "fac7bc1728d851df2a24def1431df2a136deba0c05898804bf93ba8464b9b8cd"
+    },
+    {
       "id": "simd-i32x4",
       "seed": 305419896,
       "iterations": 10000,

@@ -12,6 +12,15 @@ MASK = 0xffffffff
 
 def checksum(kind, seed, count):
     x = seed
+    if kind == "nested-calls":
+        # Exponentiate the affine recurrence independently of the guest loop.
+        mul, add, result_mul, result_add = 1664525, 1013904223, 1, 0
+        while count:
+            if count & 1:
+                result_mul, result_add = mul * result_mul & MASK, (mul * result_add + add) & MASK
+            mul, add = mul * mul & MASK, (mul * add + add) & MASK
+            count >>= 1
+        return (result_mul * seed + result_add) & MASK
     if kind.startswith("simd-memory-"):
         return memory_checksum(kind, seed, count)
     if kind == "simd-i32x4":
@@ -69,6 +78,12 @@ def source(kind):
           (func $b (type $step) local.get 0 i32.const 13 i32.rotl i32.const 0x9e3779b9 i32.xor)
           (table 2 funcref) (elem (i32.const 0) $a $b)"""
         body = "local.get $x local.get $i i32.const 1 i32.and call_indirect (type $step) local.set $x"
+    elif kind == "nested-calls":
+        setup = """(func $step (param i32) (result i32)
+            local.get 0 i32.const 1664525 i32.mul i32.const 1013904223 i32.add)
+          (func $wrap1 (param i32) (result i32) local.get 0 call $step)
+          (func $wrap2 (param i32) (result i32) local.get 0 call $wrap1)"""
+        body = "local.get $x call $wrap2 local.set $x"
     elif kind == "simd-i32x4" or kind.startswith("simd-memory-"):
         locals_ = "(local $v v128)"
         init = "local.get 0 i32x4.splat local.set $v"
@@ -132,7 +147,7 @@ def main():
     root = Path(__file__).with_name("runtime-fixtures")
     root.mkdir(exist_ok=True)
     rows = []
-    for kind, iterations in (("indirect-calls", 15000), ("simd-i32x4", 10000), ("bulk-overlap", 1000), ("globals-tables", 10000),
+    for kind, iterations in (("indirect-calls", 15000), ("nested-calls", 15000), ("simd-i32x4", 10000), ("bulk-overlap", 1000), ("globals-tables", 10000),
                              ("simd-memory-full", 10000), ("simd-memory-widen", 10000), ("simd-memory-lanes", 10000)):
         wat, wasm = root / f"{kind}.wat", root / f"{kind}.wasm"
         wat.write_text(source(kind))

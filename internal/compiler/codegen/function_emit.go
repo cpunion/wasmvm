@@ -80,6 +80,7 @@ type functionEmitter struct {
 	allocationTypes                                              []module.TypeDef
 	hasAllocations                                               bool
 	allocationBatch                                              uint32
+	inlineSlots, inlineFrames                                    uint32
 	start                                                        int
 	linkedRelocations                                            []linkedRelocation
 	linkedDispatch                                               int

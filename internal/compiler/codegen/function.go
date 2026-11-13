@@ -54,6 +54,7 @@ type CompiledFunction struct {
 	MemoryGrows                   uint32
 	ForwardedScalars              uint32
 	InlinedCalls, InlineSlots     uint32
+	InlineFrames                  uint32
 	UsesRuntimeData               bool
 	GlobalIndices                 []uint32
 	NativeGlobals                 uint32
@@ -102,8 +103,9 @@ type Config struct {
 	X86Features     X86Features
 	ARM64Features   ARM64Features
 	// DirectCallees contains only immutable definitions in the same module.
-	// An expanded entry requires one additional logical frame and InlineSlots
-	// remaining slots. The runtime must select an ordinary entry otherwise.
+	// An expanded entry requires InlineFrames additional logical frames and
+	// InlineSlots remaining slots for the original nested call tree. The runtime
+	// must select an ordinary entry when either invocation quota does not fit.
 	DirectCallees map[uint32]*slots.Function
 	// IndirectCallees indexes bounded leaf candidates by the call's type index.
 	// Every candidate must have that validated structural signature. Identity
@@ -513,7 +515,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			var end int
 			var expanded bool
 			if op == 0x10 {
-				end, expanded = e.inlineLeaf(pc, config.DirectCallees[src.Wasm.A])
+				end, expanded = e.inlineLeaf(pc, config.DirectCallees[src.Wasm.A], config.DirectCallees)
 				if expanded {
 					out.InlineSlots = max(out.InlineSlots, uint32(len(config.DirectCallees[src.Wasm.A].Slots)))
 				}
@@ -587,6 +589,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	a.mark(e.overflow)
 	e.trapCode(wasm.TrapIntegerOverflow)
 	a.mark(e.exit)
+	out.InlineSlots = max(out.InlineSlots, e.inlineSlots)
+	out.InlineFrames = e.inlineFrames
 	out.EdgeCopies = e.edgeCopies
 	out.MixedIntegers = e.mixedIntegers
 	out.BoundsElided = e.boundsElided

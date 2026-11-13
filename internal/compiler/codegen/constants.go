@@ -34,14 +34,22 @@ func (e *functionEmitter) constantPriorities(config Config, frequencies []uint64
 		var callees []*slots.Function
 		if in.Op == 0x10 {
 			callee := config.DirectCallees[e.f.Sources[in.Source].Wasm.A]
-			if _, ok := leafExpressions(callee, e.f.Args[in.Extra:in.Extra+in.Count]); ok {
-				callees = append(callees, callee)
+			if plan, ok := planLeafExpressions(callee, e.f.Args[in.Extra:in.Extra+in.Count], config.DirectCallees); ok {
+				callees = append(callees, plan.bodies...)
 			}
 		} else if in.Op == 0x11 {
 			targets := config.IndirectCallees[e.f.Sources[in.Source].Wasm.A]
 			for _, index := range targets[:min(4, len(targets))] {
-				if callee := config.DirectCallees[index]; CanExpandLeaf(callee) {
-					callees = append(callees, callee)
+				callee := config.DirectCallees[index]
+				if callee == nil || len(callee.Signature.Params) > 32 {
+					continue
+				}
+				inputs := make([]slots.Slot, len(callee.Signature.Params))
+				for i := range inputs {
+					inputs[i] = slots.Slot(i)
+				}
+				if plan, ok := planLeafExpressions(callee, inputs, config.DirectCallees); ok {
+					callees = append(callees, plan.bodies...)
 				}
 			}
 		}

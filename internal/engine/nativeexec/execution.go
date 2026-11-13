@@ -288,7 +288,8 @@ func (e *Execution) run(module *Lease, entries *functionEntries, fn *state.Funct
 	if e.metered {
 		entry = entries.metered
 		s.Payload[3] = 1
-	} else if entries.hasExpansion && uint64(depth) < maxFrames &&
+	} else if entries.hasExpansion && uint64(depth) <= maxFrames &&
+		uint64(entries.inlineFrames) <= maxFrames-uint64(depth) &&
 		uint64(base)+uint64(len(fn.Code.Slots))+uint64(entries.inlineSlots) <= maxSlots {
 		entry = entries.expanded
 		needsData = needsData || entries.usesRuntimeData
