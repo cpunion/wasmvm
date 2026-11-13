@@ -26,8 +26,8 @@ Tests execute every cold caller PC with complete raw-frame comparisons, aliased
 arguments/results, i32/i64 boundaries, recursive graphs and expansion budgets.
 Direct/indirect calls retarget at runtime and are compared with the interpreter
 at exact and insufficient stack quotas, with oversized physical workspaces and
-both fuel modes. All 32 executable Go packages pass with CI-equivalent
-integration coverage above 90%; codegen is 98.01% and nativeexec 93.27%. Relevant
+both fuel modes. All 32 Go test packages pass; every package with executable statements
+exceeds 90% CI-equivalent integration coverage; codegen is 98.01% and nativeexec 93.27%. Relevant
 Go race checks and pinned LLGo macOS execution also pass. The final hosted matrix
 and review state remain separate merge requirements.
 

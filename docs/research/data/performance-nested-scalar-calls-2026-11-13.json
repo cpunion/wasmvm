@@ -824,7 +824,7 @@
     }
   },
   "validation": {
-    "Go": "All32 executable root packages pass; CI-equivalent cross-package coverage>=90% everywhere. codegen98.01%,nativeexec93.27%,VM93.52%.",
+    "Go": "All 32 root Go test packages pass; all 31 packages with executable statements meet90% CI-equivalent cross-package coverage. codegen98.01%,nativeexec93.27%,VM93.52%.",
     "race": "Go codegen/nativeexec/VM pass.",
     "LLGo": "Pinned56fa9ae -O3 -lto=full executes codegen/nativeexec/VM on macOS arm64. Full final hosted target matrix remains a merge requirement.",
     "benchmarks": "Nested fixture added to existing runtime generator, fixed-SIMD regression subset43cases, survey69cases/8families. Existing results remain dated, not pooled."
