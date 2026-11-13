@@ -138,6 +138,9 @@ func sortValueIntervals(intervals []registerInterval) {
 }
 
 func valuePlanTransitionCost(from, to *registerPlan) uint64 {
+	if from == to {
+		return 0
+	}
 	var cost uint64
 	if from != nil {
 		for _, s := range from.slots {

@@ -1,6 +1,7 @@
 package codegen
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 
@@ -11,10 +12,37 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
+// Constant fusion alone does not prove strength reduction: generic IMUL also
+// fuses the literal. Check the hot instruction, including i32 normalization.
+func TestAMD64PowerOfTwoMultiplySelection(t *testing.T) {
+	for _, tc := range []struct {
+		op    uint32
+		value uint64
+		want  []byte
+	}{
+		{0x6c, 1, []byte{0x89, 0xc0}},
+		{0x6c, 4, []byte{0xc1, 0xe0, 2}},
+		{0x6c, 1 << 31, []byte{0xc1, 0xe0, 31}},
+		{0x6c, (1 << 32) | 4, []byte{0xc1, 0xe0, 2}},
+		{0x7e, 1 << 32, []byte{0x48, 0xc1, 0xe0, 32}},
+		{0x7e, 1 << 63, []byte{0x48, 0xc1, 0xe0, 63}},
+	} {
+		t.Run(fmt.Sprintf("op=%x/value=%x", tc.op, tc.value), func(t *testing.T) {
+			e := functionEmitter{a: &assembler{arch: "amd64"}, registers: map[slots.Slot]byte{0: 0}}
+			if !e.canRegisterImmediate(tc.op, 0, 0, tc.value) || !e.registerImmediate(tc.op, 0, 0, tc.value) {
+				t.Fatal("multiply not selected")
+			}
+			if !bytes.Equal(e.a.code, tc.want) {
+				t.Fatalf("hot instruction %x, want %x", e.a.code, tc.want)
+			}
+		})
+	}
+}
+
 func TestConstantIntegerAliasesAndEntries(t *testing.T) {
 	for _, wide := range []bool{false, true} {
 		for _, operation := range []uint32{0, 1, 2, 7, 8, 9, 10, 11, 12, 13, 14} {
-			for _, bits := range []uint64{0, 127, 128, 0x80000000, 0xffffffff, 1 << 32, ^uint64(0), ^uint64(128)} {
+			for _, bits := range []uint64{0, 1, 2, 4, 8, 127, 128, 0x80000000, 0xffffffff, 1 << 32, 1 << 63, (1 << 32) | 4, ^uint64(0), ^uint64(128)} {
 				for dst := slots.Slot(0); dst < 3; dst++ {
 					t.Run(fmt.Sprintf("wide=%v/op=%d/bits=%x/dst=%d", wide, operation, bits, dst), func(t *testing.T) {
 						typ, literal, first, constant := wasm.I32, uint32(0x41), uint32(0x6a), bits
@@ -35,8 +63,14 @@ func TestConstantIntegerAliasesAndEntries(t *testing.T) {
 						}
 						compiled, err := CompileUnmeteredFunction("amd64", f, DefaultLimits())
 						fused := !wide || operation >= 10 || uint64(int64(int32(bits))) == bits
-						if err != nil || (compiled.FusedIntegers == 1) != fused {
-							t.Fatal(compiled, err)
+						if wide && operation == 2 && (bits == 1<<31 || bits == 1<<32 || bits == 1<<63) {
+							fused = true
+						}
+						if err != nil {
+							t.Fatal(err)
+						}
+						if (compiled.FusedIntegers == 1) != fused {
+							t.Fatalf("fused=%d, expected=%v", compiled.FusedIntegers, fused)
 						}
 						if native.Available {
 							checkLinearIntegerEntries(t, f)

@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-12",
+  "purpose": "Isolate repeated immutable-register-plan cost walks in compilation; warm throughput acceptance remains open.",
+  "source": {
+    "baseRevision": "465f2c90e1773b939e3994eb375e9b70eb63830d",
+    "implementation": {
+      "file": "internal/compiler/codegen/value_scan.go",
+      "baseSHA256": "e29b9138471dda280498f23334226e7e252765b79d51a307119da1798088b044",
+      "headSHA256": "bdfb57c845ffc9151a6c47bb18e0a0ea85131d5a7b4b6b768037f18153bffcc5",
+      "change": "Return zero immediately for identical immutable register-plan pointers. All other transition calculations unchanged."
+    },
+    "instrumentation": {
+      "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/p3io/owned.go": "77b6438512b19b19cf721340f684f425116cf847c04fe94b7994df8997cb11c1",
+      "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/p3io/compile_barrier.go": "34efb85aac80dfc1cb0dfe659dc323a49e16744227f4f8390a90b650f7b88f24"
+    },
+    "binaries": {
+      "base-go-runner": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/value-plan-identity/base-go-runner",
+        "sha256": "f2036b1619c6089262ed29292788a89240ed7aac2492660753db78b50d1a7daa"
+      },
+      "head-go-runner": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/value-plan-identity/head-go-runner",
+        "sha256": "5fcb748e297d9a43f68ee059bcd292d24ca8ca718824bccc4e78b7fb1ccf2f1c"
+      }
+    },
+    "reference": {
+      "engine": "Wasmtime48Cranelift",
+      "sha256": "561370163342e51593964bc6615ca28ebf1831c22132412ce9c6c44981c54f08"
+    },
+    "fixtureSHA256": "1d583dc670704a021f06d8437bc8834c8adb9feaf1a654cb16faa7e1de3bbdd2",
+    "toolchain": {
+      "go": "go1.27.3",
+      "clang": "22.1.8",
+      "platform": "darwin/arm64",
+      "GOMAXPROCS": 4
+    },
+    "interpretation": "Fixed20block freshprocess compile screen; required semantic7Go packages pass, no builds/tests/profiles/pruning overlap. Startup/load/instantiate/first/warm/cleanup outside publicCompile timer; CPU bounded by shared phase markers."
+  },
+  "protocol": {
+    "blocks": 20,
+    "seed": 2026112483,
+    "variants": [
+      [
+        "base",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/value-plan-identity/base-go-runner",
+        4
+      ],
+      [
+        "head",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/value-plan-identity/head-go-runner",
+        4
+      ]
+    ],
+    "scope": "Exact-source465f2c9 versus onepointeridentity check in valuePlanTransitionCost. Identical immutable plan mappings have zero transition cost; omit redundant map walks only. No codegen strategy, eligibility or generated machinecode change. Full validation/limits/checks retained. All compile and preparation separated from warm execution. Same runtime/guest/publicCompile marker harness, Go1.27.3 Clang22.1.8 GOMAXPROCS4, production checks/fuelpolicies unchanged. PublicCompile+bounded marker CPU excludes startup/load/instantiate/firstcall/cleanup. Wasmtime48.0.1 Rustinternalcompilewall only, isolatedreferenceCPU unavailable.20randomized freshprocessblocks withindependentA/Aaliases,2fullycheckedHTTPresponses everyprocess. No owned overlappingbuild/test/profile/pruning; record controls, not all-target fullportfolio acceptance."
+  },
+  "medians": {
+    "base": {
+      "compileMs": 62.553687499999995,
+      "cpuMs": 114.07945833333332,
+      "instructions": 1654287494.5
+    },
+    "base-aa": {
+      "compileMs": 62.685125,
+      "cpuMs": 113.20789583333334,
+      "instructions": 1638858912.0
+    },
+    "head": {
+      "compileMs": 57.9975205,
+      "cpuMs": 107.68677083333333,
+      "instructions": 1468560184.0
+    },
+    "head-aa": {
+      "compileMs": 58.1490625,
+      "cpuMs": 107.71985416666666,
+      "instructions": 1474067581.5
+    },
+    "wasmtime": {
+      "compileMs": 50.871229
+    },
+    "wasmtime-aa": {
+      "compileMs": 50.946917
+    }
+  },
+  "pairedBootstrap": {
+    "headBaseCPU": {
+      "ratio": 0.9396687390807804,
+      "ci95": [
+        0.9292658789911862,
+        0.9503034806079442
+      ],
+      "blocks": 20
+    },
+    "headBaseWall": {
+      "ratio": 0.8998952644565815,
+      "ci95": [
+        0.8569816003129085,
+        0.9334525826397359
+      ],
+      "blocks": 20
+    },
+    "headBaseInstructions": {
+      "ratio": 0.8932378157386706,
+      "ci95": [
+        0.8867228359345303,
+        0.9003867846243923
+      ],
+      "blocks": 20
+    },
+    "baseAACPU": {
+      "ratio": 0.996523989604858,
+      "ci95": [
+        0.9825167898671888,
+        1.011758327300687
+      ],
+      "blocks": 20
+    },
+    "headAACPU": {
+      "ratio": 1.0042003014326313,
+      "ci95": [
+        0.9941147959892178,
+        1.0151982687234653
+      ],
+      "blocks": 20
+    },
+    "baseAAWall": {
+      "ratio": 0.9944249956804803,
+      "ci95": [
+        0.9475497003810045,
+        1.0331408602978636
+      ],
+      "blocks": 20
+    },
+    "headAAWall": {
+      "ratio": 1.0004681661285253,
+      "ci95": [
+        0.9922751857156192,
+        1.0096598839794522
+      ],
+      "blocks": 20
+    },
+    "headWasmtimeWall": {
+      "ratio": 1.1258638129492293,
+      "ci95": [
+        1.0982764467983013,
+        1.1479320227433372
+      ],
+      "blocks": 20
+    },
+    "allCPUControlsWithin2.5Percent": true,
+    "allWallControlsWithin2.5Percent": false
+  },
+  "controls": {
+    "cpu": "Both A/A intervals fit +/-2.5%.",
+    "wall": "Baseline A/A interval exceeds +/-2.5%; wall medians are diagnostic only.",
+    "runtime": "No warm throughput gain is claimed.",
+    "overlap": "All owned builds/tests/profiles/pruning completed before timing."
+  },
+  "counterTimebase": {
+    "api": "proc_pid_rusage v4",
+    "machTimebaseNumerator": 125,
+    "machTimebaseDenominator": 3
+  },
+  "reproduction": {
+    "measurementScript": "from pathlib import Path\nimport ctypes,json,os,random,re,statistics,subprocess,threading\n\nOUT=Path(__file__).resolve().parent\nROOT=Path('/Users/lijie/source/goplus/wasmvm')\nheader=Path('/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/resource.h').read_text()\nbody=header.split('struct rusage_info_v4 {',1)[1].split('};',1)[0]\nfields=re.findall(r'uint64_t\\s+(ri_\\w+);',body)\nclass Info(ctypes.Structure):_fields_=[('ri_uuid',ctypes.c_ubyte*16)]+[(n,ctypes.c_uint64)for n in fields]\nlib=ctypes.CDLL('/usr/lib/libproc.dylib',use_errno=True)\nlib.proc_pid_rusage.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_void_p];lib.proc_pid_rusage.restype=ctypes.c_int\nnames=['ri_user_time','ri_system_time','ri_instructions','ri_cycles','ri_pkg_idle_wkups','ri_interrupt_wkups','ri_phys_footprint','ri_lifetime_max_phys_footprint','ri_runnable_time']\ndef snapshot(pid):\n info=Info();result=lib.proc_pid_rusage(pid,4,ctypes.byref(info))\n if result:raise OSError(ctypes.get_errno(),'proc_pid_rusage')\n return {n:int(getattr(info,n)) for n in names}\nassert snapshot(os.getpid())['ri_user_time']>0\nclass Timebase(ctypes.Structure):\n _fields_=[('numer',ctypes.c_uint32),('denom',ctypes.c_uint32)]\nsystem=ctypes.CDLL('/usr/lib/libSystem.B.dylib')\nsystem.mach_timebase_info.argtypes=[ctypes.POINTER(Timebase)]\nsystem.mach_timebase_info.restype=ctypes.c_int\nclockbase=Timebase()\nassert system.mach_timebase_info(ctypes.byref(clockbase))==0\ntickNanoseconds=clockbase.numer/clockbase.denom\n\nimport hashlib,time\nvariants=[('base',str(OUT.parent/'base-go-runner'),4),('head',str(OUT.parent/'head-go-runner'),4)]\nref=ROOT/'artifacts/protocol-cost-20261112/output-screen/wasmtime-go-runner'\nplan=dict(blocks=20,seed=2026112483,variants=variants,scope='Exact-source465f2c9 versus onepointeridentity check in valuePlanTransitionCost. Identical immutable plan mappings have zero transition cost; omit redundant map walks only. No codegen strategy, eligibility or generated machinecode change. Full validation/limits/checks retained. All compile and preparation separated from warm execution. Same runtime/guest/publicCompile marker harness, Go1.27.3 Clang22.1.8 GOMAXPROCS4, production checks/fuelpolicies unchanged. PublicCompile+bounded marker CPU excludes startup/load/instantiate/firstcall/cleanup. Wasmtime48.0.1 Rustinternalcompilewall only, isolatedreferenceCPU unavailable.20randomized freshprocessblocks withindependentA/Aaliases,2fullycheckedHTTPresponses everyprocess. No owned overlappingbuild/test/profile/pruning; record controls, not all-target fullportfolio acceptance.')\nassert not(OUT/'rows.jsonl').exists();(OUT/'plan.json').write_text(json.dumps(plan,indent=2)+'\\n')\nrng=random.Random(plan['seed']);rows=[]\nfor block in range(plan['blocks']):\n order=[(label,binary,n,alias)for label,binary,n in variants for alias in ('','-aa')]+[('wasmtime',str(ref),4,alias)for alias in ('','-aa')];rng.shuffle(order)\n for label,binary,n,alias in order:\n  reference=label=='wasmtime';binary=Path(binary)if reference or binary.startswith('/') else OUT/(binary+'-go-runner')\n  command=[str(binary),'--engine','wasmtime'if reference else'wasmvm','--backend','compiler'if reference else'native','--wasm',str(ROOT/'pkg/wasi/preview3/testdata/world-rust-http.wasm'),'--payload-bytes','16','--expected','1757737011','--workers','1','--clients','1','--requests','1','--samples','1','--warmups','0']\n  if not reference:command+=['--response-mode','buffered','--request-mode','snapshot']\n  env=dict(os.environ,GOMAXPROCS=str(n));env.pop('WASMVM_INTERLEAVE',None)\n  if not reference:env['WASMVM_COMPILE_PHASE']='1'\n  started=time.perf_counter_ns();proc=subprocess.Popen(command,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,env=env);timer=threading.Timer(30,proc.kill);timer.start()\n  try:\n   assert json.loads(proc.stdout.readline())=={'ready':True};ready=time.perf_counter_ns()-started;proc.stdin.write('run\\n');proc.stdin.flush()\n   before=after=None\n   if not reference:\n    assert json.loads(proc.stdout.readline())=={'compilePhase':'compile'};before=snapshot(proc.pid);proc.stdin.write('phase\\n');proc.stdin.flush()\n    assert json.loads(proc.stdout.readline())=={'compilePhase':'compiled'};after=snapshot(proc.pid);proc.stdin.write('phase\\n');proc.stdin.flush()\n   record=json.loads(proc.stdout.readline());proc.stdin.close();remaining=proc.stdout.read();stderr=proc.stderr.read();rc=proc.wait(timeout=10)\n   assert rc==0 and not remaining and record['result']==1757737011 and record['warmResults']==[1757737011],(command,stderr,record)\n  finally:\n   timer.cancel()\n   if proc.poll()is None:proc.kill();proc.wait()\n  row=dict(block=block,id=label+alias,command=command,GOMAXPROCS=n,readyNs=ready,wallNs=time.perf_counter_ns()-started,compileMs=record['phasesNs']['compileValidate']/1e6,record=record,stderr=stderr)\n  if before:\n   row.update(before=before,after=after,cpuMs=((after['ri_user_time']-before['ri_user_time'])+(after['ri_system_time']-before['ri_system_time']))*tickNanoseconds/1e6,instructions=after['ri_instructions']-before['ri_instructions'])\n  with(OUT/'rows.jsonl').open('a')as f:f.write(json.dumps(row)+'\\n')\n  rows.append(row);print(block,row['id'],'compileMs',round(row['compileMs'],2),'CPUms',round(row.get('cpuMs',0),2),flush=True)\nsummary={label+alias:{k:statistics.median(row[k]for row in rows if row['id']==label+alias)for k in ('compileMs',)if all(k in row for row in rows if row['id']==label+alias)}for label in ('base','head','wasmtime')for alias in ('','-aa')}\nfor name in summary:\n if name.startswith('wasmtime'):continue\n for k in ('cpuMs','instructions'):summary[name][k]=statistics.median(row[k]for row in rows if row['id']==name)\n(OUT/'summary.json').write_text(json.dumps(dict(plan=plan,summary=summary),indent=2)+'\\n');print(json.dumps(summary),flush=True)\n",
+    "instrumentationOverlay": {
+      "owned.go": "Insert compilePhaseBarrier(\"compile\") before the public engine.Compile timer and compilePhaseBarrier(\"compiled\") after it, before error handling.",
+      "compile_barrier.go": "package main\nimport(\"os\";\"fmt\";\"bufio\";\"encoding/json\")\nfunc compilePhaseBarrier(stage string) {\n if os.Getenv(\"WASMVM_COMPILE_PHASE\")!=\"1\" {return}\n if err:=json.NewEncoder(os.Stdout).Encode(map[string]string{\"compilePhase\":stage});err!=nil{panic(err)}\n line,err:=bufio.NewReader(os.Stdin).ReadString('\\n');if err!=nil||line!=\"phase\\n\"{panic(fmt.Sprintf(\"phase barrier: %q %v\",line,err))}\n}\n"
+    }
+  },
+  "raw": {
+    "path": "docs/research/evidence/performance-value-plan-identity-2026-11-12.jsonl.gz",
+    "processes": 120,
+    "checkedHTTPResponses": 240,
+    "compressedBytes": 26741,
+    "sha256": "7f35bb77a69668b6b4884b7a908f646dd319fb08673a9df3532629e2545841e6",
+    "uncompressedSHA256": "27760249e652bef1a37fca33a1d6b5b8cf700e962733ebd54a8580d59794d641"
+  },
+  "validation": {
+    "Go": "Complete codegen/nativeexec/execute/VM/component/P2/P3 suites passed for the exact implementation overlay.",
+    "actualSource": "The promoted implementation matches the measured file hash.",
+    "LLGo": "Pinned3d92a58 -O3 -lto=full: complete codegen/nativeexec suites pass on macOS arm64 and Linux amd64 (Docker semantics only). Linux Go suites also pass. Full hosted matrix is still required.",
+    "statementCoverage": "Actual-source standalone codegen statement coverage95.2%; package coverage, not specification coverage.",
+    "releaseAcceptance": "Open. Wasmtime reference compile CPU is not isolated/exposed."
+  }
+}
