@@ -1,0 +1,352 @@
+{
+  "status": "Scoped C-entry improvement; complete VM performance acceptance remains open",
+  "sourceBase": "207278fe59c7280c87bc23d64f14ca23319a9fbc",
+  "sourceHead": "a31f35077c6e6cce93527fbe7e81d1dd648bf465",
+  "diagnosticCommit": "7ee45d52aecf29d16b48c5137f79219e14f9b7a9",
+  "run": "https://github.com/cpunion/wasmvm/actions/runs/43380078398",
+  "plan": {
+    "blocks": 20,
+    "samples": 7,
+    "entriesPerCall": 250000,
+    "warmups": 3,
+    "seed": 202611131661,
+    "base": "207278fe59c7280c87bc23d64f14ca23319a9fbc",
+    "head": "7ee45d52aecf29d16b48c5137f79219e14f9b7a9",
+    "sourceSHA256": {
+      "base": "65717b43cefff2249533c4f9ab48151d84dc80757d2f630101bb923ed3f62aa6",
+      "head": "522848284e79bea65661b9116fb7b00426bf1452a61f38d88fe98e3c599427e9"
+    },
+    "compiler": "Ubuntu clang version 22.1.8 (++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80)\nTarget: x86_64-pc-linux-gnu\nThread model: posix\nInstalledDir: /usr/lib/llvm-22/bin\n",
+    "host": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           48 bits physical, 48 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  4\nOn-line CPU(s) list:                     0-3\nVendor ID:                               GenuineIntel\nModel name:                              Intel(R) Xeon(R) 6975P-C\nCPU family:                              6\nModel:                                   173\nThread(s) per core:                      2\nCore(s) per socket:                      2\nSocket(s):                               1\nStepping:                                1\nBogoMIPS:                                5400.00\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq monitor vmx ssse3 fma cx16 pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch cpuid_fault ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves avx_vnni avx512_bf16 wbnoinvd ida arat vnmi avx512vbmi umip pku ospke waitpkg avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg tme avx512_vpopcntdq rdpid bus_lock_detect cldemote movdiri movdir64b md_clear serialize amx_bf16 avx512_fp16 amx_tile amx_int8 flush_l1d arch_capabilities\nVirtualization:                          VT-x\nHypervisor vendor:                       KVM\nVirtualization type:                     full\nL1d cache:                               96 KiB (2 instances)\nL1i cache:                               128 KiB (2 instances)\nL2 cache:                                4 MiB (2 instances)\nL3 cache:                                480 MiB (1 instance)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0-3\nVulnerability Gather data sampling:      Not affected\nVulnerability Ghostwrite:                Not affected\nVulnerability Indirect target selection: Not affected\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Not affected\nVulnerability Mds:                       Not affected\nVulnerability Meltdown:                  Not affected\nVulnerability Mmio stale data:           Not affected\nVulnerability Old microcode:             Not affected\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Not affected\nVulnerability Spec rstack overflow:      Not affected\nVulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; Enhanced / Automatic IBRS; IBPB conditional; PBRSB-eIBRS Not affected; BHI BHI_DIS_S\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Not affected\nVulnerability Tsx async abort:           Not affected\nVulnerability Vmscape:                   Not affected\n",
+    "builds": {
+      "O2": {
+        "command": [
+          "/usr/lib/llvm-22/bin/clang",
+          "-O2",
+          "-march=x86-64",
+          "-mtune=generic",
+          "-o",
+          "/home/runner/work/wasmvm/wasmvm/fp-entry-results/probe-O2",
+          "/home/runner/work/wasmvm/wasmvm/fp-entry-results/main.c",
+          "/home/runner/work/wasmvm/wasmvm/fp-entry-results/base.c",
+          "/home/runner/work/wasmvm/wasmvm/fp-entry-results/head.c",
+          "/home/runner/work/wasmvm/wasmvm/fp-entry-results/guest.s",
+          "-lm"
+        ],
+        "binary": "/home/runner/work/wasmvm/wasmvm/fp-entry-results/probe-O2",
+        "sha256": "9c72a608b4519df00f6aa26dcfcf2d939996d090df8b7dc2e3afe8a5e9793555"
+      },
+      "O3-full-LTO": {
+        "command": [
+          "/usr/lib/llvm-22/bin/clang",
+          "-O3",
+          "-flto=full",
+          "-fuse-ld=lld",
+          "-march=x86-64",
+          "-mtune=generic",
+          "-o",
+          "/home/runner/work/wasmvm/wasmvm/fp-entry-results/probe-O3-full-LTO",
+          "/home/runner/work/wasmvm/wasmvm/fp-entry-results/main.c",
+          "/home/runner/work/wasmvm/wasmvm/fp-entry-results/base.c",
+          "/home/runner/work/wasmvm/wasmvm/fp-entry-results/head.c",
+          "/home/runner/work/wasmvm/wasmvm/fp-entry-results/guest.s",
+          "-lm"
+        ],
+        "binary": "/home/runner/work/wasmvm/wasmvm/fp-entry-results/probe-O3-full-LTO",
+        "sha256": "809d2d7ad4662a7b22b9e6c3e9aad0f7cecd4f279ab0c4e295a3ea582c3f7afb"
+      }
+    },
+    "scope": "Native Linux physical runner. Same binary contains exact base/head adapters, chosen through a volatile pointer; identical-binary aliases. Three unmeasured batches then seven individually interleaved checked calls. Native arithmetic control omits VM admission/FP isolation, and is not an equivalent VM. C boundary diagnostic, not Go/LLGo/P3 throughput or full-profile acceptance. Fixed 20 blocks, no extension or pruning. No concurrent owned build/test/profile during measurement."
+  },
+  "summary": {
+    "O2": {
+      "base": {
+        "cpuNsPerEntry": 179.263214,
+        "wallNsPerEntry": 179.281182
+      },
+      "base-aa": {
+        "cpuNsPerEntry": 179.283348,
+        "wallNsPerEntry": 179.29863
+      },
+      "head": {
+        "cpuNsPerEntry": 80.505054,
+        "wallNsPerEntry": 80.53416
+      },
+      "head-aa": {
+        "cpuNsPerEntry": 80.466422,
+        "wallNsPerEntry": 80.47020599999999
+      },
+      "direct": {
+        "cpuNsPerEntry": 1.556174,
+        "wallNsPerEntry": 1.560606
+      },
+      "direct-aa": {
+        "cpuNsPerEntry": 1.557156,
+        "wallNsPerEntry": 1.559316
+      }
+    },
+    "O3-full-LTO": {
+      "base": {
+        "cpuNsPerEntry": 179.272828,
+        "wallNsPerEntry": 179.30194799999998
+      },
+      "base-aa": {
+        "cpuNsPerEntry": 179.296182,
+        "wallNsPerEntry": 179.30633
+      },
+      "head": {
+        "cpuNsPerEntry": 80.70127,
+        "wallNsPerEntry": 80.717096
+      },
+      "head-aa": {
+        "cpuNsPerEntry": 80.672604,
+        "wallNsPerEntry": 80.678994
+      },
+      "direct": {
+        "cpuNsPerEntry": 1.5578400000000001,
+        "wallNsPerEntry": 1.559958
+      },
+      "direct-aa": {
+        "cpuNsPerEntry": 1.5696080000000001,
+        "wallNsPerEntry": 1.5718779999999999
+      }
+    }
+  },
+  "paired": {
+    "O2": {
+      "cpuNsPerEntry": {
+        "headOverBase": {
+          "ratio": 0.4493392682743052,
+          "ci95": [
+            0.44908336435414925,
+            0.4496026239454992
+          ]
+        },
+        "AA": {
+          "base": {
+            "ratio": 1.0001434644335425,
+            "ci95": [
+              0.9999058962999262,
+              1.000406341640128
+            ],
+            "resolves2_5Percent": true
+          },
+          "head": {
+            "ratio": 0.9996744895343391,
+            "ci95": [
+              0.9983171036420173,
+              1.0010031214802197
+            ],
+            "resolves2_5Percent": true
+          },
+          "direct": {
+            "ratio": 0.9989387672545887,
+            "ci95": [
+              0.9941104726860682,
+              1.003825185511046
+            ],
+            "resolves2_5Percent": true
+          }
+        }
+      },
+      "wallNsPerEntry": {
+        "headOverBase": {
+          "ratio": 0.44935766258305726,
+          "ci95": [
+            0.4491029290164413,
+            0.44961566322201924
+          ]
+        },
+        "AA": {
+          "base": {
+            "ratio": 1.0001592590549195,
+            "ci95": [
+              0.9998955028975604,
+              1.0004558539609105
+            ],
+            "resolves2_5Percent": true
+          },
+          "head": {
+            "ratio": 0.9996307611699051,
+            "ci95": [
+              0.9982670683677772,
+              1.0009406523076576
+            ],
+            "resolves2_5Percent": true
+          },
+          "direct": {
+            "ratio": 0.9987104721868945,
+            "ci95": [
+              0.9938769271115996,
+              1.0035662653983726
+            ],
+            "resolves2_5Percent": true
+          }
+        }
+      }
+    },
+    "O3-full-LTO": {
+      "cpuNsPerEntry": {
+        "headOverBase": {
+          "ratio": 0.4498524781114872,
+          "ci95": [
+            0.44944673757592973,
+            0.45030193939927554
+          ]
+        },
+        "AA": {
+          "base": {
+            "ratio": 1.000307264584307,
+            "ci95": [
+              0.9999246183270621,
+              1.0008971029177165
+            ],
+            "resolves2_5Percent": true
+          },
+          "head": {
+            "ratio": 1.0006572399956313,
+            "ci95": [
+              0.9989942419427527,
+              1.0026940915523674
+            ],
+            "resolves2_5Percent": true
+          },
+          "direct": {
+            "ratio": 1.000630297783584,
+            "ci95": [
+              0.9952631251481118,
+              1.00603320339192
+            ],
+            "resolves2_5Percent": true
+          }
+        }
+      },
+      "wallNsPerEntry": {
+        "headOverBase": {
+          "ratio": 0.4498755930611881,
+          "ci95": [
+            0.44946421901416583,
+            0.45034261538916665
+          ]
+        },
+        "AA": {
+          "base": {
+            "ratio": 1.0003053700231082,
+            "ci95": [
+              0.9999254836081891,
+              1.0008891028340081
+            ],
+            "resolves2_5Percent": true
+          },
+          "head": {
+            "ratio": 1.0006229084491378,
+            "ci95": [
+              0.9989433138014217,
+              1.002676622196364
+            ],
+            "resolves2_5Percent": true
+          },
+          "direct": {
+            "ratio": 1.0006457449169321,
+            "ci95": [
+              0.99556061833114,
+              1.0057604288175612
+            ],
+            "resolves2_5Percent": true
+          }
+        }
+      }
+    }
+  },
+  "files": {
+    "rows.jsonl.gz": {
+      "sha256": "237e8c05cccf261e32797fd6fcaaba58e6a4b08bac9d38ed3567fb6c27cc37df",
+      "bytes": 21873
+    },
+    "summary.json": {
+      "sha256": "f2f8e5c760e6af03675026bab5f95e4c0e001da4585fee1c6d81038d150021a8",
+      "bytes": 1176
+    },
+    "rows.jsonl": {
+      "sha256": "2e0d8315e2954d368404a9c656a7c163977b2c4af98b0022670618ae55ff3038",
+      "bytes": 235747
+    },
+    "plan.json": {
+      "sha256": "8717a2f741f4680f97719b17c38babd422ebbbce458fb194ffe3a431da8c0ebc",
+      "bytes": 6009
+    },
+    "paired.json": {
+      "sha256": "a76a448b8308959ea69119b791c6955ebba44a24d97a8623f8a4c67ce3c16b27",
+      "bytes": 3292
+    },
+    "adapter.h": {
+      "sha256": "1d73da5dc0368d23b1fb01763216122b772b5d4b7a746cefe25d8c0ce55e3aff",
+      "bytes": 2324
+    },
+    "base.c": {
+      "sha256": "cb99093bdce98b92b40043334d97d34dda483dfb1d9f8ca95fff001983f01231",
+      "bytes": 11407
+    },
+    "O3-full-LTO.asm": {
+      "sha256": "7557f796654659aad8453bc803cf42702a27f428684b207ecc62654274278953",
+      "bytes": 26606
+    },
+    "head.c": {
+      "sha256": "522848284e79bea65661b9116fb7b00426bf1452a61f38d88fe98e3c599427e9",
+      "bytes": 13202
+    },
+    "main.c": {
+      "sha256": "cc80a0a43daac8a7bb17eebd1c2b71866bf3cdc8cae888c44ef887922b8ef069",
+      "bytes": 1824
+    },
+    "O2.asm": {
+      "sha256": "d6d93b867e92f0b3a37c388e28598f42ef626475cf7f2ea3fb6cf21bbc15ff70",
+      "bytes": 79030
+    },
+    "probe-O2": {
+      "sha256": "9c72a608b4519df00f6aa26dcfcf2d939996d090df8b7dc2e3afe8a5e9793555",
+      "bytes": 22552
+    },
+    "O3-full-LTO-entry.asm": {
+      "sha256": "e5c1a045865360f4c7ee39ff822b4eb8f890ac88247ec3fd3eecfd132665a829",
+      "bytes": 1923
+    },
+    "guest.s": {
+      "sha256": "12a432aa0b8bf6d7810438abf3da4a2c40f8ed8b7c98c5ddd650985a5491316a",
+      "bytes": 123
+    },
+    "probe-O3-full-LTO": {
+      "sha256": "809d2d7ad4662a7b22b9e6c3e9aad0f7cecd4f279ab0c4e295a3ea582c3f7afb",
+      "bytes": 8840
+    },
+    "O2-entry.asm": {
+      "sha256": "790a36056816ed9206f6e6405e7b17447d0cee29b98f9cae8003f27ec1c0bb64",
+      "bytes": 1892
+    },
+    "base.h": {
+      "sha256": "a9bc588afbb8d329c99df19cbcc61e35303402ce2e8c87cc6c74f2fdc4f1e1ab",
+      "bytes": 2264
+    }
+  },
+  "rawEvidence": {
+    "path": "docs/research/evidence/performance-x86-fp-entry-2026-11-13.jsonl.gz",
+    "sha256": "237e8c05cccf261e32797fd6fcaaba58e6a4b08bac9d38ed3567fb6c27cc37df"
+  },
+  "validation": {
+    "macGo": "Go1.27.3 native/codegen/nativeexec/VM passes .689/4.586/.365/.804s before diagnostic-only FP probe strengthening; full exact-head hosted matrix required",
+    "macLLGo": "56fa9ae -O3 -lto=full native/codegen/nativeexec/VM passes .629/7.316/.681/1.324s on sourcea31",
+    "linuxDocker": "Exact-source focused FP environment/every-exit/callee-saved-register probes pass .058s; nativeexec/VM pass .235/.864s. Full native package could not run a huge-address reservation under Rosetta (allocation8000000000000000); codegen corpus path was not mounted. These are incomplete local outcomes; real Linux full CI remains required. No Docker timings are performance evidence."
+  },
+  "limits": [
+    "No Go/LLGo public-API or complete P3 speedup inferred from a C loop. O2 and O3-full-LTO are two C compiler profiles, not actual whole Go/LLGo binaries.",
+    "Guest arithmetic control has no admission, floating isolation, cancellation or VM contract; no direct-control ratio is an engine ranking.",
+    "All20 blocks retained; individual95% paired diagnostic intervals from20k seeded log-ratio bootstrap. No simultaneous or full-profile acceptance.",
+    "Mac arm64 entry algorithm unchanged. Prior complete P3 gap and adverse hosted Linux interpreter advisory remain unresolved."
+  ],
+  "measurementSource": {
+    "path": "docs/research/evidence/performance-x86-fp-entry-2026-11-13-probe.py.gz",
+    "sha256": "c204a13bdd83f49f34e0f97b8193d0e89e95fdb66a010b57c28397d5e3a36d33",
+    "uncompressedSHA256": "f31ca2c9e7c44c22af98347344b6ff0a4093db771270f15f54528f7c484915ec",
+    "use": "Exact temporary diagnostic source, archived for audit/reproduction; not a production CI workflow."
+  }
+}

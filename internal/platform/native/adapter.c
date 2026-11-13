@@ -179,6 +179,26 @@ static inline void wasmvm_fp_write(struct wasmvm_fp_environment env) {
     __asm__ volatile ("msr fpcr, %0\n\tmsr fpsr, %1\n\tisb"
                       : : "r"(env.control), "r"(env.status) : "memory");
 }
+#else
+/* FNSTENV/FNINIT are non-waiting: an unmasked pending host exception must
+   survive entry rather than be raised by the environment transition. Keep
+   the full x87 environment, even though generated floating code uses SSE. */
+struct wasmvm_fp_environment {
+    unsigned char x87[28];
+    uint32_t mxcsr;
+};
+static inline struct wasmvm_fp_environment wasmvm_fp_begin(void) {
+    struct wasmvm_fp_environment saved;
+    const uint32_t default_mxcsr = 0x1f80;
+    __asm__ volatile ("fnstenv %0\n\tstmxcsr %1\n\tfninit\n\tldmxcsr %2"
+                      : "=m"(saved.x87), "=m"(saved.mxcsr)
+                      : "m"(default_mxcsr) : "memory");
+    return saved;
+}
+static inline void wasmvm_fp_write(struct wasmvm_fp_environment env) {
+    __asm__ volatile ("fldenv %0\n\tldmxcsr %1"
+                      : : "m"(env.x87), "m"(env.mxcsr) : "memory");
+}
 #endif
 
 uint32_t wasmvm_enter(const void *entry, struct wasmvm_record *ctx) {
@@ -190,19 +210,13 @@ uint32_t wasmvm_enter(const void *entry, struct wasmvm_record *ctx) {
     struct wasmvm_fp_environment saved = wasmvm_fp_read();
     wasmvm_fp_write((struct wasmvm_fp_environment){0, 0});
 #else
-    fenv_t saved;
-    if (fegetenv(&saved) != 0) return 0;
-    if (fesetenv(FE_DFL_ENV) != 0) { fesetenv(&saved); return 0; }
+    struct wasmvm_fp_environment saved = wasmvm_fp_begin();
 #endif
 #ifdef __APPLE__
     pthread_jit_write_protect_np(1);
 #endif
     uint32_t result = ((uint32_t (*)(struct wasmvm_record *))entry)(ctx);
-#ifdef __aarch64__
     wasmvm_fp_write(saved);
-#else
-    fesetenv(&saved);
-#endif
     return result;
 }
 
@@ -235,6 +249,17 @@ uint32_t wasmvm_probe_fp(const void *entry, struct wasmvm_record *ctx, uint32_t 
     expected.control |= (1u << 24) | (1u << 25);
     expected.status |= 1u << 27;
     wasmvm_fp_write(expected);
+#else
+    uint32_t expected_mxcsr, supported;
+    struct { unsigned char bytes[512]; } __attribute__((aligned(16))) fx;
+    __asm__ volatile ("fxsave %0" : "=m"(fx));
+    memcpy(&supported, fx.bytes + 28, sizeof(supported));
+    if (!supported) supported = 0xffbf;
+    __asm__ volatile ("stmxcsr %0" : "=m"(expected_mxcsr));
+    expected_mxcsr |= supported & 0x8040; /* FZ and optional DAZ. */
+    __asm__ volatile ("ldmxcsr %0" : : "m"(expected_mxcsr) : "memory");
+    unsigned char expected_x87[28];
+    __asm__ volatile ("fnstenv %0\n\tfldenv %0" : "=m"(expected_x87) : : "memory");
 #endif
     uint32_t status = wasmvm_enter(entry, ctx);
     int restored = fegetround() == FE_DOWNWARD &&
@@ -242,6 +267,13 @@ uint32_t wasmvm_probe_fp(const void *entry, struct wasmvm_record *ctx, uint32_t 
 #ifdef __aarch64__
     struct wasmvm_fp_environment actual = wasmvm_fp_read();
     restored = restored && actual.control == expected.control && actual.status == expected.status;
+#else
+    uint32_t actual_mxcsr;
+    __asm__ volatile ("stmxcsr %0" : "=m"(actual_mxcsr));
+    unsigned char actual_x87[28];
+    __asm__ volatile ("fnstenv %0\n\tfldenv %0" : "=m"(actual_x87) : : "memory");
+    restored = restored && actual_mxcsr == expected_mxcsr &&
+               memcmp(actual_x87, expected_x87, sizeof(actual_x87)) == 0;
 #endif
     fesetenv(&original);
     return status == expected_status && restored;

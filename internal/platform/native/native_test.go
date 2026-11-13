@@ -328,7 +328,7 @@ func TestMultipleEntriesAndFloatingEnvironment(t *testing.T) {
 		t.Fatal(err)
 	}
 	if runtime.GOARCH == "amd64" {
-		if state.ResultLo&0xe040 != 0 || state.ResultHi&0xc00 != 0 {
+		if state.ResultLo != 0x1f80 || state.ResultHi != 0x37f {
 			t.Fatalf("non-default MXCSR/x87: %+v", state)
 		}
 	} else if state.ResultLo != 0 || state.ResultHi != 0 {
