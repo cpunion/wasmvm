@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -48,7 +47,7 @@ func TestServiceSharedModuleIndependentStoresAndEveryReply(t *testing.T) {
 			t.Fatal(service)
 		}
 		for i, batch := range service.Batches {
-			if len(batch.RequestNs) != 35 || len(batch.PublicAPINs) != 35 || batch.ReadyClients != 7 || batch.ReadinessNs < 0 || (batch.Mallocs == nil) != (runtime.Compiler == "llgo") {
+			if len(batch.RequestNs) != 35 || len(batch.PublicAPINs) != 35 || batch.ReadyClients != 7 || batch.ReadinessNs < 0 || batch.Mallocs == nil {
 				t.Fatal(i, batch)
 			}
 			if i >= 2 && batch.WallNs != uint64(out.WarmCallNs[i-2]) {
