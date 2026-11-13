@@ -8,7 +8,7 @@ on:
       suite:
         description: Benchmark scope (PR families, sustained gates, or diagnostic survey)
         type: choice
-        options: [pr, full, native-simd, survey, routing, p3io]
+        options: [pr, full, native-simd, survey, routing, p3io, llgo-layout]
         default: full
       routing_scope:
         description: Routing groups to measure (routing suite only)
@@ -78,7 +78,7 @@ jobs:
 
   benchmark:
     # Capability completion takes priority; measurements are opt-in until then.
-    if: ${{ inputs.suite != 'native-simd' && inputs.suite != 'routing' && inputs.suite != 'p3io' && (github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks')) }}
+    if: ${{ inputs.suite != 'native-simd' && inputs.suite != 'routing' && inputs.suite != 'p3io' && inputs.suite != 'llgo-layout' && (github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks')) }}
     name: Runtime performance / linux-amd64
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && inputs.suite != 'pr' && 90 || 10 }}
@@ -500,3 +500,110 @@ jobs:
             } else {
               await github.rest.issues.createComment({...context.repo, issue_number: number, body});
             }
+
+  llgo_layout_build:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'llgo-layout' }}
+    name: Relink LLGo layout / ${{ matrix.role }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        role: [base, head]
+    env:
+      WASMVM_LLGO_REVISION: 56fa9aedc957cf3c9656c1a70f82c5424ab3b1c5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: control
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - run: bash control/scripts/setup_linux_llgo.sh
+      - uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
+        with:
+          llgo-version: 56fa9aedc957cf3c9656c1a70f82c5424ab3b1c5
+          install-method: source
+          go-version: '1.27.3'
+          llvm-version: '22'
+          install-dependencies: false
+          cache: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: routing-build-linux-amd64
+          run-id: 43448812030
+          github-token: ${{ github.token }}
+      - run: tar -xzf routing-build.tar.gz
+      - name: Relink only the three predeclared LLGo variants
+        run: python3 -u control/benchmarks/llgo_layout_diagnostic.py build --role '${{ matrix.role }}' --build-dir routing-build
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: llgo-layout-${{ matrix.role }}
+          path: |
+            llgo-layout-${{ matrix.role }}.tar.gz
+            routing-build/layout-probe-${{ matrix.role }}/
+          if-no-files-found: warn
+          retention-days: 14
+
+  llgo_layout_measure:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'llgo-layout' }}
+    name: LLGo layout causal comparison / linux-amd64
+    needs: llgo_layout_build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: control
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 95943842febc2d3571547c72f2d62bc79f232f88
+          path: head
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: routing-build-linux-amd64
+          run-id: 43448812030
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: llgo-layout-*
+          path: derived
+          merge-multiple: true
+      - name: Restore frozen defaults, derived variants and library paths
+        run: |
+          tar -xzf routing-build.tar.gz
+          tar -xzf derived/llgo-layout-base.tar.gz
+          tar -xzf derived/llgo-layout-head.tar.gz
+          python3 control/benchmarks/llgo_layout_diagnostic.py merge --build-dir routing-build
+          python3 - <<'PYLIB'
+          import os
+          from pathlib import Path
+          directories = [str(Path('routing-build/host-libraries').resolve())]
+          directories += sorted({str(p.parent.resolve()) for p in Path('routing-build/tools').rglob('*.so*') if p.is_file()})
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write('LD_LIBRARY_PATH=' + ':'.join(directories) + '\n')
+          PYLIB
+      - name: Fixed 20 blocks; all variants, references and A/A controls
+        run: |
+          python3 -u control/benchmarks/routing_compare.py measure \
+            --head-dir "$GITHUB_WORKSPACE/head" --build-dir "$GITHUB_WORKSPACE/routing-build" \
+            --group memory-simd --case memory/dependent-address --blocks 20 \
+            --output-dir "$GITHUB_WORKSPACE/llgo-layout-results"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: llgo-layout-results
+          path: llgo-layout-results/
+          if-no-files-found: error
+          retention-days: 30
