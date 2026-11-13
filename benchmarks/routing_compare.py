@@ -191,6 +191,44 @@ def build(args):
     for role in ['base', 'head']:
         for backend in ['interpreter', 'native']:
             runtimes['aa-' + role + '-llgo-' + backend] = dict(runtimes[role + '-llgo-' + backend])
+    # Temporary diagnostic: change only ELF text placement, not the compiler
+    # version, optimization level, engine source, guest or execution policy.
+    # Fixed VMA is an ablation, never a production linking requirement.
+    for role in ['base', 'head']:
+        original = builds[role + '-llgo']
+        name = 'layout-' + role + '-llgo'
+        target = Path(original['binary']).parent
+        command = list(original['command'])
+        command[command.index('-o') + 1] = str(target / 'runner-layout')
+        command.insert(command.index('-o'), '-ldflags=-extldflags=-Wl,-Ttext=0x400000')
+        record = compile_runner(command, target, env)
+        builds[name] = dict(original, **record)
+        builds[name]['experimentalLinkerFlags'] = ['-Wl,-Ttext=0x400000']
+        n = name + '-interpreter'
+        runtimes[n] = dict(runtimes[role + '-llgo-interpreter'], command=[record['binary'], '--mode', 'api'])
+        runtimes['aa-' + n] = dict(runtimes[n])
+    layout_dir = out / 'layout-probe'
+    layout_dir.mkdir()
+    objdump = shutil.which('llvm-objdump-22') or shutil.which('llvm-objdump')
+    nm = shutil.which('llvm-nm-22') or shutil.which('llvm-nm')
+    if not objdump or not nm:
+        raise ValueError('LLVM object inspection tools are required for the layout diagnostic')
+    for name in ['base-llgo', 'head-llgo', 'layout-base-llgo', 'layout-head-llgo']:
+        binary = builds[name]['binary']
+        sections = ci.capture([objdump, '--section-headers', binary])
+        match = re.search(r'^\s*\d+\s+\.text\s+[0-9a-fA-F]+\s+([0-9a-fA-F]+)', sections, re.M)
+        if not match:
+            raise ValueError('missing ELF text section')
+        text = int(match[1], 16)
+        if name.startswith('layout-') and text != 0x400000:
+            raise ValueError('diagnostic text VMA was not applied')
+        symbol = 'github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).runSlots'
+        row = next(line.split() for line in ci.capture([nm, '--print-size', binary]).splitlines() if line.endswith(' ' + symbol))
+        address, size = int(row[0], 16), int(row[1], 16)
+        assembly = ci.capture([objdump, '--disassemble-symbols=' + symbol, '--no-show-raw-insn', '--no-leading-addr', '--symbolize-operands', binary])
+        (layout_dir / (name + '.asm')).write_text(assembly)
+        builds[name]['layoutDiagnostic'] = dict(text=text, dispatcher=address, size=size, textOffset=address-text, mod64=address%64, sections=sections)
+
     revision = ci.capture(['git', '-C', str(head), 'rev-parse', 'HEAD'])
     target = out / 'wazero'
     own_build.archive(head, revision, target, ('benchmarks/embedded/wazero',))
