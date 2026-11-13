@@ -84,6 +84,7 @@ type functionEmitter struct {
 	start                                                        int
 	linkedRelocations                                            []linkedRelocation
 	linkedDispatch                                               int
+	dispatchRelocations                                          []int
 	hasLinkedDispatch                                            bool
 }
 

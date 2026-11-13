@@ -69,6 +69,7 @@ type CompiledFunction struct {
 	NativeAllocations             uint32
 	NativeAllocationBatch         uint32
 	CallRelocations               []CallRelocation
+	DispatchRelocations           []uint32
 }
 
 // CompileFunction consumes trusted, immutable output of slot lowering. It emits
@@ -134,6 +135,9 @@ type Config struct {
 	// module type indices to the same validated structural identities.
 	LinkedSignatures []uint32
 	LinkedTypeLabels []uint32
+	// SharedDispatch leaves forward address relocations for one module table
+	// per policy. The owner must append and link that table before publication.
+	SharedDispatch bool
 }
 
 func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
@@ -616,6 +620,10 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	for _, call := range e.linkedRelocations {
 		position, _ := a.labelAt(call.label)
 		out.CallRelocations = append(out.CallRelocations, CallRelocation{Offset: out.Entry.BodyOffset + uint32(position), Function: call.target})
+	}
+	for _, label := range e.dispatchRelocations {
+		position, _ := a.labelAt(label)
+		out.DispatchRelocations = append(out.DispatchRelocations, out.Entry.BodyOffset+uint32(position))
 	}
 	return out, nil
 }

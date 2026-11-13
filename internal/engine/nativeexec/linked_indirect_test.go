@@ -1,10 +1,14 @@
 package nativeexec
 
 import (
+	"context"
 	"errors"
+	"runtime"
 	"testing"
 
+	"github.com/cpunion/wasmvm/internal/compiler/codegen"
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
+	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/execute"
 	"github.com/cpunion/wasmvm/internal/engine/state"
@@ -12,6 +16,60 @@ import (
 	"github.com/cpunion/wasmvm/internal/platform/native"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
+
+func TestSharedIndirectTableFitsLinearCodeBudget(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	const count = 128
+	d := &module.Module{Types: []module.FuncType{{Results: []wasm.ValueType{wasm.I32}}},
+		Tables: []module.TableType{{Element: wasm.FuncRef, Limits: module.Limits{Min: 1}}}}
+	for range count {
+		d.Functions = append(d.Functions, module.Function{Body: module.Expr{{Op: 0x41}, {Op: 0x11}, {Op: 0xb}}})
+	}
+	m := callSlots(t, d)
+	config := codegen.Config{SharedDispatch: true, FunctionCount: count, TableCount: 1,
+		LinkedCallees: map[uint32]*slots.Function{}, LinkedSignatures: make([]uint32, count), LinkedTypeLabels: m.IR.Validated.TypeLabels()}
+	for i, f := range m.Functions {
+		config.LinkedCallees[uint32(i)] = f
+		config.LinkedSignatures[i] = config.LinkedTypeLabels[0]
+	}
+	var size uint64 = 2 * count * 32
+	for _, unmetered := range []bool{false, true} {
+		config.Unmetered, config.NativeAllocations = unmetered, unmetered
+		body, err := codegen.CompileFunctionWithConfig(runtime.GOARCH, m.Functions[0], codegen.DefaultLimits(), config)
+		if err != nil || len(body.DispatchRelocations) != 1 {
+			t.Fatal(body, err)
+		}
+		size += uint64(len(body.Entry.Code)) * count
+	}
+	limits := codegen.DefaultLimits()
+	limits.MaxCodeBytes = size
+	c, err := Compile(context.Background(), m, limits)
+	if err != nil {
+		t.Fatal("shared rows did not fit exact image budget", size, err)
+	}
+	c.Close()
+	if !c.linked || size > count*4096 {
+		t.Fatal("indirect metadata is not linear", c.linked, size)
+	}
+	limits.MaxCodeBytes--
+	if c, err := compileModule(context.Background(), m, limits, true); !errors.Is(err, wasm.ErrLimit) {
+		if c != nil {
+			c.Close()
+		}
+		t.Fatal("shared table escaped aggregate code budget", err)
+	}
+	// Linking still yields to complete ordinary tiers under a smaller quota.
+	c, err = Compile(context.Background(), m, limits)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.Close()
+	if c.linked {
+		t.Fatal("expected bounded ordinary fallback")
+	}
+}
 
 func TestLinkedIndirectRetargetingFallbacksAndQuotas(t *testing.T) {
 	if !native.Available {
