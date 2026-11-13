@@ -23,6 +23,10 @@ on:
         description: Baseline commit or ref in this repository
         default: main
         type: string
+      reuse_llgo_alignment:
+        description: Temporary diagnostic - reuse frozen alignment variants on two new hosts
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -502,7 +506,7 @@ jobs:
             }
 
   llgo_layout_build:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'llgo-layout' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'llgo-layout' && !inputs.reuse_llgo_alignment }}
     name: Relink LLGo layout / ${{ matrix.role }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -552,14 +556,18 @@ jobs:
           retention-days: 14
 
   llgo_layout_measure:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'llgo-layout' }}
-    name: LLGo layout causal comparison / linux-amd64
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.suite == 'llgo-layout' && (inputs.reuse_llgo_alignment || needs.llgo_layout_build.result == 'success') }}
+    name: LLGo layout causal comparison / ${{ matrix.cohort }}
     needs: llgo_layout_build
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
       actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        cohort: ${{ fromJSON(inputs.reuse_llgo_alignment && '["repeat-1","repeat-2"]' || '["primary"]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -577,7 +585,9 @@ jobs:
           github-token: ${{ github.token }}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          pattern: llgo-layout-*
+          pattern: llgo-layout-[bh]*
+          run-id: ${{ inputs.reuse_llgo_alignment && '43520701499' || github.run_id }}
+          github-token: ${{ github.token }}
           path: derived
           merge-multiple: true
       - name: Restore frozen defaults, derived variants and library paths
@@ -603,7 +613,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: llgo-layout-results
+          name: llgo-layout-results-${{ matrix.cohort }}
           path: llgo-layout-results/
           if-no-files-found: error
           retention-days: 30
