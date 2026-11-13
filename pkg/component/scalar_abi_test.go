@@ -14,7 +14,7 @@ import (
 
 func TestScalarCanonicalBitsAndFailedCarrierChecks(t *testing.T) {
 	codec := func() *canonical.Codec {
-		return &canonical.Codec{Layouts: canonical.NewBuilder(false, canonical.DefaultLimits()), Transfer: &canonical.Transfer{MaxBytes: 4096}, MaxValues: 1024}
+		return &canonical.Codec{Layouts: canonical.NewBuilder(false, canonical.DefaultLimits()), Transfer: canonical.Transfer{MaxBytes: 4096}, MaxValues: 1024}
 	}
 	f32, f64 := &model.Type{Kind: model.F32}, &model.Type{Kind: model.F64}
 	plan := &validate.CanonicalFunction{Type: &validate.Type{Parameters: []model.Field{{Type: f32}, {Type: f64}}, Result: f64}, Signature: vm.FunctionType{Params: []wasm.ValueType{wasm.F32, wasm.F64}, Results: []wasm.ValueType{wasm.F64}}}

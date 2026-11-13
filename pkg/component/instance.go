@@ -303,7 +303,7 @@ func (c *Compiled) Instantiate(ctx context.Context, imports Imports, options vm.
 	for i := range in.layouts {
 		in.layouts[i] = canonical.NewBuilder(i == 1, canonical.Limits{MaxNodes: in.config.Validate.MaxNodes, MaxDepth: in.config.MaxNesting, MaxBytes: in.config.MaxBytes})
 	}
-	in.initializing = &canonical.Codec{Transfer: &canonical.Transfer{Context: contextOrBackground(ctx), MaxBytes: in.config.MaxBytes}, Layouts: in.layouts[0], MaxValues: in.config.MaxValues}
+	in.initializing = &canonical.Codec{Transfer: canonical.Transfer{Context: contextOrBackground(ctx), MaxBytes: in.config.MaxBytes}, Layouts: in.layouts[0], MaxValues: in.config.MaxValues}
 	published := false
 	defer func() {
 		for _, v := range in.initialValues {

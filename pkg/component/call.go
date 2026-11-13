@@ -210,51 +210,53 @@ func (m memory) WriteString(at uint64, data string) error {
 
 // Each state belongs to one call; grouping its objects does not reuse budgets
 // or resource ownership across callers.
-type codecState struct {
-	codec    canonical.Codec
-	transfer canonical.Transfer
-}
 type resourceCodecState struct {
-	codecState
+	codec     canonical.Codec
 	resources resourceCodec
 }
 
-func (in *Instance) codec(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) *canonical.Codec {
-	return in.newCodec(caller, n, plan, true)
-}
-
-func (in *Instance) bufferCodec(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, element *model.Type) *canonical.Codec {
-	resourceValues := element != nil
+// Synchronous resource-free transfers can use fresh caller-owned codec state.
+// Endpoints retain their immutable options, never this session-bound scratch.
+func (in *Instance) initBufferCodec(codec *canonical.Codec, caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, element *model.Type) *canonical.Codec {
 	if element != nil {
 		switch element.Kind {
 		case model.Bool, model.S8, model.U8, model.S16, model.U16, model.S32, model.U32,
 			model.S64, model.U64, model.F32, model.F64, model.Char, model.String, model.Flags, model.Enum:
-			// These leaf types cannot carry a resource or endpoint capability.
-			resourceValues = false
+		default:
+			return in.codec(caller, n, plan)
 		}
 	}
-	return in.newCodec(caller, n, plan, resourceValues)
+	if codec == nil {
+		codec = &canonical.Codec{}
+	}
+	// Only strings among these leaf elements can need canonical reallocation.
+	in.configureCodec(codec, caller, n, plan, element != nil && element.Kind == model.String)
+	return codec
 }
 
-func (in *Instance) newCodec(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, resourceValues bool) *canonical.Codec {
+func (in *Instance) codec(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) *canonical.Codec {
 	var codec *canonical.Codec
-	var transfer *canonical.Transfer
-	if resourceValues && n != nil && (len(n.resources) != 0 || n.handles != nil) {
+	if n != nil && (len(n.resources) != 0 || n.handles != nil) {
 		state := &resourceCodecState{}
-		codec, transfer = &state.codec, &state.transfer
+		codec = &state.codec
 		state.resources = resourceCodec{in: in, n: n, core: caller}
 		codec.Resources = &state.resources
 	} else {
-		state := &codecState{}
-		codec, transfer = &state.codec, &state.transfer
+		codec = &canonical.Codec{}
 	}
+	in.configureCodec(codec, caller, n, plan, true)
+	return codec
+}
+
+func (in *Instance) configureCodec(codec *canonical.Codec, caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, realloc bool) {
+	transfer := &codec.Transfer
 	*transfer = canonical.Transfer{Context: caller.Context(), MaxBytes: in.config.MaxBytes}
 	if plan != nil {
 		transfer.Memory64, transfer.Encoding = plan.Memory64, plan.Encoding
 		if plan.Memory != nil {
 			transfer.Memory = memory{caller: caller, extern: n.items[model.CoreMemorySort][*plan.Memory].core}
 		}
-		if plan.Realloc != nil {
+		if realloc && plan.Realloc != nil {
 			fn := n.items[model.CoreFunctionSort][*plan.Realloc].core
 			transfer.Realloc = func(old, size, alignment, next uint64) (uint64, error) {
 				previous := n.task
@@ -277,8 +279,7 @@ func (in *Instance) newCodec(caller *vm.Caller, n *namespace, plan *validate.Can
 			}
 		}
 	}
-	codec.Transfer, codec.Layouts, codec.MaxValues = transfer, in.canonicalLayouts(n, plan), in.config.MaxValues
-	return codec
+	codec.Layouts, codec.MaxValues = in.canonicalLayouts(n, plan), in.config.MaxValues
 }
 
 func (in *Instance) canonicalLayouts(n *namespace, plan *validate.CanonicalFunction) *canonical.Builder {

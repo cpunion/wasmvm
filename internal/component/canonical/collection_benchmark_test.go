@@ -24,7 +24,7 @@ func BenchmarkCollectionConversion(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				*next, transfer.used = 64, 0
-				codec := Codec{Transfer: transfer, Layouts: builder, MaxValues: 1024}
+				codec := Codec{Transfer: *transfer, Layouts: builder, MaxValues: 1024}
 				slots, err := codec.LowerFlat(typ, value)
 				if err != nil {
 					b.Fatal(err)

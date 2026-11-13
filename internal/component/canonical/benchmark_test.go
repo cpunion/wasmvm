@@ -19,7 +19,7 @@ func BenchmarkFlatRecord(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		transfer := Transfer{MaxBytes: 1024}
-		c := Codec{Transfer: &transfer, Layouts: layouts, MaxValues: 16}
+		c := Codec{Transfer: transfer, Layouts: layouts, MaxValues: 16}
 		slots, err := c.LowerFlat(tpe, v)
 		if err != nil {
 			b.Fatal(err)
