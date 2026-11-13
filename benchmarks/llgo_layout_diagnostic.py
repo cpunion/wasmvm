@@ -16,9 +16,9 @@ SOURCE_RUN = 43448812030
 HEAD = '95943842febc2d3571547c72f2d62bc79f232f88'
 BASE = 'b546ea76663c2ee763ce303a7835e1f83096e59d'
 PROFILES = {
-    'fixed-page': ('-Wl,-Ttext=0x400000', 0x400000),
-    'fixed-base-phase': ('-Wl,-Ttext=0x400030', 0x400030),
-    'separate-code': ('-Wl,-z,separate-code', None),
+    'function-32': ('-Wl,-mllvm,-align-all-functions=5', 32),
+    'function-64': ('-Wl,-mllvm,-align-all-functions=6', 64),
+    'loop-32': ('-Wl,-mllvm,-align-loops=32', 0),
 }
 SYMBOL = 'github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).runSlots'
 
@@ -41,13 +41,11 @@ def inspect(binary, destination, expected):
     if not match:
         raise ValueError('missing ELF text section')
     text = int(match[1], 16)
-    if expected is not None and text != expected:
-        raise ValueError('requested fixed ELF text address was not applied')
-    if expected is None and text % 4096:
-        raise ValueError('separate-code did not page-align text')
     row = next(line.split() for line in ci.capture([nm, '--print-size', str(binary)]).splitlines()
                if line.endswith(' ' + SYMBOL))
     address, size = int(row[0], 16), int(row[1], 16)
+    if expected and (text % expected or address % expected):
+        raise ValueError('requested function alignment was not applied')
     assembly = ci.capture([objdump, '--disassemble-symbols=' + SYMBOL, '--no-show-raw-insn',
                            '--no-leading-addr', '--symbolize-operands', str(binary)])
     destination.write_text(assembly)
@@ -60,9 +58,8 @@ def build(folder, role):
     selected = own_build.toolchains()['llgo']
     original = data['builds'][role + '-llgo']
     previous = original['toolchain']
-    # setup-llgo embeds its temporary installation path in the CLI binary.
-    # Preserve both hashes; require identical compiler/dependency/build-option
-    # identities rather than treating a fresh installation path as code drift.
+    # Preserve both CLI hashes; require identical compiler/dependency/build
+    # identities across fresh installations instead of assuming reproducibility.
     before = previous['goBuildInfo'].splitlines()[1:]
     after = selected['goBuildInfo'].splitlines()[1:]
     if before != after:
