@@ -41,6 +41,16 @@ func TestSharedIndirectTableFitsLinearCodeBudget(t *testing.T) {
 		if err != nil || len(body.DispatchRelocations) != 1 {
 			t.Fatal(body, err)
 		}
+		single := config
+		single.FunctionCount = 1
+		single.LinkedSignatures = config.LinkedSignatures[:1]
+		single.LinkedCallees = map[uint32]*slots.Function{0: m.Functions[0]}
+		small, err := codegen.CompileFunctionWithConfig(runtime.GOARCH, m.Functions[0], codegen.DefaultLimits(), single)
+		// Allow bounded differences in immediate/address encodings, without
+		// imposing one architecture's absolute body size on the other.
+		if err != nil || len(body.Entry.Code) > len(small.Entry.Code)+64 {
+			t.Fatal("caller body grows with dispatch table", err)
+		}
 		size += uint64(len(body.Entry.Code)) * count
 	}
 	limits := codegen.DefaultLimits()
@@ -50,7 +60,7 @@ func TestSharedIndirectTableFitsLinearCodeBudget(t *testing.T) {
 		t.Fatal("shared rows did not fit exact image budget", size, err)
 	}
 	c.Close()
-	if !c.linked || size > count*4096 {
+	if !c.linked {
 		t.Fatal("indirect metadata is not linear", c.linked, size)
 	}
 	limits.MaxCodeBytes--
