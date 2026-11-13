@@ -276,6 +276,12 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
+The [nested scalar call study](docs/research/performance-nested-scalar-calls-2026-11-13.md)
+records Go at **1.119 ns/iteration**, versus wazero **3.421**, Wasmtime **1.955**
+and Wasmer **1.943** on one bounded call-tree kernel. Head/reference controls
+resolve; the old source control does not. Complete P3 requests show no material
+CPU improvement in the separate screen. Overall parity remains open.
+
 The [2026-11-13 follow-up](docs/research/performance-go-and-llgo-main-2026-11-13.md)
 reproduces a **3× Go improvement** for one private-word loop (0.814 → 0.271
 ns/iteration), records unresolved competitor controls, and tests the updated
