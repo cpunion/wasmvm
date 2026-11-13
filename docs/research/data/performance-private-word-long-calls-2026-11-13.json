@@ -1,0 +1,147 @@
+{
+  "source": {
+    "sourceHead": "09d898ba104d191a51588e55db9de485cbe5e00c",
+    "sourceBase": "b01fc2991da0fcfec7687e0eaa05aa2d5dad4abb (tree identical to merged4d41a12)",
+    "binaries": {
+      "base": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/base-go-phase",
+        "sha256": "e8e86668686c2c363010ff660b90e2b80fe9c087e4544b85aa181997f7f2164b"
+      },
+      "go": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-home/long-calls/head-go-phase",
+        "sha256": "9189b0430cd20f849683e6c15d800f007c0cfeb82cb600aabf63ad5042db326a"
+      },
+      "llgo": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-home/long-calls/head-llgo-phase",
+        "sha256": "89888acf058abdeaa5b66c59efea12823df415e87b4a72c63cb7d7e73603a664"
+      },
+      "wazero": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-home/long-calls/wazero-phase",
+        "sha256": "6fe6aaf935e69ecdf08de9a23f7feccc5b4facaaf7e2a1253a4425c51f727c68"
+      },
+      "wasmtime": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmtime-phase",
+        "sha256": "459b281138ba710ed6ee93f6a9c0c7028f553d65ef39a31fb7902531f8bfc7ff"
+      },
+      "wasmer": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmer-phase",
+        "sha256": "df7df63877b13bb33a943bcd6e5a62ed7bd898098e4b37feef19871eb664e2ae"
+      }
+    },
+    "fixtureSHA256": "2e7b92c12a31473ef5a65e805948c7d05ac41d569ca252821cdf3a2468451a57",
+    "profile": "Go1.27.3; LLGo3d92a58 -O3 -lto=full. New LLGo main remains a separate future baseline; not mixed into this source event.",
+    "preflight": "All six runtimes actually execute and verify seed17 count23 result40."
+  },
+  "mediansNsPerIteration": {
+    "base": 0.814426833,
+    "base-aa": 0.819840125,
+    "go": 0.271017666,
+    "go-aa": 0.272099541,
+    "llgo": 0.271633792,
+    "llgo-aa": 0.274324625,
+    "wazero": 0.9481827089999999,
+    "wazero-aa": 0.921405166,
+    "wasmtime": 0.47838875000000003,
+    "wasmtime-aa": 0.447371458,
+    "wasmer": 0.459067875,
+    "wasmer-aa": 0.442963708
+  },
+  "ratios": {
+    "go/base": {
+      "ratio": 0.334689132329509,
+      "ci95": [
+        0.3310810068210814,
+        0.3385605900291853
+      ]
+    },
+    "go/llgo": {
+      "ratio": 1.0050632196600409,
+      "ci95": [
+        0.9908144438644578,
+        1.0211829299147772
+      ]
+    },
+    "go/wazero": {
+      "ratio": 0.2884090942783538,
+      "ci95": [
+        0.2783237671882746,
+        0.29860221103437024
+      ]
+    },
+    "go/wasmtime": {
+      "ratio": 0.6203461862001197,
+      "ci95": [
+        0.5745227088850117,
+        0.6722064677352875
+      ]
+    },
+    "go/wasmer": {
+      "ratio": 0.6051634255169923,
+      "ci95": [
+        0.5659062735150449,
+        0.648710744613124
+      ]
+    }
+  },
+  "AAControls": {
+    "base": {
+      "ratio": 0.9999145836320148,
+      "ci95": [
+        0.9910684065716712,
+        1.0085450672593879
+      ],
+      "resolvedWithin2.5Percent": true
+    },
+    "go": {
+      "ratio": 1.0011544287936287,
+      "ci95": [
+        0.9849044251757458,
+        1.0185143890135404
+      ],
+      "resolvedWithin2.5Percent": true
+    },
+    "llgo": {
+      "ratio": 1.0102486770327959,
+      "ci95": [
+        0.9954937631229834,
+        1.03007526426409
+      ],
+      "resolvedWithin2.5Percent": false
+    },
+    "wazero": {
+      "ratio": 1.0067738831973225,
+      "ci95": [
+        0.9527453971695845,
+        1.063855595913629
+      ],
+      "resolvedWithin2.5Percent": false
+    },
+    "wasmtime": {
+      "ratio": 1.006416101426814,
+      "ci95": [
+        0.9343452288070385,
+        1.0859934654990977
+      ],
+      "resolvedWithin2.5Percent": false
+    },
+    "wasmer": {
+      "ratio": 0.9817347966905801,
+      "ci95": [
+        0.9342921164710518,
+        1.0278802757709438
+      ],
+      "resolvedWithin2.5Percent": false
+    }
+  },
+  "statistics": "20 process blocks; paired log-mean ratios and 20,000 block bootstrap replicates, seed2026112713. Individual 95% diagnostic intervals; no simultaneous full-portfolio acceptance. Earlier 50M cohorts not pooled.",
+  "rawSHA256": "008a87768f8065a76ac50fd04df0b81f95a2b56822486aa30e1f4d8efcc6de4a",
+  "rawBytes": 53055,
+  "interpretation": "Own Go/LLGo sustained guest execution is similar; a long loop amortizes the host C boundary. Both own builds retain original stores and mandatory polls. Source gain reproduces near3x. Reference controls remain unresolved, so their point estimates do not establish formal competitive or milestone acceptance.",
+  "rawEvidence": {
+    "path": "docs/research/evidence/performance-private-word-long-calls-2026-11-13.jsonl.gz",
+    "sha256": "008a87768f8065a76ac50fd04df0b81f95a2b56822486aa30e1f4d8efcc6de4a",
+    "bytes": 53055
+  },
+  "measurementScript": "from pathlib import Path\nimport os,json,random,statistics,sys,time\nROOT=Path('/Users/lijie/source/goplus/wasmvm')\nWORK=Path('/Users/lijie/source/goplus/wasmvm-source-cleanup')\nOUT=Path(__file__).resolve().parent\nsys.path.insert(0,str(WORK/'benchmarks'))\nimport interleaved\nos.environ['GOMAXPROCS']='1'\nos.environ['GOGC']='100'\nfor key in ('WASMVM_COMPILE_PHASE','WASMVM_WARM_PROFILE','WASMVM_WARM_ALLOC_PROFILE','WASMVM_DIAGNOSTIC_JIT_MAP'):os.environ.pop(key,None)\ncount=500000000;seed=17;expected=(count+seed)&0xffffffff\nvariants={'base':ROOT/'artifacts/protocol-cost-20261112/loop-memory-stores/base-go-phase','go':OUT/'head-go-phase','llgo':OUT/'head-llgo-phase','wazero':OUT/'wazero-phase','wasmtime':ROOT/'artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmtime-phase','wasmer':ROOT/'artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmer-phase'}\ncommands={}\nfor name,binary in variants.items():\n cmd=[str(binary),'--backend','native'if name in ('base','go','llgo')else'compiler','--wasm',str(ROOT/'benchmarks/modern/threads-private-memory.wasm'),'--iterations',str(count),'--seed',str(seed),'--expected',str(expected),'--samples','7','--warmups','2']\n if name in ('base','go','llgo'):cmd+=['--mode','api']\n commands[name]=cmd;commands[name+'-aa']=cmd\nplan=dict(blocks=20,samples=7,warmups=2,iterations=count,seed=seed,expected=expected,randomSeed=2026112707,commands=commands,scope='Separate fixed20-block/240-process event with 500M iterations per call, ten times the previous duration to investigate unresolved reference controls. Six runtimes with identical-binary A/A aliases; seven interleaved warm calls after first and two warmups; every result checked. Original private stores, all mandatory cancellation polls, quotas and full public native API retained. Source head09d898ba versus b01fc29 tree-equivalent base4d41a12. Pinned Go1.27.3 and LLGo3d92a58 -O3 -lto=full; LLGo main upgrade is not mixed here. Wazero1.12.0, Wasmtime48.0.1, Wasmer7.3.0. GOMAXPROCS1, GOGC100. Startup/compile/instantiate/cleanup separate. No other owned builds/tests/profiles/pruning overlap. A/A resolution predeclared within2.5percent; unresolved controls remain unresolved. Earlier cohorts retained separately, no pooling or repeated-look acceptance; no full-portfolio milestone claim.')\nassert not(OUT/'rows.jsonl').exists()\n(OUT/'plan.json').write_text(json.dumps(plan,indent=2)+'\\n')\nrng=random.Random(plan['randomSeed']);rows=[]\nfor block in range(plan['blocks']):\n observations,orders=interleaved.invoke(commands,120,rng,samples=7)\n for name,ob in observations.items():\n  record=ob['record'];assert record['warmResults']==[expected]*7 and record['warmupResults']==[expected]*2 and record['result']==expected\n  assert record['iterations']==count and record['seed']==seed\n  row=dict(block=block,id=name,observation=ob,orders=orders,nsPerIteration=statistics.median(record['warmCallNs'])/count)\n  with(OUT/'rows.jsonl').open('a')as f:f.write(json.dumps(row)+'\\n')\n  rows.append(row)\n print(block,{name:round(statistics.median(r['nsPerIteration']for r in rows if r['block']==block and r['id']==name),5)for name in commands},flush=True)\nsummary={name:statistics.median(r['nsPerIteration']for r in rows if r['id']==name)for name in commands}\n(OUT/'summary.json').write_text(json.dumps(dict(plan=plan,summary=summary),indent=2)+'\\n');print(json.dumps(summary),flush=True)\n",
+  "referenceSDKRecord": "docs/research/data/performance-private-word-home-2026-11-12.json"
+}

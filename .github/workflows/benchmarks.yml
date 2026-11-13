@@ -106,7 +106,7 @@ jobs:
         id: llgo
         uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
         with:
-          llgo-version: 3d92a58e09bd8971899c6eaf63437fbecd18d432
+          llgo-version: 56fa9aedc957cf3c9656c1a70f82c5424ab3b1c5
           install-method: source
           go-version: '1.27.3'
           llvm-version: '22'
@@ -116,7 +116,7 @@ jobs:
       - name: Verify the benchmark LLGo identity
         env:
           ACTUAL_LLGO_REVISION: ${{ steps.llgo.outputs.llgo-revision }}
-        run: test "$ACTUAL_LLGO_REVISION" = 3d92a58e09bd8971899c6eaf63437fbecd18d432
+        run: test "$ACTUAL_LLGO_REVISION" = 56fa9aedc957cf3c9656c1a70f82c5424ab3b1c5
 
       - name: Check benchmark tooling
         run: python3 -m unittest discover -s head/benchmarks -p 'test_*.py'
@@ -158,7 +158,7 @@ jobs:
         if: env.BENCHMARK_SUITE != 'survey'
         shell: bash
         env:
-          WASMVM_LLGO_REVISION: 3d92a58e09bd8971899c6eaf63437fbecd18d432
+          WASMVM_LLGO_REVISION: 56fa9aedc957cf3c9656c1a70f82c5424ab3b1c5
         run: |
           python3 head/benchmarks/phase_ci.py --timeout 180 --suite "$BENCHMARK_SUITE" \
             --base-dir "$GITHUB_WORKSPACE/base" \
@@ -171,7 +171,7 @@ jobs:
       - name: Survey the complete Core portfolio and GC / Threads
         if: env.BENCHMARK_SUITE == 'survey'
         env:
-          WASMVM_LLGO_REVISION: 3d92a58e09bd8971899c6eaf63437fbecd18d432
+          WASMVM_LLGO_REVISION: 56fa9aedc957cf3c9656c1a70f82c5424ab3b1c5
         run: |
           python3 head/benchmarks/survey.py \
             --output "$GITHUB_WORKSPACE/benchmark-results/phases" \
@@ -223,7 +223,7 @@ jobs:
         platform: ${{ fromJSON(inputs.suite == 'native-simd' && '[{"name":"linux-amd64","runner":"ubuntu-24.04","artifact":"native-amd64-comparison"},{"name":"macos-arm64","runner":"macos-15","artifact":"native-arm64-comparison"}]' || '[{"name":"macos-arm64","runner":"macos-15","artifact":"native-arm64-comparison"}]') }}
     timeout-minutes: 30
     env:
-      WASMVM_LLGO_REVISION: 3d92a58e09bd8971899c6eaf63437fbecd18d432
+      WASMVM_LLGO_REVISION: 56fa9aedc957cf3c9656c1a70f82c5424ab3b1c5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -241,7 +241,7 @@ jobs:
       - uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
         id: llgo
         with:
-          llgo-version: 3d92a58e09bd8971899c6eaf63437fbecd18d432
+          llgo-version: 56fa9aedc957cf3c9656c1a70f82c5424ab3b1c5
           install-method: source
           go-version: '1.27.3'
           llvm-version: '22'
@@ -294,7 +294,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
-      WASMVM_LLGO_REVISION: 3d92a58e09bd8971899c6eaf63437fbecd18d432
+      WASMVM_LLGO_REVISION: 56fa9aedc957cf3c9656c1a70f82c5424ab3b1c5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -314,7 +314,7 @@ jobs:
       - uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
         id: llgo
         with:
-          llgo-version: 3d92a58e09bd8971899c6eaf63437fbecd18d432
+          llgo-version: 56fa9aedc957cf3c9656c1a70f82c5424ab3b1c5
           install-method: source
           go-version: '1.27.3'
           llvm-version: '22'

@@ -19,7 +19,7 @@ execution never silently switches to one of them.
 The source APIs and proposal snapshots are experimental. Performance and
 production-release acceptance remain open; see [current measurements](#measured-performance)
 and the [release contract](docs/release-readiness.md). Supported builds pin
-Go1.27.3, LLGo `3d92a58`, LLVM22.1.8 and the LLGo `-O3 -lto=full` profile.
+Go1.27.3, LLGo `56fa9ae`, LLVM22.1.8 and the LLGo `-O3 -lto=full` profile.
 
 ## Project status
 
@@ -276,6 +276,11 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
+The [2026-11-13 follow-up](docs/research/performance-go-and-llgo-main-2026-11-13.md)
+reproduces a **3× Go improvement** for one private-word loop (0.814 → 0.271
+ns/iteration), records unresolved competitor controls, and tests the updated
+LLGo main baseline separately. P3 and full-profile acceptance remain open.
+
 The [native compiler update](docs/research/performance-compiler-layout-2026-11-12.md)
 reduces compilation of the P3 HTTP component from **179.0 to 73.9 ms**, with CPU
 **210.3 to 136.5 ms**; Wasmtime 48 observes **57.7 ms** in that separate cohort.
@@ -334,9 +339,9 @@ resource results and startup/compile/first/warm/cleanup phases are retained.
 The [previous component allocation event](docs/research/performance-component-buffer-state-2026-11-10.md)
 retains its independent results for capability coallocation and leaf-buffer codecs.
 
-The latest [compiler-source comparison](docs/research/performance-llgo-merged-2026-11-10.md)
+The 2026-11-10 [compiler-source comparison](docs/research/performance-llgo-merged-2026-11-10.md)
 evaluates the full merged LLGo #3012 integration, `3d92a58` -> `717fbe442`,
-on identical wasmvm sources. **Production remains pinned to `3d92a58`.**
+on identical wasmvm sources. That dated event retained `3d92a58`; the current compiler baseline is listed above.
 HTTP fixture, 64 KiB, four workers:
 
 | Path | Old LLGo req/s | Candidate req/s | Old / candidate B/request |
@@ -360,7 +365,8 @@ reduces SSA events92 ->24 but does not improve this warm-build median;
 default persistence stays disabled. [#3040](https://github.com/xgo-dev/llgo/issues/3040)
 fresh-zero-slice append duplication remains reproducible. Candidate macOS
 semantics pass all32 root packages and both measurement modules; candidate
-Linux acceptance and the GC investigation remain required before adoption.
+Linux acceptance and the GC investigation were still open for that candidate;
+the current main baseline is evaluated separately in the follow-up above.
 
 The earlier [Store-local API](docs/research/performance-p3-store-local-2026-11-10.md)
 and [readiness](docs/research/performance-p3-read-ahead-2026-11-10.md) studies

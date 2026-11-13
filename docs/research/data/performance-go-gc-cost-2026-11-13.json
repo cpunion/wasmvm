@@ -1,0 +1,179 @@
+{
+  "source": "09d898ba104d191a51588e55db9de485cbe5e00c",
+  "scope": "GC-off diagnostic; identical own binary, bounded 512-request batches, no production tuning or performance acceptance. External load and frequency variation remain visible. Do not compare absolute numbers across prior cohorts.",
+  "medians": {
+    "normal": {
+      "cpuUs": 198.18482259114583,
+      "instructions": 922512.6778320312,
+      "throughput": 16250.342324364501,
+      "allocsPerRequest": 705.00380859375,
+      "bytesPerRequest": 55480.743359375
+    },
+    "normal-aa": {
+      "cpuUs": 199.80275065104166,
+      "instructions": 918594.0844726562,
+      "throughput": 16299.000849658058,
+      "allocsPerRequest": 705.003369140625,
+      "bytesPerRequest": 55480.7078125
+    },
+    "no-gc": {
+      "cpuUs": 185.98312581380208,
+      "instructions": 857024.4696777344,
+      "throughput": 19479.63263383443,
+      "allocsPerRequest": 705.001904296875,
+      "bytesPerRequest": 55480.2328125
+    },
+    "no-gc-aa": {
+      "cpuUs": 186.70291137695312,
+      "instructions": 856613.469140625,
+      "throughput": 19265.165104991804,
+      "allocsPerRequest": 705.002490234375,
+      "bytesPerRequest": 55480.7484375
+    },
+    "wasmtime": {
+      "cpuUs": 67.60004069010417,
+      "instructions": 231605.29091796873,
+      "throughput": 31403.14772751923,
+      "allocsPerRequest": 1.000439453125,
+      "bytesPerRequest": 32.283203125
+    },
+    "wasmtime-aa": {
+      "cpuUs": 68.47995605468749,
+      "instructions": 231046.048046875,
+      "throughput": 30920.715765789937,
+      "allocsPerRequest": 1.000146484375,
+      "bytesPerRequest": 32.01640625
+    }
+  },
+  "paired": {
+    "cpuUs": {
+      "no-gc/normal": {
+        "ratio": 0.9508068236015357,
+        "ci95": [
+          0.9190197241639976,
+          0.987224615494453
+        ]
+      },
+      "normal-aa/normal": {
+        "ratio": 1.0029684732436945,
+        "ci95": [
+          0.9892567942481538,
+          1.0120117681833978
+        ]
+      },
+      "no-gc-aa/no-gc": {
+        "ratio": 0.9924507439816971,
+        "ci95": [
+          0.980821929638142,
+          1.0042174317954007
+        ]
+      },
+      "wasmtime-aa/wasmtime": {
+        "ratio": 1.0197673004123335,
+        "ci95": [
+          1.0107087080670039,
+          1.0268641484005412
+        ]
+      },
+      "no-gc/wasmtime": {
+        "ratio": 2.6371014018267362,
+        "ci95": [
+          2.501803549331132,
+          2.779716179304247
+        ]
+      }
+    },
+    "instructions": {
+      "no-gc/normal": {
+        "ratio": 0.9279876951911742,
+        "ci95": [
+          0.9097189012244403,
+          0.94555400554935
+        ]
+      },
+      "normal-aa/normal": {
+        "ratio": 0.9955448735451832,
+        "ci95": [
+          0.9883691665596546,
+          1.0027726772294803
+        ]
+      },
+      "no-gc-aa/no-gc": {
+        "ratio": 0.9995816581022048,
+        "ci95": [
+          0.9994067407303004,
+          0.9997566060883583
+        ]
+      },
+      "wasmtime-aa/wasmtime": {
+        "ratio": 1.0049842399253608,
+        "ci95": [
+          0.9916986134145506,
+          1.0160254287752983
+        ]
+      },
+      "no-gc/wasmtime": {
+        "ratio": 3.7233777479642756,
+        "ci95": [
+          3.678198310914711,
+          3.7845414906058368
+        ]
+      }
+    },
+    "throughput": {
+      "no-gc/normal": {
+        "ratio": 1.1575788644588227,
+        "ci95": [
+          1.0424792831993044,
+          1.2595643139038601
+        ]
+      },
+      "normal-aa/normal": {
+        "ratio": 1.002058967823507,
+        "ci95": [
+          0.9944038570773305,
+          1.0088206528199855
+        ]
+      },
+      "no-gc-aa/no-gc": {
+        "ratio": 0.9993095653597068,
+        "ci95": [
+          0.9668365857704736,
+          1.0292034045090028
+        ]
+      },
+      "wasmtime-aa/wasmtime": {
+        "ratio": 0.9392521445996115,
+        "ci95": [
+          0.8938258091657595,
+          0.9845687754044417
+        ]
+      },
+      "no-gc/wasmtime": {
+        "ratio": 0.5969484068563948,
+        "ci95": [
+          0.5637323133811677,
+          0.6202378687935078
+        ]
+      }
+    }
+  },
+  "peakFootprintBytes": {
+    "normal": 123028296,
+    "no-gc": 968181152,
+    "wasmtime": 16712544
+  },
+  "conclusion": "Turning off GC reduces instruction points by about seven percent in this cohort, while allocations remain about705 per request. It leaves a large instruction and CPU deficit versus Wasmtime. Collector removal alone cannot explain or close the observed gap; allocation, component operations, runtime transitions and guest code remain. Higher retained memory and unresolved short-window timing controls prevent a production ranking.",
+  "rawEvidence": {
+    "path": "docs/research/evidence/performance-go-gc-cost-2026-11-13.jsonl.gz",
+    "sha256": "46f490c05b1f0f70c444f84e9d81d085e8bc51aca012ed99a50196500ed3d4cd",
+    "bytes": 1639478
+  },
+  "measurementScript": "from pathlib import Path\nimport ctypes,json,os,random,re,statistics,subprocess,threading\n\nOUT=Path(__file__).resolve().parent\nROOT=Path('/Users/lijie/source/goplus/wasmvm')\nheader=Path('/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/resource.h').read_text()\nbody=header.split('struct rusage_info_v4 {',1)[1].split('};',1)[0]\nfields=re.findall(r'uint64_t\\s+(ri_\\w+);',body)\nclass Info(ctypes.Structure):_fields_=[('ri_uuid',ctypes.c_ubyte*16)]+[(n,ctypes.c_uint64)for n in fields]\nlib=ctypes.CDLL('/usr/lib/libproc.dylib',use_errno=True)\nlib.proc_pid_rusage.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_void_p];lib.proc_pid_rusage.restype=ctypes.c_int\nnames=['ri_user_time','ri_system_time','ri_instructions','ri_cycles','ri_pkg_idle_wkups','ri_interrupt_wkups','ri_phys_footprint','ri_lifetime_max_phys_footprint','ri_runnable_time']\ndef snapshot(pid):\n info=Info();result=lib.proc_pid_rusage(pid,4,ctypes.byref(info))\n if result:raise OSError(ctypes.get_errno(),'proc_pid_rusage')\n return {n:int(getattr(info,n)) for n in names}\nassert snapshot(os.getpid())['ri_user_time']>0\nclass Timebase(ctypes.Structure):\n _fields_=[('numer',ctypes.c_uint32),('denom',ctypes.c_uint32)]\nsystem=ctypes.CDLL('/usr/lib/libSystem.B.dylib')\nsystem.mach_timebase_info.argtypes=[ctypes.POINTER(Timebase)]\nsystem.mach_timebase_info.restype=ctypes.c_int\nclockbase=Timebase()\nassert system.mach_timebase_info(ctypes.byref(clockbase))==0\ntickNanoseconds=clockbase.numer/clockbase.denom\n\n\n\nimport hashlib,time,signal\nvariants={'normal':OUT.parent/'fp-entry-default/base-go-runner','no-gc':OUT.parent/'fp-entry-default/base-go-runner','wasmtime':ROOT/'artifacts/protocol-cost-20261112/output-screen/wasmtime-go-runner'}\nplan=dict(blocks=4,samples=20,batchRequests=512,seed=2026112641,payloadBytes=16,variants={k:str(v)for k,v in variants.items()},source='Exact09d898ba Go1.27.3 binary in both owned configurations; environment GOGC=100 versus GOGC=off. This is a bounded diagnostic of GC costs, not a source optimization or production acceptance.',scope='Fixed24freshprocesses and4blocks;20checked512request batches plusfinaluntimedflush. Four Stores,16clients32requests/client,GOMAXPROCS4. First/two warmups, compilation and cleanup separate. One active measured child at a time, retained A/A aliases. Normal binary and all validation/quotas/cancellation remain identical; GC-off retains unreclaimed Go objects and trades memory for diagnosis. Peak owned allocated bytes are bounded by this short cohort, not a deployable memory policy. No other owned builds/tests/profiles/pruning overlap. Do not pool with previous source comparisons.')\nassert not(OUT/'rows.jsonl').exists();(OUT/'plan.json').write_text(json.dumps(plan,indent=2)+'\\n');rng=random.Random(plan['seed']);rows=[]\ndef freeze(p):\n os.kill(p.pid,signal.SIGSTOP);pid,status=os.waitpid(p.pid,os.WUNTRACED);assert pid==p.pid and os.WIFSTOPPED(status)\ndef resume(p):os.kill(p.pid,signal.SIGCONT)\nfor block in range(plan['blocks']):\n order=[(name,alias)for name in variants for alias in ('','-aa')];rng.shuffle(order);children=[]\n try:\n  for name,alias in order:\n   reference=name=='wasmtime';cmd=[str(variants[name]),'--engine','wasmtime'if reference else'wasmvm','--backend','compiler'if reference else'native','--wasm',str(ROOT/'pkg/wasi/preview3/testdata/world-rust-http.wasm'),'--payload-bytes','16','--expected','1757737011','--workers','4','--clients','16','--requests','32','--samples','21','--warmups','2']\n   if not reference:cmd+=['--response-mode','buffered','--request-mode','snapshot']\n   env=dict(os.environ,GOMAXPROCS='4',WASMVM_INTERLEAVE='1',GOGC='off' if name=='no-gc' else '100')\n   for key in ['WASMVM_DIAGNOSTIC_JIT_MAP','WASMVM_WARM_PROFILE','WASMVM_WARM_ALLOC_PROFILE','WASMVM_COMPILE_PHASE']:env.pop(key,None)\n   err=(OUT/f'{block}-{name}{alias}.stderr').open('w');p=subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=err,text=True,env=env);child=dict(id=name+alias,process=p,errorFile=err,command=cmd,deltas=[],rounds=[]);children.append(child);child['watchdog']=threading.Timer(120,p.kill);child['watchdog'].start()\n   assert json.loads(p.stdout.readline())=={'ready':True};p.stdin.write('run\\n');p.stdin.flush();assert json.loads(p.stdout.readline())=={'sampleReady':0};time.sleep(.1);freeze(p)\n  for sample_index in range(plan['samples']):\n   order=list(children);rng.shuffle(order)\n   for c in order:\n    p=c['process'];before=snapshot(p.pid);start=time.perf_counter_ns();resume(p);p.stdin.write('sample\\n');p.stdin.flush();assert json.loads(p.stdout.readline())=={'sampleReady':sample_index+1}\n    if sample_index==plan['samples']-1:time.sleep(.1)\n    freeze(p);after=snapshot(p.pid);c['deltas'].append({n:after[n]-before[n]for n in names});c['rounds'].append(dict(round=sample_index,dispatchNs=start,stopNs=time.perf_counter_ns(),before=before,after=after))\n  for c in children:\n   p=c['process'];resume(p);p.stdin.write('sample\\n');p.stdin.close();record=json.loads(p.stdout.readline());rest=p.stdout.read();rc=p.wait(timeout=30);assert rc==0 and not rest and record['warmResults']==[1757737011]*21;counts=plan['samples']*512;total={n:sum(d[n]for d in c['deltas'])for n in names};batches=record['service']['Batches'][3:23];assert len(batches)==20\n   row=dict(block=block,id=c['id'],command=c['command'],rounds=c['rounds'],windowRequests=counts,totals=total,cpuUs=(total['ri_user_time']+total['ri_system_time'])*tickNanoseconds/counts/1000,instructions=total['ri_instructions']/counts,throughput=512e9/statistics.median(record['warmCallNs'][:20]),allocsPerRequest=sum(b.get('Mallocs',0)for b in batches)/counts,bytesPerRequest=sum(b['TotalAllocBytes']for b in batches)/counts,record=record)\n   with(OUT/'rows.jsonl').open('a')as f:f.write(json.dumps(row)+'\\n')\n   rows.append(row);print(block,c['id'],'CPUus',round(row['cpuUs'],3),'instr',round(row['instructions']),'allocs',round(row['allocsPerRequest'],3),flush=True)\n finally:\n  for c in children:\n   p=c['process'];c['watchdog'].cancel()\n   if p.poll()is None:p.kill();p.wait()\n   c['errorFile'].close()\nsummary={name+alias:{key:statistics.median(r[key]for r in rows if r['id']==name+alias)for key in ['cpuUs','instructions','throughput','allocsPerRequest','bytesPerRequest']}for name in variants for alias in ('','-aa')}\n(OUT/'summary.json').write_text(json.dumps(dict(plan=plan,summary=summary),indent=2)+'\\n');print(json.dumps(summary),flush=True)\n",
+  "identity": {
+    "source": "09d898ba104d191a51588e55db9de485cbe5e00c",
+    "ownedBinarySHA256": "3110f819ffaf180de46eb1ce0e813bfff274e9f519aa9566440f0fdba2f978f1",
+    "ownedCommand": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/fp-entry-default/base-go-runner",
+    "mutations": "No code changes; normal and no-GC runs share the exact same binary. GOGC=off is diagnostic only, with higher retained memory."
+  }
+}
