@@ -22,8 +22,9 @@ change.
 
 An exact baseline allocation diagnostic excludes setup and 80 warm requests,
 then profiles 4,096 checked requests at sampling rate 1 for each payload. It
-counts 56/92 codec constructions per request. These allocation stacks identify
-sites; their profiled timings do not establish CPU cost. Full baseline profiles
+attributes 56/92 allocation events per request to codec construction, including
+its auxiliary storage. These stacks identify sites; profiled timings do not
+establish CPU cost. Full baseline profiles
 and the before/after escape diagnostics are archived with the protocol.
 
 ## Complete request comparison
