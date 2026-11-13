@@ -126,7 +126,7 @@ func Start(calls []Call, args Options) (Call, func(), *Report, error) {
 	out := &Report{
 		Workers: len(calls), Clients: args.Clients, RequestsPerClient: args.Requests,
 		GOMAXPROCS:           runtime.GOMAXPROCS(0),
-		AllocationScope:      "runtime TotalAlloc difference; Go counts managed allocations, LLGo reports BDWGC collector bytes. Mallocs omitted under LLGo. Neither includes all native/JIT/linear memory; heap snapshots are not peak RSS.",
+		AllocationScope:      "runtime TotalAlloc difference; Go counts managed allocation bytes, LLGo reports BDWGC collector bytes. Mallocs counts managed allocation events under both pinned compilers. Neither includes all native/JIT/linear memory; heap snapshots are not peak RSS.",
 		ResourceInstrumented: args.Resources,
 	}
 	return func() (int64, uint32, error) {
@@ -164,10 +164,8 @@ func Start(calls []Call, args Options) (Call, func(), *Report, error) {
 			batch.TotalAllocBytes = after.TotalAlloc - before.TotalAlloc
 			batch.HeapBefore, batch.HeapAfter = before.HeapAlloc, after.HeapAlloc
 			batch.GCBefore, batch.GCAfter = before.NumGC, after.NumGC
-			if runtime.Compiler != "llgo" {
-				mallocs := after.Mallocs - before.Mallocs
-				batch.Mallocs = &mallocs
-			}
+			mallocs := after.Mallocs - before.Mallocs
+			batch.Mallocs = &mallocs
 			out.Batches = append(out.Batches, batch)
 			if args.Resources {
 				snapshot, err := resourceSnapshot()

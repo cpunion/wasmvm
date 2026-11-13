@@ -47,7 +47,9 @@ machine runs. Never infer a guest-only interval by subtracting these measures.
 
 Runtime allocation bytes and heap snapshots have different meanings under the
 two host compilers: Go reports managed allocations, LLGo reports BDWGC collector
-bytes. LLGo Mallocs is not exposed and is omitted. Neither counter covers all
+bytes. Starting with the pinned LLGo56fa9ae baseline, Mallocs reports managed
+allocation events under both compilers. Earlier LLGo records omitted it; do not
+interpret their missing field as zero allocations. Neither counter covers all
 native/JIT/linear memory; snapshots are not peak RSS. Optional
 `--service-resources` uses a **separate process cohort** to obtain actual idle
 OS-thread/RSS snapshots and getrusage process-lifetime peak RSS. Its ps calls
