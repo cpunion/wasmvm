@@ -276,6 +276,12 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
+The [shared indirect-dispatch study](docs/research/performance-shared-indirect-dispatch-2026-11-13.md)
+reduces native code size **90.4%** in a 512-function scaling case and **11.4%**
+in the P3 Rust component, with complete Go P3 CPU unchanged. Its fresh Linux
+portfolio records the remaining memory, SIMD and SHA-256 gaps; P3 still executes
+**3.8–4.0× Wasmtime's instructions**. Competitive parity remains open.
+
 The [canonical buffer study](docs/research/performance-canonical-buffer-state-2026-11-13.md)
 reduces Go complete P3 CPU by **0.6%/1.5%** for 16 B/64 KiB and removes
 **7/31 allocations per request**. Small-request throughput remains unresolved.

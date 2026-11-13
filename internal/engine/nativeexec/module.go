@@ -127,6 +127,8 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 	}
 	out.linked = linkedCallees != nil
 	relocations := [2][]codegen.CallRelocation{}
+	dispatchSites := [2][]uint32{}
+	var dispatchBytes uint64
 	targets := [2]map[uint32]uint32{{}, {}}
 	usesMemory := false
 	// Index structurally identical types once. Bound code expansion per type,
@@ -158,11 +160,12 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 	// on optional expansion, including when later functions are large.
 	for tier := 0; tier < 3; tier++ {
 		bounded := limits
-		bounded.MaxCodeBytes = min(limits.MaxCodeBytes, uint64(math.MaxUint32)) - uint64(len(code))
+		bounded.MaxCodeBytes = min(limits.MaxCodeBytes, uint64(math.MaxUint32)) - uint64(len(code)) - dispatchBytes
 		config := codegen.Config{Unmetered: tier != 1, NativeAllocations: tier != 1, NativeThreads: true, MemoryMinimumPages: minimum, X86Features: features, ARM64Features: armFeatures,
 			MemoryPageSizes: pageSizes, HeapTypes: definition.TypeDefs,
 			FunctionCount: importedFunctions + uint32(len(m.Functions)), ScalarImports: importedFunctions, TableCount: tables, MemoryCount: memories, SharedMemories: shared, Globals: globals}
 		config.LinkedCallees, config.LinkedGlobals = linkedCallees, linkedGlobals
+		config.SharedDispatch = true
 		if linkedCallees != nil {
 			config.LinkedSignatures, config.LinkedTypeLabels = linkedSignatures, keys
 		}
@@ -182,14 +185,24 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 			if err := ctx.Err(); err != nil {
 				return nil, err
 			}
-			remaining := min(limits.MaxCodeBytes, uint64(math.MaxUint32)) - uint64(len(code))
+			remaining := min(limits.MaxCodeBytes, uint64(math.MaxUint32)) - uint64(len(code)) - dispatchBytes
 			result := compiler.next(remaining)
 			if result.panicked {
 				panic(result.panicValue)
 			}
 			body, err := result.body, result.err
-			if err == nil && uint64(len(body.Entry.Code)) > remaining {
-				err = wasm.ErrLimit
+			policy := 0
+			if tier == 1 {
+				policy = 1
+			}
+			var newDispatchBytes uint64
+			if err == nil {
+				if len(body.DispatchRelocations) != 0 && len(dispatchSites[policy]) == 0 {
+					newDispatchBytes = uint64(len(linkedSignatures)) * 32
+				}
+				if uint64(len(body.Entry.Code))+newDispatchBytes > remaining {
+					err = wasm.ErrLimit
+				}
 			}
 			if tier == 2 && errors.Is(err, wasm.ErrLimit) {
 				// The optional expansion cannot consume the ordinary tiers'
@@ -227,9 +240,9 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 			}
 			indexes.nativeMemory = indexes.nativeMemory || body.UsesMemory
 			usesMemory = usesMemory || body.UsesMemory
-			policy := 0
-			if tier == 1 {
-				policy = 1
+			dispatchBytes += newDispatchBytes
+			for _, site := range body.DispatchRelocations {
+				dispatchSites[policy] = append(dispatchSites[policy], uint32(len(code))+site)
 			}
 			if tier != 2 {
 				targets[policy][importedFunctions+uint32(functionIndex)] = uint32(len(code)) + body.Entry.BodyOffset
@@ -243,6 +256,29 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 			out.entries[row] = indexes
 		}
 		compiler.close()
+	}
+	for policy, sites := range dispatchSites {
+		if len(sites) == 0 {
+			continue
+		}
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		table, calls, err := codegen.LinkedDispatchTable(runtime.GOARCH, codegen.Config{
+			FunctionCount: importedFunctions + uint32(len(m.Functions)), LinkedCallees: linkedCallees, LinkedSignatures: linkedSignatures,
+		})
+		if err != nil {
+			return nil, err
+		}
+		offset := uint32(len(code))
+		code = append(code, table...)
+		if err := codegen.LinkDispatch(runtime.GOARCH, code, sites, offset); err != nil {
+			return nil, err
+		}
+		for _, call := range calls {
+			call.Offset += offset
+			relocations[policy] = append(relocations[policy], call)
+		}
 	}
 	for policy := range relocations {
 		if err := codegen.LinkCalls(runtime.GOARCH, code, relocations[policy], targets[policy]); err != nil {
