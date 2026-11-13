@@ -121,15 +121,81 @@ def merge(folder):
     (folder / 'build.json').write_text(json.dumps(data, indent=2) + '\n')
 
 
+def build_poll(folder, candidate, compiler):
+    data = load(folder)
+    selected = own_build.toolchains()[compiler]
+    previous = data['builds']['head-' + compiler]['toolchain']
+    if compiler == 'llgo':
+        if previous['goBuildInfo'].splitlines()[1:] != selected['goBuildInfo'].splitlines()[1:]:
+            raise ValueError('compiler dependency or build identity changed')
+    elif selected['binarySha256'] != previous['binarySha256']:
+        raise ValueError('Go executable differs from the frozen comparison')
+    revision = ci.capture(['git', '-C', str(candidate), 'rev-parse', 'HEAD'])
+    name = 'poll-' + compiler
+    target = folder / name
+    identity = own_build.prepare(candidate, candidate, revision, target)
+    phase = target / 'internal/bench/phase/phase.go'
+    phase.write_text(routing_compare.instrument_own(phase.read_text()))
+    (phase.parent / 'provenance_gen.go').write_text('package phase\nfunc init(){sourceRevision=' + json.dumps(revision) + ';compilerRevision=' + json.dumps(selected['revision']) + '}\n')
+    env = dict(os.environ, CGO_ENABLED='1', GOWORK='off', GOTOOLCHAIN='local', GOFLAGS='', GOEXPERIMENT='')
+    if env.get('LDFLAGS'):
+        raise ValueError('unexpected alignment or other linker override')
+    command = [selected['command'], 'build', *selected['buildFlags'], '-o', str(target / 'runner'), './benchmarks/embedded/wasmvm']
+    record = routing_compare.compile_runner(command, target, env)
+    if own_build.hashes(target, own_build.ENGINE_PATHS, own_build.HARNESS) != identity['sourceHashes']:
+        raise ValueError('candidate instrumentation changed engine sources')
+    identity['harnessHashes'] = own_build.hashes(target, own_build.HARNESS)
+    build = dict(record, **identity, toolchain=selected, instrumentation=phase.read_text(), frozenSourceRun=SOURCE_RUN)
+    runtimes = {}
+    for backend in ['interpreter', 'native']:
+        runtime = dict(data['runtimes']['head-' + compiler + '-' + backend],
+            command=[record['binary'], '--mode', 'api'], sourceRevision=revision)
+        runtimes[name + '-' + backend] = runtime
+        runtimes['aa-' + name + '-' + backend] = dict(runtime)
+    fragment = folder / (name + '.json')
+    fragment.write_text(json.dumps(dict(sourceRun=SOURCE_RUN, candidateRevision=revision,
+        compiler=compiler, builds={name: build}, runtimes=runtimes), indent=2) + '\n')
+    with tarfile.open(name + '.tar.gz', 'w:gz') as archive:
+        paths = [fragment] + [target / p for p in (*own_build.ENGINE_PATHS, 'benchmarks/embedded/wasmvm', 'runner') if (target / p).exists()]
+        for path in paths:
+            archive.add(path, arcname=str(path.relative_to(folder.parent)))
+
+
+def merge_poll(folder):
+    data = load(folder)
+    revisions = set()
+    for compiler in ['go', 'llgo']:
+        fragment = json.loads((folder / ('poll-' + compiler + '.json')).read_text())
+        if fragment['sourceRun'] != SOURCE_RUN or fragment['compiler'] != compiler:
+            raise ValueError('wrong cancellation candidate provenance')
+        revisions.add(fragment['candidateRevision'])
+        data['builds'].update(fragment['builds'])
+        data['runtimes'].update(fragment['runtimes'])
+    if len(revisions) != 1:
+        raise ValueError('Go and LLGo candidate sources differ')
+    data['cancellationDiagnostic'] = dict(sourceRun=SOURCE_RUN, candidateRevision=revisions.pop(),
+        fixedBlocks=20, expectedObservations=560, expectedAlternateChecks=27,
+        acceptance='Compare candidate against unchanged production head AND original fast LLGo base; no alignment flags.')
+    (folder / 'build.json').write_text(json.dumps(data, indent=2) + '\n')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['build', 'merge'])
+    parser.add_argument('command', choices=['build', 'merge', 'build-poll', 'merge-poll'])
     parser.add_argument('--role', choices=['base', 'head'])
     parser.add_argument('--build-dir', type=Path, required=True)
+    parser.add_argument('--candidate-dir', type=Path)
+    parser.add_argument('--compiler', choices=['go', 'llgo'])
     args = parser.parse_args()
     if args.command == 'build':
         if args.role is None:
             parser.error('--role is required for build')
         build(args.build_dir.resolve(), args.role)
-    else:
+    elif args.command == 'merge':
         merge(args.build_dir.resolve())
+    elif args.command == 'build-poll':
+        if args.candidate_dir is None or args.compiler is None:
+            parser.error('--candidate-dir and --compiler are required')
+        build_poll(args.build_dir.resolve(), args.candidate_dir.resolve(), args.compiler)
+    else:
+        merge_poll(args.build_dir.resolve())
