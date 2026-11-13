@@ -609,6 +609,31 @@ jobs:
           with open(os.environ['GITHUB_ENV'], 'a') as output:
               output.write('LD_LIBRARY_PATH=' + ':'.join(directories) + '\n')
           PYLIB
+      - name: Extract compatible user-space libraries; measurements remain native host processes
+        if: inputs.llgo_diagnostic_runner == 'ubuntu-22.04'
+        env:
+          NATIVE_RUNTIME_IMAGE: ubuntu@sha256:77eb101c607d6e3d4f5ad0c8a02c2136c689b98aba1f359e6502ba517e5c57ec
+        run: |
+          mkdir -p llgo-layout-results/native-runtime
+          runtime_container=$(docker create --platform linux/amd64 "$NATIVE_RUNTIME_IMAGE" true)
+          trap 'docker rm "$runtime_container"' EXIT
+          for library in libc.so.6 libm.so.6 ld-linux-x86-64.so.2; do
+            docker cp -L "$runtime_container:/lib/x86_64-linux-gnu/$library" "llgo-layout-results/native-runtime/$library"
+          done
+          python3 - <<'PYRUNTIME'
+          import hashlib, json, os
+          from pathlib import Path
+          folder = Path('llgo-layout-results/native-runtime').resolve()
+          hashes = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in folder.iterdir()}
+          prefix = [str(folder / 'ld-linux-x86-64.so.2'), '--library-path', str(folder) + ':' + os.environ['LD_LIBRARY_PATH']]
+          path = Path('routing-build/build.json')
+          data = json.loads(path.read_text())
+          for runtime in data['runtimes'].values():
+              runtime['command'] = prefix + runtime['command']
+          data['nativeRuntime'] = {'image': os.environ['NATIVE_RUNTIME_IMAGE'], 'libraryHashes': hashes, 'prefix': prefix,
+              'scope': 'Native host processes, not container timing; Docker only extracts immutable library files.'}
+          path.write_text(json.dumps(data, indent=2) + '\n')
+          PYRUNTIME
       - name: Fixed 20 blocks; all variants, references and A/A controls
         run: |
           python3 -u control/benchmarks/routing_compare.py measure \

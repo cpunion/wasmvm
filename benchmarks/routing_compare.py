@@ -350,6 +350,9 @@ def measure(args):
             raise ValueError('built binary identity changed')
         if 'sourceHashes' in row and own_build.hashes(Path(row['binary']).parent, own_build.ENGINE_PATHS, own_build.HARNESS) != row['sourceHashes']:
             raise ValueError('archived engine identity changed')
+    for path, digest in b.get('nativeRuntime', {}).get('libraryHashes', {}).items():
+        if own_build.digest(Path(path)) != digest:
+            raise ValueError('native runtime library identity changed')
     report = dict(status='running', classification='Hosted advisory; controlled milestone acceptance remains open', build=b, group=args.group, cohort='gc-sustained-v1' if sustained_gc else 'threads-sustained-v2' if sustained_threads else 'original22-v1', host=dict(platform=platform.platform(), cpu=ci.capture(['lscpu']), affinity=sorted(os.sched_getaffinity(0)), GOMAXPROCS='1', loadBefore=os.getloadavg(), powerPolicy='Hosted VM default; physical frequency/neighbor isolation not controlled', cachePolicy='Fresh processes; disk compilation cache disabled; filesystem cache not flushed'), cases=[], checks=[], unsupported=[])
     report['protocol'] = dict(blocks=args.blocks, samples=7, warmups=2, seed=SEED, case=args.case_id,
                               controls=[name for name in b['runtimes'] if name.startswith('aa-')])
@@ -392,6 +395,8 @@ def measure(args):
                 commands['native-c'] = [b['builds']['native-application']['binary'], str(f['seed']), str(f['iterations']), str(f['expectedChecksum'])]
             elif kind in ['integer-loop', 'function-calls', 'memory-load-store', 'narrow-unaligned', 'dependent-address', 'float64-unaligned', 'simd-memory-full', 'simd-memory-widen', 'simd-memory-lanes']:
                 commands['native-c'] = [b['builds']['native-c']['binary'], kind, str(f['seed']), str(f['iterations']), str(f['expectedChecksum'])]
+            if 'native-c' in commands:
+                commands['native-c'] = b.get('nativeRuntime', {}).get('prefix', []) + commands['native-c']
             case = dict(fixture=f, observations=[], nativeC=[], sampleOrders=[], warmStatistic='mean-including-pauses-v1' if f['id'] == 'gc/struct-allocation' else 'median-v1')
             report['cases'].append(case)
             for block in range(args.blocks):
