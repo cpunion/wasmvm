@@ -87,6 +87,29 @@ the collectors count different managed activity. Wasmtime's allocation counter
 covers its Go shim only, not Rust/native allocations. None of these counts
 alone identifies an LLGo compiler defect.
 
+## Native Linux memory review audit
+
+PR #166's shared-runner advisory observed a 10.2% Go memory-loop point increase
+(1.05 to 1.15 ns/iteration), with only three process observations. Integration
+was held for a separate native Linux audit rather than attributing it to noise.
+Run [43396046658](https://github.com/cpunion/wasmvm/actions/runs/43396046658)
+executes 20 blocks/480 fresh processes on an AMD EPYC 7763 runner: original and
+single-CPU affinity, short and sustained loops, two aliases for each Go source,
+and a head control retaining the full floating transition.
+
+All 480 captured guest images are byte-identical, SHA-256
+`9004942e35a8bc1069675a8c30272266cc96748935b740ff7d56210c12059909`.
+Sustained-loop head/base normalized-time ratios are 0.99942
+[0.99032, 1.01021] with original affinity and 0.99970 [0.99858, 1.00085]
+pinned. All sustained controls resolve ±2.5%. Short-loop controls remain
+unresolved in both profiles: this does not establish a short-latency win or
+identify the cause of the earlier adverse point. The sustained regression was
+not reproduced; both observations remain visible.
+
+The [exact probe, workflow, all raw rows, summaries and captured image](data/performance-integer-entry-memory-audit-2026-11-13.tar.gz)
+are archived without another permanent benchmark job. PR #166 merged only
+after this audit and all 25 final checks passed for head `020e863`.
+
 ## Validation and evidence
 
 All 32 Go test packages pass. Actual-source integration coverage covers all
@@ -94,8 +117,8 @@ All 32 Go test packages pass. Actual-source integration coverage covers all
 98.01%, VM 93.52%. Relevant Go race checks pass. Pinned LLGo `56fa9ae`,
 `-O3 -lto=full`, executes native/nativeexec/VM/component/P2/P3 tests; final
 proof-cancellation and generated-selector tests pass as well. Local Docker
-validates x86 semantics only. The full real Linux/macOS dual-compiler PR
-matrix, CLI, coverage and benchmark checks remain required before integration.
+validates x86 semantics only. The final real Linux/macOS dual-compiler PR
+matrix, CLI, coverage and benchmark checks passed before PR #166 integration.
 
 [Identities, protocols, controls and evidence](data/performance-integer-entry-effects-2026-11-13.json)
 retain all 480 process observations. Committed projections keep every batch

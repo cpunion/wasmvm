@@ -276,6 +276,11 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
+The [canonical buffer study](docs/research/performance-canonical-buffer-state-2026-11-13.md)
+reduces Go complete P3 CPU by **0.6%/1.5%** for 16 B/64 KiB and removes
+**7/31 allocations per request**. Small-request throughput remains unresolved.
+The 64 KiB CPU ratio is still **2.24× Wasmtime**; LLGo controls remain unresolved.
+
 The [integer-image entry study](docs/research/performance-integer-entry-effects-2026-11-13.md)
 reduces complete P3 CPU by **2.1–2.3%** and raises throughput **2.2–2.7%** in
 the final Go source comparison. Go A/A controls resolve; competitor controls
