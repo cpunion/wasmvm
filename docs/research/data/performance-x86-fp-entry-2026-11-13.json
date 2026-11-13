@@ -1,7 +1,7 @@
 {
   "status": "Scoped C-entry improvement; complete VM performance acceptance remains open",
   "sourceBase": "207278fe59c7280c87bc23d64f14ca23319a9fbc",
-  "sourceHead": "a31f350",
+  "sourceHead": "a31f35077c6e6cce93527fbe7e81d1dd648bf465",
   "diagnosticCommit": "7ee45d52aecf29d16b48c5137f79219e14f9b7a9",
   "run": "https://github.com/cpunion/wasmvm/actions/runs/43380078398",
   "plan": {

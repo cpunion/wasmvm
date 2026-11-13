@@ -45,7 +45,7 @@ on the runner. All observations are retained; there is no adaptive extension.
 | `-O3 -flto=full` | 179.273 | 80.701 | 0.44985 [0.44945, 0.45030] |
 
 The entry path consumes about 55% less CPU in this diagnostic. All six CPU
-A/A intervals and all six wall-time A/A intervals resolve the predeclared
+A/A intervals and all six wall-time A/A intervals resolve the
 ±2.5% diagnostic margin. Wall-time ratios agree. Disassembly confirms that
 all admission checks remain and the new entry has only the actual guest
 call, with no libc floating-environment calls.
