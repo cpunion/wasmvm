@@ -39,8 +39,8 @@ class SurveyTests(unittest.TestCase):
     def test_complete_portfolio_and_corrupt_input(self):
         root = Path(__file__).resolve().parent.parent
         fixtures = survey.fixtures(root)
-        self.assertEqual(len(fixtures), 68)
-        self.assertEqual(len({f["id"] for f in fixtures}), 68)
+        self.assertEqual(len(fixtures), 69)
+        self.assertEqual(len({f["id"] for f in fixtures}), 69)
         self.assertEqual(len({f["family"] for f in fixtures}), 8)
         with patch("survey.digest", return_value="corrupt"):
             with self.assertRaisesRegex(ValueError, "fixture hash mismatch"):

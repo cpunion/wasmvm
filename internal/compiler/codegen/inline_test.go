@@ -170,7 +170,7 @@ func TestLeafExpansionAfterForwardedReturn(t *testing.T) {
 	// The former return block remains a valid continuation, but entry returns
 	// before reaching it. Do not lose direct-call expansion after forwarding.
 	callee.Code = append(callee.Code, callee.Code[len(callee.Code)-1])
-	if !CanExpandLeaf(callee) {
+	if !CanExpandLeaf(callee, nil) {
 		t.Fatal("forwarded leaf no longer recognized")
 	}
 	f := leafCaller(callee, 2, 5)

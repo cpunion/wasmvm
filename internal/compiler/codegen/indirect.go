@@ -22,7 +22,7 @@ func (e *functionEmitter) inlineIndirect(pc int, config Config) (int, uint32, bo
 		label int
 	}
 	var candidates []candidate
-	end, needed := pc, uint32(0)
+	end, needed, frames := pc, uint32(0), uint32(0)
 	for _, index := range config.IndirectCallees[source.Wasm.A] {
 		if len(candidates) == 4 {
 			break
@@ -41,16 +41,20 @@ func (e *functionEmitter) inlineIndirect(pc int, config Config) (int, uint32, bo
 		a := assembler{arch: e.a.arch, bounded: true, limit: e.a.limit}
 		t := *e
 		t.a = &a
-		last, ok := t.inlineLeaf(pc, callee)
+		t.inlineSlots, t.inlineFrames = 0, 0
+		last, ok := t.inlineLeaf(pc, callee, config.DirectCallees)
 		if !ok || len(candidates) != 0 && last != end {
 			continue
 		}
-		end, needed = last, max(needed, uint32(len(callee.Slots)))
+		end, needed = last, max(needed, t.inlineSlots)
+		frames = max(frames, t.inlineFrames)
 		candidates = append(candidates, candidate{index, a.code, e.a.label()})
 	}
 	if len(candidates) == 0 {
 		return pc, 0, false
 	}
+	e.inlineSlots = max(e.inlineSlots, needed)
+	e.inlineFrames = max(e.inlineFrames, frames)
 	fallback, done := e.a.label(), e.a.label()
 	_, lengthCached := e.runtimeRegisters[uint32(offset)]
 	_, baseCached := e.runtimeRegisters[uint32(offset+8)]

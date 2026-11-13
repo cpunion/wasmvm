@@ -23,7 +23,7 @@ def fixtures(head):
     groups = [("vector-integer", vector_integer_fixtures, head / "benchmarks/native/vector-integer-fixtures", None),
               ("vector-float", vector_float_fixtures, head / "benchmarks/native/vector-float-fixtures", None),
               ("regression-runtime", runtime_fixtures, head / "benchmarks/native/runtime-fixtures",
-               {"indirect-calls", "simd-i32x4", "simd-memory-full", "simd-memory-widen", "simd-memory-lanes"}),
+               {"indirect-calls", "nested-calls", "simd-i32x4", "simd-memory-full", "simd-memory-widen", "simd-memory-lanes"}),
               ("regression-core", scalar, head / "benchmarks/embedded", {"call-control", "integer-sustained", "function-calls", "memory-sustained"})]
     for group, oracle, directory, selected in groups:
         manifest = phase_ci.load_workloads(head) if group == "regression-core" else json.loads((directory / "manifest.json").read_text())
