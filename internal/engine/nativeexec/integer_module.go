@@ -1,6 +1,7 @@
 package nativeexec
 
 import (
+	"context"
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -10,22 +11,38 @@ import (
 // exit to the shared driver before running; their next artifact has its own
 // environment policy. Keep the entire image conservative, including cold and
 // unreachable code. SIMD and unknown/new operations retain the full transition.
-func integerModule(m *slots.Module) bool {
+func integerModule(ctx context.Context, m *slots.Module) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
 	if m == nil {
-		return false
+		return false, nil
 	}
 	for _, f := range m.Functions {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
 		if f == nil {
-			return false
+			return false, nil
 		}
 		for _, types := range [][]wasm.ValueType{f.Slots, f.Signature.Params, f.Signature.Results} {
-			for _, typ := range types {
+			for i, typ := range types {
+				if i%256 == 0 {
+					if err := ctx.Err(); err != nil {
+						return false, err
+					}
+				}
 				if typ == wasm.F32 || typ == wasm.F64 || typ == wasm.V128 {
-					return false
+					return false, nil
 				}
 			}
 		}
-		for _, in := range f.Code {
+		for i, in := range f.Code {
+			if i%256 == 0 {
+				if err := ctx.Err(); err != nil {
+					return false, err
+				}
+			}
 			switch op := in.Op; {
 			case op <= 5, op == 8 || op == 10, op >= 0x0b && op <= 0x15,
 				op >= 0x1a && op <= 0x1c, op >= 0x20 && op <= 0x29,
@@ -36,9 +53,9 @@ func integerModule(m *slots.Module) bool {
 				op >= 0xfe0000 && op <= 0xfe0003, op >= 0xfe0010 && op <= 0xfe004e,
 				op >= slots.ControlBase && op <= slots.ControlBase+uint32(ir.IfNull):
 			default:
-				return false
+				return false, nil
 			}
 		}
 	}
-	return true
+	return true, ctx.Err()
 }

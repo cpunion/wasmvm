@@ -259,9 +259,12 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 		return nil, err
 	}
 	if len(entries) != 0 {
-		var err error
+		integerOnly, err := integerModule(ctx, m)
+		if err != nil {
+			return nil, err
+		}
 		publish := native.Publish
-		if integerModule(m) {
+		if integerOnly {
 			publish = native.PublishIntegerCode
 		}
 		out.code, err = publish(code, entries, limits.MaxCodeBytes)
