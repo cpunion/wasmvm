@@ -359,8 +359,10 @@ On ARM64, the adapter snapshots FPCR and FPSR directly, establishes zeroed
 registers for nearest-even rounding, gradual underflow and masked exceptions,
 and restores both complete registers after every guest exit. This also isolates
 sticky exception and SIMD saturation flags. Instruction synchronization follows
-the register writes. amd64 retains the libc environment operations for both
-MXCSR and x87 state. Admission rejection and cancellation leave host state
+the register writes. On amd64, non-waiting x87 environment instructions and
+direct MXCSR accesses save and restore both complete environments, establishing
+a fresh x87 environment and MXCSR `0x1f80` during guest execution. Admission
+rejection and cancellation leave host state
 intact; the ABI probes exercise all exit codes under a non-default environment.
 
 Linux mappings transition RW to RX. Darwin uses a shared, bounded 1-GiB virtual

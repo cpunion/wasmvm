@@ -342,5 +342,11 @@
     "Guest arithmetic control has no admission, floating isolation, cancellation or VM contract; no direct-control ratio is an engine ranking.",
     "All20 blocks retained; individual95% paired diagnostic intervals from20k seeded log-ratio bootstrap. No simultaneous or full-profile acceptance.",
     "Mac arm64 entry algorithm unchanged. Prior complete P3 gap and adverse hosted Linux interpreter advisory remain unresolved."
-  ]
+  ],
+  "measurementSource": {
+    "path": "docs/research/evidence/performance-x86-fp-entry-2026-11-13-probe.py.gz",
+    "sha256": "c204a13bdd83f49f34e0f97b8193d0e89e95fdb66a010b57c28397d5e3a36d33",
+    "uncompressedSHA256": "f31ca2c9e7c44c22af98347344b6ff0a4093db771270f15f54528f7c484915ec",
+    "use": "Exact temporary diagnostic source, archived for audit/reproduction; not a production CI workflow."
+  }
 }
