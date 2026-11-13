@@ -292,12 +292,32 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 		e.forwardedMemory++
 		restoreMemory = restoreMemory || e.a.arch == "amd64" && warm.cache.register == 11
 	}
+	scaled := e.planLoopScaledMemory(start, warm)
+	if scaled != nil && !equalRegisterPlans(previous, e.currentRegisterPlan()) {
+		scaled = nil
+	}
+	if scaled != nil {
+		if start%256 == 0 {
+			e.interrupt(uint32(start))
+		}
+		e.guardLoopScaledMemory(scaled, start)
+		out.LoopGuards++
+	}
 	header := e.a.label()
 	e.a.mark(header)
 	if start%256 == 0 {
 		e.interrupt(uint32(start))
 	}
-	e.emitMemoryRegionRange(start, r.end, warm, pcs, out)
+	if scaled == nil {
+		e.emitMemoryRegionRange(start, r.end, warm, pcs, out)
+	} else {
+		_, size := memoryAccess(scaled.load.Op)
+		e.memoryAMD64Indexed(scaled.load, true, size, e.registers[scaled.input], uint32(e.f.Sources[scaled.load.Source].Wasm.MemoryOffset()), scaled.scale)
+		e.boundsElided++
+		e.directMemoryOperands++
+		out.FusedIntegers++
+		e.emitMemoryRegionRange(start+6, r.end, warm, pcs, out)
+	}
 	if e.loopBackedges == nil {
 		e.loopBackedges = map[int]loopBackedge{}
 	}
