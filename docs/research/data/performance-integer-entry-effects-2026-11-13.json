@@ -1,0 +1,860 @@
+{
+  "status": "Scoped Go source improvement; complete VM/competitive acceptance remains open",
+  "sourceBase": "14466bade1679ead9be33776416d767bcbf207e4",
+  "prototypeSource": "0fed4e409bb985b82f78b67acff520f017a38109",
+  "finalMeasuredSource": "a8084b36022a20b2a9248716163df10253495206",
+  "qualificationSource": "b5258478921a6ce38927ac7edd72a70bfab2dcf1",
+  "qualificationNote": "Only compiler-selector tests were added after final measurement; all production Go/C/header files match a808. No timing events are pooled.",
+  "originalIdentity": {
+    "base": "14466bade1679ead9be33776416d767bcbf207e4",
+    "head": "0fed4e409bb985b82f78b67acff520f017a38109",
+    "go": "go1.27.3",
+    "llvm": "22.1.8",
+    "llgo": "56fa9aedc957cf3c9656c1a70f82c5424ab3b1c5",
+    "llgoFlags": [
+      "-O3",
+      "-lto=full"
+    ],
+    "binaries": {
+      "base": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/integer-entry-effects/base-go-runner",
+        "sha256": "61ef96e383e33d3d9e04996bae1e9e47ef8d8e9c46e1c90809242799cb14f04c",
+        "bytes": 15172130
+      },
+      "head": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/integer-entry-effects/head-go-runner",
+        "sha256": "4350902cd4b9ae128e23437799163607b19d5b633b85f29fb96d67a5eb170167",
+        "bytes": 15189250
+      },
+      "llgo": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/integer-entry-effects/head-llgo-runner",
+        "sha256": "572710fd84f8316f84847e7faf348c4e4b998787d9b896817b843194cd2eb1a1",
+        "bytes": 12679728
+      },
+      "wasmtime": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/output-screen/wasmtime-go-runner",
+        "sha256": "561370163342e51593964bc6615ca28ebf1831c22132412ce9c6c44981c54f08",
+        "bytes": 44637122
+      }
+    },
+    "sourceFiles": {
+      "internal/engine/nativeexec/integer_module.go": "a124c13f6c61d46038ea16e9ef13cd9193d2edc18255c91687b5c8b92bd7beec",
+      "internal/engine/nativeexec/integer_module_test.go": "f106b7c1a33ba27af29bc4d4eccc375958361d5eed79d0fdcfbba0c147e1f5c8",
+      "internal/engine/nativeexec/module.go": "e3d3e7cded8e7d3240dd592ed78ba5d63a51f0e15a71b122aac0bd2c375a5391",
+      "internal/platform/native/adapter.c": "7960d7e52368f1294ed13f2644bff67eb8815c201767081c3cdc1510d520612c",
+      "internal/platform/native/adapter.go": "1b49fcd6d3dada214aaac5668967880fc16c55eff023f805206b4e59f488dcee",
+      "internal/platform/native/adapter.h": "dbabc72433831fcecfcd1633f78b9da2bd314e5dc4ab222c6afda31f4343c9be",
+      "internal/platform/native/integer_entry_test.go": "4472b0b5d8a8271791fb103bca60397fa2ecb2cca0eabc7f9cf4ab2c0c2cedc8",
+      "internal/platform/native/native.go": "173e60c39b96a1d055ca23c3604e3b975df4b9bcbf4c368966d42d1d58a5bcf3",
+      "internal/platform/native/unavailable.go": "49c9d37f611d6764dfc93bc62b05171e704417146ab0b9505bfd1b30e1860f03"
+    }
+  },
+  "events": {
+    "p3-16": {
+      "plan": {
+        "blocks": 20,
+        "samples": 20,
+        "batchRequests": 512,
+        "seed": 202611134604,
+        "payloadBytes": 16,
+        "variants": {
+          "base": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/integer-entry-effects/base-go-runner",
+          "head": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/integer-entry-effects/head-go-runner",
+          "llgo": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/integer-entry-effects/head-llgo-runner",
+          "wasmtime": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/output-screen/wasmtime-go-runner"
+        },
+        "source": "Go1.27.3 baseline14466bad versus exact0fed4e4 integer-only image proof; pinned LLGo56head-O3-ltofull diagnostic; Clang22.1.8 normalGC; frozen actualWasmtime48 P3 reference.",
+        "scope": "Fixed20blocks/160freshprocesses per payload; all4roles2AA, CPU AA diagnostic margin2.5percent, noextension; no timing look beforecomplete,4Stores/16clients/32requests,20measured512request batches plusfinalflush. Separate16B/64KiB cohorts not pooled. Balanced individual batch order,one active child othersSIGSTOP,first+2warmups/100mssettle separate,100msfinalbackgroundtail included. Complete body/status/headers/trailers/CRC checked. CPU/instructions bracket complete batches; warm API intervals separately retained. All A/A controls reported; reference managed events cover only Go shim. No other owned builds/tests/profiles/pruning overlap. Diagnostic only, no full-portfolio acceptance."
+      },
+      "summary": {
+        "base": {
+          "cpuUs": 110.21017456054688,
+          "instructions": 895488.8444824219,
+          "throughput": 36399.92795020097,
+          "allocsPerRequest": 705.0033203125,
+          "bytesPerRequest": 55480.789453125
+        },
+        "base-aa": {
+          "cpuUs": 111.70696818033854,
+          "instructions": 895490.7070800781,
+          "throughput": 36133.41542474905,
+          "allocsPerRequest": 705.003466796875,
+          "bytesPerRequest": 55480.791406250006
+        },
+        "head": {
+          "cpuUs": 108.21826985677083,
+          "instructions": 895240.8436523437,
+          "throughput": 36923.936237588874,
+          "allocsPerRequest": 705.0030761718749,
+          "bytesPerRequest": 55480.579687499994
+        },
+        "head-aa": {
+          "cpuUs": 107.71811930338541,
+          "instructions": 896067.3122558594,
+          "throughput": 37173.08291172082,
+          "allocsPerRequest": 705.00322265625,
+          "bytesPerRequest": 55480.653125
+        },
+        "llgo": {
+          "cpuUs": 301.18419189453124,
+          "instructions": 1464415.886328125,
+          "throughput": 16466.146196868547,
+          "allocsPerRequest": 1160.00048828125,
+          "bytesPerRequest": 75855.0875
+        },
+        "llgo-aa": {
+          "cpuUs": 306.6147176106771,
+          "instructions": 1404308.8682617187,
+          "throughput": 16270.683121471127,
+          "allocsPerRequest": 1160.000390625,
+          "bytesPerRequest": 75855.65
+        },
+        "wasmtime": {
+          "cpuUs": 37.48419189453125,
+          "instructions": 214355.8569824219,
+          "throughput": 61353.678097708136,
+          "allocsPerRequest": 1.00009765625,
+          "bytesPerRequest": 32.0109375
+        },
+        "wasmtime-aa": {
+          "cpuUs": 38.378527832031246,
+          "instructions": 215316.7755859375,
+          "throughput": 60004.82118604961,
+          "allocsPerRequest": 1.00068359375,
+          "bytesPerRequest": 32.54453125
+        }
+      },
+      "paired": {
+        "cpuUs": {
+          "headOverbase": {
+            "ratio": 0.9813742029444649,
+            "ci95": [
+              0.9751012527278613,
+              0.9880549642783156
+            ]
+          },
+          "headOverllgo": {
+            "ratio": 0.3736237391520352,
+            "ci95": [
+              0.36643638045609656,
+              0.3809266395572877
+            ]
+          },
+          "headOverwasmtime": {
+            "ratio": 2.864538661373091,
+            "ci95": [
+              2.7911012604869643,
+              2.9333939111211067
+            ]
+          },
+          "AA": {
+            "base": {
+              "ratio": 0.9988173502021686,
+              "ci95": [
+                0.9889321373616139,
+                1.0077327162835072
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9963584874646559,
+              "ci95": [
+                0.9865554316170793,
+                1.0061918950721251
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo": {
+              "ratio": 0.9855336604699451,
+              "ci95": [
+                0.9441898362540253,
+                1.0298237642323496
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0083870680570883,
+              "ci95": [
+                0.9861590447621944,
+                1.0332415380643207
+              ],
+              "resolves2_5Percent": false
+            }
+          }
+        },
+        "instructions": {
+          "headOverbase": {
+            "ratio": 0.9998817605618123,
+            "ci95": [
+              0.9988839195922034,
+              1.0008557986979263
+            ]
+          },
+          "headOverllgo": {
+            "ratio": 0.6253113539241245,
+            "ci95": [
+              0.6165142208953986,
+              0.6335042801350305
+            ]
+          },
+          "headOverwasmtime": {
+            "ratio": 4.147871818021467,
+            "ci95": [
+              4.116122276183932,
+              4.1770234972893086
+            ]
+          },
+          "AA": {
+            "base": {
+              "ratio": 1.0000616107579767,
+              "ci95": [
+                0.9989782455327059,
+                1.0011722376033048
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0003594850259598,
+              "ci95": [
+                0.9991639887035225,
+                1.0014991487545175
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo": {
+              "ratio": 0.9884417412616664,
+              "ci95": [
+                0.9599035977771221,
+                1.019101552959354
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0034421644758844,
+              "ci95": [
+                0.9959045135869915,
+                1.0121748183245465
+              ],
+              "resolves2_5Percent": true
+            }
+          }
+        },
+        "throughput": {
+          "headOverbase": {
+            "ratio": 1.0233536461614015,
+            "ci95": [
+              1.0162103030764322,
+              1.0304504932801126
+            ]
+          },
+          "headOverllgo": {
+            "ratio": 2.1995854288439998,
+            "ci95": [
+              2.1801848318295236,
+              2.2194217130937934
+            ]
+          },
+          "headOverwasmtime": {
+            "ratio": 0.601519622290241,
+            "ci95": [
+              0.5966916479164744,
+              0.6064077088247088
+            ]
+          },
+          "AA": {
+            "base": {
+              "ratio": 1.0005094282336668,
+              "ci95": [
+                0.9907295140185541,
+                1.009852364706907
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.001589708769393,
+              "ci95": [
+                0.9894364372510386,
+                1.0142184514733001
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo": {
+              "ratio": 1.0077141134737908,
+              "ci95": [
+                0.9842021549179898,
+                1.0318103831505308
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.996559099039325,
+              "ci95": [
+                0.9878290570464094,
+                1.0053543110401642
+              ],
+              "resolves2_5Percent": true
+            }
+          }
+        }
+      },
+      "evidence": {
+        "path": "docs/research/evidence/performance-integer-entry-effects-2026-11-13-p3-16.jsonl.gz",
+        "sha256": "d904154f80ee2886263162d51328cab5d97b1c1c1581e3f903bf11cd876604fa",
+        "fullUnprojectedGzipSHA256": "1bdfc4fc6bb22e3862f8eb808a3780bb3b406c666a29eba21195f716e84b4171",
+        "fullUnprojectedGzipBytes": 10283078
+      }
+    },
+    "p3-65536": {
+      "plan": {
+        "blocks": 20,
+        "samples": 20,
+        "batchRequests": 512,
+        "seed": 2026178553,
+        "payloadBytes": 65536,
+        "variants": {
+          "base": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/integer-entry-effects/base-go-runner",
+          "head": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/integer-entry-effects/head-go-runner",
+          "llgo": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/integer-entry-effects/head-llgo-runner",
+          "wasmtime": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/output-screen/wasmtime-go-runner"
+        },
+        "source": "Go1.27.3 baseline14466bad versus exact0fed4e4 integer-only image proof; pinned LLGo56head-O3-ltofull diagnostic; Clang22.1.8 normalGC; frozen actualWasmtime48 P3 reference.",
+        "scope": "Fixed20blocks/160freshprocesses per payload; all4roles2AA, CPU AA diagnostic margin2.5percent, noextension; no timing look beforecomplete,4Stores/16clients/32requests,20measured512request batches plusfinalflush. Separate16B/64KiB cohorts not pooled. Balanced individual batch order,one active child othersSIGSTOP,first+2warmups/100mssettle separate,100msfinalbackgroundtail included. Complete body/status/headers/trailers/CRC checked. CPU/instructions bracket complete batches; warm API intervals separately retained. All A/A controls reported; reference managed events cover only Go shim. No other owned builds/tests/profiles/pruning overlap. Diagnostic only, no full-portfolio acceptance."
+      },
+      "summary": {
+        "base": {
+          "cpuUs": 144.55872599283853,
+          "instructions": 1215235.6285644532,
+          "throughput": 26994.009273787655,
+          "allocsPerRequest": 789.00400390625,
+          "bytesPerRequest": 127816.967578125
+        },
+        "base-aa": {
+          "cpuUs": 145.07271931966142,
+          "instructions": 1214426.659326172,
+          "throughput": 27082.53889251239,
+          "allocsPerRequest": 789.003955078125,
+          "bytesPerRequest": 127816.921484375
+        },
+        "head": {
+          "cpuUs": 140.5354451497396,
+          "instructions": 1215390.0793945312,
+          "throughput": 27586.264132895565,
+          "allocsPerRequest": 789.0042480468751,
+          "bytesPerRequest": 127816.734765625
+        },
+        "head-aa": {
+          "cpuUs": 141.9625773111979,
+          "instructions": 1215179.6042480469,
+          "throughput": 27630.001525602886,
+          "allocsPerRequest": 789.003955078125,
+          "bytesPerRequest": 127816.7203125
+        },
+        "llgo": {
+          "cpuUs": 339.8823262532552,
+          "instructions": 1768792.2688476564,
+          "throughput": 14196.937856321241,
+          "allocsPerRequest": 1425.000390625,
+          "bytesPerRequest": 217871.5671875
+        },
+        "llgo-aa": {
+          "cpuUs": 378.64870605468747,
+          "instructions": 1841824.4262695312,
+          "throughput": 13325.510656606093,
+          "allocsPerRequest": 1425.000390625,
+          "bytesPerRequest": 217872.0703125
+        },
+        "wasmtime": {
+          "cpuUs": 48.84928588867187,
+          "instructions": 303844.3716308594,
+          "throughput": 51947.020445316426,
+          "allocsPerRequest": 1.00009765625,
+          "bytesPerRequest": 32.0109375
+        },
+        "wasmtime-aa": {
+          "cpuUs": 49.99179484049479,
+          "instructions": 306634.1405273437,
+          "throughput": 52263.77772165096,
+          "allocsPerRequest": 1.0,
+          "bytesPerRequest": 32.0
+        }
+      },
+      "paired": {
+        "cpuUs": {
+          "headOverbase": {
+            "ratio": 0.9792306851947853,
+            "ci95": [
+              0.9750990022813781,
+              0.9839800706248231
+            ]
+          },
+          "headOverllgo": {
+            "ratio": 0.4056671406313051,
+            "ci95": [
+              0.38392514630292446,
+              0.426391042828062
+            ]
+          },
+          "headOverwasmtime": {
+            "ratio": 2.824887367974355,
+            "ci95": [
+              2.7178809234889534,
+              2.9247810744455878
+            ]
+          },
+          "AA": {
+            "base": {
+              "ratio": 1.0028283898670307,
+              "ci95": [
+                0.9953383351841306,
+                1.0110133384578601
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.99911744261225,
+              "ci95": [
+                0.9912030014416355,
+                1.006810412452017
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo": {
+              "ratio": 1.0830809862135111,
+              "ci95": [
+                0.9768220740142518,
+                1.199633773715474
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0071915485471763,
+              "ci95": [
+                0.9915455298135603,
+                1.023395133893881
+              ],
+              "resolves2_5Percent": true
+            }
+          }
+        },
+        "instructions": {
+          "headOverbase": {
+            "ratio": 0.9996018010149804,
+            "ci95": [
+              0.9983100836450483,
+              1.0006978628730456
+            ]
+          },
+          "headOverllgo": {
+            "ratio": 0.6407515957181066,
+            "ci95": [
+              0.6170137634308505,
+              0.6619500322855505
+            ]
+          },
+          "headOverwasmtime": {
+            "ratio": 3.9738442356300965,
+            "ci95": [
+              3.9417486032177074,
+              4.004872814458293
+            ]
+          },
+          "AA": {
+            "base": {
+              "ratio": 0.999318742996262,
+              "ci95": [
+                0.9983100796896559,
+                1.000375785033744
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0001183819314556,
+              "ci95": [
+                0.9991137490397098,
+                1.0010712222426332
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo": {
+              "ratio": 1.0557960060037548,
+              "ci95": [
+                0.9843291386502107,
+                1.1314436592896966
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0025185932650467,
+              "ci95": [
+                0.9955263275293273,
+                1.009288760996552
+              ],
+              "resolves2_5Percent": true
+            }
+          }
+        },
+        "throughput": {
+          "headOverbase": {
+            "ratio": 1.0189062418441517,
+            "ci95": [
+              1.0124687852987795,
+              1.0251855478742053
+            ]
+          },
+          "headOverllgo": {
+            "ratio": 1.997515537271682,
+            "ci95": [
+              1.9506701497311456,
+              2.050212066774864
+            ]
+          },
+          "headOverwasmtime": {
+            "ratio": 0.5259759604106771,
+            "ci95": [
+              0.5218671164495232,
+              0.530093641991018
+            ]
+          },
+          "AA": {
+            "base": {
+              "ratio": 0.9971813200520916,
+              "ci95": [
+                0.9862071304919352,
+                1.0073333545897143
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9979667934270078,
+              "ci95": [
+                0.9890862587607814,
+                1.0063820239390775
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo": {
+              "ratio": 0.9498546958775691,
+              "ci95": [
+                0.8933885175631553,
+                1.0078753221297936
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9994216342645202,
+              "ci95": [
+                0.9932320122074443,
+                1.005466619452627
+              ],
+              "resolves2_5Percent": true
+            }
+          }
+        }
+      },
+      "evidence": {
+        "path": "docs/research/evidence/performance-integer-entry-effects-2026-11-13-p3-65536.jsonl.gz",
+        "sha256": "8a7c61efd766fdb2e548ef8d785d2074c224509f545b928a06a06496e1c947ec",
+        "fullUnprojectedGzipSHA256": "42e95c639c5ea064b401e1339d4da97abaaa5df8768786b2375be317bc7e6902",
+        "fullUnprojectedGzipBytes": 10646874
+      }
+    },
+    "final-p3-16": {
+      "plan": {
+        "blocks": 20,
+        "samples": 20,
+        "batchRequests": 512,
+        "seed": 202611134619,
+        "payloadBytes": 16,
+        "variants": {
+          "base": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/integer-entry-effects/base-go-runner",
+          "head": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/integer-entry-effects/final-go-runner"
+        },
+        "source": "Go1.27.3 baseline14466bad versus exacta8084b3 bounded effect proof, source C unchanged from0fed, Clang22.1.8, normalGC, finalsourcecomparisononly.",
+        "scope": "Fixed20blocks/80freshprocesses per payload; bothGo sources2AA, CPU AA diagnostic margin2.5percent, noextension; no timing look beforecomplete; sourcea808aftercoldproofcancellationfix, notpooledwith0fed,4Stores/16clients/32requests,20measured512request batches plusfinalflush. Separate16B/64KiB cohorts not pooled. Balanced individual batch order,one active child othersSIGSTOP,first+2warmups/100mssettle separate,100msfinalbackgroundtail included. Complete body/status/headers/trailers/CRC checked. CPU/instructions bracket complete batches; warm API intervals separately retained. All A/A controls reported; reference managed events cover only Go shim. No other owned builds/tests/profiles/pruning overlap. Diagnostic only, no full-portfolio acceptance."
+      },
+      "summary": {
+        "base": {
+          "cpuUs": 105.37217814127604,
+          "instructions": 896451.1053222655,
+          "throughput": 37359.68059145885,
+          "allocsPerRequest": 705.002978515625,
+          "bytesPerRequest": 55480.85
+        },
+        "base-aa": {
+          "cpuUs": 106.6345947265625,
+          "instructions": 896054.9439453125,
+          "throughput": 37068.93711153606,
+          "allocsPerRequest": 705.00341796875,
+          "bytesPerRequest": 55480.501562499994
+        },
+        "head": {
+          "cpuUs": 103.73513997395833,
+          "instructions": 896388.9634765625,
+          "throughput": 38042.65162155653,
+          "allocsPerRequest": 705.00361328125,
+          "bytesPerRequest": 55480.88203125
+        },
+        "head-aa": {
+          "cpuUs": 103.02719726562499,
+          "instructions": 896635.4596191407,
+          "throughput": 38419.93555309644,
+          "allocsPerRequest": 705.0033203125,
+          "bytesPerRequest": 55480.707421875006
+        }
+      },
+      "paired": {
+        "cpuUs": {
+          "headOverBase": {
+            "ratio": 0.9786899674306061,
+            "ci95": [
+              0.9717010132564746,
+              0.9858105826744386
+            ]
+          },
+          "AA": {
+            "base": {
+              "ratio": 0.9988039642115323,
+              "ci95": [
+                0.9920414132562256,
+                1.0055207721713402
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9958111238716753,
+              "ci95": [
+                0.9853782571449148,
+                1.005523598403759
+              ],
+              "resolves2_5Percent": true
+            }
+          }
+        },
+        "instructions": {
+          "headOverBase": {
+            "ratio": 1.0010760836511248,
+            "ci95": [
+              0.9995797561147381,
+              1.003031128915036
+            ]
+          },
+          "AA": {
+            "base": {
+              "ratio": 0.999532445699464,
+              "ci95": [
+                0.9983574366980099,
+                1.0007844893430928
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9991443860770077,
+              "ci95": [
+                0.9973037374365433,
+                1.0008179118834772
+              ],
+              "resolves2_5Percent": true
+            }
+          }
+        },
+        "throughput": {
+          "headOverBase": {
+            "ratio": 1.0219330682986199,
+            "ci95": [
+              1.0156520718335196,
+              1.0282349943171336
+            ]
+          },
+          "AA": {
+            "base": {
+              "ratio": 1.0016213475239695,
+              "ci95": [
+                0.9940030057924739,
+                1.0093906189896247
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0067789265711276,
+              "ci95": [
+                0.9935883405717274,
+                1.0216443206720558
+              ],
+              "resolves2_5Percent": true
+            }
+          }
+        }
+      },
+      "evidence": {
+        "path": "docs/research/evidence/performance-integer-entry-effects-2026-11-13-final-p3-16.jsonl.gz",
+        "sha256": "a6761a460819eeee27c56fd8e94c201834b6a654a88e7f37843a9087b236ebe1",
+        "fullUnprojectedGzipSHA256": "8cb223f66d1d57ed4108f3cc8296d3866ce373f9f267dacdcbe062c50836d377",
+        "fullUnprojectedGzipBytes": 5066899
+      }
+    },
+    "final-p3-65536": {
+      "plan": {
+        "blocks": 20,
+        "samples": 20,
+        "batchRequests": 512,
+        "seed": 2026178553,
+        "payloadBytes": 65536,
+        "variants": {
+          "base": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/integer-entry-effects/base-go-runner",
+          "head": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/integer-entry-effects/final-go-runner"
+        },
+        "source": "Go1.27.3 baseline14466bad versus exacta8084b3 bounded effect proof, source C unchanged from0fed, Clang22.1.8, normalGC, finalsourcecomparisononly.",
+        "scope": "Fixed20blocks/80freshprocesses per payload; bothGo sources2AA, CPU AA diagnostic margin2.5percent, noextension; no timing look beforecomplete; sourcea808aftercoldproofcancellationfix, notpooledwith0fed,4Stores/16clients/32requests,20measured512request batches plusfinalflush. Separate16B/64KiB cohorts not pooled. Balanced individual batch order,one active child othersSIGSTOP,first+2warmups/100mssettle separate,100msfinalbackgroundtail included. Complete body/status/headers/trailers/CRC checked. CPU/instructions bracket complete batches; warm API intervals separately retained. All A/A controls reported; reference managed events cover only Go shim. No other owned builds/tests/profiles/pruning overlap. Diagnostic only, no full-portfolio acceptance."
+      },
+      "summary": {
+        "base": {
+          "cpuUs": 143.7778747558594,
+          "instructions": 1220186.5940917968,
+          "throughput": 27157.046712362306,
+          "allocsPerRequest": 789.00361328125,
+          "bytesPerRequest": 127816.5921875
+        },
+        "base-aa": {
+          "cpuUs": 145.75511067708334,
+          "instructions": 1218065.320263672,
+          "throughput": 27193.106182245363,
+          "allocsPerRequest": 789.0042480468751,
+          "bytesPerRequest": 127816.748828125
+        },
+        "head": {
+          "cpuUs": 141.2451151529948,
+          "instructions": 1217591.9114746093,
+          "throughput": 28161.402644237525,
+          "allocsPerRequest": 789.00419921875,
+          "bytesPerRequest": 127816.96601562499
+        },
+        "head-aa": {
+          "cpuUs": 141.73554484049478,
+          "instructions": 1218151.0254394533,
+          "throughput": 27943.082004832293,
+          "allocsPerRequest": 789.00380859375,
+          "bytesPerRequest": 127816.86210937501
+        }
+      },
+      "paired": {
+        "cpuUs": {
+          "headOverBase": {
+            "ratio": 0.9773915805693777,
+            "ci95": [
+              0.9723086433276645,
+              0.9825096860089425
+            ]
+          },
+          "AA": {
+            "base": {
+              "ratio": 0.9959720871618573,
+              "ci95": [
+                0.9900262309957006,
+                1.0019236708499877
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0044119186372906,
+              "ci95": [
+                0.9934227161129853,
+                1.0149868402555007
+              ],
+              "resolves2_5Percent": true
+            }
+          }
+        },
+        "instructions": {
+          "headOverBase": {
+            "ratio": 1.0000637382264996,
+            "ci95": [
+              0.9981457153926461,
+              1.0019915819262382
+            ]
+          },
+          "AA": {
+            "base": {
+              "ratio": 0.9992807518671457,
+              "ci95": [
+                0.9972044708646366,
+                1.0013093425013002
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0019471967691556,
+              "ci95": [
+                0.9993882990328047,
+                1.0047144952233424
+              ],
+              "resolves2_5Percent": true
+            }
+          }
+        },
+        "throughput": {
+          "headOverBase": {
+            "ratio": 1.027253533783155,
+            "ci95": [
+              1.0210607505744318,
+              1.0335139108683307
+            ]
+          },
+          "AA": {
+            "base": {
+              "ratio": 1.0008129150802643,
+              "ci95": [
+                0.9915285924437457,
+                1.0098073627706707
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9958278542814243,
+              "ci95": [
+                0.9874853225773136,
+                1.0042806562610898
+              ],
+              "resolves2_5Percent": true
+            }
+          }
+        }
+      },
+      "evidence": {
+        "path": "docs/research/evidence/performance-integer-entry-effects-2026-11-13-final-p3-65536.jsonl.gz",
+        "sha256": "6c0cf8dfb32892be334217df2b1640f408d6981d49e0e2bd3ca7814d7427ebab",
+        "fullUnprojectedGzipSHA256": "1b23ad4d0a657e6eef5521931cd171ae2dfa76f5c571f1e3e78144c5f3c987d1",
+        "fullUnprojectedGzipBytes": 5359868
+      }
+    }
+  },
+  "analysis": {
+    "method": "Process is the unit; mean log ratio across identical aliases within each paired block, seeded20000 percentile bootstrap, individual95% diagnostics, AA2.5%margin. No optional extension.",
+    "originalSeed": 202611134609,
+    "finalSeed": 202611134624,
+    "originalControls": "Both Go source CPU/throughput controls resolve at both sizes. LLGo CPU/throughput controls unresolved both sizes; WasmtimeCPU16 unresolved,64resolved. Do not promote reference CPU ranks or LLGo source claims.",
+    "finalControls": "AllGo baseline/head CPU, instruction and throughput AA intervals resolve2.5% in both final-source cohorts."
+  },
+  "projection": {
+    "description": "All480 fresh-process observations and every complete-batch CPU/instruction snapshot, API batch timer, allocation/GC counter, phase and checksum retained. Only the two unused per-request latency arrays in each batch are replaced by count/min/median/p95/p99/max and exact compact-JSON SHA256. No process/sample is removed; full unprojected records remain in local artifacts. This keeps review evidence about2.8MiB instead of30MiB.",
+    "arrayFields": [
+      "record.service.Batches[].RequestNs",
+      "record.service.Batches[].PublicAPINs"
+    ],
+    "metricEffect": "All reported CPU/instruction/throughput/allocation values and intervals can be recomputed exactly from committed projections; no reported claim uses omitted arrays."
+  },
+  "protocolArchive": {
+    "path": "docs/research/evidence/performance-integer-entry-effects-2026-11-13-protocol.tar.gz",
+    "sha256": "77f0768a8385846dd9d55903870d8313df31c6c321e1ed423d14c1b17bc9c92e"
+  },
+  "validation": {
+    "Go": "All32testpackages pass; all31executable packages >=90%. Native95.10%, nativeexec93.25%, codegen98.01%, VM93.52%. Actual-source integration coverage, not overlay.",
+    "race": "Native1.643s/nativeexec1.654s/VM3.371s pass.",
+    "LLGo": "Pinned56 -O3 -lto=full six semantic groups includingP2/P3 pass; finalnativeexec.946s and generated-selector/native.669s pass.",
+    "LinuxLocal": "Exact finalproductiona808 and selector-testb525 focusedDocker x86 native/proof/context/FP/admission tests pass .080/.060s. Full realLinux dualcompilerCI remainsrequired. NoDockerperformanceclaims."
+  },
+  "limitations": [
+    "Original0fed comparative event and finala808 Go source event remain distinct; medians across events are not treated as paired.",
+    "Go allocations705/789unchanged. Wasmtime allocation counts cover only Go shim, not Rust/native; LLGoactualmanaged events differ from Go.",
+    "No full-profile parity, performance milestone, release or overall completion claim. MainP3 instructions stillabout4xreference and CPU remains behind."
+  ]
+}

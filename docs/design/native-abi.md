@@ -365,6 +365,14 @@ a fresh x87 environment and MXCSR `0x1f80` during guest execution. Admission
 rejection and cancellation leave host state
 intact; the ABI probes exercise all exit codes under a non-default environment.
 
+Whole-image integer proofs may instead publish code that preserves the ambient
+FP state without a transition. The proof includes every body/continuation and
+linked target; mixed FP/SIMD or unknown operations retain complete normalization.
+Imports and foreign targets return to the shared driver before another artifact
+is entered. No user option bypasses the proof or admission checks. Compilation
+cancellation remains bounded during classification. Generated integer selectors
+also run under non-default FP state to check the emitter-side contract.
+
 Linux mappings transition RW to RX. Darwin uses a shared, bounded 1-GiB virtual
 MAP_JIT arena with thread write protection and instruction-cache invalidation;
 pages are populated on publication, independently of each module's code quota;
