@@ -45,12 +45,18 @@ func sharedTransfer(dst, src unsafe.Pointer, size uint64, mode uint32) {
 	C.wasmvm_shared_transfer(dst, src, C.size_t(size), C.uint32_t(mode))
 }
 func cancel(p unsafe.Pointer) { C.wasmvm_cancel((*C.struct_wasmvm_record)(p)) }
-func enter(p, ctx unsafe.Pointer) Exit {
+func enter(p, ctx unsafe.Pointer, integerOnly bool) Exit {
+	if integerOnly {
+		return Exit(C.wasmvm_enter_integer(p, (*C.struct_wasmvm_record)(ctx)))
+	}
 	return Exit(C.wasmvm_enter(p, (*C.struct_wasmvm_record)(ctx)))
 }
 func layout(field uint32) uint64 { return uint64(C.wasmvm_layout(C.uint32_t(field))) }
 func probeFP(entry, record unsafe.Pointer, expected Exit) bool {
-	return C.wasmvm_probe_fp(entry, (*C.struct_wasmvm_record)(record), C.uint32_t(expected)) != 0
+	return C.wasmvm_probe_fp(entry, (*C.struct_wasmvm_record)(record), C.uint32_t(expected), 0) != 0
+}
+func probeIntegerFP(entry, record unsafe.Pointer, expected Exit) bool {
+	return C.wasmvm_probe_fp(entry, (*C.struct_wasmvm_record)(record), C.uint32_t(expected), 1) != 0
 }
 func probeRegisters(entry, record unsafe.Pointer) bool {
 	return C.wasmvm_probe_registers(entry, (*C.struct_wasmvm_record)(record)) != 0

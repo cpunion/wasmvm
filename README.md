@@ -276,6 +276,11 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
+The [integer-image entry study](docs/research/performance-integer-entry-effects-2026-11-13.md)
+reduces complete P3 CPU by **2.1–2.3%** and raises throughput **2.2–2.7%** in
+the final Go source comparison. Go A/A controls resolve; competitor controls
+and the larger remaining gaps are reported separately.
+
 The [nested scalar call study](docs/research/performance-nested-scalar-calls-2026-11-13.md)
 records Go at **1.119 ns/iteration**, versus wazero **3.421**, Wasmtime **1.955**
 and Wasmer **1.943** on one bounded call-tree kernel. Head/reference controls

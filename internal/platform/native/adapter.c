@@ -201,9 +201,15 @@ static inline void wasmvm_fp_write(struct wasmvm_fp_environment env) {
 }
 #endif
 
-uint32_t wasmvm_enter(const void *entry, struct wasmvm_record *ctx) {
+static uint32_t wasmvm_enter_impl(const void *entry, struct wasmvm_record *ctx, uint32_t integer_only) {
     if (ctx->version != 2 || ctx->used > ctx->capacity || ctx->depth > ctx->max_depth) return 0;
     if (__atomic_load_n(&ctx->control, __ATOMIC_ACQUIRE)) return 6; /* Poll */
+    if (integer_only) {
+#ifdef __APPLE__
+        pthread_jit_write_protect_np(1);
+#endif
+        return ((uint32_t (*)(struct wasmvm_record *))entry)(ctx);
+    }
 #ifdef __aarch64__
     /* FPCR=0 gives nearest-even, gradual underflow and masked exceptions.
        Preserve FPSR too: guest exceptions and SIMD saturation cannot leak. */
@@ -218,6 +224,12 @@ uint32_t wasmvm_enter(const void *entry, struct wasmvm_record *ctx) {
     uint32_t result = ((uint32_t (*)(struct wasmvm_record *))entry)(ctx);
     wasmvm_fp_write(saved);
     return result;
+}
+uint32_t wasmvm_enter(const void *entry, struct wasmvm_record *ctx) {
+    return wasmvm_enter_impl(entry, ctx, 0);
+}
+uint32_t wasmvm_enter_integer(const void *entry, struct wasmvm_record *ctx) {
+    return wasmvm_enter_impl(entry, ctx, 1);
 }
 
 uint64_t wasmvm_layout(uint32_t field) {
@@ -236,7 +248,7 @@ uint64_t wasmvm_layout(uint32_t field) {
     return field < sizeof(offsets)/sizeof(offsets[0]) ? offsets[field] : UINT64_MAX;
 }
 
-uint32_t wasmvm_probe_fp(const void *entry, struct wasmvm_record *ctx, uint32_t expected_status) {
+uint32_t wasmvm_probe_fp(const void *entry, struct wasmvm_record *ctx, uint32_t expected_status, uint32_t integer_only) {
     fenv_t original;
     if (feholdexcept(&original) != 0) return 0;
     if (fesetround(FE_DOWNWARD) != 0 || feraiseexcept(FE_INVALID | FE_INEXACT) != 0) {
@@ -261,7 +273,7 @@ uint32_t wasmvm_probe_fp(const void *entry, struct wasmvm_record *ctx, uint32_t 
     unsigned char expected_x87[28];
     __asm__ volatile ("fnstenv %0\n\tfldenv %0" : "=m"(expected_x87) : : "memory");
 #endif
-    uint32_t status = wasmvm_enter(entry, ctx);
+    uint32_t status = wasmvm_enter_impl(entry, ctx, integer_only);
     int restored = fegetround() == FE_DOWNWARD &&
                    fetestexcept(FE_ALL_EXCEPT) == (FE_INVALID | FE_INEXACT);
 #ifdef __aarch64__
