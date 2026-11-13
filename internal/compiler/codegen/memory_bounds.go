@@ -261,14 +261,21 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 
 // A constant needs no physical slot when the consuming instruction encodes it
 // and normal execution overwrites that slot before any observation or exit.
-func (e *functionEmitter) combineDeadImmediate(pc int) (int, bool) {
+type deadImmediate struct {
+	in       slots.Instruction
+	end      int
+	original slots.Slot
+	value    uint64
+}
+
+func (e *functionEmitter) planDeadImmediate(pc int) (deadImmediate, bool) {
 	constant := e.f.Code[pc]
 	if (constant.Op != 0x41 && constant.Op != 0x42) || pc+1 >= e.codeLimit() {
-		return 0, false
+		return deadImmediate{}, false
 	}
 	in := e.f.Code[pc+1]
 	if in.B != constant.Dst || in.A == constant.Dst {
-		return 0, false
+		return deadImmediate{}, false
 	}
 	end, dst := pc+1, in.Dst
 	if pc+2 < e.codeLimit() {
@@ -281,21 +288,29 @@ func (e *functionEmitter) combineDeadImmediate(pc int) (int, bool) {
 		}
 	}
 	if constant.Dst != dst && !e.overwrittenBeforeExit(end+1, constant.Dst) {
-		return 0, false
+		return deadImmediate{}, false
 	}
 	forwarded := in
 	forwarded.Dst = dst
 	v := e.f.Sources[constant.Source].Wasm.Bits
-	if !e.registerImmediate(in.Op, dst, in.A, v) && !e.pooledInteger(forwarded, v) {
+	return deadImmediate{forwarded, end, in.Dst, v}, true
+}
+
+func (e *functionEmitter) combineDeadImmediate(pc int) (int, bool) {
+	p, ok := e.planDeadImmediate(pc)
+	if !ok {
 		return 0, false
 	}
-	if dst != in.Dst && !e.overwrittenBeforeExit(end+1, in.Dst) {
-		e.move(in.Dst, dst)
+	if !e.registerImmediate(p.in.Op, p.in.Dst, p.in.A, p.value) && !e.pooledInteger(p.in, p.value) {
+		return 0, false
 	}
-	if end != pc+1 && !e.overwrittenBeforeExit(end+1, e.f.Code[end].Dst) {
-		e.move(e.f.Code[end].Dst, dst)
+	if p.in.Dst != p.original && !e.overwrittenBeforeExit(p.end+1, p.original) {
+		e.move(p.original, p.in.Dst)
 	}
-	return end, true
+	if p.end != pc+1 && !e.overwrittenBeforeExit(p.end+1, e.f.Code[p.end].Dst) {
+		e.move(e.f.Code[p.end].Dst, p.in.Dst)
+	}
+	return p.end, true
 }
 
 // Both memory proofs and guarded heap-cache hints use the same i32 transfer.

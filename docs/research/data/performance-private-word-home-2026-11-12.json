@@ -1,0 +1,414 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-12",
+  "scope": "One fixed-address private-word loop; original stores and every cancellation check retained. No full-portfolio or release acceptance claim.",
+  "cause": "The spare cache register introduced two serial MOV32 operations around the loop-carried ADD. A stable canonical unique value home removes both moves; actual generated code verifies their removal.",
+  "source": {
+    "baseRevision": "b01fc2991da0fcfec7687e0eaa05aa2d5dad4abb",
+    "source": {
+      "internal/compiler/codegen/memory_bounds.go": {
+        "headSHA256": "8727743bb4823949aa8ce7bb1f53d3bd0883656732b9c4e52ed6383d6b515957",
+        "overlaySHA256": "8727743bb4823949aa8ce7bb1f53d3bd0883656732b9c4e52ed6383d6b515957"
+      },
+      "internal/compiler/codegen/loop_memory_value.go": {
+        "headSHA256": "2040b467a6d303590dfb0adc229d565e5127458511ac579370f0cf34f0138521",
+        "overlaySHA256": "2040b467a6d303590dfb0adc229d565e5127458511ac579370f0cf34f0138521"
+      }
+    },
+    "binaries": {
+      "base": "e8e86668686c2c363010ff660b90e2b80fe9c087e4544b85aa181997f7f2164b",
+      "head": "c21b7be700ef99b1c81885005aeb591ea03c6631e8c93abc55362b9f39e2b158",
+      "wasmtime": "459b281138ba710ed6ee93f6a9c0c7028f553d65ef39a31fb7902531f8bfc7ff",
+      "wasmer": "df7df63877b13bb33a943bcd6e5a62ed7bd898098e4b37feef19871eb664e2ae"
+    },
+    "SDKs": {
+      "schemaVersion": 1,
+      "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm@22/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm@22/22.1.8/etc/clang/arm64-apple-darwin27.cfg\n",
+      "sources": {
+        "build.py": "838b0fedfbe3e94c031ce0e4f5e78e405bdf748d74f5852c9876a624068f86a2",
+        "check.py": "5b2be9c3baa697160fcf0dd7fc36b903f89057a3be8346a8352994a294fd7c69",
+        "common.h": "95ac46774a27b039a8afae0887a0af10af00d4dbdda44d8dc6b99f03459d0f16",
+        "wasmedge.c": "e99c94f3214d3fb4088dfd1894de20c1f97c88d7d8cc760fb38e0b97a92e9fee",
+        "wasmer.c": "c2cffab3443208225becf86bfb1ce68e6192a129020707a03d78322c888d368f",
+        "wasmtime.c": "7bbd408411ea41d6a3b3764da0c76b8ccd14424865e5b4529e8293fcef2f733d"
+      },
+      "runners": [
+        {
+          "runtime": "wasmtime",
+          "sdk": {
+            "id": "wasmtime-c-api",
+            "version": "48.0.1",
+            "includeDirectories": [
+              "include"
+            ],
+            "libraryDirectories": [
+              "lib"
+            ],
+            "resolvedLibrary": "/Users/lijie/source/goplus/wasmvm/artifacts/components/runtime-benchmark/sdk/wasmtime-c-api/wasmtime-v48.0.1-aarch64-macos-c-api/lib/libwasmtime.dylib",
+            "sha256": "bdcb27849cef4ecb62415302aa44ee27167ca8312036f4a8a2e84fb9090e7fc5"
+          },
+          "command": [
+            "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/bin/cc",
+            "-std=c11",
+            "-D_POSIX_C_SOURCE=200809L",
+            "-O2",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/service-sdks-20261109/tools/wasmtime-c-api/include",
+            "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/embedded/c/wasmtime.c",
+            "-o",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmtime-phase",
+            "-L",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/service-sdks-20261109/tools/wasmtime-c-api/lib",
+            "-Wl,-rpath,/Users/lijie/source/goplus/wasmvm/artifacts/service-sdks-20261109/tools/wasmtime-c-api/lib",
+            "-lwasmtime"
+          ],
+          "executable": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmtime-phase",
+          "sha256": "459b281138ba710ed6ee93f6a9c0c7028f553d65ef39a31fb7902531f8bfc7ff"
+        },
+        {
+          "runtime": "wasmer",
+          "sdk": {
+            "id": "wasmer",
+            "version": "7.3.0",
+            "includeDirectories": [
+              "include"
+            ],
+            "libraryDirectories": [
+              "lib"
+            ],
+            "resolvedLibrary": "/private/tmp/wasmvm-native-sdks/wasmer-minimal/lib/libwasmer.dylib",
+            "sha256": "207e65e1d056ce26aaae7d4506f8d3645ea5d92e802df729c1693d2a6ecb74ed"
+          },
+          "command": [
+            "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/bin/cc",
+            "-std=c11",
+            "-D_POSIX_C_SOURCE=200809L",
+            "-O2",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/service-sdks-20261109/tools/wasmer/include",
+            "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/embedded/c/wasmer.c",
+            "-o",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmer-phase",
+            "-L",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/service-sdks-20261109/tools/wasmer/lib",
+            "-Wl,-rpath,/Users/lijie/source/goplus/wasmvm/artifacts/service-sdks-20261109/tools/wasmer/lib",
+            "-lwasmer"
+          ],
+          "executable": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmer-phase",
+          "sha256": "df7df63877b13bb33a943bcd6e5a62ed7bd898098e4b37feef19871eb664e2ae"
+        },
+        {
+          "runtime": "wasmedge",
+          "sdk": {
+            "id": "wasmedge",
+            "version": "0.17.1",
+            "includeDirectories": [
+              "include"
+            ],
+            "libraryDirectories": [
+              "lib"
+            ],
+            "resolvedLibrary": "/opt/homebrew/Cellar/wasmedge/0.17.1_1/lib/libwasmedge.0.1.1.dylib",
+            "sha256": "7f7743d403ff8dbcf7db383b94f6b208496ee7032523d25af5b9c519b0bd30e9"
+          },
+          "command": [
+            "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/bin/cc",
+            "-std=c11",
+            "-D_POSIX_C_SOURCE=200809L",
+            "-O2",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/service-sdks-20261109/tools/wasmedge/include",
+            "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/embedded/c/wasmedge.c",
+            "-o",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmedge-phase",
+            "-L",
+            "/Users/lijie/source/goplus/wasmvm/artifacts/service-sdks-20261109/tools/wasmedge/lib",
+            "-Wl,-rpath,/Users/lijie/source/goplus/wasmvm/artifacts/service-sdks-20261109/tools/wasmedge/lib",
+            "-lwasmedge"
+          ],
+          "executable": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmedge-phase",
+          "sha256": "b8ec72709d1bdbeaffa57c5ae5f84de043a2684948212cca2c619e50e8ff4002"
+        }
+      ]
+    },
+    "fixtureSHA256": "2e7b92c12a31473ef5a65e805948c7d05ac41d569ca252821cdf3a2468451a57",
+    "earlierTimingSourceSHA256": {
+      "internal/compiler/codegen/memory_bounds.go": {
+        "baseSHA256": "6589ca2f0b270079b6616e4fe6a68f25d444ec0dd15e76db2ffdb1107396cb8b",
+        "headSHA256": "8727743bb4823949aa8ce7bb1f53d3bd0883656732b9c4e52ed6383d6b515957"
+      },
+      "internal/compiler/codegen/loop_memory_value.go": {
+        "baseSHA256": "09baffdd5dc1970f82bf651565e89c15d02416a20fadbf7e03b19eb51e942337",
+        "headSHA256": "f242262ae8565bedc40a085a44ec1f313812e1a21aae33108ec1ce1e9345a226"
+      }
+    },
+    "finalRegressionSHA256": "93fae592f30212831c5bc443cf27ce3a4701763cf3ecf34c7f6ac8853a3259c2",
+    "qualification": "Final-source codegen/nativeexec/VM tests pass with Go and pinned LLGo on macOS arm64 and Linux amd64 Docker. Seven affected Go package suites passed the earlier overlay before admission was narrowed. Actual-source codegen coverage is 95.2%; the three affected Go race suites pass. An invalid numeric high-word test also failed the unchanged baseline; the corrected regression uses Hi=0 and retains raw upper Lo bits.",
+    "imageEquivalence": {
+      "true": {
+        "byteIdentical": true,
+        "bytes": 1428,
+        "sha256": "fb734578b12a7c167dc5244aa4d8e37bef3a05e771ad39f1e10856e1809c814a"
+      },
+      "false": {
+        "byteIdentical": true,
+        "bytes": 3028,
+        "sha256": "d51f33840c519733c64c23d76894934619225facde12fe5cb090b8a7b1072484"
+      }
+    },
+    "earlierHeadBinarySHA256": "43740ed05fa0abbdc64be928a8b44c45405b1c81326d9398a4da3c8dea6e700f"
+  },
+  "mediansNsPerIteration": {
+    "base": 0.7628425000000001,
+    "base-aa": 0.76065834,
+    "head": 0.25378541,
+    "head-aa": 0.25417375,
+    "wasmtime": 0.26939166000000003,
+    "wasmtime-aa": 0.27393042,
+    "wasmer": 0.27665709000000005,
+    "wasmer-aa": 0.27147667
+  },
+  "headRatios": {
+    "base": {
+      "ratio": 0.3331281751345811,
+      "ci95": [
+        0.3323343273133212,
+        0.33394002403011935
+      ]
+    },
+    "wasmtime": {
+      "ratio": 0.9316954817008232,
+      "ci95": [
+        0.9110067075570708,
+        0.9501045016215274
+      ]
+    },
+    "wasmer": {
+      "ratio": 0.89493667860015,
+      "ci95": [
+        0.8543132950710354,
+        0.9301589944748484
+      ]
+    }
+  },
+  "AAControls": {
+    "base": {
+      "ratio": 0.9985600143775756,
+      "ci95": [
+        0.9969084451190041,
+        1.0002696013236905
+      ]
+    },
+    "head": {
+      "ratio": 0.9977947365656682,
+      "ci95": [
+        0.9945516760980369,
+        1.0008090832913772
+      ]
+    },
+    "wasmtime": {
+      "ratio": 1.0281825888552307,
+      "ci95": [
+        0.985581121289885,
+        1.0781437526812538
+      ]
+    },
+    "wasmer": {
+      "ratio": 0.9704667862449519,
+      "ci95": [
+        0.9203509026558252,
+        1.0110531904058202
+      ]
+    }
+  },
+  "AAResolvedWithin2.5Percent": {
+    "base": true,
+    "head": true,
+    "wasmtime": false,
+    "wasmer": false
+  },
+  "interpretation": "Own-source A/A controls resolve and the source improvement is substantial. Competitor A/A controls remain explicit; unresolved references do not establish competitive acceptance. Earlier broader-admission measurements are retained separately and not pooled.",
+  "protocol": {
+    "blocks": 20,
+    "samples": 7,
+    "warmups": 2,
+    "iterations": 50000000,
+    "seed": 17,
+    "expected": 50000017,
+    "randomSeed": 2026112543,
+    "commands": {
+      "base": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/base-go-phase",
+        "--backend",
+        "native",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/modern/threads-private-memory.wasm",
+        "--iterations",
+        "50000000",
+        "--seed",
+        "17",
+        "--expected",
+        "50000017",
+        "--samples",
+        "7",
+        "--warmups",
+        "2",
+        "--mode",
+        "api"
+      ],
+      "base-aa": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/base-go-phase",
+        "--backend",
+        "native",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/modern/threads-private-memory.wasm",
+        "--iterations",
+        "50000000",
+        "--seed",
+        "17",
+        "--expected",
+        "50000017",
+        "--samples",
+        "7",
+        "--warmups",
+        "2",
+        "--mode",
+        "api"
+      ],
+      "head": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-home/final-head-go-phase",
+        "--backend",
+        "native",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/modern/threads-private-memory.wasm",
+        "--iterations",
+        "50000000",
+        "--seed",
+        "17",
+        "--expected",
+        "50000017",
+        "--samples",
+        "7",
+        "--warmups",
+        "2",
+        "--mode",
+        "api"
+      ],
+      "head-aa": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-home/final-head-go-phase",
+        "--backend",
+        "native",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/modern/threads-private-memory.wasm",
+        "--iterations",
+        "50000000",
+        "--seed",
+        "17",
+        "--expected",
+        "50000017",
+        "--samples",
+        "7",
+        "--warmups",
+        "2",
+        "--mode",
+        "api"
+      ],
+      "wasmtime": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmtime-phase",
+        "--backend",
+        "compiler",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/modern/threads-private-memory.wasm",
+        "--iterations",
+        "50000000",
+        "--seed",
+        "17",
+        "--expected",
+        "50000017",
+        "--samples",
+        "7",
+        "--warmups",
+        "2"
+      ],
+      "wasmtime-aa": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmtime-phase",
+        "--backend",
+        "compiler",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/modern/threads-private-memory.wasm",
+        "--iterations",
+        "50000000",
+        "--seed",
+        "17",
+        "--expected",
+        "50000017",
+        "--samples",
+        "7",
+        "--warmups",
+        "2"
+      ],
+      "wasmer": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmer-phase",
+        "--backend",
+        "compiler",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/modern/threads-private-memory.wasm",
+        "--iterations",
+        "50000000",
+        "--seed",
+        "17",
+        "--expected",
+        "50000017",
+        "--samples",
+        "7",
+        "--warmups",
+        "2"
+      ],
+      "wasmer-aa": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmer-phase",
+        "--backend",
+        "compiler",
+        "--wasm",
+        "/Users/lijie/source/goplus/wasmvm/benchmarks/modern/threads-private-memory.wasm",
+        "--iterations",
+        "50000000",
+        "--seed",
+        "17",
+        "--expected",
+        "50000017",
+        "--samples",
+        "7",
+        "--warmups",
+        "2"
+      ]
+    },
+    "scope": "Fixed20block/160freshprocess diagnostic; b01fc29 versus cache-home proof and shared dead-immediate plan. Original stores/polls retained; two serialcacheMOVs removed onlyforproven stablecanonicalprivatewordhome; checked original private-memory workload, normal publicAPI/native cancellation and limits retained. Interleave7warmcalls perprocess afterfirst+2warmups; allfirst/warmup/warm checksumsverified. Startup/compile/instantiate/cleanup separate. Same GOMAXPROCS1, pinnedGo1.27.3/Clang22.1.8 and Wasmtime48.0.1/Wasmer7.3.0. No owned builds/tests/profiles/pruning overlap. Reference interruption policies remain distinct. No fullportfolio orreleaseacceptance claim."
+  },
+  "measurementScript": "from pathlib import Path\nimport os,json,random,statistics,sys,time\nROOT=Path('/Users/lijie/source/goplus/wasmvm')\nWORK=Path('/Users/lijie/source/goplus/wasmvm-source-cleanup')\nOUT=Path(__file__).resolve().parent\nsys.path.insert(0,str(WORK/'benchmarks'))\nimport interleaved\nos.environ['GOMAXPROCS']='1'\nfor key in ('WASMVM_COMPILE_PHASE','WASMVM_WARM_PROFILE','WASMVM_WARM_ALLOC_PROFILE','WASMVM_DIAGNOSTIC_JIT_MAP'):os.environ.pop(key,None)\ncount=50000000;seed=17;expected=(count+seed)&0xffffffff\nvariants={'base':ROOT/'artifacts/protocol-cost-20261112/loop-memory-stores/base-go-phase','head':OUT.parent/'final-head-go-phase','wasmtime':ROOT/'artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmtime-phase','wasmer':ROOT/'artifacts/protocol-cost-20261112/loop-memory-stores/references/wasmer-phase'}\ncommands={}\nfor name,binary in variants.items():\n cmd=[str(binary),'--backend','native'if name in ('base','head')else'compiler','--wasm',str(ROOT/'benchmarks/modern/threads-private-memory.wasm'),'--iterations',str(count),'--seed',str(seed),'--expected',str(expected),'--samples','7','--warmups','2']\n if name in ('base','head'):cmd+=['--mode','api']\n commands[name]=cmd;commands[name+'-aa']=cmd\nplan=dict(blocks=20,samples=7,warmups=2,iterations=count,seed=seed,expected=expected,randomSeed=2026112543,commands=commands,scope='Fixed20block/160freshprocess diagnostic; b01fc29 versus cache-home proof and shared dead-immediate plan. Original stores/polls retained; two serialcacheMOVs removed onlyforproven stablecanonicalprivatewordhome; checked original private-memory workload, normal publicAPI/native cancellation and limits retained. Interleave7warmcalls perprocess afterfirst+2warmups; allfirst/warmup/warm checksumsverified. Startup/compile/instantiate/cleanup separate. Same GOMAXPROCS1, pinnedGo1.27.3/Clang22.1.8 and Wasmtime48.0.1/Wasmer7.3.0. No owned builds/tests/profiles/pruning overlap. Reference interruption policies remain distinct. No fullportfolio orreleaseacceptance claim.')\nassert not(OUT/'rows.jsonl').exists()\n(OUT/'plan.json').write_text(json.dumps(plan,indent=2)+'\\n')\nrng=random.Random(plan['randomSeed']);rows=[]\nfor block in range(plan['blocks']):\n observations,orders=interleaved.invoke(commands,120,rng,samples=7)\n for name,ob in observations.items():\n  record=ob['record'];assert record['warmResults']==[expected]*7 and record['warmupResults']==[expected]*2 and record['result']==expected\n  assert record['iterations']==count and record['seed']==seed\n  row=dict(block=block,id=name,observation=ob,orders=orders,nsPerIteration=statistics.median(record['warmCallNs'])/count)\n  with(OUT/'rows.jsonl').open('a')as f:f.write(json.dumps(row)+'\\n')\n  rows.append(row)\n print(block,{name:round(statistics.median(r['nsPerIteration']for r in rows if r['block']==block and r['id']==name),5)for name in commands},flush=True)\nsummary={name:statistics.median(r['nsPerIteration']for r in rows if r['id']==name)for name in commands}\n(OUT/'summary.json').write_text(json.dumps(dict(plan=plan,summary=summary),indent=2)+'\\n');print(json.dumps(summary),flush=True)\n",
+  "raw": {
+    "path": "docs/research/evidence/performance-private-word-home-2026-11-12.jsonl.gz",
+    "sha256": "ff78d4eb6433d4638ec190256ea7c372d2a0e9714374046a6ba1288bfebdb829",
+    "bytes": 32330,
+    "freshProcesses": 160,
+    "warmCallsPerProcess": 7,
+    "warmupsPerProcess": 2,
+    "iterationsPerCall": 50000000
+  },
+  "validation": {
+    "Go": "Affected seven-package semantics on macOS; four-package Linux amd64 Docker semantics; final additional codegen/nativeexec/VM source checks passed.",
+    "LLGo": "Pinned3d92a58 -O3 -lto=full: complete codegen/nativeexec/VM and adversarial word/temporary checks passed on macOS arm64 and Linux amd64 Docker.",
+    "race": "Final-source Go codegen/nativeexec/VM pass.",
+    "codegenStatementCoverage": "95.2% of statements; not specification coverage.",
+    "regressions": "Every original entry, 32/64-bit unaligned words, complete frame/memory contents and forced polls; six intervening-temporary families with multiple counts and wrapping seeds. Numeric input high words are zero; raw upper Lo bits are retained.",
+    "hostedCI": "Required on the eventual PR head before merge; no compiler/platform waiver."
+  }
+}

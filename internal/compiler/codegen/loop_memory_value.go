@@ -73,6 +73,10 @@ func (e *functionEmitter) planLoopMemoryValue(start int, r memoryRegion) *loopMe
 	if e.a.arch == "arm64" && cache.address > 255 && (cache.address%cache.width != 0 || cache.address/cache.width >= 4096) {
 		return nil
 	}
+	if reg, ok := e.loopMemoryValueHome(start, r, &cache); ok {
+		cache.register = reg
+		return &cache
+	}
 	var used [32]bool
 	mark := func(plan *registerPlan) {
 		if plan != nil {
@@ -117,7 +121,9 @@ func (e *functionEmitter) initializeLoopMemoryValue(cache *loopMemoryValue) {
 
 func (e *functionEmitter) loadLoopMemoryValue(in slots.Instruction, cache *loopMemoryValue) {
 	if reg, ok := e.registers[in.Dst]; ok {
-		e.registerMove(reg, cache.register, cache.width == 8)
+		if reg != cache.register {
+			e.registerMove(reg, cache.register, cache.width == 8)
+		}
 		return
 	}
 	e.registerMove(e.operandRegister(0), cache.register, cache.width == 8)
@@ -126,9 +132,69 @@ func (e *functionEmitter) loadLoopMemoryValue(in slots.Instruction, cache *loopM
 
 func (e *functionEmitter) storeLoopMemoryValue(in slots.Instruction, cache *loopMemoryValue) {
 	if reg, ok := e.registers[in.B]; ok {
-		e.registerMove(cache.register, reg, cache.width == 8)
+		if reg != cache.register {
+			e.registerMove(cache.register, reg, cache.width == 8)
+		}
 		return
 	}
 	e.slotLoad(in.B, 0, false, cache.width == 8)
 	e.registerMove(cache.register, e.operandRegister(0), cache.width == 8)
+}
+
+// A stable unique home can carry the private word across the backedge. Require
+// its temporary slot to be unread/unwritten before the load and unchanged after
+// the store, except for the comparison restored by the existing exit snapshot.
+// The shared 32-bit home must already contain zero-extended stored bits.
+func (e *functionEmitter) loopMemoryValueHome(start int, r memoryRegion, cache *loopMemoryValue) (byte, bool) {
+	slot := e.f.Code[cache.load].Dst
+	reg, ok := e.registers[slot]
+	if !ok || r.values != nil || slot < slots.Slot(e.f.LocalCount) || e.f.Code[cache.store].B != slot {
+		return 0, false
+	}
+	var used [32]bool
+	for _, home := range e.registers {
+		if home >= 32 || used[home] {
+			return 0, false
+		}
+		used[home] = true
+	}
+	probe := *e
+	probe.regionLimit, probe.regionEnd = r.end+1, r.end+1
+	probe.provenPCs, probe.guardPCs, probe.elidedPCs = r.proven, r.guards, r.elided
+	probe.regionPredicate, probe.addresses = r.predicate, r.addresses
+	canonical := true
+	for pc := start; pc <= r.end; pc++ {
+		in := e.f.Code[pc]
+		op := in.Op
+		if !(op == 1 || op == 0x1a || op >= 0x20 && op <= 0x22 || op == 0x28 || op == 0x29 || op == 0x36 || op == 0x37 || op == 0x41 || op == 0x42 || op >= 0x45 && op <= 0x5a || op >= 0x67 && op <= 0x8a || op == 0xa7 || op == 0xac || op == 0xad) {
+			return 0, false
+		}
+		if r.elided[pc] {
+			if in.Dst == slot && (r.predicate == nil || pc != r.end) {
+				return 0, false
+			}
+			continue
+		}
+		if pc > cache.store {
+			if p, ok := probe.planDeadImmediate(pc); ok && p.end == pc+2 && p.end <= r.end && p.original == slot && (p.in.Op == 0x6a || p.in.Op == 0x6b || p.in.Op == 0x7c || p.in.Op == 0x7d) && p.in.Dst != slot && probe.canRegisterImmediate(p.in.Op, p.in.Dst, p.in.A, p.value) {
+				safe := p.original != slot || probe.overwrittenBeforeExit(p.end+1, slot)
+				safe = safe && (p.end == pc+1 || e.f.Code[p.end].Dst != slot || probe.overwrittenBeforeExit(p.end+1, slot))
+				for q := pc; q <= p.end; q++ {
+					safe = safe && !r.elided[q]
+				}
+				if safe {
+					pc = p.end
+					continue
+				}
+			}
+		}
+		read, write := scalarSlotUse(in, slots.Slot(e.f.Sources[in.Source].Wasm.A), slot)
+		if pc < cache.load && (read || write) || pc > cache.store && write {
+			return 0, false
+		}
+		if pc > cache.load && pc < cache.store && write {
+			canonical = cache.width == 8 || op >= 0x45 && op <= 0x5a || op >= 0x67 && op <= 0x78 || op == 0x41 && e.f.Sources[in.Source].Wasm.Bits <= 0xffffffff
+		}
+	}
+	return reg, canonical
 }
