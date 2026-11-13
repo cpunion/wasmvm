@@ -24,6 +24,10 @@ func (e *functionEmitter) combinePlain(pc, start int, out *CompiledFunction) (in
 		return pc + 2, true
 	}
 	if e.regionEnd != 0 {
+		if end, ok := e.combineScaledMemory(pc); ok {
+			out.FusedIntegers++
+			return end, true
+		}
 		if end, ok := e.combineDeadImmediate(pc); ok {
 			out.ForwardedScalars++
 			return end, true

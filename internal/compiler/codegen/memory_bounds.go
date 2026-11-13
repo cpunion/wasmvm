@@ -2,6 +2,7 @@ package codegen
 
 import (
 	"math"
+	"math/bits"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -25,6 +26,7 @@ type memoryRegion struct {
 	predicate *loopPredicate
 	operands  map[int]memoryOperand
 	cache     *loopMemoryValue
+	scales    map[int]byte
 }
 
 func (e *functionEmitter) codeLimit() int {
@@ -87,11 +89,31 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 			return boundedValue{max: math.MaxUint32}
 		}
 		proven := map[int]bool{}
+		var scales map[int]byte
 		candidates := 0
 		for pc := start; pc < end; pc++ {
 			in := e.f.Code[pc]
 			src := e.f.Sources[in.Source].Wasm
 			a := get(in.A)
+			if e.a.arch == "amd64" && (in.Op == 0x6c || in.Op == 0x74) && pc+1 < end &&
+				e.f.Code[pc+1].Op >= 0x28 && e.f.Code[pc+1].Op <= 0x35 && e.f.Code[pc+1].A == in.Dst {
+				b := get(in.B)
+				if b.constant {
+					shift := b.max & 31
+					if in.Op == 0x6c {
+						shift = 0
+						if b.max != 0 && b.max&(b.max-1) == 0 {
+							shift = uint64(bits.TrailingZeros64(b.max))
+						}
+					}
+					if shift >= 1 && shift <= 3 && a.max <= math.MaxUint32>>shift {
+						if scales == nil {
+							scales = map[int]byte{}
+						}
+						scales[pc] = byte(shift)
+					}
+				}
+			}
 			if isMemoryAccess(in.Op) {
 				_, size := memoryAccess(in.Op)
 				if a.max+uint64(src.B)+uint64(size) <= e.memoryMinimum {
@@ -108,7 +130,7 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 		if candidates >= 3 {
 			guards, addresses, guarded = e.memoryGuards(start, end, proven)
 		}
-		r := memoryRegion{end: end - 1, proven: proven, guards: guards, guarded: guarded, addresses: addresses}
+		r := memoryRegion{end: end - 1, proven: proven, guards: guards, guarded: guarded, addresses: addresses, scales: scales}
 		if proof := e.memoryLoop(start, r); proof != nil {
 			r.loop = &nativeLoop{yes: proof.yes, exit: proof.exit, flags: true, memory: proof}
 			r.proven, r.guards, r.addresses = proof.proven, nil, proof.addresses
@@ -152,6 +174,7 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 	e.regionEnd = r.end + 1
 	e.provenPCs = r.proven
 	e.memoryOperands = r.operands
+	e.memoryScales = r.scales
 	e.guardPCs = r.guards
 	e.addresses, e.elidedPCs = r.addresses, r.elided
 	e.regionPredicate = r.predicate
@@ -164,6 +187,7 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 		e.regionEnd = 0
 		e.provenPCs = nil
 		e.memoryOperands = nil
+		e.memoryScales = nil
 		e.guardPCs = nil
 		e.vectorAliases = nil
 		e.addresses = nil

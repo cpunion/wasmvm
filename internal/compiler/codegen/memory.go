@@ -273,6 +273,10 @@ func (e *functionEmitter) memoryAMD64(in slots.Instruction, load bool, size uint
 }
 
 func (e *functionEmitter) memoryAMD64At(in slots.Instruction, load bool, size uint32, index byte, offset uint32) {
+	e.memoryAMD64Indexed(in, load, size, index, offset, 0)
+}
+
+func (e *functionEmitter) memoryAMD64Indexed(in slots.Instruction, load bool, size uint32, index byte, offset uint32, scale byte) {
 	slot := in.B
 	if load {
 		slot = in.Dst
@@ -289,7 +293,7 @@ func (e *functionEmitter) memoryAMD64At(in slots.Instruction, load bool, size ui
 			opcode = 0x10
 		}
 		e.a.bytes(0x0f, opcode)
-		e.a.xmemoryAddress(r, index, offset)
+		e.a.xscaledMemoryAddress(r, index, offset, scale)
 		return
 	}
 	r, cached := e.registers[slot]
@@ -323,7 +327,7 @@ func (e *functionEmitter) memoryAMD64At(in slots.Instruction, load bool, size ui
 		} else {
 			e.a.bytes(0x8b)
 		}
-		e.a.xmemoryAddress(r, index, offset)
+		e.a.xscaledMemoryAddress(r, index, offset, scale)
 		if !cached {
 			e.slotStore(slot, 1, false)
 		}
@@ -347,7 +351,7 @@ func (e *functionEmitter) memoryAMD64At(in slots.Instruction, load bool, size ui
 			opcode = 0x88
 		}
 		e.a.bytes(opcode)
-		e.a.xmemoryAddress(r, index, offset)
+		e.a.xscaledMemoryAddress(r, index, offset, scale)
 	}
 }
 

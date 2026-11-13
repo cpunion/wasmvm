@@ -73,6 +73,10 @@ func (e *functionEmitter) memoryOperandFacts(start, end int, r memoryRegion) map
 // R10 is the stable memory base. Index 4 denotes no index, since RSP is never
 // allocated to a guest value. All other indexes use the ordinary SIB form.
 func (a *assembler) xmemoryAddress(reg, index byte, offset uint32) {
+	a.xscaledMemoryAddress(reg, index, offset, 0)
+}
+
+func (a *assembler) xscaledMemoryAddress(reg, index byte, offset uint32, scale byte) {
 	mode := byte(0)
 	if offset != 0 {
 		mode = 0x40
@@ -83,11 +87,53 @@ func (a *assembler) xmemoryAddress(reg, index byte, offset uint32) {
 	if index == 4 {
 		a.bytes(mode | (reg&7)<<3 | 2)
 	} else {
-		a.bytes(mode|(reg&7)<<3|4, (index&7)<<3|2)
+		a.bytes(mode|(reg&7)<<3|4, scale<<6|(index&7)<<3|2)
 	}
 	if mode == 0x40 {
 		a.bytes(byte(offset))
 	} else if mode == 0x80 {
 		a.word(offset)
 	}
+}
+
+// Fold a proven nonwrapping i32 scale into the load's address generator. Only
+// the normal bounded path can consume the three instructions; independent PCs
+// retain their original checked bodies. Every unobserved temporary must already
+// be overwritten before the next effect, trap, poll or region exit.
+func (e *functionEmitter) combineScaledMemory(pc int) (int, bool) {
+	if !e.unmetered || e.a.arch != "amd64" || e.f.Code[pc].Op != 0x41 || pc+2 >= e.codeLimit() {
+		return 0, false
+	}
+	scale := e.memoryScales[pc+1]
+	if scale == 0 {
+		return 0, false
+	}
+	p, ok := e.planDeadImmediate(pc)
+	if !ok || p.end != pc+1 {
+		return 0, false
+	}
+	load := e.f.Code[pc+2]
+	if load.Op < 0x28 || load.Op > 0x35 || load.A != p.original || !e.provenPCs[pc+2] || e.elidedPCs[pc+1] || e.elidedPCs[pc+2] {
+		return 0, false
+	}
+	if _, remapped := e.addresses[pc+2]; remapped {
+		return 0, false
+	}
+	offset := e.f.Sources[load.Source].Wasm.MemoryOffset()
+	if offset > 0x7fffffff || p.original != load.Dst && !e.overwrittenBeforeExit(pc+3, p.original) {
+		return 0, false
+	}
+	// The range proof came from a normal i32 definition. Use a narrow scratch
+	// copy when no home is resident; incoming raw frame upper bits never become
+	// part of the 64-bit effective address.
+	index, resident := e.registers[e.frameRead(p.in.A)]
+	if !resident {
+		e.slotLoad(p.in.A, 0, false, false)
+		index = 0
+	}
+	_, size := memoryAccess(load.Op)
+	e.memoryAMD64Indexed(load, true, size, index, uint32(offset), scale)
+	e.boundsElided++
+	e.directMemoryOperands++
+	return pc + 2, true
 }

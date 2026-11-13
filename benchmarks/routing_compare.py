@@ -237,7 +237,7 @@ def warm_values(case, statistic=None):
             for name in {row['runtime'] for row in rows}}
 
 
-def calibration(case, runtimes, statistic=None):
+def calibration(case, runtimes, statistic=None, blocks=BLOCKS):
     if statistic is None:
         statistic = statistics.mean if case.get('warmStatistic') == 'mean-including-pauses-v1' else statistics.median
     result = []
@@ -248,12 +248,12 @@ def calibration(case, runtimes, statistic=None):
         for row in case['observations']:
             if row['runtime'] in [name, name[3:]]:
                 rates[row['runtime'], row['block']] = statistic(row['record']['warmCallNs'])
-        if any(rates[name, i] <= 0 or rates[name[3:], i] <= 0 for i in range(BLOCKS)):
+        if any(rates[name, i] <= 0 or rates[name[3:], i] <= 0 for i in range(blocks)):
             result.append(dict(runtime=name, resolved=False, reason='unresolved timer control'))
             continue
-        logs = [math.log(rates[name, i] / rates[name[3:], i]) for i in range(BLOCKS)]
+        logs = [math.log(rates[name, i] / rates[name[3:], i]) for i in range(blocks)]
         rng = random.Random(SEED)
-        draws = sorted(math.exp(statistics.mean(rng.choices(logs, k=BLOCKS))) for _ in range(8000))
+        draws = sorted(math.exp(statistics.mean(rng.choices(logs, k=blocks))) for _ in range(8000))
         lower, upper = draws[200], draws[-201]
         result.append(dict(runtime=name, lower=lower, upper=upper, width=upper-lower,
                            resolved=0.975 <= lower <= upper <= 1.025))
@@ -280,6 +280,8 @@ def measurement_fixture(root, fixture, sustained_gc=False, sustained_threads=Fal
 
 
 def measure(args):
+    if not 2 <= args.blocks <= 60 or args.case_id and args.case_id not in GROUPS[args.group]:
+        raise ValueError('select 2–60 fixed blocks and a case within the selected group')
     sustained_gc = getattr(args, 'gc_sustained', False)
     sustained_threads = getattr(args, 'threads_sustained', False)
     if sustained_threads and (args.group != 'threads' or sustained_gc):
@@ -291,6 +293,10 @@ def measure(args):
     if (out / 'results.json').exists():
         raise ValueError('do not replace measured attempts')
     b = json.loads((folder / 'build.json').read_text())
+    if args.case_id:
+        for role in ['base', 'head']:
+            name = role + '-go-native'
+            b['runtimes']['aa-' + name] = dict(b['runtimes'][name])
     if b['head'] != ci.capture(['git', '-C', str(root), 'rev-parse', 'HEAD']):
         raise ValueError('candidate source differs from the built artifact')
     if not hasattr(os, 'sched_setaffinity'):
@@ -304,10 +310,17 @@ def measure(args):
         if 'sourceHashes' in row and own_build.hashes(Path(row['binary']).parent, own_build.ENGINE_PATHS, own_build.HARNESS) != row['sourceHashes']:
             raise ValueError('archived engine identity changed')
     report = dict(status='running', classification='Hosted advisory; controlled milestone acceptance remains open', build=b, group=args.group, cohort='gc-sustained-v1' if sustained_gc else 'threads-sustained-v2' if sustained_threads else 'original22-v1', host=dict(platform=platform.platform(), cpu=ci.capture(['lscpu']), affinity=sorted(os.sched_getaffinity(0)), GOMAXPROCS='1', loadBefore=os.getloadavg(), powerPolicy='Hosted VM default; physical frequency/neighbor isolation not controlled', cachePolicy='Fresh processes; disk compilation cache disabled; filesystem cache not flushed'), cases=[], checks=[], unsupported=[])
+    report['protocol'] = dict(blocks=args.blocks, samples=7, warmups=2, seed=SEED, case=args.case_id,
+                              controls=[name for name in b['runtimes'] if name.startswith('aa-')])
+    if args.case_id:
+        report['cohort'] = 'focused-case-v1'
+    save(out / 'plan.json', report['protocol'])
     rng = random.Random(SEED)
     try:
         for f in b['fixtures']:
             if f['id'] not in GROUPS[args.group]:
+                continue
+            if args.case_id and f['id'] != args.case_id:
                 continue
             f = measurement_fixture(root, f, sustained_gc, sustained_threads)
             if own_build.digest(Path(f['path'])) != f['wasmSha256']:
@@ -340,7 +353,7 @@ def measure(args):
                 commands['native-c'] = [b['builds']['native-c']['binary'], kind, str(f['seed']), str(f['iterations']), str(f['expectedChecksum'])]
             case = dict(fixture=f, observations=[], nativeC=[], sampleOrders=[], warmStatistic='mean-including-pauses-v1' if f['id'] == 'gc/struct-allocation' else 'median-v1')
             report['cases'].append(case)
-            for block in range(BLOCKS):
+            for block in range(args.blocks):
                 rows, orders = interleaved.invoke(commands, 180, rng)
                 case['sampleOrders'].append(orders)
                 for name, row in rows.items():
@@ -354,9 +367,9 @@ def measure(args):
                         case['observations'].append(row)
                 save(out / 'results.json', report)
             case['warmStatistic'] = 'mean-including-pauses-v1' if f['id'] == 'gc/struct-allocation' else 'median-v1'
-            case['calibration'] = calibration(case, b['runtimes'])
+            case['calibration'] = calibration(case, b['runtimes'], blocks=args.blocks)
             if f['id'] == 'gc/struct-allocation':
-                case['medianCalibration'] = calibration(case, b['runtimes'], statistics.median)
+                case['medianCalibration'] = calibration(case, b['runtimes'], statistics.median, args.blocks)
                 case['warmMedianNs'] = warm_values(case, statistics.median)
                 case['warmMeanNs'] = warm_values(case, statistics.mean)
                 case['processWarmMeanNs'] = [dict(runtime=row['runtime'], block=row['block'],
@@ -371,21 +384,21 @@ def measure(args):
     finally:
         report['host']['loadAfter'] = os.getloadavg()
         save(out / 'results.json', report)
-        lines = ['## Runtime routing comparison: ' + args.group + (' / sustained GC (300000 allocation, 1000000 other iterations)' if sustained_gc else ' / sustained Threads (100000 iterations)' if sustained_threads else ' / original22'), '', '**Hosted advisory; controlled milestone acceptance remains open.** Five fresh blocks, two warmups/seven interleaved samples; pinned source/compiler/reference identities, one inherited CPU affinity and GOMAXPROCS=1. Physical CPU power and neighbor contention remain uncontrolled. Each marginal 95% paired A/A interval must lie within ±2.5% for this diagnostic calibration; this is not the controlled native feature equivalence gate.', '', 'Base `' + b['base'] + '`; head `' + b['head'] + '`.', '', '| Workload / statistic | Go native head/base | LLGo native head/base | Go interpreter head/base | LLGo interpreter head/base | LLGo native / Wasmtime | / Native C | A/A within ±2.5% |', '| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |']
+        lines = ['## Runtime routing comparison: ' + args.group + (' / sustained GC (300000 allocation, 1000000 other iterations)' if sustained_gc else ' / sustained Threads (100000 iterations)' if sustained_threads else ' / focused ' + args.case_id if args.case_id else ' / original22'), '', f'**Hosted advisory; controlled milestone acceptance remains open.** {args.blocks} fresh blocks, two warmups/seven interleaved samples; pinned source/compiler/reference identities, one inherited CPU affinity and GOMAXPROCS=1. Physical CPU power and neighbor contention remain uncontrolled. Each marginal 95% paired A/A interval must lie within ±2.5% for this diagnostic calibration; this is not the controlled native feature equivalence gate.', '', 'Base `' + b['base'] + '`; head `' + b['head'] + '`.', '', '| Workload / statistic | Go native head/base | LLGo native head/base | Go interpreter head/base | LLGo interpreter head/base | LLGo native / Wasmtime | / Native C | A/A within ±2.5% |', '| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |']
         for case in report['cases']:
             values = warm_values(case)
             def ratio(a, c):
                 return f'{values[a]/values[c]:.3f}×' if a in values and c in values else 'unavailable'
             cells = [ratio('head-' + co + '-' + be, 'base-' + co + '-' + be) for be in ['native', 'interpreter'] for co in ['go', 'llgo']]
             cells += [ratio('head-llgo-native', 'wasmtime-cranelift'), ratio('head-llgo-native', 'native-c')]
-            resolved = all(c['resolved'] for c in case.get('calibration', [])) and len(case.get('calibration', [])) == 4
+            resolved = bool(case.get('calibration')) and all(c['resolved'] for c in case['calibration']) and len(case['calibration']) == len(report['protocol']['controls'])
             lines.append('| ' + case['fixture']['id'] + (' / process mean' if case.get('warmStatistic') == 'mean-including-pauses-v1' else ' / process median') + ' | ' + ' | '.join(cells) + ' | ' + ('yes, advisory only' if resolved else 'inconclusive') + ' |')
             if case.get('warmStatistic') == 'mean-including-pauses-v1':
                 values = warm_values(case, statistics.median)
                 cells = [ratio('head-' + co + '-' + be, 'base-' + co + '-' + be) for be in ['native', 'interpreter'] for co in ['go', 'llgo']]
                 cells += [ratio('head-llgo-native', 'wasmtime-cranelift'), ratio('head-llgo-native', 'native-c')]
                 lines.append('| ' + case['fixture']['id'] + ' / median diagnostic | ' + ' | '.join(cells) + ' | separate median controls in JSON |')
-        lines += ['', 'Allocation throughput uses the median of five fresh-process means, including every measured warm call and pause within each process. Other cases retain process medians. Allocation median diagnostics and both control reductions remain explicit; this statistic correction changes no counts, timers or samples.', '', 'Status: **' + report['status'] + '**. Complete phases, all runtimes including Wasmer/wazero/WasmEdge, unsupported GC probes, orders, controls and raw observations are retained. No timer/phase subtraction or cross-job pooling; smaller diagnostic components cannot replace complete API outcomes.']
+        lines += ['', f'Allocation throughput uses the median of {args.blocks} fresh-process means, including every measured warm call and pause within each process. Other cases retain process medians. Allocation median diagnostics and both control reductions remain explicit; this statistic correction changes no counts, timers or samples.', '', 'Status: **' + report['status'] + '**. Complete phases, all runtimes including Wasmer/wazero/WasmEdge, unsupported GC probes, orders, controls and raw observations are retained. No timer/phase subtraction or cross-job pooling; smaller diagnostic components cannot replace complete API outcomes.']
         (out / 'report.md').write_text('\n'.join(lines) + '\n')
 
 
@@ -399,6 +412,8 @@ def main():
     for name in ['head-dir', 'build-dir', 'output-dir']:
         runner.add_argument('--' + name, type=Path, required=True)
     runner.add_argument('--group', choices=GROUPS, required=True)
+    runner.add_argument('--case', dest='case_id', help='Exact case in the group; adds identical-binary Go native controls')
+    runner.add_argument('--blocks', type=int, default=BLOCKS, help='Predeclared fixed process blocks (2–60; default portfolio is unchanged)')
     runner.add_argument('--threads-sustained', action='store_true', help='Separate fixed 100000-iteration Threads cohort; original22 is unchanged')
     runner.add_argument('--gc-sustained', action='store_true', help='Separate fixed long GC cohort; never replaces the original22 cases')
     args = parser.parse_args()
