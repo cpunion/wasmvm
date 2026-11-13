@@ -25,6 +25,7 @@ func (e *functionEmitter) planLoopScaledMemory(start int, r memoryRegion) *loopS
 	if get.Op != 0x20 || get.Dst != input || input >= slots.Slot(e.f.LocalCount) || e.f.Slots[input] != wasm.I32 ||
 		literal.Op != 0x41 || mask.Op != 0x71 || mask.A != input || mask.B != literal.Dst || mask.Dst != literal.Dst ||
 		factor.Op != 0x41 || product.A != mask.Dst || product.B != factor.Dst || product.Dst != mask.Dst ||
+		mask.Dst < slots.Slot(e.f.LocalCount) || factor.Dst < slots.Slot(e.f.LocalCount) || mask.Dst == factor.Dst ||
 		load.Op < 0x28 || load.Op > 0x35 || load.A != product.Dst || load.Dst != factor.Dst || !r.proven[start+5] {
 		return nil
 	}

@@ -46,7 +46,7 @@ func guardedScaledLoopFixture(t *testing.T) *slots.Function {
 }
 
 func TestLoopScaledMemoryRequiresGuardedInductionAndRecoverableWords(t *testing.T) {
-	for _, mode := range []string{"valid", "non-low-mask", "unbounded-backedge", "live-product", "missing-index", "shared-home", "views", "copies", "versions", "arm64", "metered", "unproven", "remapped"} {
+	for _, mode := range []string{"valid", "non-low-mask", "unbounded-backedge", "live-product", "local-mask", "same-temporaries", "missing-index", "shared-home", "views", "copies", "versions", "arm64", "metered", "unproven", "remapped"} {
 		f := guardedScaledLoopFixture(t)
 		e := functionEmitter{a: &assembler{arch: "amd64"}, f: f, unmetered: true, usesMemory: true, memoryMinimum: 65536,
 			registers: map[slots.Slot]byte{4: 9}}
@@ -58,6 +58,10 @@ func TestLoopScaledMemoryRequiresGuardedInductionAndRecoverableWords(t *testing.
 			f.Code[7].Op = 0x6a
 		case "live-product":
 			f.Code[6].Op, f.Code[6].Dst = 1, slots.NoSlot
+		case "local-mask":
+			f.Code[1].Dst, f.Code[2].Dst, f.Code[2].B, f.Code[4].A, f.Code[4].Dst, f.Code[5].A = 4, 4, 4, 4, 4, 4
+		case "same-temporaries":
+			f.Code[3].Dst, f.Code[4].B, f.Code[5].Dst = f.Code[2].Dst, f.Code[2].Dst, f.Code[2].Dst
 		case "missing-index":
 			e.registers = nil
 		case "shared-home":
