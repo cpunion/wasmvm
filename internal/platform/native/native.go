@@ -11,11 +11,12 @@ import (
 // leases can still enter, and storage is freed only after leases and entries
 // drain. No finalizer participates in code lifetime.
 type Code struct {
-	mu      sync.Mutex
-	address unsafe.Pointer
-	size    uint64
-	entries []uint32
-	retired bool
+	mu          sync.Mutex
+	address     unsafe.Pointer
+	size        uint64
+	entries     []uint32
+	retired     bool
+	integerOnly bool
 	// A closed lease keeps its pin until all admitted entries have returned.
 	leases uint64
 }
@@ -24,6 +25,18 @@ type Code struct {
 // offsets. maxBytes is a literal budget. Interior continuation labels are not
 // entries. The compiler must validate instructions, relocations and targets.
 func Publish(code []byte, entries []uint32, maxBytes uint64) (*Code, error) {
+	return publishCode(code, entries, maxBytes, false)
+}
+
+// PublishIntegerCode requires a compiler proof for every entry, continuation
+// and linked callee in this image: none may observe or change floating-point
+// control/status. Such code preserves the ambient environment without a
+// transition. Arbitrary machine code must use Publish's complete environment.
+func PublishIntegerCode(code []byte, entries []uint32, maxBytes uint64) (*Code, error) {
+	return publishCode(code, entries, maxBytes, true)
+}
+
+func publishCode(code []byte, entries []uint32, maxBytes uint64, integerOnly bool) (*Code, error) {
 	if !Available {
 		return nil, ErrUnavailable
 	}
@@ -45,7 +58,7 @@ func Publish(code []byte, entries []uint32, maxBytes uint64) (*Code, error) {
 	if p == nil {
 		return nil, ErrUnavailable
 	}
-	return &Code{address: p, size: uint64(len(code)), entries: append([]uint32(nil), entries...)}, nil
+	return &Code{address: p, size: uint64(len(code)), entries: append([]uint32(nil), entries...), integerOnly: integerOnly}, nil
 }
 
 type Lease struct {
@@ -315,7 +328,7 @@ func (c *Context) run(l *Lease, entry uint32, state *State) (Exit, error) {
 	c.active = true
 	r := c.record
 	c.mu.Unlock()
-	status := enter(address, unsafe.Pointer(r))
+	status := enter(address, unsafe.Pointer(r), l.code.integerOnly)
 	runtime.KeepAlive(c)
 	runtime.KeepAlive(l)
 	l.end()

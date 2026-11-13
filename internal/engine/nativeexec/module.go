@@ -260,7 +260,11 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 	}
 	if len(entries) != 0 {
 		var err error
-		out.code, err = native.Publish(code, entries, limits.MaxCodeBytes)
+		publish := native.Publish
+		if integerModule(m) {
+			publish = native.PublishIntegerCode
+		}
+		out.code, err = publish(code, entries, limits.MaxCodeBytes)
 		if err != nil {
 			return nil, err
 		}

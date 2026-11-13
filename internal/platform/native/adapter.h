@@ -35,11 +35,12 @@ void wasmvm_shared_fill(uintptr_t destination, size_t size, uint8_t byte);
 void wasmvm_shared_fence(void);
 void wasmvm_cancel(struct wasmvm_record *ctx);
 uint32_t wasmvm_enter(const void *entry, struct wasmvm_record *ctx);
+uint32_t wasmvm_enter_integer(const void *entry, struct wasmvm_record *ctx);
 uint64_t wasmvm_layout(uint32_t field);
 /* Raw CPU/OS capabilities; all zero on other targets. */
 void wasmvm_cpu_probe(uint32_t *ecx1, uint32_t *ebx7, uint32_t *ecx7, uint64_t *xcr0);
 uint32_t wasmvm_arm64_features(void);
 /* ABI diagnostic: invoke an entry under a non-default host FP environment. */
-uint32_t wasmvm_probe_fp(const void *entry, struct wasmvm_record *ctx, uint32_t expected_status);
+uint32_t wasmvm_probe_fp(const void *entry, struct wasmvm_record *ctx, uint32_t expected_status, uint32_t integer_only);
 uint32_t wasmvm_probe_registers(const void *entry, struct wasmvm_record *ctx);
 #endif
