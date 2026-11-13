@@ -1,11 +1,28 @@
 from pathlib import Path
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import routing_compare as routing
 
 
 class RoutingComparisonTests(unittest.TestCase):
+    def test_focused_case_validates_before_builds_or_timing(self):
+        for case, blocks in [('unknown', 20), ('gc/i31-roundtrip', 20), ('memory/dependent-address', 0), ('memory/dependent-address', 61)]:
+            with self.assertRaises(ValueError):
+                routing.measure(SimpleNamespace(group='memory-simd', case_id=case, blocks=blocks))
+
+    def test_twenty_block_go_controls_use_every_declared_process(self):
+        case = dict(observations=[dict(runtime=name, block=i, record={'warmCallNs': [value] * 7})
+                                 for name, value in [('head-go-native', 100), ('aa-head-go-native', 100)]
+                                 for i in range(20)])
+        runtimes = {'head-go-native': {}, 'aa-head-go-native': {}}
+        self.assertTrue(routing.calibration(case, runtimes, blocks=20)[0]['resolved'])
+        for row in case['observations']:
+            if row['runtime'].startswith('aa-') and row['block'] >= 5:
+                row['record']['warmCallNs'] = [120] * 7
+        self.assertFalse(routing.calibration(case, runtimes, blocks=20)[0]['resolved'])
+
     def test_missing_runtime_dependencies_fail_instead_of_reaching_timing(self):
         self.assertEqual([('libgc.so.1', Path('/lib/libgc.so.1'))], routing.linked_paths(' libgc.so.1 => /lib/libgc.so.1 (0x1)\n'))
         with self.assertRaises(ValueError):

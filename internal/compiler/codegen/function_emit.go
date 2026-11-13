@@ -44,6 +44,7 @@ type functionEmitter struct {
 	directMemoryOperands                                         uint32
 	forwardedMemory                                              uint32
 	memoryOperands                                               map[int]memoryOperand
+	memoryScales                                                 map[int]byte
 	constantRegisters                                            map[uint64]byte
 	runtimeRegisters                                             map[uint32]byte
 	runtimeGlobalValues                                          map[uint32]bool

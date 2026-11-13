@@ -15,6 +15,10 @@ on:
         type: choice
         options: [all, core, memory-simd, gc, threads, applications]
         default: all
+      routing_case:
+        description: Optional exact case within routing_scope; 20 blocks and Go native controls
+        type: string
+        default: ''
       baseline:
         description: Baseline commit or ref in this repository
         default: main
@@ -389,9 +393,14 @@ jobs:
               output.write('LD_LIBRARY_PATH=' + ':'.join(directories) + '\n')
           PY
       - name: Measure only this group on one inherited CPU
+        env:
+          ROUTING_CASE: ${{ inputs.routing_case }}
         run: |
           routing_group="${{ matrix.group }}"
           routing_flags=()
+          if [[ -n "$ROUTING_CASE" ]]; then
+            routing_flags+=(--case "$ROUTING_CASE" --blocks 20)
+          fi
           if [[ "$routing_group" == threads-sustained ]]; then
             routing_group=threads
             routing_flags+=(--threads-sustained)

@@ -1,0 +1,873 @@
+{
+  "scaling-only": {
+    "rawSha256": "e9621040f7b230614ce17394c25544c447512f8d718a8d829d5e59f48fd1cc41",
+    "source": {
+      "base": "b546ea76663c2ee763ce303a7835e1f83096e59d",
+      "head": "9ef24ba0ae1ebdff4138b52b1ee40979051f08bd"
+    },
+    "host": {
+      "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+      "cpu": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           48 bits physical, 48 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  4\nOn-line CPU(s) list:                     0-3\nVendor ID:                               AuthenticAMD\nModel name:                              AMD EPYC 9V45 96-Core Processor\nCPU family:                              26\nModel:                                   2\nThread(s) per core:                      2\nCore(s) per socket:                      2\nSocket(s):                               1\nStepping:                                1\nBogoMIPS:                                5192.19\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology tsc_reliable nonstop_tsc cpuid extd_apicid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves user_shstk avx_vnni avx512_bf16 clzero xsaveerptr rdpru arat npt nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload avx512vbmi umip avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid fsrm avx512_vp2intersect\nVirtualization:                          AMD-V\nHypervisor vendor:                       Microsoft\nVirtualization type:                     full\nL1d cache:                               96 KiB (2 instances)\nL1i cache:                               64 KiB (2 instances)\nL2 cache:                                2 MiB (2 instances)\nL3 cache:                                32 MiB (1 instance)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0-3\nVulnerability Gather data sampling:      Not affected\nVulnerability Ghostwrite:                Not affected\nVulnerability Indirect target selection: Not affected\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Not affected\nVulnerability Mds:                       Not affected\nVulnerability Meltdown:                  Not affected\nVulnerability Mmio stale data:           Not affected\nVulnerability Old microcode:             Not affected\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Not affected\nVulnerability Spec rstack overflow:      Vulnerable: Safe RET, no microcode\nVulnerability Spec store bypass:         Vulnerable\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; Retpolines; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Not affected\nVulnerability Tsx async abort:           Not affected\nVulnerability Vmscape:                   Not affected",
+      "affinity": [
+        0
+      ],
+      "GOMAXPROCS": "1",
+      "loadBefore": [
+        0.47265625,
+        0.11279296875,
+        0.037109375
+      ],
+      "powerPolicy": "Hosted VM default; physical frequency/neighbor isolation not controlled",
+      "cachePolicy": "Fresh processes; disk compilation cache disabled; filesystem cache not flushed",
+      "loadAfter": [
+        1.28173828125,
+        0.56689453125,
+        0.2138671875
+      ]
+    },
+    "protocol": {
+      "blocks": 20,
+      "samples": 7,
+      "warmups": 2,
+      "seed": 2026111019,
+      "case": "memory/dependent-address",
+      "controls": [
+        "aa-base-llgo-interpreter",
+        "aa-base-llgo-native",
+        "aa-head-llgo-interpreter",
+        "aa-head-llgo-native",
+        "aa-base-go-native",
+        "aa-head-go-native"
+      ]
+    },
+    "fixture": {
+      "id": "memory/dependent-address",
+      "wasm": "dependent-address.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 2349411192,
+      "measurement": "warm ns/iteration; deterministic reset included",
+      "wasmSha256": "cbdc8625abf12a3f42ec266b72caebce49ab695124670aa7d805f4dc3370cb61",
+      "sourceSha256": "b93b9d738fe5205fd6111bcabddb59c85008f949929a404d7325f27cd9ecd3ff",
+      "family": "memory",
+      "path": "/home/runner/work/wasmvm/wasmvm/head/benchmarks/native/memory-fixtures/dependent-address.wasm",
+      "producer": "wasm-tools 1.258.0",
+      "unit": "ns/source iteration"
+    },
+    "observations": 400,
+    "alternateChecks": 19,
+    "medianNsPerSourceIteration": {
+      "aa-base-go-native": 1.6665305,
+      "aa-base-llgo-interpreter": 48.381752500000005,
+      "aa-base-llgo-native": 1.6732605,
+      "aa-head-go-native": 1.669441,
+      "aa-head-llgo-interpreter": 53.7095785,
+      "aa-head-llgo-native": 1.663431,
+      "base-go-interpreter": 57.4130635,
+      "base-go-native": 1.6684670000000001,
+      "base-llgo-interpreter": 48.243531000000004,
+      "base-llgo-native": 1.6693335,
+      "head-go-interpreter": 57.275189499999996,
+      "head-go-native": 1.6695635000000002,
+      "head-llgo-interpreter": 53.0887695,
+      "head-llgo-native": 1.6647605,
+      "native-c": 1.412909,
+      "wasmedge-interpreter": 61.072565,
+      "wasmer-cranelift": 1.664204,
+      "wasmtime-cranelift": 1.6579935,
+      "wazero-compiler": 2.125673,
+      "wazero-interpreter": 67.85042200000001
+    },
+    "pairedComparisons": {
+      "head-go-native/base-go-native": {
+        "point": 1.0026335998187312,
+        "ci95": [
+          0.9989193392653766,
+          1.0062181301525948
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      },
+      "head-llgo-native/base-llgo-native": {
+        "point": 0.9982966595492014,
+        "ci95": [
+          0.9951039236115069,
+          1.001393914116898
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      },
+      "head-go-interpreter/base-go-interpreter": {
+        "point": 0.9943469600702687,
+        "ci95": [
+          0.9889058559896159,
+          0.9988016003628676
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      },
+      "head-llgo-interpreter/base-llgo-interpreter": {
+        "point": 1.1005133045559914,
+        "ci95": [
+          1.092034599661489,
+          1.1095590527232086
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      },
+      "head-go-native/wasmtime-cranelift": {
+        "point": 1.0091296685268318,
+        "ci95": [
+          1.006196614129917,
+          1.012222752885462
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      },
+      "head-go-native/wasmer-cranelift": {
+        "point": 1.0048207510020175,
+        "ci95": [
+          1.0016646255026964,
+          1.0079937842882996
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      },
+      "head-go-native/wazero-compiler": {
+        "point": 0.7852616461054908,
+        "ci95": [
+          0.7833673858596814,
+          0.7871049770177557
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      },
+      "head-go-native/native-c": {
+        "point": 1.1822078548986892,
+        "ci95": [
+          1.178896738658562,
+          1.1861372622700934
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      },
+      "head-llgo-native/head-go-native": {
+        "point": 0.995368387981176,
+        "ci95": [
+          0.9914743864556087,
+          0.998994851012318
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      }
+    },
+    "calibration": [
+      {
+        "runtime": "aa-base-llgo-interpreter",
+        "lower": 0.9948162430452957,
+        "upper": 1.0068386574237156,
+        "width": 0.012022414378419888,
+        "resolved": true
+      },
+      {
+        "runtime": "aa-base-llgo-native",
+        "lower": 0.9972026171471399,
+        "upper": 1.0058076453915643,
+        "width": 0.00860502824442444,
+        "resolved": true
+      },
+      {
+        "runtime": "aa-head-llgo-interpreter",
+        "lower": 1.0016733776233397,
+        "upper": 1.0148534553779371,
+        "width": 0.013180077754597397,
+        "resolved": true
+      },
+      {
+        "runtime": "aa-head-llgo-native",
+        "lower": 0.9972959882760715,
+        "upper": 1.0041667295661092,
+        "width": 0.00687074129003773,
+        "resolved": true
+      },
+      {
+        "runtime": "aa-base-go-native",
+        "lower": 0.9970132792091102,
+        "upper": 1.0067243739949971,
+        "width": 0.009711094785886942,
+        "resolved": true
+      },
+      {
+        "runtime": "aa-head-go-native",
+        "lower": 0.9969364731113023,
+        "upper": 1.0041643487764702,
+        "width": 0.0072278756651679155,
+        "resolved": true
+      }
+    ],
+    "phaseMediansNs": {
+      "aa-head-go-native": {
+        "cleanup": 20851.0,
+        "compileValidate": 621313.0,
+        "engineSetup": 13971.0,
+        "exportLookup": 361.0,
+        "firstCall": 1723056.0,
+        "instantiate": 49585.0,
+        "load": 38883.5
+      },
+      "wazero-compiler": {
+        "cleanup": 9069.0,
+        "compileValidate": 300664.0,
+        "engineSetup": 111399.5,
+        "exportLookup": 2819.0,
+        "firstCall": 2394994.5,
+        "instantiate": 23150.5,
+        "load": 28944.0
+      },
+      "aa-base-llgo-native": {
+        "cleanup": 18648.0,
+        "compileValidate": 591171.5,
+        "engineSetup": 8382.0,
+        "exportLookup": 671.0,
+        "firstCall": 1673798.5,
+        "instantiate": 35814.0,
+        "load": 24016.5
+      },
+      "aa-base-llgo-interpreter": {
+        "cleanup": 4502.0,
+        "compileValidate": 158329.5,
+        "engineSetup": 7952.0,
+        "exportLookup": 656.0,
+        "firstCall": 48552046.5,
+        "instantiate": 44597.0,
+        "load": 24927.5
+      },
+      "base-go-native": {
+        "cleanup": 20250.5,
+        "compileValidate": 600108.0,
+        "engineSetup": 13089.5,
+        "exportLookup": 360.5,
+        "firstCall": 1713401.0,
+        "instantiate": 42855.0,
+        "load": 39214.5
+      },
+      "wasmtime-cranelift": {
+        "cleanup": 99906.0,
+        "compileValidate": 1343077.0,
+        "engineSetup": 173326.5,
+        "exportLookup": 8938.5,
+        "firstCall": 1720301.0,
+        "instantiate": 33681.0,
+        "load": 15112.5
+      },
+      "aa-head-llgo-interpreter": {
+        "cleanup": 4437.0,
+        "compileValidate": 130843.0,
+        "engineSetup": 6925.5,
+        "exportLookup": 686.0,
+        "firstCall": 53745062.0,
+        "instantiate": 25804.5,
+        "load": 23986.5
+      },
+      "base-llgo-native": {
+        "cleanup": 17947.5,
+        "compileValidate": 587839.5,
+        "engineSetup": 8057.0,
+        "exportLookup": 676.0,
+        "firstCall": 1682926.5,
+        "instantiate": 38008.0,
+        "load": 23971.0
+      },
+      "aa-base-go-native": {
+        "cleanup": 20340.5,
+        "compileValidate": 611538.0,
+        "engineSetup": 13195.0,
+        "exportLookup": 371.0,
+        "firstCall": 1718710.5,
+        "instantiate": 46895.5,
+        "load": 37226.0
+      },
+      "wazero-interpreter": {
+        "cleanup": 8422.5,
+        "compileValidate": 91318.0,
+        "engineSetup": 4322.0,
+        "exportLookup": 566.0,
+        "firstCall": 67735249.5,
+        "instantiate": 30271.0,
+        "load": 28613.0
+      },
+      "base-llgo-interpreter": {
+        "cleanup": 4707.0,
+        "compileValidate": 159291.5,
+        "engineSetup": 7556.5,
+        "exportLookup": 636.0,
+        "firstCall": 47673081.5,
+        "instantiate": 44912.5,
+        "load": 23931.0
+      },
+      "head-go-interpreter": {
+        "cleanup": 5172.5,
+        "compileValidate": 160526.5,
+        "engineSetup": 9159.0,
+        "exportLookup": 335.5,
+        "firstCall": 56910991.5,
+        "instantiate": 22644.0,
+        "load": 38067.5
+      },
+      "aa-head-llgo-native": {
+        "cleanup": 20606.0,
+        "compileValidate": 555030.0,
+        "engineSetup": 7011.0,
+        "exportLookup": 641.0,
+        "firstCall": 1682884.0,
+        "instantiate": 37436.5,
+        "load": 24191.5
+      },
+      "head-llgo-interpreter": {
+        "cleanup": 4506.5,
+        "compileValidate": 127187.0,
+        "engineSetup": 6429.5,
+        "exportLookup": 661.0,
+        "firstCall": 54255490.0,
+        "instantiate": 14301.0,
+        "load": 24447.0
+      },
+      "wasmedge-interpreter": {
+        "cleanup": 58518.5,
+        "compileValidate": 70355.5,
+        "engineSetup": 29369.5,
+        "exportLookup": 901.0,
+        "firstCall": 62575720.0,
+        "instantiate": 46490.5,
+        "load": 16545.0
+      },
+      "head-llgo-native": {
+        "cleanup": 17736.5,
+        "compileValidate": 599064.0,
+        "engineSetup": 8477.5,
+        "exportLookup": 701.0,
+        "firstCall": 1675489.0,
+        "instantiate": 36730.5,
+        "load": 25117.5
+      },
+      "base-go-interpreter": {
+        "cleanup": 5188.0,
+        "compileValidate": 150677.5,
+        "engineSetup": 11141.5,
+        "exportLookup": 341.0,
+        "firstCall": 57582943.0,
+        "instantiate": 20596.0,
+        "load": 35409.0
+      },
+      "wasmer-cranelift": {
+        "cleanup": 69986.0,
+        "compileValidate": 1207046.0,
+        "engineSetup": 167443.5,
+        "exportLookup": 10055.0,
+        "firstCall": 1720309.5,
+        "instantiate": 57802.0,
+        "load": 15828.5
+      },
+      "head-go-native": {
+        "cleanup": 21157.5,
+        "compileValidate": 625029.0,
+        "engineSetup": 14447.0,
+        "exportLookup": 370.0,
+        "firstCall": 1731625.5,
+        "instantiate": 46650.5,
+        "load": 38603.0
+      },
+      "native-c": {}
+    },
+    "classification": "Hosted advisory; controlled milestone acceptance remains open",
+    "limitations": "Single fixed hosted event, physical frequency/neighbor isolation uncontrolled; native C unchecked. Startup/preparation/first/warm boundaries remain separate. No cross-event pooling or full-portfolio parity claim."
+  },
+  "guarded-loop": {
+    "rawSha256": "83040ad49997b4dc88ea7ba26b734a3c710224f2e12fd80fe42b5003c8ac43ac",
+    "source": {
+      "base": "b546ea76663c2ee763ce303a7835e1f83096e59d",
+      "head": "95943842febc2d3571547c72f2d62bc79f232f88"
+    },
+    "host": {
+      "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+      "cpu": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           48 bits physical, 48 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  4\nOn-line CPU(s) list:                     0-3\nVendor ID:                               AuthenticAMD\nModel name:                              AMD EPYC 7763 64-Core Processor\nCPU family:                              25\nModel:                                   1\nThread(s) per core:                      2\nCore(s) per socket:                      2\nSocket(s):                               1\nStepping:                                1\nBogoMIPS:                                4890.85\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl tsc_reliable nonstop_tsc cpuid extd_apicid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves user_shstk clzero xsaveerptr rdpru arat npt nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload umip vaes vpclmulqdq rdpid fsrm\nVirtualization:                          AMD-V\nHypervisor vendor:                       Microsoft\nVirtualization type:                     full\nL1d cache:                               64 KiB (2 instances)\nL1i cache:                               64 KiB (2 instances)\nL2 cache:                                1 MiB (2 instances)\nL3 cache:                                32 MiB (1 instance)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0-3\nVulnerability Gather data sampling:      Not affected\nVulnerability Ghostwrite:                Not affected\nVulnerability Indirect target selection: Not affected\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Not affected\nVulnerability Mds:                       Not affected\nVulnerability Meltdown:                  Not affected\nVulnerability Mmio stale data:           Not affected\nVulnerability Old microcode:             Not affected\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Not affected\nVulnerability Spec rstack overflow:      Vulnerable: Safe RET, no microcode\nVulnerability Spec store bypass:         Vulnerable\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; Retpolines; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Vulnerable: No microcode\nVulnerability Tsx async abort:           Not affected\nVulnerability Vmscape:                   Not affected",
+      "affinity": [
+        0
+      ],
+      "GOMAXPROCS": "1",
+      "loadBefore": [
+        0.40966796875,
+        0.09716796875,
+        0.0322265625
+      ],
+      "powerPolicy": "Hosted VM default; physical frequency/neighbor isolation not controlled",
+      "cachePolicy": "Fresh processes; disk compilation cache disabled; filesystem cache not flushed",
+      "loadAfter": [
+        1.12548828125,
+        0.71435546875,
+        0.3056640625
+      ]
+    },
+    "protocol": {
+      "blocks": 20,
+      "samples": 7,
+      "warmups": 2,
+      "seed": 2026111019,
+      "case": "memory/dependent-address",
+      "controls": [
+        "aa-base-llgo-interpreter",
+        "aa-base-llgo-native",
+        "aa-head-llgo-interpreter",
+        "aa-head-llgo-native",
+        "aa-base-go-native",
+        "aa-head-go-native"
+      ]
+    },
+    "fixture": {
+      "id": "memory/dependent-address",
+      "wasm": "dependent-address.wasm",
+      "seed": 305419896,
+      "iterations": 1000000,
+      "expectedChecksum": 2349411192,
+      "measurement": "warm ns/iteration; deterministic reset included",
+      "wasmSha256": "cbdc8625abf12a3f42ec266b72caebce49ab695124670aa7d805f4dc3370cb61",
+      "sourceSha256": "b93b9d738fe5205fd6111bcabddb59c85008f949929a404d7325f27cd9ecd3ff",
+      "family": "memory",
+      "path": "/home/runner/work/wasmvm/wasmvm/head/benchmarks/native/memory-fixtures/dependent-address.wasm",
+      "producer": "wasm-tools 1.258.0",
+      "unit": "ns/source iteration"
+    },
+    "observations": 400,
+    "alternateChecks": 19,
+    "medianNsPerSourceIteration": {
+      "aa-base-go-native": 2.5711364999999997,
+      "aa-base-llgo-interpreter": 85.9681365,
+      "aa-base-llgo-native": 2.5393274999999997,
+      "aa-head-go-native": 1.9084105,
+      "aa-head-llgo-interpreter": 97.52192,
+      "aa-head-llgo-native": 1.903372,
+      "base-go-interpreter": 107.7205035,
+      "base-go-native": 2.5765515,
+      "base-llgo-interpreter": 86.09286850000001,
+      "base-llgo-native": 2.543375,
+      "head-go-interpreter": 107.8154975,
+      "head-go-native": 1.908356,
+      "head-llgo-interpreter": 97.66205249999999,
+      "head-llgo-native": 1.9042824999999999,
+      "native-c": 1.887883,
+      "wasmedge-interpreter": 244.227554,
+      "wasmer-cranelift": 2.2110564999999998,
+      "wasmtime-cranelift": 2.2044935,
+      "wazero-compiler": 2.95752,
+      "wazero-interpreter": 179.50726250000002
+    },
+    "pairedComparisons": {
+      "head-go-native/base-go-native": {
+        "point": 0.7440063093037053,
+        "ci95": [
+          0.740705957625564,
+          0.7474756898769798
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      },
+      "head-llgo-native/base-llgo-native": {
+        "point": 0.7489071437304314,
+        "ci95": [
+          0.7470244398930241,
+          0.7507357528605214
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      },
+      "head-go-interpreter/base-go-interpreter": {
+        "point": 1.00174908675509,
+        "ci95": [
+          1.000110734547052,
+          1.0034789462911358
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      },
+      "head-llgo-interpreter/base-llgo-interpreter": {
+        "point": 1.135935208620151,
+        "ci95": [
+          1.1324564180257555,
+          1.1400250498670903
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      },
+      "head-go-native/wasmtime-cranelift": {
+        "point": 0.8648300828513926,
+        "ci95": [
+          0.8631877799647087,
+          0.8663074211985903
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      },
+      "head-go-native/wasmer-cranelift": {
+        "point": 0.8616452044586645,
+        "ci95": [
+          0.8592058450893133,
+          0.8636156358485034
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      },
+      "head-go-native/wazero-compiler": {
+        "point": 0.6439132444162872,
+        "ci95": [
+          0.6396424638374981,
+          0.6481280527256674
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      },
+      "head-go-native/native-c": {
+        "point": 1.0107281535558075,
+        "ci95": [
+          1.007802642733538,
+          1.012949030031827
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      },
+      "head-llgo-native/head-go-native": {
+        "point": 0.9970287693677975,
+        "ci95": [
+          0.9953935909350363,
+          0.998636202108091
+        ],
+        "kind": "marginal 95% paired block bootstrap; diagnostic, not simultaneous controlled acceptance"
+      }
+    },
+    "calibration": [
+      {
+        "runtime": "aa-base-llgo-interpreter",
+        "lower": 0.9967365021388905,
+        "upper": 0.9998468098737552,
+        "width": 0.003110307734864648,
+        "resolved": true
+      },
+      {
+        "runtime": "aa-base-llgo-native",
+        "lower": 0.9970843332362425,
+        "upper": 1.0020250619137296,
+        "width": 0.004940728677487183,
+        "resolved": true
+      },
+      {
+        "runtime": "aa-head-llgo-interpreter",
+        "lower": 0.9934288577009602,
+        "upper": 1.0013618481917468,
+        "width": 0.007932990490786551,
+        "resolved": true
+      },
+      {
+        "runtime": "aa-head-llgo-native",
+        "lower": 0.9987964559099063,
+        "upper": 1.0022355238858918,
+        "width": 0.003439067975985477,
+        "resolved": true
+      },
+      {
+        "runtime": "aa-base-go-native",
+        "lower": 0.9924651885674632,
+        "upper": 1.0055289474445772,
+        "width": 0.013063758877113973,
+        "resolved": true
+      },
+      {
+        "runtime": "aa-head-go-native",
+        "lower": 0.9985216311661019,
+        "upper": 1.001369164157588,
+        "width": 0.0028475329914859904,
+        "resolved": true
+      }
+    ],
+    "phaseMediansNs": {
+      "aa-head-go-native": {
+        "cleanup": 21139.5,
+        "compileValidate": 808509.0,
+        "engineSetup": 17713.0,
+        "exportLookup": 555.5,
+        "firstCall": 1991847.5,
+        "instantiate": 63850.0,
+        "load": 49253.0
+      },
+      "wazero-compiler": {
+        "cleanup": 7439.0,
+        "compileValidate": 390980.0,
+        "engineSetup": 142041.5,
+        "exportLookup": 3291.0,
+        "firstCall": 3240101.0,
+        "instantiate": 25854.0,
+        "load": 38352.0
+      },
+      "aa-base-llgo-native": {
+        "cleanup": 18365.0,
+        "compileValidate": 745791.5,
+        "engineSetup": 10414.5,
+        "exportLookup": 681.5,
+        "firstCall": 2531252.0,
+        "instantiate": 44804.5,
+        "load": 30247.0
+      },
+      "aa-base-llgo-interpreter": {
+        "cleanup": 3096.0,
+        "compileValidate": 192272.0,
+        "engineSetup": 9558.0,
+        "exportLookup": 676.0,
+        "firstCall": 85951361.0,
+        "instantiate": 54372.5,
+        "load": 30016.5
+      },
+      "base-go-native": {
+        "cleanup": 20633.5,
+        "compileValidate": 761180.5,
+        "engineSetup": 19201.5,
+        "exportLookup": 546.0,
+        "firstCall": 2618486.5,
+        "instantiate": 62663.5,
+        "load": 37926.0
+      },
+      "wasmtime-cranelift": {
+        "cleanup": 93025.0,
+        "compileValidate": 1426961.5,
+        "engineSetup": 203076.0,
+        "exportLookup": 8626.5,
+        "firstCall": 2504976.5,
+        "instantiate": 50414.5,
+        "load": 19827.5
+      },
+      "aa-head-llgo-interpreter": {
+        "cleanup": 3080.5,
+        "compileValidate": 186335.5,
+        "engineSetup": 9433.0,
+        "exportLookup": 706.0,
+        "firstCall": 97702866.0,
+        "instantiate": 52283.0,
+        "load": 28935.0
+      },
+      "base-llgo-native": {
+        "cleanup": 18194.5,
+        "compileValidate": 731855.5,
+        "engineSetup": 10184.5,
+        "exportLookup": 651.0,
+        "firstCall": 2525535.0,
+        "instantiate": 42079.0,
+        "load": 29515.5
+      },
+      "aa-base-go-native": {
+        "cleanup": 20608.0,
+        "compileValidate": 771847.0,
+        "engineSetup": 17287.0,
+        "exportLookup": 576.0,
+        "firstCall": 2611012.5,
+        "instantiate": 67807.5,
+        "load": 35371.5
+      },
+      "wazero-interpreter": {
+        "cleanup": 7279.0,
+        "compileValidate": 98821.5,
+        "engineSetup": 4844.0,
+        "exportLookup": 425.5,
+        "firstCall": 180153127.5,
+        "instantiate": 28428.5,
+        "load": 35832.5
+      },
+      "base-llgo-interpreter": {
+        "cleanup": 3025.5,
+        "compileValidate": 191149.5,
+        "engineSetup": 9402.0,
+        "exportLookup": 721.0,
+        "firstCall": 86150605.0,
+        "instantiate": 54012.0,
+        "load": 28979.0
+      },
+      "head-go-interpreter": {
+        "cleanup": 3792.0,
+        "compileValidate": 183579.5,
+        "engineSetup": 14562.5,
+        "exportLookup": 450.5,
+        "firstCall": 107851317.5,
+        "instantiate": 23639.5,
+        "load": 36247.5
+      },
+      "aa-head-llgo-native": {
+        "cleanup": 20263.0,
+        "compileValidate": 734335.5,
+        "engineSetup": 10485.0,
+        "exportLookup": 656.5,
+        "firstCall": 1908141.5,
+        "instantiate": 44809.5,
+        "load": 29986.5
+      },
+      "head-llgo-interpreter": {
+        "cleanup": 3065.5,
+        "compileValidate": 194811.0,
+        "engineSetup": 9563.0,
+        "exportLookup": 706.0,
+        "firstCall": 97625164.5,
+        "instantiate": 55690.0,
+        "load": 29556.0
+      },
+      "wasmedge-interpreter": {
+        "cleanup": 58259.0,
+        "compileValidate": 64211.5,
+        "engineSetup": 28919.5,
+        "exportLookup": 792.0,
+        "firstCall": 246561312.5,
+        "instantiate": 61350.5,
+        "load": 18339.5
+      },
+      "head-llgo-native": {
+        "cleanup": 19506.5,
+        "compileValidate": 744604.0,
+        "engineSetup": 10420.0,
+        "exportLookup": 641.0,
+        "firstCall": 1906830.0,
+        "instantiate": 45075.0,
+        "load": 29670.5
+      },
+      "base-go-interpreter": {
+        "cleanup": 3682.0,
+        "compileValidate": 197341.0,
+        "engineSetup": 15459.0,
+        "exportLookup": 450.5,
+        "firstCall": 108191444.0,
+        "instantiate": 21836.5,
+        "load": 39138.5
+      },
+      "wasmer-cranelift": {
+        "cleanup": 64456.0,
+        "compileValidate": 1257473.0,
+        "engineSetup": 177844.0,
+        "exportLookup": 6247.0,
+        "firstCall": 2448978.5,
+        "instantiate": 72822.0,
+        "load": 19031.0
+      },
+      "head-go-native": {
+        "cleanup": 21716.0,
+        "compileValidate": 764376.5,
+        "engineSetup": 18059.0,
+        "exportLookup": 556.0,
+        "firstCall": 1999369.5,
+        "instantiate": 65788.5,
+        "load": 44228.0
+      },
+      "native-c": {}
+    },
+    "classification": "Hosted advisory; controlled milestone acceptance remains open",
+    "limitations": "Single fixed hosted event, physical frequency/neighbor isolation uncontrolled; native C unchecked. Startup/preparation/first/warm boundaries remain separate. No cross-event pooling or full-portfolio parity claim."
+  },
+  "imageDiagnostic": {
+    "head": "95943842febc2d3571547c72f2d62bc79f232f88",
+    "productionHashes": {
+      "internal/compiler/codegen/function_emit.go": "9226ab9811595d23ba48b8280b4cc881c90e694c7fc73f72d1a58e054303c62f",
+      "internal/compiler/codegen/loop_scaled_memory.go": "82f8ec1f38fb73c3603e6d2048c801c72902868b72027221462f4aaeb4cb5730",
+      "internal/compiler/codegen/memory.go": "cfba81c0c28fc6e567e582817a745ae4e9de484234ffb9baeb510610b34666f4",
+      "internal/compiler/codegen/memory_bounds.go": "b8f132e126316ba6e9852f0d49146dcc4c397ef6f3d0808a9bc5b8d534370c11",
+      "internal/compiler/codegen/memory_loops.go": "134448ed68ee4efafbea1d60222573b0ef7636b94fee6aef3bbaa4de52ce6658",
+      "internal/compiler/codegen/memory_operands.go": "dc46786d05cedc29967c882b35b03670441f562ec341d755b915ff309c1dfbfd",
+      "internal/compiler/codegen/selection.go": "4c58bae478049739d3e67b54d6199f20ca0b0f459bad39aed36717320aaaee02"
+    },
+    "scope": "Diagnostic codegen helper rewrites source offsets. Same configuration base/head; not full Linux production image identity.",
+    "images": {
+      "dependent-amd64": {
+        "baseBytes": 3453,
+        "headBytes": 3461,
+        "identical": false,
+        "headSha256": "43b21c89576b278a8bdd570e2191ea06952402512e7f1282535686c33e53bab9",
+        "loopGuards": 1,
+        "fusedIntegers": 7
+      },
+      "dependent-arm64": {
+        "baseBytes": 2412,
+        "headBytes": 2412,
+        "identical": true,
+        "headSha256": "44b35ecf9c1185a62a077a6dee2a7bada3bb8be7dc9374934bd6e8e102d8b83f",
+        "loopGuards": 0,
+        "fusedIntegers": 6
+      },
+      "narrow-amd64": {
+        "baseBytes": 3762,
+        "headBytes": 3762,
+        "identical": true,
+        "headSha256": "23939d5ce6c96ebf0f85847e2d8321c470dd317594cce47fa75de7b5987d0c6a",
+        "loopGuards": 0,
+        "fusedIntegers": 3
+      },
+      "narrow-arm64": {
+        "baseBytes": 2740,
+        "headBytes": 2740,
+        "identical": true,
+        "headSha256": "331859bc5b14b4c06f810d6fa3635e40a2bcf5cffc048de5b96a29d13a2ee309",
+        "loopGuards": 0,
+        "fusedIntegers": 4
+      },
+      "float-amd64": {
+        "baseBytes": 4639,
+        "headBytes": 4639,
+        "identical": true,
+        "headSha256": "8e6e780a91bf2ee4a49b0cfca434c6f48d9081b4dddb6f24e4abe5d235980910",
+        "loopGuards": 0,
+        "fusedIntegers": 13
+      },
+      "float-arm64": {
+        "baseBytes": 3520,
+        "headBytes": 3520,
+        "identical": true,
+        "headSha256": "380edbc35746b9a7e035b16e7bf4043a749755ac8f6db4dccfdad8ed1b8aaaf8",
+        "loopGuards": 0,
+        "fusedIntegers": 22
+      },
+      "private-amd64": {
+        "baseBytes": 2038,
+        "headBytes": 2038,
+        "identical": true,
+        "headSha256": "9f1a50af74c1b3a73cdae5ff6c0c5ad450ebf05df26de72054f21a896919c2c4",
+        "loopGuards": 0,
+        "fusedIntegers": 0
+      },
+      "private-arm64": {
+        "baseBytes": 1428,
+        "headBytes": 1428,
+        "identical": true,
+        "headSha256": "eb14de49351bf4842d6b9318bff140b205f49eb97fefd49fe605e8802a95e5eb",
+        "loopGuards": 0,
+        "fusedIntegers": 0
+      },
+      "shared-amd64": {
+        "baseBytes": 2179,
+        "headBytes": 2179,
+        "identical": true,
+        "headSha256": "6e9384d36c1313f20ef5e2bff485c9675588d88cfb45db935b1da6d277174d10",
+        "loopGuards": 0,
+        "fusedIntegers": 0
+      },
+      "shared-arm64": {
+        "baseBytes": 1560,
+        "headBytes": 1560,
+        "identical": true,
+        "headSha256": "6016d6a05c2722e0d0b9632860d69832df03f7c3cea393fec7500327d93e0f81",
+        "loopGuards": 0,
+        "fusedIntegers": 0
+      }
+    }
+  },
+  "applicationImageDiagnostic": {
+    "scope": "Docker amd64 semantic/image diagnostic only, not native performance; exact nativeexec full relocated image under its detected CPU profile",
+    "head": "95943842febc2d3571547c72f2d62bc79f232f88",
+    "applications": [
+      {
+        "name": "sha256-clang",
+        "baseBytes": 126970,
+        "headBytes": 126970,
+        "identical": true,
+        "baseSha256": "ce56b5cfc5a780379b8916707fc4281cc5420fae192ac7adba631ce35549fce1",
+        "headSha256": "ce56b5cfc5a780379b8916707fc4281cc5420fae192ac7adba631ce35549fce1"
+      },
+      {
+        "name": "sha256-rust",
+        "baseBytes": 127110,
+        "headBytes": 127110,
+        "identical": true,
+        "baseSha256": "95da8c2816cde2bb9ad08eecf8142522b6117c9efd0b793842cde14d2c35c849",
+        "headSha256": "95da8c2816cde2bb9ad08eecf8142522b6117c9efd0b793842cde14d2c35c849"
+      }
+    ]
+  },
+  "runs": {
+    "scaling-only": 43441525795,
+    "guarded-loop": 43448812030,
+    "cancelled-before-measurement": 43447453721
+  },
+  "cancelledEvent": "Source proof audit added independent temporary-slot gates before measurement; superseded build cancellation completed. No completed cohort was discarded for an unfavorable result."
+}
