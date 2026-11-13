@@ -27,6 +27,7 @@ func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 	if source.closed.Load() {
 		return true, wasm.ErrClosed
 	}
+	var inputState, outputState canonical.Codec
 	complete := false
 	var codec, output *canonical.Codec
 	var values, bytes uint64
@@ -63,7 +64,7 @@ func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 	if result.Values != nil || count > uint64(b.remain()) || result.Count != 0 && uint64(result.Count) != count || count == 0 && !result.Closed && b.remain() != 0 {
 		return true, vm.ErrType
 	}
-	codec = in.bufferCodec(c, w.scope, nil, r.typ.Element)
+	codec = in.initBufferCodec(&inputState, c, w.scope, nil, r.typ.Element)
 	codec.MaxValues = in.config.MaxValues - in.heldValues
 	codec.Transfer.MaxBytes = in.config.MaxBytes - in.heldBytes
 	value, err := codec.Clone(batch, Value{Text: result.Bytes})
@@ -74,7 +75,7 @@ func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 		return true, err
 	}
 	if count != 0 {
-		output, err = b.store(c, value)
+		output, err = b.storeCodec(c, value, &outputState)
 		if err != nil {
 			if !r.rejectCopy(err) {
 				return true, err

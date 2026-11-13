@@ -288,6 +288,7 @@ func (in *Instance) startSourceRead(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 		w.closeSource()
 	}
 	t.onResolve = func(current *vm.Caller, value *Value, cancelled bool) (err error) {
+		var outputState canonical.Codec
 		var output *canonical.Codec
 		complete := false
 		defer func() {
@@ -312,7 +313,7 @@ func (in *Instance) startSourceRead(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 				return vm.ErrType
 			}
 			if !unit && count != 0 {
-				output, err = b.store(current, *value)
+				output, err = b.storeCodec(current, *value, &outputState)
 				if err != nil {
 					if !r.rejectCopy(err) {
 						return err

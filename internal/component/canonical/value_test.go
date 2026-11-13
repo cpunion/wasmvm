@@ -12,7 +12,7 @@ import (
 
 func valueCodec(memory64 bool) *Codec {
 	x, _ := textTransfer(UTF8, memory64)
-	return &Codec{Transfer: x, Layouts: NewBuilder(memory64, DefaultLimits()), MaxValues: 1024}
+	return &Codec{Transfer: *x, Layouts: NewBuilder(memory64, DefaultLimits()), MaxValues: 1024}
 }
 
 func TestNestedMemoryValues(t *testing.T) {

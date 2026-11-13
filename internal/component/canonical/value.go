@@ -24,7 +24,7 @@ type Value struct {
 // Codec belongs to one synchronous call. All type graphs/layouts are immutable;
 // transfer and value budgets are aggregate across nested lists and strings.
 type Codec struct {
-	Transfer  *Transfer
+	Transfer  Transfer
 	Layouts   *Builder
 	MaxValues uint64
 	values    uint64
