@@ -276,6 +276,13 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
+The [guarded indexed-load study](docs/research/performance-guarded-index-loads-2026-11-13.md)
+reduces Go-native time **25.6%** on one dependent-memory kernel: **1.908 ns/iteration**
+versus Wasmtime **2.204**, Wasmer **2.211** and unchecked native C **1.888**.
+All six diagnostic A/A controls resolve. LLGo native improves **25.1%**;
+its interpreter regresses **13.6%**, retained as an open follow-up.
+This hosted kernel result does not establish full-portfolio parity.
+
 The [shared indirect-dispatch study](docs/research/performance-shared-indirect-dispatch-2026-11-13.md)
 reduces native code size **90.4%** in a 512-function scaling case and **11.4%**
 in the P3 Rust component, with complete Go P3 CPU unchanged. Its fresh Linux
