@@ -1,5 +1,6 @@
 """Temporary ELF-layout ablation over the frozen PR169 comparison artifact."""
 import argparse
+import difflib
 import json
 import os
 from pathlib import Path
@@ -58,8 +59,16 @@ def build(folder, role):
     data = load(folder)
     selected = own_build.toolchains()['llgo']
     original = data['builds'][role + '-llgo']
-    if selected['binarySha256'] != original['toolchain']['binarySha256']:
-        raise ValueError('compiler executable differs from the frozen comparison')
+    previous = original['toolchain']
+    # setup-llgo embeds its temporary installation path in the CLI binary.
+    # Preserve both hashes; require identical compiler/dependency/build-option
+    # identities rather than treating a fresh installation path as code drift.
+    before = previous['goBuildInfo'].splitlines()[1:]
+    after = selected['goBuildInfo'].splitlines()[1:]
+    if before != after:
+        print('\n'.join(difflib.unified_diff(before, after)), flush=True)
+        raise ValueError('compiler dependency or build identity changed')
+    print('compiler identities', json.dumps(dict(original=previous, actual=selected)), flush=True)
     target = Path(original['binary']).parent
     if own_build.hashes(target, own_build.ENGINE_PATHS, own_build.HARNESS) != original['sourceHashes']:
         raise ValueError('frozen engine source changed')
@@ -85,7 +94,8 @@ def build(folder, role):
         layout = inspect(binary, probe / (name + '.asm'), expected)
         fragment['builds'][name] = dict(original, **record, toolchain=selected,
             experimentalLinkerFlags=[flag], effectiveEnvironment={'LDFLAGS': flag},
-            layoutDiagnostic=layout, frozenSourceRun=SOURCE_RUN)
+            layoutDiagnostic=layout, frozenSourceRun=SOURCE_RUN,
+            frozenCompilerSha256=previous['binarySha256'])
         runtime = dict(data['runtimes'][role + '-llgo-interpreter'], command=[str(binary), '--mode', 'api'])
         fragment['runtimes'][name + '-interpreter'] = runtime
         fragment['runtimes']['aa-' + name + '-interpreter'] = dict(runtime)
