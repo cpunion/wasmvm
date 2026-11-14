@@ -583,6 +583,8 @@ jobs:
     needs: [llgo_layout_build, llgo_poll_build]
     runs-on: ${{ matrix.cohort == 'poll-ubuntu22' && 'ubuntu-22.04' || inputs.llgo_diagnostic_runner || 'ubuntu-24.04' }}
     timeout-minutes: 10
+    env:
+      OPERAND_ABLATION: ${{ inputs.suite == 'llgo-poll' && inputs.reuse_candidate_run != '' && inputs.candidate_revision == 'd1c313000619fe33aec9b1afea44fdf47594987b' }}
     permissions:
       contents: read
       actions: read
@@ -597,7 +599,7 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 95943842febc2d3571547c72f2d62bc79f232f88
+          ref: ${{ env.OPERAND_ABLATION == 'true' && inputs.candidate_revision || '95943842febc2d3571547c72f2d62bc79f232f88' }}
           path: head
           persist-credentials: false
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -620,6 +622,14 @@ jobs:
           github-token: ${{ github.token }}
           path: prior-derived
           merge-multiple: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: env.OPERAND_ABLATION == 'true'
+        with:
+          pattern: poll-*
+          run-id: 43556904995
+          github-token: ${{ github.token }}
+          path: ablation-derived
+          merge-multiple: true
       - name: Restore frozen defaults, derived variants and library paths
         run: |
           tar -xzf routing-build.tar.gz
@@ -630,6 +640,12 @@ jobs:
             tar -xzf prior-derived/poll-go.tar.gz -C prior
             tar -xzf prior-derived/poll-llgo.tar.gz -C prior
             python3 control/benchmarks/llgo_layout_diagnostic.py merge-poll --build-dir routing-build --prior-dir prior/routing-build
+            if [[ "$OPERAND_ABLATION" == true ]]; then
+              mkdir ablation
+              tar -xzf ablation-derived/poll-go.tar.gz -C ablation
+              tar -xzf ablation-derived/poll-llgo.tar.gz -C ablation
+              python3 control/benchmarks/llgo_layout_diagnostic.py operand-ablation --build-dir routing-build --ablation-dir ablation/routing-build
+            fi
           else
             tar -xzf derived/llgo-layout-base.tar.gz
             tar -xzf derived/llgo-layout-head.tar.gz

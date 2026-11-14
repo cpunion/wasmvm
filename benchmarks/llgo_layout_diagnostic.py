@@ -200,13 +200,62 @@ def merge_poll(folder, prior):
     (folder / 'build.json').write_text(json.dumps(data, indent=2) + '\n')
 
 
+def operand_ablation(folder, ablation):
+    """Compare two frozen operand variants without repeating PR169 roles."""
+    data = json.loads((folder / 'build.json').read_text())
+    candidate = 'd1c313000619fe33aec9b1afea44fdf47594987b'
+    antecedent = '410cee28f1b1a8830259f66137dda2776193ee9d'
+    assert data['dispatchDiagnostic']['candidateRevision'] == candidate
+    data['sourceArtifact'] = dict(run=SOURCE_RUN, base=data['base'], head=data['head'],
+        linkage=data.pop('linkage', None), scope='Historical SDK/reference provenance; retired owned runtime roles are not measured in this event.')
+    old_runtimes = data['runtimes']
+    roles = ('base-', 'head-', 'poll-', 'prior-')
+    data['runtimes'] = {name: row for name, row in old_runtimes.items()
+                        if not name.removeprefix('aa-').startswith(roles)}
+    for compiler in ('go', 'llgo'):
+        for role, source_role in (('base', 'prior'), ('head', 'poll')):
+            data['builds'][role + '-' + compiler] = data['builds'][source_role + '-' + compiler]
+            for backend in ('interpreter', 'native'):
+                key = role + '-' + compiler + '-' + backend
+                row = dict(old_runtimes[source_role + '-' + compiler + '-' + backend])
+                data['runtimes'][key] = row
+                data['runtimes']['aa-' + key] = dict(row)
+        name = 'poll-' + compiler
+        fragment = json.loads((ablation / (name + '.json')).read_text())
+        assert fragment['candidateRevision'] == antecedent and fragment['compiler'] == compiler
+        build = fragment['builds'][name]
+        binary = ablation / name / 'runner'
+        assert own_build.digest(binary) == build['binarySha256']
+        assert own_build.hashes(binary.parent, own_build.ENGINE_PATHS, own_build.HARNESS) == build['sourceHashes']
+        production = data['builds']['base-' + compiler]['toolchain']
+        assert build['toolchain']['revision'] == production['revision']
+        assert build['toolchain']['buildFlags'] == production['buildFlags']
+        data['builds']['ablation-' + compiler] = dict(build, binary=str(binary), frozenBuildRun=43556904995)
+        key = 'ablation-' + compiler + '-interpreter'
+        row = dict(fragment['runtimes'][name + '-interpreter'], command=[str(binary), '--mode', 'api'])
+        data['runtimes'][key] = row
+        data['runtimes']['aa-' + key] = dict(row)
+        del data['builds']['prior-' + compiler], data['builds']['poll-' + compiler]
+    data['base'], data['head'] = PRIOR_SOURCE, candidate
+    data['dispatchDiagnostic'].update(expectedObservations=520, expectedAlternateChecks=25,
+        scope='Current baseline and candidate use base/head roles; historical PR169 roles are retired.')
+    data['operandAblation'] = dict(antecedent=antecedent, antecedentRun=43556904995,
+        baseline=PRIOR_SOURCE, baselineRun=PRIOR_RUN, candidate=candidate,
+        fixedBlocks=20, expectedObservations=520, expectedAlternateChecks=25,
+        scope='Frozen current baseline, conditional-load candidate, selected-index antecedent and independent references; all own roles have A/A controls. Legacy PR169 roles are omitted, not pooled or reclassified.')
+    assert len(data['runtimes']) == 25
+    assert sum(name.startswith('aa-') for name in data['runtimes']) == 10
+    (folder / 'build.json').write_text(json.dumps(data, indent=2) + '\n')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['build', 'merge', 'build-poll', 'merge-poll'])
+    parser.add_argument('command', choices=['build', 'merge', 'build-poll', 'merge-poll', 'operand-ablation'])
     parser.add_argument('--role', choices=['base', 'head'])
     parser.add_argument('--build-dir', type=Path, required=True)
     parser.add_argument('--candidate-dir', type=Path)
     parser.add_argument('--prior-dir', type=Path)
+    parser.add_argument('--ablation-dir', type=Path)
     parser.add_argument('--compiler', choices=['go', 'llgo'])
     args = parser.parse_args()
     if args.command == 'build':
@@ -219,6 +268,10 @@ if __name__ == '__main__':
         if args.candidate_dir is None or args.compiler is None:
             parser.error('--candidate-dir and --compiler are required')
         build_poll(args.build_dir.resolve(), args.candidate_dir.resolve(), args.compiler)
+    elif args.command == 'operand-ablation':
+        if args.ablation_dir is None:
+            parser.error('--ablation-dir is required for operand-ablation')
+        operand_ablation(args.build_dir.resolve(), args.ablation_dir.resolve())
     else:
         if args.prior_dir is None:
             parser.error('--prior-dir is required for merge-poll')
