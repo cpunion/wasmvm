@@ -6,7 +6,7 @@ sys.path.insert(0,str(ROOT/'control/benchmarks'))
 import own_build
 sys.path.insert(0,str(ROOT/'head/benchmarks/native'))
 from memory_fixtures import checksum
-REV='c0d07ce2b58c8f2f62b25133234486d239021ee1'
+REV='e6a873288f0c70b5c3c4fd46f708a5b079651f93'
 SYMBOL='github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).runSlotsLoop'
 run=lambda args,**kw:subprocess.check_output(args,text=True,**kw)
 cli=shutil.which('llgo');assert REV[:12]in run([cli,'version'])
@@ -48,8 +48,8 @@ for role in (['scalar'] if extract_ir else ['counter','dense','scalar']):
   subprocess.run([tool('llvm-extract'), '--func=' + SYMBOL, str(saved[0]), '-o', str(loop_bc)], check=True)
   subprocess.run([tool('llvm-dis'), str(loop_bc), '-o', str(loop_ir)], check=True)
   assert any(line.startswith('define ') and SYMBOL in line for line in loop_ir.read_text().splitlines())
-  subprocess.run([tool('llc'), '-O3', str(loop_ir), '-o', str(OUT / (role + '-loop-recompiled.s'))], check=True)
-  result['roles'][role]['irDiagnostic'] = {'LDFLAGS': build_env['LDFLAGS'], 'irSha256': own_build.digest(loop_ir), 'stage': 'full-LTO precodegen; extracted function and external declarations; standalone llc -O3 reproduction, not throughput timing'}
+  subprocess.run([tool('llc'), '-O3', '-mcpu=x86-64', '-relocation-model=static', str(loop_ir), '-o', str(OUT / (role + '-loop-recompiled.s'))], check=True)
+  result['roles'][role]['irDiagnostic'] = {'LDFLAGS': build_env['LDFLAGS'], 'irSha256': own_build.digest(loop_ir), 'stage': 'full-LTO precodegen; extracted function and external declarations; standalone llc -O3 -mcpu=x86-64 -relocation-model=static reproduction, not throughput timing'}
   for temporary in OUT.glob(role + '-runner.*'):
    if temporary.suffix in ('.bc', '.o', '.lto', '.dot') or temporary.name.endswith('.resolution.txt'):
     temporary.unlink()

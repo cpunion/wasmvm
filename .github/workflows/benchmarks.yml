@@ -831,7 +831,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
-      WASMVM_LLGO_REVISION: c0d07ce2b58c8f2f62b25133234486d239021ee1
+      WASMVM_LLGO_REVISION: e6a873288f0c70b5c3c4fd46f708a5b079651f93
       REGRESSION_EXTRACT_IR: ${{ inputs.extract_regression_ir }}
     permissions:
       contents: read
@@ -871,7 +871,7 @@ jobs:
       - run: bash control/scripts/setup_linux_llgo.sh
       - uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
         with:
-          llgo-version: c0d07ce2b58c8f2f62b25133234486d239021ee1
+          llgo-version: e6a873288f0c70b5c3c4fd46f708a5b079651f93
           install-method: source
           go-version: '1.27.3'
           llvm-version: '22'
