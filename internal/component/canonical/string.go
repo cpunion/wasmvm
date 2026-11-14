@@ -135,6 +135,24 @@ func (c *Transfer) LiftString(at, length uint64) (string, error) {
 	if err := c.charge(n + output); err != nil {
 		return "", err
 	}
+	if encoding == UTF8 {
+		if memory, ok := c.Memory.(StringMemory); ok {
+			data, err := memory.ReadString(at, n)
+			if err != nil {
+				return "", err
+			}
+			if err := c.check(); err != nil {
+				return "", err
+			}
+			if uint64(len(data)) != n {
+				return "", invalid("incomplete string snapshot")
+			}
+			if !utf8.ValidString(data) {
+				return "", scalarTrap("invalid UTF-8")
+			}
+			return data, nil
+		}
+	}
 	b := make([]byte, int(n))
 	if err := c.Memory.Read(at, b); err != nil {
 		return "", err
@@ -177,8 +195,8 @@ func (c *Transfer) LiftString(at, length uint64) (string, error) {
 	return out.String(), nil
 }
 
-// LowerString allocates an exact-size encoding of a host Unicode string. No
-// source-encoding optimization is implied: this is the host-value entry path.
+// LowerString allocates an exact-size encoding of a host Unicode string.
+// UTF-8 uses immutable-memory copies when available; other encodings transcode.
 func (c *Transfer) LowerString(value string) (ptr, length uint64, err error) {
 	if err = c.check(); err != nil {
 		return
@@ -191,18 +209,20 @@ func (c *Transfer) LowerString(value string) (ptr, length uint64, err error) {
 	}
 	encoding, align := c.Encoding, uint64(1)
 	units, latin := uint64(0), true
-	for index, r := range value {
-		if index&4095 == 0 {
-			if err = c.check(); err != nil {
-				return
+	if encoding != UTF8 {
+		for index, r := range value {
+			if index&4095 == 0 {
+				if err = c.check(); err != nil {
+					return
+				}
 			}
-		}
-		units++
-		if r > 0xffff {
 			units++
-		}
-		if r > 255 {
-			latin = false
+			if r > 0xffff {
+				units++
+			}
+			if r > 255 {
+				latin = false
+			}
 		}
 	}
 	n := uint64(len(value))
@@ -213,7 +233,7 @@ func (c *Transfer) LowerString(value string) (ptr, length uint64, err error) {
 			length |= uint64(1) << (c.pointerSize()*8 - 1)
 		}
 	} else if encoding == Latin1UTF16 {
-		align, n, length = 2, uint64(utf8.RuneCountInString(value)), uint64(utf8.RuneCountInString(value))
+		align, n, length = 2, units, units
 	}
 	if n > MaxStringBytes {
 		return 0, 0, scalarTrap("string length exceeds ABI limit")
@@ -230,6 +250,15 @@ func (c *Transfer) LowerString(value string) (ptr, length uint64, err error) {
 	}
 	if err = c.rangeCheck(ptr, n, align); err != nil {
 		return
+	}
+	if encoding == UTF8 {
+		if memory, ok := c.Memory.(StringMemory); ok {
+			err = memory.WriteString(ptr, value)
+			if err == nil {
+				err = c.check()
+			}
+			return
+		}
 	}
 	buf := make([]byte, int(n))
 	if encoding == UTF8 {

@@ -125,3 +125,98 @@ func TestImmutableByteMemoryFailures(t *testing.T) {
 		})
 	}
 }
+
+func TestUnicodeStringsWithImmutableMemory(t *testing.T) {
+	for _, wide := range []bool{false, true} {
+		for _, encoding := range []Encoding{UTF8, UTF16, Latin1UTF16} {
+			for _, data := range []string{"", "ascii\x00end", "éÿ", "中文😀"} {
+				plain, _ := textTransfer(encoding, wide)
+				fast, _ := textTransfer(encoding, wide)
+				memory := &snapshotMemory{Memory: fast.Memory}
+				fast.Memory = memory
+				if err := plain.StoreString(0, data); err != nil {
+					t.Fatal(err)
+				}
+				if err := fast.StoreString(0, data); err != nil {
+					t.Fatal(err)
+				}
+				got, err := fast.LoadString(0)
+				if err != nil || got != data {
+					t.Fatal(wide, encoding, data, got, err)
+				}
+				if _, err := plain.LoadString(0); err != nil || fast.used != plain.used {
+					t.Fatal("changed logical byte accounting", err, fast.used, plain.used)
+				}
+				want := 0
+				if encoding == UTF8 {
+					want = 1
+				}
+				if memory.reads != want || memory.writes != want {
+					t.Fatal("unexpected encoding path", encoding, memory.reads, memory.writes)
+				}
+				// Later guest writes cannot change the lifted immutable snapshot.
+				if err := memory.Memory.Write(64, []byte{0, 0, 0, 0}); err != nil || got != data {
+					t.Fatal("snapshot aliases guest memory", err, got)
+				}
+			}
+		}
+	}
+}
+
+func TestImmutableUnicodeMemoryFailures(t *testing.T) {
+	sentinel := errors.New("Unicode memory failure")
+	for _, wide := range []bool{false, true} {
+		for _, mode := range []string{"read", "write", "read-cancel", "write-cancel", "short", "utf8", "host-utf8", "read-limit", "write-limit", "bounds", "realloc-bounds"} {
+			c, _ := textTransfer(UTF8, wide)
+			memory := &snapshotMemory{Memory: c.Memory}
+			c.Memory = memory
+			ctx, cancel := context.WithCancel(context.Background())
+			c.Context = ctx
+			want := sentinel
+			switch mode {
+			case "read":
+				memory.read = sentinel
+			case "write":
+				memory.write = sentinel
+			case "read-cancel", "write-cancel":
+				memory.cancel, want = cancel, context.Canceled
+			case "short":
+				memory.short, want = true, wasm.ErrInvalid
+			case "utf8":
+				memory.Memory.Write(64, []byte{0xc0, 0x80})
+				want = wasm.ErrTrap
+			case "host-utf8":
+				want = wasm.ErrInvalid
+			case "read-limit":
+				c.MaxBytes, want = 3, wasm.ErrLimit
+			case "write-limit":
+				c.MaxBytes, want = 1, wasm.ErrLimit
+			case "bounds", "realloc-bounds":
+				want = wasm.ErrTrap
+			}
+			var err error
+			switch mode {
+			case "write", "write-cancel", "write-limit":
+				_, _, err = c.LowerString("xx")
+			case "host-utf8":
+				_, _, err = c.LowerString("\xff")
+			case "bounds":
+				_, err = c.LiftString(4096, 2)
+			case "realloc-bounds":
+				c.Realloc = func(uint64, uint64, uint64, uint64) (uint64, error) { return 4096, nil }
+				_, _, err = c.LowerString("xx")
+			default:
+				_, err = c.LiftString(64, 2)
+			}
+			cancel()
+			if !errors.Is(err, want) {
+				t.Fatal(wide, mode, err, want)
+			}
+			if mode == "read-limit" || mode == "write-limit" || mode == "bounds" || mode == "realloc-bounds" || mode == "host-utf8" {
+				if memory.reads != 0 || memory.writes != 0 {
+					t.Fatal("transfer before validation", mode, memory.reads, memory.writes)
+				}
+			}
+		}
+	}
+}
