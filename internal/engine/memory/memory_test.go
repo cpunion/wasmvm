@@ -4,12 +4,51 @@ import (
 	"bytes"
 	"errors"
 	"math"
+	"math/bits"
 	"testing"
 
 	"github.com/cpunion/wasmvm/internal/core/module"
 	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
+
+func TestAccessAddressCarryAndLogicalBounds(t *testing.T) {
+	data := make([]byte, 32)
+	for i := range data {
+		data[i] = byte(i)
+	}
+	positions := []uint64{0, 1, 15, 16, 31, 32, 33, math.MaxUint32, 1 << 32, 1 << 63, math.MaxUint64 - 1, math.MaxUint64}
+	for _, index64 := range []bool{false, true} {
+		for _, shared := range []bool{false, true} {
+			for _, visible := range []uint64{0, 16, 32} {
+				m := &Memory{bytes: data[:visible], declared: module.Limits{Index64: index64}}
+				if shared {
+					m.bytes = data
+					m.sharedSize = &visible
+				}
+				for _, address := range positions {
+					for _, offset := range positions {
+						for _, size := range []uint{0, 1, 2, 4, 8, 16, 31, 32, 33, ^uint(0)} {
+							base := address
+							if !index64 {
+								base &= math.MaxUint32
+							}
+							at, carry := bits.Add64(base, offset, 0)
+							want := carry == 0 && at <= visible && uint64(size) <= visible-at
+							got, ok := m.access(address, offset, size)
+							if ok != want || !ok && got != nil {
+								t.Fatal(index64, shared, visible, address, offset, size, ok, want)
+							}
+							if ok && (len(got) != int(size) || cap(got) != cap(data)-int(at) || !bytes.Equal(got, data[int(at):int(at)+int(size)])) {
+								t.Fatal("wrong bounded view", index64, shared, visible, address, offset, size, got)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
 
 func TestLimitsGrowthAndHostAccess(t *testing.T) {
 	for _, tc := range []struct {
