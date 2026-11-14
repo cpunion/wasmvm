@@ -13,14 +13,24 @@ OUT.mkdir()
 BIN = ROOT / 'regression-input'
 BIN.mkdir()
 SYMBOL = 'github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).runSlotsLoop'
+compiler = os.environ.get('REGRESSION_COMPILER', 'llgo')
+assert compiler in ('llgo', 'go')
+artifact_role = 'poll-' + compiler
 ROLES = {'counter': ('5e5e6a44b2062d61bfa569f384232483763d3380', 43537347012),
          'dense': ('26b788258ac6c280639001ecda0af28159cf8068', 43543803052),
          'scalar': ('cf72501dc15335e75fe6da85b6f490db7f223ff2', 43545680097)}
+if compiler == 'go':
+    assert os.environ.get('REGRESSION_CANDIDATE_RUN')
+    ROLES = {'counter': ROLES['counter'],
+             'opcode': ('92d0523968707578aed7018892451f033bd6c70e', 43552275491)}
+    # Avoid asynchronous scheduler signals perturbing exact instruction counts.
+    # This is a count-only diagnostic setting, never production timing policy.
+    os.environ['GODEBUG'] = 'asyncpreemptoff=1'
 if candidate_run := os.environ.get('REGRESSION_CANDIDATE_RUN'):
     revision = os.environ['REGRESSION_CANDIDATE_REVISION']
     assert re.fullmatch(r'[0-9a-f]{40}', revision)
     assert candidate_run.isdigit()
-    del ROLES['dense']
+    ROLES.pop('dense', None)
     ROLES['candidate'] = revision, int(candidate_run)
 
 
@@ -41,13 +51,13 @@ os.environ['GOMAXPROCS'] = '1'
 os.sched_setaffinity(0, {min(os.sched_getaffinity(0))})
 builds = {}
 for role, (revision, run) in ROLES.items():
-    with tarfile.open(ROOT / 'downloads' / role / 'poll-llgo.tar.gz') as archive:
+    with tarfile.open(ROOT / 'downloads' / role / (artifact_role + '.tar.gz')) as archive:
         names = archive.getnames()
-        manifest = json.load(archive.extractfile(next(n for n in names if n.endswith('/poll-llgo.json'))))
-        row = manifest['builds']['poll-llgo']
+        manifest = json.load(archive.extractfile(next(n for n in names if n.endswith('/' + artifact_role + '.json'))))
+        row = manifest['builds'][artifact_role]
         assert manifest['candidateRevision'] == revision
         binary = BIN / (role + '-runner')
-        binary.write_bytes(archive.extractfile(next(n for n in names if n.endswith('/poll-llgo/runner'))).read())
+        binary.write_bytes(archive.extractfile(next(n for n in names if n.endswith('/' + artifact_role + '/runner'))).read())
         binary.chmod(0o755)
         assert sha(binary) == row['binarySha256']
         builds[role] = {'source': revision, 'buildRun': run, 'binary': str(binary),
@@ -62,6 +72,7 @@ count, seed = 100000, 0x12345678
 expected = checksum('dependent-address', seed, count)
 fixture = ROOT / 'head/benchmarks/native/memory-fixtures/dependent-address.wasm'
 plan = {'iterations': count, 'seed': seed, 'expected': expected, 'samples': 1, 'warmups': 0,
+        'compiler': compiler, 'GODEBUG': os.environ.get('GODEBUG', ''),
         'fixtureSha256': sha(fixture), 'roles': [*ROLES, 'counter-aa'],
         'cpu': subprocess.check_output(['lscpu'], text=True), 'affinity': list(os.sched_getaffinity(0)),
         'valgrind': subprocess.check_output(['valgrind', '--version'], text=True).strip(),

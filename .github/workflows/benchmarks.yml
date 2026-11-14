@@ -44,6 +44,11 @@ on:
         description: Temporary diagnostic - extract the scalar loop as standalone LLVM IR
         type: boolean
         default: false
+      regression_compiler:
+        description: Temporary frozen instruction-count diagnostic compiler
+        type: choice
+        options: [llgo, go]
+        default: llgo
 
 permissions:
   contents: read
@@ -737,6 +742,7 @@ jobs:
     env:
       REGRESSION_CANDIDATE_RUN: ${{ inputs.reuse_candidate_run }}
       REGRESSION_CANDIDATE_REVISION: ${{ inputs.candidate_revision }}
+      REGRESSION_COMPILER: ${{ inputs.regression_compiler }}
     permissions:
       contents: read
       actions: read
@@ -757,27 +763,35 @@ jobs:
           github-token: ${{ github.token }}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: poll-llgo
+          name: poll-${{ inputs.regression_compiler || 'llgo' }}
           run-id: 43537347012
           github-token: ${{ github.token }}
           path: downloads/counter
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        if: inputs.reuse_candidate_run == ''
+        if: inputs.reuse_candidate_run == '' && inputs.regression_compiler != 'go'
         with:
           name: poll-llgo
           run-id: 43543803052
           github-token: ${{ github.token }}
           path: downloads/dense
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: inputs.regression_compiler != 'go'
         with:
           name: poll-llgo
           run-id: 43545680097
           github-token: ${{ github.token }}
           path: downloads/scalar
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: inputs.regression_compiler == 'go'
+        with:
+          name: poll-go
+          run-id: 43552275491
+          github-token: ${{ github.token }}
+          path: downloads/opcode
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         if: inputs.reuse_candidate_run != ''
         with:
-          name: poll-llgo
+          name: poll-${{ inputs.regression_compiler || 'llgo' }}
           run-id: ${{ inputs.reuse_candidate_run }}
           github-token: ${{ github.token }}
           path: downloads/candidate
