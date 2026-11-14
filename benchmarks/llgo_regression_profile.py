@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import tarfile
@@ -15,6 +16,12 @@ SYMBOL = 'github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).runSlot
 ROLES = {'counter': ('5e5e6a44b2062d61bfa569f384232483763d3380', 43537347012),
          'dense': ('26b788258ac6c280639001ecda0af28159cf8068', 43543803052),
          'scalar': ('cf72501dc15335e75fe6da85b6f490db7f223ff2', 43545680097)}
+if candidate_run := os.environ.get('REGRESSION_CANDIDATE_RUN'):
+    revision = os.environ['REGRESSION_CANDIDATE_REVISION']
+    assert re.fullmatch(r'[0-9a-f]{40}', revision)
+    assert candidate_run.isdigit()
+    del ROLES['dense']
+    ROLES['candidate'] = revision, int(candidate_run)
 
 
 def sha(path):
@@ -55,7 +62,7 @@ count, seed = 100000, 0x12345678
 expected = checksum('dependent-address', seed, count)
 fixture = ROOT / 'head/benchmarks/native/memory-fixtures/dependent-address.wasm'
 plan = {'iterations': count, 'seed': seed, 'expected': expected, 'samples': 1, 'warmups': 0,
-        'fixtureSha256': sha(fixture), 'roles': ['counter', 'dense', 'scalar', 'counter-aa'],
+        'fixtureSha256': sha(fixture), 'roles': [*ROLES, 'counter-aa'],
         'cpu': subprocess.check_output(['lscpu'], text=True), 'affinity': list(os.sched_getaffinity(0)),
         'valgrind': subprocess.check_output(['valgrind', '--version'], text=True).strip(),
         'collection': SYMBOL,
