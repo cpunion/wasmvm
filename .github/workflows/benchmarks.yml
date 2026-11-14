@@ -580,7 +580,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cohort: ${{ fromJSON(inputs.suite == 'llgo-poll' && '["poll-ubuntu24","poll-ubuntu22"]' || inputs.reuse_llgo_alignment && '["repeat-1","repeat-2"]' || '["primary"]') }}
+        cohort: ${{ fromJSON(inputs.suite == 'llgo-poll' && (inputs.reuse_candidate_run != '' && '["confirm-1","confirm-2"]' || '["poll-ubuntu24","poll-ubuntu22"]') || inputs.reuse_llgo_alignment && '["repeat-1","repeat-2"]' || '["primary"]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
