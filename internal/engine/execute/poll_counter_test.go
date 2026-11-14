@@ -31,10 +31,13 @@ func TestPortableCounterPublishesAtHostYieldAndCompletion(t *testing.T) {
 		t.Fatal("host yield lost charged steps", e.steps, e.Fuel(), e.Err())
 	}
 	before := e.steps
+	beforeFuel := e.Fuel()
 	if err := e.ResumeHost(nil, nil); err != nil {
 		t.Fatal(err)
 	}
-	if e.Run() != Done || e.steps <= before || e.steps != 512-e.Fuel() {
+	// The resumed nop consumes fuel; the final return is a charged slot step
+	// with zero source fuel, so progress and fuel have distinct totals.
+	if e.Run() != Done || e.steps != before+2 || e.Fuel() != beforeFuel-1 {
 		t.Fatal("completion lost resumed steps", before, e.steps, e.Fuel(), e.Err())
 	}
 }
