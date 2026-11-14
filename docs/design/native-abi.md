@@ -509,6 +509,25 @@ fuel, cancellation, close and panic tests exercise these contracts with Go/LLGo.
 Call/helper speed and the final target matrix remain open acceptance gates.
 
 
+### Incremental native frame publication
+
+A resumed same-instance native chain keeps its previously authenticated prefix
+in both frame machines. The private call-view header stores the lowest changed
+frame index at byte 32, followed by 64-byte caller records at byte 40. Each
+native run initializes this index to its active frame; a pop lowers it when
+necessary. Pushes already belong to that suffix. The counter survives internal
+polls and arena moves within the run.
+
+At the next runtime exit, native execution validates the depth, physical record
+capacity and invocation quotas, reconstructs the changed suffix, and adjusts the
+existing `Parents` transfer to replace that suffix alone. The common machine
+validates every transferred frame before adopting it. The private full chain
+remains available for continuation authentication and reference roots; growing
+its host description array preserves the untouched prefix. Suspension, stale
+continuations and foreign stack changes retire the prefix through the existing
+reset path. This changes neither the external C entry record nor guest limits.
+
+
 ### Shared-memory views and concurrent entries
 
 Private runtime metadata includes one length/base pair for every declared
