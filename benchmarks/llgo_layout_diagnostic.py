@@ -204,7 +204,7 @@ def operand_ablation(folder, ablation):
     """Compare two frozen operand variants without repeating PR169 roles."""
     data = json.loads((folder / 'build.json').read_text())
     candidate = data['dispatchDiagnostic']['candidateRevision']
-    antecedent = '410cee28f1b1a8830259f66137dda2776193ee9d'
+    antecedent = '688b40b67c9ce27607a52be2d3e394e2000c2e77'
     assert re.fullmatch(r'[0-9a-f]{40}', candidate)
     data['sourceArtifact'] = dict(run=SOURCE_RUN, base=data['base'], head=data['head'],
         linkage=data.pop('linkage', None), scope='Historical SDK/reference provenance; retired owned runtime roles are not measured in this event.')
@@ -230,7 +230,7 @@ def operand_ablation(folder, ablation):
         production = data['builds']['base-' + compiler]['toolchain']
         assert build['toolchain']['revision'] == production['revision']
         assert build['toolchain']['buildFlags'] == production['buildFlags']
-        data['builds']['ablation-' + compiler] = dict(build, binary=str(binary), frozenBuildRun=43556904995)
+        data['builds']['ablation-' + compiler] = dict(build, binary=str(binary), frozenBuildRun=43561639936)
         key = 'ablation-' + compiler + '-interpreter'
         row = dict(fragment['runtimes'][name + '-interpreter'], command=[str(binary), '--mode', 'api'])
         data['runtimes'][key] = row
@@ -239,10 +239,10 @@ def operand_ablation(folder, ablation):
     data['base'], data['head'] = PRIOR_SOURCE, candidate
     data['dispatchDiagnostic'].update(expectedObservations=520, expectedAlternateChecks=25,
         scope='Current baseline and candidate use base/head roles; historical PR169 roles are retired.')
-    data['operandAblation'] = dict(antecedent=antecedent, antecedentRun=43556904995,
+    data['operandAblation'] = dict(antecedent=antecedent, antecedentRun=43561639936,
         baseline=PRIOR_SOURCE, baselineRun=PRIOR_RUN, candidate=candidate,
         fixedBlocks=20, expectedObservations=520, expectedAlternateChecks=25,
-        scope='Frozen current baseline, operand-routing candidate, selected-index antecedent and independent references; all own roles have A/A controls. Legacy PR169 roles are omitted, not pooled or reclassified.')
+        scope='Frozen current baseline, operand-routing candidate, immediate-cache predecessor and independent references; all own roles have A/A controls. Legacy PR169 roles are omitted, not pooled or reclassified.')
     assert len(data['runtimes']) == 25
     assert sum(name.startswith('aa-') for name in data['runtimes']) == 10
     (folder / 'build.json').write_text(json.dumps(data, indent=2) + '\n')
