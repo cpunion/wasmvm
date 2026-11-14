@@ -19,6 +19,8 @@ type NativeFrame struct {
 // top frame and Parents existing parents with a complete same-instance chain,
 // including its root. Parents is zero unless Resume authenticates a previously
 // published chain that survived an ordinary host return without stack changes.
+// A resumed backend may preserve an unchanged prefix and replace only its
+// changed suffix, adjusting Parents to identify that suffix's existing root.
 // Every live value must be spilled before publishing the chain. The common frame
 // machine validates and adopts it before servicing any runtime effect or GC.
 // Values must still expose the original live prefix when an error is returned,

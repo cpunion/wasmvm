@@ -63,6 +63,7 @@ func (e *Execution) prepareCalls(maxSlots, maxFrames uint64) (uint64, error) {
 		return 0, wasm.ErrLimit
 	}
 	e.callWords[2], e.callWords[3] = maxSlots*16, maxFrames
+	e.callWords[nativeabi.CallChangedOffset/8] = e.callWords[0]
 	e.callGrow = false
 	return uint64(uintptr(unsafe.Pointer(unsafe.SliceData(e.callWords)))), nil
 }
@@ -77,20 +78,26 @@ func linkedFunction(in *state.Instance, index uint64) (*state.Function, bool) {
 
 func (e *Execution) publishCallFrames(out *state.NativeFrames) error {
 	top := e.callWords[0]
-	if top > e.callWords[1] || top+uint64(out.Depth) > uint64(out.MaxFrames) ||
-		top*nativeabi.CallFrameBytes+nativeabi.CallHeaderBytes > uint64(len(e.callWords))*8 || e.entryState.Depth != uint64(out.Depth)+top {
+	changed := e.callWords[nativeabi.CallChangedOffset/8]
+	if out.Depth < 1 || top > e.callWords[1] || top > uint64(out.MaxFrames) ||
+		uint64(out.Depth) > uint64(out.MaxFrames)-top ||
+		top > (uint64(len(e.callWords))*8-nativeabi.CallHeaderBytes)/nativeabi.CallFrameBytes ||
+		e.entryState.Depth != uint64(out.Depth)+top || changed > top || changed > uint64(out.Parents) ||
+		changed != 0 && changed >= uint64(len(e.callFrames)) {
 		return wasm.ErrInvalid
 	}
 	count := int(top) + 1
 	if cap(e.callFrames) < count {
-		e.callFrames = make([]state.NativeFrame, count)
+		frames := make([]state.NativeFrame, count)
+		copy(frames, e.callFrames[:int(changed)])
+		e.callFrames = frames
 	} else {
 		if count < len(e.callFrames) {
 			clear(e.callFrames[count:])
 		}
 		e.callFrames = e.callFrames[:count]
 	}
-	for i := uint64(0); i < top; i++ {
+	for i := changed; i < top; i++ {
 		word := (nativeabi.CallHeaderBytes + i*nativeabi.CallFrameBytes) / 8
 		fn, ok := linkedFunction(out.Function.Instance, e.callWords[word+nativeabi.CallFunctionOffset/8])
 		used, pc := e.callWords[word+nativeabi.CallUsedOffset/8], e.callWords[word+nativeabi.CallPCOffset/8]
@@ -109,6 +116,9 @@ func (e *Execution) publishCallFrames(out *state.NativeFrames) error {
 		return wasm.ErrInvalid
 	}
 	e.callFrames[top] = state.NativeFrame{Function: fn, Base: int(used / 16), PC: out.PC}
-	out.Frames, out.Values = e.callFrames, e.values[:int(end)]
+	out.Frames, out.Values = e.callFrames[changed:], e.values[:int(end)]
+	out.Parents -= uint32(changed)
+	out.Function, out.Base = out.Frames[0].Function, out.Frames[0].Base
+	out.Depth += int(changed)
 	return nil
 }

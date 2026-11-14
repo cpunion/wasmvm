@@ -3,6 +3,8 @@ package nativeexec
 import (
 	"context"
 	"errors"
+	"reflect"
+	"runtime"
 	"testing"
 
 	"github.com/cpunion/wasmvm/internal/compiler/codegen"
@@ -18,6 +20,7 @@ import (
 type resumeCountingBackend struct {
 	*Execution
 	runs, resumes, parents int
+	published, replaced    []int
 }
 
 func (b *resumeCountingBackend) RunFrames(out *state.NativeFrames) error {
@@ -27,7 +30,108 @@ func (b *resumeCountingBackend) RunFrames(out *state.NativeFrames) error {
 	}
 	err := b.Execution.RunFrames(out)
 	b.parents += int(out.Parents)
+	if err == nil {
+		b.published = append(b.published, len(out.Frames))
+		b.replaced = append(b.replaced, int(out.Parents))
+	}
 	return err
+}
+
+func TestNativeFrameDeltasPreservePrefixesPushesPopsRootsAndQuotas(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	sig := module.FuncType{Params: []wasm.ValueType{wasm.I32, wasm.ExternRef}, Results: []wasm.ValueType{wasm.I32, wasm.ExternRef}}
+	d := &module.Module{Types: []module.FuncType{sig}, Imports: []module.Import{{Kind: 0}}}
+	call := func(target uint32) module.Expr {
+		return module.Expr{{Op: 0x20}, {Op: 0x20, A: 1}, {Op: 0x10, A: target}, {Op: 0x21, A: 1}, {Op: 0x21}}
+	}
+	finish := module.Expr{{Op: 0x20}, {Op: 0x41, Bits: 1}, {Op: 0x6a}, {Op: 0x20, A: 1}, {Op: 0xb}}
+	for i := 0; i < 17; i++ {
+		body := call(uint32(i + 2))
+		if i == 16 {
+			body = nil
+			for _, target := range []uint32{0, 0, 18, 0, 18} {
+				body = append(body, call(target)...)
+			}
+			body = append(body, module.Instr{Op: 0x20}, module.Instr{Op: 0x20, A: 1}, module.Instr{Op: 0xb})
+		} else {
+			body = append(body, finish...)
+		}
+		d.Functions = append(d.Functions, module.Function{Body: body})
+	}
+	d.Functions = append(d.Functions, module.Function{Body: append(call(0), finish...)})
+	m := callSlots(t, d)
+	for _, metered := range []bool{false, true} {
+		for _, maxFrames := range []uint32{17, 18} {
+			s := state.NewNative(state.DefaultLimits())
+			t.Cleanup(s.Close)
+			host, err := s.NewHost(sig, "increment")
+			if err != nil {
+				t.Fatal(err)
+			}
+			in, err := s.Allocate(m, func(string, string) (state.Extern, bool) { return host, true })
+			if err != nil {
+				t.Fatal(err)
+			}
+			limits := execute.Limits{MaxFrames: maxFrames, MaxSlots: 2048}
+			_, n := callExecution(t, s, m, in, metered, limits)
+			b := &resumeCountingBackend{Execution: n}
+			nativeRun := execute.New(s, nil, execute.Config{Limits: limits, Backend: b, Metered: metered, Fuel: 1000})
+			t.Cleanup(nativeRun.Close)
+			portable := execute.New(s, nil, execute.Config{Limits: limits, Metered: metered, Fuel: 1000})
+			t.Cleanup(portable.Close)
+			for repeat := 0; repeat < 2; repeat++ {
+				before := len(b.published)
+				var statuses []execute.Status
+				var results [][]value.Value
+				var fuels []uint64
+				for _, e := range []*execute.Execution{nativeRun, portable} {
+					if err := e.Start(in.Functions[1], []value.Value{{Lo: 5}, {Lo: 99}}); err != nil {
+						t.Fatal(err)
+					}
+					status := e.Run()
+					calls := 0
+					for status == execute.HostRequest {
+						calls++
+						args := e.Host().Args
+						if len(args) != 2 || args[1].Lo != 99 || calls > 5 {
+							t.Fatal("corrupted host arguments", args, calls)
+						}
+						roots := 0
+						e.RetainedValues(func(typ wasm.ValueType, v value.Value) {
+							if typ == wasm.ExternRef && v.Lo == 99 {
+								roots++
+							}
+						})
+						if roots < 17 {
+							t.Fatal("unchanged prefix lost reference roots", roots)
+						}
+						runtime.GC()
+						if err := e.ResumeHost([]value.Value{{Lo: args[0].Lo + 10}, args[1]}, nil); err != nil {
+							t.Fatal(err)
+						}
+						status = e.Run()
+					}
+					if maxFrames == 17 && (status != execute.Failed || !errors.Is(e.Err(), wasm.ErrLimit) || calls != 2) {
+						t.Fatal("quota bypassed by retained prefix", status, e.Err(), calls)
+					}
+					if maxFrames == 18 && (status != execute.Done || calls != 5 || !reflect.DeepEqual(e.Results(), []value.Value{{Lo: 73}, {Lo: 99}})) {
+						t.Fatal(status, e.Err(), calls, e.Results())
+					}
+					statuses = append(statuses, status)
+					results = append(results, append([]value.Value(nil), e.Results()...))
+					fuels = append(fuels, e.Fuel())
+				}
+				if statuses[0] != statuses[1] || fuels[0] != fuels[1] || !reflect.DeepEqual(results[0], results[1]) {
+					t.Fatal("native delta changed portable semantics", statuses, fuels, results)
+				}
+				if maxFrames == 18 && (!reflect.DeepEqual(b.published[before:], []int{17, 1, 2, 1, 2, 1}) || !reflect.DeepEqual(b.replaced[before:], []int{0, 0, 0, 1, 0, 17})) {
+					t.Fatal("unchanged prefix was republished", b.published[before:], b.replaced[before:])
+				}
+			}
+		}
+	}
 }
 
 func TestNativeHostReturnResumesWholeChainAndGrowsMetadata(t *testing.T) {

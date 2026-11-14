@@ -180,6 +180,14 @@ func (e *functionEmitter) callMeta(parent bool) {
 	e.callLoad(0, e.callReg(2), nativeabi.CallTopOffset)
 	if parent {
 		e.callAdvance(0, -1)
+		// Only pops can lower the changed suffix. A later push is already
+		// covered by that suffix or the active frame at entry.
+		unchanged := e.a.label()
+		e.callLoad(1, e.callReg(2), nativeabi.CallChangedOffset)
+		e.callCompare(0, 1)
+		e.branch(unchanged, "hs")
+		e.callStore(0, e.callReg(2), nativeabi.CallChangedOffset)
+		e.a.mark(unchanged)
 	}
 	e.callShift(0, 6)
 	e.callAdd(3, 2, 0)
