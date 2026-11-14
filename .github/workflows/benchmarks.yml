@@ -8,7 +8,7 @@ on:
       suite:
         description: Benchmark scope (PR families, sustained gates, or diagnostic survey)
         type: choice
-        options: [pr, full, native-simd, survey, routing, p3io, llgo-layout, llgo-poll, llgo-regression, llgo-regression-main, llgo-upgrade]
+        options: [pr, full, native-simd, survey, routing, p3io, llgo-layout, llgo-poll, llgo-regression, llgo-regression-main, llgo-upgrade, llgo-upgrade-profile]
         default: full
       routing_scope:
         description: Routing groups to measure (routing suite only)
@@ -108,7 +108,7 @@ jobs:
 
   benchmark:
     # Capability completion takes priority; measurements are opt-in until then.
-    if: ${{ inputs.suite != 'native-simd' && inputs.suite != 'routing' && inputs.suite != 'p3io' && inputs.suite != 'llgo-layout' && inputs.suite != 'llgo-poll' && inputs.suite != 'llgo-regression' && inputs.suite != 'llgo-regression-main' && inputs.suite != 'llgo-upgrade' && (github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks')) }}
+    if: ${{ inputs.suite != 'native-simd' && inputs.suite != 'routing' && inputs.suite != 'p3io' && inputs.suite != 'llgo-layout' && inputs.suite != 'llgo-poll' && inputs.suite != 'llgo-regression' && inputs.suite != 'llgo-regression-main' && inputs.suite != 'llgo-upgrade' && inputs.suite != 'llgo-upgrade-profile' && (github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks')) }}
     name: Runtime performance / linux-amd64
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && inputs.suite != 'pr' && 90 || 10 }}
@@ -1005,5 +1005,48 @@ jobs:
         with:
           name: compiler-upgrade-${{ matrix.case.name }}-${{ matrix.cohort }}
           path: upgrade-results/
+          if-no-files-found: error
+          retention-days: 30
+
+
+  llgo_upgrade_profile:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'llgo-upgrade-profile' }}
+    name: Count the fixed-source compiler memory regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: control
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 688b40b67c9ce27607a52be2d3e394e2000c2e77
+          path: head
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: routing-build-linux-amd64
+          run-id: 43448812030
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: compiler-upgrade
+          run-id: 43574500090
+          github-token: ${{ github.token }}
+      - name: Install bounded instruction-count tooling
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends valgrind
+      - name: Exact frozen old/new compiler controls; no instrumented timing acceptance
+        run: python3 -u control/benchmarks/llgo_upgrade_diagnostic.py profile
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: compiler-upgrade-counts
+          path: upgrade-profile/
           if-no-files-found: error
           retention-days: 30

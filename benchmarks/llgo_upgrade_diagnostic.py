@@ -100,7 +100,7 @@ def build():
                 archive.add(path, arcname='routing-build/poll-llgo/' + relative)
 
 
-def measure(case, group):
+def restore():
     folder = ROOT / 'routing-build'
     with tarfile.open('routing-build.tar.gz') as archive:
         archive.extractall(ROOT, filter='data')
@@ -109,21 +109,75 @@ def measure(case, group):
     libraries()
     data = json.loads((folder / 'upgrade.json').read_text())
     assert data['compilerUpgrade']['engine'] == ENGINE
-    assert case in {row['id'] for row in data['fixtures']}
     (folder / 'build.json').write_text(json.dumps(data, indent=2) + '\n')
+    return data
+
+
+def measure(case, group):
+    data = restore()
+    assert case in {row['id'] for row in data['fixtures']}
+    folder = ROOT / 'routing-build'
     routing_compare.measure(argparse.Namespace(head_dir=ROOT / 'head', build_dir=folder,
         output_dir=ROOT / 'upgrade-results', group=group, case_id=case, blocks=20,
         gc_sustained=False, threads_sustained=False))
 
 
+def profile():
+    data = restore()
+    out = ROOT / 'upgrade-profile'
+    out.mkdir()
+    os.environ['GOMAXPROCS'] = '1'
+    os.sched_setaffinity(0, {min(os.sched_getaffinity(0))})
+    fixture = next(row for row in data['fixtures'] if row['id'] == 'memory/narrow-unaligned')
+    count, seed = 100000, fixture['seed']
+    expected = routing_compare.oracle(ROOT / 'head', fixture, seed, count)
+    symbol = 'github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).runSlotsLoop'
+    plan = dict(engine=ENGINE, old=OLD, new=NEW, iterations=count, seed=seed, expected=expected,
+        flags=FLAGS, fixtureSha256=own_build.digest(Path(fixture['path'])),
+        valgrind=subprocess.check_output(['valgrind', '--version'], text=True).strip(),
+        scope='Count loop and callees over first and one measured call. Exact aliases for both compilers; normal GC. Callgrind events, not PMU cycles or throughput. VEX-generated temporary memory events remain included.')
+    (out / 'plan.json').write_text(json.dumps(plan, indent=2) + '\n')
+    results = []
+    for label in ['base', 'head', 'base-aa', 'head-aa']:
+        role = label.removesuffix('-aa')
+        build = data['builds'][role + '-llgo']
+        binary = build['binary']
+        assert own_build.digest(Path(binary)) == build['binarySha256']
+        target = out / (label + '.callgrind')
+        command = ['valgrind', '--tool=callgrind', '--collect-atstart=no', '--toggle-collect=' + symbol,
+            '--dump-instr=yes', '--cache-sim=yes', '--branch-sim=yes', '--callgrind-out-file=' + str(target),
+            binary, '--mode', 'api', '--backend', 'interpreter', '--wasm', fixture['path'],
+            '--iterations', str(count), '--seed', str(seed), '--expected', str(expected), '--samples', '1', '--warmups', '0']
+        run = subprocess.run(command, input='run\n', text=True, capture_output=True, timeout=120)
+        (out / (label + '.stdout')).write_text(run.stdout)
+        (out / (label + '.stderr')).write_text(run.stderr)
+        assert run.returncode == 0, run.stderr[-2000:]
+        record = json.loads(run.stdout.splitlines()[-1])
+        assert record['sourceRevision'] == ENGINE and record['compilerRevision'] == (OLD if role == 'base' else NEW)
+        assert record['result'] == expected and record['warmResults'] == [expected]
+        lines = target.read_text().splitlines()
+        names = next(s for s in lines if s.startswith('events:')).split()[1:]
+        totals = map(int, next(s for s in lines if s.startswith('summary:')).split()[1:])
+        row = dict(role=label, compiler=record['compilerRevision'], binarySha256=build['binarySha256'],
+            events=dict(zip(names, totals)), result=record, command=command)
+        assert row['events']['Ir'] > 1000000
+        results.append(row)
+        (out / 'results.json').write_text(json.dumps(results, indent=2) + '\n')
+        print(label, row['events'], flush=True)
+    for a, b in [(results[0], results[2]), (results[1], results[3])]:
+        assert all(a['events'][key] == b['events'][key] for key in ['Ir', 'Dr', 'Dw']), 'identical binary work counts differ'
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['build', 'measure'])
+    parser.add_argument('command', choices=['build', 'measure', 'profile'])
     parser.add_argument('--case')
     parser.add_argument('--group')
     args = parser.parse_args()
     if args.command == 'build':
         build()
+    elif args.command == 'profile':
+        profile()
     else:
         if not args.case or not args.group:
             parser.error('measure requires --case and --group')
