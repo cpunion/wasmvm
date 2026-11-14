@@ -320,7 +320,7 @@ func (e *Execution) runSlots() Status {
 	return status
 }
 
-// Keep the portable polling counter local between yields. Every exit publishes
+// Keep the portable polling counter local between yields. Each status publishes
 // the exact count without a captured closure or a store on every instruction.
 func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 	metered := e.config.Metered
