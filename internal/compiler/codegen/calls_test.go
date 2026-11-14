@@ -186,6 +186,7 @@ func TestLinkedBodiesKeepOrdinaryHostEntryChecksAndResumption(t *testing.T) {
 			{Used: 8, Depth: 1, Budget: 64, Payload: [4]uint64{0, 0, view, 0}},
 			{Used: 48, Depth: 1, Budget: 64, Payload: [4]uint64{0, 0, view, 0}},
 			{Used: 16, Depth: 1, Continuation: uint64(len(f.Code)), Budget: 64, Payload: [4]uint64{0, 0, view, 0}},
+			{Used: 16, Depth: 1, Budget: 64},
 		} {
 			status, err := ctx.RunState(lease, 0, &state)
 			if err != nil || status != native.Exit(nativeabi.BadState) {

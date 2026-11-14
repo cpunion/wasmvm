@@ -24,7 +24,7 @@ func DefaultLimits() Limits { return Limits{64 << 20, 1 << 20, 1 << 20} }
 type CompiledFunction struct {
 	NativeAtomics uint32
 	Entry         nativeabi.Entry
-	// LinkedEntry is a compiler-only target after the ordinary entry header.
+	// LinkedEntry is a compiler-only target after ordinary entry checks.
 	// Its caller must establish the checked frame, root map and dispatch PC.
 	LinkedEntry                   uint32
 	Function                      *slots.Function
@@ -236,8 +236,6 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	e.start = a.label()
 	a.mark(e.start)
 	e.header(uint64(len(f.Slots))*16, len(pcs))
-	e.linkedStart = a.label()
-	a.mark(e.linkedStart)
 	e.prepareHeapAccesses(config)
 	if config.NativeAllocations && unmetered {
 		e.allocationTypes = config.HeapTypes
@@ -249,6 +247,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		}
 	}
 	globalIndices, usesRuntimeData := e.prepareRuntimeData(config)
+	e.linkedStart = a.label()
+	a.mark(e.linkedStart)
 	e.memoryFunctions, e.memoryTables, e.memoryGlobals, e.memoryBindings = config.FunctionCount, config.TableCount, uint32(len(config.Globals)), uint32(len(globalIndices))
 	if e.usesMemory && (!e.memoryViews || e.sharedDefaultMemory) {
 		e.prepareMemory()
