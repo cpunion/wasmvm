@@ -22,7 +22,7 @@ ROLES = {'counter': ('5e5e6a44b2062d61bfa569f384232483763d3380', 43537347012),
 if compiler == 'go':
     assert os.environ.get('REGRESSION_CANDIDATE_RUN')
     ROLES = {'counter': ROLES['counter'],
-             'opcode': ('92d0523968707578aed7018892451f033bd6c70e', 43552275491)}
+             'predecessor': ('688b40b67c9ce27607a52be2d3e394e2000c2e77', 43561639936)}
     # Avoid asynchronous scheduler signals perturbing exact instruction counts.
     # This is a count-only diagnostic setting, never production timing policy.
     os.environ['GODEBUG'] = 'asyncpreemptoff=1'
