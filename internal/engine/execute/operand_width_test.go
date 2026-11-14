@@ -45,3 +45,30 @@ func TestPortableScalarRoutingPreservesWholeValueCopies(t *testing.T) {
 		}
 	}
 }
+
+func TestPortablePopcountWidths(t *testing.T) {
+	s := state.New(state.DefaultLimits())
+	defer s.Close()
+	in := instance(t, s, &module.Module{
+		Types: []module.FuncType{{Params: []wasm.ValueType{wasm.I64}, Results: []wasm.ValueType{wasm.I64, wasm.I64}}},
+		Functions: []module.Function{{Body: module.Expr{
+			{Op: 0x20}, {Op: 0xa7}, {Op: 0x69}, {Op: 0xad},
+			{Op: 0x20}, {Op: 0x7b}, {Op: 0xb},
+		}}},
+	}, nil)
+	for _, metered := range []bool{false, true} {
+		e := New(s, nil, Config{Limits: DefaultLimits(), Metered: metered, Fuel: 100})
+		defer e.Close()
+		for _, test := range []struct{ input, i32, i64 uint64 }{
+			{0, 0, 0}, {0xffff0000ffff0000, 16, 32},
+			{^uint64(0), 32, 64}, {1 << 63, 0, 1}, {0, 0, 0},
+		} {
+			if err := e.Start(in.Functions[0], []value.Value{{Lo: test.input}}); err != nil || e.Run() != Done {
+				t.Fatal(metered, test.input, err, e.Err())
+			}
+			if got := e.Results(); len(got) != 2 || got[0].Lo != test.i32 || got[1].Lo != test.i64 {
+				t.Fatal("population count used the wrong width", metered, test, got)
+			}
+		}
+	}
+}

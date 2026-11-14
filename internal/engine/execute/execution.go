@@ -536,8 +536,14 @@ func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 					result.Lo = numeric.I32Clz(a)
 				case 0x68:
 					result.Lo = numeric.I32Ctz(a)
-				case 0x69:
-					result.Lo = numeric.I32Popcnt(a)
+				case 0x69, 0x7b:
+					// Share one population-count intrinsic so its CPU feature
+					// check stays within this handler instead of other hot cases.
+					x := a
+					if op == 0x69 {
+						x = uint64(uint32(x))
+					}
+					result.Lo = numeric.I64Popcnt(x)
 				case 0x6a:
 					result.Lo = numeric.I32Add(a, b)
 				case 0x6b:
@@ -564,8 +570,6 @@ func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 					result.Lo = numeric.I64Clz(a)
 				case 0x7a:
 					result.Lo = numeric.I64Ctz(a)
-				case 0x7b:
-					result.Lo = numeric.I64Popcnt(a)
 				case 0x7c:
 					result.Lo = numeric.I64Add(a, b)
 				case 0x7d:
