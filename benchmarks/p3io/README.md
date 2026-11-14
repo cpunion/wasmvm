@@ -85,8 +85,9 @@ test executable is removed; Go quality still checks the tagged build, and
 standalone control executables retain their independent build/source/library
 qualification in benchmark events. All32 root test packages still execute once
 per LLGo platform across the same eight shards; no unique shared semantic test
-is removed. Native service reference tests remain with threads and owned P3
-measurement tests with legacy. The remaining longest P3 package link was321s
+is removed. The legacy shard runs P1 and legacy wasi-threads semantics. The threads shard
+runs the shared service driver plus native-reference and owned P3 measurement
+modules, separating the long P3 link from the legacy thread corpus. The remaining longest P3 package link was321s
 and its tests98s on macOS, so the5–10 minute job target remains open pending the
 next measured run.
 
