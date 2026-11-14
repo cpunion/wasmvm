@@ -12,7 +12,7 @@ import time
 import ci
 
 MODULE = "github.com/cpunion/wasmvm"
-LLGO_REVISION = "56fa9aedc957cf3c9656c1a70f82c5424ab3b1c5"
+LLGO_REVISION = "ac1292206d672c2aeb546780a1d585ad98edbc3d"
 LLGO_BUILD_FLAGS = ["-O3", "-lto=full"]
 GO_VERSION = "go1.27.3"
 HARNESS = ("internal/bench/phase", "internal/bench/service", "benchmarks/embedded/wasmvm")

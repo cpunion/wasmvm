@@ -16,12 +16,12 @@
   },
   {
     "name": "legacy",
-    "packages": "./pkg/wasi/preview1",
+    "packages": "./pkg/wasi/preview1 ./internal/bench/service",
     "inputs": "preview1"
   },
   {
     "name": "threads",
-    "packages": "./pkg/wasi/threads ./internal/bench/service",
+    "packages": "./pkg/wasi/threads",
     "inputs": "wasi_threads"
   },
   {
