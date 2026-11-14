@@ -8,7 +8,7 @@ on:
       suite:
         description: Benchmark scope (PR families, sustained gates, or diagnostic survey)
         type: choice
-        options: [pr, full, native-simd, survey, routing, p3io, llgo-layout, llgo-poll]
+        options: [pr, full, native-simd, survey, routing, p3io, llgo-layout, llgo-poll, llgo-regression]
         default: full
       routing_scope:
         description: Routing groups to measure (routing suite only)
@@ -95,7 +95,7 @@ jobs:
 
   benchmark:
     # Capability completion takes priority; measurements are opt-in until then.
-    if: ${{ inputs.suite != 'native-simd' && inputs.suite != 'routing' && inputs.suite != 'p3io' && inputs.suite != 'llgo-layout' && inputs.suite != 'llgo-poll' && (github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks')) }}
+    if: ${{ inputs.suite != 'native-simd' && inputs.suite != 'routing' && inputs.suite != 'p3io' && inputs.suite != 'llgo-layout' && inputs.suite != 'llgo-poll' && inputs.suite != 'llgo-regression' && (github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks')) }}
     name: Runtime performance / linux-amd64
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && inputs.suite != 'pr' && 90 || 10 }}
@@ -725,3 +725,58 @@ jobs:
           path: poll-${{ matrix.compiler }}.tar.gz
           if-no-files-found: warn
           retention-days: 14
+
+  llgo_regression_profile:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'llgo-regression' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: control
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 95943842febc2d3571547c72f2d62bc79f232f88
+          path: head
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: routing-build-linux-amd64
+          run-id: 43448812030
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: poll-llgo
+          run-id: 43537347012
+          github-token: ${{ github.token }}
+          path: downloads/counter
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: poll-llgo
+          run-id: 43543803052
+          github-token: ${{ github.token }}
+          path: downloads/dense
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: poll-llgo
+          run-id: 43545680097
+          github-token: ${{ github.token }}
+          path: downloads/scalar
+      - name: Install instruction-count tooling
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends valgrind
+          dpkg-query -W valgrind libc6
+      - name: Count frozen portable loops; instrumented timings are not used
+        run: python3 -u control/benchmarks/llgo_regression_profile.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: llgo-regression-profile
+          path: regression-profile/
+          if-no-files-found: error
+          retention-days: 30
