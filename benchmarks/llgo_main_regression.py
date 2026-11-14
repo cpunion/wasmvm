@@ -47,6 +47,7 @@ for role in (['scalar'] if extract_ir else ['counter','dense','scalar']):
   tool = lambda name: shutil.which(name + '-22') or shutil.which(name)
   subprocess.run([tool('llvm-extract'), '--func=' + SYMBOL, str(saved[0]), '-o', str(loop_bc)], check=True)
   subprocess.run([tool('llvm-dis'), str(loop_bc), '-o', str(loop_ir)], check=True)
+  assert any(line.startswith('define ') and SYMBOL in line for line in loop_ir.read_text().splitlines())
   subprocess.run([tool('llc'), '-O3', str(loop_ir), '-o', str(OUT / (role + '-loop-recompiled.s'))], check=True)
   result['roles'][role]['irDiagnostic'] = {'LDFLAGS': build_env['LDFLAGS'], 'irSha256': own_build.digest(loop_ir), 'stage': 'full-LTO precodegen; extracted function and external declarations; standalone llc -O3 reproduction, not throughput timing'}
   for temporary in OUT.glob(role + '-runner.*'):
