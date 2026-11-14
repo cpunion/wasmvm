@@ -98,6 +98,18 @@ func (e *functionEmitter) callPlan(label int, indices []slots.Slot) {
 	}
 }
 
+// Linked callers have checked depth, slot quotas and physical arena capacity.
+// The shared runtime view was validated at the ordinary entry and cannot move
+// inside this native run. Restore frame/root state and the compiler-known PC
+// directly, without reloading a just-written continuation from memory.
+func (e *functionEmitter) callEntryFrame(pc uint64) {
+	e.registerMove(e.callFrame(), e.callReg(4), true)
+	e.contextConst(nativeabi.RootMapOffset, 0)
+	if pc != 0 {
+		e.constant(0, pc)
+	}
+}
+
 func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	in := e.f.Code[pc]
 	indirect := in.Op == 0x11 || in.Op == 0x14
@@ -201,17 +213,20 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 		e.callMemory(0, e.callReg(1), 4, false, true)
 		e.callStore(0, e.callContext(), uint32(nativeabi.FunctionOffset))
 		e.callAdvance(1, 16)
+		e.callEntryFrame(0)
 		e.callJump(1)
 	} else {
 		target := e.f.Sources[in.Source].Wasm.A
 		e.contextConst(nativeabi.FunctionOffset, uint64(target))
+		e.callEntryFrame(0)
 		jump := a.label()
 		a.mark(jump)
 		a.branch(e.start, false, 0)
 		e.linkedRelocations = append(e.linkedRelocations, linkedRelocation{jump, target})
 	}
 	a.mark(resume)
-	a.branch(e.start, false, 0)
+	e.callEntryFrame(uint64(pc + 1))
+	a.branch(e.linkedStart, false, 0)
 	e.callPlan(results, e.f.Args[in.Extra+in.Count:uint32(end)])
 	if len(args) > 8 {
 		e.callPlan(inputs, args)

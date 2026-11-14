@@ -83,6 +83,7 @@ type functionEmitter struct {
 	allocationBatch                                              uint32
 	inlineSlots, inlineFrames                                    uint32
 	start                                                        int
+	linkedStart                                                  int
 	linkedRelocations                                            []linkedRelocation
 	linkedDispatch                                               int
 	dispatchRelocations                                          []int

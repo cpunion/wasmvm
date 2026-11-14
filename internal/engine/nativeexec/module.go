@@ -245,7 +245,7 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 				dispatchSites[policy] = append(dispatchSites[policy], uint32(len(code))+site)
 			}
 			if tier != 2 {
-				targets[policy][importedFunctions+uint32(functionIndex)] = uint32(len(code)) + body.Entry.BodyOffset
+				targets[policy][importedFunctions+uint32(functionIndex)] = uint32(len(code)) + body.LinkedEntry
 			}
 			for _, relocation := range body.CallRelocations {
 				relocation.Offset += uint32(len(code))

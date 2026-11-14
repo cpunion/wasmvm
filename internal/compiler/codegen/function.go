@@ -22,8 +22,11 @@ func DefaultLimits() Limits { return Limits{64 << 20, 1 << 20, 1 << 20} }
 // never an interior machine address. ReferenceSlots conservatively describes
 // every reference-bearing slot in the current frame (root-map ID zero).
 type CompiledFunction struct {
-	NativeAtomics                 uint32
-	Entry                         nativeabi.Entry
+	NativeAtomics uint32
+	Entry         nativeabi.Entry
+	// LinkedEntry is a compiler-only target after ordinary entry checks.
+	// Its caller must establish the checked frame, root map and dispatch PC.
+	LinkedEntry                   uint32
 	Function                      *slots.Function
 	Offsets                       []uint32
 	ReferenceSlots                []uint32
@@ -244,6 +247,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		}
 	}
 	globalIndices, usesRuntimeData := e.prepareRuntimeData(config)
+	e.linkedStart = a.label()
+	a.mark(e.linkedStart)
 	e.memoryFunctions, e.memoryTables, e.memoryGlobals, e.memoryBindings = config.FunctionCount, config.TableCount, uint32(len(config.Globals)), uint32(len(globalIndices))
 	if e.usesMemory && (!e.memoryViews || e.sharedDefaultMemory) {
 		e.prepareMemory()
@@ -609,6 +614,8 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	if err != nil {
 		return nil, err
 	}
+	linkedPosition, _ := a.labelAt(e.linkedStart)
+	out.LinkedEntry = out.Entry.BodyOffset + uint32(linkedPosition)
 	for i, l := range pcs {
 		position, _ := a.labelAt(l)
 		out.Offsets[i] = out.Entry.BodyOffset + uint32(position)

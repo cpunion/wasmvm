@@ -509,6 +509,26 @@ fuel, cancellation, close and panic tests exercise these contracts with Go/LLGo.
 Call/helper speed and the final target matrix remain open acceptance gates.
 
 
+### Checked internal call entries
+
+The ordinary C entry retains frame alignment/capacity and continuation checks.
+Compiler-owned linked branches target a private entry after those checks and
+the initial runtime-view validation. Before
+pushing a frame, the caller checks metadata capacity, global depth, the invocation
+slot quota and physical arena capacity, initializes the complete child frame,
+and copies complete parameters. The shared view cannot move inside a native
+run. The caller installs the computed frame pointer, root-map zero and its
+compiler-known dispatch PC before entering the shared body. A return restores
+the same state from compiler-owned parent metadata and its immutable continuation.
+
+Guest linear-memory operations cannot alter this metadata. Host resumes and
+foreign/reentrant stack changes still use the ordinary entry and common-machine
+validation; changing invocation budgets is checked before any resumed native run.
+Memory preparation, fuel boundaries, cancellation and root publication after the
+header remain shared. Nonlinked bodies retain their ordinary machine bytes.
+No second executor, register convention or public C record is introduced.
+
+
 ### Incremental native frame publication
 
 A resumed same-instance native chain keeps its previously authenticated prefix

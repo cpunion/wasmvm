@@ -35,7 +35,7 @@ func TestLinkedCallBodiesAndRelocations(t *testing.T) {
 				t.Fatal("missing linked call", arch)
 			}
 			code := append(append([]byte{}, bodies[0].Entry.Code...), bodies[1].Entry.Code...)
-			target := uint32(len(bodies[0].Entry.Code)) + bodies[1].Entry.BodyOffset
+			target := uint32(len(bodies[0].Entry.Code)) + bodies[1].LinkedEntry
 			if err := LinkCalls(arch, code, bodies[0].CallRelocations, map[uint32]uint32{7: target}); err != nil {
 				t.Fatal(err)
 			}
@@ -135,6 +135,62 @@ func TestCallRelocationRejectsInvalidTargetsWithoutPublication(t *testing.T) {
 				if code[i] != before[i] {
 					t.Fatal("partial relocation on invalid input")
 				}
+			}
+		}
+	}
+}
+
+func TestLinkedBodiesKeepOrdinaryHostEntryChecksAndResumption(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	for _, unmetered := range []bool{false, true} {
+		f := leafFixture(0x6a, nil)
+		_, lease, ctx := configuredContext(t, f, Config{Unmetered: unmetered, LinkedCallees: map[uint32]*slots.Function{7: f}})
+		data, err := native.NewMemory(8, 8)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(data.Close)
+		buffer, err := data.Buffer()
+		if err != nil {
+			t.Fatal(err)
+		}
+		view := uint64(uintptr(unsafe.Pointer(unsafe.SliceData(buffer))))
+		writeSlot(t, ctx, 16, 0, value.Value{Lo: 7})
+		writeSlot(t, ctx, 16, 1, value.Value{Lo: 19})
+		state := native.State{Used: 16, Depth: 1, Fuel: 100, Budget: 1, Payload: [4]uint64{0, 0, view, 0}}
+		if !unmetered {
+			state.Payload[3] = 1
+		}
+		done := false
+		for attempt := 0; attempt < 8; attempt++ {
+			status, err := ctx.RunState(lease, 0, &state)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if status == native.Poll {
+				state.Budget = 1
+				continue
+			}
+			if status != native.Return || readSlot(t, ctx, 16, 4).Lo != 26 {
+				t.Fatal("ordinary linked host entry or poll resume failed", unmetered, status, state)
+			}
+			done = true
+			break
+		}
+		if !done {
+			t.Fatal("ordinary entry did not finish")
+		}
+		for _, state := range []native.State{
+			{Used: 8, Depth: 1, Budget: 64, Payload: [4]uint64{0, 0, view, 0}},
+			{Used: 48, Depth: 1, Budget: 64, Payload: [4]uint64{0, 0, view, 0}},
+			{Used: 16, Depth: 1, Continuation: uint64(len(f.Code)), Budget: 64, Payload: [4]uint64{0, 0, view, 0}},
+			{Used: 16, Depth: 1, Budget: 64},
+		} {
+			status, err := ctx.RunState(lease, 0, &state)
+			if err != nil || status != native.Exit(nativeabi.BadState) {
+				t.Fatal("ordinary linked entry bypassed header", unmetered, state, status, err)
 			}
 		}
 	}
