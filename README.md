@@ -276,6 +276,12 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
+The [direct native-return study](docs/research/performance-direct-native-resumes-2026-11-15.md)
+reduces Go CPU **1.9%** and instructions **4.2%** on general native calls in an
+independent counter audit. Complete P3 CPU intervals cross parity. General-call
+reference points still have a **3.2–3.4x** gap and unresolved timing controls;
+the report retains rejected result-register experiments and LLGo GC sensitivity.
+
 The [guarded indexed-load study](docs/research/performance-guarded-index-loads-2026-11-13.md)
 reduces Go-native time **25.6%** on one dependent-memory kernel: **1.908 ns/iteration**
 versus Wasmtime **2.204**, Wasmer **2.211** and unchecked native C **1.888**.
