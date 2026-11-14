@@ -528,6 +528,21 @@ Memory preparation, fuel boundaries, cancellation and root publication after the
 header remain shared. Nonlinked bodies retain their ordinary machine bytes.
 No second executor, register convention or public C record is introduced.
 
+An unmetered compiler-owned return resumes at its exact original instruction PC.
+Its private stub restores the frame/root state, memory view, immutable scalar
+and vector constants, runtime bindings, heap-cache keys and the continuation's
+register plan, then branches directly to that PC. All caller slots were spilled
+before the call and complete results were copied before the return. Host,
+foreign and metered entries retain the ordinary continuation dispatcher.
+
+Memory preparation precedes cached runtime-register reloads, as at the ordinary
+entry. It must read the trusted runtime view directly: physical registers still
+contain callee values at that point. Literal/binding reloads reuse the selected
+plans rather than repeating whole-function analysis for every call. Stub count
+is bounded by call sites, with all emitted bytes charged to the existing code
+budget. Late indirect-call exits are emitted before their return stubs so every
+saved address is resolved before publication.
+
 
 ### Incremental native frame publication
 

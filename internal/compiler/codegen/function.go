@@ -589,6 +589,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	e.emitAllocationEntries(pcs)
 	e.emitPollExits()
 	e.emitCallExits(config)
+	e.emitCallResumes(pcs)
 	e.emitTrapExits()
 	e.emitLinkedDispatch(config)
 	a.mark(e.bad)

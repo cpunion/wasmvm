@@ -10,6 +10,10 @@ import (
 )
 
 type CallRelocation struct{ Offset, Function uint32 }
+type nativeCallResume struct {
+	label, pc int
+	plan      *registerPlan
+}
 type linkedRelocation struct {
 	label  int
 	target uint32
@@ -224,9 +228,17 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 		a.branch(e.start, false, 0)
 		e.linkedRelocations = append(e.linkedRelocations, linkedRelocation{jump, target})
 	}
-	a.mark(resume)
-	e.callEntryFrame(uint64(pc + 1))
-	a.branch(e.linkedStart, false, 0)
+	if e.unmetered {
+		plan := e.currentRegisterPlan()
+		if e.allocationPlans != nil {
+			plan = e.allocationPlans[pc+1]
+		}
+		e.callResumes = append(e.callResumes, nativeCallResume{label: resume, pc: pc + 1, plan: plan})
+	} else {
+		a.mark(resume)
+		e.callEntryFrame(uint64(pc + 1))
+		a.branch(e.linkedStart, false, 0)
+	}
 	e.callPlan(results, e.f.Args[in.Extra+in.Count:uint32(end)])
 	if len(args) > 8 {
 		e.callPlan(inputs, args)
@@ -295,4 +307,31 @@ func (e *functionEmitter) linkedReturn(pc int) {
 	e.callRawLeave(nativeabi.Return, uint64(pc), uint64(pc))
 	a.mark(fallback)
 	e.leave(nativeabi.Return, uint64(pc), uint64(pc))
+}
+
+// Private returns have a compiler-known PC and a fully materialized caller
+// frame. Restore the ordinary memory/constants/register environment, then
+// branch to that exact continuation without the host-entry dispatcher.
+func (e *functionEmitter) emitCallResumes(pcs []int) {
+	previous := e.currentRegisterPlan()
+	defer e.useRegisterPlan(previous)
+	for _, resume := range e.callResumes {
+		e.a.mark(resume.label)
+		e.callEntryFrame(0)
+		if e.usesMemory && (!e.memoryViews || e.sharedDefaultMemory) {
+			// Match the ordinary pre-allocation entry: cached runtime words
+			// still belong to the callee until the reload below.
+			runtimeRegisters := e.runtimeRegisters
+			e.runtimeRegisters = nil
+			e.prepareMemory()
+			e.runtimeRegisters = runtimeRegisters
+		}
+		e.reloadVectorConstants()
+		e.prepareConstants()
+		e.reloadRuntimeRegisters()
+		e.prepareHeapCaches()
+		e.useRegisterPlan(nil)
+		e.transitionRegisters(resume.plan)
+		e.a.branch(pcs[resume.pc], false, 0)
+	}
 }

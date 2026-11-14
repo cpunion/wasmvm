@@ -70,6 +70,73 @@ func callExecution(t *testing.T, s *state.Store, m *slots.Module, in *state.Inst
 	return e, n
 }
 
+func TestGeneratedReturnsReloadCallerConstants(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	sig := module.FuncType{Params: []wasm.ValueType{wasm.I32, wasm.V128}, Results: []wasm.ValueType{wasm.I32, wasm.V128}}
+	first := module.Instr{Op: 0xfd000c, Vector: [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9}}
+	second := module.Instr{Op: 0xfd000c, Vector: [16]byte{19, 17, 13, 11, 7, 5, 3, 2, 23}}
+	for _, shared := range []bool{false, true} {
+		for _, kind := range []uint32{0x10, 0x11, 0x14} {
+			body := module.Expr{{Op: 0x20}, {Op: 0x41, Bits: 1234567}, {Op: 0x6a}, {Op: 0x20, A: 1}, first, {Op: 0xfd0051}}
+			switch kind {
+			case 0x10:
+				body = append(body, module.Instr{Op: kind, A: 1})
+			case 0x11:
+				body = append(body, module.Instr{Op: 0x41, Bits: 1}, module.Instr{Op: kind})
+			case 0x14:
+				body = append(body, module.Instr{Op: 0xd2, A: 1}, module.Instr{Op: kind})
+			}
+			body = append(body, module.Instr{Op: 0x21, A: 1}, module.Instr{Op: 0x21}, module.Instr{Op: 0x20}, module.Instr{Op: 0x41, Bits: 1234567}, module.Instr{Op: 0x6a}, module.Instr{Op: 0x20, A: 1}, first, module.Instr{Op: 0xfd0051}, module.Instr{Op: 0xb})
+			if shared {
+				// Give shared bindings a real cache priority before the call;
+				// the callee's scalar constants overwrite the same caller pool.
+				var loads module.Expr
+				for range 8 {
+					loads = append(loads, module.Instr{Op: 0x41}, module.Instr{Op: 0x28, A: 2}, module.Instr{Op: 0x1a})
+				}
+				body = append(loads, body...)
+				body = append(body[:len(body)-1], module.Instr{Op: 0x41}, module.Instr{Op: 0x28, A: 2}, module.Instr{Op: 0x1a}, module.Instr{Op: 0xb})
+			}
+			d := &module.Module{Types: []module.FuncType{sig}, Functions: []module.Function{
+				{Body: body},
+				{Body: module.Expr{{Op: 0x20}, {Op: 0x41, Bits: 7654321}, {Op: 0x6a}, {Op: 0x20, A: 1}, second, {Op: 0xfd0051}, {Op: 0xb}}},
+			}}
+			if kind != 0x10 {
+				d.Tables = []module.TableType{{Element: wasm.FuncRef, Limits: module.Limits{Min: 2}}}
+				d.Elements = []module.Element{{Type: wasm.FuncRef, Offset: module.Expr{{Op: 0x41}, {Op: 0xb}}, Functions: []uint32{0, 1}}}
+			}
+			if shared {
+				d.Memories = []module.Limits{{Min: 1, Max: 1, HasMax: true, Shared: true}}
+			}
+			m := callSlots(t, d, wasm.Core3Features|wasm.Threads)
+			for _, metered := range []bool{false, true} {
+				s := state.NewNative(state.DefaultLimits())
+				t.Cleanup(s.Close)
+				in, err := s.Allocate(m, nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if kind != 0x10 {
+					copy(in.Tables[0].Values, in.Functions)
+				}
+				e, n := callExecution(t, s, m, in, metered, execute.Limits{MaxFrames: 128, MaxSlots: 2048})
+				for repeat := uint64(0); repeat < 3; repeat++ {
+					args := []value.Value{{Lo: 17 + repeat}, {Lo: 0x123456789abcdef0 + repeat, Hi: 0xfedcba9876543210 - repeat}}
+					want := []value.Value{{Lo: args[0].Lo + 2*1234567 + 7654321}, {Lo: args[1].Lo ^ 0x020305070b0d1113, Hi: args[1].Hi ^ 23}}
+					if err := e.Start(in.Functions[0], args); err != nil || e.Run() != execute.Done || !reflect.DeepEqual(e.Results(), want) {
+						t.Fatal(kind, metered, repeat, err, e.Err(), e.Results(), want)
+					}
+					if n.callWords[nativeabi.CallHeaderBytes/8+nativeabi.CallResumeOffset/8] == 0 {
+						t.Fatal("fixture did not execute a generated native return")
+					}
+				}
+			}
+		}
+	}
+}
+
 func TestGeneratedCallsPreserveLargeMixedTuplesAndHostRoots(t *testing.T) {
 	if !native.Available {
 		t.Skip("native platform unavailable")
