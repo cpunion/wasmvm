@@ -44,6 +44,10 @@ on:
         description: Temporary diagnostic - extract the scalar loop as standalone LLVM IR
         type: boolean
         default: false
+      go_layout:
+        description: Temporary frozen Go text-placement causal ablation
+        type: boolean
+        default: false
       regression_compiler:
         description: Temporary frozen instruction-count diagnostic compiler
         type: choice
@@ -770,7 +774,7 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 95943842febc2d3571547c72f2d62bc79f232f88
+          ref: ${{ inputs.go_layout && inputs.candidate_revision || '95943842febc2d3571547c72f2d62bc79f232f88' }}
           path: head
           persist-credentials: false
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -812,12 +816,24 @@ jobs:
           run-id: ${{ inputs.reuse_candidate_run }}
           github-token: ${{ github.token }}
           path: downloads/candidate
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        if: inputs.go_layout
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - if: inputs.go_layout
+        run: bash control/scripts/setup_linux_llgo.sh
+      - name: Isolate Go text placement on frozen sources
+        if: inputs.go_layout
+        run: python3 -u control/benchmarks/go_layout_probe.py
       - name: Install instruction-count tooling
+        if: ${{ !inputs.go_layout }}
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends valgrind
           dpkg-query -W valgrind libc6
       - name: Count frozen portable loops; instrumented timings are not used
+        if: ${{ !inputs.go_layout }}
         run: python3 -u control/benchmarks/llgo_regression_profile.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
