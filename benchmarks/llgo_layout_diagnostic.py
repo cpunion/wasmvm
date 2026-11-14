@@ -196,7 +196,7 @@ def merge_poll(folder, prior):
     data['dispatchDiagnostic'] = dict(sourceRun=SOURCE_RUN, candidateRevision=revisions.pop(),
         priorBuildRun=PRIOR_RUN, priorRevision=PRIOR_SOURCE,
         fixedBlocks=20, expectedObservations=720, expectedAlternateChecks=35,
-        acceptance='Compare dense dispatch with the unchanged cancellation/counter baseline and independent references; no alignment overrides.')
+        acceptance='Compare the portable candidate with the unchanged cancellation/counter baseline and independent references; no alignment overrides.')
     (folder / 'build.json').write_text(json.dumps(data, indent=2) + '\n')
 
 
