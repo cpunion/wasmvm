@@ -584,7 +584,7 @@ jobs:
     runs-on: ${{ matrix.cohort == 'poll-ubuntu22' && 'ubuntu-22.04' || inputs.llgo_diagnostic_runner || 'ubuntu-24.04' }}
     timeout-minutes: 10
     env:
-      OPERAND_ABLATION: ${{ inputs.suite == 'llgo-poll' && inputs.reuse_candidate_run != '' && inputs.candidate_revision == 'd1c313000619fe33aec9b1afea44fdf47594987b' }}
+      OPERAND_ABLATION: ${{ inputs.suite == 'llgo-poll' }}
     permissions:
       contents: read
       actions: read

@@ -203,9 +203,9 @@ def merge_poll(folder, prior):
 def operand_ablation(folder, ablation):
     """Compare two frozen operand variants without repeating PR169 roles."""
     data = json.loads((folder / 'build.json').read_text())
-    candidate = 'd1c313000619fe33aec9b1afea44fdf47594987b'
+    candidate = data['dispatchDiagnostic']['candidateRevision']
     antecedent = '410cee28f1b1a8830259f66137dda2776193ee9d'
-    assert data['dispatchDiagnostic']['candidateRevision'] == candidate
+    assert re.fullmatch(r'[0-9a-f]{40}', candidate)
     data['sourceArtifact'] = dict(run=SOURCE_RUN, base=data['base'], head=data['head'],
         linkage=data.pop('linkage', None), scope='Historical SDK/reference provenance; retired owned runtime roles are not measured in this event.')
     old_runtimes = data['runtimes']
