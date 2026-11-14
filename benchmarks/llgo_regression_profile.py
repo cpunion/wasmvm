@@ -18,7 +18,7 @@ assert compiler in ('llgo', 'go')
 artifact_role = 'poll-' + compiler
 ROLES = {'counter': ('5e5e6a44b2062d61bfa569f384232483763d3380', 43537347012),
          'dense': ('26b788258ac6c280639001ecda0af28159cf8068', 43543803052),
-         'scalar': ('cf72501dc15335e75fe6da85b6f490db7f223ff2', 43545680097)}
+         'predecessor': ('688b40b67c9ce27607a52be2d3e394e2000c2e77', 43561639936)}
 if compiler == 'go':
     assert os.environ.get('REGRESSION_CANDIDATE_RUN')
     ROLES = {'counter': ROLES['counter'],
