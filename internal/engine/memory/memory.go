@@ -278,15 +278,11 @@ func write(b []byte, n uint, x uint64) {
 }
 func sign(x uint64, n uint) uint64 { shift := 64 - 8*n; return uint64(int64(x<<shift) >> shift) }
 func (m *Memory) access(address, offset uint64, size uint) ([]byte, bool) {
-	address = m.declared.Address(address)
-	if offset > math.MaxUint64-address {
+	at := m.declared.Address(address) + offset
+	if at < offset || !m.rangeBytes(at, uint64(size)) {
 		return nil, false
 	}
-	at := address + offset
-	if !m.rangeBytes(at, uint64(size)) {
-		return nil, false
-	}
-	return m.bytes[int(at):int(at+uint64(size))], true
+	return m.bytes[at : at+uint64(size)], true
 }
 
 // Fixed widths stay outside the per-access frame. Tables are read-only.
