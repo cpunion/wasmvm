@@ -32,6 +32,10 @@ on:
         type: choice
         options: [ubuntu-24.04, ubuntu-22.04]
         default: ubuntu-24.04
+      reuse_candidate_run:
+        description: Temporary diagnostic - reuse the frozen cancellation candidate build run
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -561,7 +565,7 @@ jobs:
           retention-days: 14
 
   llgo_layout_measure:
-    if: ${{ always() && github.event_name == 'workflow_dispatch' && ((inputs.suite == 'llgo-layout' && (inputs.reuse_llgo_alignment || needs.llgo_layout_build.result == 'success')) || (inputs.suite == 'llgo-poll' && needs.llgo_poll_build.result == 'success')) }}
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && ((inputs.suite == 'llgo-layout' && (inputs.reuse_llgo_alignment || needs.llgo_layout_build.result == 'success')) || (inputs.suite == 'llgo-poll' && (inputs.reuse_candidate_run != '' || needs.llgo_poll_build.result == 'success'))) }}
     name: LLGo layout causal comparison / ${{ matrix.cohort }}
     needs: [llgo_layout_build, llgo_poll_build]
     runs-on: ${{ matrix.cohort == 'poll-ubuntu22' && 'ubuntu-22.04' || inputs.llgo_diagnostic_runner || 'ubuntu-24.04' }}
@@ -591,7 +595,7 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           pattern: ${{ inputs.suite == 'llgo-poll' && 'poll-*' || 'llgo-layout-[bh]*' }}
-          run-id: ${{ inputs.suite != 'llgo-poll' && inputs.reuse_llgo_alignment && '43520701499' || github.run_id }}
+          run-id: ${{ inputs.suite == 'llgo-poll' && inputs.reuse_candidate_run || inputs.suite != 'llgo-poll' && inputs.reuse_llgo_alignment && '43520701499' || github.run_id }}
           github-token: ${{ github.token }}
           path: derived
           merge-multiple: true
@@ -655,7 +659,7 @@ jobs:
           retention-days: 30
 
   llgo_poll_build:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'llgo-poll' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'llgo-poll' && inputs.reuse_candidate_run == '' }}
     name: Build cancellation candidate / ${{ matrix.compiler }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
