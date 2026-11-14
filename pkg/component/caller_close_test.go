@@ -94,3 +94,47 @@ func TestCallerCloseInstanceCapability(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCallerClosePreservesAsyncHandleShutdownError(t *testing.T) {
+	e, err := NewEngine(DefaultConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer e.Close()
+	m, err := e.Compile(nil, fixture(t, "host-reexport"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	in, err := m.Instantiate(nil, Imports{Functions: map[string]HostFunction{
+		"run": func(c *Caller, _ []Value) (*Value, error) {
+			table := c.instance.hostResources
+			id, err := table.AddOpaque("pending endpoint")
+			if err != nil {
+				return nil, err
+			}
+			// A turn may already have entered a canonical builtin when Close
+			// cancels the Store and closes its handle domain. This is shutdown,
+			// not a guest use of an invalid or consumed handle.
+			if err := c.CloseInstance(); err != nil {
+				return nil, err
+			}
+			_, err = table.Opaque(id)
+			return nil, err
+		},
+	}}, CallOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer in.Close()
+	run, err := in.Function("run")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := run.Call(nil, nil, CallOptions{}); !errors.Is(err, wasm.ErrClosed) || errors.Is(err, wasm.ErrTrap) {
+		t.Fatal("shutdown became a guest async-handle trap", err)
+	}
+	if err := in.WaitClosed(nil); err != nil {
+		t.Fatal(err)
+	}
+}

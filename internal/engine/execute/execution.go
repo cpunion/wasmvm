@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"math/bits"
+	"sync/atomic"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -70,6 +71,7 @@ type Execution struct {
 	status       Status
 	err          error
 	fuel, steps  uint64
+	cancelFlag   *atomic.Bool
 	nativeFrames state.NativeFrames
 	source       ir.Source
 	nativeResume uint64
@@ -197,7 +199,16 @@ func (e *Execution) fail(err error) Status {
 // Abort releases every active frame and pending host request. Host drivers use
 // it in deferred panic cleanup before propagating the original host panic.
 func (e *Execution) Abort(err error) { e.fail(err) }
+
+// SetCancellationFlag binds an owner-controlled signal while the execution is
+// idle. A false flag guarantees that the current context has no error. A true
+// flag still calls Err, preserving the context's cancellation publication.
+func (e *Execution) SetCancellationFlag(flag *atomic.Bool) { e.cancelFlag = flag }
+
 func (e *Execution) poll() error {
+	if e.cancelFlag != nil && !e.cancelFlag.Load() {
+		return nil
+	}
 	return e.context.Err()
 }
 
@@ -304,6 +315,14 @@ func (e *Execution) Run() Status {
 // runSlots keeps portable scalar/local/control execution in a frame-local loop.
 // Runtime effects share their handlers with validated native exits.
 func (e *Execution) runSlots() Status {
+	status, steps := e.runSlotsLoop(e.steps)
+	e.steps = steps
+	return status
+}
+
+// Keep the portable polling counter local between yields. Each status publishes
+// the exact count without a captured closure or a store on every instruction.
+func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 	metered := e.config.Metered
 	for len(e.frames) > 0 {
 		fi := len(e.frames) - 1
@@ -324,17 +343,17 @@ func (e *Execution) runSlots() Status {
 				source := &code.Sources[in.Source]
 				cost := source.Fuel()
 				if cost > e.fuel {
-					return e.fail(&wasm.Error{Kind: wasm.ErrLimit, Offset: source.Wasm.Offset, Detail: "execution fuel"})
+					return e.fail(&wasm.Error{Kind: wasm.ErrLimit, Offset: source.Wasm.Offset, Detail: "execution fuel"}), steps
 				}
 				e.fuel -= cost
 			}
-			e.steps++
-			if e.steps&63 == 0 {
+			steps++
+			if steps&63 == 0 {
 				if err := e.poll(); err != nil {
-					return e.fail(err)
+					return e.fail(err), steps
 				}
 			}
-			for in.Count != 0 && (in.Op == 0x20 || in.Op == 0x41) && !metered && e.steps&63 != 63 {
+			for in.Count != 0 && (in.Op == 0x20 || in.Op == 0x41) && !metered && steps&63 != 63 {
 				// Coalesced local reads already occupy their result slot.
 				// Commit constants before advancing, retaining every source
 				// step and stopping before the next polling boundary.
@@ -343,7 +362,7 @@ func (e *Execution) runSlots() Status {
 				}
 				pc++
 				in = &instructions[pc]
-				e.steps++
+				steps++
 			}
 			var a, b, c value.Value
 			var result value.Value
@@ -397,7 +416,7 @@ func (e *Execution) runSlots() Status {
 							if errors.As(err, &t) {
 								t.Function = fn.Index
 							}
-							return e.fail(err)
+							return e.fail(err), steps
 						}
 						if in.Dst != slots.NoSlot {
 							values[int(in.Dst)] = result
@@ -405,7 +424,7 @@ func (e *Execution) runSlots() Status {
 					} else {
 						f.pc = pc
 						if status := e.runGC(); status != Running {
-							return status
+							return status, steps
 						}
 					}
 					pc++
@@ -447,7 +466,7 @@ func (e *Execution) runSlots() Status {
 					if in.Op <= 0xe6 {
 						f.pc = pc
 						if status := e.runRuntime(); status != Running {
-							return status
+							return status, steps
 						}
 						goto transferred
 					}
@@ -600,13 +619,13 @@ func (e *Execution) runSlots() Status {
 			case slots.ControlBase + uint32(ir.Return):
 				f.pc = pc
 				if status := e.returnFrame(); status != Running {
-					return status
+					return status, steps
 				}
 				goto transferred
 			case slots.ControlBase + uint32(ir.IfCast):
 				f.pc = pc
 				if status := e.runRuntime(); status != Running {
-					return status
+					return status, steps
 				}
 				goto transferred
 			case slots.ControlBase + uint32(ir.IfNull), slots.ControlBase + uint32(ir.Jump), slots.ControlBase + uint32(ir.If), slots.ControlBase + uint32(ir.Table), slots.ControlBase + uint32(ir.Trap):
@@ -629,7 +648,7 @@ func (e *Execution) runSlots() Status {
 				edge := code.Edges[in.Extra+index]
 				if edge.PC <= pc {
 					if err := e.poll(); err != nil {
-						return e.fail(err)
+						return e.fail(err), steps
 					}
 				}
 				for _, move := range code.Moves[edge.Start : edge.Start+edge.Count] {
@@ -641,7 +660,7 @@ func (e *Execution) runSlots() Status {
 			case 8, 10:
 				f.pc = pc
 				if status := e.runThrow(); status != Running {
-					return status
+					return status, steps
 				}
 				goto transferred
 			case 1, 0x1a:
@@ -723,7 +742,7 @@ func (e *Execution) runSlots() Status {
 			case 0x10, 0x11, 0x12, 0x13, 0x14, 0x15:
 				f.pc = pc
 				if status := e.runCall(); status != Running {
-					return status
+					return status, steps
 				}
 				goto transferred
 			default:
@@ -741,14 +760,14 @@ func (e *Execution) runSlots() Status {
 					var err error
 					result, trap, err = instance.Memories[im.Memory].Atomic(e.context, e.store.Domain, op&0xffff, a.Lo, im.MemoryOffset(), b.Lo, c.Lo)
 					if err != nil {
-						return e.fail(err)
+						return e.fail(err), steps
 					}
 				case op >= 0xfc0008 && op <= 0xfc0011:
 					im := &code.Sources[in.Source].Wasm
 					var err error
 					result, trap, err = e.bulk(instance, *im, a, b, c)
 					if err != nil {
-						return e.fail(err)
+						return e.fail(err), steps
 					}
 				default:
 					panic("interp: unknown validated opcode")
@@ -756,7 +775,7 @@ func (e *Execution) runSlots() Status {
 			}
 		commit:
 			if trap != wasm.NoTrap {
-				return e.fail(&wasm.Trap{Code: trap, Function: fn.Index, Offset: code.Sources[in.Source].Wasm.Offset})
+				return e.fail(&wasm.Trap{Code: trap, Function: fn.Index, Offset: code.Sources[in.Source].Wasm.Offset}), steps
 			}
 		write:
 			if in.Dst != slots.NoSlot {

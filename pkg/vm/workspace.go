@@ -27,6 +27,7 @@ func (op *operation) acquireWorkspace(limits execute.Limits) (*callWorkspace, er
 				err = w.execution.Rebind(op.ctx, limits, op.options.Metered, op.fuel)
 			}
 			if err == nil {
+				w.execution.SetCancellationFlag(op.cancellationFlag())
 				op.frames = append(op.frames, w.execution)
 			}
 			s.mu.Unlock()
@@ -48,6 +49,7 @@ func (op *operation) acquireWorkspace(limits execute.Limits) (*callWorkspace, er
 		w.native, config.Backend = backend, backend
 	}
 	w.execution = execute.New(s.state, op.ctx, config)
+	w.execution.SetCancellationFlag(op.cancellationFlag())
 	op.addFrame(w.execution)
 	return w, nil
 }
