@@ -202,9 +202,27 @@ func (e *functionEmitter) prepareVectorConstants() {
 	}
 	e.vectorConstants = map[[2]uint64]byte{}
 	for i, v := range values[:min(len(values), len(pool))] {
-		e.vectorConstant(pool[i], v[0], v[1])
 		e.vectorConstants[v] = pool[i]
 	}
+	e.reloadVectorConstants()
+}
+
+// Reuse the immutable entry plan at private returns. Register order preserves
+// deterministic bytes without repeating the whole-function literal analysis.
+func (e *functionEmitter) reloadVectorConstants() {
+	constants := e.vectorConstants
+	if len(constants) == 0 {
+		return
+	}
+	e.vectorConstants = nil
+	for reg := byte(0); reg < 32; reg++ {
+		for v, assigned := range constants {
+			if assigned == reg {
+				e.vectorConstant(reg, v[0], v[1])
+			}
+		}
+	}
+	e.vectorConstants = constants
 }
 
 // Substitute an immutable literal only for an input; it must never become the

@@ -58,12 +58,7 @@ func (e *functionEmitter) runtimePriorities(config Config, frequencies []uint64)
 // Reload the planned words on every entry. Indirect-only missing views install
 // zeros for checked fallback; direct operations have already validated the view.
 func (e *functionEmitter) prepareRuntimeRegisters(config Config) {
-	offsets := make([]uint32, 0, len(e.runtimeRegisters))
-	for offset := range e.runtimeRegisters {
-		offsets = append(offsets, offset)
-	}
-	slices.Sort(offsets)
-	if len(offsets) == 0 {
+	if len(e.runtimeRegisters) == 0 {
 		return
 	}
 	if e.unmetered && e.a.arch == "arm64" {
@@ -79,6 +74,19 @@ func (e *functionEmitter) prepareRuntimeRegisters(config Config) {
 				e.runtimeGlobalValues[offset] = true
 			}
 		}
+	}
+	e.reloadRuntimeRegisters()
+}
+
+// Same-instance private returns reuse the selected immutable binding plan.
+func (e *functionEmitter) reloadRuntimeRegisters() {
+	offsets := make([]uint32, 0, len(e.runtimeRegisters))
+	for offset := range e.runtimeRegisters {
+		offsets = append(offsets, offset)
+	}
+	slices.Sort(offsets)
+	if len(offsets) == 0 {
+		return
 	}
 	missing, done := e.a.label(), e.a.label()
 	e.contextLoad(0, nativeabi.RuntimeDataOffset)
