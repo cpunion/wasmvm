@@ -1,0 +1,905 @@
+{
+  "16": {
+    "processes": 200,
+    "measuredCheckedRequests": 2048000,
+    "summary": {
+      "base": {
+        "cpuUs": 87.99834391276042,
+        "instructions": 901134.0666503906,
+        "throughput": 42725.976090301854,
+        "allocsPerRequest": 698.003173828125,
+        "bytesPerRequest": 54696.45078125
+      },
+      "base-aa": {
+        "cpuUs": 85.69276936848958,
+        "instructions": 898288.0836425782,
+        "throughput": 43344.23079267786,
+        "allocsPerRequest": 698.003466796875,
+        "bytesPerRequest": 54696.52890625
+      },
+      "head": {
+        "cpuUs": 86.71610717773436,
+        "instructions": 899009.0383300781,
+        "throughput": 43214.28758724428,
+        "allocsPerRequest": 696.003515625,
+        "bytesPerRequest": 54672.908203125
+      },
+      "head-aa": {
+        "cpuUs": 87.53932698567708,
+        "instructions": 898982.1018066406,
+        "throughput": 42405.3192780636,
+        "allocsPerRequest": 696.00400390625,
+        "bytesPerRequest": 54672.9296875
+      },
+      "llgo-base": {
+        "cpuUs": 263.8938334147135,
+        "instructions": 1514843.3376464844,
+        "throughput": 16683.98214962597,
+        "allocsPerRequest": 1167.001171875,
+        "bytesPerRequest": 76865.303125
+      },
+      "llgo-base-aa": {
+        "cpuUs": 260.5529764811198,
+        "instructions": 1503043.5151367188,
+        "throughput": 16764.3636436304,
+        "allocsPerRequest": 1167.001025390625,
+        "bytesPerRequest": 76863.878125
+      },
+      "llgo-head": {
+        "cpuUs": 241.3315470377604,
+        "instructions": 1390839.9012695313,
+        "throughput": 17132.800700825937,
+        "allocsPerRequest": 1165.001220703125,
+        "bytesPerRequest": 76833.0296875
+      },
+      "llgo-head-aa": {
+        "cpuUs": 238.83433227539064,
+        "instructions": 1390462.216015625,
+        "throughput": 17218.307135156654,
+        "allocsPerRequest": 1165.001123046875,
+        "bytesPerRequest": 76831.84609375
+      },
+      "wasmtime": {
+        "cpuUs": 38.13139038085937,
+        "instructions": 224626.9009277344,
+        "throughput": 57517.8997298406,
+        "allocsPerRequest": 1.000048828125,
+        "bytesPerRequest": 32.00546875
+      },
+      "wasmtime-aa": {
+        "cpuUs": 37.92729899088542,
+        "instructions": 225085.84951171873,
+        "throughput": 54279.17682104577,
+        "allocsPerRequest": 1.00009765625,
+        "bytesPerRequest": 32.0109375
+      }
+    },
+    "pairs": {
+      "head/base": {
+        "cpuUs": {
+          "ratio": 0.9854057673369808,
+          "ci95": [
+            0.9768879093249374,
+            0.9946908099807131
+          ]
+        },
+        "instructions": {
+          "ratio": 0.9981861028283949,
+          "ci95": [
+            0.9968040649645832,
+            0.9994619678291837
+          ]
+        },
+        "throughput": {
+          "ratio": 1.0254071232868975,
+          "ci95": [
+            1.004183693302231,
+            1.0477045221784644
+          ]
+        }
+      },
+      "llgo-head/llgo-base": {
+        "cpuUs": {
+          "ratio": 0.9240473775338994,
+          "ci95": [
+            0.8996159362212298,
+            0.9508964468798999
+          ]
+        },
+        "instructions": {
+          "ratio": 0.9395476562129234,
+          "ci95": [
+            0.9199507534166298,
+            0.96267490628113
+          ]
+        },
+        "throughput": {
+          "ratio": 1.0293694720657476,
+          "ci95": [
+            1.0010339744233074,
+            1.0569079283707865
+          ]
+        }
+      },
+      "head/wasmtime": {
+        "cpuUs": {
+          "ratio": 2.2592813422746927,
+          "ci95": [
+            2.1795860407783754,
+            2.3503475436917274
+          ]
+        },
+        "instructions": {
+          "ratio": 3.993544432001124,
+          "ci95": [
+            3.9500038546628975,
+            4.039228559319369
+          ]
+        },
+        "throughput": {
+          "ratio": 0.7879099615511432,
+          "ci95": [
+            0.759165944599063,
+            0.825474067001174
+          ]
+        }
+      },
+      "llgo-head/wasmtime": {
+        "cpuUs": {
+          "ratio": 6.256553024532886,
+          "ci95": [
+            5.907886536091969,
+            6.581441033828942
+          ]
+        },
+        "instructions": {
+          "ratio": 6.265518993452956,
+          "ci95": [
+            6.146510296800341,
+            6.387567559293464
+          ]
+        },
+        "throughput": {
+          "ratio": 0.3137924450771579,
+          "ci95": [
+            0.30343880144998736,
+            0.32571286522262544
+          ]
+        }
+      },
+      "llgo-head/head": {
+        "cpuUs": {
+          "ratio": 2.7692668936192133,
+          "ci95": [
+            2.6710450977645763,
+            2.8515868122755696
+          ]
+        },
+        "instructions": {
+          "ratio": 1.5689118025696709,
+          "ci95": [
+            1.5395864508344541,
+            1.6006964305296922
+          ]
+        },
+        "throughput": {
+          "ratio": 0.39825926868521977,
+          "ci95": [
+            0.38584259872493115,
+            0.4114011151813155
+          ]
+        }
+      }
+    },
+    "controls": {
+      "base": {
+        "cpuUs": {
+          "ratio": 0.9961696692778133,
+          "ci95": [
+            0.9867728041258738,
+            1.005949909854841
+          ],
+          "resolves2_5Percent": true
+        },
+        "instructions": {
+          "ratio": 0.9977745055293762,
+          "ci95": [
+            0.9966289508654658,
+            0.9989552910628894
+          ],
+          "resolves2_5Percent": true
+        },
+        "throughput": {
+          "ratio": 1.0140316856823866,
+          "ci95": [
+            0.9968065614181405,
+            1.0326910995991474
+          ],
+          "resolves2_5Percent": false
+        }
+      },
+      "head": {
+        "cpuUs": {
+          "ratio": 1.0129513240477164,
+          "ci95": [
+            1.0033715665445686,
+            1.0235534041021679
+          ],
+          "resolves2_5Percent": true
+        },
+        "instructions": {
+          "ratio": 1.001517690767089,
+          "ci95": [
+            0.999702842956396,
+            1.0036159387244377
+          ],
+          "resolves2_5Percent": true
+        },
+        "throughput": {
+          "ratio": 0.978531702302165,
+          "ci95": [
+            0.9563155730639485,
+            1.0007249629588129
+          ],
+          "resolves2_5Percent": false
+        }
+      },
+      "llgo-base": {
+        "cpuUs": {
+          "ratio": 0.9989624467245939,
+          "ci95": [
+            0.9838143872356829,
+            1.0162504938107684
+          ],
+          "resolves2_5Percent": true
+        },
+        "instructions": {
+          "ratio": 0.9971830371922974,
+          "ci95": [
+            0.9815010832753066,
+            1.0149522197385903
+          ],
+          "resolves2_5Percent": true
+        },
+        "throughput": {
+          "ratio": 0.9980698996943782,
+          "ci95": [
+            0.9783053902121305,
+            1.017327389362434
+          ],
+          "resolves2_5Percent": true
+        }
+      },
+      "llgo-head": {
+        "cpuUs": {
+          "ratio": 0.990954122199302,
+          "ci95": [
+            0.9644159475180877,
+            1.0196650302776047
+          ],
+          "resolves2_5Percent": false
+        },
+        "instructions": {
+          "ratio": 0.9934067942904722,
+          "ci95": [
+            0.9727877270420578,
+            1.0150734589699562
+          ],
+          "resolves2_5Percent": false
+        },
+        "throughput": {
+          "ratio": 0.9930809652306148,
+          "ci95": [
+            0.9602701735808431,
+            1.019548701149901
+          ],
+          "resolves2_5Percent": false
+        }
+      },
+      "wasmtime": {
+        "cpuUs": {
+          "ratio": 1.0014286395601715,
+          "ci95": [
+            0.9725829132847684,
+            1.0293501796878861
+          ],
+          "resolves2_5Percent": false
+        },
+        "instructions": {
+          "ratio": 1.0004464077241375,
+          "ci95": [
+            0.9873967305393685,
+            1.0128252909702473
+          ],
+          "resolves2_5Percent": true
+        },
+        "throughput": {
+          "ratio": 1.0064026375643371,
+          "ci95": [
+            0.979812531522187,
+            1.034141082855471
+          ],
+          "resolves2_5Percent": false
+        }
+      }
+    },
+    "phasesNs": {
+      "base": {
+        "cleanup": 67687.5,
+        "compileValidate": 66048770.5,
+        "engineSetup": 458.5,
+        "exportLookup": 688.0,
+        "firstCall": 13003708.5,
+        "instantiate": 516749.0,
+        "load": 71396.0,
+        "providerSetup": 53063.0,
+        "requestPreparation": 729.5
+      },
+      "head": {
+        "cleanup": 68021.0,
+        "compileValidate": 66946729.0,
+        "engineSetup": 458.5,
+        "exportLookup": 709.0,
+        "firstCall": 13102583.0,
+        "instantiate": 524000.5,
+        "load": 77083.0,
+        "providerSetup": 54436.5,
+        "requestPreparation": 687.0
+      },
+      "llgo-base": {
+        "cleanup": 715687.5,
+        "compileValidate": 108718042.0,
+        "engineSetup": 250.0,
+        "exportLookup": 1229.5,
+        "firstCall": 34097958.0,
+        "instantiate": 859604.5,
+        "load": 100603.5,
+        "providerSetup": 262146.0,
+        "requestPreparation": 750.0
+      },
+      "llgo-head": {
+        "cleanup": 780479.0,
+        "compileValidate": 119359958.5,
+        "engineSetup": 271.0,
+        "exportLookup": 1374.5,
+        "firstCall": 33943854.0,
+        "instantiate": 935249.5,
+        "load": 99020.5,
+        "providerSetup": 263603.5,
+        "requestPreparation": 750.0
+      },
+      "wasmtime": {
+        "cleanup": 282937.5,
+        "compileValidate": 57716020.5,
+        "engineSetup": 158521.0,
+        "executorSetup": 44792.5,
+        "exportLookup": 9250.0,
+        "firstCall": 10678895.5,
+        "instantiate": 202958.5,
+        "load": 79291.5,
+        "providerSetup": 248667.0
+      }
+    },
+    "scope": "Predeclared fixed20blocks200freshprocesses per payload;16B and64KiB separate events, no extension or timing peek.20 individually interleaved512request batches and finalflush,first+two warmups separate. Everyrole has identicalbinaryalias; normalGC and full response/body/trailer/CRC checks. No ownedlocalbuild/test/profile/sourceedit/prune overlap. Counterwindows include driver barriers and background-tail; no phased subtraction. Diagnostic source comparison, not all-platform/portfolio acceptance. External host activity recorded; unresolvedcontrols retained."
+  },
+  "65536": {
+    "processes": 200,
+    "measuredCheckedRequests": 2048000,
+    "summary": {
+      "base": {
+        "cpuUs": 117.28862101236979,
+        "instructions": 1212816.283251953,
+        "throughput": 30073.680061992098,
+        "allocsPerRequest": 758.00390625,
+        "bytesPerRequest": 124344.6
+      },
+      "base-aa": {
+        "cpuUs": 118.93586629231771,
+        "instructions": 1212086.4337402345,
+        "throughput": 29934.411730370506,
+        "allocsPerRequest": 758.00439453125,
+        "bytesPerRequest": 124344.71953125
+      },
+      "head": {
+        "cpuUs": 117.88386433919271,
+        "instructions": 1212762.3303222656,
+        "throughput": 30317.38557451892,
+        "allocsPerRequest": 756.004443359375,
+        "bytesPerRequest": 124320.81484375
+      },
+      "head-aa": {
+        "cpuUs": 117.10123697916666,
+        "instructions": 1210169.51875,
+        "throughput": 30690.546012963503,
+        "allocsPerRequest": 756.003564453125,
+        "bytesPerRequest": 124320.58828125
+      },
+      "llgo-base": {
+        "cpuUs": 316.2662679036458,
+        "instructions": 1965894.3597167968,
+        "throughput": 13535.371637555734,
+        "allocsPerRequest": 1432.001416015625,
+        "bytesPerRequest": 218879.50703125
+      },
+      "llgo-base-aa": {
+        "cpuUs": 324.3659790039062,
+        "instructions": 1978990.053857422,
+        "throughput": 13747.791198270683,
+        "allocsPerRequest": 1432.0015625,
+        "bytesPerRequest": 218880.67578125
+      },
+      "llgo-head": {
+        "cpuUs": 280.6577168782552,
+        "instructions": 1766461.7494140626,
+        "throughput": 14391.395512239129,
+        "allocsPerRequest": 1430.001318359375,
+        "bytesPerRequest": 218847.659375
+      },
+      "llgo-head-aa": {
+        "cpuUs": 284.1477864583333,
+        "instructions": 1764418.8962402344,
+        "throughput": 14342.661556176778,
+        "allocsPerRequest": 1430.00126953125,
+        "bytesPerRequest": 218848.35781249998
+      },
+      "wasmtime": {
+        "cpuUs": 50.43202107747395,
+        "instructions": 318999.8848632813,
+        "throughput": 45237.30439696666,
+        "allocsPerRequest": 1.0001953125,
+        "bytesPerRequest": 32.021875
+      },
+      "wasmtime-aa": {
+        "cpuUs": 51.814308675130206,
+        "instructions": 321284.8000488281,
+        "throughput": 45540.43489713363,
+        "allocsPerRequest": 1.00009765625,
+        "bytesPerRequest": 32.0109375
+      }
+    },
+    "pairs": {
+      "head/base": {
+        "cpuUs": {
+          "ratio": 1.0055904932424813,
+          "ci95": [
+            0.997323273562224,
+            1.0140627234384978
+          ]
+        },
+        "instructions": {
+          "ratio": 0.9995376260993907,
+          "ci95": [
+            0.9973247017802934,
+            1.0018472376031602
+          ]
+        },
+        "throughput": {
+          "ratio": 0.9949979073427769,
+          "ci95": [
+            0.98483262570256,
+            1.0049768752138082
+          ]
+        }
+      },
+      "llgo-head/llgo-base": {
+        "cpuUs": {
+          "ratio": 0.9197302757514256,
+          "ci95": [
+            0.890109211082753,
+            0.9508915948953233
+          ]
+        },
+        "instructions": {
+          "ratio": 0.9403256991978144,
+          "ci95": [
+            0.9177952487975246,
+            0.9645493070792078
+          ]
+        },
+        "throughput": {
+          "ratio": 1.0668188620497823,
+          "ci95": [
+            1.036197581831319,
+            1.1011643505299697
+          ]
+        }
+      },
+      "head/wasmtime": {
+        "cpuUs": {
+          "ratio": 2.3455018621953534,
+          "ci95": [
+            2.2799132211186595,
+            2.41596533162106
+          ]
+        },
+        "instructions": {
+          "ratio": 3.8084077013308746,
+          "ci95": [
+            3.7749685420310386,
+            3.8429236877715196
+          ]
+        },
+        "throughput": {
+          "ratio": 0.6508382104661764,
+          "ci95": [
+            0.629377764191004,
+            0.6751588566524402
+          ]
+        }
+      },
+      "llgo-head/wasmtime": {
+        "cpuUs": {
+          "ratio": 5.526016062913644,
+          "ci95": [
+            5.2683009101395015,
+            5.7929796907030635
+          ]
+        },
+        "instructions": {
+          "ratio": 5.6009512804672985,
+          "ci95": [
+            5.526818126268641,
+            5.676308488400359
+          ]
+        },
+        "throughput": {
+          "ratio": 0.3114572920304356,
+          "ci95": [
+            0.30233430882395246,
+            0.32104076323052916
+          ]
+        }
+      },
+      "llgo-head/head": {
+        "cpuUs": {
+          "ratio": 2.3560058305566125,
+          "ci95": [
+            2.2847188747927962,
+            2.4242397369782878
+          ]
+        },
+        "instructions": {
+          "ratio": 1.4706805887694236,
+          "ci95": [
+            1.4551564558363788,
+            1.4874197245354028
+          ]
+        },
+        "throughput": {
+          "ratio": 0.47854795096825653,
+          "ci95": [
+            0.46943339852226956,
+            0.48856113818741903
+          ]
+        }
+      }
+    },
+    "controls": {
+      "base": {
+        "cpuUs": {
+          "ratio": 1.0063196492898134,
+          "ci95": [
+            0.9982519473141162,
+            1.0152626567521976
+          ],
+          "resolves2_5Percent": true
+        },
+        "instructions": {
+          "ratio": 0.9992475395483863,
+          "ci95": [
+            0.9972642191447616,
+            1.0009517745167695
+          ],
+          "resolves2_5Percent": true
+        },
+        "throughput": {
+          "ratio": 0.9967518963005296,
+          "ci95": [
+            0.9820090100630601,
+            1.012832412930192
+          ],
+          "resolves2_5Percent": true
+        }
+      },
+      "head": {
+        "cpuUs": {
+          "ratio": 0.9858467919080983,
+          "ci95": [
+            0.9776369626486157,
+            0.9943034978607675
+          ],
+          "resolves2_5Percent": true
+        },
+        "instructions": {
+          "ratio": 0.9990239048261311,
+          "ci95": [
+            0.9970353639127347,
+            1.0008931591430588
+          ],
+          "resolves2_5Percent": true
+        },
+        "throughput": {
+          "ratio": 1.0150651632142842,
+          "ci95": [
+            1.0009696115962048,
+            1.0288464358385454
+          ],
+          "resolves2_5Percent": false
+        }
+      },
+      "llgo-base": {
+        "cpuUs": {
+          "ratio": 1.0254805709675072,
+          "ci95": [
+            0.9791863647856147,
+            1.075488565040489
+          ],
+          "resolves2_5Percent": false
+        },
+        "instructions": {
+          "ratio": 1.0236270192274564,
+          "ci95": [
+            0.9857902982011654,
+            1.065662750085023
+          ],
+          "resolves2_5Percent": false
+        },
+        "throughput": {
+          "ratio": 1.0041223539193433,
+          "ci95": [
+            0.9769473363222836,
+            1.0315277344526776
+          ],
+          "resolves2_5Percent": false
+        }
+      },
+      "llgo-head": {
+        "cpuUs": {
+          "ratio": 1.0039076046991544,
+          "ci95": [
+            0.986798649783061,
+            1.0208796810283478
+          ],
+          "resolves2_5Percent": true
+        },
+        "instructions": {
+          "ratio": 0.9998182886367096,
+          "ci95": [
+            0.9886443329553893,
+            1.0114020746609513
+          ],
+          "resolves2_5Percent": true
+        },
+        "throughput": {
+          "ratio": 0.9906617657745246,
+          "ci95": [
+            0.9681611366953933,
+            1.0131800881165995
+          ],
+          "resolves2_5Percent": false
+        }
+      },
+      "wasmtime": {
+        "cpuUs": {
+          "ratio": 1.0107355840988785,
+          "ci95": [
+            0.9944899043857157,
+            1.0265421865237947
+          ],
+          "resolves2_5Percent": false
+        },
+        "instructions": {
+          "ratio": 1.0049077076803625,
+          "ci95": [
+            0.9989794090951631,
+            1.0107909315594803
+          ],
+          "resolves2_5Percent": true
+        },
+        "throughput": {
+          "ratio": 0.9948786510753932,
+          "ci95": [
+            0.9746604272674185,
+            1.0140781772987126
+          ],
+          "resolves2_5Percent": false
+        }
+      }
+    },
+    "phasesNs": {
+      "base": {
+        "cleanup": 78271.0,
+        "compileValidate": 66071354.5,
+        "engineSetup": 417.0,
+        "exportLookup": 708.0,
+        "firstCall": 18628771.0,
+        "instantiate": 509937.5,
+        "load": 66812.5,
+        "providerSetup": 54834.0,
+        "requestPreparation": 8209.0
+      },
+      "head": {
+        "cleanup": 61312.5,
+        "compileValidate": 66206062.0,
+        "engineSetup": 416.5,
+        "exportLookup": 792.0,
+        "firstCall": 18083770.5,
+        "instantiate": 534687.5,
+        "load": 74250.0,
+        "providerSetup": 57646.0,
+        "requestPreparation": 8375.0
+      },
+      "llgo-base": {
+        "cleanup": 744187.5,
+        "compileValidate": 107058791.5,
+        "engineSetup": 208.0,
+        "exportLookup": 1271.0,
+        "firstCall": 38490625.0,
+        "instantiate": 892666.5,
+        "load": 98270.5,
+        "providerSetup": 262478.5,
+        "requestPreparation": 9166.5
+      },
+      "llgo-head": {
+        "cleanup": 783562.5,
+        "compileValidate": 119340500.0,
+        "engineSetup": 312.5,
+        "exportLookup": 1436.5,
+        "firstCall": 39054208.5,
+        "instantiate": 926916.5,
+        "load": 112146.0,
+        "providerSetup": 276312.0,
+        "requestPreparation": 7333.5
+      },
+      "wasmtime": {
+        "cleanup": 278583.5,
+        "compileValidate": 56478937.5,
+        "engineSetup": 153541.5,
+        "executorSetup": 44792.5,
+        "exportLookup": 9416.5,
+        "firstCall": 11608375.0,
+        "instantiate": 205021.5,
+        "load": 74812.5,
+        "providerSetup": 238979.5
+      }
+    },
+    "scope": "Predeclared fixed20blocks200freshprocesses per payload;16B and64KiB separate events, no extension or timing peek.20 individually interleaved512request batches and finalflush,first+two warmups separate. Everyrole has identicalbinaryalias; normalGC and full response/body/trailer/CRC checks. No ownedlocalbuild/test/profile/sourceedit/prune overlap. Counterwindows include driver barriers and background-tail; no phased subtraction. Diagnostic source comparison, not all-platform/portfolio acceptance. External host activity recorded; unresolvedcontrols retained."
+  },
+  "build": {
+    "base": "86bba0240e56485068575ee4b7d588c7fab1ba2d",
+    "head": "aa217c5988541ad53f5d9297f59ddd2af6e52292",
+    "sourceChanges": [
+      "internal/component/canonical/memory_string_test.go",
+      "internal/component/canonical/string.go"
+    ],
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "baseline": {
+      "base": {
+        "id": "go",
+        "command": [
+          "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+          "build",
+          "-o",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/llgo-upgrade-ac129220-20261114/p3/go-runner",
+          "."
+        ],
+        "root": null,
+        "seconds": 2.840663583,
+        "exitCode": 0,
+        "version": "go version go1.27.3 darwin/arm64",
+        "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764",
+        "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/llgo-upgrade-ac129220-20261114/p3/go-runner",
+        "binarySHA256": "8c9206d170e80c3c952b3e3da300415885a7a8217b56e16105f4b239c787ad4f"
+      },
+      "llgo-base": {
+        "id": "head",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-ac129220",
+          "build",
+          "-O3",
+          "-lto=full",
+          "-o",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/llgo-upgrade-ac129220-20261114/p3/head-runner",
+          "."
+        ],
+        "root": "/Users/lijie/source/goplus/llgo-external-link-options",
+        "seconds": 71.273495,
+        "exitCode": 0,
+        "version": "llgo v1.0.1000-0.20261114073733-ac1292206d67 darwin/arm64",
+        "compilerSHA256": "4cf4df967bb23486dcf49459c4586ef27bff1b089aa8bb17d9ba36f136024f12",
+        "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/llgo-upgrade-ac129220-20261114/p3/head-runner",
+        "binarySHA256": "e0a56c94b6b3ca593ee2dcac1b7841b653dd3772c945750d32ffa91e24ab6c80"
+      }
+    },
+    "builds": [
+      {
+        "id": "head",
+        "command": [
+          "/opt/homebrew/Cellar/go/1.27.3/libexec/bin/go",
+          "build",
+          "-o",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/canonical-utf8-20261114/head-runner",
+          "."
+        ],
+        "version": "go version go1.27.3 darwin/arm64",
+        "seconds": 3.2064799587242305,
+        "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/canonical-utf8-20261114/head-runner",
+        "binarySHA256": "028a2aa4e58365dc52ba86902b937e5236a3fb02cacb2dc954b4b4dbf46eafea",
+        "compilerSHA256": "60fa7fbaac037e24462915e8c19a1c73b02f548df0098b323823d6fbcdd0c764"
+      },
+      {
+        "id": "llgo-head",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-ac129220",
+          "build",
+          "-O3",
+          "-lto=full",
+          "-o",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/canonical-utf8-20261114/llgo-head-runner",
+          "."
+        ],
+        "version": "llgo v1.0.1000-0.20261114073733-ac1292206d67 darwin/arm64",
+        "seconds": 77.71115058287978,
+        "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/canonical-utf8-20261114/llgo-head-runner",
+        "binarySHA256": "a4b41fa0a68e1b5586ce7bc0ce465821b5b5e8d152ded2f4880c0a03028b55bb",
+        "compilerSHA256": "4cf4df967bb23486dcf49459c4586ef27bff1b089aa8bb17d9ba36f136024f12"
+      }
+    ],
+    "status": "pass"
+  },
+  "reference": {
+    "status": "pass",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "go": "go version go1.27.3 darwin/arm64\n",
+    "clang": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm@22/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm@22/22.1.8/etc/clang/arm64-apple-darwin27.cfg\n",
+    "rust": "rustc 1.98.0 (88d9e12ae 2026-08-18)\nbinary: rustc\ncommit-hash: 88d9e12ae178fab0fb5cc050a94da85685d449ea\ncommit-date: 2026-08-18\nhost: aarch64-apple-darwin\nrelease: 1.98.0\nLLVM version: 22.1.8\n",
+    "librarySHA256": "f9ead9226388df41191ece9536aff3b8c1cda15e7aa25c48ac559f9fec7e68ba",
+    "sourceHashes": {
+      "benchmarks/p3io/check_reference.py": "f9539f57c9b1768487ae3efb439d3742a858bb57d228bff8383a34de72ebeece",
+      "benchmarks/p3io/go.mod": "bd4905190950aa78ffc3573cd0216b067e27f6249fa93a4b869660273843c021",
+      "benchmarks/p3io/go.sum": "62dadf368b740288d8ded899d1cb73914dcbbc9810c5067c45574a0e8d60c0a3",
+      "benchmarks/p3io/main.go": "c8206d29bc9af625cca284802ca8cea4705d49da89f915624c0bff01363fa20b",
+      "benchmarks/p3io/main_test.go": "0821deaa52701417aab3d79859fe5cb5052319f36c99563a31cc8bddc1f82554",
+      "benchmarks/p3io/owned.go": "5ad7bbe727969f6587d8b8f0502e6b9650ccf395516cd176f4fe538d90bd15bb",
+      "benchmarks/p3io/owned_stub.go": "6e340e8ddfe011654317dfc17d00b4cc2358b67ad2e627df90c074679caf6e9d",
+      "benchmarks/p3io/owned_test.go": "f63a912b6a05b3b56025b6508b864a5f57ce64b69c5c9b1c0a37fd006bb56c0a",
+      "benchmarks/p3io/p3_reference.h": "f6eb7a0f51eca2d3934558646c4b14e1c6a1191aec65f814773fc5e4aa2c4423",
+      "benchmarks/p3io/reference.go": "f2dc9e6e6350a48576ef42833d3c489bd201d1c6808c6e0c396150a175635373",
+      "benchmarks/p3io/reference_stub.go": "72fd5fd72d75f8c22141ace170abc78eccf12f0d75a27efb7d24b7c3f1355024",
+      "benchmarks/p3io/reference_test.go": "25aeb6a84082465719ec350d3204b78ec3de5466e4a953bef8b4535a59bff70b",
+      "benchmarks/p3io/rust/Cargo.lock": "4d03954b5d4627ac4990453623b9732b064c49f13fe2970dc796a75a950333a6",
+      "benchmarks/p3io/rust/Cargo.toml": "3eff2b6290d57ba4875b41fa543d93f81bcb539f1c3c022819dde3841f7db00f",
+      "benchmarks/p3io/rust/rust-toolchain.toml": "b4ea3c94c934d96a2772b7878c12ccbf3e486313d0988a9c960e0bd87bafc8fe",
+      "benchmarks/p3io/rust/src/lib.rs": "221d46fc806609745398aca48b5a0e70c1cff8e5950da717e6cb445abd9e5b02",
+      "internal/bench/service/resources.go": "a7256dd4b5f42252d135fd2a06a50406e4e5064f7380299a3a322f2735cc34d8",
+      "internal/bench/service/service.go": "30afe8d897d4b83249033a516173dedd605dcee8208ea8631a20c52932c8a149",
+      "internal/bench/service/service_test.go": "d9e2ed415ac8d2132915c485daa64845cdd0919450effada3537ea9dc0f61cd7"
+    },
+    "binarySHA256": "561370163342e51593964bc6615ca28ebf1831c22132412ce9c6c44981c54f08",
+    "ownedDependencies": [
+      "github.com/cpunion/wasmvm/internal/bench/service"
+    ],
+    "currentHarnessSourceDifferences": [
+      "benchmarks/p3io/main.go",
+      "benchmarks/p3io/main_test.go",
+      "benchmarks/p3io/owned.go",
+      "internal/bench/service/service.go",
+      "internal/bench/service/service_test.go"
+    ],
+    "scope": "Frozen reference executable, original provenance retained; current-owned harness differs in the listed files. Comparison is a diagnostic whole-request comparison, not a same-adapter causal attribution."
+  },
+  "qualification": {
+    "controlledPortfolioAccepted": false,
+    "intervals": "individual diagnostic95%20k paired block resamples; not adjusted portfolio intervals",
+    "interimOutput": "Completed16B stdout included its summary before64KiB finished; no plan/order/sample-count changes or extensions were made. Final assessment after both cohorts.",
+    "llgoPreparation": "~10% source-event adverse observation remains under fresh baseline reconstruction audit; no attribution yet."
+  },
+  "evidence": {
+    "path": "../evidence/performance-canonical-utf8-2026-11-14.jsonl.gz",
+    "sha256": "b2aa8b037e31943cbe00a79126941e90fe7ce0e8007c2621ad642be667ea5556",
+    "processes": 400,
+    "measuredCheckedResponses": 4096000,
+    "totalCheckedResponses": 4915200,
+    "projection": "Retains all phases,counters,rounds,results and batches; unused per-request vectors become count/extrema/exact-hash summaries, full originals remain local."
+  }
+}
