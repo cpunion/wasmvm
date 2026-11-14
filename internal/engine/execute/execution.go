@@ -700,12 +700,18 @@ func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 				}
 			case 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
 				0x30, 0x31, 0x32, 0x33, 0x34, 0x35:
-				im := &code.Sources[in.Source].Wasm
-				result, trap = instance.Memories[im.Memory].Load(op, values[in.A].Lo, im.MemoryOffset(), 0, value.Value{})
+				offset := uint64(in.Count)
+				if in.Count == slots.WideMemoryOffset {
+					offset = code.Sources[in.Source].Wasm.MemoryOffset()
+				}
+				result, trap = instance.Memories[in.Extra].Load(op, values[in.A].Lo, offset, 0, value.Value{})
 			case 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d,
 				0x3e:
-				im := &code.Sources[in.Source].Wasm
-				trap = instance.Memories[im.Memory].Store(op, values[in.A].Lo, im.MemoryOffset(), 0, value.Value{Lo: values[in.B].Lo})
+				offset := uint64(in.Count)
+				if in.Count == slots.WideMemoryOffset {
+					offset = code.Sources[in.Source].Wasm.MemoryOffset()
+				}
+				trap = instance.Memories[in.Extra].Store(op, values[in.A].Lo, offset, 0, value.Value{Lo: values[in.B].Lo})
 			case 0x3f:
 				result.Lo = uint64(instance.Memories[in.Extra].Pages())
 			case 0x40:

@@ -15,6 +15,9 @@ type Slot uint32
 
 const NoSlot Slot = math.MaxUint32
 
+// WideMemoryOffset leaves a scalar memory offset in its original source.
+const WideMemoryOffset uint32 = math.MaxUint32
+
 // ControlBase separates internal control instructions from Wasm opcodes.
 const ControlBase uint32 = 1 << 24
 
@@ -37,6 +40,8 @@ type Instruction struct {
 // its Count is a pure following-integer-operation hint (zero or one).
 // Coalesced local.get uses Count as a zero/one no-copy hint. Local, global,
 // table, memory-size/grow and ref.func indices use Extra without a tuple.
+// Scalar loads/stores cache their memory index in Extra and offsets below
+// WideMemoryOffset in Count; larger offsets retain their full source value.
 // Branches address Count edges starting at Extra; A is the condition/index.
 // Every instruction retains its original source and fuel boundary.
 type Edge struct{ PC, Start, Count uint32 }
@@ -248,6 +253,11 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 			// copies and equal literals can alias; suspended call tuples cannot.
 			in := Instruction{Op: src.Wasm.Op, Source: op.Source, Dst: NoSlot, A: NoSlot, B: NoSlot, C: NoSlot}
 			switch {
+			case in.Op >= 0x28 && in.Op <= 0x3e:
+				in.Extra, in.Count = src.Wasm.Memory, WideMemoryOffset
+				if offset := src.Wasm.MemoryOffset(); offset < uint64(WideMemoryOffset) {
+					in.Count = uint32(offset)
+				}
 			case in.Op >= 0x41 && in.Op <= 0x44:
 				in.Extra, in.Count = uint32(src.Wasm.Bits), uint32(src.Wasm.Bits>>32)
 				if in.Op == 0x41 {
