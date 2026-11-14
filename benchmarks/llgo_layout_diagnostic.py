@@ -242,7 +242,7 @@ def operand_ablation(folder, ablation):
     data['operandAblation'] = dict(antecedent=antecedent, antecedentRun=43556904995,
         baseline=PRIOR_SOURCE, baselineRun=PRIOR_RUN, candidate=candidate,
         fixedBlocks=20, expectedObservations=520, expectedAlternateChecks=25,
-        scope='Frozen current baseline, conditional-load candidate, selected-index antecedent and independent references; all own roles have A/A controls. Legacy PR169 roles are omitted, not pooled or reclassified.')
+        scope='Frozen current baseline, operand-routing candidate, selected-index antecedent and independent references; all own roles have A/A controls. Legacy PR169 roles are omitted, not pooled or reclassified.')
     assert len(data['runtimes']) == 25
     assert sum(name.startswith('aa-') for name in data['runtimes']) == 10
     (folder / 'build.json').write_text(json.dumps(data, indent=2) + '\n')
