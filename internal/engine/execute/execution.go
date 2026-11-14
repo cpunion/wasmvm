@@ -479,11 +479,14 @@ func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 			if op := in.Op; op >= 0x45 && op <= 0xc4 {
 				// Numeric handlers share a short operand lifetime. Decode before
 				// their jump table while keeping copy/control indexes outside it.
-				a := values[in.A].Lo
-				b := uint64(0)
-				if in.B != slots.NoSlot {
-					b = values[in.B].Lo
+				right := in.B
+				if right == slots.NoSlot {
+					// Unary operations ignore the second value; alias their valid
+					// input so operand addressing needs no optional load branch.
+					right = in.A
 				}
+				a := values[in.A].Lo
+				b := values[right].Lo
 				switch op {
 				case 0x45:
 					result.Lo = numeric.I32Eqz(a)
