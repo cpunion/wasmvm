@@ -16,9 +16,9 @@ SOURCE_RUN = 43448812030
 HEAD = '95943842febc2d3571547c72f2d62bc79f232f88'
 BASE = 'b546ea76663c2ee763ce303a7835e1f83096e59d'
 PROFILES = {
-    'fused-32': ('-Wl,-mllvm,-x86-align-branch-boundary=32,-mllvm,-x86-align-branch=fused', 0),
-    'jcc-fused-32': ('-Wl,-mllvm,-x86-align-branch-boundary=32,-mllvm,-x86-align-branch=jcc+fused', 0),
-    'nofallthrough-32': ('-Wl,-mllvm,-align-all-nofallthru-blocks=5', 0),
+    'function-32-loop-32': ('-Wl,-mllvm,-align-all-functions=5,-mllvm,-align-loops=32', 32),
+    'function-64-loop-32': ('-Wl,-mllvm,-align-all-functions=6,-mllvm,-align-loops=32', 64),
+    'nofallthrough-32-max7': ('-Wl,-mllvm,-align-all-nofallthru-blocks=5,-mllvm,-max-bytes-for-alignment=7', 0),
 }
 SYMBOL = 'github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).runSlots'
 
