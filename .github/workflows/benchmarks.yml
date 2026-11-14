@@ -36,6 +36,10 @@ on:
         description: Temporary diagnostic - reuse the frozen cancellation candidate build run
         type: string
         default: ''
+      candidate_revision:
+        description: Temporary diagnostic candidate commit
+        type: string
+        default: '468e6c286ded60e692c4d10a4aa8b5b71d5931e2'
 
 permissions:
   contents: read
@@ -679,7 +683,7 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 468e6c286ded60e692c4d10a4aa8b5b71d5931e2
+          ref: ${{ inputs.candidate_revision }}
           path: candidate
           persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
