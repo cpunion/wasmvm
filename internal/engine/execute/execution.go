@@ -477,123 +477,130 @@ func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 			// Scalar numeric opcodes form a contiguous range. Dispatch them
 			// separately from sparse control, reference and host operations.
 			if op := in.Op; op >= 0x45 && op <= 0xc4 {
+				// Numeric handlers share a short operand lifetime. Decode before
+				// their jump table while keeping copy/control indexes outside it.
+				a := values[in.A].Lo
+				b := uint64(0)
+				if in.B != slots.NoSlot {
+					b = values[in.B].Lo
+				}
 				switch op {
 				case 0x45:
-					result.Lo = numeric.I32Eqz(values[in.A].Lo)
+					result.Lo = numeric.I32Eqz(a)
 				case 0x46:
-					result.Lo = numeric.I32Eq(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32Eq(a, b)
 				case 0x47:
-					result.Lo = numeric.I32Ne(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32Ne(a, b)
 				case 0x48:
-					result.Lo = numeric.I32LtS(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32LtS(a, b)
 				case 0x49:
-					result.Lo = numeric.I32LtU(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32LtU(a, b)
 				case 0x4a:
-					result.Lo = numeric.I32GtS(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32GtS(a, b)
 				case 0x4b:
-					result.Lo = numeric.I32GtU(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32GtU(a, b)
 				case 0x4c:
-					result.Lo = numeric.I32LeS(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32LeS(a, b)
 				case 0x4d:
-					result.Lo = numeric.I32LeU(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32LeU(a, b)
 				case 0x4e:
-					result.Lo = numeric.I32GeS(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32GeS(a, b)
 				case 0x4f:
-					result.Lo = numeric.I32GeU(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32GeU(a, b)
 				case 0x50:
-					result.Lo = numeric.I64Eqz(values[in.A].Lo)
+					result.Lo = numeric.I64Eqz(a)
 				case 0x51:
-					result.Lo = numeric.I64Eq(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64Eq(a, b)
 				case 0x52:
-					result.Lo = numeric.I64Ne(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64Ne(a, b)
 				case 0x53:
-					result.Lo = numeric.I64LtS(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64LtS(a, b)
 				case 0x54:
-					result.Lo = numeric.I64LtU(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64LtU(a, b)
 				case 0x55:
-					result.Lo = numeric.I64GtS(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64GtS(a, b)
 				case 0x56:
-					result.Lo = numeric.I64GtU(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64GtU(a, b)
 				case 0x57:
-					result.Lo = numeric.I64LeS(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64LeS(a, b)
 				case 0x58:
-					result.Lo = numeric.I64LeU(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64LeU(a, b)
 				case 0x59:
-					result.Lo = numeric.I64GeS(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64GeS(a, b)
 				case 0x5a:
-					result.Lo = numeric.I64GeU(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64GeU(a, b)
 				case 0x67:
-					result.Lo = numeric.I32Clz(values[in.A].Lo)
+					result.Lo = numeric.I32Clz(a)
 				case 0x68:
-					result.Lo = numeric.I32Ctz(values[in.A].Lo)
+					result.Lo = numeric.I32Ctz(a)
 				case 0x69:
-					result.Lo = numeric.I32Popcnt(values[in.A].Lo)
+					result.Lo = numeric.I32Popcnt(a)
 				case 0x6a:
-					result.Lo = numeric.I32Add(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32Add(a, b)
 				case 0x6b:
-					result.Lo = numeric.I32Sub(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32Sub(a, b)
 				case 0x6c:
-					result.Lo = numeric.I32Mul(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32Mul(a, b)
 				case 0x71:
-					result.Lo = numeric.I32And(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32And(a, b)
 				case 0x72:
-					result.Lo = numeric.I32Or(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32Or(a, b)
 				case 0x73:
-					result.Lo = numeric.I32Xor(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32Xor(a, b)
 				case 0x74:
-					result.Lo = numeric.I32Shl(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32Shl(a, b)
 				case 0x75:
-					result.Lo = numeric.I32ShrS(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32ShrS(a, b)
 				case 0x76:
-					result.Lo = numeric.I32ShrU(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32ShrU(a, b)
 				case 0x77:
-					result.Lo = numeric.I32Rotl(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32Rotl(a, b)
 				case 0x78:
-					result.Lo = numeric.I32Rotr(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I32Rotr(a, b)
 				case 0x79:
-					result.Lo = numeric.I64Clz(values[in.A].Lo)
+					result.Lo = numeric.I64Clz(a)
 				case 0x7a:
-					result.Lo = numeric.I64Ctz(values[in.A].Lo)
+					result.Lo = numeric.I64Ctz(a)
 				case 0x7b:
-					result.Lo = numeric.I64Popcnt(values[in.A].Lo)
+					result.Lo = numeric.I64Popcnt(a)
 				case 0x7c:
-					result.Lo = numeric.I64Add(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64Add(a, b)
 				case 0x7d:
-					result.Lo = numeric.I64Sub(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64Sub(a, b)
 				case 0x7e:
-					result.Lo = numeric.I64Mul(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64Mul(a, b)
 				case 0x83:
-					result.Lo = numeric.I64And(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64And(a, b)
 				case 0x84:
-					result.Lo = numeric.I64Or(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64Or(a, b)
 				case 0x85:
-					result.Lo = numeric.I64Xor(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64Xor(a, b)
 				case 0x86:
-					result.Lo = numeric.I64Shl(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64Shl(a, b)
 				case 0x87:
-					result.Lo = numeric.I64ShrS(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64ShrS(a, b)
 				case 0x88:
-					result.Lo = numeric.I64ShrU(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64ShrU(a, b)
 				case 0x89:
-					result.Lo = numeric.I64Rotl(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64Rotl(a, b)
 				case 0x8a:
-					result.Lo = numeric.I64Rotr(values[in.A].Lo, values[in.B].Lo)
+					result.Lo = numeric.I64Rotr(a, b)
 				case 0xa7:
-					result.Lo = numeric.I32WrapI64(values[in.A].Lo)
+					result.Lo = numeric.I32WrapI64(a)
 				case 0xac:
-					result.Lo = numeric.I64ExtendI32S(values[in.A].Lo)
+					result.Lo = numeric.I64ExtendI32S(a)
 				case 0xad:
-					result.Lo = numeric.I64ExtendI32U(values[in.A].Lo)
+					result.Lo = numeric.I64ExtendI32U(a)
 				case 0xc0:
-					result.Lo = numeric.I32Extend8S(values[in.A].Lo)
+					result.Lo = numeric.I32Extend8S(a)
 				case 0xc1:
-					result.Lo = numeric.I32Extend16S(values[in.A].Lo)
+					result.Lo = numeric.I32Extend16S(a)
 				case 0xc2:
-					result.Lo = numeric.I64Extend8S(values[in.A].Lo)
+					result.Lo = numeric.I64Extend8S(a)
 				case 0xc3:
-					result.Lo = numeric.I64Extend16S(values[in.A].Lo)
+					result.Lo = numeric.I64Extend16S(a)
 				case 0xc4:
-					result.Lo = numeric.I64Extend32S(values[in.A].Lo)
+					result.Lo = numeric.I64Extend32S(a)
 				case 0x5b, 0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61, 0x62,
 					0x63, 0x64, 0x65, 0x66, 0x6d, 0x6e, 0x6f, 0x70,
 					0x7f, 0x80, 0x81, 0x82, 0x8b, 0x8c, 0x8d, 0x8e,
@@ -603,11 +610,7 @@ func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 					0xa8, 0xa9, 0xaa, 0xab, 0xae, 0xaf, 0xb0, 0xb1,
 					0xb2, 0xb3, 0xb4, 0xb5, 0xb6, 0xb7, 0xb8, 0xb9,
 					0xba, 0xbb, 0xbc, 0xbd, 0xbe, 0xbf:
-					right := uint64(0)
-					if in.B != slots.NoSlot {
-						right = values[in.B].Lo
-					}
-					result.Lo, trap = numeric.Eval(op, values[in.A].Lo, right)
+					result.Lo, trap = numeric.Eval(op, a, b)
 					if trap != wasm.NoTrap {
 						goto commit
 					}
