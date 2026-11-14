@@ -24,9 +24,13 @@ on:
         default: main
         type: string
       reuse_llgo_alignment:
-        description: Temporary diagnostic - reuse frozen alignment variants on two new hosts
+        description: Temporary diagnostic - reuse frozen layout variants on two new hosts
         type: boolean
         default: false
+      llgo_variant_run:
+        description: Completed workflow containing the declared LLGo layout variants
+        type: string
+        default: '43520701499'
       llgo_diagnostic_runner:
         description: Temporary native alignment diagnostic runner image
         type: choice
@@ -591,7 +595,7 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           pattern: llgo-layout-[bh]*
-          run-id: ${{ inputs.reuse_llgo_alignment && '43520701499' || github.run_id }}
+          run-id: ${{ inputs.reuse_llgo_alignment && inputs.llgo_variant_run || github.run_id }}
           github-token: ${{ github.token }}
           path: derived
           merge-multiple: true
