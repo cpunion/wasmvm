@@ -39,11 +39,15 @@ func TestOpaqueMovePreservesQuotaAndAuthority(t *testing.T) {
 		t.Fatal("failed move consumed source", err)
 	}
 	a.Close()
-	if _, err := b.MoveOpaque(next, a); !errors.Is(err, wasm.ErrTrap) {
+	if _, err := b.MoveOpaque(next, a); !errors.Is(err, wasm.ErrClosed) {
 		t.Fatal(err)
 	}
-	if _, err := b.MoveOpaque(next+1, a); !errors.Is(err, wasm.ErrTrap) {
+	if _, err := b.MoveOpaque(next+1, a); !errors.Is(err, wasm.ErrClosed) {
 		t.Fatal(err)
+	}
+	b.Close()
+	if _, err := b.MoveOpaque(next, a); !errors.Is(err, wasm.ErrClosed) {
+		t.Fatal("closed source domain", err)
 	}
 	var absent *Resources
 	if _, err := absent.MoveOpaque(0, b); err == nil {

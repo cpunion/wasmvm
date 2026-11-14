@@ -58,10 +58,10 @@ func TestOpaqueHandleDomainAndQuota(t *testing.T) {
 	if _, err := a.AddOpaque(value); !errors.Is(err, wasm.ErrClosed) {
 		t.Fatal(err)
 	}
-	if _, err := a.Opaque(next); !errors.Is(err, wasm.ErrTrap) {
+	if _, err := a.Opaque(next); !errors.Is(err, wasm.ErrClosed) {
 		t.Fatal(err)
 	}
-	if err := a.RemoveOpaque(next); !errors.Is(err, wasm.ErrTrap) {
+	if err := a.RemoveOpaque(next); !errors.Is(err, wasm.ErrClosed) {
 		t.Fatal(err)
 	}
 	b.Close()

@@ -1,5 +1,7 @@
 package canonical
 
+import "github.com/cpunion/wasmvm/pkg/wasm"
+
 // AddOpaque allocates a non-resource entry in the same bounded, tagged handle
 // domain. Async waitables and sets cannot alias resources or error contexts.
 func (r *Resources) AddOpaque(value any) (uint32, error) {
@@ -14,8 +16,13 @@ func (r *Resources) AddOpaque(value any) (uint32, error) {
 func (r *Resources) Opaque(id uint32) (any, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	// Closing the owner can race an already admitted canonical operation.
+	// Match resource/error-context domains: shutdown is not a guest trap.
+	if r.closed {
+		return nil, wasm.ErrClosed
+	}
 	e := r.entryLocked(id)
-	if r.closed || e == nil || e.opaque == nil {
+	if e == nil || e.opaque == nil {
 		return nil, scalarTrap("invalid async handle")
 	}
 	return e.opaque, nil
@@ -24,8 +31,11 @@ func (r *Resources) Opaque(id uint32) (any, error) {
 func (r *Resources) RemoveOpaque(id uint32) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	if r.closed {
+		return wasm.ErrClosed
+	}
 	e := r.entryLocked(id)
-	if r.closed || e == nil || e.opaque == nil {
+	if e == nil || e.opaque == nil {
 		return scalarTrap("invalid async handle")
 	}
 	r.removeLocked(id)
@@ -48,8 +58,11 @@ func (r *Resources) MoveOpaque(id uint32, dst *Resources) (uint32, error) {
 	defer first.mu.Unlock()
 	second.mu.Lock()
 	defer second.mu.Unlock()
+	if r.closed || dst.closed {
+		return 0, wasm.ErrClosed
+	}
 	e := r.entryLocked(id)
-	if r.closed || dst.closed || e == nil || e.opaque == nil {
+	if e == nil || e.opaque == nil {
 		return 0, scalarTrap("invalid async handle")
 	}
 	if !dst.availableLocked() {
