@@ -214,7 +214,7 @@ jobs:
           read -ra packages <<< "$TEST_PACKAGES"
           llgo test -O3 -lto=full -json -debug-trace "artifacts/ci/llgo-${SHARD}.json" -count=1 -timeout=8m "${packages[@]}"
       - name: Execute native service reference under LLGo
-        if: matrix.shard == 'legacy'
+        if: matrix.shard == 'threads'
         working-directory: benchmarks/service
         run: llgo test -O3 -lto=full -json -debug-trace "$GITHUB_WORKSPACE/artifacts/ci/llgo-service-reference.json" -count=1 -timeout=2m ./...
       - name: Execute complete P3 HTTP measurement under LLGo
