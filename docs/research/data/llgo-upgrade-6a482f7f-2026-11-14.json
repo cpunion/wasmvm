@@ -1,0 +1,5101 @@
+{
+  "identity": {
+    "wasmvmSource": "4d64f95111a836ebc19eca2afc1f6d32bee2528d",
+    "oldCompiler": "ac1292206d672c2aeb546780a1d585ad98edbc3d",
+    "newCompiler": "6a482f7f6ad94e9f2d0a0fea97dd4cabd46b1130",
+    "profile": "-O3 -lto=full / LLVM22.1.8 / Go1.27.3; default GC",
+    "oldP3Runner": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-call-entries-20261114/head-llgo-runner-v2",
+    "scope": "Compiler baseline event, separate from wasmvm source optimization. Freeze old compiler/runtime artifacts before advancing the single reused SDK worktree.",
+    "frozenOldBinaries": {
+      "phase": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/llgo-upgrade-6a482f7f-20261114/old-llgo-phase",
+        "sha256": "7c9f2a59979fad3de1d0608f88efcde5f52f981e2ade5c6b32d4bd88fcccc66b"
+      },
+      "p3": {
+        "path": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-call-entries-20261114/head-llgo-runner-v2",
+        "sha256": "b0e10146e6ab296be62eb5564c0952726e6fda8cba8df981fd07554d49df640a"
+      }
+    }
+  },
+  "compilerBuild": {
+    "command": [
+      "go",
+      "build",
+      "-o",
+      "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-6a482f7f",
+      "./cmd/llgo"
+    ],
+    "seconds": 5.5305130002088845,
+    "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-6a482f7f",
+    "sha256": "f3509f5cf2b7a112c776df1ba7e9767d6d920f189ca94ce18fd2003f21df0800",
+    "version": "llgo v1.0.1000-0.20261114135510-6a482f7f6ad9 darwin/arm64",
+    "SDKRoot": "/Users/lijie/source/goplus/llgo-external-link-options",
+    "SDKCommit": "6a482f7f6ad94e9f2d0a0fea97dd4cabd46b1130"
+  },
+  "newWasmvmBuilds": [
+    {
+      "name": "phase",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-6a482f7f",
+        "build",
+        "-O3",
+        "-lto=full",
+        "-overlay",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/llgo-upgrade-6a482f7f-20261114/new-overlay.json",
+        "-o",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/llgo-upgrade-6a482f7f-20261114/new-llgo-phase",
+        "./benchmarks/embedded/wasmvm"
+      ],
+      "cwd": "/Users/lijie/source/goplus/wasmvm-source-cleanup",
+      "seconds": 22.971685375086963,
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/llgo-upgrade-6a482f7f-20261114/new-llgo-phase",
+      "sha256": "999e192c9244f821d260088151df04e3938144d7190ab3cfd3c63759a3f7856c"
+    },
+    {
+      "name": "p3",
+      "command": [
+        "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-6a482f7f",
+        "build",
+        "-O3",
+        "-lto=full",
+        "-overlay",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/llgo-upgrade-6a482f7f-20261114/new-overlay.json",
+        "-o",
+        "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/llgo-upgrade-6a482f7f-20261114/new-llgo-p3",
+        "."
+      ],
+      "cwd": "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/p3io",
+      "seconds": 73.3469026251696,
+      "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/llgo-upgrade-6a482f7f-20261114/new-llgo-p3",
+      "sha256": "a1d084c0c0047d93aae1fccde4129d4039f4eba21ab9b428c50e0f99880d9ce5"
+    }
+  ],
+  "integratedRuntimeSource": "393bf75c433668084611d6f6e69fb9f84b20def5; tree equals measured4d64f951, runtime code equalsc3cd0c4b",
+  "mergedCompilerPRs": [
+    {
+      "number": 3102,
+      "url": "https://github.com/xgo-dev/llgo/pull/3102",
+      "effect": "Analyze every emitted private-type method before archiving; invalidate old placement/archive facts; fixes3101."
+    },
+    {
+      "number": 3103,
+      "url": "https://github.com/xgo-dev/llgo/pull/3103",
+      "effect": "CallersFrames instruction PCs; no direct steady gain assumed."
+    },
+    {
+      "number": 3096,
+      "url": "https://github.com/xgo-dev/llgo/pull/3096",
+      "effect": "Host deadlines for native tests; no benchmark-duration limit change."
+    }
+  ],
+  "appendProbe": {
+    "old": {
+      "Compiler": "llgo",
+      "Calls": 100000,
+      "Empty": 0,
+      "Word": 100000,
+      "Direct": 0
+    },
+    "new": {
+      "Compiler": "llgo",
+      "Calls": 100000,
+      "Empty": 0,
+      "Word": 0,
+      "Direct": 0
+    },
+    "qualification": "100000 checked calls with spare capacity, same explicit -O3/fullLTO, global empty observer and direct-capacity/PutUint32 control. Separate upstream two-client isolated archive regression passes."
+  },
+  "analysis": {
+    "p3-16": {
+      "processes": 160,
+      "medians": {
+        "base": {
+          "cpuUs": 247.04429931640624,
+          "instructions": 1351180.6575195312,
+          "throughput": 15925.66258989098,
+          "allocsPerRequest": 1165.0017578125,
+          "bytesPerRequest": 76832.38203124999,
+          "phase_cleanup": 793542.0,
+          "phase_compileValidate": 126568874.5,
+          "phase_engineSetup": 250.0,
+          "phase_exportLookup": 1312.0,
+          "phase_firstCall": 35714187.5,
+          "phase_instantiate": 974249.5,
+          "phase_load": 100083.5,
+          "phase_providerSetup": 288165.5,
+          "phase_requestPreparation": 792.5
+        },
+        "go": {
+          "cpuUs": 92.03280232747396,
+          "instructions": 867903.3094726563,
+          "throughput": 38618.22304791078,
+          "allocsPerRequest": 696.00322265625,
+          "bytesPerRequest": 54672.513281249994,
+          "phase_cleanup": 70542.0,
+          "phase_compileValidate": 70882729.0,
+          "phase_engineSetup": 520.5,
+          "phase_exportLookup": 812.0,
+          "phase_firstCall": 14656417.0,
+          "phase_instantiate": 555499.5,
+          "phase_load": 84312.5,
+          "phase_providerSetup": 57292.0,
+          "phase_requestPreparation": 1250.5
+        },
+        "head": {
+          "cpuUs": 264.3627217610677,
+          "instructions": 1481807.245703125,
+          "throughput": 15335.684170235741,
+          "allocsPerRequest": 1165.00166015625,
+          "bytesPerRequest": 76833.1078125,
+          "phase_cleanup": 797021.0,
+          "phase_compileValidate": 114952145.5,
+          "phase_engineSetup": 209.0,
+          "phase_exportLookup": 1145.5,
+          "phase_firstCall": 35728104.5,
+          "phase_instantiate": 996896.0,
+          "phase_load": 93562.5,
+          "phase_providerSetup": 290270.0,
+          "phase_requestPreparation": 834.0
+        },
+        "wasmtime": {
+          "cpuUs": 44.622904459635414,
+          "instructions": 231325.7751953125,
+          "throughput": 49545.95755595037,
+          "allocsPerRequest": 1.00068359375,
+          "bytesPerRequest": 32.54453125,
+          "phase_cleanup": 288416.5,
+          "phase_compileValidate": 62589395.5,
+          "phase_engineSetup": 162833.0,
+          "phase_executorSetup": 54166.5,
+          "phase_exportLookup": 10437.0,
+          "phase_firstCall": 11191583.5,
+          "phase_instantiate": 234853.5,
+          "phase_load": 74312.0,
+          "phase_providerSetup": 276812.5
+        }
+      },
+      "comparisons": {
+        "cpuUs": {
+          "AA": {
+            "base": {
+              "ratio": 0.9922734634437157,
+              "ci95": [
+                0.9692447433786299,
+                1.015436867337454
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0023511424903015,
+              "ci95": [
+                0.9934882244721014,
+                1.0111383919838717
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0113933120303507,
+              "ci95": [
+                0.9958309652789035,
+                1.028119231497289
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0018995930859744,
+              "ci95": [
+                0.9791773136970305,
+                1.027060408148801
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0778185452627724,
+            "ci95": [
+              1.0562142827636463,
+              1.0981224017352715
+            ]
+          },
+          "head/go": {
+            "ratio": 2.8556569214281846,
+            "ci95": [
+              2.797504462992932,
+              2.9106113771197766
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 6.041947011185324,
+            "ci95": [
+              5.729063798493531,
+              6.390860058773155
+            ]
+          }
+        },
+        "instructions": {
+          "AA": {
+            "base": {
+              "ratio": 0.996959180792918,
+              "ci95": [
+                0.976536406687477,
+                1.0171494465270183
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 1.0000897185547355,
+              "ci95": [
+                0.9988048336531604,
+                1.0015379636628394
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0120662715176985,
+              "ci95": [
+                0.9992435934506153,
+                1.0268058212939453
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0025137361258916,
+              "ci95": [
+                0.991717070675975,
+                1.0143911628756135
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.0728854054634922,
+            "ci95": [
+              1.0541675832392046,
+              1.09040926066032
+            ]
+          },
+          "head/go": {
+            "ratio": 1.6972892560186372,
+            "ci95": [
+              1.6810896576409762,
+              1.7120811085639334
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 6.354142796558595,
+            "ci95": [
+              6.238862739068496,
+              6.458318422862834
+            ]
+          }
+        },
+        "throughput": {
+          "AA": {
+            "base": {
+              "ratio": 1.0005894100274735,
+              "ci95": [
+                0.9841316937123028,
+                1.017248899382433
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 0.9889501270277288,
+              "ci95": [
+                0.9712894880030084,
+                1.0057644566137232
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9994439973247226,
+              "ci95": [
+                0.9785984758064099,
+                1.0206875999234886
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9977076319250034,
+              "ci95": [
+                0.9803874539942425,
+                1.01503675575953
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9554396154539309,
+            "ci95": [
+              0.9384045397601513,
+              0.9704289702808079
+            ]
+          },
+          "head/go": {
+            "ratio": 0.40012362764326703,
+            "ci95": [
+              0.39225789168037056,
+              0.40764997077464743
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.3047706016086298,
+            "ci95": [
+              0.297417434760821,
+              0.31165655531548714
+            ]
+          }
+        },
+        "allocsPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 1.0000000880162587,
+              "ci95": [
+                0.9999998616888075,
+                1.0000003143437906
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 1.0000000982172428,
+              "ci95": [
+                0.9999991090308937,
+                1.000001157558683
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0000001634587534,
+              "ci95": [
+                0.9999999622787803,
+                1.0000003646388091
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9999561763502653,
+              "ci95": [
+                0.9996975909484369,
+                1.0002245659239435
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9999999455137385,
+            "ci95": [
+              0.9999997736725104,
+              1.0000001362156299
+            ]
+          },
+          "head/go": {
+            "ratio": 1.6738450515183785,
+            "ci95": [
+              1.6738441682892757,
+              1.6738458803830447
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1164.2996110917713,
+            "ci95": [
+              1164.123657995947,
+              1164.4616591241686
+            ]
+          }
+        },
+        "bytesPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 1.0000117838466085,
+              "ci95": [
+                0.999993647666329,
+                1.0000298826053944
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 1.000001307498725,
+              "ci95": [
+                0.9999975529085025,
+                1.0000049635027033
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0000011653952587,
+              "ci95": [
+                0.9999872431608413,
+                1.000015239445914
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9991795988107869,
+              "ci95": [
+                0.9932094100901148,
+                1.005796090654478
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.000002929036055,
+            "ci95": [
+              0.9999942412446832,
+              1.0000119202374367
+            ]
+          },
+          "head/go": {
+            "ratio": 1.405322790210701,
+            "ci95": [
+              1.405312858236682,
+              1.4053336765855002
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2371.0154622336327,
+            "ci95": [
+              2362.9181314182542,
+              2378.9698266798237
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9969468786999014,
+              "ci95": [
+                0.9115044562230056,
+                1.0973388134095585
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0756170108342722,
+              "ci95": [
+                0.8936028685704154,
+                1.321473900141334
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9567595365060305,
+              "ci95": [
+                0.9031313870908058,
+                1.0091427388058658
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9963939707561741,
+              "ci95": [
+                0.9394775647542764,
+                1.0571603549682052
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9909962245376629,
+            "ci95": [
+              0.9247479631907485,
+              1.0515921676565825
+            ]
+          },
+          "head/go": {
+            "ratio": 10.546509243338596,
+            "ci95": [
+              9.793433983871042,
+              11.306076893048559
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2.6312032612858833,
+            "ci95": [
+              2.505114074970159,
+              2.763217885754731
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 0.9850447235696022,
+              "ci95": [
+                0.9188512096116064,
+                1.043678533148881
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9917262334687003,
+              "ci95": [
+                0.9407329327528956,
+                1.0425838112885197
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0514690364898296,
+              "ci95": [
+                1.0037728070267724,
+                1.1004716191736739
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.029877031061317,
+              "ci95": [
+                0.9793751792456252,
+                1.0838044855506557
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.897739657250565,
+            "ci95": [
+              0.8477268303630228,
+              0.9456935002756077
+            ]
+          },
+          "head/go": {
+            "ratio": 1.5980713175681438,
+            "ci95": [
+              1.5515089406023295,
+              1.64841764820391
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.7783991785863889,
+            "ci95": [
+              1.70478271817794,
+              1.8555511430047202
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.922580073932022,
+              "ci95": [
+                0.7101822720130397,
+                1.1943081115427556
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.2086275049731439,
+              "ci95": [
+                0.8257275416407764,
+                1.9957381844238333
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.841807543046792,
+              "ci95": [
+                0.5984271197663084,
+                1.1769634473280264
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.99064810020969,
+              "ci95": [
+                0.8153865807373915,
+                1.1659251157707722
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9350024787064666,
+            "ci95": [
+              0.7609658690825534,
+              1.1544560411632558
+            ]
+          },
+          "head/go": {
+            "ratio": 0.37777948900195113,
+            "ci95": [
+              0.29257253910082065,
+              0.4660020977107256
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.001167071054506221,
+            "ci95": [
+              0.0009405709609815934,
+              0.0014189905417798642
+            ]
+          }
+        },
+        "phase_executorSetup": {
+          "AA": {
+            "wasmtime": {
+              "ratio": 0.9808634361198781,
+              "ci95": [
+                0.8114847245698403,
+                1.1524528889135341
+              ],
+              "resolves2_5Percent": false
+            }
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 1.0099050872884394,
+              "ci95": [
+                0.8751676992471272,
+                1.1693224313476207
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0479907264519075,
+              "ci95": [
+                0.9351938551261305,
+                1.1778571019239124
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.8704314493396421,
+              "ci95": [
+                0.7410371809810223,
+                1.0206882585195898
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.1445178176552262,
+              "ci95": [
+                0.8535877913653928,
+                1.4891283577281544
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.903402830642163,
+            "ci95": [
+              0.8287401062997792,
+              0.9873987193618347
+            ]
+          },
+          "head/go": {
+            "ratio": 1.469505638739969,
+            "ci95": [
+              1.3662269155911488,
+              1.596171822934287
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.10396319517938396,
+            "ci95": [
+              0.08848926082798386,
+              0.11894555830793366
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 1.0262527670727275,
+              "ci95": [
+                0.9583948351836123,
+                1.099538054091057
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0659633857295523,
+              "ci95": [
+                0.9841219076613446,
+                1.1685897760396304
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0930773168748116,
+              "ci95": [
+                1.0367950465213844,
+                1.15282752900364
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0478035461838358,
+              "ci95": [
+                0.9744620653079697,
+                1.1266346678797678
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0042977802989594,
+            "ci95": [
+              0.9372516738403205,
+              1.0757412324041393
+            ]
+          },
+          "head/go": {
+            "ratio": 2.4229516878972386,
+            "ci95": [
+              2.310913201877026,
+              2.551245381327965
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 3.1842276276484447,
+            "ci95": [
+              2.851850183766094,
+              3.5004732441174964
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 1.050288566377253,
+              "ci95": [
+                0.9775352406069558,
+                1.133939454242261
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0870270227624852,
+              "ci95": [
+                0.9685866775235563,
+                1.2286229994762643
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9247046651780425,
+              "ci95": [
+                0.6715780998941866,
+                1.269886667748613
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0088157944465375,
+              "ci95": [
+                0.8556637806346461,
+                1.1616290949476376
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.1768954355403825,
+            "ci95": [
+              0.9983515314803328,
+              1.3971268069101905
+            ]
+          },
+          "head/go": {
+            "ratio": 1.9867856567280542,
+            "ci95": [
+              1.7092760105675509,
+              2.319993861654133
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 4.761486518853575,
+            "ci95": [
+              4.093759883469519,
+              5.562636946635179
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 0.9317748747281442,
+              "ci95": [
+                0.8075930617350101,
+                1.0714899530285371
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0660975140880848,
+              "ci95": [
+                0.8937482209050042,
+                1.2842297344359448
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.8051952667046565,
+              "ci95": [
+                0.5555042058381262,
+                1.0521136327301113
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0283465760906891,
+              "ci95": [
+                0.8541345150037456,
+                1.2203394137479446
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9837531523066333,
+            "ci95": [
+              0.8481050949894808,
+              1.1966534861618146
+            ]
+          },
+          "head/go": {
+            "ratio": 1.2249648795549806,
+            "ci95": [
+              1.059091164185685,
+              1.4747230190783913
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.2553878426068439,
+            "ci95": [
+              1.1003257461614844,
+              1.4795869519173286
+            ]
+          }
+        },
+        "phase_providerSetup": {
+          "AA": {
+            "base": {
+              "ratio": 1.0415322937433138,
+              "ci95": [
+                0.9445772442114533,
+                1.1423091209850604
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0424474766525302,
+              "ci95": [
+                0.8625268689200957,
+                1.230583955114153
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.031839422545183,
+              "ci95": [
+                0.8940766701394046,
+                1.1962674301174283
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9804902954033042,
+              "ci95": [
+                0.8091209631308208,
+                1.1480559079553776
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9925516202961986,
+            "ci95": [
+              0.8784137059043711,
+              1.1162689959861056
+            ]
+          },
+          "head/go": {
+            "ratio": 4.577187395351756,
+            "ci95": [
+              4.014460773758904,
+              5.208346248613433
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.9337987179866866,
+            "ci95": [
+              0.8536934149521486,
+              1.021159848795282
+            ]
+          }
+        },
+        "phase_requestPreparation": {
+          "AA": {
+            "base": {
+              "ratio": 1.0988170972302713,
+              "ci95": [
+                0.8515898404730281,
+                1.3867691083319016
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0405172958581346,
+              "ci95": [
+                0.9351776194025326,
+                1.1606351448005663
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9353456992838026,
+              "ci95": [
+                0.7582137202234718,
+                1.1548525521427582
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9409068742367124,
+            "ci95": [
+              0.808531332796858,
+              1.08048287471994
+            ]
+          },
+          "head/go": {
+            "ratio": 0.6365350420401684,
+            "ci95": [
+              0.576886818142136,
+              0.701998423249413
+            ]
+          }
+        }
+      }
+    },
+    "p3-65536": {
+      "processes": 160,
+      "medians": {
+        "base": {
+          "cpuUs": 289.51845092773436,
+          "instructions": 1736717.6770996093,
+          "throughput": 13629.53775214359,
+          "allocsPerRequest": 1430.0017578125,
+          "bytesPerRequest": 218848.47890625,
+          "phase_cleanup": 831020.5,
+          "phase_compileValidate": 127300812.5,
+          "phase_engineSetup": 250.0,
+          "phase_exportLookup": 1292.0,
+          "phase_firstCall": 40746812.5,
+          "phase_instantiate": 962395.5,
+          "phase_load": 98937.5,
+          "phase_providerSetup": 286062.0,
+          "phase_requestPreparation": 8938.5
+        },
+        "go": {
+          "cpuUs": 121.5375752766927,
+          "instructions": 1161801.0341308594,
+          "throughput": 28397.494956517647,
+          "allocsPerRequest": 756.004345703125,
+          "bytesPerRequest": 124320.696484375,
+          "phase_cleanup": 73416.5,
+          "phase_compileValidate": 69997604.0,
+          "phase_engineSetup": 500.0,
+          "phase_exportLookup": 813.0,
+          "phase_firstCall": 19772979.0,
+          "phase_instantiate": 561145.5,
+          "phase_load": 83000.5,
+          "phase_providerSetup": 61271.0,
+          "phase_requestPreparation": 8312.5
+        },
+        "head": {
+          "cpuUs": 325.3956604003906,
+          "instructions": 1942538.1309570312,
+          "throughput": 12820.18594351182,
+          "allocsPerRequest": 1430.00166015625,
+          "bytesPerRequest": 218848.00703125,
+          "phase_cleanup": 792500.0,
+          "phase_compileValidate": 117982375.5,
+          "phase_engineSetup": 250.0,
+          "phase_exportLookup": 1166.5,
+          "phase_firstCall": 43697604.5,
+          "phase_instantiate": 951854.0,
+          "phase_load": 116000.0,
+          "phase_providerSetup": 299875.0,
+          "phase_requestPreparation": 9082.0
+        },
+        "wasmtime": {
+          "cpuUs": 54.75314941406249,
+          "instructions": 325097.39482421876,
+          "throughput": 43242.38467431344,
+          "allocsPerRequest": 1.00009765625,
+          "bytesPerRequest": 32.0109375,
+          "phase_cleanup": 309187.0,
+          "phase_compileValidate": 61875187.5,
+          "phase_engineSetup": 161208.5,
+          "phase_executorSetup": 50708.5,
+          "phase_exportLookup": 9729.0,
+          "phase_firstCall": 12743541.5,
+          "phase_instantiate": 220604.0,
+          "phase_load": 75583.5,
+          "phase_providerSetup": 260895.5
+        }
+      },
+      "comparisons": {
+        "cpuUs": {
+          "AA": {
+            "base": {
+              "ratio": 0.9927017332143047,
+              "ci95": [
+                0.9761440593213532,
+                1.0096974188191816
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 1.003944560396794,
+              "ci95": [
+                0.9992320755231957,
+                1.0088782427258391
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.054191686052933,
+              "ci95": [
+                0.9944510726156987,
+                1.1180147914241063
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0021560990096872,
+              "ci95": [
+                0.9833311408388988,
+                1.0214600902800008
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.1178447879607722,
+            "ci95": [
+              1.0840894396642062,
+              1.1529788972371626
+            ]
+          },
+          "head/go": {
+            "ratio": 2.627510135207473,
+            "ci95": [
+              2.551672569200979,
+              2.704185893414323
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 5.839139376481147,
+            "ci95": [
+              5.625637514298594,
+              6.047410048806378
+            ]
+          }
+        },
+        "instructions": {
+          "AA": {
+            "base": {
+              "ratio": 0.9904591399030562,
+              "ci95": [
+                0.9777753776236219,
+                1.004308613975787
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 1.000566771813812,
+              "ci95": [
+                0.99930837973621,
+                1.0018152316822786
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.048040989684289,
+              "ci95": [
+                0.9967090635938537,
+                1.1034292899729077
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0030831367487913,
+              "ci95": [
+                0.9950363876973507,
+                1.0109027929017804
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.100157958913256,
+            "ci95": [
+              1.0701956619050597,
+              1.132539453680339
+            ]
+          },
+          "head/go": {
+            "ratio": 1.6483064063491661,
+            "ci95": [
+              1.605088829336923,
+              1.694548920642021
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 5.903192259986273,
+            "ci95": [
+              5.753676108467242,
+              6.057358664725887
+            ]
+          }
+        },
+        "throughput": {
+          "AA": {
+            "base": {
+              "ratio": 1.0112456512105534,
+              "ci95": [
+                0.9928428284756564,
+                1.0310008915593356
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.997205992291131,
+              "ci95": [
+                0.9817827058296834,
+                1.0127079126124587
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9680153347409275,
+              "ci95": [
+                0.9347876619620334,
+                1.0021981627441214
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0077923405382148,
+              "ci95": [
+                0.9898832128093971,
+                1.0311001417286862
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9368362143828365,
+            "ci95": [
+              0.9155059953993812,
+              0.9577268203480778
+            ]
+          },
+          "head/go": {
+            "ratio": 0.44913534013796896,
+            "ci95": [
+              0.4402430817688736,
+              0.458605160057171
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.29359026240874864,
+            "ci95": [
+              0.2873911487971547,
+              0.29983956631457
+            ]
+          }
+        },
+        "allocsPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 0.9999997643960186,
+              "ci95": [
+                0.9999995765958245,
+                0.9999999658544512
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 1.0000001291735054,
+              "ci95": [
+                0.9999992637068815,
+                1.0000010011001519
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999999351235543,
+              "ci95": [
+                0.9999997917124742,
+                1.000000068291007
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 1.0000927093761716,
+              "ci95": [
+                0.9998535744933034,
+                1.0003562788957092
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9999999829272863,
+            "ci95": [
+              0.9999998446380407,
+              1.0000001178019855
+            ]
+          },
+          "head/go": {
+            "ratio": 1.8915262264609443,
+            "ci95": [
+              1.8915253627238826,
+              1.8915272004242585
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1429.5585490577355,
+            "ci95": [
+              1429.3945004834634,
+              1429.7154681310535
+            ]
+          }
+        },
+        "bytesPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 0.9999976696125553,
+              "ci95": [
+                0.9999931645076613,
+                1.000002246465562
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 0.999999411489486,
+              "ci95": [
+                0.9999978492565659,
+                1.0000010551050604
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999982072358006,
+              "ci95": [
+                0.9999937496089769,
+                1.0000030275876801
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 1.0024730326864182,
+              "ci95": [
+                0.9967516070401241,
+                1.0084845395171236
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9999994288453387,
+            "ci95": [
+              0.9999959082954858,
+              1.0000034320592173
+            ]
+          },
+          "head/go": {
+            "ratio": 1.7603497347862782,
+            "ci95": [
+              1.760345731915715,
+              1.7603535847392549
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 6799.616765026221,
+            "ci95": [
+              6779.587452714074,
+              6819.258811909282
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 1.0065686413399533,
+              "ci95": [
+                0.9445982725349532,
+                1.0647033129700372
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.134244992316858,
+              "ci95": [
+                0.9859814125902144,
+                1.311982974679507
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9715830805170006,
+              "ci95": [
+                0.9070869072334363,
+                1.038920576640442
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0307966950904979,
+              "ci95": [
+                0.9831298470761911,
+                1.0808892891977089
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.985775763891296,
+            "ci95": [
+              0.940734919074022,
+              1.038036156310017
+            ]
+          },
+          "head/go": {
+            "ratio": 9.819185408012066,
+            "ci95": [
+              9.102060346856904,
+              10.540674242309285
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2.4885905247830653,
+            "ci95": [
+              2.3156850609984727,
+              2.6954257919272653
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0029933166159588,
+              "ci95": [
+                0.9785650329610852,
+                1.0295742693603982
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0087851140281507,
+              "ci95": [
+                0.9723157142661109,
+                1.0511439102144935
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0153565758297112,
+              "ci95": [
+                0.9878561391145452,
+                1.0492705386427295
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0344548166813037,
+              "ci95": [
+                0.9760513475375692,
+                1.1201117418083169
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9307522249472729,
+            "ci95": [
+              0.8957586738565001,
+              0.9677683332113437
+            ]
+          },
+          "head/go": {
+            "ratio": 1.6583218521843133,
+            "ci95": [
+              1.5944995347340705,
+              1.715676073986742
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.8617619940577697,
+            "ci95": [
+              1.788199874126534,
+              1.9236323012295662
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.8112737581064227,
+              "ci95": [
+                0.6771025058105006,
+                0.9714551821515275
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0892169922651767,
+              "ci95": [
+                0.8935423329891595,
+                1.319416092906966
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.2365729062399653,
+              "ci95": [
+                1.0257670448729455,
+                1.4979508957729342
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0873284219981403,
+              "ci95": [
+                0.9804350451250451,
+                1.2085747366219566
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.894225769507465,
+            "ci95": [
+              0.7612784144911902,
+              1.0505726314373114
+            ]
+          },
+          "head/go": {
+            "ratio": 0.4621857643940092,
+            "ci95": [
+              0.4182496576215303,
+              0.5152985616231446
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.0012955225385806487,
+            "ci95": [
+              0.0011747008005348885,
+              0.0014317294863272069
+            ]
+          }
+        },
+        "phase_executorSetup": {
+          "AA": {
+            "wasmtime": {
+              "ratio": 1.079765170571818,
+              "ci95": [
+                0.9592745088380072,
+                1.215085795012912
+              ],
+              "resolves2_5Percent": false
+            }
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 1.094345464885953,
+              "ci95": [
+                0.9536258087437561,
+                1.2563761925784913
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9113270245659533,
+              "ci95": [
+                0.7792098477075079,
+                1.072189201583235
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.011291178508784,
+              "ci95": [
+                0.8667614875881595,
+                1.180289317865392
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.1610899603173412,
+              "ci95": [
+                1.049209600954113,
+                1.2896207031136502
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9593306971343531,
+            "ci95": [
+              0.8590223547542655,
+              1.0721069082552575
+            ]
+          },
+          "head/go": {
+            "ratio": 1.5068405379120142,
+            "ci95": [
+              1.3571760214403263,
+              1.6791959621783403
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.12211414324291331,
+            "ci95": [
+              0.11240776234328732,
+              0.13241017162851518
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 0.9874153605288772,
+              "ci95": [
+                0.9373573971734146,
+                1.0391710444815827
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9958565836622207,
+              "ci95": [
+                0.9340805159914334,
+                1.0727293899426373
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0314437322430703,
+              "ci95": [
+                0.9938987142801202,
+                1.07049479827281
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.077687206512424,
+              "ci95": [
+                0.9670734627728566,
+                1.2534345903647137
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0726760427968585,
+            "ci95": [
+              0.9942257791640003,
+              1.151005137502505
+            ]
+          },
+          "head/go": {
+            "ratio": 2.21264935776585,
+            "ci95": [
+              2.080983791494116,
+              2.336524596216713
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 3.4854157685200122,
+            "ci95": [
+              3.25310988313245,
+              3.692627570988877
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 0.9963403832545439,
+              "ci95": [
+                0.9351570782787932,
+                1.0551906535381825
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9621470527278037,
+              "ci95": [
+                0.8558464677974106,
+                1.0707095084272957
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9807391195548307,
+              "ci95": [
+                0.8114119271669954,
+                1.1970916149168118
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0658124228726553,
+              "ci95": [
+                0.9777909447152745,
+                1.161900738855106
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0470568782618057,
+            "ci95": [
+              0.9698372284463859,
+              1.1368957399805046
+            ]
+          },
+          "head/go": {
+            "ratio": 1.7361186913280826,
+            "ci95": [
+              1.5665092308404205,
+              1.9183492525461305
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 4.435037342124249,
+            "ci95": [
+              4.113468490380962,
+              4.853392423144948
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 0.9324376620075709,
+              "ci95": [
+                0.8382696893050953,
+                1.0365839722961445
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9765912980381081,
+              "ci95": [
+                0.8187439724370749,
+                1.1626516842025902
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0046937432890641,
+              "ci95": [
+                0.8511297309236067,
+                1.1944396982328425
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.939328957975777,
+              "ci95": [
+                0.8105994575604675,
+                1.099421649318425
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.040742337095156,
+            "ci95": [
+              0.9307473963479338,
+              1.1566469376685866
+            ]
+          },
+          "head/go": {
+            "ratio": 1.269181763090757,
+            "ci95": [
+              1.1469687976206364,
+              1.4069194150082063
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.3309274975748364,
+            "ci95": [
+              1.1512154161501915,
+              1.5392550369275253
+            ]
+          }
+        },
+        "phase_providerSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.98530338681387,
+              "ci95": [
+                0.916993862549901,
+                1.0526752572284508
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0435805430027099,
+              "ci95": [
+                0.8991839342372602,
+                1.222553545474881
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.063011131798161,
+              "ci95": [
+                0.9554830449882813,
+                1.1804782340611661
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9990751748770675,
+              "ci95": [
+                0.9334282764353943,
+                1.0699172212092178
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0885484694236667,
+            "ci95": [
+              0.9927976219491847,
+              1.19130692443224
+            ]
+          },
+          "head/go": {
+            "ratio": 4.586366389367461,
+            "ci95": [
+              4.1718327757341465,
+              5.022209388389496
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.0821895838696856,
+            "ci95": [
+              1.0066067649307517,
+              1.15339486452215
+            ]
+          }
+        },
+        "phase_requestPreparation": {
+          "AA": {
+            "base": {
+              "ratio": 1.2194285792407131,
+              "ci95": [
+                0.9873915279159379,
+                1.4567707593750834
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.954937430228881,
+              "ci95": [
+                0.7921598169974092,
+                1.127451555223641
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.806342890216825,
+              "ci95": [
+                0.5198833890264006,
+                1.2342173017774196
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.1572037194473495,
+            "ci95": [
+              0.9060280560914684,
+              1.4690219943246996
+            ]
+          },
+          "head/go": {
+            "ratio": 1.276855825568555,
+            "ci95": [
+              1.0235247502297788,
+              1.6047353274181768
+            ]
+          }
+        }
+      }
+    },
+    "integer-interpreter": {
+      "processes": 120,
+      "medians": {
+        "base": {
+          "nsPerIteration": 26.7376245,
+          "phase_cleanup": 7374.5,
+          "phase_compileValidate": 60562.5,
+          "phase_engineSetup": 5229.5,
+          "phase_exportLookup": 417.0,
+          "phase_firstCall": 26714958.5,
+          "phase_instantiate": 8208.5,
+          "phase_load": 59875.0
+        },
+        "go": {
+          "nsPerIteration": 33.702542,
+          "phase_cleanup": 1958.5,
+          "phase_compileValidate": 65270.5,
+          "phase_engineSetup": 4938.0,
+          "phase_exportLookup": 291.0,
+          "phase_firstCall": 33646583.5,
+          "phase_instantiate": 7542.0,
+          "phase_load": 54812.5
+        },
+        "head": {
+          "nsPerIteration": 26.658208000000002,
+          "phase_cleanup": 7896.0,
+          "phase_compileValidate": 59229.5,
+          "phase_engineSetup": 5437.5,
+          "phase_exportLookup": 458.0,
+          "phase_firstCall": 26836812.5,
+          "phase_instantiate": 8187.5,
+          "phase_load": 61124.5
+        }
+      },
+      "comparisons": {
+        "nsPerIteration": {
+          "AA": {
+            "base": {
+              "ratio": 1.0015368145137629,
+              "ci95": [
+                0.9910884538688476,
+                1.0119927443671544
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 0.9936710935161832,
+              "ci95": [
+                0.9843656068946384,
+                1.0035469200791327
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0098727703442116,
+              "ci95": [
+                0.9970953661024612,
+                1.0223050524445305
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.002339232633839,
+            "ci95": [
+              0.9951595675154412,
+              1.0099965857282056
+            ]
+          },
+          "head/go": {
+            "ratio": 0.7957985143707822,
+            "ci95": [
+              0.7901209169107062,
+              0.801674119257196
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 1.1145251126759108,
+              "ci95": [
+                0.9815123590964536,
+                1.2924212256192602
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0200264155856478,
+              "ci95": [
+                0.9276580910146287,
+                1.1169979613767667
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.922456056172284,
+              "ci95": [
+                0.7822454711181624,
+                1.0542982275402966
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0826360772864987,
+            "ci95": [
+              1.0084746195316876,
+              1.1623861592146463
+            ]
+          },
+          "head/go": {
+            "ratio": 4.07328681330959,
+            "ci95": [
+              3.766120189293088,
+              4.40294503500357
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 1.065059813668748,
+              "ci95": [
+                0.9487308664169071,
+                1.2120135956544924
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.1427169394507732,
+              "ci95": [
+                1.0195556409115745,
+                1.2786257202047113
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9486984122293761,
+              "ci95": [
+                0.8284928908499647,
+                1.0883700392332634
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0061022170356047,
+            "ci95": [
+              0.9169495525737966,
+              1.1007538655907756
+            ]
+          },
+          "head/go": {
+            "ratio": 0.9327603603468698,
+            "ci95": [
+              0.8537420259437536,
+              1.0110049775296168
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 1.0290234954600381,
+              "ci95": [
+                0.8076301955308527,
+                1.3049913489024698
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.1457501607253,
+              "ci95": [
+                0.9640467334187579,
+                1.414455353752455
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9298417891768084,
+              "ci95": [
+                0.7747060313695179,
+                1.0748221550538237
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0727274188817664,
+            "ci95": [
+              0.9403771907890136,
+              1.221722961410135
+            ]
+          },
+          "head/go": {
+            "ratio": 1.1429745226693189,
+            "ci95": [
+              1.0318469027845811,
+              1.2655909589350087
+            ]
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9926628927613839,
+              "ci95": [
+                0.8659200277123217,
+                1.1415246953304452
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0070153264589432,
+              "ci95": [
+                0.8389144250861945,
+                1.1805596053858083
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.031265359498561,
+              "ci95": [
+                0.9301168007390883,
+                1.1482619563484637
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0019858661310366,
+            "ci95": [
+              0.94247366039041,
+              1.0644821461447396
+            ]
+          },
+          "head/go": {
+            "ratio": 1.627088619222771,
+            "ci95": [
+              1.4469364059140095,
+              1.8196941829842197
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 1.0013336717402521,
+              "ci95": [
+                0.9884416974049604,
+                1.0157626910140354
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 1.0011928456866828,
+              "ci95": [
+                0.9773849086865639,
+                1.0216966069157798
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0009230594772691,
+              "ci95": [
+                0.9819514471000238,
+                1.0195977596465409
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.0036911338567311,
+            "ci95": [
+              0.9922142651380834,
+              1.015514819416161
+            ]
+          },
+          "head/go": {
+            "ratio": 0.7962854257201037,
+            "ci95": [
+              0.7838572994285113,
+              0.8093575412025694
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0802965498753103,
+              "ci95": [
+                0.9403992249968108,
+                1.287770066122958
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0356301516018454,
+              "ci95": [
+                0.7857722266618662,
+                1.3351347113766963
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9745979711982107,
+              "ci95": [
+                0.8252680469276937,
+                1.1043818861055412
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9855732915886817,
+            "ci95": [
+              0.9505328590323071,
+              1.0232302463209373
+            ]
+          },
+          "head/go": {
+            "ratio": 0.997315094798727,
+            "ci95": [
+              0.8766746214368337,
+              1.1062752438876744
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 1.0052253892965213,
+              "ci95": [
+                0.8633350317919787,
+                1.1750229639992975
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9586209630916613,
+              "ci95": [
+                0.8190841409260107,
+                1.1188844561281353
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.046538079324416,
+              "ci95": [
+                0.9049317661848508,
+                1.2049597438529647
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9980947655751009,
+            "ci95": [
+              0.8822330943054681,
+              1.1165740456360942
+            ]
+          },
+          "head/go": {
+            "ratio": 1.074182957502896,
+            "ci95": [
+              0.9259282599619488,
+              1.2471103069044263
+            ]
+          }
+        }
+      }
+    },
+    "integer-native": {
+      "processes": 120,
+      "medians": {
+        "base": {
+          "nsPerIteration": 1.6756375000000001,
+          "phase_cleanup": 10645.5,
+          "phase_compileValidate": 214729.0,
+          "phase_engineSetup": 5791.5,
+          "phase_exportLookup": 458.0,
+          "phase_firstCall": 8291521.0,
+          "phase_instantiate": 8417.0,
+          "phase_load": 64812.5
+        },
+        "go": {
+          "nsPerIteration": 1.6773543000000002,
+          "phase_cleanup": 6437.5,
+          "phase_compileValidate": 230146.0,
+          "phase_engineSetup": 7020.5,
+          "phase_exportLookup": 250.0,
+          "phase_firstCall": 8376791.5,
+          "phase_instantiate": 8000.5,
+          "phase_load": 67625.0
+        },
+        "head": {
+          "nsPerIteration": 1.6689416000000001,
+          "phase_cleanup": 10396.0,
+          "phase_compileValidate": 201063.0,
+          "phase_engineSetup": 5896.0,
+          "phase_exportLookup": 500.0,
+          "phase_firstCall": 8276500.0,
+          "phase_instantiate": 8437.5,
+          "phase_load": 61167.0
+        }
+      },
+      "comparisons": {
+        "nsPerIteration": {
+          "AA": {
+            "base": {
+              "ratio": 0.9957319884195904,
+              "ci95": [
+                0.9870791746281347,
+                1.0045804945387797
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 0.9930366008465689,
+              "ci95": [
+                0.9833033333549861,
+                1.0026656833519856
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9958051824248266,
+              "ci95": [
+                0.9884938666678488,
+                1.0033416175617622
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9958595298665791,
+            "ci95": [
+              0.9888577228950557,
+              1.0017015925327946
+            ]
+          },
+          "head/go": {
+            "ratio": 0.9941381019304754,
+            "ci95": [
+              0.9882390077841975,
+              0.9997152499694164
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 1.0696535435978693,
+              "ci95": [
+                0.835929321893452,
+                1.324326396867302
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0983659100438474,
+              "ci95": [
+                0.818642585913764,
+                1.484386926732425
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0336843687674824,
+              "ci95": [
+                0.8836148683312882,
+                1.2092281404306315
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9567041436220364,
+            "ci95": [
+              0.8702626154243994,
+              1.04401699894865
+            ]
+          },
+          "head/go": {
+            "ratio": 1.5810848065024807,
+            "ci95": [
+              1.3611122522927999,
+              1.8319836211712195
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0285851464772933,
+              "ci95": [
+                0.9553408530503027,
+                1.1181327300924726
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0435308730352342,
+              "ci95": [
+                0.9195773692680683,
+                1.1926320961760142
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0177017428153048,
+              "ci95": [
+                0.9277676147904038,
+                1.1320035742238024
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9581296275870828,
+            "ci95": [
+              0.9020897889817948,
+              1.0157340426724673
+            ]
+          },
+          "head/go": {
+            "ratio": 0.8651175474704669,
+            "ci95": [
+              0.8038850174362298,
+              0.9274738984293203
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 1.1348587422973713,
+              "ci95": [
+                0.8827995147919326,
+                1.5178485771876609
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.8087118468232914,
+              "ci95": [
+                0.6108548458550669,
+                1.0264544660802177
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.1454244646173095,
+              "ci95": [
+                0.9443909796645046,
+                1.4285702689411433
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0426970265452138,
+            "ci95": [
+              0.8493007621872205,
+              1.266677485960485
+            ]
+          },
+          "head/go": {
+            "ratio": 0.7978441693485386,
+            "ci95": [
+              0.6638360301672408,
+              0.9301550766506131
+            ]
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9748502036179293,
+              "ci95": [
+                0.889760629816523,
+                1.0770663298171768
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.930809516278272,
+              "ci95": [
+                0.7867299776361628,
+                1.0845329879548837
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0166263654197936,
+              "ci95": [
+                0.8949278561100549,
+                1.1670632869209179
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.012766719543641,
+            "ci95": [
+              0.9384444491615198,
+              1.0957907955382074
+            ]
+          },
+          "head/go": {
+            "ratio": 1.8203069115655826,
+            "ci95": [
+              1.6215222140586931,
+              2.0401991166854385
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 0.9978818705381107,
+              "ci95": [
+                0.9794978338373561,
+                1.0162353747719965
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 0.9910064522814221,
+              "ci95": [
+                0.9675939300740872,
+                1.0134204550602348
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9930957844306839,
+              "ci95": [
+                0.9557031470960188,
+                1.02108391875467
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0098759634049155,
+            "ci95": [
+              0.9970224644552764,
+              1.023677037643165
+            ]
+          },
+          "head/go": {
+            "ratio": 0.9991799541068622,
+            "ci95": [
+              0.9779810629594815,
+              1.0249162721317433
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 0.946643996187967,
+              "ci95": [
+                0.816498003013511,
+                1.0545309440034403
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.134065158828492,
+              "ci95": [
+                0.9773417974849329,
+                1.3662669639183807
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.1147227315980988,
+              "ci95": [
+                0.9984542764564482,
+                1.2804981806040843
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9960919478593888,
+            "ci95": [
+              0.9200483358847802,
+              1.0808883054909124
+            ]
+          },
+          "head/go": {
+            "ratio": 1.020656821396161,
+            "ci95": [
+              0.8991386063583726,
+              1.1330617867465478
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 0.9119388456981716,
+              "ci95": [
+                0.7515508892672301,
+                1.1091646975146108
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9352864989370179,
+              "ci95": [
+                0.7688526287693723,
+                1.1441517028953907
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0076780778214205,
+              "ci95": [
+                0.8373921188961627,
+                1.2256935890471938
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0099468399728813,
+            "ci95": [
+              0.8990189035602503,
+              1.127279613335046
+            ]
+          },
+          "head/go": {
+            "ratio": 1.0047577753151296,
+            "ci95": [
+              0.9123925795179174,
+              1.1068832889753573
+            ]
+          }
+        }
+      }
+    },
+    "memory-interpreter": {
+      "processes": 120,
+      "medians": {
+        "base": {
+          "nsPerIteration": 63.117958,
+          "phase_cleanup": 6979.0,
+          "phase_compileValidate": 84874.5,
+          "phase_engineSetup": 5520.5,
+          "phase_exportLookup": 458.0,
+          "phase_firstCall": 31818125.0,
+          "phase_instantiate": 14520.5,
+          "phase_load": 66770.5
+        },
+        "go": {
+          "nsPerIteration": 72.337126,
+          "phase_cleanup": 2209.0,
+          "phase_compileValidate": 80229.0,
+          "phase_engineSetup": 5000.0,
+          "phase_exportLookup": 292.0,
+          "phase_firstCall": 35826854.0,
+          "phase_instantiate": 12083.0,
+          "phase_load": 53812.5
+        },
+        "head": {
+          "nsPerIteration": 63.70616699999999,
+          "phase_cleanup": 7187.5,
+          "phase_compileValidate": 86812.5,
+          "phase_engineSetup": 5667.0,
+          "phase_exportLookup": 458.0,
+          "phase_firstCall": 31390791.0,
+          "phase_instantiate": 17646.5,
+          "phase_load": 59416.5
+        }
+      },
+      "comparisons": {
+        "nsPerIteration": {
+          "AA": {
+            "base": {
+              "ratio": 0.9943753855145221,
+              "ci95": [
+                0.9809794549501754,
+                1.008538519861481
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 0.987524016810003,
+              "ci95": [
+                0.9714630997519623,
+                1.001213445007897
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9865177250429285,
+              "ci95": [
+                0.9719894553736254,
+                1.0016033996966964
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0081826218479244,
+            "ci95": [
+              0.9972404763098986,
+              1.019354581423391
+            ]
+          },
+          "head/go": {
+            "ratio": 0.883234695278576,
+            "ci95": [
+              0.8759941909243728,
+              0.8909381911977466
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 1.3235864707257134,
+              "ci95": [
+                1.013759778750647,
+                1.7987099976247978
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0962045363041462,
+              "ci95": [
+                0.9268741097739503,
+                1.4497892281113718
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.8366473246729857,
+              "ci95": [
+                0.6108981559085619,
+                1.0331896289746836
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9377562716056929,
+            "ci95": [
+              0.788377868575578,
+              1.1239340701278107
+            ]
+          },
+          "head/go": {
+            "ratio": 3.1928107422669316,
+            "ci95": [
+              2.6113162234893634,
+              3.848983352665335
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 1.1668115999971245,
+              "ci95": [
+                1.0325946853582715,
+                1.3414986631618873
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.07963833743975,
+              "ci95": [
+                0.971377837304003,
+                1.1991009864731754
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.8874088049986943,
+              "ci95": [
+                0.7821494454388865,
+                1.004265249532629
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.006196752750643,
+            "ci95": [
+              0.9208279984641417,
+              1.0983416365348408
+            ]
+          },
+          "head/go": {
+            "ratio": 1.0654228737859046,
+            "ci95": [
+              0.972827115548666,
+              1.1615778934844632
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 1.1198532350103203,
+              "ci95": [
+                0.8008135663628252,
+                1.5818508123725203
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0124039315881603,
+              "ci95": [
+                0.7886816005246152,
+                1.3162693552684102
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0988367007269988,
+              "ci95": [
+                0.91253455022087,
+                1.3421330928356427
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9132167157897805,
+            "ci95": [
+              0.750650992537268,
+              1.0972633248900179
+            ]
+          },
+          "head/go": {
+            "ratio": 1.1091903888729162,
+            "ci95": [
+              0.9140475362577374,
+              1.3194522973586482
+            ]
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 1.0220717380013564,
+              "ci95": [
+                0.9028313210492162,
+                1.1657086811301904
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9976744908653122,
+              "ci95": [
+                0.6307381505437839,
+                1.3626338914476197
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0505100514198142,
+              "ci95": [
+                0.9368296995709345,
+                1.1813217482209097
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0955446014498693,
+            "ci95": [
+              1.0020619454854562,
+              1.1994177500326708
+            ]
+          },
+          "head/go": {
+            "ratio": 1.4782391370321408,
+            "ci95": [
+              1.1469352357678277,
+              1.744437425585765
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 1.0056172481143284,
+              "ci95": [
+                0.9744892425114944,
+                1.037343060513169
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9777573796644885,
+              "ci95": [
+                0.9408585179816386,
+                1.0093862156964954
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9736216527453369,
+              "ci95": [
+                0.9183400499644144,
+                1.0139787823723379
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9962536415975765,
+            "ci95": [
+              0.9599492724383667,
+              1.0434112647888862
+            ]
+          },
+          "head/go": {
+            "ratio": 0.8797852053906288,
+            "ci95": [
+              0.8524353038531517,
+              0.9162807887259268
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 0.9858458689847345,
+              "ci95": [
+                0.8464632245852604,
+                1.1419484658757264
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.1130155235532875,
+              "ci95": [
+                0.9109523601727191,
+                1.36264245073844
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0446608022066781,
+              "ci95": [
+                0.7615149081973682,
+                1.3835319117995488
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.129361257295886,
+            "ci95": [
+              0.9648007091278744,
+              1.293957525533122
+            ]
+          },
+          "head/go": {
+            "ratio": 1.4007954823690059,
+            "ci95": [
+              1.2057493708378049,
+              1.6324552705700075
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 1.091863148428613,
+              "ci95": [
+                0.916016975528396,
+                1.3087953126250613
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0063301076425488,
+              "ci95": [
+                0.8520134098275695,
+                1.189739092272871
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0633721007780614,
+              "ci95": [
+                0.8886365301128093,
+                1.2426139531542602
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9457288645343659,
+            "ci95": [
+              0.8426358632426062,
+              1.0619291485427607
+            ]
+          },
+          "head/go": {
+            "ratio": 1.0434398516923786,
+            "ci95": [
+              0.9056750297372044,
+              1.1937860990366334
+            ]
+          }
+        }
+      }
+    },
+    "narrow-native": {
+      "processes": 120,
+      "medians": {
+        "base": {
+          "nsPerIteration": 0.731167,
+          "phase_cleanup": 10604.5,
+          "phase_compileValidate": 339187.0,
+          "phase_engineSetup": 6000.0,
+          "phase_exportLookup": 458.5,
+          "phase_firstCall": 708083.0,
+          "phase_instantiate": 12979.0,
+          "phase_load": 72521.0
+        },
+        "go": {
+          "nsPerIteration": 0.731333,
+          "phase_cleanup": 7729.5,
+          "phase_compileValidate": 319083.0,
+          "phase_engineSetup": 6896.0,
+          "phase_exportLookup": 292.0,
+          "phase_firstCall": 716458.5,
+          "phase_instantiate": 13750.5,
+          "phase_load": 66312.5
+        },
+        "head": {
+          "nsPerIteration": 0.7299165000000001,
+          "phase_cleanup": 10083.0,
+          "phase_compileValidate": 332771.0,
+          "phase_engineSetup": 6125.0,
+          "phase_exportLookup": 500.0,
+          "phase_firstCall": 705979.0,
+          "phase_instantiate": 13375.0,
+          "phase_load": 66604.0
+        }
+      },
+      "comparisons": {
+        "nsPerIteration": {
+          "AA": {
+            "base": {
+              "ratio": 0.9998993091205362,
+              "ci95": [
+                0.9784398041916125,
+                1.0260408517654014
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.000224641767442,
+              "ci95": [
+                0.9788092931105753,
+                1.0192036647795306
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9994626365647677,
+              "ci95": [
+                0.9843508627821348,
+                1.0163911390138467
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9912890920016817,
+            "ci95": [
+              0.9808653929012224,
+              1.0015972210114517
+            ]
+          },
+          "head/go": {
+            "ratio": 0.992794762924434,
+            "ci95": [
+              0.9784962033511423,
+              1.0062207678704163
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 0.987610475957046,
+              "ci95": [
+                0.8140194562584615,
+                1.198344421800725
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0900399555292626,
+              "ci95": [
+                0.7446691060284272,
+                1.6738401722025025
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.032188743870972,
+              "ci95": [
+                0.845131241173726,
+                1.2570483495402895
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9019289480067215,
+            "ci95": [
+              0.7338168973885907,
+              1.1017867635361784
+            ]
+          },
+          "head/go": {
+            "ratio": 1.1710220200010513,
+            "ci95": [
+              0.9515176430851651,
+              1.4371354758157888
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0490439313958015,
+              "ci95": [
+                0.9667989490197627,
+                1.1446835410492437
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9352917899672051,
+              "ci95": [
+                0.8291779697348683,
+                1.0400981673491074
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0104959436131913,
+              "ci95": [
+                0.8993455672759599,
+                1.1460296657677307
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0147933662960142,
+            "ci95": [
+              0.9547149706256458,
+              1.0778684527122167
+            ]
+          },
+          "head/go": {
+            "ratio": 1.0592953642690575,
+            "ci95": [
+              0.9836360073438234,
+              1.126893356776209
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9236135773941692,
+              "ci95": [
+                0.758394590873974,
+                1.0956955014862595
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0714533613232204,
+              "ci95": [
+                0.7965159718179077,
+                1.4826403110761313
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.1685029785190097,
+              "ci95": [
+                0.8741518010478415,
+                1.5736883660838392
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.1236019033502747,
+            "ci95": [
+              0.9425865851295296,
+              1.3657219406306982
+            ]
+          },
+          "head/go": {
+            "ratio": 0.9112666877802529,
+            "ci95": [
+              0.745385627081541,
+              1.1079252832242812
+            ]
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9519764591143234,
+              "ci95": [
+                0.8680859735727553,
+                1.0475711586438132
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.034153153465768,
+              "ci95": [
+                0.8679750303437762,
+                1.231423688021978
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9704329600081071,
+              "ci95": [
+                0.8705592241576451,
+                1.0946344847991136
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0527285048260968,
+            "ci95": [
+              0.9858931164890176,
+              1.1211671867295296
+            ]
+          },
+          "head/go": {
+            "ratio": 1.7381925664557871,
+            "ci95": [
+              1.6243235980170985,
+              1.8587808436983482
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 1.0130502108866086,
+              "ci95": [
+                0.9604757498890943,
+                1.0732140171244684
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0224179160636973,
+              "ci95": [
+                0.9577042379544237,
+                1.0843761581522133
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9643032763110122,
+              "ci95": [
+                0.9117763101404288,
+                1.025498832626569
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0201788201495334,
+            "ci95": [
+              0.9930605568997516,
+              1.0482902267073342
+            ]
+          },
+          "head/go": {
+            "ratio": 0.9874979519898734,
+            "ci95": [
+              0.9456791699943877,
+              1.0301972724144484
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 1.1923842809916958,
+              "ci95": [
+                1.0486291900302203,
+                1.4102143894895864
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9074980612864367,
+              "ci95": [
+                0.7714342821081126,
+                1.050796721507726
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0493255465162707,
+              "ci95": [
+                0.8569318512729289,
+                1.3070143875073719
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0357047685359266,
+            "ci95": [
+              0.9205976780551628,
+              1.1591285196224503
+            ]
+          },
+          "head/go": {
+            "ratio": 1.021103950943305,
+            "ci95": [
+              0.978093341477429,
+              1.0691988429225676
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 0.9737628333708709,
+              "ci95": [
+                0.8070942845867833,
+                1.1823150924395827
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.8940571815440435,
+              "ci95": [
+                0.7228128744144322,
+                1.1001678369116739
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0255241205229932,
+              "ci95": [
+                0.8567522893916474,
+                1.2366133204259906
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.967470056797618,
+            "ci95": [
+              0.86088930248936,
+              1.0797757595857036
+            ]
+          },
+          "head/go": {
+            "ratio": 1.0654852630222145,
+            "ci95": [
+              0.9343153074172804,
+              1.2079858831567063
+            ]
+          }
+        }
+      }
+    },
+    "generic-native": {
+      "processes": 120,
+      "medians": {
+        "base": {
+          "nsPerIteration": 7.80935,
+          "phase_cleanup": 12333.5,
+          "phase_compileValidate": 281604.0,
+          "phase_engineSetup": 5604.0,
+          "phase_exportLookup": 458.0,
+          "phase_firstCall": 38733854.0,
+          "phase_instantiate": 10666.5,
+          "phase_load": 59625.0
+        },
+        "go": {
+          "nsPerIteration": 7.7900833,
+          "phase_cleanup": 16500.0,
+          "phase_compileValidate": 297729.0,
+          "phase_engineSetup": 6708.5,
+          "phase_exportLookup": 250.0,
+          "phase_firstCall": 38582125.5,
+          "phase_instantiate": 9771.0,
+          "phase_load": 65271.0
+        },
+        "head": {
+          "nsPerIteration": 7.7553374,
+          "phase_cleanup": 12437.5,
+          "phase_compileValidate": 261479.0,
+          "phase_engineSetup": 5625.0,
+          "phase_exportLookup": 458.0,
+          "phase_firstCall": 38582646.0,
+          "phase_instantiate": 9667.0,
+          "phase_load": 65021.0
+        }
+      },
+      "comparisons": {
+        "nsPerIteration": {
+          "AA": {
+            "base": {
+              "ratio": 0.9990660337311186,
+              "ci95": [
+                0.9893260860019192,
+                1.0105621882981284
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 1.000402057328057,
+              "ci95": [
+                0.9888180738995741,
+                1.0125514733432637
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.99673589928708,
+              "ci95": [
+                0.9878741844697272,
+                1.0057660937872952
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.0042017120277378,
+            "ci95": [
+              0.9962777487830544,
+              1.013088755778338
+            ]
+          },
+          "head/go": {
+            "ratio": 1.0040899681265454,
+            "ci95": [
+              0.9941323680142133,
+              1.0136766647229059
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 1.1392585619033109,
+              "ci95": [
+                1.0153328767027427,
+                1.2809478184975056
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9518339837550172,
+              "ci95": [
+                0.7623146743609917,
+                1.1787433850323208
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.8792114308402392,
+              "ci95": [
+                0.7579916955436816,
+                1.017019150779125
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9774303850670087,
+            "ci95": [
+              0.9093551131639401,
+              1.0511268242693974
+            ]
+          },
+          "head/go": {
+            "ratio": 0.8693873949999738,
+            "ci95": [
+              0.6970975441454909,
+              1.0700851044093682
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 0.9680824665366182,
+              "ci95": [
+                0.865741588082098,
+                1.0719119041880947
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9872484929540892,
+              "ci95": [
+                0.8984412872124654,
+                1.0851247876384056
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0223318167241313,
+              "ci95": [
+                0.9431855302719767,
+                1.1146384804543612
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9331780107969877,
+            "ci95": [
+              0.8789989226938203,
+              0.9888542587499911
+            ]
+          },
+          "head/go": {
+            "ratio": 0.888273389390135,
+            "ci95": [
+              0.8387668238819005,
+              0.944304626876095
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9395790429978554,
+              "ci95": [
+                0.7048208591884405,
+                1.2465099596130493
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.1032377923881975,
+              "ci95": [
+                0.8442514381579338,
+                1.443403081826847
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9988090563306855,
+              "ci95": [
+                0.898460513424059,
+                1.1049512638008832
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9603168226301123,
+            "ci95": [
+              0.8557590194388959,
+              1.062026142367329
+            ]
+          },
+          "head/go": {
+            "ratio": 0.7875404880226214,
+            "ci95": [
+              0.6975883622673976,
+              0.8747549408061388
+            ]
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 1.019935293756328,
+              "ci95": [
+                0.7705248629889947,
+                1.569577401156156
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9493047300832474,
+              "ci95": [
+                0.8319132073263393,
+                1.08280580658226
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.003025823513122,
+              "ci95": [
+                0.8666981926358607,
+                1.163429147476274
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9442985445762155,
+            "ci95": [
+              0.7944310334729975,
+              1.0909770404241181
+            ]
+          },
+          "head/go": {
+            "ratio": 1.8472013215978307,
+            "ci95": [
+              1.6668496701233209,
+              2.07374099061372
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 0.9850418218436943,
+              "ci95": [
+                0.9673095999058468,
+                1.0024887475329816
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9867429600460688,
+              "ci95": [
+                0.9650690586830802,
+                1.0107565312462363
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0169696805331525,
+              "ci95": [
+                0.9897885419054759,
+                1.0487414965342334
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0098535741233696,
+            "ci95": [
+              1.0001486815711793,
+              1.0206599713168474
+            ]
+          },
+          "head/go": {
+            "ratio": 1.0033968309329246,
+            "ci95": [
+              0.9799768681574476,
+              1.026249464290694
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 0.9958579436051282,
+              "ci95": [
+                0.8161607038350733,
+                1.2137280985332115
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.957174285051531,
+              "ci95": [
+                0.8643634228712355,
+                1.0702579490823838
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0228454467918238,
+              "ci95": [
+                0.8286552694200957,
+                1.2786026950211347
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9693566279641457,
+            "ci95": [
+              0.8607415603583125,
+              1.1018348338023374
+            ]
+          },
+          "head/go": {
+            "ratio": 1.115999443393972,
+            "ci95": [
+              1.0039886630886636,
+              1.2448029633168183
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 0.9704441287125685,
+              "ci95": [
+                0.8201391182518896,
+                1.1545021024531297
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.024724191212157,
+              "ci95": [
+                0.8464805998238776,
+                1.2407122714735013
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0413412725949962,
+              "ci95": [
+                0.9116323528904091,
+                1.1955601231275577
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0219803361591517,
+            "ci95": [
+              0.9077117995046997,
+              1.144570850209312
+            ]
+          },
+          "head/go": {
+            "ratio": 0.9953830798307026,
+            "ci95": [
+              0.8823436358555359,
+              1.1235234758696357
+            ]
+          }
+        }
+      }
+    },
+    "no-gc-16": {
+      "processes": 40,
+      "medians": {
+        "base": {
+          "cpuUs": 175.94834798177084,
+          "instructions": 1216943.4679687498,
+          "throughput": 24235.162876515053,
+          "allocsPerRequest": 1165.0001953125,
+          "bytesPerRequest": 76841.140625,
+          "phase_cleanup": 575833.5,
+          "phase_compileValidate": 98914729.0,
+          "phase_engineSetup": 167.0,
+          "phase_exportLookup": 915.5,
+          "phase_firstCall": 22989583.5,
+          "phase_instantiate": 777124.5,
+          "phase_load": 75625.0,
+          "phase_providerSetup": 168812.0,
+          "phase_requestPreparation": 543.0
+        },
+        "head": {
+          "cpuUs": 178.9594970703125,
+          "instructions": 1217488.5529296875,
+          "throughput": 24002.891077402222,
+          "allocsPerRequest": 1165.000390625,
+          "bytesPerRequest": 76840.18125,
+          "phase_cleanup": 581792.0,
+          "phase_compileValidate": 90148500.0,
+          "phase_engineSetup": 167.0,
+          "phase_exportLookup": 854.5,
+          "phase_firstCall": 23017416.5,
+          "phase_instantiate": 766458.0,
+          "phase_load": 71417.0,
+          "phase_providerSetup": 175979.0,
+          "phase_requestPreparation": 583.5
+        }
+      },
+      "comparisons": {
+        "cpuUs": {
+          "AA": {
+            "base": {
+              "ratio": 1.0083512631000464,
+              "ci95": [
+                0.9948354704465698,
+                1.0225399347751125
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.000998799980736,
+              "ci95": [
+                0.9784139951844667,
+                1.0235871866838584
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.006619554622542,
+            "ci95": [
+              0.9924171302433272,
+              1.0243871266419666
+            ]
+          }
+        },
+        "instructions": {
+          "AA": {
+            "base": {
+              "ratio": 1.0007893454272274,
+              "ci95": [
+                0.9993784732616834,
+                1.002174436192025
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0001746458611318,
+              "ci95": [
+                0.9987579681360295,
+                1.0015278276407429
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.0003521385388188,
+            "ci95": [
+              0.9992644597131021,
+              1.0013713575418195
+            ]
+          }
+        },
+        "throughput": {
+          "AA": {
+            "base": {
+              "ratio": 0.985857866202346,
+              "ci95": [
+                0.9732575744105556,
+                0.9966723657038064
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0149726747692467,
+              "ci95": [
+                1.000724150118708,
+                1.0309108801662479
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9984043514730223,
+            "ci95": [
+              0.9857172742780111,
+              1.0145737250008149
+            ]
+          }
+        },
+        "allocsPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 1.0000004694204525,
+              "ci95": [
+                1.00000023471021,
+                1.000000704130795
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999995976399144,
+              "ci95": [
+                0.9999991282200174,
+                1.0000000000001574
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.000000100590055,
+            "ci95": [
+              0.9999998491149222,
+              1.000000335300255
+            ]
+          }
+        },
+        "bytesPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 1.000052058503413,
+              "ci95": [
+                1.0000023640161917,
+                1.0000955417447102
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999835909662371,
+              "ci95": [
+                0.9998801424774626,
+                1.0000771127318064
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9999636902526837,
+            "ci95": [
+              0.9999105872429702,
+              1.0000236756319567
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9720763265099172,
+              "ci95": [
+                0.908098373710933,
+                1.0380444534808737
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0574976717732596,
+              "ci95": [
+                0.9792681930341934,
+                1.1473447786487814
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0150885869734705,
+            "ci95": [
+              0.9730746240992226,
+              1.0551098375132975
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0069015987841976,
+              "ci95": [
+                0.9978821423732702,
+                1.016041445559999
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.000933276627456,
+              "ci95": [
+                0.9773175993051596,
+                1.0261713051004524
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9062018045562412,
+            "ci95": [
+              0.8916253180455955,
+              0.9210888509582429
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.8275289426348121,
+              "ci95": [
+                0.5932036275789143,
+                1.1326978606958606
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0314373731312783,
+              "ci95": [
+                0.8025081619295605,
+                1.2990828081384824
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9090778308440031,
+            "ci95": [
+              0.7385401796912511,
+              1.1030790973637916
+            ]
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 1.0304975354492965,
+              "ci95": [
+                0.9358641483940192,
+                1.1433618585945398
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0872673619054039,
+              "ci95": [
+                1.0224223710075588,
+                1.1700448925342775
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.930873749794663,
+            "ci95": [
+              0.8784118088501601,
+              0.9896040045293858
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 1.0063622412745603,
+              "ci95": [
+                0.9889029663196435,
+                1.0297034244674885
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0058003125838255,
+              "ci95": [
+                0.9755684889742852,
+                1.0380323978275712
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0055486783816356,
+            "ci95": [
+              0.993045586796537,
+              1.0182110176164012
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0185132197848166,
+              "ci95": [
+                0.9730154579267971,
+                1.063141947950815
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9826205411146639,
+              "ci95": [
+                0.9138942816684242,
+                1.0536904514101213
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9925884805488965,
+            "ci95": [
+              0.9741107187555305,
+              1.0130522987274715
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 0.8808489361632447,
+              "ci95": [
+                0.8082556009100027,
+                0.9520992455549554
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.3371079412111202,
+              "ci95": [
+                0.8829566649397295,
+                2.5830653334630598
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.078165770089921,
+            "ci95": [
+              0.8834421954149144,
+              1.4947203682857344
+            ]
+          }
+        },
+        "phase_providerSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9930584541028761,
+              "ci95": [
+                0.9620185141006117,
+                1.0285408942277636
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0883078757885374,
+              "ci95": [
+                1.035578545229733,
+                1.1527693195900877
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0436451196503918,
+            "ci95": [
+              1.0059453549514272,
+              1.0931092610418556
+            ]
+          }
+        },
+        "phase_requestPreparation": {
+          "AA": {
+            "base": {
+              "ratio": 1.1149342978266628,
+              "ci95": [
+                0.7708656340788443,
+                1.543476552699217
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0085670076019155,
+              "ci95": [
+                0.6345402914304346,
+                1.4854752408454734
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9739397571594143,
+            "ci95": [
+              0.747734006757928,
+              1.2686156271107314
+            ]
+          }
+        }
+      }
+    },
+    "no-gc-65536": {
+      "processes": 40,
+      "medians": {
+        "base": {
+          "cpuUs": 209.052392578125,
+          "instructions": 1613408.8494140627,
+          "throughput": 19087.526839537943,
+          "allocsPerRequest": 1430.0,
+          "bytesPerRequest": 218856.5375,
+          "phase_cleanup": 568103.5,
+          "phase_compileValidate": 99137042.0,
+          "phase_engineSetup": 166.0,
+          "phase_exportLookup": 937.0,
+          "phase_firstCall": 28887187.5,
+          "phase_instantiate": 799770.5,
+          "phase_load": 79520.5,
+          "phase_providerSetup": 176625.5,
+          "phase_requestPreparation": 19708.5
+        },
+        "head": {
+          "cpuUs": 208.54986979166665,
+          "instructions": 1611763.4375,
+          "throughput": 19096.550417667204,
+          "allocsPerRequest": 1430.0,
+          "bytesPerRequest": 218856.41875,
+          "phase_cleanup": 587520.5,
+          "phase_compileValidate": 89959500.0,
+          "phase_engineSetup": 146.0,
+          "phase_exportLookup": 834.0,
+          "phase_firstCall": 28789021.0,
+          "phase_instantiate": 801375.0,
+          "phase_load": 73999.5,
+          "phase_providerSetup": 176938.0,
+          "phase_requestPreparation": 18166.5
+        }
+      },
+      "comparisons": {
+        "cpuUs": {
+          "AA": {
+            "base": {
+              "ratio": 1.0108285007568742,
+              "ci95": [
+                0.9963427102602316,
+                1.026980869149322
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9924435636953367,
+              "ci95": [
+                0.9779452860161875,
+                1.0075778917106435
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.0049883558314732,
+            "ci95": [
+              0.9918674810416326,
+              1.0171619090954094
+            ]
+          }
+        },
+        "instructions": {
+          "AA": {
+            "base": {
+              "ratio": 1.0002963425819347,
+              "ci95": [
+                0.9988928947091967,
+                1.0016373754254413
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9995519408380503,
+              "ci95": [
+                0.9983142426454761,
+                1.0007973676921413
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9993262841441306,
+            "ci95": [
+              0.9983205639365749,
+              1.000565712497717
+            ]
+          }
+        },
+        "throughput": {
+          "AA": {
+            "base": {
+              "ratio": 1.0029727900359553,
+              "ci95": [
+                0.9806122184422073,
+                1.0310252551590666
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.012611949983885,
+              "ci95": [
+                1.0006804010730368,
+                1.028187966456471
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9988134991390704,
+            "ci95": [
+              0.9927783953676539,
+              1.0048726946354478
+            ]
+          }
+        },
+        "allocsPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 1.0000000546327716,
+              "ci95": [
+                0.9999997541522289,
+                1.0000004097461956
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999998907343388,
+              "ci95": [
+                0.9999996175701673,
+                1.0000001092657327
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9999999180507549,
+            "ci95": [
+              0.999999672203086,
+              1.0000001092656918
+            ]
+          }
+        },
+        "bytesPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 0.9999696317778097,
+              "ci95": [
+                0.9999394018561341,
+                1.0000022786861131
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.999993397517701,
+              "ci95": [
+                0.9999653686008656,
+                1.0000209670453541
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9999951849324373,
+            "ci95": [
+              0.9999731912866769,
+              1.0000160281493058
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 1.0224980479927124,
+              "ci95": [
+                0.9709327623264566,
+                1.0773256125986905
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.014914421694246,
+              "ci95": [
+                0.9520350816640449,
+                1.0762043798639909
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.004711706935157,
+            "ci95": [
+              0.9454177872695726,
+              1.060503529221058
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0128750007841685,
+              "ci95": [
+                0.9994010062892942,
+                1.028226255778029
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0067410078711998,
+              "ci95": [
+                0.9883229307725601,
+                1.026871370255642
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9074552943172595,
+            "ci95": [
+              0.8997212750436833,
+              0.9158525390820338
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9215588291570829,
+              "ci95": [
+                0.8107901918265178,
+                1.0605060138503786
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.970364376141518,
+              "ci95": [
+                0.6567963439422398,
+                1.6239958994110992
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0905125605195836,
+            "ci95": [
+              0.8735012921111003,
+              1.4073632361573507
+            ]
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 1.0105574443747445,
+              "ci95": [
+                0.9355801699048177,
+                1.0912534982832016
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9585445987839972,
+              "ci95": [
+                0.8910534841344515,
+                1.036418627019982
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9400371242985864,
+            "ci95": [
+              0.8479738187622662,
+              1.0441905916396836
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 1.0229745660513354,
+              "ci95": [
+                1.0000607745460195,
+                1.0480334122482484
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.013735244695507,
+              "ci95": [
+                0.9941440474012377,
+                1.0364938812728628
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.983959423364379,
+            "ci95": [
+              0.9638768735622717,
+              1.0021675426944259
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0203307349352555,
+              "ci95": [
+                0.9838508352663141,
+                1.060282277380722
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9804739790580717,
+              "ci95": [
+                0.9519221466768504,
+                1.0041621756068868
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9963683994043434,
+            "ci95": [
+              0.9635948356215309,
+              1.031430356969968
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 0.9637328442589529,
+              "ci95": [
+                0.8772191476643202,
+                1.0507253767204976
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.073801531272646,
+              "ci95": [
+                0.9607509745349119,
+                1.236324137690535
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.941368943406601,
+            "ci95": [
+              0.8924995851983593,
+              0.9937524361250414
+            ]
+          }
+        },
+        "phase_providerSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9945583450718655,
+              "ci95": [
+                0.9487912189498885,
+                1.0338409916234963
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9749978647342795,
+              "ci95": [
+                0.9242090562745428,
+                1.0291626025371585
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.002903570170227,
+            "ci95": [
+              0.9708958844872543,
+              1.0373923261771418
+            ]
+          }
+        },
+        "phase_requestPreparation": {
+          "AA": {
+            "base": {
+              "ratio": 1.0627046273830631,
+              "ci95": [
+                0.9527234939732987,
+                1.1779072710500522
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.8956537285712758,
+              "ci95": [
+                0.7096261929942491,
+                1.103437448616095
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.008773787156364,
+            "ci95": [
+              0.9001917926294901,
+              1.1372201464779113
+            ]
+          }
+        }
+      }
+    }
+  },
+  "observedAdversePoints": {
+    "p3-16": {
+      "cpuUs": {
+        "ratio": 1.0778185452627724,
+        "ci95": [
+          1.0562142827636463,
+          1.0981224017352715
+        ]
+      },
+      "instructions": {
+        "ratio": 1.0728854054634922,
+        "ci95": [
+          1.0541675832392046,
+          1.09040926066032
+        ]
+      },
+      "throughput": {
+        "ratio": 0.9554396154539309,
+        "ci95": [
+          0.9384045397601513,
+          0.9704289702808079
+        ]
+      },
+      "bytesPerRequest": {
+        "ratio": 1.000002929036055,
+        "ci95": [
+          0.9999942412446832,
+          1.0000119202374367
+        ]
+      },
+      "phase_firstCall": {
+        "ratio": 1.0042977802989594,
+        "ci95": [
+          0.9372516738403205,
+          1.0757412324041393
+        ]
+      },
+      "phase_instantiate": {
+        "ratio": 1.1768954355403825,
+        "ci95": [
+          0.9983515314803328,
+          1.3971268069101905
+        ]
+      }
+    },
+    "p3-65536": {
+      "cpuUs": {
+        "ratio": 1.1178447879607722,
+        "ci95": [
+          1.0840894396642062,
+          1.1529788972371626
+        ]
+      },
+      "instructions": {
+        "ratio": 1.100157958913256,
+        "ci95": [
+          1.0701956619050597,
+          1.132539453680339
+        ]
+      },
+      "throughput": {
+        "ratio": 0.9368362143828365,
+        "ci95": [
+          0.9155059953993812,
+          0.9577268203480778
+        ]
+      },
+      "phase_firstCall": {
+        "ratio": 1.0726760427968585,
+        "ci95": [
+          0.9942257791640003,
+          1.151005137502505
+        ]
+      },
+      "phase_instantiate": {
+        "ratio": 1.0470568782618057,
+        "ci95": [
+          0.9698372284463859,
+          1.1368957399805046
+        ]
+      },
+      "phase_load": {
+        "ratio": 1.040742337095156,
+        "ci95": [
+          0.9307473963479338,
+          1.1566469376685866
+        ]
+      },
+      "phase_providerSetup": {
+        "ratio": 1.0885484694236667,
+        "ci95": [
+          0.9927976219491847,
+          1.19130692443224
+        ]
+      },
+      "phase_requestPreparation": {
+        "ratio": 1.1572037194473495,
+        "ci95": [
+          0.9060280560914684,
+          1.4690219943246996
+        ]
+      }
+    },
+    "integer-interpreter": {
+      "nsPerIteration": {
+        "ratio": 1.002339232633839,
+        "ci95": [
+          0.9951595675154412,
+          1.0099965857282056
+        ]
+      },
+      "phase_cleanup": {
+        "ratio": 1.0826360772864987,
+        "ci95": [
+          1.0084746195316876,
+          1.1623861592146463
+        ]
+      },
+      "phase_compileValidate": {
+        "ratio": 1.0061022170356047,
+        "ci95": [
+          0.9169495525737966,
+          1.1007538655907756
+        ]
+      },
+      "phase_engineSetup": {
+        "ratio": 1.0727274188817664,
+        "ci95": [
+          0.9403771907890136,
+          1.221722961410135
+        ]
+      },
+      "phase_exportLookup": {
+        "ratio": 1.0019858661310366,
+        "ci95": [
+          0.94247366039041,
+          1.0644821461447396
+        ]
+      },
+      "phase_firstCall": {
+        "ratio": 1.0036911338567311,
+        "ci95": [
+          0.9922142651380834,
+          1.015514819416161
+        ]
+      }
+    },
+    "integer-native": {
+      "phase_engineSetup": {
+        "ratio": 1.0426970265452138,
+        "ci95": [
+          0.8493007621872205,
+          1.266677485960485
+        ]
+      },
+      "phase_exportLookup": {
+        "ratio": 1.012766719543641,
+        "ci95": [
+          0.9384444491615198,
+          1.0957907955382074
+        ]
+      },
+      "phase_firstCall": {
+        "ratio": 1.0098759634049155,
+        "ci95": [
+          0.9970224644552764,
+          1.023677037643165
+        ]
+      },
+      "phase_load": {
+        "ratio": 1.0099468399728813,
+        "ci95": [
+          0.8990189035602503,
+          1.127279613335046
+        ]
+      }
+    },
+    "memory-interpreter": {
+      "nsPerIteration": {
+        "ratio": 1.0081826218479244,
+        "ci95": [
+          0.9972404763098986,
+          1.019354581423391
+        ]
+      },
+      "phase_compileValidate": {
+        "ratio": 1.006196752750643,
+        "ci95": [
+          0.9208279984641417,
+          1.0983416365348408
+        ]
+      },
+      "phase_exportLookup": {
+        "ratio": 1.0955446014498693,
+        "ci95": [
+          1.0020619454854562,
+          1.1994177500326708
+        ]
+      },
+      "phase_instantiate": {
+        "ratio": 1.129361257295886,
+        "ci95": [
+          0.9648007091278744,
+          1.293957525533122
+        ]
+      }
+    },
+    "narrow-native": {
+      "phase_compileValidate": {
+        "ratio": 1.0147933662960142,
+        "ci95": [
+          0.9547149706256458,
+          1.0778684527122167
+        ]
+      },
+      "phase_engineSetup": {
+        "ratio": 1.1236019033502747,
+        "ci95": [
+          0.9425865851295296,
+          1.3657219406306982
+        ]
+      },
+      "phase_exportLookup": {
+        "ratio": 1.0527285048260968,
+        "ci95": [
+          0.9858931164890176,
+          1.1211671867295296
+        ]
+      },
+      "phase_firstCall": {
+        "ratio": 1.0201788201495334,
+        "ci95": [
+          0.9930605568997516,
+          1.0482902267073342
+        ]
+      },
+      "phase_instantiate": {
+        "ratio": 1.0357047685359266,
+        "ci95": [
+          0.9205976780551628,
+          1.1591285196224503
+        ]
+      }
+    },
+    "generic-native": {
+      "nsPerIteration": {
+        "ratio": 1.0042017120277378,
+        "ci95": [
+          0.9962777487830544,
+          1.013088755778338
+        ]
+      },
+      "phase_firstCall": {
+        "ratio": 1.0098535741233696,
+        "ci95": [
+          1.0001486815711793,
+          1.0206599713168474
+        ]
+      },
+      "phase_load": {
+        "ratio": 1.0219803361591517,
+        "ci95": [
+          0.9077117995046997,
+          1.144570850209312
+        ]
+      }
+    },
+    "no-gc-16": {
+      "cpuUs": {
+        "ratio": 1.006619554622542,
+        "ci95": [
+          0.9924171302433272,
+          1.0243871266419666
+        ]
+      },
+      "instructions": {
+        "ratio": 1.0003521385388188,
+        "ci95": [
+          0.9992644597131021,
+          1.0013713575418195
+        ]
+      },
+      "throughput": {
+        "ratio": 0.9984043514730223,
+        "ci95": [
+          0.9857172742780111,
+          1.0145737250008149
+        ]
+      },
+      "allocsPerRequest": {
+        "ratio": 1.000000100590055,
+        "ci95": [
+          0.9999998491149222,
+          1.000000335300255
+        ]
+      },
+      "phase_cleanup": {
+        "ratio": 1.0150885869734705,
+        "ci95": [
+          0.9730746240992226,
+          1.0551098375132975
+        ]
+      },
+      "phase_firstCall": {
+        "ratio": 1.0055486783816356,
+        "ci95": [
+          0.993045586796537,
+          1.0182110176164012
+        ]
+      },
+      "phase_load": {
+        "ratio": 1.078165770089921,
+        "ci95": [
+          0.8834421954149144,
+          1.4947203682857344
+        ]
+      },
+      "phase_providerSetup": {
+        "ratio": 1.0436451196503918,
+        "ci95": [
+          1.0059453549514272,
+          1.0931092610418556
+        ]
+      }
+    },
+    "no-gc-65536": {
+      "cpuUs": {
+        "ratio": 1.0049883558314732,
+        "ci95": [
+          0.9918674810416326,
+          1.0171619090954094
+        ]
+      },
+      "throughput": {
+        "ratio": 0.9988134991390704,
+        "ci95": [
+          0.9927783953676539,
+          1.0048726946354478
+        ]
+      },
+      "phase_cleanup": {
+        "ratio": 1.004711706935157,
+        "ci95": [
+          0.9454177872695726,
+          1.060503529221058
+        ]
+      },
+      "phase_engineSetup": {
+        "ratio": 1.0905125605195836,
+        "ci95": [
+          0.8735012921111003,
+          1.4073632361573507
+        ]
+      },
+      "phase_providerSetup": {
+        "ratio": 1.002903570170227,
+        "ci95": [
+          0.9708958844872543,
+          1.0373923261771418
+        ]
+      },
+      "phase_requestPreparation": {
+        "ratio": 1.008773787156364,
+        "ci95": [
+          0.9001917926294901,
+          1.1372201464779113
+        ]
+      }
+    }
+  },
+  "GCAndHeapObservations": {
+    "p3-16": {
+      "base": {
+        "collectionsMedian": 24.0,
+        "collectionsRange": [
+          19,
+          35
+        ],
+        "mallocsPerRequestMedian": 1165.0017578125,
+        "bytesPerRequestMedian": 76832.38203124999,
+        "heapBeforeMedian": 32356352.0,
+        "heapAfterMedian": 32456704.0,
+        "initialPhysicalFootprintMedian": 177251024.0
+      },
+      "go": {
+        "collectionsMedian": 35.0,
+        "collectionsRange": [
+          33,
+          36
+        ],
+        "mallocsPerRequestMedian": 696.00322265625,
+        "bytesPerRequestMedian": 54672.513281249994,
+        "heapBeforeMedian": 21416252.0,
+        "heapAfterMedian": 29090460.0,
+        "initialPhysicalFootprintMedian": 67715900.0
+      },
+      "head": {
+        "collectionsMedian": 39.0,
+        "collectionsRange": [
+          27,
+          40
+        ],
+        "mallocsPerRequestMedian": 1165.00166015625,
+        "bytesPerRequestMedian": 76833.1078125,
+        "heapBeforeMedian": 20443136.0,
+        "heapAfterMedian": 21213184.0,
+        "initialPhysicalFootprintMedian": 167830188.0
+      },
+      "wasmtime": {
+        "collectionsMedian": 0.0,
+        "collectionsRange": [
+          0,
+          0
+        ],
+        "mallocsPerRequestMedian": 1.00068359375,
+        "bytesPerRequestMedian": 32.54453125,
+        "heapBeforeMedian": 449560.0,
+        "heapAfterMedian": 952176.0,
+        "initialPhysicalFootprintMedian": 15115116.0
+      }
+    },
+    "p3-65536": {
+      "base": {
+        "collectionsMedian": 30.5,
+        "collectionsRange": [
+          28,
+          41
+        ],
+        "mallocsPerRequestMedian": 1430.0017578125,
+        "bytesPerRequestMedian": 218848.47890625,
+        "heapBeforeMedian": 74536960.0,
+        "heapAfterMedian": 42665984.0,
+        "initialPhysicalFootprintMedian": 185819844.0
+      },
+      "go": {
+        "collectionsMedian": 76.0,
+        "collectionsRange": [
+          74,
+          77
+        ],
+        "mallocsPerRequestMedian": 756.004345703125,
+        "bytesPerRequestMedian": 124320.696484375,
+        "heapBeforeMedian": 22635764.0,
+        "heapAfterMedian": 28235184.0,
+        "initialPhysicalFootprintMedian": 71959368.0
+      },
+      "head": {
+        "collectionsMedian": 60.0,
+        "collectionsRange": [
+          33,
+          111
+        ],
+        "mallocsPerRequestMedian": 1430.00166015625,
+        "bytesPerRequestMedian": 218848.00703125,
+        "heapBeforeMedian": 55592960.0,
+        "heapAfterMedian": 36993024.0,
+        "initialPhysicalFootprintMedian": 128418488.0
+      },
+      "wasmtime": {
+        "collectionsMedian": 0.0,
+        "collectionsRange": [
+          0,
+          0
+        ],
+        "mallocsPerRequestMedian": 1.00009765625,
+        "bytesPerRequestMedian": 32.0109375,
+        "heapBeforeMedian": 520384.0,
+        "heapAfterMedian": 1017832.0,
+        "initialPhysicalFootprintMedian": 16090000.0
+      }
+    },
+    "no-gc-16": {
+      "base": {
+        "collectionsMedian": 0.0,
+        "collectionsRange": [
+          0,
+          0
+        ],
+        "mallocsPerRequestMedian": 1165.0001953125,
+        "bytesPerRequestMedian": 76841.140625,
+        "heapBeforeMedian": 432156672.0,
+        "heapAfterMedian": 630751232.0,
+        "initialPhysicalFootprintMedian": 475677584.0
+      },
+      "head": {
+        "collectionsMedian": 0.0,
+        "collectionsRange": [
+          0,
+          0
+        ],
+        "mallocsPerRequestMedian": 1165.000390625,
+        "bytesPerRequestMedian": 76840.18125,
+        "heapBeforeMedian": 399552512.0,
+        "heapAfterMedian": 598145024.0,
+        "initialPhysicalFootprintMedian": 440320864.0
+      }
+    },
+    "no-gc-65536": {
+      "base": {
+        "collectionsMedian": 0.0,
+        "collectionsRange": [
+          0,
+          0
+        ],
+        "mallocsPerRequestMedian": 1430.0,
+        "bytesPerRequestMedian": 218856.5375,
+        "heapBeforeMedian": 663216128.0,
+        "heapAfterMedian": 1246347264.0,
+        "initialPhysicalFootprintMedian": 711689272.0
+      },
+      "head": {
+        "collectionsMedian": 0.0,
+        "collectionsRange": [
+          0,
+          0
+        ],
+        "mallocsPerRequestMedian": 1430.0,
+        "bytesPerRequestMedian": 218856.41875,
+        "heapBeforeMedian": 630624256.0,
+        "heapAfterMedian": 1213749248.0,
+        "initialPhysicalFootprintMedian": 676348960.0
+      }
+    }
+  },
+  "interpretation": {
+    "correctness": "The reported cached-private-method allocation is fixed in the production profile.",
+    "cold": "P3 Wasm compile-wall points improve10.23%/6.92%, but cold controls remain unresolved; host compiler build and runtime preparation stay distinct.",
+    "steady": "Five core points cross1; memory interpreter+0.82% has an unresolved head control. Normal P3 CPU+7.78%/+11.78%, instructions+7.29%/+10.02%, throughput\u22124.46%/\u22126.32%; several own controls unresolved, preserve adverse evidence rather than claim accepted exact regression size.",
+    "causality": "P3 managed events/request remain1165/1430. Median collections rise24\u219239 and30.5\u219260 per10240 requests; initial live/physical heap sizes differ. Bounded no-GC events have zero measured collections, instruction ratios1.00035/0.99933 and CPU1.00662/1.00499 with intervals crossing1; some controls remain unresolved. This implicates collector work/initial heap state, but does not isolate heap sizing versus retained conservative roots or prove a code-generation defect. No-GC is diagnostic only; production retains default GC.",
+    "acceptance": "Compiler correctness upgrade; no claim that all performance gaps or adverse points are resolved. Go-first optimization and full portfolio acceptance remain open."
+  },
+  "validation": {
+    "newCompilerVersion": "llgo v1.0.1000-0.20261114135510-6a482f7f6ad9 darwin/arm64",
+    "cacheRegression": "TestAppendUint32CachedPrivateMethod passes13.556s",
+    "semantics": "New production-profile compiler executes codegen/nativeexec/component suites",
+    "pinTooling": "Five own_build tests and complete32-package/eight-shard inventory pass; packaging/compiler CI requires final head",
+    "GoRuntimeSourceChanged": false,
+    "newFullTargetCI": "required before merge"
+  },
+  "evidence": {
+    "path": "../evidence/llgo-upgrade-6a482f7f-2026-11-14.jsonl.gz",
+    "sha256": "19cca031bc20a8a814b40c9bd906dc17679567ceda6dad501b336fb35e2dd43e",
+    "records": 1000,
+    "cohorts": {
+      "p3-16": 160,
+      "p3-65536": 160,
+      "integer-interpreter": 120,
+      "integer-native": 120,
+      "memory-interpreter": 120,
+      "narrow-native": 120,
+      "generic-native": 120,
+      "no-gc-16": 40,
+      "no-gc-65536": 40
+    },
+    "projection": "Only unused per-request latency vectors replaced by count/extrema/canonicalJSONSHA256; full originals remain local. All cold/warm timers, allocation/GC counters, rusage snapshots, outputs and protocol events retained. No events pooled or extended."
+  },
+  "protocol": {
+    "path": "llgo-upgrade-6a482f7f-2026-11-14-protocol.tar.gz",
+    "sha256": "54228649484da00302d3593df538ab5f046e6a46605f8f2535933e4328c0c718"
+  }
+}

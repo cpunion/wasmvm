@@ -19,7 +19,7 @@ execution never silently switches to one of them.
 The source APIs and proposal snapshots are experimental. Performance and
 production-release acceptance remain open; see [current measurements](#measured-performance)
 and the [release contract](docs/release-readiness.md). Supported builds pin
-Go1.27.3, LLGo `ac129220`, LLVM22.1.8 and the LLGo `-O3 -lto=full` profile.
+Go1.27.3, LLGo `6a482f7f`, LLVM22.1.8 and the LLGo `-O3 -lto=full` profile.
 
 ## Project status
 
