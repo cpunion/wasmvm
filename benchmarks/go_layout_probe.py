@@ -44,7 +44,11 @@ assert own_build.digest(Path(go)) == head[1]['toolchain']['binarySha256']
 assert base[1]['toolchain']['binarySha256'] == head[1]['toolchain']['binarySha256']
 source = Path(head[1]['binary']).parent
 shifted = source / 'runner-shift32'
-flag = '-ldflags=-T=0x401020'
+readelf = shutil.which('llvm-readelf-22') or shutil.which('llvm-readelf')
+assert readelf
+sections = subprocess.check_output([readelf, '--sections', '--wide', head[1]['binary']], text=True)
+text_address = int(re.search(r'\.text\s+PROGBITS\s+([0-9a-f]+)', sections)[1], 16)
+flag = '-ldflags=-extldflags=-Wl,-Ttext=' + hex(text_address + 32)
 command = [go, 'build', flag, '-o', str(shifted), './benchmarks/embedded/wasmvm']
 environment = dict(os.environ, CGO_ENABLED='1', GOWORK='off', GOTOOLCHAIN='local', GOFLAGS='', GOEXPERIMENT='')
 assert not environment.get('LDFLAGS')
@@ -63,6 +67,7 @@ for role, binary in [('base', Path(base[1]['binary'])), ('head', Path(head[1]['b
     static[role] = dict(entry=int(rows[0][0], 16), binarySha256=own_build.digest(binary), instructions=len(rows))
     normalized[role] = [re.sub(r'# 0x[0-9a-f]+', '# <reloc>', re.sub(r'\[rip ([+-]) 0x[0-9a-f]+\]', r'[rip \1 <reloc>]', re.sub(r'0x[0-9a-f]+(?= <)', '<reloc>', text))) for _, text in rows]
     shutil.copyfile(binary, OUT / (role + '-runner'))
+(OUT / 'placement-precondition.json').write_text(json.dumps(dict(flag=flag, static=static), indent=2) + '\n')
 assert static['shift']['entry'] - static['head']['entry'] == 32, static
 assert normalized['shift'] == normalized['head'], 'placement changed loop instructions/registers/control'
 derived = copy.deepcopy(head[1])
