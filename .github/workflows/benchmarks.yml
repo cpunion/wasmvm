@@ -585,6 +585,7 @@ jobs:
     timeout-minutes: 10
     env:
       OPERAND_ABLATION: ${{ inputs.suite == 'llgo-poll' }}
+      ROUTING_CASE: ${{ inputs.routing_case || 'memory/dependent-address' }}
     permissions:
       contents: read
       actions: read
@@ -688,7 +689,7 @@ jobs:
         run: |
           python3 -u control/benchmarks/routing_compare.py measure \
             --head-dir "$GITHUB_WORKSPACE/head" --build-dir "$GITHUB_WORKSPACE/routing-build" \
-            --group memory-simd --case memory/dependent-address --blocks 20 \
+            --group memory-simd --case "$ROUTING_CASE" --blocks 20 \
             --output-dir "$GITHUB_WORKSPACE/llgo-layout-results"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
