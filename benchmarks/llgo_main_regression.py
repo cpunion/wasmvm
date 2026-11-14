@@ -14,7 +14,8 @@ nm=shutil.which('llvm-nm-22')or shutil.which('llvm-nm')
 objdump=shutil.which('llvm-objdump-22')or shutil.which('llvm-objdump')
 assert nm and objdump
 result={'compiler':REV,'cliVersion':run([cli,'version']),'cliSha256':own_build.digest(Path(cli)),'cliGoBuildInfo':run(['go','version','-m',cli]),'clang':run(['clang','--version']),'profile':['-O3','-lto=full'],'roles':{},'scope':'Separate compiler baseline event. Identical frozen engine sources; only common harness compiler provenance changes. Static code generation and checked guest execution, not timing acceptance. Production pin remains56fa9ae.'}
-for role in ['counter','dense','scalar']:
+extract_ir = os.environ.get('REGRESSION_EXTRACT_IR') == 'true'
+for role in (['scalar'] if extract_ir else ['counter','dense','scalar']):
  folder=ROOT/('source-'+role);folder.mkdir()
  with tarfile.open(ROOT/'downloads'/role/'poll-llgo.tar.gz')as t:t.extractall(folder,filter='data')
  base=folder/'routing-build';manifest=json.loads((base/'poll-llgo.json').read_text());record=manifest['builds']['poll-llgo'];source=base/'poll-llgo'
@@ -22,7 +23,11 @@ for role in ['counter','dense','scalar']:
  gen=source/'internal/bench/phase/provenance_gen.go'
  gen.write_text('package phase\nfunc init(){sourceRevision='+json.dumps(manifest['candidateRevision'])+';compilerRevision='+json.dumps(REV)+'}\n')
  binary=OUT/(role+'-runner');build_cmd=[cli,'build','-O3','-lto=full','-o',str(binary),'./benchmarks/embedded/wasmvm']
- subprocess.run(build_cmd,cwd=source,check=True,timeout=180)
+ build_env = dict(os.environ)
+ if extract_ir:
+  assert not build_env.get('LDFLAGS')
+  build_env['LDFLAGS'] = '-Wl,--save-temps'
+ subprocess.run(build_cmd,cwd=source,env=build_env,check=True,timeout=180)
  assert own_build.hashes(source,own_build.ENGINE_PATHS,own_build.HARNESS)==record['sourceHashes']
  asm=run([objdump,'--disassemble-symbols='+SYMBOL,'--no-show-raw-insn','--x86-asm-syntax=intel',str(binary)])
  (OUT/(role+'.asm')).write_text(asm)
@@ -34,6 +39,19 @@ for role in ['counter','dense','scalar']:
  assert proc.returncode==0,proc.stderr
  receipt=json.loads(proc.stdout.splitlines()[-1]);assert receipt['sourceRevision']==manifest['candidateRevision']and receipt['compilerRevision']==REV and receipt['warmResults']==[expected]and receipt['result']==expected
  result['roles'][role]={'source':manifest['candidateRevision'],'binarySha256':own_build.digest(binary),'symbol':symbols,'buildCommand':build_cmd,'executionCommand':cmd,'checkedGuest':receipt,'prologue':asm.splitlines()[5:20]}
+ if extract_ir:
+  saved = list(OUT.glob(role + '-runner.*precodegen.bc'))
+  assert len(saved) == 1, list(OUT.iterdir())
+  loop_bc = OUT / (role + '-loop.bc')
+  loop_ir = OUT / (role + '-loop.ll')
+  tool = lambda name: shutil.which(name + '-22') or shutil.which(name)
+  subprocess.run([tool('llvm-extract'), '--func=' + SYMBOL, str(saved[0]), '-o', str(loop_bc)], check=True)
+  subprocess.run([tool('llvm-dis'), str(loop_bc), '-o', str(loop_ir)], check=True)
+  subprocess.run([tool('llc'), '-O3', str(loop_ir), '-o', str(OUT / (role + '-loop-recompiled.s'))], check=True)
+  result['roles'][role]['irDiagnostic'] = {'LDFLAGS': build_env['LDFLAGS'], 'irSha256': own_build.digest(loop_ir), 'stage': 'full-LTO precodegen; extracted function and external declarations; standalone llc -O3 reproduction, not throughput timing'}
+  for temporary in OUT.glob(role + '-runner.*'):
+   if temporary.suffix in ('.bc', '.o', '.lto', '.dot') or temporary.name.endswith('.resolution.txt'):
+    temporary.unlink()
  (OUT/'results.json').write_text(json.dumps(result,indent=2)+'\n');print(role,symbols,flush=True)
 
 for path in OUT.glob("*.llgo-debug-lto"):

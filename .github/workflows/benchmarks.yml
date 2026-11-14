@@ -40,6 +40,10 @@ on:
         description: Temporary diagnostic candidate commit
         type: string
         default: '468e6c286ded60e692c4d10a4aa8b5b71d5931e2'
+      extract_regression_ir:
+        description: Temporary diagnostic - extract the scalar loop as standalone LLVM IR
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -798,6 +802,7 @@ jobs:
     timeout-minutes: 10
     env:
       WASMVM_LLGO_REVISION: c0d07ce2b58c8f2f62b25133234486d239021ee1
+      REGRESSION_EXTRACT_IR: ${{ inputs.extract_regression_ir }}
     permissions:
       contents: read
       actions: read
