@@ -98,6 +98,15 @@ func (e *functionEmitter) callPlan(label int, indices []slots.Slot) {
 	}
 }
 
+// Linked callers have checked depth, slot quotas and physical arena capacity.
+// Install the same frame/root/PC state as the ordinary header before entering
+// the shared body. Saved returns restore a compiler-owned parent and PC.
+func (e *functionEmitter) callEntryFrame() {
+	e.registerMove(e.callFrame(), e.callReg(4), true)
+	e.contextConst(nativeabi.RootMapOffset, 0)
+	e.contextLoad(0, nativeabi.ContinuationOffset)
+}
+
 func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	in := e.f.Code[pc]
 	indirect := in.Op == 0x11 || in.Op == 0x14
@@ -201,17 +210,20 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 		e.callMemory(0, e.callReg(1), 4, false, true)
 		e.callStore(0, e.callContext(), uint32(nativeabi.FunctionOffset))
 		e.callAdvance(1, 16)
+		e.callEntryFrame()
 		e.callJump(1)
 	} else {
 		target := e.f.Sources[in.Source].Wasm.A
 		e.contextConst(nativeabi.FunctionOffset, uint64(target))
+		e.callEntryFrame()
 		jump := a.label()
 		a.mark(jump)
 		a.branch(e.start, false, 0)
 		e.linkedRelocations = append(e.linkedRelocations, linkedRelocation{jump, target})
 	}
 	a.mark(resume)
-	a.branch(e.start, false, 0)
+	e.callEntryFrame()
+	a.branch(e.linkedStart, false, 0)
 	e.callPlan(results, e.f.Args[in.Extra+in.Count:uint32(end)])
 	if len(args) > 8 {
 		e.callPlan(inputs, args)

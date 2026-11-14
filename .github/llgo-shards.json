@@ -11,17 +11,17 @@
   },
   {
     "name": "component",
-    "packages": "./internal/component/canonical ./internal/component/decode ./internal/component/validate ./pkg/component ./internal/compiler/nativeabi ./internal/compiler/ir ./internal/compat ./internal/wasi/host",
+    "packages": "./internal/component/canonical ./internal/component/decode ./internal/component/validate ./pkg/component ./internal/compiler/nativeabi ./internal/compiler/ir ./internal/wasi/host",
     "inputs": "component"
   },
   {
     "name": "legacy",
-    "packages": "./pkg/wasi/preview1 ./pkg/wasi/threads",
+    "packages": "./pkg/wasi/preview1 ./pkg/wasi/threads ./internal/bench/service",
     "inputs": "preview1 wasi_threads"
   },
   {
     "name": "threads",
-    "packages": "./internal/bench/service",
+    "packages": "./internal/compat",
     "inputs": ""
   },
   {
