@@ -48,7 +48,9 @@ readelf = shutil.which('llvm-readelf-22') or shutil.which('llvm-readelf')
 assert readelf
 sections = subprocess.check_output([readelf, '--sections', '--wide', head[1]['binary']], text=True)
 text_address = int(re.search(r'\.text\s+PROGBITS\s+([0-9a-f]+)', sections)[1], 16)
-flag = '-ldflags=-extldflags=-Wl,-Ttext=' + hex(text_address + 32)
+script = OUT / 'text-placement.ld'
+script.write_text('SECTIONS { .text ' + hex(text_address + 32) + ' : SUBALIGN(32) { *(.text .text.*) } } INSERT AFTER .plt;\n')
+flag = '-ldflags=-extldflags=-Wl,-T,' + str(script)
 command = [go, 'build', flag, '-o', str(shifted), './benchmarks/embedded/wasmvm']
 environment = dict(os.environ, CGO_ENABLED='1', GOWORK='off', GOTOOLCHAIN='local', GOFLAGS='', GOEXPERIMENT='')
 assert not environment.get('LDFLAGS')
@@ -83,7 +85,7 @@ for name, row in list(runtimes.items()):
 data['sourceArtifact'] = dict(run=43448812030, base=data['base'], head=data['head'], linkage=data.pop('linkage', None), scope='Historical SDK/reference identities; retired owned binaries are not measured.')
 data.update(base=base[0]['candidateRevision'], head=revision, runtimes=runtimes,
             goLayoutDiagnostic=dict(flag=flag, static=static, loopInstructionsEqual=True, expectedObservations=300, alternateChecks=14, controls=7,
-                scope='Text placement only on identical candidate sources; shifted flags are diagnostic, never production. All variants and references retained.'))
+                scope='Identical candidate sources; explicit text placement and32-byte input-section alignment are diagnostic, never production. Loop instructions/registers/control must match; all variants/references retained.'))
 (ROOT / 'routing-build/build.json').write_text(json.dumps(data, indent=2) + '\n')
 (OUT / 'static-provenance.json').write_text(json.dumps(data['goLayoutDiagnostic'], indent=2) + '\n')
 routing_compare.measure(argparse.Namespace(head_dir=ROOT / 'head', build_dir=ROOT / 'routing-build', output_dir=OUT / 'measurements',
