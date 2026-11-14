@@ -34,7 +34,7 @@ on:
       llgo_diagnostic_runner:
         description: Temporary native alignment diagnostic runner image
         type: choice
-        options: [ubuntu-24.04, ubuntu-22.04]
+        options: [ubuntu-24.04, ubuntu-22.04, ubuntu-latest]
         default: ubuntu-24.04
 
 permissions:
