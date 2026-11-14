@@ -13,6 +13,8 @@ import own_build
 import routing_compare
 
 SOURCE_RUN = 43448812030
+PRIOR_RUN = 43537347012
+PRIOR_SOURCE = '5e5e6a44b2062d61bfa569f384232483763d3380'
 HEAD = '95943842febc2d3571547c72f2d62bc79f232f88'
 BASE = 'b546ea76663c2ee763ce303a7835e1f83096e59d'
 PROFILES = {
@@ -161,7 +163,7 @@ def build_poll(folder, candidate, compiler):
             archive.add(path, arcname=str(path.relative_to(folder.parent)))
 
 
-def merge_poll(folder):
+def merge_poll(folder, prior):
     data = load(folder)
     revisions = set()
     for compiler in ['go', 'llgo']:
@@ -173,9 +175,28 @@ def merge_poll(folder):
         data['runtimes'].update(fragment['runtimes'])
     if len(revisions) != 1:
         raise ValueError('Go and LLGo candidate sources differ')
-    data['cancellationDiagnostic'] = dict(sourceRun=SOURCE_RUN, candidateRevision=revisions.pop(),
-        fixedBlocks=20, expectedObservations=560, expectedAlternateChecks=27,
-        acceptance='Compare candidate against unchanged production head AND original fast LLGo base; no alignment flags.')
+    for compiler in ['go', 'llgo']:
+        fragment = json.loads((prior / ('poll-' + compiler + '.json')).read_text())
+        if (fragment['sourceRun'], fragment['candidateRevision'], fragment['compiler']) != (SOURCE_RUN, PRIOR_SOURCE, compiler):
+            raise ValueError('wrong prior candidate provenance')
+        name = 'poll-' + compiler
+        build = fragment['builds'][name]
+        binary = prior / name / 'runner'
+        if own_build.digest(binary) != build['binarySha256']:
+            raise ValueError('prior candidate binary changed')
+        if own_build.hashes(binary.parent, own_build.ENGINE_PATHS, own_build.HARNESS) != build['sourceHashes']:
+            raise ValueError('prior candidate engine source changed')
+        data['builds']['prior-' + compiler] = dict(build, binary=str(binary), frozenBuildRun=PRIOR_RUN,
+            frozenBinary=build['binary'])
+        for backend in ['interpreter', 'native']:
+            runtime = dict(fragment['runtimes'][name + '-' + backend], command=[str(binary), '--mode', 'api'])
+            key = 'prior-' + compiler + '-' + backend
+            data['runtimes'][key] = runtime
+            data['runtimes']['aa-' + key] = dict(runtime)
+    data['dispatchDiagnostic'] = dict(sourceRun=SOURCE_RUN, candidateRevision=revisions.pop(),
+        priorBuildRun=PRIOR_RUN, priorRevision=PRIOR_SOURCE,
+        fixedBlocks=20, expectedObservations=720, expectedAlternateChecks=35,
+        acceptance='Compare dense dispatch with the unchanged cancellation/counter baseline and independent references; no alignment overrides.')
     (folder / 'build.json').write_text(json.dumps(data, indent=2) + '\n')
 
 
@@ -185,6 +206,7 @@ if __name__ == '__main__':
     parser.add_argument('--role', choices=['base', 'head'])
     parser.add_argument('--build-dir', type=Path, required=True)
     parser.add_argument('--candidate-dir', type=Path)
+    parser.add_argument('--prior-dir', type=Path)
     parser.add_argument('--compiler', choices=['go', 'llgo'])
     args = parser.parse_args()
     if args.command == 'build':
@@ -198,4 +220,6 @@ if __name__ == '__main__':
             parser.error('--candidate-dir and --compiler are required')
         build_poll(args.build_dir.resolve(), args.candidate_dir.resolve(), args.compiler)
     else:
-        merge_poll(args.build_dir.resolve())
+        if args.prior_dir is None:
+            parser.error('--prior-dir is required for merge-poll')
+        merge_poll(args.build_dir.resolve(), args.prior_dir.resolve())

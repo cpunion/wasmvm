@@ -570,7 +570,7 @@ jobs:
 
   llgo_layout_measure:
     if: ${{ always() && github.event_name == 'workflow_dispatch' && ((inputs.suite == 'llgo-layout' && (inputs.reuse_llgo_alignment || needs.llgo_layout_build.result == 'success')) || (inputs.suite == 'llgo-poll' && (inputs.reuse_candidate_run != '' || needs.llgo_poll_build.result == 'success'))) }}
-    name: LLGo layout causal comparison / ${{ matrix.cohort }}
+    name: Portable dispatch causal comparison / ${{ matrix.cohort }}
     needs: [llgo_layout_build, llgo_poll_build]
     runs-on: ${{ matrix.cohort == 'poll-ubuntu22' && 'ubuntu-22.04' || inputs.llgo_diagnostic_runner || 'ubuntu-24.04' }}
     timeout-minutes: 10
@@ -603,13 +603,24 @@ jobs:
           github-token: ${{ github.token }}
           path: derived
           merge-multiple: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: inputs.suite == 'llgo-poll'
+        with:
+          pattern: poll-*
+          run-id: 43537347012
+          github-token: ${{ github.token }}
+          path: prior-derived
+          merge-multiple: true
       - name: Restore frozen defaults, derived variants and library paths
         run: |
           tar -xzf routing-build.tar.gz
           if [[ '${{ inputs.suite }}' == llgo-poll ]]; then
             tar -xzf derived/poll-go.tar.gz
             tar -xzf derived/poll-llgo.tar.gz
-            python3 control/benchmarks/llgo_layout_diagnostic.py merge-poll --build-dir routing-build
+            mkdir prior
+            tar -xzf prior-derived/poll-go.tar.gz -C prior
+            tar -xzf prior-derived/poll-llgo.tar.gz -C prior
+            python3 control/benchmarks/llgo_layout_diagnostic.py merge-poll --build-dir routing-build --prior-dir prior/routing-build
           else
             tar -xzf derived/llgo-layout-base.tar.gz
             tar -xzf derived/llgo-layout-head.tar.gz
@@ -664,7 +675,7 @@ jobs:
 
   llgo_poll_build:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'llgo-poll' && inputs.reuse_candidate_run == '' }}
-    name: Build cancellation candidate / ${{ matrix.compiler }}
+    name: Build portable dispatch candidate / ${{ matrix.compiler }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
