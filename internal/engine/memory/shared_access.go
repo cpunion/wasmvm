@@ -16,6 +16,10 @@ func (m *Memory) readAccess(b []byte, width uint) uint64 {
 	if m.sharedSize == nil {
 		return read(b, width)
 	}
+	return readShared(b, width)
+}
+
+func readShared(b []byte, width uint) uint64 {
 	v, err := native.SharedLoad(unsafe.Pointer(unsafe.SliceData(b)), uint32(width))
 	checkedShared(err)
 	return v
