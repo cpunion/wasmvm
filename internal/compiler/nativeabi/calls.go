@@ -10,7 +10,8 @@ const (
 	CallCapacityOffset     = 8
 	CallSlotsOffset        = 16
 	CallDepthOffset        = 24
-	CallHeaderBytes        = 32
+	CallChangedOffset      = 32
+	CallHeaderBytes        = 40
 	CallFrameBytes         = 64
 	CallFunctionOffset     = 0
 	CallUsedOffset         = 8

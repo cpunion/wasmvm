@@ -209,7 +209,7 @@ func (e *Execution) RunFrames(frames *state.NativeFrames) error {
 		if err == nil && e.callWords[0] != 0 && e.nextResume != ^uint64(0) {
 			e.nextResume++
 			e.resumeToken, frames.Resume = e.nextResume, e.nextResume
-			e.resumeDepth = frames.Depth + len(e.callFrames) - 1
+			e.resumeDepth = int(e.entryState.Depth)
 		}
 	}
 	if err != nil {

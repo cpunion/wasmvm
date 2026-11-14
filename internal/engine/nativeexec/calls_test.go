@@ -332,7 +332,8 @@ func TestNativeCallMetadataValidationAndRetirement(t *testing.T) {
 			break
 		}
 	}
-	for _, name := range []string{"valid", "top", "limit", "depth", "parent-function", "parent-used", "parent-pc", "current-function", "current-used", "current-end", "slot-limit"} {
+	for _, name := range []string{"valid", "top", "limit", "depth", "parent-function", "parent-used", "parent-pc", "current-function", "current-used", "current-end", "slot-limit", "changed", "unauthenticated-prefix", "overflow-top"} {
+		n.resetCalls()
 		if _, err := n.prepareCalls(2048, 128); err != nil {
 			t.Fatal(err)
 		}
@@ -364,6 +365,12 @@ func TestNativeCallMetadataValidationAndRetirement(t *testing.T) {
 			n.entryState.Used = 2048 * 16
 		case "slot-limit":
 			packet.MaxSlots = uint32(len(root.Code.Slots))
+		case "changed":
+			n.callWords[nativeabi.CallChangedOffset/8] = 2
+		case "unauthenticated-prefix":
+			n.callWords[nativeabi.CallChangedOffset/8] = 1
+		case "overflow-top":
+			n.callWords[0], n.callWords[1] = ^uint64(0), ^uint64(0)
 		}
 		err := n.publishCallFrames(&packet)
 		if name == "valid" {
