@@ -299,12 +299,7 @@ func (m *Memory) load(op uint32, address, offset uint64, lane byte, previous val
 		if !ok {
 			return value.Value{}, wasm.TrapMemoryBounds
 		}
-		var x uint64
-		if m.sharedSize == nil {
-			x = read(b, n)
-		} else {
-			x = readShared(b, n)
-		}
+		x := m.readAccess(b, n)
 		if op == 0x2c || op == 0x2e || op == 0x30 || op == 0x32 || op == 0x34 {
 			x = sign(x, n)
 		}

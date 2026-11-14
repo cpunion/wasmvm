@@ -171,7 +171,7 @@ against the older counter baseline.
 Full-portfolio and P3 acceptance remain open.
 
 
-## Private scalar read candidate
+## Held private scalar read experiment
 
 Source 1f659b69 starts from 688b40b6, excluding the rejected immediate cache. The
 Go compiler cannot inline readAccess (cost 125 before shared-helper extraction,
@@ -181,8 +181,51 @@ native atomic adapter; vector paths use the existing common access wrapper.
 This removes a known extra private-load function call without changing address,
 overflow, logical-capacity, signed-extension or sharing contracts.
 
-Complete memory/execute/VM suites pass with Go and pinned LLGo. New native
-comparison 43566971853 is pending. The contribution's final head must pass its
-own full dual-compiler/platform CI and per-package coverage gates before merge.
-Every earlier adverse result remains part of the ledger; a faster new candidate
-does not close an unexplained old regression.
+Complete memory/execute/VM suites pass with Go and pinned LLGo; contribution
+head 1839c82a passes all 23 hosted checks. However, [native comparison 43566971853](https://github.com/cpunion/wasmvm/actions/runs/43566971853)
+finds Go +3.64%/4.36% against 688b40b6 on 9V45/9V74. LLGo improves 12.48%/6.89%.
+[Confirmation 43567805820](https://github.com/cpunion/wasmvm/actions/runs/43567805820)
+retains Intel Go +0.50% and LLGo +4.49% against that same predecessor; relative
+to the counter baseline, Intel LLGo regresses 8.73%. All these named events have
+10/10 resolved A/A controls. No cross-host or cross-event aggregate is used.
+
+[Two Intel nonzero-offset events](https://github.com/cpunion/wasmvm/actions/runs/43568542450)
+find Go +1.04%/1.08% and LLGo +5.43%/5.06% versus 688b40b6, each 10/10 A/A.
+Go remains 1.37%/1.52% behind WasmEdge; LLGo 3.73%/3.74% behind. The private-read
+experiment is held under the Go-first decision; it is excluded from this PR.
+
+[Go counts](https://github.com/cpunion/wasmvm/actions/runs/43567718690) show 3.60M
+fewer instructions, 1.00M fewer reads and 1.20M fewer writes. Whole-window A/A
+fails by 128 instructions; loop-self A/A is exact. [LLGo counts](https://github.com/cpunion/wasmvm/actions/runs/43568302358)
+have exact whole-window A/A and show 3.00M fewer instructions and 1.00M fewer
+reads/writes. Both compilers' loop-self instruction/read/write counts are
+unchanged from 688b40b6. Go's 2588-instruction loop is relocation-normalized
+identical with a 624-byte frame, moved 160 bytes; LLGo's 2229-instruction loop
+retains its 712-byte frame and local control/register sequence, with relocated
+data addresses, moved 32 bytes. No new hot operand spill is present. Fewer helper
+operations fail to predict elapsed time. Placement/dependency and physical-cycle
+attribution remain open; no allocation/GC explanation is supported.
+
+## Tool-event caveat and disposition
+
+Valgrind 3.22 VEX lowers register-form bit tests through temporary guest stack
+memory ([pinned source](https://sourceware.org/git/?p=valgrind.git;a=blob_plain;f=VEX/priv/guest_amd64_toIR.c;hb=VALGRIND_3_22_0),
+register case around lines 8219–8240). Dr/Dw therefore include tool-generated
+accesses and must not be described as PMU retired loads/stores. Direct stack
+metrics above separately match disassembled rbp/rsp operands. Compiler issues
+retain this clarification. Instrumented timings are never throughput evidence.
+
+The retained implementation has the engine source closure of 688b40b6: opcode-local
+scalar reads, scoped popcount and checked unsigned memory ranges. Both held
+experiments remain reproducible on diagnostic commits. The retained source's
+complete Go coverage covers 31 executable packages at ≥90%, including execute 92.85%,
+memory 92.75% and VM 93.54%; memory/execute/VM suites pass with both compilers and
+the memory race suite passes. The final contribution head still requires its
+own complete dual-compiler/platform checks. Whole-portfolio and remaining
+regression investigations stay open.
+
+A Go text-placement ablation is separate diagnostic work. The first `-T` attempt
+was ignored by external linking; forwarding a .text address to the external
+linker moved the entry 64 bytes, rather than the intended 32. Both attempts failed
+preconditions before timing, and remain failed. They do not establish a layout
+cause or compiler throughput result.
