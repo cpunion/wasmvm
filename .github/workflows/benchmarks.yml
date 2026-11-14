@@ -644,6 +644,10 @@ jobs:
             --head-dir "$GITHUB_WORKSPACE/head" --build-dir "$GITHUB_WORKSPACE/routing-build" \
             --group memory-simd --case memory/dependent-address --blocks 20 \
             --output-dir "$GITHUB_WORKSPACE/llgo-layout-results"
+      - name: Collect separate native PMU diagnostics when supported
+        run: |
+          python3 control/benchmarks/llgo_perf_diagnostic.py \
+            llgo-layout-results/results.json llgo-layout-results/pmu
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
