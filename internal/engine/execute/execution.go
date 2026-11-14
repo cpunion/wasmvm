@@ -320,6 +320,15 @@ func (e *Execution) runSlots() Status {
 	return status
 }
 
+// portableDispatchKey preserves common opcodes without arithmetic on the hot
+// path. Internal controls use a separate compact range in the dispatch only.
+func portableDispatchKey(op uint32) uint32 {
+	if op < slots.ControlBase {
+		return op
+	}
+	return op - slots.ControlBase + (1 << 8)
+}
+
 // Keep the portable polling counter local between yields. Each status publishes
 // the exact count without a captured closure or a store on every instruction.
 func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
@@ -489,7 +498,7 @@ func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 			// bit 24 to bit 8 only in this dispatch key, leaving prefix opcodes
 			// and immutable runtime/native metadata unchanged. The compact range
 			// allows a single jump table for scalar and control instructions.
-			switch op := in.Op&(slots.ControlBase-1) | in.Op/slots.ControlBase*controlDispatchBase; op {
+			switch op := portableDispatchKey(in.Op); op {
 			case 0x45:
 				result.Lo = numeric.I32Eqz(a.Lo)
 			case 0x46:
