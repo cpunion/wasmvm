@@ -6,7 +6,7 @@ sys.path.insert(0,str(ROOT/'control/benchmarks'))
 import own_build
 sys.path.insert(0,str(ROOT/'head/benchmarks/native'))
 from memory_fixtures import checksum
-REV='e6a873288f0c70b5c3c4fd46f708a5b079651f93'
+REV='ac1292206d672c2aeb546780a1d585ad98edbc3d'
 SYMBOL='github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).runSlotsLoop'
 run=lambda args,**kw:subprocess.check_output(args,text=True,**kw)
 cli=shutil.which('llgo');assert REV[:12]in run([cli,'version'])

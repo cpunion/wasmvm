@@ -8,7 +8,7 @@ on:
       suite:
         description: Benchmark scope (PR families, sustained gates, or diagnostic survey)
         type: choice
-        options: [pr, full, native-simd, survey, routing, p3io, llgo-layout, llgo-poll, llgo-regression, llgo-regression-main]
+        options: [pr, full, native-simd, survey, routing, p3io, llgo-layout, llgo-poll, llgo-regression, llgo-regression-main, llgo-upgrade]
         default: full
       routing_scope:
         description: Routing groups to measure (routing suite only)
@@ -108,7 +108,7 @@ jobs:
 
   benchmark:
     # Capability completion takes priority; measurements are opt-in until then.
-    if: ${{ inputs.suite != 'native-simd' && inputs.suite != 'routing' && inputs.suite != 'p3io' && inputs.suite != 'llgo-layout' && inputs.suite != 'llgo-poll' && inputs.suite != 'llgo-regression' && inputs.suite != 'llgo-regression-main' && (github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks')) }}
+    if: ${{ inputs.suite != 'native-simd' && inputs.suite != 'routing' && inputs.suite != 'p3io' && inputs.suite != 'llgo-layout' && inputs.suite != 'llgo-poll' && inputs.suite != 'llgo-regression' && inputs.suite != 'llgo-regression-main' && inputs.suite != 'llgo-upgrade' && (github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks')) }}
     name: Runtime performance / linux-amd64
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && inputs.suite != 'pr' && 90 || 10 }}
@@ -848,7 +848,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
-      WASMVM_LLGO_REVISION: e6a873288f0c70b5c3c4fd46f708a5b079651f93
+      WASMVM_LLGO_REVISION: ac1292206d672c2aeb546780a1d585ad98edbc3d
       REGRESSION_EXTRACT_IR: ${{ inputs.extract_regression_ir }}
     permissions:
       contents: read
@@ -888,7 +888,7 @@ jobs:
       - run: bash control/scripts/setup_linux_llgo.sh
       - uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
         with:
-          llgo-version: e6a873288f0c70b5c3c4fd46f708a5b079651f93
+          llgo-version: ac1292206d672c2aeb546780a1d585ad98edbc3d
           install-method: source
           go-version: '1.27.3'
           llvm-version: '22'
@@ -901,5 +901,109 @@ jobs:
         with:
           name: llgo-main-regression
           path: main-regression/
+          if-no-files-found: error
+          retention-days: 30
+
+
+  llgo_upgrade_build:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'llgo-upgrade' }}
+    name: Build one frozen engine with updated LLGo
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    env:
+      WASMVM_LLGO_REVISION: ac1292206d672c2aeb546780a1d585ad98edbc3d
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: control
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - run: bash control/scripts/setup_linux_llgo.sh
+      - uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
+        id: compiler
+        with:
+          llgo-version: ac1292206d672c2aeb546780a1d585ad98edbc3d
+          install-method: source
+          go-version: '1.27.3'
+          llvm-version: '22'
+          install-dependencies: false
+          cache: true
+      - name: Verify compiler snapshot
+        env:
+          ACTUAL_REVISION: ${{ steps.compiler.outputs.llgo-revision }}
+        run: test "$ACTUAL_REVISION" = "$WASMVM_LLGO_REVISION"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: routing-build-linux-amd64
+          run-id: 43448812030
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: poll-*
+          run-id: 43561639936
+          github-token: ${{ github.token }}
+          path: downloads
+          merge-multiple: true
+      - name: Preserve original engine and baseline; build only the new compiler role
+        run: python3 -u control/benchmarks/llgo_upgrade_diagnostic.py build
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: compiler-upgrade
+          path: compiler-upgrade.tar.gz
+          if-no-files-found: warn
+          retention-days: 30
+
+  llgo_upgrade_measure:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'llgo-upgrade' }}
+    name: Compiler upgrade / ${{ matrix.case.name }} / cohort${{ matrix.cohort }}
+    needs: llgo_upgrade_build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        case:
+          - {name: integer, id: core/integer-loop, group: core}
+          - {name: dependent, id: memory/dependent-address, group: memory-simd}
+          - {name: narrow, id: memory/narrow-unaligned, group: memory-simd}
+        cohort: [1, 2]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: control
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 688b40b67c9ce27607a52be2d3e394e2000c2e77
+          path: head
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: routing-build-linux-amd64
+          run-id: 43448812030
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: compiler-upgrade
+      - name: Fixed 20 blocks with old/new compiler, unchanged Go and reference aliases
+        env:
+          UPGRADE_CASE: ${{ matrix.case.id }}
+          UPGRADE_GROUP: ${{ matrix.case.group }}
+        run: python3 -u control/benchmarks/llgo_upgrade_diagnostic.py measure --case "$UPGRADE_CASE" --group "$UPGRADE_GROUP"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: compiler-upgrade-${{ matrix.case.name }}-${{ matrix.cohort }}
+          path: upgrade-results/
           if-no-files-found: error
           retention-days: 30
