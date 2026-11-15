@@ -241,18 +241,14 @@ func (in *Instance) codec(caller *vm.Caller, n *namespace, plan *validate.Canoni
 	var codec *canonical.Codec
 	if n != nil && (len(n.resources) != 0 || n.handles != nil) {
 		state := &resourceCodecState{}
-		codec = in.initResourceCodec(state, caller, n)
+		codec = &state.codec
+		state.resources = resourceCodec{in: in, n: n, core: caller}
+		codec.Resources = &state.resources
 	} else {
 		codec = &canonical.Codec{}
 	}
 	in.configureCodec(codec, caller, n, plan, true)
 	return codec
-}
-
-func (in *Instance) initResourceCodec(state *resourceCodecState, caller *vm.Caller, n *namespace) *canonical.Codec {
-	state.resources = resourceCodec{in: in, n: n, core: caller}
-	state.codec.Resources = &state.resources
-	return &state.codec
 }
 
 func (in *Instance) configureCodec(codec *canonical.Codec, caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, realloc bool) {

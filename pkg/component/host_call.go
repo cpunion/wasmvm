@@ -22,36 +22,8 @@ type hostCall struct {
 	values, bytes uint64
 }
 
-type plainHostCall struct {
-	call  hostCall
-	codec canonical.Codec
-}
-
-type resourceHostCall struct {
-	call  hostCall
-	codec resourceCodecState
-}
-
-// The call and its canonical transaction have the same lifetime, including
-// suspended host work and failure cleanup. Neither is reused by another call.
-func (f *Function) newHostCall(core *vm.Caller) *hostCall {
-	var h *hostCall
-	if f.scope != nil && (len(f.scope.resources) != 0 || f.scope.handles != nil) {
-		allocation := &resourceHostCall{}
-		h = &allocation.call
-		h.codec = f.instance.initResourceCodec(&allocation.codec, core, f.scope)
-	} else {
-		allocation := &plainHostCall{}
-		h = &allocation.call
-		h.codec = &allocation.codec
-	}
-	h.function = f
-	f.instance.configureCodec(h.codec, core, f.scope, nil, true)
-	return h
-}
-
 func (f *Function) hostCall(core *vm.Caller, args []Value) (h *hostCall, err error) {
-	h = f.newHostCall(core)
+	h = &hostCall{function: f, codec: f.instance.codec(core, f.scope, nil)}
 	if len(args) != len(f.typ.Parameters) {
 		return h, vm.ErrType
 	}
