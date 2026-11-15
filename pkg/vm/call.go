@@ -34,7 +34,22 @@ type callerAllocation struct {
 
 func (op *operation) newCaller(instance *state.Instance) *Caller {
 	op.exposed.Store(true)
-	allocation := &callerAllocation{}
+	var allocation *callerAllocation
+	if op.callerBlock == nil && op.nextCaller == 0 {
+		// Most leases need only their initial capability. Allocate a batch only
+		// after a callback actually creates another Caller in the same lease.
+		allocation = &callerAllocation{}
+		op.nextCaller = 4
+	} else {
+		if op.callerBlock == nil || op.nextCaller == uint8(len(op.callerBlock)) {
+			op.callerBlock = new([4]callerAllocation)
+			op.nextCaller = 0
+		}
+		allocation = &op.callerBlock[op.nextCaller]
+		op.nextCaller++
+	}
+	// Slots are consumed once, never reset or rebound. Retained header copies
+	// keep their own guard alive, including across collection and block growth.
 	allocation.state.active = true
 	allocation.state.op = op
 	allocation.state.instance = instance
