@@ -139,9 +139,13 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	e.callLoad(2, e.callContext(), uint32(nativeabi.CallViewOffset))
 	e.callTest(2)
 	e.branch(fallback, "eq")
-	e.callLoad(0, e.callReg(2), nativeabi.CallTopOffset)
 	e.callLoad(1, e.callReg(2), nativeabi.CallCapacityOffset)
-	e.callCompare(0, 1)
+	if e.frameRegisters {
+		e.callCompare(callTop, 1)
+	} else {
+		e.callTopLoad(0)
+		e.callCompare(0, 1)
+	}
 	e.branch(fallback, "hs")
 	e.callLoad(1, e.callReg(2), nativeabi.CallDepthOffset)
 	if e.frameRegisters {
@@ -222,9 +226,13 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	e.callStore(0, e.callReg(3), nativeabi.CallResumeOffset)
 	e.callAddress(results, 0)
 	e.callStore(0, e.callReg(3), nativeabi.CallDestinationsOffset)
-	e.callLoad(0, e.callReg(2), nativeabi.CallTopOffset)
-	e.callAdvance(0, 1)
-	e.callStore(0, e.callReg(2), nativeabi.CallTopOffset)
+	if e.frameRegisters {
+		e.callAdvance(callTop, 1)
+	} else {
+		e.callTopLoad(0)
+		e.callAdvance(0, 1)
+		e.callStore(0, e.callReg(2), nativeabi.CallTopOffset)
+	}
 	e.callPushState()
 	e.contextConst(nativeabi.ContinuationOffset, 0)
 	if indirect {
@@ -295,8 +303,12 @@ func (e *functionEmitter) linkedReturn(pc int) {
 	e.callLoad(2, e.callContext(), uint32(nativeabi.CallViewOffset))
 	e.callTest(2)
 	e.branch(fallback, "eq")
-	e.callLoad(0, e.callReg(2), nativeabi.CallTopOffset)
-	e.callTest(0)
+	if e.frameRegisters {
+		e.callTest(callTop)
+	} else {
+		e.callTopLoad(0)
+		e.callTest(0)
+	}
 	e.branch(fallback, "eq")
 	in := e.f.Code[pc]
 	scalar := false
@@ -334,10 +346,14 @@ func (e *functionEmitter) linkedReturn(pc int) {
 	e.callLoad(0, e.callReg(3), nativeabi.CallPCOffset)
 	e.callAdvance(0, 1)
 	e.callStore(0, e.callContext(), uint32(nativeabi.ContinuationOffset))
-	e.callLoad(2, e.callContext(), uint32(nativeabi.CallViewOffset))
-	e.callLoad(0, e.callReg(2), nativeabi.CallTopOffset)
-	e.callAdvance(0, -1)
-	e.callStore(0, e.callReg(2), nativeabi.CallTopOffset)
+	if e.frameRegisters {
+		e.callAdvance(callTop, -1)
+	} else {
+		e.callLoad(2, e.callContext(), uint32(nativeabi.CallViewOffset))
+		e.callTopLoad(0)
+		e.callAdvance(0, -1)
+		e.callStore(0, e.callReg(2), nativeabi.CallTopOffset)
+	}
 	e.callLoad(0, e.callReg(3), nativeabi.CallResumeOffset)
 	e.callJump(0)
 	e.callPlan(sources, e.f.Args[in.Extra:in.Extra+in.Count])

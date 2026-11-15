@@ -31,6 +31,7 @@ func (e *functionEmitter) integerRegisterPool() []byte {
 	var used [32]bool
 	if e.frameRegisters {
 		used[e.callReg(callUsed)], used[e.callReg(callDepth)] = true, true
+		used[e.callReg(callTop)] = true
 	}
 	for _, r := range e.constantRegisters {
 		used[r] = true

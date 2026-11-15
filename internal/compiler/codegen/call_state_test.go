@@ -32,7 +32,7 @@ func TestNativeFrameStateIsExcludedFromGuestAllocation(t *testing.T) {
 			e := functionEmitter{a: &assembler{arch: arch}, usesMemory: memory}
 			ordinary := slices.Clone(e.integerRegisterPool())
 			e.frameRegisters = true
-			reserved := []byte{e.callReg(callUsed), e.callReg(callDepth)}
+			reserved := []byte{e.callReg(callUsed), e.callReg(callDepth), e.callReg(callTop)}
 			want := slices.DeleteFunc(ordinary, func(r byte) bool { return slices.Contains(reserved, r) })
 			if got := e.integerRegisterPool(); !slices.Equal(got, want) {
 				t.Fatal(arch, memory, got, want)

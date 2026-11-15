@@ -206,6 +206,7 @@ func TestLinkedBodiesKeepOrdinaryHostEntryChecksAndResumption(t *testing.T) {
 			{Used: 16, Depth: 1, Budget: 64},
 		} {
 			state.Function = 77
+			state.Payload[1] = 1 // Header failures must not dereference a call view.
 			used, depth := state.Used, state.Depth
 			status, err := ctx.RunState(lease, 0, &state)
 			if err != nil || status != native.Exit(nativeabi.BadState) || state.Function != 77 || state.Used != used || state.Depth != depth {

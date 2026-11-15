@@ -359,6 +359,7 @@ func (e *functionEmitter) status(status nativeabi.Exit) {
 	e.rawStatus(status)
 }
 func (e *functionEmitter) rawStatus(status nativeabi.Exit) {
+	e.callTopExit()
 	if e.frameRegisters {
 		e.callStore(callUsed, e.callContext(), uint32(nativeabi.UsedOffset))
 		e.callStore(callDepth, e.callContext(), uint32(nativeabi.DepthOffset))

@@ -141,9 +141,9 @@ type Config struct {
 	// SharedDispatch leaves forward address relocations for one module table
 	// per policy. The owner must append and link that table before publication.
 	SharedDispatch bool
-	// NativeFrameRegisters retains Used/Depth in dedicated callee-saved words.
+	// NativeFrameRegisters retains Used/Depth/Top in dedicated callee-saved words.
 	// Only unmetered linked modules may enable it, consistently for every body.
-	// Ordinary entries reload the state and all exits publish it to the record.
+	// Ordinary entries reload state and all exits publish it to the record/view.
 	NativeFrameRegisters bool
 	// NativeFunction identifies an unmetered linked body by module index + 1.
 	// Zero retains record-based function identity. Linked modules set this for
@@ -252,6 +252,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	e.start = a.label()
 	a.mark(e.start)
 	if e.frameRegisters {
+		e.callConst(callTop, ^uint64(0))
 		e.callLoad(callUsed, e.callContext(), uint32(nativeabi.UsedOffset))
 		e.callLoad(callDepth, e.callContext(), uint32(nativeabi.DepthOffset))
 	}
@@ -267,6 +268,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		}
 	}
 	globalIndices, usesRuntimeData := e.prepareRuntimeData(config)
+	e.callTopEntry()
 	e.linkedStart = a.label()
 	a.mark(e.linkedStart)
 	e.memoryFunctions, e.memoryTables, e.memoryGlobals, e.memoryBindings = config.FunctionCount, config.TableCount, uint32(len(config.Globals)), uint32(len(globalIndices))
