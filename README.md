@@ -276,6 +276,13 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
+The [parameter-initialization study](docs/research/performance-native-parameter-initialization-2026-11-15.md)
+removes redundant clearing of direct-call parameters, reducing general-call Go
+CPU **17.9%** and Go/LLGo warm time **18.0%/17.5%**, with resolving own controls.
+Reference time ratios remain **2.23–2.38x**. Complete P3 requests show no resolved
+CPU gain; an adverse 16 B throughput point and its independent audit remain
+recorded separately.
+
 The [native call-state study](docs/research/performance-native-call-state-2026-11-15.md)
 reduces general-call Go CPU **2.6%** and instructions **11.0%**, with resolving
 own controls; shared exits also reduce P3 native code size **2.3%**. General-call

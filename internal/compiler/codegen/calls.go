@@ -122,7 +122,7 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	count := in.Count
 	if indirect {
 		count--
-	} else if callee == nil || int(count) != len(callee.Signature.Params) {
+	} else if callee == nil || int(count) != len(callee.Signature.Params) || int(count) > len(callee.Slots) {
 		return false
 	}
 	resultsCount := len(e.f.Sources[in.Source].Outputs)
@@ -192,7 +192,7 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 		e.callMemory(5, e.callReg(5), 0, false, true)
 		e.callZeroDynamic(cancelled)
 	} else {
-		e.callZero(uint32(len(callee.Slots)), cancelled)
+		e.callZero(uint32(len(callee.Slots)), count, cancelled)
 	}
 	args := e.f.Args[in.Extra : in.Extra+count]
 	if len(args) <= 8 {

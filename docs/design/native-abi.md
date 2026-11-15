@@ -563,6 +563,13 @@ inside a large copy must still publish the callee's live frame chain. Public
 record fields, full-width values, guest roots and hardware stack usage are
 unchanged; these registers never contain guest values or native pointers.
 
+Direct private calls initialize only the non-parameter suffix of a checked
+child frame. Every parameter's complete 128-bit value is copied before the child
+joins the live chain, so clearing those same words first is redundant. Frame
+capacity checks still cover the entire child; clearing/copying retains bounded
+cancellation and a partial child stays unpublished. Dynamic indirect frames
+retain their existing full-clear path.
+
 Linked unmetered bodies may also carry their compiler-known module function
 index. The ordinary, expanded and parallel compilation paths assign the same
 index, including imported-function prefixes. Each caller records its constant
