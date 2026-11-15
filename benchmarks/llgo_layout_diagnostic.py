@@ -117,7 +117,7 @@ def merge(folder):
         data['builds'].update(fragment['builds'])
         data['runtimes'].update(fragment['runtimes'])
     data['layoutDiagnostic'] = dict(sourceRun=SOURCE_RUN, profiles=PROFILES,
-        fixedBlocks=20, profiles=list(PROFILES),
+        fixedBlocks=20,
         acceptance='Recover head against original fast default base; slowing both roles is not recovery.')
     (folder / 'build.json').write_text(json.dumps(data, indent=2) + '\n')
 
