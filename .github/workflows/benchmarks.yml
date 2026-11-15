@@ -585,7 +585,7 @@ jobs:
     if: ${{ always() && github.event_name == 'workflow_dispatch' && ((inputs.suite == 'llgo-layout' && (inputs.reuse_llgo_alignment || needs.llgo_layout_build.result == 'success')) || (inputs.suite == 'llgo-poll' && (inputs.reuse_candidate_run != '' || needs.llgo_poll_build.result == 'success'))) }}
     name: Portable dispatch causal comparison / ${{ matrix.cohort }}
     needs: [llgo_layout_build, llgo_poll_build]
-    runs-on: ${{ matrix.cohort == 'poll-ubuntu22' && 'ubuntu-22.04' || inputs.llgo_diagnostic_runner || 'ubuntu-24.04' }}
+    runs-on: ${{ endsWith(matrix.cohort, 'ubuntu22') && 'ubuntu-22.04' || inputs.llgo_diagnostic_runner || 'ubuntu-24.04' }}
     timeout-minutes: 10
     env:
       OPERAND_ABLATION: ${{ inputs.suite == 'llgo-poll' }}
@@ -596,7 +596,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cohort: ${{ fromJSON(inputs.suite == 'llgo-poll' && (inputs.reuse_candidate_run != '' && '["confirm-1","confirm-2"]' || '["poll-ubuntu24","poll-ubuntu22"]') || inputs.reuse_llgo_alignment && '["repeat-1","repeat-2"]' || '["primary"]') }}
+        cohort: ${{ fromJSON(inputs.suite == 'llgo-poll' && (inputs.reuse_candidate_run != '' && '["confirm-1","confirm-2"]' || '["poll-ubuntu24","poll-ubuntu22"]') || inputs.reuse_llgo_alignment && '["repeat-1","repeat-2"]' || '["segment-ubuntu24","segment-ubuntu22"]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -665,7 +665,7 @@ jobs:
               output.write('LD_LIBRARY_PATH=' + ':'.join(directories) + '\n')
           PYLIB
       - name: Extract compatible user-space libraries; measurements remain native host processes
-        if: inputs.llgo_diagnostic_runner == 'ubuntu-22.04' || matrix.cohort == 'poll-ubuntu22'
+        if: inputs.llgo_diagnostic_runner == 'ubuntu-22.04' || endsWith(matrix.cohort, 'ubuntu22')
         env:
           NATIVE_RUNTIME_IMAGE: ubuntu@sha256:77eb101c607d6e3d4f5ad0c8a02c2136c689b98aba1f359e6502ba517e5c57ec
         run: |

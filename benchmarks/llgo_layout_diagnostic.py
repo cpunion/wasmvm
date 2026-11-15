@@ -17,11 +17,8 @@ PRIOR_RUN = 43537347012
 PRIOR_SOURCE = '5e5e6a44b2062d61bfa569f384232483763d3380'
 HEAD = '95943842febc2d3571547c72f2d62bc79f232f88'
 BASE = 'b546ea76663c2ee763ce303a7835e1f83096e59d'
-PROFILES = {
-    'function-32': ('-Wl,-mllvm,-align-all-functions=5', 32),
-    'function-64': ('-Wl,-mllvm,-align-all-functions=6', 64),
-    'loop-32': ('-Wl,-mllvm,-align-loops=32', 0),
-}
+PROFILES = {'text-page': ('-Wl,-z,separate-code', 0)}
+
 SYMBOL = 'github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).runSlots'
 
 
@@ -91,6 +88,8 @@ def build(folder, role):
         print('building', name, flag, flush=True)
         record = routing_compare.compile_runner(command, target, env)
         layout = inspect(binary, probe / (name + '.asm'), expected)
+        if layout['text'] % 4096:
+            raise ValueError('executable segment is not page aligned')
         fragment['builds'][name] = dict(original, **record, toolchain=selected,
             experimentalLinkerFlags=[flag], effectiveEnvironment={'LDFLAGS': flag},
             layoutDiagnostic=layout, frozenSourceRun=SOURCE_RUN,
@@ -118,7 +117,7 @@ def merge(folder):
         data['builds'].update(fragment['builds'])
         data['runtimes'].update(fragment['runtimes'])
     data['layoutDiagnostic'] = dict(sourceRun=SOURCE_RUN, profiles=PROFILES,
-        fixedBlocks=20, expectedObservations=640, expectedAlternateChecks=31,
+        fixedBlocks=20, profiles=list(PROFILES),
         acceptance='Recover head against original fast default base; slowing both roles is not recovery.')
     (folder / 'build.json').write_text(json.dumps(data, indent=2) + '\n')
 
