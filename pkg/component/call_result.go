@@ -40,7 +40,7 @@ func (f *Function) callWithResult(ctx context.Context, args []Value, options Cal
 		complete := false
 		defer in.finishTasks(c, &err, &complete)
 		if prepare != nil {
-			factory := &hostCall{function: f, codec: in.codec(c, f.scope, nil)}
+			factory := f.newHostCall(c)
 			factory.limit()
 			defer factory.finishDeferred(c, &complete, &err)
 			defer factory.account()
