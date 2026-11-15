@@ -341,7 +341,11 @@ func (in *Instance) cleanupRepresentation(core *vm.Caller, rt *resourceType, rep
 
 // Only accepted host parameters can escape through a successful imported effect.
 // Results remain unpublished until the caller's canonical handoff succeeds.
-func (r *resourceCodec) ParametersAccepted() { r.escaped = append(r.escaped, r.created...) }
+func (r *resourceCodec) ParametersAccepted() {
+	// created only appends until Finish. A fixed-length view retains exactly
+	// the accepted prefix even when result ownership grows or reallocates it.
+	r.escaped = r.created
+}
 
 // Most ownership transactions contain one capability. Keep that identity in
 // the transaction itself; additional identities retain the ordinary map and
