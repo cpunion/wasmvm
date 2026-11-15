@@ -84,14 +84,12 @@ func (e *functionEmitter) callCopy(count uint32, cancelled int) {
 	e.callAdvance(6, 4)
 	e.callShift(0, 4)
 	e.callAddFrame(0)
-	e.callLoad(1, e.callReg(0), 0)
-	e.callLoad(2, e.callReg(0), 8)
+	e.callValueMemory(e.callReg(0), 0, false)
 	e.callMemory(0, e.callReg(7), 0, false, true)
 	e.callAdvance(7, 4)
 	e.callShift(0, 4)
 	e.callAdd(0, 0, 4)
-	e.callStore(1, e.callReg(0), 0)
-	e.callStore(2, e.callReg(0), 8)
+	e.callValueMemory(e.callReg(0), 0, true)
 	e.callCancelled(cancelled)
 	e.callAdvance(5, -1)
 	e.callTest(5)
@@ -110,10 +108,9 @@ func (e *functionEmitter) callPlan(label int, indices []slots.Slot) {
 // directly, without reloading a just-written continuation from memory.
 func (e *functionEmitter) callEntryFrame(pc uint64) {
 	e.registerMove(e.callFrame(), e.callReg(4), true)
-	e.contextConst(nativeabi.RootMapOffset, 0)
-	if pc != 0 {
-		e.constant(0, pc)
-	}
+	// Ordinary entry established root map zero for this native run. Private
+	// calls never change it; every body uses the same conservative root map.
+	e.constant(0, pc)
 }
 
 func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
@@ -197,10 +194,8 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	args := e.f.Args[in.Extra : in.Extra+count]
 	if len(args) <= 8 {
 		for i, slot := range args {
-			e.callLoad(0, e.callFrame(), uint32(slot)*16)
-			e.callLoad(1, e.callFrame(), uint32(slot)*16+8)
-			e.callStore(0, e.callReg(4), uint32(i)*16)
-			e.callStore(1, e.callReg(4), uint32(i)*16+8)
+			e.callValueMemory(e.callFrame(), uint32(slot)*16, false)
+			e.callValueMemory(e.callReg(4), uint32(i)*16, true)
 		}
 	} else {
 		e.callAddress(inputs, 6)
@@ -343,9 +338,11 @@ func (e *functionEmitter) linkedReturn(pc int) {
 		e.callStore(0, e.callContext(), uint32(nativeabi.FunctionOffset))
 	}
 	e.callPopState()
-	e.callLoad(0, e.callReg(3), nativeabi.CallPCOffset)
-	e.callAdvance(0, 1)
-	e.callStore(0, e.callContext(), uint32(nativeabi.ContinuationOffset))
+	if !e.unmetered {
+		e.callLoad(0, e.callReg(3), nativeabi.CallPCOffset)
+		e.callAdvance(0, 1)
+		e.callStore(0, e.callContext(), uint32(nativeabi.ContinuationOffset))
+	}
 	if e.frameRegisters {
 		e.callAdvance(callTop, -1)
 	} else {

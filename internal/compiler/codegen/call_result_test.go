@@ -164,3 +164,61 @@ func TestPrivateScalarResultsSurviveEntryScratchAndBorrowedHomes(t *testing.T) {
 		}
 	}
 }
+
+func TestCallValueCopiesCompleteWordsAtLargeOffsets(t *testing.T) {
+	for _, arch := range []string{"amd64", "arm64"} {
+		for _, source := range []slots.Slot{0, 4097} {
+			for _, target := range []slots.Slot{1, 4098} {
+				a := assembler{arch: arch, longBranches: true}
+				e := functionEmitter{a: &a, exit: a.label()}
+				e.callLoad(4, e.callContext(), uint32(nativeabi.ArenaOffset))
+				e.registerMove(e.callFrame(), e.callReg(4), true)
+				e.callValueMemory(e.callFrame(), uint32(source)*16, false)
+				e.callValueMemory(e.callReg(4), uint32(target)*16, true)
+				e.rawStatus(nativeabi.Return)
+				a.mark(e.exit)
+				body, err := a.finish()
+				if err != nil {
+					t.Fatal(err)
+				}
+				entry, err := nativeabi.Wrap(arch, body, 16384)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !native.Available || arch != runtime.GOARCH {
+					continue
+				}
+				code, err := native.Publish(entry.Code, []uint32{0}, uint64(len(entry.Code)))
+				if err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(code.Close)
+				lease, err := code.Acquire()
+				if err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(lease.Close)
+				ctx, err := native.NewContext(4100*16, 4100*16, 2)
+				if err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(ctx.Close)
+				want := value.Value{Lo: 0xfedcba9876543210, Hi: 0x123456789abcdef0}
+				sentinel := value.Value{Lo: 0xa5a5a5a5a5a5a5a5, Hi: 0x5a5a5a5a5a5a5a5a}
+				writeSlot(t, ctx, 0, target+1, sentinel)
+				writeSlot(t, ctx, 0, target, sentinel)
+				writeSlot(t, ctx, 0, source, want)
+				state := native.State{Depth: 1}
+				if status, err := ctx.RunState(lease, 0, &state); err != nil || status != native.Return {
+					t.Fatal(status, err)
+				}
+				if got := readSlot(t, ctx, 0, target); got != want {
+					t.Fatal(arch, source, target, got, want)
+				}
+				if got := readSlot(t, ctx, 0, target+1); got != sentinel {
+					t.Fatal("adjacent word overwritten", got)
+				}
+			}
+		}
+	}
+}
