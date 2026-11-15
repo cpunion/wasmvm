@@ -8337,6 +8337,16 @@
     "semanticAndSharedChecks": 23,
     "newLibraryProducerChecks": 2,
     "packageCoverage": "The same32 test packages, once per LLGo platform; no extra test execution in library warmups or main pushes.",
-    "requirement": "All25 final-head checks must succeed before merge; no controlled performance gate is closed by cache warming."
+    "requirement": "All27 final-head checks must succeed before merge;32 root test packages and the auxiliary P3 module remain complete, exactly once per LLGo platform.",
+    "standaloneP3Checks": 2,
+    "totalRequiredChecks": 27,
+    "unchangedSemanticAndSharedChecks": 23,
+    "sharedCacheAttempt": {
+      "source": "24809a989a0a1f60e6ed75b641b65f4936c35f6f",
+      "run": "https://github.com/cpunion/wasmvm/actions/runs/43731209518",
+      "macosCLIJobSeconds": 567,
+      "macosThreadsRootSeconds": 153,
+      "macosThreadsOutcome": "Root tests passed; job canceled during the subsequent P3 full-LTO link. Split P3 into an independently budgeted module shard, preserving its2m test timeout."
+    }
   }
 }

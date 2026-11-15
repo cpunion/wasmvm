@@ -215,8 +215,14 @@ A single no-link library-union build now runs per platform before the unchanged
 semantic/CLI matrix. Consumers restore its profile-qualified cache without
 uploading duplicate shard copies. Main pushes run only these two library warmups,
 so future PRs can restore default-branch objects without repeating semantic
-execution on merge. All23 existing semantic/shared checks remain; two cache
-producer checks are added. All32 test packages, pinned compiler identity and
+execution on merge. All23 existing semantic/shared checks remain. The next attempt passed the
+macOS CLI in9m27s, but the threads job spent2m33s on its successful root tests
+then exceeded its remaining budget linking the P3 measurement binary. P3
+measurement therefore moves to its own shard per platform, with its original
+2-minute test timeout; no test is duplicated or removed. The authoritative
+plan verifies32 root packages plus that auxiliary module exactly once. Two
+cache producers and two independently budgeted P3 checks bring the final
+required total to27. All32 test packages, pinned compiler identity and
 `-O3 -lto=full` execution remain mandatory. Local union compilation succeeds and
 its trace contains no native link; final-head hosted timing is still required.
 

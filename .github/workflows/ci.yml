@@ -216,7 +216,7 @@ jobs:
         platform:
           - {name: linux-amd64, runner: ubuntu-24.04}
           - {name: macos-arm64, runner: macos-15}
-        shard: ["core", "vm", "component", "legacy", "threads", "http", "async", "entry"]
+        shard: ["core", "vm", "component", "legacy", "threads", "http", "async", "entry", "p3io"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Select semantic shard
@@ -265,23 +265,19 @@ jobs:
             python3 "scripts/${corpus}_corpus.py"
           done
       - name: Execute LLGo semantic shard
+        working-directory: ${{ steps.shard.outputs.directory }}
         env:
           TEST_PACKAGES: ${{ steps.shard.outputs.packages }}
           SHARD: ${{ matrix.shard }}
           WASMVM_CONFORMANCE_REPORT: ${{ github.workspace }}/artifacts/conformance/core2.json
         run: |
-          mkdir -p artifacts/ci
+          mkdir -p "$GITHUB_WORKSPACE/artifacts/ci"
           read -ra packages <<< "$TEST_PACKAGES"
-          llgo test -O3 -lto=full -json -debug-trace "artifacts/ci/llgo-${SHARD}.json" -count=1 -timeout=8m "${packages[@]}"
+          llgo test -O3 -lto=full -json -debug-trace "$GITHUB_WORKSPACE/artifacts/ci/llgo-${SHARD}.json" -count=1 -timeout="${{ steps.shard.outputs.timeout }}" "${packages[@]}"
       - name: Execute native service reference under LLGo
         if: matrix.shard == 'legacy'
         working-directory: benchmarks/service
         run: llgo test -O3 -lto=full -json -debug-trace "$GITHUB_WORKSPACE/artifacts/ci/llgo-service-reference.json" -count=1 -timeout=2m ./...
-      - name: Execute complete P3 HTTP measurement under LLGo
-        if: matrix.shard == 'threads'
-        working-directory: benchmarks/p3io
-        run: |
-          llgo test -O3 -lto=full -json -debug-trace "$GITHUB_WORKSPACE/artifacts/ci/llgo-p3io.json" -count=1 -timeout=2m ./...
       - name: Preserve shard execution and timing evidence
         if: always()
         timeout-minutes: 2

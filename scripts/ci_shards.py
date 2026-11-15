@@ -8,6 +8,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 INPUTS = {'core2', 'core3', 'core_extensions', 'preview1', 'wasi_threads', 'component'}
+MODULES = {'benchmarks/p3io'}
 
 
 def validate(shards, root=ROOT):
@@ -17,19 +18,27 @@ def validate(shards, root=ROOT):
         for path in (root / directory).rglob('*_test.go')
         if 'testdata' not in path.relative_to(root).parts
     }
-    packages = []
+    packages, modules = [], []
     names = set()
     for shard in shards:
         name = shard['name']
-        if not re.fullmatch('[a-z]+', name) or name in names:
+        if not re.fullmatch('[a-z][a-z0-9]*', name) or name in names:
             raise ValueError('invalid or duplicate shard name')
         names.add(name)
         paths = shard['packages'].split()
-        if not paths or any(not re.fullmatch(r'\./(?:internal|pkg|cmd)/[a-z0-9_/-]+', p) for p in paths):
-            raise ValueError('invalid package list')
+        directory = shard.get('directory', '.')
         if not set(shard['inputs'].split()) <= INPUTS:
             raise ValueError('invalid shard input/CLI configuration')
+        if directory != '.':
+            if directory not in MODULES or paths != ['./...'] or shard['inputs']:
+                raise ValueError('invalid auxiliary module configuration')
+            modules.append(directory)
+            continue
+        if not paths or any(not re.fullmatch(r'\./(?:internal|pkg|cmd)/[a-z0-9_/-]+', p) for p in paths):
+            raise ValueError('invalid package list')
         packages.extend(paths)
+    if Counter(modules) != Counter(MODULES):
+        raise ValueError('auxiliary module coverage mismatch')
     duplicate = [p for p, count in Counter(packages).items() if count != 1]
     if duplicate or set(packages) != expected:
         raise ValueError(f'package coverage mismatch: duplicates={duplicate}, '
@@ -69,7 +78,10 @@ def main():
             else:
                 output.write('packages=' + selected['packages'] + '\n')
                 output.write('inputs=' + selected['inputs'] + '\n')
-    print(f'Validated {count} test packages, once each across {len(shards)} LLGo shards')
+                directory = selected.get('directory', '.')
+                output.write('directory=' + directory + '\n')
+                output.write('timeout=' + ('8m' if directory == '.' else '2m') + '\n')
+    print(f'Validated {count} root test packages and {len(MODULES)} auxiliary module, once each across {len(shards)} LLGo shards')
 
 
 if __name__ == '__main__':

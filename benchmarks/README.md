@@ -76,3 +76,8 @@ and CLI jobs restore that shared cache; default-branch pushes refresh only the
 library objects. Every existing test package and the production LLGo profile
 remain unchanged. This addresses PR-scoped cold caches; it is not a benchmark
 speedup or a reduced semantic matrix.
+
+The LLGo P3 measurement module has an independent shard on each platform. It
+keeps its original2-minute test timeout and runs once, separating its full-LTO
+link from the thread-compatibility executable. The shard validator covers all32
+root test packages and this auxiliary module, including its working directory.
