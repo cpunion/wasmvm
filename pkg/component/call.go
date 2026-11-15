@@ -20,6 +20,9 @@ type Function struct {
 	lift      func(*vm.Caller, []Value) (*Value, error)
 	start     func(*vm.Caller, taskArguments, taskResolution) (*componentTask, error)
 	plan      *validate.CanonicalFunction
+	// Accessed only while holding the instance Store lease. These descriptors
+	// contain type metadata; each handoff still creates a fresh transaction.
+	resultReceivers [2]*Function
 }
 
 type CallResult struct {
