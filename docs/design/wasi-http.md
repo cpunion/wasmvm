@@ -200,6 +200,10 @@ materialization budget. The one-byte excess probe detects overflow without
 retaining that excess byte. External forwarded bodies use the same typed byte
 source contract. A late guest failure discards the collected response; successful
 return includes guest completion rather than stopping at the first result.
+After that join, the buffered path releases its retained body directly, without
+streaming notification channels or a streaming body wrapper. Already completed
+endpoint reads check cancellation at handoff without registering wake callbacks;
+pending reads retain both independent cancellation notifications.
 
 The P3 measurement harness explicitly selects `--response-mode streaming` or
 `--response-mode buffered`. Both check every response byte, status, header and

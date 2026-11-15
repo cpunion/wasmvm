@@ -19,7 +19,7 @@ execution never silently switches to one of them.
 The source APIs and proposal snapshots are experimental. Performance and
 production-release acceptance remain open; see [current measurements](#measured-performance)
 and the [release contract](docs/release-readiness.md). Supported builds pin
-Go1.27.3, LLGo `0539ea6e`, LLVM22.1.8 and the LLGo `-O3 -lto=full` profile.
+Go1.27.3, LLGo `5860fb6f`, LLVM22.1.8 and the LLGo `-O3 -lto=full` profile.
 
 ## Project status
 
@@ -45,8 +45,9 @@ their integration and final CI evidence.
 | macOS arm64 native | Yes; C compiler/cgo required | Yes; pinned release profile | CI target |
 | Other native OS/architecture combinations | Not validated | Not validated | No native support claim |
 
-CI runs Go and LLGo on both targets; eight LLGo shards execute all 32 test
-packages exactly once per target. Shared Go checks include race detection,
+CI runs Go and LLGo on both targets; eight root LLGo shards execute all 32 test
+packages exactly once per target, plus a separate P3 measurement-module shard.
+Shared Go checks include race detection,
 native pointer ownership, fuzz smoke checks and a **90% statement-coverage gate
 for each executable package**. The coverage badge states this policy, not an
 aggregate measurement. The CI badge tracks PR runs; merging requires the final
@@ -275,6 +276,14 @@ These are dated advisory events with exact source/toolchain identities. Hosts,
 compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
+
+The [latest-main P3 study](docs/research/performance-latest-main-p3-2026-11-16.md)
+pins LLGo **5860fb6f** and removes completed-read watchers, redundant completion
+wakes and buffered response handoffs. Go complete-request CPU falls **0.9%**;
+requests use **7 fewer Go / 8 fewer LLGo allocations**. LLGo CPU gains remain
+unproven. Go and LLGo CPU points remain roughly **2.5x / 8–9x Wasmtime** with
+unresolved reference controls. Collector/synchronization diagnostics and the
+latest compiler's adverse observations remain explicit.
 
 The [ordered optimization study](docs/research/performance-ordered-optimizations-2026-11-15.md)
 reports corrected arm64 generic-call improvements of **4.3% Go /6.3% LLGo**,
