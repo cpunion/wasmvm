@@ -17,7 +17,11 @@ PRIOR_RUN = 43537347012
 PRIOR_SOURCE = '5e5e6a44b2062d61bfa569f384232483763d3380'
 HEAD = '95943842febc2d3571547c72f2d62bc79f232f88'
 BASE = 'b546ea76663c2ee763ce303a7835e1f83096e59d'
-PROFILES = {'text-page': ('-Wl,-z,separate-code', 0)}
+PROFILES = {
+    'loop-64': ('-Wl,-mllvm,-align-loops=64', 0),
+    'branch-32': ('-Wl,-mllvm,-x86-align-branch-boundary=32,-mllvm,-x86-align-branch=fused+jcc+jmp+indirect', 0),
+    'loop-64-branch-32': ('-Wl,-mllvm,-align-loops=64,-mllvm,-x86-align-branch-boundary=32,-mllvm,-x86-align-branch=fused+jcc+jmp+indirect', 0),
+}
 
 SYMBOL = 'github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).runSlots'
 
@@ -88,8 +92,6 @@ def build(folder, role):
         print('building', name, flag, flush=True)
         record = routing_compare.compile_runner(command, target, env)
         layout = inspect(binary, probe / (name + '.asm'), expected)
-        if layout['text'] % 4096:
-            raise ValueError('executable segment is not page aligned')
         fragment['builds'][name] = dict(original, **record, toolchain=selected,
             experimentalLinkerFlags=[flag], effectiveEnvironment={'LDFLAGS': flag},
             layoutDiagnostic=layout, frozenSourceRun=SOURCE_RUN,
