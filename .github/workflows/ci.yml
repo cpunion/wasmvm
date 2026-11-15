@@ -1,6 +1,8 @@
 name: Go and LLGo
 
 on:
+  push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
     inputs:
@@ -22,6 +24,7 @@ env:
 
 jobs:
   plan:
+    if: github.event_name != 'push'
     name: Verify semantic shard coverage
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -30,6 +33,7 @@ jobs:
       - run: python3 scripts/ci_shards.py
 
   go:
+    if: github.event_name != 'push'
     name: go / ${{ matrix.platform.name }}
     runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 12
@@ -145,10 +149,65 @@ jobs:
             artifacts/core3/evidence.json
           if-no-files-found: error
 
+  llgo-libraries:
+    # One union graph per platform, without a final link or test executable.
+    # Main pushes warm the cache only; PRs retain every existing semantic job.
+    name: Warm LLGo libraries / ${{ matrix.platform.name }}
+    runs-on: ${{ matrix.platform.runner }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - {name: linux-amd64, runner: ubuntu-24.04}
+          - {name: macos-arm64, runner: macos-15}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Install Linux LLVM dependencies
+        if: runner.os == 'Linux'
+        run: bash scripts/setup_linux_llgo.sh
+      - name: Set up pinned LLGo
+        id: llgo
+        uses: xgo-dev/setup-llgo@4b2f2c9aed3fd28f139615fe636dee5e2ce5bc91
+        with:
+          llgo-version: ${{ env.LLGO_REVISION }}
+          install-method: source
+          go-version: ${{ env.GO_VERSION }}
+          llvm-version: '22'
+          install-dependencies: ${{ runner.os != 'Linux' }}
+          cache: true
+      - name: Verify compiler and locate package cache
+        id: cache-path
+        env:
+          ACTUAL_LLGO_REVISION: ${{ steps.llgo.outputs.llgo-revision }}
+        run: |
+          test "$ACTUAL_LLGO_REVISION" = "$LLGO_REVISION"
+          printf 'path=%s\n' "$(llgo env LLGO_PKG_CACHE_DIR)" >> "$GITHUB_OUTPUT"
+      - name: Restore shared library objects
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ steps.cache-path.outputs.path }}
+          key: llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-shared-${{ github.sha }}
+          restore-keys: |
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-shared-
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-
+      - name: Compile reusable libraries without final linking
+        run: |
+          mkdir -p artifacts/ci
+          llgo build -O3 -lto=full -debug-trace artifacts/ci/llgo-libraries.json ./internal/... ./pkg/... testing testing/internal/testdeps
+      - name: Preserve frontend and object compilation timings
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: llgo-libraries-${{ matrix.platform.name }}
+          path: artifacts/ci/llgo-libraries.json
+          if-no-files-found: warn
+          retention-days: 30
+
   llgo:
+    if: github.event_name != 'push'
+    needs: llgo-libraries
     name: llgo / ${{ matrix.platform.name }} / ${{ matrix.shard }}
-    env:
-      LLGO_CACHE_GROUP: ${{ matrix.shard }}
     runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 12
     strategy:
@@ -187,13 +246,14 @@ jobs:
           go version
           llgo version
           printf 'path=%s\n' "$(llgo env LLGO_PKG_CACHE_DIR)" >> "$GITHUB_OUTPUT"
-      - name: Restore LLGo package objects
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      - name: Restore shared LLGo package objects
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ steps.cache-path.outputs.path }}
-          key: llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-${{ env.LLGO_CACHE_GROUP }}-${{ github.sha }}
+          key: llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-shared-${{ github.sha }}
           restore-keys: |
-            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-${{ env.LLGO_CACHE_GROUP }}-
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-shared-
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-${{ matrix.shard }}-
             llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-${{ matrix.shard == 'entry' && 'cli' || 'component' }}-
             llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-
       - name: Prepare this shard's pinned inputs
@@ -243,11 +303,11 @@ jobs:
           if-no-files-found: error
 
   llgo-cli:
+    if: github.event_name != 'push'
+    needs: llgo-libraries
     name: llgo CLI / ${{ matrix.platform.name }}
     runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 10
-    env:
-      LLGO_CACHE_GROUP: cli
     strategy:
       fail-fast: false
       matrix:
@@ -278,20 +338,29 @@ jobs:
           go version
           llgo version
           printf 'path=%s\n' "$(llgo env LLGO_PKG_CACHE_DIR)" >> "$GITHUB_OUTPUT"
-      - name: Restore LLGo package objects
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      - name: Restore shared LLGo package objects
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ steps.cache-path.outputs.path }}
-          key: llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-${{ env.LLGO_CACHE_GROUP }}-${{ github.sha }}
+          key: llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-shared-${{ github.sha }}
           restore-keys: |
-            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-${{ env.LLGO_CACHE_GROUP }}-
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-shared-
+            llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-cli-
             llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-component-
             llgo-pkg-v1-${{ matrix.platform.name }}-${{ env.GO_VERSION }}-${{ env.LLGO_REVISION }}-O3-full-
       - name: Build and execute the LLGo CLI
         run: |
-          mkdir -p artifacts/cli
-          llgo build -O3 -lto=full -o artifacts/cli/wasmvm ./cmd/wasmvm
+          mkdir -p artifacts/cli artifacts/ci
+          llgo build -O3 -lto=full -debug-trace artifacts/ci/llgo-cli.json -o artifacts/cli/wasmvm ./cmd/wasmvm
           python3 scripts/package_cli.py artifacts/cli/wasmvm --compiler llgo --native available --output artifacts/cli-packages
+      - name: Preserve CLI compile and link timings
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: llgo-cli-timings-${{ matrix.platform.name }}
+          path: artifacts/ci/llgo-cli.json
+          if-no-files-found: warn
+          retention-days: 30
       - name: Preserve verified LLGo CLI candidate packages
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -301,6 +370,7 @@ jobs:
           retention-days: 30
 
   race:
+    if: github.event_name != 'push'
     name: Go race / linux-amd64
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -319,6 +389,7 @@ jobs:
         run: go test -race -count=1 -timeout=8m -skip 'TestCompleteCore[23]|Test.*(Proposal|Spec)$|TestP1Conformance$|TestOfficialGoGuest$|TestUpstream(P2WorldConsumers|WASIConsumers)$' ./...
 
   quality:
+    if: github.event_name != 'push'
     name: Go quality / linux-amd64
     runs-on: ubuntu-24.04
     timeout-minutes: 10

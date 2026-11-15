@@ -202,6 +202,24 @@ about a compiler defect or broad interpreter speedup follows from these points.
 The longest final benchmark job is memory/SIMD at9m10s; shared build6m41s,
 sustained Threads6m06s. All seven selected jobs succeed without a rerun.
 
+## CI cold-cache correction
+
+The first final-head semantic run canceled the macOS CLI at10 minutes and the
+async shard at12 minutes. The CLI log shows no package-object cache hit and an
+unfinished native linker. Observed matching caches belong to PR-scoped refs,
+not a reusable default-branch warmup. [Cache scope rules](https://github.com/actions/cache#cache-scopes)
+explain why the preceding PR's objects do not supply the next PR's baseline.
+These are build-budget failures, not successful guest execution.
+
+A single no-link library-union build now runs per platform before the unchanged
+semantic/CLI matrix. Consumers restore its profile-qualified cache without
+uploading duplicate shard copies. Main pushes run only these two library warmups,
+so future PRs can restore default-branch objects without repeating semantic
+execution on merge. All23 existing semantic/shared checks remain; two cache
+producer checks are added. All32 test packages, pinned compiler identity and
+`-O3 -lto=full` execution remain mandatory. Local union compilation succeeds and
+its trace contains no native link; final-head hosted timing is still required.
+
 ## Validation, evidence and remaining work
 
 All32 root Go test packages pass, all31 executable packages remain above90%

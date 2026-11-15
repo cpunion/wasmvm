@@ -8316,5 +8316,27 @@
     "initial": "https://github.com/cpunion/wasmvm/actions/runs/43724193408",
     "corrected": "https://github.com/cpunion/wasmvm/actions/runs/43726122216"
   },
-  "status": "Advisory optimization event; unresolved controls, adverse outcomes and incomplete controlled portfolio acceptance remain explicit."
+  "status": "Advisory optimization event; unresolved controls, adverse outcomes and incomplete controlled portfolio acceptance remain explicit.",
+  "ciCorrection": {
+    "priorRun": "https://github.com/cpunion/wasmvm/actions/runs/43728454679",
+    "priorHead": "0d2c8730c0839aa8a98d1473d662db0bdd3d1271",
+    "observedCanceledJobs": [
+      "llgo CLI / macos-arm64 (10-minute job budget; cold package-cache miss; unfinished lld)",
+      "llgo / macos-arm64 / async (12-minute job budget)"
+    ],
+    "observedCacheScopes": [
+      "refs/pull/182/merge",
+      "refs/pull/183/merge",
+      "refs/pull/184/merge"
+    ],
+    "cacheScopeDocumentation": "https://github.com/actions/cache#cache-scopes",
+    "sharedLibraryCommand": "llgo build -O3 -lto=full -debug-trace artifacts/ci/llgo-libraries.json ./internal/... ./pkg/... testing testing/internal/testdeps",
+    "localWarmWallSeconds": 10.056131,
+    "localNativeLinkEvents": [],
+    "traceSha256": "445818191229eb71bf3986dde505bf7e515ceeaa271b33b03496bc6f8ef532a6",
+    "semanticAndSharedChecks": 23,
+    "newLibraryProducerChecks": 2,
+    "packageCoverage": "The same32 test packages, once per LLGo platform; no extra test execution in library warmups or main pushes.",
+    "requirement": "All25 final-head checks must succeed before merge; no controlled performance gate is closed by cache warming."
+  }
 }
