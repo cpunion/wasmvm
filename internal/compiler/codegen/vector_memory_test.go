@@ -71,7 +71,7 @@ func TestNativeVectorMemoryBoundsLanesAndSpills(t *testing.T) {
 			for _, offset := range []uint32{0, 1, 16, 4095, 4096, 8193, 65535, 0xffffffff} {
 				for mode := 0; mode < 4; mode++ {
 					profiles := []X86Features{0}
-					if runtime.GOARCH == "amd64" && op >= 0xfd0001 && op <= 0xfd000a {
+					if runtime.GOARCH == "amd64" && (op >= 0xfd0001 && op <= 0xfd000a || op >= 0xfd0054 && op <= 0xfd005b) {
 						for _, profile := range []X86Features{X86SSE41, X86AVX2} {
 							if profile&^X86Features(native.CPUFeatures()) == 0 {
 								profiles = append(profiles, profile)

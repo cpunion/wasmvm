@@ -110,10 +110,9 @@ func (e *functionEmitter) callPlan(label int, indices []slots.Slot) {
 // directly, without reloading a just-written continuation from memory.
 func (e *functionEmitter) callEntryFrame(pc uint64) {
 	e.registerMove(e.callFrame(), e.callReg(4), true)
-	e.contextConst(nativeabi.RootMapOffset, 0)
-	if pc != 0 {
-		e.constant(0, pc)
-	}
+	// Ordinary entry established root map zero for this native run. Private
+	// calls never change it; every body uses the same conservative root map.
+	e.constant(0, pc)
 }
 
 func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
@@ -343,9 +342,11 @@ func (e *functionEmitter) linkedReturn(pc int) {
 		e.callStore(0, e.callContext(), uint32(nativeabi.FunctionOffset))
 	}
 	e.callPopState()
-	e.callLoad(0, e.callReg(3), nativeabi.CallPCOffset)
-	e.callAdvance(0, 1)
-	e.callStore(0, e.callContext(), uint32(nativeabi.ContinuationOffset))
+	if !e.unmetered {
+		e.callLoad(0, e.callReg(3), nativeabi.CallPCOffset)
+		e.callAdvance(0, 1)
+		e.callStore(0, e.callContext(), uint32(nativeabi.ContinuationOffset))
+	}
 	if e.frameRegisters {
 		e.callAdvance(callTop, -1)
 	} else {

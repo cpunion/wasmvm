@@ -7,6 +7,11 @@ import "github.com/cpunion/wasmvm/internal/compiler/slots"
 // selection, then retain an independent continuation for each consumed PC.
 func (e *functionEmitter) combinePlain(pc, start int, out *CompiledFunction) (int, bool) {
 	in := e.f.Code[pc]
+	if end, ok := e.combineByteSwap(pc); ok {
+		out.FusedIntegers++
+		out.ByteSwaps++
+		return end, true
+	}
 	if end, ok := e.combineVectorAffine(pc); ok {
 		out.FusedVectors++
 		return end, true

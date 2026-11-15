@@ -323,8 +323,12 @@ func (c *Codec) validate(t *model.Type, v Value, depth uint32) error {
 	if err := c.visit(depth); err != nil {
 		return err
 	}
-	if _, err := c.Layouts.Build(t); err != nil {
-		return err
+	if depth == 0 {
+		// Building the immutable root validates and caches every descendant.
+		// Recursive value visits still charge their own budgets and depth.
+		if _, err := c.Layouts.Build(t); err != nil {
+			return err
+		}
 	}
 	if scalarKind(t.Kind) {
 		_, err := LowerScalar(Scalar{t.Kind, v.Bits})

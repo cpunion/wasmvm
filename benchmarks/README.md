@@ -12,6 +12,12 @@ retain API process startup and every guest phase; production CLI builds/timings
 run only in the explicit full suite. Build durations are recorded separately
 and printed as they complete, so linking delays remain visible.
 
+Routing source comparisons now include same-binary A/A aliases for both Go and
+LLGo, in interpreter and native modes. Every declared block contributes to its
+control interval. Named reference timings remain separately qualified; hosted
+results do not close controlled acceptance. The [ordered optimization event](../docs/research/performance-ordered-optimizations-2026-11-15.md)
+retains the rejected combined candidate, causal ablations and corrected data.
+
 The [2026-11-01 owned-engine audit](../docs/research/performance-2026-11-01.md)
 measures the complete existing Core portfolio, modern GC/Threads and selected
 P1/component/P2/async boundaries. Dispatch Runtime benchmarks with `suite=survey`
@@ -64,3 +70,14 @@ The [tool manifest](tools-linux-amd64.json) records release URLs, archive sizes 
 The job publishes a Markdown summary and a `runtime-benchmark-comparison` artifact containing separate `phases/` and `cli/` raw observations and reports, retained for 30 days. The phase series uses three fresh processes per configuration/workload, each with a separately timed first call, two warmups, and seven measured warm calls. It directly measures startup, loading, engine/store setup, preparation, instantiation, lookup, calls, and cleanup. A separate job creates or updates one marked PR comment with baseline/head medians, percentage changes, competitor results, commit identities, and the run link. It checks that both PR head and base still match before posting, so an obsolete run cannot replace a current result. The comment job does not execute checkout code and is the only job granted comment-writing permission. Same-repository PRs receive automatic comments; fork PRs retain read-only tokens and publish the job summary and artifact.
 
 Incorrect output, traps, missing tools, broken downloads, and incomplete result matrices fail the job. Timing changes are advisory because hosted runners and these small samples do not provide a stable performance budget. In particular, an apparent improvement between two identical candidate versions is not an optimization. The report labels the process-level metric and backend differences; it does not treat interpreter/native timings as the same execution strategy or compare a Linux run numerically against the earlier macOS baseline.
+
+CI library caches are compiled once per platform without a final link. Semantic
+and CLI jobs restore that shared cache; default-branch pushes refresh only the
+library objects. Every existing test package and the production LLGo profile
+remain unchanged. This addresses PR-scoped cold caches; it is not a benchmark
+speedup or a reduced semantic matrix.
+
+The LLGo P3 measurement module has an independent shard on each platform. It
+keeps its original2-minute test timeout and runs once, separating its full-LTO
+link from the thread-compatibility executable. The shard validator covers all32
+root test packages and this auxiliary module, including its working directory.

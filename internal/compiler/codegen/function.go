@@ -32,6 +32,7 @@ type CompiledFunction struct {
 	ReferenceSlots                []uint32
 	Helpers, Calls, EdgeCopies    uint32
 	FusedIntegers                 uint32
+	ByteSwaps                     uint32
 	MixedIntegers                 uint32
 	ForwardedPredicates           uint32
 	UsesMemory                    bool

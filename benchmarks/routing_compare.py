@@ -189,8 +189,10 @@ def build(args):
                     compilerRevision=toolchain['revision'], mode='api', goos=toolchain['goos'], goarch=toolchain['goarch'], policy=POLICY)
             print('built', name, flush=True)
     for role in ['base', 'head']:
-        for backend in ['interpreter', 'native']:
-            runtimes['aa-' + role + '-llgo-' + backend] = dict(runtimes[role + '-llgo-' + backend])
+        for compiler in ['go', 'llgo']:
+            for backend in ['interpreter', 'native']:
+                name = role + '-' + compiler + '-' + backend
+                runtimes['aa-' + name] = dict(runtimes[name])
     revision = ci.capture(['git', '-C', str(head), 'rev-parse', 'HEAD'])
     target = out / 'wazero'
     own_build.archive(head, revision, target, ('benchmarks/embedded/wazero',))

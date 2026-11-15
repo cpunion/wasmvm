@@ -54,12 +54,34 @@ class ShardsTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 validate_matrix(self.shards, changed)
 
+    def test_auxiliary_module_cannot_hide_root_coverage_or_escape_directory(self):
+        for mode in ('missing', 'duplicate', 'directory', 'packages', 'root'):
+            with self.subTest(mode=mode):
+                shards = copy.deepcopy(self.shards)
+                auxiliary = shards[-1]
+                if mode == 'missing':
+                    shards.pop()
+                elif mode == 'duplicate':
+                    duplicate = copy.deepcopy(auxiliary)
+                    duplicate['name'] = 'duplicate'
+                    shards.append(duplicate)
+                elif mode == 'directory':
+                    auxiliary['directory'] = '../llgo'
+                elif mode == 'packages':
+                    auxiliary['packages'] = './...;echo'
+                else:
+                    shards[0]['directory'] = auxiliary['directory']
+                with self.assertRaises(ValueError):
+                    validate(shards)
+
     def test_selected_job_uses_the_authoritative_package_and_input_lists(self):
         with tempfile.TemporaryDirectory() as directory:
             for shard in self.shards:
                 target = Path(directory) / shard['name']
                 subprocess.run([sys.executable, str(ROOT / 'scripts/ci_shards.py'), '--shard', shard['name'], '--github-output', str(target)], check=True, capture_output=True)
-                self.assertEqual(target.read_text(), 'packages=' + shard['packages'] + '\ninputs=' + shard['inputs'] + '\n')
+                module_directory = shard.get('directory', '.')
+                timeout = '8m' if module_directory == '.' else '2m'
+                self.assertEqual(target.read_text(), 'packages=' + shard['packages'] + '\ninputs=' + shard['inputs'] + '\ndirectory=' + module_directory + '\ntimeout=' + timeout + '\n')
             target = Path(directory) / 'invalid'
             failed = subprocess.run([sys.executable, str(ROOT / 'scripts/ci_shards.py'), '--shard', 'missing', '--github-output', str(target)], capture_output=True)
             self.assertNotEqual(failed.returncode, 0)
