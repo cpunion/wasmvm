@@ -526,7 +526,7 @@ foreign/reentrant stack changes still use the ordinary entry and common-machine
 validation; changing invocation budgets is checked before any resumed native run.
 Memory preparation, fuel boundaries, cancellation and root publication after the
 header remain shared. Nonlinked bodies retain their ordinary machine bytes.
-No second executor, register convention or public C record is introduced.
+The shared executor and public C record remain unchanged.
 
 An unmetered compiler-owned return resumes at its exact original instruction PC.
 Its private stub restores the frame/root state, memory view, immutable scalar
