@@ -737,3 +737,23 @@ and linked-call returns. It cannot retain addresses across a host call or GC
 relocation. Calls, polls and runtime helpers cannot carry cached addresses across reentry.
 Root hints determine profitability only. Precise mode retains the
 established path. See the [source-bound qualification](../research/performance-amd64-heap-cache-2026-11-07.md).
+
+### Private call state and byte permutations
+
+The ordinary entry initializes the conservative root map for the entire native
+run. Private entries retain that invariant and explicitly initialize their
+dispatch PC. Unmetered private returns use their static resume labels,
+publishing a continuation only at an actual exit. Metered returns keep their
+ordinary dispatch publication. Complete value transfers retain the integer
+load/store path, including opaque high words and large frame offsets.
+
+A bounded amd64 unmetered byte-expression selector recognizes a complete i32
+byte reversal from whole-byte shifts, rotations, masks and compatible OR/XOR
+merges. It emits BSWAP only when every observable intermediate is unchanged,
+dead, a constant, or a recoverable masked projection of the result. Every
+original PC retains its independent ordinary entry. Register pressure,
+selection boundaries, unsupported expressions and precise fuel retain the
+original instructions. The ARM candidate and wider logical-immediate selection
+were rejected after the combined measurement and causal ablations. SSE2/SSE4.1
+lane forms retain explicit CPU feature gates and exact-width bounds checks;
+shared ordinary memory accesses and every backedge poll remain.

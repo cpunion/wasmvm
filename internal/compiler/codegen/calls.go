@@ -84,12 +84,14 @@ func (e *functionEmitter) callCopy(count uint32, cancelled int) {
 	e.callAdvance(6, 4)
 	e.callShift(0, 4)
 	e.callAddFrame(0)
-	e.callValueMemory(e.callReg(0), 0, false)
+	e.callLoad(1, e.callReg(0), 0)
+	e.callLoad(2, e.callReg(0), 8)
 	e.callMemory(0, e.callReg(7), 0, false, true)
 	e.callAdvance(7, 4)
 	e.callShift(0, 4)
 	e.callAdd(0, 0, 4)
-	e.callValueMemory(e.callReg(0), 0, true)
+	e.callStore(1, e.callReg(0), 0)
+	e.callStore(2, e.callReg(0), 8)
 	e.callCancelled(cancelled)
 	e.callAdvance(5, -1)
 	e.callTest(5)
@@ -194,8 +196,10 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	args := e.f.Args[in.Extra : in.Extra+count]
 	if len(args) <= 8 {
 		for i, slot := range args {
-			e.callValueMemory(e.callFrame(), uint32(slot)*16, false)
-			e.callValueMemory(e.callReg(4), uint32(i)*16, true)
+			e.callLoad(0, e.callFrame(), uint32(slot)*16)
+			e.callLoad(1, e.callFrame(), uint32(slot)*16+8)
+			e.callStore(0, e.callReg(4), uint32(i)*16)
+			e.callStore(1, e.callReg(4), uint32(i)*16+8)
 		}
 	} else {
 		e.callAddress(inputs, 6)

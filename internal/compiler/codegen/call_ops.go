@@ -70,35 +70,6 @@ func (e *functionEmitter) callLoad(n, base byte, off uint32) {
 func (e *functionEmitter) callStore(n, base byte, off uint32) {
 	e.callMemory(n, base, off, true, false)
 }
-
-// Both guest frames have already passed complete bounds/quota checks. Use the
-// reserved vector scratch for a complete value, preserving opaque high words.
-// No live guest vector occupies scratch zero after caller spills.
-func (e *functionEmitter) callValueMemory(base byte, offset uint32, store bool) {
-	if e.a.arch == "amd64" {
-		e.a.bytes(0xf3)
-		if base >= 8 {
-			e.a.bytes(0x41)
-		}
-		op := byte(0x6f) // MOVDQU xmm0, [base+offset].
-		if store {
-			op = 0x7f
-		}
-		e.a.bytes(0x0f, op, 0x80|base&7)
-		e.a.word(offset)
-		return
-	}
-	if offset%16 != 0 || offset/16 >= 4096 {
-		e.a.aconst(uint32(e.callReg(7)), uint64(offset), true)
-		e.a.word(0x8b000000 | uint32(e.callReg(7))<<16 | uint32(base)<<5 | uint32(e.callReg(7)))
-		base, offset = e.callReg(7), 0
-	}
-	op := uint32(0x3dc00000) // LDR q0, [base+offset].
-	if store {
-		op = 0x3d800000
-	}
-	e.a.word(op | offset/16<<10 | uint32(base)<<5)
-}
 func (e *functionEmitter) callAdd(dst, left, right byte) {
 	d, l, r := e.callReg(dst), e.callReg(left), e.callReg(right)
 	if e.a.arch == "amd64" {

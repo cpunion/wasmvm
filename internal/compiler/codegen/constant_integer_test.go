@@ -147,7 +147,7 @@ func TestARMConstantIntegerSelectionAndColdAliases(t *testing.T) {
 			fused bool
 		}{
 			{0, 4095, true}, {0, 4096, false}, {1, 127, true}, {2, 4, true}, {2, 9, true}, {2, 7, false},
-			{7, 1, true}, {7, 8191, true}, {7, 0x1555, false}, {8, 127, true}, {9, 128, true},
+			{7, 1, true}, {7, 8191, true}, {7, 0x1555, false}, {8, 127, false}, {9, 128, false},
 			{10, 0, true}, {11, 66, true}, {12, 127, true}, {13, 1 << 63, true}, {14, ^uint64(0), true},
 		} {
 			typ, literal, first, constant := wasm.I32, uint32(0x41), uint32(0x6a), tc.bits

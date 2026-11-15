@@ -51,7 +51,7 @@ func byteSwapFixture() *slots.Function {
 }
 
 func TestByteSwapSelectionAndColdFrames(t *testing.T) {
-	for _, arch := range []string{"amd64", "arm64"} {
+	for _, arch := range []string{"amd64"} {
 		f := byteSwapFixture()
 		e := functionEmitter{f: f, a: &assembler{arch: arch}, unmetered: true, registers: map[slots.Slot]byte{0: 3, 5: 12}}
 		if end, ok := e.combineByteSwap(0); !ok || end != 18 {
@@ -105,7 +105,7 @@ func TestByteSwapSelectionAndColdFrames(t *testing.T) {
 	}
 	emit(slots.ControlBase+uint32(ir.Return), slots.NoSlot, slots.NoSlot, slots.NoSlot, 0)
 	f.Code[len(f.Code)-1].Count = uint32(len(f.Args))
-	for _, arch := range []string{"amd64", "arm64"} {
+	for _, arch := range []string{"amd64"} {
 		e := functionEmitter{f: f, a: &assembler{arch: arch}, unmetered: true, registers: map[slots.Slot]byte{0: 3, 1: 12, 2: 13, 3: 14, 4: 15}}
 		if end, ok := e.combineByteSwap(0); !ok || end != 9 {
 			t.Fatal("live projections", arch, end, ok)
@@ -135,7 +135,7 @@ func TestByteSwapApplicationSelection(t *testing.T) {
 				swaps += c.ByteSwaps
 			}
 			t.Log(producer, arch, "byte swaps", swaps)
-			if swaps == 0 {
+			if (swaps != 0) != (arch == "amd64") {
 				t.Fatal("producer byte permutations were not selected", producer, arch)
 			}
 		}

@@ -44,7 +44,7 @@ func mergeBytes(a, b uint32, xor bool) (uint32, bool) {
 // instruction sequence. Dead intermediates may disappear; original PCs retain
 // their ordinary cold entries, and precise-fuel code retains every operation.
 func (e *functionEmitter) combineByteSwap(start int) (int, bool) {
-	if !e.unmetered || start+2 >= e.codeLimit() {
+	if !e.unmetered || e.a.arch != "amd64" || start+2 >= e.codeLimit() {
 		return 0, false
 	}
 	first, next := e.f.Code[start], e.f.Code[start+1]
@@ -148,15 +148,11 @@ func (e *functionEmitter) combineByteSwap(start int) (int, bool) {
 			}
 			masks[slot] = mask
 		}
-		if e.a.arch == "arm64" {
-			e.a.word(0x5ac00800 | uint32(l)<<5 | uint32(d)) // REV Wd, Wn.
-		} else {
-			e.registerMove(d, l, false)
-			if d >= 8 {
-				e.a.bytes(0x41)
-			}
-			e.a.bytes(0x0f, 0xc8|d&7) // BSWAP r32.
+		e.registerMove(d, l, false)
+		if d >= 8 {
+			e.a.bytes(0x41)
 		}
+		e.a.bytes(0x0f, 0xc8|d&7) // BSWAP r32.
 		// Preserve observable intermediate words without replaying the shuffle.
 		// Masked projections of the final permutation need one logical operation.
 		for _, slot := range order {
