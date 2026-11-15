@@ -20,7 +20,7 @@ import own_build
 
 SYMBOL = "github.com/cpunion/wasmvm/internal/engine/execute.(*Execution).runSlotsLoop"
 BASE = "113daaad50547e5ac8f994d63909e70f2b635e0c"
-FIX = "b96415f25a0ec7067ac4e4ab3765ce38ba057d4b"
+FIX = "676d83db29f16096644f34758fe2f0cfbe7ae26a"
 compilers = {
     "base": (shutil.which("llgo"), os.environ["LLGO_ROOT"], BASE),
     "fix": (str(ROOT / "compiler/llgo-diag"), str(ROOT / "compiler"), FIX),

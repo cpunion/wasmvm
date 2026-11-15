@@ -901,7 +901,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: cpunion/llgo
-          ref: b96415f25a0ec7067ac4e4ab3765ce38ba057d4b
+          ref: 676d83db29f16096644f34758fe2f0cfbe7ae26a
           path: compiler
           persist-credentials: false
       - name: Build candidate compiler
