@@ -1,0 +1,4927 @@
+{
+  "identity": {
+    "source": "26b6d6a68eac30b3094d1446f507d9378f5fc90f",
+    "base": "da68bf246a015a360c04471ee17d1f1ebd260fb2",
+    "command": [
+      "go",
+      "build",
+      "-overlay",
+      "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/component-call-setup-20261115/overlay.json",
+      "-o",
+      "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/component-call-setup-20261115/head-go-runner",
+      "."
+    ],
+    "buildSeconds": 2.987969375215471,
+    "sha256": "bdaf20444bf89d513eb187a39a4263bcede9bc9e4f27aaf6660c908782f729e4",
+    "llgo": {
+      "revision": "0539ea6e2d23a94f8cbb1f9d408c909766ce133b",
+      "flags": [
+        "-O3",
+        "-lto=full"
+      ],
+      "sha256": "33b54cb340435a09f1a781ffc99e4bbc58fe824ba494ed520238014fcd7a0d0a",
+      "LLVM": "22.1.8",
+      "Go": "1.27.3"
+    }
+  },
+  "host": "Apple M4 Max/macOS arm64; other user/desktop activity recorded; no owned measurement-host build/test/profile/analysis/edit/pruning overlaps timed events. Fixed cohorts not extended or pooled.",
+  "toolchains": {
+    "Go": "1.27.3",
+    "LLGo": "0539ea6e2d23a94f8cbb1f9d408c909766ce133b",
+    "LLVM": "22.1.8",
+    "LLGoFlags": [
+      "-O3",
+      "-lto=full"
+    ],
+    "GC": "default production GC"
+  },
+  "reference": "Independent frozen Wasmtime48.0.1 P3 provider; wazero/Wasmer lack equivalent P3 worlds here.",
+  "results": {
+    "go-16": {
+      "processes": 60,
+      "medians": {
+        "base": {
+          "cpuUs": 102.69012247721354,
+          "instructions": 861402.9327636719,
+          "throughput": 31371.367013198615,
+          "allocsPerRequest": 663.0037597656251,
+          "bytesPerRequest": 54232.658203125,
+          "phase_cleanup": 99020.5,
+          "phase_compileValidate": 82129604.0,
+          "phase_engineSetup": 500.0,
+          "phase_exportLookup": 979.5,
+          "phase_firstCall": 17828020.5,
+          "phase_instantiate": 659375.0,
+          "phase_load": 98916.5,
+          "phase_providerSetup": 68604.5,
+          "phase_requestPreparation": 876.0
+        },
+        "head": {
+          "cpuUs": 101.49701131184895,
+          "instructions": 855876.641796875,
+          "throughput": 31706.798056568223,
+          "allocsPerRequest": 655.003369140625,
+          "bytesPerRequest": 53208.6046875,
+          "phase_cleanup": 92666.5,
+          "phase_compileValidate": 85355625.5,
+          "phase_engineSetup": 583.5,
+          "phase_exportLookup": 999.5,
+          "phase_firstCall": 17843104.5,
+          "phase_instantiate": 605104.5,
+          "phase_load": 95479.0,
+          "phase_providerSetup": 67249.5,
+          "phase_requestPreparation": 853.5
+        },
+        "wasmtime": {
+          "cpuUs": 56.461850992838535,
+          "instructions": 242235.74375,
+          "throughput": 39966.5926067905,
+          "allocsPerRequest": 1.00009765625,
+          "bytesPerRequest": 32.0109375,
+          "phase_cleanup": 307875.0,
+          "phase_compileValidate": 69262208.5,
+          "phase_engineSetup": 170187.5,
+          "phase_executorSetup": 53438.0,
+          "phase_exportLookup": 10708.5,
+          "phase_firstCall": 12567062.5,
+          "phase_instantiate": 235082.5,
+          "phase_load": 86916.5,
+          "phase_providerSetup": 286812.5
+        }
+      },
+      "comparisons": {
+        "cpuUs": {
+          "AA": {
+            "base": {
+              "ratio": 0.9942036419656844,
+              "ci95": [
+                0.9813150802139573,
+                1.0077802953880937
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9898833073506524,
+              "ci95": [
+                0.9754189111476773,
+                1.0045103124081034
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9768303012765408,
+              "ci95": [
+                0.9435224100786216,
+                1.0109384064477365
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9899203327863909,
+            "ci95": [
+              0.9799360564587608,
+              0.997540970698946
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.8964371136251779,
+            "ci95": [
+              1.7763385020510085,
+              2.0709824438402276
+            ]
+          }
+        },
+        "instructions": {
+          "AA": {
+            "base": {
+              "ratio": 1.0004209612902193,
+              "ci95": [
+                0.998947684402996,
+                1.0018386535807489
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.999497538682161,
+              "ci95": [
+                0.9977825107131943,
+                1.001131989921851
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9910401422725132,
+              "ci95": [
+                0.9758031159092977,
+                1.0051293362736808
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9944930756626854,
+            "ci95": [
+              0.9928179863510083,
+              0.9961239057447083
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 3.5643753448382074,
+            "ci95": [
+              3.4906958181951757,
+              3.6570288637568336
+            ]
+          }
+        },
+        "throughput": {
+          "AA": {
+            "base": {
+              "ratio": 0.9994347302573309,
+              "ci95": [
+                0.9852543080853359,
+                1.0137128041501442
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.003837487909233,
+              "ci95": [
+                0.9752685775290982,
+                1.0347862618205752
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9964839202009621,
+              "ci95": [
+                0.9830635341753408,
+                1.0088592846655209
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.014710285518634,
+            "ci95": [
+              0.9959707094585533,
+              1.0374851458321346
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.7859832894699776,
+            "ci95": [
+              0.7652355903457562,
+              0.8068947535917167
+            ]
+          }
+        },
+        "allocsPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 1.0000005302571975,
+              "ci95": [
+                0.9999987480043813,
+                1.0000022094081091
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0000003876404775,
+              "ci95": [
+                0.999999686905381,
+                1.000001192741085
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 1.0000877844580187,
+              "ci95": [
+                0.9995609039070721,
+                1.0006441746768384
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9879333342960477,
+            "ci95": [
+              0.987932318693516,
+              0.987934381492161
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 654.750989831489,
+            "ci95": [
+              654.63246659653,
+              654.8629775271228
+            ]
+          }
+        },
+        "bytesPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 1.0000023956223303,
+              "ci95": [
+                0.9999977628133504,
+                1.0000072027810627
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0000017545932034,
+              "ci95": [
+                0.9999965818746209,
+                1.000006833366636
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 1.0031787073325251,
+              "ci95": [
+                0.9912978296260959,
+                1.015250831588189
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9811182501364712,
+            "ci95": [
+              0.9811150054150527,
+              0.9811215900653251
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1651.0129346337737,
+            "ci95": [
+              1642.9711194630509,
+              1657.914541470394
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 1.4928303747599854,
+              "ci95": [
+                1.1273563377628144,
+                1.9355485179982264
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.3190989505096506,
+              "ci95": [
+                0.951901514318217,
+                1.7995826637701837
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.053970238094705,
+              "ci95": [
+                0.9424988144153318,
+                1.2090178438433
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.036125346644731,
+            "ci95": [
+              0.8993897033061934,
+              1.1803380290209062
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.31729677099036385,
+            "ci95": [
+              0.27161372037347464,
+              0.3715997000967704
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0608728201407727,
+              "ci95": [
+                0.9746855615853881,
+                1.1899413572206679
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.985558689201489,
+              "ci95": [
+                0.9359411878059491,
+                1.038941288743997
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0214849161099282,
+              "ci95": [
+                0.9217112507354402,
+                1.13080205884019
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0237188252360576,
+            "ci95": [
+              0.9680060125702169,
+              1.0763016719701053
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.1911250428763962,
+            "ci95": [
+              1.1270124145387865,
+              1.2679886956468853
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9851084324702785,
+              "ci95": [
+                0.8685431493291995,
+                1.131489237016035
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.6404795912867111,
+              "ci95": [
+                0.2698899630282893,
+                1.087336029622531
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.2350112693854707,
+              "ci95": [
+                0.9345580946858348,
+                1.7493557974073974
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.2863892216530801,
+            "ci95": [
+              0.9645367108861226,
+              1.8536899662865647
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.003547923927951792,
+            "ci95": [
+              0.0025794406753062867,
+              0.00530529092806624
+            ]
+          }
+        },
+        "phase_executorSetup": {
+          "AA": {
+            "wasmtime": {
+              "ratio": 1.151472761679137,
+              "ci95": [
+                0.9138031941646076,
+                1.4699820259136351
+              ],
+              "resolves2_5Percent": false
+            }
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 1.0496821455920555,
+              "ci95": [
+                0.7667219786993713,
+                1.384576259427262
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0971646038522935,
+              "ci95": [
+                0.9374839837118938,
+                1.2888196703006922
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0958386394694195,
+              "ci95": [
+                0.9605748993489355,
+                1.275360555452989
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9894731326436355,
+            "ci95": [
+              0.8831511177405755,
+              1.1075046401021356
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.08624542578038213,
+            "ci95": [
+              0.05929221498286046,
+              0.11245499630206092
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 1.163940316261452,
+              "ci95": [
+                1.0004747083805159,
+                1.4128732069179408
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9710403471187677,
+              "ci95": [
+                0.8623928523069955,
+                1.1040252496715626
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0200232083079717,
+              "ci95": [
+                0.8870439469805079,
+                1.189192525626111
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.024615786014878,
+            "ci95": [
+              0.9279555882551316,
+              1.1289292961917905
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.4256360292588643,
+            "ci95": [
+              1.2489355514896092,
+              1.6336439714520532
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0315944240945,
+              "ci95": [
+                0.7817338372280579,
+                1.3208151975165443
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.2017732476681875,
+              "ci95": [
+                0.8913421803212769,
+                1.6442070410181222
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.052088721434885,
+              "ci95": [
+                0.8687675382749919,
+                1.2307329535406721
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9729236245010127,
+            "ci95": [
+              0.8534988496525654,
+              1.1021728379441136
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2.7140930547665225,
+            "ci95": [
+              2.298249580938162,
+              3.2217394867854154
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 0.9088723816511863,
+              "ci95": [
+                0.6201254970156201,
+                1.241361847473192
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.7934424356429498,
+              "ci95": [
+                0.6581339073518209,
+                0.9254893868231597
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.3012712159870472,
+              "ci95": [
+                1.0722339984824172,
+                1.616077631269182
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.8213249566365284,
+            "ci95": [
+              0.5233079002425101,
+              1.1288995152303183
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.0333259089242859,
+            "ci95": [
+              0.8500470310136303,
+              1.2205564061155407
+            ]
+          }
+        },
+        "phase_providerSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9025268781073927,
+              "ci95": [
+                0.5871495726051538,
+                1.3477557449075288
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.1007863415843286,
+              "ci95": [
+                0.7066947484192303,
+                1.727862795861047
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.1117533899471608,
+              "ci95": [
+                0.9681798255952334,
+                1.312908448229079
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9252611418866105,
+            "ci95": [
+              0.727631425763253,
+              1.1703741560255925
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.2601832382736449,
+            "ci95": [
+              0.22447875734882078,
+              0.31145977347053255
+            ]
+          }
+        },
+        "phase_requestPreparation": {
+          "AA": {
+            "base": {
+              "ratio": 0.9438943248250231,
+              "ci95": [
+                0.6728327082978016,
+                1.3457773804129334
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.2189296119347997,
+              "ci95": [
+                0.9491094250504588,
+                1.596200861599531
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9205249629901643,
+            "ci95": [
+              0.7664304691748206,
+              1.0962886528790645
+            ]
+          }
+        }
+      }
+    },
+    "go-65536": {
+      "processes": 60,
+      "medians": {
+        "base": {
+          "cpuUs": 125.98673909505209,
+          "instructions": 1146787.518701172,
+          "throughput": 26913.608189598246,
+          "allocsPerRequest": 714.004150390625,
+          "bytesPerRequest": 123880.709375,
+          "phase_cleanup": 78895.5,
+          "phase_compileValidate": 77138979.5,
+          "phase_engineSetup": 458.5,
+          "phase_exportLookup": 938.0,
+          "phase_firstCall": 20869041.5,
+          "phase_instantiate": 641374.0,
+          "phase_load": 82292.0,
+          "phase_providerSetup": 68230.0,
+          "phase_requestPreparation": 8250.5
+        },
+        "head": {
+          "cpuUs": 125.5234354654948,
+          "instructions": 1141711.2065917968,
+          "throughput": 26869.77796795821,
+          "allocsPerRequest": 706.0041015625,
+          "bytesPerRequest": 122088.796875,
+          "phase_cleanup": 68167.0,
+          "phase_compileValidate": 78030395.5,
+          "phase_engineSetup": 395.5,
+          "phase_exportLookup": 874.5,
+          "phase_firstCall": 20819125.0,
+          "phase_instantiate": 573146.5,
+          "phase_load": 79854.0,
+          "phase_providerSetup": 60750.5,
+          "phase_requestPreparation": 7729.5
+        },
+        "wasmtime": {
+          "cpuUs": 61.67378336588541,
+          "instructions": 329237.02045898436,
+          "throughput": 40320.84189493702,
+          "allocsPerRequest": 1.00068359375,
+          "bytesPerRequest": 32.54453125,
+          "phase_cleanup": 294104.0,
+          "phase_compileValidate": 67667437.5,
+          "phase_engineSetup": 159687.5,
+          "phase_executorSetup": 50729.0,
+          "phase_exportLookup": 9896.0,
+          "phase_firstCall": 13299354.0,
+          "phase_instantiate": 225958.5,
+          "phase_load": 82063.0,
+          "phase_providerSetup": 272937.0
+        }
+      },
+      "comparisons": {
+        "cpuUs": {
+          "AA": {
+            "base": {
+              "ratio": 0.9987245175260231,
+              "ci95": [
+                0.9856260169108548,
+                1.0126946306592917
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.000451161037532,
+              "ci95": [
+                0.9870969372145735,
+                1.0117198540252266
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 1.004641785803525,
+              "ci95": [
+                0.9886830474320982,
+                1.0188169828461302
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9965940243034372,
+            "ci95": [
+              0.990565077735624,
+              1.0039428727101813
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2.164834940871608,
+            "ci95": [
+              2.0401337118555407,
+              2.325881117132733
+            ]
+          }
+        },
+        "instructions": {
+          "AA": {
+            "base": {
+              "ratio": 1.0000191064031212,
+              "ci95": [
+                0.9978359920435478,
+                1.0030195981096623
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9985391557070706,
+              "ci95": [
+                0.9952684623422766,
+                1.0014911474703834
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9999007900750188,
+              "ci95": [
+                0.9928146943192223,
+                1.0063464952231846
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9946501378211929,
+            "ci95": [
+              0.9922350318147103,
+              0.9966014606509634
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 3.5236173652210074,
+            "ci95": [
+              3.463529256567142,
+              3.5926104843507387
+            ]
+          }
+        },
+        "throughput": {
+          "AA": {
+            "base": {
+              "ratio": 1.0046670423186674,
+              "ci95": [
+                0.9811943074464922,
+                1.0281152648173797
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9934186274870587,
+              "ci95": [
+                0.9718945903675872,
+                1.0147498593891406
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9831701810024169,
+              "ci95": [
+                0.9590764786695425,
+                1.0052854425278972
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0058046310560371,
+            "ci95": [
+              0.9850519094846494,
+              1.0240968832465125
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.6586074748085471,
+            "ci95": [
+              0.6391774404368611,
+              0.6824762040899592
+            ]
+          }
+        },
+        "allocsPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 1.00000021883517,
+              "ci95": [
+                0.999998851108841,
+                1.0000015865627805
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999998755096833,
+              "ci95": [
+                0.9999979251653125,
+                1.0000016737034987
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9997950177161965,
+              "ci95": [
+                0.999512046580932,
+                1.0001171295554347
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9887952906548284,
+            "ci95": [
+              0.9887946040913236,
+              0.9887960228676055
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 705.6698494596476,
+            "ci95": [
+              705.5558767221369,
+              705.7837243002803
+            ]
+          }
+        },
+        "bytesPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 1.0000015627398362,
+              "ci95": [
+                0.999998978982668,
+                1.0000041326284568
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999991482890754,
+              "ci95": [
+                0.9999962828101505,
+                1.000002085445138
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9949513045556414,
+              "ci95": [
+                0.9882619913225218,
+                1.0018587602847102
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9855342535514974,
+            "ci95": [
+              0.9855328617086178,
+              0.9855358485967056
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 3778.7552175080373,
+            "ci95": [
+              3765.6450938300304,
+              3792.098362178768
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9402938049058149,
+              "ci95": [
+                0.7700233176591452,
+                1.1340495611307866
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.112683075010313,
+              "ci95": [
+                0.8756917188690966,
+                1.3929824988029555
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.001882600684801,
+              "ci95": [
+                0.8983848217801812,
+                1.1340709565522715
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.8978175063581348,
+            "ci95": [
+              0.7633763450744264,
+              1.056936960210948
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.23196170103076932,
+            "ci95": [
+              0.20138145637052066,
+              0.26649096430654307
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 0.8460977908588618,
+              "ci95": [
+                0.7516095294200091,
+                0.9388211724300148
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.001067611557086,
+              "ci95": [
+                0.9348543517530036,
+                1.0610636682554577
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0042662230299435,
+              "ci95": [
+                0.9029262412063154,
+                1.1319919363554087
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0185900915084531,
+            "ci95": [
+              0.9632868907181378,
+              1.0772872049856428
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.1417545458569776,
+            "ci95": [
+              1.0802848415697124,
+              1.206440292704487
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 1.022981018591464,
+              "ci95": [
+                0.792027637849644,
+                1.3046544416796082
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0441896101678312,
+              "ci95": [
+                0.8238477918545674,
+                1.2948691262004015
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0327232613341197,
+              "ci95": [
+                0.9109653921231194,
+                1.188845383975832
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9263984980760671,
+            "ci95": [
+              0.7383021912720773,
+              1.1227469089076947
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.0025095660049181813,
+            "ci95": [
+              0.002247428566302847,
+              0.002787935654152365
+            ]
+          }
+        },
+        "phase_executorSetup": {
+          "AA": {
+            "wasmtime": {
+              "ratio": 0.9476840142716285,
+              "ci95": [
+                0.7061031531803028,
+                1.2149024602271417
+              ],
+              "resolves2_5Percent": false
+            }
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 0.8415615790100223,
+              "ci95": [
+                0.6780187438915918,
+                1.0178340385034297
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.8779817378622126,
+              "ci95": [
+                0.7042721262018526,
+                1.0714619524927371
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9900584687450076,
+              "ci95": [
+                0.6559904065296388,
+                1.4772857992752142
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9584383123001032,
+            "ci95": [
+              0.8044136699307072,
+              1.1295131978870658
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.07463824820895298,
+            "ci95": [
+              0.0604500515829207,
+              0.09074003699332649
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 0.8126775525506983,
+              "ci95": [
+                0.7083946637544412,
+                0.9243388762736867
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9475460229612341,
+              "ci95": [
+                0.8659713329316069,
+                1.0306178198228026
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0164835794166676,
+              "ci95": [
+                0.8874945556796014,
+                1.1657405937724092
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0273848134405983,
+            "ci95": [
+              0.9770421982803086,
+              1.0904422582590174
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.5324615925511964,
+            "ci95": [
+              1.3843316485978305,
+              1.673249015332201
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 0.8890692630169758,
+              "ci95": [
+                0.7356954518545167,
+                1.0563669122471626
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9187291738869625,
+              "ci95": [
+                0.7636517270128307,
+                1.1320694763889427
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9574431752028639,
+              "ci95": [
+                0.7279172714027108,
+                1.2405292417796574
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9699259017271408,
+            "ci95": [
+              0.8503840218038781,
+              1.0827745650553264
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2.422005887248229,
+            "ci95": [
+              2.1303472802787096,
+              2.7370210664034813
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 1.0705372912349174,
+              "ci95": [
+                0.8457875284760903,
+                1.333120096537155
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0432920357746696,
+              "ci95": [
+                0.9156937389999513,
+                1.1969261129043989
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0617742539193893,
+              "ci95": [
+                0.8680825481307783,
+                1.2984842684587212
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9992874974050678,
+            "ci95": [
+              0.8631296812792779,
+              1.1419507270106646
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.9213054420744577,
+            "ci95": [
+              0.773161198512561,
+              1.0792544685479746
+            ]
+          }
+        },
+        "phase_providerSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.6988116824156135,
+              "ci95": [
+                0.5481597413715398,
+                0.8602073235355884
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9468962172693609,
+              "ci95": [
+                0.7600925577517474,
+                1.181183166980264
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0208996295033566,
+              "ci95": [
+                0.8404398771210962,
+                1.243600310184508
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9015276075623949,
+            "ci95": [
+              0.7480377079433026,
+              1.0836830127865416
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.23395358949240408,
+            "ci95": [
+              0.1977257581461434,
+              0.2792612785969759
+            ]
+          }
+        },
+        "phase_requestPreparation": {
+          "AA": {
+            "base": {
+              "ratio": 1.0608176780619334,
+              "ci95": [
+                0.841597981597757,
+                1.4280693630413746
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9114202904483559,
+              "ci95": [
+                0.8060219203902654,
+                1.0148413415914799
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.8234716713772071,
+            "ci95": [
+              0.5535714526275276,
+              1.0644857560531258
+            ]
+          }
+        }
+      }
+    },
+    "llgo-16": {
+      "processes": 80,
+      "medians": {
+        "base": {
+          "cpuUs": 272.3552103678385,
+          "instructions": 1326284.4237792967,
+          "throughput": 12428.891115733291,
+          "allocsPerRequest": 981.0015625,
+          "bytesPerRequest": 72960.26953125,
+          "phase_cleanup": 835854.0,
+          "phase_compileValidate": 134038583.5,
+          "phase_engineSetup": 250.0,
+          "phase_exportLookup": 1520.5,
+          "phase_firstCall": 43669375.5,
+          "phase_instantiate": 1229812.5,
+          "phase_load": 87812.5,
+          "phase_providerSetup": 332979.0,
+          "phase_requestPreparation": 958.0
+        },
+        "go": {
+          "cpuUs": 112.97242431640625,
+          "instructions": 854098.2900390625,
+          "throughput": 28323.480497375414,
+          "allocsPerRequest": 655.00322265625,
+          "bytesPerRequest": 53208.723046875006,
+          "phase_cleanup": 65437.0,
+          "phase_compileValidate": 86207812.5,
+          "phase_engineSetup": 625.0,
+          "phase_exportLookup": 1125.5,
+          "phase_firstCall": 17533937.5,
+          "phase_instantiate": 780396.0,
+          "phase_load": 84145.5,
+          "phase_providerSetup": 77604.0,
+          "phase_requestPreparation": 1020.5
+        },
+        "head": {
+          "cpuUs": 266.93163045247394,
+          "instructions": 1324706.5605957033,
+          "throughput": 12969.149195436408,
+          "allocsPerRequest": 973.00146484375,
+          "bytesPerRequest": 72160.3796875,
+          "phase_cleanup": 788500.0,
+          "phase_compileValidate": 133480479.5,
+          "phase_engineSetup": 250.0,
+          "phase_exportLookup": 1459.0,
+          "phase_firstCall": 39516375.0,
+          "phase_instantiate": 1118500.0,
+          "phase_load": 89604.0,
+          "phase_providerSetup": 330917.0,
+          "phase_requestPreparation": 957.5
+        },
+        "wasmtime": {
+          "cpuUs": 61.01325276692708,
+          "instructions": 240528.5173828125,
+          "throughput": 37279.93049632343,
+          "allocsPerRequest": 1.00068359375,
+          "bytesPerRequest": 32.54453125,
+          "phase_cleanup": 369250.0,
+          "phase_compileValidate": 76055688.0,
+          "phase_engineSetup": 219250.0,
+          "phase_executorSetup": 53354.5,
+          "phase_exportLookup": 10562.0,
+          "phase_firstCall": 13191771.0,
+          "phase_instantiate": 268375.0,
+          "phase_load": 78958.5,
+          "phase_providerSetup": 296979.0
+        }
+      },
+      "comparisons": {
+        "cpuUs": {
+          "AA": {
+            "base": {
+              "ratio": 1.033342131022828,
+              "ci95": [
+                1.0136285335130342,
+                1.0480457287048255
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9953450622707253,
+              "ci95": [
+                0.9849006924337875,
+                1.0058407114871268
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9833235879148535,
+              "ci95": [
+                0.9552203614117585,
+                1.0118114998678154
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0152176188167101,
+              "ci95": [
+                0.9783400643419901,
+                1.0567051656150768
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9983645790924626,
+            "ci95": [
+              0.9817879826774925,
+              1.017928922969525
+            ]
+          },
+          "head/go": {
+            "ratio": 2.4362072676213704,
+            "ci95": [
+              2.344706385305008,
+              2.529156908842696
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 4.674279443214068,
+            "ci95": [
+              4.394215350991079,
+              5.054120509102375
+            ]
+          }
+        },
+        "instructions": {
+          "AA": {
+            "base": {
+              "ratio": 1.0311835585459617,
+              "ci95": [
+                1.0031788904953023,
+                1.0524579823458886
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0023498881566826,
+              "ci95": [
+                0.9968944406673415,
+                1.0078133280297397
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9826729659702096,
+              "ci95": [
+                0.9511635011646287,
+                1.0123026049605144
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0048784752742956,
+              "ci95": [
+                0.988461851213022,
+                1.0227228787811469
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.0051756967816743,
+            "ci95": [
+              0.9910645759433468,
+              1.0221953901678
+            ]
+          },
+          "head/go": {
+            "ratio": 1.5667765995343417,
+            "ci95": [
+              1.5418246558673576,
+              1.5924328110277912
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 5.581535307347051,
+            "ci95": [
+              5.445778326564294,
+              5.73072323923903
+            ]
+          }
+        },
+        "throughput": {
+          "AA": {
+            "base": {
+              "ratio": 0.9933824757107206,
+              "ci95": [
+                0.9644021698397891,
+                1.025555144354667
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0034270126984748,
+              "ci95": [
+                0.9882441155945986,
+                1.018384642236791
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.008624749533816,
+              "ci95": [
+                0.9695035116280087,
+                1.0491633887144234
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9689851277762449,
+              "ci95": [
+                0.939770476167594,
+                1.0009503782756908
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0129482867253559,
+            "ci95": [
+              0.9806375807182292,
+              1.0490980701287314
+            ]
+          },
+          "head/go": {
+            "ratio": 0.42914069405991667,
+            "ci95": [
+              0.4145785329134744,
+              0.44413766862077914
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.3261641687025616,
+            "ci95": [
+              0.3129091679534802,
+              0.33864317168660146
+            ]
+          }
+        },
+        "allocsPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 0.9999992633543328,
+              "ci95": [
+                0.9999979792046501,
+                1.000000219004424
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 0.9999993141746483,
+              "ci95": [
+                0.9999981065236455,
+                1.000000551643645
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999998093070556,
+              "ci95": [
+                0.9999992773700215,
+                1.000000291061499
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9999316682184752,
+              "ci95": [
+                0.9995121446015744,
+                1.0003903858275989
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9918451120934594,
+            "ci95": [
+              0.991844770695782,
+              0.9918455527834932
+            ]
+          },
+          "head/go": {
+            "ratio": 1.485492485755479,
+            "ci95": [
+              1.4854901991966003,
+              1.4854957272709628
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 972.4092044391455,
+            "ci95": [
+              972.1754379920492,
+              972.6323668992485
+            ]
+          }
+        },
+        "bytesPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 1.000006739594872,
+              "ci95": [
+                0.9999896731727718,
+                1.0000229582358315
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 0.9999974011582953,
+              "ci95": [
+                0.9999935161219333,
+                1.00000189848504
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0000112510486554,
+              "ci95": [
+                0.9999913883808469,
+                1.0000312289968714
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9983141012214031,
+              "ci95": [
+                0.9883112268724901,
+                1.009979182714853
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9890341049328043,
+            "ci95": [
+              0.989021812536111,
+              0.9890463017035859
+            ]
+          },
+          "head/go": {
+            "ratio": 1.356171230370114,
+            "ci95": [
+              1.356160246966887,
+              1.3561833064283624
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2226.0181461545753,
+            "ci95": [
+              2212.99569371697,
+              2239.067479914048
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9690168042354386,
+              "ci95": [
+                0.8423241929055483,
+                1.064862213053462
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0397726446407312,
+              "ci95": [
+                0.7851397454451154,
+                1.4805084407266436
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.8332596327709568,
+              "ci95": [
+                0.6689241768053567,
+                1.0268944549588348
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9263623397080939,
+              "ci95": [
+                0.7947314947329862,
+                1.0704403869746595
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0432024243764275,
+            "ci95": [
+              0.9308818168860444,
+              1.1679617015031667
+            ]
+          },
+          "head/go": {
+            "ratio": 10.315454647820815,
+            "ci95": [
+              8.633710140307697,
+              12.495985829222391
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2.287400566861431,
+            "ci95": [
+              2.008787102180593,
+              2.5871693674912684
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 1.080937027829549,
+              "ci95": [
+                1.019635687543369,
+                1.151218745729822
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.8814256934511352,
+              "ci95": [
+                0.8038417831603634,
+                0.9582301727309067
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9788886022053628,
+              "ci95": [
+                0.8907684953590872,
+                1.0675381477258
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.076095065461729,
+              "ci95": [
+                0.954830498898052,
+                1.1999242933442829
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9758765890248942,
+            "ci95": [
+              0.9188835233126718,
+              1.0378535569406029
+            ]
+          },
+          "head/go": {
+            "ratio": 1.4748786235558888,
+            "ci95": [
+              1.3651473366658404,
+              1.5742872236692844
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.7353370083055593,
+            "ci95": [
+              1.5768139314522935,
+              1.921167300111471
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9974331135055606,
+              "ci95": [
+                0.7373449321963472,
+                1.3256500839085477
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9998234143018795,
+              "ci95": [
+                0.8120205297953484,
+                1.2230691193368923
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.2943716262066312,
+              "ci95": [
+                0.8460650435810043,
+                1.937499649371211
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9225184749799005,
+              "ci95": [
+                0.6108046015019107,
+                1.3072348585681313
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9202321238415959,
+            "ci95": [
+              0.7513559510277724,
+              1.136116304264646
+            ]
+          },
+          "head/go": {
+            "ratio": 0.3623629438978086,
+            "ci95": [
+              0.2970185630541668,
+              0.44715157021644497
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.0010232672185201972,
+            "ci95": [
+              0.0007903269245320957,
+              0.0013690548263524682
+            ]
+          }
+        },
+        "phase_executorSetup": {
+          "AA": {
+            "wasmtime": {
+              "ratio": 0.9062585057096374,
+              "ci95": [
+                0.6704476476349311,
+                1.1558417767751736
+              ],
+              "resolves2_5Percent": false
+            }
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9383003339012078,
+              "ci95": [
+                0.7867902075174892,
+                1.113753145025115
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.7801322816849033,
+              "ci95": [
+                0.6513943267454865,
+                0.9089745349004298
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9906785618090681,
+              "ci95": [
+                0.7684030920432997,
+                1.2157007490534824
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0537162523128492,
+              "ci95": [
+                0.8006634338231708,
+                1.3566701527493736
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9399064750948826,
+            "ci95": [
+              0.8609447746876102,
+              1.0440631557871294
+            ]
+          },
+          "head/go": {
+            "ratio": 1.309770251764828,
+            "ci95": [
+              1.2126797863319934,
+              1.4276999701328519
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.10101108623034583,
+            "ci95": [
+              0.06772646953843234,
+              0.13782322883534837
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 1.1415520770064198,
+              "ci95": [
+                1.0291172757460691,
+                1.2704334662764636
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.867475090442063,
+              "ci95": [
+                0.7964857234095831,
+                0.9344209815479332
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.986394318700412,
+              "ci95": [
+                0.8641875832908668,
+                1.1182973249526993
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.170974833025189,
+              "ci95": [
+                1.0128311935876,
+                1.4046836339480948
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.8984576834161109,
+            "ci95": [
+              0.8146733314993307,
+              0.9890695644127258
+            ]
+          },
+          "head/go": {
+            "ratio": 2.2028270249849236,
+            "ci95": [
+              1.9934539897870185,
+              2.4130228129447424
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2.9657159238881485,
+            "ci95": [
+              2.758058211195316,
+              3.1983322704235575
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 0.9966498825869962,
+              "ci95": [
+                0.9143613263487916,
+                1.0905240196468058
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.8068051602330997,
+              "ci95": [
+                0.6097934736150206,
+                1.0265957383228344
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9219559570105417,
+              "ci95": [
+                0.8113612437705885,
+                1.027742012511027
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9590703149908978,
+              "ci95": [
+                0.7794724951664342,
+                1.1724228083389912
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.947020219953006,
+            "ci95": [
+              0.8697065486358154,
+              1.0372938895354231
+            ]
+          },
+          "head/go": {
+            "ratio": 1.4228562500442372,
+            "ci95": [
+              1.1692343042439286,
+              1.668536425730755
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 4.040754460232262,
+            "ci95": [
+              3.567291902488759,
+              4.555017334546385
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 0.9210053135657815,
+              "ci95": [
+                0.7298683710006975,
+                1.195277411167763
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9059860036502773,
+              "ci95": [
+                0.45748444819924833,
+                1.38782553253798
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9184621772760202,
+              "ci95": [
+                0.7175245741225384,
+                1.1850665267782259
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0118135634521561,
+              "ci95": [
+                0.7922934621375682,
+                1.3112881384658541
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0405222156968916,
+            "ci95": [
+              0.9528469227849452,
+              1.1441486498007671
+            ]
+          },
+          "head/go": {
+            "ratio": 0.9177678516041242,
+            "ci95": [
+              0.5845328665459218,
+              1.3299256660019403
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.1700660836321493,
+            "ci95": [
+              0.9949289771955866,
+              1.3656790023769663
+            ]
+          }
+        },
+        "phase_providerSetup": {
+          "AA": {
+            "base": {
+              "ratio": 1.052826383218582,
+              "ci95": [
+                0.7824229325790438,
+                1.3503232812583532
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.5564918681088645,
+              "ci95": [
+                0.42043037697707464,
+                0.7223250384756433
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9603243669183348,
+              "ci95": [
+                0.7918923812562294,
+                1.1196594520623817
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9348774451923003,
+              "ci95": [
+                0.7452725240870159,
+                1.1509668964168693
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9513947810883978,
+            "ci95": [
+              0.8149055012327244,
+              1.1257907518443115
+            ]
+          },
+          "head/go": {
+            "ratio": 3.736770513816558,
+            "ci95": [
+              3.2274558809903957,
+              4.345580274093731
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.0563034146399872,
+            "ci95": [
+              0.92885142011069,
+              1.2145444936436025
+            ]
+          }
+        },
+        "phase_requestPreparation": {
+          "AA": {
+            "base": {
+              "ratio": 0.9423164331105957,
+              "ci95": [
+                0.7080414350548649,
+                1.2351066995703244
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9206950765487675,
+              "ci95": [
+                0.7406178883932447,
+                1.1579919522203388
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.6393097890961281,
+              "ci95": [
+                0.36103775066087607,
+                1.0161983990213097
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9912847928520032,
+            "ci95": [
+              0.7891197865026548,
+              1.2581025129614616
+            ]
+          },
+          "head/go": {
+            "ratio": 1.050792356691566,
+            "ci95": [
+              0.7952181461490913,
+              1.493415431335747
+            ]
+          }
+        }
+      }
+    },
+    "llgo-65536": {
+      "processes": 80,
+      "medians": {
+        "base": {
+          "cpuUs": 328.103916422526,
+          "instructions": 1731670.5596679687,
+          "throughput": 10930.430155640006,
+          "allocsPerRequest": 1153.00146484375,
+          "bytesPerRequest": 213489.18671875,
+          "phase_cleanup": 867312.5,
+          "phase_compileValidate": 133276604.0,
+          "phase_engineSetup": 250.0,
+          "phase_exportLookup": 1166.5,
+          "phase_firstCall": 45533958.5,
+          "phase_instantiate": 965730.0,
+          "phase_load": 90500.0,
+          "phase_providerSetup": 289063.0,
+          "phase_requestPreparation": 11687.5
+        },
+        "go": {
+          "cpuUs": 141.16666666666666,
+          "instructions": 1139379.3983398438,
+          "throughput": 23048.946184361826,
+          "allocsPerRequest": 706.004296875,
+          "bytesPerRequest": 122088.675390625,
+          "phase_cleanup": 81375.0,
+          "phase_compileValidate": 75518687.5,
+          "phase_engineSetup": 541.5,
+          "phase_exportLookup": 833.5,
+          "phase_firstCall": 22197020.5,
+          "phase_instantiate": 558854.5,
+          "phase_load": 89729.0,
+          "phase_providerSetup": 53876.0,
+          "phase_requestPreparation": 9687.5
+        },
+        "head": {
+          "cpuUs": 323.82512003580723,
+          "instructions": 1724535.5338867188,
+          "throughput": 11369.98435762457,
+          "allocsPerRequest": 1145.001806640625,
+          "bytesPerRequest": 212113.365625,
+          "phase_cleanup": 852166.5,
+          "phase_compileValidate": 132401666.5,
+          "phase_engineSetup": 229.0,
+          "phase_exportLookup": 1229.0,
+          "phase_firstCall": 49736792.0,
+          "phase_instantiate": 1059416.5,
+          "phase_load": 77249.5,
+          "phase_providerSetup": 315416.5,
+          "phase_requestPreparation": 13062.5
+        },
+        "wasmtime": {
+          "cpuUs": 62.899645996093746,
+          "instructions": 324914.9889648438,
+          "throughput": 35883.842549407986,
+          "allocsPerRequest": 1.00078125,
+          "bytesPerRequest": 32.55546875,
+          "phase_cleanup": 324270.5,
+          "phase_compileValidate": 75137749.5,
+          "phase_engineSetup": 167354.5,
+          "phase_executorSetup": 57604.0,
+          "phase_exportLookup": 10917.0,
+          "phase_firstCall": 13993687.5,
+          "phase_instantiate": 271915.5,
+          "phase_load": 73791.5,
+          "phase_providerSetup": 318583.0
+        }
+      },
+      "comparisons": {
+        "cpuUs": {
+          "AA": {
+            "base": {
+              "ratio": 0.9792692986678276,
+              "ci95": [
+                0.9424052709081935,
+                1.0159498838333727
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0048467690350174,
+              "ci95": [
+                0.992969427038945,
+                1.0165984573101663
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9756201816146045,
+              "ci95": [
+                0.9263762320604424,
+                1.0373704404663646
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9905610092559529,
+              "ci95": [
+                0.96202366844709,
+                1.0166385213656486
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9879194340071669,
+            "ci95": [
+              0.9564905782815077,
+              1.0206923282994056
+            ]
+          },
+          "head/go": {
+            "ratio": 2.2536975269534127,
+            "ci95": [
+              2.187935594933683,
+              2.321224654369775
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 4.848409491263969,
+            "ci95": [
+              4.5962647681130395,
+              5.123068838540739
+            ]
+          }
+        },
+        "instructions": {
+          "AA": {
+            "base": {
+              "ratio": 0.9881520788190138,
+              "ci95": [
+                0.9537828746024221,
+                1.0217643012897863
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.0027197837531159,
+              "ci95": [
+                1.0004531870730575,
+                1.0053061202568763
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9669659080602875,
+              "ci95": [
+                0.9228800211555066,
+                1.0219324654963362
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9921381176208168,
+              "ci95": [
+                0.9772875696531939,
+                1.0042614242829109
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9968200253643906,
+            "ci95": [
+              0.9603986087866472,
+              1.0337398983044486
+            ]
+          },
+          "head/go": {
+            "ratio": 1.5408619995342459,
+            "ci95": [
+              1.50880943842971,
+              1.5697102211772325
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 5.387984114697936,
+            "ci95": [
+              5.269638649605429,
+              5.496649166925612
+            ]
+          }
+        },
+        "throughput": {
+          "AA": {
+            "base": {
+              "ratio": 1.0231126942480955,
+              "ci95": [
+                0.9862596831741357,
+                1.0579640996123405
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9635250486598166,
+              "ci95": [
+                0.9187292625603435,
+                1.002887273083606
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0229128810137926,
+              "ci95": [
+                0.9855355976875138,
+                1.0593343378035567
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9846407473360651,
+              "ci95": [
+                0.9643762990887174,
+                1.0035481473022183
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0129298075026558,
+            "ci95": [
+              0.9790461897923639,
+              1.047297873777857
+            ]
+          },
+          "head/go": {
+            "ratio": 0.47287001231076514,
+            "ci95": [
+              0.4551148959610396,
+              0.488895607813996
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.31089650265887464,
+            "ci95": [
+              0.2994297660688851,
+              0.3216856445525175
+            ]
+          }
+        },
+        "allocsPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 1.0000002879709673,
+              "ci95": [
+                1.0000000338788877,
+                1.0000005505325535
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 1.0000010789158802,
+              "ci95": [
+                0.9999998893431012,
+                1.0000022823253927
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0000001279337496,
+              "ci95": [
+                0.9999998720663322,
+                1.0000004093880464
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 1.0000000123810193,
+              "ci95": [
+                0.9997169918000439,
+                1.0002732795182945
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9930617284085529,
+            "ci95": [
+              0.993061354972828,
+              0.9930620426446349
+            ]
+          },
+          "head/go": {
+            "ratio": 1.6218058490139928,
+            "ci95": [
+              1.621804801393099,
+              1.621807117021954
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1144.2867800770514,
+            "ci95": [
+              1144.0244325405454,
+              1144.554801632918
+            ]
+          }
+        },
+        "bytesPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 1.0000081057034291,
+              "ci95": [
+                1.0000019658519792,
+                1.0000144066386454
+              ],
+              "resolves2_5Percent": true
+            },
+            "go": {
+              "ratio": 1.0000010961529888,
+              "ci95": [
+                0.999998270984996,
+                1.0000039699568524
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999978504790891,
+              "ci95": [
+                0.9999886433393587,
+                1.0000051777969434
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 1.001451534909071,
+              "ci95": [
+                0.9946851300514824,
+                1.0082024775430694
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9935549553546564,
+            "ci95": [
+              0.9935505559875426,
+              0.9935599279180201
+            ]
+          },
+          "head/go": {
+            "ratio": 1.7373668444677375,
+            "ci95": [
+              1.7373619128872597,
+              1.737372792175336
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 6542.823737751471,
+            "ci95": [
+              6509.519567526118,
+              6576.594049912436
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 1.1567959614509673,
+              "ci95": [
+                1.0375273156940699,
+                1.2841808484416528
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.2826369141007257,
+              "ci95": [
+                1.0715073119821659,
+                1.6004423334854545
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.1706463322640497,
+              "ci95": [
+                0.9039191971902475,
+                1.6646224141026549
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0162928322103095,
+              "ci95": [
+                0.9179488005597063,
+                1.119804671634782
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0993064159484784,
+            "ci95": [
+              0.945120454428256,
+              1.3238810032919417
+            ]
+          },
+          "head/go": {
+            "ratio": 10.798701335315577,
+            "ci95": [
+              9.022026112627476,
+              13.476022510530314
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2.67703343495403,
+            "ci95": [
+              2.2250215744818966,
+              3.358856245008564
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0700312836143648,
+              "ci95": [
+                0.9357944182195234,
+                1.2131255597800434
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.925591673480203,
+              "ci95": [
+                0.7911481513583087,
+                1.0718631409739527
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.125969934712862,
+              "ci95": [
+                0.9798413786433476,
+                1.3076411655665683
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0354467053992458,
+              "ci95": [
+                0.9048988718489293,
+                1.1863047283844657
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0518097017051689,
+            "ci95": [
+              0.9776956826061807,
+              1.13454126784279
+            ]
+          },
+          "head/go": {
+            "ratio": 1.7723818553713702,
+            "ci95": [
+              1.6095995398324017,
+              1.9626893322048022
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.8389433132338404,
+            "ci95": [
+              1.621713859725985,
+              2.0905034116480046
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 1.1072041538279107,
+              "ci95": [
+                0.5976696018570394,
+                2.9588837138542696
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.8557306417206044,
+              "ci95": [
+                0.7552982529166399,
+                0.9685860737547617
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.164925922879356,
+              "ci95": [
+                0.847936960411794,
+                1.598171882088763
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9330112886482068,
+              "ci95": [
+                0.7628361351043876,
+                1.137984545993939
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.6804125804323422,
+            "ci95": [
+              0.42000784442021544,
+              0.9695244681003098
+            ]
+          },
+          "head/go": {
+            "ratio": 0.384398256473638,
+            "ci95": [
+              0.33478034853713107,
+              0.44652485165368294
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.0011476380653012814,
+            "ci95": [
+              0.0010063031336632875,
+              0.001296132817980177
+            ]
+          }
+        },
+        "phase_executorSetup": {
+          "AA": {
+            "wasmtime": {
+              "ratio": 1.0307510051545614,
+              "ci95": [
+                0.8352977163003672,
+                1.245809925123706
+              ],
+              "resolves2_5Percent": false
+            }
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9625138888073632,
+              "ci95": [
+                0.7852071992775773,
+                1.161803328650388
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.8689529445033654,
+              "ci95": [
+                0.702136551041595,
+                1.0985972070293135
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.2299350572834689,
+              "ci95": [
+                1.056096327711503,
+                1.4202469444950079
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.1528844931812279,
+              "ci95": [
+                0.8149648358902258,
+                1.8540335607833611
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0435274441563058,
+            "ci95": [
+              0.9438736039087066,
+              1.1545469834326163
+            ]
+          },
+          "head/go": {
+            "ratio": 1.4028624348477168,
+            "ci95": [
+              1.25688835013748,
+              1.5754141700786546
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.10249064202021704,
+            "ci95": [
+              0.08588385011068274,
+              0.11710598998258148
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 1.0575451635613347,
+              "ci95": [
+                0.83239809606475,
+                1.3381554389989059
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 1.062530225867221,
+              "ci95": [
+                0.801978914332439,
+                1.4795309480773555
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.1662052923235628,
+              "ci95": [
+                0.9683888243969878,
+                1.4075703508774342
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9861678998790965,
+              "ci95": [
+                0.8113118069764066,
+                1.2113372396141084
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0499643722282912,
+            "ci95": [
+              0.8970078732930385,
+              1.2119322916129864
+            ]
+          },
+          "head/go": {
+            "ratio": 2.2584891094731208,
+            "ci95": [
+              1.9653217384279797,
+              2.635243671664519
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 3.5434121620500094,
+            "ci95": [
+              2.982539327565254,
+              4.21604640855193
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 0.9435751309902307,
+              "ci95": [
+                0.8039148823371329,
+                1.0995616990486958
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.7956983538063136,
+              "ci95": [
+                0.655959197963176,
+                0.9419272400104229
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.280051211612766,
+              "ci95": [
+                1.0298680143635635,
+                1.590047622341357
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9526500322022972,
+              "ci95": [
+                0.7635056918969082,
+                1.176339016844825
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.1951643553443145,
+            "ci95": [
+              1.0405176023780474,
+              1.3802941468164804
+            ]
+          },
+          "head/go": {
+            "ratio": 1.8913399916771152,
+            "ci95": [
+              1.5241385908904792,
+              2.3290738357453025
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 4.345942884084362,
+            "ci95": [
+              3.624841329370872,
+              5.416545377187183
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 0.8529916383116065,
+              "ci95": [
+                0.6363310234394358,
+                1.12497694317864
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.8085792953205095,
+              "ci95": [
+                0.6260605570641438,
+                1.0202512926337972
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9380907089733435,
+              "ci95": [
+                0.6639973279873135,
+                1.320827813938328
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0178928922625068,
+              "ci95": [
+                0.7919803339430481,
+                1.3205484808613364
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9537795475641627,
+            "ci95": [
+              0.8520254753256352,
+              1.0794747673363592
+            ]
+          },
+          "head/go": {
+            "ratio": 1.0183209336147583,
+            "ci95": [
+              0.8796392418766289,
+              1.1767331257534879
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.1526166676766134,
+            "ci95": [
+              0.9664743842020583,
+              1.3583926244110618
+            ]
+          }
+        },
+        "phase_providerSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9534942887203246,
+              "ci95": [
+                0.7202481729895596,
+                1.2723446845602893
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.873236253925205,
+              "ci95": [
+                0.6696130028401345,
+                1.0571180526359532
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.2733283146539656,
+              "ci95": [
+                0.8405012956946565,
+                2.022935280530823
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.916706603406834,
+              "ci95": [
+                0.696877632585537,
+                1.1733245545350695
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.330006303614571,
+            "ci95": [
+              1.022133285690687,
+              1.7608906875954495
+            ]
+          },
+          "head/go": {
+            "ratio": 6.078188520983197,
+            "ci95": [
+              4.6777923701274275,
+              8.240584648491883
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.1109757624778904,
+            "ci95": [
+              0.848441828345412,
+              1.501706287571549
+            ]
+          }
+        },
+        "phase_requestPreparation": {
+          "AA": {
+            "base": {
+              "ratio": 1.0993687285127716,
+              "ci95": [
+                0.6445840306698943,
+                1.9202896393185607
+              ],
+              "resolves2_5Percent": false
+            },
+            "go": {
+              "ratio": 0.9275646179805612,
+              "ci95": [
+                0.5299596929858482,
+                1.3380588434848228
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.8249473093793693,
+              "ci95": [
+                1.2967081688423419,
+                2.5171469350259676
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0892499060035072,
+            "ci95": [
+              0.8971401719538044,
+              1.3185056804393636
+            ]
+          },
+          "head/go": {
+            "ratio": 1.1692870865487257,
+            "ci95": [
+              0.8559269815666646,
+              1.5744954233779003
+            ]
+          }
+        }
+      }
+    }
+  },
+  "rejected": {
+    "alpha": {
+      "processes": 60,
+      "medians": {
+        "base": {
+          "cpuUs": 101.89100341796875,
+          "instructions": 858867.1565917969,
+          "throughput": 33593.87986297715,
+          "allocsPerRequest": 663.00341796875,
+          "bytesPerRequest": 54232.73984375,
+          "phase_cleanup": 68083.0,
+          "phase_compileValidate": 85002104.0,
+          "phase_engineSetup": 458.5,
+          "phase_exportLookup": 875.0,
+          "phase_firstCall": 15793854.5,
+          "phase_instantiate": 669522.0,
+          "phase_load": 87041.5,
+          "phase_providerSetup": 70916.0,
+          "phase_requestPreparation": 916.5
+        },
+        "head": {
+          "cpuUs": 101.68324584960936,
+          "instructions": 864442.4282226562,
+          "throughput": 33525.10218604304,
+          "allocsPerRequest": 663.003369140625,
+          "bytesPerRequest": 54232.55546875,
+          "phase_cleanup": 60167.0,
+          "phase_compileValidate": 76689583.0,
+          "phase_engineSetup": 562.0,
+          "phase_exportLookup": 854.5,
+          "phase_firstCall": 16611875.0,
+          "phase_instantiate": 576124.5,
+          "phase_load": 99125.0,
+          "phase_providerSetup": 64020.5,
+          "phase_requestPreparation": 772.0
+        },
+        "wasmtime": {
+          "cpuUs": 57.17865804036458,
+          "instructions": 239707.48623046876,
+          "throughput": 41073.674454738764,
+          "allocsPerRequest": 1.00029296875,
+          "bytesPerRequest": 32.0328125,
+          "phase_cleanup": 286833.0,
+          "phase_compileValidate": 72139354.0,
+          "phase_engineSetup": 172250.5,
+          "phase_executorSetup": 49833.5,
+          "phase_exportLookup": 9895.0,
+          "phase_firstCall": 13506646.0,
+          "phase_instantiate": 207541.0,
+          "phase_load": 89062.5,
+          "phase_providerSetup": 259666.5
+        }
+      },
+      "comparisons": {
+        "cpuUs": {
+          "AA": {
+            "base": {
+              "ratio": 1.0041882621152174,
+              "ci95": [
+                0.9918627109223607,
+                1.0155680288389712
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.011007871094308,
+              "ci95": [
+                1.0023157347231204,
+                1.0196832270115719
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.971637259575837,
+              "ci95": [
+                0.950389466875784,
+                0.9961798044837062
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.008844824889669,
+            "ci95": [
+              0.9981350041674778,
+              1.0195657468825023
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.8109437415200542,
+            "ci95": [
+              1.69563508251606,
+              1.9036875606231078
+            ]
+          }
+        },
+        "instructions": {
+          "AA": {
+            "base": {
+              "ratio": 1.0014285146237527,
+              "ci95": [
+                0.9989122344479802,
+                1.003823853224551
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0000052377078668,
+              "ci95": [
+                0.9977518517882633,
+                1.0028048401776188
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.987501990524683,
+              "ci95": [
+                0.9750226761980555,
+                1.0011632207364485
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.0069401537282596,
+            "ci95": [
+              1.0040322148235121,
+              1.0094693722024717
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 3.6005029238442137,
+            "ci95": [
+              3.553698683775832,
+              3.646805035538964
+            ]
+          }
+        },
+        "throughput": {
+          "AA": {
+            "base": {
+              "ratio": 0.9943273577074473,
+              "ci95": [
+                0.9767135130053182,
+                1.012697811893157
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9940236090065279,
+              "ci95": [
+                0.9704941449850243,
+                1.0208192288067905
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0090615269779908,
+              "ci95": [
+                0.985583450927459,
+                1.0313010532767894
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9846914101035015,
+            "ci95": [
+              0.9702205516011525,
+              0.9990363230199313
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.8273113446509934,
+            "ci95": [
+              0.7922358322913836,
+              0.8813193108880336
+            ]
+          }
+        },
+        "allocsPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 0.9999993519069976,
+              "ci95": [
+                0.9999984828733193,
+                1.000000191481934
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0000003829634838,
+              "ci95": [
+                0.9999988805678212,
+                1.0000018117145548
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9999902244339037,
+              "ci95": [
+                0.9995707000607671,
+                1.0004197064758586
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9999999116236694,
+            "ci95": [
+              0.9999991456964004,
+              1.0000005818104343
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 662.6765999078197,
+            "ci95": [
+              662.5537068478741,
+              662.7964197313565
+            ]
+          }
+        },
+        "bytesPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 0.999994779460308,
+              "ci95": [
+                0.9999915814499417,
+                0.9999978161229339
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999997637615313,
+              "ci95": [
+                0.9999926273058816,
+                1.0000062822753726
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9985169770536763,
+              "ci95": [
+                0.988425797666355,
+                1.0100820925643375
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9999989253495962,
+            "ci95": [
+              0.9999958087471256,
+              1.0000016933639218
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1680.9136024515553,
+            "ci95": [
+              1673.7863147385553,
+              1688.0257196894613
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 1.0830321829719392,
+              "ci95": [
+                0.8550083546497383,
+                1.3964749191343897
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.7837193823053233,
+              "ci95": [
+                0.6406993073771043,
+                0.9571145196247631
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0832350318634285,
+              "ci95": [
+                0.9844348460378041,
+                1.2045009538582805
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.8989188714106751,
+            "ci95": [
+              0.7243202479771763,
+              1.088933109016819
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.21704274541221538,
+            "ci95": [
+              0.18736808122288354,
+              0.24657859625535003
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0240282736721558,
+              "ci95": [
+                0.9306521004905933,
+                1.150258287846479
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9539005907909973,
+              "ci95": [
+                0.8793372687558129,
+                1.026151003967762
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9977377612648473,
+              "ci95": [
+                0.912813911897507,
+                1.085910788136611
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9981418866872901,
+            "ci95": [
+              0.9076048179779573,
+              1.0879185570836458
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.1193610912635057,
+            "ci95": [
+              1.0564131273749184,
+              1.1764977156889285
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 1.3832247568974143,
+              "ci95": [
+                0.9371741418466962,
+                2.48535885270164
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.7034519362931215,
+              "ci95": [
+                0.37299987471622703,
+                1.104901556058646
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0441816904857002,
+              "ci95": [
+                0.6731358827872331,
+                1.4750739327004836
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.1407461339807772,
+            "ci95": [
+              0.7126839015251537,
+              1.735182056608188
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.0031709502244122324,
+            "ci95": [
+              0.002387038963074872,
+              0.004348441404070143
+            ]
+          }
+        },
+        "phase_executorSetup": {
+          "AA": {
+            "wasmtime": {
+              "ratio": 0.76133729496495,
+              "ci95": [
+                0.475364899331138,
+                1.0797255691052712
+              ],
+              "resolves2_5Percent": false
+            }
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 1.2834520632175916,
+              "ci95": [
+                1.1347254675143157,
+                1.4582527017325628
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.908047370788604,
+              "ci95": [
+                0.6904717647513094,
+                1.1704009221432254
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.5650791075258966,
+              "ci95": [
+                0.28948905861956603,
+                1.009201227348792
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0595807828821961,
+            "ci95": [
+              0.8693892683677278,
+              1.2638417125515538
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.06823820902486571,
+            "ci95": [
+              0.05036564000640084,
+              0.09050975064433323
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 1.0976614790225943,
+              "ci95": [
+                0.9345570786925967,
+                1.2746445212290238
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9818536686390305,
+              "ci95": [
+                0.8935141326655978,
+                1.0819790399653424
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0198817007738994,
+              "ci95": [
+                0.8482693710268374,
+                1.2444855229171348
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0839486291727296,
+            "ci95": [
+              0.9895866864717092,
+              1.189871810375196
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.1951559904750793,
+            "ci95": [
+              1.0232353927850044,
+              1.4075633582375415
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0669736435386452,
+              "ci95": [
+                0.9138907218130161,
+                1.2681424903367104
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9481199061730906,
+              "ci95": [
+                0.7453772363573135,
+                1.1854750019545612
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9088077315189217,
+              "ci95": [
+                0.7125950213876371,
+                1.1133744007894149
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0213736173078904,
+            "ci95": [
+              0.8332837949322118,
+              1.215946314351898
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2.940572765580373,
+            "ci95": [
+              2.367959690672621,
+              3.606086872521559
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 0.9875498228643597,
+              "ci95": [
+                0.6876869022644487,
+                1.4053591098697116
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.1726592333088293,
+              "ci95": [
+                0.7540208731504374,
+                2.3402153984268628
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0225034096500858,
+              "ci95": [
+                0.7549658999921801,
+                1.3629870496757643
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.1533056430655904,
+            "ci95": [
+              0.9300607842907418,
+              1.5405608604346839
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.2079890952428909,
+            "ci95": [
+              0.9943247794886835,
+              1.6233783091623109
+            ]
+          }
+        },
+        "phase_providerSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9143478888524091,
+              "ci95": [
+                0.7032193262174373,
+                1.1481590765563
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.861235512153633,
+              "ci95": [
+                0.522956621441459,
+                1.3001484807312882
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.8788115922061602,
+              "ci95": [
+                0.6643674700401269,
+                1.1006793301464872
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.060320687703843,
+            "ci95": [
+              0.8404939433799749,
+              1.372197051506566
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.28395939732378744,
+            "ci95": [
+              0.22871183499167066,
+              0.3684402814377376
+            ]
+          }
+        },
+        "phase_requestPreparation": {
+          "AA": {
+            "base": {
+              "ratio": 1.1422035457190562,
+              "ci95": [
+                0.8968668156488215,
+                1.4920421789056246
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.065304360168618,
+              "ci95": [
+                0.7334810673291075,
+                1.4754812120346659
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.8806608837704837,
+            "ci95": [
+              0.7826287941408377,
+              0.9916687528208283
+            ]
+          }
+        }
+      }
+    },
+    "beta": {
+      "processes": 60,
+      "medians": {
+        "base": {
+          "cpuUs": 117.2092325846354,
+          "instructions": 863417.5307128907,
+          "throughput": 26357.746124851168,
+          "allocsPerRequest": 663.00390625,
+          "bytesPerRequest": 54232.92578125,
+          "phase_cleanup": 73791.5,
+          "phase_compileValidate": 96601625.5,
+          "phase_engineSetup": 521.0,
+          "phase_exportLookup": 958.0,
+          "phase_firstCall": 17776458.5,
+          "phase_instantiate": 643937.5,
+          "phase_load": 76771.0,
+          "phase_providerSetup": 59000.5,
+          "phase_requestPreparation": 855.0
+        },
+        "head": {
+          "cpuUs": 118.17706095377604,
+          "instructions": 860331.8739746094,
+          "throughput": 26627.63677747662,
+          "allocsPerRequest": 663.0037109375,
+          "bytesPerRequest": 54232.5625,
+          "phase_cleanup": 68479.0,
+          "phase_compileValidate": 91571750.0,
+          "phase_engineSetup": 542.0,
+          "phase_exportLookup": 916.5,
+          "phase_firstCall": 18915333.5,
+          "phase_instantiate": 723354.0,
+          "phase_load": 84895.5,
+          "phase_providerSetup": 64667.0,
+          "phase_requestPreparation": 1083.0
+        },
+        "wasmtime": {
+          "cpuUs": 51.368798828124994,
+          "instructions": 232225.08891601564,
+          "throughput": 42190.70583990278,
+          "allocsPerRequest": 1.000732421875,
+          "bytesPerRequest": 32.55,
+          "phase_cleanup": 310708.0,
+          "phase_compileValidate": 68960813.0,
+          "phase_engineSetup": 185021.5,
+          "phase_executorSetup": 56750.0,
+          "phase_exportLookup": 11458.0,
+          "phase_firstCall": 15239375.0,
+          "phase_instantiate": 250479.0,
+          "phase_load": 76187.5,
+          "phase_providerSetup": 295229.0
+        }
+      },
+      "comparisons": {
+        "cpuUs": {
+          "AA": {
+            "base": {
+              "ratio": 1.0096268775080668,
+              "ci95": [
+                0.9920794022168936,
+                1.0283641802887848
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9906637600477748,
+              "ci95": [
+                0.973607779348755,
+                1.0070859932098488
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0105142270999667,
+              "ci95": [
+                0.9678568590225123,
+                1.0589283929997597
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0023433550551575,
+            "ci95": [
+              0.9926629639293203,
+              1.012272479807464
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2.1992078494014646,
+            "ci95": [
+              2.038666952720351,
+              2.3926928207683207
+            ]
+          }
+        },
+        "instructions": {
+          "AA": {
+            "base": {
+              "ratio": 1.0039293090696455,
+              "ci95": [
+                0.9999125455685326,
+                1.0073624904260006
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0000840051374038,
+              "ci95": [
+                0.9928210845697929,
+                1.0053140535825464
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 1.0012965209358735,
+              "ci95": [
+                0.9890398828259268,
+                1.0131417988665243
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.0029872880825805,
+            "ci95": [
+              0.9989847505304026,
+              1.0078731006056245
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 3.723190752961083,
+            "ci95": [
+              3.680249539671843,
+              3.767086575661291
+            ]
+          }
+        },
+        "throughput": {
+          "AA": {
+            "base": {
+              "ratio": 1.0061094731620672,
+              "ci95": [
+                0.9583824471873176,
+                1.0491252708979921
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0416637478592934,
+              "ci95": [
+                1.0050034290201266,
+                1.0775684026336123
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9928765585509379,
+              "ci95": [
+                0.9093139498061156,
+                1.0893390756821912
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9807691795837031,
+            "ci95": [
+              0.9571513179751996,
+              1.0074432369195097
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.6832937997965992,
+            "ci95": [
+              0.6126486871142149,
+              0.7600383552447847
+            ]
+          }
+        },
+        "allocsPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 1.0000004418806072,
+              "ci95": [
+                0.999999116238334,
+                1.0000018264412465
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999998821659537,
+              "ci95": [
+                0.9999982619381341,
+                1.000001443478939
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9997169127946712,
+              "ci95": [
+                0.9994047700322081,
+                1.0000778976007427
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9999997937888861,
+            "ci95": [
+              0.9999991677920839,
+              1.0000004345151194
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 662.5672024092215,
+            "ci95": [
+              662.4733561280692,
+              662.6482499314019
+            ]
+          }
+        },
+        "bytesPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 0.9999997406951,
+              "ci95": [
+                0.9999928059473946,
+                1.000005860162692
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999963237496781,
+              "ci95": [
+                0.999988984224823,
+                1.0000028551939597
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9932139463371001,
+              "ci95": [
+                0.986497074430275,
+                1.0002111611007516
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.999996632000207,
+            "ci95": [
+              0.9999930061671762,
+              1.000000059049835
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1671.42598548252,
+            "ci95": [
+              1665.8130860054268,
+              1676.968472513096
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 0.8236022861370406,
+              "ci95": [
+                0.5032183556909365,
+                1.2704203638797025
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0161110932984925,
+              "ci95": [
+                0.7820979136748321,
+                1.364382387811947
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0890527810660204,
+              "ci95": [
+                0.9361112211256303,
+                1.2655427376239392
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9402639301232837,
+            "ci95": [
+              0.750306669053492,
+              1.1525520987206033
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.251825537488526,
+            "ci95": [
+              0.22173491369853005,
+              0.28914945641928125
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0012056992145215,
+              "ci95": [
+                0.9633386951750857,
+                1.034579366932448
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0930476904410202,
+              "ci95": [
+                0.9677354416151892,
+                1.2436572302446236
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.139413887200123,
+              "ci95": [
+                0.9881043430958886,
+                1.300249719026894
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0734204356177235,
+            "ci95": [
+              0.9667251682107613,
+              1.191445849294865
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.230314811531643,
+            "ci95": [
+              1.127936429202682,
+              1.3589940077450897
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.8661502213904763,
+              "ci95": [
+                0.6617863683757421,
+                1.1827841018710377
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0948287041944194,
+              "ci95": [
+                0.8904471036535756,
+                1.3234774482433052
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0043552758265977,
+              "ci95": [
+                0.7776748979044835,
+                1.4712469206988614
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.984367073277383,
+            "ci95": [
+              0.9060965626106577,
+              1.0661760992944698
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.002749621519990968,
+            "ci95": [
+              0.002349208991231855,
+              0.0031522183215768923
+            ]
+          }
+        },
+        "phase_executorSetup": {
+          "AA": {
+            "wasmtime": {
+              "ratio": 1.3428808233430807,
+              "ci95": [
+                1.0272920918083472,
+                1.845696604265292
+              ],
+              "resolves2_5Percent": false
+            }
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9169966768612225,
+              "ci95": [
+                0.7132808552941801,
+                1.1607316961527379
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0232311212742684,
+              "ci95": [
+                0.8376950804408668,
+                1.2497847785754708
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.4545747379677345,
+              "ci95": [
+                0.9734356153612159,
+                2.362083090084493
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9604597664133496,
+            "ci95": [
+              0.8086633318216936,
+              1.1306628407437347
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.06805877041532254,
+            "ci95": [
+              0.04910061656844754,
+              0.09215177918529473
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 1.0140954765313304,
+              "ci95": [
+                0.9390648161969445,
+                1.0898307316206568
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.048282534816335,
+              "ci95": [
+                0.8905750368061847,
+                1.236192783376554
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.108664424271796,
+              "ci95": [
+                0.8073411773507467,
+                1.573251694752868
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0088728797862696,
+            "ci95": [
+              0.9012403492431439,
+              1.129105840725584
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.1384294947105191,
+            "ci95": [
+              0.9386421751699067,
+              1.3758234030628707
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 0.8616592471465158,
+              "ci95": [
+                0.721088889608883,
+                1.0037154579031722
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9707666280615574,
+              "ci95": [
+                0.7888718403801767,
+                1.1944550686476278
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.3743447073210082,
+              "ci95": [
+                0.9698844108909399,
+                2.196390121155287
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.2111861718166055,
+            "ci95": [
+              0.9831429276845651,
+              1.437718514145902
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2.8387474792471354,
+            "ci95": [
+              2.385636361556021,
+              3.4404362472888437
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 0.6854587920590305,
+              "ci95": [
+                0.2408097959730497,
+                1.3618167228743763
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0724099041737591,
+              "ci95": [
+                0.8185764764445782,
+                1.3908451275501794
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9938972621156854,
+              "ci95": [
+                0.7699241468673802,
+                1.2881103571676238
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.8475823391307853,
+            "ci95": [
+              0.5473239903395618,
+              1.1049249629741547
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.08900997097942,
+            "ci95": [
+              0.9762905435083626,
+              1.2153914859132762
+            ]
+          }
+        },
+        "phase_providerSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.937702173780498,
+              "ci95": [
+                0.6919579671020321,
+                1.2375011518077128
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.8832561808257495,
+              "ci95": [
+                0.6668015795528878,
+                1.1904425977976831
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.047159511440459,
+              "ci95": [
+                0.8550684776166371,
+                1.348397116578861
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.1685633619376634,
+            "ci95": [
+              0.9215901624212299,
+              1.4537072771009345
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.2615822880667513,
+            "ci95": [
+              0.21787500693964867,
+              0.3247975618989439
+            ]
+          }
+        },
+        "phase_requestPreparation": {
+          "AA": {
+            "base": {
+              "ratio": 0.6275781979554359,
+              "ci95": [
+                0.32854121377542456,
+                1.0120748653506235
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9988688731708639,
+              "ci95": [
+                0.7044770911225327,
+                1.4279147443560818
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0953588842070328,
+            "ci95": [
+              0.7706126103631948,
+              1.458816799282009
+            ]
+          }
+        }
+      }
+    },
+    "betaErratum": {
+      "error": "The copied plan source text names alpha eef5ad61; the beta head is 4175286d49e04b095f8207b04057ce99eba47342, matching identity.json and the recorded binary SHA256. Original plan and raw records are retained."
+    }
+  },
+  "llgoVarianceAudit": {
+    "llgo-16": {
+      "base": {
+        "userUs": {
+          "median": 170.7334025065104,
+          "range": [
+            141.11006673177081,
+            184.39652913411456
+          ]
+        },
+        "systemUs": {
+          "median": 97.78299967447916,
+          "range": [
+            80.82900390625,
+            100.78477376302082
+          ]
+        },
+        "collections": {
+          "median": 23.5,
+          "range": [
+            19,
+            36
+          ]
+        },
+        "instructions": {
+          "median": 1306444.2083007812,
+          "range": [
+            1262036.2814453125,
+            1390901.0741210938
+          ]
+        }
+      },
+      "head-aa": {
+        "userUs": {
+          "median": 167.18435668945312,
+          "range": [
+            147.88996175130205,
+            199.3136759440104
+          ]
+        },
+        "systemUs": {
+          "median": 97.54963175455728,
+          "range": [
+            84.20616861979165,
+            101.06467692057291
+          ]
+        },
+        "collections": {
+          "median": 25.0,
+          "range": [
+            19,
+            36
+          ]
+        },
+        "instructions": {
+          "median": 1308083.5578613281,
+          "range": [
+            1266567.2794921875,
+            1400425.6927734376
+          ]
+        }
+      },
+      "head": {
+        "userUs": {
+          "median": 173.05018513997393,
+          "range": [
+            151.02926839192708,
+            189.63155110677081
+          ]
+        },
+        "systemUs": {
+          "median": 96.75988362630208,
+          "range": [
+            82.68199055989582,
+            104.37976888020833
+          ]
+        },
+        "collections": {
+          "median": 27.5,
+          "range": [
+            22,
+            36
+          ]
+        },
+        "instructions": {
+          "median": 1328372.0307128907,
+          "range": [
+            1292023.4446289062,
+            1410301.3004882813
+          ]
+        }
+      },
+      "base-aa": {
+        "userUs": {
+          "median": 179.57716267903646,
+          "range": [
+            142.83348388671874,
+            190.09144694010416
+          ]
+        },
+        "systemUs": {
+          "median": 97.6261494954427,
+          "range": [
+            84.73956298828125,
+            105.210888671875
+          ]
+        },
+        "collections": {
+          "median": 32.5,
+          "range": [
+            19,
+            36
+          ]
+        },
+        "instructions": {
+          "median": 1357803.0727539062,
+          "range": [
+            1279568.4287109375,
+            1406746.15078125
+          ]
+        }
+      }
+    },
+    "llgo-65536": {
+      "head": {
+        "userUs": {
+          "median": 218.84654947916667,
+          "range": [
+            179.97445882161458,
+            257.74962565104164
+          ]
+        },
+        "systemUs": {
+          "median": 110.07607014973958,
+          "range": [
+            93.25475260416665,
+            118.65544026692707
+          ]
+        },
+        "collections": {
+          "median": 57.0,
+          "range": [
+            30,
+            65
+          ]
+        },
+        "instructions": {
+          "median": 1855097.8509277343,
+          "range": [
+            1644136.9345703125,
+            1914945.40546875
+          ]
+        }
+      },
+      "base-aa": {
+        "userUs": {
+          "median": 215.85453084309896,
+          "range": [
+            193.2400634765625,
+            239.08909912109374
+          ]
+        },
+        "systemUs": {
+          "median": 106.67443033854167,
+          "range": [
+            98.39237060546876,
+            117.42290852864583
+          ]
+        },
+        "collections": {
+          "median": 43.5,
+          "range": [
+            36,
+            58
+          ]
+        },
+        "instructions": {
+          "median": 1736295.2231445312,
+          "range": [
+            1721563.0268554688,
+            1860370.0693359375
+          ]
+        }
+      },
+      "head-aa": {
+        "userUs": {
+          "median": 211.1649251302083,
+          "range": [
+            187.24132080078124,
+            234.98712158203125
+          ]
+        },
+        "systemUs": {
+          "median": 105.75108032226561,
+          "range": [
+            100.69997965494791,
+            112.37677001953125
+          ]
+        },
+        "collections": {
+          "median": 41.0,
+          "range": [
+            30,
+            65
+          ]
+        },
+        "instructions": {
+          "median": 1718411.142529297,
+          "range": [
+            1652125.73203125,
+            1937100.0243164063
+          ]
+        }
+      },
+      "base": {
+        "userUs": {
+          "median": 222.70025227864585,
+          "range": [
+            199.5618693033854,
+            237.8622111002604
+          ]
+        },
+        "systemUs": {
+          "median": 107.9072285970052,
+          "range": [
+            101.39643961588541,
+            119.16677652994791
+          ]
+        },
+        "collections": {
+          "median": 42.5,
+          "range": [
+            30,
+            65
+          ]
+        },
+        "instructions": {
+          "median": 1730598.7111816406,
+          "range": [
+            1643402.1041015624,
+            1917140.5327148438
+          ]
+        }
+      }
+    }
+  },
+  "validation": {
+    "GoTestPackages": 32,
+    "coverage": {
+      "github.com/cpunion/wasmvm/internal/bench/phase": {
+        "covered": 284,
+        "statements": 298,
+        "percentage": 95.30201342281879
+      },
+      "github.com/cpunion/wasmvm/internal/bench/service": {
+        "covered": 114,
+        "statements": 120,
+        "percentage": 95.0
+      },
+      "github.com/cpunion/wasmvm/internal/binary": {
+        "covered": 78,
+        "statements": 78,
+        "percentage": 100.0
+      },
+      "github.com/cpunion/wasmvm/internal/cli": {
+        "covered": 582,
+        "statements": 595,
+        "percentage": 97.81512605042016
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/codegen": {
+        "covered": 9619,
+        "statements": 9815,
+        "percentage": 98.00305654610291
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/ir": {
+        "covered": 301,
+        "statements": 311,
+        "percentage": 96.78456591639872
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/lower": {
+        "covered": 324,
+        "statements": 327,
+        "percentage": 99.08256880733946
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/nativeabi": {
+        "covered": 34,
+        "statements": 34,
+        "percentage": 100.0
+      },
+      "github.com/cpunion/wasmvm/internal/compiler/slots": {
+        "covered": 410,
+        "statements": 418,
+        "percentage": 98.08612440191388
+      },
+      "github.com/cpunion/wasmvm/internal/component/canonical": {
+        "covered": 1522,
+        "statements": 1612,
+        "percentage": 94.41687344913151
+      },
+      "github.com/cpunion/wasmvm/internal/component/decode": {
+        "covered": 353,
+        "statements": 366,
+        "percentage": 96.44808743169399
+      },
+      "github.com/cpunion/wasmvm/internal/component/validate": {
+        "covered": 2221,
+        "statements": 2411,
+        "percentage": 92.11945250933222
+      },
+      "github.com/cpunion/wasmvm/internal/core/constant": {
+        "covered": 8,
+        "statements": 8,
+        "percentage": 100.0
+      },
+      "github.com/cpunion/wasmvm/internal/core/decode": {
+        "covered": 527,
+        "statements": 543,
+        "percentage": 97.05340699815838
+      },
+      "github.com/cpunion/wasmvm/internal/core/module": {
+        "covered": 289,
+        "statements": 294,
+        "percentage": 98.29931972789116
+      },
+      "github.com/cpunion/wasmvm/internal/core/validate": {
+        "covered": 1093,
+        "statements": 1168,
+        "percentage": 93.57876712328768
+      },
+      "github.com/cpunion/wasmvm/internal/engine/execute": {
+        "covered": 1143,
+        "statements": 1231,
+        "percentage": 92.85134037367993
+      },
+      "github.com/cpunion/wasmvm/internal/engine/memory": {
+        "covered": 486,
+        "statements": 524,
+        "percentage": 92.74809160305344
+      },
+      "github.com/cpunion/wasmvm/internal/engine/nativeexec": {
+        "covered": 697,
+        "statements": 748,
+        "percentage": 93.18181818181817
+      },
+      "github.com/cpunion/wasmvm/internal/engine/numeric": {
+        "covered": 268,
+        "statements": 268,
+        "percentage": 100.0
+      },
+      "github.com/cpunion/wasmvm/internal/engine/simd": {
+        "covered": 303,
+        "statements": 309,
+        "percentage": 98.05825242718447
+      },
+      "github.com/cpunion/wasmvm/internal/engine/state": {
+        "covered": 1507,
+        "statements": 1582,
+        "percentage": 95.25916561314791
+      },
+      "github.com/cpunion/wasmvm/internal/platform/native": {
+        "covered": 427,
+        "statements": 449,
+        "percentage": 95.10022271714922
+      },
+      "github.com/cpunion/wasmvm/internal/wasi/host": {
+        "covered": 578,
+        "statements": 617,
+        "percentage": 93.67909238249594
+      },
+      "github.com/cpunion/wasmvm/pkg/component": {
+        "covered": 3396,
+        "statements": 3672,
+        "percentage": 92.48366013071896
+      },
+      "github.com/cpunion/wasmvm/pkg/vm": {
+        "covered": 1516,
+        "statements": 1620,
+        "percentage": 93.58024691358024
+      },
+      "github.com/cpunion/wasmvm/pkg/wasi/preview1": {
+        "covered": 1233,
+        "statements": 1356,
+        "percentage": 90.929203539823
+      },
+      "github.com/cpunion/wasmvm/pkg/wasi/preview2": {
+        "covered": 4832,
+        "statements": 5315,
+        "percentage": 90.91251175917215
+      },
+      "github.com/cpunion/wasmvm/pkg/wasi/preview3": {
+        "covered": 4201,
+        "statements": 4600,
+        "percentage": 91.32608695652173
+      },
+      "github.com/cpunion/wasmvm/pkg/wasi/threads": {
+        "covered": 224,
+        "statements": 226,
+        "percentage": 99.11504424778761
+      },
+      "github.com/cpunion/wasmvm/pkg/wasm": {
+        "covered": 169,
+        "statements": 177,
+        "percentage": 95.48022598870057
+      }
+    },
+    "GoRace": "pkg/component and pkg/wasi/preview3 passed",
+    "GoExtraModules": "benchmarks/p3io and benchmarks/service passed",
+    "LLGoExecution": "pkg/component and pkg/wasi/preview3 passed, O3/full LTO",
+    "finalHeadCI": "Required before merge; see PR checks."
+  },
+  "cohorts": {
+    "rejected-alpha": {
+      "processes": 60,
+      "originalRawSHA256": "40e79ef954bd88ccc626cf5ae2b5f4d00e09d9663ff8f988f124a84588226a38",
+      "plan": {
+        "blocks": 10,
+        "samples": 20,
+        "batchRequests": 512,
+        "seed": 202611155733,
+        "payloadBytes": 16,
+        "source": "Engine baseda68bf24, headeef5ad61d1e7f831c75c7e99f322587b30d6ead9; reused base1385093b has identical all Go/module files. Go1.27.3 defaultGC, frozen independent Wasmtime48.0.1.",
+        "scope": "Fixed10block60process event per payload, twenty individually interleaved512-request batches plus separate flush, allaliases and full body/status/header/trailer/CRC verification. Startup/first/twowarmups separate. No owned builds/tests/profiles/analysis/edits/pruning overlap. No extension/pooling/portfolio acceptance.",
+        "variants": {
+          "base": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/profile-gap-0539ea6e-20261115/caller-batches/head-go-runner",
+          "head": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/resource-walk-20261115/head-go-runner",
+          "wasmtime": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/output-screen/wasmtime-go-runner"
+        },
+        "binarySHA256": {
+          "base": "c0ce3e2baca69042e3c3c2a9e202df89b4661b3f90fbf110e6a64acbdad70043",
+          "head": "718e4eb7415289ea2cae2dba2bb928303fefbf9cc9fd15eeb50fa959c5c79f05",
+          "wasmtime": "561370163342e51593964bc6615ca28ebf1831c22132412ce9c6c44981c54f08"
+        },
+        "machTimebase": {
+          "numer": 125,
+          "denom": 3
+        }
+      }
+    },
+    "rejected-beta": {
+      "processes": 60,
+      "originalRawSHA256": "66de11e23ef238e32d8c9e7ce7c471bc3c51d50b6e2bd394bd126b8005b3fef4",
+      "plan": {
+        "blocks": 10,
+        "samples": 20,
+        "batchRequests": 512,
+        "seed": 202611165733,
+        "payloadBytes": 16,
+        "source": "Engine baseda68bf24, headeef5ad61d1e7f831c75c7e99f322587b30d6ead9; reused base1385093b has identical all Go/module files. Go1.27.3 defaultGC, frozen independent Wasmtime48.0.1.",
+        "scope": "Fixed10block60process event per payload, twenty individually interleaved512-request batches plus separate flush, allaliases and full body/status/header/trailer/CRC verification. Startup/first/twowarmups separate. No owned builds/tests/profiles/analysis/edits/pruning overlap. No extension/pooling/portfolio acceptance.",
+        "variants": {
+          "base": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/profile-gap-0539ea6e-20261115/caller-batches/head-go-runner",
+          "head": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/resource-walk-20261115/beta/head-go-runner",
+          "wasmtime": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/output-screen/wasmtime-go-runner"
+        },
+        "binarySHA256": {
+          "base": "c0ce3e2baca69042e3c3c2a9e202df89b4661b3f90fbf110e6a64acbdad70043",
+          "head": "076c9b109c6fd071b5c3ec80ab5b5fc2e07e5f7260e6edfbba64855abc10c662",
+          "wasmtime": "561370163342e51593964bc6615ca28ebf1831c22132412ce9c6c44981c54f08"
+        },
+        "machTimebase": {
+          "numer": 125,
+          "denom": 3
+        }
+      }
+    },
+    "go-16": {
+      "processes": 60,
+      "originalRawSHA256": "388a9c1ce30d7cbb993fa89d2d3b97cbfed965a83cc26d80281a81831db11971",
+      "plan": {
+        "blocks": 10,
+        "samples": 20,
+        "batchRequests": 512,
+        "seed": 202611175733,
+        "payloadBytes": 16,
+        "source": "Engine baseda68bf24, head26b6d6a68eac30b3094d1446f507d9378f5fc90f; reused base1385093b has identical all Go/module files. Go1.27.3 defaultGC, frozen independent Wasmtime48.0.1.",
+        "scope": "Fixed10block60process event per payload, twenty individually interleaved512-request batches plus separate flush, allaliases and full body/status/header/trailer/CRC verification. Startup/first/twowarmups separate. No owned builds/tests/profiles/analysis/edits/pruning overlap. No extension/pooling/portfolio acceptance.",
+        "variants": {
+          "base": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/profile-gap-0539ea6e-20261115/caller-batches/head-go-runner",
+          "head": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/component-call-setup-20261115/head-go-runner",
+          "wasmtime": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/output-screen/wasmtime-go-runner"
+        },
+        "binarySHA256": {
+          "base": "c0ce3e2baca69042e3c3c2a9e202df89b4661b3f90fbf110e6a64acbdad70043",
+          "head": "bdaf20444bf89d513eb187a39a4263bcede9bc9e4f27aaf6660c908782f729e4",
+          "wasmtime": "561370163342e51593964bc6615ca28ebf1831c22132412ce9c6c44981c54f08"
+        },
+        "machTimebase": {
+          "numer": 125,
+          "denom": 3
+        }
+      }
+    },
+    "go-65536": {
+      "processes": 60,
+      "originalRawSHA256": "049ea20b97534c1a752a31ef7328a2289f9a79d7a39d3e7f3d06d50a679c9d0e",
+      "plan": {
+        "blocks": 10,
+        "samples": 20,
+        "batchRequests": 512,
+        "seed": 202611221253,
+        "payloadBytes": 65536,
+        "source": "Engine baseda68bf24, head26b6d6a68eac30b3094d1446f507d9378f5fc90f; reused base1385093b has identical all Go/module files. Go1.27.3 defaultGC, frozen independent Wasmtime48.0.1.",
+        "scope": "Fixed10block60process event per payload, twenty individually interleaved512-request batches plus separate flush, allaliases and full body/status/header/trailer/CRC verification. Startup/first/twowarmups separate. No owned builds/tests/profiles/analysis/edits/pruning overlap. No extension/pooling/portfolio acceptance.",
+        "variants": {
+          "base": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/profile-gap-0539ea6e-20261115/caller-batches/head-go-runner",
+          "head": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/component-call-setup-20261115/head-go-runner",
+          "wasmtime": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/output-screen/wasmtime-go-runner"
+        },
+        "binarySHA256": {
+          "base": "c0ce3e2baca69042e3c3c2a9e202df89b4661b3f90fbf110e6a64acbdad70043",
+          "head": "bdaf20444bf89d513eb187a39a4263bcede9bc9e4f27aaf6660c908782f729e4",
+          "wasmtime": "561370163342e51593964bc6615ca28ebf1831c22132412ce9c6c44981c54f08"
+        },
+        "machTimebase": {
+          "numer": 125,
+          "denom": 3
+        }
+      }
+    },
+    "llgo-16": {
+      "processes": 80,
+      "originalRawSHA256": "6459f6ddb6bf0e0d7ed48ceb443f22d1664e8fe693039b7475abbd836810f469",
+      "plan": {
+        "blocks": 10,
+        "samples": 20,
+        "batchRequests": 512,
+        "seed": 202611175816,
+        "payloadBytes": 16,
+        "source": "Engine base da68bf24 (reused1385093b identical Go/module files), head 26b6d6a68eac30b3094d1446f507d9378f5fc90f. Go1.27.3; LLGo0539ea6e/LLVM22.1.8 -O3 -lto=full; default GC; frozen independent Wasmtime48.0.1.",
+        "scope": "Fixed10block80process cohort per payload, aliases,20 interleaved512-request batches and separate flush, full HTTP checks. Startup/first/two warmups separate. No owned measurement-host builds/tests/profiles/analysis/edits/pruning overlap. No extension, pooling or portfolio acceptance.",
+        "variants": {
+          "base": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/profile-gap-0539ea6e-20261115/caller-batches/head-llgo-runner",
+          "head": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/component-call-setup-20261115/head-llgo-runner",
+          "go": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/component-call-setup-20261115/head-go-runner",
+          "wasmtime": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/output-screen/wasmtime-go-runner"
+        },
+        "binarySHA256": {
+          "base": "5d2879e940f3d62f2c76b0bd1085db8afd2da113d1d6926222a346620d25eeea",
+          "head": "33b54cb340435a09f1a781ffc99e4bbc58fe824ba494ed520238014fcd7a0d0a",
+          "go": "bdaf20444bf89d513eb187a39a4263bcede9bc9e4f27aaf6660c908782f729e4",
+          "wasmtime": "561370163342e51593964bc6615ca28ebf1831c22132412ce9c6c44981c54f08"
+        },
+        "machTimebase": {
+          "numer": 125,
+          "denom": 3
+        }
+      }
+    },
+    "llgo-65536": {
+      "processes": 80,
+      "originalRawSHA256": "9d2a138588962dbda5c7f691ce6e044974ce03bf198885e654e4575052023507",
+      "plan": {
+        "blocks": 10,
+        "samples": 20,
+        "batchRequests": 512,
+        "seed": 202611241336,
+        "payloadBytes": 65536,
+        "source": "Engine base da68bf24 (reused1385093b identical Go/module files), head 26b6d6a68eac30b3094d1446f507d9378f5fc90f. Go1.27.3; LLGo0539ea6e/LLVM22.1.8 -O3 -lto=full; default GC; frozen independent Wasmtime48.0.1.",
+        "scope": "Fixed10block80process cohort per payload, aliases,20 interleaved512-request batches and separate flush, full HTTP checks. Startup/first/two warmups separate. No owned measurement-host builds/tests/profiles/analysis/edits/pruning overlap. No extension, pooling or portfolio acceptance.",
+        "variants": {
+          "base": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/profile-gap-0539ea6e-20261115/caller-batches/head-llgo-runner",
+          "head": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/component-call-setup-20261115/head-llgo-runner",
+          "go": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/component-call-setup-20261115/head-go-runner",
+          "wasmtime": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/output-screen/wasmtime-go-runner"
+        },
+        "binarySHA256": {
+          "base": "5d2879e940f3d62f2c76b0bd1085db8afd2da113d1d6926222a346620d25eeea",
+          "head": "33b54cb340435a09f1a781ffc99e4bbc58fe824ba494ed520238014fcd7a0d0a",
+          "go": "bdaf20444bf89d513eb187a39a4263bcede9bc9e4f27aaf6660c908782f729e4",
+          "wasmtime": "561370163342e51593964bc6615ca28ebf1831c22132412ce9c6c44981c54f08"
+        },
+        "machTimebase": {
+          "numer": 125,
+          "denom": 3
+        }
+      }
+    }
+  },
+  "records": {
+    "path": "performance-component-call-setup-2026-11-15-records.jsonl.gz",
+    "sha256": "f849249aa28bb327a35352e7a35f0dcdbdf7e07bde5efe713cc2772112664d56",
+    "processes": 400,
+    "omissions": "Only unused per-request RequestNs/PublicAPINs vectors replaced by count, extrema and canonical JSON SHA256. Warm-call arrays, per-batch phase/GC/allocation data, process rusage and request checks retained. Full originals retained locally."
+  },
+  "protocol": {
+    "path": "performance-component-call-setup-2026-11-15-protocol.tar.gz",
+    "sha256": "20384ac1c6b1d7d366e4bffd16f7a6c11222c62606b0cdffd007b5dbecec9d51",
+    "contents": "Plans/scripts, rejected source patches, compiler/binary identities, control/results summaries, load snapshots, allocation diagnostic/profile and validation logs. No full repository source copies, executables or environment-bearing traces."
+  }
+}
