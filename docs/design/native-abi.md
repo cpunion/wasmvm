@@ -543,6 +543,22 @@ is bounded by call sites, with all emitted bytes charged to the existing code
 budget. Late indirect-call exits are emitted before their return stubs so every
 saved address is resolved before publication.
 
+Unmetered linked modules reserve two callee-saved integer registers for logical
+arena usage and call depth (amd64 r15/r14, arm64 x28/x27). Every body in a linked
+policy uses the same convention, and all integer allocation/cache/leaf plans
+exclude those registers. Ordinary entries seed them before header validation;
+private entries inherit them. Every native exit publishes both words before
+returning to the common machine, including failed header checks, cancellation,
+helpers, traps and foreign calls. Host reentry always reloads them. Metered and
+unlinked bodies retain context-based state.
+
+The caller checks the cached state against metadata, logical and physical
+limits before deriving the child from its current frame. Return restores the
+parent usage/depth only after complete result copying succeeds: cancellation
+inside a large copy must still publish the callee's live frame chain. Public
+record fields, full-width values, guest roots and hardware stack usage are
+unchanged; these registers never contain guest values or native pointers.
+
 
 ### Incremental native frame publication
 

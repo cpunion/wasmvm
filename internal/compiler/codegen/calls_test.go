@@ -16,13 +16,20 @@ import (
 
 func TestLinkedCallBodiesAndRelocations(t *testing.T) {
 	for _, arch := range []string{"amd64", "arm64"} {
-		for _, unmetered := range []bool{false, true} {
+		for profile := 0; profile < 3; profile++ {
+			unmetered, frameRegisters := profile != 0, profile == 2
 			callee := leafFixture(0x6a, nil)
 			for range 700 {
 				callee.Slots = append(callee.Slots, wasm.I64)
 			}
 			caller := leafCaller(callee, 0, 5)
-			config := Config{Unmetered: unmetered, LinkedCallees: map[uint32]*slots.Function{7: callee}}
+			if frameRegisters {
+				// Exercise Used increments beyond the ARM immediate range.
+				for range 700 {
+					caller.Slots = append(caller.Slots, wasm.I64)
+				}
+			}
+			config := Config{Unmetered: unmetered, NativeFrameRegisters: frameRegisters, LinkedCallees: map[uint32]*slots.Function{7: callee}}
 			bodies := make([]*CompiledFunction, 2)
 			for i, f := range []*slots.Function{caller, callee} {
 				var err error
@@ -146,7 +153,7 @@ func TestLinkedBodiesKeepOrdinaryHostEntryChecksAndResumption(t *testing.T) {
 	}
 	for _, unmetered := range []bool{false, true} {
 		f := leafFixture(0x6a, nil)
-		_, lease, ctx := configuredContext(t, f, Config{Unmetered: unmetered, LinkedCallees: map[uint32]*slots.Function{7: f}})
+		_, lease, ctx := configuredContext(t, f, Config{Unmetered: unmetered, NativeFrameRegisters: unmetered, LinkedCallees: map[uint32]*slots.Function{7: f}})
 		data, err := native.NewMemory(8, 8)
 		if err != nil {
 			t.Fatal(err)
@@ -188,8 +195,9 @@ func TestLinkedBodiesKeepOrdinaryHostEntryChecksAndResumption(t *testing.T) {
 			{Used: 16, Depth: 1, Continuation: uint64(len(f.Code)), Budget: 64, Payload: [4]uint64{0, 0, view, 0}},
 			{Used: 16, Depth: 1, Budget: 64},
 		} {
+			used, depth := state.Used, state.Depth
 			status, err := ctx.RunState(lease, 0, &state)
-			if err != nil || status != native.Exit(nativeabi.BadState) {
+			if err != nil || status != native.Exit(nativeabi.BadState) || state.Used != used || state.Depth != depth {
 				t.Fatal("ordinary linked entry bypassed header", unmetered, state, status, err)
 			}
 		}

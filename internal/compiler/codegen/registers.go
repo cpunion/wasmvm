@@ -29,6 +29,9 @@ func (e *functionEmitter) integerRegisterPool() []byte {
 		pool = []byte{19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 1, 2, 3, 4, 5, 6, 7, 8}
 	}
 	var used [32]bool
+	if e.frameRegisters {
+		used[e.callReg(callUsed)], used[e.callReg(callDepth)] = true, true
+	}
 	for _, r := range e.constantRegisters {
 		used[r] = true
 	}
