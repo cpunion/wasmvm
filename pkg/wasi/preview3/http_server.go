@@ -36,7 +36,9 @@ func (r *httpReply) set(response *http.Response, err error) {
 	r.ready = true
 	r.response = response
 	r.failure = err
-	close(r.done)
+	if r.done != nil {
+		close(r.done)
+	}
 	r.mu.Unlock()
 }
 func (r *httpReply) abandon() error {
@@ -145,10 +147,16 @@ func (p *HTTP) callIncoming(ctx context.Context, in *component.Instance, request
 		}
 	}
 	path := request.URL.RequestURI()
-	reply := &httpReply{done: make(chan struct{})}
-	callDone := make(chan struct{})
+	reply := &httpReply{}
+	var callDone chan struct{}
+	if collector == nil {
+		reply.done = make(chan struct{})
+		callDone = make(chan struct{})
+	}
 	run := func() {
-		defer close(callDone)
+		if callDone != nil {
+			defer close(callDone)
+		}
 		defer func() {
 			if recover() != nil {
 				body.dispose(nil, httpErr("internal-error"))
@@ -202,7 +210,12 @@ func (p *HTTP) callIncoming(ctx context.Context, in *component.Instance, request
 				return failed
 			}
 			message.body.handled()
-			response.Body = &httpCallBody{ReadCloser: stream, done: callDone, interrupt: context.AfterFunc(callCtx, func() { message.body.dispose(nil, callCtx.Err()) }), release: message.body.release, cancel: cancel, stop: stop}
+			if collector == nil {
+				response.Body = &httpCallBody{ReadCloser: stream, done: callDone, interrupt: context.AfterFunc(callCtx, func() { message.body.dispose(nil, callCtx.Err()) }), release: message.body.release, cancel: cancel, stop: stop}
+			} else {
+				collector.body = message.body
+				response.Body = http.NoBody
+			}
 			owned = false
 			reply.set(response, nil)
 			return nil
@@ -227,11 +240,16 @@ func (p *HTTP) callIncoming(ctx context.Context, in *component.Instance, request
 	}
 	reserved = false
 	accepted = true
-	if collector != nil && collector.failure != nil {
-		reply.abandon()
-		stop()
-		cancel()
-		return nil, collector.failure
+	if collector != nil {
+		defer cancel()
+		defer stop()
+		defer collector.releaseBody()
+		if collector.failure != nil {
+			return nil, collector.failure
+		}
+		// run joined the guest tasks synchronously. The complete reply has
+		// no channel handoff or streaming body lifetime left to manage.
+		return reply.response, reply.failure
 	}
 	select {
 	case <-reply.done:

@@ -26,6 +26,16 @@ type httpCollector struct {
 	data    []byte
 	fuel    uint64
 	failure error
+	body    *httpBody
+}
+
+// Retain the collected response through guest task cleanup. After that join,
+// buffered calls need no streaming owner for the completed body.
+func (c *httpCollector) releaseBody() {
+	if c.body != nil {
+		c.body.release()
+		c.body = nil
+	}
 }
 
 // CallIncomingBuffered consumes the complete response inside the handler's

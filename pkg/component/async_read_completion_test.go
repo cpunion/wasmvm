@@ -145,3 +145,73 @@ func TestAwaitReadWorkCancellationWakesOperation(t *testing.T) {
 		t.Fatal("source worker stranded")
 	}
 }
+
+func TestAwaitReadReadyEventChecksCancellationBeforeHandoff(t *testing.T) {
+	for _, backend := range []string{"interpreter", "native"} {
+		if backend == "native" && !native.Available {
+			continue
+		}
+		for _, cancellation := range []string{"none", "operation", "parent"} {
+			t.Run(backend+"/"+cancellation, func(t *testing.T) {
+				in, typ := sourceType(t, backend, "host-source-stream-u8")
+				closed, consumed := 0, 0
+				_, err := in.WithCaller(nil, CallOptions{}, func(c *Caller) error {
+					original := c.ctx
+					parent, cancelParent := context.WithCancel(c.Context())
+					defer cancelParent()
+					operation, cancelOperation := context.WithCancel(context.Background())
+					defer cancelOperation()
+					c.ctx = parent
+					source, err := c.NewSource(typ, AsyncSource{
+						ReadBytes: func(uint32) (ReadResult, bool, error) {
+							return ReadResult{Bytes: "*", Closed: true}, true, nil
+						},
+						Read: func(*Caller, uint32) (*ReadCompletion, error) {
+							return nil, vm.ErrLink
+						},
+						Close: func() { closed++ },
+					})
+					if err != nil {
+						return err
+					}
+					p, err := c.AwaitRead(operation, source.Resource, 1, func(_ *Caller, result ReadResult, failed error) (*Value, error) {
+						consumed++
+						if cancellation == "none" {
+							if failed != nil || result.Bytes != "*" || !result.Closed {
+								t.Error(result, failed)
+							}
+						} else if !errors.Is(failed, context.Canceled) || result.Bytes != "" {
+							t.Error("canceled event published its data", result, failed)
+						}
+						return nil, nil
+					})
+					c.ctx = original
+					if err != nil || !p.ready() {
+						t.Fatal("read did not complete synchronously", err)
+					}
+					if err = p.bind(in.scheduler().wake); err != nil {
+						return err
+					}
+					if cancellation == "operation" {
+						cancelOperation()
+					} else if cancellation == "parent" {
+						cancelParent()
+					}
+					resolve, _, err := p.take()
+					if err != nil {
+						return err
+					}
+					_, err = resolve(c)
+					p.close()
+					if err != nil {
+						return err
+					}
+					return c.DropAsync(source.Resource)
+				})
+				if err != nil || closed != 1 || consumed != 1 || in.heldValues != 0 || in.heldBytes != 0 {
+					t.Fatal(err, closed, consumed, in.heldValues, in.heldBytes)
+				}
+			})
+		}
+	}
+}
