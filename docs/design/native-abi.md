@@ -581,6 +581,13 @@ indexed copy path. All high words, roots, cancellation exits and host resumes
 remain authoritative in their canonical frames; no additional register is
 reserved from guest allocation.
 
+Normal linked unmetered exits share one state-publication tail per function.
+Work register 1 carries the exit kind until usage/depth/top and function identity
+are published, then the tail returns that kind through the C ABI. BadState keeps
+its diagnostic identity and guarded inline publication. Private returns bypass
+this tail and retain their low-word carrier. All tail bytes and branches remain
+charged to the ordinary code budget.
+
 
 ### Incremental native frame publication
 

@@ -113,6 +113,7 @@ func TestPrivateScalarResultsSurviveEntryScratchAndBorrowedHomes(t *testing.T) {
 				e.rawStatus(nativeabi.Return)
 				a.mark(e.bad)
 				e.rawStatus(nativeabi.BadState)
+				e.emitStatusExit()
 				a.mark(e.exit)
 				body, err := a.finish()
 				if err != nil {

@@ -18,6 +18,7 @@ type functionEmitter struct {
 	a                                                            *assembler
 	f                                                            *slots.Function
 	exit, bad, zero, overflow                                    int
+	statusExit                                                   int // Encoded label + 1; zero means unused.
 	edgeCopies                                                   uint32
 	mixedIntegers                                                uint32
 	unmetered                                                    bool
@@ -359,14 +360,15 @@ func (e *functionEmitter) status(status nativeabi.Exit) {
 	e.rawStatus(status)
 }
 func (e *functionEmitter) rawStatus(status nativeabi.Exit) {
-	e.callTopExit()
-	if e.frameRegisters {
-		e.callStore(callUsed, e.callContext(), uint32(nativeabi.UsedOffset))
-		e.callStore(callDepth, e.callContext(), uint32(nativeabi.DepthOffset))
+	if e.frameRegisters && status != nativeabi.BadState {
+		if e.statusExit == 0 {
+			e.statusExit = e.a.label() + 1
+		}
+		e.callConst(1, uint64(status))
+		e.a.branch(e.statusExit-1, false, 0)
+		return
 	}
-	if e.nativeFunction != 0 && status != nativeabi.BadState {
-		e.contextConst(nativeabi.FunctionOffset, e.nativeFunction-1)
-	}
+	e.publishStatusState(status != nativeabi.BadState)
 	if e.a.arch == "amd64" {
 		e.a.bytes(0xb8)
 		e.a.word(uint32(status))
@@ -374,6 +376,27 @@ func (e *functionEmitter) rawStatus(status nativeabi.Exit) {
 		e.a.aconst(0, uint64(status), false)
 	}
 	e.a.branch(e.exit, false, 0)
+}
+
+func (e *functionEmitter) publishStatusState(identity bool) {
+	e.callTopExit()
+	if e.frameRegisters {
+		e.callStore(callUsed, e.callContext(), uint32(nativeabi.UsedOffset))
+		e.callStore(callDepth, e.callContext(), uint32(nativeabi.DepthOffset))
+	}
+	if e.nativeFunction != 0 && identity {
+		e.contextConst(nativeabi.FunctionOffset, e.nativeFunction-1)
+	}
+}
+
+// All normal exits share state publication. BadState retains its diagnostic
+// identity, and private returns keep their result carrier without entering here.
+func (e *functionEmitter) emitStatusExit() {
+	if e.statusExit != 0 {
+		e.a.mark(e.statusExit - 1)
+		e.publishStatusState(true)
+		e.registerMove(0, e.callReg(1), false)
+	}
 }
 func (e *functionEmitter) leave(status nativeabi.Exit, payload, pc uint64) {
 	e.contextConst(nativeabi.ContinuationOffset, pc)

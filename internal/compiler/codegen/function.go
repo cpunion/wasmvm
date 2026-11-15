@@ -620,6 +620,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	e.trapCode(wasm.TrapIntegerDivideByZero)
 	a.mark(e.overflow)
 	e.trapCode(wasm.TrapIntegerOverflow)
+	e.emitStatusExit()
 	a.mark(e.exit)
 	out.InlineSlots = max(out.InlineSlots, e.inlineSlots)
 	out.InlineFrames = e.inlineFrames
