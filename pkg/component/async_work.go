@@ -110,6 +110,11 @@ func (in *Instance) checkOwned(ref *Resource) error {
 	}
 	return vm.ErrReference
 }
+
+// Scheduled work has no canonical parameters or result. This private type is
+// immutable and carries no instance, ownership or callback state.
+var scheduledWorkType = validate.Type{Kind: model.AsyncFunction}
+
 func (c *Caller) Schedule(work AsyncWork) error {
 	if err := c.enter(); err != nil {
 		return err
@@ -139,7 +144,7 @@ func (c *Caller) Schedule(work AsyncWork) error {
 		seen[key] = true
 	}
 	scope := &namespace{handles: in.hostResources}
-	f := &Function{instance: in, scope: scope, typ: &validate.Type{Kind: model.AsyncFunction}}
+	f := &Function{instance: in, scope: scope, typ: &scheduledWorkType}
 	t, err := in.makeTask(c.core, scope, nil, vm.Extern{}, nil, nil)
 	if err != nil {
 		return err

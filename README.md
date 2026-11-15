@@ -19,7 +19,7 @@ execution never silently switches to one of them.
 The source APIs and proposal snapshots are experimental. Performance and
 production-release acceptance remain open; see [current measurements](#measured-performance)
 and the [release contract](docs/release-readiness.md). Supported builds pin
-Go1.27.3, LLGo `6a482f7f`, LLVM22.1.8 and the LLGo `-O3 -lto=full` profile.
+Go1.27.3, LLGo `0539ea6e`, LLVM22.1.8 and the LLGo `-O3 -lto=full` profile.
 
 ## Project status
 
@@ -275,6 +275,13 @@ These are dated advisory events with exact source/toolchain identities. Hosts,
 compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
+
+The [latest LLGo/runtime allocation study](docs/research/performance-runtime-allocation-2026-11-15.md)
+updates LLGo to main **0539ea6e** and identifies a BDWGC size threshold behind a
+rejected coallocation regression. Fresh Caller batches and immutable signatures
+reduce P3 Go allocations **4.7–5.6%**, LLGo **3.3–3.5%**. Complete-request CPU and
+throughput improvements remain unproven. Reference gaps and all adverse results
+remain recorded; lower allocation counts do not establish performance parity.
 
 The [parameter-initialization study](docs/research/performance-native-parameter-initialization-2026-11-15.md)
 removes redundant clearing of direct-call parameters, reducing general-call Go

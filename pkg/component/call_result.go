@@ -72,13 +72,11 @@ func (f *Function) callWithResult(ctx context.Context, args []Value, options Cal
 		if err != nil {
 			return err
 		}
-		parameters := []model.Field(nil)
 		values := []Value(nil)
 		if result != nil {
-			parameters = []model.Field{{Type: f.typ.Result}}
 			values = []Value{*result}
 		}
-		receiver := &Function{instance: in, scope: f.scope, typ: &validate.Type{Kind: model.Function, Parameters: parameters}}
+		receiver := f.resultReceiver(result != nil)
 		handoff, err := receiver.hostCall(c, values)
 		if err != nil {
 			return err
@@ -99,4 +97,23 @@ func (f *Function) callWithResult(ctx context.Context, args []Value, options Cal
 		}
 		return nil
 	})
+}
+
+// resultReceiver is called inside the exclusive Store lease. The two immutable
+// shapes distinguish an absent result from a present result, including an empty
+// value. Arguments, ownership and Caller lifetimes belong to the new hostCall.
+func (f *Function) resultReceiver(present bool) *Function {
+	index := 0
+	if present {
+		index = 1
+	}
+	if f.resultReceivers[index] == nil {
+		var parameters []model.Field
+		if present {
+			parameters = []model.Field{{Type: f.typ.Result}}
+		}
+		f.resultReceivers[index] = &Function{instance: f.instance, scope: f.scope,
+			typ: &validate.Type{Kind: model.Function, Parameters: parameters}}
+	}
+	return f.resultReceivers[index]
 }

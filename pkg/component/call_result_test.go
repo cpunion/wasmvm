@@ -1,6 +1,7 @@
 package component
 
 import (
+	"context"
 	"errors"
 	"github.com/cpunion/wasmvm/internal/component/canonical"
 	"github.com/cpunion/wasmvm/internal/platform/native"
@@ -8,6 +9,48 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 	"testing"
 )
+
+func TestRepeatedResultHandoffsKeepFreshOwnershipAndContext(t *testing.T) {
+	type contextKey struct{}
+	for _, backend := range []string{"interpreter", "native"} {
+		if backend == "native" && !native.Available {
+			continue
+		}
+		in := asyncInstance(t, backend, "host-result-stream", Imports{})
+		run, _ := in.Function("run")
+		var previous *Caller
+		for round := range 3 {
+			ctx := context.WithValue(context.Background(), contextKey{}, round)
+			called := false
+			_, err := run.CallWithResult(ctx, nil, CallOptions{}, func(c *Caller, v *Value) error {
+				called = true
+				if c.Context().Value(contextKey{}) != round || c == previous {
+					t.Fatal("result handoff retained an earlier invocation")
+				}
+				if previous != nil {
+					if _, err := previous.ReadAsync(nil, 1); !errors.Is(err, wasm.ErrClosed) {
+						t.Fatal("previous Caller became usable", err)
+					}
+				}
+				previous = c
+				read, err := c.ReadAsync(v.Resource, 1)
+				if err != nil || len(read.Values) != 1 || read.Values[0].Bits != 42 {
+					t.Fatal("result ownership was reused", read, err)
+				}
+				if round == 2 {
+					return vm.ErrLink
+				}
+				return c.DropAsync(v.Resource)
+			})
+			if !called || round == 2 && !errors.Is(err, vm.ErrLink) || round != 2 && err != nil {
+				t.Fatal(backend, round, called, err)
+			}
+			if in.tasks != nil || in.heldValues != 0 || in.heldBytes != 0 {
+				t.Fatal("handoff retained task or budget state")
+			}
+		}
+	}
+}
 
 func TestCallWithResultConsumesBeforeProducerExit(t *testing.T) {
 	for _, backend := range []string{"interpreter", "native"} {

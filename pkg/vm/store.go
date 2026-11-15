@@ -72,6 +72,8 @@ type operation struct {
 	collect       bool
 	exposed       atomic.Bool
 	continuations map[*Continuation]struct{}
+	callerBlock   *[4]callerAllocation
+	nextCaller    uint8
 }
 
 func (e *Engine) NewStore(config StoreConfig) (*Store, error) {
@@ -170,6 +172,9 @@ func (op *operation) finish() {
 	if len(op.continuations) != 0 {
 		op.finishContinuations()
 	}
+	// Retained capabilities own their blocks through interior pointers. The
+	// finished driver need not retain unrelated, expired capabilities.
+	op.callerBlock = nil
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.active = nil
