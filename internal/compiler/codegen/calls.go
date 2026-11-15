@@ -141,11 +141,15 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	e.callLoad(1, e.callReg(2), nativeabi.CallCapacityOffset)
 	e.callCompare(0, 1)
 	e.branch(fallback, "hs")
-	e.callLoad(0, e.callContext(), uint32(nativeabi.DepthOffset))
 	e.callLoad(1, e.callReg(2), nativeabi.CallDepthOffset)
-	e.callCompare(0, 1)
+	if e.frameRegisters {
+		e.callCompare(callDepth, 1)
+	} else {
+		e.callStateLoad(0, nativeabi.DepthOffset)
+		e.callCompare(0, 1)
+	}
 	e.branch(fallback, "hs")
-	e.callLoad(0, e.callContext(), uint32(nativeabi.UsedOffset))
+	e.callStateLoad(0, nativeabi.UsedOffset)
 	if indirect {
 		e.callLoad(1, e.callContext(), uint32(nativeabi.PayloadOffset))
 		e.callMemory(1, e.callReg(1), 0, false, true)
@@ -165,11 +169,18 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	if !indirect {
 		e.spillRegisters()
 	}
-	e.callLoad(0, e.callContext(), uint32(nativeabi.UsedOffset))
-	e.callConst(1, uint64(len(e.f.Slots))*16)
-	e.callAdd(0, 0, 1)
-	e.callLoad(4, e.callContext(), uint32(nativeabi.ArenaOffset))
-	e.callAdd(4, 4, 0)
+	if e.frameRegisters {
+		// The current frame is already Arena+Used. Quotas above checked
+		// the complete child before deriving its address from that frame.
+		e.callConst(4, uint64(len(e.f.Slots))*16)
+		e.callAddFrame(4)
+	} else {
+		e.callStateLoad(0, nativeabi.UsedOffset)
+		e.callConst(1, uint64(len(e.f.Slots))*16)
+		e.callAdd(0, 0, 1)
+		e.callLoad(4, e.callContext(), uint32(nativeabi.ArenaOffset))
+		e.callAdd(4, 4, 0)
+	}
 	if indirect {
 		e.callLoad(5, e.callContext(), uint32(nativeabi.PayloadOffset))
 		e.callMemory(5, e.callReg(5), 0, false, true)
@@ -193,8 +204,12 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	e.callMeta(false)
 	e.callLoad(0, e.callContext(), uint32(nativeabi.FunctionOffset))
 	e.callStore(0, e.callReg(3), nativeabi.CallFunctionOffset)
-	e.callLoad(0, e.callContext(), uint32(nativeabi.UsedOffset))
-	e.callStore(0, e.callReg(3), nativeabi.CallUsedOffset)
+	if e.frameRegisters {
+		e.callStore(callUsed, e.callReg(3), nativeabi.CallUsedOffset)
+	} else {
+		e.callStateLoad(0, nativeabi.UsedOffset)
+		e.callStore(0, e.callReg(3), nativeabi.CallUsedOffset)
+	}
 	e.callConst(0, uint64(pc))
 	e.callStore(0, e.callReg(3), nativeabi.CallPCOffset)
 	e.callAddress(resume, 0)
@@ -204,13 +219,7 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	e.callLoad(0, e.callReg(2), nativeabi.CallTopOffset)
 	e.callAdvance(0, 1)
 	e.callStore(0, e.callReg(2), nativeabi.CallTopOffset)
-	e.callLoad(0, e.callContext(), uint32(nativeabi.UsedOffset))
-	e.callConst(1, uint64(len(e.f.Slots))*16)
-	e.callAdd(0, 0, 1)
-	e.callStore(0, e.callContext(), uint32(nativeabi.UsedOffset))
-	e.callLoad(0, e.callContext(), uint32(nativeabi.DepthOffset))
-	e.callAdvance(0, 1)
-	e.callStore(0, e.callContext(), uint32(nativeabi.DepthOffset))
+	e.callPushState()
 	e.contextConst(nativeabi.ContinuationOffset, 0)
 	if indirect {
 		e.callLoad(1, e.callContext(), uint32(nativeabi.PayloadOffset))
@@ -285,14 +294,10 @@ func (e *functionEmitter) linkedReturn(pc int) {
 	}
 	e.callLoad(0, e.callReg(3), nativeabi.CallFunctionOffset)
 	e.callStore(0, e.callContext(), uint32(nativeabi.FunctionOffset))
-	e.callLoad(0, e.callReg(3), nativeabi.CallUsedOffset)
-	e.callStore(0, e.callContext(), uint32(nativeabi.UsedOffset))
+	e.callPopState()
 	e.callLoad(0, e.callReg(3), nativeabi.CallPCOffset)
 	e.callAdvance(0, 1)
 	e.callStore(0, e.callContext(), uint32(nativeabi.ContinuationOffset))
-	e.callLoad(0, e.callContext(), uint32(nativeabi.DepthOffset))
-	e.callAdvance(0, -1)
-	e.callStore(0, e.callContext(), uint32(nativeabi.DepthOffset))
 	e.callLoad(2, e.callContext(), uint32(nativeabi.CallViewOffset))
 	e.callLoad(0, e.callReg(2), nativeabi.CallTopOffset)
 	e.callAdvance(0, -1)

@@ -141,6 +141,10 @@ type Config struct {
 	// SharedDispatch leaves forward address relocations for one module table
 	// per policy. The owner must append and link that table before publication.
 	SharedDispatch bool
+	// NativeFrameRegisters retains Used/Depth in dedicated callee-saved words.
+	// Only unmetered linked modules may enable it, consistently for every body.
+	// Ordinary entries reload the state and all exits publish it to the record.
+	NativeFrameRegisters bool
 }
 
 func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
@@ -149,6 +153,9 @@ func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, co
 
 func compileFunction(arch string, f *slots.Function, limits Limits, config Config) (out *CompiledFunction, err error) {
 	unmetered := config.Unmetered
+	if config.NativeFrameRegisters && (!unmetered || config.LinkedCallees == nil) {
+		return nil, wasm.ErrInvalid
+	}
 	pageSize := uint64(65536)
 	if len(config.MemoryPageSizes) != 0 {
 		if len(config.MemoryPageSizes) != max(1, int(config.MemoryCount)) {
@@ -201,6 +208,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	}
 	a := assembler{arch: arch, labels: make([]int, 1, len(f.Code)+8), bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true, compactBranches: arch == "arm64"}
 	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered, memoryMinimum: uint64(config.MemoryMinimumPages) * pageSize, memoryPageSizes: config.MemoryPageSizes}
+	e.frameRegisters = config.NativeFrameRegisters
 	e.x86Features = config.X86Features
 	e.arm64Features = config.ARM64Features
 	e.nativeThreads = config.NativeThreads
@@ -235,6 +243,10 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	e.sharedDefaultMemory = e.sharedDefaultMemory && e.memoryViews
 	e.start = a.label()
 	a.mark(e.start)
+	if e.frameRegisters {
+		e.callLoad(callUsed, e.callContext(), uint32(nativeabi.UsedOffset))
+		e.callLoad(callDepth, e.callContext(), uint32(nativeabi.DepthOffset))
+	}
 	e.header(uint64(len(f.Slots))*16, len(pcs))
 	e.prepareHeapAccesses(config)
 	if config.NativeAllocations && unmetered {

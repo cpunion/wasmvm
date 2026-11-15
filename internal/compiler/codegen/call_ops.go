@@ -6,9 +6,9 @@ import "github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 // after they have been spilled. Context and current frame registers stay fixed.
 func (e *functionEmitter) callReg(n byte) byte {
 	if e.a.arch == "amd64" {
-		return [...]byte{0, 1, 2, 8, 9, 10, 11, 3}[n]
+		return [...]byte{0, 1, 2, 8, 9, 10, 11, 3, 15, 14}[n]
 	}
-	return [...]byte{9, 10, 11, 14, 15, 16, 17, 13}[n]
+	return [...]byte{9, 10, 11, 14, 15, 16, 17, 13, 28, 27}[n]
 }
 func (e *functionEmitter) callContext() byte {
 	if e.a.arch == "amd64" {

@@ -276,6 +276,12 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
+The [native frame-register study](docs/research/performance-native-frame-registers-2026-11-15.md)
+reduces general-call Go CPU **11.2%** and instructions **6.4%**, with resolving
+own controls. Go P3 CPU stays near parity with the previous revision. General
+calls still take **2.88–3.01x** the reference time; LLGo's adverse normal-GC
+64 KiB P3 point and separate zero-GC diagnosis remain recorded.
+
 The [direct native-return study](docs/research/performance-direct-native-resumes-2026-11-15.md)
 reduces Go CPU **1.9%** and instructions **4.2%** on general native calls in an
 independent counter audit. Complete P3 CPU intervals cross parity. General-call
