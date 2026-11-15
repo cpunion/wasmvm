@@ -12,6 +12,12 @@ retain API process startup and every guest phase; production CLI builds/timings
 run only in the explicit full suite. Build durations are recorded separately
 and printed as they complete, so linking delays remain visible.
 
+Routing source comparisons now include same-binary A/A aliases for both Go and
+LLGo, in interpreter and native modes. Every declared block contributes to its
+control interval. Named reference timings remain separately qualified; hosted
+results do not close controlled acceptance. The [ordered optimization event](../docs/research/performance-ordered-optimizations-2026-11-15.md)
+retains the rejected combined candidate, causal ablations and corrected data.
+
 The [2026-11-01 owned-engine audit](../docs/research/performance-2026-11-01.md)
 measures the complete existing Core portfolio, modern GC/Threads and selected
 P1/component/P2/async boundaries. Dispatch Runtime benchmarks with `suite=survey`

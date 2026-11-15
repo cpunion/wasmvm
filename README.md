@@ -276,6 +276,15 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
+The [ordered optimization study](docs/research/performance-ordered-optimizations-2026-11-15.md)
+reports corrected arm64 generic-call improvements of **4.3% Go /6.3% LLGo**,
+while Go remains **2.28x Wasmtime** on that non-inlined case. Linux hosted
+SIMD lanes improve about **14%** and Rust SHA **2%**, with resolving source
+controls. Competitive rankings remain advisory. P3 uses **3 fewer
+allocations per request** under both compilers; CPU gains remain unproven.
+The regressing vector-copy and ARM byte/mask candidates were removed. A small
+residual LLGo SHA regression and unresolved controls remain explicitly open.
+
 The [component call-setup study](docs/research/performance-component-call-setup-2026-11-15.md)
 removes exit-closure allocations and full-`Extern` adapter boxes. P3 requests
 use **8 fewer allocations** under both compilers. Go 16 B CPU falls about **1.0%**
