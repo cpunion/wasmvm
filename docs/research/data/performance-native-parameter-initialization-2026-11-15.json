@@ -1,0 +1,5776 @@
+{
+  "base": "fd625a2d5d58c29f099065c17fc9d093bfaac59e",
+  "reusedBaseSource": "9de037fbef8f0e99a56175141233258ef426aa70",
+  "source": "55f3e93a0a362c56b2fc285fe2aee9919582a38e",
+  "sourceTree": "6dc23444c89801eeaea8e096a7008cbc1e0a9ff8",
+  "identity": {
+    "base": "fd625a2d5d58c29f099065c17fc9d093bfaac59e",
+    "reusedBaseSource": "9de037fbef8f0e99a56175141233258ef426aa70",
+    "source": "55f3e93a0a362c56b2fc285fe2aee9919582a38e",
+    "productionFiles": [
+      "internal/compiler/codegen/call_ops.go",
+      "internal/compiler/codegen/calls.go"
+    ],
+    "baseQualification": "The four reused baseline binaries were built at9de037fb. Git verifies all Go/module files identical to integratedfd625a2d. Preserve original sourceRevision and binary hashes; baseline links avoid copies. Each role has same-binary A/A aliases. Head source uses two-file committed overlays.",
+    "profile": {
+      "go": "go1.27.3",
+      "llgo": "6a482f7f6ad94e9f2d0a0fea97dd4cabd46b1130",
+      "llvm": "22.1.8",
+      "llgoFlags": [
+        "-O3",
+        "-lto=full"
+      ],
+      "GC": "Default production GC"
+    },
+    "overlays": {
+      "base": {
+        "internal/compiler/codegen/call_ops.go": "3acd57d1ec6ee42902877523e50b99ee3f33fcc8b888e6e933799bf0384537cc",
+        "internal/compiler/codegen/calls.go": "50d721d83789c9aad5f482231f33d6a81365478bbba0c8a628f7a2caaa6992c7"
+      },
+      "head": {
+        "internal/compiler/codegen/call_ops.go": "5a13be28a5bdd02980f567bea4b52aa6eec192f1a07cd1d289786740804d52af",
+        "internal/compiler/codegen/calls.go": "3950204daf3e46cfb8ecc1c685f0b2322a8beb52c4fd6adee27f4bd79e42b81e"
+      }
+    },
+    "builds": [
+      {
+        "role": "base",
+        "compiler": "go",
+        "kind": "phase",
+        "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-parameter-initialization-20261115/base-go-phase-committed",
+        "reusedFrom": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-shared-exits-20261115/head-go-phase-committed",
+        "sourceRevision": "9de037fbef8f0e99a56175141233258ef426aa70",
+        "sha256": "2b24889fa948b6641bead583135d50c9fd4aa5a8eb69d8cf250f400ad393a2fe"
+      },
+      {
+        "role": "base",
+        "compiler": "go",
+        "kind": "runner",
+        "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-parameter-initialization-20261115/base-go-runner-committed",
+        "reusedFrom": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-shared-exits-20261115/head-go-runner-committed",
+        "sourceRevision": "9de037fbef8f0e99a56175141233258ef426aa70",
+        "sha256": "1c9a32077c043d77570f1d9a1ef99e8c80551e2dc0a7c16857fa4942a925c25e"
+      },
+      {
+        "role": "head",
+        "compiler": "go",
+        "kind": "phase",
+        "command": [
+          "go",
+          "build",
+          "-overlay",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-parameter-initialization-20261115/head-go-committed-overlay/overlay.json",
+          "-o",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-parameter-initialization-20261115/head-go-phase-committed",
+          "./benchmarks/embedded/wasmvm"
+        ],
+        "cwd": "/Users/lijie/source/goplus/wasmvm-source-cleanup",
+        "seconds": 1.7319370000623167,
+        "sourceRevision": "55f3e93a0a362c56b2fc285fe2aee9919582a38e",
+        "sha256": "f09c30436ecc800d84c779b39fb05c0fe589693d450acb28d7a937b4bd6b39b4"
+      },
+      {
+        "role": "head",
+        "compiler": "go",
+        "kind": "runner",
+        "command": [
+          "go",
+          "build",
+          "-overlay",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-parameter-initialization-20261115/head-go-committed-overlay/overlay.json",
+          "-o",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-parameter-initialization-20261115/head-go-runner-committed",
+          "."
+        ],
+        "cwd": "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/p3io",
+        "seconds": 2.089360374957323,
+        "sourceRevision": "55f3e93a0a362c56b2fc285fe2aee9919582a38e",
+        "sha256": "83ae3ffdf2749dc59357daedac35253ee5a863039786ae1a11380eac992962c2"
+      },
+      {
+        "role": "base",
+        "compiler": "llgo",
+        "kind": "phase",
+        "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-parameter-initialization-20261115/base-llgo-phase-committed",
+        "reusedFrom": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-shared-exits-20261115/head-llgo-phase-committed",
+        "sourceRevision": "9de037fbef8f0e99a56175141233258ef426aa70",
+        "sha256": "ca00e5011a4fff7343fc275b30e43782bafa3fb65c7a8679a1f3a2dddc3c0293"
+      },
+      {
+        "role": "base",
+        "compiler": "llgo",
+        "kind": "runner",
+        "binary": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-parameter-initialization-20261115/base-llgo-runner-committed",
+        "reusedFrom": "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-shared-exits-20261115/head-llgo-runner-committed",
+        "sourceRevision": "9de037fbef8f0e99a56175141233258ef426aa70",
+        "sha256": "b05899d9a4270bae1cd4b0e32e3d3b886384e26cddc711dfbab12ac189bf419c"
+      },
+      {
+        "role": "head",
+        "compiler": "llgo",
+        "kind": "phase",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-6a482f7f",
+          "build",
+          "-O3",
+          "-lto=full",
+          "-overlay",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-parameter-initialization-20261115/head-llgo-committed-overlay/overlay.json",
+          "-o",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-parameter-initialization-20261115/head-llgo-phase-committed",
+          "./benchmarks/embedded/wasmvm"
+        ],
+        "cwd": "/Users/lijie/source/goplus/wasmvm-source-cleanup",
+        "seconds": 29.949276666156948,
+        "sourceRevision": "55f3e93a0a362c56b2fc285fe2aee9919582a38e",
+        "sha256": "c69ab16f063df4607e75ac8294fb38aebda2804da04352981995fcce917a626f"
+      },
+      {
+        "role": "head",
+        "compiler": "llgo",
+        "kind": "runner",
+        "command": [
+          "/Users/lijie/source/goplus/wasmvm/artifacts/components/llgo-6a482f7f",
+          "build",
+          "-O3",
+          "-lto=full",
+          "-overlay",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-parameter-initialization-20261115/head-llgo-committed-overlay/overlay.json",
+          "-o",
+          "/Users/lijie/source/goplus/wasmvm/artifacts/protocol-cost-20261112/native-parameter-initialization-20261115/head-llgo-runner-committed",
+          "."
+        ],
+        "cwd": "/Users/lijie/source/goplus/wasmvm-source-cleanup/benchmarks/p3io",
+        "seconds": 64.1703075831756,
+        "sourceRevision": "55f3e93a0a362c56b2fc285fe2aee9919582a38e",
+        "sha256": "b328e037bda393f17d67cd7f8234048de5105a6137708fee30d83ed36a8651a0"
+      }
+    ]
+  },
+  "host": "Apple M4 Max, darwin/arm64; other user compiler/link/test/desktop activity observed. Fixed cohorts are distinct; no owned build/test/analysis/source edit/pruning overlaps timed work.",
+  "references": {
+    "wazero": "1.12.0",
+    "wasmtime": "48.0.1",
+    "wasmer": "7.3.0",
+    "nativeC": "Unchecked LLVM22 affine oracle, 2N steps normalized per guest iteration, without VM safety contracts."
+  },
+  "finalComparisons": {
+    "counter-final": {
+      "processes": 40,
+      "medians": {
+        "base": {
+          "cpuNs": 6.248010624999999,
+          "instructions": 169.289769175,
+          "cycles": 23.58485616,
+          "cpi": 0.13932494896990633,
+          "nsPerIteration": 6.298018750000001,
+          "phase_cleanup": 15542.0,
+          "phase_compileValidate": 267125.5,
+          "phase_engineSetup": 6083.0,
+          "phase_exportLookup": 250.0,
+          "phase_firstCall": 31264979.0,
+          "phase_instantiate": 8333.0,
+          "phase_load": 62437.0
+        },
+        "head": {
+          "cpuNs": 5.128553333333333,
+          "instructions": 168.23165426,
+          "cycles": 19.35361537,
+          "cpi": 0.11503847307726056,
+          "nsPerIteration": 5.1740104,
+          "phase_cleanup": 30333.0,
+          "phase_compileValidate": 276312.5,
+          "phase_engineSetup": 6000.0,
+          "phase_exportLookup": 250.0,
+          "phase_firstCall": 25876687.5,
+          "phase_instantiate": 8750.0,
+          "phase_load": 65687.5
+        }
+      },
+      "comparisons": {
+        "cpuNs": {
+          "AA": {
+            "base": {
+              "ratio": 1.0007431331763175,
+              "ci95": [
+                0.9977485970766224,
+                1.0034393671239732
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9976867385349176,
+              "ci95": [
+                0.9943151340993387,
+                1.0004341242665284
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.8214498945155602,
+            "ci95": [
+              0.8198459756442446,
+              0.823360094287829
+            ]
+          }
+        },
+        "instructions": {
+          "AA": {
+            "base": {
+              "ratio": 1.0000444035849259,
+              "ci95": [
+                0.9999121172691136,
+                1.000174249067449
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999757726067754,
+              "ci95": [
+                0.9999220336721153,
+                1.0000289211042837
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9938305503677042,
+            "ci95": [
+              0.9937574725625588,
+              0.9939155178239504
+            ]
+          }
+        },
+        "cycles": {
+          "AA": {
+            "base": {
+              "ratio": 1.0006975949442574,
+              "ci95": [
+                0.9994209027281865,
+                1.001866657521345
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9984898874560021,
+              "ci95": [
+                0.9965438666184187,
+                1.000182569058203
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.8213793748025872,
+            "ci95": [
+              0.8205164573292123,
+              0.822455765325977
+            ]
+          }
+        },
+        "cpi": {
+          "AA": {
+            "base": {
+              "ratio": 1.0006531623565813,
+              "ci95": [
+                0.9994853791866263,
+                1.0016915683595202
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9985140788492306,
+              "ci95": [
+                0.9966145797270417,
+                1.0001462685681437
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.8264782909910424,
+            "ci95": [
+              0.8256355294119322,
+              0.8275095820394314
+            ]
+          }
+        },
+        "nsPerIteration": {
+          "AA": {
+            "base": {
+              "ratio": 1.0018632344568057,
+              "ci95": [
+                0.9977474940482494,
+                1.0061608209550914
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9988789716499402,
+              "ci95": [
+                0.9956695755116263,
+                1.0020114339014006
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.8205154435805643,
+            "ci95": [
+              0.8183881136183716,
+              0.8226364512962208
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 0.8841747787193772,
+              "ci95": [
+                0.5968374549733682,
+                1.3876950251403273
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.7120017614997545,
+              "ci95": [
+                0.4283184705406575,
+                1.2204588166552013
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.467306912683741,
+            "ci95": [
+              1.1147726968590848,
+              2.0087384272860676
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 0.9030156999199718,
+              "ci95": [
+                0.7266153505185068,
+                1.0398837644711791
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0270114956570127,
+              "ci95": [
+                0.8647477004477174,
+                1.3107951910725872
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.061655712036467,
+            "ci95": [
+              0.9941383917901636,
+              1.1265675888577262
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.8151885787942192,
+              "ci95": [
+                0.5601101967458828,
+                1.1190836422314931
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.1487768567822823,
+              "ci95": [
+                0.80339037485741,
+                1.7509039708132736
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0111564988139736,
+            "ci95": [
+              0.8672822187678974,
+              1.164883130218476
+            ]
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9743698393456955,
+              "ci95": [
+                0.8485702388080782,
+                1.1165396367445197
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.8282913031080992,
+              "ci95": [
+                0.6578956423256244,
+                1.033096200516316
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.1153867758006022,
+            "ci95": [
+              0.9253674076317134,
+              1.3349994407315595
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 1.0148156135647848,
+              "ci95": [
+                1.0056601401513416,
+                1.0247437823181882
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9796598837178792,
+              "ci95": [
+                0.9726642520806025,
+                0.9875124245834015
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.8247362676226412,
+            "ci95": [
+              0.8140487655991963,
+              0.8331665813245653
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 0.9242871722291981,
+              "ci95": [
+                0.7023361551377078,
+                1.1386945472500944
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0197224288924551,
+              "ci95": [
+                0.7869648779541338,
+                1.404699890553226
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.08376548858468,
+            "ci95": [
+              0.965575547115857,
+              1.3023048245286397
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 0.7538663484474516,
+              "ci95": [
+                0.4043720910746823,
+                1.2564992056813735
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9487195166474127,
+              "ci95": [
+                0.7015516503486551,
+                1.3210183569706628
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0053070462896134,
+            "ci95": [
+              0.7090526558523158,
+              1.3014704964933492
+            ]
+          }
+        }
+      }
+    },
+    "core-final": {
+      "processes": 192,
+      "medians": {
+        "base": {
+          "nsPerIteration": 6.3272125,
+          "readinessNs": 4253708.0,
+          "phase_cleanup": 15187.5,
+          "phase_compileValidate": 280791.5,
+          "phase_engineSetup": 6125.0,
+          "phase_exportLookup": 208.5,
+          "phase_firstCall": 31443854.0,
+          "phase_instantiate": 8604.5,
+          "phase_load": 72563.0
+        },
+        "head": {
+          "nsPerIteration": 5.1842208,
+          "readinessNs": 4313000.0,
+          "phase_cleanup": 11770.5,
+          "phase_compileValidate": 288854.5,
+          "phase_engineSetup": 6229.0,
+          "phase_exportLookup": 250.0,
+          "phase_firstCall": 25932458.5,
+          "phase_instantiate": 8729.5,
+          "phase_load": 73458.0
+        },
+        "llgo-base": {
+          "nsPerIteration": 6.3129916,
+          "readinessNs": 5915583.5,
+          "phase_cleanup": 10437.0,
+          "phase_compileValidate": 257041.5,
+          "phase_engineSetup": 6250.0,
+          "phase_exportLookup": 417.0,
+          "phase_firstCall": 31777854.0,
+          "phase_instantiate": 10041.5,
+          "phase_load": 76187.0
+        },
+        "llgo-head": {
+          "nsPerIteration": 5.2206542,
+          "readinessNs": 5682729.0,
+          "phase_cleanup": 11354.5,
+          "phase_compileValidate": 252854.0,
+          "phase_engineSetup": 6354.0,
+          "phase_exportLookup": 437.5,
+          "phase_firstCall": 25966687.5,
+          "phase_instantiate": 9646.0,
+          "phase_load": 68812.5
+        },
+        "native-llvm": {
+          "nsPerIteration": 2.1754375,
+          "readinessNs": 3172583.5,
+          "phase_firstCall": 10839146.0
+        },
+        "wasmer": {
+          "nsPerIteration": 2.1772958,
+          "readinessNs": 6072624.5,
+          "phase_cleanup": 31333.0,
+          "phase_compileValidate": 1298166.5,
+          "phase_engineSetup": 44104.5,
+          "phase_exportLookup": 4646.0,
+          "phase_firstCall": 10885270.5,
+          "phase_instantiate": 17437.5,
+          "phase_load": 71271.0
+        },
+        "wasmtime": {
+          "nsPerIteration": 2.1806248999999998,
+          "readinessNs": 4471583.0,
+          "phase_cleanup": 72041.5,
+          "phase_compileValidate": 850375.5,
+          "phase_engineSetup": 133854.0,
+          "phase_exportLookup": 3791.5,
+          "phase_firstCall": 10907875.0,
+          "phase_instantiate": 7395.5,
+          "phase_load": 57666.5
+        },
+        "wazero": {
+          "nsPerIteration": 2.3292998999999996,
+          "readinessNs": 4541063.0,
+          "phase_cleanup": 4479.0,
+          "phase_compileValidate": 132687.5,
+          "phase_engineSetup": 60937.5,
+          "phase_exportLookup": 2583.5,
+          "phase_firstCall": 10952125.0,
+          "phase_instantiate": 14021.0,
+          "phase_load": 80729.5
+        }
+      },
+      "comparisons": {
+        "nsPerIteration": {
+          "AA": {
+            "base": {
+              "ratio": 1.0035097913011497,
+              "ci95": [
+                0.9980343828628799,
+                1.0092757533874792
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9965980942020527,
+              "ci95": [
+                0.9916971431728713,
+                1.0014923566434268
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo-base": {
+              "ratio": 0.9969715238060968,
+              "ci95": [
+                0.9870618177839384,
+                1.0040345236998418
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo-head": {
+              "ratio": 0.9990957206240814,
+              "ci95": [
+                0.9900710910195606,
+                1.0093677061533424
+              ],
+              "resolves2_5Percent": true
+            },
+            "native-llvm": {
+              "ratio": 1.0001316149866732,
+              "ci95": [
+                0.9903553453956718,
+                1.0086309638116557
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmer": {
+              "ratio": 0.9959220846726969,
+              "ci95": [
+                0.9860589281545981,
+                1.0065482871990097
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 1.00049203272903,
+              "ci95": [
+                0.9930613993631382,
+                1.0094827039040408
+              ],
+              "resolves2_5Percent": true
+            },
+            "wazero": {
+              "ratio": 1.0023945778569334,
+              "ci95": [
+                0.992748801704319,
+                1.0133729924745583
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.8202971276747221,
+            "ci95": [
+              0.8171424215316606,
+              0.8231700130251319
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2.3782353437712467,
+            "ci95": [
+              2.3647358037836548,
+              2.3906898562604675
+            ]
+          },
+          "head/wazero": {
+            "ratio": 2.234263258159923,
+            "ci95": [
+              2.217240698724538,
+              2.2553167503896745
+            ]
+          },
+          "head/wasmer": {
+            "ratio": 2.3816849448839705,
+            "ci95": [
+              2.3710711391300845,
+              2.3936889417767784
+            ]
+          },
+          "head/native-llvm": {
+            "ratio": 2.383423271025986,
+            "ci95": [
+              2.3703300636289235,
+              2.395842154306629
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.8246481824099088,
+            "ci95": [
+              0.8197819155508286,
+              0.8285967169737698
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.0054626036848737,
+            "ci95": [
+              1.0013196808673794,
+              1.009700984025319
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 2.3912267009236285,
+            "ci95": [
+              2.3759929641266875,
+              2.4067209640366234
+            ]
+          }
+        },
+        "readinessNs": {
+          "AA": {
+            "base": {
+              "ratio": 0.9844987753264676,
+              "ci95": [
+                0.9228955976330167,
+                1.0465484873074566
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0443784866376808,
+              "ci95": [
+                0.9901448758014337,
+                1.0901874439279353
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 0.8987232017764258,
+              "ci95": [
+                0.7625924958637808,
+                0.9923251980043024
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.6559184388262347,
+              "ci95": [
+                0.29080333087046734,
+                1.0076646430871168
+              ],
+              "resolves2_5Percent": false
+            },
+            "native-llvm": {
+              "ratio": 1.0848860627680095,
+              "ci95": [
+                0.9820949926819177,
+                1.2595080861188412
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmer": {
+              "ratio": 0.8837907692766319,
+              "ci95": [
+                0.6635847492742102,
+                1.0576308987887804
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.889585192940274,
+              "ci95": [
+                0.712180510304391,
+                1.0193639963562635
+              ],
+              "resolves2_5Percent": false
+            },
+            "wazero": {
+              "ratio": 0.8926813440523172,
+              "ci95": [
+                0.7890667140544492,
+                0.9652074617807404
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0147073081457063,
+            "ci95": [
+              0.975924480499404,
+              1.048832798914259
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.9288286258613392,
+            "ci95": [
+              0.8338989409140046,
+              1.0008698104088793
+            ]
+          },
+          "head/wazero": {
+            "ratio": 0.949864132947026,
+            "ci95": [
+              0.8967903254493947,
+              0.9945055092770166
+            ]
+          },
+          "head/wasmer": {
+            "ratio": 0.6700072515975536,
+            "ci95": [
+              0.5944701697169269,
+              0.7246406434513983
+            ]
+          },
+          "head/native-llvm": {
+            "ratio": 1.3466704470377957,
+            "ci95": [
+              1.2422106204145849,
+              1.4352744326792246
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 1.1448016238574976,
+            "ci95": [
+              0.9514279856780579,
+              1.6013382881511309
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.5914776507437203,
+            "ci95": [
+              1.2727859766564606,
+              2.413473914165983
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 1.4782099994293219,
+            "ci95": [
+              1.233497762669199,
+              2.0471136476726994
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 1.2004755705954453,
+              "ci95": [
+                0.7423929577942532,
+                1.9066734329923185
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.6930457114188211,
+              "ci95": [
+                0.4939419578121639,
+                0.9606846171870066
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 0.8532569938585829,
+              "ci95": [
+                0.6819851341406566,
+                1.0306245358328134
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 1.0957764756896249,
+              "ci95": [
+                0.9343759367219496,
+                1.329007124175539
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmer": {
+              "ratio": 1.2573635848005416,
+              "ci95": [
+                0.9092803631339867,
+                1.9827192243367833
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.2131030575624384,
+              "ci95": [
+                0.9308210657244692,
+                1.8273708938674884
+              ],
+              "resolves2_5Percent": false
+            },
+            "wazero": {
+              "ratio": 1.1102119342620214,
+              "ci95": [
+                0.8356533677251036,
+                1.5850214145481694
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.8610190637250591,
+            "ci95": [
+              0.5673054637238014,
+              1.3529602525597122
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.15251735713526848,
+            "ci95": [
+              0.10640948265016233,
+              0.2184323781799312
+            ]
+          },
+          "head/wazero": {
+            "ratio": 2.351889814558667,
+            "ci95": [
+              1.4828541611017825,
+              3.648415569832477
+            ]
+          },
+          "head/wasmer": {
+            "ratio": 0.3581808692433205,
+            "ci95": [
+              0.24491193466707406,
+              0.5316300706898676
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 1.104323668984375,
+            "ci95": [
+              1.0501120442755996,
+              1.1570275188886452
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 0.9007430804058328,
+            "ci95": [
+              0.6639249203675034,
+              1.1783315430055223
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 0.13737895408137832,
+            "ci95": [
+              0.10911755322019487,
+              0.15919193690812206
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0189562148911449,
+              "ci95": [
+                0.8950086695977277,
+                1.1766820859277327
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.1488957833996087,
+              "ci95": [
+                0.9887703548169992,
+                1.399771468811772
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 0.9587129667756892,
+              "ci95": [
+                0.8292271528147753,
+                1.082160036387135
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.9746127147082068,
+              "ci95": [
+                0.8322104923636846,
+                1.1163450655226734
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmer": {
+              "ratio": 0.7837696007713079,
+              "ci95": [
+                0.502388054944818,
+                0.9978761078519062
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.809611717862509,
+              "ci95": [
+                0.5266901499166203,
+                1.050786134888865
+              ],
+              "resolves2_5Percent": false
+            },
+            "wazero": {
+              "ratio": 1.0115918223991227,
+              "ci95": [
+                0.8639736398405656,
+                1.1615897879491488
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0563786989437254,
+            "ci95": [
+              0.93341282996436,
+              1.2088938285662238
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.3246382257517599,
+            "ci95": [
+              0.24549875689715012,
+              0.39137363033382566
+            ]
+          },
+          "head/wazero": {
+            "ratio": 2.1171681453720645,
+            "ci95": [
+              1.7991112781498448,
+              2.479557118883535
+            ]
+          },
+          "head/wasmer": {
+            "ratio": 0.21517798474046604,
+            "ci95": [
+              0.16393763751801654,
+              0.26232036910281337
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9825244695654225,
+            "ci95": [
+              0.918646452422135,
+              1.0384189483553945
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 0.8658521127042528,
+            "ci95": [
+              0.7775859024790736,
+              0.9575552692488557
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 0.28108869363172145,
+            "ci95": [
+              0.2299264117202289,
+              0.3204897339601262
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9265887433669076,
+              "ci95": [
+                0.8300719829389822,
+                1.0176164026646035
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.4209900970490401,
+              "ci95": [
+                1.000332118571989,
+                2.157071708328936
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 0.8714285719969315,
+              "ci95": [
+                0.57371854609192,
+                1.3391074269199719
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.816217508968365,
+              "ci95": [
+                0.6325263833371916,
+                1.0169953999694485
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmer": {
+              "ratio": 0.7576934302826177,
+              "ci95": [
+                0.36483776506795373,
+                1.1386989964955825
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.7154647428143222,
+              "ci95": [
+                0.4085212909900953,
+                1.0044010552511506
+              ],
+              "resolves2_5Percent": false
+            },
+            "wazero": {
+              "ratio": 0.8940428484685315,
+              "ci95": [
+                0.7354830477202197,
+                1.0344064277136185
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.1329394635136651,
+            "ci95": [
+              0.9166484181404296,
+              1.4666175603770075
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.04565178679519551,
+            "ci95": [
+              0.0299868060246092,
+              0.06486935758433171
+            ]
+          },
+          "head/wazero": {
+            "ratio": 0.11269781387332603,
+            "ci95": [
+              0.09052176473001723,
+              0.14551166542395325
+            ]
+          },
+          "head/wasmer": {
+            "ratio": 0.14251032982175035,
+            "ci95": [
+              0.09335359966658245,
+              0.20167586560662734
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9480510429231817,
+            "ci95": [
+              0.795760669378678,
+              1.12864092306784
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 0.9067304027468582,
+            "ci95": [
+              0.7657770488324003,
+              1.059453220729948
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 0.0413938630269213,
+            "ci95": [
+              0.02959616271834512,
+              0.05295801347448903
+            ]
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 1.0254578308569948,
+              "ci95": [
+                0.8388902841020895,
+                1.248830407834806
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0091974113837767,
+              "ci95": [
+                0.8489324927127085,
+                1.1756022576604268
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 1.0656091997169677,
+              "ci95": [
+                0.9517492348626612,
+                1.1905940858144959
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 1.1475133055403641,
+              "ci95": [
+                1.0132127703128835,
+                1.2991537294729325
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmer": {
+              "ratio": 0.9093417048614499,
+              "ci95": [
+                0.6175288684437763,
+                1.1513271287561022
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.863797136600085,
+              "ci95": [
+                0.5756438315218394,
+                1.1433529828510243
+              ],
+              "resolves2_5Percent": false
+            },
+            "wazero": {
+              "ratio": 1.0556781560039878,
+              "ci95": [
+                0.8679428139926331,
+                1.2976584880836513
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0745562774153172,
+            "ci95": [
+              0.9169712177640071,
+              1.255545721220647
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.056793100543119056,
+            "ci95": [
+              0.04442551279720533,
+              0.06714248954226415
+            ]
+          },
+          "head/wazero": {
+            "ratio": 0.09498296597953372,
+            "ci95": [
+              0.08354910743456206,
+              0.10526907489124883
+            ]
+          },
+          "head/wasmer": {
+            "ratio": 0.0469481197923117,
+            "ci95": [
+              0.03876395764599562,
+              0.054009877483942835
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 1.0011770912103468,
+            "ci95": [
+              0.931487232812172,
+              1.072831341870548
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.7797249564119073,
+            "ci95": [
+              1.5353748857544667,
+              2.0250674717478034
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 0.10107609838859963,
+            "ci95": [
+              0.0739878472604613,
+              0.1253231033402253
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 0.991612268657429,
+              "ci95": [
+                0.9768457487766988,
+                1.0062873876372596
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0312307307509272,
+              "ci95": [
+                1.00642799607217,
+                1.0582592914512061
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 1.0064953163367358,
+              "ci95": [
+                0.9768252157200771,
+                1.0384165898284836
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.9945710205784569,
+              "ci95": [
+                0.9782944692382978,
+                1.0097554466723377
+              ],
+              "resolves2_5Percent": true
+            },
+            "native-llvm": {
+              "ratio": 1.0008761740181817,
+              "ci95": [
+                0.9787601101280059,
+                1.0259691416542018
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmer": {
+              "ratio": 0.9934285298763025,
+              "ci95": [
+                0.9666131242398881,
+                1.0184591562789755
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0029865858027565,
+              "ci95": [
+                0.991730967778808,
+                1.0127258081201531
+              ],
+              "resolves2_5Percent": true
+            },
+            "wazero": {
+              "ratio": 0.9905741371509484,
+              "ci95": [
+                0.9572056136780868,
+                1.026724480748533
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.8273955709567204,
+            "ci95": [
+              0.8181578897050769,
+              0.8368804994329918
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2.383323069084177,
+            "ci95": [
+              2.3561841403752184,
+              2.4145767366468407
+            ]
+          },
+          "head/wazero": {
+            "ratio": 2.376126321879515,
+            "ci95": [
+              2.3350364094248217,
+              2.4207947036100834
+            ]
+          },
+          "head/wasmer": {
+            "ratio": 2.401276372896707,
+            "ci95": [
+              2.359795360996595,
+              2.444182211379979
+            ]
+          },
+          "head/native-llvm": {
+            "ratio": 2.3899017068184643,
+            "ci95": [
+              2.3470382763777464,
+              2.4296492691938947
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.8169084403884428,
+            "ci95": [
+              0.8033455832889106,
+              0.8289491050212806
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.0002489662349558,
+            "ci95": [
+              0.9903139043966963,
+              1.0103918679148907
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 2.3839164360553697,
+            "ci95": [
+              2.3616055981688655,
+              2.4074887487967045
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 1.1294340512475616,
+              "ci95": [
+                0.9028324059963838,
+                1.5255215243166451
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.027828761368775,
+              "ci95": [
+                0.9493078261522325,
+                1.113216851759418
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 0.806671616817609,
+              "ci95": [
+                0.6267711197878656,
+                0.9827790759092243
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.9407642857456072,
+              "ci95": [
+                0.710222459523759,
+                1.2058869597237585
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmer": {
+              "ratio": 0.8280077781181331,
+              "ci95": [
+                0.48608157638738647,
+                1.1485742667756411
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.8499236537118687,
+              "ci95": [
+                0.5955454100023836,
+                1.0673397139182825
+              ],
+              "resolves2_5Percent": false
+            },
+            "wazero": {
+              "ratio": 0.8862159885687909,
+              "ci95": [
+                0.7720591916336635,
+                0.99981833899242
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.963545265110109,
+            "ci95": [
+              0.83098040721052,
+              1.0845304418266006
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.1106514566452945,
+            "ci95": [
+              0.899156021142451,
+              1.2789414971142525
+            ]
+          },
+          "head/wazero": {
+            "ratio": 0.5984877962099775,
+            "ci95": [
+              0.5513604429090277,
+              0.6482438028903184
+            ]
+          },
+          "head/wasmer": {
+            "ratio": 0.4513554477325741,
+            "ci95": [
+              0.34420798426250826,
+              0.5414436825312462
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9492358897198127,
+            "ci95": [
+              0.8793987235003202,
+              1.019284898204246
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.166745274229603,
+            "ci95": [
+              1.0461843236501105,
+              1.3156470953990584
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 1.295847338357122,
+            "ci95": [
+              1.143639637075777,
+              1.448418895868617
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 0.9091999838212104,
+              "ci95": [
+                0.7492912213503887,
+                1.0863240067885835
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.007666021026843,
+              "ci95": [
+                0.7668045910093676,
+                1.3527036085036008
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 1.0204129442073717,
+              "ci95": [
+                0.8492976544618808,
+                1.21729982518668
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.9748431388072286,
+              "ci95": [
+                0.7675225655651943,
+                1.2621611031997029
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmer": {
+              "ratio": 1.0031659044302772,
+              "ci95": [
+                0.8153989166140503,
+                1.23592541193245
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9507440795308031,
+              "ci95": [
+                0.6812503257504724,
+                1.3315415010803495
+              ],
+              "resolves2_5Percent": false
+            },
+            "wazero": {
+              "ratio": 1.0878956540966394,
+              "ci95": [
+                0.8432025796051955,
+                1.4045426640993404
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.02099423827369,
+            "ci95": [
+              0.8417707242022391,
+              1.236664315945132
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.1844351362881147,
+            "ci95": [
+              0.9734066422197675,
+              1.454248702117408
+            ]
+          },
+          "head/wazero": {
+            "ratio": 0.989121894591387,
+            "ci95": [
+              0.8201581791516002,
+              1.1876171247676395
+            ]
+          },
+          "head/wasmer": {
+            "ratio": 1.0329553795874353,
+            "ci95": [
+              0.8919504605263106,
+              1.1913734992453442
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9368301995600797,
+            "ci95": [
+              0.8287568315573397,
+              1.0457261218582494
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 0.964308590299429,
+            "ci95": [
+              0.8523889492273741,
+              1.0946329555367855
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 1.1421609765751037,
+            "ci95": [
+              0.9803612980956845,
+              1.3493362246254876
+            ]
+          }
+        }
+      }
+    },
+    "final-16": {
+      "processes": 80,
+      "medians": {
+        "base": {
+          "cpuUs": 88.00394694010416,
+          "instructions": 853172.011328125,
+          "throughput": 41664.207216679526,
+          "allocsPerRequest": 696.0030761718749,
+          "bytesPerRequest": 54672.48359375,
+          "phase_cleanup": 82291.5,
+          "phase_compileValidate": 68499396.0,
+          "phase_engineSetup": 500.0,
+          "phase_exportLookup": 771.5,
+          "phase_firstCall": 12935812.0,
+          "phase_instantiate": 558854.5,
+          "phase_load": 104583.5,
+          "phase_providerSetup": 57271.0,
+          "phase_requestPreparation": 792.0
+        },
+        "head": {
+          "cpuUs": 88.64811197916666,
+          "instructions": 851896.5645507813,
+          "throughput": 41070.11421282545,
+          "allocsPerRequest": 696.0029296875,
+          "bytesPerRequest": 54672.876171875,
+          "phase_cleanup": 79979.5,
+          "phase_compileValidate": 68001000.0,
+          "phase_engineSetup": 437.5,
+          "phase_exportLookup": 707.0,
+          "phase_firstCall": 13635396.0,
+          "phase_instantiate": 532145.5,
+          "phase_load": 92229.5,
+          "phase_providerSetup": 62166.5,
+          "phase_requestPreparation": 832.5
+        },
+        "llgo-base": {
+          "cpuUs": 264.603037516276,
+          "instructions": 1454381.1150878905,
+          "throughput": 15920.87374494454,
+          "allocsPerRequest": 1165.001806640625,
+          "bytesPerRequest": 76833.1203125,
+          "phase_cleanup": 789104.0,
+          "phase_compileValidate": 111391229.0,
+          "phase_engineSetup": 271.0,
+          "phase_exportLookup": 1251.0,
+          "phase_firstCall": 35229000.0,
+          "phase_instantiate": 973500.5,
+          "phase_load": 113729.0,
+          "phase_providerSetup": 293688.0,
+          "phase_requestPreparation": 833.0
+        },
+        "llgo-head": {
+          "cpuUs": 262.271083577474,
+          "instructions": 1450811.0216308595,
+          "throughput": 16127.56847284616,
+          "allocsPerRequest": 1165.001806640625,
+          "bytesPerRequest": 76832.3265625,
+          "phase_cleanup": 789521.0,
+          "phase_compileValidate": 112287604.0,
+          "phase_engineSetup": 167.0,
+          "phase_exportLookup": 1436.5,
+          "phase_firstCall": 34394208.5,
+          "phase_instantiate": 975729.5,
+          "phase_load": 91687.5,
+          "phase_providerSetup": 294687.5,
+          "phase_requestPreparation": 728.5
+        },
+        "wasmtime": {
+          "cpuUs": 41.79069417317708,
+          "instructions": 227514.18837890626,
+          "throughput": 50969.374342882904,
+          "allocsPerRequest": 1.00068359375,
+          "bytesPerRequest": 32.54453125,
+          "phase_cleanup": 295104.0,
+          "phase_compileValidate": 58627875.0,
+          "phase_engineSetup": 167542.0,
+          "phase_executorSetup": 48897.0,
+          "phase_exportLookup": 9270.5,
+          "phase_firstCall": 10737083.5,
+          "phase_instantiate": 205605.0,
+          "phase_load": 78645.5,
+          "phase_providerSetup": 245813.0
+        }
+      },
+      "comparisons": {
+        "cpuUs": {
+          "AA": {
+            "base": {
+              "ratio": 1.0042872891765484,
+              "ci95": [
+                0.9904855440091395,
+                1.0194602713262761
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0036011034576573,
+              "ci95": [
+                0.98893134875332,
+                1.0154904371308189
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo-base": {
+              "ratio": 1.0080464943237266,
+              "ci95": [
+                0.9924310767237884,
+                1.0273739972418632
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.997132811380666,
+              "ci95": [
+                0.9539013302407494,
+                1.0494258679195898
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9660369092404697,
+              "ci95": [
+                0.9379352944831181,
+                0.995605025812842
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.009437328585537,
+            "ci95": [
+              0.9996691629936874,
+              1.0189435626322565
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2.0637513603647655,
+            "ci95": [
+              1.9750016048130696,
+              2.1449612454750007
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9834455981734822,
+            "ci95": [
+              0.9580542070263725,
+              1.0096691046430153
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 2.9079513940258708,
+            "ci95": [
+              2.8469328600853308,
+              2.9723864836510767
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 6.0012886452955065,
+            "ci95": [
+              5.625425502040645,
+              6.366982176975737
+            ]
+          }
+        },
+        "instructions": {
+          "AA": {
+            "base": {
+              "ratio": 1.0011885924495985,
+              "ci95": [
+                1.0000087544382918,
+                1.0023534006825594
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.000632813943776,
+              "ci95": [
+                0.9996898246773666,
+                1.0014604374946703
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo-base": {
+              "ratio": 1.0109557752469205,
+              "ci95": [
+                0.999229848486225,
+                1.0258335903992877
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.9977508244805338,
+              "ci95": [
+                0.9547346159864406,
+                1.0482372443961405
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.984259353976069,
+              "ci95": [
+                0.971948827712088,
+                0.9965533418912186
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0000448944907845,
+            "ci95": [
+              0.9989489810516453,
+              1.0009920869126399
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 3.738641580743612,
+            "ci95": [
+              3.687201124405039,
+              3.78600810542045
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9854580847245038,
+            "ci95": [
+              0.9613068357989288,
+              1.009718005139081
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.6673847451227353,
+            "ci95": [
+              1.6413548784093415,
+              1.6934471437247158
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 6.2337539392134484,
+            "ci95": [
+              6.056386075849462,
+              6.39415120122043
+            ]
+          }
+        },
+        "throughput": {
+          "AA": {
+            "base": {
+              "ratio": 0.9921408581874329,
+              "ci95": [
+                0.9750387895106487,
+                1.0094086309803116
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9841519203318295,
+              "ci95": [
+                0.9659963621615991,
+                1.0035653864851932
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 0.9943304335741671,
+              "ci95": [
+                0.9730678022526276,
+                1.0110413171407002
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 1.0084413316336829,
+              "ci95": [
+                0.9744397216737025,
+                1.0381658158734515
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0052684558032305,
+              "ci95": [
+                0.9952107875347597,
+                1.0154989152232294
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9792674018660845,
+            "ci95": [
+              0.9697027816809198,
+              0.9899886929697672
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.809401719794949,
+            "ci95": [
+              0.8021033031065787,
+              0.8168532947994198
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 1.0084932865950236,
+            "ci95": [
+              0.990292229574077,
+              1.0261786827594375
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 0.3930956628136374,
+            "ci95": [
+              0.3864151535163126,
+              0.39910703131939923
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 0.31817230552529346,
+            "ci95": [
+              0.31208283827272587,
+              0.3244093701814444
+            ]
+          }
+        },
+        "allocsPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 1.0000006840120872,
+              "ci95": [
+                0.9999988950585621,
+                1.000002490506234
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999985092071813,
+              "ci95": [
+                0.9999977550439414,
+                0.9999992282953359
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo-base": {
+              "ratio": 1.0000001676499775,
+              "ci95": [
+                0.9999998218721333,
+                1.0000005029498762
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo-head": {
+              "ratio": 1.0000001047812692,
+              "ci95": [
+                0.9999997485250716,
+                1.0000004296031562
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9996951225816001,
+              "ci95": [
+                0.9992074366165626,
+                1.00015865810978
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9999998070742807,
+            "ci95": [
+              0.9999987547510878,
+              1.0000006752428474
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 695.6338413526295,
+            "ci95": [
+              695.4976108185613,
+              695.7912746701071
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9999999685656358,
+            "ci95": [
+              0.9999998428281998,
+              1.0000001152593163
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.673845593416966,
+            "ci95": [
+              1.6738443066676088,
+              1.6738469219375893
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 1164.3836399798158,
+            "ci95": [
+              1164.1492519797998,
+              1164.6465967284805
+            ]
+          }
+        },
+        "bytesPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 1.0000011771103625,
+              "ci95": [
+                0.9999946253491402,
+                1.000007468133635
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999978244184485,
+              "ci95": [
+                0.9999946110535939,
+                1.0000008609588678
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo-base": {
+              "ratio": 0.9999780447505834,
+              "ci95": [
+                0.9999530983858028,
+                1.0000055215152588
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo-head": {
+              "ratio": 1.0000078756798045,
+              "ci95": [
+                0.9999894661512295,
+                1.0000263291191214
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 0.9935957760828437,
+              "ci95": [
+                0.9813282727342946,
+                1.004185133187512
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.0000019621442289,
+            "ci95": [
+              0.9999994587875743,
+              1.0000041645358986
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1688.5214903574172,
+            "ci95": [
+              1681.144374451203,
+              1697.4928357671772
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9999902144552273,
+            "ci95": [
+              0.9999725473439219,
+              1.0000056614620196
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.405312023248766,
+            "ci95": [
+              1.4052958885493392,
+              1.4053285041433066
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 2372.899551913204,
+            "ci95": [
+              2362.5815089860416,
+              2385.489647010737
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 0.8811388344074511,
+              "ci95": [
+                0.7610412267407075,
+                1.0077813068194081
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0153381704582696,
+              "ci95": [
+                0.8190028389831231,
+                1.2226297787455365
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 1.0344473310813767,
+              "ci95": [
+                0.9696729412616223,
+                1.1238687201281028
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 1.0252263807992323,
+              "ci95": [
+                0.9621280475083313,
+                1.0893658157426895
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9876728954097468,
+              "ci95": [
+                0.9157326629123198,
+                1.0683583612247258
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9443567748321289,
+            "ci95": [
+              0.8156112320458289,
+              1.0746581682952543
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.2667687149833809,
+            "ci95": [
+              0.23789411470819194,
+              0.30306129306966745
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 1.0008411394191374,
+            "ci95": [
+              0.9482906588717933,
+              1.0566778572973397
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 9.852282630660353,
+            "ci95": [
+              8.930390194018006,
+              10.73128196030258
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 2.628280777034347,
+            "ci95": [
+              2.5011686007812943,
+              2.766468744490239
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 0.9825702743218436,
+              "ci95": [
+                0.9513151045888306,
+                1.0134319288728362
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9808683514365895,
+              "ci95": [
+                0.9473776429463509,
+                1.0139252165612085
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 1.0045773767076334,
+              "ci95": [
+                0.9684334098232774,
+                1.0496883376760942
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.9832352762748466,
+              "ci95": [
+                0.9577666547334527,
+                1.0100052619948814
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9740200311868675,
+              "ci95": [
+                0.9318550515011461,
+                1.0102211812811388
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9831849299326815,
+            "ci95": [
+              0.9574049490368206,
+              1.0081050284205768
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.1459305024564272,
+            "ci95": [
+              1.1197415393276688,
+              1.169621388223164
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 1.0015919116616894,
+            "ci95": [
+              0.9835538448655486,
+              1.0201361997191245
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.6405959906415146,
+            "ci95": [
+              1.5912645748228587,
+              1.6882558392442615
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 1.8800089878838309,
+            "ci95": [
+              1.8296553676566782,
+              1.9279812527078113
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 1.3688255959468694,
+              "ci95": [
+                1.0671235836993311,
+                1.765536453954565
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9659831547261079,
+              "ci95": [
+                0.7524281751123579,
+                1.1894335096971804
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 0.9736232558057718,
+              "ci95": [
+                0.6986293339056765,
+                1.3882620212932146
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.7290981263061473,
+              "ci95": [
+                0.46969300952954324,
+                1.206151939034908
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.8916283833625838,
+              "ci95": [
+                0.6346731410222959,
+                1.1255676817287696
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9908842428788788,
+            "ci95": [
+              0.8460709462606325,
+              1.1619728894832053
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.0024179380807626393,
+            "ci95": [
+              0.0019445451663773561,
+              0.002892231397279869
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.7430861517893359,
+            "ci95": [
+              0.5099519679940467,
+              1.1185786382464862
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 0.4380261277201431,
+            "ci95": [
+              0.2830484618855724,
+              0.6627327833173424
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 0.001059120054583534,
+            "ci95": [
+              0.0006673057439127525,
+              0.001597594783496181
+            ]
+          }
+        },
+        "phase_executorSetup": {
+          "AA": {
+            "wasmtime": {
+              "ratio": 0.9340142202959542,
+              "ci95": [
+                0.6385847019821487,
+                1.1964459650151817
+              ],
+              "resolves2_5Percent": false
+            }
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 1.1462927369480194,
+              "ci95": [
+                0.8679254238020104,
+                1.5354832697874718
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.8377516238898961,
+              "ci95": [
+                0.7173198948253618,
+                0.9978829668656833
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 1.062733010764548,
+              "ci95": [
+                0.8549708150306401,
+                1.2853582616131678
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.9528392537803017,
+              "ci95": [
+                0.7779642631687796,
+                1.1637517588351358
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.8177323660536677,
+              "ci95": [
+                0.4632669267241884,
+                1.2521581732094669
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9122863886441214,
+            "ci95": [
+              0.8301175057306943,
+              0.9987339470948617
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.07001338162174096,
+            "ci95": [
+              0.055879618230364685,
+              0.08354582478341989
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 1.0578405207091899,
+            "ci95": [
+              0.948440191710856,
+              1.17229138331221
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.8752657585147878,
+            "ci95": [
+              1.681208298451672,
+              2.0785919941156963
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 0.1312936971930794,
+            "ci95": [
+              0.09794698481974387,
+              0.16702314745748698
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 1.0363409195268565,
+              "ci95": [
+                0.950630230008808,
+                1.1365373704830775
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0229191410955194,
+              "ci95": [
+                0.9535815685153232,
+                1.1043146241466153
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 1.041677256159696,
+              "ci95": [
+                0.9678449462379168,
+                1.148174358315335
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.9887596204557345,
+              "ci95": [
+                0.9391494999227094,
+                1.0507267920989367
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9544942236554426,
+              "ci95": [
+                0.875799811830795,
+                1.049016933641701
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0531141199735323,
+            "ci95": [
+              1.0053755833949432,
+              1.105455116432915
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.2718097310065224,
+            "ci95": [
+              1.1753800629038988,
+              1.3655413591475194
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9789190455788845,
+            "ci95": [
+              0.9392657449067161,
+              1.022858203599526
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 2.4324441950234945,
+            "ci95": [
+              2.2778210754340584,
+              2.5826750308085034
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 3.0936061973612077,
+            "ci95": [
+              2.8554592892284107,
+              3.3365341342246735
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 1.2647572441527555,
+              "ci95": [
+                0.9984627135470155,
+                1.6374856427805815
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.8763921901994729,
+              "ci95": [
+                0.7085846649487348,
+                1.0374901271433234
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 1.2947774036432003,
+              "ci95": [
+                0.9196042457293843,
+                1.987604849184526
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 1.045021903976979,
+              "ci95": [
+                0.9984020824816451,
+                1.0937797489084211
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9164483486478504,
+              "ci95": [
+                0.7422766750123417,
+                1.060477155793388
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.989474657895283,
+            "ci95": [
+              0.8751527052506354,
+              1.1302212776127338
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2.6421361989233283,
+            "ci95": [
+              2.331503582561244,
+              2.9902198825803703
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.7550970937208369,
+            "ci95": [
+              0.5299844287528488,
+              1.0280013664053642
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.6789071889997844,
+            "ci95": [
+              1.5465458586476948,
+              1.8267360819453684
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 4.4359014586889405,
+            "ci95": [
+              3.9904288898226206,
+              4.917713906607013
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 1.1716561289205898,
+              "ci95": [
+                0.9826321924429645,
+                1.4343904994096903
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0911829945237406,
+              "ci95": [
+                0.8521335518702929,
+                1.3807952657936116
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 0.632314696859397,
+              "ci95": [
+                0.3071396212636546,
+                0.9955918741737086
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.763518165855567,
+              "ci95": [
+                0.675101237865384,
+                0.8603749824856399
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.97502818136245,
+              "ci95": [
+                0.7746093788156175,
+                1.1730079409359382
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.873611486947787,
+            "ci95": [
+              0.7268298108156293,
+              1.0040990815968225
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.0722479705724235,
+            "ci95": [
+              0.8531738021267835,
+              1.3016032130954076
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.7608545644327814,
+            "ci95": [
+              0.5103233464296449,
+              1.0467625718835323
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.1223464485511914,
+            "ci95": [
+              0.9184501510484196,
+              1.3781948255795804
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 1.203433701738182,
+            "ci95": [
+              0.9611074823268414,
+              1.5248863979652867
+            ]
+          }
+        },
+        "phase_providerSetup": {
+          "AA": {
+            "base": {
+              "ratio": 1.1378546560091314,
+              "ci95": [
+                0.7574111854960887,
+                1.6442071263819145
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9669696470473601,
+              "ci95": [
+                0.7230791734079481,
+                1.311146484355
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 0.9748277702485459,
+              "ci95": [
+                0.8609281894413848,
+                1.149360247249054
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 1.0813285348069481,
+              "ci95": [
+                0.9951859690518675,
+                1.1755587005486372
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.8807807966243875,
+              "ci95": [
+                0.6996416497746721,
+                1.033788163725733
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9737636102031741,
+            "ci95": [
+              0.8156639267579499,
+              1.127577575848328
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.24166912525032097,
+            "ci95": [
+              0.2206666912183211,
+              0.26108820531308247
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 1.003124649296317,
+            "ci95": [
+              0.9223983828495464,
+              1.1022600210416422
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 4.613546621625927,
+            "ci95": [
+              4.3185639706303185,
+              4.9081380388353315
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 1.1149517763499115,
+            "ci95": [
+              0.984819872915991,
+              1.2429844832273351
+            ]
+          }
+        },
+        "phase_requestPreparation": {
+          "AA": {
+            "base": {
+              "ratio": 1.1706117423570965,
+              "ci95": [
+                0.9550914216290178,
+                1.4739560181908753
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9142304760330794,
+              "ci95": [
+                0.743253533024419,
+                1.1186698924839802
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 1.3431912615419495,
+              "ci95": [
+                0.9325684583025222,
+                1.998552751923556
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 1.1536010672764037,
+              "ci95": [
+                0.9238950762169531,
+                1.4062124757550343
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9514823825227929,
+            "ci95": [
+              0.8350949849414998,
+              1.0934315617618844
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.8282098051794586,
+            "ci95": [
+              0.669657043108213,
+              1.032361555264021
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 0.9786971721734595,
+            "ci95": [
+              0.846301043409755,
+              1.1614036742775795
+            ]
+          }
+        }
+      }
+    },
+    "final-65536": {
+      "processes": 80,
+      "medians": {
+        "base": {
+          "cpuUs": 119.01875203450521,
+          "instructions": 1144129.8823730468,
+          "throughput": 30466.20776333584,
+          "allocsPerRequest": 756.0047363281251,
+          "bytesPerRequest": 124320.73749999999,
+          "phase_cleanup": 78042.0,
+          "phase_compileValidate": 68086000.0,
+          "phase_engineSetup": 458.0,
+          "phase_exportLookup": 812.0,
+          "phase_firstCall": 17926979.5,
+          "phase_instantiate": 524749.5,
+          "phase_load": 72062.5,
+          "phase_providerSetup": 63896.0,
+          "phase_requestPreparation": 9062.5
+        },
+        "head": {
+          "cpuUs": 119.1358154296875,
+          "instructions": 1142540.2956542969,
+          "throughput": 30242.13655727204,
+          "allocsPerRequest": 756.003955078125,
+          "bytesPerRequest": 124320.6453125,
+          "phase_cleanup": 68854.5,
+          "phase_compileValidate": 71670000.0,
+          "phase_engineSetup": 458.5,
+          "phase_exportLookup": 749.5,
+          "phase_firstCall": 18151396.0,
+          "phase_instantiate": 522813.0,
+          "phase_load": 78833.0,
+          "phase_providerSetup": 60208.0,
+          "phase_requestPreparation": 8500.0
+        },
+        "llgo-base": {
+          "cpuUs": 328.0547831217448,
+          "instructions": 1934367.4676757813,
+          "throughput": 12798.58752675402,
+          "allocsPerRequest": 1430.001806640625,
+          "bytesPerRequest": 218848.5875,
+          "phase_cleanup": 789062.5,
+          "phase_compileValidate": 114449666.5,
+          "phase_engineSetup": 292.0,
+          "phase_exportLookup": 1146.5,
+          "phase_firstCall": 43062666.5,
+          "phase_instantiate": 935707.5,
+          "phase_load": 114000.5,
+          "phase_providerSetup": 294563.0,
+          "phase_requestPreparation": 7583.5
+        },
+        "llgo-head": {
+          "cpuUs": 325.87849731445306,
+          "instructions": 1908242.133935547,
+          "throughput": 13056.308845557876,
+          "allocsPerRequest": 1430.00146484375,
+          "bytesPerRequest": 218847.6015625,
+          "phase_cleanup": 755333.0,
+          "phase_compileValidate": 114572042.0,
+          "phase_engineSetup": 250.0,
+          "phase_exportLookup": 1125.0,
+          "phase_firstCall": 41926708.5,
+          "phase_instantiate": 935375.5,
+          "phase_load": 90792.0,
+          "phase_providerSetup": 295938.5,
+          "phase_requestPreparation": 8729.0
+        },
+        "wasmtime": {
+          "cpuUs": 55.232183837890624,
+          "instructions": 325180.2015625,
+          "throughput": 43798.84648647111,
+          "allocsPerRequest": 1.000244140625,
+          "bytesPerRequest": 32.02734375,
+          "phase_cleanup": 316187.5,
+          "phase_compileValidate": 59378979.0,
+          "phase_engineSetup": 165708.0,
+          "phase_executorSetup": 46229.0,
+          "phase_exportLookup": 9125.0,
+          "phase_firstCall": 11940166.5,
+          "phase_instantiate": 223354.5,
+          "phase_load": 77375.0,
+          "phase_providerSetup": 251812.5
+        }
+      },
+      "comparisons": {
+        "cpuUs": {
+          "AA": {
+            "base": {
+              "ratio": 1.0013799772580163,
+              "ci95": [
+                0.9877818961544802,
+                1.0161165125411962
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0011360127405446,
+              "ci95": [
+                0.9923310310496112,
+                1.014308346283449
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo-base": {
+              "ratio": 0.9818074484280099,
+              "ci95": [
+                0.9115565675333664,
+                1.0516305891319018
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 1.0501720894620385,
+              "ci95": [
+                1.0037495521455548,
+                1.0969838323652255
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0003053756365883,
+              "ci95": [
+                0.9657665835648972,
+                1.0390939069341043
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9965859708197476,
+            "ci95": [
+              0.9899779891633208,
+              1.0035350528666802
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2.1153990769803164,
+            "ci95": [
+              2.0120656276775977,
+              2.2164973011630598
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9763140128091363,
+            "ci95": [
+              0.9314500593166471,
+              1.0162067255153637
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 2.7016588653847866,
+            "ci95": [
+              2.634480979215662,
+              2.7576121638164475
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 5.715086670150668,
+            "ci95": [
+              5.430990623012762,
+              6.0349848605156255
+            ]
+          }
+        },
+        "instructions": {
+          "AA": {
+            "base": {
+              "ratio": 0.9993966199193728,
+              "ci95": [
+                0.9969919678039282,
+                1.0017591787656106
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9997999219344355,
+              "ci95": [
+                0.998760610515449,
+                1.0007956012870876
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo-base": {
+              "ratio": 0.9785429908218466,
+              "ci95": [
+                0.9177009936284937,
+                1.0356105395879183
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 1.0344616942490028,
+              "ci95": [
+                0.9960119773670367,
+                1.0711210178284032
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9950176575449255,
+              "ci95": [
+                0.9820421755221117,
+                1.0078306282132796
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.998937528245932,
+            "ci95": [
+              0.9978042414130551,
+              1.0000929641449676
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 3.5252141531419072,
+            "ci95": [
+              3.4891392807548547,
+              3.562763745940611
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9779154525948981,
+            "ci95": [
+              0.935652153196978,
+              1.014179322339759
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.6610576297693054,
+            "ci95": [
+              1.6284031223701945,
+              1.6913440299483702
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 5.855583865647105,
+            "ci95": [
+              5.756011262051522,
+              5.945423432291707
+            ]
+          }
+        },
+        "throughput": {
+          "AA": {
+            "base": {
+              "ratio": 0.9943256949144162,
+              "ci95": [
+                0.9598851486366892,
+                1.0235717864438043
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9901654574105573,
+              "ci95": [
+                0.9668872692131576,
+                1.0091412029338016
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 1.0021528779101663,
+              "ci95": [
+                0.9528906498361092,
+                1.0561896340623327
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.9752476260982919,
+              "ci95": [
+                0.9533136436812358,
+                0.9972075897882698
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.985329090544876,
+              "ci95": [
+                0.9598157022142613,
+                1.0093869622062217
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0050463384681774,
+            "ci95": [
+              0.9820224318014542,
+              1.0264843074346925
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.70200784649465,
+            "ci95": [
+              0.6852204231472182,
+              0.7207746145833567
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 1.020348874946113,
+            "ci95": [
+              0.9896991762240926,
+              1.054336630724652
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 0.42279263899770775,
+            "ci95": [
+              0.41568053953496753,
+              0.4290367225749453
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 0.2968037500165708,
+            "ci95": [
+              0.29100448471852325,
+              0.3024461955229899
+            ]
+          }
+        },
+        "allocsPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 0.9999989666065048,
+              "ci95": [
+                0.999997868627132,
+                1.0000000645879905
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0000002583487246,
+              "ci95": [
+                0.9999989989004766,
+                1.0000015339451824
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo-base": {
+              "ratio": 1.0000001024365315,
+              "ci95": [
+                0.9999998719543328,
+                1.000000341455144
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo-head": {
+              "ratio": 1.0000001109728267,
+              "ci95": [
+                0.999999692690481,
+                1.0000005377916985
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 1.0004148332817973,
+              "ci95": [
+                1.0000610018735097,
+                1.000805377229275
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9999994671566435,
+            "ci95": [
+              0.9999988777996444,
+              1.0000000000003066
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 755.6259156013413,
+            "ci95": [
+              755.464711603867,
+              755.7960430559183
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9999998420770787,
+            "ci95": [
+              0.9999996585450425,
+              1.000000025609142
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.891526385722804,
+            "ci95": [
+              1.8915248533672344,
+              1.8915276370721577
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 1429.2863570958891,
+            "ci95": [
+              1428.9813827140745,
+              1429.6003519604699
+            ]
+          }
+        },
+        "bytesPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 0.9999983669115118,
+              "ci95": [
+                0.9999951682955188,
+                1.0000012049839546
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0000024453178944,
+              "ci95": [
+                1.0000000691233415,
+                1.0000048639342505
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo-base": {
+              "ratio": 0.9999996340984909,
+              "ci95": [
+                0.9999894119663091,
+                1.0000102811364933
+              ],
+              "resolves2_5Percent": true
+            },
+            "llgo-head": {
+              "ratio": 1.000003184308627,
+              "ci95": [
+                0.9999993503059217,
+                1.0000076225000913
+              ],
+              "resolves2_5Percent": true
+            },
+            "wasmtime": {
+              "ratio": 1.0104849795164608,
+              "ci95": [
+                1.0018968215311888,
+                1.0210005212916984
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9999989599755388,
+            "ci95": [
+              0.9999977534244264,
+              1.0000005891373673
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 3846.908458706124,
+            "ci95": [
+              3826.820588958483,
+              3867.2544054232717
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9999979232651012,
+            "ci95": [
+              0.9999916613584051,
+              1.0000037733048541
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.7603517412193748,
+            "ci95": [
+              1.7603417063420328,
+              1.7603621020605993
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 6771.91200359487,
+            "ci95": [
+              6736.44064941881,
+              6807.853669770767
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9521219356647042,
+              "ci95": [
+                0.8289633900551012,
+                1.08957250291745
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.2101860876518094,
+              "ci95": [
+                0.8231532014274622,
+                1.9321736630117974
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 1.1518289401895683,
+              "ci95": [
+                1.0408654592875597,
+                1.2925867730767522
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 1.0727911822180973,
+              "ci95": [
+                0.959973200797242,
+                1.2085417966251844
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0266495895061836,
+              "ci95": [
+                0.9389380154240394,
+                1.1297026365286948
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9664480361573324,
+            "ci95": [
+              0.845209361234522,
+              1.1035705677650431
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.2525167372540755,
+            "ci95": [
+              0.22108149016562684,
+              0.2901011457185236
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9423820007305682,
+            "ci95": [
+              0.8862992281914277,
+              0.9988762109196564
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 9.633072770356609,
+            "ci95": [
+              8.699099438943934,
+              10.652265426263751
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 2.432512105701528,
+            "ci95": [
+              2.238764487456481,
+              2.661678207720456
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0250806317024368,
+              "ci95": [
+                0.9386233286247266,
+                1.1292532798623443
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9901582709185242,
+              "ci95": [
+                0.9616010182509646,
+                1.0241986445569697
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 0.9815435410470792,
+              "ci95": [
+                0.9264939828391732,
+                1.044390659558359
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.9756938828536676,
+              "ci95": [
+                0.9135302609876074,
+                1.040639698378323
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.9536183301518358,
+              "ci95": [
+                0.8790030560202561,
+                1.0203079650583322
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9894807444780824,
+            "ci95": [
+              0.9353922766133432,
+              1.0457571313688647
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.1382592725214549,
+            "ci95": [
+              1.0554881305984622,
+              1.2132294566793254
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 1.003180909144729,
+            "ci95": [
+              0.9865039926578213,
+              1.0209966581349414
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.6326407523669515,
+            "ci95": [
+              1.585795986166086,
+              1.6755748951419613
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 1.8583684750780867,
+            "ci95": [
+              1.7333867990345089,
+              1.9693965164106735
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.967750078806208,
+              "ci95": [
+                0.7837143635414243,
+                1.2083330048182923
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9252074063968889,
+              "ci95": [
+                0.7320662336545022,
+                1.160314825148334
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 0.9089976094435833,
+              "ci95": [
+                0.6527730577150606,
+                1.246517166423864
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.7208145926497759,
+              "ci95": [
+                0.6270931818003878,
+                0.8428998803016361
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.1365035966192278,
+              "ci95": [
+                0.9641510206459638,
+                1.393426433626263
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.014779045715441,
+            "ci95": [
+              0.8849957999307788,
+              1.1754726698684084
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.0025744378882619325,
+            "ci95": [
+              0.0019766151516004225,
+              0.003174781681613627
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9095486305744281,
+            "ci95": [
+              0.7211459649780373,
+              1.1396852537064102
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 0.5635686868972621,
+            "ci95": [
+              0.49623891247568075,
+              0.6444461584814998
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 0.0014508725801863377,
+            "ci95": [
+              0.0010226901190478767,
+              0.0019227350881354805
+            ]
+          }
+        },
+        "phase_executorSetup": {
+          "AA": {
+            "wasmtime": {
+              "ratio": 1.1336828568186275,
+              "ci95": [
+                0.9318372613646294,
+                1.4049476222772366
+              ],
+              "resolves2_5Percent": false
+            }
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 1.043835448868037,
+              "ci95": [
+                0.9007717182332823,
+                1.185119343353112
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9087323897582464,
+              "ci95": [
+                0.8053341663178613,
+                1.04232804565933
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 0.9542713419522244,
+              "ci95": [
+                0.7188807081392793,
+                1.2316657069730934
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 1.2099480704284418,
+              "ci95": [
+                0.9757662276405852,
+                1.5791335404167899
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.1623171840609954,
+              "ci95": [
+                0.9530480301839495,
+                1.4039109210000829
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9102627850050546,
+            "ci95": [
+              0.8476528640360877,
+              0.9735793824003397
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.07686411106926223,
+            "ci95": [
+              0.07160631579738619,
+              0.08153410493843126
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 1.0330783309442912,
+            "ci95": [
+              0.8531118640834536,
+              1.223019058458071
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.635037094758425,
+            "ci95": [
+              1.4631766670253676,
+              1.8390081591888858
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 0.12567567285387543,
+            "ci95": [
+              0.11033409314435463,
+              0.14280014100269076
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 1.063234624388693,
+              "ci95": [
+                0.994794971860452,
+                1.1381281426486543
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9256928286693891,
+              "ci95": [
+                0.8218664449623095,
+                1.0410470929156659
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 0.9241583596129398,
+              "ci95": [
+                0.8244142326006102,
+                1.027407270213766
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 1.0527380559688564,
+              "ci95": [
+                0.9760299905738263,
+                1.1571349056539149
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.8902171188408772,
+              "ci95": [
+                0.6415466301768815,
+                1.0920639770609968
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9993586521986366,
+            "ci95": [
+              0.9270329177935515,
+              1.0659151631354176
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.4877420025903092,
+            "ci95": [
+              1.2615515246632012,
+              1.678112860741188
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9567105045184257,
+            "ci95": [
+              0.9085957418237212,
+              1.0018689537938543
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 2.264431667659074,
+            "ci95": [
+              2.2125915500609623,
+              2.3160722008154053
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 3.3688901039720243,
+            "ci95": [
+              2.8422139306527763,
+              3.8147109258314233
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 0.9721935566654667,
+              "ci95": [
+                0.8430971387202598,
+                1.0999326209438547
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9005463406547145,
+              "ci95": [
+                0.7392761332522659,
+                1.030432700484758
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 0.8989811690667643,
+              "ci95": [
+                0.8300155566988553,
+                0.9662762104055141
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 1.011588985511502,
+              "ci95": [
+                0.8934878156120092,
+                1.138905664140032
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.0457894630696145,
+              "ci95": [
+                0.8890489970991198,
+                1.221690617584476
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0031417512597756,
+            "ci95": [
+              0.8919994745565792,
+              1.0998154436809242
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 2.410575263922033,
+            "ci95": [
+              2.1607632363738722,
+              2.7135987926982237
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9954515479645605,
+            "ci95": [
+              0.9574760703671483,
+              1.0416571339661316
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.7052040189619655,
+            "ci95": [
+              1.6002698592975266,
+              1.8015487600043518
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 4.110522628050151,
+            "ci95": [
+              3.762322481612925,
+              4.421720512741294
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 0.9532313348121041,
+              "ci95": [
+                0.7033163817523561,
+                1.3278446462454165
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9091574347056002,
+              "ci95": [
+                0.66692722486276,
+                1.262909828528446
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 0.944619729877363,
+              "ci95": [
+                0.8140676216985078,
+                1.1229451634881513
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.8453084243856642,
+              "ci95": [
+                0.6421723636099902,
+                1.136258171138915
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 0.8233503941253081,
+              "ci95": [
+                0.6664090116825423,
+                1.0485868630718567
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0623881136303686,
+            "ci95": [
+              0.8736187538069086,
+              1.3074263574676315
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 1.0996306361168713,
+            "ci95": [
+              0.9516777986059974,
+              1.2494700108696681
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9559163556356752,
+            "ci95": [
+              0.7806533389300246,
+              1.148282250401339
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.1746347824242616,
+            "ci95": [
+              1.058007504026416,
+              1.2722164496649755
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 1.2916643930021934,
+            "ci95": [
+              1.0861722193446204,
+              1.5249828986141905
+            ]
+          }
+        },
+        "phase_providerSetup": {
+          "AA": {
+            "base": {
+              "ratio": 1.1037736959082707,
+              "ci95": [
+                0.8405116787628515,
+                1.4386537936290582
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9159424670232957,
+              "ci95": [
+                0.720307463114119,
+                1.1622266524672236
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 0.898935381897935,
+              "ci95": [
+                0.8022425211027963,
+                1.0044017195139714
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 1.258540579824144,
+              "ci95": [
+                1.0752199007184782,
+                1.491683619259967
+              ],
+              "resolves2_5Percent": false
+            },
+            "wasmtime": {
+              "ratio": 1.058156485139416,
+              "ci95": [
+                0.8983732752537208,
+                1.2338960765451958
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9192974549372904,
+            "ci95": [
+              0.7828881856541592,
+              1.0704576390716223
+            ]
+          },
+          "head/wasmtime": {
+            "ratio": 0.24246213062805122,
+            "ci95": [
+              0.21688506483879044,
+              0.27248802056135224
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 0.9978841099239418,
+            "ci95": [
+              0.9360897717459633,
+              1.0723056771939732
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 4.4734922471910235,
+            "ci95": [
+              4.048724285788532,
+              4.873268719462179
+            ]
+          },
+          "llgo-head/wasmtime": {
+            "ratio": 1.0846524616020043,
+            "ci95": [
+              0.9253777625555875,
+              1.2237610082793833
+            ]
+          }
+        },
+        "phase_requestPreparation": {
+          "AA": {
+            "base": {
+              "ratio": 0.8408112016734359,
+              "ci95": [
+                0.5920363228033125,
+                1.1386610927817822
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0848962243923852,
+              "ci95": [
+                0.8539642765964893,
+                1.3767278801416727
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-base": {
+              "ratio": 0.7359515106318609,
+              "ci95": [
+                0.4954406182893149,
+                1.0263916910229924
+              ],
+              "resolves2_5Percent": false
+            },
+            "llgo-head": {
+              "ratio": 0.7774362888194202,
+              "ci95": [
+                0.4850687321301507,
+                1.2300205199731482
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9277683904265726,
+            "ci95": [
+              0.805441910169698,
+              1.088810394412754
+            ]
+          },
+          "llgo-head/llgo-base": {
+            "ratio": 1.156140724060353,
+            "ci95": [
+              0.9134886529286093,
+              1.5048782062123836
+            ]
+          },
+          "llgo-head/head": {
+            "ratio": 1.1369472626614878,
+            "ci95": [
+              0.8895948532140512,
+              1.4763618429719825
+            ]
+          }
+        }
+      }
+    },
+    "no-gc-16": {
+      "processes": 32,
+      "medians": {
+        "base": {
+          "cpuUs": 226.40865071614581,
+          "instructions": 1246406.48203125,
+          "throughput": 17139.60858397003,
+          "allocsPerRequest": 1165.0021484375,
+          "bytesPerRequest": 76844.521875,
+          "phase_cleanup": 780208.5,
+          "phase_compileValidate": 110976395.5,
+          "phase_engineSetup": 188.0,
+          "phase_exportLookup": 1083.5,
+          "phase_firstCall": 33550083.0,
+          "phase_instantiate": 992562.0,
+          "phase_load": 95041.5,
+          "phase_providerSetup": 291896.5,
+          "phase_requestPreparation": 750.0
+        },
+        "head": {
+          "cpuUs": 226.60309244791665,
+          "instructions": 1245559.8248046874,
+          "throughput": 16957.560076741927,
+          "allocsPerRequest": 1165.00234375,
+          "bytesPerRequest": 76839.8125,
+          "phase_cleanup": 779020.5,
+          "phase_compileValidate": 111067271.0,
+          "phase_engineSetup": 270.5,
+          "phase_exportLookup": 1125.0,
+          "phase_firstCall": 33287625.0,
+          "phase_instantiate": 1026228.5,
+          "phase_load": 111395.5,
+          "phase_providerSetup": 275749.0,
+          "phase_requestPreparation": 770.5
+        }
+      },
+      "comparisons": {
+        "cpuUs": {
+          "AA": {
+            "base": {
+              "ratio": 1.0134031513219843,
+              "ci95": [
+                0.9969166922361163,
+                1.0367009076415605
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9984878070032731,
+              "ci95": [
+                0.9931042709258633,
+                1.0044019334694536
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.0032604710677373,
+            "ci95": [
+              0.9949041177707783,
+              1.0110380989783594
+            ]
+          }
+        },
+        "instructions": {
+          "AA": {
+            "base": {
+              "ratio": 1.0019192577546985,
+              "ci95": [
+                0.999635462966963,
+                1.0046954271384145
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.000154672982299,
+              "ci95": [
+                0.998791382613125,
+                1.0015324550017226
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.0000176984152416,
+            "ci95": [
+              0.9985994235862392,
+              1.0016600724539104
+            ]
+          }
+        },
+        "throughput": {
+          "AA": {
+            "base": {
+              "ratio": 0.9874904847731405,
+              "ci95": [
+                0.9731665787253988,
+                1.0018941235398435
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0059417343363748,
+              "ci95": [
+                0.9994750081747504,
+                1.0138086755610645
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9952162085710914,
+            "ci95": [
+              0.9835503953885397,
+              1.0069305909758273
+            ]
+          }
+        },
+        "allocsPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 1.00000004191266,
+              "ci95": [
+                0.9999994132255313,
+                1.0000007544249994
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999997485249628,
+              "ci95": [
+                0.999999245575387,
+                1.0000001676498071
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.0000001466936639,
+            "ci95": [
+              0.999999811393811,
+              1.0000004610374587
+            ]
+          }
+        },
+        "bytesPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 0.9999823995351117,
+              "ci95": [
+                0.9999000818444648,
+                1.000062456692356
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999565338837637,
+              "ci95": [
+                0.9999148979053255,
+                0.9999941032557303
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9999590179051386,
+            "ci95": [
+              0.9999150609069641,
+              0.9999979476649187
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 1.094480798706186,
+              "ci95": [
+                0.996055529360239,
+                1.2058793650682043
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9593537013331797,
+              "ci95": [
+                0.8884933525333641,
+                1.0279731063439261
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9907153512294512,
+            "ci95": [
+              0.9453120603788451,
+              1.0390167672018382
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 0.9971574316976902,
+              "ci95": [
+                0.9749252598755759,
+                1.0204148616717552
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0094488217828197,
+              "ci95": [
+                0.9836505940334583,
+                1.0343321702908648
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0078097444853653,
+            "ci95": [
+              0.9970970518809952,
+              1.0211276913623621
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.8099515103582052,
+              "ci95": [
+                0.519806868912716,
+                1.2719010677550822
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.8117247329342441,
+              "ci95": [
+                0.5516212464703363,
+                1.2333946024433646
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.1312489576439464,
+            "ci95": [
+              0.9188010403123015,
+              1.381184921450217
+            ]
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 1.0785486217526121,
+              "ci95": [
+                0.8685040747868621,
+                1.347876815282031
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0400143714180683,
+              "ci95": [
+                0.8472741517070673,
+                1.2784046946021403
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9645966663090232,
+            "ci95": [
+              0.8577153609867711,
+              1.0893569864394252
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 1.0070521723292554,
+              "ci95": [
+                0.9550850320924131,
+                1.0773825916502056
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.035563262086949,
+              "ci95": [
+                1.0054280930566637,
+                1.0645773739834066
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9908140025916159,
+            "ci95": [
+              0.9663423757230707,
+              1.0211660412676211
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0399609477264538,
+              "ci95": [
+                0.9850874202558517,
+                1.0926371883165908
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0845335758213988,
+              "ci95": [
+                1.01354539500852,
+                1.178707685223163
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0239495118042,
+            "ci95": [
+              0.9667604656175052,
+              1.0912651545268592
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 1.019124622984078,
+              "ci95": [
+                0.8515065017874887,
+                1.224922096013339
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9841534615991991,
+              "ci95": [
+                0.8133209404364127,
+                1.1602666722562986
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.1347122717857867,
+            "ci95": [
+              0.9885416213919015,
+              1.3205919722940023
+            ]
+          }
+        },
+        "phase_providerSetup": {
+          "AA": {
+            "base": {
+              "ratio": 0.9860089157684682,
+              "ci95": [
+                0.875202895634911,
+                1.1383288527304225
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.1074459353753896,
+              "ci95": [
+                1.005609064849488,
+                1.236714492367581
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9875059452515647,
+            "ci95": [
+              0.9001230618673104,
+              1.0819816829900422
+            ]
+          }
+        },
+        "phase_requestPreparation": {
+          "AA": {
+            "base": {
+              "ratio": 0.6679971342945612,
+              "ci95": [
+                0.2413651833107842,
+                1.3671118538455207
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.4336890413323815,
+              "ci95": [
+                1.0630550140611328,
+                1.944598864655871
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.8299291616099026,
+            "ci95": [
+              0.5237063806415417,
+              1.2164789885149168
+            ]
+          }
+        }
+      }
+    },
+    "no-gc-65536": {
+      "processes": 32,
+      "medians": {
+        "base": {
+          "cpuUs": 280.18016764322914,
+          "instructions": 1650944.3937499998,
+          "throughput": 12861.92083675506,
+          "allocsPerRequest": 1430.001953125,
+          "bytesPerRequest": 218859.29062500002,
+          "phase_cleanup": 784000.0,
+          "phase_compileValidate": 110225896.0,
+          "phase_engineSetup": 250.0,
+          "phase_exportLookup": 1063.5,
+          "phase_firstCall": 42494521.0,
+          "phase_instantiate": 1056938.0,
+          "phase_load": 108083.0,
+          "phase_providerSetup": 278188.0,
+          "phase_requestPreparation": 23625.0
+        },
+        "head": {
+          "cpuUs": 280.8129964192708,
+          "instructions": 1650191.1857421875,
+          "throughput": 12733.096018883356,
+          "allocsPerRequest": 1430.0021484375,
+          "bytesPerRequest": 218858.546875,
+          "phase_cleanup": 776187.5,
+          "phase_compileValidate": 110941937.5,
+          "phase_engineSetup": 167.0,
+          "phase_exportLookup": 1063.0,
+          "phase_firstCall": 42850729.0,
+          "phase_instantiate": 1015188.0,
+          "phase_load": 103458.0,
+          "phase_providerSetup": 275062.5,
+          "phase_requestPreparation": 19979.0
+        }
+      },
+      "comparisons": {
+        "cpuUs": {
+          "AA": {
+            "base": {
+              "ratio": 0.9988950792498846,
+              "ci95": [
+                0.9925911846285046,
+                1.0054570089002863
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0014092265854244,
+              "ci95": [
+                0.9931308065551528,
+                1.009371683024979
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9973381291458828,
+            "ci95": [
+              0.9862233511474298,
+              1.0064622034104556
+            ]
+          }
+        },
+        "instructions": {
+          "AA": {
+            "base": {
+              "ratio": 0.9999403986338878,
+              "ci95": [
+                0.9990008230664457,
+                1.0008063938286222
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9991587993652469,
+              "ci95": [
+                0.9973312562547788,
+                1.0011468139870296
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9994831362973591,
+            "ci95": [
+              0.9980703091574372,
+              1.0006357902057532
+            ]
+          }
+        },
+        "throughput": {
+          "AA": {
+            "base": {
+              "ratio": 1.0010378558210404,
+              "ci95": [
+                0.9931812306543024,
+                1.009224865443328
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 1.0026278920024514,
+              "ci95": [
+                0.9916575522435199,
+                1.0152582367485954
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9952661884136921,
+            "ci95": [
+              0.9850844389856447,
+              1.0068352598993975
+            ]
+          }
+        },
+        "allocsPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 0.9999997609818458,
+              "ci95": [
+                0.9999991122179728,
+                1.0000004097462516
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.999999419526818,
+              "ci95": [
+                0.9999990097812799,
+                0.9999998634181027
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 1.0000002048729464,
+            "ci95": [
+              0.9999999146362445,
+              1.0000004951097885
+            ]
+          }
+        },
+        "bytesPerRequest": {
+          "AA": {
+            "base": {
+              "ratio": 0.9999804523168787,
+              "ci95": [
+                0.9999407620075499,
+                1.0000110124126786
+              ],
+              "resolves2_5Percent": true
+            },
+            "head": {
+              "ratio": 0.9999966017390604,
+              "ci95": [
+                0.9999561721609366,
+                1.000038400336374
+              ],
+              "resolves2_5Percent": true
+            }
+          },
+          "head/base": {
+            "ratio": 0.9999984436575666,
+            "ci95": [
+              0.9999802311190729,
+              1.0000144252076544
+            ]
+          }
+        },
+        "phase_cleanup": {
+          "AA": {
+            "base": {
+              "ratio": 1.0018742154970026,
+              "ci95": [
+                0.9432367466476405,
+                1.0598641724076245
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.0667414837648568,
+              "ci95": [
+                0.9936372976269657,
+                1.1166110812767516
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.022943157211295,
+            "ci95": [
+              0.9766995033088505,
+              1.0728548599431864
+            ]
+          }
+        },
+        "phase_compileValidate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0342708495345807,
+              "ci95": [
+                0.9895103788685586,
+                1.0874289706934244
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9806795720973368,
+              "ci95": [
+                0.9470783390261943,
+                1.009147568218949
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.992211489040196,
+            "ci95": [
+              0.9652103300745907,
+              1.0167936694445778
+            ]
+          }
+        },
+        "phase_engineSetup": {
+          "AA": {
+            "base": {
+              "ratio": 1.0807803364957693,
+              "ci95": [
+                0.7279518084468027,
+                1.638548572260327
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.4003730653535325,
+              "ci95": [
+                0.7723875606956387,
+                2.538938768513393
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.8972124683280904,
+            "ci95": [
+              0.7038594260301972,
+              1.1416520225254478
+            ]
+          }
+        },
+        "phase_exportLookup": {
+          "AA": {
+            "base": {
+              "ratio": 1.1411320678390175,
+              "ci95": [
+                1.0134911759764331,
+                1.285416167242385
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9089888118428996,
+              "ci95": [
+                0.7833270297814159,
+                1.1314981763992635
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 1.0202248303947163,
+            "ci95": [
+              0.9096855129880443,
+              1.1382622582005792
+            ]
+          }
+        },
+        "phase_firstCall": {
+          "AA": {
+            "base": {
+              "ratio": 1.067935051362627,
+              "ci95": [
+                0.9907972382936596,
+                1.1769849991278778
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9994855901928303,
+              "ci95": [
+                0.9100320547299079,
+                1.070813565381347
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9755731484080101,
+            "ci95": [
+              0.9256507807383472,
+              1.0112255250466253
+            ]
+          }
+        },
+        "phase_instantiate": {
+          "AA": {
+            "base": {
+              "ratio": 1.0725034029624723,
+              "ci95": [
+                1.003309250093105,
+                1.1514536617458977
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9941986193903217,
+              "ci95": [
+                0.9098462666395333,
+                1.0922430953094413
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9712543017122557,
+            "ci95": [
+              0.9053879874538224,
+              1.0337212793939816
+            ]
+          }
+        },
+        "phase_load": {
+          "AA": {
+            "base": {
+              "ratio": 1.218661882355633,
+              "ci95": [
+                0.7875363216900442,
+                2.298380315941603
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.093968573317803,
+              "ci95": [
+                0.8971521607338072,
+                1.3209595516224626
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.8665725715637903,
+            "ci95": [
+              0.7430244947178477,
+              0.9882382142041455
+            ]
+          }
+        },
+        "phase_providerSetup": {
+          "AA": {
+            "base": {
+              "ratio": 1.10740427475621,
+              "ci95": [
+                0.9389773339924369,
+                1.3015982463933458
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 0.9951324186242031,
+              "ci95": [
+                0.8757735629216677,
+                1.0974027392865378
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.9379890212591511,
+            "ci95": [
+              0.871999029883541,
+              1.0043680874320404
+            ]
+          }
+        },
+        "phase_requestPreparation": {
+          "AA": {
+            "base": {
+              "ratio": 0.7553977715267939,
+              "ci95": [
+                0.6221363590364513,
+                0.9261884234101234
+              ],
+              "resolves2_5Percent": false
+            },
+            "head": {
+              "ratio": 1.046864590065338,
+              "ci95": [
+                0.8743237762419074,
+                1.2581170194454407
+              ],
+              "resolves2_5Percent": false
+            }
+          },
+          "head/base": {
+            "ratio": 0.8474353010291545,
+            "ci95": [
+              0.752059795732321,
+              0.9574400327823211
+            ]
+          }
+        }
+      }
+    }
+  },
+  "screen": {
+    "processes": 40,
+    "medians": {
+      "base": {
+        "cpuNs": 6.3634635416666665,
+        "instructions": 169.5962672,
+        "cycles": 23.986661495,
+        "cpi": 0.14144097735535394,
+        "nsPerIteration": 6.7042333,
+        "phase_cleanup": 15708.5,
+        "phase_compileValidate": 300500.0,
+        "phase_engineSetup": 6270.5,
+        "phase_exportLookup": 250.0,
+        "phase_firstCall": 32705395.5,
+        "phase_instantiate": 9292.0,
+        "phase_load": 77375.0
+      },
+      "head": {
+        "cpuNs": 5.240806458333333,
+        "instructions": 168.49106825500002,
+        "cycles": 19.755489635,
+        "cpi": 0.11725348101097638,
+        "nsPerIteration": 5.4214021,
+        "phase_cleanup": 14708.5,
+        "phase_compileValidate": 317062.5,
+        "phase_engineSetup": 6396.0,
+        "phase_exportLookup": 292.0,
+        "phase_firstCall": 27846895.5,
+        "phase_instantiate": 11458.5,
+        "phase_load": 65354.0
+      }
+    },
+    "comparisons": {
+      "cpuNs": {
+        "AA": {
+          "base": {
+            "ratio": 1.0032412921453604,
+            "ci95": [
+              0.9998629827059827,
+              1.0070229382558609
+            ],
+            "resolves2_5Percent": true
+          },
+          "head": {
+            "ratio": 0.9996752369051679,
+            "ci95": [
+              0.9974385683850944,
+              1.0020012096040862
+            ],
+            "resolves2_5Percent": true
+          }
+        },
+        "head/base": {
+          "ratio": 0.8217207911702777,
+          "ci95": [
+            0.8195565649916807,
+            0.8235498560642313
+          ]
+        }
+      },
+      "instructions": {
+        "AA": {
+          "base": {
+            "ratio": 1.0001591080066865,
+            "ci95": [
+              0.9998903988197372,
+              1.0004528780817747
+            ],
+            "resolves2_5Percent": true
+          },
+          "head": {
+            "ratio": 1.0000441084350706,
+            "ci95": [
+              0.9999084187211494,
+              1.0001803122870483
+            ],
+            "resolves2_5Percent": true
+          }
+        },
+        "head/base": {
+          "ratio": 0.9933874426529513,
+          "ci95": [
+            0.9931588846518049,
+            0.9936011797893773
+          ]
+        }
+      },
+      "cycles": {
+        "AA": {
+          "base": {
+            "ratio": 1.002041181515749,
+            "ci95": [
+              0.9994288278731828,
+              1.0049378117805965
+            ],
+            "resolves2_5Percent": true
+          },
+          "head": {
+            "ratio": 1.0002848426702255,
+            "ci95": [
+              0.9984975958730058,
+              1.0020829603718224
+            ],
+            "resolves2_5Percent": true
+          }
+        },
+        "head/base": {
+          "ratio": 0.8219723108003336,
+          "ci95": [
+            0.8205329190131697,
+            0.823131786458184
+          ]
+        }
+      },
+      "cpi": {
+        "AA": {
+          "base": {
+            "ratio": 1.001881774103736,
+            "ci95": [
+              0.9995409404967404,
+              1.0044495019462758
+            ],
+            "resolves2_5Percent": true
+          },
+          "head": {
+            "ratio": 1.0002407236172128,
+            "ci95": [
+              0.9985401972789326,
+              1.0019223397311317
+            ],
+            "resolves2_5Percent": true
+          }
+        },
+        "head/base": {
+          "ratio": 0.8274438305815155,
+          "ci95": [
+            0.826175225294934,
+            0.8284846080215206
+          ]
+        }
+      },
+      "nsPerIteration": {
+        "AA": {
+          "base": {
+            "ratio": 1.009914275704916,
+            "ci95": [
+              0.9956275717513766,
+              1.0252274726904407
+            ],
+            "resolves2_5Percent": false
+          },
+          "head": {
+            "ratio": 1.0125213574308514,
+            "ci95": [
+              1.0028213359076024,
+              1.0232958627089992
+            ],
+            "resolves2_5Percent": true
+          }
+        },
+        "head/base": {
+          "ratio": 0.8139535045782745,
+          "ci95": [
+            0.8061666233866182,
+            0.8202006593602098
+          ]
+        }
+      },
+      "phase_cleanup": {
+        "AA": {
+          "base": {
+            "ratio": 0.7281635392958229,
+            "ci95": [
+              0.3807878389489094,
+              1.3945915836590488
+            ],
+            "resolves2_5Percent": false
+          },
+          "head": {
+            "ratio": 1.2176663954433673,
+            "ci95": [
+              0.6709817879295832,
+              2.2564671145090354
+            ],
+            "resolves2_5Percent": false
+          }
+        },
+        "head/base": {
+          "ratio": 0.9185348828647479,
+          "ci95": [
+            0.6797287745488709,
+            1.29622051699437
+          ]
+        }
+      },
+      "phase_compileValidate": {
+        "AA": {
+          "base": {
+            "ratio": 1.0089176961921986,
+            "ci95": [
+              0.8507025778114061,
+              1.1891859838612344
+            ],
+            "resolves2_5Percent": false
+          },
+          "head": {
+            "ratio": 0.9227749234115326,
+            "ci95": [
+              0.7244931274084496,
+              1.133889998352502
+            ],
+            "resolves2_5Percent": false
+          }
+        },
+        "head/base": {
+          "ratio": 1.0541217177133926,
+          "ci95": [
+            0.9231018308910979,
+            1.2144197234966247
+          ]
+        }
+      },
+      "phase_engineSetup": {
+        "AA": {
+          "base": {
+            "ratio": 1.0073893363232278,
+            "ci95": [
+              0.6868685466863089,
+              1.4524695907573153
+            ],
+            "resolves2_5Percent": false
+          },
+          "head": {
+            "ratio": 0.8982507082482,
+            "ci95": [
+              0.5228588813468114,
+              1.497253552449808
+            ],
+            "resolves2_5Percent": false
+          }
+        },
+        "head/base": {
+          "ratio": 1.1049664315211565,
+          "ci95": [
+            0.9224983005651048,
+            1.3058917990018655
+          ]
+        }
+      },
+      "phase_exportLookup": {
+        "AA": {
+          "base": {
+            "ratio": 1.0784378635626817,
+            "ci95": [
+              0.8433594113779217,
+              1.3932083139209217
+            ],
+            "resolves2_5Percent": false
+          },
+          "head": {
+            "ratio": 1.146406828442404,
+            "ci95": [
+              0.8700992182136512,
+              1.5495067259339101
+            ],
+            "resolves2_5Percent": false
+          }
+        },
+        "head/base": {
+          "ratio": 1.22958976069492,
+          "ci95": [
+            1.0253670349220498,
+            1.524626071683916
+          ]
+        }
+      },
+      "phase_firstCall": {
+        "AA": {
+          "base": {
+            "ratio": 1.026070105984508,
+            "ci95": [
+              0.9878400028429279,
+              1.0678389722132746
+            ],
+            "resolves2_5Percent": false
+          },
+          "head": {
+            "ratio": 0.9913746328485364,
+            "ci95": [
+              0.9545331037484331,
+              1.031001979488181
+            ],
+            "resolves2_5Percent": false
+          }
+        },
+        "head/base": {
+          "ratio": 0.8390078514090938,
+          "ci95": [
+            0.8173920337957071,
+            0.8603545025051221
+          ]
+        }
+      },
+      "phase_instantiate": {
+        "AA": {
+          "base": {
+            "ratio": 0.9434601815844633,
+            "ci95": [
+              0.6350780617491533,
+              1.18964108645274
+            ],
+            "resolves2_5Percent": false
+          },
+          "head": {
+            "ratio": 1.3229806968206401,
+            "ci95": [
+              1.0985139862272355,
+              1.5948417691930095
+            ],
+            "resolves2_5Percent": false
+          }
+        },
+        "head/base": {
+          "ratio": 1.2339936275289523,
+          "ci95": [
+            1.0731017164952366,
+            1.450145730157364
+          ]
+        }
+      },
+      "phase_load": {
+        "AA": {
+          "base": {
+            "ratio": 1.2602254657290224,
+            "ci95": [
+              1.0392687236166223,
+              1.5199392722736524
+            ],
+            "resolves2_5Percent": false
+          },
+          "head": {
+            "ratio": 0.7848248415398233,
+            "ci95": [
+              0.44027393119204183,
+              1.2353091554066589
+            ],
+            "resolves2_5Percent": false
+          }
+        },
+        "head/base": {
+          "ratio": 0.9268584729384375,
+          "ci95": [
+            0.7176129941054745,
+            1.2559312007373595
+          ]
+        }
+      }
+    }
+  },
+  "regressionAudit": {
+    "processes": 48,
+    "medians": {
+      "base": {
+        "cpuUs": 89.74583129882814,
+        "instructions": 855005.957421875,
+        "throughput": 41136.57233155757,
+        "allocsPerRequest": 696.00322265625,
+        "bytesPerRequest": 54672.85078125,
+        "phase_cleanup": 70500.0,
+        "phase_compileValidate": 67439437.5,
+        "phase_engineSetup": 437.5,
+        "phase_exportLookup": 854.5,
+        "phase_firstCall": 13225250.0,
+        "phase_instantiate": 587021.0,
+        "phase_load": 93666.5,
+        "phase_providerSetup": 62937.5,
+        "phase_requestPreparation": 750.0
+      },
+      "head": {
+        "cpuUs": 89.98319091796876,
+        "instructions": 852851.1143066406,
+        "throughput": 41067.99742650093,
+        "allocsPerRequest": 696.0035644531249,
+        "bytesPerRequest": 54672.74140625,
+        "phase_cleanup": 76750.0,
+        "phase_compileValidate": 68022833.0,
+        "phase_engineSetup": 437.5,
+        "phase_exportLookup": 687.5,
+        "phase_firstCall": 12970437.5,
+        "phase_instantiate": 522291.5,
+        "phase_load": 81687.5,
+        "phase_providerSetup": 56562.5,
+        "phase_requestPreparation": 667.0
+      }
+    },
+    "comparisons": {
+      "cpuUs": {
+        "AA": {
+          "base": {
+            "ratio": 0.9989717292905622,
+            "ci95": [
+              0.988403930031084,
+              1.010269367496357
+            ],
+            "resolves2_5Percent": true
+          },
+          "head": {
+            "ratio": 0.9867544243371889,
+            "ci95": [
+              0.9784230339865072,
+              0.9948113489370107
+            ],
+            "resolves2_5Percent": true
+          }
+        },
+        "head/base": {
+          "ratio": 1.001367408063954,
+          "ci95": [
+            0.9954970660134929,
+            1.007482732062417
+          ]
+        }
+      },
+      "instructions": {
+        "AA": {
+          "base": {
+            "ratio": 1.0000768151247315,
+            "ci95": [
+              0.9959031876473547,
+              1.0041297056076566
+            ],
+            "resolves2_5Percent": true
+          },
+          "head": {
+            "ratio": 0.9998318525181886,
+            "ci95": [
+              0.9973647152825272,
+              1.002801591612475
+            ],
+            "resolves2_5Percent": true
+          }
+        },
+        "head/base": {
+          "ratio": 0.997733271224542,
+          "ci95": [
+            0.9952800681647964,
+            0.9998801109562293
+          ]
+        }
+      },
+      "throughput": {
+        "AA": {
+          "base": {
+            "ratio": 1.0030807027225468,
+            "ci95": [
+              0.9891597128436048,
+              1.0173613094986989
+            ],
+            "resolves2_5Percent": true
+          },
+          "head": {
+            "ratio": 1.0112772976976283,
+            "ci95": [
+              1.0019079791564127,
+              1.0201569771552437
+            ],
+            "resolves2_5Percent": true
+          }
+        },
+        "head/base": {
+          "ratio": 0.9954522747958916,
+          "ci95": [
+            0.9878723158945822,
+            1.0023799003670528
+          ]
+        }
+      },
+      "allocsPerRequest": {
+        "AA": {
+          "base": {
+            "ratio": 1.0000001286175983,
+            "ci95": [
+              0.9999993218355677,
+              1.0000009821714337
+            ],
+            "resolves2_5Percent": true
+          },
+          "head": {
+            "ratio": 1.0000001169255444,
+            "ci95": [
+              0.999998900905864,
+              1.0000013680243667
+            ],
+            "resolves2_5Percent": true
+          }
+        },
+        "head/base": {
+          "ratio": 1.000000520315882,
+          "ci95": [
+            0.9999999181522494,
+            1.0000012043278763
+          ]
+        }
+      },
+      "bytesPerRequest": {
+        "AA": {
+          "base": {
+            "ratio": 1.0000001321770835,
+            "ci95": [
+              0.9999975350456313,
+              1.0000029650981146
+            ],
+            "resolves2_5Percent": true
+          },
+          "head": {
+            "ratio": 0.9999987925479975,
+            "ci95": [
+              0.9999936399802742,
+              1.0000038343900044
+            ],
+            "resolves2_5Percent": true
+          }
+        },
+        "head/base": {
+          "ratio": 1.0000006412345888,
+          "ci95": [
+            0.9999967437605441,
+            1.000004784630059
+          ]
+        }
+      },
+      "phase_cleanup": {
+        "AA": {
+          "base": {
+            "ratio": 0.8642902965208966,
+            "ci95": [
+              0.7236289147246618,
+              1.0458750790388531
+            ],
+            "resolves2_5Percent": false
+          },
+          "head": {
+            "ratio": 0.7879465796609836,
+            "ci95": [
+              0.5624012929328837,
+              1.0449263079453943
+            ],
+            "resolves2_5Percent": false
+          }
+        },
+        "head/base": {
+          "ratio": 1.0935240038746021,
+          "ci95": [
+            0.9459221230694481,
+            1.2669904056045547
+          ]
+        }
+      },
+      "phase_compileValidate": {
+        "AA": {
+          "base": {
+            "ratio": 0.9621785037976793,
+            "ci95": [
+              0.9171451711050974,
+              0.9941707376934276
+            ],
+            "resolves2_5Percent": false
+          },
+          "head": {
+            "ratio": 1.022828422540785,
+            "ci95": [
+              1.001385103229179,
+              1.0441815571024624
+            ],
+            "resolves2_5Percent": false
+          }
+        },
+        "head/base": {
+          "ratio": 0.9902350593076303,
+          "ci95": [
+            0.9579551828654839,
+            1.0163450166386259
+          ]
+        }
+      },
+      "phase_engineSetup": {
+        "AA": {
+          "base": {
+            "ratio": 1.2709804909306155,
+            "ci95": [
+              1.0964016982268763,
+              1.4602832785908522
+            ],
+            "resolves2_5Percent": false
+          },
+          "head": {
+            "ratio": 1.35083235947159,
+            "ci95": [
+              1.1087868733555493,
+              1.6470593514714016
+            ],
+            "resolves2_5Percent": false
+          }
+        },
+        "head/base": {
+          "ratio": 0.937878445083309,
+          "ci95": [
+            0.7661554944755384,
+            1.160757257110505
+          ]
+        }
+      },
+      "phase_exportLookup": {
+        "AA": {
+          "base": {
+            "ratio": 1.1685753669982126,
+            "ci95": [
+              0.9705752048829486,
+              1.4119780209602681
+            ],
+            "resolves2_5Percent": false
+          },
+          "head": {
+            "ratio": 1.0542275792982592,
+            "ci95": [
+              0.8732910867312905,
+              1.2792733936923186
+            ],
+            "resolves2_5Percent": false
+          }
+        },
+        "head/base": {
+          "ratio": 0.7977145774106944,
+          "ci95": [
+            0.7406505173023594,
+            0.8530094027157342
+          ]
+        }
+      },
+      "phase_firstCall": {
+        "AA": {
+          "base": {
+            "ratio": 0.978012664423594,
+            "ci95": [
+              0.9161294632938676,
+              1.0441482425615964
+            ],
+            "resolves2_5Percent": false
+          },
+          "head": {
+            "ratio": 0.903056365358328,
+            "ci95": [
+              0.7348778081959657,
+              1.0281617291729976
+            ],
+            "resolves2_5Percent": false
+          }
+        },
+        "head/base": {
+          "ratio": 1.026983575873429,
+          "ci95": [
+            0.9546666682359254,
+            1.121920408310017
+          ]
+        }
+      },
+      "phase_instantiate": {
+        "AA": {
+          "base": {
+            "ratio": 1.0696113344074218,
+            "ci95": [
+              0.9851596053889717,
+              1.1687376466255341
+            ],
+            "resolves2_5Percent": false
+          },
+          "head": {
+            "ratio": 0.996072421227197,
+            "ci95": [
+              0.9328422037327849,
+              1.0714813529942633
+            ],
+            "resolves2_5Percent": false
+          }
+        },
+        "head/base": {
+          "ratio": 0.9265723384176288,
+          "ci95": [
+            0.8657725739827273,
+            0.9819747668045427
+          ]
+        }
+      },
+      "phase_load": {
+        "AA": {
+          "base": {
+            "ratio": 1.34401967244005,
+            "ci95": [
+              1.0705505955271402,
+              1.8486755874719183
+            ],
+            "resolves2_5Percent": false
+          },
+          "head": {
+            "ratio": 1.3832223358998228,
+            "ci95": [
+              1.1617528780753952,
+              1.6828888088804956
+            ],
+            "resolves2_5Percent": false
+          }
+        },
+        "head/base": {
+          "ratio": 0.9053131143455347,
+          "ci95": [
+            0.759132151321689,
+            1.0658685457680201
+          ]
+        }
+      },
+      "phase_providerSetup": {
+        "AA": {
+          "base": {
+            "ratio": 1.1883563730369777,
+            "ci95": [
+              1.0319671943210351,
+              1.3932652883856818
+            ],
+            "resolves2_5Percent": false
+          },
+          "head": {
+            "ratio": 1.1284898907210137,
+            "ci95": [
+              0.9332330658129532,
+              1.4178567459143663
+            ],
+            "resolves2_5Percent": false
+          }
+        },
+        "head/base": {
+          "ratio": 0.9016571000459327,
+          "ci95": [
+            0.8309157038638885,
+            0.9763261678740072
+          ]
+        }
+      },
+      "phase_requestPreparation": {
+        "AA": {
+          "base": {
+            "ratio": 1.0149009092591625,
+            "ci95": [
+              0.8546351088940931,
+              1.2128396865142306
+            ],
+            "resolves2_5Percent": false
+          },
+          "head": {
+            "ratio": 0.9951258843634272,
+            "ci95": [
+              0.8403663876013068,
+              1.1723892409905328
+            ],
+            "resolves2_5Percent": false
+          }
+        },
+        "head/base": {
+          "ratio": 0.8763470233741629,
+          "ci95": [
+            0.7766509858569719,
+            1.001655771588878
+          ]
+        }
+      }
+    }
+  },
+  "GCObservations": {
+    "final-16": {
+      "base": {
+        "collectionsMedian": 35.0,
+        "collectionsRange": [
+          34,
+          35
+        ],
+        "initialHeapMedian": 20861668.0
+      },
+      "head": {
+        "collectionsMedian": 35.0,
+        "collectionsRange": [
+          34,
+          36
+        ],
+        "initialHeapMedian": 20780608.0
+      },
+      "llgo-base": {
+        "collectionsMedian": 39.0,
+        "collectionsRange": [
+          27,
+          39
+        ],
+        "initialHeapMedian": 34996224.0
+      },
+      "llgo-head": {
+        "collectionsMedian": 39.0,
+        "collectionsRange": [
+          27,
+          39
+        ],
+        "initialHeapMedian": 34420736.0
+      },
+      "wasmtime": {
+        "collectionsMedian": 0.0,
+        "collectionsRange": [
+          0,
+          0
+        ],
+        "initialHeapMedian": 448536.0
+      }
+    },
+    "final-65536": {
+      "base": {
+        "collectionsMedian": 76.0,
+        "collectionsRange": [
+          75,
+          78
+        ],
+        "initialHeapMedian": 24391740.0
+      },
+      "head": {
+        "collectionsMedian": 76.0,
+        "collectionsRange": [
+          75,
+          77
+        ],
+        "initialHeapMedian": 21165112.0
+      },
+      "llgo-base": {
+        "collectionsMedian": 60.0,
+        "collectionsRange": [
+          34,
+          111
+        ],
+        "initialHeapMedian": 26980352.0
+      },
+      "llgo-head": {
+        "collectionsMedian": 60.0,
+        "collectionsRange": [
+          34,
+          72
+        ],
+        "initialHeapMedian": 56872960.0
+      },
+      "wasmtime": {
+        "collectionsMedian": 0.0,
+        "collectionsRange": [
+          0,
+          0
+        ],
+        "initialHeapMedian": 519232.0
+      }
+    },
+    "no-gc-16": {
+      "base": {
+        "collectionsMedian": 0.0,
+        "collectionsRange": [
+          0,
+          0
+        ],
+        "initialHeapMedian": 403396608.0
+      },
+      "head": {
+        "collectionsMedian": 0.0,
+        "collectionsRange": [
+          0,
+          0
+        ],
+        "initialHeapMedian": 402812928.0
+      }
+    },
+    "no-gc-65536": {
+      "base": {
+        "collectionsMedian": 0.0,
+        "collectionsRange": [
+          0,
+          0
+        ],
+        "initialHeapMedian": 634466304.0
+      },
+      "head": {
+        "collectionsMedian": 0.0,
+        "collectionsRange": [
+          0,
+          0
+        ],
+        "initialHeapMedian": 633878528.0
+      }
+    },
+    "p3-16-audit": {
+      "base": {
+        "collectionsMedian": 35.0,
+        "collectionsRange": [
+          33,
+          36
+        ],
+        "initialHeapMedian": 20732244.0
+      },
+      "head": {
+        "collectionsMedian": 35.0,
+        "collectionsRange": [
+          33,
+          36
+        ],
+        "initialHeapMedian": 20693972.0
+      }
+    }
+  },
+  "validation": {
+    "Go": "All32 root test packages pass; all31 measured executable packages >=90% statement coverage.",
+    "LLGo": "Affected codegen/nativeexec execute under pinned6a482f7f -O3 -lto=full. Complete final-head Go/LLGo x Linux amd64/macOS arm64 CI required before merge.",
+    "cases": "Parameter and outer-guard complete words, zeroed local suffix, zero/all-parameter frames, >4095-byte prefixes and bounded cancellation; existing mixed results/roots/quotas/reentry/proposals/fullWASI stay green."
+  },
+  "interpretation": "See companion study. Generic-call CPU improves with resolving own controls, but full requests do not show resolved gains. All adverse throughput/cold/no-GC points and unresolved controls remain. Independent regression audit does not reproduce a resolved16B regression; do not pool it or relabel the initial event. Repeated store/dependency contribution versus layout remains unisolated. No milestone, competitive-parity or release acceptance.",
+  "protocolErrata": "The first new cancellation test set Control before the wrapper, which correctly returned Poll before the generated body. Final fixture sets it after wrapper validation to exercise chunk cancellation. The initial failing expectation/source and corrected semantic logs are retained; this was not a production execution failure.",
+  "evidence": {
+    "path": "../evidence/performance-native-parameter-initialization-2026-11-15.jsonl.gz",
+    "records": 544,
+    "cohorts": {
+      "counter-screen": 40,
+      "counter-final": 40,
+      "core-final": 192,
+      "final-16": 80,
+      "final-65536": 80,
+      "no-gc-16": 32,
+      "no-gc-65536": 32,
+      "p3-16-audit": 48
+    },
+    "sha256": "a4321c924b2393dd0304c8ebd92764537017507bb77a567a48d6e55597192cc9",
+    "projection": "Only unused RequestNs/PublicAPINs vectors become count/extrema/canonical-JSON SHA256. Full originals retained locally; phases, checks, GC/allocations, rusage and orders remain."
+  },
+  "protocol": {
+    "path": "performance-native-parameter-initialization-2026-11-15-protocol.tar.gz",
+    "sha256": "d2eaa65105fc286988b85ea500e9cf81d6b34219d0e050db2dd8b95cb7f8d7fe"
+  }
+}
