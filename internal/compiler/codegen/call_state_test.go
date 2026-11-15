@@ -16,6 +16,8 @@ func TestNativeFrameRegistersRequireUnmeteredLinkedBodies(t *testing.T) {
 			{NativeFrameRegisters: true},
 			{NativeFrameRegisters: true, Unmetered: true},
 			{NativeFrameRegisters: true, LinkedCallees: map[uint32]*slots.Function{7: f}},
+			{NativeFunction: 1, Unmetered: true},
+			{NativeFunction: 1<<32 + 1, Unmetered: true, NativeFrameRegisters: true, LinkedCallees: map[uint32]*slots.Function{7: f}},
 		} {
 			if _, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), config); !errors.Is(err, wasm.ErrInvalid) {
 				t.Fatal(arch, config, err)
@@ -30,7 +32,7 @@ func TestNativeFrameStateIsExcludedFromGuestAllocation(t *testing.T) {
 			e := functionEmitter{a: &assembler{arch: arch}, usesMemory: memory}
 			ordinary := slices.Clone(e.integerRegisterPool())
 			e.frameRegisters = true
-			reserved := []byte{e.callReg(callUsed), e.callReg(callDepth)}
+			reserved := []byte{e.callReg(callUsed), e.callReg(callDepth), e.callReg(callTop)}
 			want := slices.DeleteFunc(ordinary, func(r byte) bool { return slices.Contains(reserved, r) })
 			if got := e.integerRegisterPool(); !slices.Equal(got, want) {
 				t.Fatal(arch, memory, got, want)

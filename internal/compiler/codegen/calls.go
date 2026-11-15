@@ -3,6 +3,7 @@ package codegen
 import (
 	"encoding/binary"
 	"math"
+	"slices"
 
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
@@ -13,6 +14,7 @@ type CallRelocation struct{ Offset, Function uint32 }
 type nativeCallResume struct {
 	label, pc int
 	plan      *registerPlan
+	result    slots.Slot
 }
 type linkedRelocation struct {
 	label  int
@@ -137,9 +139,13 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	e.callLoad(2, e.callContext(), uint32(nativeabi.CallViewOffset))
 	e.callTest(2)
 	e.branch(fallback, "eq")
-	e.callLoad(0, e.callReg(2), nativeabi.CallTopOffset)
 	e.callLoad(1, e.callReg(2), nativeabi.CallCapacityOffset)
-	e.callCompare(0, 1)
+	if e.frameRegisters {
+		e.callCompare(callTop, 1)
+	} else {
+		e.callTopLoad(0)
+		e.callCompare(0, 1)
+	}
 	e.branch(fallback, "hs")
 	e.callLoad(1, e.callReg(2), nativeabi.CallDepthOffset)
 	if e.frameRegisters {
@@ -202,7 +208,11 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 		e.callCopy(count, cancelled)
 	}
 	e.callMeta(false)
-	e.callLoad(0, e.callContext(), uint32(nativeabi.FunctionOffset))
+	if e.nativeFunction != 0 {
+		e.callConst(0, e.nativeFunction-1)
+	} else {
+		e.callLoad(0, e.callContext(), uint32(nativeabi.FunctionOffset))
+	}
 	e.callStore(0, e.callReg(3), nativeabi.CallFunctionOffset)
 	if e.frameRegisters {
 		e.callStore(callUsed, e.callReg(3), nativeabi.CallUsedOffset)
@@ -216,21 +226,29 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	e.callStore(0, e.callReg(3), nativeabi.CallResumeOffset)
 	e.callAddress(results, 0)
 	e.callStore(0, e.callReg(3), nativeabi.CallDestinationsOffset)
-	e.callLoad(0, e.callReg(2), nativeabi.CallTopOffset)
-	e.callAdvance(0, 1)
-	e.callStore(0, e.callReg(2), nativeabi.CallTopOffset)
+	if e.frameRegisters {
+		e.callAdvance(callTop, 1)
+	} else {
+		e.callTopLoad(0)
+		e.callAdvance(0, 1)
+		e.callStore(0, e.callReg(2), nativeabi.CallTopOffset)
+	}
 	e.callPushState()
 	e.contextConst(nativeabi.ContinuationOffset, 0)
 	if indirect {
 		e.callLoad(1, e.callContext(), uint32(nativeabi.PayloadOffset))
-		e.callMemory(0, e.callReg(1), 4, false, true)
-		e.callStore(0, e.callContext(), uint32(nativeabi.FunctionOffset))
+		if e.nativeFunction == 0 {
+			e.callMemory(0, e.callReg(1), 4, false, true)
+			e.callStore(0, e.callContext(), uint32(nativeabi.FunctionOffset))
+		}
 		e.callAdvance(1, 16)
 		e.callEntryFrame(0)
 		e.callJump(1)
 	} else {
 		target := e.f.Sources[in.Source].Wasm.A
-		e.contextConst(nativeabi.FunctionOffset, uint64(target))
+		if e.nativeFunction == 0 {
+			e.contextConst(nativeabi.FunctionOffset, uint64(target))
+		}
 		e.callEntryFrame(0)
 		jump := a.label()
 		a.mark(jump)
@@ -242,7 +260,14 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 		if e.allocationPlans != nil {
 			plan = e.allocationPlans[pc+1]
 		}
-		e.callResumes = append(e.callResumes, nativeCallResume{label: resume, pc: pc + 1, plan: plan})
+		result := slots.NoSlot
+		if e.frameRegisters && resultsCount == 1 {
+			slot := e.f.Args[in.Extra+in.Count]
+			if typ := e.f.Slots[slot]; typ != wasm.F32 && typ != wasm.F64 && typ != wasm.V128 {
+				result = slot
+			}
+		}
+		e.callResumes = append(e.callResumes, nativeCallResume{label: resume, pc: pc + 1, plan: plan, result: result})
 	} else {
 		a.mark(resume)
 		e.callEntryFrame(uint64(pc + 1))
@@ -278,30 +303,57 @@ func (e *functionEmitter) linkedReturn(pc int) {
 	e.callLoad(2, e.callContext(), uint32(nativeabi.CallViewOffset))
 	e.callTest(2)
 	e.branch(fallback, "eq")
-	e.callLoad(0, e.callReg(2), nativeabi.CallTopOffset)
-	e.callTest(0)
+	if e.frameRegisters {
+		e.callTest(callTop)
+	} else {
+		e.callTopLoad(0)
+		e.callTest(0)
+	}
 	e.branch(fallback, "eq")
+	in := e.f.Code[pc]
+	scalar := false
+	var source slots.Slot
+	var cached byte
+	var hasCached bool
+	if e.frameRegisters && in.Count == 1 {
+		source = e.f.Args[in.Extra]
+		typ := e.f.Slots[source]
+		scalar = typ != wasm.F32 && typ != wasm.F64 && typ != wasm.V128
+		cached, hasCached = e.registers[source]
+	}
 	e.spillRegisters()
+	if scalar && hasCached {
+		// Work word 5 survives parent-metadata preparation. Capture the
+		// already materialized low word without loading its spill again.
+		e.registerMove(e.callReg(5), cached, true)
+	}
 	e.callMeta(true)
 	e.callLoad(4, e.callReg(3), nativeabi.CallUsedOffset)
 	e.callLoad(0, e.callContext(), uint32(nativeabi.ArenaOffset))
 	e.callAdd(4, 4, 0)
-	in := e.f.Code[pc]
-	if in.Count != 0 {
+	if scalar {
+		e.callScalarResult(source, hasCached, cancelled)
+	} else if in.Count != 0 {
 		e.callAddress(sources, 6)
 		e.callLoad(7, e.callReg(3), nativeabi.CallDestinationsOffset)
 		e.callCopy(in.Count, cancelled)
 	}
-	e.callLoad(0, e.callReg(3), nativeabi.CallFunctionOffset)
-	e.callStore(0, e.callContext(), uint32(nativeabi.FunctionOffset))
+	if e.nativeFunction == 0 {
+		e.callLoad(0, e.callReg(3), nativeabi.CallFunctionOffset)
+		e.callStore(0, e.callContext(), uint32(nativeabi.FunctionOffset))
+	}
 	e.callPopState()
 	e.callLoad(0, e.callReg(3), nativeabi.CallPCOffset)
 	e.callAdvance(0, 1)
 	e.callStore(0, e.callContext(), uint32(nativeabi.ContinuationOffset))
-	e.callLoad(2, e.callContext(), uint32(nativeabi.CallViewOffset))
-	e.callLoad(0, e.callReg(2), nativeabi.CallTopOffset)
-	e.callAdvance(0, -1)
-	e.callStore(0, e.callReg(2), nativeabi.CallTopOffset)
+	if e.frameRegisters {
+		e.callAdvance(callTop, -1)
+	} else {
+		e.callLoad(2, e.callContext(), uint32(nativeabi.CallViewOffset))
+		e.callTopLoad(0)
+		e.callAdvance(0, -1)
+		e.callStore(0, e.callReg(2), nativeabi.CallTopOffset)
+	}
 	e.callLoad(0, e.callReg(3), nativeabi.CallResumeOffset)
 	e.callJump(0)
 	e.callPlan(sources, e.f.Args[in.Extra:in.Extra+in.Count])
@@ -314,6 +366,25 @@ func (e *functionEmitter) linkedReturn(pc int) {
 	e.leave(nativeabi.Return, uint64(pc), uint64(pc))
 }
 
+// Keep the complete canonical result in the parent frame and also carry its
+// low word in work register 1 until the caller's private continuation. The high
+// word remains authoritative in the frame, including opaque reference values.
+func (e *functionEmitter) callScalarResult(source slots.Slot, cached bool, cancelled int) {
+	if cached {
+		e.callMove(1, 5)
+	} else {
+		e.callLoad(1, e.callFrame(), uint32(source)*16)
+	}
+	e.callLoad(2, e.callFrame(), uint32(source)*16+8)
+	e.callLoad(7, e.callReg(3), nativeabi.CallDestinationsOffset)
+	e.callMemory(0, e.callReg(7), 0, false, true)
+	e.callShift(0, 4)
+	e.callAdd(0, 0, 4)
+	e.callStore(1, e.callReg(0), 0)
+	e.callStore(2, e.callReg(0), 8)
+	e.callCancelled(cancelled)
+}
+
 // Private returns have a compiler-known PC and a fully materialized caller
 // frame. Restore the ordinary memory/constants/register environment, then
 // branch to that exact continuation without the host-entry dispatcher.
@@ -323,6 +394,15 @@ func (e *functionEmitter) emitCallResumes(pcs []int) {
 	for _, resume := range e.callResumes {
 		e.a.mark(resume.label)
 		e.callEntryFrame(0)
+		var incoming *registerPlan
+		if resume.result != slots.NoSlot && resume.plan != nil {
+			if reg, ok := resume.plan.homes[resume.result]; ok && slices.Contains(e.integerRegisterPool(), reg) {
+				// Install the value before scratch/binding initialization. The
+				// selected guest home is disjoint from those register classes.
+				e.registerMove(reg, e.callReg(1), true)
+				incoming = &registerPlan{homes: map[slots.Slot]byte{resume.result: reg}, slots: []slots.Slot{resume.result}}
+			}
+		}
 		if e.usesMemory && (!e.memoryViews || e.sharedDefaultMemory) {
 			// Match the ordinary pre-allocation entry: cached runtime words
 			// still belong to the callee until the reload below.
@@ -335,7 +415,7 @@ func (e *functionEmitter) emitCallResumes(pcs []int) {
 		e.prepareConstants()
 		e.reloadRuntimeRegisters()
 		e.prepareHeapCaches()
-		e.useRegisterPlan(nil)
+		e.useRegisterPlan(incoming)
 		e.transitionRegisters(resume.plan)
 		e.a.branch(pcs[resume.pc], false, 0)
 	}

@@ -6,9 +6,9 @@ import "github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 // after they have been spilled. Context and current frame registers stay fixed.
 func (e *functionEmitter) callReg(n byte) byte {
 	if e.a.arch == "amd64" {
-		return [...]byte{0, 1, 2, 8, 9, 10, 11, 3, 15, 14}[n]
+		return [...]byte{0, 1, 2, 8, 9, 10, 11, 3, 15, 14, 13}[n]
 	}
-	return [...]byte{9, 10, 11, 14, 15, 16, 17, 13, 28, 27}[n]
+	return [...]byte{9, 10, 11, 14, 15, 16, 17, 13, 28, 27, 26}[n]
 }
 func (e *functionEmitter) callContext() byte {
 	if e.a.arch == "amd64" {
@@ -177,7 +177,7 @@ func (e *functionEmitter) callJump(n byte) {
 }
 func (e *functionEmitter) callMeta(parent bool) {
 	e.callLoad(2, e.callContext(), uint32(nativeabi.CallViewOffset))
-	e.callLoad(0, e.callReg(2), nativeabi.CallTopOffset)
+	e.callTopLoad(0)
 	if parent {
 		e.callAdvance(0, -1)
 		// Only pops can lower the changed suffix. A later push is already

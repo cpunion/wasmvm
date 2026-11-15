@@ -6,7 +6,44 @@ import "github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 // entry seeds them before header checks; every exit publishes their current
 // values. They never hold guest values or pointers and are excluded from all
 // integer allocation plans.
-const callUsed, callDepth = byte(8), byte(9)
+const callUsed, callDepth, callTop = byte(8), byte(9), byte(10)
+
+func (e *functionEmitter) callTopLoad(n byte) {
+	if e.frameRegisters {
+		e.callMove(n, callTop)
+	} else {
+		e.callLoad(n, e.callReg(2), nativeabi.CallTopOffset)
+	}
+}
+
+func (e *functionEmitter) callTopEntry() {
+	if !e.frameRegisters {
+		return
+	}
+	missing := e.a.label()
+	e.callLoad(2, e.callContext(), uint32(nativeabi.CallViewOffset))
+	e.callTest(2)
+	e.branch(missing, "eq")
+	e.callLoad(callTop, e.callReg(2), nativeabi.CallTopOffset)
+	e.a.mark(missing)
+}
+
+func (e *functionEmitter) callTopExit() {
+	if !e.frameRegisters {
+		return
+	}
+	missing := e.a.label()
+	// Ordinary entry initializes the sentinel before any header check, so
+	// malformed records never publish an uninitialized top or dereference it.
+	e.callConst(0, ^uint64(0))
+	e.callCompare(callTop, 0)
+	e.branch(missing, "eq")
+	e.callLoad(2, e.callContext(), uint32(nativeabi.CallViewOffset))
+	e.callTest(2)
+	e.branch(missing, "eq")
+	e.callStore(callTop, e.callReg(2), nativeabi.CallTopOffset)
+	e.a.mark(missing)
+}
 
 func (e *functionEmitter) callStateLoad(n byte, offset uintptr) {
 	if e.frameRegisters {

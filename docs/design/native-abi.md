@@ -543,11 +543,15 @@ is bounded by call sites, with all emitted bytes charged to the existing code
 budget. Late indirect-call exits are emitted before their return stubs so every
 saved address is resolved before publication.
 
-Unmetered linked modules reserve two callee-saved integer registers for logical
-arena usage and call depth (amd64 r15/r14, arm64 x28/x27). Every body in a linked
+Unmetered linked modules reserve three callee-saved integer registers for logical
+arena usage, call depth and private call top (amd64 r15/r14/r13, arm64 x28/x27/x26).
+Every body in a linked
 policy uses the same convention, and all integer allocation/cache/leaf plans
-exclude those registers. Ordinary entries seed them before header validation;
-private entries inherit them. Every native exit publishes both words before
+exclude those registers. Ordinary entries seed usage/depth before header
+validation and load the top from the trusted view afterwards; private entries
+inherit them. A top sentinel set before header checks prevents malformed entries
+from publishing an uninitialized word or dereferencing an invalid view. Every
+native exit publishes the initialized state before
 returning to the common machine, including failed header checks, cancellation,
 helpers, traps and foreign calls. Host reentry always reloads them. Metered and
 unlinked bodies retain context-based state.
@@ -558,6 +562,31 @@ parent usage/depth only after complete result copying succeeds: cancellation
 inside a large copy must still publish the callee's live frame chain. Public
 record fields, full-width values, guest roots and hardware stack usage are
 unchanged; these registers never contain guest values or native pointers.
+
+Linked unmetered bodies may also carry their compiler-known module function
+index. The ordinary, expanded and parallel compilation paths assign the same
+index, including imported-function prefixes. Each caller records its constant
+identity in parent metadata; private transfers omit record identity updates.
+Every native exit publishes the active body's identity. Failed entry validation
+preserves the supplied record identity for diagnostics. Metered and standalone
+compilation retain record-based identity.
+
+A sole integer/reference result retains its complete canonical parent value
+and carries its low word in private work register 1. A cached callee result is
+captured before metadata work, avoiding a reload of its spill. The caller can
+install that word into its permanent integer home before entry initialization,
+then reuse the ordinary register transition. Borrowed loop scratch retains its
+canonical frame reload. FP/vector and multi-result transfers keep the full
+indexed copy path. All high words, roots, cancellation exits and host resumes
+remain authoritative in their canonical frames; no additional register is
+reserved from guest allocation.
+
+Normal linked unmetered exits share one state-publication tail per function.
+Work register 1 carries the exit kind until usage/depth/top and function identity
+are published, then the tail returns that kind through the C ABI. BadState keeps
+its diagnostic identity and guarded inline publication. Private returns bypass
+this tail and retain their low-word carrier. All tail bytes and branches remain
+charged to the ordinary code budget.
 
 
 ### Incremental native frame publication

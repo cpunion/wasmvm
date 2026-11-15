@@ -141,10 +141,14 @@ type Config struct {
 	// SharedDispatch leaves forward address relocations for one module table
 	// per policy. The owner must append and link that table before publication.
 	SharedDispatch bool
-	// NativeFrameRegisters retains Used/Depth in dedicated callee-saved words.
+	// NativeFrameRegisters retains Used/Depth/Top in dedicated callee-saved words.
 	// Only unmetered linked modules may enable it, consistently for every body.
-	// Ordinary entries reload the state and all exits publish it to the record.
+	// Ordinary entries reload state and all exits publish it to the record/view.
 	NativeFrameRegisters bool
+	// NativeFunction identifies an unmetered linked body by module index + 1.
+	// Zero retains record-based function identity. Linked modules set this for
+	// every body so identity is published only when execution leaves native code.
+	NativeFunction uint64
 }
 
 func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
@@ -154,6 +158,9 @@ func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, co
 func compileFunction(arch string, f *slots.Function, limits Limits, config Config) (out *CompiledFunction, err error) {
 	unmetered := config.Unmetered
 	if config.NativeFrameRegisters && (!unmetered || config.LinkedCallees == nil) {
+		return nil, wasm.ErrInvalid
+	}
+	if config.NativeFunction != 0 && (!config.NativeFrameRegisters || config.NativeFunction > 1<<32) {
 		return nil, wasm.ErrInvalid
 	}
 	pageSize := uint64(65536)
@@ -209,6 +216,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	a := assembler{arch: arch, labels: make([]int, 1, len(f.Code)+8), bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true, compactBranches: arch == "arm64"}
 	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered, memoryMinimum: uint64(config.MemoryMinimumPages) * pageSize, memoryPageSizes: config.MemoryPageSizes}
 	e.frameRegisters = config.NativeFrameRegisters
+	e.nativeFunction = config.NativeFunction
 	e.x86Features = config.X86Features
 	e.arm64Features = config.ARM64Features
 	e.nativeThreads = config.NativeThreads
@@ -244,6 +252,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	e.start = a.label()
 	a.mark(e.start)
 	if e.frameRegisters {
+		e.callConst(callTop, ^uint64(0))
 		e.callLoad(callUsed, e.callContext(), uint32(nativeabi.UsedOffset))
 		e.callLoad(callDepth, e.callContext(), uint32(nativeabi.DepthOffset))
 	}
@@ -259,6 +268,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		}
 	}
 	globalIndices, usesRuntimeData := e.prepareRuntimeData(config)
+	e.callTopEntry()
 	e.linkedStart = a.label()
 	a.mark(e.linkedStart)
 	e.memoryFunctions, e.memoryTables, e.memoryGlobals, e.memoryBindings = config.FunctionCount, config.TableCount, uint32(len(config.Globals)), uint32(len(globalIndices))
@@ -610,6 +620,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	e.trapCode(wasm.TrapIntegerDivideByZero)
 	a.mark(e.overflow)
 	e.trapCode(wasm.TrapIntegerOverflow)
+	e.emitStatusExit()
 	a.mark(e.exit)
 	out.InlineSlots = max(out.InlineSlots, e.inlineSlots)
 	out.InlineFrames = e.inlineFrames
