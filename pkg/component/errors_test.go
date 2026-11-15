@@ -157,6 +157,9 @@ func TestInstanceExpansionAndHostReentryAreBounded(t *testing.T) {
 	if _, err := run.Call(nil, nil, vm.CallOptions{}); !errors.Is(err, wasm.ErrLimit) {
 		t.Fatal(err)
 	}
+	if in.callDepth != 0 {
+		t.Fatal("failed reentry retained call depth", in.callDepth)
+	}
 }
 
 func TestTrapsAndHostFailuresLockCanonicalState(t *testing.T) {

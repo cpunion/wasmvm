@@ -276,6 +276,13 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
+The [component call-setup study](docs/research/performance-component-call-setup-2026-11-15.md)
+removes exit-closure allocations and full-`Extern` adapter boxes. P3 requests
+use **8 fewer allocations** under both compilers. Go 16 B CPU falls about **1.0%**
+with resolving controls; 64 KiB and LLGo CPU/throughput gains remain unproven.
+Go 64 KiB still uses **2.16x Wasmtime CPU** in the resolving targeted event.
+Rejected ownership-walk variants and every unresolved/adverse result are retained.
+
 The [latest LLGo/runtime allocation study](docs/research/performance-runtime-allocation-2026-11-15.md)
 updates LLGo to main **0539ea6e** and identifies a BDWGC size threshold behind a
 rejected coallocation regression. Fresh Caller batches and immutable signatures

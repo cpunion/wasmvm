@@ -146,11 +146,10 @@ func (c *Caller) Call(f *Function, args []Value) (*Value, error) {
 }
 
 func (f *Function) call(core *vm.Caller, args []Value) (result *Value, err error) {
-	leave, err := f.enterCall(core, args)
-	if err != nil {
+	if err := f.enterCall(core, args); err != nil {
 		return nil, err
 	}
-	defer leave()
+	defer f.leaveCall()
 
 	if f.lift != nil {
 		return f.lift(core, args)
@@ -173,42 +172,46 @@ func (f *Function) call(core *vm.Caller, args []Value) (result *Value, err error
 	return result, err
 }
 
-func (f *Function) enterCall(core *vm.Caller, args []Value) (func(), error) {
+func (f *Function) enterCall(core *vm.Caller, args []Value) error {
 	if f == nil || f.instance == nil {
-		return nil, vm.ErrReference
+		return vm.ErrReference
 	}
 	if f.instance.store != core.Store() {
-		return nil, vm.ErrReference
+		return vm.ErrReference
 	}
 	if err := core.Context().Err(); err != nil {
-		return nil, err
+		return err
 	}
 	if len(args) != len(f.typ.Parameters) {
-		return nil, vm.ErrType
+		return vm.ErrType
 	}
 	if f.instance.callDepth > f.instance.config.Store.MaxReentry {
-		return nil, wasm.ErrLimit
+		return wasm.ErrLimit
 	}
 	f.instance.callDepth++
-	return func() { f.instance.callDepth-- }, nil
+	return nil
 }
+
+func (f *Function) leaveCall() { f.instance.callDepth-- }
 
 type memory struct {
 	caller *vm.Caller
-	extern vm.Extern
+	// The namespace item is immutable after linking. Keep its capability by
+	// reference instead of boxing a full Extern for every transfer session.
+	extern *vm.Extern
 }
 
 func (m memory) Read(at uint64, bytes []byte) error {
-	return m.caller.ReadExternalMemory(m.extern, at, bytes)
+	return m.caller.ReadExternalMemory(*m.extern, at, bytes)
 }
 func (m memory) Write(at uint64, bytes []byte) error {
-	return m.caller.WriteExternalMemory(m.extern, at, bytes)
+	return m.caller.WriteExternalMemory(*m.extern, at, bytes)
 }
 func (m memory) ReadString(at, n uint64) (string, error) {
-	return m.caller.ReadExternalMemoryString(m.extern, at, n)
+	return m.caller.ReadExternalMemoryString(*m.extern, at, n)
 }
 func (m memory) WriteString(at uint64, data string) error {
-	return m.caller.WriteExternalMemoryString(m.extern, at, data)
+	return m.caller.WriteExternalMemoryString(*m.extern, at, data)
 }
 
 // Each state belongs to one call; grouping its objects does not reuse budgets
@@ -257,7 +260,7 @@ func (in *Instance) configureCodec(codec *canonical.Codec, caller *vm.Caller, n 
 	if plan != nil {
 		transfer.Memory64, transfer.Encoding = plan.Memory64, plan.Encoding
 		if plan.Memory != nil {
-			transfer.Memory = memory{caller: caller, extern: n.items[model.CoreMemorySort][*plan.Memory].core}
+			transfer.Memory = memory{caller: caller, extern: &n.items[model.CoreMemorySort][*plan.Memory].core}
 		}
 		if realloc && plan.Realloc != nil {
 			fn := n.items[model.CoreFunctionSort][*plan.Realloc].core

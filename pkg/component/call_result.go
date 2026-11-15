@@ -55,11 +55,10 @@ func (f *Function) callWithResult(ctx context.Context, args []Value, options Cal
 		if f.start == nil {
 			result, err = f.call(c, args)
 		} else {
-			leave, failed := f.enterCall(c, args)
-			if failed != nil {
+			if failed := f.enterCall(c, args); failed != nil {
 				return failed
 			}
-			defer leave()
+			defer f.leaveCall()
 			task, failed := in.beginAsyncCall(c, f, f.plan, args)
 			if failed != nil {
 				return failed
