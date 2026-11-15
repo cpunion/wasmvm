@@ -24,32 +24,44 @@ func TestCompilationOrderAndOptionalSelection(t *testing.T) {
 	}
 	m := callSlots(t, d)
 	limits := codegen.DefaultLimits()
-	config := codegen.Config{Unmetered: true}
-	for _, processors := range []int{1, 4} {
-		previous := runtime.GOMAXPROCS(processors)
-		func() {
-			defer runtime.GOMAXPROCS(previous)
-			for _, optional := range []bool{false, true} {
-				wanted := map[*slots.Function]bool{m.Functions[0]: true, m.Functions[3]: true, m.Functions[8]: true}
-				p := newFunctionCompiler(context.Background(), m.Functions, limits, config, optional, wanted)
-				defer p.close()
-				for _, f := range m.Functions {
-					if optional && !wanted[f] {
-						continue
+	linked := map[uint32]*slots.Function{}
+	for i, f := range m.Functions {
+		linked[23+uint32(i)] = f
+	}
+	for _, config := range []codegen.Config{
+		{Unmetered: true},
+		{Unmetered: true, NativeFrameRegisters: true, LinkedCallees: linked, ScalarImports: 23},
+	} {
+		for _, processors := range []int{1, 4} {
+			previous := runtime.GOMAXPROCS(processors)
+			func() {
+				defer runtime.GOMAXPROCS(previous)
+				for _, optional := range []bool{false, true} {
+					wanted := map[*slots.Function]bool{m.Functions[0]: true, m.Functions[3]: true, m.Functions[8]: true}
+					p := newFunctionCompiler(context.Background(), m.Functions, limits, config, optional, wanted)
+					defer p.close()
+					for index, f := range m.Functions {
+						if optional && !wanted[f] {
+							continue
+						}
+						got := p.next(limits.MaxCodeBytes)
+						expected := config
+						if config.NativeFrameRegisters {
+							expected.NativeFunction = uint64(24 + index)
+						}
+						want, err := codegen.CompileFunctionWithConfig(runtime.GOARCH, f, limits, expected)
+						if err != nil || got.err != nil || got.panicked || !bytes.Equal(got.body.Entry.Code, want.Entry.Code) {
+							t.Fatal("compilation reordered or changed a body", processors, optional, err, got.err, got.panicked)
+						}
+						if p.queued-p.taken > len(p.results) {
+							t.Fatal("unbounded outstanding bodies")
+						}
 					}
-					got := p.next(limits.MaxCodeBytes)
-					want, err := codegen.CompileFunctionWithConfig(runtime.GOARCH, f, limits, config)
-					if err != nil || got.err != nil || got.panicked || !bytes.Equal(got.body.Entry.Code, want.Entry.Code) {
-						t.Fatal("compilation reordered or changed a body", processors, optional, err, got.err, got.panicked)
-					}
-					if p.queued-p.taken > len(p.results) {
-						t.Fatal("unbounded outstanding bodies")
-					}
+					p.close()
+					p.close()
 				}
-				p.close()
-				p.close()
-			}
-		}()
+			}()
+		}
 	}
 }
 

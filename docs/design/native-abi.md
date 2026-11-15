@@ -559,6 +559,24 @@ inside a large copy must still publish the callee's live frame chain. Public
 record fields, full-width values, guest roots and hardware stack usage are
 unchanged; these registers never contain guest values or native pointers.
 
+Linked unmetered bodies may also carry their compiler-known module function
+index. The ordinary, expanded and parallel compilation paths assign the same
+index, including imported-function prefixes. Each caller records its constant
+identity in parent metadata; private transfers omit record identity updates.
+Every native exit publishes the active body's identity. Failed entry validation
+preserves the supplied record identity for diagnostics. Metered and standalone
+compilation retain record-based identity.
+
+A sole integer/reference result retains its complete canonical parent value
+and carries its low word in private work register 1. A cached callee result is
+captured before metadata work, avoiding a reload of its spill. The caller can
+install that word into its permanent integer home before entry initialization,
+then reuse the ordinary register transition. Borrowed loop scratch retains its
+canonical frame reload. FP/vector and multi-result transfers keep the full
+indexed copy path. All high words, roots, cancellation exits and host resumes
+remain authoritative in their canonical frames; no additional register is
+reserved from guest allocation.
+
 
 ### Incremental native frame publication
 

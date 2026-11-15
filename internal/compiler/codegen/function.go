@@ -145,6 +145,10 @@ type Config struct {
 	// Only unmetered linked modules may enable it, consistently for every body.
 	// Ordinary entries reload the state and all exits publish it to the record.
 	NativeFrameRegisters bool
+	// NativeFunction identifies an unmetered linked body by module index + 1.
+	// Zero retains record-based function identity. Linked modules set this for
+	// every body so identity is published only when execution leaves native code.
+	NativeFunction uint64
 }
 
 func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
@@ -154,6 +158,9 @@ func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, co
 func compileFunction(arch string, f *slots.Function, limits Limits, config Config) (out *CompiledFunction, err error) {
 	unmetered := config.Unmetered
 	if config.NativeFrameRegisters && (!unmetered || config.LinkedCallees == nil) {
+		return nil, wasm.ErrInvalid
+	}
+	if config.NativeFunction != 0 && (!config.NativeFrameRegisters || config.NativeFunction > 1<<32) {
 		return nil, wasm.ErrInvalid
 	}
 	pageSize := uint64(65536)
@@ -209,6 +216,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	a := assembler{arch: arch, labels: make([]int, 1, len(f.Code)+8), bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true, compactBranches: arch == "arm64"}
 	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered, memoryMinimum: uint64(config.MemoryMinimumPages) * pageSize, memoryPageSizes: config.MemoryPageSizes}
 	e.frameRegisters = config.NativeFrameRegisters
+	e.nativeFunction = config.NativeFunction
 	e.x86Features = config.X86Features
 	e.arm64Features = config.ARM64Features
 	e.nativeThreads = config.NativeThreads

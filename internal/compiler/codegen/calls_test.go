@@ -16,8 +16,8 @@ import (
 
 func TestLinkedCallBodiesAndRelocations(t *testing.T) {
 	for _, arch := range []string{"amd64", "arm64"} {
-		for profile := 0; profile < 3; profile++ {
-			unmetered, frameRegisters := profile != 0, profile == 2
+		for profile := 0; profile < 4; profile++ {
+			unmetered, frameRegisters := profile != 0, profile >= 2
 			callee := leafFixture(0x6a, nil)
 			for range 700 {
 				callee.Slots = append(callee.Slots, wasm.I64)
@@ -33,6 +33,12 @@ func TestLinkedCallBodiesAndRelocations(t *testing.T) {
 			bodies := make([]*CompiledFunction, 2)
 			for i, f := range []*slots.Function{caller, callee} {
 				var err error
+				if profile == 3 {
+					config.NativeFunction = 1
+					if i == 1 {
+						config.NativeFunction = 8
+					}
+				}
 				bodies[i], err = CompileFunctionWithConfig(arch, f, DefaultLimits(), config)
 				if err != nil {
 					t.Fatal(arch, unmetered, err)
@@ -153,7 +159,11 @@ func TestLinkedBodiesKeepOrdinaryHostEntryChecksAndResumption(t *testing.T) {
 	}
 	for _, unmetered := range []bool{false, true} {
 		f := leafFixture(0x6a, nil)
-		_, lease, ctx := configuredContext(t, f, Config{Unmetered: unmetered, NativeFrameRegisters: unmetered, LinkedCallees: map[uint32]*slots.Function{7: f}})
+		config := Config{Unmetered: unmetered, NativeFrameRegisters: unmetered, LinkedCallees: map[uint32]*slots.Function{7: f}}
+		if unmetered {
+			config.NativeFunction = 8
+		}
+		_, lease, ctx := configuredContext(t, f, config)
 		data, err := native.NewMemory(8, 8)
 		if err != nil {
 			t.Fatal(err)
@@ -166,7 +176,7 @@ func TestLinkedBodiesKeepOrdinaryHostEntryChecksAndResumption(t *testing.T) {
 		view := uint64(uintptr(unsafe.Pointer(unsafe.SliceData(buffer))))
 		writeSlot(t, ctx, 16, 0, value.Value{Lo: 7})
 		writeSlot(t, ctx, 16, 1, value.Value{Lo: 19})
-		state := native.State{Used: 16, Depth: 1, Fuel: 100, Budget: 1, Payload: [4]uint64{0, 0, view, 0}}
+		state := native.State{Function: 7, Used: 16, Depth: 1, Fuel: 100, Budget: 1, Payload: [4]uint64{0, 0, view, 0}}
 		if !unmetered {
 			state.Payload[3] = 1
 		}
@@ -180,7 +190,7 @@ func TestLinkedBodiesKeepOrdinaryHostEntryChecksAndResumption(t *testing.T) {
 				state.Budget = 1
 				continue
 			}
-			if status != native.Return || readSlot(t, ctx, 16, 4).Lo != 26 {
+			if status != native.Return || state.Function != 7 || readSlot(t, ctx, 16, 4).Lo != 26 {
 				t.Fatal("ordinary linked host entry or poll resume failed", unmetered, status, state)
 			}
 			done = true
@@ -195,9 +205,10 @@ func TestLinkedBodiesKeepOrdinaryHostEntryChecksAndResumption(t *testing.T) {
 			{Used: 16, Depth: 1, Continuation: uint64(len(f.Code)), Budget: 64, Payload: [4]uint64{0, 0, view, 0}},
 			{Used: 16, Depth: 1, Budget: 64},
 		} {
+			state.Function = 77
 			used, depth := state.Used, state.Depth
 			status, err := ctx.RunState(lease, 0, &state)
-			if err != nil || status != native.Exit(nativeabi.BadState) || state.Used != used || state.Depth != depth {
+			if err != nil || status != native.Exit(nativeabi.BadState) || state.Function != 77 || state.Used != used || state.Depth != depth {
 				t.Fatal("ordinary linked entry bypassed header", unmetered, state, status, err)
 			}
 		}

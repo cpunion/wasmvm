@@ -54,6 +54,14 @@ type functionCompiler struct {
 	once          sync.Once
 }
 
+func (p *functionCompiler) functionConfig(index int) codegen.Config {
+	config := p.config
+	if config.NativeFrameRegisters {
+		config.NativeFunction = uint64(config.ScalarImports) + uint64(index) + 1
+	}
+	return config
+}
+
 func newFunctionCompiler(ctx context.Context, functions []*slots.Function, limits codegen.Limits, config codegen.Config, optional bool, wanted map[*slots.Function]bool) *functionCompiler {
 	p := &functionCompiler{ctx: ctx, functions: functions, limits: limits, config: config}
 	for i, f := range functions {
@@ -78,7 +86,7 @@ func newFunctionCompiler(ctx context.Context, functions []*slots.Function, limit
 			for job := range p.jobs {
 				bounded := p.limits
 				bounded.MaxCodeBytes = job.maximum
-				job.result <- compileFunction(p.ctx, p.functions[job.index], bounded, p.config)
+				job.result <- compileFunction(p.ctx, p.functions[job.index], bounded, p.functionConfig(job.index))
 			}
 		}()
 	}
@@ -90,7 +98,7 @@ func (p *functionCompiler) next(maximum uint64) functionCompileResult {
 		p.taken++
 		bounded := p.limits
 		bounded.MaxCodeBytes = maximum
-		return compileFunction(p.ctx, p.functions[i], bounded, p.config)
+		return compileFunction(p.ctx, p.functions[i], bounded, p.functionConfig(i))
 	}
 	for p.queued < len(p.indices) && p.queued-p.taken < len(p.results) {
 		slot := p.queued % len(p.results)

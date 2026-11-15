@@ -22,6 +22,7 @@ type functionEmitter struct {
 	mixedIntegers                                                uint32
 	unmetered                                                    bool
 	frameRegisters                                               bool
+	nativeFunction                                               uint64
 	x86Features                                                  X86Features
 	arm64Features                                                ARM64Features
 	usesMemory                                                   bool
@@ -361,6 +362,9 @@ func (e *functionEmitter) rawStatus(status nativeabi.Exit) {
 	if e.frameRegisters {
 		e.callStore(callUsed, e.callContext(), uint32(nativeabi.UsedOffset))
 		e.callStore(callDepth, e.callContext(), uint32(nativeabi.DepthOffset))
+	}
+	if e.nativeFunction != 0 && status != nativeabi.BadState {
+		e.contextConst(nativeabi.FunctionOffset, e.nativeFunction-1)
 	}
 	if e.a.arch == "amd64" {
 		e.a.bytes(0xb8)

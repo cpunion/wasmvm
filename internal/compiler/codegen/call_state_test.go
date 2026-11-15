@@ -16,6 +16,8 @@ func TestNativeFrameRegistersRequireUnmeteredLinkedBodies(t *testing.T) {
 			{NativeFrameRegisters: true},
 			{NativeFrameRegisters: true, Unmetered: true},
 			{NativeFrameRegisters: true, LinkedCallees: map[uint32]*slots.Function{7: f}},
+			{NativeFunction: 1, Unmetered: true},
+			{NativeFunction: 1<<32 + 1, Unmetered: true, NativeFrameRegisters: true, LinkedCallees: map[uint32]*slots.Function{7: f}},
 		} {
 			if _, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), config); !errors.Is(err, wasm.ErrInvalid) {
 				t.Fatal(arch, config, err)

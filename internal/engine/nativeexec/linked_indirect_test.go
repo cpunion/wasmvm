@@ -37,6 +37,9 @@ func TestSharedIndirectTableFitsLinearCodeBudget(t *testing.T) {
 	var size uint64 = 2 * count * 32
 	for _, unmetered := range []bool{false, true} {
 		config.Unmetered, config.NativeAllocations, config.NativeFrameRegisters = unmetered, unmetered, unmetered
+		if unmetered {
+			config.NativeFunction = 1
+		}
 		body, err := codegen.CompileFunctionWithConfig(runtime.GOARCH, m.Functions[0], codegen.DefaultLimits(), config)
 		if err != nil || len(body.DispatchRelocations) != 1 {
 			t.Fatal(body, err)
