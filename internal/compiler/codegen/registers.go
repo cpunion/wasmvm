@@ -320,6 +320,23 @@ func armRegisterImmediate(op uint32, dst, left byte, value uint64) (uint32, bool
 		}
 		return ins | uint32(left)<<5 | uint32(dst), true
 	}
+	if op >= 0x71 && op <= 0x73 || op >= 0x83 && op <= 0x85 {
+		width := 32
+		if wide {
+			width = 64
+		}
+		if mask, ok := armLogicalImmediate(value, width); ok {
+			kind := op - 0x71
+			if wide {
+				kind = op - 0x83
+			}
+			word := uint32(0x12000000) | kind<<29 | mask | uint32(left)<<5 | uint32(dst)
+			if wide {
+				word |= 1 << 31
+			}
+			return word, true
+		}
+	}
 	if !(op >= 0x74 && op <= 0x78 || op >= 0x86 && op <= 0x8a) {
 		return 0, false
 	}

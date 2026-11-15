@@ -27,6 +27,37 @@ func (e *functionEmitter) vectorExtract(src byte, size, lane uint32, signed bool
 		e.a.word(ins | ((1<<size)|(lane<<(size+1)))<<16 | uint32(src)<<5)
 		return
 	}
+	if size == 1 {
+		// SSE2 PEXTRW extracts directly without shifting a scratch vector.
+		e.a.bytes(0x66)
+		if src >= 8 {
+			e.a.bytes(0x41)
+		}
+		e.a.bytes(0x0f, 0xc5, 0xc0|src&7, byte(lane))
+		if signed {
+			e.a.bytes(0x0f, 0xbf, 0xc0)
+		}
+		return
+	}
+	if e.x86Features&(X86SSE41|X86AVX2) != 0 {
+		e.a.bytes(0x66)
+		rex := byte(0x40) | (src>>3)<<2
+		if size == 3 {
+			rex |= 8
+		}
+		if rex != 0x40 {
+			e.a.bytes(rex)
+		}
+		op := byte(0x16) // PEXTRD/Q.
+		if size == 0 {
+			op = 0x14 // PEXTRB.
+		}
+		e.a.bytes(0x0f, 0x3a, op, 0xc0|(src&7)<<3, byte(lane))
+		if signed {
+			e.a.bytes(0x0f, 0xbe, 0xc0)
+		}
+		return
+	}
 	e.vectorMove(11, src)
 	if lane != 0 {
 		e.a.xvector(0x73, 3, 11)
@@ -104,6 +135,29 @@ func (e *functionEmitter) vectorLaneInstruction(in slots.Instruction) {
 // SSE2 lacks a general lane insert. Mask and merge the scalar in RAX without
 // touching an allocated input; MOVD/Q zeroes unused replacement bits.
 func (e *functionEmitter) vectorInsertAMD64(dst slots.Slot, left byte, size, lane uint32) {
+	if size == 1 || e.x86Features&(X86SSE41|X86AVX2) != 0 {
+		d := e.vectorDestination(dst)
+		e.vectorMove(d, left)
+		e.a.bytes(0x66)
+		rex := byte(0x40) | (d>>3)<<2
+		if size == 3 {
+			rex |= 8
+		}
+		if rex != 0x40 {
+			e.a.bytes(rex)
+		}
+		if size == 1 {
+			e.a.bytes(0x0f, 0xc4, 0xc0|(d&7)<<3, byte(lane)) // PINSRW.
+		} else {
+			op := byte(0x22) // PINSRD/Q.
+			if size == 0 {
+				op = 0x20 // PINSRB.
+			}
+			e.a.bytes(0x0f, 0x3a, op, 0xc0|(d&7)<<3, byte(lane))
+		}
+		e.vectorStore(dst, d)
+		return
+	}
 	e.vectorMove(0, left)
 	if size < 2 {
 		e.a.bytes(0x25)

@@ -66,6 +66,10 @@ func (e *functionEmitter) vectorMemoryARM64(in slots.Instruction, load bool, siz
 // All x86 memory forms use [r10+rax], after widened address/bounds arithmetic.
 func (e *functionEmitter) vectorMemoryAMD64(in slots.Instruction, load bool, size uint32) {
 	op, lane := in.Op&0xffff, uint32(e.f.Sources[in.Source].Wasm.Lane)
+	if op >= 84 && op <= 91 && (load && size == 2 || e.x86Features&(X86SSE41|X86AVX2) != 0) {
+		e.vectorLaneMemoryAMD64(in, load, size, lane)
+		return
+	}
 	d := e.vectorDestination(in.Dst)
 	if !load {
 		d = e.vectorOperand(in.B, 0)
@@ -144,6 +148,44 @@ func (e *functionEmitter) vectorMemoryAMD64(in slots.Instruction, load bool, siz
 	}
 	if load {
 		e.vectorStore(in.Dst, d)
+	}
+}
+
+// Lane memory forms consume exactly the range checked by memoryAt. They avoid
+// a GPR round trip and leave all other vector lanes intact, including NaN bits.
+func (e *functionEmitter) vectorLaneMemoryAMD64(in slots.Instruction, load bool, size, lane uint32) {
+	r := e.vectorOperand(in.B, 0)
+	if load {
+		d := e.vectorDestination(in.Dst)
+		e.vectorMove(d, r)
+		r = d
+	}
+	e.a.bytes(0x66)
+	rex := byte(0x41) | (r>>3)<<2 // R10 base, RAX index.
+	if size == 8 {
+		rex |= 8
+	}
+	e.a.bytes(rex, 0x0f)
+	if load && size == 2 {
+		e.a.bytes(0xc4) // SSE2 PINSRW also supports a memory source.
+	} else {
+		opcode := byte(0x16) // PEXTRD/Q.
+		if size == 1 {
+			opcode = 0x14
+		} else if size == 2 {
+			opcode = 0x15
+		}
+		if load {
+			opcode = 0x22 // PINSRD/Q.
+			if size == 1 {
+				opcode = 0x20
+			}
+		}
+		e.a.bytes(0x3a, opcode)
+	}
+	e.a.bytes((r&7)<<3|4, 2, byte(lane))
+	if load {
+		e.vectorStore(in.Dst, r)
 	}
 }
 
