@@ -204,10 +204,23 @@ func (e *functionEmitter) callRawLeave(status nativeabi.Exit, payload, pc uint64
 	e.rawStatus(status)
 }
 
-// Zero at most 4KiB between cancellation checks. The caller has spilled all
-// registers; a canceled partial child is not yet part of the live frame chain.
-func (e *functionEmitter) callZero(slots uint32, cancelled int) {
-	e.callMove(6, 4)
+// Parameters are copied completely before the child becomes live. Zero only
+// the remaining slots, at most 4KiB between cancellation checks. The caller has
+// spilled all registers; canceled partial children are outside the live chain.
+func (e *functionEmitter) callZero(slots, parameters uint32, cancelled int) {
+	slots -= parameters
+	if slots == 0 {
+		return
+	}
+	offset := uint64(parameters) * 16
+	if offset == 0 {
+		e.callMove(6, 4)
+	} else if e.a.arch == "arm64" && offset <= 4095 {
+		e.a.word(0x91000000 | uint32(offset)<<10 | uint32(e.callReg(4))<<5 | uint32(e.callReg(6)))
+	} else {
+		e.callConst(6, offset)
+		e.callAdd(6, 6, 4)
+	}
 	chunks, tail := slots/256, slots%256
 	if e.a.arch == "amd64" {
 		e.registerMove(e.callReg(7), e.callContext(), true)
