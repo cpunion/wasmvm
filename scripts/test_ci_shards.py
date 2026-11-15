@@ -79,9 +79,9 @@ class ShardsTest(unittest.TestCase):
             for shard in self.shards:
                 target = Path(directory) / shard['name']
                 subprocess.run([sys.executable, str(ROOT / 'scripts/ci_shards.py'), '--shard', shard['name'], '--github-output', str(target)], check=True, capture_output=True)
-                directory = shard.get('directory', '.')
-                timeout = '8m' if directory == '.' else '2m'
-                self.assertEqual(target.read_text(), 'packages=' + shard['packages'] + '\ninputs=' + shard['inputs'] + '\ndirectory=' + directory + '\ntimeout=' + timeout + '\n')
+                module_directory = shard.get('directory', '.')
+                timeout = '8m' if module_directory == '.' else '2m'
+                self.assertEqual(target.read_text(), 'packages=' + shard['packages'] + '\ninputs=' + shard['inputs'] + '\ndirectory=' + module_directory + '\ntimeout=' + timeout + '\n')
             target = Path(directory) / 'invalid'
             failed = subprocess.run([sys.executable, str(ROOT / 'scripts/ci_shards.py'), '--shard', 'missing', '--github-output', str(target)], capture_output=True)
             self.assertNotEqual(failed.returncode, 0)
