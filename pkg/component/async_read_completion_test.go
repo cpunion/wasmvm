@@ -189,7 +189,10 @@ func TestAwaitReadReadyEventChecksCancellationBeforeHandoff(t *testing.T) {
 					if err != nil || !p.ready() {
 						t.Fatal("read did not complete synchronously", err)
 					}
-					if err = p.bind(in.scheduler().wake); err != nil {
+					if ready, err := p.bind(in.scheduler().wake); err != nil || !ready {
+						if err == nil {
+							err = vm.ErrType
+						}
 						return err
 					}
 					if cancellation == "operation" {

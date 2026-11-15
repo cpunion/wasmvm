@@ -254,18 +254,18 @@ func TestHostCompletionProtocol(t *testing.T) {
 	if err := p.Cancelled(); !errors.Is(err, wasm.ErrClosed) {
 		t.Fatal(err)
 	}
-	if err := p.bind(wake); err != nil {
-		t.Fatal(err)
+	if ready, err := p.bind(wake); err != nil || !ready {
+		t.Fatal("lost pre-bind completion", ready, err)
 	}
 	select {
 	case <-wake:
+		t.Fatal("already ready completion sent a redundant notification")
 	default:
-		t.Fatal("lost pre-bind notification")
 	}
 	if !p.ready() {
 		t.Fatal("not ready")
 	}
-	if err := p.bind(wake); !errors.Is(err, vm.ErrType) {
+	if _, err := p.bind(wake); !errors.Is(err, vm.ErrType) {
 		t.Fatal(err)
 	}
 	if _, cancelled, err := p.take(); err != nil || !cancelled {
@@ -278,7 +278,48 @@ func TestHostCompletionProtocol(t *testing.T) {
 		t.Fatal("consumed result ready")
 	}
 	p.close()
-	if err := p.bind(wake); !errors.Is(err, vm.ErrType) {
+	if _, err := p.bind(wake); !errors.Is(err, vm.ErrType) {
 		t.Fatal(err)
+	}
+}
+
+func TestHostCompletionConcurrentBindAndPublish(t *testing.T) {
+	for _, cancelled := range []bool{false, true} {
+		for range 32 {
+			p := NewHostCompletion()
+			wake := make(chan struct{}, 1)
+			start := make(chan struct{})
+			published := make(chan error, 1)
+			go func() {
+				<-start
+				if cancelled {
+					published <- p.Cancelled()
+				} else {
+					published <- p.Resolve(func(*Caller) (*Value, error) { return nil, nil })
+				}
+			}()
+			close(start)
+			ready, err := p.bind(wake)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !ready {
+				timer := time.NewTimer(3 * time.Second)
+				select {
+				case <-wake:
+					timer.Stop()
+				case <-timer.C:
+					t.Fatal("publication was neither ready nor notified")
+				}
+			}
+			if err = <-published; err != nil {
+				t.Fatal(err)
+			}
+			resolve, gotCancelled, err := p.take()
+			if err != nil || gotCancelled != cancelled || (resolve == nil) != cancelled {
+				t.Fatal("completion changed across subscription", gotCancelled, err)
+			}
+			p.close()
+		}
 	}
 }

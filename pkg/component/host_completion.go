@@ -67,18 +67,19 @@ func (p *HostCompletion) notify() {
 		}
 	}
 }
-func (p *HostCompletion) bind(wake chan<- struct{}) error {
+
+// bind subscribes to future notifications and returns readiness from the same
+// locked snapshot. The active Store consumes an already ready completion
+// directly; only a later producer needs to send a wake notification.
+func (p *HostCompletion) bind(wake chan<- struct{}) (bool, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.bound || p.state == 3 {
-		return vm.ErrType
+		return false, vm.ErrType
 	}
 	p.bound = true
 	p.wake = wake
-	if p.state != 0 {
-		p.notify()
-	}
-	return nil
+	return p.state != 0, nil
 }
 func (p *HostCompletion) ready() bool {
 	p.mu.Lock()
