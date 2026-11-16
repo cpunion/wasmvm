@@ -1137,7 +1137,7 @@ jobs:
           - label: base
             revision: 5860fb6f9c13371f6cdb456a987a8e95844066d4
           - label: head
-            revision: 75a25564d2b409d64df9a1bfe3231559b17009d9
+            revision: 0fead5513f951c3302dd3524d3560afb3de9ae66
     runs-on: windows-2022
     timeout-minutes: 25
     permissions:
@@ -1171,6 +1171,18 @@ jobs:
           run-id: 43803237857
           github-token: ${{ github.token }}
           path: simd-diagnostic
+      - uses: ./.github/actions/setup-go
+        if: matrix.label == 'head'
+      - name: Build candidate and check caller allocation regression
+        if: matrix.label == 'head'
+        shell: python
+        run: |
+          import os,pathlib,subprocess
+          out=pathlib.Path('simd-diagnostic').resolve()
+          cli=pathlib.Path(os.environ['RUNNER_TEMP'])/'unwind-llgo.exe'
+          subprocess.run(['go','build','-o',str(cli),'./cmd/llgo'],check=True)
+          subprocess.run([str(cli),'test','-O2','-c','-o',str(out/'upstream.exe'),'simd/archsimd/internal/simd_test'],check=True)
+          subprocess.run([str(cli),'test','-O2','-v','-run','^TestRuntimeCallersWindowsAllocations$','-count=1','./test/go'],check=True,timeout=240)
       - name: Bound execution and capture stalled native stacks
         shell: python
         run: |
@@ -1198,7 +1210,7 @@ jobs:
           assert smoke.returncode==0
           cases=[line.strip()for line in pathlib.Path('dev/simd/upstream-archsimd-amd64.txt').read_text().splitlines()if line.strip()and not line.startswith('#')]
           qualified='^('+'|'.join(cases)+')$'
-          result={'frozenBuildRun':43803237857,'binarySHA256':hashlib.sha256(binary.read_bytes()).hexdigest(),'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'runs':[]}
+          result={'frozenBuildRun':43803237857 if os.environ['DIAG_LABEL']=='base'else None,'binarySHA256':hashlib.sha256(binary.read_bytes()).hexdigest(),'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'runs':[]}
           for label,settings,pattern,expected,limit in [
               ('gogc-10',{'GOGC':'10'},'^TestAdd$',['TestAdd'],30),
               ('default',{'GOGC':'100'},'^TestAdd$',['TestAdd'],30),
@@ -1226,7 +1238,7 @@ jobs:
                           ok=dbghelp.MiniDumpWriteDump(wintypes.HANDLE(int(p._handle)),p.pid,wintypes.HANDLE(msvcrt.get_osfhandle(dump.fileno())),0x1000,None,None,None)
                           print('minidump',label,bool(ok),flush=True)
                       if lldb:
-                          variables='target variable GC_arrays._heapsize GC_arrays._large_free_bytes GC_arrays._composite_in_use GC_arrays._atomic_in_use GC_arrays._n_heap_bases GC_root_size GC_total_stacksize GC_free_space_divisor min_bytes_allocd_minimum llgo_gc_budget_percent'
+                          variables='target variable -r llgo_gc_.*|GC_free_space_divisor|min_bytes_allocd_minimum'
                           cmd=[lldb,'--batch','-p',str(p.pid),'-o','thread backtrace all','-o',variables,'-o','process detach','-k','thread backtrace all','-k',variables,'-k','process detach']
                           try:
                               stack=subprocess.run(cmd,env=debugger_env,text=True,capture_output=True,timeout=30)
