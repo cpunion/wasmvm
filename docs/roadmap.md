@@ -165,6 +165,13 @@ old frame storage and work registers to distinguish successful retirement from
 canceled-frame/root recovery. Register parameters and unified acceptance stay
 open.
 
+The 2026-11-17 immutable-call-site experiment was rejected: smaller private
+records improved general calls but regressed complete Go P3 request CPU by
+about 1.7% with resolving controls. Production keeps 24-byte records and direct
+identity loads. See [the retained evidence](research/performance-native-call-metadata-2026-11-17.md).
+LLGo is pinned to `9e45f103` (wide SIMD rounding/conversions); source and compiler
+performance events remain separate.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and
