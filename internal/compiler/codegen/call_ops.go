@@ -70,6 +70,22 @@ func (e *functionEmitter) callLoad(n, base byte, off uint32) {
 func (e *functionEmitter) callStore(n, base byte, off uint32) {
 	e.callMemory(n, base, off, true, false)
 }
+
+// Keep complete values in integer registers. ARM pair operations neither use
+// vector state nor extend the checked memory span; large offsets use the same
+// individually addressed words as the ordinary path.
+func (e *functionEmitter) callPair(first, second, base byte, off uint32, store bool) {
+	if e.a.arch == "arm64" && off%8 == 0 && off <= 504 {
+		op := uint32(0xa9400000) // ldp xFirst,xSecond,[base,#off]
+		if store {
+			op = 0xa9000000
+		}
+		e.a.word(op | off/8<<15 | uint32(e.callReg(second))<<10 | uint32(base)<<5 | uint32(e.callReg(first)))
+		return
+	}
+	e.callMemory(first, base, off, store, false)
+	e.callMemory(second, base, off+8, store, false)
+}
 func (e *functionEmitter) callAdd(dst, left, right byte) {
 	d, l, r := e.callReg(dst), e.callReg(left), e.callReg(right)
 	if e.a.arch == "amd64" {
@@ -189,7 +205,7 @@ func (e *functionEmitter) callMeta(parent bool) {
 		e.callStore(0, e.callReg(2), nativeabi.CallChangedOffset)
 		e.a.mark(unchanged)
 	}
-	e.callShift(0, 6)
+	e.callShift(0, 5)
 	e.callAdd(3, 2, 0)
 	e.callAdvance(3, nativeabi.CallHeaderBytes)
 }

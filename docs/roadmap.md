@@ -104,6 +104,24 @@ bindings, then the remaining CPI/shared-memory/GC-access/SHA gaps. All earlier
 failures and unresolved controls remain; final CI passes all 27 checks and
 31 coverage gates, but its 11m51s longest job still misses the 5–10 minute target.
 
+The next native-call increment packs the u32 function/slot-PC identity into one
+word and halves private caller records from 64 to 32 bytes. Used, resume and
+destination addresses remain full width. ARM complete-value transfers use
+integer LDP/STP within checked spans; large offsets and amd64 keep scalar
+addressing. Corrupt wide context IDs fall back without narrowing. Exact budgets
+sum actual function identities, including shorter immediate encodings. Full
+values, cancellation, roots and the supported C transition remain required.
+This is the first call-ABI step, not register-argument ABI completion or a
+measured speedup; typed canonical/WASI and the remaining frame work stay open.
+
+The same PR removes an observed CI dependency barrier: Linux libraries finished,
+but every LLGo shard waited while macOS warmup remained queued for over twelve
+minutes. A reusable per-platform workflow retains byte-identical execution steps
+after platform-context renaming, all nine shards, CLI checks, release flags,
+caches, inputs and timeouts. Each platform now depends only on its own warmup.
+This removes cross-platform waiting; it does not establish a shorter final link
+or close the measured 5–10 minute per-job target.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and

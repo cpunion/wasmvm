@@ -56,13 +56,32 @@ def validate(shards, root=ROOT):
 def validate_matrix(shards, workflow=None):
     # The owned workflow uses a JSON list so this check needs no YAML dependency.
     if workflow is None:
-        workflow = (ROOT / '.github/workflows/ci.yml').read_text()
+        workflow = (ROOT / '.github/workflows/llgo-platform.yml').read_text()
     lists = re.findall(r'^        shard: (\[[^\n]+\])$', workflow, re.MULTILINE)
     if len(lists) != 1:
         raise ValueError('expected one explicit semantic shard matrix')
     names = json.loads(lists[0])
     if Counter(names) != Counter(shard['name'] for shard in shards):
         raise ValueError('workflow shard matrix differs from the complete plan')
+
+
+def validate_platforms(workflow=None):
+    if workflow is None:
+        workflow = (ROOT / '.github/workflows/ci.yml').read_text()
+    match = re.search(r'^  llgo:\n(.*?)(?=^  [a-z][a-z0-9-]*:|\Z)', workflow, re.MULTILINE | re.DOTALL)
+    if match is None:
+        raise ValueError('missing per-platform LLGo workflow')
+    job = match[1]
+    if 'needs:' in job or 'uses: ./.github/workflows/llgo-platform.yml' not in job:
+        raise ValueError('LLGo platforms must have independent warmup dependencies')
+    platforms = re.findall(r'\{name: ([a-z0-9-]+), runner: ([a-z0-9.-]+)\}', job)
+    if Counter(platforms) != Counter([('linux-amd64', 'ubuntu-24.04'), ('macos-arm64', 'macos-15')]):
+        raise ValueError('LLGo platform coverage differs from the complete plan')
+    for name, variable in [('go-version', 'GO_VERSION'), ('llgo-revision', 'LLGO_REVISION')]:
+        selected = re.search(r'^      ' + name + r": ['\"]?([a-zA-Z0-9.-]+)['\"]?\s*$", job, re.MULTILINE)
+        pinned = re.search(r'^  ' + variable + r": ['\"]?([a-zA-Z0-9.-]+)['\"]?\s*$", workflow, re.MULTILINE)
+        if not selected or not pinned or selected[1] != pinned[1]:
+            raise ValueError('reusable LLGo workflow differs from pinned toolchain')
 
 
 def main():
@@ -73,6 +92,7 @@ def main():
     shards = json.loads((ROOT / '.github/llgo-shards.json').read_text())
     count = validate(shards)
     validate_matrix(shards)
+    validate_platforms()
     selected = next((s for s in shards if s['name'] == args.shard), None)
     if args.shard and selected is None:
         parser.error('unknown semantic shard: ' + args.shard)

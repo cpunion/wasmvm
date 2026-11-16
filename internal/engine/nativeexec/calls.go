@@ -99,8 +99,9 @@ func (e *Execution) publishCallFrames(out *state.NativeFrames) error {
 	}
 	for i := changed; i < top; i++ {
 		word := (nativeabi.CallHeaderBytes + i*nativeabi.CallFrameBytes) / 8
-		fn, ok := linkedFunction(out.Function.Instance, e.callWords[word+nativeabi.CallFunctionOffset/8])
-		used, pc := e.callWords[word+nativeabi.CallUsedOffset/8], e.callWords[word+nativeabi.CallPCOffset/8]
+		site := e.callWords[word+nativeabi.CallFunctionOffset/8]
+		fn, ok := linkedFunction(out.Function.Instance, uint64(uint32(site)))
+		used, pc := e.callWords[word+nativeabi.CallUsedOffset/8], site>>32
 		if !ok || used%16 != 0 || used/16 > uint64(len(e.values)) || pc >= uint64(len(fn.Code.Code)) {
 			return wasm.ErrInvalid
 		}

@@ -607,7 +607,7 @@ charged to the ordinary code budget.
 
 A resumed same-instance native chain keeps its previously authenticated prefix
 in both frame machines. The private call-view header stores the lowest changed
-frame index at byte 32, followed by 64-byte caller records at byte 40. Each
+frame index at byte 32, followed by 32-byte caller records at byte 40. Each
 native run initializes this index to its active frame; a pop lowers it when
 necessary. Pushes already belong to that suffix. The counter survives internal
 polls and arena moves within the run.
@@ -620,6 +620,20 @@ remains available for continuation authentication and reference roots; growing
 its host description array preserves the untouched prefix. Suspension, stale
 continuations and foreign stack changes retire the prefix through the existing
 reset path. This changes neither the external C entry record nor guest limits.
+
+Private caller records encode the module function index and slot PC as adjacent
+little-endian u32 words at offsets 0/4. Used, the native resume address and the
+destination-plan address occupy full-width words at offsets 8/16/24. Known
+unmetered bodies publish the function/PC word together; dynamic contexts reject
+function IDs above u32 before entering a linked callee. Publication authenticates
+both decoded halves against the instance/function and code bounds. Logical
+depth, slot quotas and continuation authentication do not depend on record size.
+
+Complete argument/result transfers remain two integer words. ARM uses LDP/STP
+only for their checked 16-byte span when the offset fits the pair instruction;
+larger offsets retain individually addressed words. amd64 retains scalar word
+operations. This does not use a vector carrier, change opaque high words, remove
+copy-loop cancellation polls or alter the supported C entry transition.
 
 
 ### Shared-memory views and concurrent entries

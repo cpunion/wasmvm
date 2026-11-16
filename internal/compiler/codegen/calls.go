@@ -84,14 +84,12 @@ func (e *functionEmitter) callCopy(count uint32, cancelled int) {
 	e.callAdvance(6, 4)
 	e.callShift(0, 4)
 	e.callAddFrame(0)
-	e.callLoad(1, e.callReg(0), 0)
-	e.callLoad(2, e.callReg(0), 8)
+	e.callPair(1, 2, e.callReg(0), 0, false)
 	e.callMemory(0, e.callReg(7), 0, false, true)
 	e.callAdvance(7, 4)
 	e.callShift(0, 4)
 	e.callAdd(0, 0, 4)
-	e.callStore(1, e.callReg(0), 0)
-	e.callStore(2, e.callReg(0), 8)
+	e.callPair(1, 2, e.callReg(0), 0, true)
 	e.callCancelled(cancelled)
 	e.callAdvance(5, -1)
 	e.callTest(5)
@@ -135,6 +133,13 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	a := e.a
 	fallback, cancelled, resume := a.label(), a.label(), a.label()
 	results, inputs, parameters := a.label(), a.label(), a.label()
+	if e.nativeFunction == 0 {
+		// Wasm function indices occupy one word in the private call record.
+		// Reject a malformed standalone context instead of truncating its ID.
+		e.callMemory(0, e.callContext(), uint32(nativeabi.FunctionOffset)+4, false, true)
+		e.callTest(0)
+		e.branch(fallback, "ne")
+	}
 	e.callLoad(2, e.callContext(), uint32(nativeabi.CallViewOffset))
 	e.callTest(2)
 	e.branch(fallback, "eq")
@@ -196,10 +201,8 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	args := e.f.Args[in.Extra : in.Extra+count]
 	if len(args) <= 8 {
 		for i, slot := range args {
-			e.callLoad(0, e.callFrame(), uint32(slot)*16)
-			e.callLoad(1, e.callFrame(), uint32(slot)*16+8)
-			e.callStore(0, e.callReg(4), uint32(i)*16)
-			e.callStore(1, e.callReg(4), uint32(i)*16+8)
+			e.callPair(0, 1, e.callFrame(), uint32(slot)*16, false)
+			e.callPair(0, 1, e.callReg(4), uint32(i)*16, true)
 		}
 	} else {
 		e.callAddress(inputs, 6)
@@ -208,19 +211,22 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	}
 	e.callMeta(false)
 	if e.nativeFunction != 0 {
-		e.callConst(0, e.nativeFunction-1)
+		// Both halves are compiler constants. Publish their complete packed
+		// word with one store; the remaining record words stay full width.
+		e.callConst(0, uint64(uint32(pc))<<32|(e.nativeFunction-1))
+		e.callPair(0, callUsed, e.callReg(3), nativeabi.CallFunctionOffset, true)
 	} else {
-		e.callLoad(0, e.callContext(), uint32(nativeabi.FunctionOffset))
+		e.callMemory(0, e.callContext(), uint32(nativeabi.FunctionOffset), false, true)
+		e.callMemory(0, e.callReg(3), nativeabi.CallFunctionOffset, true, true)
+		e.callConst(0, uint64(pc))
+		e.callMemory(0, e.callReg(3), nativeabi.CallPCOffset, true, true)
+		if e.frameRegisters {
+			e.callStore(callUsed, e.callReg(3), nativeabi.CallUsedOffset)
+		} else {
+			e.callStateLoad(0, nativeabi.UsedOffset)
+			e.callStore(0, e.callReg(3), nativeabi.CallUsedOffset)
+		}
 	}
-	e.callStore(0, e.callReg(3), nativeabi.CallFunctionOffset)
-	if e.frameRegisters {
-		e.callStore(callUsed, e.callReg(3), nativeabi.CallUsedOffset)
-	} else {
-		e.callStateLoad(0, nativeabi.UsedOffset)
-		e.callStore(0, e.callReg(3), nativeabi.CallUsedOffset)
-	}
-	e.callConst(0, uint64(pc))
-	e.callStore(0, e.callReg(3), nativeabi.CallPCOffset)
 	e.callAddress(resume, 0)
 	e.callStore(0, e.callReg(3), nativeabi.CallResumeOffset)
 	e.callAddress(results, 0)
@@ -338,12 +344,12 @@ func (e *functionEmitter) linkedReturn(pc int) {
 		e.callCopy(in.Count, cancelled)
 	}
 	if e.nativeFunction == 0 {
-		e.callLoad(0, e.callReg(3), nativeabi.CallFunctionOffset)
+		e.callMemory(0, e.callReg(3), nativeabi.CallFunctionOffset, false, true)
 		e.callStore(0, e.callContext(), uint32(nativeabi.FunctionOffset))
 	}
 	e.callPopState()
 	if !e.unmetered {
-		e.callLoad(0, e.callReg(3), nativeabi.CallPCOffset)
+		e.callMemory(0, e.callReg(3), nativeabi.CallPCOffset, false, true)
 		e.callAdvance(0, 1)
 		e.callStore(0, e.callContext(), uint32(nativeabi.ContinuationOffset))
 	}
@@ -381,8 +387,7 @@ func (e *functionEmitter) callScalarResult(source slots.Slot, cached bool, cance
 	e.callMemory(0, e.callReg(7), 0, false, true)
 	e.callShift(0, 4)
 	e.callAdd(0, 0, 4)
-	e.callStore(1, e.callReg(0), 0)
-	e.callStore(2, e.callReg(0), 8)
+	e.callPair(1, 2, e.callReg(0), 0, true)
 	e.callCancelled(cancelled)
 }
 

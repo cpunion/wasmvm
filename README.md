@@ -47,6 +47,8 @@ their integration and final CI evidence.
 
 CI runs Go and LLGo on both targets; eight root LLGo shards execute all 32 test
 packages exactly once per target, plus a separate P3 measurement-module shard.
+Each platform independently warms its LLGo libraries before its own semantic
+and CLI jobs; a queued macOS runner does not hold back Linux jobs.
 Shared Go checks include race detection,
 native pointer ownership, fuzz smoke checks and a **90% statement-coverage gate
 for each executable package**. The coverage badge states this policy, not an

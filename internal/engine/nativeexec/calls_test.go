@@ -406,9 +406,8 @@ func TestNativeCallMetadataValidationAndRetirement(t *testing.T) {
 		}
 		n.callWords[0] = 1
 		word := nativeabi.CallHeaderBytes / 8
-		n.callWords[word+nativeabi.CallFunctionOffset/8] = 0
+		n.callWords[word+nativeabi.CallFunctionOffset/8] = callPC << 32
 		n.callWords[word+nativeabi.CallUsedOffset/8] = 0
-		n.callWords[word+nativeabi.CallPCOffset/8] = callPC
 		n.entryState = native.State{Function: 1, Used: uint64(len(root.Code.Slots)) * 16, Depth: 2}
 		packet := state.NativeFrames{Function: root, Depth: 1, MaxFrames: 128, MaxSlots: 2048}
 		switch name {
@@ -423,7 +422,7 @@ func TestNativeCallMetadataValidationAndRetirement(t *testing.T) {
 		case "parent-used":
 			n.callWords[word+nativeabi.CallUsedOffset/8] = 1
 		case "parent-pc":
-			n.callWords[word+nativeabi.CallPCOffset/8] = uint64(len(root.Code.Code))
+			n.callWords[word+nativeabi.CallFunctionOffset/8] = uint64(len(root.Code.Code)) << 32
 		case "current-function":
 			n.entryState.Function = 100
 		case "current-used":
