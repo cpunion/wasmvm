@@ -80,6 +80,15 @@ continuation and fresh-Caller protocol. Packing reads low words forward and
 unpacking writes complete result carriers backward to handle overlap safely.
 No borrowed stack contains reference-typed parameters or crosses suspension.
 
+Synchronous component imports can explicitly declare `BorrowedParameters`.
+Only a canonical lower may pass its normalized invocation-owned parameters
+directly to such a callback. Ordinary hosts, public calls and async operations
+retain owned snapshots. Validation, logical value/transfer charges and affine
+acceptance still run; result cloning completes before the private frame clears.
+P3 HTTP types copy retained aggregate data into provider objects and opt in.
+Reentry acquires independent canonical storage; neither pending work nor a
+later invocation can observe an earlier borrowed parameter slice.
+
 Each source lazily binds one immutable read signature/value plan. Read calls
 still allocate independent mutable Function/callback, codec, ownership and
 cancellation state. Completion scheduling observes atomic readiness; subscription

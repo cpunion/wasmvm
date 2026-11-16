@@ -35,10 +35,22 @@ func TestValuePlansPreserveOwnedConversionsAndBudgets(t *testing.T) {
 		plan := NewValuePlan(row.typ)
 		for _, wide := range []bool{false, true, false} {
 			plain, bound := valueCodec(wide), valueCodec(wide)
+			borrowed := valueCodec(wide)
+			borrowedPlan := NewValuePlan(row.typ)
 			for repeat := 0; repeat < 2; repeat++ {
+				beforeValues, beforeBytes := plain.Usage()
 				owned, err := plain.Clone(row.typ, row.v)
 				if err != nil {
 					t.Fatal(err)
+				}
+				afterValues, afterBytes := plain.Usage()
+				borrowValues, borrowBytes := borrowed.Usage()
+				if err := borrowedPlan.RetainBorrowed(borrowed, row.v); err != nil {
+					t.Fatal(err)
+				}
+				nextValues, nextBytes := borrowed.Usage()
+				if nextValues-borrowValues != afterValues-beforeValues || nextBytes-borrowBytes != afterBytes-beforeBytes {
+					t.Fatal("borrowed retention changed logical clone accounting", row.typ.Kind)
 				}
 				copy, err := plan.Clone(bound, row.v)
 				if err != nil || !reflect.DeepEqual(owned, copy) {
@@ -113,10 +125,16 @@ func TestValuePlanRejectsInvalidRepresentationsAndKeepsErrorOrdering(t *testing.
 		if _, err := p.LowerFlatInto(c, Value{Bits: 2}, nil); !errors.Is(err, context.Canceled) {
 			t.Fatal("cancellation must precede invalid host representation", err)
 		}
+		if err := p.RetainBorrowed(c, Value{Bits: 2}); !errors.Is(err, context.Canceled) {
+			t.Fatal("borrowed cancellation must precede invalid representation", err)
+		}
 		c.Transfer.Context = nil
 		c.MaxValues = c.values
 		if _, err := p.Clone(c, Value{Bits: 2}); !errors.Is(err, wasm.ErrLimit) {
 			t.Fatal("value quota must precede invalid host representation", err)
+		}
+		if err := p.RetainBorrowed(c, Value{Bits: 2}); !errors.Is(err, wasm.ErrLimit) {
+			t.Fatal("borrowed value quota must precede invalid representation", err)
 		}
 	}
 	char := NewValuePlan(typ(model.Char))
@@ -125,6 +143,7 @@ func TestValuePlanRejectsInvalidRepresentationsAndKeepsErrorOrdering(t *testing.
 	}
 	for _, method := range []func(*Codec) error{
 		func(c *Codec) error { _, err := plan.Clone(c, Value{Bits: 1 << 32}); return err },
+		func(c *Codec) error { return plan.RetainBorrowed(c, Value{Bits: 1 << 32}) },
 		func(c *Codec) error { _, err := plan.LowerFlatInto(c, Value{Bits: 1 << 32}, nil); return err },
 	} {
 		if err := method(valueCodec(false)); !errors.Is(err, wasm.ErrInvalid) {

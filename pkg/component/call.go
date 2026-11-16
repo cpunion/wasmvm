@@ -12,15 +12,16 @@ import (
 )
 
 type Function struct {
-	instance  *Instance
-	typ       *validate.Type
-	host      HostFunction
-	asyncHost AsyncHostFunction
-	scope     *namespace
-	lift      func(*vm.Caller, []Value) (*Value, error)
-	start     func(*vm.Caller, taskArguments, taskResolution) (*componentTask, error)
-	plan      *validate.CanonicalFunction
-	values    *functionValues
+	instance           *Instance
+	typ                *validate.Type
+	host               HostFunction
+	asyncHost          AsyncHostFunction
+	scope              *namespace
+	lift               func(*vm.Caller, []Value) (*Value, error)
+	start              func(*vm.Caller, taskArguments, taskResolution) (*componentTask, error)
+	plan               *validate.CanonicalFunction
+	values             *functionValues
+	borrowedParameters bool
 	// Accessed only while holding the instance Store lease. These descriptors
 	// contain type metadata; each handoff still creates a fresh transaction.
 	resultReceivers [2]*Function
@@ -167,6 +168,10 @@ func (c *Caller) Call(f *Function, args []Value) (*Value, error) {
 }
 
 func (f *Function) call(core *vm.Caller, args []Value) (result *Value, err error) {
+	return f.callWithParameters(core, args, false)
+}
+
+func (f *Function) callWithParameters(core *vm.Caller, args []Value, borrowed bool) (result *Value, err error) {
 	if err := f.enterCall(core, args); err != nil {
 		return nil, err
 	}
@@ -178,7 +183,7 @@ func (f *Function) call(core *vm.Caller, args []Value) (result *Value, err error
 	if f.scope != nil && (f.scope.failed || f.scope.blocked) {
 		return nil, wasm.ErrTrap
 	}
-	h, err := f.hostCall(core, args)
+	h, err := f.hostParameters(core, args, borrowed)
 	if err != nil {
 		return nil, err
 	}
@@ -517,7 +522,7 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 		if err != nil {
 			return err
 		}
-		v, err := callee.call(caller, args)
+		v, err := callee.callWithParameters(caller, args, callee.borrowedParameters)
 		if err != nil {
 			return err
 		}

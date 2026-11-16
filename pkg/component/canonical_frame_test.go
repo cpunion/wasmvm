@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/cpunion/wasmvm/internal/component/canonical"
@@ -113,11 +114,13 @@ func TestCanonicalFramesReturnAfterHostFailure(t *testing.T) {
 		if backend == "native" && !native.Available {
 			continue
 		}
-		for _, mode := range []string{"panic", "cancel", "invalid-result"} {
+		for _, mode := range []string{"panic", "cancel", "invalid-result", "borrowed-panic", "borrowed-cancel", "borrowed-invalid-result"} {
 			t.Run(backend+"/"+mode, func(t *testing.T) {
+				borrowed := strings.HasPrefix(mode, "borrowed-")
+				mode := strings.TrimPrefix(mode, "borrowed-")
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
-				in := asyncInstance(t, backend, "canonical-frames", Imports{Functions: map[string]HostFunction{"step": func(*Caller, []Value) (*Value, error) {
+				in := asyncInstance(t, backend, "canonical-frames", Imports{BorrowedParameters: map[string]bool{"step": borrowed}, Functions: map[string]HostFunction{"step": func(*Caller, []Value) (*Value, error) {
 					if mode == "panic" {
 						panic("frame panic")
 					}

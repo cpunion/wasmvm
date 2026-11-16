@@ -166,6 +166,15 @@ instance, err := compiled.Instantiate(ctx, component.Imports{
 
 Import names and signatures come from the component, including nested
 `Imports.Instances`. All bindings are checked before guest start effects.
+Synchronous hosts may opt into `Imports.BorrowedParameters[name] = true` when
+they consume parameter and aggregate slices before callback return. Canonical
+calls then use their invocation-owned values instead of copying those slices.
+Copy aggregate data that must survive the callback; immutable strings and
+transferred owned resources retain their ordinary contracts. Results remain
+owned snapshots, including when the callback returns a parameter. Public
+`Function.Call` still snapshots caller inputs. Async imports reject this flag;
+pending operations keep their existing owned arguments. The P3 HTTP types
+provider uses this option after copying data into its own provider objects.
 Closing host prevents new bindings; existing bound Instances keep their module
 until close. `host.Info()` supplies an owned Core metadata snapshot. See
 [component lifetime and matching](design/component-runtime.md#host-core-module-imports).

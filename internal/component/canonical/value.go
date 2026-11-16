@@ -49,6 +49,10 @@ func (c *Codec) Clone(t *model.Type, v Value) (Value, error) {
 }
 
 func (c *Codec) clone(t *model.Type, v Value) (Value, error) {
+	return c.copyValue(t, v, true)
+}
+
+func (c *Codec) copyValue(t *model.Type, v Value, owned bool) (Value, error) {
 	if t.Kind == model.Own || t.Kind == model.Borrow || t.Kind == model.ErrorContext || t.Kind == model.Future || t.Kind == model.Stream {
 		amount := uint64(128)
 		if t.Kind == model.ErrorContext {
@@ -58,7 +62,7 @@ func (c *Codec) clone(t *model.Type, v Value) (Value, error) {
 		if err := c.Transfer.charge(amount); err != nil {
 			return Value{}, err
 		}
-		if t.Kind == model.ErrorContext {
+		if t.Kind == model.ErrorContext && owned {
 			return snapshotErrorContext(v), nil
 		}
 		return Value{Resource: v.Resource}, nil
@@ -77,6 +81,9 @@ func (c *Codec) clone(t *model.Type, v Value) (Value, error) {
 			if err := c.Transfer.charge(2 * uint64(len(v.Elements))); err != nil {
 				return Value{}, err
 			}
+			if !owned {
+				return Value{}, nil
+			}
 			data, err := v.ByteString()
 			return Value{Text: data}, err
 		}
@@ -89,7 +96,7 @@ func (c *Codec) clone(t *model.Type, v Value) (Value, error) {
 		return Value{}, err
 	}
 	out := Value{}
-	if len(v.Elements) != 0 {
+	if owned && len(v.Elements) != 0 {
 		out.Elements = make([]Value, len(v.Elements))
 	}
 	if t.Kind == model.Variant || t.Kind == model.Option || t.Kind == model.Result {
@@ -108,21 +115,25 @@ func (c *Codec) clone(t *model.Type, v Value) (Value, error) {
 			if err := c.Transfer.charge(128); err != nil {
 				return Value{}, err
 			}
-			key, err := c.clone(t.Key, element.Elements[0])
+			key, err := c.copyValue(t.Key, element.Elements[0], owned)
 			if err != nil {
 				return Value{}, err
 			}
-			value, err := c.clone(t.Element, element.Elements[1])
+			value, err := c.copyValue(t.Element, element.Elements[1], owned)
 			if err != nil {
 				return Value{}, err
 			}
-			out.Elements[i] = Value{Elements: []Value{key, value}}
+			if owned {
+				out.Elements[i] = Value{Elements: []Value{key, value}}
+			}
 			continue
 		}
-		var err error
-		out.Elements[i], err = c.clone(child, element)
+		childValue, err := c.copyValue(child, element, owned)
 		if err != nil {
 			return Value{}, err
+		}
+		if owned {
+			out.Elements[i] = childValue
 		}
 	}
 	return out, nil

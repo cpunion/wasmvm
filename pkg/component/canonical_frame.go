@@ -6,9 +6,10 @@ import (
 	"github.com/cpunion/wasmvm/pkg/vm"
 )
 
-// A frame is private scratch for one synchronous canonical lower. Host callbacks
-// receive independent argument snapshots and fresh capabilities. Suspended
-// canonical calls use their existing task-owned state instead of these frames.
+// A frame is private scratch for one synchronous canonical lower. Ordinary host
+// callbacks receive independent snapshots; explicitly annotated callbacks borrow
+// these arguments only until return. Capabilities remain fresh. Suspended calls
+// use their existing task-owned state instead of these frames.
 type canonicalFrame struct {
 	state   resourceCodecState
 	args    []Value

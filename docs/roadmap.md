@@ -68,6 +68,12 @@ published slot is recycled. Reentry, collection, failure cleanup and shutdown
 retain the existing ownership protocol. This changes allocation organization,
 not logical quota accounting or the deferred competitive acceptance gate.
 
+The same increment adds explicit synchronous borrowed component parameters.
+P3 HTTP types consume normalized canonical parameters without another aggregate
+snapshot; retained provider data and returned results still become owned.
+Public calls and async bindings retain their existing snapshot contracts.
+Both paths preserve logical budgets and fresh resource/callback guards.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and

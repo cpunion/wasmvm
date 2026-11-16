@@ -21,6 +21,10 @@ type ValueFactory func(*Caller) (Value, error)
 
 type Imports struct {
 	Functions map[string]HostFunction
+	// BorrowedParameters marks synchronous Functions whose parameter/aggregate
+	// slices are borrowed only until callback return. Immutable strings and
+	// transferred owned resources keep their usual value/ownership contracts.
+	BorrowedParameters map[string]bool
 	// AsyncFunctions explicitly binds async component function types. Ordinary
 	// Functions keep synchronous contracts, including stable WASI 0.2 imports.
 	AsyncFunctions map[string]HostFunction
@@ -466,8 +470,12 @@ func (in *Instance) bind(types []validate.Extern, imports Imports) (map[string]i
 
 		case model.FunctionSort:
 			fn := imports.Functions[name]
+			borrowed := imports.BorrowedParameters[name]
 			var async AsyncHostFunction
 			if expected.Type.Kind == model.AsyncFunction {
+				if borrowed {
+					return nil, vm.ErrType
+				}
 				fn = imports.AsyncFunctions[name]
 				async = imports.AsyncCompletions[name]
 			}
@@ -480,7 +488,7 @@ func (in *Instance) bind(types []validate.Extern, imports Imports) (map[string]i
 			if check := imports.FunctionChecks[name]; check != nil {
 				in.functionChecks = append(in.functionChecks, pendingFunctionCheck{name: name, typ: expected.Type, check: check})
 			}
-			e.function = &Function{instance: in, typ: expected.Type, host: fn, asyncHost: async}
+			e.function = &Function{instance: in, typ: expected.Type, host: fn, asyncHost: async, borrowedParameters: borrowed}
 			if async != nil {
 				f := e.function
 				f.start = func(c *vm.Caller, args taskArguments, resolve taskResolution) (*componentTask, error) {
