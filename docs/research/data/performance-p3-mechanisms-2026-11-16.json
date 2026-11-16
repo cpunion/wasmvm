@@ -1,0 +1,3642 @@
+{
+  "schemaVersion": 1,
+  "source": "a096c7b0d53100fbdbe1181c6e0a0ef4682cb94d",
+  "host": {
+    "os": "macOS arm64",
+    "cpu": "Apple M4 Max",
+    "Go": "1.27.3",
+    "LLGo": "5860fb6f9c13371f6cdb456a987a8e95844066d4",
+    "profile": "-O3 -lto=full",
+    "LLVM": "22.1.8",
+    "Rust": "1.98.0",
+    "Wasmtime": "48.0.1",
+    "wazero": "1.12.0"
+  },
+  "scope": "Architectural diagnostics, no production changes or portfolio/complete-P3 speed acceptance. Managed allocation event domains differ; no exclusive CPU fractions or control subtraction. Failed controls and timeout retained.",
+  "primaryPlan": {
+    "source": "a096c7b0d53100fbdbe1181c6e0a0ef4682cb94d",
+    "blocks": 6,
+    "seeds": [
+      7,
+      4294967295,
+      19,
+      2147483648,
+      43,
+      123456789
+    ],
+    "cases": {
+      "core-loop": 5000000,
+      "core-host": 100000,
+      "component-loop": 5000000,
+      "component-host": 100000
+    },
+    "participants": [
+      "go",
+      "llgo",
+      "wasmtime"
+    ],
+    "extraParticipant": {
+      "component-host": "wasmtime-dynamic"
+    },
+    "sameBinaryAA": true,
+    "warmups": 2,
+    "samples": 7,
+    "unit": "fresh-process median; pair A/B process medians geometrically within block",
+    "schedule": "existing benchmarks/interleaved.py invoke; seeded shuffled preparation and one call at a time",
+    "rngSeed": 2026111601,
+    "analysis": "fixed six blocks; paired geometric ratios with 95% marginal bootstrap intervals, seed 2026111602, 20000 block resamples; same-binary A/A full interval inside [0.975,1.025] required for resolved timing claims",
+    "exclusions": "No instrumentation in Wasmtime performance runner; allocation-instrumented reference measured separately. No full P3/portfolio parity, exclusive cost subtraction, or equivalence of fuel/cancellation policy. No owned build/test/profile/analysis/edit/prune during timed cohort. External load recorded. Preserve failures; do not extend cohort.",
+    "binaries": {
+      "go": {
+        "sha256": "13e9d2c80196f8c841795a572808a868110280aa14980d0153ae5982c1fd1ac9"
+      },
+      "llgo": {
+        "sha256": "dab16d6625e39ded700786085ef9968338a1bdd1ba4c645b2d292c722c746f21"
+      },
+      "wasmtime": {
+        "sha256": "a2f7eabc7316b69ebeafb579c5fe9c1eb6590547856797d1e11eee375be462ed"
+      }
+    }
+  },
+  "primary": {
+    "core-loop": {
+      "costs": {
+        "go": {
+          "medianNsPerIteration": 1.1895560278914723,
+          "blockRangeNsPerIteration": [
+            1.1099595397015334,
+            1.2592947123290879
+          ],
+          "mallocsPerIteration": 4e-07,
+          "accountedBytesPerIteration": 1.28e-05,
+          "coldMedianNs": {
+            "load": 99104.0,
+            "prepare": 386666.5,
+            "cleanup": 16792.0,
+            "firstCallNs": 5847062.5
+          }
+        },
+        "llgo": {
+          "medianNsPerIteration": 1.1885523302639367,
+          "blockRangeNsPerIteration": [
+            1.142308822081402,
+            1.2675715923379791
+          ],
+          "mallocsPerIteration": 4e-07,
+          "accountedBytesPerIteration": 9.6e-06,
+          "coldMedianNs": {
+            "load": 117000.5,
+            "prepare": 452729.5,
+            "cleanup": 8875.0,
+            "firstCallNs": 6156771.0
+          }
+        },
+        "wasmtime": {
+          "medianNsPerIteration": 1.5652866593440768,
+          "blockRangeNsPerIteration": [
+            1.4222226832110363,
+            1.8550193348439794
+          ],
+          "mallocsPerIteration": null,
+          "accountedBytesPerIteration": null,
+          "coldMedianNs": {
+            "load": 77479.5,
+            "prepare": 1175000.0,
+            "cleanup": 76312.0,
+            "firstCallNs": 7769833.5
+          }
+        }
+      },
+      "sameBinaryControls": {
+        "go": {
+          "ratio": 0.9655711585934277,
+          "ci95": [
+            0.9476644590311982,
+            0.9831827735990231
+          ],
+          "resolved": false
+        },
+        "llgo": {
+          "ratio": 1.0003005029183039,
+          "ci95": [
+            0.9361210255786835,
+            1.0737698200830221
+          ],
+          "resolved": false
+        },
+        "wasmtime": {
+          "ratio": 1.0723429011198589,
+          "ci95": [
+            0.9965914335539133,
+            1.1548647738097333
+          ],
+          "resolved": false
+        }
+      },
+      "comparisons": {
+        "go/wasmtime": {
+          "ratio": 0.7554388220097072,
+          "ci95": [
+            0.6866021086306867,
+            0.7981196222284244
+          ],
+          "controlsResolve": false
+        },
+        "llgo/wasmtime": {
+          "ratio": 0.7599754214912331,
+          "ci95": [
+            0.7212335620177536,
+            0.7999163598455313
+          ],
+          "controlsResolve": false
+        },
+        "llgo/go": {
+          "ratio": 1.0060052506561115,
+          "ci95": [
+            0.9556470150334065,
+            1.066691939337412
+          ],
+          "controlsResolve": false
+        }
+      }
+    },
+    "core-host": {
+      "costs": {
+        "go": {
+          "medianNsPerIteration": 228.71137053002994,
+          "blockRangeNsPerIteration": [
+            199.18114140022695,
+            255.56605792422124
+          ],
+          "mallocsPerIteration": 1.25006,
+          "accountedBytesPerIteration": 72.00392,
+          "coldMedianNs": {
+            "load": 74770.5,
+            "prepare": 419937.5,
+            "cleanup": 9166.5,
+            "firstCallNs": 20852584.0
+          }
+        },
+        "llgo": {
+          "medianNsPerIteration": 348.0172806280933,
+          "blockRangeNsPerIteration": [
+            273.0642679316029,
+            974.0139478735947
+          ],
+          "mallocsPerIteration": 3.25005,
+          "accountedBytesPerIteration": 132.01032,
+          "coldMedianNs": {
+            "load": 62854.0,
+            "prepare": 340042.0,
+            "cleanup": 9562.5,
+            "firstCallNs": 32965041.5
+          }
+        },
+        "wasmtime": {
+          "medianNsPerIteration": 5.585157855474496,
+          "blockRangeNsPerIteration": [
+            5.079095553235832,
+            6.097582252417756
+          ],
+          "mallocsPerIteration": null,
+          "accountedBytesPerIteration": null,
+          "coldMedianNs": {
+            "load": 44124.5,
+            "prepare": 1162250.0,
+            "cleanup": 66728.5,
+            "firstCallNs": 586875.0
+          }
+        }
+      },
+      "sameBinaryControls": {
+        "go": {
+          "ratio": 0.980763408240832,
+          "ci95": [
+            0.8909364329325711,
+            1.0737315978330895
+          ],
+          "resolved": false
+        },
+        "llgo": {
+          "ratio": 0.9728078633440967,
+          "ci95": [
+            0.8258362091195331,
+            1.0905701711304119
+          ],
+          "resolved": false
+        },
+        "wasmtime": {
+          "ratio": 1.0052749399078658,
+          "ci95": [
+            0.9494690686431403,
+            1.0653108470234098
+          ],
+          "resolved": false
+        }
+      },
+      "comparisons": {
+        "go/wasmtime": {
+          "ratio": 41.11609255758695,
+          "ci95": [
+            38.86570149840928,
+            43.493141577885815
+          ],
+          "controlsResolve": false
+        },
+        "llgo/wasmtime": {
+          "ratio": 71.88568310907294,
+          "ci95": [
+            55.78726017871475,
+            104.61953620317574
+          ],
+          "controlsResolve": false
+        },
+        "llgo/go": {
+          "ratio": 1.7483588210234298,
+          "ci95": [
+            1.3883049602614161,
+            2.4572213792298254
+          ],
+          "controlsResolve": false
+        }
+      }
+    },
+    "component-loop": {
+      "costs": {
+        "go": {
+          "medianNsPerIteration": 1.0738776825214953,
+          "blockRangeNsPerIteration": [
+            1.0288228524872491,
+            1.18996729656417
+          ],
+          "mallocsPerIteration": 3.2e-06,
+          "accountedBytesPerIteration": 0.0001712,
+          "coldMedianNs": {
+            "load": 91333.5,
+            "prepare": 399417.0,
+            "cleanup": 34499.5,
+            "firstCallNs": 5436208.5
+          }
+        },
+        "llgo": {
+          "medianNsPerIteration": 1.075843508444906,
+          "blockRangeNsPerIteration": [
+            0.9916207337782323,
+            1.1906254026980947
+          ],
+          "mallocsPerIteration": 3.8e-06,
+          "accountedBytesPerIteration": 6.72e-05,
+          "coldMedianNs": {
+            "load": 80749.5,
+            "prepare": 397479.0,
+            "cleanup": 66250.0,
+            "firstCallNs": 5536520.5
+          }
+        },
+        "wasmtime": {
+          "medianNsPerIteration": 1.4298211502061937,
+          "blockRangeNsPerIteration": [
+            1.4072946103538948,
+            1.4995479808395595
+          ],
+          "mallocsPerIteration": null,
+          "accountedBytesPerIteration": null,
+          "coldMedianNs": {
+            "load": 56625.0,
+            "prepare": 1104729.0,
+            "cleanup": 57479.5,
+            "firstCallNs": 7096083.5
+          }
+        }
+      },
+      "sameBinaryControls": {
+        "go": {
+          "ratio": 0.984903733704742,
+          "ci95": [
+            0.952621288757856,
+            1.0164586143861385
+          ],
+          "resolved": false
+        },
+        "llgo": {
+          "ratio": 1.0055074877203534,
+          "ci95": [
+            0.9990489212077786,
+            1.0125116113085035
+          ],
+          "resolved": true
+        },
+        "wasmtime": {
+          "ratio": 0.9849557811581041,
+          "ci95": [
+            0.9742645677606251,
+            0.9968700670364519
+          ],
+          "resolved": false
+        }
+      },
+      "comparisons": {
+        "go/wasmtime": {
+          "ratio": 0.753702340251439,
+          "ci95": [
+            0.7408203571204885,
+            0.7713279367311144
+          ],
+          "controlsResolve": false
+        },
+        "llgo/wasmtime": {
+          "ratio": 0.7479772904439262,
+          "ci95": [
+            0.7267476493912008,
+            0.7697294027843933
+          ],
+          "controlsResolve": false
+        },
+        "llgo/go": {
+          "ratio": 0.9924040970794878,
+          "ci95": [
+            0.9800667590254386,
+            1.0007640779264115
+          ],
+          "controlsResolve": false
+        }
+      }
+    },
+    "component-host": {
+      "costs": {
+        "go": {
+          "medianNsPerIteration": 651.6605535522697,
+          "blockRangeNsPerIteration": [
+            601.653146750445,
+            766.6058021487722
+          ],
+          "mallocsPerIteration": 9.25017,
+          "accountedBytesPerIteration": 760.01136,
+          "coldMedianNs": {
+            "load": 75270.5,
+            "prepare": 395625.0,
+            "cleanup": 26396.0,
+            "firstCallNs": 61431083.0
+          }
+        },
+        "llgo": {
+          "medianNsPerIteration": 1239.2234729302872,
+          "blockRangeNsPerIteration": [
+            1153.8645761601263,
+            1391.1585591000307
+          ],
+          "mallocsPerIteration": 15.25019,
+          "accountedBytesPerIteration": 1028.01024,
+          "coldMedianNs": {
+            "load": 62604.5,
+            "prepare": 393583.5,
+            "cleanup": 57666.5,
+            "firstCallNs": 125272813.0
+          }
+        },
+        "wasmtime": {
+          "medianNsPerIteration": 89.21098045495101,
+          "blockRangeNsPerIteration": [
+            85.2308626238172,
+            112.48380122423318
+          ],
+          "mallocsPerIteration": null,
+          "accountedBytesPerIteration": null,
+          "coldMedianNs": {
+            "load": 43417.0,
+            "prepare": 1335354.5,
+            "cleanup": 62708.5,
+            "firstCallNs": 8788083.5
+          }
+        },
+        "wasmtime-dynamic": {
+          "medianNsPerIteration": 152.16076016206347,
+          "blockRangeNsPerIteration": [
+            139.2119346953493,
+            173.87845404462854
+          ],
+          "mallocsPerIteration": null,
+          "accountedBytesPerIteration": null,
+          "coldMedianNs": {
+            "load": 47375.0,
+            "prepare": 1380750.0,
+            "cleanup": 56041.5,
+            "firstCallNs": 14488916.5
+          }
+        }
+      },
+      "sameBinaryControls": {
+        "go": {
+          "ratio": 0.9691957863814026,
+          "ci95": [
+            0.9019883410275397,
+            1.0198642058210756
+          ],
+          "resolved": false
+        },
+        "llgo": {
+          "ratio": 0.9361514611092709,
+          "ci95": [
+            0.8979386364018715,
+            0.9682851625633608
+          ],
+          "resolved": false
+        },
+        "wasmtime": {
+          "ratio": 1.0085888059466228,
+          "ci95": [
+            0.9871209190688569,
+            1.0319709176007528
+          ],
+          "resolved": false
+        },
+        "wasmtime-dynamic": {
+          "ratio": 1.0321105230843797,
+          "ci95": [
+            1.0025866409319883,
+            1.072505491506801
+          ],
+          "resolved": false
+        }
+      },
+      "comparisons": {
+        "go/wasmtime": {
+          "ratio": 7.095639321170269,
+          "ci95": [
+            6.8052768466541504,
+            7.570261833048566
+          ],
+          "controlsResolve": false
+        },
+        "llgo/wasmtime": {
+          "ratio": 13.38700887133261,
+          "ci95": [
+            12.74611084244338,
+            14.141887518265577
+          ],
+          "controlsResolve": false
+        },
+        "llgo/go": {
+          "ratio": 1.8866529519604607,
+          "ci95": [
+            1.8484717156453798,
+            1.9255666471914528
+          ],
+          "controlsResolve": false
+        },
+        "wasmtime-dynamic/wasmtime": {
+          "ratio": 1.6259500672672977,
+          "ci95": [
+            1.5755310408624457,
+            1.6928786788097896
+          ],
+          "controlsResolve": false
+        }
+      }
+    }
+  },
+  "supplementaryCorePlan": {
+    "source": "a096c7b0d53100fbdbe1181c6e0a0ef4682cb94d",
+    "blocks": 6,
+    "seeds": [
+      7,
+      4294967295,
+      19,
+      2147483648,
+      43,
+      123456789
+    ],
+    "cases": {
+      "core-loop": 5000000,
+      "core-host": 100000
+    },
+    "participants": [
+      "go",
+      "llgo",
+      "wasmtime",
+      "wazero"
+    ],
+    "extraParticipant": {},
+    "sameBinaryAA": true,
+    "warmups": 2,
+    "samples": 7,
+    "unit": "fresh-process median; pair A/B process medians geometrically within block",
+    "schedule": "existing benchmarks/interleaved.py invoke; seeded shuffled preparation and one call at a time",
+    "rngSeed": 2026111603,
+    "analysis": "fixed six blocks; paired geometric ratios with 95% marginal bootstrap intervals, seed 2026111602, 20000 block resamples; same-binary A/A full interval inside [0.975,1.025] required for resolved timing claims",
+    "exclusions": "No instrumentation in Wasmtime performance runner; allocation-instrumented reference measured separately. No full P3/portfolio parity, exclusive cost subtraction, or equivalence of fuel/cancellation policy. No owned build/test/profile/analysis/edit/prune during timed cohort. External load recorded. Preserve failures; do not extend cohort.",
+    "binaries": {
+      "go": {
+        "sha256": "13e9d2c80196f8c841795a572808a868110280aa14980d0153ae5982c1fd1ac9"
+      },
+      "llgo": {
+        "sha256": "dab16d6625e39ded700786085ef9968338a1bdd1ba4c645b2d292c722c746f21"
+      },
+      "wasmtime": {
+        "sha256": "a2f7eabc7316b69ebeafb579c5fe9c1eb6590547856797d1e11eee375be462ed"
+      },
+      "wazero": {
+        "sha256": "9f1a82f3f7891519a3699c39ded8f408bff21edd10965d4264bcf0c995efb74d"
+      }
+    },
+    "scope": "Independent supplementary core-host architecture diagnostic; no pooling with first cohort; wazero 1.12.0 Go1.27.3 optimized GoFunc borrowed stack, runtime default termination policy."
+  },
+  "supplementaryCore": {
+    "core-loop": {
+      "costs": {
+        "go": {
+          "medianNsPerIteration": 0.8550687173832909,
+          "blockRangeNsPerIteration": [
+            0.8235182973066719,
+            0.9139207563025145
+          ],
+          "mallocsPerIteration": 4e-07,
+          "accountedBytesPerIteration": 1.28e-05,
+          "coldMedianNs": {
+            "load": 82063.0,
+            "prepare": 249416.5,
+            "cleanup": 6333.5,
+            "firstCallNs": 4226750.0
+          }
+        },
+        "llgo": {
+          "medianNsPerIteration": 0.8457873605009134,
+          "blockRangeNsPerIteration": [
+            0.7974234096771426,
+            0.9096437602710195
+          ],
+          "mallocsPerIteration": 4e-07,
+          "accountedBytesPerIteration": 9.6e-06,
+          "coldMedianNs": {
+            "load": 68812.0,
+            "prepare": 257250.5,
+            "cleanup": 5000.0,
+            "firstCallNs": 4251708.5
+          }
+        },
+        "wasmtime": {
+          "medianNsPerIteration": 1.1308549726147255,
+          "blockRangeNsPerIteration": [
+            1.0865373248172931,
+            1.1734877143050966
+          ],
+          "mallocsPerIteration": null,
+          "accountedBytesPerIteration": null,
+          "coldMedianNs": {
+            "load": 68166.5,
+            "prepare": 840208.0,
+            "cleanup": 39270.5,
+            "firstCallNs": 5531208.0
+          }
+        },
+        "wazero": {
+          "medianNsPerIteration": 1.206000591166076,
+          "blockRangeNsPerIteration": [
+            1.1353747178795202,
+            1.2757877441506482
+          ],
+          "mallocsPerIteration": 0.0,
+          "accountedBytesPerIteration": 0.0,
+          "coldMedianNs": {
+            "load": 76624.5,
+            "prepare": 252146.5,
+            "cleanup": 2312.5,
+            "firstCallNs": 5589500.0
+          }
+        }
+      },
+      "sameBinaryControls": {
+        "go": {
+          "ratio": 0.9880869837799021,
+          "ci95": [
+            0.9786843466178321,
+            0.9962165546523024
+          ],
+          "resolved": true
+        },
+        "llgo": {
+          "ratio": 0.9866829756159984,
+          "ci95": [
+            0.9620260022982167,
+            1.006090767750434
+          ],
+          "resolved": false
+        },
+        "wasmtime": {
+          "ratio": 0.9968917046719277,
+          "ci95": [
+            0.976533781970864,
+            1.0195970835525177
+          ],
+          "resolved": true
+        },
+        "wazero": {
+          "ratio": 0.9845378093273347,
+          "ci95": [
+            0.9570233440117276,
+            1.0124298412424486
+          ],
+          "resolved": false
+        }
+      },
+      "comparisons": {
+        "go/wasmtime": {
+          "ratio": 0.7628868990628259,
+          "ci95": [
+            0.7550741108545027,
+            0.7710120604247751
+          ],
+          "controlsResolve": true
+        },
+        "llgo/wasmtime": {
+          "ratio": 0.7501809570238621,
+          "ci95": [
+            0.7394451082892436,
+            0.7622941721574948
+          ],
+          "controlsResolve": false
+        },
+        "llgo/go": {
+          "ratio": 0.9833449203878418,
+          "ci95": [
+            0.9737532846550658,
+            0.9939363904916461
+          ],
+          "controlsResolve": false
+        },
+        "go/wazero": {
+          "ratio": 0.7226491522711884,
+          "ci95": [
+            0.7122411706599705,
+            0.7342090027039778
+          ],
+          "controlsResolve": false
+        },
+        "llgo/wazero": {
+          "ratio": 0.7106133731084532,
+          "ci95": [
+            0.6951460403560142,
+            0.7283203796209345
+          ],
+          "controlsResolve": false
+        },
+        "wazero/wasmtime": {
+          "ratio": 1.0556808883884743,
+          "ci95": [
+            1.0356656762451542,
+            1.0734456586800287
+          ],
+          "controlsResolve": false
+        }
+      }
+    },
+    "core-host": {
+      "costs": {
+        "go": {
+          "medianNsPerIteration": 145.98925609955415,
+          "blockRangeNsPerIteration": [
+            143.71739353728205,
+            148.35956388821046
+          ],
+          "mallocsPerIteration": 1.25005,
+          "accountedBytesPerIteration": 72.00384,
+          "coldMedianNs": {
+            "load": 54229.0,
+            "prepare": 263479.0,
+            "cleanup": 6354.5,
+            "firstCallNs": 14867062.5
+          }
+        },
+        "llgo": {
+          "medianNsPerIteration": 216.66023332323198,
+          "blockRangeNsPerIteration": [
+            212.05944239661318,
+            218.9486939469464
+          ],
+          "mallocsPerIteration": 3.25005,
+          "accountedBytesPerIteration": 132.00352,
+          "coldMedianNs": {
+            "load": 57479.0,
+            "prepare": 248583.5,
+            "cleanup": 4146.0,
+            "firstCallNs": 22051625.0
+          }
+        },
+        "wasmtime": {
+          "medianNsPerIteration": 3.97430177618355,
+          "blockRangeNsPerIteration": [
+            3.91064297107266,
+            4.0894910563540785
+          ],
+          "mallocsPerIteration": null,
+          "accountedBytesPerIteration": null,
+          "coldMedianNs": {
+            "load": 34750.0,
+            "prepare": 925062.5,
+            "cleanup": 37750.0,
+            "firstCallNs": 437646.0
+          }
+        },
+        "wazero": {
+          "medianNsPerIteration": 20.46234111324727,
+          "blockRangeNsPerIteration": [
+            20.389454520589805,
+            21.099430432478503
+          ],
+          "mallocsPerIteration": 0.0,
+          "accountedBytesPerIteration": 0.0,
+          "coldMedianNs": {
+            "load": 43187.5,
+            "prepare": 255646.0,
+            "cleanup": 4333.0,
+            "firstCallNs": 2060541.5
+          }
+        }
+      },
+      "sameBinaryControls": {
+        "go": {
+          "ratio": 0.9984161157014126,
+          "ci95": [
+            0.9805243671418251,
+            1.013083348825521
+          ],
+          "resolved": true
+        },
+        "llgo": {
+          "ratio": 0.9917187247072323,
+          "ci95": [
+            0.98400275188239,
+            0.9992554206513188
+          ],
+          "resolved": true
+        },
+        "wasmtime": {
+          "ratio": 1.0142683820803091,
+          "ci95": [
+            0.9846742520308542,
+            1.047767535143723
+          ],
+          "resolved": false
+        },
+        "wazero": {
+          "ratio": 0.9811233597438862,
+          "ci95": [
+            0.9708774482065078,
+            0.9928514842061414
+          ],
+          "resolved": false
+        }
+      },
+      "comparisons": {
+        "go/wasmtime": {
+          "ratio": 36.62543766674822,
+          "ci95": [
+            36.264876724899494,
+            36.94668192340336
+          ],
+          "controlsResolve": false
+        },
+        "llgo/wasmtime": {
+          "ratio": 54.17117584868339,
+          "ci95": [
+            53.331204174496754,
+            55.076523858558225
+          ],
+          "controlsResolve": false
+        },
+        "llgo/go": {
+          "ratio": 1.4790587990123794,
+          "ci95": [
+            1.4651573737118455,
+            1.4947471403709078
+          ],
+          "controlsResolve": true
+        },
+        "go/wazero": {
+          "ratio": 7.080729434243802,
+          "ci95": [
+            7.0141787502393695,
+            7.148023746017893
+          ],
+          "controlsResolve": false
+        },
+        "llgo/wazero": {
+          "ratio": 10.472815173144243,
+          "ci95": [
+            10.380007661965243,
+            10.569600758797646
+          ],
+          "controlsResolve": false
+        },
+        "wazero/wasmtime": {
+          "ratio": 5.172551501490848,
+          "ci95": [
+            5.109193425287689,
+            5.254685464193205
+          ],
+          "controlsResolve": false
+        }
+      }
+    }
+  },
+  "requestOperationCounts": [
+    {
+      "compiler": "go",
+      "payloadBytes": 16,
+      "processes": 6,
+      "countsPerRequest": {
+        "builtin/async_builtin/14": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/async_builtin/15": {
+          "min": 3.0,
+          "max": 3.0
+        },
+        "builtin/async_builtin/16": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/async_builtin/19": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/async_builtin/20": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/async_builtin/21": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/async_builtin/22": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/async_builtin/23": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/async_builtin/26": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/async_builtin/27": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/task/9": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/waitable/31": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/waitable/33": {
+          "min": 3.0,
+          "max": 3.0
+        },
+        "builtin/waitable/34": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/waitable/35": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "canonical/clone/kind/101": {
+          "min": 4.0,
+          "max": 4.0
+        },
+        "canonical/clone/kind/102": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "canonical/clone/kind/104": {
+          "min": 3.0,
+          "max": 3.0
+        },
+        "canonical/clone/kind/105": {
+          "min": 7.0,
+          "max": 7.0
+        },
+        "canonical/clone/kind/106": {
+          "min": 10.0,
+          "max": 10.0
+        },
+        "canonical/clone/kind/107": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "canonical/clone/kind/111": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "canonical/clone/kind/112": {
+          "min": 11.0,
+          "max": 11.0
+        },
+        "canonical/clone/kind/115": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "canonical/clone/kind/123": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "canonical/clone/node": {
+          "min": 47.0,
+          "max": 47.0
+        },
+        "canonical/clone/root": {
+          "min": 30.0,
+          "max": 30.0
+        },
+        "canonical/layout/build": {
+          "min": 116.0,
+          "max": 116.0
+        },
+        "canonical/load/node": {
+          "min": 4.0,
+          "max": 4.0
+        },
+        "canonical/memory/Read": {
+          "min": 31.0,
+          "max": 31.0
+        },
+        "canonical/memory/ReadString": {
+          "min": 4.0,
+          "max": 4.0
+        },
+        "canonical/memory/Write": {
+          "min": 9.0,
+          "max": 9.0
+        },
+        "canonical/memory/WriteString": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "canonical/memory/readBytes": {
+          "min": 23.0,
+          "max": 23.0
+        },
+        "canonical/memory/readStringBytes": {
+          "min": 33.0,
+          "max": 33.0
+        },
+        "canonical/memory/writeBytes": {
+          "min": 21.0,
+          "max": 21.0
+        },
+        "canonical/memory/writeStringBytes": {
+          "min": 16.0,
+          "max": 16.0
+        },
+        "canonical/transfer/budgetBytes": {
+          "min": 4979.0,
+          "max": 4979.0
+        },
+        "canonical/transfer/charge": {
+          "min": 70.0,
+          "max": 70.0
+        },
+        "canonical/transfer/check": {
+          "min": 135.0,
+          "max": 135.0
+        },
+        "canonical/transfer/rangeCheck": {
+          "min": 26.0,
+          "max": 26.0
+        },
+        "canonical/visit": {
+          "min": 85.0,
+          "max": 85.0
+        },
+        "component/caller/new": {
+          "min": 23.0,
+          "max": 23.0
+        },
+        "component/codec/bufferInit": {
+          "min": 14.0,
+          "max": 14.0
+        },
+        "component/codec/new": {
+          "min": 31.0,
+          "max": 31.0
+        },
+        "component/completion/bind": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/completion/new": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/completion/notify": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/completion/ready": {
+          "min": 11.98828125,
+          "max": 12.0
+        },
+        "component/completion/resolve": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/completion/take": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/function/enter": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "component/hostCall/accept": {
+          "min": 12.0,
+          "max": 12.0
+        },
+        "component/hostCall/finish": {
+          "min": 19.0,
+          "max": 19.0
+        },
+        "component/hostCall/new": {
+          "min": 13.0,
+          "max": 13.0
+        },
+        "component/scheduler/await": {
+          "min": 6.0,
+          "max": 6.0
+        },
+        "component/scheduler/step": {
+          "min": 17.98828125,
+          "max": 18.0
+        },
+        "component/task/new": {
+          "min": 6.0,
+          "max": 6.0
+        },
+        "component/task/resume": {
+          "min": 16.0,
+          "max": 16.0
+        },
+        "dispatch/guestCross": {
+          "min": 16.0,
+          "max": 16.0
+        },
+        "dispatch/host": {
+          "min": 38.0,
+          "max": 38.0
+        },
+        "import/sync/[constructor]fields": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "import/sync/[method]fields.append": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "import/sync/[method]response.set-status-code": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "import/sync/[static]request.consume-body": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "import/sync/[static]response.new": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "native/entry": {
+          "min": 46.0,
+          "max": 46.0
+        },
+        "native/exit/1": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "native/exit/10": {
+          "min": 38.0,
+          "max": 38.0
+        },
+        "native/frames/prepare": {
+          "min": 46.0,
+          "max": 46.0
+        },
+        "native/frames/publish": {
+          "min": 43.0,
+          "max": 43.0
+        },
+        "native/state/init": {
+          "min": 46.0,
+          "max": 46.0
+        },
+        "ownership/accept": {
+          "min": 45.0,
+          "max": 45.0
+        },
+        "ownership/finish": {
+          "min": 29.0,
+          "max": 29.0
+        },
+        "ownership/lift": {
+          "min": 10.0,
+          "max": 10.0
+        },
+        "ownership/lower": {
+          "min": 7.0,
+          "max": 7.0
+        },
+        "ownership/validate": {
+          "min": 25.0,
+          "max": 25.0
+        },
+        "vm/caller/enter": {
+          "min": 73.0,
+          "max": 73.0
+        },
+        "vm/caller/new": {
+          "min": 39.0,
+          "max": 39.0
+        },
+        "vm/continuation/poll": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "vm/continuation/start": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "vm/host/dispatch": {
+          "min": 38.0,
+          "max": 38.0
+        }
+      }
+    },
+    {
+      "compiler": "go",
+      "payloadBytes": 65536,
+      "processes": 6,
+      "countsPerRequest": {
+        "builtin/async_builtin/14": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/async_builtin/15": {
+          "min": 15.0,
+          "max": 15.0
+        },
+        "builtin/async_builtin/16": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/async_builtin/19": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/async_builtin/20": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/async_builtin/21": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/async_builtin/22": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/async_builtin/23": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/async_builtin/26": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/async_builtin/27": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/task/9": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/waitable/31": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/waitable/33": {
+          "min": 3.0,
+          "max": 3.0
+        },
+        "builtin/waitable/34": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/waitable/35": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "canonical/clone/kind/101": {
+          "min": 4.0,
+          "max": 4.0
+        },
+        "canonical/clone/kind/102": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "canonical/clone/kind/104": {
+          "min": 3.0,
+          "max": 3.0
+        },
+        "canonical/clone/kind/105": {
+          "min": 7.0,
+          "max": 7.0
+        },
+        "canonical/clone/kind/106": {
+          "min": 10.0,
+          "max": 10.0
+        },
+        "canonical/clone/kind/107": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "canonical/clone/kind/111": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "canonical/clone/kind/112": {
+          "min": 23.0,
+          "max": 23.0
+        },
+        "canonical/clone/kind/115": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "canonical/clone/kind/123": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "canonical/clone/node": {
+          "min": 59.0,
+          "max": 59.0
+        },
+        "canonical/clone/root": {
+          "min": 42.0,
+          "max": 42.0
+        },
+        "canonical/layout/build": {
+          "min": 152.0,
+          "max": 152.0
+        },
+        "canonical/load/node": {
+          "min": 4.0,
+          "max": 4.0
+        },
+        "canonical/memory/Read": {
+          "min": 43.0,
+          "max": 43.0
+        },
+        "canonical/memory/ReadString": {
+          "min": 4.0,
+          "max": 4.0
+        },
+        "canonical/memory/Write": {
+          "min": 9.0,
+          "max": 9.0
+        },
+        "canonical/memory/WriteString": {
+          "min": 14.0,
+          "max": 14.0
+        },
+        "canonical/memory/readBytes": {
+          "min": 65543.0,
+          "max": 65543.0
+        },
+        "canonical/memory/readStringBytes": {
+          "min": 33.0,
+          "max": 33.0
+        },
+        "canonical/memory/writeBytes": {
+          "min": 21.0,
+          "max": 21.0
+        },
+        "canonical/memory/writeStringBytes": {
+          "min": 65536.0,
+          "max": 65536.0
+        },
+        "canonical/transfer/budgetBytes": {
+          "min": 332579.0,
+          "max": 332579.0
+        },
+        "canonical/transfer/charge": {
+          "min": 94.0,
+          "max": 94.0
+        },
+        "canonical/transfer/check": {
+          "min": 171.0,
+          "max": 171.0
+        },
+        "canonical/transfer/rangeCheck": {
+          "min": 38.0,
+          "max": 38.0
+        },
+        "canonical/visit": {
+          "min": 97.0,
+          "max": 97.0
+        },
+        "component/caller/new": {
+          "min": 23.0,
+          "max": 23.0
+        },
+        "component/codec/bufferInit": {
+          "min": 38.0,
+          "max": 38.0
+        },
+        "component/codec/new": {
+          "min": 31.0,
+          "max": 31.0
+        },
+        "component/completion/bind": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/completion/new": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/completion/notify": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/completion/ready": {
+          "min": 11.99609375,
+          "max": 12.0
+        },
+        "component/completion/resolve": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/completion/take": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/function/enter": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "component/hostCall/accept": {
+          "min": 12.0,
+          "max": 12.0
+        },
+        "component/hostCall/finish": {
+          "min": 19.0,
+          "max": 19.0
+        },
+        "component/hostCall/new": {
+          "min": 13.0,
+          "max": 13.0
+        },
+        "component/scheduler/await": {
+          "min": 6.0,
+          "max": 6.0
+        },
+        "component/scheduler/step": {
+          "min": 17.99609375,
+          "max": 18.0
+        },
+        "component/task/new": {
+          "min": 6.0,
+          "max": 6.0
+        },
+        "component/task/resume": {
+          "min": 16.0,
+          "max": 16.0
+        },
+        "dispatch/guestCross": {
+          "min": 28.0,
+          "max": 28.0
+        },
+        "dispatch/host": {
+          "min": 50.0,
+          "max": 50.0
+        },
+        "import/sync/[constructor]fields": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "import/sync/[method]fields.append": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "import/sync/[method]response.set-status-code": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "import/sync/[static]request.consume-body": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "import/sync/[static]response.new": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "native/entry": {
+          "min": 58.0,
+          "max": 58.0
+        },
+        "native/exit/1": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "native/exit/10": {
+          "min": 50.0,
+          "max": 50.0
+        },
+        "native/frames/prepare": {
+          "min": 58.0,
+          "max": 58.0
+        },
+        "native/frames/publish": {
+          "min": 55.0,
+          "max": 55.0
+        },
+        "native/state/init": {
+          "min": 58.0,
+          "max": 58.0
+        },
+        "ownership/accept": {
+          "min": 45.0,
+          "max": 45.0
+        },
+        "ownership/finish": {
+          "min": 29.0,
+          "max": 29.0
+        },
+        "ownership/lift": {
+          "min": 10.0,
+          "max": 10.0
+        },
+        "ownership/lower": {
+          "min": 7.0,
+          "max": 7.0
+        },
+        "ownership/validate": {
+          "min": 25.0,
+          "max": 25.0
+        },
+        "vm/caller/enter": {
+          "min": 109.0,
+          "max": 109.0
+        },
+        "vm/caller/new": {
+          "min": 51.0,
+          "max": 51.0
+        },
+        "vm/continuation/poll": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "vm/continuation/start": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "vm/host/dispatch": {
+          "min": 50.0,
+          "max": 50.0
+        }
+      }
+    },
+    {
+      "compiler": "llgo",
+      "payloadBytes": 16,
+      "processes": 6,
+      "countsPerRequest": {
+        "builtin/async_builtin/14": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/async_builtin/15": {
+          "min": 3.0,
+          "max": 3.0
+        },
+        "builtin/async_builtin/16": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/async_builtin/19": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/async_builtin/20": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/async_builtin/21": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/async_builtin/22": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/async_builtin/23": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/async_builtin/26": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/async_builtin/27": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/task/9": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/waitable/31": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/waitable/33": {
+          "min": 3.0,
+          "max": 3.0
+        },
+        "builtin/waitable/34": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/waitable/35": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "canonical/clone/kind/101": {
+          "min": 4.0,
+          "max": 4.0
+        },
+        "canonical/clone/kind/102": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "canonical/clone/kind/104": {
+          "min": 3.0,
+          "max": 3.0
+        },
+        "canonical/clone/kind/105": {
+          "min": 7.0,
+          "max": 7.0
+        },
+        "canonical/clone/kind/106": {
+          "min": 10.0,
+          "max": 10.0
+        },
+        "canonical/clone/kind/107": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "canonical/clone/kind/111": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "canonical/clone/kind/112": {
+          "min": 11.0,
+          "max": 11.0
+        },
+        "canonical/clone/kind/115": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "canonical/clone/kind/123": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "canonical/clone/node": {
+          "min": 47.0,
+          "max": 47.0
+        },
+        "canonical/clone/root": {
+          "min": 30.0,
+          "max": 30.0
+        },
+        "canonical/layout/build": {
+          "min": 116.0,
+          "max": 116.0
+        },
+        "canonical/load/node": {
+          "min": 4.0,
+          "max": 4.0
+        },
+        "canonical/memory/Read": {
+          "min": 31.0,
+          "max": 31.0
+        },
+        "canonical/memory/ReadString": {
+          "min": 4.0,
+          "max": 4.0
+        },
+        "canonical/memory/Write": {
+          "min": 9.0,
+          "max": 9.0
+        },
+        "canonical/memory/WriteString": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "canonical/memory/readBytes": {
+          "min": 23.0,
+          "max": 23.0
+        },
+        "canonical/memory/readStringBytes": {
+          "min": 33.0,
+          "max": 33.0
+        },
+        "canonical/memory/writeBytes": {
+          "min": 21.0,
+          "max": 21.0
+        },
+        "canonical/memory/writeStringBytes": {
+          "min": 16.0,
+          "max": 16.0
+        },
+        "canonical/transfer/budgetBytes": {
+          "min": 4979.0,
+          "max": 4979.0
+        },
+        "canonical/transfer/charge": {
+          "min": 70.0,
+          "max": 70.0
+        },
+        "canonical/transfer/check": {
+          "min": 135.0,
+          "max": 135.0
+        },
+        "canonical/transfer/rangeCheck": {
+          "min": 26.0,
+          "max": 26.0
+        },
+        "canonical/visit": {
+          "min": 85.0,
+          "max": 85.0
+        },
+        "component/caller/new": {
+          "min": 23.0,
+          "max": 23.0
+        },
+        "component/codec/bufferInit": {
+          "min": 14.0,
+          "max": 14.0
+        },
+        "component/codec/new": {
+          "min": 31.0,
+          "max": 31.0
+        },
+        "component/completion/bind": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/completion/new": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/completion/notify": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/completion/ready": {
+          "min": 11.96484375,
+          "max": 12.0
+        },
+        "component/completion/resolve": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/completion/take": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/function/enter": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "component/hostCall/accept": {
+          "min": 12.0,
+          "max": 12.0
+        },
+        "component/hostCall/finish": {
+          "min": 19.0,
+          "max": 19.0
+        },
+        "component/hostCall/new": {
+          "min": 13.0,
+          "max": 13.0
+        },
+        "component/scheduler/await": {
+          "min": 6.0,
+          "max": 6.0
+        },
+        "component/scheduler/step": {
+          "min": 17.98046875,
+          "max": 18.0
+        },
+        "component/task/new": {
+          "min": 6.0,
+          "max": 6.0
+        },
+        "component/task/resume": {
+          "min": 15.99609375,
+          "max": 16.0
+        },
+        "dispatch/guestCross": {
+          "min": 16.0,
+          "max": 16.0
+        },
+        "dispatch/host": {
+          "min": 38.0,
+          "max": 38.0
+        },
+        "import/sync/[constructor]fields": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "import/sync/[method]fields.append": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "import/sync/[method]response.set-status-code": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "import/sync/[static]request.consume-body": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "import/sync/[static]response.new": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "native/entry": {
+          "min": 46.0,
+          "max": 46.0
+        },
+        "native/exit/1": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "native/exit/10": {
+          "min": 38.0,
+          "max": 38.0
+        },
+        "native/frames/prepare": {
+          "min": 46.0,
+          "max": 46.0
+        },
+        "native/frames/publish": {
+          "min": 43.0,
+          "max": 43.0
+        },
+        "native/state/init": {
+          "min": 46.0,
+          "max": 46.0
+        },
+        "ownership/accept": {
+          "min": 45.0,
+          "max": 45.0
+        },
+        "ownership/finish": {
+          "min": 29.0,
+          "max": 29.0
+        },
+        "ownership/lift": {
+          "min": 10.0,
+          "max": 10.0
+        },
+        "ownership/lower": {
+          "min": 7.0,
+          "max": 7.0
+        },
+        "ownership/validate": {
+          "min": 25.0,
+          "max": 25.0
+        },
+        "vm/caller/enter": {
+          "min": 73.0,
+          "max": 73.0
+        },
+        "vm/caller/new": {
+          "min": 39.0,
+          "max": 39.0
+        },
+        "vm/continuation/poll": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "vm/continuation/start": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "vm/host/dispatch": {
+          "min": 38.0,
+          "max": 38.0
+        }
+      }
+    },
+    {
+      "compiler": "llgo",
+      "payloadBytes": 65536,
+      "processes": 6,
+      "countsPerRequest": {
+        "builtin/async_builtin/14": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/async_builtin/15": {
+          "min": 15.0,
+          "max": 15.0
+        },
+        "builtin/async_builtin/16": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/async_builtin/19": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/async_builtin/20": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/async_builtin/21": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/async_builtin/22": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/async_builtin/23": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/async_builtin/26": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/async_builtin/27": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "builtin/task/9": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/waitable/31": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/waitable/33": {
+          "min": 3.0,
+          "max": 3.0
+        },
+        "builtin/waitable/34": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "builtin/waitable/35": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "canonical/clone/kind/101": {
+          "min": 4.0,
+          "max": 4.0
+        },
+        "canonical/clone/kind/102": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "canonical/clone/kind/104": {
+          "min": 3.0,
+          "max": 3.0
+        },
+        "canonical/clone/kind/105": {
+          "min": 7.0,
+          "max": 7.0
+        },
+        "canonical/clone/kind/106": {
+          "min": 10.0,
+          "max": 10.0
+        },
+        "canonical/clone/kind/107": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "canonical/clone/kind/111": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "canonical/clone/kind/112": {
+          "min": 23.0,
+          "max": 23.0
+        },
+        "canonical/clone/kind/115": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "canonical/clone/kind/123": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "canonical/clone/node": {
+          "min": 59.0,
+          "max": 59.0
+        },
+        "canonical/clone/root": {
+          "min": 42.0,
+          "max": 42.0
+        },
+        "canonical/layout/build": {
+          "min": 152.0,
+          "max": 152.0
+        },
+        "canonical/load/node": {
+          "min": 4.0,
+          "max": 4.0
+        },
+        "canonical/memory/Read": {
+          "min": 43.0,
+          "max": 43.0
+        },
+        "canonical/memory/ReadString": {
+          "min": 4.0,
+          "max": 4.0
+        },
+        "canonical/memory/Write": {
+          "min": 9.0,
+          "max": 9.0
+        },
+        "canonical/memory/WriteString": {
+          "min": 14.0,
+          "max": 14.0
+        },
+        "canonical/memory/readBytes": {
+          "min": 65543.0,
+          "max": 65543.0
+        },
+        "canonical/memory/readStringBytes": {
+          "min": 33.0,
+          "max": 33.0
+        },
+        "canonical/memory/writeBytes": {
+          "min": 21.0,
+          "max": 21.0
+        },
+        "canonical/memory/writeStringBytes": {
+          "min": 65536.0,
+          "max": 65536.0
+        },
+        "canonical/transfer/budgetBytes": {
+          "min": 332579.0,
+          "max": 332579.0
+        },
+        "canonical/transfer/charge": {
+          "min": 94.0,
+          "max": 94.0
+        },
+        "canonical/transfer/check": {
+          "min": 171.0,
+          "max": 171.0
+        },
+        "canonical/transfer/rangeCheck": {
+          "min": 38.0,
+          "max": 38.0
+        },
+        "canonical/visit": {
+          "min": 97.0,
+          "max": 97.0
+        },
+        "component/caller/new": {
+          "min": 23.0,
+          "max": 23.0
+        },
+        "component/codec/bufferInit": {
+          "min": 38.0,
+          "max": 38.0
+        },
+        "component/codec/new": {
+          "min": 31.0,
+          "max": 31.0
+        },
+        "component/completion/bind": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/completion/new": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/completion/notify": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/completion/ready": {
+          "min": 11.99609375,
+          "max": 12.0
+        },
+        "component/completion/resolve": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/completion/take": {
+          "min": 5.0,
+          "max": 5.0
+        },
+        "component/function/enter": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "component/hostCall/accept": {
+          "min": 12.0,
+          "max": 12.0
+        },
+        "component/hostCall/finish": {
+          "min": 19.0,
+          "max": 19.0
+        },
+        "component/hostCall/new": {
+          "min": 13.0,
+          "max": 13.0
+        },
+        "component/scheduler/await": {
+          "min": 6.0,
+          "max": 6.0
+        },
+        "component/scheduler/step": {
+          "min": 17.99609375,
+          "max": 18.0
+        },
+        "component/task/new": {
+          "min": 6.0,
+          "max": 6.0
+        },
+        "component/task/resume": {
+          "min": 16.0,
+          "max": 16.0
+        },
+        "dispatch/guestCross": {
+          "min": 28.0,
+          "max": 28.0
+        },
+        "dispatch/host": {
+          "min": 50.0,
+          "max": 50.0
+        },
+        "import/sync/[constructor]fields": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "import/sync/[method]fields.append": {
+          "min": 2.0,
+          "max": 2.0
+        },
+        "import/sync/[method]response.set-status-code": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "import/sync/[static]request.consume-body": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "import/sync/[static]response.new": {
+          "min": 1.0,
+          "max": 1.0
+        },
+        "native/entry": {
+          "min": 58.0,
+          "max": 58.0
+        },
+        "native/exit/1": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "native/exit/10": {
+          "min": 50.0,
+          "max": 50.0
+        },
+        "native/frames/prepare": {
+          "min": 58.0,
+          "max": 58.0
+        },
+        "native/frames/publish": {
+          "min": 55.0,
+          "max": 55.0
+        },
+        "native/state/init": {
+          "min": 58.0,
+          "max": 58.0
+        },
+        "ownership/accept": {
+          "min": 45.0,
+          "max": 45.0
+        },
+        "ownership/finish": {
+          "min": 29.0,
+          "max": 29.0
+        },
+        "ownership/lift": {
+          "min": 10.0,
+          "max": 10.0
+        },
+        "ownership/lower": {
+          "min": 7.0,
+          "max": 7.0
+        },
+        "ownership/validate": {
+          "min": 25.0,
+          "max": 25.0
+        },
+        "vm/caller/enter": {
+          "min": 109.0,
+          "max": 109.0
+        },
+        "vm/caller/new": {
+          "min": 51.0,
+          "max": 51.0
+        },
+        "vm/continuation/poll": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "vm/continuation/start": {
+          "min": 8.0,
+          "max": 8.0
+        },
+        "vm/host/dispatch": {
+          "min": 50.0,
+          "max": 50.0
+        }
+      }
+    }
+  ],
+  "jitByteComparison": [
+    {
+      "case": "core-loop",
+      "GoSHA256": [
+        "59ea36ba3df213ca85057d189f78de0729a332017a274abc94ff66479073e127"
+      ],
+      "LLGoSHA256": [
+        "59ea36ba3df213ca85057d189f78de0729a332017a274abc94ff66479073e127"
+      ],
+      "equal": true
+    },
+    {
+      "case": "core-host",
+      "GoSHA256": [
+        "b2d3e3376ee26d4928c4771dc6d3201575c561af41c1b35b60f29e58d3183db1"
+      ],
+      "LLGoSHA256": [
+        "b2d3e3376ee26d4928c4771dc6d3201575c561af41c1b35b60f29e58d3183db1"
+      ],
+      "equal": true
+    },
+    {
+      "case": "component-loop",
+      "GoSHA256": [
+        "59ea36ba3df213ca85057d189f78de0729a332017a274abc94ff66479073e127"
+      ],
+      "LLGoSHA256": [
+        "59ea36ba3df213ca85057d189f78de0729a332017a274abc94ff66479073e127"
+      ],
+      "equal": true
+    },
+    {
+      "case": "component-host",
+      "GoSHA256": [
+        "b2d3e3376ee26d4928c4771dc6d3201575c561af41c1b35b60f29e58d3183db1"
+      ],
+      "LLGoSHA256": [
+        "b2d3e3376ee26d4928c4771dc6d3201575c561af41c1b35b60f29e58d3183db1"
+      ],
+      "equal": true
+    }
+  ],
+  "referenceSourceVerification": [
+    {
+      "reference": "Wasmtime48.0.1",
+      "path": "crates/wasmtime/src/runtime/component/func/host.rs",
+      "url": "https://raw.githubusercontent.com/bytecodealliance/wasmtime/v48.0.1/crates/wasmtime/src/runtime/component/func/host.rs",
+      "localSHA256": "980f47225b603f136cbe1dc9409c5b6d2cd88538a2b88d660fcc4b89bd5c29e4",
+      "upstreamBytesMatch": true
+    },
+    {
+      "reference": "Wasmtime48.0.1",
+      "path": "crates/wasmtime/src/runtime/component/concurrent.rs",
+      "url": "https://raw.githubusercontent.com/bytecodealliance/wasmtime/v48.0.1/crates/wasmtime/src/runtime/component/concurrent.rs",
+      "localSHA256": "a3feed27a30324bf25f79c26c313d955eebc04bc489cdb0b5d1baf3b93f08050",
+      "upstreamBytesMatch": true
+    },
+    {
+      "reference": "Wasmtime48.0.1",
+      "path": "crates/wasi-http/src/p3/bindings.rs",
+      "url": "https://raw.githubusercontent.com/bytecodealliance/wasmtime/v48.0.1/crates/wasi-http/src/p3/bindings.rs",
+      "localSHA256": "9dfb3749395eec98ec22dea0b1d0aa8ff51d93bd4fade6df362cb971a103073c",
+      "upstreamBytesMatch": true
+    },
+    {
+      "reference": "wazero1.12.0",
+      "path": "internal/engine/wazevo/call_engine.go",
+      "url": "https://raw.githubusercontent.com/tetratelabs/wazero/v1.12.0/internal/engine/wazevo/call_engine.go",
+      "localSHA256": "fea97da71a5f23411ee2de41b181adcda5b8e273358996becafe9e6cf76e5207",
+      "upstreamBytesMatch": true
+    },
+    {
+      "reference": "wazero1.12.0",
+      "path": "api/wasm.go",
+      "url": "https://raw.githubusercontent.com/tetratelabs/wazero/v1.12.0/api/wasm.go",
+      "localSHA256": "95c16f8dc2bd2b0d342d13f08762ca865700ba0e94b7d96dd88f2acbc813c746",
+      "upstreamBytesMatch": true
+    }
+  ],
+  "ownAllocationCounts": [
+    {
+      "participant": "go",
+      "repeat": 0,
+      "record": {
+        "allocatedBytes": [
+          72376,
+          72376,
+          72376,
+          72376,
+          72376,
+          72376,
+          72376
+        ],
+        "firstCallNs": 162375,
+        "hostCallsPerRun": 1001,
+        "hostCompiler": "gc",
+        "iterations": 1001,
+        "kind": "core-host",
+        "mallocs": [
+          1256,
+          1256,
+          1256,
+          1256,
+          1256,
+          1256,
+          1256
+        ],
+        "phasesNs": {
+          "cleanup": 3125,
+          "load": 683500,
+          "prepare": 3692041
+        },
+        "result": 3829164860,
+        "seed": 4294967295,
+        "warmCallNs": [
+          141459,
+          137875,
+          155333,
+          158625,
+          158583,
+          139208,
+          136083
+        ],
+        "warmupNs": [
+          137333,
+          136875
+        ]
+      }
+    },
+    {
+      "participant": "go",
+      "repeat": 1,
+      "record": {
+        "allocatedBytes": [
+          72376,
+          72376,
+          72376,
+          72376,
+          72376,
+          72376,
+          72376
+        ],
+        "firstCallNs": 146250,
+        "hostCallsPerRun": 1001,
+        "hostCompiler": "gc",
+        "iterations": 1001,
+        "kind": "core-host",
+        "mallocs": [
+          1256,
+          1256,
+          1256,
+          1256,
+          1256,
+          1256,
+          1256
+        ],
+        "phasesNs": {
+          "cleanup": 2875,
+          "load": 47375,
+          "prepare": 496000
+        },
+        "result": 3829164860,
+        "seed": 4294967295,
+        "warmCallNs": [
+          135958,
+          135083,
+          132542,
+          135917,
+          129125,
+          145167,
+          135083
+        ],
+        "warmupNs": [
+          137042,
+          135542
+        ]
+      }
+    },
+    {
+      "participant": "go",
+      "repeat": 0,
+      "record": {
+        "allocatedBytes": [
+          720360,
+          724632,
+          720360,
+          720360,
+          720360,
+          720360,
+          720360
+        ],
+        "firstCallNs": 1298500,
+        "hostCallsPerRun": 10000,
+        "hostCompiler": "gc",
+        "iterations": 10000,
+        "kind": "core-host",
+        "mallocs": [
+          12505,
+          12519,
+          12505,
+          12505,
+          12505,
+          12505,
+          12505
+        ],
+        "phasesNs": {
+          "cleanup": 5334,
+          "load": 33250,
+          "prepare": 228459
+        },
+        "result": 2500859855,
+        "seed": 4294967295,
+        "warmCallNs": [
+          1361958,
+          1498625,
+          1301000,
+          1321709,
+          1324875,
+          1269167,
+          1314166
+        ],
+        "warmupNs": [
+          1408667,
+          1360375
+        ]
+      }
+    },
+    {
+      "participant": "go",
+      "repeat": 1,
+      "record": {
+        "allocatedBytes": [
+          720360,
+          724648,
+          720360,
+          720360,
+          720360,
+          720360,
+          720360
+        ],
+        "firstCallNs": 1375375,
+        "hostCallsPerRun": 10000,
+        "hostCompiler": "gc",
+        "iterations": 10000,
+        "kind": "core-host",
+        "mallocs": [
+          12505,
+          12519,
+          12505,
+          12505,
+          12505,
+          12505,
+          12505
+        ],
+        "phasesNs": {
+          "cleanup": 4583,
+          "load": 43000,
+          "prepare": 220250
+        },
+        "result": 2500859855,
+        "seed": 4294967295,
+        "warmCallNs": [
+          1348333,
+          1589125,
+          1318750,
+          1259583,
+          1341167,
+          1323791,
+          1310875
+        ],
+        "warmupNs": [
+          1338584,
+          1313083
+        ]
+      }
+    },
+    {
+      "participant": "go",
+      "repeat": 0,
+      "record": {
+        "allocatedBytes": [
+          761816,
+          766088,
+          761816,
+          761816,
+          761816,
+          761816,
+          761816
+        ],
+        "firstCallNs": 473708,
+        "hostCallsPerRun": 1001,
+        "hostCompiler": "gc",
+        "iterations": 1001,
+        "kind": "component-host",
+        "mallocs": [
+          9276,
+          9290,
+          9276,
+          9276,
+          9276,
+          9276,
+          9276
+        ],
+        "phasesNs": {
+          "cleanup": 141208,
+          "load": 177958,
+          "prepare": 1114084
+        },
+        "result": 3829164860,
+        "seed": 4294967295,
+        "warmCallNs": [
+          437709,
+          726334,
+          445625,
+          419333,
+          388208,
+          382375,
+          508583
+        ],
+        "warmupNs": [
+          446208,
+          469208
+        ]
+      }
+    },
+    {
+      "participant": "go",
+      "repeat": 1,
+      "record": {
+        "allocatedBytes": [
+          761816,
+          766088,
+          761816,
+          761816,
+          761816,
+          761816,
+          761816
+        ],
+        "firstCallNs": 439958,
+        "hostCallsPerRun": 1001,
+        "hostCompiler": "gc",
+        "iterations": 1001,
+        "kind": "component-host",
+        "mallocs": [
+          9276,
+          9290,
+          9276,
+          9276,
+          9276,
+          9276,
+          9276
+        ],
+        "phasesNs": {
+          "cleanup": 12083,
+          "load": 40583,
+          "prepare": 272333
+        },
+        "result": 3829164860,
+        "seed": 4294967295,
+        "warmCallNs": [
+          425875,
+          649958,
+          430500,
+          410167,
+          409250,
+          409417,
+          546667
+        ],
+        "warmupNs": [
+          453959,
+          426542
+        ]
+      }
+    },
+    {
+      "participant": "go",
+      "repeat": 0,
+      "record": {
+        "allocatedBytes": [
+          7601096,
+          7600888,
+          7600872,
+          7600872,
+          7600856,
+          7600904,
+          7600872
+        ],
+        "firstCallNs": 4529667,
+        "hostCallsPerRun": 10000,
+        "hostCompiler": "gc",
+        "iterations": 10000,
+        "kind": "component-host",
+        "mallocs": [
+          92519,
+          92516,
+          92516,
+          92516,
+          92516,
+          92517,
+          92516
+        ],
+        "phasesNs": {
+          "cleanup": 18417,
+          "load": 66042,
+          "prepare": 269500
+        },
+        "result": 2500859855,
+        "seed": 4294967295,
+        "warmCallNs": [
+          4269208,
+          4436583,
+          4513750,
+          4370625,
+          4297167,
+          4346167,
+          6044000
+        ],
+        "warmupNs": [
+          4303917,
+          4186542
+        ]
+      }
+    },
+    {
+      "participant": "go",
+      "repeat": 1,
+      "record": {
+        "allocatedBytes": [
+          7600872,
+          7600872,
+          7601016,
+          7600872,
+          7600872,
+          7600872,
+          7600872
+        ],
+        "firstCallNs": 8093959,
+        "hostCallsPerRun": 10000,
+        "hostCompiler": "gc",
+        "iterations": 10000,
+        "kind": "component-host",
+        "mallocs": [
+          92516,
+          92516,
+          92518,
+          92516,
+          92516,
+          92516,
+          92516
+        ],
+        "phasesNs": {
+          "cleanup": 18292,
+          "load": 42208,
+          "prepare": 296083
+        },
+        "result": 2500859855,
+        "seed": 4294967295,
+        "warmCallNs": [
+          4539875,
+          4690625,
+          4364292,
+          4226917,
+          4284917,
+          4354625,
+          4438125
+        ],
+        "warmupNs": [
+          4910416,
+          5422541
+        ]
+      }
+    },
+    {
+      "participant": "llgo",
+      "repeat": 0,
+      "record": {
+        "allocatedBytes": [
+          134304,
+          131216,
+          131200,
+          135296,
+          131312,
+          131200,
+          135296
+        ],
+        "firstCallNs": 168334,
+        "hostCallsPerRun": 1001,
+        "hostCompiler": "llgo",
+        "iterations": 1001,
+        "kind": "core-host",
+        "mallocs": [
+          3258,
+          3258,
+          3258,
+          3258,
+          3258,
+          3258,
+          3258
+        ],
+        "phasesNs": {
+          "cleanup": 3000,
+          "load": 75375,
+          "prepare": 1591708
+        },
+        "result": 3829164860,
+        "seed": 4294967295,
+        "warmCallNs": [
+          142750,
+          139958,
+          150417,
+          142292,
+          144750,
+          155041,
+          137250
+        ],
+        "warmupNs": [
+          149667,
+          498041
+        ]
+      }
+    },
+    {
+      "participant": "llgo",
+      "repeat": 1,
+      "record": {
+        "allocatedBytes": [
+          135296,
+          131216,
+          135296,
+          129728,
+          131200,
+          135296,
+          131216
+        ],
+        "firstCallNs": 154959,
+        "hostCallsPerRun": 1001,
+        "hostCompiler": "llgo",
+        "iterations": 1001,
+        "kind": "core-host",
+        "mallocs": [
+          3258,
+          3258,
+          3258,
+          3258,
+          3258,
+          3258,
+          3258
+        ],
+        "phasesNs": {
+          "cleanup": 3250,
+          "load": 37250,
+          "prepare": 238417
+        },
+        "result": 3829164860,
+        "seed": 4294967295,
+        "warmCallNs": [
+          140959,
+          142625,
+          139291,
+          145333,
+          140166,
+          140958,
+          140541
+        ],
+        "warmupNs": [
+          515209,
+          152000
+        ]
+      }
+    },
+    {
+      "participant": "llgo",
+      "repeat": 0,
+      "record": {
+        "allocatedBytes": [
+          1320768,
+          1325776,
+          1314320,
+          1316576,
+          1326464,
+          1313440,
+          1324752
+        ],
+        "firstCallNs": 1997583,
+        "hostCallsPerRun": 10000,
+        "hostCompiler": "llgo",
+        "iterations": 10000,
+        "kind": "core-host",
+        "mallocs": [
+          32505,
+          32505,
+          32505,
+          32505,
+          32505,
+          32505,
+          32505
+        ],
+        "phasesNs": {
+          "cleanup": 3875,
+          "load": 34166,
+          "prepare": 221292
+        },
+        "result": 2500859855,
+        "seed": 4294967295,
+        "warmCallNs": [
+          2030042,
+          2054334,
+          2022958,
+          2022917,
+          2111083,
+          1817333,
+          1934000
+        ],
+        "warmupNs": [
+          1897792,
+          2075000
+        ]
+      }
+    },
+    {
+      "participant": "llgo",
+      "repeat": 1,
+      "record": {
+        "allocatedBytes": [
+          1318624,
+          1319312,
+          1321824,
+          1322896,
+          1314256,
+          1321824,
+          1321824
+        ],
+        "firstCallNs": 2070083,
+        "hostCallsPerRun": 10000,
+        "hostCompiler": "llgo",
+        "iterations": 10000,
+        "kind": "core-host",
+        "mallocs": [
+          32505,
+          32505,
+          32505,
+          32505,
+          32505,
+          32505,
+          32505
+        ],
+        "phasesNs": {
+          "cleanup": 3875,
+          "load": 35250,
+          "prepare": 208625
+        },
+        "result": 2500859855,
+        "seed": 4294967295,
+        "warmCallNs": [
+          1909292,
+          1919250,
+          2095458,
+          2016792,
+          2314250,
+          2025541,
+          1806333
+        ],
+        "warmupNs": [
+          1893875,
+          1965666
+        ]
+      }
+    },
+    {
+      "participant": "llgo",
+      "repeat": 0,
+      "record": {
+        "allocatedBytes": [
+          1025152,
+          1030960,
+          1033776,
+          1028976,
+          1028272,
+          1032096,
+          1037808
+        ],
+        "firstCallNs": 952834,
+        "hostCallsPerRun": 1001,
+        "hostCompiler": "llgo",
+        "iterations": 1001,
+        "kind": "component-host",
+        "mallocs": [
+          15285,
+          15285,
+          15285,
+          15285,
+          15285,
+          15285,
+          15285
+        ],
+        "phasesNs": {
+          "cleanup": 717500,
+          "load": 44083,
+          "prepare": 2435458
+        },
+        "result": 3829164860,
+        "seed": 4294967295,
+        "warmCallNs": [
+          3794125,
+          600792,
+          689750,
+          715625,
+          591000,
+          692292,
+          555750
+        ],
+        "warmupNs": [
+          598042,
+          3852333
+        ]
+      }
+    },
+    {
+      "participant": "llgo",
+      "repeat": 1,
+      "record": {
+        "allocatedBytes": [
+          1029552,
+          1028992,
+          1031216,
+          1031440,
+          1029680,
+          1030800,
+          1037664
+        ],
+        "firstCallNs": 1093875,
+        "hostCallsPerRun": 1001,
+        "hostCompiler": "llgo",
+        "iterations": 1001,
+        "kind": "component-host",
+        "mallocs": [
+          15285,
+          15285,
+          15285,
+          15285,
+          15285,
+          15285,
+          15285
+        ],
+        "phasesNs": {
+          "cleanup": 52833,
+          "load": 44417,
+          "prepare": 296292
+        },
+        "result": 3829164860,
+        "seed": 4294967295,
+        "warmCallNs": [
+          901792,
+          744917,
+          1005375,
+          1965375,
+          714708,
+          955125,
+          675125
+        ],
+        "warmupNs": [
+          675917,
+          1115750
+        ]
+      }
+    },
+    {
+      "participant": "llgo",
+      "repeat": 0,
+      "record": {
+        "allocatedBytes": [
+          10286864,
+          10274208,
+          10280784,
+          10282864,
+          10279536,
+          10282048,
+          10279904
+        ],
+        "firstCallNs": 8686583,
+        "hostCallsPerRun": 10000,
+        "hostCompiler": "llgo",
+        "iterations": 10000,
+        "kind": "component-host",
+        "mallocs": [
+          152519,
+          152519,
+          152519,
+          152519,
+          152519,
+          152519,
+          152519
+        ],
+        "phasesNs": {
+          "cleanup": 40584,
+          "load": 47167,
+          "prepare": 325000
+        },
+        "result": 2500859855,
+        "seed": 4294967295,
+        "warmCallNs": [
+          9776167,
+          9171083,
+          9050542,
+          9201666,
+          8898416,
+          9126291,
+          8261375
+        ],
+        "warmupNs": [
+          8247000,
+          9045792
+        ]
+      }
+    },
+    {
+      "participant": "llgo",
+      "repeat": 1,
+      "record": {
+        "allocatedBytes": [
+          10281744,
+          10278336,
+          10286512,
+          10284112,
+          10280176,
+          10282288,
+          10276608
+        ],
+        "firstCallNs": 8698167,
+        "hostCallsPerRun": 10000,
+        "hostCompiler": "llgo",
+        "iterations": 10000,
+        "kind": "component-host",
+        "mallocs": [
+          152519,
+          152519,
+          152519,
+          152519,
+          152519,
+          152519,
+          152519
+        ],
+        "phasesNs": {
+          "cleanup": 41208,
+          "load": 41042,
+          "prepare": 310292
+        },
+        "result": 2500859855,
+        "seed": 4294967295,
+        "warmCallNs": [
+          8712083,
+          9047917,
+          8681458,
+          8586167,
+          8820542,
+          8553458,
+          10894959
+        ],
+        "warmupNs": [
+          8642666,
+          8218291
+        ]
+      }
+    },
+    {
+      "participant": "wazero",
+      "repeat": 0,
+      "record": {
+        "allocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "firstCallNs": 125542,
+        "hostCallsPerRun": 1001,
+        "hostCompiler": "gc",
+        "iterations": 1001,
+        "kind": "core-host",
+        "mallocs": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "phasesNs": {
+          "cleanup": 3209,
+          "load": 173416,
+          "prepare": 2457250
+        },
+        "result": 3829164860,
+        "seed": 4294967295,
+        "warmCallNs": [
+          29500,
+          20417,
+          20334,
+          29750,
+          21083,
+          21417,
+          20000
+        ],
+        "warmupNs": [
+          21416,
+          22917
+        ]
+      }
+    },
+    {
+      "participant": "wazero",
+      "repeat": 1,
+      "record": {
+        "allocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "firstCallNs": 46375,
+        "hostCallsPerRun": 1001,
+        "hostCompiler": "gc",
+        "iterations": 1001,
+        "kind": "core-host",
+        "mallocs": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "phasesNs": {
+          "cleanup": 2042,
+          "load": 38584,
+          "prepare": 263208
+        },
+        "result": 3829164860,
+        "seed": 4294967295,
+        "warmCallNs": [
+          25333,
+          25250,
+          24584,
+          32417,
+          20417,
+          19792,
+          24167
+        ],
+        "warmupNs": [
+          31875,
+          31292
+        ]
+      }
+    },
+    {
+      "participant": "wazero",
+      "repeat": 0,
+      "record": {
+        "allocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "firstCallNs": 224250,
+        "hostCallsPerRun": 10000,
+        "hostCompiler": "gc",
+        "iterations": 10000,
+        "kind": "core-host",
+        "mallocs": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "phasesNs": {
+          "cleanup": 2709,
+          "load": 43500,
+          "prepare": 258000
+        },
+        "result": 2500859855,
+        "seed": 4294967295,
+        "warmCallNs": [
+          215583,
+          231459,
+          203667,
+          247584,
+          205416,
+          256666,
+          212500
+        ],
+        "warmupNs": [
+          257041,
+          247917
+        ]
+      }
+    },
+    {
+      "participant": "wazero",
+      "repeat": 1,
+      "record": {
+        "allocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "firstCallNs": 318291,
+        "hostCallsPerRun": 10000,
+        "hostCompiler": "gc",
+        "iterations": 10000,
+        "kind": "core-host",
+        "mallocs": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "phasesNs": {
+          "cleanup": 4208,
+          "load": 45750,
+          "prepare": 264666
+        },
+        "result": 2500859855,
+        "seed": 4294967295,
+        "warmCallNs": [
+          216875,
+          280125,
+          242459,
+          197375,
+          234917,
+          208500,
+          215667
+        ],
+        "warmupNs": [
+          214625,
+          277166
+        ]
+      }
+    }
+  ],
+  "rustAllocationCounts": [
+    {
+      "kind": "core-host",
+      "hostCompiler": "rust1.98.0",
+      "iterations": 1001,
+      "seed": 4294967295,
+      "result": 3829164860,
+      "hostCallsPerRun": 1001,
+      "firstCallNs": 33542,
+      "warmupNs": [
+        3708,
+        3667
+      ],
+      "warmCallNs": [
+        3750,
+        3750,
+        3667,
+        3667,
+        3708,
+        3666,
+        3708
+      ],
+      "mallocs": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "allocatedBytes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "allocationInstrumented": true,
+      "phasesNs": {
+        "load": 310208,
+        "prepare": 14465625,
+        "cleanup": 162042
+      }
+    },
+    {
+      "kind": "core-host",
+      "hostCompiler": "rust1.98.0",
+      "iterations": 10000,
+      "seed": 4294967295,
+      "result": 2500859855,
+      "hostCallsPerRun": 10000,
+      "firstCallNs": 61709,
+      "warmupNs": [
+        36667,
+        36583
+      ],
+      "warmCallNs": [
+        36583,
+        36541,
+        36667,
+        36625,
+        36667,
+        36584,
+        36625
+      ],
+      "mallocs": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "allocatedBytes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "allocationInstrumented": true,
+      "phasesNs": {
+        "load": 28500,
+        "prepare": 714792,
+        "cleanup": 22625
+      }
+    },
+    {
+      "kind": "component-host",
+      "hostCompiler": "rust1.98.0",
+      "iterations": 1001,
+      "seed": 4294967295,
+      "result": 3829164860,
+      "hostCallsPerRun": 1001,
+      "firstCallNs": 114584,
+      "warmupNs": [
+        71750,
+        77833
+      ],
+      "warmCallNs": [
+        71542,
+        70541,
+        70125,
+        70417,
+        70042,
+        70041,
+        70625
+      ],
+      "mallocs": [
+        1005,
+        1005,
+        1005,
+        1005,
+        1005,
+        1005,
+        1005
+      ],
+      "allocatedBytes": [
+        104604,
+        104604,
+        104604,
+        104604,
+        104604,
+        104604,
+        104604
+      ],
+      "allocationInstrumented": true,
+      "phasesNs": {
+        "load": 191083,
+        "prepare": 2409833,
+        "cleanup": 34458
+      }
+    },
+    {
+      "kind": "component-host",
+      "hostCompiler": "rust1.98.0",
+      "iterations": 10000,
+      "seed": 4294967295,
+      "result": 2500859855,
+      "hostCallsPerRun": 10000,
+      "firstCallNs": 750166,
+      "warmupNs": [
+        669125,
+        628125
+      ],
+      "warmCallNs": [
+        629833,
+        627209,
+        620917,
+        624167,
+        626333,
+        617625,
+        639416
+      ],
+      "mallocs": [
+        10004,
+        10004,
+        10004,
+        10004,
+        10004,
+        10004,
+        10004
+      ],
+      "allocatedBytes": [
+        1040500,
+        1040500,
+        1040500,
+        1040500,
+        1040500,
+        1040500,
+        1040500
+      ],
+      "allocationInstrumented": true,
+      "phasesNs": {
+        "load": 25333,
+        "prepare": 953542,
+        "cleanup": 27542
+      }
+    },
+    {
+      "kind": "dynamic-host",
+      "hostCompiler": "rust1.98.0",
+      "iterations": 1001,
+      "seed": 4294967295,
+      "result": 3829164860,
+      "hostCallsPerRun": 1001,
+      "firstCallNs": 137084,
+      "warmupNs": [
+        115750,
+        118750
+      ],
+      "warmCallNs": [
+        116250,
+        119333,
+        123417,
+        120125,
+        114667,
+        115834,
+        123000
+      ],
+      "mallocs": [
+        2006,
+        2006,
+        2006,
+        2006,
+        2006,
+        2006,
+        2006
+      ],
+      "allocatedBytes": [
+        296796,
+        296796,
+        296796,
+        296796,
+        296796,
+        296796,
+        296796
+      ],
+      "allocationInstrumented": true,
+      "phasesNs": {
+        "load": 28500,
+        "prepare": 917292,
+        "cleanup": 21583
+      }
+    },
+    {
+      "kind": "dynamic-host",
+      "hostCompiler": "rust1.98.0",
+      "iterations": 10000,
+      "seed": 4294967295,
+      "result": 2500859855,
+      "hostCallsPerRun": 10000,
+      "firstCallNs": 1263875,
+      "warmupNs": [
+        1162125,
+        1094500
+      ],
+      "warmCallNs": [
+        1043125,
+        1065458,
+        1072417,
+        1053958,
+        1032959,
+        1069250,
+        1090292
+      ],
+      "mallocs": [
+        20004,
+        20004,
+        20004,
+        20004,
+        20004,
+        20004,
+        20004
+      ],
+      "allocatedBytes": [
+        2960500,
+        2960500,
+        2960500,
+        2960500,
+        2960500,
+        2960500,
+        2960500
+      ],
+      "allocationInstrumented": true,
+      "phasesNs": {
+        "load": 27708,
+        "prepare": 1042542,
+        "cleanup": 41083
+      }
+    }
+  ],
+  "rejectedLLGoMinimization": [
+    {
+      "compiler": "go",
+      "trial": 0,
+      "stdout": "direct result=17546545051095256615 mallocs=0\nasserted result=17546545051095256615 mallocs=0\nmutable-defer result=17546545051095256615 mallocs=0\n"
+    },
+    {
+      "compiler": "go",
+      "trial": 1,
+      "stdout": "direct result=17546545051095256615 mallocs=0\nasserted result=17546545051095256615 mallocs=0\nmutable-defer result=17546545051095256615 mallocs=0\n"
+    },
+    {
+      "compiler": "go",
+      "trial": 2,
+      "stdout": "direct result=17546545051095256615 mallocs=0\nasserted result=17546545051095256615 mallocs=0\nmutable-defer result=17546545051095256615 mallocs=0\n"
+    },
+    {
+      "compiler": "llgo",
+      "trial": 0,
+      "stdout": "direct result=17546545051095256615 mallocs=0\nasserted result=17546545051095256615 mallocs=0\nmutable-defer result=17546545051095256615 mallocs=0\n"
+    },
+    {
+      "compiler": "llgo",
+      "trial": 1,
+      "stdout": "direct result=17546545051095256615 mallocs=0\nasserted result=17546545051095256615 mallocs=0\nmutable-defer result=17546545051095256615 mallocs=0\n"
+    },
+    {
+      "compiler": "llgo",
+      "trial": 2,
+      "stdout": "direct result=17546545051095256615 mallocs=0\nasserted result=17546545051095256615 mallocs=0\nmutable-defer result=17546545051095256615 mallocs=0\n"
+    }
+  ],
+  "counterFailure": {
+    "initial": "One original LLGo 16B 256-request process timed out at 120s; final record missing.",
+    "diagnostic": "One initial watchdog process and separately declared twelve combinations completed with no slow event to capture.",
+    "status": "Unexplained diagnostic timeout; not a reproduced production defect; original trace retained.",
+    "watchdogResults": [
+      {
+        "payload": 16,
+        "n": 1,
+        "repeat": 0,
+        "returncode": 0
+      },
+      {
+        "payload": 16,
+        "n": 1,
+        "repeat": 1,
+        "returncode": 0
+      },
+      {
+        "payload": 16,
+        "n": 16,
+        "repeat": 0,
+        "returncode": 0
+      },
+      {
+        "payload": 16,
+        "n": 16,
+        "repeat": 1,
+        "returncode": 0
+      },
+      {
+        "payload": 16,
+        "n": 256,
+        "repeat": 0,
+        "returncode": 0
+      },
+      {
+        "payload": 16,
+        "n": 256,
+        "repeat": 1,
+        "returncode": 0
+      },
+      {
+        "payload": 65536,
+        "n": 1,
+        "repeat": 0,
+        "returncode": 0
+      },
+      {
+        "payload": 65536,
+        "n": 1,
+        "repeat": 1,
+        "returncode": 0
+      },
+      {
+        "payload": 65536,
+        "n": 16,
+        "repeat": 0,
+        "returncode": 0
+      },
+      {
+        "payload": 65536,
+        "n": 16,
+        "repeat": 1,
+        "returncode": 0
+      },
+      {
+        "payload": 65536,
+        "n": 256,
+        "repeat": 0,
+        "returncode": 0
+      },
+      {
+        "payload": 65536,
+        "n": 256,
+        "repeat": 1,
+        "returncode": 0
+      }
+    ]
+  },
+  "samples": {
+    "timedFreshProcesses": 252,
+    "cohorts": 2,
+    "blocks": 36,
+    "warmSamplesPerProcess": 7,
+    "requestCountPrimaryProcesses": 24
+  },
+  "productionChanges": false
+}

@@ -34,6 +34,15 @@ independent competitors before dedicated LLGo tuning. Keep the full LLGo semanti
 matrix and production pin. The [Go comparison](research/performance-go-frame-plans-2026-11-11.md)
 records retained improvements, rejected experiments and unresolved acceptance.
 
+The 2026-11-16 [mechanism investigation](research/performance-p3-mechanisms-2026-11-16.md)
+finds common host/canonical materialization costs under Go and LLGo, distinct
+from guest arithmetic and collector behavior. Continue with bound canonical
+plans, scoped internal storage, a shorter native host transition, then typed
+WASI/memory adapters and ready/pending async costs. Preserve public lifetime,
+reentry, cancellation, quota and ownership contracts. This is implementation
+direction supported by diagnostic counts/instructions, not closed performance
+acceptance; exact timing claims still require resolving controls.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and

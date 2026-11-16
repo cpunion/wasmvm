@@ -277,6 +277,15 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
+The [P3 mechanism study](docs/research/performance-p3-mechanisms-2026-11-16.md)
+locates a shared Go/LLGo gap at host and canonical transitions. Scalar Component
+imports use about **9.25 / 15.25 managed allocation events**, compared with
+**1 / 2 Rust allocation requests** for Wasmtime typed/dynamic bindings. These
+are different allocator scopes, not total-heap rankings. The arithmetic control
+does not reproduce the large gap; wazero demonstrates a borrowed-stack Go
+host path. Exact request counts, emitted instructions, failed time controls
+and a safe internal-boundary redesign order are recorded. Parity remains open.
+
 The [latest-main P3 study](docs/research/performance-latest-main-p3-2026-11-16.md)
 pins LLGo **5860fb6f** and removes completed-read watchers, redundant completion
 wakes and buffered response handoffs. Go complete-request CPU falls **0.9%**;
