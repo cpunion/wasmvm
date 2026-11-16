@@ -113,7 +113,11 @@ func (e *functionEmitter) combineScaledMemory(pc int) (int, bool) {
 		return 0, false
 	}
 	load := e.f.Code[pc+2]
-	if load.Op < 0x28 || load.Op > 0x35 || load.A != p.original || !e.provenPCs[pc+2] || e.elidedPCs[pc+1] || e.elidedPCs[pc+2] {
+	if !isMemoryAccess(load.Op) || load.A != p.original || !e.provenPCs[pc+2] || e.elidedPCs[pc+1] || e.elidedPCs[pc+2] {
+		return 0, false
+	}
+	isLoad, size := memoryAccess(load.Op)
+	if !isLoad {
 		return 0, false
 	}
 	if _, remapped := e.addresses[pc+2]; remapped {
@@ -131,7 +135,6 @@ func (e *functionEmitter) combineScaledMemory(pc int) (int, bool) {
 		e.slotLoad(p.in.A, 0, false, false)
 		index = 0
 	}
-	_, size := memoryAccess(load.Op)
 	e.memoryAMD64Indexed(load, true, size, index, uint32(offset), scale)
 	e.boundsElided++
 	e.directMemoryOperands++

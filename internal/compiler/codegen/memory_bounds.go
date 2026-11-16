@@ -96,9 +96,10 @@ func (e *functionEmitter) memoryRegions() map[int]memoryRegion {
 			src := e.f.Sources[in.Source].Wasm
 			a := get(in.A)
 			if e.a.arch == "amd64" && (in.Op == 0x6c || in.Op == 0x74) && pc+1 < end &&
-				e.f.Code[pc+1].Op >= 0x28 && e.f.Code[pc+1].Op <= 0x35 && e.f.Code[pc+1].A == in.Dst {
+				isMemoryAccess(e.f.Code[pc+1].Op) && e.f.Code[pc+1].A == in.Dst {
+				load, _ := memoryAccess(e.f.Code[pc+1].Op)
 				b := get(in.B)
-				if b.constant {
+				if load && b.constant {
 					shift := b.max & 31
 					if in.Op == 0x6c {
 						shift = 0

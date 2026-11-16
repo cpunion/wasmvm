@@ -14,7 +14,9 @@ import (
 
 func scaledMemoryFixture(op, arithmetic uint32, factor uint64, offset uint32) *slots.Function {
 	typ := wasm.I32
-	if op == 0x29 || op >= 0x30 {
+	if nativeVectorMemoryOpcode(op) {
+		typ = wasm.V128
+	} else if op == 0x29 || op >= 0x30 {
 		typ = wasm.I64
 	} else if op == 0x2a {
 		typ = wasm.F32
@@ -32,6 +34,10 @@ func scaledMemoryFixture(op, arithmetic uint32, factor uint64, offset uint32) *s
 	emit(0x41, 2, slots.NoSlot, slots.NoSlot, factor)
 	emit(arithmetic, 3, 1, 2, 0)
 	emit(op, 4, 3, slots.NoSlot, 0)
+	if op >= 0xfd0054 && op <= 0xfd0057 {
+		f.Code[4].B = 4 // Preserve all lanes except the selected memory lane.
+		f.Sources[4].Wasm.Lane = 1
+	}
 	// Both intermediates remain observable on cold entry, but normal execution
 	// overwrites them after the nontrapping load. Return every original word.
 	emit(0x41, 3, slots.NoSlot, slots.NoSlot, 19)
@@ -46,12 +52,19 @@ func scaledMemoryFixture(op, arithmetic uint32, factor uint64, offset uint32) *s
 }
 
 func TestScaledMemoryProofAndSelectionBoundaries(t *testing.T) {
-	for _, mode := range []string{"multiply", "shift", "modulo-shift", "overflow", "zero", "one", "non-power", "large", "live-product", "live-literal", "remapped", "unproven", "region-end", "arm64", "metered", "stack-index"} {
+	for _, mode := range []string{"multiply", "shift", "modulo-shift", "vector-load", "vector-store", "overflow", "zero", "one", "non-power", "large", "live-product", "live-literal", "remapped", "unproven", "region-end", "arm64", "metered", "stack-index"} {
 		f := scaledMemoryFixture(0x28, 0x6c, 4, 0)
 		want := true
 		e := functionEmitter{f: f, a: &assembler{arch: "amd64"}, unmetered: true, usesMemory: true, memoryMinimum: 65536,
 			registers: map[slots.Slot]byte{0: 3, 1: 12, 2: 13, 3: 14, 4: 15}}
 		switch mode {
+		case "vector-load", "vector-store":
+			f.Slots[4] = wasm.V128
+			f.Code[4].Op, f.Sources[4].Wasm.Op = 0xfd0000, 0xfd0000
+			if mode == "vector-store" {
+				f.Code[4].Op, f.Sources[4].Wasm.Op, want = 0xfd000b, 0xfd000b, false
+				f.Code[4].B, f.Code[4].Dst = 4, slots.NoSlot
+			}
 		case "shift", "modulo-shift":
 			f.Code[3].Op, f.Sources[3].Wasm.Op = 0x74, 0x74
 			f.Sources[2].Wasm.Bits = 2
@@ -95,7 +108,18 @@ func TestScaledMemoryProofAndSelectionBoundaries(t *testing.T) {
 }
 
 func TestScaledMemoryEveryColdFrameAndLoadWidth(t *testing.T) {
+	var ops []uint32
 	for op := uint32(0x28); op <= 0x35; op++ {
+		ops = append(ops, op)
+	}
+	for op := uint32(0xfd0000); op <= 0xfd005d; op++ {
+		if nativeVectorMemoryOpcode(op) {
+			if load, _ := memoryAccess(op); load {
+				ops = append(ops, op)
+			}
+		}
+	}
+	for _, op := range ops {
 		for _, arithmetic := range []uint32{0x6c, 0x74} {
 			for shift := uint64(1); shift <= 3; shift++ {
 				factor := uint64(1) << shift
@@ -125,6 +149,9 @@ func TestScaledMemoryEveryColdFrameAndLoadWidth(t *testing.T) {
 						for _, raw := range []uint64{0, 255, 0xdeadbeef00000042, ^uint64(0)} {
 							for slot := range f.Slots {
 								bits := value.Value{Lo: raw ^ uint64(slot)}
+								if f.Slots[slot] == wasm.V128 {
+									bits.Hi = ^raw ^ uint64(slot)*0x123456789abcdef
+								}
 								if f.Slots[slot] == wasm.F32 {
 									bits.Lo = uint64(uint32(bits.Lo))
 								}

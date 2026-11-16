@@ -303,21 +303,11 @@ func (c *Codec) storeInt(at, size, value uint64) error {
 }
 
 func (c *Codec) loadPair(at uint64) (uint64, uint64, error) {
-	w := c.Transfer.pointerSize()
-	ptr, err := c.loadInt(at, w)
-	if err != nil {
-		return 0, 0, err
-	}
-	n, err := c.loadInt(at+w, w)
-	return ptr, n, err
+	return c.Transfer.loadPair(at)
 }
 
 func (c *Codec) storePair(at, ptr, n uint64) error {
-	w := c.Transfer.pointerSize()
-	if err := c.storeInt(at, w, ptr); err != nil {
-		return err
-	}
-	return c.storeInt(at+w, w, n)
+	return c.Transfer.storePair(at, ptr, n)
 }
 
 // Store validates all host values before allocating or modifying guest memory.
