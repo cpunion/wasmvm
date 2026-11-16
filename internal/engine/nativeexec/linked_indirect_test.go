@@ -54,7 +54,20 @@ func TestSharedIndirectTableFitsLinearCodeBudget(t *testing.T) {
 		if err != nil || len(body.Entry.Code) > len(small.Entry.Code)+64 {
 			t.Fatal("caller body grows with dispatch table", err)
 		}
-		size += uint64(len(body.Entry.Code)) * count
+		if !unmetered {
+			size += uint64(len(body.Entry.Code)) * count
+			continue
+		}
+		// Packed call-site immediates can use fewer words for function zero.
+		// Sum the exact production identities instead of extrapolating it.
+		for i := range count {
+			config.NativeFunction = uint64(i) + 1
+			body, err := codegen.CompileFunctionWithConfig(runtime.GOARCH, m.Functions[i], codegen.DefaultLimits(), config)
+			if err != nil {
+				t.Fatal(err)
+			}
+			size += uint64(len(body.Entry.Code))
+		}
 	}
 	limits := codegen.DefaultLimits()
 	limits.MaxCodeBytes = size

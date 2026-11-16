@@ -16,7 +16,7 @@ import (
 
 func TestLinkedCallBodiesAndRelocations(t *testing.T) {
 	for _, arch := range []string{"amd64", "arm64"} {
-		for profile := 0; profile < 4; profile++ {
+		for profile := 0; profile < 5; profile++ {
 			unmetered, frameRegisters := profile != 0, profile >= 2
 			callee := leafFixture(0x6a, nil)
 			for range 700 {
@@ -33,8 +33,11 @@ func TestLinkedCallBodiesAndRelocations(t *testing.T) {
 			bodies := make([]*CompiledFunction, 2)
 			for i, f := range []*slots.Function{caller, callee} {
 				var err error
-				if profile == 3 {
+				if profile >= 3 {
 					config.NativeFunction = 1
+					if profile == 4 {
+						config.NativeFunction = 1 << 32
+					}
 					if i == 1 {
 						config.NativeFunction = 8
 					}
@@ -108,8 +111,20 @@ func TestLinkedCallBodiesAndRelocations(t *testing.T) {
 					}
 					continue
 				}
-				if exit != native.Return || state.Function != 0 || state.Depth != 1 || words[0] != 0 || readSlot(t, ctx, 0, 0).Lo != 26 {
+				wantFunction := uint64(0)
+				if profile == 4 {
+					wantFunction = 1<<32 - 1
+				}
+				if exit != native.Return || state.Function != wantFunction || state.Depth != 1 || words[0] != 0 || readSlot(t, ctx, 0, 0).Lo != 26 {
 					t.Fatal("linked guest return", unmetered, exit, state, words[:12], readSlot(t, ctx, 0, 0))
+				}
+				if profile == 4 {
+					site := words[nativeabi.CallHeaderBytes/8]
+					for pc, op := range caller.Code {
+						if op.Op == 0x10 && (uint64(uint32(site)) != wantFunction || site>>32 != uint64(pc)) {
+							t.Fatal("packed call site lost function or PC bits", site, pc)
+						}
+					}
 				}
 				for i := 5; i < len(callee.Slots); i++ {
 					if got := readSlot(t, ctx, uint64(len(caller.Slots))*16, slots.Slot(i)); got != (value.Value{}) {
@@ -118,6 +133,17 @@ func TestLinkedCallBodiesAndRelocations(t *testing.T) {
 				}
 				if unmetered && state.Fuel != 100 {
 					t.Fatal("unmetered fuel", state.Fuel)
+				}
+			}
+			if profile < 3 {
+				clear(words)
+				words[1], words[2], words[3] = 16, 2048*16, 64
+				state := native.State{Function: 1 << 32, Depth: 1, Fuel: 100, Budget: 64, Payload: [4]uint64{0, view, view, 0}}
+				if !unmetered {
+					state.Payload[3] = 1
+				}
+				if exit, err := ctx.RunState(lease, 0, &state); err != nil || exit != native.Call || words[0] != 0 || state.Function != 1<<32 {
+					t.Fatal("malformed function ID was narrowed", profile, exit, state, err)
 				}
 			}
 		}
