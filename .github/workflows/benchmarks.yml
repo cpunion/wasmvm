@@ -1192,7 +1192,7 @@ jobs:
           print('debugger',lldb,smoke.returncode,smoke.stdout,smoke.stderr,flush=True)
           assert smoke.returncode==0
           result={'frozenBuildRun':43797281619,'binarySHA256':hashlib.sha256(binary.read_bytes()).hexdigest(),'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'runs':[]}
-          for label,settings in [('gogc-0',{'GOGC':'0','GC_PRINT_STATS':'1'}),('gogc-10',{'GOGC':'10'}),('gogc-33',{'GOGC':'33'}),('default',{'GOGC':'100','GC_PRINT_STATS':'1'}),('gogc-off',{'GOGC':'off'})]:
+          for label,settings in [('gogc-10',{'GOGC':'10'}),('default',{'GOGC':'100'}),('gogc-off',{'GOGC':'off'})]:
               env=dict(os.environ)
               env.pop('GC_DONT_GC',None)
               env.pop('GOGC',None)
@@ -1207,8 +1207,14 @@ jobs:
                       time.sleep(0.25)
                   if p.poll() is None:
                       stalled=True
+                      dbghelp=ctypes.WinDLL('Dbghelp')
+                      dbghelp.MiniDumpWriteDump.argtypes=[wintypes.HANDLE,wintypes.DWORD,wintypes.HANDLE,wintypes.DWORD,ctypes.c_void_p,ctypes.c_void_p,ctypes.c_void_p]
+                      import msvcrt
+                      with (out/(label+'.dmp')).open('wb')as dump:
+                          ok=dbghelp.MiniDumpWriteDump(wintypes.HANDLE(int(p._handle)),p.pid,wintypes.HANDLE(msvcrt.get_osfhandle(dump.fileno())),0x1000,None,None,None)
+                          print('minidump',label,bool(ok),flush=True)
                       if lldb:
-                          cmd=[lldb,'--batch','-o','process attach --pid '+str(p.pid),'-o','thread backtrace all','-o','process detach','-o','quit']
+                          cmd=[lldb,'--batch','-p',str(p.pid),'-o','thread backtrace all','-o','process detach','-k','thread backtrace all','-k','process detach']
                           try:
                               stack=subprocess.run(cmd,env=debugger_env,text=True,capture_output=True,timeout=30)
                               (out/(label+'.stacks')).write_text('debugger exit '+str(stack.returncode)+'\n'+stack.stdout+stack.stderr)
