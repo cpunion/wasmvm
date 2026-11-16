@@ -22,6 +22,16 @@ type linkedRelocation struct {
 	target uint32
 }
 
+// The first two non-floating parameter positions of short private calls can
+// retain their low words in work registers 5/6 through metadata publication.
+// Their complete canonical frame copies remain authoritative at every exit.
+func (e *functionEmitter) callArgumentRegister(count, index int, typ wasm.ValueType) (byte, bool) {
+	if !e.frameRegisters || count > 8 || index >= 2 || typ == wasm.F32 || typ == wasm.F64 || typ == wasm.V128 {
+		return 0, false
+	}
+	return byte(5 + index), true
+}
+
 // LinkCalls resolves compiler-owned body branches after module layout. Validate
 // every relocation before changing the unpublished code buffer.
 func LinkCalls(arch string, code []byte, relocations []CallRelocation, targets map[uint32]uint32) error {
@@ -206,8 +216,12 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	args := e.f.Args[in.Extra : in.Extra+count]
 	if len(args) <= 8 {
 		for i, slot := range args {
-			e.callPair(0, 1, e.callFrame(), uint32(slot)*16, false)
-			e.callPair(0, 1, e.callReg(4), uint32(i)*16, true)
+			low := byte(0)
+			if carrier, ok := e.callArgumentRegister(len(args), i, e.f.Slots[slot]); ok {
+				low = carrier
+			}
+			e.callPair(low, 1, e.callFrame(), uint32(slot)*16, false)
+			e.callPair(low, 1, e.callReg(4), uint32(i)*16, true)
 		}
 	} else {
 		e.callAddress(inputs, 6)
@@ -449,15 +463,62 @@ func (e *functionEmitter) emitCallStart(pcs []int, initial *registerPlan) int {
 	entry := e.a.label()
 	e.a.mark(entry)
 	e.useRegisterPlan(nil)
-	e.callEnvironment()
 	if e.allocationPlans != nil {
 		initial = e.allocationPlans[0]
 	}
+	incoming := e.callArgumentPlan(initial)
+	e.callEnvironment()
+	e.useRegisterPlan(incoming)
 	// Allocation entry stubs reload and dispatch an arbitrary context PC.
 	// Fresh calls establish only the first plan, then enter the original PC.
 	e.transitionRegisters(initial)
 	e.a.branch(pcs[0], false, 0)
 	return entry
+}
+
+// Install carried values before restoring runtime bindings, just as private
+// result continuations do. Only permanent integer homes survive that setup.
+// Parallel moves preserve an amd64 swap between the two carrier registers.
+func (e *functionEmitter) callArgumentPlan(initial *registerPlan) *registerPlan {
+	if initial == nil {
+		return nil
+	}
+	var targets [2]byte
+	var active [2]bool
+	pool := e.integerRegisterPool()
+	for i, typ := range e.f.Signature.Params {
+		if _, ok := e.callArgumentRegister(len(e.f.Signature.Params), i, typ); !ok {
+			continue
+		}
+		slot := slots.Slot(i)
+		reg, ok := initial.homes[slot]
+		if ok && e.frameRead(slot) == slot && slices.Contains(pool, reg) {
+			targets[i], active[i] = reg, true
+		}
+	}
+	second := e.callReg(6)
+	if active[0] && active[1] && targets[0] == second {
+		e.registerMove(e.callReg(0), second, true)
+		second = e.callReg(0)
+	}
+	var incoming *registerPlan
+	for i, valid := range active {
+		if !valid {
+			continue
+		}
+		source := e.callReg(5)
+		if i == 1 {
+			source = second
+		}
+		e.registerMove(targets[i], source, true)
+		if incoming == nil {
+			incoming = &registerPlan{homes: map[slots.Slot]byte{}}
+		}
+		slot := slots.Slot(i)
+		incoming.homes[slot] = targets[i]
+		incoming.slots = append(incoming.slots, slot)
+	}
+	return incoming
 }
 
 func (e *functionEmitter) callEnvironment() {

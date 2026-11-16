@@ -818,7 +818,18 @@ stores nor reads a context continuation solely to rediscover PC zero.
 Ordinary host entry retains all header/fuel/state validation and every original
 PC for helper, trap, interrupt and inspection resumption. Metered linked calls
 retain their context-PC dispatch. This shortens shared private entry work; it
-does not yet introduce register parameters or lazy frame materialization.
+retains complete canonical frames; lazy frame materialization remains open.
+
+Short private calls (at most eight parameters) additionally retain the low
+words of the first two non-floating parameter positions in work registers 5/6.
+Argument copies load directly into those carriers and still store both complete
+words into the child frame. Metadata setup preserves the carriers. The fresh
+callee installs eligible first-plan integer homes before restoring runtime
+bindings, then skips their frame reloads. Other parameter classes and larger
+tuples retain ordinary materialization. Parameter frame aliases use their actual
+canonical source. amd64 parallel moves preserve swapped carrier destinations.
+No carrier contains a Go pointer; ordinary host entry, all cold PCs, metered
+execution and public frame/root publication keep their existing contracts.
 
 ### Materialize live return frames on exceptional exits
 
