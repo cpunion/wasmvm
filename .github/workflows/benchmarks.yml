@@ -8,7 +8,7 @@ on:
       suite:
         description: Benchmark scope (PR families, sustained gates, or diagnostic survey)
         type: choice
-        options: [pr, full, native-simd, survey, routing, p3io, llgo-layout, llgo-poll, llgo-regression, llgo-regression-main, llgo-policy-replay, llgo-weak, llgo-upgrade]
+        options: [pr, full, native-simd, survey, routing, p3io, llgo-layout, llgo-poll, llgo-regression, llgo-regression-main, llgo-policy-replay, llgo-weak, llgo-msvc-simd, llgo-upgrade]
         default: full
       routing_scope:
         description: Routing groups to measure (routing suite only)
@@ -1121,5 +1121,88 @@ jobs:
         with:
           name: llgo-weak-${{ matrix.label }}
           path: weak-diagnostic/
+          if-no-files-found: error
+          retention-days: 30
+
+  llgo_msvc_simd_diagnostic:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'llgo-msvc-simd' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: base
+            revision: 5860fb6f9c13371f6cdb456a987a8e95844066d4
+          - label: head
+            revision: e5dc41d1da1cfa27343f2688612dbe3980413730
+    runs-on: windows-2022
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    env:
+      LLGO_ROOT: ${{ github.workspace }}
+      GOEXPERIMENT: simd
+      GOAMD64: v1
+      GODEBUG: cpu.avx512f=off
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: cpunion/llgo
+          ref: ${{ matrix.revision }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-deps
+        with:
+          llvm-version: '22'
+          windows-abi: msvc
+          windows-arch: amd64
+          windows-msvc-dependencies: runtime
+      - uses: ./.github/actions/setup-go
+      - name: Build the exact native upstream test module
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force simd-diagnostic | Out-Null
+          go build -o "$env:RUNNER_TEMP/diag-llgo.exe" ./cmd/llgo
+          if ($LASTEXITCODE -ne 0) { throw 'compiler build failed' }
+          go test -v -count=1 -timeout=2m -run='^TestAdd$' simd/archsimd/internal/simd_test
+          if ($LASTEXITCODE -ne 0) { throw 'Go reference failed' }
+          & "$env:RUNNER_TEMP/diag-llgo.exe" test -O2 -c -o "$env:GITHUB_WORKSPACE/simd-diagnostic/upstream.exe" simd/archsimd/internal/simd_test
+          if ($LASTEXITCODE -ne 0) { throw 'LLGo test compilation failed' }
+      - name: Bound execution and capture stalled native stacks
+        shell: python
+        run: |
+          import os,json,pathlib,subprocess,shutil,time
+          out=pathlib.Path('simd-diagnostic').resolve()
+          binary=out/'upstream.exe'
+          result={'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'collectorVersion':subprocess.check_output(['pkg-config','--modversion','bdw-gc'],text=True).strip(),'runs':[]}
+          for label,settings in [('default',{'GOGC':'100'}),('gogc-off',{'GOGC':'off'}),('collector-off',{'GC_DONT_GC':'1'})]:
+              env=dict(os.environ)
+              env.pop('GC_DONT_GC',None)
+              env.pop('GOGC',None)
+              env.update(settings)
+              with (out/(label+'.stdout')).open('w')as stdout,(out/(label+'.stderr')).open('w')as stderr:
+                  started=time.monotonic()
+                  p=subprocess.Popen([str(binary),'-test.v','-test.count=1','-test.timeout=20s','-test.run=^TestAdd$'],stdout=stdout,stderr=stderr,env=env)
+                  stalled=False
+                  try:p.wait(timeout=30)
+                  except subprocess.TimeoutExpired:
+                      stalled=True
+                      lldb=shutil.which('lldb')
+                      if lldb:
+                          cmd=[lldb,'--batch','-o','process attach --pid '+str(p.pid),'-o','thread backtrace all','-o','process detach','-o','quit']
+                          try:
+                              stack=subprocess.run(cmd,text=True,capture_output=True,timeout=30)
+                              (out/(label+'.stacks')).write_text(stack.stdout+stack.stderr)
+                          except subprocess.TimeoutExpired as e:
+                              (out/(label+'.stacks')).write_text('debugger timeout\n'+str(e))
+                      p.kill()
+                      p.wait(timeout=10)
+                  result['runs'].append({'label':label,'environment':settings,'exit':p.returncode,'stalled':stalled,'seconds':time.monotonic()-started})
+                  (out/'results.json').write_text(json.dumps(result,indent=2)+'\n')
+                  print(result['runs'][-1],flush=True)
+          assert result['runs'][0]['exit']==0
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: llgo-msvc-simd-${{ matrix.label }}
+          path: simd-diagnostic/
           if-no-files-found: error
           retention-days: 30
