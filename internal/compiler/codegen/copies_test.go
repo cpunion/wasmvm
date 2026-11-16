@@ -15,6 +15,9 @@ import (
 // differ at cold continuations, so no preceding copy/constant may be assumed.
 func checkLinearIntegerEntries(t *testing.T, f *slots.Function) {
 	t.Helper()
+	if !native.Available {
+		return
+	}
 	_, lease, c := functionContext(t, f, true)
 	for _, seed := range []uint64{0, 1, 0xffffffff, 1 << 63, ^uint64(0), 0x123456789abcdef0} {
 		for start := range f.Code {

@@ -152,7 +152,8 @@ dispatch. Valid structural subtypes, imports, cross-instance targets and tail
 calls also retain that path.
 
 The linked path shares direct-call frame setup, return copies and continuation
-metadata. Dynamic frame zeroing polls cancellation for every slot. Native frame
+metadata. Dynamic frame zeroing clears only the non-parameter suffix and polls at most
+every 4 KiB, sharing the bounded bulk primitives with direct calls. Native frame
 adoption validates the selected same-instance callee and its function subtype
 before publishing the transferred stack. Logical slot/depth limits and exact
 metered fuel remain enforced. `Payload[0]` temporarily holds the trusted dispatch
@@ -570,12 +571,17 @@ inside a large copy must still publish the callee's live frame chain. Public
 record fields, full-width values, guest roots and hardware stack usage are
 unchanged; these registers never contain guest values or native pointers.
 
-Direct private calls initialize only the non-parameter suffix of a checked
+Direct and indirect private calls initialize only the non-parameter suffix of a checked
 child frame. Every parameter's complete 128-bit value is copied before the child
 joins the live chain, so clearing those same words first is redundant. Frame
 capacity checks still cover the entire child; clearing/copying retains bounded
-cancellation and a partial child stays unpublished. Dynamic indirect frames
-retain their existing full-clear path.
+cancellation and a partial child stays unpublished. Dynamically selected frames
+use the checked dispatch row for their complete slot count and the validated
+signature for their parameter count. Full 4 KiB chunks share the direct-call
+clearer; a bounded tail clears the remaining complete 16-byte values. amd64
+uses REP STOSQ with the context restored before any poll; arm64 uses vector
+stores only after all caller vector homes have been spilled. Neither path
+clears parameter words that the subsequent complete transfer replaces.
 
 Linked unmetered bodies may also carry their compiler-known module function
 index. The ordinary, expanded and parallel compilation paths assign the same

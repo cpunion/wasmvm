@@ -199,7 +199,7 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	if indirect {
 		e.callLoad(5, e.callContext(), uint32(nativeabi.PayloadOffset))
 		e.callMemory(5, e.callReg(5), 0, false, true)
-		e.callZeroDynamic(cancelled)
+		e.callZeroDynamic(count, cancelled)
 	} else {
 		e.callZero(uint32(len(callee.Slots)), count, cancelled)
 	}

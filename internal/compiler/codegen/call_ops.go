@@ -126,22 +126,50 @@ func (e *functionEmitter) callSubtract(left, right byte) {
 	}
 }
 
-// The row supplies the callee's slot count in register 5. Poll every slot so
-// even a large dynamically selected frame has bounded cancellation latency.
-func (e *functionEmitter) callZeroDynamic(cancelled int) {
-	done, loop := e.a.label(), e.a.label()
+// The checked row supplies the callee's slot count in register 5. Parameters
+// are copied completely before publication; clear only the remaining slots.
+// Match direct calls' 4KiB cancellation bound, including very large frames.
+func (e *functionEmitter) callZeroDynamic(parameters uint32, cancelled int) {
+	done, loop, tail := e.a.label(), e.a.label(), e.a.label()
+	if parameters != 0 {
+		e.callConst(0, uint64(parameters))
+		e.callSubtract(5, 0)
+	}
 	e.callTest(5)
 	e.branch(done, "eq")
-	e.callMove(6, 4)
-	e.callConst(1, 0)
+	e.callMove(3, 5)
+	e.callZeroCursor(parameters)
+	if e.a.arch == "amd64" {
+		e.registerMove(e.callReg(7), e.callContext(), true)
+	}
+	e.callConst(0, 256)
+	e.callCompare(3, 0)
+	e.branch(tail, "lo")
 	e.a.mark(loop)
-	e.callStore(1, e.callReg(6), 0)
-	e.callStore(1, e.callReg(6), 8)
+	e.callZeroChunk(256)
 	e.callCancelled(cancelled)
-	e.callAdvance(6, 16)
-	e.callAdvance(5, -1)
-	e.callTest(5)
-	e.branch(loop, "ne")
+	e.callAdvance(3, -256)
+	e.callConst(0, 256)
+	e.callCompare(3, 0)
+	e.branch(loop, "hs")
+	e.a.mark(tail)
+	e.callTest(3)
+	e.branch(done, "eq")
+	if e.a.arch == "amd64" {
+		e.registerMove(7, e.callReg(6), true)
+		e.callMove(1, 3)
+		e.callShift(1, 1)
+		e.callZeroAMD64()
+	} else {
+		e.a.word(0x4f00e400) // movi v0.16b, #0
+		last := e.a.label()
+		e.a.mark(last)
+		e.a.word(0x3d800000 | uint32(e.callReg(6))<<5) // str q0,[cursor]
+		e.callAdvance(6, 16)
+		e.callAdvance(3, -1)
+		e.callTest(3)
+		e.branch(last, "ne")
+	}
 	e.a.mark(done)
 }
 func (e *functionEmitter) callShift(n, bits byte) {
@@ -235,6 +263,29 @@ func (e *functionEmitter) callZero(slots, parameters uint32, cancelled int) {
 	if slots == 0 {
 		return
 	}
+	e.callZeroCursor(parameters)
+	chunks, tail := slots/256, slots%256
+	counter := byte(7)
+	if e.a.arch == "amd64" {
+		e.registerMove(e.callReg(7), e.callContext(), true)
+		counter = 5
+	}
+	if chunks != 0 {
+		e.callConst(counter, uint64(chunks))
+		loop := e.a.label()
+		e.a.mark(loop)
+		e.callZeroChunk(256)
+		e.callCancelled(cancelled)
+		e.callAdvance(counter, -1)
+		e.callTest(counter)
+		e.branch(loop, "ne")
+	}
+	if tail != 0 {
+		e.callZeroChunk(tail)
+	}
+}
+
+func (e *functionEmitter) callZeroCursor(parameters uint32) {
 	offset := uint64(parameters) * 16
 	if offset == 0 {
 		e.callMove(6, 4)
@@ -244,68 +295,45 @@ func (e *functionEmitter) callZero(slots, parameters uint32, cancelled int) {
 		e.callConst(6, offset)
 		e.callAdd(6, 6, 4)
 	}
-	chunks, tail := slots/256, slots%256
+}
+
+// Clear a bounded constant span and advance work cursor 6. On amd64 work
+// register 7 retains the context while REP STOSQ temporarily uses RDI.
+func (e *functionEmitter) callZeroChunk(n uint32) {
 	if e.a.arch == "amd64" {
-		e.registerMove(e.callReg(7), e.callContext(), true)
-		chunk := func(n uint32) {
-			e.registerMove(7, e.callReg(6), true)
-			e.a.xconst(1, uint64(n)*2)
-			e.a.xconst(0, 0)
-			e.a.bytes(0xf3, 0x48, 0xab) // rep stosq
-			e.registerMove(e.callReg(6), 7, true)
-			e.registerMove(7, e.callReg(7), true)
-		}
-		if chunks != 0 {
-			e.callConst(5, uint64(chunks))
-			loop := e.a.label()
-			e.a.mark(loop)
-			chunk(256)
-			e.callCancelled(cancelled)
-			e.callAdvance(5, -1)
-			e.callTest(5)
-			e.branch(loop, "ne")
-		}
-		if tail != 0 {
-			chunk(tail)
-		}
+		e.registerMove(7, e.callReg(6), true)
+		e.a.xconst(1, uint64(n)*2)
+		e.callZeroAMD64()
 		return
 	}
-	chunk := func(n uint32) {
-		e.a.word(0x4f00e400) // movi v0.16b, #0; all guest vectors were spilled.
-		if blocks := n / 8; blocks != 0 {
-			e.callConst(5, uint64(blocks))
-			loop := e.a.label()
-			e.a.mark(loop)
-			for pair := uint32(0); pair < 4; pair++ {
-				e.a.word(0xad000000 | pair*2<<15 | uint32(e.callReg(6))<<5) // stp q0,q0,[cursor,#pair*32]
-			}
-			e.callAdvance(6, 128)
-			e.callAdvance(5, -1)
-			e.callTest(5)
-			e.branch(loop, "ne")
-		}
-		remaining := n % 8
-		for pair := uint32(0); pair < remaining/2; pair++ {
-			e.a.word(0xad000000 | pair*2<<15 | uint32(e.callReg(6))<<5)
-		}
-		if remaining%2 != 0 {
-			e.a.word(0x3d800000 | (remaining-1)<<10 | uint32(e.callReg(6))<<5) // str q0,[cursor,#slot*16]
-		}
-		if remaining != 0 {
-			e.callAdvance(6, int(remaining)*16)
-		}
-	}
-	if chunks != 0 {
-		e.callConst(7, uint64(chunks))
+	e.a.word(0x4f00e400) // movi v0.16b, #0; all guest vectors were spilled.
+	if blocks := n / 8; blocks != 0 {
+		e.callConst(5, uint64(blocks))
 		loop := e.a.label()
 		e.a.mark(loop)
-		chunk(256)
-		e.callCancelled(cancelled)
-		e.callAdvance(7, -1)
-		e.callTest(7)
+		for pair := uint32(0); pair < 4; pair++ {
+			e.a.word(0xad000000 | pair*2<<15 | uint32(e.callReg(6))<<5) // stp q0,q0,[cursor,#pair*32]
+		}
+		e.callAdvance(6, 128)
+		e.callAdvance(5, -1)
+		e.callTest(5)
 		e.branch(loop, "ne")
 	}
-	if tail != 0 {
-		chunk(tail)
+	remaining := n % 8
+	for pair := uint32(0); pair < remaining/2; pair++ {
+		e.a.word(0xad000000 | pair*2<<15 | uint32(e.callReg(6))<<5)
 	}
+	if remaining%2 != 0 {
+		e.a.word(0x3d800000 | (remaining-1)<<10 | uint32(e.callReg(6))<<5) // str q0,[cursor,#slot*16]
+	}
+	if remaining != 0 {
+		e.callAdvance(6, int(remaining)*16)
+	}
+}
+
+func (e *functionEmitter) callZeroAMD64() {
+	e.a.xconst(0, 0)
+	e.a.bytes(0xf3, 0x48, 0xab) // rep stosq; RCX supplies the word count.
+	e.registerMove(e.callReg(6), 7, true)
+	e.registerMove(7, e.callReg(7), true)
 }
