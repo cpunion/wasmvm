@@ -74,6 +74,15 @@ snapshot; retained provider data and returned results still become owned.
 Public calls and async bindings retain their existing snapshot contracts.
 Both paths preserve logical budgets and fresh resource/callback guards.
 
+The following increment reuses only cleared private synchronous transaction
+shells, copies pointer/length descriptors as one checked span, and folds proven
+amd64 vector-load scales into the existing address encoder. ARM shifted integer
+consumers may precede a still-live intermediate when the source survives,
+shortening the result dependency without discarding an observable frame word.
+Original cold entries, precise fuel, exact vector widths and every interrupt
+poll remain intact. Semantic validation and structural selection evidence do
+not close the deferred performance gate.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and

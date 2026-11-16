@@ -168,10 +168,10 @@ func (c *Caller) Call(f *Function, args []Value) (*Value, error) {
 }
 
 func (f *Function) call(core *vm.Caller, args []Value) (result *Value, err error) {
-	return f.callWithParameters(core, args, false)
+	return f.callWithParameters(core, args, false, nil)
 }
 
-func (f *Function) callWithParameters(core *vm.Caller, args []Value, borrowed bool) (result *Value, err error) {
+func (f *Function) callWithParameters(core *vm.Caller, args []Value, borrowed bool, frame *canonicalFrame) (result *Value, err error) {
 	if err := f.enterCall(core, args); err != nil {
 		return nil, err
 	}
@@ -183,7 +183,14 @@ func (f *Function) callWithParameters(core *vm.Caller, args []Value, borrowed bo
 	if f.scope != nil && (f.scope.failed || f.scope.blocked) {
 		return nil, wasm.ErrTrap
 	}
-	h, err := f.hostParameters(core, args, borrowed)
+	var storage *resourceHostCall
+	if frame != nil {
+		if frame.host == nil {
+			frame.host = &resourceHostCall{}
+		}
+		storage = frame.host
+	}
+	h, err := f.hostParameters(core, args, borrowed, storage)
 	if err != nil {
 		return nil, err
 	}
@@ -522,7 +529,7 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 		if err != nil {
 			return err
 		}
-		v, err := callee.callWithParameters(caller, args, callee.borrowedParameters)
+		v, err := callee.callWithParameters(caller, args, callee.borrowedParameters, frame)
 		if err != nil {
 			return err
 		}
