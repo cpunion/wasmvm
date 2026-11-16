@@ -11,10 +11,13 @@ import (
 // these arguments only until return. Capabilities remain fresh. Suspended calls
 // use their existing task-owned state instead of these frames.
 type canonicalFrame struct {
-	state   resourceCodecState
-	args    []Value
-	result  [canonical.MaxFlatResults]canonical.Slot
-	memory  memory
+	state  resourceCodecState
+	args   []Value
+	result [canonical.MaxFlatResults]canonical.Slot
+	memory memory
+	// Only the synchronous private transaction uses this lazy storage. Public
+	// Callers and parameter/result snapshots never point into this object.
+	host    *resourceHostCall
 	caller  *vm.Caller
 	n       *namespace
 	plan    *validate.CanonicalFunction
@@ -49,6 +52,9 @@ func (frame *canonicalFrame) reallocate(old, size, alignment, next uint64) (uint
 // Never retain a Caller, Context, memory capability, value or resource between
 // invocations. Reentrant calls acquire a different frame until this one returns.
 func (in *Instance) releaseCanonicalFrame(frame *canonicalFrame) {
+	if frame.host != nil {
+		*frame.host = resourceHostCall{}
+	}
 	clear(frame.args)
 	frame.args = frame.args[:0]
 	if cap(frame.args) > canonical.MaxFlatParams {

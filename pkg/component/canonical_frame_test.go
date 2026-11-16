@@ -26,6 +26,13 @@ func checkCanonicalFramesCleared(t *testing.T, in *Instance) int {
 		if frame.caller != nil || frame.n != nil || frame.plan != nil || frame.memory.caller != nil || frame.state.codec.Resources != nil || frame.state.codec.Transfer.Context != nil || frame.state.codec.Transfer.Memory != nil || frame.state.codec.Transfer.Realloc != nil || frame.state.resources.core != nil || len(frame.args) != 0 {
 			t.Fatal("released frame retains invocation state")
 		}
+		if frame.host != nil {
+			h := &frame.host.hostCall
+			r := &frame.host.resources
+			if h.function != nil || h.args != nil || h.ctx != nil || h.cancel != nil || h.completion != nil || h.created != nil || h.reads != nil || h.values != 0 || h.bytes != 0 || h.codec.Resources != nil || h.codec.Layouts != nil || h.codec.Transfer.Context != nil || r.in != nil || r.core != nil || r.n != nil || r.scope != nil || r.created != nil || r.escaped != nil || r.lowered != nil {
+				t.Fatal("released synchronous host storage retains invocation state")
+			}
+		}
 		for _, v := range frame.args[:cap(frame.args)] {
 			if v.Bits != 0 || v.Text != "" || v.Elements != nil || v.Resource != nil || v.Case != 0 {
 				t.Fatal("released argument storage retains values")

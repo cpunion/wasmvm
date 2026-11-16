@@ -1,8 +1,8 @@
 package codegen
 
-// Select a shifted second operand after a constant shift. The intermediate
-// must be overwritten before any observation; independent PCs keep the original
-// constant/shift/consumer sequence. All inputs are read before the result write.
+// Select a shifted second operand after a constant shift. A live intermediate
+// is computed after the consumer, outside its dependency chain, only if the
+// original source survives. Independent PCs retain the original sequence.
 func (e *functionEmitter) combineShiftedInteger(pc int) (int, bool) {
 	if !e.unmetered || e.a.arch != "arm64" || pc+2 >= e.codeLimit() || pc/256 != (pc+2)/256 {
 		return 0, false
@@ -39,13 +39,18 @@ func (e *functionEmitter) combineShiftedInteger(pc int) (int, bool) {
 		}
 		left = in.B
 	}
-	if left == shift.Dst || shift.Dst != in.Dst && !e.overwrittenBeforeExit(pc+3, shift.Dst) {
+	if left == shift.Dst {
 		return 0, false
 	}
+	keepShift := shift.Dst != in.Dst && !e.overwrittenBeforeExit(pc+3, shift.Dst)
 	l, lok := e.registers[left]
 	r, rok := e.registers[shift.A]
 	d, dok := e.registers[in.Dst]
 	if !lok || !rok || !dok {
+		return 0, false
+	}
+	intermediate, resident := e.registers[shift.Dst]
+	if keepShift && (!resident || d == r) {
 		return 0, false
 	}
 	kind := shift.Op - first
@@ -61,5 +66,11 @@ func (e *functionEmitter) combineShiftedInteger(pc int) (int, bool) {
 		e.literal(constant)
 	}
 	e.a.arm(wide, word|mode<<22|uint32(r)<<16|count<<10|uint32(l)<<5|uint32(d))
+	if keepShift {
+		// Reuse the ordinary immediate encoder and preserve every word exposed
+		// by a later trap, poll or cold continuation. No extra scratch move.
+		instruction, _ := armRegisterImmediate(shift.Op, intermediate, r, e.f.Sources[constant.Source].Wasm.Bits)
+		e.a.word(instruction)
+	}
 	return pc + 2, true
 }

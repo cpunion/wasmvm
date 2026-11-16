@@ -27,14 +27,21 @@ type resourceHostCall struct {
 	resources resourceCodec
 }
 
-func (in *Instance) newHostCall(core *vm.Caller, f *Function, n *namespace) *hostCall {
+// Non-nil storage is zeroed, private synchronous canonical storage. It cannot
+// belong to a pending task or escape through a public callback capability.
+func (in *Instance) newHostCall(core *vm.Caller, f *Function, n *namespace, storage *resourceHostCall) *hostCall {
 	var h *hostCall
+	if storage != nil {
+		h = &storage.hostCall
+	}
 	if n != nil && (len(n.resources) != 0 || n.handles != nil) {
-		state := &resourceHostCall{}
-		h = &state.hostCall
-		state.resources = resourceCodec{in: in, n: n, core: core}
-		h.codec.Resources = &state.resources
-	} else {
+		if storage == nil {
+			storage = &resourceHostCall{}
+			h = &storage.hostCall
+		}
+		storage.resources = resourceCodec{in: in, n: n, core: core}
+		h.codec.Resources = &storage.resources
+	} else if h == nil {
 		h = &hostCall{}
 	}
 	h.function = f
@@ -43,13 +50,13 @@ func (in *Instance) newHostCall(core *vm.Caller, f *Function, n *namespace) *hos
 }
 
 func (f *Function) hostCall(core *vm.Caller, args []Value) (h *hostCall, err error) {
-	return f.hostParameters(core, args, false)
+	return f.hostParameters(core, args, false, nil)
 }
 
 // Only the canonical lower's normalized invocation-owned arguments may be
 // borrowed. Public Function.Call and pending calls keep owned snapshots.
-func (f *Function) hostParameters(core *vm.Caller, args []Value, borrowed bool) (h *hostCall, err error) {
-	h = f.instance.newHostCall(core, f, f.scope)
+func (f *Function) hostParameters(core *vm.Caller, args []Value, borrowed bool, storage *resourceHostCall) (h *hostCall, err error) {
+	h = f.instance.newHostCall(core, f, f.scope, storage)
 	if len(args) != len(f.typ.Parameters) {
 		return h, vm.ErrType
 	}

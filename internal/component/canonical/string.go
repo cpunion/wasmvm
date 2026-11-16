@@ -87,15 +87,37 @@ func (c *Transfer) LoadString(at uint64) (string, error) {
 	if err := c.rangeCheck(at, 2*width, width); err != nil {
 		return "", err
 	}
-	var pair [16]byte
-	if err := c.Memory.Read(at, pair[:2*width]); err != nil {
+	ptr, length, err := c.loadPair(at)
+	if err != nil {
 		return "", err
 	}
-	ptr, length := uint64(binary.LittleEndian.Uint32(pair[:])), uint64(binary.LittleEndian.Uint32(pair[4:]))
-	if c.Memory64 {
-		ptr, length = binary.LittleEndian.Uint64(pair[:]), binary.LittleEndian.Uint64(pair[8:])
-	}
 	return c.LiftString(ptr, length)
+}
+
+// Pointer/length descriptors are one bounded transfer. The adapter checks the
+// complete range and keeps its capability for the copy; no backing view escapes.
+// Shared adapters retain byte-wise synchronization, not descriptor atomicity.
+func (c *Transfer) loadPair(at uint64) (uint64, uint64, error) {
+	var pair [16]byte
+	if err := c.Memory.Read(at, pair[:2*c.pointerSize()]); err != nil {
+		return 0, 0, err
+	}
+	if c.Memory64 {
+		return binary.LittleEndian.Uint64(pair[:]), binary.LittleEndian.Uint64(pair[8:]), nil
+	}
+	return uint64(binary.LittleEndian.Uint32(pair[:])), uint64(binary.LittleEndian.Uint32(pair[4:])), nil
+}
+
+func (c *Transfer) storePair(at, ptr, n uint64) error {
+	var pair [16]byte
+	if c.Memory64 {
+		binary.LittleEndian.PutUint64(pair[:], ptr)
+		binary.LittleEndian.PutUint64(pair[8:], n)
+	} else {
+		binary.LittleEndian.PutUint32(pair[:], uint32(ptr))
+		binary.LittleEndian.PutUint32(pair[4:], uint32(n))
+	}
+	return c.Memory.Write(at, pair[:2*c.pointerSize()])
 }
 
 func (c *Transfer) LiftString(at, length uint64) (string, error) {
@@ -310,13 +332,5 @@ func (c *Transfer) StoreString(at uint64, value string) error {
 	if err != nil {
 		return err
 	}
-	var pair [16]byte
-	if c.Memory64 {
-		binary.LittleEndian.PutUint64(pair[:], ptr)
-		binary.LittleEndian.PutUint64(pair[8:], length)
-	} else {
-		binary.LittleEndian.PutUint32(pair[:], uint32(ptr))
-		binary.LittleEndian.PutUint32(pair[4:], uint32(length))
-	}
-	return c.Memory.Write(at, pair[:2*width])
+	return c.storePair(at, ptr, length)
 }

@@ -89,6 +89,19 @@ P3 HTTP types copy retained aggregate data into provider objects and opt in.
 Reentry acquires independent canonical storage; neither pending work nor a
 later invocation can observe an earlier borrowed parameter slice.
 
+Private synchronous frames also lazily retain an empty host transaction shell.
+Every call rebinds its codec/resource state and keeps fresh public Caller guards;
+cleanup finishes before the shell clears, including during panic unwinding.
+Release clears its function, context, resources, completion, arguments and
+budget state. Reentry uses another frame. Pending tasks and public calls retain
+independent transactions. This adds one lazily allocated shell per cached frame
+in exchange for avoiding a transaction allocation on each subsequent callback.
+
+Pointer/length descriptors for strings, lists and maps share one bounded memory
+copy. The complete descriptor is checked without exposing guest backing storage.
+Memory32/64 widths and byte-wise shared synchronization remain distinct from
+descriptor atomicity; growth/reentry still refreshes the normal memory adapter.
+
 Each source lazily binds one immutable read signature/value plan. Read calls
 still allocate independent mutable Function/callback, codec, ownership and
 cancellation state. Completion scheduling observes atomic readiness; subscription

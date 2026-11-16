@@ -84,7 +84,7 @@ func TestBorrowedAggregateParametersKeepResultAndQuotaOwnership(t *testing.T) {
 	f := &Function{instance: in, typ: &validate.Type{Kind: model.Function, Parameters: []model.Field{{Type: typ}}, Result: typ}}
 	args := []Value{{Elements: []Value{{Bits: 17}, {Bits: 23}}}}
 	_, err := in.store.WithCaller(nil, CallOptions{}, func(core *vm.Caller) error {
-		owned, err := f.hostParameters(core, args, false)
+		owned, err := f.hostParameters(core, args, false, nil)
 		if err != nil {
 			return err
 		}
@@ -96,7 +96,7 @@ func TestBorrowedAggregateParametersKeepResultAndQuotaOwnership(t *testing.T) {
 		if err := owned.finish(core, true, nil); err != nil {
 			return err
 		}
-		borrowed, err := f.hostParameters(core, args, true)
+		borrowed, err := f.hostParameters(core, args, true, nil)
 		if err != nil {
 			return err
 		}
@@ -115,7 +115,7 @@ func TestBorrowedAggregateParametersKeepResultAndQuotaOwnership(t *testing.T) {
 			t.Fatal("result retained borrowed aggregate storage")
 		}
 		in.config.MaxBytes = bytes - 1
-		if _, err := f.hostParameters(core, args, true); !errors.Is(err, wasm.ErrLimit) {
+		if _, err := f.hostParameters(core, args, true, nil); !errors.Is(err, wasm.ErrLimit) {
 			t.Fatal("borrowed arguments bypassed transfer limit", err)
 		}
 		if in.heldValues != 0 || in.heldBytes != 0 {

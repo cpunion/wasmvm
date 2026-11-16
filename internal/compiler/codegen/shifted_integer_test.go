@@ -50,7 +50,7 @@ func TestShiftedIntegerWidthsCountsAliasesAndColdEntries(t *testing.T) {
 							f := shiftedIntegerFixture(wide, shift, consumer, count, alias[0], alias[1], alias[2], swapped, preserve)
 							e := functionEmitter{f: f, a: &assembler{arch: "arm64"}, unmetered: true, registers: map[slots.Slot]byte{0: 19, 1: 20, 2: 21, 3: 22, 4: 23, 5: 24}}
 							_, selected := e.combineShiftedInteger(0)
-							want := (consumer >= 7 || shift < 3) && (consumer != 1 || !swapped) && alias[2] != alias[0] && (!preserve || alias[0] == alias[1])
+							want := (consumer >= 7 || shift < 3) && (consumer != 1 || !swapped) && alias[2] != alias[0] && (!preserve || alias[0] == alias[1] || alias[1] != 0)
 							if selected != want {
 								t.Fatal(wide, shift, consumer, count, alias, swapped, preserve, selected, want)
 							}
@@ -101,7 +101,14 @@ func TestShiftedIntegerSelectionBoundaries(t *testing.T) {
 		case "region":
 			e.regionLimit = 2
 		}
-		if _, ok := e.combineShiftedInteger(pc); ok || len(e.a.code) != 0 {
+		_, selected := e.combineShiftedInteger(pc)
+		if kind == "trap" || kind == "guard" {
+			if !selected {
+				t.Fatal("live intermediate was not preserved before observation", kind)
+			}
+			continue
+		}
+		if selected || len(e.a.code) != 0 {
 			t.Fatal("unsafe selection", kind)
 		}
 	}

@@ -42,7 +42,7 @@ func (f *Function) callWithResult(ctx context.Context, args []Value, options Cal
 		if prepare != nil {
 			// Preparation creates capabilities through its Caller, tracked by
 			// hostCall.created. It performs no canonical ownership conversion.
-			factory := in.newHostCall(c, f, nil)
+			factory := in.newHostCall(c, f, nil, nil)
 			factory.limit()
 			defer factory.finishDeferred(c, &complete, &err)
 			defer factory.account()
