@@ -1,0 +1,42 @@
+[
+  {
+    "cpuPercent": 180.4,
+    "pid": 82172,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/ApplicationsStorageExtension.appex/Contents/MacOS/ApplicationsStorageExtension"
+  },
+  {
+    "cpuPercent": 59.4,
+    "pid": 82145,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/StorageManagementService"
+  },
+  {
+    "cpuPercent": 27.2,
+    "pid": 89114,
+    "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.81/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)"
+  },
+  {
+    "cpuPercent": 26.6,
+    "pid": 614,
+    "command": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+  },
+  {
+    "cpuPercent": 25.9,
+    "pid": 1582,
+    "command": "/Applications/iTerm.app/Contents/MacOS/iTerm2"
+  },
+  {
+    "cpuPercent": 24.8,
+    "pid": 54505,
+    "command": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  },
+  {
+    "cpuPercent": 8.6,
+    "pid": 25821,
+    "command": "/Applications/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper"
+  },
+  {
+    "cpuPercent": 5.7,
+    "pid": 1593,
+    "command": "/Applications/Surge.app/Contents/MacOS/Surge"
+  }
+]

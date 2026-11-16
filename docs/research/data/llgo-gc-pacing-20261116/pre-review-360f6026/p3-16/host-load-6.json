@@ -1,0 +1,32 @@
+[
+  {
+    "cpuPercent": 100.7,
+    "pid": 67459,
+    "command": "/var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build1960209812/b001/dastos.test"
+  },
+  {
+    "cpuPercent": 100.0,
+    "pid": 46983,
+    "command": "/Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper.app/Contents/MacOS/Code Helper"
+  },
+  {
+    "cpuPercent": 96.9,
+    "pid": 82172,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/ApplicationsStorageExtension.appex/Contents/MacOS/ApplicationsStorageExtension"
+  },
+  {
+    "cpuPercent": 83.5,
+    "pid": 82145,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/StorageManagementService"
+  },
+  {
+    "cpuPercent": 36.7,
+    "pid": 614,
+    "command": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+  },
+  {
+    "cpuPercent": 18.2,
+    "pid": 1582,
+    "command": "/Applications/iTerm.app/Contents/MacOS/iTerm2"
+  }
+]

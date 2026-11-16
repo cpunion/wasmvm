@@ -1,0 +1,37 @@
+[
+  {
+    "cpuPercent": 94.5,
+    "pid": 82172,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/ApplicationsStorageExtension.appex/Contents/MacOS/ApplicationsStorageExtension"
+  },
+  {
+    "cpuPercent": 75.7,
+    "pid": 82145,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/StorageManagementService"
+  },
+  {
+    "cpuPercent": 39.8,
+    "pid": 614,
+    "command": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+  },
+  {
+    "cpuPercent": 27.1,
+    "pid": 30431,
+    "command": "/Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/PairedSync.framework/Support/pairedsyncd"
+  },
+  {
+    "cpuPercent": 16.9,
+    "pid": 1582,
+    "command": "/Applications/iTerm.app/Contents/MacOS/iTerm2"
+  },
+  {
+    "cpuPercent": 8.0,
+    "pid": 30433,
+    "command": "/Applications/ego lite.app/Contents/Frameworks/ego Framework.framework/Versions/0.6.3.14/Helpers/ego Helper (Aperitif Renderer).app/Contents/MacOS/ego Helper (Aperitif Renderer)"
+  },
+  {
+    "cpuPercent": 5.5,
+    "pid": 74240,
+    "command": "/System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine"
+  }
+]

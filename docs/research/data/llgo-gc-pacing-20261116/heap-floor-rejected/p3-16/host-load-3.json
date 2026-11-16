@@ -1,0 +1,47 @@
+[
+  {
+    "cpuPercent": 186.2,
+    "pid": 74800,
+    "command": "/Users/lijie/Library/Android/sdk/emulator/qemu/darwin-aarch64/qemu-system-aarch64-headless"
+  },
+  {
+    "cpuPercent": 98.9,
+    "pid": 75742,
+    "command": "/opt/homebrew/bin/ld64.lld"
+  },
+  {
+    "cpuPercent": 94.9,
+    "pid": 82172,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/ApplicationsStorageExtension.appex/Contents/MacOS/ApplicationsStorageExtension"
+  },
+  {
+    "cpuPercent": 71.3,
+    "pid": 82145,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/StorageManagementService"
+  },
+  {
+    "cpuPercent": 33.0,
+    "pid": 614,
+    "command": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+  },
+  {
+    "cpuPercent": 26.9,
+    "pid": 1582,
+    "command": "/Applications/iTerm.app/Contents/MacOS/iTerm2"
+  },
+  {
+    "cpuPercent": 17.3,
+    "pid": 1593,
+    "command": "/Applications/Surge.app/Contents/MacOS/Surge"
+  },
+  {
+    "cpuPercent": 10.9,
+    "pid": 25821,
+    "command": "/Applications/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper"
+  },
+  {
+    "cpuPercent": 9.9,
+    "pid": 76130,
+    "command": "/var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build409016014/b345/threads.test"
+  }
+]

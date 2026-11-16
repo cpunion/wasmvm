@@ -1,0 +1,32 @@
+[
+  {
+    "cpuPercent": 73.4,
+    "pid": 82145,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/StorageManagementService"
+  },
+  {
+    "cpuPercent": 40.9,
+    "pid": 614,
+    "command": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+  },
+  {
+    "cpuPercent": 16.2,
+    "pid": 1582,
+    "command": "/Applications/iTerm.app/Contents/MacOS/iTerm2"
+  },
+  {
+    "cpuPercent": 8.0,
+    "pid": 1593,
+    "command": "/Applications/Surge.app/Contents/MacOS/Surge"
+  },
+  {
+    "cpuPercent": 7.0,
+    "pid": 25821,
+    "command": "/Applications/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper"
+  },
+  {
+    "cpuPercent": 5.8,
+    "pid": 763,
+    "command": "/System/Library/DriverExtensions/com.apple.DriverKit-AppleBCMWLAN.dext/com.apple.DriverKit-AppleBCMWLAN"
+  }
+]

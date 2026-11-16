@@ -1,0 +1,72 @@
+[
+  {
+    "cpuPercent": 335.7,
+    "pid": 74800,
+    "command": "/Users/lijie/Library/Android/sdk/emulator/qemu/darwin-aarch64/qemu-system-aarch64-headless"
+  },
+  {
+    "cpuPercent": 208.9,
+    "pid": 75594,
+    "command": "/var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build409016014/b343/preview3.test"
+  },
+  {
+    "cpuPercent": 196.8,
+    "pid": 75575,
+    "command": "/var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build409016014/b339/preview2.test"
+  },
+  {
+    "cpuPercent": 100.0,
+    "pid": 75742,
+    "command": "/opt/homebrew/bin/ld64.lld"
+  },
+  {
+    "cpuPercent": 76.2,
+    "pid": 82172,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/ApplicationsStorageExtension.appex/Contents/MacOS/ApplicationsStorageExtension"
+  },
+  {
+    "cpuPercent": 67.1,
+    "pid": 82145,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/StorageManagementService"
+  },
+  {
+    "cpuPercent": 36.0,
+    "pid": 1582,
+    "command": "/Applications/iTerm.app/Contents/MacOS/iTerm2"
+  },
+  {
+    "cpuPercent": 28.9,
+    "pid": 614,
+    "command": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+  },
+  {
+    "cpuPercent": 19.5,
+    "pid": 76130,
+    "command": "/var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build409016014/b345/threads.test"
+  },
+  {
+    "cpuPercent": 18.9,
+    "pid": 1593,
+    "command": "/Applications/Surge.app/Contents/MacOS/Surge"
+  },
+  {
+    "cpuPercent": 13.4,
+    "pid": 25821,
+    "command": "/Applications/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper"
+  },
+  {
+    "cpuPercent": 11.2,
+    "pid": 47276,
+    "command": "/System/Library/ExtensionKit/Extensions/Storage.appex/Contents/MacOS/Storage"
+  },
+  {
+    "cpuPercent": 9.9,
+    "pid": 77293,
+    "command": "codex"
+  },
+  {
+    "cpuPercent": 9.5,
+    "pid": 74240,
+    "command": "/System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine"
+  }
+]

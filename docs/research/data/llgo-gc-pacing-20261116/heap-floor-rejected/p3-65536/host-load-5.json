@@ -1,0 +1,72 @@
+[
+  {
+    "cpuPercent": 174.1,
+    "pid": 77066,
+    "command": "/var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build887756356/b161/preview3.test"
+  },
+  {
+    "cpuPercent": 92.3,
+    "pid": 82172,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/ApplicationsStorageExtension.appex/Contents/MacOS/ApplicationsStorageExtension"
+  },
+  {
+    "cpuPercent": 69.1,
+    "pid": 82145,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/StorageManagementService"
+  },
+  {
+    "cpuPercent": 67.7,
+    "pid": 54505,
+    "command": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  },
+  {
+    "cpuPercent": 27.7,
+    "pid": 614,
+    "command": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+  },
+  {
+    "cpuPercent": 26.4,
+    "pid": 1582,
+    "command": "/Applications/iTerm.app/Contents/MacOS/iTerm2"
+  },
+  {
+    "cpuPercent": 19.8,
+    "pid": 54563,
+    "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.81/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)"
+  },
+  {
+    "cpuPercent": 19.5,
+    "pid": 95885,
+    "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.81/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)"
+  },
+  {
+    "cpuPercent": 14.2,
+    "pid": 14408,
+    "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.81/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)"
+  },
+  {
+    "cpuPercent": 14.1,
+    "pid": 40982,
+    "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.81/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)"
+  },
+  {
+    "cpuPercent": 13.6,
+    "pid": 29926,
+    "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.81/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)"
+  },
+  {
+    "cpuPercent": 6.6,
+    "pid": 70120,
+    "command": "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores"
+  },
+  {
+    "cpuPercent": 5.9,
+    "pid": 25821,
+    "command": "/Applications/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper"
+  },
+  {
+    "cpuPercent": 5.5,
+    "pid": 74800,
+    "command": "/Users/lijie/Library/Android/sdk/emulator/qemu/darwin-aarch64/qemu-system-aarch64-headless"
+  }
+]

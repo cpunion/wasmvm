@@ -1,0 +1,27 @@
+[
+  {
+    "cpuPercent": 142.9,
+    "pid": 82145,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/StorageManagementService"
+  },
+  {
+    "cpuPercent": 38.9,
+    "pid": 614,
+    "command": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+  },
+  {
+    "cpuPercent": 26.8,
+    "pid": 1582,
+    "command": "/Applications/iTerm.app/Contents/MacOS/iTerm2"
+  },
+  {
+    "cpuPercent": 14.6,
+    "pid": 54505,
+    "command": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  },
+  {
+    "cpuPercent": 9.8,
+    "pid": 86057,
+    "command": "/Applications/Grok Bot.app/Contents/Frameworks/Grok Bot Helper.app/Contents/MacOS/Grok Bot Helper"
+  }
+]

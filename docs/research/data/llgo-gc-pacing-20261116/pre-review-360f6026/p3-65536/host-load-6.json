@@ -1,0 +1,32 @@
+[
+  {
+    "cpuPercent": 95.2,
+    "pid": 82172,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/ApplicationsStorageExtension.appex/Contents/MacOS/ApplicationsStorageExtension"
+  },
+  {
+    "cpuPercent": 61.5,
+    "pid": 82145,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/StorageManagementService"
+  },
+  {
+    "cpuPercent": 44.8,
+    "pid": 614,
+    "command": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+  },
+  {
+    "cpuPercent": 24.6,
+    "pid": 1582,
+    "command": "/Applications/iTerm.app/Contents/MacOS/iTerm2"
+  },
+  {
+    "cpuPercent": 7.4,
+    "pid": 610,
+    "command": "/usr/libexec/corebrightnessd"
+  },
+  {
+    "cpuPercent": 5.1,
+    "pid": 1110,
+    "command": "/System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter"
+  }
+]

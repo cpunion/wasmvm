@@ -1,0 +1,62 @@
+[
+  {
+    "cpuPercent": 138.9,
+    "pid": 77997,
+    "command": "/opt/homebrew/Cellar/go/1.27.3/libexec/pkg/tool/darwin_arm64/compile"
+  },
+  {
+    "cpuPercent": 100.8,
+    "pid": 77066,
+    "command": "/var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build887756356/b161/preview3.test"
+  },
+  {
+    "cpuPercent": 97.7,
+    "pid": 77249,
+    "command": "/opt/homebrew/bin/ld64.lld"
+  },
+  {
+    "cpuPercent": 90.9,
+    "pid": 82172,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/ApplicationsStorageExtension.appex/Contents/MacOS/ApplicationsStorageExtension"
+  },
+  {
+    "cpuPercent": 59.7,
+    "pid": 82145,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/StorageManagementService"
+  },
+  {
+    "cpuPercent": 36.9,
+    "pid": 614,
+    "command": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+  },
+  {
+    "cpuPercent": 25.3,
+    "pid": 1582,
+    "command": "/Applications/iTerm.app/Contents/MacOS/iTerm2"
+  },
+  {
+    "cpuPercent": 14.2,
+    "pid": 47276,
+    "command": "/System/Library/ExtensionKit/Extensions/Storage.appex/Contents/MacOS/Storage"
+  },
+  {
+    "cpuPercent": 8.3,
+    "pid": 1593,
+    "command": "/Applications/Surge.app/Contents/MacOS/Surge"
+  },
+  {
+    "cpuPercent": 6.9,
+    "pid": 25821,
+    "command": "/Applications/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper"
+  },
+  {
+    "cpuPercent": 5.3,
+    "pid": 74800,
+    "command": "/Users/lijie/Library/Android/sdk/emulator/qemu/darwin-aarch64/qemu-system-aarch64-headless"
+  },
+  {
+    "cpuPercent": 5.2,
+    "pid": 1110,
+    "command": "/System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter"
+  }
+]

@@ -1,0 +1,112 @@
+[
+  {
+    "cpuPercent": 101.4,
+    "pid": 54505,
+    "command": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  },
+  {
+    "cpuPercent": 86.3,
+    "pid": 34149,
+    "command": "/var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build4018435787/b001/dastos.test"
+  },
+  {
+    "cpuPercent": 58.1,
+    "pid": 82145,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/StorageManagementService"
+  },
+  {
+    "cpuPercent": 53.4,
+    "pid": 95885,
+    "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.81/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)"
+  },
+  {
+    "cpuPercent": 42.6,
+    "pid": 2169,
+    "command": "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd"
+  },
+  {
+    "cpuPercent": 40.3,
+    "pid": 614,
+    "command": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+  },
+  {
+    "cpuPercent": 35.0,
+    "pid": 33842,
+    "command": "/var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build1012534591/b001/os.test"
+  },
+  {
+    "cpuPercent": 30.4,
+    "pid": 54563,
+    "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.81/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)"
+  },
+  {
+    "cpuPercent": 30.3,
+    "pid": 47808,
+    "command": "/Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper.app/Contents/MacOS/Code Helper"
+  },
+  {
+    "cpuPercent": 21.2,
+    "pid": 1582,
+    "command": "/Applications/iTerm.app/Contents/MacOS/iTerm2"
+  },
+  {
+    "cpuPercent": 21.1,
+    "pid": 14408,
+    "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.81/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)"
+  },
+  {
+    "cpuPercent": 20.5,
+    "pid": 29926,
+    "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.81/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)"
+  },
+  {
+    "cpuPercent": 20.0,
+    "pid": 40982,
+    "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.81/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)"
+  },
+  {
+    "cpuPercent": 16.5,
+    "pid": 38028,
+    "command": "postgres: lijie cc04_wake_events_reg_test 127.0.0.1(60575) idle"
+  },
+  {
+    "cpuPercent": 15.2,
+    "pid": 82172,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/ApplicationsStorageExtension.appex/Contents/MacOS/ApplicationsStorageExtension"
+  },
+  {
+    "cpuPercent": 11.7,
+    "pid": 38033,
+    "command": "postgres: lijie cc04_wake_events_reg_test 127.0.0.1(60577) idle"
+  },
+  {
+    "cpuPercent": 9.2,
+    "pid": 46983,
+    "command": "/Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper.app/Contents/MacOS/Code Helper"
+  },
+  {
+    "cpuPercent": 8.8,
+    "pid": 25821,
+    "command": "/Applications/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper"
+  },
+  {
+    "cpuPercent": 7.6,
+    "pid": 49453,
+    "command": "agy"
+  },
+  {
+    "cpuPercent": 7.5,
+    "pid": 38040,
+    "command": "postgres: lijie cc04_wake_kernel_reg_test 127.0.0.1(60586) idle in transaction"
+  },
+  {
+    "cpuPercent": 5.9,
+    "pid": 74240,
+    "command": "/System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine"
+  },
+  {
+    "cpuPercent": 5.4,
+    "pid": 38032,
+    "command": "postgres: lijie cc04_wake_events_reg_test 127.0.0.1(60576) idle"
+  }
+]

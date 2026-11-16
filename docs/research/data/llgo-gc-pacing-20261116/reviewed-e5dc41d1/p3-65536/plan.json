@@ -1,0 +1,21 @@
+{
+  "blocks": 20,
+  "samples": 20,
+  "batchRequests": 512,
+  "seed": 202611150601,
+  "payloadBytes": 65536,
+  "variants": {
+    "base": "/private/tmp/llgo-p3-gc-reviewed-base-20261116",
+    "head": "/private/tmp/llgo-p3-gc-reviewed-fix-20261116"
+  },
+  "source": "Frozen wasmvm393bf75c; main5860fb6f9 versus native BDWGC pacing PR3120 heade5dc41d1da1cfa27343f2688612dbe3980413730; both compiled with the same final compiler executable; LLVM22.1.8, Go1.27.3, -O3/fullLTO, GOGC100, normal GC.",
+  "scope": "Fixed20blocks/80processes per payload with identical-binary controls and 20 interleaved batches; focused GC diagnostic, not portfolio acceptance. All phases and adverse controls retained.",
+  "binarySHA256": {
+    "base": "d3f9ba70368e4416b70e2440e85b9dd02ec6808b40d37c664318f9683e262067",
+    "head": "bf467d76bde9dd673bc93801b498cf8e43d543fb7bb0e181a04b939b9cd0ef83"
+  },
+  "machTimebase": {
+    "numer": 125,
+    "denom": 3
+  }
+}

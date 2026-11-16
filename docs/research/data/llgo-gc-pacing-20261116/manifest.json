@@ -1,0 +1,34 @@
+{
+  "heap-floor-rejected/16": {
+    "rawGzipSha256": "bf12fc6fc40d50e72c1b7fb015a8978777feec181773bce65ee9229e2ce9c0c2",
+    "projection": "Only RequestNs and PublicAPINs vectors replaced by count/range/canonical JSON digest; all other fields retained."
+  },
+  "heap-floor-rejected/65536": {
+    "rawGzipSha256": "0d52667513aeae9ae5ef5ba34dce1e1c8b45fe3e0956fbccb7efe8afaa9aaf21",
+    "projection": "Only RequestNs and PublicAPINs vectors replaced by count/range/canonical JSON digest; all other fields retained."
+  },
+  "scan-prototype/16": {
+    "rawGzipSha256": "d04a4711d59022400766b148e578ee2b7dc95411be18073a24e6079e908a83a6",
+    "projection": "Only RequestNs and PublicAPINs vectors replaced by count/range/canonical JSON digest; all other fields retained."
+  },
+  "scan-prototype/65536": {
+    "rawGzipSha256": "9f5f19de50fd4956aa0c2dc253fb04b4b35924c660cc6b04cd3e080ea6c5aaa0",
+    "projection": "Only RequestNs and PublicAPINs vectors replaced by count/range/canonical JSON digest; all other fields retained."
+  },
+  "pre-review-360f6026/16": {
+    "rawGzipSha256": "be0b9fe8718086db69f2b46113b5636b1a84485d619fe63b67b5698a1d747b66",
+    "projection": "Only RequestNs and PublicAPINs vectors replaced by count/range/canonical JSON digest; all other fields retained."
+  },
+  "pre-review-360f6026/65536": {
+    "rawGzipSha256": "38d38956f0333a360d354264827b76e5b63486069267561c530df537ebbe37ab",
+    "projection": "Only RequestNs and PublicAPINs vectors replaced by count/range/canonical JSON digest; all other fields retained."
+  },
+  "reviewed-e5dc41d1/16": {
+    "rawGzipSha256": "bda6ac6ba6589d7091a6106c2d03d03b5ed69d935468ad9441e70756f66ccb25",
+    "projection": "Only RequestNs and PublicAPINs vectors replaced by count/range/canonical JSON digest; all other fields retained."
+  },
+  "reviewed-e5dc41d1/65536": {
+    "rawGzipSha256": "d6ba71f28ce31e6b57f6209efc8b1a3bfdcd7f2e0217777b8452682b0d160ba5",
+    "projection": "Only RequestNs and PublicAPINs vectors replaced by count/range/canonical JSON digest; all other fields retained."
+  }
+}

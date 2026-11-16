@@ -1,0 +1,82 @@
+[
+  {
+    "cpuPercent": 546.8,
+    "pid": 74800,
+    "command": "/Users/lijie/Library/Android/sdk/emulator/qemu/darwin-aarch64/qemu-system-aarch64-headless"
+  },
+  {
+    "cpuPercent": 157.8,
+    "pid": 75731,
+    "command": "node"
+  },
+  {
+    "cpuPercent": 148.6,
+    "pid": 75575,
+    "command": "/var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build409016014/b339/preview2.test"
+  },
+  {
+    "cpuPercent": 134.9,
+    "pid": 75509,
+    "command": "/var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build409016014/b333/preview1.test"
+  },
+  {
+    "cpuPercent": 101.5,
+    "pid": 75594,
+    "command": "/var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build409016014/b343/preview3.test"
+  },
+  {
+    "cpuPercent": 89.9,
+    "pid": 75385,
+    "command": "/var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build409016014/b309/execute.test"
+  },
+  {
+    "cpuPercent": 82.8,
+    "pid": 75742,
+    "command": "/opt/homebrew/bin/ld64.lld"
+  },
+  {
+    "cpuPercent": 52.2,
+    "pid": 82172,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/ApplicationsStorageExtension.appex/Contents/MacOS/ApplicationsStorageExtension"
+  },
+  {
+    "cpuPercent": 33.2,
+    "pid": 1582,
+    "command": "/Applications/iTerm.app/Contents/MacOS/iTerm2"
+  },
+  {
+    "cpuPercent": 23.6,
+    "pid": 614,
+    "command": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+  },
+  {
+    "cpuPercent": 20.9,
+    "pid": 75736,
+    "command": "/Users/lijie/source/dast.ai/dast-os-main-chat-implementation/apps/ui/node_modules/@esbuild/darwin-arm64/bin/esbuild"
+  },
+  {
+    "cpuPercent": 16.5,
+    "pid": 47276,
+    "command": "/System/Library/ExtensionKit/Extensions/Storage.appex/Contents/MacOS/Storage"
+  },
+  {
+    "cpuPercent": 15.7,
+    "pid": 2169,
+    "command": "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd"
+  },
+  {
+    "cpuPercent": 8.9,
+    "pid": 25821,
+    "command": "/Applications/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper"
+  },
+  {
+    "cpuPercent": 6.4,
+    "pid": 54505,
+    "command": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  },
+  {
+    "cpuPercent": 5.6,
+    "pid": 74240,
+    "command": "/System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine"
+  }
+]

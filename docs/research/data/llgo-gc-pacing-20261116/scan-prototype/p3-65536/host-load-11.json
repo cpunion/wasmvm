@@ -1,0 +1,82 @@
+[
+  {
+    "cpuPercent": 95.9,
+    "pid": 34149,
+    "command": "/var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build4018435787/b001/dastos.test"
+  },
+  {
+    "cpuPercent": 87.5,
+    "pid": 82172,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/ApplicationsStorageExtension.appex/Contents/MacOS/ApplicationsStorageExtension"
+  },
+  {
+    "cpuPercent": 85.3,
+    "pid": 33842,
+    "command": "/var/folders/wb/8zzrvxd56294wxlxxbpws9440000gn/T/go-build1012534591/b001/os.test"
+  },
+  {
+    "cpuPercent": 64.4,
+    "pid": 82145,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/StorageManagementService"
+  },
+  {
+    "cpuPercent": 59.7,
+    "pid": 38112,
+    "command": "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python"
+  },
+  {
+    "cpuPercent": 39.0,
+    "pid": 614,
+    "command": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+  },
+  {
+    "cpuPercent": 29.1,
+    "pid": 47276,
+    "command": "/System/Library/ExtensionKit/Extensions/Storage.appex/Contents/MacOS/Storage"
+  },
+  {
+    "cpuPercent": 24.9,
+    "pid": 2169,
+    "command": "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd"
+  },
+  {
+    "cpuPercent": 23.1,
+    "pid": 1582,
+    "command": "/Applications/iTerm.app/Contents/MacOS/iTerm2"
+  },
+  {
+    "cpuPercent": 17.6,
+    "pid": 47808,
+    "command": "/Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper.app/Contents/MacOS/Code Helper"
+  },
+  {
+    "cpuPercent": 12.6,
+    "pid": 93682,
+    "command": "/Applications/ego lite.app/Contents/Frameworks/ego Framework.framework/Versions/0.6.3.14/Helpers/ego Helper (Aperitif Renderer).app/Contents/MacOS/ego Helper (Aperitif Renderer)"
+  },
+  {
+    "cpuPercent": 8.2,
+    "pid": 38525,
+    "command": "postgres: lijie cc04_wake_events_reg_test 127.0.0.1(60682) idle in transaction"
+  },
+  {
+    "cpuPercent": 7.8,
+    "pid": 49453,
+    "command": "agy"
+  },
+  {
+    "cpuPercent": 6.6,
+    "pid": 46983,
+    "command": "/Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper.app/Contents/MacOS/Code Helper"
+  },
+  {
+    "cpuPercent": 6.1,
+    "pid": 74240,
+    "command": "/System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine"
+  },
+  {
+    "cpuPercent": 5.5,
+    "pid": 25821,
+    "command": "/Applications/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper"
+  }
+]

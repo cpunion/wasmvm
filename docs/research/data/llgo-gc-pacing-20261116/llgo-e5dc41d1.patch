@@ -1,0 +1,623 @@
+diff --git a/doc/native-gc-pacing.md b/doc/native-gc-pacing.md
+new file mode 100644
+index 000000000..47a48ac7b
+--- /dev/null
++++ b/doc/native-gc-pacing.md
+@@ -0,0 +1,59 @@
++# Native collection pacing
++
++Native LLGo programs require BDWGC (libgc) 8.2 or newer. Older releases are not
++supported by this policy. Its scan-cost heuristic weights traced and
++pointer-free allocations differently. Reducing temporary allocations can shrink
++the initial heap and the next allocation budget, making an unchanged steady
++workload collect more frequently (issue #3106).
++
++LLGo adds an allocation-budget floor after initialization and each completed
++collection:
++
++```
++p = last active non-negative GOGC percentage (initially 100)
++heap budget = clamp(max(4 MiB, occupied heap blocks) * p / 100, 1, SIZE_MAX/2)
++divisor = p == 0 ? UINTPTR_MAX : max(1, ceil(100 / p))
++effective budget = max(BDWGC scan-work estimate / divisor, heap budget, preexisting minimum)
++```
++
++Occupied blocks are a conservative estimate from BDWGC's heap statistics, not
++an exact measurement of live Go objects. The floor includes pointer-free storage
++and the minimum heap budget avoids excessive collection in small heaps. It can
++increase physical memory use in exchange for less collection work. It does not
++allocate an artificial warmup heap or change the root set.
++
++The collector's scan-cost budget also participates: at GOGC=100 it permits its
++full scan-work estimate between collections, rather than BDWGC's default one
++third. This includes the fixed cost of scanning roots, which a heap-only floor
++cannot account for. Other percentages map to the collector's integer free-space
++divisor, rounded toward more frequent collection. The divisor remains 1 for
++percentages of 100 or greater; the occupied-heap floor continues to scale with
++the full percentage. A zero percentage sets the heap floor to one byte.
++
++The divisor also controls BDWGC's heap expansion step, approximately the current
++heap size divided by the divisor before collector limits are applied. At the
++default percentage this can grow the heap by about its current size, rather than
++about one third. Both this expansion and the allocation budget can increase
++managed and physical heap footprints; the percentage is a memory/time tradeoff.
++
++`GOGC` defaults to 100. `GOGC=off` and negative `debug.SetGCPercent` values disable
++automatic collection; explicit `runtime.GC` remains available. Changing the
++percentage is synchronized and returns the previous value. BDWGC can retain its
++current scan-cost estimate until the next collection, so a percentage change is
++not an exact heap-size limit. Disabling GC preserves the active budget, so
++restoring the same percentage does not force a collection. Small reductions can
++retain the preceding estimate for one cycle. A substantially lower target or a
++lowered target already exceeded by allocations refreshes the estimate with a
++collection outside the policy lock, so finalizers can reenter the API.
++Existing `GC_disable` nesting and an automatic-collection disable already set by
++the host at policy initialization are preserved.
++
++The collection callback performs only C arithmetic and uses the collector's
++unsynchronized statistics API while holding its allocation lock. It neither
++allocates nor calls Go code, and preserves a previously installed event callback.
++No work is added to ordinary allocation calls.
++
++This policy applies to native BDWGC builds. WebAssembly, bare-metal and `nogc`
++builds keep their existing collector policies. `debug.SetMemoryLimit` is not
++implemented by this change. The heap budget covers collector-managed blocks;
++it does not bound process RSS, foreign allocations or JIT/linear memory.
+diff --git a/internal/build/gc_policy_test.go b/internal/build/gc_policy_test.go
+new file mode 100644
+index 000000000..2386a576c
+--- /dev/null
++++ b/internal/build/gc_policy_test.go
+@@ -0,0 +1,50 @@
++//go:build darwin || linux
++
++package build
++
++import (
++	"os"
++	"os/exec"
++	"path/filepath"
++	"strings"
++	"testing"
++)
++
++func TestBDWGCAllocationPolicy(t *testing.T) {
++	if out, err := exec.Command("pkg-config", "--atleast-version=8.2.0", "bdw-gc").CombinedOutput(); err != nil {
++		t.Fatalf("native GC tests require BDWGC >= 8.2.0: %v\n%s", err, out)
++	}
++	flags, err := exec.Command("pkg-config", "--libs", "bdw-gc").Output()
++	if err != nil {
++		t.Fatal("native GC tests require bdw-gc pkg-config metadata:", err)
++	}
++	output := filepath.Join(t.TempDir(), "gc-policy")
++	args := []string{"-std=c11", "-Wall", "-Wextra", "-Werror", "../../runtime/internal/clite/bdwgc/_test/gc_policy_test.c", "-o", output}
++	args = append(args, strings.Fields(string(flags))...)
++	if out, err := exec.Command("clang", args...).CombinedOutput(); err != nil {
++		t.Fatalf("compile BDWGC policy test: %v\n%s", err, out)
++	}
++	cmd := exec.Command(output)
++	cmd.Env = append(os.Environ(), "GOGC=100")
++	if out, err := cmd.CombinedOutput(); err != nil {
++		t.Fatalf("execute BDWGC policy test: %v\n%s", err, out)
++	}
++	cmd = exec.Command(output, "host-disabled")
++	cmd.Env = append(os.Environ(), "GOGC=100")
++	if out, err := cmd.CombinedOutput(); err != nil {
++		t.Fatalf("preserve host automatic-collection disablement: %v\n%s", err, out)
++	}
++	for _, test := range []struct{ input, want string }{
++		{"off", "-1"}, {"-2", "-1"}, {"0", "0"}, {"25", "25"},
++		{"", "100"}, {"bad", "100"}, {"2147483648", "100"},
++		{"+25", "25"}, {" 25", "100"}, {"25 ", "100"},
++	} {
++		t.Run("GOGC="+test.input, func(t *testing.T) {
++			cmd := exec.Command(output, test.want)
++			cmd.Env = append(os.Environ(), "GOGC="+test.input)
++			if out, err := cmd.CombinedOutput(); err != nil {
++				t.Fatalf("initialize policy from environment: %v\n%s", err, out)
++			}
++		})
++	}
++}
+diff --git a/runtime/internal/clite/bdwgc/_test/gc_policy_test.c b/runtime/internal/clite/bdwgc/_test/gc_policy_test.c
+new file mode 100644
+index 000000000..3146432ce
+--- /dev/null
++++ b/runtime/internal/clite/bdwgc/_test/gc_policy_test.c
+@@ -0,0 +1,90 @@
++#include <assert.h>
++#include <stdio.h>
++#include <string.h>
++#include "../_wrap/gc_policy.c"
++
++extern void GC_init(void);
++extern void GC_gcollect(void);
++extern uintptr_t GC_get_gc_no(void);
++extern void *GC_malloc_atomic(size_t);
++extern int GC_get_disable_automatic_collection(void);
++extern uintptr_t GC_get_free_space_divisor(void);
++
++static unsigned previous_callbacks;
++static void previous_event(int event) { if (event == 5) ++previous_callbacks; }
++static void *volatile sink;
++
++int main(int argc, char **argv)
++{
++    assert(llgo_gc_budget(0, 100) == 4u << 20);
++    assert(llgo_gc_budget(8u << 20, 100) == 8u << 20);
++    assert(llgo_gc_budget(8u << 20, 50) == 4u << 20);
++    assert(llgo_gc_budget(SIZE_MAX, 200) == SIZE_MAX);
++    assert(llgo_gc_budget(SIZE_MAX, INT32_MAX) == SIZE_MAX);
++    assert(llgo_gc_budget(SIZE_MAX, 100) == SIZE_MAX);
++    assert(llgo_gc_budget(0, 0) == 1);
++
++    GC_init();
++    if (argc == 2 && strcmp(argv[1], "host-disabled") == 0) {
++        GC_set_disable_automatic_collection(1);
++        llgo_gc_init_policy();
++        assert(GC_get_disable_automatic_collection());
++        assert(llgo_gc_set_percent(-1) == 100);
++        assert(llgo_gc_set_percent(100) == -1);
++        assert(GC_get_disable_automatic_collection());
++        return 0;
++    }
++    GC_set_on_collection_event(previous_event);
++    llgo_gc_init_policy();
++    llgo_gc_init_policy(); /* Must not chain the callback to itself. */
++    if (argc == 2) {
++        assert(llgo_gc_set_percent(100) == atoi(argv[1]));
++        return 0;
++    }
++    assert(GC_get_min_bytes_allocd() >= 4u << 20);
++    assert(GC_get_free_space_divisor() == 1);
++    assert(llgo_gc_set_percent(-2) == 100);
++    assert(GC_get_disable_automatic_collection());
++    uintptr_t before = GC_get_gc_no();
++    for (int i = 0; i < 8192; ++i) {
++        sink = GC_malloc_atomic(4096);
++        assert(sink != NULL);
++    }
++    assert(GC_get_gc_no() == before);
++    GC_gcollect();
++    assert(GC_get_gc_no() > before);
++    assert(previous_callbacks > 0);
++    assert(llgo_gc_set_percent(0) == -1);
++    assert(!GC_get_disable_automatic_collection());
++    before = GC_get_gc_no();
++    for (int i = 0; i < 16384; ++i) {
++        sink = GC_malloc_atomic(4096);
++        assert(sink != NULL);
++    }
++    assert(GC_get_gc_no() > before);
++    assert(llgo_gc_set_percent(100) == 0);
++    GC_gcollect();
++    before = GC_get_gc_no();
++    assert(llgo_gc_set_percent(-1) == 100);
++    assert(llgo_gc_set_percent(100) == -1);
++    assert(GC_get_gc_no() == before);
++    assert(llgo_gc_set_percent(101) == 100);
++    assert(llgo_gc_set_percent(100) == 101);
++    assert(GC_get_gc_no() == before);
++    assert(llgo_gc_set_percent(25) == 100);
++    assert(llgo_gc_set_percent(-1) == 25);
++    assert(GC_get_free_space_divisor() == 4);
++    before = GC_get_gc_no();
++    assert(llgo_gc_set_percent(25) == -1);
++    assert(GC_get_gc_no() == before);
++    assert(llgo_gc_set_percent(100) == 25);
++    assert(llgo_gc_set_percent(INT32_MAX) == 100);
++    /* Prime the collector's cached threshold with the large percentage. */
++    for (int i = 0; i < 128; ++i)
++        sink = GC_malloc_atomic(4096);
++    before = GC_get_gc_no();
++    assert(llgo_gc_set_percent(100) == INT32_MAX);
++    assert(GC_get_gc_no() > before);
++    puts("BDWGC policy: budget, overflow, callback, explicit GC and resume pass");
++    return 0;
++}
+diff --git a/runtime/internal/clite/bdwgc/_wrap/gc_policy.c b/runtime/internal/clite/bdwgc/_wrap/gc_policy.c
+new file mode 100644
+index 000000000..db74cee45
+--- /dev/null
++++ b/runtime/internal/clite/bdwgc/_wrap/gc_policy.c
+@@ -0,0 +1,179 @@
++/* Native BDWGC pacing. No Go code or allocation runs under the collector lock. */
++#if defined(_WIN32)
++#define _CRT_SECURE_NO_WARNINGS 1
++#define WIN32_LEAN_AND_MEAN
++#include <windows.h>
++#else
++#include <sched.h>
++#endif
++#include <stdint.h>
++#include <stddef.h>
++#include <stdlib.h>
++#include <errno.h>
++#include <stdatomic.h>
++
++/* This stable prefix is deliberately smaller than GC_prof_stats_s. The API
++ * accepts the caller's size, including clients built against older headers. */
++typedef struct {
++    uintptr_t heap_size;
++    uintptr_t free_bytes;
++    uintptr_t unmapped_bytes;
++} llgo_gc_stats;
++
++typedef void (*llgo_gc_event_fn)(int);
++extern void GC_set_on_collection_event(llgo_gc_event_fn);
++extern llgo_gc_event_fn GC_get_on_collection_event(void);
++extern size_t GC_get_prof_stats_unsafe(llgo_gc_stats *, size_t);
++extern void *GC_call_with_alloc_lock(void *(*)(void *), void *);
++extern void GC_set_min_bytes_allocd(size_t);
++extern size_t GC_get_min_bytes_allocd(void);
++extern void GC_set_free_space_divisor(uintptr_t);
++extern uintptr_t GC_get_free_space_divisor(void);
++extern void GC_set_disable_automatic_collection(int);
++extern int GC_get_disable_automatic_collection(void);
++extern uintptr_t GC_get_bytes_since_gc(void);
++extern void GC_gcollect(void);
++
++static int32_t llgo_gc_percent = 100;
++static int32_t llgo_gc_budget_percent = 100;
++static int llgo_gc_host_automatic_disabled;
++static size_t llgo_gc_original_min;
++static llgo_gc_event_fn llgo_gc_previous_event;
++static atomic_flag llgo_gc_policy_lock = ATOMIC_FLAG_INIT;
++static atomic_int llgo_gc_policy_initialized;
++
++static void llgo_gc_yield(void)
++{
++#if defined(_WIN32)
++    Sleep(0);
++#else
++    sched_yield();
++#endif
++}
++
++static size_t llgo_gc_budget(size_t live, int32_t percent)
++{
++    size_t base = live > (4u << 20) ? live : (4u << 20);
++    size_t result;
++    if (percent < 0)
++        return SIZE_MAX;
++    if (percent == 0)
++        return 1;
++    /* Divide first, preserving the remainder, without overflowing size_t. */
++    if (base / 100 > SIZE_MAX / (uint32_t)percent)
++        return SIZE_MAX;
++    result = (base / 100) * (uint32_t)percent;
++    uint64_t remainder = (uint64_t)(base % 100) * (uint32_t)percent / 100;
++    return remainder > SIZE_MAX - result ? SIZE_MAX : result + (size_t)remainder;
++}
++
++/* Both the collection callback and call_with_alloc_lock hold the GC lock.
++ * Use the unsynchronized statistics API and setter here: the synchronized
++ * variants would deadlock. Block occupancy is a conservative live estimate,
++ * not an exact object count; BDWGC's own scan-cost budget is still a floor. */
++static size_t llgo_gc_update_budget(void)
++{
++    llgo_gc_stats stats = {0, 0, 0};
++    if (llgo_gc_original_min == 0)
++        llgo_gc_original_min = GC_get_min_bytes_allocd();
++    size_t filled = GC_get_prof_stats_unsafe(&stats, sizeof(stats));
++    size_t live = filled >= 2 * sizeof(uintptr_t) && stats.heap_size > stats.free_bytes
++        ? stats.heap_size - stats.free_bytes : 0;
++    /* Preserve the last active budget while automatic GC is disabled. A
++     * disable/restore pair must not invalidate the collector's cached target. */
++    size_t budget = llgo_gc_budget(live, llgo_gc_budget_percent);
++    /* Leave room for the collector's expansion arithmetic on 32-bit hosts. */
++    if (budget > SIZE_MAX / 2)
++        budget = SIZE_MAX / 2;
++    /* BDWGC normally permits roughly one third of its estimated scan work
++     * in allocations per collection. GOGC=100 permits the full estimate,
++     * including roots; a heap-only floor misses this fixed scanning cost. */
++    uint32_t percent = (uint32_t)llgo_gc_budget_percent;
++    uintptr_t divisor = percent == 0 ? UINTPTR_MAX : (100u / percent + (100u % percent != 0));
++    GC_set_free_space_divisor(divisor > 0 ? divisor : 1);
++    budget = budget > llgo_gc_original_min ? budget : llgo_gc_original_min;
++    GC_set_min_bytes_allocd(budget);
++    return budget;
++}
++
++static void llgo_gc_collection_event(int event)
++{
++    if (llgo_gc_previous_event != NULL)
++        llgo_gc_previous_event(event);
++    if (event == 5) /* GC_EVENT_END, a stable public enum value. */
++        llgo_gc_update_budget();
++}
++
++typedef struct {
++    int32_t requested;
++    int32_t previous;
++    int refresh;
++} llgo_gc_percent_change;
++
++static void *llgo_gc_change_percent(void *raw)
++{
++    llgo_gc_percent_change *change = raw;
++    int32_t previous_budget = llgo_gc_budget_percent;
++    uintptr_t previous_divisor = GC_get_free_space_divisor();
++    change->previous = llgo_gc_percent;
++    llgo_gc_percent = change->requested;
++    if (change->requested >= 0)
++        llgo_gc_budget_percent = change->requested;
++    size_t budget = llgo_gc_update_budget();
++    /* Small reductions can retain the preceding estimate for one cycle.
++     * Refresh a substantially lower target, or one already exceeded, rather
++     * than allowing a formerly enormous cached budget to persist indefinitely. */
++    change->refresh = change->requested >= 0 && change->requested < previous_budget &&
++        (GC_get_free_space_divisor() > previous_divisor ||
++         (uint64_t)previous_budget > 2 * (uint64_t)change->requested ||
++         GC_get_bytes_since_gc() >= budget);
++    return NULL;
++}
++
++int32_t llgo_gc_set_percent(int32_t percent)
++{
++    llgo_gc_percent_change change = {percent < 0 ? -1 : percent, 0, 0};
++    /* Serialize the two collector operations, including concurrent callers.
++     * Collection callbacks never acquire this outer lock. */
++    while (atomic_flag_test_and_set_explicit(&llgo_gc_policy_lock, memory_order_acquire))
++        llgo_gc_yield();
++    GC_call_with_alloc_lock(llgo_gc_change_percent, &change);
++    GC_set_disable_automatic_collection(llgo_gc_host_automatic_disabled || percent < 0);
++    atomic_flag_clear_explicit(&llgo_gc_policy_lock, memory_order_release);
++    /* BDWGC caches its threshold until the next collection. A lower target
++     * must not remain stuck behind an arbitrarily large previous budget.
++     * Collect outside both locks: finalizers can reenter this API. Startup
++     * configuration does not force a collection during runtime init. */
++    if (atomic_load(&llgo_gc_policy_initialized) == 2 && change.refresh)
++        GC_gcollect();
++    return change.previous;
++}
++
++void llgo_gc_init_policy(void)
++{
++    int expected = 0;
++    if (!atomic_compare_exchange_strong(&llgo_gc_policy_initialized, &expected, 1)) {
++        while (atomic_load(&llgo_gc_policy_initialized) != 2)
++            llgo_gc_yield();
++        return;
++    }
++    const char *value = getenv("GOGC");
++    int32_t percent = 100;
++    if (value != NULL) {
++        if (value[0] == 'o' && value[1] == 'f' && value[2] == 'f' && value[3] == '\0') {
++            percent = -1;
++        } else {
++            char *end;
++            errno = 0;
++            long number = strtol(value, &end, 10);
++            if ((value[0] == '+' || value[0] == '-' || (value[0] >= '0' && value[0] <= '9')) &&
++                errno == 0 && end != value && *end == '\0' && number >= INT32_MIN && number <= INT32_MAX)
++                percent = (int32_t)number;
++        }
++    }
++    llgo_gc_host_automatic_disabled = GC_get_disable_automatic_collection();
++    llgo_gc_previous_event = GC_get_on_collection_event();
++    GC_set_on_collection_event(llgo_gc_collection_event);
++    llgo_gc_set_percent(percent);
++    atomic_store(&llgo_gc_policy_initialized, 2);
++}
+diff --git a/runtime/internal/clite/bdwgc/blocking_files_stub.go b/runtime/internal/clite/bdwgc/blocking_files_stub.go
+new file mode 100644
+index 000000000..4027b4ca9
+--- /dev/null
++++ b/runtime/internal/clite/bdwgc/blocking_files_stub.go
+@@ -0,0 +1,5 @@
++//go:build windows || darwin || wasm || baremetal
++
++package bdwgc
++
++const blockingLLGoFiles = ""
+diff --git a/runtime/internal/clite/bdwgc/blocking_unix.go b/runtime/internal/clite/bdwgc/blocking_unix.go
+index 81be01a65..098b4d908 100644
+--- a/runtime/internal/clite/bdwgc/blocking_unix.go
++++ b/runtime/internal/clite/bdwgc/blocking_unix.go
+@@ -8,7 +8,7 @@ import (
+ 	c "github.com/xgo-dev/llgo/runtime/internal/clite"
+ )
+ 
+-const LLGoFiles = "_wrap/blocking_unix.c"
++const blockingLLGoFiles = "_wrap/blocking_unix.c"
+ 
+ // CondWait preserves the caller's roots without suspending the blocked thread
+ // during collection. It restores the active GC state before returning.
+diff --git a/runtime/internal/clite/bdwgc/config_default.go b/runtime/internal/clite/bdwgc/config_default.go
+index 192ac110e..946426b02 100644
+--- a/runtime/internal/clite/bdwgc/config_default.go
++++ b/runtime/internal/clite/bdwgc/config_default.go
+@@ -1,3 +1,5 @@
+ package bdwgc
+ 
+ const LLGoPackage = "link: $(pkg-config --libs bdw-gc); -lgc"
++
++const LLGoFiles = blockingLLGoFiles + gcPolicyLLGoFiles
+diff --git a/runtime/internal/clite/bdwgc/gc_policy.go b/runtime/internal/clite/bdwgc/gc_policy.go
+new file mode 100644
+index 000000000..ecc8a6763
+--- /dev/null
++++ b/runtime/internal/clite/bdwgc/gc_policy.go
+@@ -0,0 +1,18 @@
++//go:build !nogc && !baremetal && !wasm
++
++package bdwgc
++
++import _ "unsafe"
++
++const gcPolicyLLGoFiles = "; _wrap/gc_policy.c"
++
++// InitPolicy installs the native collector's allocation budget after GC_init.
++//
++//go:linkname InitPolicy C.llgo_gc_init_policy
++func InitPolicy()
++
++// SetGCPercent returns the previous percentage and updates automatic collection.
++// Explicit GC_gcollect remains available when the percentage is negative.
++//
++//go:linkname SetGCPercent C.llgo_gc_set_percent
++func SetGCPercent(percent int32) int32
+diff --git a/runtime/internal/clite/bdwgc/gc_policy_stub.go b/runtime/internal/clite/bdwgc/gc_policy_stub.go
+new file mode 100644
+index 000000000..03f564009
+--- /dev/null
++++ b/runtime/internal/clite/bdwgc/gc_policy_stub.go
+@@ -0,0 +1,5 @@
++//go:build nogc || baremetal || wasm
++
++package bdwgc
++
++const gcPolicyLLGoFiles = ""
+diff --git a/runtime/internal/lib/runtime/debug_gc_bdwgc.go b/runtime/internal/lib/runtime/debug_gc_bdwgc.go
+new file mode 100644
+index 000000000..66802bb01
+--- /dev/null
++++ b/runtime/internal/lib/runtime/debug_gc_bdwgc.go
+@@ -0,0 +1,7 @@
++//go:build !nogc && !baremetal && !wasm
++
++package runtime
++
++import "github.com/xgo-dev/llgo/runtime/internal/clite/bdwgc"
++
++func setCollectorGCPercent(percent int32) int32 { return bdwgc.SetGCPercent(percent) }
+diff --git a/runtime/internal/lib/runtime/debug_gc_stub.go b/runtime/internal/lib/runtime/debug_gc_stub.go
+new file mode 100644
+index 000000000..2a6e77012
+--- /dev/null
++++ b/runtime/internal/lib/runtime/debug_gc_stub.go
+@@ -0,0 +1,9 @@
++//go:build nogc || baremetal || wasm
++
++package runtime
++
++func setCollectorGCPercent(percent int32) int32 {
++	previous := llgoGCPercent
++	llgoGCPercent = percent
++	return previous
++}
+diff --git a/runtime/internal/lib/runtime/debug_linkname_llgo.go b/runtime/internal/lib/runtime/debug_linkname_llgo.go
+index edac1d957..91f48e8da 100644
+--- a/runtime/internal/lib/runtime/debug_linkname_llgo.go
++++ b/runtime/internal/lib/runtime/debug_linkname_llgo.go
+@@ -31,9 +31,7 @@ func setMaxStack(in int) (out int) {
+ 
+ //go:linkname setGCPercent runtime/debug.setGCPercent
+ func setGCPercent(in int32) (out int32) {
+-	out = llgoGCPercent
+-	llgoGCPercent = in
+-	return out
++	return setCollectorGCPercent(in)
+ }
+ 
+ //go:linkname setPanicOnFault runtime/debug.setPanicOnFault
+diff --git a/runtime/internal/lib/runtime/runtime_gc.go b/runtime/internal/lib/runtime/runtime_gc.go
+index 93d70dada..9f0fdce42 100644
+--- a/runtime/internal/lib/runtime/runtime_gc.go
++++ b/runtime/internal/lib/runtime/runtime_gc.go
+@@ -11,6 +11,7 @@ import (
+ 
+ func init() {
+ 	bdwgc.Init()
++	bdwgc.InitPolicy()
+ 	enableForeignThreadRegistration()
+ }
+ 
+diff --git a/test/go/gc_percent_test.go b/test/go/gc_percent_test.go
+new file mode 100644
+index 000000000..70e56f7a4
+--- /dev/null
++++ b/test/go/gc_percent_test.go
+@@ -0,0 +1,91 @@
++//go:build !wasm && !baremetal && !nogc
++
++package gotest
++
++import (
++	"runtime"
++	"runtime/debug"
++	"sync"
++	"testing"
++)
++
++var gcPercentAllocationSink []byte
++
++//go:noinline
++func gcPercentAllocate(count int) {
++	for range count {
++		gcPercentAllocationSink = make([]byte, 64<<10)
++	}
++}
++
++func TestGCPercentConcurrentExchange(t *testing.T) {
++	old := debug.SetGCPercent(100)
++	defer debug.SetGCPercent(old)
++	const n = 32
++	previous := make(chan int, n)
++	var workers sync.WaitGroup
++	for i := range n {
++		workers.Add(1)
++		go func(value int) {
++			defer workers.Done()
++			previous <- debug.SetGCPercent(value)
++		}(101 + i)
++	}
++	workers.Wait()
++	close(previous)
++	counts := map[int]int{100: 1}
++	for i := range n {
++		counts[101+i]++
++	}
++	for value := range previous {
++		counts[value]--
++	}
++	counts[debug.SetGCPercent(100)]--
++	for value, count := range counts {
++		if count != 0 {
++			t.Fatalf("GC percentage exchanges lost value %d: balance %d", value, count)
++		}
++	}
++}
++
++func TestGCPercentLowersLargeCachedBudget(t *testing.T) {
++	old := debug.SetGCPercent(1<<31 - 1)
++	defer debug.SetGCPercent(old)
++	gcPercentAllocate(16)
++	debug.SetGCPercent(100)
++	var before, after runtime.MemStats
++	runtime.ReadMemStats(&before)
++	gcPercentAllocate(2048)
++	runtime.ReadMemStats(&after)
++	if after.NumGC <= before.NumGC {
++		t.Fatal("lowering GOGC retained the previous enormous collection threshold")
++	}
++	gcPercentAllocationSink = nil
++}
++
++func TestGCPercentControlsAutomaticCollection(t *testing.T) {
++	old := debug.SetGCPercent(-1)
++	defer debug.SetGCPercent(old)
++	var before, after runtime.MemStats
++	runtime.ReadMemStats(&before)
++	gcPercentAllocate(1024)
++	runtime.ReadMemStats(&after)
++	if after.NumGC != before.NumGC {
++		t.Fatalf("automatic collection continued with GOGC off: %d -> %d", before.NumGC, after.NumGC)
++	}
++	runtime.GC()
++	runtime.ReadMemStats(&after)
++	if after.NumGC <= before.NumGC {
++		t.Fatal("disabling automatic GC also disabled explicit runtime.GC")
++	}
++	if previous := debug.SetGCPercent(0); previous != -1 {
++		t.Fatalf("previous GC percentage = %d, want -1", previous)
++	}
++	runtime.ReadMemStats(&before)
++	gcPercentAllocate(2048)
++	runtime.ReadMemStats(&after)
++	if after.NumGC <= before.NumGC {
++		t.Fatal("automatic collection did not resume")
++	}
++	gcPercentAllocationSink = nil
++}

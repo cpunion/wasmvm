@@ -1,0 +1,42 @@
+[
+  {
+    "cpuPercent": 886.9,
+    "pid": 69539,
+    "command": "go"
+  },
+  {
+    "cpuPercent": 42.8,
+    "pid": 614,
+    "command": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+  },
+  {
+    "cpuPercent": 33.1,
+    "pid": 82145,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/StorageManagementService"
+  },
+  {
+    "cpuPercent": 26.5,
+    "pid": 1582,
+    "command": "/Applications/iTerm.app/Contents/MacOS/iTerm2"
+  },
+  {
+    "cpuPercent": 12.5,
+    "pid": 25821,
+    "command": "/Applications/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper"
+  },
+  {
+    "cpuPercent": 12.5,
+    "pid": 69567,
+    "command": "/Applications/ego lite.app/Contents/Frameworks/ego Framework.framework/Versions/0.6.3.14/Helpers/ego Helper (Aperitif Renderer).app/Contents/MacOS/ego Helper (Aperitif Renderer)"
+  },
+  {
+    "cpuPercent": 10.8,
+    "pid": 2169,
+    "command": "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd"
+  },
+  {
+    "cpuPercent": 7.3,
+    "pid": 54505,
+    "command": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  }
+]

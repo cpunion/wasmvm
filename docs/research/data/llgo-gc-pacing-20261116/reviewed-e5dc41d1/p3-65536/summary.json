@@ -1,0 +1,53 @@
+{
+  "plan": {
+    "blocks": 20,
+    "samples": 20,
+    "batchRequests": 512,
+    "seed": 202611150601,
+    "payloadBytes": 65536,
+    "variants": {
+      "base": "/private/tmp/llgo-p3-gc-reviewed-base-20261116",
+      "head": "/private/tmp/llgo-p3-gc-reviewed-fix-20261116"
+    },
+    "source": "Frozen wasmvm393bf75c; main5860fb6f9 versus native BDWGC pacing PR3120 heade5dc41d1da1cfa27343f2688612dbe3980413730; both compiled with the same final compiler executable; LLVM22.1.8, Go1.27.3, -O3/fullLTO, GOGC100, normal GC.",
+    "scope": "Fixed20blocks/80processes per payload with identical-binary controls and 20 interleaved batches; focused GC diagnostic, not portfolio acceptance. All phases and adverse controls retained.",
+    "binarySHA256": {
+      "base": "d3f9ba70368e4416b70e2440e85b9dd02ec6808b40d37c664318f9683e262067",
+      "head": "bf467d76bde9dd673bc93801b498cf8e43d543fb7bb0e181a04b939b9cd0ef83"
+    },
+    "machTimebase": {
+      "numer": 125,
+      "denom": 3
+    }
+  },
+  "summary": {
+    "base": {
+      "cpuUs": 333.87202148437495,
+      "instructions": 2004076.7189941406,
+      "throughput": 14441.735945710145,
+      "allocsPerRequest": 1194.001708984375,
+      "bytesPerRequest": 148240.9859375
+    },
+    "base-aa": {
+      "cpuUs": 331.75096232096354,
+      "instructions": 2145357.905224609,
+      "throughput": 14592.930171482925,
+      "allocsPerRequest": 1194.0017578125,
+      "bytesPerRequest": 148241.009375
+    },
+    "head": {
+      "cpuUs": 274.18748168945314,
+      "instructions": 1885406.9830566407,
+      "throughput": 16264.103633557672,
+      "allocsPerRequest": 1194.001806640625,
+      "bytesPerRequest": 148241.4515625
+    },
+    "head-aa": {
+      "cpuUs": 278.54313354492183,
+      "instructions": 1890383.918359375,
+      "throughput": 16023.717382699253,
+      "allocsPerRequest": 1194.001806640625,
+      "bytesPerRequest": 148242.0296875
+    }
+  }
+}

@@ -1,0 +1,52 @@
+[
+  {
+    "cpuPercent": 145.4,
+    "pid": 82172,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/ApplicationsStorageExtension.appex/Contents/MacOS/ApplicationsStorageExtension"
+  },
+  {
+    "cpuPercent": 69.1,
+    "pid": 31961,
+    "command": "/usr/libexec/spotlightknowledged.updater"
+  },
+  {
+    "cpuPercent": 47.2,
+    "pid": 82145,
+    "command": "/System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/StorageManagementService"
+  },
+  {
+    "cpuPercent": 43.4,
+    "pid": 614,
+    "command": "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+  },
+  {
+    "cpuPercent": 24.4,
+    "pid": 1582,
+    "command": "/Applications/iTerm.app/Contents/MacOS/iTerm2"
+  },
+  {
+    "cpuPercent": 17.9,
+    "pid": 54505,
+    "command": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  },
+  {
+    "cpuPercent": 15.9,
+    "pid": 923,
+    "command": "/usr/sbin/cfprefsd"
+  },
+  {
+    "cpuPercent": 8.7,
+    "pid": 754,
+    "command": "/usr/sbin/coreaudiod"
+  },
+  {
+    "cpuPercent": 8.2,
+    "pid": 70938,
+    "command": "gh"
+  },
+  {
+    "cpuPercent": 5.6,
+    "pid": 25821,
+    "command": "/Applications/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper"
+  }
+]

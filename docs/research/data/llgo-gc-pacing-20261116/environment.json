@@ -1,0 +1,7 @@
+{
+  "hardware": "Apple M4 Max",
+  "macOS": "27.0.1",
+  "go": "go version go1.27.3 darwin/arm64",
+  "llvm": "22.1.8",
+  "bdwgc": "8.2.12"
+}
