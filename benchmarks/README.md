@@ -77,6 +77,12 @@ library objects. Every existing test package and the production LLGo profile
 remain unchanged. This addresses PR-scoped cold caches; it is not a benchmark
 speedup or a reduced semantic matrix.
 
+The reusable `llgo-platform.yml` keeps warmup, nine semantic shards and CLI
+within each platform's dependency graph. Linux shards need only Linux warmup;
+queued macOS capacity does not block them. Package/input validation also checks
+both platform runners and the caller's pinned toolchain inputs. Per-job build
+latency and queue delay remain separate concerns.
+
 The LLGo P3 measurement module has an independent shard on each platform. It
 keeps its original2-minute test timeout and runs once, separating its full-LTO
 link from the thread-compatibility executable. The shard validator covers all32

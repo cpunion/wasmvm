@@ -7,7 +7,7 @@ import subprocess
 import sys
 import tempfile
 
-from ci_shards import ROOT, validate, validate_matrix
+from ci_shards import ROOT, validate, validate_matrix, validate_platforms
 
 
 class ShardsTest(unittest.TestCase):
@@ -54,12 +54,25 @@ class ShardsTest(unittest.TestCase):
 
 
     def test_independent_matrix_preserves_every_shard(self):
-        workflow = (ROOT / '.github/workflows/ci.yml').read_text()
+        workflow = (ROOT / '.github/workflows/llgo-platform.yml').read_text()
         validate_matrix(self.shards, workflow)
         for replacement in ('[]', '["core", "core", "vm", "component", "http", "async"]', '["missing"]'):
             changed = re.sub(r'^        shard: \[[^\n]+\]$', '        shard: ' + replacement, workflow, flags=re.MULTILINE)
             with self.assertRaises(ValueError):
                 validate_matrix(self.shards, changed)
+
+    def test_platforms_do_not_wait_for_each_others_warmup(self):
+        workflow = (ROOT / '.github/workflows/ci.yml').read_text()
+        validate_platforms(workflow)
+        changes = [
+            workflow.replace('  llgo:\n', '  llgo:\n    needs: llgo-libraries\n'),
+            workflow.replace('          - {name: macos-arm64, runner: macos-15}\n', ''),
+            workflow.replace("      go-version: '1.27.3'", "      go-version: '1.0.0'"),
+            workflow.replace('      llgo-revision: ', '      wrong-revision: '),
+        ]
+        for changed in changes:
+            with self.assertRaises(ValueError):
+                validate_platforms(changed)
 
     def test_auxiliary_module_cannot_hide_root_coverage_or_escape_directory(self):
         for mode in ('missing', 'duplicate', 'directory', 'packages', 'root'):

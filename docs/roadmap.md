@@ -114,6 +114,14 @@ values, cancellation, roots and the supported C transition remain required.
 This is the first call-ABI step, not register-argument ABI completion or a
 measured speedup; typed canonical/WASI and the remaining frame work stay open.
 
+The same PR removes an observed CI dependency barrier: Linux libraries finished,
+but every LLGo shard waited while macOS warmup remained queued for over twelve
+minutes. A reusable per-platform workflow retains byte-identical execution steps
+after platform-context renaming, all nine shards, CLI checks, release flags,
+caches, inputs and timeouts. Each platform now depends only on its own warmup.
+This removes cross-platform waiting; it does not establish a shorter final link
+or close the measured 5–10 minute per-job target.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and
