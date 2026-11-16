@@ -8,7 +8,7 @@ on:
       suite:
         description: Benchmark scope (PR families, sustained gates, or diagnostic survey)
         type: choice
-        options: [pr, full, native-simd, survey, routing, p3io, llgo-layout, llgo-poll, llgo-regression, llgo-regression-main, llgo-upgrade]
+        options: [pr, full, native-simd, survey, routing, p3io, llgo-layout, llgo-poll, llgo-regression, llgo-regression-main, llgo-policy-replay, llgo-upgrade]
         default: full
       routing_scope:
         description: Routing groups to measure (routing suite only)
@@ -1020,5 +1020,47 @@ jobs:
         with:
           name: compiler-upgrade-${{ matrix.case.name }}-${{ matrix.cohort }}
           path: upgrade-results/
+          if-no-files-found: error
+          retention-days: 30
+
+  llgo_policy_replay:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'llgo-policy-replay' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-22.04, ubuntu-24.04]
+        cohort: [1, 2]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: control
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 95943842febc2d3571547c72f2d62bc79f232f88
+          path: head
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: llgo-main-regression-ubuntu-22.04
+          run-id: 43782740347
+          github-token: ${{ github.token }}
+          path: frozen
+      - name: Install frozen executable dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgc1 libffi8
+      - name: Replay frozen binaries with paired controls
+        run: python3 -u control/benchmarks/llgo_policy_replay.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: llgo-policy-replay-${{ matrix.runner }}-${{ matrix.cohort }}
+          path: policy-replay/
           if-no-files-found: error
           retention-days: 30
