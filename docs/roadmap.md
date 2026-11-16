@@ -138,6 +138,12 @@ and reader closure still use the shared finalization path. A verified count
 probe removes one read per complete request (3→2 at 16 B, 15→14 at 64 KiB);
 these counts do not establish a CPU or throughput gain.
 
+The production LLGo pin advances separately from `1b44c645` to official main
+`f5e246c8` (integer SIMD interleave/concatenation). Before switching the SDK,
+retain old-compiler phase/P3 binaries for the identical engine source, with
+release flags and hashes. This compiler baseline event is not a speedup claim;
+subsequent source comparisons must compile both sides with the same SDK.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and

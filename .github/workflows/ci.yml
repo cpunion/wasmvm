@@ -20,7 +20,7 @@ concurrency:
 
 env:
   GO_VERSION: '1.27.3'
-  LLGO_REVISION: 1b44c645e6d95263aa9278dcf29866fae199216f
+  LLGO_REVISION: f5e246c815e5d05b5f05b851c79f1339b0b702ed
 
 jobs:
   plan:
@@ -164,7 +164,7 @@ jobs:
       platform: ${{ matrix.platform.name }}
       runner: ${{ matrix.platform.runner }}
       go-version: '1.27.3'
-      llgo-revision: 1b44c645e6d95263aa9278dcf29866fae199216f
+      llgo-revision: f5e246c815e5d05b5f05b851c79f1339b0b702ed
 
   race:
     if: github.event_name != 'push'
