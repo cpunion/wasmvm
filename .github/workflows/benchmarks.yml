@@ -1172,7 +1172,7 @@ jobs:
           import os,json,pathlib,subprocess,shutil,time
           out=pathlib.Path('simd-diagnostic').resolve()
           binary=out/'upstream.exe'
-          result={'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'collectorVersion':subprocess.check_output(['pkg-config','--modversion','bdw-gc'],text=True).strip(),'runs':[]}
+          result={'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'runs':[]}
           for label,settings in [('default',{'GOGC':'100'}),('gogc-off',{'GOGC':'off'}),('collector-off',{'GC_DONT_GC':'1'})]:
               env=dict(os.environ)
               env.pop('GC_DONT_GC',None)
@@ -1193,12 +1193,12 @@ jobs:
                               (out/(label+'.stacks')).write_text(stack.stdout+stack.stderr)
                           except subprocess.TimeoutExpired as e:
                               (out/(label+'.stacks')).write_text('debugger timeout\n'+str(e))
-                      p.kill()
+                      if p.poll() is None: p.kill()
                       p.wait(timeout=10)
-                  result['runs'].append({'label':label,'environment':settings,'exit':p.returncode,'stalled':stalled,'seconds':time.monotonic()-started})
+                  result['runs'].append({'label':label,'environment':settings,'exit':p.returncode,'stalled':stalled,'seconds':time.monotonic()-started,'executed':'=== RUN   TestAdd' in (out/(label+'.stdout')).read_text()})
                   (out/'results.json').write_text(json.dumps(result,indent=2)+'\n')
                   print(result['runs'][-1],flush=True)
-          assert result['runs'][0]['exit']==0
+          assert result['runs'][0]['exit']==0 and result['runs'][0]['executed']
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
