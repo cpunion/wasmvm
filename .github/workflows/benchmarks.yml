@@ -1102,15 +1102,15 @@ jobs:
         working-directory: test/std/weak
         run: |
           python3 -u - <<'PYTHON'
-          import os,json,subprocess,pathlib,shutil,hashlib
+          import os,json,subprocess,pathlib,shutil,hashlib,tempfile
           root=pathlib.Path(os.environ['GITHUB_WORKSPACE'])
           out=root/'weak-diagnostic'
           wasm=out/'weak.wasm'
           cli=shutil.which('wasmer')
           result={'revision':subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip(),'wasmer':subprocess.check_output([cli,'--version'],text=True),'wasmSha256':hashlib.sha256(wasm.read_bytes()).hexdigest(),'processes':[]}
           for i in range(30):
-              cmd=[cli,'run','--enable-exceptions','--enable-simd','--stack-size=1048576','--volume=.','--volume=/tmp',str(wasm),'--','-test.v','-test.count=1']
-              p=subprocess.run(cmd,text=True,capture_output=True,timeout=30)
+              cmd=[cli,'run','--enable-exceptions','--enable-simd','--stack-size=1048576','--volume='+str(pathlib.Path.cwd()),'--volume='+tempfile.gettempdir(),'--env=PWD='+str(pathlib.Path.cwd()),str(wasm),'--','-test.v','-test.count=1']
+              p=subprocess.run(cmd,text=True,capture_output=True,timeout=30,env=dict(os.environ,RUST_LOG='off'))
               result['processes'].append({'index':i,'command':cmd,'exit':p.returncode,'stdout':p.stdout,'stderr':p.stderr})
               (out/'results.json').write_text(json.dumps(result,indent=2)+'\n')
               print(i,'exit',p.returncode,flush=True)
