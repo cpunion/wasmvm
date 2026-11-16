@@ -1168,21 +1168,9 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: llgo-msvc-simd-${{ matrix.label }}
-          run-id: 43797281619
+          run-id: 43803237857
           github-token: ${{ github.token }}
           path: simd-diagnostic
-      - uses: ./.github/actions/setup-go
-        if: matrix.label == 'head'
-      - name: Build candidate and check caller allocation regression
-        if: matrix.label == 'head'
-        shell: python
-        run: |
-          import os,pathlib,subprocess
-          out=pathlib.Path('simd-diagnostic').resolve()
-          cli=pathlib.Path(os.environ['RUNNER_TEMP'])/'unwind-llgo.exe'
-          subprocess.run(['go','build','-o',str(cli),'./cmd/llgo'],check=True)
-          subprocess.run([str(cli),'test','-O2','-c','-o',str(out/'upstream.exe'),'simd/archsimd/internal/simd_test'],check=True)
-          subprocess.run([str(cli),'test','-O2','-v','-run','^TestRuntimeCallersWindowsAllocations$','-count=1','./test/go'],check=True,timeout=240)
       - name: Bound execution and capture stalled native stacks
         shell: python
         run: |
@@ -1208,18 +1196,25 @@ jobs:
           smoke=subprocess.run([lldb,'--version'],env=debugger_env,text=True,capture_output=True)
           print('debugger',lldb,smoke.returncode,smoke.stdout,smoke.stderr,flush=True)
           assert smoke.returncode==0
-          result={'frozenBuildRun':43797281619 if os.environ.get('DIAG_LABEL')=='base'else None,'binarySHA256':hashlib.sha256(binary.read_bytes()).hexdigest(),'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'runs':[]}
-          for label,settings in [('gogc-10',{'GOGC':'10'}),('default',{'GOGC':'100'}),('gogc-off',{'GOGC':'off'})]:
+          cases=[line.strip()for line in pathlib.Path('dev/simd/upstream-archsimd-amd64.txt').read_text().splitlines()if line.strip()and not line.startswith('#')]
+          qualified='^('+'|'.join(cases)+')$'
+          result={'frozenBuildRun':43803237857,'binarySHA256':hashlib.sha256(binary.read_bytes()).hexdigest(),'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'runs':[]}
+          for label,settings,pattern,expected,limit in [
+              ('gogc-10',{'GOGC':'10'},'^TestAdd$',['TestAdd'],30),
+              ('default',{'GOGC':'100'},'^TestAdd$',['TestAdd'],30),
+              ('gogc-off',{'GOGC':'off'},'^TestAdd$',['TestAdd'],30),
+              ('qualified',{'GOGC':'100'},qualified,cases,90),
+          ]:
               env=dict(os.environ)
               env.pop('GC_DONT_GC',None)
               env.pop('GOGC',None)
               env.update(settings)
               with (out/(label+'.stdout')).open('w')as stdout,(out/(label+'.stderr')).open('w')as stderr:
                   started=time.monotonic()
-                  p=subprocess.Popen([str(binary),'-test.v','-test.count=1','-test.timeout=20s','-test.run=^TestAdd$'],stdout=stdout,stderr=stderr,env=env)
+                  p=subprocess.Popen([str(binary),'-test.v','-test.count=1','-test.timeout='+('60s'if label=='qualified'else'20s'),'-test.run='+pattern],stdout=stdout,stderr=stderr,env=env)
                   stalled=False
                   samples=[]
-                  while p.poll() is None and time.monotonic()-started<30:
+                  while p.poll() is None and time.monotonic()-started<limit:
                       samples.append(sample(p))
                       time.sleep(0.25)
                   if p.poll() is None:
@@ -1239,7 +1234,8 @@ jobs:
                               (out/(label+'.stacks')).write_text('debugger timeout\n'+str(e))
                       if p.poll() is None: p.kill()
                       p.wait(timeout=10)
-                  result['runs'].append({'label':label,'environment':settings,'exit':p.returncode,'stalled':stalled,'seconds':time.monotonic()-started,'samples':samples,'executed':'=== RUN   TestAdd' in (out/(label+'.stdout')).read_text()})
+                  output=(out/(label+'.stdout')).read_text()
+                  result['runs'].append({'label':label,'environment':settings,'exit':p.returncode,'stalled':stalled,'seconds':time.monotonic()-started,'samples':samples,'expectedTests':expected,'executed':all('=== RUN   '+name+'\n'in output for name in expected)})
                   (out/'results.json').write_text(json.dumps(result,indent=2)+'\n')
                   print({k:v for k,v in result['runs'][-1].items()if k!='samples'},flush=True)
           assert all(r['exit']==0 and r['executed']for r in result['runs']if r['label']!='gogc-off')
