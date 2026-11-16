@@ -122,6 +122,22 @@ caches, inputs and timeouts. Each platform now depends only on its own warmup.
 This removes cross-platform waiting; it does not establish a shorter final link
 or close the measured 5–10 minute per-job target.
 
+A subsequent private-call increment derives destination indices from an
+immutable prefix at each continuation, removing another repeated address/store
+and shrinking caller records to 24 bytes. Signature checks establish prefix
+length, both architectures retain full-width resume/Used addresses, and large
+tuples use checked complete-value copies with their existing cancellation polls.
+A 1,025-result reversal preserves both opaque value words on both policy tiers.
+This remains an ABI representation step; register argument passing, typed WASI
+bindings and performance acceptance stay open.
+
+The same batch recognizes EOF with the final available immutable HTTP snapshot
+bytes, using the existing data-plus-close stream contract. The ordinary Reader
+API keeps its separate-read EOF behavior. Length validation, trailer publication
+and reader closure still use the shared finalization path. A verified count
+probe removes one read per complete request (3→2 at 16 B, 15→14 at 64 KiB);
+these counts do not establish a CPU or throughput gain.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and

@@ -205,9 +205,16 @@ func (e *functionEmitter) callMeta(parent bool) {
 		e.callStore(0, e.callReg(2), nativeabi.CallChangedOffset)
 		e.a.mark(unchanged)
 	}
-	e.callShift(0, 5)
-	e.callAdd(3, 2, 0)
-	e.callAdvance(3, nativeabi.CallHeaderBytes)
+	if e.a.arch == "amd64" {
+		// RAX *= 3; R8 = view + RAX*8 + header, without an extra shift.
+		e.a.bytes(0x48, 0x8d, 0x04, 0x40)
+		e.a.bytes(0x4c, 0x8d, 0x44, 0xc2, nativeabi.CallHeaderBytes)
+	} else {
+		index, base, dst := uint32(e.callReg(0)), uint32(e.callReg(2)), uint32(e.callReg(3))
+		e.a.word(0x8b000000 | index<<16 | 1<<10 | index<<5 | index)
+		e.a.word(0x8b000000 | index<<16 | 3<<10 | base<<5 | dst)
+		e.callAdvance(3, nativeabi.CallHeaderBytes)
+	}
 }
 func (e *functionEmitter) callCancelled(label int) {
 	e.callLoad(0, e.callContext(), uint32(nativeabi.ControlOffset))

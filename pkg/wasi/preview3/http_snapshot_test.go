@@ -91,10 +91,9 @@ func TestHTTPSnapshotAccountingReadAheadAndContention(t *testing.T) {
 		}
 		if expected != 3 {
 			data, failed, ready = b.readSnapshot(r)
-			if !ready || data != "e" || failed != nil {
+			if !ready || data != "e" || failed == nil {
 				t.Fatal(data, failed, ready)
 			}
-			_, failed, _ = b.readSnapshot(r)
 			if expected == 5 && failed != io.EOF || expected == 7 && failed == io.EOF {
 				t.Fatal(expected, failed)
 			}
@@ -112,6 +111,37 @@ func TestHTTPSnapshotAccountingReadAheadAndContention(t *testing.T) {
 		t.Fatal("trailer panic escaped or retained body", data, err, ready)
 	}
 	b.release()
+}
+
+func TestSnapshotFinalDataClosesBodyAndPublishesTrailers(t *testing.T) {
+	p := httpOwner(t, HTTPConfig{})
+	p.network.io.config.MaxReadBytes = 64
+	b, err := p.newBody()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer b.release()
+	r := &snapshotReader{data: "final bytes"}
+	b.reader = r
+	public := &snapshotReader{data: r.data}
+	buffer := make([]byte, 32)
+	if n, failed := public.Read(buffer); n != len(r.data) || failed != nil {
+		t.Fatal("ordinary Reader EOF contract changed", n, failed)
+	}
+	if _, failed := public.Read(buffer); failed != io.EOF {
+		t.Fatal(failed)
+	}
+	public.Close()
+	publications := 0
+	fields, err := host.NewHTTPFields(p.fields, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.trailerSnapshot = func() (*host.HTTPFields, error) { publications++; return fields, nil }
+	data, failed, ready := b.readSnapshot(r)
+	if !ready || data != "final bytes" || failed != io.EOF || !r.closed || !b.bodyDone || publications != 1 || b.trailersValue != fields {
+		t.Fatal("final immutable bytes did not finish body/trailers", data, failed, ready, publications)
+	}
 }
 
 func TestHTTPSnapshotCancellationAndLimit(t *testing.T) {

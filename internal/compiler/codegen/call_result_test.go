@@ -56,7 +56,7 @@ func TestScalarResultCarrierPreservesCompleteWordsAndLargeSources(t *testing.T) 
 					t.Fatal(err)
 				}
 				address := uint64(uintptr(unsafe.Pointer(unsafe.SliceData(data))))
-				binary.LittleEndian.PutUint64(data[nativeabi.CallDestinationsOffset:], address+64)
+				binary.LittleEndian.PutUint64(data[nativeabi.CallResumeOffset:], address+68)
 				code, err := native.Publish(entry.Code, []uint32{0}, uint64(len(entry.Code)))
 				if err != nil {
 					t.Fatal(err)

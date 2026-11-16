@@ -12,9 +12,10 @@ import (
 
 type CallRelocation struct{ Offset, Function uint32 }
 type nativeCallResume struct {
-	label, pc int
-	plan      *registerPlan
-	result    slots.Slot
+	label, pc    int
+	plan         *registerPlan
+	result       slots.Slot
+	destinations []slots.Slot
 }
 type linkedRelocation struct {
 	label  int
@@ -97,6 +98,10 @@ func (e *functionEmitter) callCopy(count uint32, cancelled int) {
 }
 func (e *functionEmitter) callPlan(label int, indices []slots.Slot) {
 	e.a.mark(label)
+	e.callIndices(indices)
+}
+
+func (e *functionEmitter) callIndices(indices []slots.Slot) {
 	for _, slot := range indices {
 		e.a.word(uint32(slot))
 	}
@@ -132,7 +137,7 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	}
 	a := e.a
 	fallback, cancelled, resume := a.label(), a.label(), a.label()
-	results, inputs, parameters := a.label(), a.label(), a.label()
+	inputs, parameters := a.label(), a.label()
 	if e.nativeFunction == 0 {
 		// Wasm function indices occupy one word in the private call record.
 		// Reject a malformed standalone context instead of truncating its ID.
@@ -229,8 +234,6 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	}
 	e.callAddress(resume, 0)
 	e.callStore(0, e.callReg(3), nativeabi.CallResumeOffset)
-	e.callAddress(results, 0)
-	e.callStore(0, e.callReg(3), nativeabi.CallDestinationsOffset)
 	if e.frameRegisters {
 		e.callAdvance(callTop, 1)
 	} else {
@@ -272,13 +275,13 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 				result = slot
 			}
 		}
-		e.callResumes = append(e.callResumes, nativeCallResume{label: resume, pc: pc + 1, plan: plan, result: result})
+		e.callResumes = append(e.callResumes, nativeCallResume{label: resume, pc: pc + 1, plan: plan, result: result, destinations: e.f.Args[in.Extra+in.Count : uint32(end)]})
 	} else {
+		e.callIndices(e.f.Args[in.Extra+in.Count : uint32(end)])
 		a.mark(resume)
 		e.callEntryFrame(uint64(pc + 1))
 		a.branch(e.linkedStart, false, 0)
 	}
-	e.callPlan(results, e.f.Args[in.Extra+in.Count:uint32(end)])
 	if len(args) > 8 {
 		e.callPlan(inputs, args)
 		a.mark(parameters)
@@ -340,7 +343,7 @@ func (e *functionEmitter) linkedReturn(pc int) {
 		e.callScalarResult(source, hasCached, cancelled)
 	} else if in.Count != 0 {
 		e.callAddress(sources, 6)
-		e.callLoad(7, e.callReg(3), nativeabi.CallDestinationsOffset)
+		e.callDestinations(in.Count)
 		e.callCopy(in.Count, cancelled)
 	}
 	if e.nativeFunction == 0 {
@@ -383,12 +386,25 @@ func (e *functionEmitter) callScalarResult(source slots.Slot, cached bool, cance
 		e.callLoad(1, e.callFrame(), uint32(source)*16)
 	}
 	e.callLoad(2, e.callFrame(), uint32(source)*16+8)
-	e.callLoad(7, e.callReg(3), nativeabi.CallDestinationsOffset)
+	e.callDestinations(1)
 	e.callMemory(0, e.callReg(7), 0, false, true)
 	e.callShift(0, 4)
 	e.callAdd(0, 0, 4)
 	e.callPair(1, 2, e.callReg(0), 0, true)
 	e.callCancelled(cancelled)
+}
+
+// The caller's immutable result indices immediately precede its continuation.
+// Structural signature checks establish the count before a private call.
+func (e *functionEmitter) callDestinations(count uint32) {
+	e.callLoad(7, e.callReg(3), nativeabi.CallResumeOffset)
+	bytes := uint64(count) * 4
+	if bytes <= 4095 || e.a.arch == "amd64" {
+		e.callAdvance(7, -int(bytes))
+	} else {
+		e.callConst(0, bytes)
+		e.callSubtract(7, 0)
+	}
 }
 
 // Private returns have a compiler-known PC and a fully materialized caller
@@ -398,6 +414,7 @@ func (e *functionEmitter) emitCallResumes(pcs []int) {
 	previous := e.currentRegisterPlan()
 	defer e.useRegisterPlan(previous)
 	for _, resume := range e.callResumes {
+		e.callIndices(resume.destinations)
 		e.a.mark(resume.label)
 		e.callEntryFrame(0)
 		var incoming *registerPlan

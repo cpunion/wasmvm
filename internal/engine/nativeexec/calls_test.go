@@ -41,7 +41,7 @@ func callSlots(t *testing.T, d *module.Module, features ...wasm.Features) *slots
 	return m
 }
 
-func callExecution(t *testing.T, s *state.Store, m *slots.Module, in *state.Instance, metered bool, limits execute.Limits) (*execute.Execution, *Execution) {
+func callExecution(t *testing.T, s *state.Store, m *slots.Module, in *state.Instance, metered bool, limits execute.Limits, reserve ...uint32) (*execute.Execution, *Execution) {
 	t.Helper()
 	compiled, err := Compile(context.Background(), m, codegen.DefaultLimits())
 	if err != nil {
@@ -56,13 +56,17 @@ func callExecution(t *testing.T, s *state.Store, m *slots.Module, in *state.Inst
 		t.Fatal(err)
 	}
 	t.Cleanup(lease.Close)
-	n, err := New(context.Background(), map[*slots.Module]*Lease{m: lease}, 2048, 128, metered)
+	reservedSlots := uint32(2048)
+	if len(reserve) != 0 {
+		reservedSlots = reserve[0]
+	}
+	n, err := New(context.Background(), map[*slots.Module]*Lease{m: lease}, reservedSlots, 128, metered)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// Reserve space so the test exercises native pushes before any common
 	// frame-machine growth. Other cases explicitly test bounded exhaustion.
-	if _, err = n.Resize(0, 2048); err != nil {
+	if _, err = n.Resize(0, int(reservedSlots)); err != nil {
 		t.Fatal(err)
 	}
 	e := execute.New(s, nil, execute.Config{Limits: limits, Backend: n, Metered: metered, Fuel: 1000})

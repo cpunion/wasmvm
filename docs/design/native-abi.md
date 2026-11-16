@@ -607,7 +607,7 @@ charged to the ordinary code budget.
 
 A resumed same-instance native chain keeps its previously authenticated prefix
 in both frame machines. The private call-view header stores the lowest changed
-frame index at byte 32, followed by 32-byte caller records at byte 40. Each
+frame index at byte 32, followed by 24-byte caller records at byte 40. Each
 native run initializes this index to its active frame; a pop lowers it when
 necessary. Pushes already belong to that suffix. The counter survives internal
 polls and arena moves within the run.
@@ -622,12 +622,22 @@ continuations and foreign stack changes retire the prefix through the existing
 reset path. This changes neither the external C entry record nor guest limits.
 
 Private caller records encode the module function index and slot PC as adjacent
-little-endian u32 words at offsets 0/4. Used, the native resume address and the
-destination-plan address occupy full-width words at offsets 8/16/24. Known
+little-endian u32 words at offsets 0/4. Used and the native resume address occupy
+full-width words at offsets 8/16. Known
 unmetered bodies publish the function/PC word together; dynamic contexts reject
 function IDs above u32 before entering a linked callee. Publication authenticates
 both decoded halves against the instance/function and code bounds. Logical
 depth, slot quotas and continuation authentication do not depend on record size.
+
+Each continuation has its immutable u32 destination-index vector immediately
+before its code address. Direct, indirect and reference-call type checks establish
+the same result count for caller and callee. The return path derives the vector
+by subtracting four times that count from the continuation address, with a
+full-width subtraction for large tuples. No per-call destination pointer is
+materialized or stored. Zero-result continuations have an empty prefix. Result
+indices stay inside the leased code image and are never executed as instructions.
+The physical record address uses a three-word stride; both encoders combine its
+index scaling with the trusted view base while retaining logical capacity checks.
 
 Complete argument/result transfers remain two integer words. ARM uses LDP/STP
 only for their checked 16-byte span when the offset fits the pair instruction;
