@@ -156,6 +156,15 @@ loads the first residency plan explicitly and branches to the original PC zero;
 failed patches/logs remain. An isolated test poisons register homes and retains
 a nonzero context PC, covering both global and block-specific initial mappings.
 
+The same private-call batch delays writes to retired callee homes. Successful
+returns materialize only copied results and ISA-clobbered integer homes; the
+cold cancellation path materializes all remaining live homes before driver
+publication. Scalar carriers retain opaque high words, vector results copy both
+words, and ordinary returns keep full frame publication. Native tests poison
+old frame storage and work registers to distinguish successful retirement from
+canceled-frame/root recovery. Register parameters and unified acceptance stay
+open.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and

@@ -331,7 +331,7 @@ func (e *functionEmitter) linkedReturn(pc int) {
 		scalar = typ != wasm.F32 && typ != wasm.F64 && typ != wasm.V128
 		cached, hasCached = e.registers[source]
 	}
-	e.spillRegisters()
+	deferred := e.callReturnSpills(in, scalar && hasCached)
 	if scalar && hasCached {
 		// Work word 5 survives parent-metadata preparation. Capture the
 		// already materialized low word without loading its spill again.
@@ -373,6 +373,7 @@ func (e *functionEmitter) linkedReturn(pc int) {
 	if a.arch == "arm64" {
 		a.word(0xd50339bf)
 	}
+	e.spillRegisterSlots(deferred)
 	e.callRawLeave(nativeabi.Return, uint64(pc), uint64(pc))
 	a.mark(fallback)
 	e.leave(nativeabi.Return, uint64(pc), uint64(pc))
@@ -472,4 +473,36 @@ func (e *functionEmitter) callEnvironment() {
 	e.prepareConstants()
 	e.reloadRuntimeRegisters()
 	e.prepareHeapCaches()
+}
+
+// A successful private return retires its child frame. Materialize results and
+// any homes overwritten by the return's work registers now; preserve the rest
+// in registers until the last cancellation poll. The cold exit materializes
+// those surviving homes before exposing the still-live child to the driver.
+func (e *functionEmitter) callReturnSpills(in slots.Instruction, scalarCarrier bool) []slots.Slot {
+	if !e.frameRegisters {
+		e.spillRegisters()
+		return nil
+	}
+	var work [32]bool
+	for n := byte(0); n < 8; n++ {
+		work[e.callReg(n)] = true
+	}
+	results := map[slots.Slot]bool{}
+	if !scalarCarrier {
+		for _, slot := range e.f.Args[in.Extra : in.Extra+in.Count] {
+			results[slot] = true
+		}
+	}
+	var early, deferred []slots.Slot
+	for _, slot := range e.registerSlots {
+		reg, integer := e.registers[slot]
+		if results[slot] || integer && work[reg] {
+			early = append(early, slot)
+		} else {
+			deferred = append(deferred, slot)
+		}
+	}
+	e.spillRegisterSlots(early)
+	return deferred
 }

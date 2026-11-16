@@ -100,10 +100,14 @@ func (e *functionEmitter) registerMove(dst, src byte, wide bool) {
 }
 
 func (e *functionEmitter) spillRegisters() {
+	e.spillRegisterSlots(e.registerSlots)
+}
+
+func (e *functionEmitter) spillRegisterSlots(slots []slots.Slot) {
 	registers, floats := e.registers, e.floatRegisters
 	e.registers, e.floatRegisters = nil, nil
 	// Stable order makes emitted code independent of Go map iteration order.
-	for _, s := range e.registerSlots {
+	for _, s := range slots {
 		if r, ok := e.vectorRegisters[s]; ok {
 			e.vectorMemory(s, r, true)
 			continue

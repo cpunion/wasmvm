@@ -813,3 +813,20 @@ Ordinary host entry retains all header/fuel/state validation and every original
 PC for helper, trap, interrupt and inspection resumption. Metered linked calls
 retain their context-PC dispatch. This shortens shared private entry work; it
 does not yet introduce register parameters or lazy frame materialization.
+
+### Materialize live return frames on exceptional exits
+
+A successful private return retires its child frame. Spill result homes needed
+by complete-value copies and integer homes overwritten by the ISA-specific
+return work registers before that work starts. A cached scalar result keeps
+its existing carrier; canonical high words remain in the frame. Other integer,
+float and vector homes stay in registers until the last return cancellation
+poll, avoiding writes to a frame that is about to become dead.
+
+If cancellation wins, spill the surviving homes before publishing the still-live
+child and its original return PC to the common driver. Homes already overwritten
+by return work must use their earlier materialized copies. Missing-parent and
+ordinary host returns retain full materialization. Code generation shares the
+same ordered slot-spill encoder and keeps the original mapping throughout;
+only the materialization point changes. Full tuple words and host roots remain
+required on every observable exit.
