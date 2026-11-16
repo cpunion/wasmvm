@@ -797,3 +797,19 @@ original instructions. The ARM candidate and wider logical-immediate selection
 were rejected after the combined measurement and causal ablations. SSE2/SSE4.1
 lane forms retain explicit CPU feature gates and exact-width bounds checks;
 shared ordinary memory accesses and every backedge poll remain.
+
+### Fresh private-call entries
+
+Unmetered frame-register modules give each fresh private call a PC-zero entry.
+The caller still checks depth, slot quotas, physical capacity and structural
+signatures, initializes the whole child frame, and establishes its frame base.
+The ordinary entry has already established the immutable policy/root-map
+contract for this native run. Fresh entry shares private-return restoration of
+memory bindings, vector/integer literals, runtime words and heap cache keys,
+then selects the original first PC and its allocation plan directly. It neither
+stores nor reads a context continuation solely to rediscover PC zero.
+
+Ordinary host entry retains all header/fuel/state validation and every original
+PC for helper, trap, interrupt and inspection resumption. Metered linked calls
+retain their context-PC dispatch. This shortens shared private entry work; it
+does not yet introduce register parameters or lazy frame materialization.

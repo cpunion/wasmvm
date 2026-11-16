@@ -144,6 +144,18 @@ retain old-compiler phase/P3 binaries for the identical engine source, with
 release flags and hashes. This compiler baseline event is not a speedup claim;
 subsequent source comparisons must compile both sides with the same SDK.
 
+The next shared-call step gives checked unmetered fresh calls an explicit
+PC-zero entry, reusing the existing private-return binding restoration. It
+removes the repeated context continuation store/load and fresh-call dispatch;
+ordinary host resumptions and precise-fuel policies retain their checked entry
+and all original PCs. Tests also enter calls from a nonzero cold PC. Register
+parameters, lazy frames, typed canonical/WASI and unified acceptance remain open.
+The first local experiment still routed through allocation-entry stubs that
+reload the context PC, causing complex CLI/WASI failures. The corrected entry
+loads the first residency plan explicitly and branches to the original PC zero;
+failed patches/logs remain. An isolated test poisons register homes and retains
+a nonzero context PC, covering both global and block-specific initial mappings.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and

@@ -242,7 +242,9 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 		e.callStore(0, e.callReg(2), nativeabi.CallTopOffset)
 	}
 	e.callPushState()
-	e.contextConst(nativeabi.ContinuationOffset, 0)
+	if !e.frameRegisters {
+		e.contextConst(nativeabi.ContinuationOffset, 0)
+	}
 	if indirect {
 		e.callLoad(1, e.callContext(), uint32(nativeabi.PayloadOffset))
 		if e.nativeFunction == 0 {
@@ -426,20 +428,48 @@ func (e *functionEmitter) emitCallResumes(pcs []int) {
 				incoming = &registerPlan{homes: map[slots.Slot]byte{resume.result: reg}, slots: []slots.Slot{resume.result}}
 			}
 		}
-		if e.usesMemory && (!e.memoryViews || e.sharedDefaultMemory) {
-			// Match the ordinary pre-allocation entry: cached runtime words
-			// still belong to the callee until the reload below.
-			runtimeRegisters := e.runtimeRegisters
-			e.runtimeRegisters = nil
-			e.prepareMemory()
-			e.runtimeRegisters = runtimeRegisters
-		}
-		e.reloadVectorConstants()
-		e.prepareConstants()
-		e.reloadRuntimeRegisters()
-		e.prepareHeapCaches()
+		e.callEnvironment()
 		e.useRegisterPlan(incoming)
 		e.transitionRegisters(resume.plan)
 		e.a.branch(pcs[resume.pc], false, 0)
 	}
+}
+
+// A fresh private call has a checked, initialized frame and policy established
+// by the ordinary entry. Reuse the same binding setup as private returns, then
+// enter the first original PC without a context-PC load or dispatch. Cold host
+// resumptions retain the ordinary checked entry and all original continuations.
+func (e *functionEmitter) emitCallStart(pcs []int, initial *registerPlan) int {
+	if !e.frameRegisters {
+		return e.linkedStart
+	}
+	previous := e.currentRegisterPlan()
+	defer e.useRegisterPlan(previous)
+	entry := e.a.label()
+	e.a.mark(entry)
+	e.useRegisterPlan(nil)
+	e.callEnvironment()
+	if e.allocationPlans != nil {
+		initial = e.allocationPlans[0]
+	}
+	// Allocation entry stubs reload and dispatch an arbitrary context PC.
+	// Fresh calls establish only the first plan, then enter the original PC.
+	e.transitionRegisters(initial)
+	e.a.branch(pcs[0], false, 0)
+	return entry
+}
+
+func (e *functionEmitter) callEnvironment() {
+	if e.usesMemory && (!e.memoryViews || e.sharedDefaultMemory) {
+		// Match the ordinary pre-allocation entry: cached runtime words
+		// still belong to the callee until the reload below.
+		runtimeRegisters := e.runtimeRegisters
+		e.runtimeRegisters = nil
+		e.prepareMemory()
+		e.runtimeRegisters = runtimeRegisters
+	}
+	e.reloadVectorConstants()
+	e.prepareConstants()
+	e.reloadRuntimeRegisters()
+	e.prepareHeapCaches()
 }
