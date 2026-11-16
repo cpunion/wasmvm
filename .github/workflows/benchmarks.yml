@@ -1138,6 +1138,7 @@ jobs:
     timeout-minutes: 25
     permissions:
       contents: read
+      actions: read
     env:
       LLGO_ROOT: ${{ github.workspace }}
       GOEXPERIMENT: simd
@@ -1155,24 +1156,36 @@ jobs:
           windows-abi: msvc
           windows-arch: amd64
           windows-msvc-dependencies: runtime
-      - uses: ./.github/actions/setup-go
-      - name: Build the exact native upstream test module
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force simd-diagnostic | Out-Null
-          go build -o "$env:RUNNER_TEMP/diag-llgo.exe" ./cmd/llgo
-          if ($LASTEXITCODE -ne 0) { throw 'compiler build failed' }
-          go test -v -count=1 -timeout=2m -run='^TestAdd$' simd/archsimd/internal/simd_test
-          if ($LASTEXITCODE -ne 0) { throw 'Go reference failed' }
-          & "$env:RUNNER_TEMP/diag-llgo.exe" test -O2 -c -o "$env:GITHUB_WORKSPACE/simd-diagnostic/upstream.exe" simd/archsimd/internal/simd_test
-          if ($LASTEXITCODE -ne 0) { throw 'LLGo test compilation failed' }
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          architecture: x64
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: llgo-msvc-simd-${{ matrix.label }}
+          run-id: 43797281619
+          github-token: ${{ github.token }}
+          path: simd-diagnostic
       - name: Bound execution and capture stalled native stacks
         shell: python
         run: |
-          import os,json,pathlib,subprocess,shutil,time
+          import os,json,pathlib,subprocess,shutil,time,ctypes,hashlib
+          from ctypes import wintypes
           out=pathlib.Path('simd-diagnostic').resolve()
           binary=out/'upstream.exe'
-          result={'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'runs':[]}
+          class Memory(ctypes.Structure):
+              _fields_=[('cb',wintypes.DWORD),('faults',wintypes.DWORD)]+[(name,ctypes.c_size_t)for name in ['peakWS','workingSet','peakPaged','paged','peakNonPaged','nonPaged','pagefile','peakPagefile','private']]
+          psapi=ctypes.WinDLL('psapi')
+          psapi.GetProcessMemoryInfo.argtypes=[wintypes.HANDLE,ctypes.c_void_p,wintypes.DWORD]
+          kernel=ctypes.WinDLL('kernel32')
+          kernel.GetProcessTimes.argtypes=[wintypes.HANDLE]+[ctypes.POINTER(wintypes.FILETIME)]*4
+          def sample(p):
+              m=Memory();m.cb=ctypes.sizeof(m)
+              ok=psapi.GetProcessMemoryInfo(wintypes.HANDLE(int(p._handle)),ctypes.byref(m),m.cb)
+              times=[wintypes.FILETIME()for _ in range(4)]
+              kernel.GetProcessTimes(wintypes.HANDLE(int(p._handle)),*(ctypes.byref(t)for t in times))
+              return {'privateBytes':m.private,'workingSetBytes':m.workingSet,'memoryOK':bool(ok),'cpuMs':sum((t.dwHighDateTime<<32)+t.dwLowDateTime for t in times[2:])/10000}
+          result={'frozenBuildRun':43797281619,'binarySHA256':hashlib.sha256(binary.read_bytes()).hexdigest(),'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'runs':[]}
           for label,settings in [('default',{'GOGC':'100'}),('gogc-off',{'GOGC':'off'}),('collector-off',{'GC_DONT_GC':'1'})]:
               env=dict(os.environ)
               env.pop('GC_DONT_GC',None)
@@ -1182,20 +1195,23 @@ jobs:
                   started=time.monotonic()
                   p=subprocess.Popen([str(binary),'-test.v','-test.count=1','-test.timeout=20s','-test.run=^TestAdd$'],stdout=stdout,stderr=stderr,env=env)
                   stalled=False
-                  try:p.wait(timeout=30)
-                  except subprocess.TimeoutExpired:
+                  samples=[]
+                  while p.poll() is None and time.monotonic()-started<30:
+                      samples.append(sample(p))
+                      time.sleep(0.25)
+                  if p.poll() is None:
                       stalled=True
                       lldb=shutil.which('lldb')
                       if lldb:
                           cmd=[lldb,'--batch','-o','process attach --pid '+str(p.pid),'-o','thread backtrace all','-o','process detach','-o','quit']
                           try:
                               stack=subprocess.run(cmd,text=True,capture_output=True,timeout=30)
-                              (out/(label+'.stacks')).write_text(stack.stdout+stack.stderr)
+                              (out/(label+'.stacks')).write_text('debugger exit '+str(stack.returncode)+'\n'+stack.stdout+stack.stderr)
                           except subprocess.TimeoutExpired as e:
                               (out/(label+'.stacks')).write_text('debugger timeout\n'+str(e))
                       if p.poll() is None: p.kill()
                       p.wait(timeout=10)
-                  result['runs'].append({'label':label,'environment':settings,'exit':p.returncode,'stalled':stalled,'seconds':time.monotonic()-started,'executed':'=== RUN   TestAdd' in (out/(label+'.stdout')).read_text()})
+                  result['runs'].append({'label':label,'environment':settings,'exit':p.returncode,'stalled':stalled,'seconds':time.monotonic()-started,'samples':samples,'executed':'=== RUN   TestAdd' in (out/(label+'.stdout')).read_text()})
                   (out/'results.json').write_text(json.dumps(result,indent=2)+'\n')
                   print(result['runs'][-1],flush=True)
           assert result['runs'][0]['exit']==0 and result['runs'][0]['executed']
