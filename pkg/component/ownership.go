@@ -96,7 +96,7 @@ func (r *resourceCodec) Lift(t *model.Type, id uint32) (Value, error) {
 		if err != nil {
 			return Value{}, err
 		}
-		return Value{Resource: canonical.NewReference(r.n.handles, rt.identity, id, rt, r.scope)}, nil
+		return Value{Resource: r.in.references.New(r.n.handles, rt.identity, id, rt, r.scope)}, nil
 	}
 	rep, err := r.n.handles.Take(rt.identity, id)
 	if err != nil {
@@ -106,7 +106,7 @@ func (r *resourceCodec) Lift(t *model.Type, id uint32) (Value, error) {
 	if err != nil {
 		return Value{}, err
 	}
-	ref := canonical.NewReference(r.in.hostResources, rt.identity, id, rt, nil)
+	ref := r.in.references.New(r.in.hostResources, rt.identity, id, rt, nil)
 	r.created = append(r.created, ref)
 	return Value{Resource: ref}, nil
 }
@@ -174,9 +174,9 @@ func (r *resourceCodec) Accept(t *model.Type, v Value, commit bool) (Value, erro
 		if _, err := r.borrowScope().Lift(table, rt.identity, id); err != nil {
 			return Value{}, err
 		}
-		return Value{Resource: canonical.NewReference(table, rt.identity, id, rt, r.scope)}, nil
+		return Value{Resource: r.in.references.New(table, rt.identity, id, rt, r.scope)}, nil
 	}
-	ref, err := canonical.MoveReference(v.Resource)
+	ref, err := r.in.references.Move(v.Resource)
 	if err != nil {
 		return Value{}, err
 	}

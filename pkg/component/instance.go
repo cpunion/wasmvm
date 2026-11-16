@@ -55,6 +55,7 @@ type Instance struct {
 	instances, depth      uint32
 	callDepth             uint32
 	canonicalFrames       *canonicalFrame
+	references            canonical.ReferenceAllocator
 	tasks                 *taskScheduler
 	heldValues, heldBytes uint64
 	bufferTypes           map[*model.Type]*model.Type
@@ -121,6 +122,7 @@ func (in *Instance) finishShutdown() {
 	defer in.comparisons.Clear()
 	in.store.WaitClosed(nil)
 	in.canonicalFrames = nil
+	in.references.Clear()
 	in.flushSourceCleanup(nil)
 }
 

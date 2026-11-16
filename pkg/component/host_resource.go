@@ -35,7 +35,7 @@ func (in *Instance) newResource(t *HostResourceType, rep uint32) (Value, error) 
 	if err != nil {
 		return Value{}, err
 	}
-	return Value{Resource: canonical.NewReference(in.hostResources, rt.identity, id, rt, nil)}, nil
+	return Value{Resource: in.references.New(in.hostResources, rt.identity, id, rt, nil)}, nil
 }
 
 // NewResource grants host ownership for a type bound to this instance. Numeric

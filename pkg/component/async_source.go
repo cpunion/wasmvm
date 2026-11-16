@@ -149,7 +149,7 @@ func (in *Instance) newSource(t ValueType, source AsyncSource) (Value, error) {
 	in.heldValues += n
 	in.heldBytes += bytes
 	for _, ref := range owned {
-		moved, err := canonical.MoveReference(ref)
+		moved, err := in.references.Move(ref)
 		if err != nil {
 			in.mu.Unlock()
 			r.abort()
@@ -176,7 +176,7 @@ func (in *Instance) newSource(t ValueType, source AsyncSource) (Value, error) {
 		}
 	}
 
-	return Value{Resource: canonical.NewReference(in.hostResources, nil, r.id, r, nil)}, nil
+	return Value{Resource: in.references.New(in.hostResources, nil, r.id, r, nil)}, nil
 }
 func (c *Caller) NewSource(t ValueType, source AsyncSource) (Value, error) {
 	v, _, err := c.NewOwnedSource(t, source)

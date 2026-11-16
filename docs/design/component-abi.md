@@ -90,6 +90,16 @@ one-shot and are never recycled.
 
 ## Resource state
 
+An instance's serialized reference allocator groups fresh opaque capabilities
+in blocks of four, after a standalone first allocation for small owners. Every
+slot is published once; move and invalidation keep each alias's own affine bit,
+and no address or guard is rebound. Header copies retain their block through
+interior pointers. Shutdown drops the allocation cursor after Store quiescence.
+Logical resource/value/transfer quotas and handle generations are unchanged.
+Future/stream endpoint pairs also share allocation storage while retaining
+independent handles, state transitions, cleanup and event delivery. A retained
+member can keep its small allocation group alive; this is not object pooling.
+
 `Resources` holds nominal resource declarations and owned/borrowed handles.
 Host capabilities do not reuse IDs. Guest tables use the specified LIFO free
 list; publication generations distinguish provisional ownership after reuse.

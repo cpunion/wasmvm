@@ -153,8 +153,13 @@ func (in *Instance) allocateEnds(n, scope *namespace, t *model.Type) (*asyncEnd,
 		in.resourceTable(n)
 		table = n.handles
 	}
-	r := &asyncEnd{in: in, typ: t, scope: scope, n: n, read: true, state: endIdle}
-	w := &asyncEnd{in: in, typ: t, scope: scope, n: n, state: endIdle}
+	// The paired endpoints start together but retain independent handles and
+	// state transitions. Their shared allocation never reuses a retired endpoint.
+	pair := &[2]asyncEnd{
+		{in: in, typ: t, scope: scope, n: n, read: true, state: endIdle},
+		{in: in, typ: t, scope: scope, n: n, state: endIdle},
+	}
+	r, w := &pair[0], &pair[1]
 	r.other, w.other = w, r
 	r.waitable.producer = r
 	w.waitable.producer = w
