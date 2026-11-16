@@ -184,6 +184,14 @@ scalar slot words, records continuation/source state, returns exit code 10,
 and reaches the wrapper epilogue at 0x418. A later entry restores registers,
 checks state and dispatches to the saved continuation. Cold paths and policy
 tiers remain in the dump; disassembling their bytes does not mean they ran.
+There is also an explicit platform boundary: `native.Context.run` publishes
+state under its context/lease protocol and calls `native.enter`. The Go object
+calls `runtime.cgoCheckPointer` and `_Cfunc_wasmvm_enter_integer.abi0`, whose
+wrapper calls `runtime.cgocall`. LLGo instead emits a native indirect call in
+the inlined entry path. Thus repeated host exits also repeat a cgo boundary
+under Go, while LLGo retains the other common-state/lifetime work. This is
+instruction evidence of different mechanisms, not a measured exclusive cgo
+time share; LLGo's faster FFI alone cannot remove the shared architecture cost.
 The production Go host object contains the scalar `runtime.makeslice` call.
 LLGo's host object contains `GC_malloc`, `GC_malloc_atomic`, the captured
 panic flag and dynamic function handling as well as fast atomic guard checks.
