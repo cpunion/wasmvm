@@ -83,6 +83,15 @@ Original cold entries, precise fuel, exact vector widths and every interrupt
 poll remain intact. Semantic validation and structural selection evidence do
 not close the deferred performance gate.
 
+The next native transition increment uses the existing Store-owned workspace
+contract to omit repeated Context mutex acquisitions. State/code/memory checks
+share the ordinary implementation and native code still enters through the
+supported C ABI. Only cancellation overlaps an owned entry; the Store drains it
+before rebinding or closing. Standalone clients retain concurrent-close support.
+Two active owned entries are tested through collection, lease retirement and
+interrupt delivery. The broader direct Go assembly bridge remains rejected;
+these changes do not weaken scheduler cooperation or close performance acceptance.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and
