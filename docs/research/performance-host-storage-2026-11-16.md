@@ -70,6 +70,13 @@ The next unified event builds both source base/head with the new SDK and treats
 the fixed-engine old/new compiler comparison as a separate baseline event.
 Neither SDK adoption nor source optimization is a performance result by itself.
 
+PR #190's longest job was macOS LLGo VM at 606 seconds. Its trace records a
+472-second build, 1,116 seconds of overlapping link work and about 30 seconds of
+test execution; the codegen test link takes 209 seconds. Moving that package
+to the shorter component shard retains the same 32 root packages, one auxiliary
+module, nine shards and full LTO profile. Its effect on the maximum job duration
+must be assessed from the next CI run, not inferred by adding parallel spans.
+
 ## Validation and rejected entry bridge
 
 The tests exercise retained public arguments/results, copied expired Caller
