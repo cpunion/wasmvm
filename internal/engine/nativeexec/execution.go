@@ -20,6 +20,7 @@ type Execution struct {
 	maximum         uint64
 	maxFrames       uint64
 	metered         bool
+	owned           bool
 	stop            func() bool
 	interrupted     atomic.Bool
 	reusable        bool
@@ -50,8 +51,9 @@ func New(ctx context.Context, modules map[*slots.Module]*Lease, maxSlots, maxFra
 	return newExecution(ctx, modules, maxSlots, maxFrames, metered, false)
 }
 
-// NewOwned delegates cancellation delivery to the invocation owner. The owner
-// must interrupt on cancellation and drain that delivery before Close or reuse.
+// NewOwned delegates cancellation delivery and exclusive execution ownership to
+// the invocation owner. The owner serializes execution/rebinding/Close, interrupts
+// on cancellation and drains that delivery before Close or reuse.
 func NewOwned(ctx context.Context, modules map[*slots.Module]*Lease, maxSlots, maxFrames uint32, metered bool) (*Execution, error) {
 	return newExecution(ctx, modules, maxSlots, maxFrames, metered, true)
 }
@@ -89,7 +91,7 @@ func (e *Execution) begin(ctx context.Context, metered, owned bool) error {
 		ctx = context.Background()
 	}
 	e.entryState = native.State{}
-	e.ctx, e.metered = ctx, metered
+	e.ctx, e.metered, e.owned = ctx, metered, owned
 	e.reusable = false
 	if !owned {
 		e.stop = context.AfterFunc(ctx, e.native.Cancel)
@@ -119,6 +121,7 @@ func (e *Execution) Suspend() bool {
 		stopped = e.stop() && stopped
 	}
 	e.stop, e.ctx, e.runtimeInstance = nil, nil, nil
+	e.owned = false
 	e.entryState = native.State{}
 	e.resetCalls()
 	e.resetRuntimeGlobals()
@@ -147,6 +150,7 @@ func (e *Execution) Resize(length, capacity int) ([]value.Value, error) {
 func (e *Execution) Close() {
 	e.reusable = false
 	e.ctx = nil
+	e.owned = false
 	e.entryState = native.State{}
 	e.resetCalls()
 	if e.callData != nil {
@@ -318,7 +322,13 @@ func (e *Execution) run(module *Lease, entries *functionEntries, fn *state.Funct
 			return 0, s.Fuel, err
 		}
 		previousFuel := s.Fuel
-		exit, err := e.native.RunState(module.code, entry, s)
+		var exit native.Exit
+		var err error
+		if e.owned {
+			exit, err = e.native.RunOwnedState(module.code, entry, s)
+		} else {
+			exit, err = e.native.RunState(module.code, entry, s)
+		}
 		if e.allocationView != 0 {
 			if finishErr := fn.Instance.Owner.FinishNativeAllocations(fn.Instance.Types); finishErr != nil {
 				return 0, s.Fuel, finishErr

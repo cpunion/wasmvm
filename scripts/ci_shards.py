@@ -9,6 +9,7 @@ import re
 ROOT = Path(__file__).resolve().parents[1]
 INPUTS = {'core2', 'core3', 'core_extensions', 'preview1', 'wasi_threads', 'component'}
 MODULES = {'benchmarks/p3io'}
+PACKAGE_INPUTS = {'./internal/compiler/codegen': {'core2'}}
 
 
 def validate(shards, root=ROOT):
@@ -36,6 +37,10 @@ def validate(shards, root=ROOT):
             continue
         if not paths or any(not re.fullmatch(r'\./(?:internal|pkg|cmd)/[a-z0-9_/-]+', p) for p in paths):
             raise ValueError('invalid package list')
+        for path in paths:
+            missing = PACKAGE_INPUTS.get(path, set()) - set(shard['inputs'].split())
+            if missing:
+                raise ValueError(f'missing required inputs for {path}: {sorted(missing)}')
         packages.extend(paths)
     if Counter(modules) != Counter(MODULES):
         raise ValueError('auxiliary module coverage mismatch')

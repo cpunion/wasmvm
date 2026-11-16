@@ -51,6 +51,32 @@ encoder emits the restored intermediate. A compile-only diagnostic selects one
 additional `i32.shr_u`/`i32.xor` group in each pinned Clang/Rust SHA module.
 This selection count does not establish a time or throughput improvement.
 
+A further native entry increment uses Store workspace exclusivity through
+`NewOwned`/`BeginOwned` and `RunOwnedState`. It removes the two Context mutex
+acquisitions from each owned native entry, sharing the same state checks and
+code/memory pins with the general entry. Only cancellation may overlap; the
+owner drains delivery before rebinding or closing. Other Context clients keep
+their concurrent-close path. Native code still enters through the supported C
+transition. A test holds two owned entries active through Go collection, then
+retires their code lease and cancels/drains both entries before storage release.
+This addresses repeated host-side synchronization without adopting the rejected
+assembly bridge below; full state/frame materialization still exists.
+
+The following SDK pin advances LLGo from `5860fb6f` to main `1b44c645` (five
+commits: horizontal SIMD subtraction and PCLN/LTO flag handling). The existing
+`-O3 -lto=full` profile stays fixed. Old-SDK phase and complete-P3 controls were
+built at committed engine source `4d6fc1a4` before changing the SDK checkout.
+The next unified event builds both source base/head with the new SDK and treats
+the fixed-engine old/new compiler comparison as a separate baseline event.
+Neither SDK adoption nor source optimization is a performance result by itself.
+
+PR #190's longest job was macOS LLGo VM at 606 seconds. Its trace records a
+472-second build, 1,116 seconds of overlapping link work and about 30 seconds of
+test execution; the codegen test link takes 209 seconds. Moving that package
+to the shorter component shard retains the same 32 root packages, one auxiliary
+module, nine shards and full LTO profile. Its effect on the maximum job duration
+must be assessed from the next CI run, not inferred by adding parallel spans.
+
 ## Validation and rejected entry bridge
 
 The tests exercise retained public arguments/results, copied expired Caller
@@ -61,6 +87,14 @@ frame word and memory byte against checked execution. Linux amd64 execution uses
 local Docker; macOS arm64 uses the local host. Final PR CI retains both compilers
 and platforms, including the pinned LLGo `-O3 -lto=full` profile and per-package
 coverage gates. Local Docker execution is semantic evidence, not timing evidence.
+
+The owned-context follow-up's local Docker full native package run aborts in
+Rosetta when the existing stable-memory test requests an unreservable extent
+near 2^63 bytes. Replaying the unchanged test against the pre-change native
+sources reproduces the same abort. Targeted entry/GC/lease tests and complete
+nativeexec/VM packages pass there; local Go/LLGo arm64 runs pass. This Docker
+failure is retained as an environment limitation, not counted as a full native
+package pass. Native amd64 CI remains required without skipping that test.
 
 The earlier direct Go assembly entry experiment remains rejected. One native
 entry could run while another goroutine requested collection; Go could not

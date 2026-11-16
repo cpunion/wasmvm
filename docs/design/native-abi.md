@@ -675,6 +675,15 @@ skip an empty interruption dispatch. Store close retires idle storage before
 state and executable leases. Active calls keep ownership through deferred
 cleanup, including panic and close-from-callback paths.
 
+`nativeexec.NewOwned`/`BeginOwned` also select `Context.RunOwnedState`. The Store
+already serializes execution, binding and teardown; only `Cancel` may overlap
+an owned entry. This path shares state validation, code admission, memory pins
+and the supported C transition with ordinary `RunState`, while omitting the two
+Context mutex acquisitions used for arbitrary concurrent Context clients. The
+owner drains interruption before rebinding or closing. General Context users
+retain `RunState` and its concurrent-close protocol. Guest frames, state copies,
+FP environment and root publication are unchanged by this ownership contract.
+
 
 ### Fallthrough interrupt polling
 

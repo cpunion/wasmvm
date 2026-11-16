@@ -22,7 +22,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parent.parent
 GO_VERSION = 'go1.27.3'
-LLGO_REVISION = '5860fb6f9c13371f6cdb456a987a8e95844066d4'
+LLGO_REVISION = '1b44c645e6d95263aa9278dcf29866fae199216f'
 
 
 def capture(command):

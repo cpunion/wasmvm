@@ -296,45 +296,16 @@ func (c *Context) RunState(l *Lease, entry uint32, state *State) (Exit, error) {
 }
 
 func (c *Context) run(l *Lease, entry uint32, state *State) (Exit, error) {
-	if l == nil {
-		return 0, ErrInvalid
-	}
 	c.mu.Lock()
-	if err := c.idle(); err != nil {
-		c.mu.Unlock()
-		return 0, err
-	}
-	if state != nil {
-		if state.Used > c.size || state.Depth > c.record.MaxDepth {
-			c.mu.Unlock()
-			return 0, ErrLimit
-		}
-		c.record.State = *state
-	}
-	address, err := l.begin(entry)
+	address, err := c.prepareEntry(l, entry, state)
 	if err != nil {
 		c.mu.Unlock()
 		return 0, err
 	}
-	if c.memory != nil {
-		base, size, err := c.memory.begin()
-		if err != nil {
-			l.end()
-			c.mu.Unlock()
-			return 0, err
-		}
-		c.record.MemoryBase, c.record.MemorySize = base, size
-	}
 	c.active = true
 	r := c.record
 	c.mu.Unlock()
-	status := enter(address, unsafe.Pointer(r), l.code.integerOnly)
-	runtime.KeepAlive(c)
-	runtime.KeepAlive(l)
-	l.end()
-	if c.memory != nil {
-		c.memory.end()
-	}
+	status := c.runEntry(l, address, r)
 	c.mu.Lock()
 	if state != nil {
 		*state = r.State
@@ -350,6 +321,47 @@ func (c *Context) run(l *Lease, entry uint32, state *State) (Exit, error) {
 		return status, ErrClosed
 	}
 	return status, nil
+}
+
+// The ordinary caller holds mu; an owned caller excludes every Context method
+// except Cancel. Both paths keep identical state, code and memory admissions.
+func (c *Context) prepareEntry(l *Lease, entry uint32, state *State) (unsafe.Pointer, error) {
+	if l == nil {
+		return nil, ErrInvalid
+	}
+	if err := c.idle(); err != nil {
+		return nil, err
+	}
+	if state != nil {
+		if state.Used > c.size || state.Depth > c.record.MaxDepth {
+			return nil, ErrLimit
+		}
+		c.record.State = *state
+	}
+	address, err := l.begin(entry)
+	if err != nil {
+		return nil, err
+	}
+	if c.memory != nil {
+		base, size, err := c.memory.begin()
+		if err != nil {
+			l.end()
+			return nil, err
+		}
+		c.record.MemoryBase, c.record.MemorySize = base, size
+	}
+	return address, nil
+}
+
+func (c *Context) runEntry(l *Lease, address unsafe.Pointer, r *record) Exit {
+	status := enter(address, unsafe.Pointer(r), l.code.integerOnly)
+	runtime.KeepAlive(c)
+	runtime.KeepAlive(l)
+	l.end()
+	if c.memory != nil {
+		c.memory.end()
+	}
+	return status
 }
 
 // Close requests cancellation and defers freeing until the active entry exits.

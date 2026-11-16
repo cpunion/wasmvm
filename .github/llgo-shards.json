@@ -6,13 +6,13 @@
   },
   {
     "name": "vm",
-    "packages": "./pkg/vm ./internal/compiler/codegen ./internal/engine/nativeexec ./internal/engine/state ./internal/engine/simd ./internal/engine/memory ./internal/platform/native ./internal/engine/numeric",
+    "packages": "./pkg/vm ./internal/engine/nativeexec ./internal/engine/state ./internal/engine/simd ./internal/engine/memory ./internal/platform/native ./internal/engine/numeric",
     "inputs": "core2"
   },
   {
     "name": "component",
-    "packages": "./internal/component/canonical ./internal/component/decode ./internal/component/validate ./pkg/component ./internal/compiler/nativeabi ./internal/compiler/ir ./internal/wasi/host",
-    "inputs": "component"
+    "packages": "./internal/component/canonical ./internal/component/decode ./internal/component/validate ./pkg/component ./internal/compiler/nativeabi ./internal/compiler/ir ./internal/wasi/host ./internal/compiler/codegen",
+    "inputs": "core2 component"
   },
   {
     "name": "legacy",
