@@ -290,3 +290,33 @@ func TestCanonicalFramesBoundScratchForSpilledParameters(t *testing.T) {
 		t.Fatal("incomplete flattened argument representation accepted", err)
 	}
 }
+
+func TestCanonicalFramesClearArgumentsBeforePartialLiftFailure(t *testing.T) {
+	in := asyncInstance(t, "interpreter", "pending-callback", Imports{})
+	memory, err := in.store.NewMemory(vm.MemoryType{Min: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := memory.WriteMemory(64, []byte("retained prefix")); err != nil {
+		t.Fatal(err)
+	}
+	index := uint32(0)
+	plan := &validate.CanonicalFunction{Definition: &model.Canonical{Op: 1}, Memory: &index,
+		Type:      &validate.Type{Parameters: []model.Field{{Type: &model.Type{Kind: model.String}}, {Type: &model.Type{Kind: model.Char}}}},
+		Signature: vm.FunctionType{Params: []wasm.ValueType{wasm.I32, wasm.I32, wasm.I32}}}
+	bound := newCanonicalCallPlan(plan)
+	n := &namespace{items: map[model.Sort][]item{model.CoreMemorySort: {{core: memory}}}}
+	_, err = in.store.WithCaller(nil, CallOptions{}, func(core *vm.Caller) error {
+		frame := in.acquireCanonicalFrame(core, n, plan)
+		defer in.releaseCanonicalFrame(frame)
+		prefix, err := bound.liftScalarArguments(&frame.state.codec, []uint64{64, 15, 0xd800}, frame.args[:0])
+		frame.args = prefix
+		if !errors.Is(err, wasm.ErrTrap) || len(prefix) != 1 || prefix[0].Text != "retained prefix" {
+			t.Fatal("partial argument prefix was lost", prefix, err)
+		}
+		return nil
+	})
+	if err != nil || checkCanonicalFramesCleared(t, in) != 1 {
+		t.Fatal(err)
+	}
+}

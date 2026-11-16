@@ -31,7 +31,9 @@ func (in *Instance) acquireCanonicalFrame(c *vm.Caller, n *namespace, plan *vali
 	}
 	frame.caller, frame.n, frame.plan = c, n, plan
 	if n != nil && (len(n.resources) != 0 || n.handles != nil) {
-		frame.state.resources = resourceCodec{in: in, n: n, core: c}
+		// Release already zeroed the state. Rebind only the active owners.
+		r := &frame.state.resources
+		r.in, r.n, r.core = in, n, c
 		frame.state.codec.Resources = &frame.state.resources
 	}
 	in.configureCanonicalCodec(&frame.state.codec, c, n, plan, true, frame)
@@ -46,7 +48,7 @@ func (frame *canonicalFrame) reallocate(old, size, alignment, next uint64) (uint
 // Never retain a Caller, Context, memory capability, value or resource between
 // invocations. Reentrant calls acquire a different frame until this one returns.
 func (in *Instance) releaseCanonicalFrame(frame *canonicalFrame) {
-	clear(frame.args[:cap(frame.args)])
+	clear(frame.args)
 	frame.args = frame.args[:0]
 	if cap(frame.args) > canonical.MaxFlatParams {
 		frame.args = nil

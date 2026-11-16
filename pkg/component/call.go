@@ -512,10 +512,11 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 		complete := false
 		defer cleanupCanonical(n, codec, &complete, &err)
 		args, err := bound.liftScalarArguments(codec, words, frame.args[:0])
+		// The partial prefix is frame-owned even when a later argument fails.
+		frame.args = args
 		if err != nil {
 			return err
 		}
-		frame.args = args
 		v, err := callee.call(caller, args)
 		if err != nil {
 			return err

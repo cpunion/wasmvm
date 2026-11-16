@@ -43,14 +43,14 @@ func (bound *canonicalCallPlan) liftScalarArguments(codec *canonical.Codec, word
 		parameter := &bound.values.parameters[i]
 		count, err := parameter.FlatCount(codec)
 		if err != nil {
-			return nil, err
+			return dst, err
 		}
 		if count > uint64(len(flat)) {
-			return nil, vm.ErrType
+			return dst, vm.ErrType
 		}
 		value, err := parameter.LiftFlat(codec, flat[:count])
 		if err != nil {
-			return nil, err
+			return dst, err
 		}
 		dst = append(dst, value)
 		flat = flat[count:]
