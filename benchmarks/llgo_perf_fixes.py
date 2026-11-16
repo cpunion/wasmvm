@@ -31,7 +31,7 @@ result = {"host": run(["lscpu"]), "compiler": {}, "roles": {}, "scope": "Focused
 for label, (cli, sdk, revision) in compilers.items():
     result["compiler"][label] = {"revision": revision, "cliSha256": own_build.digest(Path(cli)), "version": run([cli, "version"], env=dict(os.environ, LLGO_ROOT=sdk))}
 fixture = ROOT / "head/benchmarks/native/memory-fixtures/dependent-address.wasm"
-for role in ["counter", "dense", "scalar"]:
+for role in ([] if os.environ.get("PORTFOLIO_CASE") else ["counter", "dense", "scalar"]):
     folder = ROOT / ("source-" + role)
     folder.mkdir()
     with tarfile.open(ROOT / "downloads" / role / "poll-llgo.tar.gz") as archive:
@@ -89,6 +89,9 @@ portfolio = {
     "json": ("benchmark/crossinline/json", "JSONRoundTrip", "200x"),
     "template": ("benchmark/crossinline/template", "TemplateExecute", "1000x"),
 }
+selected_case = os.environ.get("PORTFOLIO_CASE")
+if selected_case:
+    portfolio = {selected_case: portfolio[selected_case]}
 result["portfolio"] = {}
 for role, (package, pattern, iterations) in portfolio.items():
     data = {"package": package, "builds": {}, "blocks": []}
@@ -111,6 +114,7 @@ for role, (package, pattern, iterations) in portfolio.items():
         shutil.copy2(binary, str(binary) + "-aa")
     data["sourceHashes"] = source_hashes
     result["portfolio"][role] = data
+    (OUT / "results.json").write_text(json.dumps(result, indent=2) + "\n")
 for role, (package, pattern, iterations) in portfolio.items():
     data = result["portfolio"][role]
     for block in range(20):

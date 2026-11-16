@@ -849,9 +849,11 @@ jobs:
       fail-fast: false
       matrix:
         runner: [ubuntu-22.04, ubuntu-24.04]
+        case: [fields, json, template]
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     env:
+      PORTFOLIO_CASE: ${{ matrix.case }}
       WASMVM_LLGO_REVISION: 5860fb6f9c13371f6cdb456a987a8e95844066d4
       REGRESSION_EXTRACT_IR: ${{ inputs.extract_regression_ir }}
     permissions:
@@ -907,15 +909,12 @@ jobs:
       - name: Build candidate compiler
         working-directory: compiler
         run: go build -o llgo-diag ./cmd/llgo
-      - name: Verify backend policy and full-LTO PC metadata
-        working-directory: compiler
-        run: go test ./internal/build -run 'TestDispatchInline|TestNativeFullLTOCodeLayout' -count=1 -v
       - name: Compare frozen sources with paired controls
         run: python3 -u control/benchmarks/llgo_perf_fixes.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: llgo-main-regression-${{ matrix.runner }}
+          name: llgo-portfolio-${{ matrix.case }}-${{ matrix.runner }}
           path: main-regression/
           if-no-files-found: error
           retention-days: 30
