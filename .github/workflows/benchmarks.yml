@@ -1134,10 +1134,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - label: base
-            revision: 5860fb6f9c13371f6cdb456a987a8e95844066d4
           - label: head
-            revision: 669a7bf3af9aaad782f34552a91689d80c3b19c2
+            revision: 2c780e256ecafc970189404022c8c266b151eeba
     runs-on: windows-2022
     timeout-minutes: 25
     permissions:
@@ -1166,6 +1164,7 @@ jobs:
           python-version: '3.11.9'
           architecture: x64
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: matrix.label == 'base'
         with:
           name: llgo-msvc-simd-${{ matrix.label == 'base' && 'base' || 'head' }}
           run-id: 43803237857
@@ -1177,8 +1176,10 @@ jobs:
         if: matrix.label != 'base'
         shell: python
         run: |
-          import os,pathlib,subprocess
+          import json,os,pathlib,subprocess
           out=pathlib.Path('simd-diagnostic').resolve()
+          out.mkdir(exist_ok=True)
+          (out/'build.json').write_text(json.dumps({'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'flags':['-O2']})+'\n')
           cli=pathlib.Path(os.environ['RUNNER_TEMP'])/'unwind-llgo.exe'
           subprocess.run(['go','build','-o',str(cli),'./cmd/llgo'],check=True)
           subprocess.run(['go','test','./internal/build','-run','^TestBDWGCAllocationPolicy$','-count=1'],check=True)
