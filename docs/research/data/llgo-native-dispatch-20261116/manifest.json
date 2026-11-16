@@ -1,0 +1,98 @@
+{
+  "layout-only/llgo-layout-results-segment-ubuntu22/results.json.gz": {
+    "uncompressedSha256": "a85813759e04149a563db79063d07870b234b92267132830f85b36031e59c762",
+    "uncompressedBytes": 5199398
+  },
+  "layout-only/llgo-layout-results-segment-ubuntu24/results.json.gz": {
+    "uncompressedSha256": "c5c999fc07394455eb215db85fd1cdce237a3c35d038f5a9e7806c33c8879ecc",
+    "uncompressedBytes": 4835967
+  },
+  "combined-portfolio/llgo-portfolio-json-ubuntu-22.04/results.json.gz": {
+    "uncompressedSha256": "94ab27d8e7a5aec2a038b37b308207108c0919f90f13f366bf342816f3733252",
+    "uncompressedBytes": 64214
+  },
+  "combined-portfolio/llgo-portfolio-fields-ubuntu-22.04/results.json.gz": {
+    "uncompressedSha256": "1f11bbac6045bca1d6a72bd4d2290545f839643212dbcd1e2fd2db4c94cb45b3",
+    "uncompressedBytes": 84641
+  },
+  "combined-portfolio/llgo-portfolio-template-ubuntu-22.04/results.json.gz": {
+    "uncompressedSha256": "7bfd24bf73fad8063d7e6dc2769e7b2effb96537f3a2b89e3a796aefa008e908",
+    "uncompressedBytes": 65358
+  },
+  "combined-portfolio/llgo-portfolio-template-ubuntu-24.04/results.json.gz": {
+    "uncompressedSha256": "1e4cd093a2459758b6c20600fec165bc10bf8637d2ef4ecc4e0246ef30ac91a2",
+    "uncompressedBytes": 64910
+  },
+  "combined-portfolio/llgo-portfolio-json-ubuntu-24.04/results.json.gz": {
+    "uncompressedSha256": "8475ab612a92ff8c68d00503a27bf07124d7e880ebcf11bfe19c1f7bf695a8a5",
+    "uncompressedBytes": 65369
+  },
+  "combined-portfolio/llgo-portfolio-fields-ubuntu-24.04/results.json.gz": {
+    "uncompressedSha256": "157104a07705f46398024148a5579fe763a1886a6c4d377a6a99e84ca544f617",
+    "uncompressedBytes": 84576
+  },
+  "combined-replay-1/llgo-policy-replay-ubuntu-22.04-1/results.json.gz": {
+    "uncompressedSha256": "5a7034eb02591a6828ecaec709f8cfe3a02b46c43e90e9ad36f6d4b527898542",
+    "uncompressedBytes": 493753
+  },
+  "combined-replay-1/llgo-policy-replay-ubuntu-24.04-1/results.json.gz": {
+    "uncompressedSha256": "cdfd6686858334817c4d6caff581e066a9f50483b12043a9fafed8ae60acb938",
+    "uncompressedBytes": 494196
+  },
+  "combined-replay-1/llgo-policy-replay-ubuntu-22.04-2/results.json.gz": {
+    "uncompressedSha256": "5aa28c71f91fee48e6fa71a5f6db7bd50536b435af3c0a04433c2245cf42d058",
+    "uncompressedBytes": 494002
+  },
+  "combined-replay-1/llgo-policy-replay-ubuntu-24.04-2/results.json.gz": {
+    "uncompressedSha256": "327f14a1577932dd834fba5ba78bd59410933ac435e3e91de4b47e971997cb05",
+    "uncompressedBytes": 493849
+  },
+  "slice-nil-rejected/llgo-main-regression-ubuntu-22.04/results.json.gz": {
+    "uncompressedSha256": "0fbf4dc43d1c4a514c22f6b70a0cbb666f76bbd45130cb9a038b1abe443314d7",
+    "uncompressedBytes": 483326
+  },
+  "slice-nil-rejected/llgo-main-regression-ubuntu-24.04/results.json.gz": {
+    "uncompressedSha256": "fa1c5896ec6a29fd8a4724e4399ab560cfae43985bcc9c17aa17fde4f1b52ace",
+    "uncompressedBytes": 482785
+  },
+  "page-separation-rejected/llgo-layout-results-segment-ubuntu22/results.json.gz": {
+    "uncompressedSha256": "e11ddba8202aa7db3d8428ea2f9fbf880330e4ad3746dc4443014729be5c6b39",
+    "uncompressedBytes": 3522168
+  },
+  "page-separation-rejected/llgo-layout-results-segment-ubuntu24/results.json.gz": {
+    "uncompressedSha256": "180974e51a3c6f18c4a95d63425aa2d7fd889cf5d8c6cc4570ba44516d6af49e",
+    "uncompressedBytes": 3251390
+  },
+  "combined-build/llgo-main-regression-ubuntu-22.04/results.json.gz": {
+    "uncompressedSha256": "6b4cacf6e95cc66b15a0fa92a23ff3ddad7b795c6fdf4bc604867d277abffcff",
+    "uncompressedBytes": 493661
+  },
+  "combined-build/llgo-main-regression-ubuntu-24.04/results.json.gz": {
+    "uncompressedSha256": "51d2cb1041137d384af5c1741cb74aa78fb957523e7a8e44288f382cdbcc3045",
+    "uncompressedBytes": 493927
+  },
+  "combined-replay-2/llgo-policy-replay-ubuntu-22.04-1/results.json.gz": {
+    "uncompressedSha256": "a0c249c3ba745a99e4ea1f3934822313f0e0713c5f7c3c9c85c8f00ccbdcd61e",
+    "uncompressedBytes": 493975
+  },
+  "combined-replay-2/llgo-policy-replay-ubuntu-24.04-1/results.json.gz": {
+    "uncompressedSha256": "cf6e9beebbb900091a13e8ef66b5d4fc975babdab9f0dc6127136a574fdc6415",
+    "uncompressedBytes": 493788
+  },
+  "combined-replay-2/llgo-policy-replay-ubuntu-22.04-2/results.json.gz": {
+    "uncompressedSha256": "42e911e97908bdec4e59e8e2c4e932727ae47c3148d96227ca549ed2781c38c5",
+    "uncompressedBytes": 493681
+  },
+  "combined-replay-2/llgo-policy-replay-ubuntu-24.04-2/results.json.gz": {
+    "uncompressedSha256": "f2cdc7d0eddc131edf54eaf0d868b94cd065b351b92cd7269bbd31f961374eb2",
+    "uncompressedBytes": 494031
+  },
+  "inline-only/llgo-main-regression-ubuntu-22.04/results.json.gz": {
+    "uncompressedSha256": "59a708d7ca60e90b533e1fca38dcfa9526922f57ea6df7a3796067433b275bb3",
+    "uncompressedBytes": 482502
+  },
+  "inline-only/llgo-main-regression-ubuntu-24.04/results.json.gz": {
+    "uncompressedSha256": "6b755d7280767929a1b489beece7cb36a36aa9b827d0e631142aaaea35f3b812",
+    "uncompressedBytes": 482736
+  }
+}
