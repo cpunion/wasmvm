@@ -1137,9 +1137,7 @@ jobs:
           - label: base
             revision: 5860fb6f9c13371f6cdb456a987a8e95844066d4
           - label: head
-            revision: 49f051541b2c725d7846386f543269a1a14b216d
-          - label: head-normal-expansion
-            revision: 86e86c9daaebf62dbc1ea944193f6264e0258a86
+            revision: 669a7bf3af9aaad782f34552a91689d80c3b19c2
     runs-on: windows-2022
     timeout-minutes: 25
     permissions:
@@ -1183,8 +1181,23 @@ jobs:
           out=pathlib.Path('simd-diagnostic').resolve()
           cli=pathlib.Path(os.environ['RUNNER_TEMP'])/'unwind-llgo.exe'
           subprocess.run(['go','build','-o',str(cli),'./cmd/llgo'],check=True)
+          subprocess.run(['go','test','./internal/build','-run','^TestBDWGCAllocationPolicy$','-count=1'],check=True)
+          policy=pathlib.Path('runtime/internal/clite/bdwgc/_wrap/gc_policy.c')
+          original=policy.read_bytes()
+          old='0fead5513f951c3302dd3524d3560afb3de9ae66'
+          subprocess.run(['git','fetch','--no-tags','--depth=1','origin',old],check=True)
+          try:
+              policy.write_bytes(subprocess.check_output(['git','show',old+':'+policy.as_posix()]))
+              negative=subprocess.run(['go','test','./internal/build','-run','^TestBDWGCAllocationPolicy$','-count=1'],text=True,capture_output=True,timeout=180)
+              report=negative.stdout+negative.stderr
+              (out/'negative-control.log').write_text(report)
+              assert negative.returncode!=0 and 'Windows GC floor changed with occupied blocks:'in report,report
+              print('Occupied-block policy rejected by the retained-heap regression.',flush=True)
+          finally:
+              policy.write_bytes(original)
+          subprocess.run(['go','test','./test/go','-run','^TestGCPercent','-count=1'],check=True)
           subprocess.run([str(cli),'test','-O2','-c','-o',str(out/'upstream.exe'),'simd/archsimd/internal/simd_test'],check=True)
-          subprocess.run([str(cli),'test','-O2','-v','-run','^TestRuntimeCallersWindowsAllocations$','-count=1','./test/go'],check=True,timeout=240)
+          subprocess.run([str(cli),'test','-O2','-v','-run','^(TestRuntimeCallersWindowsAllocations|TestGCPercent.*)$','-count=1','./test/go'],check=True,timeout=240)
       - name: Bound execution and capture stalled native stacks
         shell: python
         run: |
@@ -1213,19 +1226,20 @@ jobs:
           cases=[line.strip()for line in pathlib.Path('dev/simd/upstream-archsimd-amd64.txt').read_text().splitlines()if line.strip()and not line.startswith('#')]
           qualified='^('+'|'.join(cases)+')$'
           result={'frozenBuildRun':43803237857 if os.environ['DIAG_LABEL']=='base'else None,'binarySHA256':hashlib.sha256(binary.read_bytes()).hexdigest(),'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'runs':[]}
-          for label,settings,pattern,expected,limit in [
+          runs=[
               ('gogc-10',{'GOGC':'10'},'^TestAdd$',['TestAdd'],30),
               ('default',{'GOGC':'100'},'^TestAdd$',['TestAdd'],30),
               ('gogc-off',{'GOGC':'off'},'^TestAdd$',['TestAdd'],30),
               ('qualified',{'GOGC':'100','GC_PRINT_STATS':'1'},qualified,cases,90),
-          ]:
+          ]+[(f'qualified-{i}',{'GOGC':'100'},qualified,cases,90)for i in range(1,10)]
+          for label,settings,pattern,expected,limit in runs:
               env=dict(os.environ)
               env.pop('GC_DONT_GC',None)
               env.pop('GOGC',None)
               env.update(settings)
               with (out/(label+'.stdout')).open('w')as stdout,(out/(label+'.stderr')).open('w')as stderr:
                   started=time.monotonic()
-                  p=subprocess.Popen([str(binary),'-test.v','-test.count=1','-test.timeout='+('60s'if label=='qualified'else'20s'),'-test.run='+pattern],stdout=stdout,stderr=stderr,env=env)
+                  p=subprocess.Popen([str(binary),'-test.v','-test.count=1','-test.timeout='+('60s'if label.startswith('qualified')else'20s'),'-test.run='+pattern],stdout=stdout,stderr=stderr,env=env)
                   stalled=False
                   samples=[]
                   while p.poll() is None and time.monotonic()-started<limit:
