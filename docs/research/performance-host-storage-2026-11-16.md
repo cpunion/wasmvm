@@ -62,6 +62,14 @@ retires their code lease and cancels/drains both entries before storage release.
 This addresses repeated host-side synchronization without adopting the rejected
 assembly bridge below; full state/frame materialization still exists.
 
+The following SDK pin advances LLGo from `5860fb6f` to main `1b44c645` (five
+commits: horizontal SIMD subtraction and PCLN/LTO flag handling). The existing
+`-O3 -lto=full` profile stays fixed. Old-SDK phase and complete-P3 controls were
+built at committed engine source `4d6fc1a4` before changing the SDK checkout.
+The next unified event builds both source base/head with the new SDK and treats
+the fixed-engine old/new compiler comparison as a separate baseline event.
+Neither SDK adoption nor source optimization is a performance result by itself.
+
 ## Validation and rejected entry bridge
 
 The tests exercise retained public arguments/results, copied expired Caller
