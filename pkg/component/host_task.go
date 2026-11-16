@@ -24,6 +24,7 @@ func (t *componentTask) resumeHost(c *vm.Caller) error {
 		return err
 	}
 
+	var ready bool
 	if !t.started {
 		h := t.host
 		if h == nil {
@@ -52,13 +53,15 @@ func (t *componentTask) resumeHost(c *vm.Caller) error {
 		if p == nil {
 			return vm.ErrType
 		}
-		if err := p.bind(t.in.scheduler().wake); err != nil {
+		if ready, err = p.bind(t.in.scheduler().wake); err != nil {
 			return err
 		}
 		h.completion = p
+	} else {
+		ready = t.host.completion.ready()
 	}
 	h := t.host
-	if !h.completion.ready() {
+	if !ready {
 		return nil
 	}
 	resolve, cancelled, err := h.completion.take()

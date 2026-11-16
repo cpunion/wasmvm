@@ -77,12 +77,15 @@ func (c *Caller) awaitRead(ctx context.Context, ref *Resource, limit uint32, che
 		return nil, err
 	}
 	c.reads = append(c.reads, state)
+	if e.waitable.pending {
+		// The resolver checks both cancellation scopes before accepting this
+		// already available event. No cancellation watcher is needed to wake it.
+		resolve()
+		return completion, nil
+	}
 	stopOperation := context.AfterFunc(ctx, resolve)
 	stopParent := context.AfterFunc(parent, resolve)
 	state.stop = func() bool { a, b := stopOperation(), stopParent(); return a || b }
-	if e.waitable.pending {
-		resolve()
-	}
 	return completion, nil
 }
 
