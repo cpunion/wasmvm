@@ -320,10 +320,14 @@ func (c *Codec) Store(t *model.Type, at uint64, value Value) error {
 }
 
 func (c *Codec) validate(t *model.Type, v Value, depth uint32) error {
+	return c.validateLayout(t, v, depth, nil)
+}
+
+func (c *Codec) validateLayout(t *model.Type, v Value, depth uint32, layout *Layout) error {
 	if err := c.visit(depth); err != nil {
 		return err
 	}
-	if depth == 0 {
+	if depth == 0 && layout == nil {
 		// Building the immutable root validates and caches every descendant.
 		// Recursive value visits still charge their own budgets and depth.
 		if _, err := c.Layouts.Build(t); err != nil {

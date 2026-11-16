@@ -54,6 +54,7 @@ type Instance struct {
 	initializing          *canonical.Codec
 	instances, depth      uint32
 	callDepth             uint32
+	canonicalFrames       *canonicalFrame
 	tasks                 *taskScheduler
 	heldValues, heldBytes uint64
 	bufferTypes           map[*model.Type]*model.Type
@@ -119,6 +120,7 @@ func (in *Instance) finishShutdown() {
 	defer close(in.shutdown)
 	defer in.comparisons.Clear()
 	in.store.WaitClosed(nil)
+	in.canonicalFrames = nil
 	in.flushSourceCleanup(nil)
 }
 

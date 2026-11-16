@@ -20,9 +20,30 @@ type Function struct {
 	lift      func(*vm.Caller, []Value) (*Value, error)
 	start     func(*vm.Caller, taskArguments, taskResolution) (*componentTask, error)
 	plan      *validate.CanonicalFunction
+	values    *functionValues
 	// Accessed only while holding the instance Store lease. These descriptors
 	// contain type metadata; each handoff still creates a fresh transaction.
 	resultReceivers [2]*Function
+}
+
+type functionValues struct {
+	parameters []canonical.ValuePlan
+	result     canonical.ValuePlan
+}
+
+func newFunctionValues(typ *validate.Type) *functionValues {
+	values := &functionValues{parameters: make([]canonical.ValuePlan, len(typ.Parameters)), result: canonical.NewValuePlan(typ.Result)}
+	for i, parameter := range typ.Parameters {
+		values.parameters[i] = canonical.NewValuePlan(parameter.Type)
+	}
+	return values
+}
+
+func (f *Function) valuePlans() *functionValues {
+	if f.values == nil {
+		f.values = newFunctionValues(f.typ)
+	}
+	return f.values
 }
 
 type CallResult struct {
@@ -255,37 +276,58 @@ func (in *Instance) codec(caller *vm.Caller, n *namespace, plan *validate.Canoni
 }
 
 func (in *Instance) configureCodec(codec *canonical.Codec, caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, realloc bool) {
+	in.configureCanonicalCodec(codec, caller, n, plan, realloc, nil)
+}
+
+func (in *Instance) configureCanonicalCodec(codec *canonical.Codec, caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, realloc bool, frame *canonicalFrame) {
 	transfer := &codec.Transfer
 	*transfer = canonical.Transfer{Context: caller.Context(), MaxBytes: in.config.MaxBytes}
 	if plan != nil {
 		transfer.Memory64, transfer.Encoding = plan.Memory64, plan.Encoding
 		if plan.Memory != nil {
-			transfer.Memory = memory{caller: caller, extern: &n.items[model.CoreMemorySort][*plan.Memory].core}
+			view := memory{caller: caller, extern: &n.items[model.CoreMemorySort][*plan.Memory].core}
+			if frame == nil {
+				transfer.Memory = view
+			} else {
+				frame.memory = view
+				transfer.Memory = &frame.memory
+			}
 		}
 		if realloc && plan.Realloc != nil {
-			fn := n.items[model.CoreFunctionSort][*plan.Realloc].core
-			transfer.Realloc = func(old, size, alignment, next uint64) (uint64, error) {
-				previous := n.task
-				if n.taskOps {
-					n.task = &callTask{}
+			if frame == nil {
+				transfer.Realloc = func(old, size, alignment, next uint64) (uint64, error) {
+					return canonicalReallocate(caller, n, plan, old, size, alignment, next)
 				}
-				defer func() { n.task = previous }()
-				n.blocked = true
-				defer func() { n.blocked = false }()
-				kind := wasm.I32
-				if plan.Memory64 {
-					kind = wasm.I64
+			} else {
+				if frame.realloc == nil {
+					frame.realloc = frame.reallocate
 				}
-				result, err := caller.Call(fn, vmValues([]canonical.Slot{{Type: kind, Bits: old}, {Type: kind, Bits: size}, {Type: kind, Bits: alignment}, {Type: kind, Bits: next}}))
-				if err != nil {
-					return 0, err
-				}
-				bits, _, err := result.Values[0].Bits()
-				return bits, err
+				transfer.Realloc = frame.realloc
 			}
 		}
 	}
 	codec.Layouts, codec.MaxValues = in.canonicalLayouts(n, plan), in.config.MaxValues
+}
+
+func canonicalReallocate(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, old, size, alignment, next uint64) (uint64, error) {
+	fn := n.items[model.CoreFunctionSort][*plan.Realloc].core
+	previous := n.task
+	if n.taskOps {
+		n.task = &callTask{}
+	}
+	defer func() { n.task = previous }()
+	n.blocked = true
+	defer func() { n.blocked = false }()
+	kind := wasm.I32
+	if plan.Memory64 {
+		kind = wasm.I64
+	}
+	result, err := caller.Call(fn, vmValues([]canonical.Slot{{Type: kind, Bits: old}, {Type: kind, Bits: size}, {Type: kind, Bits: alignment}, {Type: kind, Bits: next}}))
+	if err != nil {
+		return 0, err
+	}
+	bits, _, err := result.Values[0].Bits()
+	return bits, err
 }
 
 func (in *Instance) canonicalLayouts(n *namespace, plan *validate.CanonicalFunction) *canonical.Builder {
@@ -459,14 +501,19 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 		}
 		return err
 	}
+	bound := newCanonicalCallPlan(plan)
 	core, err := caller.NewScalarFunction(plan.Signature, func(caller *vm.Caller, words []uint64) (err error) {
 		if n.failed || n.blocked {
 			return wasm.ErrTrap
 		}
-		codec := in.codec(caller, n, plan)
+		frame := in.acquireCanonicalFrame(caller, n, plan)
+		defer in.releaseCanonicalFrame(frame)
+		codec := &frame.state.codec
 		complete := false
 		defer cleanupCanonical(n, codec, &complete, &err)
-		args, err := liftScalarArguments(codec, plan, words)
+		args, err := bound.liftScalarArguments(codec, words, frame.args[:0])
+		// The partial prefix is frame-owned even when a later argument fails.
+		frame.args = args
 		if err != nil {
 			return err
 		}
@@ -474,7 +521,7 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 		if err != nil {
 			return err
 		}
-		err = lowerScalarResult(codec, plan, words, v)
+		err = bound.lowerScalarResult(codec, words, v, frame.result[:0])
 		if err != nil {
 			return err
 		}

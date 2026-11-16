@@ -10,7 +10,7 @@ import (
 // Both immediate and delayed host functions share argument/result ownership.
 type hostCall struct {
 	function      *Function
-	codec         *canonical.Codec
+	codec         canonical.Codec
 	args          []Value
 	created       []*Resource
 	reads         []*pendingHostRead
@@ -22,8 +22,28 @@ type hostCall struct {
 	values, bytes uint64
 }
 
+type resourceHostCall struct {
+	hostCall
+	resources resourceCodec
+}
+
+func (in *Instance) newHostCall(core *vm.Caller, f *Function, n *namespace) *hostCall {
+	var h *hostCall
+	if n != nil && (len(n.resources) != 0 || n.handles != nil) {
+		state := &resourceHostCall{}
+		h = &state.hostCall
+		state.resources = resourceCodec{in: in, n: n, core: core}
+		h.codec.Resources = &state.resources
+	} else {
+		h = &hostCall{}
+	}
+	h.function = f
+	in.configureCodec(&h.codec, core, n, nil, true)
+	return h
+}
+
 func (f *Function) hostCall(core *vm.Caller, args []Value) (h *hostCall, err error) {
-	h = &hostCall{function: f, codec: f.instance.codec(core, f.scope, nil)}
+	h = f.instance.newHostCall(core, f, f.scope)
 	if len(args) != len(f.typ.Parameters) {
 		return h, vm.ErrType
 	}
@@ -36,8 +56,9 @@ func (f *Function) hostCall(core *vm.Caller, args []Value) (h *hostCall, err err
 	}()
 	h.limit()
 	h.args = make([]Value, len(args))
-	for i, p := range f.typ.Parameters {
-		h.args[i], err = h.codec.Clone(p.Type, args[i])
+	plans := f.valuePlans()
+	for i := range f.typ.Parameters {
+		h.args[i], err = plans.parameters[i].Clone(&h.codec, args[i])
 		if err != nil {
 			return h, err
 		}
@@ -82,7 +103,7 @@ func (h *hostCall) accept(result *Value) (*Value, error) {
 	if result == nil {
 		return nil, nil
 	}
-	v, err := h.codec.Clone(h.function.typ.Result, *result)
+	v, err := h.function.valuePlans().result.Clone(&h.codec, *result)
 	if err != nil {
 		return nil, err
 	}
@@ -135,8 +156,8 @@ func (h *hostCall) finish(core *vm.Caller, complete bool, err error) error {
 			h.function.instance.publishReference(ref)
 		}
 	}
-	bindResourceCaller(h.codec, core)
-	guard.run(func() { err = finishResources(h.codec, complete, err) })
+	bindResourceCaller(&h.codec, core)
+	guard.run(func() { err = finishResources(&h.codec, complete, err) })
 	guard.finish()
 	return err
 
