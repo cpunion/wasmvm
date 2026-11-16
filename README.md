@@ -277,6 +277,14 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
+The [combined host/native study](docs/research/performance-combined-optimizations-2026-11-16.md)
+measures PRs #188–191 together with LLGo **1b44c645**. Go 16 B P3 CPU improves
+**3.5%**, throughput **4.6%**, and allocations fall **616 → 521/request**,
+with resolving controls. General native calls still take **2.26x Wasmtime**;
+P3 competitive controls, interpreter CPI regressions, LLGo collection sensitivity
+and native amd64 timing remain open. The record includes 9,940 primary processes,
+184 independent diagnostic processes, all controls, lifecycle phases and failures.
+
 The [canonical invocation increment](docs/research/performance-canonical-invocations-2026-11-16.md)
 adds private synchronous frames and bound root value plans. Complete P3 requests
 allocate **29 fewer Go allocations / 34 fewer LLGo allocations**, and final Go instruction

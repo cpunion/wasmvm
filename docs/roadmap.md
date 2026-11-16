@@ -92,6 +92,18 @@ Two active owned entries are tested through collection, lease retirement and
 interrupt delivery. The broader direct Go assembly bridge remains rejected;
 these changes do not weaken scheduler cooperation or close performance acceptance.
 
+The [unified follow-up event](research/performance-combined-optimizations-2026-11-16.md)
+measures those four increments together: Go 16 B P3 CPU falls 3.5%, throughput
+rises 4.6%, and managed allocations fall 616 → 521/request with resolving
+controls. General native calls remain 2.26x Wasmtime. Interpreter regressions
+show nearly unchanged dynamic instruction work but higher CPI in independent
+diagnostics. The adverse LLGo SDK point loses its CPU/instruction regression
+in a separately bounded zero-GC diagnostic; default-GC acceptance stays open.
+Next prioritize the shared private native call/frame ABI, typed canonical/WASI
+bindings, then the remaining CPI/shared-memory/GC-access/SHA gaps. All earlier
+failures and unresolved controls remain; final CI passes all 27 checks and
+31 coverage gates, but its 11m51s longest job still misses the 5–10 minute target.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and
