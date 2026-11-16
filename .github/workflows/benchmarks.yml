@@ -1074,7 +1074,7 @@ jobs:
           - label: base
             revision: 5860fb6f9c13371f6cdb456a987a8e95844066d4
           - label: head
-            revision: e5dc41d1da1cfa27343f2688612dbe3980413730
+            revision: 75a25564d2b409d64df9a1bfe3231559b17009d9
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -1098,6 +1098,7 @@ jobs:
           mkdir weak-diagnostic
           go build -o "$RUNNER_TEMP/weak-llgo" ./cmd/llgo
           "$RUNNER_TEMP/weak-llgo" test -c -target wasi -o "$GITHUB_WORKSPACE/weak-diagnostic/weak.wasm" ./test/std/weak
+          "$RUNNER_TEMP/weak-llgo" test -c -target wasi -o "$GITHUB_WORKSPACE/weak-diagnostic/sync.wasm" ./test/std/sync
       - name: Repeat under the pinned CI Wasmer and emulator flags
         working-directory: test/std/weak
         run: |
@@ -1108,10 +1109,13 @@ jobs:
           wasm=out/'weak.wasm'
           cli=shutil.which('wasmer')
           result={'revision':subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip(),'wasmer':subprocess.check_output([cli,'--version'],text=True),'wasmSha256':hashlib.sha256(wasm.read_bytes()).hexdigest(),'processes':[]}
-          for i in range(30):
-              cmd=[cli,'run','--enable-exceptions','--enable-simd','--stack-size=1048576','--volume='+str(pathlib.Path.cwd()),'--volume='+tempfile.gettempdir(),'--env=PWD='+str(pathlib.Path.cwd()),str(wasm),'--','-test.v','-test.count=1']
+          for i in range(60):
+              package='weak'if i<30 else 'sync'
+              os.chdir(root/'test'/'std'/package)
+              wasm=out/(package+'.wasm')
+              cmd=[cli,'run','--enable-exceptions','--enable-simd','--stack-size=1048576','--volume='+str(pathlib.Path.cwd()),'--volume='+tempfile.gettempdir(),'--env=PWD='+str(pathlib.Path.cwd()),str(wasm),'--','-test.v','-test.count=1']+(['-test.run=^TestCondStateReclamation$']if package=='sync'else[])
               p=subprocess.run(cmd,text=True,capture_output=True,timeout=30,env=dict(os.environ,RUST_LOG='off'))
-              result['processes'].append({'index':i,'command':cmd,'exit':p.returncode,'stdout':p.stdout,'stderr':p.stderr})
+              result['processes'].append({'index':i,'package':package,'command':cmd,'exit':p.returncode,'stdout':p.stdout,'stderr':p.stderr})
               (out/'results.json').write_text(json.dumps(result,indent=2)+'\n')
               print(i,'exit',p.returncode,flush=True)
           assert all(p['exit']==0 and 'PASS' in p['stdout']for p in result['processes'])
