@@ -49,6 +49,28 @@ remain supported. Logical transfer charges, value limits, complete-range
 prechecks and post-copy cancellation checks remain identical for both paths,
 even when the immutable path avoids scratch allocation.
 
+## Invocation plans and private storage
+
+Synchronous canonical lowers bind immutable root `ValuePlan` descriptors to
+their layout-builder policy on first use. The shared recursive codec retains
+validation, quota, cancellation and ownership behavior. Changing memory width
+or namespace policy rebinds layouts. Unused types consume no layout budget.
+
+An instance-local frame cache supplies synchronous temporary arguments, flat
+results and codec/resource state under the Store lease. Nested reentry leases
+distinct frames. Resource cleanup precedes frame release, including panic and
+failure paths. Release clears live values, active Caller/context/memory and
+resource state; large parameter spills are discarded and shutdown drops the
+cache. Realloc adapters resolve the current namespace binding for every call,
+and no borrowed memory view survives reentry or growth.
+
+This storage never backs public callback snapshots or public capabilities.
+Public Callers, References and BorrowScopes retain their original invalidation
+rules. Suspended canonical calls retain task-owned storage. Host calls embed
+their own codec/resource transaction, which survives pending work as before.
+The [implementation record](../research/performance-canonical-invocations-2026-11-16.md)
+retains semantic tests, allocation reductions and unresolved timing evidence.
+
 ## Resource state
 
 `Resources` holds nominal resource declarations and owned/borrowed handles.

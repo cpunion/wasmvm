@@ -43,6 +43,15 @@ reentry, cancellation, quota and ownership contracts. This is implementation
 direction supported by diagnostic counts/instructions, not closed performance
 acceptance; exact timing claims still require resolving controls.
 
+The first [canonical invocation increment](research/performance-canonical-invocations-2026-11-16.md)
+implements lazy root value plans, invocation-private synchronous frames and
+host-call-owned codec state. Complete P3 requests allocate 29 fewer Go allocations
+and 34 fewer LLGo allocations. Public lifetime, reentry, quotas and pending ownership
+remain unchanged. Final Go instruction counts improve 1.2–1.6%; CPU improvement
+and LLGo time controls remain unresolved, including retained adverse points.
+The native host transition, typed WASI/scoped memory, ready/pending async and
+remaining ordered memory/SIMD work still precede unified performance acceptance.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and

@@ -277,6 +277,13 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
+The [canonical invocation increment](docs/research/performance-canonical-invocations-2026-11-16.md)
+adds private synchronous frames and bound root value plans. Complete P3 requests
+allocate **29 fewer Go allocations / 34 fewer LLGo allocations**, and final Go instruction
+counts fall **1.2–1.6%**. CPU improvement and competitive acceptance remain open;
+the report retains adverse observations and failed controls. Native host
+transitions and typed WASI adapters are the next implementation steps.
+
 The [P3 mechanism study](docs/research/performance-p3-mechanisms-2026-11-16.md)
 locates a shared Go/LLGo gap at host and canonical transitions. Scalar Component
 imports use about **9.25 / 15.25 managed allocation events**, compared with
