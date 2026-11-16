@@ -49,7 +49,7 @@ func TestHostCallsRetainIndependentTransactionsThroughCollection(t *testing.T) {
 				if err != nil {
 					return err
 				}
-				if first == second || first.codec == second.codec || (first.codec.Resources != nil) != (scope != nil) {
+				if first == second || &first.codec == &second.codec || (first.codec.Resources != nil) != (scope != nil) {
 					t.Fatal("host transaction identity or resource policy changed", backend)
 				}
 				if first.codec.Resources != nil && first.codec.Resources == second.codec.Resources {

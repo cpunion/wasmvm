@@ -6,9 +6,23 @@ import (
 	"github.com/cpunion/wasmvm/pkg/vm"
 )
 
-// Core canonical signatures already describe scalar carriers. Retain canonical
-// validation and ownership, while avoiding public VM Value boxing at this edge.
-func liftScalarArguments(codec *canonical.Codec, plan *validate.CanonicalFunction, words []uint64) ([]Value, error) {
+// Types are bound once, while layout validation remains at its first use under
+// the active codec policy. Mutable budgets and ownership stay in the frame.
+type canonicalCallPlan struct {
+	definition *validate.CanonicalFunction
+	values     *functionValues
+}
+
+func newCanonicalCallPlan(plan *validate.CanonicalFunction) *canonicalCallPlan {
+	bound := &canonicalCallPlan{definition: plan}
+	if plan.Type != nil {
+		bound.values = newFunctionValues(plan.Type)
+	}
+	return bound
+}
+
+func (bound *canonicalCallPlan) liftScalarArguments(codec *canonical.Codec, words []uint64, dst []Value) ([]Value, error) {
+	plan := bound.definition
 	if plan.ABI.ParameterMemory != nil {
 		v, err := codec.Load(plan.ABI.ParameterMemory, words[0])
 		return v.Elements, err
@@ -21,10 +35,31 @@ func liftScalarArguments(codec *canonical.Codec, plan *validate.CanonicalFunctio
 	for i, typ := range plan.Signature.Params {
 		slots[i] = canonical.Slot{Type: typ, Bits: words[i]}
 	}
-	return liftFlatArguments(codec, plan, slots[:len(plan.Signature.Params)])
+	flat := slots[:len(plan.Signature.Params)]
+	if dst == nil {
+		dst = make([]Value, 0, min(len(plan.Type.Parameters), canonical.MaxFlatParams))
+	}
+	for i := range bound.values.parameters {
+		parameter := &bound.values.parameters[i]
+		count, err := parameter.FlatCount(codec)
+		if err != nil {
+			return nil, err
+		}
+		if count > uint64(len(flat)) {
+			return nil, vm.ErrType
+		}
+		value, err := parameter.LiftFlat(codec, flat[:count])
+		if err != nil {
+			return nil, err
+		}
+		dst = append(dst, value)
+		flat = flat[count:]
+	}
+	return dst, nil
 }
 
-func lowerScalarResult(codec *canonical.Codec, plan *validate.CanonicalFunction, words []uint64, v *Value) error {
+func (bound *canonicalCallPlan) lowerScalarResult(codec *canonical.Codec, words []uint64, v *Value, scratch []canonical.Slot) error {
+	plan := bound.definition
 	if v == nil {
 		if !plan.Async && len(plan.Signature.Results) != 0 {
 			return vm.ErrType
@@ -39,7 +74,7 @@ func lowerScalarResult(codec *canonical.Codec, plan *validate.CanonicalFunction,
 	if plan.ABI.ResultMemory != nil {
 		return codec.Store(plan.Type.Result, words[len(plan.Signature.Params)-1], *v)
 	}
-	slots, err := codec.LowerFlat(plan.Type.Result, *v)
+	slots, err := bound.values.result.LowerFlatInto(codec, *v, scratch)
 	if err != nil || plan.Async {
 		return err
 	}

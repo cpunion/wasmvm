@@ -14,6 +14,10 @@ func (c *Codec) LiftFlat(t *model.Type, slots []Slot) (Value, error) {
 	if err != nil {
 		return Value{}, err
 	}
+	return c.liftFlatLayout(t, l, slots)
+}
+
+func (c *Codec) liftFlatLayout(t *model.Type, l *Layout, slots []Slot) (Value, error) {
 	if l.FlatCount > MaxFlatParams || uint64(len(slots)) != l.FlatCount {
 		return Value{}, invalid("flat value arity")
 	}

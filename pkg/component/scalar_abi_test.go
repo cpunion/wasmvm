@@ -19,47 +19,47 @@ func TestScalarCanonicalBitsAndFailedCarrierChecks(t *testing.T) {
 	f32, f64 := &model.Type{Kind: model.F32}, &model.Type{Kind: model.F64}
 	plan := &validate.CanonicalFunction{Type: &validate.Type{Parameters: []model.Field{{Type: f32}, {Type: f64}}, Result: f64}, Signature: vm.FunctionType{Params: []wasm.ValueType{wasm.F32, wasm.F64}, Results: []wasm.ValueType{wasm.F64}}}
 	words := []uint64{0x80000000, 0x8000000000000000}
-	args, err := liftScalarArguments(codec(), plan, words)
+	args, err := newCanonicalCallPlan(plan).liftScalarArguments(codec(), words, nil)
 	if err != nil || len(args) != 2 || args[0].Bits != words[0] || args[1].Bits != words[1] {
 		t.Fatal(args, err)
 	}
-	if err := lowerScalarResult(codec(), plan, words, &args[1]); err != nil || words[0] != 0x8000000000000000 {
+	if err := newCanonicalCallPlan(plan).lowerScalarResult(codec(), words, &args[1], nil); err != nil || words[0] != 0x8000000000000000 {
 		t.Fatal(words, err)
 	}
 	// Canonical NaN normalization still applies at this boundary.
 	words = []uint64{0x80000000, 0xfff8000000001234}
-	nanArgs, err := liftScalarArguments(codec(), plan, words)
+	nanArgs, err := newCanonicalCallPlan(plan).liftScalarArguments(codec(), words, nil)
 	if err != nil || nanArgs[1].Bits != 0x7ff8000000000000 {
 		t.Fatal(nanArgs, err)
 	}
-	if err := lowerScalarResult(codec(), plan, words, &nanArgs[1]); err != nil || words[0] != 0x7ff8000000000000 {
+	if err := newCanonicalCallPlan(plan).lowerScalarResult(codec(), words, &nanArgs[1], nil); err != nil || words[0] != 0x7ff8000000000000 {
 		t.Fatal(words, err)
 	}
-	if err := lowerScalarResult(codec(), plan, words, nil); !errors.Is(err, vm.ErrType) {
+	if err := newCanonicalCallPlan(plan).lowerScalarResult(codec(), words, nil, nil); !errors.Is(err, vm.ErrType) {
 		t.Fatal("missing numeric result accepted", err)
 	}
 	plan.Signature.Results[0] = wasm.I32
-	if err := lowerScalarResult(codec(), plan, words, &args[1]); !errors.Is(err, vm.ErrType) {
+	if err := newCanonicalCallPlan(plan).lowerScalarResult(codec(), words, &args[1], nil); !errors.Is(err, vm.ErrType) {
 		t.Fatal("incompatible result carrier accepted", err)
 	}
 	oversized := &validate.CanonicalFunction{Signature: vm.FunctionType{Params: make([]wasm.ValueType, canonical.MaxFlatParams+2)}}
-	if _, err := liftScalarArguments(codec(), oversized, nil); !errors.Is(err, vm.ErrType) {
+	if _, err := newCanonicalCallPlan(oversized).liftScalarArguments(codec(), nil, nil); !errors.Is(err, vm.ErrType) {
 		t.Fatal("oversized flat signature accepted", err)
 	}
 	plan = &validate.CanonicalFunction{Type: &validate.Type{Parameters: []model.Field{{Type: &model.Type{Kind: model.Char}}}}, Signature: vm.FunctionType{Params: []wasm.ValueType{wasm.I32}}}
-	if _, err := liftScalarArguments(codec(), plan, []uint64{0xd800}); err == nil {
+	if _, err := newCanonicalCallPlan(plan).liftScalarArguments(codec(), []uint64{0xd800}, nil); err == nil {
 		t.Fatal("invalid character accepted")
 	}
 	limited := codec()
 	limited.MaxValues = 0
-	if _, err := liftScalarArguments(limited, plan, []uint64{1}); !errors.Is(err, wasm.ErrLimit) {
+	if _, err := newCanonicalCallPlan(plan).liftScalarArguments(limited, []uint64{1}, nil); !errors.Is(err, wasm.ErrLimit) {
 		t.Fatal(err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	canceled := codec()
 	canceled.Transfer.Context = ctx
-	if _, err := liftScalarArguments(canceled, plan, []uint64{1}); !errors.Is(err, context.Canceled) {
+	if _, err := newCanonicalCallPlan(plan).liftScalarArguments(canceled, []uint64{1}, nil); !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
 }
