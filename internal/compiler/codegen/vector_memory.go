@@ -63,11 +63,16 @@ func (e *functionEmitter) vectorMemoryARM64(in slots.Instruction, load bool, siz
 	}
 }
 
-// All x86 memory forms use [r10+rax], after widened address/bounds arithmetic.
+// Checked accesses use R10+RAX. Proven accesses also accept a canonical
+// allocated index or constant displacement without an address-register copy.
 func (e *functionEmitter) vectorMemoryAMD64(in slots.Instruction, load bool, size uint32) {
+	e.vectorMemoryAMD64Indexed(in, load, size, 0, 0, 0)
+}
+
+func (e *functionEmitter) vectorMemoryAMD64Indexed(in slots.Instruction, load bool, size uint32, index byte, offset uint32, scale byte) {
 	op, lane := in.Op&0xffff, uint32(e.f.Sources[in.Source].Wasm.Lane)
 	if op >= 84 && op <= 91 && (load && size == 2 || e.x86Features&(X86SSE41|X86AVX2) != 0) {
-		e.vectorLaneMemoryAMD64(in, load, size, lane)
+		e.vectorLaneMemoryAMD64(in, load, size, lane, index, offset, scale)
 		return
 	}
 	d := e.vectorDestination(in.Dst)
@@ -79,7 +84,7 @@ func (e *functionEmitter) vectorMemoryAMD64(in slots.Instruction, load bool, siz
 		if !load {
 			code = 0x7f
 		}
-		e.vectorAccessAMD64(0xf3, code, d)
+		e.vectorAccessAMD64(0xf3, code, d, index, offset, scale)
 	} else if op >= 1 && op <= 6 {
 		if e.x86Features&(X86SSE41|X86AVX2) != 0 {
 			code := [...]byte{0x20, 0x23, 0x25}[(op-1)/2] // PMOVSXBW/WD/DQ.
@@ -87,12 +92,13 @@ func (e *functionEmitter) vectorMemoryAMD64(in slots.Instruction, load bool, siz
 				code += 0x10 // PMOVZXBW/WD/DQ.
 			}
 			if e.x86Features&X86AVX2 != 0 {
-				e.vectorAccessVEXAMD64(code, d)
+				e.vectorAccessVEXAMD64(code, d, index, offset, scale)
 			} else {
-				e.a.bytes(0x66, 0x41|(d>>3)<<2, 0x0f, 0x38, code, (d&7)<<3|4, 2)
+				e.a.bytes(0x66, 0x41|(d>>3)<<2|(index>>3)<<1, 0x0f, 0x38, code)
+				e.a.xscaledMemoryAddress(d, index, offset, scale)
 			}
 		} else {
-			e.vectorAccessAMD64(0xf3, 0x7e, d) // MOVQ loads exactly eight bytes.
+			e.vectorAccessAMD64(0xf3, 0x7e, d, index, offset, scale) // MOVQ loads exactly eight bytes.
 			e.vectorZero(11)
 			width := (op - 1) / 2
 			if op%2 == 1 {
@@ -102,13 +108,13 @@ func (e *functionEmitter) vectorMemoryAMD64(in slots.Instruction, load bool, siz
 		}
 	} else if op >= 7 && op <= 10 && e.x86Features&X86AVX2 != 0 {
 		// Broadcast the exact scalar width without a GPR/vector round trip.
-		e.vectorAccessVEXAMD64([...]byte{0x78, 0x79, 0x58, 0x59}[op-7], d)
+		e.vectorAccessVEXAMD64([...]byte{0x78, 0x79, 0x58, 0x59}[op-7], d, index, offset, scale)
 	} else if op == 92 || op == 93 {
 		prefix, code := byte(0x66), byte(0x6e) // MOVD, with zeroed upper bits.
 		if op == 93 {
 			prefix, code = 0xf3, 0x7e
 		}
-		e.vectorAccessAMD64(prefix, code, d)
+		e.vectorAccessAMD64(prefix, code, d, index, offset, scale)
 	} else if op >= 88 && op <= 91 {
 		e.vectorMove(11, d)
 		if lane != 0 {
@@ -125,17 +131,20 @@ func (e *functionEmitter) vectorMemoryAMD64(in slots.Instruction, load bool, siz
 		} else if size == 1 {
 			code = 0x88
 		}
-		e.a.bytes(rex, code, 0x0c, 0x02)
+		e.a.bytes(rex|(index>>3)<<1, code)
+		e.a.xscaledMemoryAddress(1, index, offset, scale)
 	} else {
 		// Splat and lane loads read exactly their scalar width into RCX.
 		if size <= 2 {
-			e.a.bytes(0x41, 0x0f, 0xb6+byte(size-1), 0x0c, 0x02)
+			e.a.bytes(0x41|(index>>3)<<1, 0x0f, 0xb6+byte(size-1))
+			e.a.xscaledMemoryAddress(1, index, offset, scale)
 		} else {
 			rex := byte(0x41)
 			if size == 8 {
 				rex |= 8
 			}
-			e.a.bytes(rex, 0x8b, 0x0c, 0x02)
+			e.a.bytes(rex|(index>>3)<<1, 0x8b)
+			e.a.xscaledMemoryAddress(1, index, offset, scale)
 		}
 		e.registerMove(0, 1, size == 8) // Address no longer needed after the load.
 		width := uint32(bits.TrailingZeros32(size))
@@ -153,7 +162,7 @@ func (e *functionEmitter) vectorMemoryAMD64(in slots.Instruction, load bool, siz
 
 // Lane memory forms consume exactly the range checked by memoryAt. They avoid
 // a GPR round trip and leave all other vector lanes intact, including NaN bits.
-func (e *functionEmitter) vectorLaneMemoryAMD64(in slots.Instruction, load bool, size, lane uint32) {
+func (e *functionEmitter) vectorLaneMemoryAMD64(in slots.Instruction, load bool, size, lane uint32, index byte, offset uint32, scale byte) {
 	r := e.vectorOperand(in.B, 0)
 	if load {
 		d := e.vectorDestination(in.Dst)
@@ -161,7 +170,7 @@ func (e *functionEmitter) vectorLaneMemoryAMD64(in slots.Instruction, load bool,
 		r = d
 	}
 	e.a.bytes(0x66)
-	rex := byte(0x41) | (r>>3)<<2 // R10 base, RAX index.
+	rex := byte(0x41) | (r>>3)<<2 | (index>>3)<<1 // R10 base.
 	if size == 8 {
 		rex |= 8
 	}
@@ -183,21 +192,27 @@ func (e *functionEmitter) vectorLaneMemoryAMD64(in slots.Instruction, load bool,
 		}
 		e.a.bytes(0x3a, opcode)
 	}
-	e.a.bytes((r&7)<<3|4, 2, byte(lane))
+	e.a.xscaledMemoryAddress(r, index, offset, scale)
+	e.a.bytes(byte(lane))
 	if load {
 		e.vectorStore(in.Dst, r)
 	}
 }
 
-// Unary VEX.128.66.0F38 memory forms share the checked R10+RAX address.
-func (e *functionEmitter) vectorAccessVEXAMD64(opcode, reg byte) {
+// Unary VEX.128.66.0F38 forms share the scalar address encoder.
+func (e *functionEmitter) vectorAccessVEXAMD64(opcode, reg, index byte, offset uint32, scale byte) {
 	second := byte(0xc2)
 	if reg >= 8 {
 		second &^= 0x80
 	}
-	e.a.bytes(0xc4, second, 0x79, opcode, (reg&7)<<3|4, 2)
+	if index >= 8 {
+		second &^= 0x40
+	}
+	e.a.bytes(0xc4, second, 0x79, opcode)
+	e.a.xscaledMemoryAddress(reg, index, offset, scale)
 }
 
-func (e *functionEmitter) vectorAccessAMD64(prefix, opcode, reg byte) {
-	e.a.bytes(prefix, 0x41|(reg>>3)<<2, 0x0f, opcode, (reg&7)<<3|4, 2)
+func (e *functionEmitter) vectorAccessAMD64(prefix, opcode, reg, index byte, offset uint32, scale byte) {
+	e.a.bytes(prefix, 0x41|(reg>>3)<<2|(index>>3)<<1, 0x0f, opcode)
+	e.a.xscaledMemoryAddress(reg, index, offset, scale)
 }

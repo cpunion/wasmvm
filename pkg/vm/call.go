@@ -302,9 +302,11 @@ func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]valu
 	}
 	s := op.store
 	scalar, isScalar := request.Function.Host.(ScalarHostFunction)
+	borrowed, isBorrowed := request.Function.Host.(BorrowedScalarHostFunction)
+	suspendable, isSuspendableScalar := request.Function.Host.(BorrowedSuspendableScalarHostFunction)
 	var args []Value
 	var err error
-	if !isScalar {
+	if !isScalar && !isBorrowed && !isSuspendableScalar {
 		s.mu.Lock()
 		args, err = s.encodeValuesLocked(request.Args, request.Function.Signature.Params)
 		s.mu.Unlock()
@@ -331,10 +333,23 @@ func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]valu
 			v.Release()
 		}
 	}()
-	if isScalar {
+	if isScalar || isBorrowed || isSuspendableScalar {
 		signature := FunctionType(request.Function.Signature)
-		stack := scalarStack(request.Args, signature)
-		err = scalar(caller, stack)
+		var stack []uint64
+		if isSuspendableScalar {
+			stack = borrowedScalarStack(request.Args, signature)
+			var pending *HostSuspension
+			pending, err = suspendable(caller, stack)
+			if pending != nil && err == nil {
+				err = wasm.ErrTrap
+			}
+		} else if isBorrowed {
+			stack = borrowedScalarStack(request.Args, signature)
+			err = borrowed(caller, stack)
+		} else {
+			stack = scalarStack(request.Args, signature)
+			err = scalar(caller, stack)
+		}
 		panicked = false
 		if err != nil {
 			return nil, op.hostError(err)

@@ -18,7 +18,7 @@ func NewErrorContext(message string) (Value, error) { return canonical.NewErrorC
 func ErrorContextMessage(value Value) (string, error) { return canonical.ErrorContextMessage(value) }
 
 func (in *Instance) errorContextBuiltin(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
-	fn, err := caller.NewScalarFunction(plan.Signature, func(c *vm.Caller, words []uint64) error {
+	fn, err := caller.NewBorrowedScalarFunction(plan.Signature, func(c *vm.Caller, words []uint64) error {
 		if n.failed || n.blocked {
 			return wasm.ErrTrap
 		}

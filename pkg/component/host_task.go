@@ -25,6 +25,9 @@ func (t *componentTask) resumeHost(c *vm.Caller) error {
 	}
 
 	var ready bool
+	var resolve func(*Caller) (*Value, error)
+	var cancelled bool
+	var err error
 	if !t.started {
 		h := t.host
 		if h == nil {
@@ -53,20 +56,19 @@ func (t *componentTask) resumeHost(c *vm.Caller) error {
 		if p == nil {
 			return vm.ErrType
 		}
-		if ready, err = p.bind(t.in.scheduler().wake); err != nil {
+		if resolve, cancelled, ready, err = p.poll(t.in.scheduler().wake, true); err != nil {
 			return err
 		}
 		h.completion = p
 	} else {
-		ready = t.host.completion.ready()
+		resolve, cancelled, ready, err = t.host.completion.poll(nil, false)
+		if err != nil {
+			return err
+		}
 	}
 	h := t.host
 	if !ready {
 		return nil
-	}
-	resolve, cancelled, err := h.completion.take()
-	if err != nil {
-		return err
 	}
 	if cancelled {
 		// Cancellation can arrive after resume's initial snapshot but before the

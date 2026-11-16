@@ -23,7 +23,7 @@ func (e *functionEmitter) memoryOperandFacts(start, end int, r memoryRegion) map
 		in := e.f.Code[pc]
 		src := e.f.Sources[in.Source].Wasm
 		a, b, v := values[in.A], values[in.B], memoryOperand{}
-		if r.proven[pc] && isMemoryAccess(in.Op) && !nativeVectorMemoryOpcode(in.Op) {
+		if r.proven[pc] && isMemoryAccess(in.Op) {
 			address := in.A
 			if remap, ok := r.addresses[pc]; ok {
 				address = remap.local

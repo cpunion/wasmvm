@@ -62,7 +62,7 @@ func (in *Instance) resourceBuiltin(caller *vm.Caller, n *namespace, plan *valid
 		return vm.ErrType
 	}
 	in.resourceTable(n)
-	fn, err := caller.NewScalarFunction(plan.Signature, func(c *vm.Caller, words []uint64) error {
+	fn, err := caller.NewBorrowedScalarFunction(plan.Signature, func(c *vm.Caller, words []uint64) error {
 		if n.failed || n.blocked && plan.Definition.Op != 4 {
 			return wasm.ErrTrap
 		}

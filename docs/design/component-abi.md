@@ -71,6 +71,23 @@ their own codec/resource transaction, which survives pending work as before.
 The [implementation record](../research/performance-canonical-invocations-2026-11-16.md)
 retains semantic tests, allocation reductions and unresolved timing evidence.
 
+Internal synchronous canonical functions and scalar builtins now use the Core
+borrowed-stack API. Their numeric operands reuse the parked execution's host
+carriers; public component argument snapshots remain independently owned.
+Blocking stream/future builtins use the borrowed suspendable form: immediate
+results stay scalar, while actual pending work retains the existing owned
+continuation and fresh-Caller protocol. Packing reads low words forward and
+unpacking writes complete result carriers backward to handle overlap safely.
+No borrowed stack contains reference-typed parameters or crosses suspension.
+
+Each source lazily binds one immutable read signature/value plan. Read calls
+still allocate independent mutable Function/callback, codec, ownership and
+cancellation state. Completion scheduling observes atomic readiness; subscription
+and result consumption share one mutex-protected snapshot. Publication either
+appears in that snapshot or sends a subscribed wake, and consumed/closed
+completions clear readiness before cleanup. Public completion objects remain
+one-shot and are never recycled.
+
 ## Resource state
 
 `Resources` holds nominal resource declarations and owned/borrowed handles.

@@ -254,7 +254,7 @@ func (in *Instance) startSourceRead(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 	}
 	unit := r.typ.Element == nil
 	var completion *ReadCompletion
-	f := &Function{instance: in, scope: w.scope, typ: &validate.Type{Kind: model.AsyncFunction, Result: batch}}
+	f := w.source.readFunction(batch)
 	f.asyncHost = func(caller *Caller, _ []Value) (*HostCompletion, error) {
 		var err error
 		if in.callDepth >= in.config.Store.MaxReentry {
@@ -374,8 +374,27 @@ type sourceState struct {
 	controlAccepted     bool
 	hasOwned            bool
 	source              AsyncSource
+	readPlan            *sourceReadPlan
 	once                sync.Once
 	closed              atomic.Bool
+}
+
+// One source has a fixed batch schema and resource namespace. Bind that
+// immutable signature/layout policy once; each read still has a fresh Function,
+// callback, codec, ownership transaction and cancellation scope.
+type sourceReadPlan struct {
+	typ    validate.Type
+	values functionValues
+}
+
+func (s *sourceState) readFunction(batch *model.Type) *Function {
+	if s.readPlan == nil {
+		s.readPlan = &sourceReadPlan{
+			typ:    validate.Type{Kind: model.AsyncFunction, Result: batch},
+			values: functionValues{result: canonical.NewValuePlan(batch)},
+		}
+	}
+	return &Function{instance: s.in, scope: s.writer.scope, typ: &s.readPlan.typ, values: &s.readPlan.values}
 }
 
 func (s *sourceState) start(c *Caller, limit uint32) (*ReadCompletion, error) {

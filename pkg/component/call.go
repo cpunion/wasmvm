@@ -502,7 +502,7 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 		return err
 	}
 	bound := newCanonicalCallPlan(plan)
-	core, err := caller.NewScalarFunction(plan.Signature, func(caller *vm.Caller, words []uint64) (err error) {
+	core, err := caller.NewBorrowedScalarFunction(plan.Signature, func(caller *vm.Caller, words []uint64) (err error) {
 		if n.failed || n.blocked {
 			return wasm.ErrTrap
 		}

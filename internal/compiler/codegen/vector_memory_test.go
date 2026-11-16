@@ -14,6 +14,23 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
+func TestProvenVectorMemoryOperandsAMD64(t *testing.T) {
+	for op := uint32(0xfd0000); op <= 0xfd005d; op++ {
+		if !nativeVectorMemoryOpcode(op) {
+			continue
+		}
+		for _, features := range []X86Features{0, X86SSE41, X86AVX2} {
+			for _, offset := range []uint32{0, 1, 127, 128, 4096} {
+				f, _ := vectorMemoryFunction(t, op, offset, 0, true, true)
+				compiled, err := CompileFunctionWithConfig("amd64", f, DefaultLimits(), Config{Unmetered: true, MemoryMinimumPages: 1, X86Features: features})
+				if err != nil || compiled.DirectMemoryOperands != 1 || compiled.BoundsElided != 1 {
+					t.Fatal("proven vector access materialized an address", op, offset, features, compiled, err)
+				}
+			}
+		}
+	}
+}
+
 func vectorMemoryFunction(t *testing.T, op, offset uint32, lane byte, bounded, pressure bool) (*slots.Function, int) {
 	load, _ := memoryAccess(op)
 	sig := module.FuncType{Params: []wasm.ValueType{wasm.I32, wasm.V128}}
