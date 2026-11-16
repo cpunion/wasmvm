@@ -172,6 +172,13 @@ identity loads. See [the retained evidence](research/performance-native-call-met
 LLGo is pinned to `9e45f103` (wide SIMD rounding/conversions); source and compiler
 performance events remain separate.
 
+Indirect-call frame initialization now shares the direct-call bulk primitives,
+skips the fully overwritten parameter prefix, and polls cancellation at most
+every 4 KiB. Tests poison both value words and guard slots across empty, tail,
+chunk-boundary and large-parameter cases, including canceled partial children.
+Full dual-compiler/platform validation and request regression checks remain
+required; register arguments and unified competitive acceptance stay open.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and
