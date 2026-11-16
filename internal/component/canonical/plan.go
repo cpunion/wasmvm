@@ -65,6 +65,17 @@ func (p *ValuePlan) Clone(c *Codec, v Value) (Value, error) {
 	return c.clone(p.typ, v)
 }
 
+// RetainBorrowed validates and charges the same logical retention as Clone,
+// without allocating aggregate snapshots. Its caller owns normalized private
+// carriers and must not expose them to callbacks that retain aggregate slices.
+func (p *ValuePlan) RetainBorrowed(c *Codec, v Value) error {
+	if err := p.validate(c, v); err != nil {
+		return err
+	}
+	_, err := c.copyValue(p.typ, v, false)
+	return err
+}
+
 // LowerFlatInto appends to invocation-owned scalar storage. The codec and plan
 // never retain that storage. Validation precedes lowering and resource effects.
 func (p *ValuePlan) LowerFlatInto(c *Codec, v Value, dst []Slot) ([]Slot, error) {

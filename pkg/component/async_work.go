@@ -163,7 +163,7 @@ func (c *Caller) Schedule(work AsyncWork) error {
 	in.heldBytes += bytes
 	state.refs = make([]*Resource, len(work.Owned))
 	for i, ref := range work.Owned {
-		state.refs[i], err = canonical.MoveReference(ref)
+		state.refs[i], err = in.references.Move(ref)
 		if err != nil {
 			t.finish(c.core, err)
 			return err

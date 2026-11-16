@@ -80,6 +80,15 @@ continuation and fresh-Caller protocol. Packing reads low words forward and
 unpacking writes complete result carriers backward to handle overlap safely.
 No borrowed stack contains reference-typed parameters or crosses suspension.
 
+Synchronous component imports can explicitly declare `BorrowedParameters`.
+Only a canonical lower may pass its normalized invocation-owned parameters
+directly to such a callback. Ordinary hosts, public calls and async operations
+retain owned snapshots. Validation, logical value/transfer charges and affine
+acceptance still run; result cloning completes before the private frame clears.
+P3 HTTP types copy retained aggregate data into provider objects and opt in.
+Reentry acquires independent canonical storage; neither pending work nor a
+later invocation can observe an earlier borrowed parameter slice.
+
 Each source lazily binds one immutable read signature/value plan. Read calls
 still allocate independent mutable Function/callback, codec, ownership and
 cancellation state. Completion scheduling observes atomic readiness; subscription
@@ -89,6 +98,16 @@ completions clear readiness before cleanup. Public completion objects remain
 one-shot and are never recycled.
 
 ## Resource state
+
+An instance's serialized reference allocator groups fresh opaque capabilities
+in blocks of four, after a standalone first allocation for small owners. Every
+slot is published once; move and invalidation keep each alias's own affine bit,
+and no address or guard is rebound. Header copies retain their block through
+interior pointers. Shutdown drops the allocation cursor after Store quiescence.
+Logical resource/value/transfer quotas and handle generations are unchanged.
+Future/stream endpoint pairs also share allocation storage while retaining
+independent handles, state transitions, cleanup and event delivery. A retained
+member can keep its small allocation group alive; this is not object pooling.
 
 `Resources` holds nominal resource declarations and owned/borrowed handles.
 Host capabilities do not reuse IDs. Guest tables use the specified LIFO free

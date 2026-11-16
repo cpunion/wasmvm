@@ -43,6 +43,12 @@ func (in *Instance) newHostCall(core *vm.Caller, f *Function, n *namespace) *hos
 }
 
 func (f *Function) hostCall(core *vm.Caller, args []Value) (h *hostCall, err error) {
+	return f.hostParameters(core, args, false)
+}
+
+// Only the canonical lower's normalized invocation-owned arguments may be
+// borrowed. Public Function.Call and pending calls keep owned snapshots.
+func (f *Function) hostParameters(core *vm.Caller, args []Value, borrowed bool) (h *hostCall, err error) {
 	h = f.instance.newHostCall(core, f, f.scope)
 	if len(args) != len(f.typ.Parameters) {
 		return h, vm.ErrType
@@ -55,10 +61,18 @@ func (f *Function) hostCall(core *vm.Caller, args []Value) (h *hostCall, err err
 		}
 	}()
 	h.limit()
-	h.args = make([]Value, len(args))
+	if borrowed {
+		h.args = args
+	} else {
+		h.args = make([]Value, len(args))
+	}
 	plans := f.valuePlans()
 	for i := range f.typ.Parameters {
-		h.args[i], err = plans.parameters[i].Clone(&h.codec, args[i])
+		if borrowed {
+			err = plans.parameters[i].RetainBorrowed(&h.codec, args[i])
+		} else {
+			h.args[i], err = plans.parameters[i].Clone(&h.codec, args[i])
+		}
 		if err != nil {
 			return h, err
 		}

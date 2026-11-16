@@ -61,6 +61,19 @@ retain their contracts. Per the 2026-11-16 owner direction, competitor timing
 campaigns wait for the combined optimization work. These structural changes
 and semantic checks do not establish competitive performance completion.
 
+A following ownership increment groups fresh affine-reference allocations and
+future/stream endpoint storage. Copied headers still share only their original
+guard, moves publish a distinct binding, borrows remain scope-bound, and no
+published slot is recycled. Reentry, collection, failure cleanup and shutdown
+retain the existing ownership protocol. This changes allocation organization,
+not logical quota accounting or the deferred competitive acceptance gate.
+
+The same increment adds explicit synchronous borrowed component parameters.
+P3 HTTP types consume normalized canonical parameters without another aggregate
+snapshot; retained provider data and returned results still become owned.
+Public calls and async bindings retain their existing snapshot contracts.
+Both paths preserve logical budgets and fresh resource/callback guards.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and

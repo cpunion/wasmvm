@@ -330,10 +330,11 @@ func (p *HTTP) Imports() component.Imports {
 	if p == nil || p.types == nil {
 		return component.Imports{}
 	}
-	types := component.Imports{Resources: p.types, Functions: map[string]component.HostFunction{}, FunctionChecks: map[string]component.FunctionCheck{}}
+	types := component.Imports{Resources: p.types, Functions: map[string]component.HostFunction{}, BorrowedParameters: map[string]bool{}, FunctionChecks: map[string]component.FunctionCheck{}}
 	for name, schema := range httpWITFunctions["types"] {
 		types.FunctionChecks[name] = schema.check(p.types)
 		types.Functions[name] = p.method(name)
+		types.BorrowedParameters[name] = true
 	}
 	instances := map[string]component.Imports{HTTPTypesInterface: types}
 	for _, name := range []string{"handler", "client"} {

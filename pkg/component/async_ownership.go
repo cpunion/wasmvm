@@ -48,7 +48,7 @@ func (r *resourceCodec) liftAsync(t *model.Type, id uint32) (Value, error) {
 		return Value{}, err
 	}
 	e.n, e.id = nil, next
-	ref := canonical.NewReference(r.in.hostResources, nil, next, e, nil)
+	ref := r.in.references.New(r.in.hostResources, nil, next, e, nil)
 	r.created = append(r.created, ref)
 	return Value{Resource: ref}, nil
 }
@@ -77,7 +77,7 @@ func (r *resourceCodec) acceptAsync(t *model.Type, v Value, commit bool) (Value,
 		}
 		return v, nil
 	}
-	ref, err := canonical.MoveReference(v.Resource)
+	ref, err := r.in.references.Move(v.Resource)
 	if err != nil {
 		return Value{}, err
 	}
