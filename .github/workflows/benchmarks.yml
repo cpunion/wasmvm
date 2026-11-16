@@ -108,7 +108,7 @@ jobs:
 
   benchmark:
     # Capability completion takes priority; measurements are opt-in until then.
-    if: ${{ inputs.suite != 'native-simd' && inputs.suite != 'routing' && inputs.suite != 'p3io' && inputs.suite != 'llgo-layout' && inputs.suite != 'llgo-poll' && inputs.suite != 'llgo-regression' && inputs.suite != 'llgo-regression-main' && inputs.suite != 'llgo-upgrade' && (github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks')) }}
+    if: ${{ inputs.suite != 'native-simd' && inputs.suite != 'routing' && inputs.suite != 'p3io' && inputs.suite != 'llgo-layout' && inputs.suite != 'llgo-poll' && inputs.suite != 'llgo-regression' && inputs.suite != 'llgo-regression-main' && inputs.suite != 'llgo-upgrade' && inputs.suite != 'llgo-msvc-simd' && inputs.suite != 'llgo-weak' && (github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks')) }}
     name: Runtime performance / linux-amd64
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && inputs.suite != 'pr' && 90 || 10 }}
@@ -1133,7 +1133,7 @@ jobs:
           - label: base
             revision: 5860fb6f9c13371f6cdb456a987a8e95844066d4
           - label: head
-            revision: e5dc41d1da1cfa27343f2688612dbe3980413730
+            revision: 75a25564d
     runs-on: windows-2022
     timeout-minutes: 25
     permissions:
@@ -1144,6 +1144,7 @@ jobs:
       GOEXPERIMENT: simd
       GOAMD64: v1
       GODEBUG: cpu.avx512f=off
+      DIAG_LABEL: ${{ matrix.label }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -1166,6 +1167,18 @@ jobs:
           run-id: 43797281619
           github-token: ${{ github.token }}
           path: simd-diagnostic
+      - uses: ./.github/actions/setup-go
+        if: matrix.label == 'head'
+      - name: Build candidate and check caller allocation regression
+        if: matrix.label == 'head'
+        shell: python
+        run: |
+          import os,pathlib,subprocess
+          out=pathlib.Path('simd-diagnostic').resolve()
+          cli=pathlib.Path(os.environ['RUNNER_TEMP'])/'unwind-llgo.exe'
+          subprocess.run(['go','build','-o',str(cli),'./cmd/llgo'],check=True)
+          subprocess.run([str(cli),'test','-O2','-c','-o',str(out/'upstream.exe'),'simd/archsimd/internal/simd_test'],check=True)
+          subprocess.run([str(cli),'test','-O2','-v','-run','^TestRuntimeCallersWindowsAllocations$','-count=1','./test/go'],check=True,timeout=240)
       - name: Bound execution and capture stalled native stacks
         shell: python
         run: |
@@ -1191,7 +1204,7 @@ jobs:
           smoke=subprocess.run([lldb,'--version'],env=debugger_env,text=True,capture_output=True)
           print('debugger',lldb,smoke.returncode,smoke.stdout,smoke.stderr,flush=True)
           assert smoke.returncode==0
-          result={'frozenBuildRun':43797281619,'binarySHA256':hashlib.sha256(binary.read_bytes()).hexdigest(),'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'runs':[]}
+          result={'frozenBuildRun':43797281619 if os.environ.get('DIAG_LABEL')=='base'else None,'binarySHA256':hashlib.sha256(binary.read_bytes()).hexdigest(),'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'runs':[]}
           for label,settings in [('gogc-10',{'GOGC':'10'}),('default',{'GOGC':'100'}),('gogc-off',{'GOGC':'off'})]:
               env=dict(os.environ)
               env.pop('GC_DONT_GC',None)
