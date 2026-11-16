@@ -12,7 +12,7 @@
   {
     "name": "component",
     "packages": "./internal/component/canonical ./internal/component/decode ./internal/component/validate ./pkg/component ./internal/compiler/nativeabi ./internal/compiler/ir ./internal/wasi/host ./internal/compiler/codegen",
-    "inputs": "component"
+    "inputs": "core2 component"
   },
   {
     "name": "legacy",

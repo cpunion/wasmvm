@@ -17,6 +17,13 @@ class ShardsTest(unittest.TestCase):
     def test_complete_repository_plan(self):
         self.assertEqual(validate(self.shards), 32)
 
+    def test_rebalanced_codegen_keeps_its_core_corpus(self):
+        shards = copy.deepcopy(self.shards)
+        source = next(s for s in shards if './internal/compiler/codegen' in s['packages'].split())
+        source['inputs'] = ' '.join(x for x in source['inputs'].split() if x != 'core2')
+        with self.assertRaisesRegex(ValueError, 'missing required inputs.*codegen.*core2'):
+            validate(shards)
+
     def test_missing_duplicate_and_unknown_packages(self):
         for mode in ('missing', 'duplicate', 'unknown'):
             with self.subTest(mode=mode):
