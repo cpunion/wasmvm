@@ -77,6 +77,11 @@ func (b *httpBody) readSnapshot(reader io.ReadCloser) (data string, err error, r
 		return "", nil, false
 	}
 	data, err = r.takeLocked(int(b.owner.network.io.config.MaxReadBytes))
+	if err == nil && r.offset == len(r.data) {
+		// The immutable source establishes EOF with its final bytes. Ordinary
+		// Reader callers keep their separate-read EOF contract.
+		err = io.EOF
+	}
 	r.mu.Unlock()
 	ready = true
 	defer func() {
