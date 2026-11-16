@@ -1133,7 +1133,7 @@ jobs:
           - label: base
             revision: 5860fb6f9c13371f6cdb456a987a8e95844066d4
           - label: head
-            revision: 75a25564d
+            revision: 75a25564d2b409d64df9a1bfe3231559b17009d9
     runs-on: windows-2022
     timeout-minutes: 25
     permissions:
