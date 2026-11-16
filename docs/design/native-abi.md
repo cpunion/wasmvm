@@ -797,3 +797,36 @@ original instructions. The ARM candidate and wider logical-immediate selection
 were rejected after the combined measurement and causal ablations. SSE2/SSE4.1
 lane forms retain explicit CPU feature gates and exact-width bounds checks;
 shared ordinary memory accesses and every backedge poll remain.
+
+### Fresh private-call entries
+
+Unmetered frame-register modules give each fresh private call a PC-zero entry.
+The caller still checks depth, slot quotas, physical capacity and structural
+signatures, initializes the whole child frame, and establishes its frame base.
+The ordinary entry has already established the immutable policy/root-map
+contract for this native run. Fresh entry shares private-return restoration of
+memory bindings, vector/integer literals, runtime words and heap cache keys,
+then selects the original first PC and its allocation plan directly. It neither
+stores nor reads a context continuation solely to rediscover PC zero.
+
+Ordinary host entry retains all header/fuel/state validation and every original
+PC for helper, trap, interrupt and inspection resumption. Metered linked calls
+retain their context-PC dispatch. This shortens shared private entry work; it
+does not yet introduce register parameters or lazy frame materialization.
+
+### Materialize live return frames on exceptional exits
+
+A successful private return retires its child frame. Spill result homes needed
+by complete-value copies and integer homes overwritten by the ISA-specific
+return work registers before that work starts. A cached scalar result keeps
+its existing carrier; canonical high words remain in the frame. Other integer,
+float and vector homes stay in registers until the last return cancellation
+poll, avoiding writes to a frame that is about to become dead.
+
+If cancellation wins, spill the surviving homes before publishing the still-live
+child and its original return PC to the common driver. Homes already overwritten
+by return work must use their earlier materialized copies. Missing-parent and
+ordinary host returns retain full materialization. Code generation shares the
+same ordered slot-spill encoder and keeps the original mapping throughout;
+only the materialization point changes. Full tuple words and host roots remain
+required on every observable exit.

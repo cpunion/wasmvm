@@ -87,7 +87,9 @@ func TestLinkedCallBodiesAndRelocations(t *testing.T) {
 			for _, test := range []struct {
 				capacity, slots uint64
 				linked          bool
-			}{{16, 2048, true}, {0, 2048, false}, {16, 5, false}} {
+				pc              uint64
+			}{{16, 2048, true, 0}, {0, 2048, false, 0}, {16, 5, false, 0},
+				{16, 2048, true, 5}, {0, 2048, false, 5}, {16, 5, false, 5}} {
 				clear(words)
 				words[1], words[2], words[3] = test.capacity, test.slots*16, 64
 				for i := range 2048 {
@@ -97,7 +99,9 @@ func TestLinkedCallBodiesAndRelocations(t *testing.T) {
 				for i, v := range initial {
 					writeSlot(t, ctx, 0, slots.Slot(i), v)
 				}
-				state := native.State{Depth: 1, Fuel: 100, Budget: 64, Payload: [4]uint64{0, view, view, 0}}
+				// A call entered from a nonzero cold PC must enter its child at
+				// PC zero even when private calls no longer write Continuation.
+				state := native.State{Continuation: test.pc, Depth: 1, Fuel: 100, Budget: 64, Payload: [4]uint64{0, view, view, 0}}
 				if !unmetered {
 					state.Payload[3] = 1
 				}

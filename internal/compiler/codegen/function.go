@@ -25,7 +25,9 @@ type CompiledFunction struct {
 	NativeAtomics uint32
 	Entry         nativeabi.Entry
 	// LinkedEntry is a compiler-only target after ordinary entry checks.
-	// Its caller must establish the checked frame, root map and dispatch PC.
+	// Its caller must establish the checked frame and root map. Unmetered
+	// frame-register bodies enter at PC zero without reading Continuation;
+	// other policies require their dispatch PC in the context.
 	LinkedEntry                   uint32
 	Function                      *slots.Function
 	Offsets                       []uint32
@@ -277,6 +279,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		e.prepareMemory()
 	}
 	regions := e.addNativeLoops(e.memoryRegions())
+	var initialPlan *registerPlan
 	if unmetered {
 		e.selectRegisters(config, regions)
 		e.prepareVectorConstants()
@@ -285,6 +288,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		e.prepareHeapCaches()
 		e.prepareLinearScan(regions, 1<<18)
 		plan := e.currentRegisterPlan()
+		initialPlan = plan
 		e.useRegisterPlan(nil)
 		if e.allocationPlans == nil {
 			e.transitionRegisters(plan)
@@ -615,6 +619,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	e.emitCallResumes(pcs)
 	e.emitTrapExits()
 	e.emitLinkedDispatch(config)
+	linkedEntry := e.emitCallStart(pcs, initialPlan)
 	a.mark(e.bad)
 	e.rawStatus(nativeabi.BadState)
 	a.mark(e.zero)
@@ -639,7 +644,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	if err != nil {
 		return nil, err
 	}
-	linkedPosition, _ := a.labelAt(e.linkedStart)
+	linkedPosition, _ := a.labelAt(linkedEntry)
 	out.LinkedEntry = out.Entry.BodyOffset + uint32(linkedPosition)
 	for i, l := range pcs {
 		position, _ := a.labelAt(l)
