@@ -159,7 +159,7 @@ and must not be pooled with the newer pure-build-time records.
   680-byte stack reservation, first operand retained in r10 while decoding the
   second address. The original report's loop was 7494 bytes/696-byte stack.
 - Inline-budget-only removes the four calls but is placement-sensitive: its Intel
-  counter regresses about 8.5%; its AMD dense case regresses about 11.3% with an
+  counter regresses about 8.5%; its AMD dense case improves about 11.3% with an
   unresolved control. The combined policy is a separate measured event.
 - ELF page-separated text fails to restore the original AMD layout baseline;
   it can slow the original fast source too. It is not adopted.
