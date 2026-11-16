@@ -1158,7 +1158,7 @@ jobs:
           windows-msvc-dependencies: runtime
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: '3.11.9'
           architecture: x64
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
@@ -1169,7 +1169,7 @@ jobs:
       - name: Bound execution and capture stalled native stacks
         shell: python
         run: |
-          import os,json,pathlib,subprocess,shutil,time,ctypes,hashlib
+          import os,json,pathlib,subprocess,shutil,time,ctypes,hashlib,sys
           from ctypes import wintypes
           out=pathlib.Path('simd-diagnostic').resolve()
           binary=out/'upstream.exe'
@@ -1185,8 +1185,14 @@ jobs:
               times=[wintypes.FILETIME()for _ in range(4)]
               kernel.GetProcessTimes(wintypes.HANDLE(int(p._handle)),*(ctypes.byref(t)for t in times))
               return {'privateBytes':m.private,'workingSetBytes':m.workingSet,'memoryOK':bool(ok),'cpuMs':sum((t.dwHighDateTime<<32)+t.dwLowDateTime for t in times[2:])/10000}
+          debugger_env=dict(os.environ,PYTHONHOME=sys.base_prefix,PYTHONPATH=os.environ['LLGO_WINDOWS_LLDB_PYTHONPATH'])
+          debugger_env['PATH']=sys.base_prefix+os.pathsep+debugger_env['PATH']
+          lldb=os.environ['LLGO_LLDB']
+          smoke=subprocess.run([lldb,'--version'],env=debugger_env,text=True,capture_output=True)
+          print('debugger',lldb,smoke.returncode,smoke.stdout,smoke.stderr,flush=True)
+          assert smoke.returncode==0
           result={'frozenBuildRun':43797281619,'binarySHA256':hashlib.sha256(binary.read_bytes()).hexdigest(),'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'runs':[]}
-          for label,settings in [('default',{'GOGC':'100'}),('gogc-off',{'GOGC':'off'}),('collector-off',{'GC_DONT_GC':'1'})]:
+          for label,settings in [('gogc-0',{'GOGC':'0','GC_PRINT_STATS':'1'}),('gogc-10',{'GOGC':'10'}),('gogc-33',{'GOGC':'33'}),('default',{'GOGC':'100','GC_PRINT_STATS':'1'}),('gogc-off',{'GOGC':'off'})]:
               env=dict(os.environ)
               env.pop('GC_DONT_GC',None)
               env.pop('GOGC',None)
@@ -1201,11 +1207,10 @@ jobs:
                       time.sleep(0.25)
                   if p.poll() is None:
                       stalled=True
-                      lldb=shutil.which('lldb')
                       if lldb:
                           cmd=[lldb,'--batch','-o','process attach --pid '+str(p.pid),'-o','thread backtrace all','-o','process detach','-o','quit']
                           try:
-                              stack=subprocess.run(cmd,text=True,capture_output=True,timeout=30)
+                              stack=subprocess.run(cmd,env=debugger_env,text=True,capture_output=True,timeout=30)
                               (out/(label+'.stacks')).write_text('debugger exit '+str(stack.returncode)+'\n'+stack.stdout+stack.stderr)
                           except subprocess.TimeoutExpired as e:
                               (out/(label+'.stacks')).write_text('debugger timeout\n'+str(e))
@@ -1213,8 +1218,8 @@ jobs:
                       p.wait(timeout=10)
                   result['runs'].append({'label':label,'environment':settings,'exit':p.returncode,'stalled':stalled,'seconds':time.monotonic()-started,'samples':samples,'executed':'=== RUN   TestAdd' in (out/(label+'.stdout')).read_text()})
                   (out/'results.json').write_text(json.dumps(result,indent=2)+'\n')
-                  print(result['runs'][-1],flush=True)
-          assert result['runs'][0]['exit']==0 and result['runs'][0]['executed']
+                  print({k:v for k,v in result['runs'][-1].items()if k!='samples'},flush=True)
+          assert all(r['exit']==0 and r['executed']for r in result['runs']if r['label']!='gogc-off')
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
