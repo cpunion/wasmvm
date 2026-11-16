@@ -52,6 +52,15 @@ and LLGo time controls remain unresolved, including retained adverse points.
 The native host transition, typed WASI/scoped memory, ready/pending async and
 remaining ordered memory/SIMD work still precede unified performance acceptance.
 
+The next host/runtime increment borrows Core scalar carriers for synchronous
+canonical operations and immediate suspendable builtins, shares source read
+type/value plans, and combines completion readiness/consumption with atomic
+scheduling hints. Proven amd64 SIMD addresses reuse the scalar address encoder.
+Owned callbacks, true suspension, roots, quotas and GC/scheduler cooperation
+retain their contracts. Per the 2026-11-16 owner direction, competitor timing
+campaigns wait for the combined optimization work. These structural changes
+and semantic checks do not establish competitive performance completion.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and

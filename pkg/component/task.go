@@ -33,7 +33,7 @@ func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.
 	if plan.Definition.Op == 0x0a || plan.Definition.Op == 0x0b {
 		return in.contextBuiltin(caller, n, plan)
 	}
-	fn, err := caller.NewScalarFunction(plan.Signature, func(c *vm.Caller, words []uint64) error {
+	fn, err := caller.NewBorrowedScalarFunction(plan.Signature, func(c *vm.Caller, words []uint64) error {
 		task := n.task
 		if n.failed || task == nil {
 			return wasm.ErrTrap

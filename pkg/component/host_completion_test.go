@@ -254,33 +254,31 @@ func TestHostCompletionProtocol(t *testing.T) {
 	if err := p.Cancelled(); !errors.Is(err, wasm.ErrClosed) {
 		t.Fatal(err)
 	}
-	if ready, err := p.bind(wake); err != nil || !ready {
-		t.Fatal("lost pre-bind completion", ready, err)
+	if !p.ready() {
+		t.Fatal("publication is not ready")
+	}
+	if _, cancelled, ready, err := p.poll(wake, true); err != nil || !ready || !cancelled {
+		t.Fatal("lost pre-bind cancellation", cancelled, ready, err)
 	}
 	select {
 	case <-wake:
-		t.Fatal("already ready completion sent a redundant notification")
+		t.Fatal("ready completion sent a redundant wake")
 	default:
 	}
-	if !p.ready() {
-		t.Fatal("not ready")
-	}
-	if _, err := p.bind(wake); !errors.Is(err, vm.ErrType) {
+	if _, _, _, err := p.poll(wake, true); !errors.Is(err, vm.ErrType) {
 		t.Fatal(err)
 	}
-	if _, cancelled, err := p.take(); err != nil || !cancelled {
-		t.Fatal(cancelled, err)
-	}
-	if _, _, err := p.take(); !errors.Is(err, vm.ErrType) {
-		t.Fatal(err)
+	if _, _, ready, err := p.poll(nil, false); err != nil || ready {
+		t.Fatal(ready, err)
 	}
 	if p.ready() {
-		t.Fatal("consumed result ready")
+		t.Fatal("consumed result remains ready")
 	}
 	p.close()
-	if _, err := p.bind(wake); !errors.Is(err, vm.ErrType) {
+	if _, _, _, err := p.poll(wake, true); !errors.Is(err, vm.ErrType) {
 		t.Fatal(err)
 	}
+
 }
 
 func TestHostCompletionConcurrentBindAndPublish(t *testing.T) {
@@ -299,7 +297,7 @@ func TestHostCompletionConcurrentBindAndPublish(t *testing.T) {
 				}
 			}()
 			close(start)
-			ready, err := p.bind(wake)
+			resolve, gotCancelled, ready, err := p.poll(wake, true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -315,11 +313,88 @@ func TestHostCompletionConcurrentBindAndPublish(t *testing.T) {
 			if err = <-published; err != nil {
 				t.Fatal(err)
 			}
-			resolve, gotCancelled, err := p.take()
+			if !ready {
+				resolve, gotCancelled, ready, err = p.poll(nil, false)
+			}
 			if err != nil || gotCancelled != cancelled || (resolve == nil) != cancelled {
 				t.Fatal("completion changed across subscription", gotCancelled, err)
 			}
 			p.close()
 		}
+	}
+}
+
+func TestHostCompletionPollReadinessAndCleanup(t *testing.T) {
+	for _, cancelled := range []bool{false, true} {
+		for _, immediate := range []bool{false, true} {
+			for range 32 {
+				cleaned := 0
+				p := NewHostCompletionWithCleanup(func() { cleaned++ })
+				wake := make(chan struct{}, 1)
+				publish := func() error {
+					if cancelled {
+						return p.Cancelled()
+					}
+					return p.Resolve(func(*Caller) (*Value, error) { return &Value{Bits: 42}, nil })
+				}
+				if immediate {
+					if err := publish(); err != nil || !p.ready() {
+						t.Fatal("publication was not visible", err)
+					}
+				}
+				resolve, gotCancelled, ready, err := p.poll(wake, true)
+				if err != nil || ready != immediate {
+					t.Fatal(ready, err)
+				}
+				if !immediate {
+					done := make(chan error, 1)
+					go func() { done <- publish() }()
+					select {
+					case <-wake:
+					case <-time.After(time.Second):
+						t.Fatal("pending publication lost its wake")
+					}
+					if err := <-done; err != nil || !p.ready() {
+						t.Fatal("pending result was not visible", err)
+					}
+					resolve, gotCancelled, ready, err = p.poll(nil, false)
+				} else {
+					select {
+					case <-wake:
+						t.Fatal("immediate result sent an unnecessary wake")
+					default:
+					}
+				}
+				if err != nil || !ready || gotCancelled != cancelled || (resolve == nil) != cancelled || p.ready() {
+					t.Fatal("poll lost or retained a handoff", gotCancelled, ready, err)
+				}
+				if resolve != nil {
+					value, err := resolve(nil)
+					if err != nil || value.Bits != 42 {
+						t.Fatal(value, err)
+					}
+				}
+				if _, _, ready, err := p.poll(nil, false); err != nil || ready {
+					t.Fatal("consumed completion became ready", ready, err)
+				}
+				if _, _, _, err := p.poll(wake, true); !errors.Is(err, vm.ErrType) {
+					t.Fatal("completion admitted twice", err)
+				}
+				p.close()
+				p.close()
+				if cleaned != 1 || p.ready() {
+					t.Fatal("completion cleanup or readiness survived close", cleaned)
+				}
+			}
+		}
+	}
+	p := NewHostCompletion()
+	p.Resolve(func(*Caller) (*Value, error) { return nil, nil })
+	if _, _, _, err := p.poll(nil, false); !errors.Is(err, vm.ErrType) {
+		t.Fatal("unbound completion consumed", err)
+	}
+	p.close()
+	if p.ready() {
+		t.Fatal("closed unconsumed completion remains ready")
 	}
 }

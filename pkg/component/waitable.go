@@ -168,7 +168,7 @@ func (in *Instance) waitableBuiltin(caller *vm.Caller, n *namespace, plan *valid
 	if plan.Definition.Op == 6 {
 		return in.subtaskCancel(caller, n, plan)
 	}
-	fn, err := caller.NewScalarFunction(plan.Signature, func(c *vm.Caller, words []uint64) error {
+	fn, err := caller.NewBorrowedScalarFunction(plan.Signature, func(c *vm.Caller, words []uint64) error {
 		if n.failed || n.blocked {
 			return wasm.ErrTrap
 		}

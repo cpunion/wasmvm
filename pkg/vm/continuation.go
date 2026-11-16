@@ -289,7 +289,30 @@ func (c *Caller) Poll(call *Continuation) (result CallResult, done bool, err err
 		case execute.HostRequest:
 			op.fuel = e.Fuel()
 			request := e.Host()
-			if host, ok := request.Function.Host.(SuspendableHostFunction); ok {
+			if host, ok := request.Function.Host.(BorrowedSuspendableScalarHostFunction); ok {
+				var raw []value.Value
+				var step HostResult
+				step, err = call.resumeHost(nil, func(current *Caller) (HostResult, error) {
+					signature := FunctionType(request.Function.Signature)
+					words := borrowedScalarStack(request.Args, signature)
+					pending, failed := host(current, words)
+					if pending == nil && failed == nil {
+						raw = scalarResults(request.Args, words, signature.Results)
+					}
+					return HostResult{Pending: pending}, failed
+				})
+				if step.Pending != nil && err == nil {
+					call.pending = step.Pending
+					complete = true
+					return result, false, nil
+				}
+				if err != nil {
+					err = op.hostError(err)
+				}
+				if err = call.resumeRaw(raw, err); err != nil {
+					return result, false, err
+				}
+			} else if host, ok := request.Function.Host.(SuspendableHostFunction); ok {
 				var step HostResult
 				step, err = call.resumeHost(request, func(current *Caller) (HostResult, error) { return host(current, call.args) })
 				if step.Pending != nil && err == nil {
@@ -356,6 +379,13 @@ func (call *Continuation) resumeValues(values []Value, failed error) error {
 	} else {
 		err = op.hostError(err)
 	}
+	return call.resumeRaw(raw, err)
+}
+
+// Both owned reference values and borrowed scalar carriers converge before
+// resuming the same execution, fuel, cancellation and temporary-root protocol.
+func (call *Continuation) resumeRaw(raw []value.Value, err error) error {
+	op := call.op
 	defer func() {
 		for _, v := range call.args {
 			v.Release()

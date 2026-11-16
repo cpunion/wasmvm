@@ -4,6 +4,7 @@ import (
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 	"sync"
+	"sync/atomic"
 )
 
 // AsyncHostFunction starts work without retaining its Caller. The completion's
@@ -14,12 +15,13 @@ type AsyncHostFunction func(*Caller, []Value) (*HostCompletion, error)
 // Resolve and Cancelled may be called from another goroutine. Resource creation
 // and guest reentry belong in Resolve's function, where Caller is valid.
 type HostCompletion struct {
-	mu      sync.Mutex
-	state   uint8
-	bound   bool
-	resolve func(*Caller) (*Value, error)
-	wake    chan<- struct{}
-	cleanup func()
+	mu        sync.Mutex
+	state     uint8
+	published atomic.Bool
+	bound     bool
+	resolve   func(*Caller) (*Value, error)
+	wake      chan<- struct{}
+	cleanup   func()
 }
 
 func NewHostCompletion() *HostCompletion { return &HostCompletion{} }
@@ -41,6 +43,7 @@ func (p *HostCompletion) Resolve(fn func(*Caller) (*Value, error)) error {
 		return wasm.ErrClosed
 	}
 	p.resolve, p.state = fn, 1
+	p.published.Store(true)
 	p.notify()
 	return nil
 }
@@ -56,6 +59,7 @@ func (p *HostCompletion) Cancelled() error {
 		return wasm.ErrClosed
 	}
 	p.state = 2
+	p.published.Store(true)
 	p.notify()
 	return nil
 }
@@ -68,39 +72,38 @@ func (p *HostCompletion) notify() {
 	}
 }
 
-// bind subscribes to future notifications and returns readiness from the same
-// locked snapshot. The active Store consumes an already ready completion
-// directly; only a later producer needs to send a wake notification.
-func (p *HostCompletion) bind(wake chan<- struct{}) (bool, error) {
+// ready is a scheduling hint; result fields are consumed under mu in poll.
+func (p *HostCompletion) ready() bool { return p.published.Load() }
+
+// poll combines readiness and consumption in one locked snapshot. On first
+// admission it also subscribes before checking readiness, so a concurrent
+// producer either supplies the result here or sends the subscribed wake.
+func (p *HostCompletion) poll(wake chan<- struct{}, bind bool) (resolve func(*Caller) (*Value, error), cancelled, ready bool, err error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if p.bound || p.state == 3 {
-		return false, vm.ErrType
+	if bind {
+		if p.bound || p.state == 3 {
+			return nil, false, false, vm.ErrType
+		}
+		p.bound, p.wake = true, wake
 	}
-	p.bound = true
-	p.wake = wake
-	return p.state != 0, nil
-}
-func (p *HostCompletion) ready() bool {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	return p.state == 1 || p.state == 2
-}
-func (p *HostCompletion) take() (func(*Caller) (*Value, error), bool, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if !p.bound || (p.state != 1 && p.state != 2) {
-		return nil, false, vm.ErrType
+	if !p.bound {
+		return nil, false, false, vm.ErrType
 	}
-	fn, cancelled := p.resolve, p.state == 2
+	if p.state != 1 && p.state != 2 {
+		return nil, false, false, nil
+	}
+	resolve, cancelled = p.resolve, p.state == 2
 	p.resolve, p.state, p.wake = nil, 3, nil
-	return fn, cancelled, nil
+	p.published.Store(false)
+	return resolve, cancelled, true, nil
 }
 func (p *HostCompletion) close() {
 	p.mu.Lock()
 	cleanup := p.cleanup
 	p.cleanup = nil
 	p.resolve, p.state, p.wake = nil, 3, nil
+	p.published.Store(false)
 	p.mu.Unlock()
 	if cleanup != nil {
 		cleanup()

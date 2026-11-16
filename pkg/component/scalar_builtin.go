@@ -5,19 +5,14 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
-// Both edges share one builtin implementation. Only operations which can
-// actually park need public VM values and the existing suspension protocol.
+// Both edges borrow scalar carriers and share one builtin implementation.
+// Parked results use the existing owned continuation protocol.
 type scalarOperands struct {
-	words  []uint64
-	values []vm.Value
+	words []uint64
 }
 
 func (a scalarOperands) at(index int) uint64 {
-	if a.words != nil {
-		return a.words[index]
-	}
-	bits, _, _ := a.values[index].Bits()
-	return bits
+	return a.words[index]
 }
 
 type scalarStep struct {
@@ -30,12 +25,15 @@ func newScalarBuiltin(c *vm.Caller, signature vm.FunctionType, suspends bool, ru
 		return vm.Extern{}, vm.ErrType
 	}
 	if suspends {
-		return c.NewSuspendableFunction(signature, func(c *vm.Caller, values []vm.Value) (vm.HostResult, error) {
-			step, err := run(c, scalarOperands{values: values})
-			return scalarHostResult(signature, step), err
+		return c.NewBorrowedSuspendableScalarFunction(signature, func(c *vm.Caller, words []uint64) (*vm.HostSuspension, error) {
+			step, err := run(c, scalarOperands{words: words})
+			if err == nil && step.pending == nil && len(signature.Results) != 0 {
+				words[0] = step.bits
+			}
+			return step.pending, err
 		})
 	}
-	return c.NewScalarFunction(signature, func(c *vm.Caller, words []uint64) error {
+	return c.NewBorrowedScalarFunction(signature, func(c *vm.Caller, words []uint64) error {
 		step, err := run(c, scalarOperands{words: words})
 		if err != nil {
 			return err

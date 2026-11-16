@@ -8,7 +8,7 @@ import (
 )
 
 func (in *Instance) backpressureBuiltin(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
-	fn, err := caller.NewScalarFunction(plan.Signature, func(*vm.Caller, []uint64) error {
+	fn, err := caller.NewBorrowedScalarFunction(plan.Signature, func(*vm.Caller, []uint64) error {
 		if n.failed {
 			return wasm.ErrTrap
 		}

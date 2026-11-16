@@ -69,6 +69,20 @@ two calls concurrently; use Caller.Call for controlled host reentry. References
 and V128 use typed Values. `Store.NewScalarFunction` defines an independent raw
 numeric host callback; its callback stack is separate from this caller buffer.
 
+`Store.NewBorrowedScalarFunction` and `Caller.NewBorrowedScalarFunction` opt
+into a callback-only scalar stack. Parameters and immediate results reuse the
+execution's numeric carriers; do not retain the stack or access it concurrently.
+Nested reentry has independent storage. `NewScalarFunction` keeps its owned,
+retainable stack contract. Both forms preserve Caller expiration, exact scalar
+bits, cancellation, collection and cleanup.
+
+`NewBorrowedSuspendableScalarFunction` uses the same borrowed stack for an
+immediate result, or returns an ordinary `HostSuspension`. Copy any scalar inputs
+needed by pending work before returning. The suspension's `Resume` receives a
+fresh Caller and returns owned `HostResult.Values`; no borrowed stack crosses
+suspension. Use `Caller.Start`/`Poll` for work that may park. A synchronous call
+rejects a pending result.
+
 ## Shared linear memory and modern core
 
 Enable `wasm.Threads`, create shared memory with an explicit maximum, and use

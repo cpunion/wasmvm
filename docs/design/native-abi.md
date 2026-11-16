@@ -103,6 +103,13 @@ before a UXTW-indexed load/store. This removes an addition from the dynamic
 address dependency; larger offsets retain scaled or full-address forms. No
 alignment, wrapped i32 index or cold-entry bounds assumption changes.
 
+Proven unmetered amd64 SIMD accesses share the scalar SIB/displacement encoder.
+An i32 index must have been defined canonically in the active region; incoming
+upper bits are never assumed zero. Full vectors, widening/zero loads, splats and
+lane operations preserve their exact-width memory instructions across SSE2,
+SSE4.1 and AVX2. Extended index registers set REX.X/VEX.X correctly. Unproved,
+memory64, precise-fuel and interior cold accesses retain their checked path.
+
 Bounded range analysis includes native SIMD operations and proves an access
 against the module's minimum memory size. Each original interior PC retains a
 checked cold entry. Unproved memory accesses stop copy/dead-value elimination,

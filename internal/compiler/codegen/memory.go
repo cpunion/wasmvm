@@ -86,7 +86,7 @@ func (e *functionEmitter) memoryAt(in slots.Instruction, proven bool, offset uin
 	// Keep the i32 path zero-extended. The i64 path checks carry from both
 	// address+offset and the complete access end before comparing the length.
 	vector := nativeVectorMemoryOpcode(in.Op)
-	if e.unmetered && e.a.arch == "amd64" && proven && !wide && !vector && offset <= math.MaxInt32 {
+	if e.unmetered && e.a.arch == "amd64" && proven && !wide && offset <= math.MaxInt32 {
 		if operand.constant && uint64(operand.bits)+offset <= math.MaxInt32 {
 			e.memoryAMD64At(in, load, size, 4, uint32(uint64(operand.bits)+offset))
 			e.directMemoryOperands++
@@ -277,6 +277,10 @@ func (e *functionEmitter) memoryAMD64At(in slots.Instruction, load bool, size ui
 }
 
 func (e *functionEmitter) memoryAMD64Indexed(in slots.Instruction, load bool, size uint32, index byte, offset uint32, scale byte) {
+	if nativeVectorMemoryOpcode(in.Op) {
+		e.vectorMemoryAMD64Indexed(in, load, size, index, offset, scale)
+		return
+	}
 	slot := in.B
 	if load {
 		slot = in.Dst
