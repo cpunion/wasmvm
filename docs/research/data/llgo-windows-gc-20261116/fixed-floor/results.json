@@ -1,0 +1,564 @@
+{
+  "frozenBuildRun": null,
+  "binarySHA256": "8b733b3898b08941f40c49086a60a28c4a3268755f6ea776fb81118539509ddd",
+  "revision": "49f051541b2c725d7846386f543269a1a14b216d",
+  "runs": [
+    {
+      "label": "gogc-10",
+      "environment": {
+        "GOGC": "10"
+      },
+      "exit": 0,
+      "stalled": false,
+      "seconds": 2.515000000000043,
+      "samples": [
+        {
+          "privateBytes": 34820096,
+          "workingSetBytes": 1339392,
+          "memoryOK": true,
+          "cpuMs": 0.0
+        },
+        {
+          "privateBytes": 189001728,
+          "workingSetBytes": 194670592,
+          "memoryOK": true,
+          "cpuMs": 281.25
+        },
+        {
+          "privateBytes": 416862208,
+          "workingSetBytes": 414838784,
+          "memoryOK": true,
+          "cpuMs": 531.25
+        },
+        {
+          "privateBytes": 636260352,
+          "workingSetBytes": 635744256,
+          "memoryOK": true,
+          "cpuMs": 781.25
+        },
+        {
+          "privateBytes": 872501248,
+          "workingSetBytes": 872734720,
+          "memoryOK": true,
+          "cpuMs": 1031.25
+        },
+        {
+          "privateBytes": 1108779008,
+          "workingSetBytes": 1106731008,
+          "memoryOK": true,
+          "cpuMs": 1281.25
+        },
+        {
+          "privateBytes": 1343533056,
+          "workingSetBytes": 1344716800,
+          "memoryOK": true,
+          "cpuMs": 1531.25
+        },
+        {
+          "privateBytes": 1596407808,
+          "workingSetBytes": 1596944384,
+          "memoryOK": true,
+          "cpuMs": 1781.25
+        },
+        {
+          "privateBytes": 1707331584,
+          "workingSetBytes": 1709080576,
+          "memoryOK": true,
+          "cpuMs": 2031.25
+        },
+        {
+          "privateBytes": 521707520,
+          "workingSetBytes": 525910016,
+          "memoryOK": true,
+          "cpuMs": 2281.25
+        }
+      ],
+      "expectedTests": [
+        "TestAdd"
+      ],
+      "executed": true
+    },
+    {
+      "label": "default",
+      "environment": {
+        "GOGC": "100"
+      },
+      "exit": 0,
+      "stalled": false,
+      "seconds": 1.5,
+      "samples": [
+        {
+          "privateBytes": 34828288,
+          "workingSetBytes": 1384448,
+          "memoryOK": true,
+          "cpuMs": 0.0
+        },
+        {
+          "privateBytes": 391360512,
+          "workingSetBytes": 388980736,
+          "memoryOK": true,
+          "cpuMs": 250.0
+        },
+        {
+          "privateBytes": 831401984,
+          "workingSetBytes": 828264448,
+          "memoryOK": true,
+          "cpuMs": 500.0
+        },
+        {
+          "privateBytes": 1270910976,
+          "workingSetBytes": 1263316992,
+          "memoryOK": true,
+          "cpuMs": 750.0
+        },
+        {
+          "privateBytes": 1702871040,
+          "workingSetBytes": 1695883264,
+          "memoryOK": true,
+          "cpuMs": 1000.0
+        },
+        {
+          "privateBytes": 1722613760,
+          "workingSetBytes": 1719984128,
+          "memoryOK": true,
+          "cpuMs": 1250.0
+        }
+      ],
+      "expectedTests": [
+        "TestAdd"
+      ],
+      "executed": true
+    },
+    {
+      "label": "gogc-off",
+      "environment": {
+        "GOGC": "off"
+      },
+      "exit": 0,
+      "stalled": false,
+      "seconds": 1.5159999999999627,
+      "samples": [
+        {
+          "privateBytes": 34824192,
+          "workingSetBytes": 1335296,
+          "memoryOK": true,
+          "cpuMs": 0.0
+        },
+        {
+          "privateBytes": 458530816,
+          "workingSetBytes": 459862016,
+          "memoryOK": true,
+          "cpuMs": 265.625
+        },
+        {
+          "privateBytes": 958033920,
+          "workingSetBytes": 956596224,
+          "memoryOK": true,
+          "cpuMs": 515.625
+        },
+        {
+          "privateBytes": 1474420736,
+          "workingSetBytes": 1463267328,
+          "memoryOK": true,
+          "cpuMs": 765.625
+        },
+        {
+          "privateBytes": 1712549888,
+          "workingSetBytes": 1709944832,
+          "memoryOK": true,
+          "cpuMs": 1015.625
+        },
+        {
+          "privateBytes": 638529536,
+          "workingSetBytes": 629829632,
+          "memoryOK": true,
+          "cpuMs": 1265.625
+        }
+      ],
+      "expectedTests": [
+        "TestAdd"
+      ],
+      "executed": true
+    },
+    {
+      "label": "qualified",
+      "environment": {
+        "GOGC": "100",
+        "GC_PRINT_STATS": "1"
+      },
+      "exit": 0,
+      "stalled": false,
+      "seconds": 10.01600000000002,
+      "samples": [
+        {
+          "privateBytes": 34824192,
+          "workingSetBytes": 1347584,
+          "memoryOK": true,
+          "cpuMs": 0.0
+        },
+        {
+          "privateBytes": 357552128,
+          "workingSetBytes": 359960576,
+          "memoryOK": true,
+          "cpuMs": 203.125
+        },
+        {
+          "privateBytes": 746881024,
+          "workingSetBytes": 747286528,
+          "memoryOK": true,
+          "cpuMs": 453.125
+        },
+        {
+          "privateBytes": 1160859648,
+          "workingSetBytes": 1151733760,
+          "memoryOK": true,
+          "cpuMs": 687.5
+        },
+        {
+          "privateBytes": 1600745472,
+          "workingSetBytes": 1588695040,
+          "memoryOK": true,
+          "cpuMs": 921.875
+        },
+        {
+          "privateBytes": 1713606656,
+          "workingSetBytes": 1713463296,
+          "memoryOK": true,
+          "cpuMs": 1171.875
+        },
+        {
+          "privateBytes": 1740857344,
+          "workingSetBytes": 1737424896,
+          "memoryOK": true,
+          "cpuMs": 1421.875
+        },
+        {
+          "privateBytes": 1768042496,
+          "workingSetBytes": 1761538048,
+          "memoryOK": true,
+          "cpuMs": 1671.875
+        },
+        {
+          "privateBytes": 1786814464,
+          "workingSetBytes": 1785073664,
+          "memoryOK": true,
+          "cpuMs": 1921.875
+        },
+        {
+          "privateBytes": 1813860352,
+          "workingSetBytes": 1806680064,
+          "memoryOK": true,
+          "cpuMs": 2171.875
+        },
+        {
+          "privateBytes": 1832566784,
+          "workingSetBytes": 1829212160,
+          "memoryOK": true,
+          "cpuMs": 2421.875
+        },
+        {
+          "privateBytes": 1832914944,
+          "workingSetBytes": 1833578496,
+          "memoryOK": true,
+          "cpuMs": 2671.875
+        },
+        {
+          "privateBytes": 1832914944,
+          "workingSetBytes": 1833590784,
+          "memoryOK": true,
+          "cpuMs": 2921.875
+        },
+        {
+          "privateBytes": 1832914944,
+          "workingSetBytes": 1833611264,
+          "memoryOK": true,
+          "cpuMs": 3171.875
+        },
+        {
+          "privateBytes": 1832919040,
+          "workingSetBytes": 1833697280,
+          "memoryOK": true,
+          "cpuMs": 3421.875
+        },
+        {
+          "privateBytes": 1832914944,
+          "workingSetBytes": 1833717760,
+          "memoryOK": true,
+          "cpuMs": 3671.875
+        },
+        {
+          "privateBytes": 1850851328,
+          "workingSetBytes": 1846820864,
+          "memoryOK": true,
+          "cpuMs": 3921.875
+        },
+        {
+          "privateBytes": 1878458368,
+          "workingSetBytes": 1875464192,
+          "memoryOK": true,
+          "cpuMs": 4171.875
+        },
+        {
+          "privateBytes": 1906061312,
+          "workingSetBytes": 1904599040,
+          "memoryOK": true,
+          "cpuMs": 4421.875
+        },
+        {
+          "privateBytes": 1933733888,
+          "workingSetBytes": 1933463552,
+          "memoryOK": true,
+          "cpuMs": 4671.875
+        },
+        {
+          "privateBytes": 1969745920,
+          "workingSetBytes": 1962401792,
+          "memoryOK": true,
+          "cpuMs": 4921.875
+        },
+        {
+          "privateBytes": 1997348864,
+          "workingSetBytes": 1990705152,
+          "memoryOK": true,
+          "cpuMs": 5171.875
+        },
+        {
+          "privateBytes": 2033852416,
+          "workingSetBytes": 2024996864,
+          "memoryOK": true,
+          "cpuMs": 5421.875
+        },
+        {
+          "privateBytes": 2070495232,
+          "workingSetBytes": 2061537280,
+          "memoryOK": true,
+          "cpuMs": 5671.875
+        },
+        {
+          "privateBytes": 2107289600,
+          "workingSetBytes": 2099359744,
+          "memoryOK": true,
+          "cpuMs": 5921.875
+        },
+        {
+          "privateBytes": 2143993856,
+          "workingSetBytes": 2136236032,
+          "memoryOK": true,
+          "cpuMs": 6187.5
+        },
+        {
+          "privateBytes": 2180775936,
+          "workingSetBytes": 2174693376,
+          "memoryOK": true,
+          "cpuMs": 6437.5
+        },
+        {
+          "privateBytes": 2181197824,
+          "workingSetBytes": 2179518464,
+          "memoryOK": true,
+          "cpuMs": 6687.5
+        },
+        {
+          "privateBytes": 2181197824,
+          "workingSetBytes": 2179522560,
+          "memoryOK": true,
+          "cpuMs": 6937.5
+        },
+        {
+          "privateBytes": 2181197824,
+          "workingSetBytes": 2179522560,
+          "memoryOK": true,
+          "cpuMs": 7187.5
+        },
+        {
+          "privateBytes": 2181197824,
+          "workingSetBytes": 2179538944,
+          "memoryOK": true,
+          "cpuMs": 7437.5
+        },
+        {
+          "privateBytes": 2181197824,
+          "workingSetBytes": 2179563520,
+          "memoryOK": true,
+          "cpuMs": 7687.5
+        },
+        {
+          "privateBytes": 2181197824,
+          "workingSetBytes": 2179584000,
+          "memoryOK": true,
+          "cpuMs": 7937.5
+        },
+        {
+          "privateBytes": 2181197824,
+          "workingSetBytes": 2179600384,
+          "memoryOK": true,
+          "cpuMs": 8187.5
+        },
+        {
+          "privateBytes": 2181197824,
+          "workingSetBytes": 2179608576,
+          "memoryOK": true,
+          "cpuMs": 8437.5
+        },
+        {
+          "privateBytes": 2181197824,
+          "workingSetBytes": 2179612672,
+          "memoryOK": true,
+          "cpuMs": 8687.5
+        },
+        {
+          "privateBytes": 2181197824,
+          "workingSetBytes": 2179620864,
+          "memoryOK": true,
+          "cpuMs": 8937.5
+        },
+        {
+          "privateBytes": 2181197824,
+          "workingSetBytes": 2179629056,
+          "memoryOK": true,
+          "cpuMs": 9187.5
+        },
+        {
+          "privateBytes": 2181197824,
+          "workingSetBytes": 2179657728,
+          "memoryOK": true,
+          "cpuMs": 9437.5
+        },
+        {
+          "privateBytes": 1824931840,
+          "workingSetBytes": 1822707712,
+          "memoryOK": true,
+          "cpuMs": 9703.125
+        }
+      ],
+      "expectedTests": [
+        "TestAdd",
+        "TestSub",
+        "TestMax",
+        "TestMin",
+        "TestAnd",
+        "TestAndNot",
+        "TestXor",
+        "TestOr",
+        "TestMul",
+        "TestDiv",
+        "TestGetElem",
+        "TestSetElem",
+        "TestAddAMD64",
+        "TestSubAMD64",
+        "TestMaxAMD64",
+        "TestMinAMD64",
+        "TestAndAMD64",
+        "TestAndNotAMD64",
+        "TestXorAMD64",
+        "TestOrAMD64",
+        "TestMulAMD64",
+        "TestDivAMD64",
+        "TestLess",
+        "TestLessEqual",
+        "TestGreater",
+        "TestGreaterEqual",
+        "TestEqual",
+        "TestNotEqual",
+        "TestMasked",
+        "TestIfElse",
+        "TestLessAMD64",
+        "TestLessEqualAMD64",
+        "TestGreaterAMD64",
+        "TestGreaterEqualAMD64",
+        "TestEqualAMD64",
+        "TestNotEqualAMD64",
+        "TestRotateAllLeft",
+        "TestRotateAllRight",
+        "TestShiftAll",
+        "TestRotateAllLeftAMD64",
+        "TestRotateAllRightAMD64",
+        "TestShift",
+        "TestShiftAllAMD64",
+        "TestPermuteOrZero",
+        "TestSlicesInt8",
+        "TestSlicesInt8TooShortLoad",
+        "TestSlicesInt8TooShortStore",
+        "TestSlicesFloat64",
+        "TestMergeLocals",
+        "TestBitMaskToBits",
+        "TestMergeFloat",
+        "TestIfElseFloat",
+        "TestRotateAllVariable",
+        "TestRotateAllConst",
+        "TestBroadcastFloat32x8",
+        "TestBroadcastInt8x32",
+        "TestConcatPermute128ScalarsError",
+        "TestStringAMD64",
+        "TestMaskString",
+        "TestMaskedMerge",
+        "TestMaskedIfElse",
+        "TestClMul",
+        "TestType",
+        "TestUncomparable",
+        "TestFuncValue",
+        "TestReflectMethod",
+        "TestVectorConversion",
+        "TestMaskConversion",
+        "TestBroadcastUint32x4",
+        "TestBroadcastFloat32x4",
+        "TestBroadcastFloat64x2",
+        "TestBroadcastUint64x2",
+        "TestBroadcastUint16x8",
+        "TestBroadcastInt8x16",
+        "TestBroadcastUint8x16",
+        "TestBroadcastInt16x8",
+        "TestBroadcastInt32x4",
+        "TestBroadcastInt64x2",
+        "TestString",
+        "TestTypeParam",
+        "TestManyFloats",
+        "TestSlicesInt8SetElem",
+        "TestSlicesInt8GetElem",
+        "TestSlicesInt8GetElem16",
+        "TestSlicesInt8GetElem16const",
+        "TestSlicesInt8GetElem15",
+        "TestSlicesInt8GetElem15const",
+        "TestSlicesInt8SetElem17",
+        "TestSlicesInt8SetElem17const",
+        "TestPartInt8x16",
+        "TestPartUint8x16",
+        "TestPartInt16x8",
+        "TestSlicesPartStoreInt8x16",
+        "TestSlicesPartStoreInt16x8",
+        "TestSlicesPartStoreUint8x16",
+        "TestPartInt32",
+        "TestPartFloat64",
+        "TestStorePartReturnValues128",
+        "TestPartInt8x32",
+        "TestPartUint8x32",
+        "TestPartInt16x16",
+        "TestSlicesPartStoreInt16x16",
+        "TestSlicesPartStoreUint16x16",
+        "TestSlicesPartStoreUint8x32",
+        "TestPartUint64",
+        "TestPartFloat32",
+        "TestStorePartReturnValuesWider",
+        "TestTransposePlain",
+        "TestTranspose2Blocked",
+        "TestTranspose3Blocked",
+        "TestTranspose4Blocked",
+        "TestTranspose5aBlocked",
+        "TestTranspose5bBlocked",
+        "TestCeil",
+        "TestFloor",
+        "TestTrunc",
+        "TestRound",
+        "TestSqrt",
+        "TestNot",
+        "TestAbs",
+        "TestNeg",
+        "TestAbsAMD64",
+        "TestNegAMD64",
+        "TestSqrtAMD64",
+        "TestNotAMD64"
+      ],
+      "executed": true
+    }
+  ]
+}

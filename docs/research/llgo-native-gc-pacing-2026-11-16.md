@@ -135,3 +135,68 @@ manifest also records the SHA-256 of each original full raw gzip, which remains
 in the local audit archive. `analyze.py` computes the published summaries from
 the original rows; to use a projection, change its filename to
 `rows.projected.jsonl.gz` (it does not read the omitted vectors).
+
+## Windows correctness follow-up
+
+The macOS performance cohort above predates the Windows corrections. It does
+not qualify the Windows defaults. The complete Windows upstream SIMD gate
+exposed a failure that an isolated `TestAdd` missed: allocation stopped in
+`GC_default_on_abort("Too many heap sections")`, which displayed a modal error
+dialog while holding the collector lock. The Go test timeout could not make
+progress. An independent process guard captured the native stacks and terminated
+the stuck executable.
+
+These are correctness diagnostics on Windows 2022 amd64/MSVC, Go 1.27.3 and
+LLVM 22.1.8, with `GOEXPERIMENT=simd`, `GOAMD64=v1`,
+`GODEBUG=cpu.avx512f=off` and `-O2`, matching the failing upstream gate. They are
+not P3 `-O3 -lto=full` performance acceptance. The SDK dependency setup is pinned
+by each recorded source revision; the loaded GC DLL's standalone version/hash
+was not separately captured. Hosts and address layouts differ across runs.
+
+| Source | Windows policy at GOGC=100 | Complete 125-case corpus | Largest sampled private bytes, decimal GB |
+|---|---|---|---:|
+| `75a25564d` | Occupied-block floor, scan divisor 1; caller-buffer fix | Hangs in `TestLessEqual` | 2.21 |
+| `0fead5513` | Occupied-block floor, scan divisor 3 | Hangs in `TestLessEqual` | 2.20 |
+| `49f051541` | Fixed 4 MiB floor, scan divisor 1 | Passes once | 2.18 |
+| `86e86c9da` | Fixed 4 MiB floor, scan divisor 3 | Passes once | 1.85 |
+| `2c780e256` | Final fixed floor/divisor 3 and retained-heap regression | Passes in all 10 fresh processes | 1.85–1.86 |
+
+The executable's private bytes were sampled through `GetProcessMemoryInfo`
+every 250 ms. These maxima can miss brief peaks and are neither managed live
+bytes nor the macOS physical-footprint metric. The table does not establish a
+calibrated speed or memory ratio. Main `5860fb6f9` also passed the complete
+corpus in ten fresh processes. Every process checked execution of the full
+125-case inventory; this is 1,250 executed cases in each final source cohort.
+
+Restoring only the scan divisor does not repair the occupied-block floor.
+Occupied blocks include fragmentation and deferred sweep and cannot be treated
+as precise live-object bytes. Windows now retains the scaled 4 MiB minimum and
+the collector's normal expansion scale, with BDWGC's own scan-cost calculation
+responsible for larger heaps. The fixed-floor/divisor-1 ablation passes but
+leaves much less observed headroom before the failing reservation-table range.
+Other native targets retain the policy measured in the macOS cohort.
+
+The C regression retains 8 MiB of objects and checks that the Windows minimum
+remains fixed. Temporarily restoring `0fead5513` while keeping the final test
+produces the expected failure:
+
+```text
+Windows GC floor changed with occupied blocks: 16777216 != 4194304
+```
+
+The final source passes that C test, shared Go/LLGo automatic-GC controls,
+4,096 repeated caller walks, isolated `TestAdd` at GOGC 10/100/off, and ten fresh
+full-corpus processes. The first attempt to enable the C test on Windows failed
+before execution because its CRT suppression macro followed the test headers;
+`2c780e256` moves it before those headers. This fixture failure is retained and
+is not classified as an executed native-policy failure. An attempted collector
+statistics run emitted no `GC_PRINT_STATS` output and could not resolve the
+private GC globals; no exact-live-byte inference is made from that attempt.
+
+[Windows evidence](data/llgo-windows-gc-20261116/manifest.json) records source and
+binary hashes, workflow links, every successful and failed full-corpus cohort,
+raw sampling records, compressed test output/stacks and the negative control.
+Large executables/dumps remain workflow artifacts; the committed records and
+source revisions permit rebuilding after those artifacts expire. The
+[final qualification](https://github.com/cpunion/wasmvm/actions/runs/43844558434)
+uses the final PR source; the main PR matrix remains a separate gate.
