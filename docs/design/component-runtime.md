@@ -565,6 +565,16 @@ bytes and counting-only unit streams share the canonical transfer transaction.
 Futures produce exactly one element; empty non-final positive-capacity stream
 reads are invalid. No Caller or guest execution stack escapes to a worker.
 
+`AsyncSource.ReadReady` optionally supplies an already available typed batch
+without creating an external-work task, completion or cancellation context.
+Its fresh Caller permits resource creation and expires at probe return, while
+rejecting guest reentry and blocking reads. Canonical validation, snapshot
+copies, task/reentry admission, quotas and resource transactions still apply.
+False readiness supplies no data, rolls back speculative creations and starts
+the required `Read`/`ReadOwned` fallback. `ReadBytes` keeps its smaller packed-byte
+path; the two probes are mutually exclusive. HTTP trailer results use this path
+when body completion and trailer publication (or absence) are already known.
+
 `Instance.ReadAsync` and `Caller.ReadAsync` drive one bounded host-side read in
 the existing scheduler. `Function.CallWithResult` transfers an async result to
 a scoped consumer as soon as task.return resolves it, permitting consumption
