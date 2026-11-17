@@ -269,7 +269,7 @@ records primary sources, feature flags and ambiguous entries.
 | [wazero 1.12.0](https://github.com/wazero/wazero/tree/v1.12.0) | Go; interpreter and native compiler | Go embedding and P1; experimental modern features, without declared GC/multi-memory/memory64/P2/P3 parity |
 | [Wasmtime 48.0.1](https://github.com/bytecodealliance/wasmtime/tree/v48.0.1) | Rust; Cranelift in this audit | Broad Core/GC/Threads and component/WASI reference; experimental features are individually gated |
 | [Wasmer 7.3.0](https://github.com/wasmerio/wasmer/tree/v7.3.0) | Rust; Cranelift in this audit | Core 2 and selected modern features; no declared GC feature; WASIX is a separate ABI |
-| [WasmEdge 0.17.1](https://github.com/WasmEdge/WasmEdge/tree/0.17.1) | C++; interpreter and AOT | Broad Core/GC features; only its interpreter was timed; no equivalent P2/P3 coverage claim here |
+| [WasmEdge 0.17.1](https://github.com/WasmEdge/WasmEdge/tree/0.17.1) | C++; interpreter and AOT | Both execution profiles measured; three sustained AOT GC cases fail in the pinned macOS SDK; no equivalent P2/P3 coverage claim here |
 | [Wago 90f2b57](https://github.com/wago-org/wago/tree/90f2b57dafa7f8c3cc7e3aca38b91148f15e1d1e) | Go; beta runtime | Reports Core 3, optional Threads, compact imports and wide arithmetic; no fresh performance measurement here |
 
 ### Measured performance
@@ -278,6 +278,15 @@ These are dated advisory events with exact source/toolchain identities. Hosts,
 compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
+
+The [complete PR #200 comparison](docs/research/performance-pr200-complete-comparison-2026-11-17.md)
+reports all 33 core workloads and two P3 payloads with separate columns for
+wasmvm Go, wasmvm LLGo, wazero, Wasmtime, Wasmer and WasmEdge. It includes
+WasmEdge O3 AOT, all lifecycle phases, source/SDK baselines and 6,324 verified
+process records. Resolving P3 source CPU gains are Go 64 KiB **7.61%** and LLGo
+16 B/64 KiB **4.62%/2.90%**; competitive P3 controls remain unresolved.
+General calls, SHA, field access, shared memory and P3 still require optimization.
+Every subsequent PR must publish a fresh complete comparison in this format.
 
 The [combined host/native study](docs/research/performance-combined-optimizations-2026-11-16.md)
 measures PRs #188–191 together with LLGo **1b44c645**. Go 16 B P3 CPU improves
