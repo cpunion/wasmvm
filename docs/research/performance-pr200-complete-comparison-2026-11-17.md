@@ -930,9 +930,17 @@ Unchecked C kernels omit runtime safety/lifetime contracts; native Go implements
 
 The initial core campaign stopped on sustained indirect struct access. All incomplete timing rows are retained separately and excluded. Full-size semantic checks then found SIGSEGV in three AOT cells: sustained struct access, struct allocation and indirect struct access. Their small original cases pass. The indirect case reproduces three times in the C harness; WasmEdge’s own CLI also fails at 1,000,000 iterations (SIGILL in that invocation), while its interpreter returns the expected checksum. LLDB catches `EXC_BAD_ACCESS` in `WasmEdge::Executor::Executor::arrayGet`, on `strb w12, [x8]`. This identifies a failure site, not a proven root cause. The complete core cohort was restarted once with those exact cells labeled failed; independently completed P3 cohorts were retained unchanged.
 
+## Post-campaign generated-code evidence
+
+Separate untimed diagnostic builds use the same WasmEdge native-output/O3 configuration. Their LLVM IR, ARM64 assembly, compiler helper and provenance are included in the protocol archive. They do not replace any timed binary.
+
+**General calls:** WasmEdge fully unrolls the two-iteration callee, inlines it into the outer loop, and folds the two affine updates into `x * 389569705 + 1196435762` modulo 2^32. Its outer loop at `_f1+0x18` is exactly `madd; add; cmp; b.lo`, with no call instruction. wasmvm’s current `planLeafExpressions` rejects conditional/backward edges, so this fixture retains its general native call. The observed gap therefore includes bounded-loop expansion, inlining and algebraic simplification; it is not an isolated call-ABI benchmark across all engines. The fixture name is historical and describes the wasmvm route it forces.
+
+**Sustained GC failure:** optimized WasmEdge IR places four 16-byte `alloca` instructions inside the indirect-access loop. Its native code decreases SP four times per iteration at offsets `0x538`, `0x564`, `0x58c` and `0x5b0`, and branches back at `0x5e0` without restoring SP. Restoration occurs only on function exit. This establishes 64 bytes of cumulative stack growth per source iteration (about 64 MB at one million), consistent with the observed stack-boundary access failure. No wasmvm frame/GC change is justified by this competitor failure.
+
 ## Next implementation work
 
-1. General native calls: inspect actual emitted frame/parameter/root bookkeeping versus competitor output. Previous record-cursor variants regressed and remain rejected. WasmEdge AOT is now a measured strong reference on this case; its inlining/code shape must be checked before attributing the entire ratio to an ABI.
+1. General native calls: inspect actual emitted frame/parameter/root bookkeeping versus competitor output. Previous record-cursor variants regressed and remain rejected. WasmEdge AOT is now a measured strong reference on this case; the measured gap includes its proven full inlining and affine simplification, so bounded expression expansion should be addressed alongside ABI costs.
 2. SHA and field access: improve compiler range/region coverage and invariant heap-reference guards while preserving trap order, cold resumes, full reference metadata and GC roots.
 3. Shared memory: investigate the measured code and execution counters. The current short loop polls control state every iteration; the parked four-copy grouping experiment did not demonstrate a qualified gain. No mutex-only explanation is established.
 4. P3: retain PR #200’s reduced ready-source work and continue canonical/host-transition work. These measurements show a large instruction gap; Go’s scheduler alone does not guarantee a faster complete Component/WASI request. Separate LLGo generated host code, allocation, runtime synchronization and guest-native execution before filing compiler issues.
@@ -941,5 +949,5 @@ The initial core campaign stopped on sustained indirect struct access. All incom
 
 - [Machine-readable results, all controls and source/SDK contrasts](data/pr200-complete-comparison-2026-11-17.json).
 - [All 6,324 verified process records](data/pr200-complete-comparison-2026-11-17-raw.jsonl.gz), SHA-256 `de2f4c5ccb477cdec62c38180eaf03894c2acaf11982b0f281699bf59b80a388`.
-- [Frozen plans, commands, hashes, analysis/export scripts, semantic checks and failure evidence](data/pr200-complete-comparison-2026-11-17-protocol.tar.gz), SHA-256 `0860f9f03f084dea6a5eea87b2ecce3d51e5517372becae4846ca8af760273c3`.
+- [Frozen plans, commands, hashes, analysis/export scripts, semantic checks and failure evidence](data/pr200-complete-comparison-2026-11-17-protocol.tar.gz), SHA-256 `88fec41c5b7ba78ef8c671f76cf74dc1adb87aa39287a8b5e8ff3f41f3c3ec78`.
 - Per-request vectors unused by these metrics are projected to count/extrema/hash; no latency-tail claim. Public load records omit unrelated desktop command arguments. The incomplete first core run is retained locally with its source hash in the JSON.
