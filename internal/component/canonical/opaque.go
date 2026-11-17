@@ -10,7 +10,11 @@ func (r *Resources) AddOpaque(value any) (uint32, error) {
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	return r.addLocked(&resourceEntry{opaque: value, owned: true})
+	e, id, err := r.addLocked()
+	if err == nil {
+		e.opaque, e.owned = value, true
+	}
+	return id, err
 }
 
 func (r *Resources) Opaque(id uint32) (any, error) {

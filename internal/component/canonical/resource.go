@@ -71,6 +71,8 @@ type Resources struct {
 	count        uint32
 	next         uint32
 	generation   uint64
+	entryBlock   *[4]resourceEntry
+	entryNext    uint8
 	free         []uint32
 	reuse        bool
 	budget       *ResourceBudget
@@ -177,20 +179,38 @@ func (r *Resources) EntryGeneration(id uint32) uint64 {
 	return 0
 }
 
-func (r *Resources) addLocked(e *resourceEntry) (uint32, error) {
+// Allocate fresh identities in small groups. Slots are consumed once and never
+// rebound: borrow scopes and cross-domain transfers retain stable entry pointers.
+// A table with only one publication avoids a partially used group.
+func (r *Resources) newEntryLocked() *resourceEntry {
+	if r.entryBlock == nil && r.entryNext == 0 {
+		r.entryNext = 4
+		return &resourceEntry{}
+	}
+	if r.entryBlock == nil || r.entryNext == uint8(len(r.entryBlock)) {
+		r.entryBlock = new([4]resourceEntry)
+		r.entryNext = 0
+	}
+	e := &r.entryBlock[r.entryNext]
+	r.entryNext++
+	return e
+}
+
+func (r *Resources) addLocked() (*resourceEntry, uint32, error) {
 	if r.closed {
-		return 0, wasm.ErrClosed
+		return nil, 0, wasm.ErrClosed
 	}
 	if !r.availableLocked() {
-		return 0, exhausted()
+		return nil, 0, exhausted()
 	}
 	if err := r.budget.acquire(); err != nil {
-		return 0, err
+		return nil, 0, err
 	}
 	i := r.indexLocked()
+	e := r.newEntryLocked()
 	e.id, e.generation = i, r.generation
 	r.insertLocked(i, e)
-	return i, nil
+	return e, i, nil
 }
 
 func (r *Resources) New(t *ResourceType, rep uint64) (uint32, error) {
@@ -199,7 +219,11 @@ func (r *Resources) New(t *ResourceType, rep uint64) (uint32, error) {
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	return r.addLocked(&resourceEntry{typeID: t, rep: rep, owned: true})
+	e, id, err := r.addLocked()
+	if err == nil {
+		e.typeID, e.rep, e.owned = t, rep, true
+	}
+	return id, err
 }
 
 func (r *Resources) getLocked(t *ResourceType, id uint32) (*resourceEntry, error) {
@@ -347,11 +371,11 @@ func (s *BorrowScope) Lower(r *Resources, t *ResourceType, rep uint64) (uint32, 
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	e := &resourceEntry{typeID: t, rep: rep, scope: s}
-	id, err := r.addLocked(e)
+	e, id, err := r.addLocked()
 	if err != nil {
 		return 0, err
 	}
+	e.typeID, e.rep, e.scope = t, rep, s
 	s.borrows[e] = lender{r, e}
 	return id, nil
 }
@@ -414,6 +438,7 @@ func (r *Resources) Drain(ctx context.Context) error {
 	entries, guest := r.entries, r.guestEntries
 	r.budget.release(r.count)
 	r.count = 0
+	r.entryBlock, r.entryNext = nil, 0
 	r.guestEntries = nil
 	if r.reuse {
 		r.next = 1
@@ -455,6 +480,7 @@ func (r *Resources) Close() {
 	}
 	r.budget.release(r.count)
 	r.count = 0
+	r.entryBlock, r.entryNext = nil, 0
 	r.guestEntries = nil
 	r.entries = nil
 	r.free = nil
