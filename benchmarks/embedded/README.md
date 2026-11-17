@@ -140,7 +140,7 @@ checkouts; both must contain the candidate dependency selection.
 
 ```sh
 python3 benchmarks/install_tools.py --sdk --destination /tmp/wasmvm-phase-tools
-WASMVM_LLGO_REVISION=9e45f103758cf4a0b8a70dc242403bbc2f46bea7 \
+WASMVM_LLGO_REVISION=2e3e02f4b769cd3d1860e008f2df092b395ee18c \
 python3 benchmarks/phase_ci.py \
   --base-dir /path/to/base --base-sha FULL_BASE_COMMIT \
   --head-dir /path/to/head --head-sha FULL_HEAD_COMMIT \

@@ -166,6 +166,7 @@ func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, 
 			FunctionCount: importedFunctions + uint32(len(m.Functions)), ScalarImports: importedFunctions, TableCount: tables, MemoryCount: memories, SharedMemories: shared, Globals: globals}
 		config.LinkedCallees, config.LinkedGlobals = linkedCallees, linkedGlobals
 		config.NativeFrameRegisters = tier != 1 && linkedCallees != nil
+		config.NativeCallLimits = config.NativeFrameRegisters
 		config.SharedDispatch = true
 		if linkedCallees != nil {
 			config.LinkedSignatures, config.LinkedTypeLabels = linkedSignatures, keys

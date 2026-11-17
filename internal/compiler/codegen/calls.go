@@ -158,14 +158,16 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	e.callLoad(2, e.callContext(), uint32(nativeabi.CallViewOffset))
 	e.callTest(2)
 	e.branch(fallback, "eq")
-	e.callLoad(1, e.callReg(2), nativeabi.CallCapacityOffset)
-	if e.frameRegisters {
-		e.callCompare(callTop, 1)
-	} else {
-		e.callTopLoad(0)
-		e.callCompare(0, 1)
+	if !e.nativeCallLimits {
+		e.callLoad(1, e.callReg(2), nativeabi.CallCapacityOffset)
+		if e.frameRegisters {
+			e.callCompare(callTop, 1)
+		} else {
+			e.callTopLoad(0)
+			e.callCompare(0, 1)
+		}
+		e.branch(fallback, "hs")
 	}
-	e.branch(fallback, "hs")
 	e.callLoad(1, e.callReg(2), nativeabi.CallDepthOffset)
 	if e.frameRegisters {
 		e.callCompare(callDepth, 1)
@@ -188,9 +190,11 @@ func (e *functionEmitter) linkedCall(pc int, callee *slots.Function) bool {
 	e.callLoad(1, e.callReg(2), nativeabi.CallSlotsOffset)
 	e.callCompare(1, 0)
 	e.branch(fallback, "lo")
-	e.callLoad(1, e.callContext(), uint32(nativeabi.CapacityOffset))
-	e.callCompare(1, 0)
-	e.branch(fallback, "lo")
+	if !e.nativeCallLimits {
+		e.callLoad(1, e.callContext(), uint32(nativeabi.CapacityOffset))
+		e.callCompare(1, 0)
+		e.branch(fallback, "lo")
+	}
 	if !indirect {
 		e.spillRegisters()
 	}

@@ -1,0 +1,2261 @@
+{
+  "scope": "Two distinct fixed own-only events, no pooling or competitor acceptance. Timing SDK 9e45f103; subsequent CI SDK 2e3e02f4 is a separate event.",
+  "boundsSource": "21c00387fdb534e8aaabb9f4a914a5bec9999820",
+  "rejectedReturnSource": "d65da11c97fec14faddd13058fe72ce224cf238e",
+  "events": {
+    "native-call-bounds-20261117": {
+      "screen-analysis.json": {
+        "scope": "Own native-call regression screen only, no competitors or performance acceptance claim. Common source-base/head compiler 9e45f103 O3/full-LTO/defaultGC. Fixed six fresh-process symmetric-AA blocks, seven serialized warm calls with two uncounted warmups. Preserve all phases/raw output. No own builds/tests/analysis/edits during timing; external desktop load uncontrolled. Marginal bootstrap intervals, no simultaneous inference or stopping extensions.",
+        "processes": 48,
+        "medians": {
+          "base-go-phase": 4.3388709,
+          "head-go-phase": 4.0882626,
+          "base-llgo-phase": 4.3157292,
+          "head-llgo-phase": 4.0517458
+        },
+        "AA": {
+          "base-go-phase": {
+            "ratio": 0.9998049648184568,
+            "ci95": [
+              0.9876508050576945,
+              1.01204032437514
+            ],
+            "resolves2_5Percent": true
+          },
+          "head-go-phase": {
+            "ratio": 1.0059544804313336,
+            "ci95": [
+              0.9947535122178796,
+              1.0159684457608107
+            ],
+            "resolves2_5Percent": true
+          },
+          "base-llgo-phase": {
+            "ratio": 0.9909900280799782,
+            "ci95": [
+              0.982082815033111,
+              0.9993756128275024
+            ],
+            "resolves2_5Percent": true
+          },
+          "head-llgo-phase": {
+            "ratio": 0.9941943035619201,
+            "ci95": [
+              0.9852455001894711,
+              1.0024404951884496
+            ],
+            "resolves2_5Percent": true
+          }
+        },
+        "comparisons": {
+          "go": {
+            "ratio": 0.9374814235781145,
+            "ci95": [
+              0.9325675210082983,
+              0.942748792187968
+            ],
+            "controlsResolve": true
+          },
+          "llgo": {
+            "ratio": 0.9316832084637185,
+            "ci95": [
+              0.9274286176377317,
+              0.9362046931735828
+            ],
+            "controlsResolve": true
+          }
+        }
+      },
+      "p3-analysis.json": {
+        "scope": "Complete request/driver counters with mach timebase conversion, per-role symmetric AA and fixed-block marginal bootstrap95 intervals. No timing subtraction or cross-event pooling.",
+        "results": {
+          "16": {
+            "processes": 48,
+            "medians": {
+              "base-go": {
+                "cpuUs": 75.96298014322917,
+                "instructions": 778548.5861328125,
+                "throughput": 52675.85009633878,
+                "allocsPerRequest": 519.25361328125,
+                "bytesPerRequest": 45048.917578125
+              },
+              "base-llgo": {
+                "cpuUs": 205.34300740559894,
+                "instructions": 1379260.1376464844,
+                "throughput": 23444.127817634315,
+                "allocsPerRequest": 592.250390625,
+                "bytesPerRequest": 56397.12890625
+              },
+              "head-go": {
+                "cpuUs": 75.84437662760416,
+                "instructions": 777390.1812988281,
+                "throughput": 53153.22162773285,
+                "allocsPerRequest": 519.253173828125,
+                "bytesPerRequest": 45048.919140625
+              },
+              "head-llgo": {
+                "cpuUs": 202.20804239908853,
+                "instructions": 1375638.6228515627,
+                "throughput": 23836.442998822702,
+                "allocsPerRequest": 592.2503417968751,
+                "bytesPerRequest": 56395.271093749994
+              }
+            },
+            "AA": {
+              "base-go": {
+                "cpuUs": {
+                  "ratio": 0.9968832070703777,
+                  "ci95": [
+                    0.9808921167106566,
+                    1.0148649329477015
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 0.9997275374046305,
+                  "ci95": [
+                    0.9989065363461345,
+                    1.0006437527732794
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 1.0075905011945807,
+                  "ci95": [
+                    0.9722809241202095,
+                    1.036633914197661
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999994357889064,
+                  "ci95": [
+                    0.9999982446768729,
+                    1.0000007522834742
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999989854861714,
+                  "ci95": [
+                    0.9999919560845174,
+                    1.0000062085856314
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "base-llgo": {
+                "cpuUs": {
+                  "ratio": 1.0034669936926834,
+                  "ci95": [
+                    0.9917717645099594,
+                    1.0127243512628183
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 0.9996990233147414,
+                  "ci95": [
+                    0.9950962125804889,
+                    1.0057349092288135
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9925058375684965,
+                  "ci95": [
+                    0.9834930318038477,
+                    1.0016505308037837
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999999175549219,
+                  "ci95": [
+                    0.9999995877747863,
+                    1.0000002748168522
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999885715258324,
+                  "ci95": [
+                    0.9999628476305468,
+                    1.0000163878841128
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "head-go": {
+                "cpuUs": {
+                  "ratio": 0.9900911466325496,
+                  "ci95": [
+                    0.9777705735211719,
+                    1.0031331480902093
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 1.0015727078501735,
+                  "ci95": [
+                    1.0002462498228346,
+                    1.0027797576185806
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 1.0008013443526418,
+                  "ci95": [
+                    0.9750847305436836,
+                    1.025957882094711
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.00000119111426,
+                  "ci95": [
+                    0.9999999059656475,
+                    1.0000025703021307
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999999017167809,
+                  "ci95": [
+                    0.9999934041361005,
+                    1.0000067086152282
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "head-llgo": {
+                "cpuUs": {
+                  "ratio": 0.9952983469731315,
+                  "ci95": [
+                    0.9821096632923109,
+                    1.011368152662413
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 1.0004723663293726,
+                  "ci95": [
+                    0.9936103731084668,
+                    1.0075429209119071
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9967230444347974,
+                  "ci95": [
+                    0.970906338094487,
+                    1.0221862803778468
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000003022987516,
+                  "ci95": [
+                    0.999999725183246,
+                    1.0000008794145905
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999885946091296,
+                  "ci95": [
+                    0.9999548592629942,
+                    1.0000344576796134
+                  ],
+                  "resolves2_5Percent": true
+                }
+              }
+            },
+            "comparisons": {
+              "head-go/base-go": {
+                "cpuUs": {
+                  "ratio": 0.9978808959800001,
+                  "ci95": [
+                    0.9903913436881139,
+                    1.0053176302750542
+                  ],
+                  "controlsResolve": true
+                },
+                "instructions": {
+                  "ratio": 0.9979861653292789,
+                  "ci95": [
+                    0.9974604892437727,
+                    0.9984752651525511
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 1.0098261706322516,
+                  "ci95": [
+                    0.9955298980857179,
+                    1.029419338152809
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999996238586313,
+                  "ci95": [
+                    0.9999985424544551,
+                    1.0000007209363515
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000001777552459,
+                  "ci95": [
+                    0.9999956109534501,
+                    1.0000043760559814
+                  ],
+                  "controlsResolve": true
+                }
+              },
+              "head-llgo/base-llgo": {
+                "cpuUs": {
+                  "ratio": 0.997195524720041,
+                  "ci95": [
+                    0.9882461412765585,
+                    1.0050723633774614
+                  ],
+                  "controlsResolve": true
+                },
+                "instructions": {
+                  "ratio": 0.9988521884856335,
+                  "ci95": [
+                    0.9931237162042125,
+                    1.0060830438825807
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 1.0017298544085906,
+                  "ci95": [
+                    0.9908388759641408,
+                    1.0125166009876854
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.99999994503661,
+                  "ci95": [
+                    0.999999670219828,
+                    1.0000001786309638
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999794261804205,
+                  "ci95": [
+                    0.9999698217362688,
+                    0.9999863687382035
+                  ],
+                  "controlsResolve": true
+                }
+              }
+            },
+            "phasesMedianNs": {
+              "base-go": {
+                "instantiate": 548228.5,
+                "firstCall": 10735687.5,
+                "providerSetup": 44666.0,
+                "load": 70666.5,
+                "requestPreparation": 729.5,
+                "engineSetup": 375.0,
+                "exportLookup": 791.5,
+                "cleanup": 85687.5,
+                "compileValidate": 62848979.5,
+                "processStartup": 6646333.0
+              },
+              "base-llgo": {
+                "instantiate": 796624.5,
+                "firstCall": 21862021.0,
+                "providerSetup": 197021.0,
+                "load": 78812.5,
+                "requestPreparation": 728.5,
+                "engineSetup": 208.5,
+                "exportLookup": 1061.5,
+                "cleanup": 726563.0,
+                "compileValidate": 98425833.0,
+                "processStartup": 13390270.5
+              },
+              "head-go": {
+                "instantiate": 506354.0,
+                "firstCall": 10572312.5,
+                "providerSetup": 52041.5,
+                "load": 75229.0,
+                "requestPreparation": 708.5,
+                "engineSetup": 396.0,
+                "exportLookup": 667.0,
+                "cleanup": 66583.5,
+                "compileValidate": 63215645.5,
+                "processStartup": 6386104.5
+              },
+              "head-llgo": {
+                "instantiate": 793416.0,
+                "firstCall": 22319479.0,
+                "providerSetup": 206249.5,
+                "load": 87146.5,
+                "requestPreparation": 646.0,
+                "engineSetup": 250.0,
+                "exportLookup": 1103.5,
+                "cleanup": 732333.5,
+                "compileValidate": 96891292.0,
+                "processStartup": 13302792.0
+              }
+            }
+          },
+          "65536": {
+            "processes": 48,
+            "medians": {
+              "base-go": {
+                "cpuUs": 102.54288940429686,
+                "instructions": 1061955.6382324218,
+                "throughput": 37763.7944920959,
+                "allocsPerRequest": 558.254296875,
+                "bytesPerRequest": 113641.120703125
+              },
+              "base-llgo": {
+                "cpuUs": 241.41776529947916,
+                "instructions": 1702914.5095703127,
+                "throughput": 19975.810482335153,
+                "allocsPerRequest": 655.250390625,
+                "bytesPerRequest": 128491.70546875
+              },
+              "head-go": {
+                "cpuUs": 100.77425537109374,
+                "instructions": 1059264.726611328,
+                "throughput": 39166.75241728955,
+                "allocsPerRequest": 558.2541015625,
+                "bytesPerRequest": 113640.682421875
+              },
+              "head-llgo": {
+                "cpuUs": 245.5316182454427,
+                "instructions": 1720177.8486816408,
+                "throughput": 19672.005141448033,
+                "allocsPerRequest": 655.250634765625,
+                "bytesPerRequest": 128491.334375
+              }
+            },
+            "AA": {
+              "base-go": {
+                "cpuUs": {
+                  "ratio": 0.9914153382155297,
+                  "ci95": [
+                    0.9791568287251734,
+                    1.0044301842753967
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 0.9974066688005022,
+                  "ci95": [
+                    0.9938940836310486,
+                    1.000187361251759
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 1.0428923122640705,
+                  "ci95": [
+                    1.008472760154217,
+                    1.0786397815300792
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000005831055907,
+                  "ci95": [
+                    0.9999988337928781,
+                    1.000002070023299
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000016510808287,
+                  "ci95": [
+                    0.9999994580443808,
+                    1.0000038716224058
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "base-llgo": {
+                "cpuUs": {
+                  "ratio": 1.0155640267930672,
+                  "ci95": [
+                    0.991035733510177,
+                    1.040018289612035
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "instructions": {
+                  "ratio": 1.01422761115363,
+                  "ci95": [
+                    0.9979777005663869,
+                    1.0303368157006318
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "throughput": {
+                  "ratio": 0.9894617760736886,
+                  "ci95": [
+                    0.973892153230229,
+                    1.0058104692119731
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000004967879,
+                  "ci95": [
+                    1.0000000745180777,
+                    1.0000010184150634
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999926531640512,
+                  "ci95": [
+                    0.999981482017177,
+                    1.0000083055653635
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "head-go": {
+                "cpuUs": {
+                  "ratio": 1.001428756474067,
+                  "ci95": [
+                    0.9851597497727886,
+                    1.0188862054266694
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 0.9975777540967027,
+                  "ci95": [
+                    0.9960363565083507,
+                    0.9989060015934923
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 1.0279319289946618,
+                  "ci95": [
+                    0.9839858577311319,
+                    1.0903456374179237
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999999708457408,
+                  "ci95": [
+                    0.9999972885680336,
+                    1.0000032945466686
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000006576816622,
+                  "ci95": [
+                    0.9999983706899126,
+                    1.000004044636443
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "head-llgo": {
+                "cpuUs": {
+                  "ratio": 0.995778774423201,
+                  "ci95": [
+                    0.963261733401507,
+                    1.0308178424347898
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "instructions": {
+                  "ratio": 0.9989192967339141,
+                  "ci95": [
+                    0.9803830396967087,
+                    1.0169445800198325
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 1.0173532358817845,
+                  "ci95": [
+                    0.9876662083847595,
+                    1.0465740238094112
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999986835138004,
+                  "ci95": [
+                    0.9999973918686678,
+                    0.9999998012849461
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999927180849114,
+                  "ci95": [
+                    0.999977481294075,
+                    1.0000086543783804
+                  ],
+                  "resolves2_5Percent": true
+                }
+              }
+            },
+            "comparisons": {
+              "head-go/base-go": {
+                "cpuUs": {
+                  "ratio": 0.9875390723049933,
+                  "ci95": [
+                    0.9754045395671417,
+                    0.9969372484434771
+                  ],
+                  "controlsResolve": true
+                },
+                "instructions": {
+                  "ratio": 0.9959168937049862,
+                  "ci95": [
+                    0.9926537713107665,
+                    0.9989558477604403
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 1.0238332536302623,
+                  "ci95": [
+                    1.0063421901150174,
+                    1.0445883986169748
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999995480922873,
+                  "ci95": [
+                    0.999997317721368,
+                    1.000001311986091
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999974248446998,
+                  "ci95": [
+                    0.9999954397746956,
+                    0.9999992094050205
+                  ],
+                  "controlsResolve": true
+                }
+              },
+              "head-llgo/base-llgo": {
+                "cpuUs": {
+                  "ratio": 1.0117082694524144,
+                  "ci95": [
+                    1.0015336500769345,
+                    1.023131286902164
+                  ],
+                  "controlsResolve": false
+                },
+                "instructions": {
+                  "ratio": 1.0060724158928198,
+                  "ci95": [
+                    0.9963876608229006,
+                    1.0170493732725003
+                  ],
+                  "controlsResolve": false
+                },
+                "throughput": {
+                  "ratio": 1.0037289421779996,
+                  "ci95": [
+                    0.9909539683260856,
+                    1.0202077702895544
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.000000459528689,
+                  "ci95": [
+                    1.0000000869374561,
+                    1.0000008445393451
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999943312517394,
+                  "ci95": [
+                    0.9999860318826828,
+                    1.0000036845924878
+                  ],
+                  "controlsResolve": true
+                }
+              }
+            },
+            "phasesMedianNs": {
+              "base-go": {
+                "instantiate": 516458.5,
+                "firstCall": 15852250.0,
+                "providerSetup": 49771.0,
+                "load": 70791.5,
+                "requestPreparation": 8771.0,
+                "engineSetup": 396.0,
+                "exportLookup": 771.0,
+                "cleanup": 77000.5,
+                "compileValidate": 67469791.5,
+                "processStartup": 6546500.0
+              },
+              "base-llgo": {
+                "instantiate": 864417.5,
+                "firstCall": 29365604.0,
+                "providerSetup": 255124.5,
+                "load": 83583.0,
+                "requestPreparation": 8542.0,
+                "engineSetup": 271.0,
+                "exportLookup": 1208.0,
+                "cleanup": 633895.5,
+                "compileValidate": 111659104.0,
+                "processStartup": 13286479.5
+              },
+              "head-go": {
+                "instantiate": 511188.0,
+                "firstCall": 16050166.5,
+                "providerSetup": 57563.0,
+                "load": 75146.0,
+                "requestPreparation": 8915.5,
+                "engineSetup": 375.0,
+                "exportLookup": 708.5,
+                "cleanup": 65750.0,
+                "compileValidate": 67378979.0,
+                "processStartup": 6569521.0
+              },
+              "head-llgo": {
+                "instantiate": 752082.5,
+                "firstCall": 24110958.5,
+                "providerSetup": 187604.0,
+                "load": 82791.5,
+                "requestPreparation": 9729.0,
+                "engineSetup": 187.5,
+                "exportLookup": 1249.0,
+                "cleanup": 638188.0,
+                "compileValidate": 96573062.5,
+                "processStartup": 12996583.5
+              }
+            }
+          }
+        }
+      },
+      "instruction-audit.json": {
+        "scope": "ARM64 closed-call sample: same callee size, caller removes exactly24bytes/six instructions by replacing two logical+physical bound pairs with host-checked effective bounds. Canonical copies and private parameter ABI are unchanged.",
+        "functions": {
+          "base": [
+            {
+              "function": 0,
+              "codeBytes": 1280,
+              "linkedEntry": 1032,
+              "firstPC": 296
+            },
+            {
+              "function": 1,
+              "codeBytes": 1512,
+              "linkedEntry": 1280,
+              "firstPC": 268
+            }
+          ],
+          "head": [
+            {
+              "function": 0,
+              "codeBytes": 1280,
+              "linkedEntry": 1032,
+              "firstPC": 296
+            },
+            {
+              "function": 1,
+              "codeBytes": 1488,
+              "linkedEntry": 1256,
+              "firstPC": 268
+            }
+          ]
+        }
+      },
+      "build-complete.json": {
+        "head": "e9c2918f660b093f5ee233447f3239be05b35a61",
+        "base": "266ac846614bc9ee86fd6ad113ce918b0ff11674",
+        "builds": 8
+      },
+      "campaign.json": {
+        "scope": "Separate fixed own-only source regression event for host-folded checked call bounds. Same 9e45f103 SDK O3/full-LTO/defaultGC on base/head. P3 payload16 then65536 (six symmetric-AA blocks each) followed by six-block closed general-call screen. Complete output/status/headers/body/trailers/CRC verification. Startup/setup/first/cleanup separate. No own builds/tests/profiles/edits/pruning/analysis during timed processes; posthoc analysis only after all cohorts finish. External desktop load uncontrolled and recorded; controls qualify conclusions. No competitors, pooling or stopping extension; no completion claim.",
+        "head": "e9c2918f660b093f5ee233447f3239be05b35a61",
+        "files": {
+          "screen.py": "42ad9d2e5a2b9c41a973e659d638e7ece16fe56e44db88755b212341d46a58bb",
+          "analyze_p3.py": "3fcfe362e46cd8d941eb53f6cb4a15c7a652852202a8f9b7f0c5fb08e7cf08b8",
+          "run_campaign.py": "8bdd0f29606137ba0bff11539a3d7de043aef40352766960e263a9dc488050c8",
+          "p3-16/measure.py": "1ebcbe0c79eb0dc392c32f7b717b5625b1a79d7fda3493a0c96b1f99a1effff4",
+          "p3-16/frozen-plan.json": "bfa8d24ddfc52c600eb13c9d2608199db7e0e6ac38e403b19e694dcc3447960f",
+          "p3-65536/measure.py": "6ef3625822774db9f21a23c941fd225f8930b53fef32704a1a108807adcb15cb",
+          "p3-65536/frozen-plan.json": "ef44b6ec15d80bc12edd3788ea14b01fb9770c9760b34792fc2c9352a5dcb383",
+          "build.json": "14ced5fdaba71c417c596493eb3cfa527cb9e2b8380c19385edf92fb8226e7bf",
+          "smoke.json": "042820b3af0f6aa48d47c922d85fe3fff917af5fa9d8251292576d5cae10f74b",
+          "instruction-audit.json": "f16f790ea92a347f509f2a5503336d29ccd0bd3c0a337ad7e5a7ef67f55b2e41"
+        }
+      },
+      "evidenceSha256": {
+        "screen-raw.jsonl.gz": "8dbb22d4e9df6c3ace68ea4b5ba6b0cd328d90f4ef6b7c6b630201771a67d9ac",
+        "campaign-complete.json": "88ccb795da6c4f31e851e66869e1d607c5ea56bc64b11ad9661ef450ff0c04e4",
+        "build.json": "14ced5fdaba71c417c596493eb3cfa527cb9e2b8380c19385edf92fb8226e7bf",
+        "p3-65536/plan.json": "8801bd316b527ed5f0cdfb14f32ad3c4a3b3ba79767979ea7bbdd0774f689f9c",
+        "p3-16/plan.json": "ed582ef11d553f77f106b3f378e31f1df9c9038faa3f8b0711a29b4920165de7"
+      }
+    },
+    "native-result-pairs-20261117": {
+      "screen-analysis.json": {
+        "scope": "Own native-call regression screen only, no competitors or performance acceptance claim. Common source-base/head compiler 9e45f103 O3/full-LTO/defaultGC. Fixed six fresh-process symmetric-AA blocks, seven serialized warm calls with two uncounted warmups. Preserve all phases/raw output. No own builds/tests/analysis/edits during timing; external desktop load uncontrolled. Marginal bootstrap intervals, no simultaneous inference or stopping extensions.",
+        "processes": 72,
+        "medians": {
+          "base-go-phase": 4.366675,
+          "head-go-phase": 4.127675099999999,
+          "base-llgo-phase": 4.3398166,
+          "head-llgo-phase": 4.1172708,
+          "middle-go-phase": 4.0846833,
+          "middle-llgo-phase": 4.038729099999999
+        },
+        "AA": {
+          "base-go-phase": {
+            "ratio": 1.0042092736781407,
+            "ci95": [
+              0.9913700128110274,
+              1.017915857631939
+            ],
+            "resolves2_5Percent": true
+          },
+          "head-go-phase": {
+            "ratio": 1.00763452360464,
+            "ci95": [
+              0.9952394061592534,
+              1.0193664019536859
+            ],
+            "resolves2_5Percent": true
+          },
+          "base-llgo-phase": {
+            "ratio": 0.9925708409793292,
+            "ci95": [
+              0.9820746291901126,
+              1.0052390435842147
+            ],
+            "resolves2_5Percent": true
+          },
+          "head-llgo-phase": {
+            "ratio": 1.0238206050842649,
+            "ci95": [
+              1.0048759178185214,
+              1.0461648926823068
+            ],
+            "resolves2_5Percent": false
+          },
+          "middle-go-phase": {
+            "ratio": 1.0009951529200978,
+            "ci95": [
+              0.9864712261124606,
+              1.013931877853849
+            ],
+            "resolves2_5Percent": true
+          },
+          "middle-llgo-phase": {
+            "ratio": 1.0204171870858738,
+            "ci95": [
+              1.002208312652267,
+              1.0379557298490192
+            ],
+            "resolves2_5Percent": false
+          }
+        },
+        "comparisons": {
+          "go": {
+            "ratio": 0.9439145318517562,
+            "ci95": [
+              0.9376267807583162,
+              0.9500146746671089
+            ],
+            "controlsResolve": true
+          },
+          "llgo": {
+            "ratio": 0.945322257728237,
+            "ci95": [
+              0.936207621611787,
+              0.9545215306824559
+            ],
+            "controlsResolve": false
+          },
+          "return-go": {
+            "ratio": 1.005823870423042,
+            "ci95": [
+              0.9944406741574279,
+              1.0216618557376067
+            ],
+            "controlsResolve": true
+          },
+          "return-llgo": {
+            "ratio": 1.0111026921706738,
+            "ci95": [
+              0.9977278681417768,
+              1.0245544446993093
+            ],
+            "controlsResolve": false
+          },
+          "bounds-go": {
+            "ratio": 0.9384491257448013,
+            "ci95": [
+              0.9269449457841359,
+              0.9491721383173807
+            ],
+            "controlsResolve": true
+          },
+          "bounds-llgo": {
+            "ratio": 0.9349418857730297,
+            "ci95": [
+              0.9295011877002273,
+              0.9408689948936609
+            ],
+            "controlsResolve": false
+          }
+        }
+      },
+      "p3-analysis.json": {
+        "scope": "Complete request/driver counters with mach timebase conversion, per-role symmetric AA and fixed-block marginal bootstrap95 intervals. No timing subtraction or cross-event pooling.",
+        "results": {
+          "16": {
+            "processes": 72,
+            "medians": {
+              "base-go": {
+                "cpuUs": 79.73529866536458,
+                "instructions": 779209.1356933594,
+                "throughput": 50719.381245458564,
+                "allocsPerRequest": 519.25341796875,
+                "bytesPerRequest": 45048.56640625
+              },
+              "base-llgo": {
+                "cpuUs": 205.08803507486977,
+                "instructions": 1377459.1630371094,
+                "throughput": 22619.503400183665,
+                "allocsPerRequest": 592.250390625,
+                "bytesPerRequest": 56397.5171875
+              },
+              "head-go": {
+                "cpuUs": 78.47926432291666,
+                "instructions": 778747.5854003907,
+                "throughput": 50876.588655148305,
+                "allocsPerRequest": 519.254052734375,
+                "bytesPerRequest": 45048.910546875006
+              },
+              "head-llgo": {
+                "cpuUs": 204.33030598958334,
+                "instructions": 1374251.2904785157,
+                "throughput": 22971.441982364442,
+                "allocsPerRequest": 592.2503417968751,
+                "bytesPerRequest": 56396.41875
+              },
+              "middle-go": {
+                "cpuUs": 78.92259521484374,
+                "instructions": 777420.7311523438,
+                "throughput": 50719.90630653941,
+                "allocsPerRequest": 519.253369140625,
+                "bytesPerRequest": 45048.535546875
+              },
+              "middle-llgo": {
+                "cpuUs": 204.69642944335936,
+                "instructions": 1378403.0821777345,
+                "throughput": 22924.274602708567,
+                "allocsPerRequest": 592.250390625,
+                "bytesPerRequest": 56396.54609375
+              }
+            },
+            "AA": {
+              "base-go": {
+                "cpuUs": {
+                  "ratio": 0.9992354620600791,
+                  "ci95": [
+                    0.9801466546131224,
+                    1.0188100303486725
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 1.000189730806565,
+                  "ci95": [
+                    0.9988414010080104,
+                    1.0016551031424001
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 1.0050435911735116,
+                  "ci95": [
+                    0.9892904972682188,
+                    1.0189557797035074
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999993104084217,
+                  "ci95": [
+                    0.9999989029228996,
+                    0.9999997492394767
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000009480465026,
+                  "ci95": [
+                    0.9999988033814492,
+                    1.0000043789412023
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "base-llgo": {
+                "cpuUs": {
+                  "ratio": 1.0154080196197415,
+                  "ci95": [
+                    0.9906801264518037,
+                    1.0391274215669222
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "instructions": {
+                  "ratio": 1.0010477511005627,
+                  "ci95": [
+                    0.9896394402964968,
+                    1.0094861668850401
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9713626265659786,
+                  "ci95": [
+                    0.9429846436545452,
+                    1.0011809834620238
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000004397071918,
+                  "ci95": [
+                    1.0000001648902084,
+                    1.0000006595608648
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999915870741768,
+                  "ci95": [
+                    0.9999704845166861,
+                    1.000011646094212
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "head-go": {
+                "cpuUs": {
+                  "ratio": 0.9951179594711405,
+                  "ci95": [
+                    0.9777901308787557,
+                    1.0118287551355027
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 0.9991656493282878,
+                  "ci95": [
+                    0.9970571713758931,
+                    1.0012061160126922
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 1.0039298172281277,
+                  "ci95": [
+                    0.9894356156526694,
+                    1.0157243448082365
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999969908803634,
+                  "ci95": [
+                    0.9999954863250459,
+                    0.9999984014048889
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000012139777668,
+                  "ci95": [
+                    0.9999964043928788,
+                    1.0000061536586087
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "head-llgo": {
+                "cpuUs": {
+                  "ratio": 1.005814369957164,
+                  "ci95": [
+                    0.9893854827230228,
+                    1.0223282248134522
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 1.0019223402839834,
+                  "ci95": [
+                    0.9962012955030254,
+                    1.0074481922165621
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9908918109382368,
+                  "ci95": [
+                    0.9689382153934324,
+                    1.0098251014895068
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999997251830511,
+                  "ci95": [
+                    0.999999395402902,
+                    1.0000000549633499
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000115387313484,
+                  "ci95": [
+                    0.9999662768953296,
+                    1.0000509601542735
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "middle-go": {
+                "cpuUs": {
+                  "ratio": 1.0077079144732426,
+                  "ci95": [
+                    0.9918183142246237,
+                    1.0238022508287383
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 0.9984001543225883,
+                  "ci95": [
+                    0.9956630010595506,
+                    1.0010652639846216
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9965492391776606,
+                  "ci95": [
+                    0.9897600865577122,
+                    1.0031955247987596
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999999373090218,
+                  "ci95": [
+                    0.9999986835072067,
+                    1.0000012224572796
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999978379786888,
+                  "ci95": [
+                    0.9999910889619963,
+                    1.0000049888098792
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "middle-llgo": {
+                "cpuUs": {
+                  "ratio": 0.9827306500146342,
+                  "ci95": [
+                    0.9720438068429649,
+                    0.9946582256035528
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "instructions": {
+                  "ratio": 0.9939699648477485,
+                  "ci95": [
+                    0.9917485160391869,
+                    0.996199992479383
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 1.0058004613289222,
+                  "ci95": [
+                    0.9675589130731501,
+                    1.0346942100840537
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.000000219853635,
+                  "ci95": [
+                    0.9999995877747818,
+                    1.0000008794144999
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.000005614816536,
+                  "ci95": [
+                    0.999979733717313,
+                    1.0000294468079158
+                  ],
+                  "resolves2_5Percent": true
+                }
+              }
+            },
+            "comparisons": {
+              "head-go/base-go": {
+                "cpuUs": {
+                  "ratio": 0.9904792206397952,
+                  "ci95": [
+                    0.9769266582467697,
+                    1.0032429494897115
+                  ],
+                  "controlsResolve": true
+                },
+                "instructions": {
+                  "ratio": 0.9997466607226275,
+                  "ci95": [
+                    0.9982153324600964,
+                    1.0011540212178924
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 1.0069717056036798,
+                  "ci95": [
+                    1.0011834846787817,
+                    1.013115395011889
+                  ],
+                  "controlsResolve": true
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000015672540075,
+                  "ci95": [
+                    1.0000002037418556,
+                    1.0000033069115537
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000051824795138,
+                  "ci95": [
+                    0.9999996603771644,
+                    1.0000109416326113
+                  ],
+                  "controlsResolve": true
+                }
+              },
+              "head-llgo/base-llgo": {
+                "cpuUs": {
+                  "ratio": 0.9985378186830804,
+                  "ci95": [
+                    0.9884926073640457,
+                    1.0052540626411202
+                  ],
+                  "controlsResolve": false
+                },
+                "instructions": {
+                  "ratio": 0.9977406666914713,
+                  "ci95": [
+                    0.9921646174261541,
+                    1.0025987578067566
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 0.9953300522892735,
+                  "ci95": [
+                    0.9732090365463072,
+                    1.0191492787581997
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000000274816836,
+                  "ci95": [
+                    0.9999997526647907,
+                    1.0000003160394777
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999872024295798,
+                  "ci95": [
+                    0.9999552726886013,
+                    1.0000220844625534
+                  ],
+                  "controlsResolve": true
+                }
+              },
+              "head-go/middle-go": {
+                "cpuUs": {
+                  "ratio": 1.0027952914116558,
+                  "ci95": [
+                    0.9906810161798436,
+                    1.0160844619413694
+                  ],
+                  "controlsResolve": true
+                },
+                "instructions": {
+                  "ratio": 1.0012935683859856,
+                  "ci95": [
+                    0.9996605240605152,
+                    1.0030904100655278
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 0.9990365382717465,
+                  "ci95": [
+                    0.9932969340811011,
+                    1.0042712810297156
+                  ],
+                  "controlsResolve": true
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000010970767417,
+                  "ci95": [
+                    1.0000005171906061,
+                    1.0000016612893474
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000047489226187,
+                  "ci95": [
+                    1.0000017819389782,
+                    1.0000084255221569
+                  ],
+                  "controlsResolve": true
+                }
+              },
+              "head-llgo/middle-llgo": {
+                "cpuUs": {
+                  "ratio": 0.994751271526064,
+                  "ci95": [
+                    0.9803167479164246,
+                    1.0069670260850412
+                  ],
+                  "controlsResolve": false
+                },
+                "instructions": {
+                  "ratio": 0.998787544539284,
+                  "ci95": [
+                    0.9943661337208936,
+                    1.0027604193129502
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 0.9971289132045829,
+                  "ci95": [
+                    0.9688565323060552,
+                    1.0237501268845235
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999999450366758,
+                  "ci95": [
+                    0.9999996977015435,
+                    1.0000001923719326
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999900004430258,
+                  "ci95": [
+                    0.9999713732062151,
+                    1.000007443180854
+                  ],
+                  "controlsResolve": true
+                }
+              },
+              "middle-go/base-go": {
+                "cpuUs": {
+                  "ratio": 0.9877182602697276,
+                  "ci95": [
+                    0.9765797346132689,
+                    1.0003030644522524
+                  ],
+                  "controlsResolve": true
+                },
+                "instructions": {
+                  "ratio": 0.998455090782365,
+                  "ci95": [
+                    0.9976318916597704,
+                    0.9994729659852832
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 1.007942819934955,
+                  "ci95": [
+                    0.9999726777216689,
+                    1.017323223673445
+                  ],
+                  "controlsResolve": true
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.00000047017675,
+                  "ci95": [
+                    0.9999989812854089,
+                    1.000002225504205
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000004335548363,
+                  "ci95": [
+                    0.9999961066477577,
+                    1.0000068401357953
+                  ],
+                  "controlsResolve": true
+                }
+              },
+              "middle-llgo/base-llgo": {
+                "cpuUs": {
+                  "ratio": 1.0038065265814715,
+                  "ci95": [
+                    0.9973638974396578,
+                    1.0104545676139707
+                  ],
+                  "controlsResolve": false
+                },
+                "instructions": {
+                  "ratio": 0.9989518513185949,
+                  "ci95": [
+                    0.9976408286462068,
+                    1.0003628707529646
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 0.9981959595279128,
+                  "ci95": [
+                    0.9843651641717022,
+                    1.0107800326873213
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000000824450124,
+                  "ci95": [
+                    0.9999998351097623,
+                    1.000000412225311
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999972019585749,
+                  "ci95": [
+                    0.9999724914642059,
+                    1.0000240907736377
+                  ],
+                  "controlsResolve": true
+                }
+              }
+            },
+            "phasesMedianNs": {
+              "base-go": {
+                "providerSetup": 50686.5,
+                "cleanup": 68291.5,
+                "requestPreparation": 707.0,
+                "firstCall": 10773333.5,
+                "instantiate": 524021.0,
+                "compileValidate": 66009187.0,
+                "load": 73062.0,
+                "engineSetup": 354.5,
+                "exportLookup": 832.0,
+                "processStartup": 6615479.5
+              },
+              "base-llgo": {
+                "providerSetup": 201791.5,
+                "cleanup": 593374.5,
+                "requestPreparation": 687.0,
+                "firstCall": 22283312.5,
+                "instantiate": 807083.5,
+                "compileValidate": 98971270.5,
+                "load": 91833.5,
+                "engineSetup": 208.5,
+                "exportLookup": 979.5,
+                "processStartup": 13525083.0
+              },
+              "head-go": {
+                "providerSetup": 50625.5,
+                "cleanup": 60437.5,
+                "requestPreparation": 875.0,
+                "firstCall": 10458708.5,
+                "instantiate": 618915.5,
+                "compileValidate": 61936875.0,
+                "load": 74812.5,
+                "engineSetup": 396.0,
+                "exportLookup": 708.0,
+                "processStartup": 7258729.0
+              },
+              "head-llgo": {
+                "providerSetup": 261667.0,
+                "cleanup": 587625.0,
+                "requestPreparation": 728.5,
+                "firstCall": 27259313.0,
+                "instantiate": 877437.5,
+                "compileValidate": 103704771.0,
+                "load": 80020.5,
+                "engineSetup": 209.0,
+                "exportLookup": 1104.0,
+                "processStartup": 13643979.5
+              },
+              "middle-go": {
+                "providerSetup": 55270.5,
+                "cleanup": 71896.5,
+                "requestPreparation": 770.0,
+                "firstCall": 11930041.5,
+                "instantiate": 567645.5,
+                "compileValidate": 71754562.5,
+                "load": 87875.0,
+                "engineSetup": 375.5,
+                "exportLookup": 750.0,
+                "processStartup": 7400062.5
+              },
+              "middle-llgo": {
+                "providerSetup": 218959.0,
+                "cleanup": 622937.5,
+                "requestPreparation": 728.5,
+                "firstCall": 22608333.5,
+                "instantiate": 809896.0,
+                "compileValidate": 100070271.0,
+                "load": 82542.0,
+                "engineSetup": 250.0,
+                "exportLookup": 1063.0,
+                "processStartup": 13007958.0
+              }
+            }
+          },
+          "65536": {
+            "processes": 72,
+            "medians": {
+              "base-go": {
+                "cpuUs": 102.86270141601561,
+                "instructions": 1061329.168359375,
+                "throughput": 38259.82262398536,
+                "allocsPerRequest": 558.254345703125,
+                "bytesPerRequest": 113641.0578125
+              },
+              "base-llgo": {
+                "cpuUs": 239.30103963216146,
+                "instructions": 1715352.6093261717,
+                "throughput": 20393.39586616755,
+                "allocsPerRequest": 655.250244140625,
+                "bytesPerRequest": 128492.190625
+              },
+              "head-go": {
+                "cpuUs": 102.74503173828126,
+                "instructions": 1061641.6555664062,
+                "throughput": 38364.490106781115,
+                "allocsPerRequest": 558.25390625,
+                "bytesPerRequest": 113640.879296875
+              },
+              "head-llgo": {
+                "cpuUs": 237.05799967447916,
+                "instructions": 1705827.228955078,
+                "throughput": 20379.93066369216,
+                "allocsPerRequest": 655.25029296875,
+                "bytesPerRequest": 128490.984375
+              },
+              "middle-go": {
+                "cpuUs": 102.54351196289062,
+                "instructions": 1060099.4028808593,
+                "throughput": 38900.67625238164,
+                "allocsPerRequest": 558.2537109375,
+                "bytesPerRequest": 113640.662109375
+              },
+              "middle-llgo": {
+                "cpuUs": 238.24007161458331,
+                "instructions": 1698387.4579589844,
+                "throughput": 20416.784552880556,
+                "allocsPerRequest": 655.2506347656249,
+                "bytesPerRequest": 128491.4125
+              }
+            },
+            "AA": {
+              "base-go": {
+                "cpuUs": {
+                  "ratio": 1.0045056788059772,
+                  "ci95": [
+                    0.9965415553551665,
+                    1.0123573857111787
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 1.0003602556766567,
+                  "ci95": [
+                    0.9979680311539414,
+                    1.0034152968298518
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9851130420077744,
+                  "ci95": [
+                    0.9587159494323227,
+                    1.0138796078779313
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999996792913881,
+                  "ci95": [
+                    0.9999979882895904,
+                    1.0000013411409505
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000005820605715,
+                  "ci95": [
+                    0.9999989160883678,
+                    1.0000029068648046
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "base-llgo": {
+                "cpuUs": {
+                  "ratio": 1.0066357343554888,
+                  "ci95": [
+                    0.9950222812363401,
+                    1.01946608550086
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 1.001280876012447,
+                  "ci95": [
+                    0.9936055309230343,
+                    1.0088002464626546
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9891075516379859,
+                  "ci95": [
+                    0.9790464237938733,
+                    1.0014326377866027
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999999999999778,
+                  "ci95": [
+                    0.9999997516057002,
+                    1.0000002483943133
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999989927712327,
+                  "ci95": [
+                    0.9999939442388777,
+                    1.0000044061528992
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "head-go": {
+                "cpuUs": {
+                  "ratio": 0.9905787128516379,
+                  "ci95": [
+                    0.9676512506676292,
+                    1.0148435318837405
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "instructions": {
+                  "ratio": 1.0007574590640254,
+                  "ci95": [
+                    0.997881409118311,
+                    1.0043339547197736
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 1.0237702147050356,
+                  "ci95": [
+                    0.9971852552004599,
+                    1.051063929246024
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000011370553819,
+                  "ci95": [
+                    0.9999995626723279,
+                    1.0000025948179154
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000020440854038,
+                  "ci95": [
+                    1.0000003437355025,
+                    1.0000038796391184
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "head-llgo": {
+                "cpuUs": {
+                  "ratio": 0.9968748031867493,
+                  "ci95": [
+                    0.9805053940127095,
+                    1.0136139440370693
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 0.9986021500574868,
+                  "ci95": [
+                    0.989533739620745,
+                    1.0109539530337122
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9798471945763341,
+                  "ci95": [
+                    0.9530932663906068,
+                    1.005561624570727
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000000248394734,
+                  "ci95": [
+                    0.9999997516058632,
+                    1.0000002483943098
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000129568149398,
+                  "ci95": [
+                    0.99999841100532,
+                    1.000026063766561
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "middle-go": {
+                "cpuUs": {
+                  "ratio": 1.008987186784793,
+                  "ci95": [
+                    1.000437824212314,
+                    1.0187429191112427
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 0.9999936457554768,
+                  "ci95": [
+                    0.9974127990417263,
+                    1.0023594252352206
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9960714350291339,
+                  "ci95": [
+                    0.9888637335447572,
+                    1.0077314491217704
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999983089970121,
+                  "ci95": [
+                    0.9999972885651113,
+                    0.9999992711198388
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999991085776286,
+                  "ci95": [
+                    0.9999984692299863,
+                    0.999999708969905
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "middle-llgo": {
+                "cpuUs": {
+                  "ratio": 0.9995723018785468,
+                  "ci95": [
+                    0.9909571887334382,
+                    1.0091461887716346
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 0.9941521260899955,
+                  "ci95": [
+                    0.989028178551373,
+                    0.9987306560131315
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9647114275998964,
+                  "ci95": [
+                    0.9216003681999013,
+                    1.000361974499446
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999999006426828,
+                  "ci95": [
+                    0.9999989567460859,
+                    1.0000007451828141
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999783447309475,
+                  "ci95": [
+                    0.9999678933349386,
+                    0.9999874748713764
+                  ],
+                  "resolves2_5Percent": true
+                }
+              }
+            },
+            "comparisons": {
+              "head-go/base-go": {
+                "cpuUs": {
+                  "ratio": 0.9886714055918139,
+                  "ci95": [
+                    0.9765723731508464,
+                    1.0009203363813648
+                  ],
+                  "controlsResolve": false
+                },
+                "instructions": {
+                  "ratio": 0.9993662006802787,
+                  "ci95": [
+                    0.9964121016999765,
+                    1.001443711188647
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 1.0034612373516223,
+                  "ci95": [
+                    0.9904971072136143,
+                    1.0181822494999517
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999996209812444,
+                  "ci95": [
+                    0.9999985276607133,
+                    1.0000007143029708
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999994408564473,
+                  "ci95": [
+                    0.999996675503607,
+                    1.0000021787185855
+                  ],
+                  "controlsResolve": true
+                }
+              },
+              "head-llgo/base-llgo": {
+                "cpuUs": {
+                  "ratio": 0.9947252457909531,
+                  "ci95": [
+                    0.9801043792236478,
+                    1.008953974465884
+                  ],
+                  "controlsResolve": true
+                },
+                "instructions": {
+                  "ratio": 0.9962882190852566,
+                  "ci95": [
+                    0.9861810822147403,
+                    1.0068487358110405
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 0.9945104768198881,
+                  "ci95": [
+                    0.9771234361718506,
+                    1.0151450263452357
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000001614562768,
+                  "ci95": [
+                    0.9999999999999777,
+                    1.0000003353323186
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.999997916458702,
+                  "ci95": [
+                    0.9999854410880243,
+                    1.0000138353634964
+                  ],
+                  "controlsResolve": true
+                }
+              },
+              "head-go/middle-go": {
+                "cpuUs": {
+                  "ratio": 0.9991447572854112,
+                  "ci95": [
+                    0.9959325306688465,
+                    1.0024920051538777
+                  ],
+                  "controlsResolve": false
+                },
+                "instructions": {
+                  "ratio": 1.0013752204293689,
+                  "ci95": [
+                    0.9995212738184559,
+                    1.0031481748905147
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 0.996996042129763,
+                  "ci95": [
+                    0.9907126088712186,
+                    1.0041158843996496
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000005976834891,
+                  "ci95": [
+                    0.9999986297041645,
+                    1.0000029301090465
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000010770421193,
+                  "ci95": [
+                    0.9999979055026513,
+                    1.000003804023527
+                  ],
+                  "controlsResolve": true
+                }
+              },
+              "head-llgo/middle-llgo": {
+                "cpuUs": {
+                  "ratio": 1.0026658126805592,
+                  "ci95": [
+                    0.9815733477459986,
+                    1.018970978233051
+                  ],
+                  "controlsResolve": true
+                },
+                "instructions": {
+                  "ratio": 0.9991935836734873,
+                  "ci95": [
+                    0.9859898262085646,
+                    1.0077581756059129
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 1.0050353548096462,
+                  "ci95": [
+                    0.9940065423365799,
+                    1.0153266352729748
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.999999515631711,
+                  "ci95": [
+                    0.9999991057819414,
+                    0.9999998633833074
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000024665636882,
+                  "ci95": [
+                    0.99999029200252,
+                    1.0000119436987331
+                  ],
+                  "controlsResolve": true
+                }
+              },
+              "middle-go/base-go": {
+                "cpuUs": {
+                  "ratio": 0.9895176833814827,
+                  "ci95": [
+                    0.9800693136451116,
+                    0.9995262792227837
+                  ],
+                  "controlsResolve": true
+                },
+                "instructions": {
+                  "ratio": 0.9979937393016088,
+                  "ci95": [
+                    0.9960315832448597,
+                    0.9997723352594975
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 1.0064846749120975,
+                  "ci95": [
+                    0.998803613629738,
+                    1.0176907224110407
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.999999023298339,
+                  "ci95": [
+                    0.9999977404677838,
+                    0.9999999708443917
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999983638160902,
+                  "ci95": [
+                    0.9999958350675894,
+                    1.0000008656422916
+                  ],
+                  "controlsResolve": true
+                }
+              },
+              "middle-llgo/base-llgo": {
+                "cpuUs": {
+                  "ratio": 0.9920805448942379,
+                  "ci95": [
+                    0.9756915956433778,
+                    1.0075407360464192
+                  ],
+                  "controlsResolve": true
+                },
+                "instructions": {
+                  "ratio": 0.9970922905874262,
+                  "ci95": [
+                    0.9890389770529145,
+                    1.00577398284618
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 0.9895278529860757,
+                  "ci95": [
+                    0.9799428681182715,
+                    1.002153378476545
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000006458248787,
+                  "ci95": [
+                    1.0000001987152765,
+                    1.0000011674527123
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999954499062369,
+                  "ci95": [
+                    0.9999781560176741,
+                    1.000011060800334
+                  ],
+                  "controlsResolve": true
+                }
+              }
+            },
+            "phasesMedianNs": {
+              "base-go": {
+                "providerSetup": 45708.0,
+                "cleanup": 59667.0,
+                "requestPreparation": 11540.0,
+                "firstCall": 14432854.5,
+                "instantiate": 490687.5,
+                "compileValidate": 61223458.5,
+                "load": 72979.0,
+                "engineSetup": 354.5,
+                "exportLookup": 771.5,
+                "processStartup": 6622875.5
+              },
+              "base-llgo": {
+                "providerSetup": 199624.5,
+                "cleanup": 611166.5,
+                "requestPreparation": 10749.0,
+                "firstCall": 25770000.0,
+                "instantiate": 793270.5,
+                "compileValidate": 97964854.5,
+                "load": 73520.5,
+                "engineSetup": 229.0,
+                "exportLookup": 1311.5,
+                "processStartup": 13396604.0
+              },
+              "head-go": {
+                "providerSetup": 51521.5,
+                "cleanup": 61729.0,
+                "requestPreparation": 10709.0,
+                "firstCall": 14504062.5,
+                "instantiate": 533062.0,
+                "compileValidate": 62080438.0,
+                "load": 73437.5,
+                "engineSetup": 333.0,
+                "exportLookup": 792.0,
+                "processStartup": 6522250.0
+              },
+              "head-llgo": {
+                "providerSetup": 199646.0,
+                "cleanup": 601895.5,
+                "requestPreparation": 8479.5,
+                "firstCall": 25206541.5,
+                "instantiate": 791021.0,
+                "compileValidate": 100974562.5,
+                "load": 89021.0,
+                "engineSetup": 209.0,
+                "exportLookup": 1312.5,
+                "processStartup": 13311021.0
+              },
+              "middle-go": {
+                "providerSetup": 51104.5,
+                "cleanup": 54021.0,
+                "requestPreparation": 9479.0,
+                "firstCall": 14824896.0,
+                "instantiate": 530769.5,
+                "compileValidate": 60568187.5,
+                "load": 68479.5,
+                "engineSetup": 354.5,
+                "exportLookup": 749.5,
+                "processStartup": 6499208.0
+              },
+              "middle-llgo": {
+                "providerSetup": 191708.5,
+                "cleanup": 577437.5,
+                "requestPreparation": 9730.0,
+                "firstCall": 24603646.0,
+                "instantiate": 779875.0,
+                "compileValidate": 101008104.0,
+                "load": 87750.5,
+                "engineSetup": 229.0,
+                "exportLookup": 1208.0,
+                "processStartup": 13203041.5
+              }
+            }
+          }
+        }
+      },
+      "instruction-audit.json": {
+        "scope": "ARM64 closed-call sample: both bodies shrink another24bytes after paired-result continuations. The scalar destination-index walk moves to one known-offset pair store in the caller; the scalar vector prefix is removed. Six native call-bound instructions were removed separately in the middle role.",
+        "middle": [
+          {
+            "function": 0,
+            "codeBytes": 1280,
+            "linkedEntry": 1032,
+            "firstPC": 296
+          },
+          {
+            "function": 1,
+            "codeBytes": 1488,
+            "linkedEntry": 1256,
+            "firstPC": 268
+          }
+        ],
+        "head": [
+          {
+            "function": 0,
+            "codeBytes": 1256,
+            "linkedEntry": 1008,
+            "firstPC": 296
+          },
+          {
+            "function": 1,
+            "codeBytes": 1464,
+            "linkedEntry": 1232,
+            "firstPC": 268
+          }
+        ]
+      },
+      "build-complete.json": {
+        "head": "d65da11c97fec14faddd13058fe72ce224cf238e",
+        "base": "266ac846614bc9ee86fd6ad113ce918b0ff11674",
+        "builds": 12
+      },
+      "campaign.json": {
+        "scope": "Fixed six-role own-only regression event: source baselinePR197, separately preserved bounds-only middle, combined bounds+complete scalar return head; Go/LLGo all use same9e45f103 SDK O3/full-LTO/defaultGC. Six symmetric-AA fresh-process blocks per cohort, P3payload16 then65536 followed by general native calls. Complete semantic outputs/status/headers/body/trailers/CRC verified. Startup/setup/first/cleanup separate. No own build/test/profile/edit/prune/analysis during timed processes. Posthoc comparisons follow all cohorts. External desktop load uncontrolled and recorded; controls qualify conclusions. No competitor campaign, pooling or stopping extension; no performance-completion claim.",
+        "head": "d65da11c97fec14faddd13058fe72ce224cf238e",
+        "files": {
+          "screen.py": "faf5241270e115c00a67414d559f23ce9230549e58bbb4ace9a29c08644b1e36",
+          "analyze_p3.py": "7e5078b780b1ecb09a8e6d734a687f051c622ed0cebca33c3cc4013c2a02e27c",
+          "run_campaign.py": "8bdd0f29606137ba0bff11539a3d7de043aef40352766960e263a9dc488050c8",
+          "p3-16/measure.py": "3d7478592f546d647107d8e5ce0bbc2f3b1d76260bc4a2e992b2a500f18d0622",
+          "p3-16/frozen-plan.json": "f453a5e78cf79a1cb9ed45f7ebe0a000b62e57b2008da752987791e190ff2b5b",
+          "p3-65536/measure.py": "8b61e861205471bf2751ffb7d405c9ddb53c2661aa8cefe2e754344198144659",
+          "p3-65536/frozen-plan.json": "b0f883a7f378c08ae0447a109927ba5559c18d892137348eda9060b2ce3c8511",
+          "build.json": "7e3b424c4d7897935f9091f2b77e45b4d0909b57f89cc535f2731de50c29bbab",
+          "smoke.json": "8d59308c47605b2978188b66e378477dc271ea18903803b384cc283ffbda7899",
+          "instruction-audit.json": "826b5d22e23f7e44522b9e7678183345701588e82fdbb0067e8c10211a87c033",
+          "rebase.json": "67f27792501b11c4d6835ee09db2fc599f2f495845e1265d0b49fcf01edd30de"
+        }
+      },
+      "rebase.json": {
+        "old": "f7d793cfd2f02318a94fdbebea72cf51e288c9e3",
+        "head": "d65da11c97fec14faddd13058fe72ce224cf238e",
+        "base": "9f33573fb31c43a3ca3e6d348e0437a60abdc0ac",
+        "tree": "30638552ee7450a7f65342be43a3fe89b3c75e64",
+        "treeIdentical": true,
+        "oldBound": "e9c2918f660b093f5ee233447f3239be05b35a61",
+        "newBound": "21c00387fdb534e8aaabb9f4a914a5bec9999820"
+      },
+      "evidenceSha256": {
+        "screen-raw.jsonl.gz": "741e41f680fcd8fdea5c00ae5bef95445c506d48bfc5b3cc27447f5f49d9b9e1",
+        "campaign-complete.json": "942514c06d9c47b342c487719697366da28e225ec3d632aecfa91d14c771771f",
+        "build.json": "7e3b424c4d7897935f9091f2b77e45b4d0909b57f89cc535f2731de50c29bbab",
+        "p3-65536/plan.json": "68abbab8b4f90a24dc73b17e89249b826221d03aecec83af2b042192c41ffb9c",
+        "p3-16/plan.json": "a6fed917747aff40f6f4512d6d4b0e4008f22593f70bd386e4a1345e138e917f"
+      }
+    }
+  }
+}

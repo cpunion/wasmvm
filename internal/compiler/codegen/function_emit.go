@@ -24,6 +24,7 @@ type functionEmitter struct {
 	unmetered                                                    bool
 	frameRegisters                                               bool
 	nativeFunction                                               uint64
+	nativeCallLimits                                             bool
 	x86Features                                                  X86Features
 	arm64Features                                                ARM64Features
 	usesMemory                                                   bool

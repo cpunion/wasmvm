@@ -152,6 +152,9 @@ type Config struct {
 	// Zero retains record-based function identity. Linked modules set this for
 	// every body so identity is published only when execution leaves native code.
 	NativeFunction uint64
+	// NativeCallLimits uses host-checked effective slot/depth bounds in the
+	// private call view. Every linked body must use the same convention.
+	NativeCallLimits bool
 }
 
 func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
@@ -164,6 +167,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		return nil, wasm.ErrInvalid
 	}
 	if config.NativeFunction != 0 && (!config.NativeFrameRegisters || config.NativeFunction > 1<<32) {
+		return nil, wasm.ErrInvalid
+	}
+	if config.NativeCallLimits && config.NativeFunction == 0 {
 		return nil, wasm.ErrInvalid
 	}
 	pageSize := uint64(65536)
@@ -220,6 +226,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered, memoryMinimum: uint64(config.MemoryMinimumPages) * pageSize, memoryPageSizes: config.MemoryPageSizes}
 	e.frameRegisters = config.NativeFrameRegisters
 	e.nativeFunction = config.NativeFunction
+	e.nativeCallLimits = config.NativeCallLimits
 	e.x86Features = config.X86Features
 	e.arm64Features = config.ARM64Features
 	e.nativeThreads = config.NativeThreads

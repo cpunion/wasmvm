@@ -13,6 +13,8 @@ func TestNativeFrameRegistersRequireUnmeteredLinkedBodies(t *testing.T) {
 	f := leafFixture(0x6a, nil)
 	for _, arch := range []string{"amd64", "arm64"} {
 		for _, config := range []Config{
+			{NativeCallLimits: true},
+			{NativeCallLimits: true, NativeFrameRegisters: true, Unmetered: true, LinkedCallees: map[uint32]*slots.Function{7: f}},
 			{NativeFrameRegisters: true},
 			{NativeFrameRegisters: true, Unmetered: true},
 			{NativeFrameRegisters: true, LinkedCallees: map[uint32]*slots.Function{7: f}},
