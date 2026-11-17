@@ -179,6 +179,20 @@ chunk-boundary and large-parameter cases, including canceled partial children.
 Full dual-compiler/platform validation and request regression checks remain
 required; register arguments and unified competitive acceptance stay open.
 
+The next local ABI increment retains the first two integer/reference parameter
+positions of short private calls in registers while preserving every full
+canonical frame copy. It installs the actual first-plan homes and handles amd64
+carrier swaps; aliases and other classes keep ordinary frame reads. Poisoned
+low-word probes check carrier use independently of frame fallback, with opaque
+high words preserved. Full validation and own regression checks remain required.
+
+Known-zero private-entry home initialization was also retained as an unintegrated
+experiment. Keeping the original load order improves the Go general-call kernel
+by 1.61% with resolving controls, but complete Go request CPU controls remain
+unresolved (16 B point 1.0056; 64 KiB point 1.0105). The earlier reordered
+variant has a resolving adverse 16 B result. No event is pooled or extended,
+and neither variant is integrated.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and
