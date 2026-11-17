@@ -193,6 +193,12 @@ unresolved (16 B point 1.0056; 64 KiB point 1.0105). The earlier reordered
 variant has a resolving adverse 16 B result. No event is pooled or extended,
 and neither variant is integrated.
 
+A subsequent local increment folds private-call logical/physical limits at
+host entry, then removes their redundant per-call comparisons. Standalone and
+metered bodies retain independent checks. Metadata-capacity authentication,
+arena/record growth, Depth-Top invariance and saturating arithmetic have direct
+tests. Broad validation, own regression checks and final CI remain required.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and

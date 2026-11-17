@@ -31,7 +31,13 @@ func (e *Execution) resumeCalls(in *state.NativeFrames) bool {
 func (e *Execution) prepareCalls(maxSlots, maxFrames uint64) (uint64, error) {
 	capacity := uint64(0)
 	if len(e.callWords) != 0 {
+		if len(e.callWords) < nativeabi.CallHeaderBytes/8 {
+			return 0, wasm.ErrInvalid
+		}
 		capacity = e.callWords[1]
+		if e.callWords[0] > capacity || capacity != (uint64(len(e.callWords))*8-nativeabi.CallHeaderBytes)/nativeabi.CallFrameBytes {
+			return 0, wasm.ErrInvalid
+		}
 	}
 	wanted := capacity
 	if wanted == 0 {
@@ -40,6 +46,9 @@ func (e *Execution) prepareCalls(maxSlots, maxFrames uint64) (uint64, error) {
 		wanted = min(capacity*2, maxFrames)
 	}
 	if wanted > capacity {
+		if wanted > (^uint64(0)-nativeabi.CallHeaderBytes)/nativeabi.CallFrameBytes {
+			return 0, wasm.ErrLimit
+		}
 		bytes := uint64(nativeabi.CallHeaderBytes) + wanted*nativeabi.CallFrameBytes
 		data, err := native.NewMemory(bytes, bytes)
 		if err != nil {
@@ -60,6 +69,19 @@ func (e *Execution) prepareCalls(maxSlots, maxFrames uint64) (uint64, error) {
 		e.callWords[1] = wanted
 	}
 	if len(e.callWords) == 0 {
+		return 0, wasm.ErrLimit
+	}
+	if !e.metered {
+		// During one native run, Depth-Top and both backing allocations are
+		// invariant. Fold logical and physical limits once, not at every call.
+		maxSlots = min(maxSlots, uint64(len(e.values)))
+		remaining := e.callWords[1] - e.callWords[0]
+		depth := e.entryState.Depth
+		if remaining <= ^uint64(0)-depth {
+			maxFrames = min(maxFrames, depth+remaining)
+		}
+	}
+	if maxSlots > ^uint64(0)/16 {
 		return 0, wasm.ErrLimit
 	}
 	e.callWords[2], e.callWords[3] = maxSlots*16, maxFrames

@@ -37,6 +37,7 @@ func TestSharedIndirectTableFitsLinearCodeBudget(t *testing.T) {
 	var size uint64 = 2 * count * 32
 	for _, unmetered := range []bool{false, true} {
 		config.Unmetered, config.NativeAllocations, config.NativeFrameRegisters = unmetered, unmetered, unmetered
+		config.NativeCallLimits = unmetered
 		if unmetered {
 			config.NativeFunction = 1
 		}

@@ -831,6 +831,17 @@ canonical source. amd64 parallel moves preserve swapped carrier destinations.
 No carrier contains a Go pointer; ordinary host entry, all cold PCs, metered
 execution and public frame/root publication keep their existing contracts.
 
+Production unmetered linked modules also select checked call-limit descriptors.
+The host authenticates the metadata allocation and folds the logical slot quota
+with the current arena size. It folds the logical depth quota with
+`entryDepth + recordCapacity - entryTop`, using saturation on overflow. Since
+Depth-Top and backing allocations stay constant during the run, private calls
+need only those two effective bounds. A new host entry recomputes both after
+arena/metadata growth or policy changes. Standalone code generation defaults to
+the original independent logical/physical checks; the checked convention
+requires known linked function identity and uniform module configuration.
+The record size/layout and every observable frame/root check remain unchanged.
+
 ### Materialize live return frames on exceptional exits
 
 A successful private return retires its child frame. Spill result homes needed
