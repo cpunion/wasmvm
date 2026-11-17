@@ -136,6 +136,7 @@ func TestHostSourceFailures(t *testing.T) {
 			for _, mode := range []string{"nil", "zero", "start-error", "start-panic", "result-error", "result-panic", "count", "empty", "invalid", "close-panic", "pending"} {
 				var typ ValueType
 				var closed atomic.Uint32
+				pendingStarted := make(chan struct{})
 				source := AsyncSource{Close: func() {
 					closed.Add(1)
 					if mode == "close-panic" {
@@ -154,6 +155,7 @@ func TestHostSourceFailures(t *testing.T) {
 					}
 					p := NewReadCompletion()
 					if mode == "pending" {
+						close(pendingStarted)
 						return p, nil
 					}
 					p.Resolve(func(*Caller) (ReadResult, error) {
@@ -186,8 +188,19 @@ func TestHostSourceFailures(t *testing.T) {
 							err = wasm.ErrTrap
 						}
 					}()
-					ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 					defer cancel()
+					if mode == "pending" {
+						// Cancel only after the source read exists. Compilation or
+						// scheduling delay must not masquerade as a cleanup failure.
+						go func() {
+							select {
+							case <-pendingStarted:
+								cancel()
+							case <-ctx.Done():
+							}
+						}()
+					}
 					_, err = run.Call(ctx, []Value{{}}, CallOptions{})
 					return err
 				}

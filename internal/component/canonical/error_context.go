@@ -72,10 +72,11 @@ func (r *Resources) addErrorContext(data *errorContext) (uint32, error) {
 	if err := r.budget.retainError(data); err != nil {
 		return 0, err
 	}
-	id, err := r.addLocked(&resourceEntry{errorContext: data})
+	e, id, err := r.addLocked()
 	if err != nil {
 		r.budget.releaseError(data)
 	} else {
+		e.errorContext = data
 		r.errorCount++
 	}
 	return id, err

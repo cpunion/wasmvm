@@ -13,9 +13,17 @@ import (
 
 func TestGlobalsAliasesHostReentryAndExitVisibility(t *testing.T) {
 	withBackends(t, func(t *testing.T, newEngine func() *Engine) {
+		config := newEngine().config
+		config.Features |= wasm.Threads
 		for _, first := range []Value{I32(0xffc01234), I64(0xfedcba9876543210), F32Bits(0xffc01234), F64Bits(0xfff8123456789abc), V128(0xfedcba9876543210, 0x123456789abcdef0)} {
 			t.Run(fmt.Sprintf("%x", first.Type()), func(t *testing.T) {
-				e, s, l := setupWithEngine(t, newEngine)
+				e, s, l := setupWithEngine(t, func() *Engine {
+					e, err := NewEngineWithConfig(config)
+					if err != nil {
+						t.Fatal(err)
+					}
+					return e
+				})
 				typ := first.Type()
 				second := first
 				second.bits.Lo ^= 0x12345678
@@ -23,6 +31,14 @@ func TestGlobalsAliasesHostReentryAndExitVisibility(t *testing.T) {
 				gtype := module.GlobalType{Value: typ, Mutable: true}
 				global, err := s.NewGlobal(GlobalType(gtype), first)
 				if err != nil {
+					t.Fatal(err)
+				}
+				memoryType := MemoryType{Min: 1, Max: 1, HasMax: true, Shared: true}
+				signal, err := s.NewMemory(memoryType)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := l.Define("h", "signal", signal); err != nil {
 					t.Fatal(err)
 				}
 				var read, change, plain Extern
@@ -56,16 +72,16 @@ func TestGlobalsAliasesHostReentryAndExitVisibility(t *testing.T) {
 					}
 				}
 				d := &module.Module{Types: []module.FuncType{{}, {Params: []wasm.ValueType{typ}, Results: []wasm.ValueType{typ}}, {Results: []wasm.ValueType{typ}}, {Params: []wasm.ValueType{typ}}},
-					Imports: []module.Import{{Module: "h", Name: "host", Kind: 0}, {Module: "h", Name: "a", Kind: 3, Global: gtype}, {Module: "h", Name: "b", Kind: 3, Global: gtype}},
+					Imports: []module.Import{{Module: "h", Name: "host", Kind: 0}, {Module: "h", Name: "a", Kind: 3, Global: gtype}, {Module: "h", Name: "b", Kind: 3, Global: gtype}, {Module: "h", Name: "signal", Kind: 2, Memory: memoryType}},
 					Functions: []module.Function{
 						{Type: 1, Body: module.Expr{{Op: 0x20}, {Op: 0x24}, {Op: 0x23, A: 1}, {Op: 0x1a}, {Op: 0x10}, {Op: 0x23}, {Op: 0xb}}},
 						{Type: 1, Body: module.Expr{{Op: 0x20}, {Op: 0x24, A: 1}, {Op: 0x23}, {Op: 0xb}}},
 						{Type: 2, Body: module.Expr{{Op: 0x23}, {Op: 0xb}}},
 						{Body: module.Expr{{Op: 0xb}}},
 						{Type: 3, Body: module.Expr{{Op: 0x20}, {Op: 0x24}, {Op: 0}, {Op: 0xb}}},
-						{Type: 3, Body: module.Expr{{Op: 0x20}, {Op: 0x24}, {Op: 3, Block: -64}, {Op: 0xc}, {Op: 0xb}, {Op: 0xb}}},
+						{Type: 3, Body: module.Expr{{Op: 0x20}, {Op: 0x24}, {Op: 0x41}, {Op: 0x41, Bits: 1}, {Op: 0xfe0017, A: 2}, {Op: 3, Block: -64}, {Op: 0xc}, {Op: 0xb}, {Op: 0xb}}},
 					}, Exports: []module.Export{{Name: "run", Index: 1}, {Name: "change", Index: 2}, {Name: "read", Index: 3}, {Name: "plain", Index: 4}, {Name: "trap", Index: 5}, {Name: "spin", Index: 6}}}
-				m := compileDefinition(t, e, d)
+				m := compileDefinitionWithFeatures(t, e, d, wasm.Threads)
 				in, other := instantiate(t, l, m), instantiate(t, l, m)
 				read, change, plain = export(t, in, "read"), export(t, other, "change"), export(t, other, "plain")
 				run := export(t, in, "run")
@@ -107,9 +123,30 @@ func TestGlobalsAliasesHostReentryAndExitVisibility(t *testing.T) {
 				if err := global.GlobalSet(second); err != nil {
 					t.Fatal(err)
 				}
-				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 				defer cancel()
-				if _, err := export(t, in, "spin").Call(ctx, []Value{first}, CallOptions{}); !errors.Is(err, context.DeadlineExceeded) {
+				spin := export(t, in, "spin")
+				done := make(chan error, 1)
+				go func() {
+					_, err := spin.Call(ctx, []Value{first}, CallOptions{})
+					done <- err
+				}()
+				// Observe the guest's atomic acknowledgement after its global
+				// write, without a host transition that would publish globals.
+				for {
+					v, trap, err := signal.external.Memory.Atomic(ctx, e.domain, 0x10, 0, 0, 0, 0)
+					if err != nil || trap != wasm.NoTrap {
+						cancel()
+						<-done
+						t.Fatal("guest did not acknowledge entry", trap, err)
+					}
+					if v.Lo == 1 {
+						break
+					}
+					time.Sleep(100 * time.Microsecond)
+				}
+				cancel()
+				if err := <-done; !errors.Is(err, context.Canceled) {
 					t.Fatal(err)
 				}
 				if got, err := global.GlobalGet(); err != nil || got.bits != first.bits {
