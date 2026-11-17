@@ -1,5 +1,16 @@
 #include "common.h"
 #include <wasmedge/wasmedge.h>
+#ifdef WASMVM_WASMEDGE_AOT
+#include <unistd.h>
+
+static char temporary_directory[PATH_MAX];
+static char compiled_path[PATH_MAX];
+
+static void remove_artifact(void) {
+  if (*compiled_path) { unlink(compiled_path); *compiled_path = '\0'; }
+  if (*temporary_directory) { rmdir(temporary_directory); *temporary_directory = '\0'; }
+}
+#endif
 
 typedef struct {
   WasmEdge_ExecutorContext *executor;
@@ -29,7 +40,13 @@ static uint32_t invoke(void *opaque, const options *opt, uint64_t *elapsed) {
 }
 
 int main(int argc, char **argv) {
+#ifdef WASMVM_WASMEDGE_AOT
+  options opt = begin(argc, argv, "compiler");
+  const enum WasmEdge_RunMode mode = WasmEdge_RunMode_AOT;
+#else
   options opt = begin(argc, argv, "interpreter");
+  const enum WasmEdge_RunMode mode = WasmEdge_RunMode_Interpreter;
+#endif
   measurements result = {0};
   size_t size;
   uint64_t start = now_ns();
@@ -45,27 +62,57 @@ int main(int argc, char **argv) {
   WasmEdge_ConfigureContext *config = WasmEdge_ConfigureCreate();
   if (!config) fail("cannot create WasmEdge configuration");
   WasmEdge_ConfigureSetRunMode(config, WasmEdge_RunMode_Interpreter);
+#ifdef WASMVM_WASMEDGE_AOT
+  WasmEdge_ConfigureSetRunMode(config, mode);
+  WasmEdge_ConfigureCompilerSetOptimizationLevel(config, WasmEdge_CompilerOptimizationLevel_O3);
+  WasmEdge_ConfigureCompilerSetOutputFormat(config, WasmEdge_CompilerOutputFormat_Native);
+  WasmEdge_CompilerContext *compiler = WasmEdge_CompilerCreate(config);
+  if (!compiler) fail("WasmEdge AOT compiler is unavailable in this SDK");
+#endif
   WasmEdge_LoaderContext *loader = WasmEdge_LoaderCreate(config);
   WasmEdge_ValidatorContext *validator = WasmEdge_ValidatorCreate(config);
   WasmEdge_ExecutorContext *executor = WasmEdge_ExecutorCreate(config, NULL);
   WasmEdge_StoreContext *store = WasmEdge_StoreCreate();
   result.engine_setup = now_ns() - start;
   if (!loader || !validator || !executor || !store) fail("cannot create WasmEdge contexts");
-  if (WasmEdge_ConfigureGetRunMode(config) != WasmEdge_RunMode_Interpreter)
-    fail("WasmEdge interpreter selection failed");
+  if (WasmEdge_ConfigureGetRunMode(config) != mode)
+    fail("WasmEdge execution-mode selection failed");
 
   WasmEdge_ASTModuleContext *module = NULL;
   WasmEdge_Bytes binary = WasmEdge_BytesWrap(bytes, (uint32_t)size);
+#ifdef WASMVM_WASMEDGE_AOT
+  /* A fresh native image for each process, with checked compiler and loader
+   * results. AOT mode loads its native code rather than an interpreter copy.
+   * This API also validates and writes an artifact; do not call it pure codegen. */
+  const char *tmp = getenv("TMPDIR");
+  if (!tmp || !*tmp) tmp = "/tmp";
+  int written = snprintf(temporary_directory, sizeof(temporary_directory),
+                         "%s/wasmvm-wasmedge-XXXXXX", tmp);
+  if (written < 0 || (size_t)written >= sizeof(temporary_directory) ||
+      !mkdtemp(temporary_directory)) fail("cannot create AOT artifact directory");
+  if (atexit(remove_artifact) != 0) fail("cannot register AOT artifact cleanup");
+  written = snprintf(compiled_path, sizeof(compiled_path), "%s/module.so", temporary_directory);
+  if (written < 0 || (size_t)written >= sizeof(compiled_path)) fail("AOT artifact path exceeds limit");
+  start = now_ns();
+  WasmEdge_Result status = WasmEdge_CompilerCompileFromBytes(compiler, binary, compiled_path);
+  result.native_compile = now_ns() - start;
+  check(status);
+  start = now_ns();
+  status = WasmEdge_LoaderParseFromFile(loader, &module, compiled_path);
+  result.artifact_load = result.parse = now_ns() - start;
+  result.separate_native_compile = true;
+#else
   start = now_ns();
   WasmEdge_Result status = WasmEdge_LoaderParseFromBytes(loader, &module, binary);
   result.parse = now_ns() - start;
+#endif
   check(status);
   start = now_ns();
   status = WasmEdge_ValidatorValidate(validator, module);
   result.validate = now_ns() - start;
   check(status);
   result.separate_validation = true;
-  result.compile_validate = result.parse + result.validate;
+  result.compile_validate = result.native_compile + result.parse + result.validate;
 
   WasmEdge_ModuleInstanceContext *instance = NULL;
   start = now_ns();
@@ -99,6 +146,10 @@ int main(int argc, char **argv) {
   WasmEdge_ExecutorDelete(executor);
   WasmEdge_ValidatorDelete(validator);
   WasmEdge_LoaderDelete(loader);
+#ifdef WASMVM_WASMEDGE_AOT
+  WasmEdge_CompilerDelete(compiler);
+  remove_artifact();
+#endif
   WasmEdge_ConfigureDelete(config);
   free(bytes);
   result.cleanup = now_ns() - start;

@@ -109,8 +109,13 @@ All process/configuration/workload cases are interleaved in seeded random order.
   are recorded. These extra reference base/head rows compare dependency selections; the separately named owned rows measure wasmvm implementation revisions.
 - Wasmtime 48.0.1: pinned C API SDK, Cranelift with optimization level 2.
 - Wasmer 7.3.0: pinned C API SDK with Cranelift selected explicitly.
-- WasmEdge 0.17.1: pinned C API SDK with interpreter mode selected explicitly;
-  raw parse and validate durations are recorded under `preparationPartsNs`.
+- WasmEdge 0.17.1: pinned C API SDK with interpreter mode selected explicitly.
+  Defining `WASMVM_WASMEDGE_AOT=1` builds the native AOT profile at optimization
+  level O3. Each process compiles a fresh native image and loads it in AOT mode;
+  compilation or loading failures terminate the measurement. Both profiles
+  record parse and validate durations under `preparationPartsNs`. The AOT
+  profile also records compilation (including validation and artifact I/O) and
+  native image loading separately under `aotPreparationNs`.
 
 The C APIs and versioned headers are the source of each measured boundary:
 [Wasmtime module API](https://github.com/bytecodealliance/wasmtime/blob/v48.0.1/crates/c-api/include/wasmtime/module.h),
@@ -118,7 +123,7 @@ The C APIs and versioned headers are the source of each measured boundary:
 [WasmEdge C API](https://github.com/WasmEdge/WasmEdge/tree/0.17.1/include/api).
 Calling a standalone validation API before a compile API that already validates
 would repeat work, so those costs are not presented as disjoint phases. No disk
-compilation cache or precompiled artifact is used.
+compilation cache or reused precompiled artifact is used.
 
 The Go measurement runner is tested with Go, including both backends and race
 checks. Its owned-code statement coverage is enforced at 90% or higher. The C

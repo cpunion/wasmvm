@@ -26,9 +26,11 @@ typedef struct {
 typedef struct {
   uint64_t load, engine_setup, compile_validate, instantiate, export_lookup;
   uint64_t first_call, cleanup, parse, validate;
+  uint64_t native_compile, artifact_load;
   uint64_t warm[MAX_CALLS], warmup[MAX_CALLS], timer_pair[7];
   uint32_t first_result, warm_results[MAX_CALLS], warmup_results[MAX_CALLS];
   bool separate_validation;
+  bool separate_native_compile;
 } measurements;
 
 static void fail(const char *message) {
@@ -218,6 +220,10 @@ static void report(const options *opt, measurements *result) {
   if (result->separate_validation)
     printf(",\"preparationPartsNs\":{\"parse\":%" PRIu64 ",\"validate\":%" PRIu64 "}",
            result->parse, result->validate);
+  if (result->separate_native_compile)
+    printf(",\"aotPreparationNs\":{\"compileValidateArtifactIO\":%" PRIu64
+           ",\"compiledArtifactLoad\":%" PRIu64 "}",
+           result->native_compile, result->artifact_load);
   puts("}");
 }
 
