@@ -24,12 +24,17 @@ func (in *Instance) readReadySource(core *vm.Caller, r, w *asyncEnd, b *guestBuf
 	if w.scope.failed || w.scope.blocked {
 		return true, wasm.ErrTrap
 	}
-	if in.scheduler().live >= in.config.MaxTasks || in.callDepth >= in.config.Store.MaxReentry {
+	scheduler := in.scheduler()
+	if scheduler.live >= in.config.MaxTasks || in.callDepth >= in.config.Store.MaxReentry {
 		return true, wasm.ErrLimit
 	}
 	if source.closed.Load() {
 		return true, wasm.ErrClosed
 	}
+	// The callback may schedule other work. Reserve the same logical task slot
+	// until its transfer/cleanup ends, without allocating a scheduler node.
+	scheduler.live++
+	defer func() { scheduler.live-- }()
 	f := source.readFunction(batch)
 	h, err := f.hostCall(core, nil)
 	if err != nil {

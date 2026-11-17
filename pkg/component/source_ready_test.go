@@ -93,6 +93,38 @@ func TestReadySourceProbeContracts(t *testing.T) {
 	}
 }
 
+func TestReadySourceKeepsTaskReservationDuringCallback(t *testing.T) {
+	for _, ready := range []bool{true, false} {
+		in, typ := sourceType(t, "interpreter", "host-source-future-u32")
+		in.config.MaxTasks = 1
+		v, err := in.NewSource(nil, typ, AsyncSource{ReadReady: func(c *Caller, _ uint32) (ReadResult, bool, error) {
+			if err := c.Schedule(AsyncWork{Start: func(*Caller, []*Resource) (*HostCompletion, error) {
+				t.Fatal("over-quota work started")
+				return nil, nil
+			}}); !errors.Is(err, wasm.ErrLimit) {
+				t.Fatal("ready callback lost its logical task reservation", err)
+			}
+			if !ready {
+				return ReadResult{}, false, nil
+			}
+			return ReadResult{Values: []Value{{Bits: 42}}}, true, nil
+		}, Read: func(*Caller, uint32) (*ReadCompletion, error) {
+			p := NewReadCompletion()
+			p.Resolve(func(*Caller) (ReadResult, error) { return ReadResult{Values: []Value{{Bits: 42}}}, nil })
+			return p, nil
+		}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got, err := in.ReadAsync(nil, v.Resource, 1, CallOptions{}); err != nil || got.Values[0].Bits != 42 || in.tasks != nil {
+			t.Fatal(got, err)
+		}
+		if _, err := in.DropAsync(nil, v.Resource, CallOptions{}); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 func TestReadyTypedSourceFailuresAndAdmission(t *testing.T) {
 	for _, backend := range []string{"interpreter", "native"} {
 		for _, mode := range []string{"count", "bounds", "future-empty", "invalid-value", "mixed", "not-ready-data", "error", "panic", "close-panic", "values", "bytes", "cancel", "tasks", "reentry"} {
