@@ -1,0 +1,1911 @@
+{
+  "scope": "Separate fixed source events, common LLGo 2e3e02f4 O3/full-LTO/default GC. No pooling or competitor acceptance.",
+  "events": {
+    "resource-entry-blocks-20261117": {
+      "build-complete.json": {
+        "head": "034ed786adf8a50777706c6a18c026ab8b82df1e",
+        "base": "41de3fe4cea0c255b3bb6220137efed554639865",
+        "builds": 4
+      },
+      "campaign.json": {
+        "createdUtc": "2026-11-17T03:09:48.762041+00:00",
+        "head": "034ed786adf8a50777706c6a18c026ab8b82df1e",
+        "order": [
+          "p3-16/measure.py",
+          "p3-65536/measure.py",
+          "analyze_p3.py"
+        ],
+        "scope": "Fixed six-block four-role symmetric-AA request-only source regression event; default GC, separate setup/startup, common LLGo 2e3e02f4 O3/full-LTO. No owned builds/tests/profiles/analysis/edits/pruning during timing. No stopping extensions or competitor acceptance.",
+        "sha256": {
+          "build.json": "4800ba257b4ab6fb364f551814554387948f00e998b7b2bfc80ac853549153cf",
+          "build-complete.json": "770d01bc267662a6a99ebf84eb0b4a4e04ec94a2c08ad87f41e36d5de396ca36",
+          "prepare_p3.py": "a8cd65cca41478e86e870effc4379b850bd1dab482ac803a144ac2da1335acf8",
+          "analyze_p3.py": "3fcfe362e46cd8d941eb53f6cb4a15c7a652852202a8f9b7f0c5fb08e7cf08b8",
+          "smoke.json": "30a061466025cdefca714df18570be561165102373e38e212fd04fe74f7ff243",
+          "p3-16/measure.py": "45e79b347c46f0927b3a2c582833878a8112b2799325241c068b9bfb4196fece",
+          "p3-16/frozen-plan.json": "e44af0104706e186feeb5cf1aa915fa5e3004f89f672b24d569523b720c263d4",
+          "p3-65536/measure.py": "6e499fc86dd3cb6270cefdfb5e2b89fa6e1f0377db9295e8e0f407e93df660bf",
+          "p3-65536/frozen-plan.json": "a5257b58f88d0e486a7e66414920072e3c1f1cb9b4faf45bb7fa128d4594b803"
+        }
+      },
+      "p3-analysis.json": {
+        "scope": "Complete request/driver counters with mach timebase conversion, per-role symmetric AA and fixed-block marginal bootstrap95 intervals. No timing subtraction or cross-event pooling.",
+        "results": {
+          "16": {
+            "processes": 48,
+            "medians": {
+              "base-go": {
+                "cpuUs": 78.83821411132811,
+                "instructions": 780369.7119140625,
+                "throughput": 47875.41581355354,
+                "allocsPerRequest": 519.252734375,
+                "bytesPerRequest": 45048.46953125
+              },
+              "base-llgo": {
+                "cpuUs": 210.16991373697914,
+                "instructions": 1380188.596875,
+                "throughput": 21464.748695228147,
+                "allocsPerRequest": 592.25048828125,
+                "bytesPerRequest": 56396.705468750006
+              },
+              "head-go": {
+                "cpuUs": 79.19440511067708,
+                "instructions": 778492.2318847657,
+                "throughput": 50559.96844605754,
+                "allocsPerRequest": 497.50322265625005,
+                "bytesPerRequest": 45048.891796875
+              },
+              "head-llgo": {
+                "cpuUs": 210.20377604166666,
+                "instructions": 1374419.7201660157,
+                "throughput": 21473.90097206248,
+                "allocsPerRequest": 570.500537109375,
+                "bytesPerRequest": 56048.03515625
+              }
+            },
+            "AA": {
+              "base-go": {
+                "cpuUs": {
+                  "ratio": 0.9889920200244618,
+                  "ci95": [
+                    0.9691389933648337,
+                    1.0142464948613454
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "instructions": {
+                  "ratio": 0.9989948749216444,
+                  "ci95": [
+                    0.9930573195045606,
+                    1.0030074709005619
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 1.0186259800410946,
+                  "ci95": [
+                    0.9879064340545544,
+                    1.042722893298349
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999974297074116,
+                  "ci95": [
+                    0.9999946713508941,
+                    0.9999994671329498
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999931469023141,
+                  "ci95": [
+                    0.9999882217258693,
+                    0.9999976703371155
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "base-llgo": {
+                "cpuUs": {
+                  "ratio": 0.993381008041109,
+                  "ci95": [
+                    0.9819064990425515,
+                    1.0044332976649506
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 0.9962529884243658,
+                  "ci95": [
+                    0.9933959192227284,
+                    1.000060628164863
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 1.0127426781525395,
+                  "ci95": [
+                    0.9730172436253189,
+                    1.064361636732015
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999998351098914,
+                  "ci95": [
+                    0.9999993954031512,
+                    1.0000002473351752
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999982683349575,
+                  "ci95": [
+                    0.9999815667247393,
+                    1.0000166464397642
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "head-go": {
+                "cpuUs": {
+                  "ratio": 0.9917388732925948,
+                  "ci95": [
+                    0.9703218838075645,
+                    1.0119518658737638
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "instructions": {
+                  "ratio": 1.0001302783278336,
+                  "ci95": [
+                    0.9987110057290263,
+                    1.0014836266491367
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 1.0063395018460286,
+                  "ci95": [
+                    0.9982223937034702,
+                    1.015453838234802
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000009487457016,
+                  "ci95": [
+                    0.9999984950903746,
+                    1.0000033696899187
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999959332174422,
+                  "ci95": [
+                    0.9999900108568329,
+                    1.0000019336396997
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "head-llgo": {
+                "cpuUs": {
+                  "ratio": 1.0031884032248624,
+                  "ci95": [
+                    0.9909738133283313,
+                    1.012199856133333
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 1.0011740349601392,
+                  "ci95": [
+                    0.9934534434925831,
+                    1.0098177173655634
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 1.005037202803986,
+                  "ci95": [
+                    0.9820207596169981,
+                    1.0285931016509404
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999996861765497,
+                  "ci95": [
+                    0.9999994579413328,
+                    0.9999998573530027
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000253413525164,
+                  "ci95": [
+                    0.999999837562713,
+                    1.0000519515123945
+                  ],
+                  "resolves2_5Percent": true
+                }
+              }
+            },
+            "comparisons": {
+              "head-go/base-go": {
+                "cpuUs": {
+                  "ratio": 0.9952359487635993,
+                  "ci95": [
+                    0.9840121186848135,
+                    1.006569690150167
+                  ],
+                  "controlsResolve": false
+                },
+                "instructions": {
+                  "ratio": 0.9970672025888617,
+                  "ci95": [
+                    0.9946773343224307,
+                    0.998807222652665
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 1.027027912615188,
+                  "ci95": [
+                    1.0054458664616726,
+                    1.0552985328790512
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9581136172229257,
+                  "ci95": [
+                    0.9581129187722613,
+                    0.9581140782102909
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000050408575027,
+                  "ci95": [
+                    1.0000010578868248,
+                    1.000008483328847
+                  ],
+                  "controlsResolve": true
+                }
+              },
+              "head-llgo/base-llgo": {
+                "cpuUs": {
+                  "ratio": 1.0021927783775058,
+                  "ci95": [
+                    0.996721076010547,
+                    1.0084319489624796
+                  ],
+                  "controlsResolve": true
+                },
+                "instructions": {
+                  "ratio": 0.9977142119325225,
+                  "ci95": [
+                    0.9938987595614343,
+                    1.0022525242151255
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 1.0042153944268073,
+                  "ci95": [
+                    0.982198418054561,
+                    1.0286328729539242
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9632756622866728,
+                  "ci95": [
+                    0.9632754357570977,
+                    0.9632759474281353
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9938127438788567,
+                  "ci95": [
+                    0.9937966862231767,
+                    0.9938253096537729
+                  ],
+                  "controlsResolve": true
+                }
+              }
+            },
+            "phasesMedianNs": {
+              "base-go": {
+                "instantiate": 598979.5,
+                "load": 104625.0,
+                "providerSetup": 61458.5,
+                "requestPreparation": 791.5,
+                "firstCall": 13078437.0,
+                "exportLookup": 729.5,
+                "engineSetup": 416.5,
+                "cleanup": 63145.5,
+                "compileValidate": 68773541.5,
+                "processStartup": 6829437.5
+              },
+              "base-llgo": {
+                "instantiate": 901438.0,
+                "load": 107729.0,
+                "providerSetup": 285416.0,
+                "requestPreparation": 813.0,
+                "firstCall": 26729854.5,
+                "exportLookup": 1250.0,
+                "engineSetup": 354.0,
+                "cleanup": 684416.5,
+                "compileValidate": 111743854.0,
+                "processStartup": 13778521.0
+              },
+              "head-go": {
+                "instantiate": 546501.0,
+                "load": 95104.0,
+                "providerSetup": 61208.5,
+                "requestPreparation": 729.0,
+                "firstCall": 13399021.0,
+                "exportLookup": 812.5,
+                "engineSetup": 437.5,
+                "cleanup": 62708.5,
+                "compileValidate": 71234208.5,
+                "processStartup": 7170354.0
+              },
+              "head-llgo": {
+                "instantiate": 873500.0,
+                "load": 94854.0,
+                "providerSetup": 243374.5,
+                "requestPreparation": 749.5,
+                "firstCall": 26764562.5,
+                "exportLookup": 1166.5,
+                "engineSetup": 312.5,
+                "cleanup": 664791.5,
+                "compileValidate": 110581541.5,
+                "processStartup": 13620625.0
+              }
+            }
+          },
+          "65536": {
+            "processes": 48,
+            "medians": {
+              "base-go": {
+                "cpuUs": 102.61699829101562,
+                "instructions": 1062276.4633789062,
+                "throughput": 38268.625294285615,
+                "allocsPerRequest": 558.253955078125,
+                "bytesPerRequest": 113640.75703124999
+              },
+              "base-llgo": {
+                "cpuUs": 245.5575968424479,
+                "instructions": 1720074.1652343748,
+                "throughput": 19178.962246718773,
+                "allocsPerRequest": 655.25048828125,
+                "bytesPerRequest": 128491.63671875
+              },
+              "head-go": {
+                "cpuUs": 102.54735514322917,
+                "instructions": 1060303.0208496093,
+                "throughput": 38286.448964850824,
+                "allocsPerRequest": 536.50400390625,
+                "bytesPerRequest": 113641.055859375
+              },
+              "head-llgo": {
+                "cpuUs": 243.1285888671875,
+                "instructions": 1702870.9296875,
+                "throughput": 20087.864640785716,
+                "allocsPerRequest": 633.5003417968751,
+                "bytesPerRequest": 128143.71328125
+              }
+            },
+            "AA": {
+              "base-go": {
+                "cpuUs": {
+                  "ratio": 0.9980074945540762,
+                  "ci95": [
+                    0.9781230281105067,
+                    1.0156578846312805
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 0.9999285146983898,
+                  "ci95": [
+                    0.9964087457477946,
+                    1.0034563737382838
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9930536669782568,
+                  "ci95": [
+                    0.9665587408346425,
+                    1.0196668387444663
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000016910087288,
+                  "ci95": [
+                    0.9999996792973349,
+                    1.0000031487744212
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999989859792147,
+                  "ci95": [
+                    0.9999976557202281,
+                    1.0000004984197972
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "base-llgo": {
+                "cpuUs": {
+                  "ratio": 1.0060330884252568,
+                  "ci95": [
+                    0.9917280901131672,
+                    1.0205207824815261
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 1.0074976936804514,
+                  "ci95": [
+                    1.0033566217701415,
+                    1.0119319497672032
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 1.0092311613424803,
+                  "ci95": [
+                    0.9853215093943463,
+                    1.0358920662667261
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999999503211736,
+                  "ci95": [
+                    0.9999997764452452,
+                    1.0000001241971137
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999951217462028,
+                  "ci95": [
+                    0.9999820517580491,
+                    1.0000124949013087
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "head-go": {
+                "cpuUs": {
+                  "ratio": 1.0077258669403955,
+                  "ci95": [
+                    0.9959574254554069,
+                    1.0188582659563203
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 1.0007766335199717,
+                  "ci95": [
+                    0.9986220800553237,
+                    1.0027879569415363
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9827782652053866,
+                  "ci95": [
+                    0.9757784316573495,
+                    0.9905011708198761
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000002730341313,
+                  "ci95": [
+                    0.9999987258382639,
+                    1.0000019112432628
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999988255641946,
+                  "ci95": [
+                    0.9999955451880402,
+                    1.0000035267277918
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "head-llgo": {
+                "cpuUs": {
+                  "ratio": 1.0087766495506572,
+                  "ci95": [
+                    0.9939945264612239,
+                    1.024920741916689
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 1.0031391576843762,
+                  "ci95": [
+                    0.9950915020611417,
+                    1.012589119881016
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9822582799294387,
+                  "ci95": [
+                    0.9389327332021065,
+                    1.023733043554855
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000002569223159,
+                  "ci95": [
+                    1.000000025692278,
+                    1.0000004881522961
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999968215694471,
+                  "ci95": [
+                    0.999971360233351,
+                    1.0000203853097203
+                  ],
+                  "resolves2_5Percent": true
+                }
+              }
+            },
+            "comparisons": {
+              "head-go/base-go": {
+                "cpuUs": {
+                  "ratio": 0.9929518242047983,
+                  "ci95": [
+                    0.9832019602076641,
+                    1.002812319672074
+                  ],
+                  "controlsResolve": true
+                },
+                "instructions": {
+                  "ratio": 0.9977848809787058,
+                  "ci95": [
+                    0.9958916624506136,
+                    0.9996200599303431
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 1.0177470578297814,
+                  "ci95": [
+                    1.0090389247961598,
+                    1.026269753400789
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9610396026450658,
+                  "ci95": [
+                    0.9610382972856097,
+                    0.9610406965346363
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000018435716342,
+                  "ci95": [
+                    1.0000006433583186,
+                    1.0000031967502578
+                  ],
+                  "controlsResolve": true
+                }
+              },
+              "head-llgo/base-llgo": {
+                "cpuUs": {
+                  "ratio": 0.9913648150720246,
+                  "ci95": [
+                    0.9800190813564172,
+                    1.0034428519224727
+                  ],
+                  "controlsResolve": true
+                },
+                "instructions": {
+                  "ratio": 0.9928086571950548,
+                  "ci95": [
+                    0.9859553282528639,
+                    1.0002355584343319
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 1.0080368414220886,
+                  "ci95": [
+                    0.9901838730084553,
+                    1.0305269800244705
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9668065125976487,
+                  "ci95": [
+                    0.9668062935777322,
+                    0.9668067216192303
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.997295077340909,
+                  "ci95": [
+                    0.9972793191547396,
+                    0.9973102525324439
+                  ],
+                  "controlsResolve": true
+                }
+              }
+            },
+            "phasesMedianNs": {
+              "base-go": {
+                "instantiate": 514500.0,
+                "load": 70021.0,
+                "providerSetup": 60978.5,
+                "requestPreparation": 9812.5,
+                "firstCall": 17000125.0,
+                "exportLookup": 834.0,
+                "engineSetup": 333.5,
+                "cleanup": 56979.5,
+                "compileValidate": 69349896.0,
+                "processStartup": 7049437.5
+              },
+              "base-llgo": {
+                "instantiate": 832458.0,
+                "load": 92354.5,
+                "providerSetup": 236708.0,
+                "requestPreparation": 7333.5,
+                "firstCall": 27841562.5,
+                "exportLookup": 1271.5,
+                "engineSetup": 249.5,
+                "cleanup": 755521.0,
+                "compileValidate": 105858291.5,
+                "processStartup": 13718354.0
+              },
+              "head-go": {
+                "instantiate": 627708.5,
+                "load": 76916.5,
+                "providerSetup": 55645.5,
+                "requestPreparation": 8083.5,
+                "firstCall": 17001354.5,
+                "exportLookup": 1000.0,
+                "engineSetup": 541.5,
+                "cleanup": 60687.5,
+                "compileValidate": 66990583.0,
+                "processStartup": 6697250.0
+              },
+              "head-llgo": {
+                "instantiate": 828980.0,
+                "load": 88375.0,
+                "providerSetup": 248188.0,
+                "requestPreparation": 8145.5,
+                "firstCall": 29949167.0,
+                "exportLookup": 1167.0,
+                "engineSetup": 271.0,
+                "cleanup": 713646.0,
+                "compileValidate": 109423000.5,
+                "processStartup": 13234541.0
+              }
+            }
+          }
+        }
+      },
+      "evidenceSha256": {
+        "gc-size-probe.log": "d2d5766e70dcacc03b3b20c6c3dfcbe38df8c4fb4596d9ac3c4595bd58371531",
+        "diagnostic-entry-size.log": "edabca4cdde80ebb272b2c8e63531c0d7fb1c1e18df7e2fa26ea9a2d8d6d9f96",
+        "campaign-complete.json": "237d4682c32cd75001c151bf95365de451398bec00ec7c6ed5391b7a78e735fe",
+        "build.json": "4800ba257b4ab6fb364f551814554387948f00e998b7b2bfc80ac853549153cf",
+        "p3-65536/rows.jsonl.gz": "265418247db2f329c70fa225db7421a870c9cacb6f757e3d09b29878bb4231d4",
+        "p3-65536/plan.json": "4de99626bc671320085603b0dde15610f035394a6404eca3764519bd77caf33c",
+        "p3-65536/frozen-plan.json": "a5257b58f88d0e486a7e66414920072e3c1f1cb9b4faf45bb7fa128d4594b803",
+        "p3-16/rows.jsonl.gz": "273a7e6e90916446ccfa60978d4da51799ce0eef3c0f02137079e658682224ec",
+        "p3-16/plan.json": "0c13abb74e356a8bf2f2c03fcc605712a4af9863a6512d687ec41a828252e0a5",
+        "p3-16/frozen-plan.json": "e44af0104706e186feeb5cf1aa915fa5e3004f89f672b24d569523b720c263d4"
+      }
+    },
+    "canonical-transfer-refresh-20261117": {
+      "build-complete.json": {
+        "head": "c64f5bf92fe3d394c5f9620b9ae20ef0017cc09a",
+        "base": "41de3fe4cea0c255b3bb6220137efed554639865",
+        "builds": 4
+      },
+      "campaign.json": {
+        "createdUtc": "2026-11-17T02:55:20.207648+00:00",
+        "head": "bd10cfee241e54f4b942a3203c5b8044bc4b9a2b",
+        "order": [
+          "p3-16/measure.py",
+          "p3-65536/measure.py",
+          "analyze_p3.py"
+        ],
+        "scope": "Fixed six-block four-role symmetric-AA request-only source regression event; default GC, separate setup/startup, common LLGo 2e3e02f4 O3/full-LTO. No owned builds/tests/profiles/analysis/edits/pruning during timing. No stopping extensions or competitor acceptance.",
+        "sha256": {
+          "build.json": "0bf0543581a7502e773baee68d7640062bc6ebabb2cd58c13c26d4ae7d7bec57",
+          "build-complete.json": "ca16cf31a98e661f3486566fff73dacd78898bdc09d4cbd2b6ac6e6d30c871b2",
+          "qualification-final.json": "f7a12f9d0085d19a440e7dd99283b0efd1bd60464fb7783848af3fd5a9db8b28",
+          "prepare_p3.py": "54da82f55b63e057bf5791746eac708944779176f90ae787169d39ca8e0773b6",
+          "analyze_p3.py": "3fcfe362e46cd8d941eb53f6cb4a15c7a652852202a8f9b7f0c5fb08e7cf08b8",
+          "smoke.json": "62a5c806eac91bd19e9edd24ffedcb3b33ba1cc552eaca9f8236951833d806f8",
+          "p3-16/measure.py": "82179dbc0d0d9c66f8bb9a6e5fda83c82c44a1a3c86aea865233ea0554bca778",
+          "p3-16/frozen-plan.json": "383ef3bf7736c2967a47b4f2aac21d1a2a25163bc7063621dd87b36f2702a463",
+          "p3-65536/measure.py": "c918d9f6c517772e3bf4924f2c14ce423917e8d77148867b52847614c34f0afe",
+          "p3-65536/frozen-plan.json": "a67668eb1f238bb2dda6d22cbb6c292d3f256c73a6588a2238f7fbb44e7ddd54"
+        }
+      },
+      "p3-analysis.json": {
+        "scope": "Complete request/driver counters with mach timebase conversion, per-role symmetric AA and fixed-block marginal bootstrap95 intervals. No timing subtraction or cross-event pooling.",
+        "results": {
+          "16": {
+            "processes": 48,
+            "medians": {
+              "base-go": {
+                "cpuUs": 80.5975321451823,
+                "instructions": 778665.519921875,
+                "throughput": 50017.84612590315,
+                "allocsPerRequest": 519.2537109375,
+                "bytesPerRequest": 45048.575781249994
+              },
+              "base-llgo": {
+                "cpuUs": 208.51737467447916,
+                "instructions": 1376906.462109375,
+                "throughput": 22591.850331609174,
+                "allocsPerRequest": 592.2506347656249,
+                "bytesPerRequest": 56396.81171875
+              },
+              "head-go": {
+                "cpuUs": 80.91695760091145,
+                "instructions": 779570.8423828125,
+                "throughput": 49101.3608990027,
+                "allocsPerRequest": 519.2533203125,
+                "bytesPerRequest": 45048.753125
+              },
+              "head-llgo": {
+                "cpuUs": 211.16012980143228,
+                "instructions": 1380933.1471191407,
+                "throughput": 22503.892009774405,
+                "allocsPerRequest": 592.250390625,
+                "bytesPerRequest": 56396.64375
+              }
+            },
+            "AA": {
+              "base-go": {
+                "cpuUs": {
+                  "ratio": 1.0037825883665856,
+                  "ci95": [
+                    0.9822269261452867,
+                    1.0211643030534985
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 0.9992418683471174,
+                  "ci95": [
+                    0.9972594602198713,
+                    1.001327989075443
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9759273777056404,
+                  "ci95": [
+                    0.9503081261677766,
+                    0.997633235444011
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999997805851863,
+                  "ci95": [
+                    0.9999989029228171,
+                    1.0000010030444613
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000016937670089,
+                  "ci95": [
+                    0.9999953580434924,
+                    1.0000073560615368
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "base-llgo": {
+                "cpuUs": {
+                  "ratio": 0.9840918638234762,
+                  "ci95": [
+                    0.9733965823955868,
+                    0.9958462923295532
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "instructions": {
+                  "ratio": 0.9960235762795735,
+                  "ci95": [
+                    0.9864735733226918,
+                    1.0078950126982797
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 1.029976879316852,
+                  "ci95": [
+                    1.005013667152708,
+                    1.0546433465232665
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000000549634587,
+                  "ci95": [
+                    0.9999997801466171,
+                    1.0000003572621363
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.000026296812316,
+                  "ci95": [
+                    0.9999907967423137,
+                    1.000056011722985
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "head-go": {
+                "cpuUs": {
+                  "ratio": 1.0083415361624228,
+                  "ci95": [
+                    0.9944555471017731,
+                    1.0225546433439152
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 1.0003465747539304,
+                  "ci95": [
+                    0.9987217375801816,
+                    1.0020001689885105
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9867024022725716,
+                  "ci95": [
+                    0.9560530939181059,
+                    1.00918528570459
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999980879537803,
+                  "ci95": [
+                    0.9999953295977579,
+                    1.0000008463174113
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999971616467092,
+                  "ci95": [
+                    0.999990635183749,
+                    1.0000049281449723
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "head-llgo": {
+                "cpuUs": {
+                  "ratio": 0.999340534765445,
+                  "ci95": [
+                    0.9816614780251635,
+                    1.0174373314623888
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 0.998632366179199,
+                  "ci95": [
+                    0.9930859177902163,
+                    1.0029627484203025
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 1.034228727223387,
+                  "ci95": [
+                    0.9899004498397437,
+                    1.1022242607592325
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999999725182763,
+                  "ci95": [
+                    0.9999996152564767,
+                    1.0000004397068973
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999825455502708,
+                  "ci95": [
+                    0.9999478593113926,
+                    1.0000123661234095
+                  ],
+                  "resolves2_5Percent": true
+                }
+              }
+            },
+            "comparisons": {
+              "head-go/base-go": {
+                "cpuUs": {
+                  "ratio": 0.995441738804914,
+                  "ci95": [
+                    0.9838287674219371,
+                    1.0064371517087918
+                  ],
+                  "controlsResolve": true
+                },
+                "instructions": {
+                  "ratio": 1.0017326024709405,
+                  "ci95": [
+                    1.0007729868744526,
+                    1.0025431308905182
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 0.9955980802733231,
+                  "ci95": [
+                    0.9845540682775,
+                    1.0075431539723212
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.000000094034055,
+                  "ci95": [
+                    0.9999989185949749,
+                    1.0000012067833144
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.000001138811017,
+                  "ci95": [
+                    0.9999987831424254,
+                    1.0000042156515918
+                  ],
+                  "controlsResolve": true
+                }
+              },
+              "head-llgo/base-llgo": {
+                "cpuUs": {
+                  "ratio": 1.0058754832783368,
+                  "ci95": [
+                    0.9941941380013185,
+                    1.0209161228043229
+                  ],
+                  "controlsResolve": false
+                },
+                "instructions": {
+                  "ratio": 1.0001012252521742,
+                  "ci95": [
+                    0.9974855879094862,
+                    1.0035399681565886
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 0.989290459476548,
+                  "ci95": [
+                    0.9592671007819338,
+                    1.0217484989850563
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999997664057355,
+                  "ci95": [
+                    0.999999450366443,
+                    1.0000000687042738
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999811996002781,
+                  "ci95": [
+                    0.9999591974280584,
+                    1.0000003967342057
+                  ],
+                  "controlsResolve": true
+                }
+              }
+            },
+            "phasesMedianNs": {
+              "base-go": {
+                "providerSetup": 47166.5,
+                "cleanup": 58792.0,
+                "instantiate": 521563.0,
+                "engineSetup": 354.5,
+                "compileValidate": 60984438.0,
+                "firstCall": 10736396.5,
+                "requestPreparation": 709.0,
+                "load": 67646.0,
+                "exportLookup": 729.0,
+                "processStartup": 6203500.0
+              },
+              "base-llgo": {
+                "providerSetup": 223792.0,
+                "cleanup": 702188.0,
+                "instantiate": 823291.0,
+                "engineSetup": 250.0,
+                "compileValidate": 100901791.5,
+                "firstCall": 23446958.0,
+                "requestPreparation": 896.0,
+                "load": 83541.5,
+                "exportLookup": 1062.0,
+                "processStartup": 13149500.0
+              },
+              "head-go": {
+                "providerSetup": 56479.0,
+                "cleanup": 77521.0,
+                "instantiate": 567499.5,
+                "engineSetup": 500.0,
+                "compileValidate": 65540666.5,
+                "firstCall": 10701166.5,
+                "requestPreparation": 709.5,
+                "load": 72896.5,
+                "exportLookup": 728.5,
+                "processStartup": 6596854.0
+              },
+              "head-llgo": {
+                "providerSetup": 191624.0,
+                "cleanup": 723020.5,
+                "instantiate": 760228.0,
+                "engineSetup": 270.5,
+                "compileValidate": 95146958.5,
+                "firstCall": 22114125.5,
+                "requestPreparation": 667.0,
+                "load": 78188.0,
+                "exportLookup": 1021.0,
+                "processStartup": 12789958.5
+              }
+            }
+          },
+          "65536": {
+            "processes": 48,
+            "medians": {
+              "base-go": {
+                "cpuUs": 117.13656005859374,
+                "instructions": 1060429.959033203,
+                "throughput": 32970.34733470796,
+                "allocsPerRequest": 558.2541015625,
+                "bytesPerRequest": 113640.71406249999
+              },
+              "base-llgo": {
+                "cpuUs": 262.89008178710935,
+                "instructions": 1718772.9958007813,
+                "throughput": 17720.423163164596,
+                "allocsPerRequest": 655.2505859375,
+                "bytesPerRequest": 128491.3203125
+              },
+              "head-go": {
+                "cpuUs": 119.63665161132812,
+                "instructions": 1063537.2119628908,
+                "throughput": 32465.542666425157,
+                "allocsPerRequest": 558.25380859375,
+                "bytesPerRequest": 113641.021875
+              },
+              "head-llgo": {
+                "cpuUs": 265.40636189778644,
+                "instructions": 1713650.8525390625,
+                "throughput": 17511.310176301078,
+                "allocsPerRequest": 655.250537109375,
+                "bytesPerRequest": 128491.88593749999
+              }
+            },
+            "AA": {
+              "base-go": {
+                "cpuUs": {
+                  "ratio": 0.9965684592223163,
+                  "ci95": [
+                    0.9782308117492532,
+                    1.0107633778905525
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 1.0034399650829753,
+                  "ci95": [
+                    1.0015933756817774,
+                    1.0053797741730588
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9997718851015035,
+                  "ci95": [
+                    0.9716973502281463,
+                    1.0293001638265065
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000005831057284,
+                  "ci95": [
+                    0.9999986880149161,
+                    1.0000028280625555
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 0.9999988152568914,
+                  "ci95": [
+                    0.9999958980888076,
+                    1.0000023087669885
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "base-llgo": {
+                "cpuUs": {
+                  "ratio": 1.0184756043242196,
+                  "ci95": [
+                    1.0034557689828008,
+                    1.0325355159329153
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "instructions": {
+                  "ratio": 1.0065384848208603,
+                  "ci95": [
+                    0.9971729000588255,
+                    1.0152707267792385
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9711803446446464,
+                  "ci95": [
+                    0.9237549399590489,
+                    1.010437502586261
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999996770878096,
+                  "ci95": [
+                    0.9999993044967737,
+                    1.0000001490367125
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.000000016097304,
+                  "ci95": [
+                    0.9999788413244921,
+                    1.0000204029999704
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "head-go": {
+                "cpuUs": {
+                  "ratio": 0.9966621604521763,
+                  "ci95": [
+                    0.984307589803028,
+                    1.0083513484792734
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "instructions": {
+                  "ratio": 0.9981080135484139,
+                  "ci95": [
+                    0.99571789993147,
+                    1.0007149716030213
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 1.0247712794215014,
+                  "ci95": [
+                    0.9831316171037643,
+                    1.0760634597126557
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000012245226044,
+                  "ci95": [
+                    0.9999995918273505,
+                    1.0000027114413992
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000033090360072,
+                  "ci95": [
+                    1.0000018240952706,
+                    1.0000047378333166
+                  ],
+                  "resolves2_5Percent": true
+                }
+              },
+              "head-llgo": {
+                "cpuUs": {
+                  "ratio": 1.0158667469817508,
+                  "ci95": [
+                    1.0023988332406837,
+                    1.026373466457424
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "instructions": {
+                  "ratio": 1.009281418350672,
+                  "ci95": [
+                    0.9999352625584327,
+                    1.0176946048638476
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "throughput": {
+                  "ratio": 0.9657867094621742,
+                  "ci95": [
+                    0.9503765690249816,
+                    0.9782833100195036
+                  ],
+                  "resolves2_5Percent": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 1.0000003477518389,
+                  "ci95": [
+                    1.0000001987153042,
+                    1.0000004967882368
+                  ],
+                  "resolves2_5Percent": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000037595025197,
+                  "ci95": [
+                    0.999990393376052,
+                    1.0000202064259418
+                  ],
+                  "resolves2_5Percent": true
+                }
+              }
+            },
+            "comparisons": {
+              "head-go/base-go": {
+                "cpuUs": {
+                  "ratio": 1.0092767383577208,
+                  "ci95": [
+                    0.9957500365858293,
+                    1.0244101123864273
+                  ],
+                  "controlsResolve": true
+                },
+                "instructions": {
+                  "ratio": 1.0013626959881976,
+                  "ci95": [
+                    0.999952694665449,
+                    1.0031016083361937
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 0.9833176628803767,
+                  "ci95": [
+                    0.939575537603022,
+                    1.0220519461377569
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999994168944176,
+                  "ci95": [
+                    0.9999979445552882,
+                    1.0000010058572093
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.000001071310065,
+                  "ci95": [
+                    0.9999992707044987,
+                    1.0000037375604323
+                  ],
+                  "controlsResolve": true
+                }
+              },
+              "head-llgo/base-llgo": {
+                "cpuUs": {
+                  "ratio": 0.9985959254595926,
+                  "ci95": [
+                    0.9861337583997808,
+                    1.0119987527677174
+                  ],
+                  "controlsResolve": false
+                },
+                "instructions": {
+                  "ratio": 0.9973154544430008,
+                  "ci95": [
+                    0.9902062065674686,
+                    1.0043405170530562
+                  ],
+                  "controlsResolve": true
+                },
+                "throughput": {
+                  "ratio": 1.0053461305826348,
+                  "ci95": [
+                    0.983322484941944,
+                    1.0274548037612359
+                  ],
+                  "controlsResolve": false
+                },
+                "allocsPerRequest": {
+                  "ratio": 0.9999999130621166,
+                  "ci95": [
+                    0.9999996646679827,
+                    1.000000161456299
+                  ],
+                  "controlsResolve": true
+                },
+                "bytesPerRequest": {
+                  "ratio": 1.0000035154287892,
+                  "ci95": [
+                    0.9999916845520816,
+                    1.0000120702198998
+                  ],
+                  "controlsResolve": true
+                }
+              }
+            },
+            "phasesMedianNs": {
+              "base-go": {
+                "providerSetup": 55896.0,
+                "cleanup": 66021.0,
+                "instantiate": 576917.0,
+                "engineSetup": 375.0,
+                "compileValidate": 68093396.0,
+                "firstCall": 17004396.0,
+                "requestPreparation": 8271.0,
+                "load": 73937.5,
+                "exportLookup": 854.0,
+                "processStartup": 7039749.5
+              },
+              "base-llgo": {
+                "providerSetup": 267646.0,
+                "cleanup": 826874.5,
+                "instantiate": 899062.5,
+                "engineSetup": 250.0,
+                "compileValidate": 113437104.5,
+                "firstCall": 32437083.0,
+                "requestPreparation": 7353.5,
+                "load": 88250.0,
+                "exportLookup": 1332.5,
+                "processStartup": 14553041.5
+              },
+              "head-go": {
+                "providerSetup": 52374.0,
+                "cleanup": 75271.0,
+                "instantiate": 526605.0,
+                "engineSetup": 500.0,
+                "compileValidate": 70250333.5,
+                "firstCall": 18701104.0,
+                "requestPreparation": 7999.0,
+                "load": 84770.5,
+                "exportLookup": 707.5,
+                "processStartup": 6894334.0
+              },
+              "head-llgo": {
+                "providerSetup": 203480.0,
+                "cleanup": 817291.5,
+                "instantiate": 786896.0,
+                "engineSetup": 229.5,
+                "compileValidate": 101667624.5,
+                "firstCall": 24709333.5,
+                "requestPreparation": 7209.0,
+                "load": 87270.5,
+                "exportLookup": 1145.5,
+                "processStartup": 13477771.0
+              }
+            }
+          }
+        }
+      },
+      "diagnostic-counts.json": {
+        "scope": "Instrumented Go semantic diagnostic only, excluded from all performance events. Both optimized transfer-refresh sites execute zero times in this complete-request fixture.",
+        "rows": [
+          {
+            "payloadBytes": 16,
+            "command": [
+              "/Users/lijie/source/goplus/wasmvm/artifacts/canonical-transfer-refresh-20261117/go-transfer-diagnostic",
+              "--engine",
+              "wasmvm",
+              "--backend",
+              "native",
+              "--wasm",
+              "/Users/lijie/source/goplus/wasmvm-source-cleanup/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+              "--payload-bytes",
+              "16",
+              "--expected",
+              "1757737011",
+              "--workers",
+              "1",
+              "--clients",
+              "2",
+              "--requests",
+              "2",
+              "--samples",
+              "2",
+              "--warmups",
+              "0",
+              "--response-mode",
+              "buffered",
+              "--request-mode",
+              "snapshot"
+            ],
+            "counters": [
+              "diagnostic-transfer-close 0 0"
+            ],
+            "record": {
+              "schemaVersion": 1,
+              "engine": "wasmvm",
+              "backend": "native",
+              "hostCompiler": "gc",
+              "mode": "p3-http-service",
+              "policy": "owned P3 HTTP CallIncomingBuffered; bounded complete body/trailer collection and guest join inside one Store lease; one World/Store per worker sharing compiled code; fuel off, cancellation/logical limits retained; per-call handler lookup/signature check included; no network socket; explicit immutable request body, prepared once per worker in requestPreparation; per-request HTTP construction remains inside batch timing",
+              "payloadBytes": 16,
+              "ownedResponseMode": "buffered",
+              "ownedRequestMode": "snapshot",
+              "result": 1757737011,
+              "phasesNs": {
+                "cleanup": 64042,
+                "compileValidate": 74275209,
+                "engineSetup": 1125,
+                "exportLookup": 250,
+                "firstCall": 1314834,
+                "instantiate": 298583,
+                "load": 362167,
+                "providerSetup": 132875,
+                "requestPreparation": 292
+              },
+              "warmCallNs": [
+                656083,
+                662792
+              ],
+              "warmupCallNs": [],
+              "warmResults": [
+                1757737011,
+                1757737011
+              ],
+              "warmupResults": [],
+              "service": {
+                "Workers": 1,
+                "Clients": 2,
+                "RequestsPerClient": 2,
+                "GOMAXPROCS": 16,
+                "WorkerSetupNs": 16292,
+                "AllocationScope": "runtime TotalAlloc difference; Go counts managed allocation bytes, LLGo reports BDWGC collector bytes. Mallocs counts managed allocation events under both pinned compilers. Neither includes all native/JIT/linear memory; heap snapshots are not peak RSS.",
+                "Batches": [
+                  {
+                    "WallNs": 1314834,
+                    "TotalAllocBytes": 205312,
+                    "ReadinessNs": 1041,
+                    "ReadyClients": 2,
+                    "Mallocs": 2356,
+                    "HeapBefore": 20629816,
+                    "HeapAfter": 20835128,
+                    "GCBefore": 14,
+                    "GCAfter": 14,
+                    "GoroutinesBefore": 6,
+                    "GoroutinesAfter": 8,
+                    "RequestNs": [
+                      1100959,
+                      213125,
+                      897000,
+                      328125
+                    ],
+                    "PublicAPINs": [
+                      194334,
+                      95500,
+                      739833,
+                      115292
+                    ]
+                  },
+                  {
+                    "WallNs": 656083,
+                    "TotalAllocBytes": 180208,
+                    "ReadinessNs": 1083,
+                    "ReadyClients": 2,
+                    "Mallocs": 2077,
+                    "HeapBefore": 20835480,
+                    "HeapAfter": 21015688,
+                    "GCBefore": 14,
+                    "GCAfter": 14,
+                    "GoroutinesBefore": 8,
+                    "GoroutinesAfter": 8,
+                    "RequestNs": [
+                      251708,
+                      403792,
+                      177292,
+                      333583
+                    ],
+                    "PublicAPINs": [
+                      74209,
+                      157458,
+                      150625,
+                      241500
+                    ]
+                  },
+                  {
+                    "WallNs": 662792,
+                    "TotalAllocBytes": 180544,
+                    "ReadinessNs": 3500,
+                    "ReadyClients": 2,
+                    "Mallocs": 2080,
+                    "HeapBefore": 21016184,
+                    "HeapAfter": 21196728,
+                    "GCBefore": 14,
+                    "GCAfter": 14,
+                    "GoroutinesBefore": 8,
+                    "GoroutinesAfter": 8,
+                    "RequestNs": [
+                      453542,
+                      208625,
+                      264542,
+                      336417
+                    ],
+                    "PublicAPINs": [
+                      210250,
+                      76959,
+                      210167,
+                      145292
+                    ]
+                  }
+                ],
+                "ResourceInstrumented": false
+              }
+            }
+          },
+          {
+            "payloadBytes": 65536,
+            "command": [
+              "/Users/lijie/source/goplus/wasmvm/artifacts/canonical-transfer-refresh-20261117/go-transfer-diagnostic",
+              "--engine",
+              "wasmvm",
+              "--backend",
+              "native",
+              "--wasm",
+              "/Users/lijie/source/goplus/wasmvm-source-cleanup/pkg/wasi/preview3/testdata/world-rust-http.wasm",
+              "--payload-bytes",
+              "65536",
+              "--expected",
+              "2629362236",
+              "--workers",
+              "1",
+              "--clients",
+              "2",
+              "--requests",
+              "2",
+              "--samples",
+              "2",
+              "--warmups",
+              "0",
+              "--response-mode",
+              "buffered",
+              "--request-mode",
+              "snapshot"
+            ],
+            "counters": [
+              "diagnostic-transfer-close 0 0"
+            ],
+            "record": {
+              "schemaVersion": 1,
+              "engine": "wasmvm",
+              "backend": "native",
+              "hostCompiler": "gc",
+              "mode": "p3-http-service",
+              "policy": "owned P3 HTTP CallIncomingBuffered; bounded complete body/trailer collection and guest join inside one Store lease; one World/Store per worker sharing compiled code; fuel off, cancellation/logical limits retained; per-call handler lookup/signature check included; no network socket; explicit immutable request body, prepared once per worker in requestPreparation; per-request HTTP construction remains inside batch timing",
+              "payloadBytes": 65536,
+              "ownedResponseMode": "buffered",
+              "ownedRequestMode": "snapshot",
+              "result": 2629362236,
+              "phasesNs": {
+                "cleanup": 38000,
+                "compileValidate": 73828000,
+                "engineSetup": 542,
+                "exportLookup": 375,
+                "firstCall": 1688750,
+                "instantiate": 206167,
+                "load": 66708,
+                "providerSetup": 33208,
+                "requestPreparation": 2208
+              },
+              "warmCallNs": [
+                551792,
+                619208
+              ],
+              "warmupCallNs": [],
+              "warmResults": [
+                2629362236,
+                2629362236
+              ],
+              "warmupResults": [],
+              "service": {
+                "Workers": 1,
+                "Clients": 2,
+                "RequestsPerClient": 2,
+                "GOMAXPROCS": 16,
+                "WorkerSetupNs": 7958,
+                "AllocationScope": "runtime TotalAlloc difference; Go counts managed allocation bytes, LLGo reports BDWGC collector bytes. Mallocs counts managed allocation events under both pinned compilers. Neither includes all native/JIT/linear memory; heap snapshots are not peak RSS.",
+                "Batches": [
+                  {
+                    "WallNs": 1688750,
+                    "TotalAllocBytes": 480624,
+                    "ReadinessNs": 15042,
+                    "ReadyClients": 2,
+                    "Mallocs": 2513,
+                    "HeapBefore": 52095728,
+                    "HeapAfter": 52576352,
+                    "GCBefore": 14,
+                    "GCAfter": 14,
+                    "GoroutinesBefore": 6,
+                    "GoroutinesAfter": 8,
+                    "RequestNs": [
+                      1124208,
+                      415042,
+                      1351916,
+                      334333
+                    ],
+                    "PublicAPINs": [
+                      1042042,
+                      182792,
+                      220958,
+                      160584
+                    ]
+                  },
+                  {
+                    "WallNs": 551792,
+                    "TotalAllocBytes": 454704,
+                    "ReadinessNs": 1667,
+                    "ReadyClients": 2,
+                    "Mallocs": 2235,
+                    "HeapBefore": 52576704,
+                    "HeapAfter": 53031408,
+                    "GCBefore": 14,
+                    "GCAfter": 14,
+                    "GoroutinesBefore": 8,
+                    "GoroutinesAfter": 8,
+                    "RequestNs": [
+                      320209,
+                      230875,
+                      195750,
+                      250208
+                    ],
+                    "PublicAPINs": [
+                      133375,
+                      146542,
+                      165917,
+                      85916
+                    ]
+                  },
+                  {
+                    "WallNs": 619208,
+                    "TotalAllocBytes": 454624,
+                    "ReadinessNs": 1083,
+                    "ReadyClients": 2,
+                    "Mallocs": 2235,
+                    "HeapBefore": 53031904,
+                    "HeapAfter": 53486528,
+                    "GCBefore": 14,
+                    "GCAfter": 14,
+                    "GoroutinesBefore": 8,
+                    "GoroutinesAfter": 8,
+                    "RequestNs": [
+                      449875,
+                      165291,
+                      320917,
+                      213708
+                    ],
+                    "PublicAPINs": [
+                      127083,
+                      90292,
+                      272917,
+                      94459
+                    ]
+                  }
+                ],
+                "ResourceInstrumented": false
+              }
+            }
+          }
+        ],
+        "binarySha256": "b1c41d93dc23ffa0a8ffa154df7de13f53d7e51ca511d9950685715cb8fa2936"
+      },
+      "go-codegen-diagnostic.json": {
+        "base": {
+          "configureCanonicalCodec": {
+            "instructions": 228,
+            "calls": [
+              "call.go:77\t\t0x10039e6f0\t\t97ffac7c\t\tCALL github.com/cpunion/wasmvm/pkg/vm.(*operation).publicContext(SB)",
+              "call.go:296\t\t0x10039e71c\t\t97f39e59\t\tCALL runtime.gcWriteBarrier2(SB)",
+              "call.go:296\t\t0x10039e730\t\t97f20624\t\tCALL runtime.wbZero(SB)",
+              "call.go:299\t\t0x10039e790\t\t1400003e\t\tJMP 62(PC)",
+              "call.go:300\t\t0x10039e7ac\t\t97f1a42d\t\tCALL runtime.mapaccess1(SB)",
+              "call.go:304\t\t0x10039e7fc\t\t14000009\t\tJMP 9(PC)",
+              "call.go:304\t\t0x10039e80c\t\t97f39e2d\t\tCALL runtime.gcWriteBarrier6(SB)",
+              "call.go:305\t\t0x10039e830\t\t14000016\t\tJMP 22(PC)",
+              "call.go:302\t\t0x10039e848\t\t97f1e78a\t\tCALL runtime.convT(SB)",
+              "call.go:302\t\t0x10039e86c\t\t97f39e05\t\tCALL runtime.gcWriteBarrier2(SB)",
+              "call.go:315\t\t0x10039e8b4\t\t97f1f883\t\tCALL runtime.mallocgcSmallScanNoHeaderSC2(SB)",
+              "call.go:315\t\t0x10039e8d4\t\t14000006\t\tJMP 6(PC)",
+              "call.go:315\t\t0x10039e8e0\t\t97f39dec\t\tCALL runtime.gcWriteBarrier3(SB)",
+              "call.go:317\t\t0x10039e914\t\t97f39ddb\t\tCALL runtime.gcWriteBarrier2(SB)",
+              "call.go:317\t\t0x10039e928\t\t14000023\t\tJMP 35(PC)",
+              "call.go:310\t\t0x10039e93c\t\t97f1fa2d\t\tCALL runtime.mallocgcSmallScanNoHeaderSC4(SB)",
+              "call.go:310\t\t0x10039e968\t\t1400000a\t\tJMP 10(PC)",
+              "call.go:310\t\t0x10039e974\t\t97f39dcf\t\tCALL runtime.gcWriteBarrier5(SB)",
+              "call.go:310\t\t0x10039e99c\t\t14000006\t\tJMP 6(PC)",
+              "call.go:308\t\t0x10039e9a8\t\t14000003\t\tJMP 3(PC)",
+              "call.go:321\t\t0x10039e9b8\t\t940000ce\t\tCALL github.com/cpunion/wasmvm/pkg/component.(*Instance).canonicalLayouts(SB)",
+              "call.go:321\t\t0x10039e9d4\t\t14000005\t\tJMP 5(PC)",
+              "call.go:321\t\t0x10039e9e0\t\t97f39da8\t\tCALL runtime.gcWriteBarrier2(SB)",
+              "call.go:300\t\t0x10039e9fc\t\t97f39e55\t\tCALL runtime.panicBounds(SB)",
+              "call.go:294\t\t0x10039ea1c\t\t97f395b5\t\tCALL runtime.morestack_noctxt.abi0(SB)",
+              "call.go:294\t\t0x10039ea34\t\t17ffff1f\t\tJMP github.com/cpunion/wasmvm/pkg/component.(*Instance).configureCanonicalCodec(SB)"
+            ]
+          },
+          "codec": {
+            "instructions": 80,
+            "calls": [
+              "call.go:278\t\t0x10039e5a8\t\t14000002\t\tJMP 2(PC)",
+              "call.go:279\t\t0x10039e5c4\t\t97f1f6ff\t\tCALL runtime.newobject(SB)",
+              "call.go:281\t\t0x10039e608\t\t1400000b\t\tJMP 11(PC)",
+              "call.go:281\t\t0x10039e614\t\t97f39eb3\t\tCALL runtime.gcWriteBarrier8(SB)",
+              "call.go:282\t\t0x10039e648\t\t14000007\t\tJMP 7(PC)",
+              "call.go:284\t\t0x10039e654\t\t97f1f6db\t\tCALL runtime.newobject(SB)",
+              "call.go:291\t\t0x10039e67c\t\t9400000d\t\tCALL github.com/cpunion/wasmvm/pkg/component.(*Instance).configureCanonicalCodec(SB)",
+              "call.go:276\t\t0x10039e69c\t\t97f39695\t\tCALL runtime.morestack_noctxt.abi0(SB)",
+              "call.go:276\t\t0x10039e6a8\t\t17ffffb2\t\tJMP github.com/cpunion/wasmvm/pkg/component.(*Instance).codec(SB)"
+            ]
+          },
+          "canonicalLayouts": {
+            "instructions": 128,
+            "calls": [
+              "call.go:346\t\t0x10039ed10\t\t14000002\t\tJMP 2(PC)",
+              "call.go:353\t\t0x10039ed78\t\t97f1f752\t\tCALL runtime.mallocgcSmallScanNoHeaderSC2(SB)",
+              "call.go:353\t\t0x10039ed98\t\t14000004\t\tJMP 4(PC)",
+              "call.go:353\t\t0x10039ed9c\t\t97f39cb5\t\tCALL runtime.gcWriteBarrier1(SB)",
+              "layout.go:49\t\t0x10039edc4\t\t97f1fad7\t\tCALL runtime.mallocgcSmallScanNoHeaderSC6(SB)",
+              "layout.go:49\t\t0x10039edec\t\t97f37949\t\tCALL runtime.makemap_small(SB)",
+              "layout.go:49\t\t0x10039ee00\t\t14000005\t\tJMP 5(PC)",
+              "layout.go:49\t\t0x10039ee0c\t\t97f39c9d\t\tCALL runtime.gcWriteBarrier2(SB)",
+              "layout.go:49\t\t0x10039ee18\t\t97f3793e\t\tCALL runtime.makemap_small(SB)",
+              "layout.go:49\t\t0x10039ee2c\t\t14000005\t\tJMP 5(PC)",
+              "layout.go:49\t\t0x10039ee38\t\t97f39c92\t\tCALL runtime.gcWriteBarrier2(SB)",
+              "layout.go:61\t\t0x10039ee70\t\t14000009\t\tJMP 9(PC)",
+              "layout.go:61\t\t0x10039ee84\t\t97f39c87\t\tCALL runtime.gcWriteBarrier4(SB)",
+              "call.go:345\t\t0x10039eed8\t\t97f39486\t\tCALL runtime.morestack_noctxt.abi0(SB)",
+              "call.go:345\t\t0x10039eee4\t\t17ffff83\t\tJMP github.com/cpunion/wasmvm/pkg/component.(*Instance).canonicalLayouts(SB)"
+            ]
+          }
+        },
+        "head": {
+          "configureCanonicalCodec": {
+            "instructions": 48,
+            "calls": [
+              "call.go:295\t\t0x10039e6dc\t\t94000025\t\tCALL github.com/cpunion/wasmvm/pkg/component.(*Instance).configureTransfer(SB)",
+              "call.go:296\t\t0x10039e6ec\t\t94000199\t\tCALL github.com/cpunion/wasmvm/pkg/component.(*Instance).canonicalLayouts(SB)",
+              "call.go:296\t\t0x10039e708\t\t14000005\t\tJMP 5(PC)",
+              "call.go:296\t\t0x10039e714\t\t97f39e5b\t\tCALL runtime.gcWriteBarrier2(SB)",
+              "call.go:294\t\t0x10039e748\t\t97f3966a\t\tCALL runtime.morestack_noctxt.abi0(SB)",
+              "call.go:294\t\t0x10039e760\t\t17ffffd4\t\tJMP github.com/cpunion/wasmvm/pkg/component.(*Instance).configureCanonicalCodec(SB)"
+            ]
+          },
+          "configureTransfer": {
+            "instructions": 204,
+            "calls": [
+              "call.go:77\t\t0x10039e7ac\t\t97ffac4d\t\tCALL github.com/cpunion/wasmvm/pkg/vm.(*operation).publicContext(SB)",
+              "call.go:303\t\t0x10039e7dc\t\t97f39e29\t\tCALL runtime.gcWriteBarrier2(SB)",
+              "call.go:303\t\t0x10039e7f0\t\t97f205f4\t\tCALL runtime.wbZero(SB)",
+              "call.go:306\t\t0x10039e84c\t\t1400003e\t\tJMP 62(PC)",
+              "call.go:307\t\t0x10039e868\t\t97f1a3fe\t\tCALL runtime.mapaccess1(SB)",
+              "call.go:311\t\t0x10039e8b8\t\t14000009\t\tJMP 9(PC)",
+              "call.go:311\t\t0x10039e8c8\t\t97f39dfe\t\tCALL runtime.gcWriteBarrier6(SB)",
+              "call.go:312\t\t0x10039e8ec\t\t14000016\t\tJMP 22(PC)",
+              "call.go:309\t\t0x10039e904\t\t97f1e75b\t\tCALL runtime.convT(SB)",
+              "call.go:309\t\t0x10039e928\t\t97f39dd6\t\tCALL runtime.gcWriteBarrier2(SB)",
+              "call.go:322\t\t0x10039e970\t\t97f1f854\t\tCALL runtime.mallocgcSmallScanNoHeaderSC2(SB)",
+              "call.go:322\t\t0x10039e990\t\t14000006\t\tJMP 6(PC)",
+              "call.go:322\t\t0x10039e99c\t\t97f39dbd\t\tCALL runtime.gcWriteBarrier3(SB)",
+              "call.go:324\t\t0x10039e9cc\t\t97f39dad\t\tCALL runtime.gcWriteBarrier2(SB)",
+              "call.go:324\t\t0x10039e9d8\t\t1400001d\t\tJMP 29(PC)",
+              "call.go:317\t\t0x10039e9ec\t\t97f1fa01\t\tCALL runtime.mallocgcSmallScanNoHeaderSC4(SB)",
+              "call.go:317\t\t0x10039ea18\t\t1400000a\t\tJMP 10(PC)",
+              "call.go:317\t\t0x10039ea24\t\t97f39da3\t\tCALL runtime.gcWriteBarrier5(SB)",
+              "call.go:307\t\t0x10039ea58\t\t97f39e3e\t\tCALL runtime.panicBounds(SB)",
+              "call.go:302\t\t0x10039ea78\t\t97f3959e\t\tCALL runtime.morestack_noctxt.abi0(SB)",
+              "call.go:302\t\t0x10039ea90\t\t17ffff38\t\tJMP github.com/cpunion/wasmvm/pkg/component.(*Instance).configureTransfer(SB)"
+            ]
+          },
+          "codec": {
+            "instructions": 80,
+            "calls": [
+              "call.go:278\t\t0x10039e5a8\t\t14000002\t\tJMP 2(PC)",
+              "call.go:279\t\t0x10039e5c4\t\t97f1f6ff\t\tCALL runtime.newobject(SB)",
+              "call.go:281\t\t0x10039e608\t\t1400000b\t\tJMP 11(PC)",
+              "call.go:281\t\t0x10039e614\t\t97f39eb3\t\tCALL runtime.gcWriteBarrier8(SB)",
+              "call.go:282\t\t0x10039e648\t\t14000007\t\tJMP 7(PC)",
+              "call.go:284\t\t0x10039e654\t\t97f1f6db\t\tCALL runtime.newobject(SB)",
+              "call.go:291\t\t0x10039e67c\t\t9400000d\t\tCALL github.com/cpunion/wasmvm/pkg/component.(*Instance).configureCanonicalCodec(SB)",
+              "call.go:276\t\t0x10039e69c\t\t97f39695\t\tCALL runtime.morestack_noctxt.abi0(SB)",
+              "call.go:276\t\t0x10039e6a8\t\t17ffffb2\t\tJMP github.com/cpunion/wasmvm/pkg/component.(*Instance).codec(SB)"
+            ]
+          },
+          "canonicalLayouts": {
+            "instructions": 128,
+            "calls": [
+              "call.go:352\t\t0x10039ed70\t\t14000002\t\tJMP 2(PC)",
+              "call.go:359\t\t0x10039edd8\t\t97f1f73a\t\tCALL runtime.mallocgcSmallScanNoHeaderSC2(SB)",
+              "call.go:359\t\t0x10039edf8\t\t14000004\t\tJMP 4(PC)",
+              "call.go:359\t\t0x10039edfc\t\t97f39c9d\t\tCALL runtime.gcWriteBarrier1(SB)",
+              "layout.go:49\t\t0x10039ee24\t\t97f1fabf\t\tCALL runtime.mallocgcSmallScanNoHeaderSC6(SB)",
+              "layout.go:49\t\t0x10039ee4c\t\t97f37931\t\tCALL runtime.makemap_small(SB)",
+              "layout.go:49\t\t0x10039ee60\t\t14000005\t\tJMP 5(PC)",
+              "layout.go:49\t\t0x10039ee6c\t\t97f39c85\t\tCALL runtime.gcWriteBarrier2(SB)",
+              "layout.go:49\t\t0x10039ee78\t\t97f37926\t\tCALL runtime.makemap_small(SB)",
+              "layout.go:49\t\t0x10039ee8c\t\t14000005\t\tJMP 5(PC)",
+              "layout.go:49\t\t0x10039ee98\t\t97f39c7a\t\tCALL runtime.gcWriteBarrier2(SB)",
+              "layout.go:61\t\t0x10039eed0\t\t14000009\t\tJMP 9(PC)",
+              "layout.go:61\t\t0x10039eee4\t\t97f39c6f\t\tCALL runtime.gcWriteBarrier4(SB)",
+              "call.go:351\t\t0x10039ef38\t\t97f3946e\t\tCALL runtime.morestack_noctxt.abi0(SB)",
+              "call.go:351\t\t0x10039ef44\t\t17ffff83\t\tJMP github.com/cpunion/wasmvm/pkg/component.(*Instance).canonicalLayouts(SB)"
+            ]
+          }
+        }
+      },
+      "qualification-final.json": {
+        "measuredSource": "c64f5bf92fe3d394c5f9620b9ae20ef0017cc09a",
+        "qualificationSource": "bd10cfee241e54f4b942a3203c5b8044bc4b9a2b",
+        "changes": [
+          "pkg/component/async_source_test.go",
+          "pkg/vm/globals_test.go"
+        ],
+        "productionInputsIdentical": true
+      },
+      "evidenceSha256": {
+        "campaign-complete.json": "e939f1d3d2cffe8ff76c4e746d88aeec94c005ff44a26d41e567f55bc326b001",
+        "build.json": "0bf0543581a7502e773baee68d7640062bc6ebabb2cd58c13c26d4ae7d7bec57",
+        "p3-65536/rows.jsonl.gz": "33e4a2591615fd3b489c656c79b6c2c97330cdd0cbfd0d4ebe7e4b98919b76b1",
+        "p3-65536/plan.json": "55d1639c0f77734f6f0c210b0ed10b5b43a45f3220334a9ffcaf3aea4b038833",
+        "p3-65536/frozen-plan.json": "a67668eb1f238bb2dda6d22cbb6c292d3f256c73a6588a2238f7fbb44e7ddd54",
+        "p3-16/rows.jsonl.gz": "ccbe4e9e745c6938161fabb8b79cd3fca5c300a9b7cb30fc1fbd02b39a280aee",
+        "p3-16/plan.json": "cbdf067aa9dcee81fa7440fb2a0a17d930937affafe6efd629a2e1c6354dbbb8",
+        "p3-16/frozen-plan.json": "383ef3bf7736c2967a47b4f2aac21d1a2a25163bc7063621dd87b36f2702a463"
+      }
+    }
+  }
+}

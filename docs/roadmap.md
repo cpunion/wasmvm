@@ -202,6 +202,15 @@ complete-pair return experiment has no demonstrated incremental speedup and
 remains unintegrated. See the [measurement and validation record](research/performance-native-call-bounds-2026-11-17.md).
 Final target CI and overall performance acceptance remain separate gates.
 
+Fresh canonical resource entries now use small allocation groups without
+rebinding old publication identities. Complete requests remove 21.75 managed
+allocations under both host compilers, with resolving controls; CPU improvement
+is not demonstrated. The preceding transfer-refresh refactor remains rejected:
+its optimized resume sites are unused by the measured P3 workload, while common
+initialization gains another native call. The [entry measurement record](research/performance-resource-entries-2026-11-17.md)
+retains both events and lifecycle validation. Final target CI and the remaining
+typed-adapter/native/memory work still gate performance completion.
+
 On 2026-10-31 the owner directed capability-first development through the full
 remaining scope, followed by performance optimization. Continue functional work
 across merged increments; retain the final Go/LLGo semantic matrix, coverage and
