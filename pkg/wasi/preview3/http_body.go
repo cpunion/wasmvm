@@ -552,6 +552,16 @@ func (b *httpBody) trailerSource(c *component.Caller, t component.ValueType) (co
 		}
 		b.release()
 	}}
+	source.ReadReady = func(c *component.Caller, _ uint32) (component.ReadResult, bool, error) {
+		b.mu.Lock()
+		ready := b.bodyDone && (b.trailerDone == nil || b.trailerReady)
+		b.mu.Unlock()
+		if !ready {
+			return component.ReadResult{}, false, nil
+		}
+		value, err := b.trailerResult(c, &resolved)
+		return component.ReadResult{Values: []component.Value{value}, Closed: true}, true, err
+	}
 	source.ReadOwned = func(c *component.Caller, refs []*component.Resource, _ uint32) (*component.ReadCompletion, error) {
 		completion := component.NewReadCompletion()
 		b.mu.Lock()
@@ -590,32 +600,10 @@ func (b *httpBody) trailerSource(c *component.Caller, t component.ValueType) (co
 			}
 			return nil, err
 		}
-		b.mu.Lock()
-		failure, fields := b.failure, b.trailersValue
-		// A parent context can cancel before the provider's close callback
-		// publishes the body failure. Cancellation cannot become a success.
-		if failure == nil && b.ctx.Err() != nil {
-			failure = httpErr("connection-terminated")
+		value, err := b.trailerResult(c, &resolved)
+		if err != nil {
+			return nil, err
 		}
-		b.mu.Unlock()
-		var value component.Value
-		if failure != nil {
-			value = httpErrorResult(failure)
-		} else if fields != nil {
-			v, err := b.owner.publish(c, &httpEntry{kind: "fields", fields: fields})
-			if err != nil {
-				return nil, err
-			}
-			value = httpOK(httpSome(v))
-		} else {
-			value = httpOK(component.Value{})
-		}
-		if value.Case == 1 {
-			b.tx.set(value)
-		} else {
-			b.transferred()
-		}
-		resolved.Store(true)
 		completion.Resolve(func(*component.Caller) (component.ReadResult, error) {
 			return component.ReadResult{Values: []component.Value{value}, Closed: true}, nil
 		})
@@ -629,6 +617,38 @@ func (b *httpBody) trailerSource(c *component.Caller, t component.ValueType) (co
 	b.mu.Lock()
 	b.trailers = nil
 	b.mu.Unlock()
+	return value, nil
+}
+
+// Called only after both body completion and trailer publication. Resource
+// creation uses the current callback's transaction, including on the ready path.
+func (b *httpBody) trailerResult(c *component.Caller, resolved *atomic.Bool) (component.Value, error) {
+	b.mu.Lock()
+	failure, fields := b.failure, b.trailersValue
+	// A parent context can cancel before the provider's close callback
+	// publishes the body failure. Cancellation cannot become a success.
+	if failure == nil && b.ctx.Err() != nil {
+		failure = httpErr("connection-terminated")
+	}
+	b.mu.Unlock()
+	var value component.Value
+	if failure != nil {
+		value = httpErrorResult(failure)
+	} else if fields != nil {
+		v, err := b.owner.publish(c, &httpEntry{kind: "fields", fields: fields})
+		if err != nil {
+			return component.Value{}, err
+		}
+		value = httpOK(httpSome(v))
+	} else {
+		value = httpOK(component.Value{})
+	}
+	if value.Case == 1 {
+		b.tx.set(value)
+	} else {
+		b.transferred()
+	}
+	resolved.Store(true)
 	return value, nil
 }
 func (p *HTTP) worker(fn func()) error {
