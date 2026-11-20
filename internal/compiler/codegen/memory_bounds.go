@@ -20,6 +20,7 @@ type memoryRegion struct {
 	addresses map[int]memoryAddress
 	elided    map[int]bool
 	loop      *nativeLoop
+	heap      *structLoop
 	unroll    *memoryUnroll
 	values    *loopValuePlans
 	copies    *loopFrameCopies
@@ -179,6 +180,7 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 	e.guardPCs = r.guards
 	e.addresses, e.elidedPCs = r.addresses, r.elided
 	e.regionPredicate = r.predicate
+	e.structLoop = r.heap
 	e.vectorAliases = map[slots.Slot]slots.Slot{}
 	defer func() {
 		e.frameAliases, e.deferredFrameSlots = nil, nil
@@ -194,6 +196,7 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 		e.addresses = nil
 		e.elidedPCs = nil
 		e.regionPredicate = nil
+		e.structLoop = nil
 	}()
 	var boundaries []int
 	coalesced := e.coalescedRegisterSlots()
@@ -278,6 +281,10 @@ func (e *functionEmitter) emitMemoryRegionRange(start, end int, r memoryRegion, 
 		}
 		if isMemoryAccess(in.Op) {
 			e.memoryAt(in, r.proven[pc], e.f.Sources[in.Source].Wasm.MemoryOffset(), r.operands[pc])
+			continue
+		}
+		if r.heap != nil && e.heapInstruction(in) {
+			out.NativeHeap++
 			continue
 		}
 		e.plain(in, r.proven[pc])

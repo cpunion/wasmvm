@@ -91,6 +91,9 @@ func (e *functionEmitter) nativeLoop(start int, r memoryRegion) *nativeLoop {
 	}
 	for pc := start; pc <= r.end; pc++ {
 		in := e.f.Code[pc]
+		if r.heap != nil && e.isLoopStructAccess(in, r.heap) {
+			continue
+		}
 		if !plainOpcode(in.Op) || scalarCanTrap(in.Op) || in.Op == 0x3f || isMemoryAccess(in.Op) && !r.proven[pc] {
 			return nil
 		}

@@ -105,6 +105,17 @@ so synthesized literals are prepared at entry. Expanded entries keep original
 logical frame/slot quotas, caller cold continuations and boundary polling.
 Precise-fuel execution retains the original metered body.
 
+For short native loops that repeatedly access one invariant struct local, the
+entry resolves its complete handle before using the payload. Handle validation
+failure runs the original checked body, so null traps follow preceding guest
+operations and retain their original PC. The private backedge reuses the
+validated address and retains its interrupt poll. Independent continuations
+either resolve again or use the original field checks, including after object
+relocation. The proof excludes mutating the reference, calls, allocation, other
+heap access classes, and potentially trapping instructions. A forwarded i32
+field can retain the exact result of its preceding i32 arithmetic inside the
+private body. Cold entries still apply field-width truncation independently.
+
 Start with a simple verified lowering. Measure register/slot dispatch against a predecoded stack-dispatch prototype using identical complete semantics. The default design is slot bytecode; change it only with measured evidence covering both compilers, dispatch cost, bytecode size, compile latency, and representative workloads. Do not maintain two permanent production interpreters merely to preserve the experiment.
 
 Optimize demonstrated bottlenecks with direct local/constant forms, copy elimination, block layout, and bounded superinstructions. Fusion must preserve fuel, trap locations, memory effects and safepoints. Pre-resolve internal direct calls; indirect calls retain null, bounds, signature, ownership, and instance checks. Poll at calls, backedges and a maximum straight-line work interval; chunk bulk operations. An unmetered mode still observes cancellation and resource limits. There is no unchecked performance mode for untrusted guests.

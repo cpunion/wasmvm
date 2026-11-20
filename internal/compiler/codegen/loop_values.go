@@ -155,7 +155,8 @@ func (e *functionEmitter) loopValueVersions(start int, r memoryRegion) *loopValu
 			continue
 		}
 		in := e.f.Code[pc]
-		if !plainOpcode(in.Op) || scalarCanTrap(in.Op) || isMemoryAccess(in.Op) && !r.proven[pc] {
+		guardedField := r.heap != nil && e.isLoopStructAccess(in, r.heap)
+		if !guardedField && (!plainOpcode(in.Op) || scalarCanTrap(in.Op) || isMemoryAccess(in.Op) && !r.proven[pc]) {
 			return nil
 		}
 		local := slots.Slot(e.f.Sources[in.Source].Wasm.A)

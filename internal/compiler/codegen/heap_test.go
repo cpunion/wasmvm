@@ -355,6 +355,9 @@ func TestNativeHeapCacheRechecksChangedReferences(t *testing.T) {
 			addHeapFixtureLoop(f, 2)
 		}
 		compiled, lease, ctx := configuredContext(t, f, config)
+		if loop && compiled.GuardedStructLoops != 1 {
+			t.Fatal("invariant loop did not use a guarded payload", compiled.GuardedStructLoops)
+		}
 		if loop && runtime.GOARCH == "amd64" && compiled.HeapCaches != 1 {
 			t.Fatal("changed-reference cache not selected", compiled.HeapCaches)
 		}
@@ -421,10 +424,12 @@ func TestNativeHeapCacheRechecksChangedReferences(t *testing.T) {
 			writeSlot(t, ctx, 16, 0, value.Value{Lo: first})
 			writeSlot(t, ctx, 16, 6, value.Value{Lo: second})
 			writeSlot(t, ctx, 16, 7, value.Value{})
-			// Unmetered polling observes Control, not Budget. Patch the verified
-			// cold-PC poll load using the existing deterministic poll witness.
+			// Force the poll in the actually executed loop body. A guarded
+			// loop has a private backedge and an independent cold entry.
 			probe := *compiled
-			probe.PrivatePollOffsets = []uint32{compiled.Offsets[len(f.Code)-2]}
+			if len(probe.PrivatePollOffsets) == 0 {
+				probe.PrivatePollOffsets = []uint32{compiled.Offsets[len(f.Code)-2]}
+			}
 			forced, err := native.Publish(forcePrivateLoopPoll(t, &probe, runtime.GOARCH), []uint32{0}, DefaultLimits().MaxCodeBytes)
 			if err != nil {
 				t.Fatal(err)
