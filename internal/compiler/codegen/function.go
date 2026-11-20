@@ -70,6 +70,7 @@ type CompiledFunction struct {
 	AliasedVectorReads            uint32
 	NativeHeap                    uint32
 	HeapCaches                    uint32
+	GuardedStructLoops            uint32
 	ForwardedHeap                 uint32
 	NativeBulk                    uint32
 	NativeAllocations             uint32
@@ -289,6 +290,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	var initialPlan *registerPlan
 	if unmetered {
 		e.selectRegisters(config, regions)
+		regions = e.addStructLoops(regions)
 		e.prepareVectorConstants()
 		e.prepareConstants()
 		e.prepareRuntimeRegisters(config)
@@ -434,7 +436,7 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 		}
 		// Only fallthrough from the preceding constant proves an immediate.
 		// Keep the original PC as a generic cold entry for branches/resumption.
-		if unmetered && pc > 0 && pc%256 != 0 {
+		if regions[pc].heap == nil && unmetered && pc > 0 && pc%256 != 0 {
 			previous := f.Code[pc-1]
 			if (previous.Op == 0x41 || previous.Op == 0x42) && previous.Dst == in.B && in.B != slots.NoSlot &&
 				e.registerImmediate(in.Op, in.Dst, in.A, f.Sources[previous.Source].Wasm.Bits) {
@@ -616,7 +618,9 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	for _, fallback := range e.memoryFallbacks {
 		e.useRegisterPlan(fallback.registers)
 		a.mark(fallback.label)
-		e.plain(f.Code[fallback.pc], false)
+		if !e.heapInstruction(f.Code[fallback.pc]) {
+			e.plain(f.Code[fallback.pc], false)
+		}
 		a.branch(e.targetPC(pcs, fallback.pc+1), false, 0)
 	}
 	e.emitAllocationEdges()

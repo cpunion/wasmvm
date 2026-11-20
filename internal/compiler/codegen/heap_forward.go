@@ -32,6 +32,15 @@ func (e *functionEmitter) forwardHeapStoreLoad(start int) (int, bool) {
 			value = e.f.Args[store.Extra+2]
 		}
 		e.heapInstruction(store)
+		if e.structLoop != nil && start > e.structLoop.start && b.width == 4 && value == in.Dst {
+			// On this private edge the preceding i32 arithmetic has already
+			// written the exact zero-extended field value. Cold entries can
+			// supply independent frame words and keep ordinary forwarding.
+			producer := e.f.Code[start-1]
+			if producer.Dst == value && producer.Op >= 0x6a && producer.Op <= 0x78 {
+				return end, true
+			}
+		}
 		e.forwardHeapValue(value, in.Dst, b.width, b.signed)
 		return end, true
 	}

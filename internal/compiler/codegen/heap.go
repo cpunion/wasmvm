@@ -163,6 +163,10 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 	if !ok {
 		return false
 	}
+	if e.structLoop != nil && e.isLoopStructAccess(in, e.structLoop) {
+		e.emitHeapField(in, a, e.structLoop.cache.address)
+		return true
+	}
 	cache, cached := e.heapCaches[a.cacheClass]
 	reference := e.operandRegister(0)
 	if r, ok := e.registers[e.frameRead(in.A)]; ok && e.unmetered && e.a.arch == "arm64" && cached && !a.array {
@@ -199,38 +203,7 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 		// compares the complete reference directly in its allocated home.
 		e.slotLoad(in.A, 0, false, true)
 	}
-	e.test(true)
-	e.branch(e.trapExit(wasm.TrapNullReference, e.f.Sources[in.Source].Wasm.Offset), "eq")
-	// Validate the complete generation/tag word before loading a payload.
-	// A stale or forged internal frame is a bad state, never a host address.
-	if _, cached := e.runtimeRegisters[e.heapPair]; !cached {
-		e.contextLoad(2, nativeabi.RuntimeDataOffset)
-	}
-	e.runtimeLoad(1, e.heapPair)
-	e.registerMove(e.operandRegister(2), e.operandRegister(0), false)
-	if e.a.arch == "amd64" {
-		e.a.bytes(0x48, 0x39, 0xca) // cmp rdx, rcx
-	} else {
-		e.a.word(0xeb0a017f) // cmp x11, x10
-	}
-	e.branch(e.bad, "hs")
-	if base, cached := e.runtimeRegisters[e.heapPair+8]; cached {
-		e.registerMove(e.operandRegister(1), base, true)
-	} else {
-		e.contextLoad(1, nativeabi.RuntimeDataOffset)
-		e.pointerLoad(1, 1, e.heapPair+8)
-	}
-	if e.a.arch == "amd64" {
-		e.a.bytes(0x48, 0xc1, 0xe2, 5, 0x48, 0x01, 0xca) // shl rdx,5; add rdx,rcx
-	} else {
-		e.a.word(0x8b0b154b) // add x11, x10, x11, lsl #5
-	}
-	e.pointerLoad(1, 2, 0)
-	e.compare(true)
-	e.branch(e.bad, "ne")
-	if !a.array {
-		e.pointerLoad(2, 2, 8)
-	}
+	e.resolveHeapHandle(a.array, e.trapExit(wasm.TrapNullReference, e.f.Sources[in.Source].Wasm.Offset), e.bad)
 	if cached && !bounded {
 		e.registerMove(cache.address, e.operandRegister(2), true)
 		e.registerMove(cache.key, e.operandRegister(0), true)
@@ -279,6 +252,46 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 			e.a.word(0x8b09016b | shift<<10) // add x11,x11,x9,lsl #stride
 		}
 	}
+	e.emitHeapField(in, a, base)
+	return true
+}
+
+func (e *functionEmitter) resolveHeapHandle(array bool, null, bad int) {
+	e.test(true)
+	e.branch(null, "eq")
+	// Validate the complete generation/tag word before loading a payload.
+	// A stale or forged internal frame is a bad state, never a host address.
+	if _, cached := e.runtimeRegisters[e.heapPair]; !cached {
+		e.contextLoad(2, nativeabi.RuntimeDataOffset)
+	}
+	e.runtimeLoad(1, e.heapPair)
+	e.registerMove(e.operandRegister(2), e.operandRegister(0), false)
+	if e.a.arch == "amd64" {
+		e.a.bytes(0x48, 0x39, 0xca) // cmp rdx, rcx
+	} else {
+		e.a.word(0xeb0a017f) // cmp x11, x10
+	}
+	e.branch(bad, "hs")
+	if base, cached := e.runtimeRegisters[e.heapPair+8]; cached {
+		e.registerMove(e.operandRegister(1), base, true)
+	} else {
+		e.contextLoad(1, nativeabi.RuntimeDataOffset)
+		e.pointerLoad(1, 1, e.heapPair+8)
+	}
+	if e.a.arch == "amd64" {
+		e.a.bytes(0x48, 0xc1, 0xe2, 5, 0x48, 0x01, 0xca) // shl rdx,5; add rdx,rcx
+	} else {
+		e.a.word(0x8b0b154b) // add x11, x10, x11, lsl #5
+	}
+	e.pointerLoad(1, 2, 0)
+	e.compare(true)
+	e.branch(bad, "ne")
+	if !array {
+		e.pointerLoad(2, 2, 8)
+	}
+}
+
+func (e *functionEmitter) emitHeapField(in slots.Instruction, a heapAccess, base byte) {
 	offset := uint32(0)
 	if !a.array {
 		offset = a.offset
@@ -345,7 +358,6 @@ func (e *functionEmitter) heapInstruction(in slots.Instruction) bool {
 			e.heapResult(in.Dst)
 		}
 	}
-	return true
 }
 
 // Header word two packs length below the local/canonical type. Always

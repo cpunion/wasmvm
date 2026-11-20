@@ -213,6 +213,10 @@ func (e *functionEmitter) memoryLoop(start int, r memoryRegion) *memoryLoop {
 
 func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, out *CompiledFunction) {
 	loop := r.loop
+	if r.heap != nil {
+		e.guardStructLoop(r.heap, start)
+		out.GuardedStructLoops++
+	}
 	if proof := loop.memory; proof != nil {
 		cold := e.a.label()
 		e.memoryFallbacks = append(e.memoryFallbacks, memoryFallback{cold, start, e.currentRegisterPlan()})
@@ -239,18 +243,28 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 	// removes its owner. An unused R11 still contains that old cached word.
 	restoreMemory := e.loopBorrowedMemoryLength()
 	values := e.loopValueVersions(start, r)
-	coalesced, entry, merges := e.coalesceLoopRegisters(values, (r.end-start+1)*128)
+	registerValues := values
+	if r.heap != nil {
+		// Preserve fixed heap operand homes, including across the store/load
+		// selector and adjacent fused arithmetic. The value graph can still
+		// prove that the branch predicate needs no hot frame write.
+		registerValues = nil
+	}
+	coalesced, entry, merges := e.coalesceLoopRegisters(registerValues, (r.end-start+1)*128)
 	if coalesced != nil {
 		e.transitionRegisters(entry)
 		e.useRegisterPlan(coalesced)
 		out.CoalescedSlotGroups += merges
 	}
-	warm := e.hoistLoopLiterals(values, r, out)
+	warm := e.hoistLoopLiterals(registerValues, r, out)
 	warm.guards, warm.loop = nil, nil
 	// The range planner still needs the original loop eligibility marker.
 	candidate := warm
 	candidate.loop = loop
-	plans := e.loopValuePlans(start, candidate, previous)
+	var plans *loopValuePlans
+	if r.heap == nil {
+		plans = e.loopValuePlans(start, candidate, previous)
+	}
 	restoreMemory = restoreMemory || e.loopBorrowedMemoryLength()
 	if plans != nil {
 		warm.values = plans
@@ -264,7 +278,7 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 			}
 		}
 	}
-	warm.copies = e.planLoopFrameCopies(values, warm, (r.end-start+1)*128)
+	warm.copies = e.planLoopFrameCopies(registerValues, warm, (r.end-start+1)*128)
 	if warm.copies != nil {
 		out.DeferredFrameCopies += uint32(len(warm.copies.final))
 	}
