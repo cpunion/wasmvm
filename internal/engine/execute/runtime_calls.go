@@ -60,6 +60,16 @@ func (e *Execution) runCall() Status {
 	if err := e.poll(); err != nil {
 		return e.fail(err)
 	}
+	if leaf, ok := callee.Host.(*state.ScalarLeaf); ok && !tail {
+		if err := leaf.CallSlots(callee.Signature, inputs[:count], dest, values); err != nil {
+			return e.fail(err)
+		}
+		if err := e.poll(); err != nil {
+			return e.fail(err)
+		}
+		f.pc = pc + 1
+		return Running
+	}
 	if access, ok := callee.Host.(*state.ScalarAccess); ok && !tail {
 		var bits uint64
 		if access.Write {

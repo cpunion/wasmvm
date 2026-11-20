@@ -399,6 +399,25 @@ func (e *Execution) run(module *Lease, entries *functionEntries, fn *state.Funct
 			if !valid {
 				return 0, s.Fuel, wasm.ErrInvalid
 			}
+			// Internal scalar leaves operate on host state only. They can finish
+			// in the current native frame without a public Caller or a frame
+			// transfer to execute. The next entry still tests cancellation.
+			if exit == native.Call && op == 0x10 && module.linked && e.callEnabled && !e.metered && e.allocationView == 0 {
+				code := fn.Code
+				site := &code.Code[pc]
+				index, _ := code.SourceIndices(site.Source)
+				if callee, ok := instance.Owner.Function(instance.Functions[index]); ok {
+					if leaf, ok := callee.Host.(*state.ScalarLeaf); ok {
+						end := site.Extra + site.Count
+						values := e.values[base : base+len(code.Slots)]
+						if err := leaf.CallSlots(callee.Signature, code.Args[site.Extra:end], code.Args[end:end+uint32(len(callee.Signature.Results))], values); err != nil {
+							return 0, s.Fuel, err
+						}
+						s.Continuation = pc + 1
+						continue
+					}
+				}
+			}
 			return uint32(pc), s.Fuel, nil
 		default:
 			return 0, s.Fuel, wasm.ErrInvalid

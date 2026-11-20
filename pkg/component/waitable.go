@@ -5,6 +5,7 @@ import (
 
 	"github.com/cpunion/wasmvm/internal/component/model"
 	"github.com/cpunion/wasmvm/internal/component/validate"
+	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -162,17 +163,26 @@ func (in *Instance) subtask(n *namespace, id uint32) (*componentSubtask, error) 
 func (in *Instance) waitableBuiltin(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
 	in.resourceTable(n)
 	n.taskOps = true
-	if plan.Definition.Op == 0x20 {
+	op := plan.Definition.Op
+	switch op {
+	case 0x20:
 		return in.waitableWait(caller, n, plan)
-	}
-	if plan.Definition.Op == 6 {
+	case 6:
 		return in.subtaskCancel(caller, n, plan)
+	case 0x1f, 0x22, 0x23, 0x0d:
+		leaf := state.NewScalarLeaf(func(a, b uint64) (uint64, error) {
+			return in.waitableLeaf(n, op, uint32(a), uint32(b))
+		})
+		fn, err := caller.NewScalarLeafFunction(plan.Signature, leaf)
+		if err == nil {
+			n.add(item{sort: model.CoreFunctionSort, core: fn})
+		}
+		return err
 	}
 	fn, err := caller.NewBorrowedScalarFunction(plan.Signature, func(c *vm.Caller, words []uint64) error {
 		if n.failed || n.blocked {
 			return wasm.ErrTrap
 		}
-		op := plan.Definition.Op
 		if op == 5 {
 			t := n.task
 			if t == nil || t.plan == nil || !t.plan.Async || t.runtime == nil || t.resolved || !t.runtime.cancelDelivered {
@@ -184,81 +194,82 @@ func (in *Instance) waitableBuiltin(caller *vm.Caller, n *namespace, plan *valid
 			t.resolved = true
 			return t.runtime.resolve(c, nil, true)
 		}
-		if op == 0x1f {
-			s := &waitableSet{n: n}
-			id, err := n.handles.AddOpaque(s)
-			if err != nil {
-				return err
-			}
-			if in.tasks == nil {
-				in.tasks = &taskScheduler{}
-			}
-			s.id, s.group, s.next = id, in.tasks, in.tasks.sets
-			if s.next != nil {
-				s.next.previous = s
-			}
-			in.tasks.sets = s
-			words[0] = uint64(id)
-			return nil
+		if op != 0x21 {
+			return wasm.ErrTrap
 		}
-		bits := words[0]
-		id := uint32(bits)
-		if op == 0x21 || op == 0x22 {
-			s, err := in.waitableSet(n, id)
-			if err != nil {
-				return err
-			}
-			if op == 0x22 {
-				if s.head != nil || s.waiters != 0 {
-					return wasm.ErrTrap
-				}
-				s.unlink()
-				return n.handles.RemoveOpaque(id)
-			}
-			ptr := words[1]
-			bits, err := in.eventBits(c, n, plan, s, ptr)
-			words[0] = uint64(bits)
-			return err
-		}
-
-		if op == 0x23 {
-			w, err := in.waitable(n, id)
-			if err != nil {
-				return err
-			}
-			if w.syncWaiter {
-				return wasm.ErrTrap
-			}
-			var set *waitableSet
-			other := words[1]
-			if other != 0 {
-				set, err = in.waitableSet(n, uint32(other))
-				if err != nil {
-					return err
-				}
-			}
-			w.join(set)
-			return nil
-		}
-		s, err := in.subtask(n, id)
+		s, err := in.waitableSet(n, uint32(words[0]))
 		if err != nil {
 			return err
 		}
-		switch op {
-		case 0x0d:
-			if !s.delivered || s.waitable.syncWaiter {
-				return wasm.ErrTrap
-			}
-			s.waitable.join(nil)
-			return n.handles.RemoveOpaque(id)
-		default:
-			return wasm.ErrTrap
-		}
+		bits, err := in.eventBits(c, n, plan, s, words[1])
+		words[0] = uint64(bits)
+		return err
 	})
 	if err == nil {
 		n.add(item{sort: model.CoreFunctionSort, core: fn})
 	}
 	return err
+}
+
+func (in *Instance) waitableLeaf(n *namespace, op byte, id, other uint32) (uint64, error) {
+	if n.failed || n.blocked {
+		return 0, wasm.ErrTrap
+	}
+	switch op {
+	case 0x1f:
+		s := &waitableSet{n: n}
+		id, err := n.handles.AddOpaque(s)
+		if err != nil {
+			return 0, err
+		}
+		if in.tasks == nil {
+			in.tasks = &taskScheduler{}
+		}
+		s.id, s.group, s.next = id, in.tasks, in.tasks.sets
+		if s.next != nil {
+			s.next.previous = s
+		}
+		in.tasks.sets = s
+		return uint64(id), nil
+	case 0x22:
+		s, err := in.waitableSet(n, id)
+		if err != nil {
+			return 0, err
+		}
+		if s.head != nil || s.waiters != 0 {
+			return 0, wasm.ErrTrap
+		}
+		s.unlink()
+	case 0x23:
+		w, err := in.waitable(n, id)
+		if err != nil {
+			return 0, err
+		}
+		if w.syncWaiter {
+			return 0, wasm.ErrTrap
+		}
+		var set *waitableSet
+		if other != 0 {
+			set, err = in.waitableSet(n, other)
+			if err != nil {
+				return 0, err
+			}
+		}
+		w.join(set)
+		return 0, nil
+	case 0x0d:
+		s, err := in.subtask(n, id)
+		if err != nil {
+			return 0, err
+		}
+		if !s.delivered || s.waitable.syncWaiter {
+			return 0, wasm.ErrTrap
+		}
+		s.waitable.join(nil)
+	default:
+		return 0, wasm.ErrTrap
+	}
+	return 0, n.handles.RemoveOpaque(id)
 }
 
 func (in *Instance) eventMemory(c *vm.Caller, n *namespace, plan *validate.CanonicalFunction, s *waitableSet, ptr uint64) (vm.HostResult, error) {
