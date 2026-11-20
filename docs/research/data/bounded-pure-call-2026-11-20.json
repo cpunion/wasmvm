@@ -801,8 +801,8 @@
             "processStartup": 15885104.0,
             "preparationPartsNs/validate": 3625.0,
             "preparationPartsNs/parse": 254257542.0,
-            "aotPreparationNs/compiledArtifactLoad": 254257542.0,
-            "aotPreparationNs/compileValidateArtifactIO": 16924333.5
+            "aotPreparationNs/compileValidateArtifactIO": 16924333.5,
+            "aotPreparationNs/compiledArtifactLoad": 254257542.0
           },
           "wasmedge-interpreter": {
             "load": 38500.0,
@@ -1375,8 +1375,8 @@
             "processStartup": 16226520.5,
             "preparationPartsNs/validate": 5145.5,
             "preparationPartsNs/parse": 252929062.5,
-            "aotPreparationNs/compiledArtifactLoad": 252929062.5,
-            "aotPreparationNs/compileValidateArtifactIO": 17256521.5
+            "aotPreparationNs/compileValidateArtifactIO": 17256521.5,
+            "aotPreparationNs/compiledArtifactLoad": 252929062.5
           },
           "wasmedge-interpreter": {
             "load": 36875.0,
@@ -1949,8 +1949,8 @@
             "processStartup": 16054896.0,
             "preparationPartsNs/validate": 4708.0,
             "preparationPartsNs/parse": 266575146.0,
-            "aotPreparationNs/compiledArtifactLoad": 266575146.0,
-            "aotPreparationNs/compileValidateArtifactIO": 17921292.0
+            "aotPreparationNs/compileValidateArtifactIO": 17921292.0,
+            "aotPreparationNs/compiledArtifactLoad": 266575146.0
           },
           "wasmedge-interpreter": {
             "load": 39166.5,
@@ -2523,8 +2523,8 @@
             "processStartup": 16110292.0,
             "preparationPartsNs/validate": 6375.0,
             "preparationPartsNs/parse": 252659292.0,
-            "aotPreparationNs/compiledArtifactLoad": 252659292.0,
-            "aotPreparationNs/compileValidateArtifactIO": 20157791.5
+            "aotPreparationNs/compileValidateArtifactIO": 20157791.5,
+            "aotPreparationNs/compiledArtifactLoad": 252659292.0
           },
           "wasmedge-interpreter": {
             "load": 39187.5,
@@ -3097,8 +3097,8 @@
             "processStartup": 16249812.0,
             "preparationPartsNs/validate": 7979.5,
             "preparationPartsNs/parse": 286161875.0,
-            "aotPreparationNs/compiledArtifactLoad": 286161875.0,
-            "aotPreparationNs/compileValidateArtifactIO": 19928583.5
+            "aotPreparationNs/compileValidateArtifactIO": 19928583.5,
+            "aotPreparationNs/compiledArtifactLoad": 286161875.0
           },
           "wasmedge-interpreter": {
             "load": 39125.0,
@@ -3671,8 +3671,8 @@
             "processStartup": 15931354.5,
             "preparationPartsNs/validate": 9854.0,
             "preparationPartsNs/parse": 289243666.5,
-            "aotPreparationNs/compiledArtifactLoad": 289243666.5,
-            "aotPreparationNs/compileValidateArtifactIO": 19178187.5
+            "aotPreparationNs/compileValidateArtifactIO": 19178187.5,
+            "aotPreparationNs/compiledArtifactLoad": 289243666.5
           },
           "wasmedge-interpreter": {
             "load": 41979.5,
@@ -4245,8 +4245,8 @@
             "processStartup": 16104333.0,
             "preparationPartsNs/validate": 7791.5,
             "preparationPartsNs/parse": 276783479.0,
-            "aotPreparationNs/compiledArtifactLoad": 276783479.0,
-            "aotPreparationNs/compileValidateArtifactIO": 21203145.5
+            "aotPreparationNs/compileValidateArtifactIO": 21203145.5,
+            "aotPreparationNs/compiledArtifactLoad": 276783479.0
           },
           "wasmedge-interpreter": {
             "load": 43458.5,
@@ -4819,8 +4819,8 @@
             "processStartup": 16205187.5,
             "preparationPartsNs/validate": 7958.5,
             "preparationPartsNs/parse": 256110354.5,
-            "aotPreparationNs/compiledArtifactLoad": 256110354.5,
-            "aotPreparationNs/compileValidateArtifactIO": 18193166.5
+            "aotPreparationNs/compileValidateArtifactIO": 18193166.5,
+            "aotPreparationNs/compiledArtifactLoad": 256110354.5
           },
           "wasmedge-interpreter": {
             "load": 41583.5,
@@ -5393,8 +5393,8 @@
             "processStartup": 15769541.5,
             "preparationPartsNs/validate": 6666.5,
             "preparationPartsNs/parse": 259094146.0,
-            "aotPreparationNs/compiledArtifactLoad": 259094146.0,
-            "aotPreparationNs/compileValidateArtifactIO": 17468583.0
+            "aotPreparationNs/compileValidateArtifactIO": 17468583.0,
+            "aotPreparationNs/compiledArtifactLoad": 259094146.0
           },
           "wasmedge-interpreter": {
             "load": 41812.0,
@@ -5967,8 +5967,8 @@
             "processStartup": 15808312.5,
             "preparationPartsNs/validate": 7166.5,
             "preparationPartsNs/parse": 251440667.0,
-            "aotPreparationNs/compiledArtifactLoad": 251440667.0,
-            "aotPreparationNs/compileValidateArtifactIO": 17557291.5
+            "aotPreparationNs/compileValidateArtifactIO": 17557291.5,
+            "aotPreparationNs/compiledArtifactLoad": 251440667.0
           },
           "wasmedge-interpreter": {
             "load": 44041.0,
@@ -6422,8 +6422,8 @@
             "processStartup": 15843958.0,
             "preparationPartsNs/validate": 6791.5,
             "preparationPartsNs/parse": 253187291.5,
-            "aotPreparationNs/compiledArtifactLoad": 253187291.5,
-            "aotPreparationNs/compileValidateArtifactIO": 18820354.0
+            "aotPreparationNs/compileValidateArtifactIO": 18820354.0,
+            "aotPreparationNs/compiledArtifactLoad": 253187291.5
           },
           "wasmedge-interpreter": {
             "load": 38979.0,
@@ -6847,8 +6847,8 @@
             "processStartup": 15959291.5,
             "preparationPartsNs/validate": 4500.0,
             "preparationPartsNs/parse": 252452666.5,
-            "aotPreparationNs/compiledArtifactLoad": 252452666.5,
-            "aotPreparationNs/compileValidateArtifactIO": 18247125.0
+            "aotPreparationNs/compileValidateArtifactIO": 18247125.0,
+            "aotPreparationNs/compiledArtifactLoad": 252452666.5
           },
           "wasmedge-interpreter": {
             "load": 42271.0,
@@ -7272,8 +7272,8 @@
             "processStartup": 15700145.5,
             "preparationPartsNs/validate": 7083.0,
             "preparationPartsNs/parse": 252544104.5,
-            "aotPreparationNs/compiledArtifactLoad": 252544104.5,
-            "aotPreparationNs/compileValidateArtifactIO": 17742709.0
+            "aotPreparationNs/compileValidateArtifactIO": 17742709.0,
+            "aotPreparationNs/compiledArtifactLoad": 252544104.5
           },
           "wasmedge-interpreter": {
             "load": 37646.0,
@@ -7697,8 +7697,8 @@
             "processStartup": 15951125.0,
             "preparationPartsNs/validate": 7646.0,
             "preparationPartsNs/parse": 252971229.0,
-            "aotPreparationNs/compiledArtifactLoad": 252971229.0,
-            "aotPreparationNs/compileValidateArtifactIO": 18561021.0
+            "aotPreparationNs/compileValidateArtifactIO": 18561021.0,
+            "aotPreparationNs/compiledArtifactLoad": 252971229.0
           },
           "wasmedge-interpreter": {
             "load": 39500.0,
@@ -8209,8 +8209,8 @@
             "processStartup": 15565187.5,
             "preparationPartsNs/validate": 6063.0,
             "preparationPartsNs/parse": 250646000.5,
-            "aotPreparationNs/compiledArtifactLoad": 250646000.5,
-            "aotPreparationNs/compileValidateArtifactIO": 16632916.5
+            "aotPreparationNs/compileValidateArtifactIO": 16632916.5,
+            "aotPreparationNs/compiledArtifactLoad": 250646000.5
           },
           "wasmedge-interpreter": {
             "load": 40417.0,
@@ -8751,8 +8751,8 @@
             "processStartup": 15574666.5,
             "preparationPartsNs/validate": 6625.0,
             "preparationPartsNs/parse": 253407708.0,
-            "aotPreparationNs/compiledArtifactLoad": 253407708.0,
-            "aotPreparationNs/compileValidateArtifactIO": 16826479.0
+            "aotPreparationNs/compileValidateArtifactIO": 16826479.0,
+            "aotPreparationNs/compiledArtifactLoad": 253407708.0
           },
           "wasmedge-interpreter": {
             "load": 42771.0,
@@ -9293,8 +9293,8 @@
             "processStartup": 16016270.5,
             "preparationPartsNs/validate": 5916.5,
             "preparationPartsNs/parse": 256456479.0,
-            "aotPreparationNs/compiledArtifactLoad": 256456479.0,
-            "aotPreparationNs/compileValidateArtifactIO": 17511729.0
+            "aotPreparationNs/compileValidateArtifactIO": 17511729.0,
+            "aotPreparationNs/compiledArtifactLoad": 256456479.0
           },
           "wasmedge-interpreter": {
             "load": 34833.0,
@@ -9835,8 +9835,8 @@
             "processStartup": 15614354.0,
             "preparationPartsNs/validate": 7042.0,
             "preparationPartsNs/parse": 255732312.5,
-            "aotPreparationNs/compiledArtifactLoad": 255732312.5,
-            "aotPreparationNs/compileValidateArtifactIO": 17323729.0
+            "aotPreparationNs/compileValidateArtifactIO": 17323729.0,
+            "aotPreparationNs/compiledArtifactLoad": 255732312.5
           },
           "wasmedge-interpreter": {
             "load": 34750.0,
@@ -10377,8 +10377,8 @@
             "processStartup": 15972479.5,
             "preparationPartsNs/validate": 7062.0,
             "preparationPartsNs/parse": 254856083.0,
-            "aotPreparationNs/compiledArtifactLoad": 254856083.0,
-            "aotPreparationNs/compileValidateArtifactIO": 18039146.0
+            "aotPreparationNs/compileValidateArtifactIO": 18039146.0,
+            "aotPreparationNs/compiledArtifactLoad": 254856083.0
           },
           "wasmedge-interpreter": {
             "load": 36083.0,
@@ -10919,8 +10919,8 @@
             "processStartup": 15738812.5,
             "preparationPartsNs/validate": 6291.5,
             "preparationPartsNs/parse": 250856208.5,
-            "aotPreparationNs/compiledArtifactLoad": 250856208.5,
-            "aotPreparationNs/compileValidateArtifactIO": 17245666.5
+            "aotPreparationNs/compileValidateArtifactIO": 17245666.5,
+            "aotPreparationNs/compiledArtifactLoad": 250856208.5
           },
           "wasmedge-interpreter": {
             "load": 35770.5,
@@ -11493,8 +11493,8 @@
             "processStartup": 17042458.5,
             "preparationPartsNs/validate": 13000.0,
             "preparationPartsNs/parse": 250771562.5,
-            "aotPreparationNs/compiledArtifactLoad": 250771562.5,
-            "aotPreparationNs/compileValidateArtifactIO": 25186292.0
+            "aotPreparationNs/compileValidateArtifactIO": 25186292.0,
+            "aotPreparationNs/compiledArtifactLoad": 250771562.5
           },
           "wasmedge-interpreter": {
             "load": 47063.0,
@@ -12067,8 +12067,8 @@
             "processStartup": 15755854.5,
             "preparationPartsNs/validate": 10187.5,
             "preparationPartsNs/parse": 249831312.5,
-            "aotPreparationNs/compiledArtifactLoad": 249831312.5,
-            "aotPreparationNs/compileValidateArtifactIO": 23082437.0
+            "aotPreparationNs/compileValidateArtifactIO": 23082437.0,
+            "aotPreparationNs/compiledArtifactLoad": 249831312.5
           },
           "wasmedge-interpreter": {
             "load": 36583.0,
@@ -12522,8 +12522,8 @@
             "processStartup": 15756541.5,
             "preparationPartsNs/validate": 5041.5,
             "preparationPartsNs/parse": 251788896.0,
-            "aotPreparationNs/compiledArtifactLoad": 251788896.0,
-            "aotPreparationNs/compileValidateArtifactIO": 17504708.0
+            "aotPreparationNs/compileValidateArtifactIO": 17504708.0,
+            "aotPreparationNs/compiledArtifactLoad": 251788896.0
           },
           "wasmedge-interpreter": {
             "load": 37479.0,
@@ -14180,8 +14180,8 @@
             "processStartup": 16045270.5,
             "preparationPartsNs/validate": 5895.5,
             "preparationPartsNs/parse": 253341750.0,
-            "aotPreparationNs/compiledArtifactLoad": 253341750.0,
-            "aotPreparationNs/compileValidateArtifactIO": 17520812.5
+            "aotPreparationNs/compileValidateArtifactIO": 17520812.5,
+            "aotPreparationNs/compiledArtifactLoad": 253341750.0
           },
           "wasmedge-interpreter": {
             "load": 38750.0,
@@ -14722,8 +14722,8 @@
             "processStartup": 16160542.0,
             "preparationPartsNs/validate": 5021.0,
             "preparationPartsNs/parse": 257154937.5,
-            "aotPreparationNs/compiledArtifactLoad": 257154937.5,
-            "aotPreparationNs/compileValidateArtifactIO": 17367646.0
+            "aotPreparationNs/compileValidateArtifactIO": 17367646.0,
+            "aotPreparationNs/compiledArtifactLoad": 257154937.5
           },
           "wasmedge-interpreter": {
             "load": 36395.5,
@@ -15264,8 +15264,8 @@
             "processStartup": 15906000.0,
             "preparationPartsNs/validate": 6312.5,
             "preparationPartsNs/parse": 248765521.0,
-            "aotPreparationNs/compiledArtifactLoad": 248765521.0,
-            "aotPreparationNs/compileValidateArtifactIO": 16964270.5
+            "aotPreparationNs/compileValidateArtifactIO": 16964270.5,
+            "aotPreparationNs/compiledArtifactLoad": 248765521.0
           },
           "wasmedge-interpreter": {
             "load": 40562.5,
@@ -15806,8 +15806,8 @@
             "processStartup": 15863583.5,
             "preparationPartsNs/validate": 6270.5,
             "preparationPartsNs/parse": 250671187.5,
-            "aotPreparationNs/compiledArtifactLoad": 250671187.5,
-            "aotPreparationNs/compileValidateArtifactIO": 17412958.5
+            "aotPreparationNs/compileValidateArtifactIO": 17412958.5,
+            "aotPreparationNs/compiledArtifactLoad": 250671187.5
           },
           "wasmedge-interpreter": {
             "load": 36812.5,
@@ -16348,8 +16348,8 @@
             "processStartup": 15540291.5,
             "preparationPartsNs/validate": 4854.5,
             "preparationPartsNs/parse": 256981854.0,
-            "aotPreparationNs/compiledArtifactLoad": 256981854.0,
-            "aotPreparationNs/compileValidateArtifactIO": 16855437.5
+            "aotPreparationNs/compileValidateArtifactIO": 16855437.5,
+            "aotPreparationNs/compiledArtifactLoad": 256981854.0
           },
           "wasmedge-interpreter": {
             "load": 40979.0,
@@ -16890,8 +16890,8 @@
             "processStartup": 16434458.5,
             "preparationPartsNs/validate": 6291.5,
             "preparationPartsNs/parse": 253859895.5,
-            "aotPreparationNs/compiledArtifactLoad": 253859895.5,
-            "aotPreparationNs/compileValidateArtifactIO": 17438979.0
+            "aotPreparationNs/compileValidateArtifactIO": 17438979.0,
+            "aotPreparationNs/compiledArtifactLoad": 253859895.5
           },
           "wasmedge-interpreter": {
             "load": 39270.5,
@@ -17465,8 +17465,8 @@
             "processStartup": 16814917.0,
             "preparationPartsNs/validate": 6417.0,
             "preparationPartsNs/parse": 256815812.5,
-            "aotPreparationNs/compiledArtifactLoad": 256815812.5,
-            "aotPreparationNs/compileValidateArtifactIO": 18661208.5
+            "aotPreparationNs/compileValidateArtifactIO": 18661208.5,
+            "aotPreparationNs/compiledArtifactLoad": 256815812.5
           },
           "wasmedge-interpreter": {
             "load": 44375.0,
@@ -19223,6 +19223,6 @@
   },
   "protocol": {
     "file": "bounded-pure-call-2026-11-20-protocol.tar.gz",
-    "sha256": "68010e778d3b4fc4f7a19a4208fa80a5efc497a41e1e998746054cf50a4e5897"
+    "sha256": "d79cd0a87b4dd19d5c92b5ef25449ce283dfd0c013800412c3776ef1b3c58916"
   }
 }

@@ -12,7 +12,7 @@ Cells show `absolute observation (signed speed Δ%)`. Positive speed change mean
 
 For time, speed Δ = `(reference / candidate - 1) * 100%`; for throughput, speed Δ = `(candidate / reference - 1) * 100%`. Thus 100 ns to 50 ns is **−50% time**, **+100% speed**. P3 CPU percentages mean work per CPU time, separate from wall-clock throughput. Instruction/allocation/byte counters show quantity Δ rather than speed. Source/SDK comparisons retain paired ratio intervals and report quantity Δ plus speed Δ where applicable; reciprocal interval endpoints are reversed.
 
-Competitive cell percentages are descriptive quotients of the displayed medians; paired block estimates below can differ. `†` on these cells means either the candidate or the named reference has unresolved A/A controls; it never establishes a qualified win. Incomparable preparation/phase boundaries keep separate absolute observations. This is a presentation update of the recorded event, not a measurement of later compiler changes.
+Competitive cell percentages are descriptive quotients of the displayed medians; paired block estimates below can differ. `†` on these cells means either the candidate or the named reference has unresolved A/A controls; it never establishes a qualified win. Incomparable preparation/phase boundaries keep separate absolute observations. All percentages derive from this frozen event; they do not measure any later source changes.
 
 ## Revisions, profiles and protocol
 
@@ -918,7 +918,7 @@ All entries below are **microseconds per process or invocation**, including unre
 
 ## Native controls (different contracts)
 
-Unchecked C kernels omit runtime safety/lifetime contracts; native Go implements HTTP replies without Component/WASI. These are overhead oracles, not equivalent competitors, and are never subtracted from runtime timings.
+Unchecked C kernels omit runtime safety/lifetime contracts; native Go implements HTTP replies without Component/WASI. These are overhead oracles, not equivalent competitors, and are never subtracted from runtime timings. The general-call C control runs twice as many iterations of one recurrence; unlike the optimized Wasm it does not represent the same two-update affine composition as one operation. Beating that control does not establish a win over the best possible native implementation.
 
 | Workload | Unchecked native C, ns/iteration |
 | --- | ---: |
@@ -991,5 +991,5 @@ Native Rust SHA’s small SDK timing regression does not reproduce in the diagno
 
 - [Machine-readable results, all controls and source/SDK contrasts](data/bounded-pure-call-2026-11-20.json).
 - [All 6,324 primary and 120 independent diagnostic process records](data/bounded-pure-call-2026-11-20-raw.jsonl.gz), SHA-256 `116a26da77bbf1838c8338e9506a136ff50da7fb9897ef235bea408fff132024`.
-- [Frozen plans, commands, hashes, analysis/export scripts, semantic checks and failure evidence](data/bounded-pure-call-2026-11-20-protocol.tar.gz), SHA-256 `68010e778d3b4fc4f7a19a4208fa80a5efc497a41e1e998746054cf50a4e5897`.
+- [Frozen plans, commands, hashes, analysis/export scripts, semantic checks and failure evidence](data/bounded-pure-call-2026-11-20-protocol.tar.gz), SHA-256 `d79cd0a87b4dd19d5c92b5ef25449ce283dfd0c013800412c3776ef1b3c58916`.
 - Per-request vectors unused by these metrics are projected to count/extrema/hash; no latency-tail claim. Public load records omit unrelated desktop command arguments. The separate diagnostic contains 120 process records and is never pooled into the 6,324 primary records.
