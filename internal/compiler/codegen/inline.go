@@ -9,7 +9,8 @@ import (
 // A leaf expression has no observable work except its returned scalar values.
 // Limit both the input and the expansion; shared expressions are emitted once.
 // Only bounded direct-call trees of these expressions can also be expanded.
-// Traps, references, memory and conditional/backward edges are ineligible.
+// Traps, references and memory are ineligible. Control flow must be decidable
+// from constants and terminate within the shared instruction-visit budget.
 type leafExpression struct {
 	op          uint32
 	bits        uint64
@@ -34,7 +35,7 @@ func CanExpandLeaf(f *slots.Function, callees map[uint32]*slots.Function) bool {
 type leafExpansion struct {
 	values        []*leafExpression
 	slots, frames uint32
-	bodies        []*slots.Function
+	visits        uint32
 }
 
 // Limit both call depth and total visited slot instructions, including repeated
@@ -60,7 +61,11 @@ func planLeafExpressions(f *slots.Function, inputs []slots.Slot, callees map[uin
 		values[i] = n
 	}
 	b := leafBuilder{callees: callees, active: map[*slots.Function]bool{}, remaining: 256}
-	return b.build(f, values, 0)
+	plan, ok := b.build(f, values, 0)
+	if ok {
+		plan.visits = uint32(256 - b.remaining)
+	}
+	return plan, ok
 }
 
 func (b *leafBuilder) build(f *slots.Function, inputs []*leafExpression, depth int) (*leafExpansion, bool) {
@@ -69,10 +74,9 @@ func (b *leafBuilder) build(f *slots.Function, inputs []*leafExpression, depth i
 		len(inputs) != len(f.Signature.Params) || len(f.Signature.Results) > 8 || len(f.Code) > b.remaining || checkFunction(f) != nil {
 		return nil, false
 	}
-	b.remaining -= len(f.Code)
 	b.active[f] = true
 	defer delete(b.active, f)
-	plan := &leafExpansion{slots: uint32(len(f.Slots)), frames: 1, bodies: []*slots.Function{f}}
+	plan := &leafExpansion{slots: uint32(len(f.Slots)), frames: 1}
 	values := make([]*leafExpression, len(f.Slots))
 	for i, typ := range f.Slots {
 		if typ != wasm.I32 && typ != wasm.I64 {
@@ -93,7 +97,12 @@ func (b *leafBuilder) build(f *slots.Function, inputs []*leafExpression, depth i
 		}
 		return values[s]
 	}
-	for pc, in := range f.Code {
+	for pc := 0; pc < len(f.Code); pc++ {
+		if b.remaining == 0 {
+			return nil, false
+		}
+		b.remaining--
+		in := f.Code[pc]
 		source := f.Sources[in.Source].Wasm
 		var n *leafExpression
 		switch op := in.Op; {
@@ -137,24 +146,32 @@ func (b *leafBuilder) build(f *slots.Function, inputs []*leafExpression, depth i
 			// chain contributes to the original logical stack requirement.
 			plan.slots = max(plan.slots, uint32(len(f.Slots))+child.slots)
 			plan.frames = max(plan.frames, 1+child.frames)
-			plan.bodies = append(plan.bodies, child.bodies...)
 			continue
 		case op >= 0x45 && op <= 0x5a || op >= 0x6a && op <= 0x8a && !scalarCanTrap(op):
 			n = &leafExpression{op: op, left: get(in.A), right: get(in.B)}
 			if n.left == nil || n.right == nil && op != 0x45 && op != 0x50 {
 				return nil, false
 			}
-		case op == slots.ControlBase+uint32(ir.Jump):
-			edge := f.Edges[in.Extra]
-			if edge.PC != uint32(pc+1) {
-				return nil, false
+			n = foldLeafExpression(n)
+		case op == slots.ControlBase+uint32(ir.Jump) || op == slots.ControlBase+uint32(ir.If):
+			index := in.Extra
+			if op == slots.ControlBase+uint32(ir.If) {
+				condition := get(in.A)
+				if condition == nil || condition.op != 0x41 {
+					return nil, false
+				}
+				if uint32(condition.bits) == 0 {
+					index++
+				}
 			}
+			edge := f.Edges[index]
 			for _, move := range f.Moves[edge.Start : edge.Start+edge.Count] {
 				if get(move.Src) == nil {
 					return nil, false
 				}
 				values[move.Dst] = get(move.Src)
 			}
+			pc = int(edge.PC) - 1
 			continue
 		case op == slots.ControlBase+uint32(ir.Return):
 			if int(in.Count) != len(f.Signature.Results) {

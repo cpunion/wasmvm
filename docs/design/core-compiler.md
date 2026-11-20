@@ -96,6 +96,15 @@ probe and semantic CI. Source comparisons apply identical flags to base/head.
 Default `-Os` diagnostics retain observed regressions; an inlined helper or a
 release-profile improvement does not establish a default-build performance win.
 
+Pure integer call expansion interprets constant-decidable control flow within
+the shared 256-instruction visit budget, including repeated loop bodies and
+nested calls. Unknown branches, recursion, effects, possible traps and budget
+exhaustion retain ordinary calls. Wrapping affine expressions compose without
+mutating shared nodes; constant-register scoring uses the final expression DAG
+so synthesized literals are prepared at entry. Expanded entries keep original
+logical frame/slot quotas, caller cold continuations and boundary polling.
+Precise-fuel execution retains the original metered body.
+
 Start with a simple verified lowering. Measure register/slot dispatch against a predecoded stack-dispatch prototype using identical complete semantics. The default design is slot bytecode; change it only with measured evidence covering both compilers, dispatch cost, bytecode size, compile latency, and representative workloads. Do not maintain two permanent production interpreters merely to preserve the experiment.
 
 Optimize demonstrated bottlenecks with direct local/constant forms, copy elimination, block layout, and bounded superinstructions. Fusion must preserve fuel, trap locations, memory effects and safepoints. Pre-resolve internal direct calls; indirect calls retain null, bounds, signature, ownership, and instance checks. Poll at calls, backedges and a maximum straight-line work interval; chunk bulk operations. An unmetered mode still observes cancellation and resource limits. There is no unchecked performance mode for untrusted guests.
