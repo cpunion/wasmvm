@@ -30,12 +30,33 @@ func (e *functionEmitter) constantPriorities(config Config, frequencies []uint64
 		}
 	}
 	work := uint64(len(e.f.Code)) * 8
+	score := func(plan *leafExpansion, weight uint64) bool {
+		if uint64(plan.visits) > work {
+			return false
+		}
+		work -= uint64(plan.visits)
+		// Expansion can synthesize literals absent from the original bodies.
+		// Charge all original visits, including nested calls and repeated loop
+		// bodies. Each visit constructs only a bounded number of DAG nodes.
+		expressions := append([]*leafExpression(nil), plan.values...)
+		seen := map[*leafExpression]bool{}
+		for len(expressions) != 0 {
+			n := expressions[len(expressions)-1]
+			expressions = expressions[:len(expressions)-1]
+			if n == nil || seen[n] {
+				continue
+			}
+			seen[n] = true
+			add(n.op, n.bits, weight)
+			expressions = append(expressions, n.left, n.right)
+		}
+		return true
+	}
 	for pc, in := range e.f.Code {
-		var callees []*slots.Function
 		if in.Op == 0x10 {
 			callee := config.DirectCallees[e.f.Sources[in.Source].Wasm.A]
-			if plan, ok := planLeafExpressions(callee, e.f.Args[in.Extra:in.Extra+in.Count], config.DirectCallees); ok {
-				callees = append(callees, plan.bodies...)
+			if plan, ok := planLeafExpressions(callee, e.f.Args[in.Extra:in.Extra+in.Count], config.DirectCallees); ok && !score(plan, frequency(frequencies, pc)) {
+				return weights
 			}
 		} else if in.Op == 0x11 {
 			targets := config.IndirectCallees[e.f.Sources[in.Source].Wasm.A]
@@ -48,18 +69,9 @@ func (e *functionEmitter) constantPriorities(config Config, frequencies []uint64
 				for i := range inputs {
 					inputs[i] = slots.Slot(i)
 				}
-				if plan, ok := planLeafExpressions(callee, inputs, config.DirectCallees); ok {
-					callees = append(callees, plan.bodies...)
+				if plan, ok := planLeafExpressions(callee, inputs, config.DirectCallees); ok && !score(plan, frequency(frequencies, pc)) {
+					return weights
 				}
-			}
-		}
-		for _, callee := range callees {
-			if uint64(len(callee.Code)) > work {
-				return weights
-			}
-			work -= uint64(len(callee.Code))
-			for _, literal := range callee.Code {
-				add(literal.Op, callee.Sources[literal.Source].Wasm.Bits, frequency(frequencies, pc))
 			}
 		}
 	}

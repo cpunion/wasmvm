@@ -57,48 +57,70 @@ func countedLeafFixture(wide bool, count uint64) *slots.Function {
 func TestBoundedConstantControlPreservesColdCallerValues(t *testing.T) {
 	for _, wide := range []bool{false, true} {
 		for _, count := range []uint64{0, 1, 2, 3, 7, 16} {
-			callee := countedLeafFixture(wide, count)
-			for _, destination := range []slots.Slot{0, 2} {
-				caller := leafCaller(callee, destination, 5)
-				config := Config{Unmetered: true, DirectCallees: map[uint32]*slots.Function{7: callee}}
-				for _, arch := range []string{"arm64", "amd64"} {
-					c, err := CompileFunctionWithConfig(arch, caller, DefaultLimits(), config)
-					if err != nil || c.InlinedCalls != 1 || c.InlineFrames != 1 || c.InlineSlots != uint32(len(callee.Slots)) {
-						t.Fatal(arch, wide, count, c, err)
+			for _, copies := range []bool{false, true} {
+				callee := countedLeafFixture(wide, count)
+				if copies {
+					// Use the lowered sequential plan for a parallel swap on the
+					// backedge. Each expression must retain its previous value.
+					callee.Slots = append(callee.Slots, callee.Slots[0])
+					callee.Moves = []slots.Move{{Dst: 5, Src: 0}, {Dst: 0, Src: 1}, {Dst: 1, Src: 5}}
+					callee.Edges[0].Count = 3
+					// Exercise both conditional polarities and edge selections.
+					callee.Code[7].Op += 6 // unsigned >= instead of unsigned <
+					callee.Sources[7].Wasm.Op = callee.Code[7].Op
+					callee.Edges[0], callee.Edges[1] = callee.Edges[1], callee.Edges[0]
+				}
+				for _, destination := range []slots.Slot{0, 2} {
+					caller := leafCaller(callee, destination, 5)
+					config := Config{Unmetered: true, DirectCallees: map[uint32]*slots.Function{7: callee}}
+					for _, arch := range []string{"arm64", "amd64"} {
+						c, err := CompileFunctionWithConfig(arch, caller, DefaultLimits(), config)
+						if err != nil || c.InlinedCalls != 1 || c.InlineFrames != 1 || c.InlineSlots != uint32(len(callee.Slots)) {
+							t.Fatal(arch, wide, count, c, err)
+						}
+						metered := config
+						metered.Unmetered = false
+						c, err = CompileFunctionWithConfig(arch, caller, DefaultLimits(), metered)
+						if err != nil || c.InlinedCalls != 0 || c.Calls != 1 {
+							t.Fatal("precise fuel must retain the call", arch, c, err)
+						}
 					}
-				}
-				if !native.Available {
-					continue
-				}
-				_, lease, ctx := configuredContext(t, caller, config)
-				for _, seed := range []uint64{0, 1, 0x80000001, 0xfedcba9876543210, ^uint64(0)} {
-					for pc := range caller.Code {
-						initial := []value.Value{{Lo: seed}, {Lo: seed >> 1}, {Lo: 17}, {Lo: 19}, {Lo: 23}}
-						for i := range initial {
-							if !wide {
-								initial[i].Lo = uint64(uint32(initial[i].Lo))
-							}
-							writeSlot(t, ctx, 16, slots.Slot(i), initial[i])
-						}
-						if err := ctx.SetState(native.State{Used: 16, Depth: 1, Continuation: uint64(pc)}); err != nil {
-							t.Fatal(err)
-						}
-						if exit, err := ctx.Enter(lease, 0); err != nil || exit != native.Return {
-							t.Fatal(wide, count, pc, exit, err)
-						}
-						if pc < len(caller.Code)-1 {
-							x := initial[0].Lo
-							for i := uint64(0); i < max(count, 1); i++ {
-								x = x*1664525 + 1013904223
+					if !native.Available {
+						continue
+					}
+					_, lease, ctx := configuredContext(t, caller, config)
+					for _, seed := range []uint64{0, 1, 0x80000001, 0xfedcba9876543210, ^uint64(0)} {
+						for pc := range caller.Code {
+							initial := []value.Value{{Lo: seed}, {Lo: seed >> 1}, {Lo: 17}, {Lo: 19}, {Lo: 23}}
+							for i := range initial {
 								if !wide {
-									x = uint64(uint32(x))
+									initial[i].Lo = uint64(uint32(initial[i].Lo))
 								}
+								writeSlot(t, ctx, 16, slots.Slot(i), initial[i])
 							}
-							initial[destination] = value.Value{Lo: x}
-						}
-						for i, want := range initial {
-							if got := readSlot(t, ctx, 16, slots.Slot(i)); got != want {
-								t.Fatal(wide, count, seed, pc, i, got, want)
+							if err := ctx.SetState(native.State{Used: 16, Depth: 1, Continuation: uint64(pc)}); err != nil {
+								t.Fatal(err)
+							}
+							if exit, err := ctx.Enter(lease, 0); err != nil || exit != native.Return {
+								t.Fatal(wide, count, pc, exit, err)
+							}
+							if pc < len(caller.Code)-1 {
+								x, y := initial[0].Lo, initial[1].Lo
+								for i := uint64(0); i < max(count, 1); i++ {
+									x = x*1664525 + 1013904223
+									if !wide {
+										x = uint64(uint32(x))
+									}
+									if copies && i+1 < max(count, 1) {
+										x, y = y, x
+									}
+								}
+								initial[destination] = value.Value{Lo: x}
+							}
+							for i, want := range initial {
+								if got := readSlot(t, ctx, 16, slots.Slot(i)); got != want {
+									t.Fatal(wide, count, seed, pc, i, got, want)
+								}
 							}
 						}
 					}
@@ -126,5 +148,20 @@ func TestConstantControlRejectsUnknownOrUnboundedPaths(t *testing.T) {
 		if CanExpandLeaf(f, nil) {
 			t.Fatal("expanded ineligible control flow", kind)
 		}
+	}
+}
+
+func TestBoundedExpansionCachesSynthesizedLiterals(t *testing.T) {
+	callee := countedLeafFixture(false, 2)
+	caller := leafCaller(callee, 0, 5)
+	e := functionEmitter{f: caller, a: &assembler{arch: "arm64"}, unmetered: true}
+	weights := e.constantPriorities(Config{DirectCallees: map[uint32]*slots.Function{7: callee}}, nil)
+	for _, bits := range []uint64{389569705, 1196435762} {
+		if weights[bits] == 0 {
+			t.Fatal("missing folded literal", bits, weights)
+		}
+	}
+	if weights[1664525] != 0 || weights[1013904223] != 0 {
+		t.Fatal("reserved registers for eliminated literals", weights)
 	}
 }

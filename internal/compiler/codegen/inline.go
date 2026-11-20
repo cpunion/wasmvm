@@ -35,7 +35,7 @@ func CanExpandLeaf(f *slots.Function, callees map[uint32]*slots.Function) bool {
 type leafExpansion struct {
 	values        []*leafExpression
 	slots, frames uint32
-	bodies        []*slots.Function
+	visits        uint32
 }
 
 // Limit both call depth and total visited slot instructions, including repeated
@@ -61,7 +61,11 @@ func planLeafExpressions(f *slots.Function, inputs []slots.Slot, callees map[uin
 		values[i] = n
 	}
 	b := leafBuilder{callees: callees, active: map[*slots.Function]bool{}, remaining: 256}
-	return b.build(f, values, 0)
+	plan, ok := b.build(f, values, 0)
+	if ok {
+		plan.visits = uint32(256 - b.remaining)
+	}
+	return plan, ok
 }
 
 func (b *leafBuilder) build(f *slots.Function, inputs []*leafExpression, depth int) (*leafExpansion, bool) {
@@ -72,7 +76,7 @@ func (b *leafBuilder) build(f *slots.Function, inputs []*leafExpression, depth i
 	}
 	b.active[f] = true
 	defer delete(b.active, f)
-	plan := &leafExpansion{slots: uint32(len(f.Slots)), frames: 1, bodies: []*slots.Function{f}}
+	plan := &leafExpansion{slots: uint32(len(f.Slots)), frames: 1}
 	values := make([]*leafExpression, len(f.Slots))
 	for i, typ := range f.Slots {
 		if typ != wasm.I32 && typ != wasm.I64 {
@@ -142,7 +146,6 @@ func (b *leafBuilder) build(f *slots.Function, inputs []*leafExpression, depth i
 			// chain contributes to the original logical stack requirement.
 			plan.slots = max(plan.slots, uint32(len(f.Slots))+child.slots)
 			plan.frames = max(plan.frames, 1+child.frames)
-			plan.bodies = append(plan.bodies, child.bodies...)
 			continue
 		case op >= 0x45 && op <= 0x5a || op >= 0x6a && op <= 0x8a && !scalarCanTrap(op):
 			n = &leafExpression{op: op, left: get(in.A), right: get(in.B)}
