@@ -1,9 +1,19 @@
 package component
 
 import (
+	"github.com/cpunion/wasmvm/internal/component/model"
+	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
+
+func (n *namespace) addScalarLeaf(c *vm.Caller, signature vm.FunctionType, run func(uint64, uint64) (uint64, error)) error {
+	fn, err := c.NewScalarLeafFunction(signature, state.NewScalarLeaf(run))
+	if err == nil {
+		n.add(item{sort: model.CoreFunctionSort, core: fn})
+	}
+	return err
+}
 
 // Both edges borrow scalar carriers and share one builtin implementation.
 // Parked results use the existing owned continuation protocol.

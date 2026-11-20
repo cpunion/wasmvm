@@ -5,7 +5,6 @@ import (
 
 	"github.com/cpunion/wasmvm/internal/component/model"
 	"github.com/cpunion/wasmvm/internal/component/validate"
-	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -170,14 +169,9 @@ func (in *Instance) waitableBuiltin(caller *vm.Caller, n *namespace, plan *valid
 	case 6:
 		return in.subtaskCancel(caller, n, plan)
 	case 0x1f, 0x22, 0x23, 0x0d:
-		leaf := state.NewScalarLeaf(func(a, b uint64) (uint64, error) {
+		return n.addScalarLeaf(caller, plan.Signature, func(a, b uint64) (uint64, error) {
 			return in.waitableLeaf(n, op, uint32(a), uint32(b))
 		})
-		fn, err := caller.NewScalarLeafFunction(plan.Signature, leaf)
-		if err == nil {
-			n.add(item{sort: model.CoreFunctionSort, core: fn})
-		}
-		return err
 	}
 	fn, err := caller.NewBorrowedScalarFunction(plan.Signature, func(c *vm.Caller, words []uint64) error {
 		if n.failed || n.blocked {
