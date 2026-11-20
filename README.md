@@ -279,6 +279,15 @@ compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
 
+The [bounded pure-call comparison](docs/research/performance-bounded-pure-call-2026-11-20.md)
+reports the fresh 33-case and P3 matrix for PR #202. General native calls fall to
+**1.044 ns/iteration** for both Go and LLGo: paired source speed gains are
+**270.44%/278.46%**, and both beat Wasmtime/Wasmer with resolving controls.
+WasmEdge AOT observes **1.037 ns** with unresolved controls. The separate latest
+LLGo SDK comparison finds interpreter regressions, including SIMD lane time
+**+15.72%**, retained with instruction/CPI and assembly evidence. SHA, field
+access, shared memory and complete P3 performance acceptance remain open.
+
 The [complete PR #200 comparison](docs/research/performance-pr200-complete-comparison-2026-11-17.md)
 reports all 33 core workloads and two P3 payloads with separate columns for
 wasmvm Go, wasmvm LLGo, wazero, Wasmtime, Wasmer and WasmEdge. It includes
