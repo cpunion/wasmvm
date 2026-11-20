@@ -6,8 +6,9 @@ import "github.com/cpunion/wasmvm/internal/compiler/slots"
 // Both ordinary exits and cold polls use this contract before publishing the
 // complete frame. Original PC entries still execute the original operations.
 type frameSnapshot struct {
-	copies    []loopSlotCopy
-	predicate *loopPredicate
+	copies        []loopSlotCopy
+	predicate     *loopPredicate
+	savedCallRegs bool
 }
 
 type loopPredicate struct {

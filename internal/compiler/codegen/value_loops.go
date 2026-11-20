@@ -9,9 +9,10 @@ import (
 )
 
 type loopValuePlans struct {
-	first int
-	plans []*registerPlan
-	next  []int
+	first        int
+	plans        []*registerPlan
+	next         []int
+	usesCallRegs bool
 }
 
 func (p *loopValuePlans) at(pc int) *registerPlan { return p.plans[pc-p.first] }
@@ -92,7 +93,9 @@ func (e *functionEmitter) loopValuePlans(start int, r memoryRegion, exit *regist
 	}
 	sortValueIntervals(order)
 	integers := scanBank{}
-	for _, reg := range append(e.integerRegisterPool(), e.loopAuxiliaryRegisters(start, r)...) {
+	pool := append(e.integerRegisterPool(), e.loopAuxiliaryRegisters(start, r)...)
+	pool = append(pool, e.loopCallRegisters(start, r)...)
+	for _, reg := range pool {
 		if !integerUsed[reg] {
 			integers.pool = append(integers.pool, reg)
 		}
@@ -133,6 +136,7 @@ func (e *functionEmitter) loopValuePlans(start int, r memoryRegion, exit *regist
 			if remaining < 0 {
 				return nil
 			}
+			result.usesCallRegs = result.usesCallRegs || e.usesLoopCallRegisters(plan)
 		}
 		result.plans[pc-start], previous = plan, plan
 	}

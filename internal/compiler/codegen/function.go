@@ -408,8 +408,12 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 			e.frameAliases = nil
 			e.materializeFrameSnapshot(edge.snapshot, true, !edge.yes)
 			restoreMemory := edge.restoreMemory || e.loopBorrowedMemoryLength()
-			if edge.registers != nil {
+			savedCallRegs := edge.snapshot != nil && edge.snapshot.savedCallRegs
+			if edge.registers != nil || savedCallRegs {
 				e.transitionRegisters(edge.registers)
+			}
+			if savedCallRegs {
+				e.restoreLoopCallRegisters()
 			}
 			if restoreMemory {
 				e.prepareMemory()

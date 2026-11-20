@@ -235,6 +235,10 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 	out.NativeLoops++
 	previous := e.currentRegisterPlan()
 	plan := e.loopRegisterPlan(start, r)
+	savedCallRegs := e.usesLoopCallRegisters(plan)
+	if savedCallRegs {
+		e.saveLoopCallRegisters()
+	}
 	if plan != nil {
 		e.transitionRegisters(plan)
 		out.RegisterRegions++
@@ -268,6 +272,10 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 	restoreMemory = restoreMemory || e.loopBorrowedMemoryLength()
 	if plans != nil {
 		warm.values = plans
+		if plans.usesCallRegs && !savedCallRegs {
+			e.saveLoopCallRegisters()
+			savedCallRegs = true
+		}
 		e.transitionRegisters(plans.at(start))
 		out.ValueLoops++
 		for _, p := range plans.plans {
@@ -336,8 +344,8 @@ func (e *functionEmitter) emitNativeLoop(start int, r memoryRegion, pcs []int, o
 		e.loopBackedges = map[int]loopBackedge{}
 	}
 	edge := loopBackedge{header: header, yes: loop.yes, always: loop.always, flags: loop.flags, exit: loop.exit, restoreMemory: restoreMemory}
-	if predicate != nil || warm.copies != nil {
-		edge.snapshot = &frameSnapshot{predicate: predicate}
+	if predicate != nil || warm.copies != nil || savedCallRegs {
+		edge.snapshot = &frameSnapshot{predicate: predicate, savedCallRegs: savedCallRegs}
 	}
 	if warm.copies != nil {
 		edge.snapshot.copies = warm.copies.final
