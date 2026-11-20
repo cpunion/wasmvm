@@ -553,10 +553,9 @@ saved address is resolved before publication.
 
 Unmetered linked modules reserve three callee-saved integer registers for logical
 arena usage, call depth and private call top (amd64 r15/r14/r13, arm64 x28/x27/x26).
-Every body in a linked
-policy uses the same convention, and all integer allocation/cache/leaf plans
-exclude those registers. Ordinary entries seed usage/depth before header
-validation and load the top from the trusted view afterwards; private entries
+Every body in a linked policy uses the same convention, and ordinary integer
+allocation, cache and leaf plans exclude those registers. Ordinary entries seed
+usage and depth before header validation and load the top from the trusted view afterwards; private entries
 inherit them. A top sentinel set before header checks prevents malformed entries
 from publishing an uninitialized word or dereferencing an invalid view. Every
 native exit publishes the initialized state before
@@ -568,8 +567,15 @@ The caller checks the cached state against metadata, logical and physical
 limits before deriving the child from its current frame. Return restores the
 parent usage/depth only after complete result copying succeeds: cancellation
 inside a large copy must still publish the callee's live frame chain. Public
-record fields, full-width values, guest roots and hardware stack usage are
-unchanged; these registers never contain guest values or native pointers.
+record fields, full-width values and guest roots retain the same representation.
+
+A guarded arm64 memory loop can reuse the call registers when its entry guards
+cover every memory access and its body cannot call, trap or poll before the
+backedge. It reserves 32 bytes for the three words, preserving stack alignment,
+after all guards pass. A normal exit restores them after transitioning out of
+the loop's allocation plan. A backedge poll first materializes the canonical
+guest slots, then restores and publishes the call state. Independent resume
+entries and guard fallbacks execute without the reservation.
 
 Direct and indirect private calls initialize only the non-parameter suffix of a checked
 child frame. Every parameter's complete 128-bit value is copied before the child

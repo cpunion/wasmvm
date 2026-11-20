@@ -107,6 +107,7 @@ func (e *functionEmitter) loopRegisterPlan(start int, r memoryRegion) *registerP
 		return nil
 	}
 	extra := e.loopAuxiliaryRegisters(start, r)
+	extra = append(extra, e.loopCallRegisters(start, r)...)
 	var proof *memoryLoop
 	if r.loop != nil {
 		proof = r.loop.memory

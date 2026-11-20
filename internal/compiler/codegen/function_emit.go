@@ -532,6 +532,11 @@ func (e *functionEmitter) emitPollExits() {
 			e.a.word(0xd50339bf) // dmb ishld: acquire after the atomic load.
 		}
 		e.materializeFrameSnapshot(exit.snapshot, false, false)
+		if exit.snapshot != nil && exit.snapshot.savedCallRegs {
+			e.spillRegisters()
+			e.restoreLoopCallRegisters()
+			e.useRegisterPlan(nil)
+		}
 		e.leave(nativeabi.Poll, 0, uint64(exit.pc))
 	}
 	e.useRegisterPlan(baseline)
