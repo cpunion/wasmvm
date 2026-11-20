@@ -19,7 +19,7 @@ execution never silently switches to one of them.
 The source APIs and proposal snapshots are experimental. Performance and
 production-release acceptance remain open; see [current measurements](#measured-performance)
 and the [release contract](docs/release-readiness.md). Supported builds pin
-Go1.27.3, LLGo `5860fb6f`, LLVM22.1.8 and the LLGo `-O3 -lto=full` profile.
+Go1.27.3, LLGo `3c6b33ec`, LLVM22.1.8 and the LLGo `-O3 -lto=full` profile.
 
 ## Project status
 
@@ -278,6 +278,15 @@ These are dated advisory events with exact source/toolchain identities. Hosts,
 compiler versions, lifecycle phases and sampling cohorts remain separate.
 **Performance parity is not achieved.** Full process arrays, unresolved controls,
 adverse results and unsupported references remain in the linked records.
+
+The [invariant struct loop comparison](docs/research/performance-invariant-struct-loops-2026-11-20.md)
+records 33 core workloads and two complete P3 payloads on macOS arm64.
+Sustained native field access reaches **1.113 ns (Go)** and **1.152 ns (LLGo)**,
+with paired speed gains of **24.68%** and **22.45%** over PR #202. Wasmtime
+observes **1.087 ns** with unresolved timing controls. Separate diagnostics
+trace the Go interpreter slowdowns to sensitivity to the linked layout.
+The comparison includes 5,508 primary process records, native controls, and
+preparation, first-call and warm execution timings.
 
 The [bounded pure-call comparison](docs/research/performance-bounded-pure-call-2026-11-20.md)
 reports the fresh 33-case and P3 matrix for PR #202. General native calls fall to
