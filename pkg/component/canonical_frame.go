@@ -6,7 +6,7 @@ import (
 	"github.com/cpunion/wasmvm/pkg/vm"
 )
 
-// A frame is private scratch for one synchronous canonical lower. Ordinary host
+// A frame is private scratch for one synchronous canonical call. Ordinary host
 // callbacks receive independent snapshots; explicitly annotated callbacks borrow
 // these arguments only until return. Capabilities remain fresh. Suspended calls
 // use their existing task-owned state instead of these frames.
@@ -25,7 +25,7 @@ type canonicalFrame struct {
 	next    *canonicalFrame
 }
 
-func (in *Instance) acquireCanonicalFrame(c *vm.Caller, n *namespace, plan *validate.CanonicalFunction) *canonicalFrame {
+func (in *Instance) acquireFrame() *canonicalFrame {
 	frame := in.canonicalFrames
 	if frame == nil {
 		frame = &canonicalFrame{}
@@ -33,6 +33,18 @@ func (in *Instance) acquireCanonicalFrame(c *vm.Caller, n *namespace, plan *vali
 		in.canonicalFrames = frame.next
 		frame.next = nil
 	}
+	return frame
+}
+
+func (frame *canonicalFrame) hostStorage() *resourceHostCall {
+	if frame.host == nil {
+		frame.host = &resourceHostCall{}
+	}
+	return frame.host
+}
+
+func (in *Instance) acquireCanonicalFrame(c *vm.Caller, n *namespace, plan *validate.CanonicalFunction) *canonicalFrame {
+	frame := in.acquireFrame()
 	frame.caller, frame.n, frame.plan = c, n, plan
 	if n != nil && (len(n.resources) != 0 || n.handles != nil) {
 		// Release already zeroed the state. Rebind only the active owners.

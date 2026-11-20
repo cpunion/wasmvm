@@ -36,7 +36,9 @@ func (in *Instance) readReadySource(core *vm.Caller, r, w *asyncEnd, b *guestBuf
 	scheduler.live++
 	defer func() { scheduler.live-- }()
 	f := source.readFunction(batch)
-	h, err := f.hostCall(core, nil)
+	frame := in.acquireFrame()
+	defer in.releaseCanonicalFrame(frame)
+	h, err := f.hostParameters(core, nil, false, frame.hostStorage())
 	if err != nil {
 		return true, err
 	}
@@ -89,12 +91,12 @@ func (in *Instance) readReadySource(core *vm.Caller, r, w *asyncEnd, b *guestBuf
 	if meta.Values != nil && meta.Bytes != "" || count > uint64(b.remain()) || meta.Count != 0 && uint64(meta.Count) != count || unit && (len(meta.Values) != 0 || meta.Bytes != "") || r.typ.Kind == model.Future && count != 1 || count == 0 && !meta.Closed && b.remain() != 0 {
 		return true, vm.ErrType
 	}
-	value, err := h.accept(&encoded)
-	if err != nil {
+	var value Value
+	if err = h.acceptInto(&encoded, &value); err != nil {
 		return true, err
 	}
 	if !unit && count != 0 {
-		output, err = b.storeCodec(core, *value, &outputState)
+		output, err = b.storeCodec(core, value, &outputState)
 		if err != nil {
 			if !r.rejectCopy(err) {
 				return true, err

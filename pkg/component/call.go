@@ -183,14 +183,11 @@ func (f *Function) callWithParameters(core *vm.Caller, args []Value, borrowed bo
 	if f.scope != nil && (f.scope.failed || f.scope.blocked) {
 		return nil, wasm.ErrTrap
 	}
-	var storage *resourceHostCall
-	if frame != nil {
-		if frame.host == nil {
-			frame.host = &resourceHostCall{}
-		}
-		storage = frame.host
+	if frame == nil {
+		frame = f.instance.acquireFrame()
+		defer f.instance.releaseCanonicalFrame(frame)
 	}
-	h, err := f.hostParameters(core, args, borrowed, storage)
+	h, err := f.hostParameters(core, args, borrowed, frame.hostStorage())
 	if err != nil {
 		return nil, err
 	}
