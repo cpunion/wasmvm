@@ -183,6 +183,7 @@ func (f *Function) callWithParameters(core *vm.Caller, args []Value, borrowed bo
 	if f.scope != nil && (f.scope.failed || f.scope.blocked) {
 		return nil, wasm.ErrTrap
 	}
+	borrowResult := frame != nil
 	if frame == nil {
 		frame = f.instance.acquireFrame()
 		defer f.instance.releaseCanonicalFrame(frame)
@@ -197,7 +198,17 @@ func (f *Function) callWithParameters(core *vm.Caller, args []Value, borrowed bo
 	if err != nil {
 		return nil, err
 	}
-	result, err = h.accept(result)
+	if borrowResult {
+		err = h.acceptInto(result, &frame.hostValue)
+		if err != nil {
+			return nil, err
+		}
+		if result != nil {
+			result = &frame.hostValue
+		}
+	} else {
+		result, err = h.accept(result)
+	}
 	complete = err == nil
 	return result, err
 }

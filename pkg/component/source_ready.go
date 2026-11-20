@@ -91,12 +91,11 @@ func (in *Instance) readReadySource(core *vm.Caller, r, w *asyncEnd, b *guestBuf
 	if meta.Values != nil && meta.Bytes != "" || count > uint64(b.remain()) || meta.Count != 0 && uint64(meta.Count) != count || unit && (len(meta.Values) != 0 || meta.Bytes != "") || r.typ.Kind == model.Future && count != 1 || count == 0 && !meta.Closed && b.remain() != 0 {
 		return true, vm.ErrType
 	}
-	var value Value
-	if err = h.acceptInto(&encoded, &value); err != nil {
+	if err = h.acceptInto(&encoded, &frame.hostValue); err != nil {
 		return true, err
 	}
 	if !unit && count != 0 {
-		output, err = b.storeCodec(core, value, &outputState)
+		output, err = b.storeCodec(core, frame.hostValue, &outputState)
 		if err != nil {
 			if !r.rejectCopy(err) {
 				return true, err

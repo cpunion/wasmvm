@@ -17,12 +17,13 @@ type canonicalFrame struct {
 	memory memory
 	// Only the synchronous private transaction uses this lazy storage. Public
 	// Callers and parameter/result snapshots never point into this object.
-	host    *resourceHostCall
-	caller  *vm.Caller
-	n       *namespace
-	plan    *validate.CanonicalFunction
-	realloc func(uint64, uint64, uint64, uint64) (uint64, error)
-	next    *canonicalFrame
+	host      *resourceHostCall
+	hostValue Value
+	caller    *vm.Caller
+	n         *namespace
+	plan      *validate.CanonicalFunction
+	realloc   func(uint64, uint64, uint64, uint64) (uint64, error)
+	next      *canonicalFrame
 }
 
 func (in *Instance) acquireFrame() *canonicalFrame {
@@ -73,6 +74,7 @@ func (in *Instance) releaseCanonicalFrame(frame *canonicalFrame) {
 		frame.args = nil
 	}
 	frame.state = resourceCodecState{}
+	frame.hostValue = Value{}
 	frame.memory = memory{}
 	frame.caller, frame.n, frame.plan = nil, nil, nil
 	frame.next = in.canonicalFrames

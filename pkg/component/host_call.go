@@ -136,12 +136,10 @@ func (h *hostCall) acceptInto(result, accepted *Value) error {
 	if err != nil {
 		return err
 	}
-	if h.codec.Resources != nil {
-		if err = h.codec.AcceptResult(h.function.typ.Result, &v); err != nil {
-			return err
-		}
-	}
 	*accepted = v
+	if h.codec.Resources != nil {
+		return h.codec.AcceptResult(h.function.typ.Result, accepted)
+	}
 	return nil
 }
 func (h *hostCall) finish(core *vm.Caller, complete bool, err error) error {
