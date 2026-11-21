@@ -464,13 +464,13 @@ func (in *Instance) externalProgressPossible() bool {
 }
 
 func (in *Instance) awaitTasksContext(c *vm.Caller, ctx context.Context, ready func() bool) error {
-	return in.awaitTasksContexts(c, ctx, nil, ready)
+	return in.awaitTasksContexts(c, ctx, nil, ready, nil)
 }
 
 // Preserve the callback and optional operation cancellations independently.
 // Context channels are needed only while actually blocking; ready transfers
 // do not allocate a child context or register propagation callbacks.
-func (in *Instance) awaitTasksContexts(c *vm.Caller, ctx, parent context.Context, ready func() bool) error {
+func (in *Instance) awaitTasksContexts(c *vm.Caller, ctx, parent context.Context, ready func() bool, signal <-chan struct{}) error {
 	for !ready() {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -489,9 +489,9 @@ func (in *Instance) awaitTasksContexts(c *vm.Caller, ctx, parent context.Context
 		}
 		if !progress {
 			if ready() {
-				continue
+				return nil
 			}
-			if !in.externalProgressPossible() {
+			if signal == nil && !in.externalProgressPossible() {
 				return fmt.Errorf("%w: component deadlock: no runnable task or external producer", wasm.ErrTrap)
 			}
 			var parentDone <-chan struct{}
@@ -505,6 +505,8 @@ func (in *Instance) awaitTasksContexts(c *vm.Caller, ctx, parent context.Context
 				return ctx.Err()
 			case <-c.Context().Done():
 				return c.Context().Err()
+			case <-signal:
+				return nil
 			case <-in.scheduler().wake:
 			}
 		}
