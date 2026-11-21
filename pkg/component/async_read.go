@@ -75,6 +75,47 @@ func (c *Caller) ReadAsyncContext(ctx context.Context, ref *Resource, limit uint
 	return c.readAsyncContext(ctx, ref, limit, nil)
 }
 
+// WaitSignal waits for an external readiness signal while driving the current
+// Store's component tasks. The producer must signal or cancel ctx. A nil
+// context uses the callback context. Prompt callbacks cannot wait.
+func (c *Caller) WaitSignal(ctx context.Context, signal <-chan struct{}) error {
+	if signal == nil {
+		return vm.ErrType
+	}
+	if err := c.enter(); err != nil {
+		return err
+	}
+	defer c.mu.Unlock()
+	if c.prompt {
+		return vm.ErrType
+	}
+	parent := c.Context()
+	if ctx == nil {
+		ctx, parent = parent, nil
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	err := c.instance.awaitTasksContexts(c.core, ctx, parent, func() bool {
+		select {
+		case <-signal:
+			return true
+		default:
+			return false
+		}
+	}, signal)
+	if err == nil {
+		err = ctx.Err()
+	}
+	if err == nil && parent != nil {
+		err = parent.Err()
+	}
+	if err == nil {
+		err = c.core.Context().Err()
+	}
+	return err
+}
+
 // ReadAsyncInto uses the callback's Store lease to read stream<u8> into storage
 // supplied by destination. A nil context uses the callback context. It shares
 // the size, ownership and cancellation contracts of Instance.ReadAsyncInto.
@@ -173,7 +214,7 @@ func (in *Instance) readAsyncContexts(c *vm.Caller, ref *Resource, limit uint32,
 	if err := e.copy(c, b); err != nil {
 		return result, b, err
 	}
-	if err := in.awaitTasksContexts(c, ctx, parent, func() bool { return e.waitable.pending }); err != nil {
+	if err := in.awaitTasksContexts(c, ctx, parent, func() bool { return e.waitable.pending }, nil); err != nil {
 		return result, b, err
 	}
 	event, err := e.waitable.poll(c)

@@ -16,6 +16,44 @@ func voidCompletion() *HostCompletion {
 	p.Resolve(func(*Caller) (*Value, error) { return nil, nil })
 	return p
 }
+
+func TestWaitSignalRunsScheduledProducer(t *testing.T) {
+	in := asyncInstance(t, "interpreter", "host-result-future", Imports{})
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	ready := make(chan struct{}, 1)
+	_, err := in.WithCaller(ctx, CallOptions{}, func(c *Caller) error {
+		if err := c.WaitSignal(nil, nil); !errors.Is(err, vm.ErrType) {
+			t.Fatal("nil signal", err)
+		}
+		if err := c.Schedule(AsyncWork{Start: func(*Caller, []*Resource) (*HostCompletion, error) {
+			ready <- struct{}{}
+			return voidCompletion(), nil
+		}}); err != nil {
+			return err
+		}
+		if err := c.WaitSignal(nil, ready); err != nil {
+			return err
+		}
+		if len(ready) != 0 {
+			t.Fatal("wait did not consume signal")
+		}
+		operation, cancel := context.WithCancel(ctx)
+		cancel()
+		ready <- struct{}{}
+		if err := c.WaitSignal(operation, ready); !errors.Is(err, context.Canceled) {
+			t.Fatal("ready publication ignored cancellation", err)
+		}
+		if len(ready) != 1 {
+			t.Fatal("a cancelled operation consumed the signal")
+		}
+		return nil
+	})
+	if err != nil || in.tasks != nil {
+		t.Fatal("signal left work in the Store", err)
+	}
+}
+
 func TestScheduledWorkConsumesGuestStreams(t *testing.T) {
 	for _, backend := range []string{"interpreter", "native"} {
 		if backend == "native" && !native.Available {

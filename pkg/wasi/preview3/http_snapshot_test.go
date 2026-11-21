@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/cpunion/wasmvm/internal/wasi/host"
 	"github.com/cpunion/wasmvm/pkg/component"
@@ -207,6 +208,35 @@ func TestHTTPSnapshotCompleteGuestAndRetainedResponse(t *testing.T) {
 		}
 		if err := response.Body.Close(); err != nil {
 			t.Fatal(err)
+		}
+	})
+}
+
+func TestHTTPSnapshotReadinessWithBusyIOWorkers(t *testing.T) {
+	backends(t, func(t *testing.T, backend string) {
+		w := worldOwnerForTest(t, WorldConfig{IO: IOConfig{MaxStreams: 1}})
+		in := instantiate(t, compileFixture(t, backend, "world-rust-http"), w.Imports())
+		release := make(chan struct{})
+		defer close(release)
+		for range 2 {
+			if err := w.IO().worker(func() { <-release }); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		const payload = "ready without an I/O worker"
+		request, err := NewSnapshotRequest(ctx, "POST", "http://localhost/", payload)
+		if err != nil {
+			t.Fatal(err)
+		}
+		response, err := w.HTTP().CallIncomingBuffered(ctx, in, request, uint64(len(payload)), component.CallOptions{})
+		if err != nil || response == nil {
+			t.Fatal(response, err)
+		}
+		if response.StatusCode != 201 || string(response.Body) != payload || response.Trailer.Get("X-Guest-Trailer") != "done" {
+			t.Fatal("incomplete response", response)
 		}
 	})
 }

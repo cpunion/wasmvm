@@ -16,13 +16,13 @@ import (
 )
 
 type httpCell struct {
-	mu    sync.Mutex
-	done  chan struct{}
-	ready bool
-	value component.Value
+	mu      sync.Mutex
+	ready   bool
+	value   component.Value
+	pending *component.ReadCompletion
+	stop    func() bool
 }
 
-func newHTTPCell() *httpCell { return &httpCell{done: make(chan struct{})} }
 func (s *httpCell) set(value component.Value) {
 	s.mu.Lock()
 	if s.ready {
@@ -31,32 +31,61 @@ func (s *httpCell) set(value component.Value) {
 	}
 	s.ready = true
 	s.value = value
-	close(s.done)
+	pending, stop := s.pending, s.stop
+	s.pending, s.stop = nil, nil
 	s.mu.Unlock()
+	if pending != nil && stop() {
+		resolveHTTPCell(pending, value)
+	}
 }
-func (s *httpCell) source(p *HTTP, close func()) component.AsyncSource {
-	return component.AsyncSource{Close: close, Read: func(c *component.Caller, _ uint32) (*component.ReadCompletion, error) {
+
+func (s *httpCell) readReady(*component.Caller, uint32) (component.ReadResult, bool, error) {
+	s.mu.Lock()
+	value, ready := s.value, s.ready
+	s.mu.Unlock()
+	if !ready {
+		return component.ReadResult{}, false, nil
+	}
+	return component.ReadResult{Values: []component.Value{value}, Closed: true}, true, nil
+}
+
+func resolveHTTPCell(completion *component.ReadCompletion, value component.Value) {
+	_ = completion.Resolve(func(*component.Caller) (component.ReadResult, error) {
+		return component.ReadResult{Values: []component.Value{value}, Closed: true}, nil
+	})
+}
+
+// A message publishes one transmit future. Its read consumes a subscription
+// under the Store lease, and the producer may publish from any goroutine.
+func (s *httpCell) read(c *component.Caller, _ uint32) (*component.ReadCompletion, error) {
+	s.mu.Lock()
+	if s.ready {
+		value := s.value
+		s.mu.Unlock()
 		completion := component.NewReadCompletion()
-		ctx := c.Context()
-		err := p.network.io.worker(func() {
-			select {
-			case <-ctx.Done():
-				completion.Cancelled()
-				return
-			case <-s.done:
-			}
-			s.mu.Lock()
-			value := s.value
-			s.mu.Unlock()
-			completion.Resolve(func(*component.Caller) (component.ReadResult, error) {
-				return component.ReadResult{Values: []component.Value{value}, Closed: true}, nil
-			})
-		})
-		if err != nil {
-			return nil, err
-		}
+		resolveHTTPCell(completion, value)
 		return completion, nil
-	}}
+	}
+	if s.pending != nil {
+		s.mu.Unlock()
+		return nil, wasm.ErrTrap
+	}
+	var completion *component.ReadCompletion
+	completion = component.NewReadCompletionWithCleanup(func() {
+		s.mu.Lock()
+		if s.pending != completion {
+			s.mu.Unlock()
+			return
+		}
+		stop := s.stop
+		s.pending, s.stop = nil, nil
+		s.mu.Unlock()
+		stop()
+	})
+	s.pending = completion
+	s.stop = context.AfterFunc(c.Context(), func() { _ = completion.Cancelled() })
+	s.mu.Unlock()
+	return completion, nil
 }
 
 type httpBody struct {
@@ -70,7 +99,7 @@ type httpBody struct {
 	transmitted, handlingDone  bool
 	failure                    error
 	done                       chan struct{}
-	tx                         *httpCell
+	tx                         httpCell
 	original, trailers, anchor *component.Resource
 	controls                   []*component.Cancellation
 	reader                     io.ReadCloser
@@ -81,7 +110,6 @@ type httpBody struct {
 	sizeFailure                string
 	readerOnce                 sync.Once
 	readerMu                   sync.Mutex
-	trailerType                component.ValueType
 	trailerDone                chan struct{}
 	trailerReady               bool
 	trailersValue              *host.HTTPFields
@@ -101,7 +129,7 @@ func (p *HTTP) newBody() (*httpBody, error) {
 		return nil, wasm.ErrLimit
 	}
 	ctx, cancel := context.WithCancel(p.ctx)
-	b := &httpBody{owner: p, refs: 1, ctx: ctx, cancel: cancel, done: make(chan struct{}), tx: newHTTPCell()}
+	b := &httpBody{owner: p, refs: 1, ctx: ctx, cancel: cancel, done: make(chan struct{})}
 	p.bodies[b] = struct{}{}
 	return b, nil
 }
@@ -254,7 +282,7 @@ func (b *httpBody) dispose(c *component.Caller, err error) {
 }
 func (b *httpBody) txSource(c *component.Caller, t component.ValueType) (component.Value, error) {
 	b.acquire()
-	v, err := c.NewSource(t, b.tx.source(b.owner, b.release))
+	v, err := c.NewSource(t, component.AsyncSource{ReadReady: b.tx.readReady, Read: b.tx.read, Close: b.release})
 	if err != nil {
 		b.release()
 	}
@@ -315,7 +343,6 @@ func (p *HTTP) newMessage(c *component.Caller, kind string, args []component.Val
 		b.original = refs[0]
 	}
 	b.trailers = refs[len(refs)-1]
-	_, b.trailerType = c.FunctionInfo().Parameter(2)
 	b.trailerDone = make(chan struct{})
 	b.mu.Unlock()
 	b.control(signal)
@@ -568,29 +595,14 @@ func (b *httpBody) trailerSource(c *component.Caller, t component.ValueType) (co
 		done := b.bodyDone
 		b.mu.Unlock()
 		if !done {
-			waiter, err := c.NewSource(t, component.AsyncSource{Read: func(c *component.Caller, _ uint32) (*component.ReadCompletion, error) {
-				p := component.NewReadCompletion()
-				ctx := c.Context()
-				err := b.owner.network.io.worker(func() {
-					select {
-					case <-ctx.Done():
-						p.Cancelled()
-					case <-b.done:
-						p.Resolve(func(*component.Caller) (component.ReadResult, error) {
-							return component.ReadResult{Values: []component.Value{httpOK(component.Value{})}, Closed: true}, nil
-						})
-					}
-				})
-				return p, err
-			}})
-			if err != nil {
-				return nil, err
-			}
-			_, err = c.ReadAsyncContext(b.ctx, waiter.Resource, 1)
-			_ = c.DropAsync(waiter.Resource)
-			if err != nil && c.Context().Err() != nil {
-				completion.Cancelled()
-				return completion, nil
+			if err := c.WaitSignal(b.ctx, b.done); err != nil {
+				if c.Context().Err() != nil {
+					completion.Cancelled()
+					return completion, nil
+				}
+				if b.ctx.Err() == nil {
+					return nil, err
+				}
 			}
 		}
 		if err := b.waitTrailers(c); err != nil {
@@ -793,6 +805,9 @@ func (b *httpBody) finishTrailers(fields *host.HTTPFields, err error) {
 	if !b.trailerReady {
 		b.trailerReady = true
 		b.trailersValue = fields
+		if err != nil && b.failure == nil {
+			b.failure = err
+		}
 		close(b.trailerDone)
 	}
 	b.mu.Unlock()
@@ -802,31 +817,12 @@ func (b *httpBody) finishTrailers(fields *host.HTTPFields, err error) {
 }
 func (b *httpBody) waitTrailers(c *component.Caller) error {
 	b.mu.Lock()
-	done, ready, typ := b.trailerDone, b.trailerReady, b.trailerType
+	done, ready := b.trailerDone, b.trailerReady
 	b.mu.Unlock()
 	if done == nil || ready {
 		return nil
 	}
-	waiter, err := c.NewSource(typ, component.AsyncSource{Read: func(c *component.Caller, _ uint32) (*component.ReadCompletion, error) {
-		completion := component.NewReadCompletion()
-		ctx := c.Context()
-		err := b.owner.network.io.worker(func() {
-			select {
-			case <-ctx.Done():
-				completion.Cancelled()
-			case <-done:
-				completion.Resolve(func(*component.Caller) (component.ReadResult, error) {
-					return component.ReadResult{Values: []component.Value{httpOK(component.Value{})}, Closed: true}, nil
-				})
-			}
-		})
-		return completion, err
-	}})
-	if err != nil {
-		return err
-	}
-	defer c.DropAsync(waiter.Resource)
-	_, err = c.ReadAsyncContext(b.ctx, waiter.Resource, 1)
+	err := c.WaitSignal(b.ctx, done)
 	if c.Context().Err() == nil && b.ctx.Err() != nil {
 		return nil
 	}
