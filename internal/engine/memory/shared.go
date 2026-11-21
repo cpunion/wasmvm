@@ -281,10 +281,10 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 			if m.domain == nil {
 				return value.Value{}, wasm.TrapWaitUnshared, nil
 			}
-			observed, err := native.SharedAtomicContext(ctx, unsafe.Pointer(unsafe.SliceData(bytes)), uint32(n), native.AtomicLoad, 0, 0)
-			if err != nil {
+			if err := ctx.Err(); err != nil {
 				return value.Value{}, wasm.NoTrap, err
 			}
+			observed := loadNativeWaitWord(bytes, n)
 			mask := ^uint64(0) >> (64 - n*8)
 			if observed != a&mask {
 				return value.Value{Lo: 1}, wasm.NoTrap, nil
@@ -295,6 +295,16 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 		}
 	}
 	return m.atomicSlow(ctx, d, sub, address, offset, a, b, n)
+}
+
+// Wait compares a checked, naturally aligned i32 or i64 word in a retained
+// native mapping. The comparison is sequentially consistent.
+func loadNativeWaitWord(bytes []byte, width uint) uint64 {
+	p := unsafe.Pointer(unsafe.SliceData(bytes))
+	if width == 4 {
+		return uint64(atomic.LoadUint32((*uint32)(p)))
+	}
+	return atomic.LoadUint64((*uint64)(p))
 }
 
 // The queue path owns timers and deferred cleanup; scalar fast paths never
@@ -343,13 +353,7 @@ func (m *Memory) atomicSlow(ctx context.Context, d *Domain, sub uint32, address,
 		mask := ^uint64(0) >> (64 - n*8)
 		var observed uint64
 		if m.owner != nil {
-			var err error
-			observed, err = native.SharedAtomic(unsafe.Pointer(unsafe.SliceData(bytes)), uint32(n), native.AtomicLoad, 0, 0)
-			if err != nil {
-				m.releaseNativeWaiter()
-				d.mu.Unlock()
-				return value.Value{}, wasm.NoTrap, err
-			}
+			observed = loadNativeWaitWord(bytes, n)
 		} else {
 			observed = read(bytes, n)
 		}
