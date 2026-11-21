@@ -287,6 +287,22 @@ func (op *operation) call(ref uint64, args []value.Value) ([]value.Value, error)
 func (op *operation) leaveCall() { op.depth-- }
 
 func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]value.Value, error) {
+	if leaf, ok := request.Function.Host.(*state.ScalarLeaf); ok {
+		var a, b uint64
+		if len(request.Args) > 0 {
+			a = request.Args[0].Lo
+		}
+		if len(request.Args) > 1 {
+			b = request.Args[1].Lo
+		}
+		v, err := leaf.Call(request.Function.Signature, a, b)
+		if err != nil || len(request.Function.Signature.Results) == 0 {
+			return nil, err
+		}
+		results := request.Args[:1]
+		results[0] = v
+		return results, nil
+	}
 	if access, ok := request.Function.Host.(*state.ScalarAccess); ok {
 		var bits uint64
 		if access.Write {

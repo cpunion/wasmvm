@@ -13,16 +13,21 @@ func (in *Instance) asyncValueBuiltin(caller *vm.Caller, n *namespace, p *valida
 	if op >= 0x15 && op <= 0x1b {
 		op -= 7
 	}
-	fn, err := newScalarBuiltin(caller, p.Signature, !p.Async && op != 0x0e && op != 0x13 && op != 0x14 && op != 0x2e && op != 0x2f, func(c *vm.Caller, args scalarOperands) (scalarStep, error) {
-		if n.failed || n.blocked {
-			return scalarStep{}, wasm.ErrTrap
-		}
-		if op == 0x0e {
+	if op == 0x0e {
+		return n.addScalarLeaf(caller, p.Signature, func(_, _ uint64) (uint64, error) {
+			if n.failed || n.blocked {
+				return 0, wasm.ErrTrap
+			}
 			r, w, err := in.newEnds(n, p.Type.Value)
 			if err != nil {
-				return scalarStep{}, err
+				return 0, err
 			}
-			return scalarStep{bits: uint64(r.id) | uint64(w.id)<<32}, nil
+			return uint64(r.id) | uint64(w.id)<<32, nil
+		})
+	}
+	fn, err := newScalarBuiltin(caller, p.Signature, !p.Async && op != 0x13 && op != 0x14 && op != 0x2e && op != 0x2f, func(c *vm.Caller, args scalarOperands) (scalarStep, error) {
+		if n.failed || n.blocked {
+			return scalarStep{}, wasm.ErrTrap
 		}
 		id := args.at(0)
 		read := op == 0x0f || op == 0x11 || op == 0x13 || op == 0x2e || op == 0x2f

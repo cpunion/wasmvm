@@ -3,6 +3,7 @@ package vm
 import (
 	"unsafe"
 
+	"github.com/cpunion/wasmvm/internal/engine/state"
 	"github.com/cpunion/wasmvm/internal/engine/value"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -26,6 +27,19 @@ type BorrowedScalarHostFunction func(*Caller, []uint64) error
 // protocol. Neither the stack nor Caller may survive callback return. Pending
 // work copies any needed scalar inputs and resumes with a fresh Caller.
 type BorrowedSuspendableScalarHostFunction func(*Caller, []uint64) (*HostSuspension, error)
+
+// NewScalarLeafFunction binds an internal Caller-free leaf with at most two
+// scalar inputs and one scalar result.
+func (c *Caller) NewScalarLeafFunction(signature FunctionType, leaf *state.ScalarLeaf) (Extern, error) {
+	if err := c.enter(); err != nil {
+		return Extern{}, err
+	}
+	defer c.mu.Unlock()
+	if !leaf.Valid() || len(signature.Params) > 2 || len(signature.Results) > 1 || !scalarSignature(signature) {
+		return Extern{}, ErrType
+	}
+	return c.op.store.newHostFunction(signature, leaf)
+}
 
 func (s *Store) NewBorrowedSuspendableScalarFunction(signature FunctionType, callback BorrowedSuspendableScalarHostFunction, referenceType ...wasm.ValueType) (Extern, error) {
 	op, err := s.begin(nil, CallOptions{})

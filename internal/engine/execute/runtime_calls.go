@@ -60,21 +60,6 @@ func (e *Execution) runCall() Status {
 	if err := e.poll(); err != nil {
 		return e.fail(err)
 	}
-	if access, ok := callee.Host.(*state.ScalarAccess); ok && !tail {
-		var bits uint64
-		if access.Write {
-			bits = values[int(inputs[0])].Lo
-		}
-		bits, err := access.Access(bits)
-		if err != nil {
-			return e.fail(err)
-		}
-		if !access.Write {
-			values[int(dest[0])] = value.Value{Lo: bits}
-		}
-		f.pc = pc + 1
-		return Running
-	}
 	if tail {
 		// Preserve the tuple before retiring/reusing the current frame.
 		// This supports overlapping/permuted arguments and a different
@@ -108,12 +93,40 @@ func (e *Execution) runCall() Status {
 		e.tailArgs = e.tailArgs[:0]
 		return Running
 	}
+	host := callee.Code == nil
+	if host {
+		switch fn := callee.Host.(type) {
+		case *state.ScalarLeaf:
+			if err := fn.CallSlots(callee.Signature, inputs[:count], dest, values); err != nil {
+				return e.fail(err)
+			}
+			if err := e.poll(); err != nil {
+				return e.fail(err)
+			}
+			f.pc = pc + 1
+			return Running
+		case *state.ScalarAccess:
+			var bits uint64
+			if fn.Write {
+				bits = values[int(inputs[0])].Lo
+			}
+			bits, err := fn.Access(bits)
+			if err != nil {
+				return e.fail(err)
+			}
+			if !fn.Write {
+				values[int(dest[0])] = value.Value{Lo: bits}
+			}
+			f.pc = pc + 1
+			return Running
+		}
+	}
 	// Publish the caller continuation before a host suspension or
 	// frame push. Straight-line execution keeps its PC local.
 	f.nativeResume = e.nativeResume
 	f.pc = pc + 1
 	f.callPC, f.suspended = pc, true
-	if callee.Code == nil {
+	if host {
 		args := e.prepareHost(callee, instance, int(count))
 		for i := range args {
 			args[i] = e.values[base+int(inputs[i])]

@@ -116,24 +116,31 @@ func (h *hostCall) start(core *vm.Caller) (p *HostCompletion, err error) {
 	return h.function.asyncHost(c, h.args)
 }
 func (h *hostCall) accept(result *Value) (*Value, error) {
+	var accepted Value
+	if err := h.acceptInto(result, &accepted); err != nil || result == nil {
+		return nil, err
+	}
+	return &accepted, nil
+}
+
+func (h *hostCall) acceptInto(result, accepted *Value) error {
 	h.limit()
 	defer h.account()
 	if (result == nil) != (h.function.typ.Result == nil) {
-		return nil, vm.ErrType
+		return vm.ErrType
 	}
 	if result == nil {
-		return nil, nil
+		return nil
 	}
 	v, err := h.function.valuePlans().result.Clone(&h.codec, *result)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	*accepted = v
 	if h.codec.Resources != nil {
-		if err = h.codec.AcceptResult(h.function.typ.Result, &v); err != nil {
-			return nil, err
-		}
+		return h.codec.AcceptResult(h.function.typ.Result, accepted)
 	}
-	return &v, nil
+	return nil
 }
 func (h *hostCall) finish(core *vm.Caller, complete bool, err error) error {
 	if h.closed {

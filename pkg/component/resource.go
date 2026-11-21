@@ -62,31 +62,26 @@ func (in *Instance) resourceBuiltin(caller *vm.Caller, n *namespace, plan *valid
 		return vm.ErrType
 	}
 	in.resourceTable(n)
+	op := plan.Definition.Op
+	if op != 3 {
+		return n.addScalarLeaf(caller, plan.Signature, func(bits, _ uint64) (uint64, error) {
+			if n.failed || n.blocked && op != 4 {
+				return 0, wasm.ErrTrap
+			}
+			if op == 2 {
+				id, err := n.handles.New(rt.identity, bits)
+				return uint64(id), err
+			}
+			return n.handles.Rep(rt.identity, uint32(bits))
+		})
+	}
 	fn, err := caller.NewBorrowedScalarFunction(plan.Signature, func(c *vm.Caller, words []uint64) error {
-		if n.failed || n.blocked && plan.Definition.Op != 4 {
+		if n.failed || n.blocked {
 			return wasm.ErrTrap
 		}
-		// The Core callback signature has already checked this scalar slot.
-		bits := words[0]
-		switch plan.Definition.Op {
-		case 2:
-			id, err := n.handles.New(rt.identity, bits)
-			if err != nil {
-				return err
-			}
-			words[0] = uint64(id)
-			return nil
-		case 3:
-			err := n.handles.DropWith(c.Context(), rt.identity, uint32(bits), func(_ context.Context, rep uint64) error { return rt.destroy(c, rep) })
-			return err
-		default:
-			rep, err := n.handles.Rep(rt.identity, uint32(bits))
-			if err != nil {
-				return err
-			}
-			words[0] = rep
-			return nil
-		}
+		return n.handles.DropWith(c.Context(), rt.identity, uint32(words[0]), func(_ context.Context, rep uint64) error {
+			return rt.destroy(c, rep)
+		})
 	})
 	if err == nil {
 		n.add(item{sort: model.CoreFunctionSort, core: fn})

@@ -279,14 +279,37 @@ func write(b []byte, n uint, x uint64) {
 func sign(x uint64, n uint) uint64 { shift := 64 - 8*n; return uint64(int64(x<<shift) >> shift) }
 func (m *Memory) access(address, offset uint64, size uint) ([]byte, bool) {
 	at := m.declared.Address(address) + offset
-	if at < offset || !m.rangeBytes(at, uint64(size)) {
+	end := at + uint64(size)
+	if at < offset || end < at || end > m.size() {
 		return nil, false
 	}
-	return m.bytes[at : at+uint64(size)], true
+	return m.bytes[at:end], true
 }
 
 // Fixed widths stay outside the per-access frame. Tables are read-only.
-var scalarLoadWidths = [...]uint8{4, 8, 4, 8, 1, 1, 2, 2, 1, 1, 2, 2, 4, 4}
+type scalarLoadShape struct {
+	mask             uint64
+	width, signShift uint8
+}
+
+const untrimmed = ^uint64(0)
+
+var scalarLoadShapes = [...]scalarLoadShape{
+	{mask: untrimmed, width: 4}, // i32.load
+	{mask: untrimmed, width: 8}, // i64.load
+	{mask: untrimmed, width: 4}, // f32.load
+	{mask: untrimmed, width: 8}, // f64.load
+	{mask: 0xffffffff, width: 1, signShift: 56},
+	{mask: untrimmed, width: 1},
+	{mask: 0xffffffff, width: 2, signShift: 48},
+	{mask: untrimmed, width: 2},
+	{mask: untrimmed, width: 1, signShift: 56},
+	{mask: untrimmed, width: 1},
+	{mask: untrimmed, width: 2, signShift: 48},
+	{mask: untrimmed, width: 2},
+	{mask: untrimmed, width: 4, signShift: 32},
+	{mask: untrimmed, width: 4},
+}
 var scalarStoreWidths = [...]uint8{4, 8, 4, 8, 1, 2, 1, 2, 4}
 
 // Load implements every scalar and fixed-SIMD load, including lane operations.
@@ -294,18 +317,15 @@ var scalarStoreWidths = [...]uint8{4, 8, 4, 8, 1, 2, 1, 2, 4}
 // lane indexes must have passed validation. previous supplies load_lane's input.
 func (m *Memory) load(op uint32, address, offset uint64, lane byte, previous value.Value) (value.Value, wasm.TrapCode) {
 	if op >= 0x28 && op <= 0x35 {
-		n := uint(scalarLoadWidths[op-0x28])
+		shape := scalarLoadShapes[op-0x28]
+		n := uint(shape.width)
 		b, ok := m.access(address, offset, n)
 		if !ok {
 			return value.Value{}, wasm.TrapMemoryBounds
 		}
 		x := m.readAccess(b, n)
-		if op == 0x2c || op == 0x2e || op == 0x30 || op == 0x32 || op == 0x34 {
-			x = sign(x, n)
-		}
-		if op == 0x28 || op == 0x2a || op >= 0x2c && op <= 0x2f {
-			x = uint64(uint32(x))
-		}
+		shift := shape.signShift
+		x = uint64(int64(x<<shift)>>shift) & shape.mask
 		return value.Value{Lo: x}, wasm.NoTrap
 	}
 	return m.loadVector(op, address, offset, lane, previous)

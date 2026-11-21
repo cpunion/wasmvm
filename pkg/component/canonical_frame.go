@@ -6,7 +6,7 @@ import (
 	"github.com/cpunion/wasmvm/pkg/vm"
 )
 
-// A frame is private scratch for one synchronous canonical lower. Ordinary host
+// A frame is private scratch for one synchronous canonical call. Ordinary host
 // callbacks receive independent snapshots; explicitly annotated callbacks borrow
 // these arguments only until return. Capabilities remain fresh. Suspended calls
 // use their existing task-owned state instead of these frames.
@@ -17,15 +17,16 @@ type canonicalFrame struct {
 	memory memory
 	// Only the synchronous private transaction uses this lazy storage. Public
 	// Callers and parameter/result snapshots never point into this object.
-	host    *resourceHostCall
-	caller  *vm.Caller
-	n       *namespace
-	plan    *validate.CanonicalFunction
-	realloc func(uint64, uint64, uint64, uint64) (uint64, error)
-	next    *canonicalFrame
+	host      *resourceHostCall
+	hostValue Value
+	caller    *vm.Caller
+	n         *namespace
+	plan      *validate.CanonicalFunction
+	realloc   func(uint64, uint64, uint64, uint64) (uint64, error)
+	next      *canonicalFrame
 }
 
-func (in *Instance) acquireCanonicalFrame(c *vm.Caller, n *namespace, plan *validate.CanonicalFunction) *canonicalFrame {
+func (in *Instance) acquireFrame() *canonicalFrame {
 	frame := in.canonicalFrames
 	if frame == nil {
 		frame = &canonicalFrame{}
@@ -33,6 +34,18 @@ func (in *Instance) acquireCanonicalFrame(c *vm.Caller, n *namespace, plan *vali
 		in.canonicalFrames = frame.next
 		frame.next = nil
 	}
+	return frame
+}
+
+func (frame *canonicalFrame) hostStorage() *resourceHostCall {
+	if frame.host == nil {
+		frame.host = &resourceHostCall{}
+	}
+	return frame.host
+}
+
+func (in *Instance) acquireCanonicalFrame(c *vm.Caller, n *namespace, plan *validate.CanonicalFunction) *canonicalFrame {
+	frame := in.acquireFrame()
 	frame.caller, frame.n, frame.plan = c, n, plan
 	if n != nil && (len(n.resources) != 0 || n.handles != nil) {
 		// Release already zeroed the state. Rebind only the active owners.
@@ -61,6 +74,7 @@ func (in *Instance) releaseCanonicalFrame(frame *canonicalFrame) {
 		frame.args = nil
 	}
 	frame.state = resourceCodecState{}
+	frame.hostValue = Value{}
 	frame.memory = memory{}
 	frame.caller, frame.n, frame.plan = nil, nil, nil
 	frame.next = in.canonicalFrames
