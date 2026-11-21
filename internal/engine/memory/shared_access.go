@@ -13,7 +13,7 @@ func checkedShared(err error) {
 }
 
 func (m *Memory) readAccess(b []byte, width uint) uint64 {
-	if m.accessClass != nativeSharedBytes {
+	if m.sharedSize == nil {
 		return read(b, width)
 	}
 	v, err := native.SharedLoad(unsafe.Pointer(unsafe.SliceData(b)), uint32(width))
@@ -22,7 +22,7 @@ func (m *Memory) readAccess(b []byte, width uint) uint64 {
 }
 
 func (m *Memory) writeAccess(b []byte, width uint, value uint64) {
-	if m.accessClass != nativeSharedBytes {
+	if m.sharedSize == nil {
 		write(b, width, value)
 		return
 	}

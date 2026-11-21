@@ -18,25 +18,20 @@ const PageSize uint64 = 65536
 const MaxPages = 65536
 const MaxPages64 = 1 << 48
 
-type byteAccess uint8
-
-const (
-	storeLocalBytes byteAccess = iota
-	lockedSharedBytes
-	nativeSharedBytes
-)
-
 type Memory struct {
-	bytes         []byte
-	owner         *native.Memory
-	declared      module.Limits
-	domain        *Domain
-	refs          uint64
-	reservation   uint64
-	maximum       uint64
+	bytes       []byte
+	owner       *native.Memory
+	declared    module.Limits
+	domain      *Domain
+	refs        uint64
+	reservation uint64
+	maximum     uint64
+	// sharedSize is observed by Go only when the memory can cross Stores.
+	// Native code also has a size and wait cell for Store-local shared owners.
 	sharedSize    *uint64
 	sharedWaiters *uint64
-	accessClass   byteAccess
+	lockedShared  bool
+	shareable     bool // Immutable after allocation, including when the backing retires.
 }
 
 // New applies the host page quota independently of the module declaration.
@@ -68,7 +63,7 @@ func (m *Memory) Native() *native.Memory {
 // NativeShared returns only stable native shared storage, distinct from the
 // entry-exclusive private-memory contract exposed by Native.
 func (m *Memory) NativeShared() *native.Memory {
-	if m.sharedSize == nil {
+	if m.sharedWaiters == nil {
 		return nil
 	}
 	return m.owner
@@ -169,11 +164,18 @@ func (m *Memory) grow(delta uint64) (uint64, bool) {
 		return old, true
 	}
 	if m.owner != nil {
-		if err := m.owner.Grow(next * m.declared.PageBytes()); err != nil {
+		size := next * m.declared.PageBytes()
+		if err := m.owner.Grow(size); err != nil {
 			return old, false
 		}
 		if m.sharedSize == nil {
-			m.bytes, _ = m.owner.Buffer()
+			if m.sharedWaiters != nil {
+				// The Store-local owner has a stable reservation. Native growth
+				// published its size; refresh the Store's logical slice as well.
+				m.bytes = m.bytes[:size]
+			} else {
+				m.bytes, _ = m.owner.Buffer()
+			}
 		}
 		return old, true
 	}
@@ -193,7 +195,7 @@ func (m *Memory) readBytes(offset uint64, dst []byte) bool {
 	if !m.rangeBytes(offset, uint64(len(dst))) {
 		return false
 	}
-	if m.accessClass == nativeSharedBytes {
+	if m.sharedSize != nil {
 		checkedShared(native.SharedTransfer(bytePointer(dst, 0), bytePointer(m.bytes, offset), uint64(len(dst)), false, true))
 	} else {
 		copy(dst, m.bytes[int(offset):])
@@ -204,7 +206,7 @@ func (m *Memory) writeBytes(offset uint64, src []byte) bool {
 	if !m.rangeBytes(offset, uint64(len(src))) {
 		return false
 	}
-	if m.accessClass == nativeSharedBytes {
+	if m.sharedSize != nil {
 		checkedShared(native.SharedTransfer(bytePointer(m.bytes, offset), bytePointer(src, 0), uint64(len(src)), true, false))
 	} else {
 		copy(m.bytes[int(offset):], src)
@@ -219,7 +221,7 @@ func (m *Memory) fill(dst uint64, b byte, count uint64) bool {
 	if !m.rangeBytes(dst, count) {
 		return false
 	}
-	if m.accessClass == nativeSharedBytes {
+	if m.sharedSize != nil {
 		checkedShared(native.SharedFill(bytePointer(m.bytes, dst), count, b))
 		return true
 	}
@@ -238,8 +240,8 @@ func (m *Memory) copyFrom(source *Memory, dst, src, count uint64) bool {
 	if !m.rangeBytes(dst, count) || !source.rangeBytes(src, count) {
 		return false
 	}
-	if m.accessClass == nativeSharedBytes || source.accessClass == nativeSharedBytes {
-		checkedShared(native.SharedTransfer(bytePointer(m.bytes, dst), bytePointer(source.bytes, src), count, m.accessClass == nativeSharedBytes, source.accessClass == nativeSharedBytes))
+	if m.sharedSize != nil || source.sharedSize != nil {
+		checkedShared(native.SharedTransfer(bytePointer(m.bytes, dst), bytePointer(source.bytes, src), count, m.sharedSize != nil, source.sharedSize != nil))
 	} else {
 		copy(m.bytes[int(dst):int(dst+count)], source.bytes[int(src):int(src+count)])
 	}
@@ -249,7 +251,7 @@ func (m *Memory) initBytes(dst, src, count uint64, data []byte) bool {
 	if !m.rangeBytes(dst, count) || !fits(uint64(len(data)), src, count) {
 		return false
 	}
-	if m.accessClass == nativeSharedBytes {
+	if m.sharedSize != nil {
 		checkedShared(native.SharedTransfer(bytePointer(m.bytes, dst), bytePointer(data, src), count, true, false))
 	} else {
 		copy(m.bytes[int(dst):int(dst+count)], data[int(src):int(src+count)])
@@ -370,7 +372,7 @@ func (m *Memory) loadVector(op uint32, address, offset uint64, lane byte, previo
 	case sub == 0:
 		return value.Value{Lo: m.readAccess(b, 8), Hi: m.readAccess(b[8:], 8)}, wasm.NoTrap
 	case sub >= 1 && sub <= 6:
-		if m.accessClass != nativeSharedBytes {
+		if m.sharedSize == nil {
 			// Store-local bytes, or portable shared bytes under the domain lock,
 			// can be read once. Concurrent native shared bytes retain their
 			// existing per-lane accesses below.

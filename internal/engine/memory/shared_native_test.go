@@ -56,3 +56,55 @@ func TestNativeSharedReservationKeepsLogicalBoundsAndStableGrowth(t *testing.T) 
 		}
 	}
 }
+
+func TestLocalNativeSharedGrowthUpdatesBothLogicalViews(t *testing.T) {
+	if !native.Available {
+		t.Skip("native platform unavailable")
+	}
+	for _, pageSize := range []uint64{1, PageSize} {
+		t.Run(fmt.Sprint(pageSize), func(t *testing.T) {
+			declared := module.Limits{Max: 3, HasMax: true, Shared: true, PageSize: pageSize, Index64: true}
+			m, err := NewStoreLocalShared(declared, 3, NewDomain(1, true))
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer m.Release()
+			owner := m.NativeShared()
+			if owner == nil || m.Shareable() || m.Retain() || m.sharedSize != nil {
+				t.Fatal("Store-local backing escaped or lost its native owner")
+			}
+			base, published, maximum, err := owner.SharedView()
+			if err != nil || maximum != 3*pageSize || len(m.bytes) != 0 || cap(m.bytes) != int(maximum) {
+				t.Fatal("wrong initial logical view", maximum, len(m.bytes), cap(m.bytes), err)
+			}
+			if m.Write(0, []byte{9}) || m.Range(0, 1) {
+				t.Fatal("empty memory accessed before growth")
+			}
+			if old, ok := m.Grow(1); !ok || old != 0 {
+				t.Fatal(old, ok)
+			}
+			if m.Pages() != 1 || atomic.LoadUint64((*uint64)(published)) != pageSize ||
+				unsafe.Pointer(unsafe.SliceData(m.bytes)) != base || len(m.bytes) != int(pageSize) {
+				t.Fatal("growth did not update both views in place")
+			}
+			if !m.Write(0, []byte{42}) || m.Write(pageSize, []byte{9}) {
+				t.Fatal("wrong logical write bounds after growth")
+			}
+			if old, ok := m.Grow(2); !ok || old != 1 {
+				t.Fatal(old, ok)
+			}
+			if got, trap := m.Load(0x2d, 0, 0, 0, value.Value{}); got.Lo != 42 || trap != wasm.NoTrap {
+				t.Fatal("ordinary access lost old bytes", got, trap)
+			}
+			for i, v := range m.bytes[pageSize:] {
+				if v != 0 {
+					t.Fatal("growth did not expose zero bytes", i, v)
+				}
+			}
+			if old, ok := m.Grow(1); ok || old != 3 || len(m.bytes) != int(maximum) ||
+				atomic.LoadUint64((*uint64)(published)) != maximum {
+				t.Fatal("failed growth altered a logical bound", old, ok)
+			}
+		})
+	}
+}
