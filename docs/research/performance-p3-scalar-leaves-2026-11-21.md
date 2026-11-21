@@ -1,11 +1,11 @@
 # P3 scalar scheduler leaves and synchronous host transactions, 2026-11-21
 
-Core scalar leaves update serialized host metadata inside the active frame. Snapshot-based synchronous component calls and ready-source reads reuse private transaction and result storage. The changes preserve public result ownership, resource accounting, cancellation and the suspendable call path.
+Core scalar leaves update serialized host metadata inside the active frame. Snapshot-based synchronous component calls and ready-source reads reuse private transaction and result storage. Scalar load descriptors encode the access width, sign extension and result mask. Memory accesses validate the exclusive endpoint and both address carries before slicing. Scalar callable classification runs within the host path. The changes preserve public result ownership, resource accounting, cancellation and the suspendable call path.
 
-- P3 16 B, GO. CPU 73.360 → 72.707 µs/request and throughput 53,186.65 → 54,254.48 requests/s. Paired CPU comparison against source base 0.976 [0.961, 0.992]; Δ -2.38%; speed +2.43% [+0.82%, +4.07%]; unresolved. Against Wasmtime 1.741 [1.598, 1.900]; Δ +74.11%; speed -42.56% [-47.37%, -37.43%]; unresolved.
-- P3 16 B, LLGO. CPU 208.23 → 206.18 µs/request and throughput 22,453.01 → 22,603.74 requests/s. Paired CPU comparison against source base 0.996 [0.990, 1.002]; Δ -0.39%; speed +0.39% [-0.19%, +0.97%]; pass. Against Wasmtime 4.906 [4.503, 5.359]; Δ +390.59%; speed -79.62% [-81.34%, -77.79%]; unresolved.
-- P3 65,536 B, GO. CPU 111.62 → 108.74 µs/request and throughput 34,267.51 → 35,268.67 requests/s. Paired CPU comparison against source base 0.980 [0.966, 1.001]; Δ -1.99%; speed +2.03% [-0.12%, +3.50%]; pass. Against Wasmtime 1.841 [1.699, 1.974]; Δ +84.09%; speed -45.68% [-49.33%, -41.14%]; unresolved.
-- P3 65,536 B, LLGO. CPU 249.17 → 244.47 µs/request and throughput 17,178.95 → 17,167.43 requests/s. Paired CPU comparison against source base 0.971 [0.962, 0.980]; Δ -2.87%; speed +2.95% [+2.07%, +3.91%]; unresolved. Against Wasmtime 4.252 [3.844, 4.737]; Δ +325.24%; speed -76.48% [-78.89%, -73.98%]; unresolved.
+- P3 16 B, GO. CPU 64.602 → 63.286 µs/request and throughput 61,354.95 → 62,613.51 requests/s. Paired CPU comparison against source base 0.983 [0.970, 0.996]; Δ -1.69%; speed +1.72% [+0.35%, +3.14%]; pass. Against Wasmtime 2.112 [1.968, 2.242]; Δ +111.19%; speed -52.65% [-55.40%, -49.19%]; unresolved.
+- P3 16 B, LLGO. CPU 188.50 → 186.19 µs/request and throughput 25,601.18 → 26,608.55 requests/s. Paired CPU comparison against source base 0.994 [0.983, 1.005]; Δ -0.63%; speed +0.64% [-0.48%, +1.72%]; pass. Against Wasmtime 6.217 [5.798, 6.585]; Δ +521.66%; speed -83.91% [-84.81%, -82.75%]; unresolved.
+- P3 65,536 B, GO. CPU 89.259 → 90.210 µs/request and throughput 43,976.17 → 43,881.66 requests/s. Paired CPU comparison against source base 1.001 [0.992, 1.011]; Δ +0.14%; speed -0.14% [-1.07%, +0.78%]; pass. Against Wasmtime 2.127 [1.986, 2.283]; Δ +112.73%; speed -52.99% [-56.19%, -49.65%]; unresolved.
+- P3 65,536 B, LLGO. CPU 225.63 → 223.15 µs/request and throughput 21,158.72 → 21,609.08 requests/s. Paired CPU comparison against source base 0.995 [0.985, 1.004]; Δ -0.53%; speed +0.54% [-0.37%, +1.55%]; unresolved. Against Wasmtime 5.367 [4.877, 5.932]; Δ +436.66%; speed -81.37% [-83.14%, -79.49%]; unresolved.
 
 All 33 core workloads and two complete P3 payloads are measured on the same pinned toolchains. Tables give preparation and steady execution independently. The performance acceptance gate remains open.
 
@@ -19,8 +19,9 @@ Competitive cell percentages are descriptive quotients of the displayed medians.
 
 ## Revisions, profiles and protocol
 
-- Engine source: base `57e67995` (merged PR #204), measured head `23854d99`. Reused binaries retain their producer revisions. The build records verify production-source equivalence for each reused binary.
+- Engine source: base `57e67995` (merged PR #204), measured head `731b1120`. Reused binaries retain their producer revisions. The build records verify production-source equivalence for each reused binary.
 - Go **1.27.3**; LLGo **3c6b33ec**, **`-O3 -lto=full`**, LLVM **22.1.8**, default production GC. Source base/head share the compiler profile.
+- Separate SDK validation executes affected suites with LLGo **19a6779f**. The separate harness build and checksum smoke apply to the previous source candidate. The primary matrix retains its common pinned SDK.
 - wazero **1.12.0**, native compiler/interpreter; Wasmtime **48.0.1**, Cranelift speed; Wasmer **7.3.0**, Cranelift; WasmEdge **0.17.1**, interpreter and **O3 AOT**. Comparison scope is the named profile of each runtime.
 - Local Apple M4 Max, macOS arm64, 128 GiB RAM. External desktop load is uncontrolled and recorded; no owned builds, tests, profiles, analysis or edits overlap timing. The timing scope is macOS arm64.
 - Core uses six fixed fresh-process blocks, each with symmetric same-binary A/A, two warmups and seven interleaved measured calls. **5,364 successful process records** after excluding exactly three failing sustained WasmEdge AOT cells. All 33 workloads remain represented. Allocation workloads use means including pauses; others use medians.
@@ -37,39 +38,39 @@ The reference runtime is **Wasmtime**.
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 5,750.00 (-57.61% speed) † | 5,188.00 (-53.02% speed) † | 1,271.00 (+91.78% speed) † | 2,437.50 (ref) † | 4,771.00 (-48.91% speed) † | 6,000.00 (-59.38% speed) † |
-| original22-v1/core/integer-loop | 1.876 (+1.24% speed) † | 1.888 (+0.61% speed) † | 2.076 (-8.52% speed) † | 1.899 (ref) † | 1.885 (+0.76% speed) † | 1.844 (+3.00% speed) † |
-| original22-v1/core/function-calls | 0.957 (+16.72% speed) † | 0.952 (+17.36% speed) † | 1.692 (-33.95% speed) † | 1.117 (ref) † | 0.937 (+19.32% speed) † | 0.958 (+16.59% speed) † |
-| original22-v1/core/memory-load-store | 0.530 (+8.19% speed) † | 0.521 (+10.20% speed) † | 1.073 (-46.53% speed) † | 0.574 (ref) † | 0.658 (-12.82% speed) † | 0.341 (+68.19% speed) † |
-| original22-v1/memory/narrow-unaligned | 0.777 (+7.05% speed) † | 0.778 (+6.97% speed) † | 1.292 (-35.58% speed) † | 0.832 (ref) † | 0.872 (-4.60% speed) † | 0.612 (+35.99% speed) † |
-| original22-v1/memory/dependent-address | 2.145 (+13.01% speed) † | 2.217 (+9.38% speed) † | 3.792 (-36.06% speed) † | 2.425 (ref) † | 2.489 (-2.57% speed) † | 1.670 (+45.20% speed) † |
-| original22-v1/memory/float64-unaligned | 0.887 (-4.68% speed) † | 0.878 (-3.70% speed) † | 1.045 (-19.07% speed) † | 0.845 (ref) | 0.840 (+0.61% speed) † | 0.799 (+5.81% speed) † |
-| original22-v1/runtime/simd-memory-full | 3.982 (+7.31% speed) † | 3.977 (+7.45% speed) † | 4.449 (-3.95% speed) † | 4.273 (ref) † | 4.109 (+3.98% speed) † | 4.248 (+0.60% speed) † |
-| original22-v1/runtime/simd-memory-widen | 1.219 (-1.91% speed) † | 1.202 (-0.50% speed) † | 1.312 (-8.86% speed) † | 1.196 (ref) † | 1.204 (-0.65% speed) † | 1.201 (-0.39% speed) † |
-| original22-v1/runtime/simd-memory-lanes | 5.836 (+18.17% speed) † | 5.967 (+15.56% speed) † | 7.299 (-5.52% speed) † | 6.896 (ref) † | 6.908 (-0.17% speed) † | 5.917 (+16.55% speed) † |
-| original22-v1/gc/i31-roundtrip | 2.783 (-9.28% speed) † | 2.227 (+13.38% speed) † | US | 2.525 (ref) † | US | 2.410 (+4.75% speed) † |
-| original22-v1/gc/struct-access | 2.852 (-37.33% speed) † | 2.656 (-32.70% speed) † | US | 1.788 (ref) † | US | 12.123 (-85.26% speed) † |
-| original22-v1/gc/struct-allocation | 33.418 (+134.24% speed) † | 35.164 (+122.61% speed) † | US | 78.278 (ref) † | US | 47.551 (+64.62% speed) † |
-| original22-v1/gc/struct-indirect-access | 3.583 (-3.49% speed) † | 2.883 (+19.94% speed) † | US | 3.458 (ref) † | US | 30.706 (-88.74% speed) † |
-| original22-v1/threads/private-memory | 1.848 (-3.83% speed) † | 1.096 (+62.17% speed) † | 2.263 (-21.45% speed) † | 1.777 (ref) † | 2.196 (-19.07% speed) † | 2.065 (-13.93% speed) † |
-| original22-v1/threads/shared-memory | 3.154 (-47.69% speed) † | 2.292 (-28.00% speed) † | 1.813 (-8.97% speed) † | 1.650 (ref) † | 2.083 (-20.80% speed) † | 1.977 (-16.55% speed) † |
-| original22-v1/threads/atomic-rmw | 3.652 (-31.55% speed) † | 3.015 (-17.07% speed) † | 2.823 (-11.44% speed) † | 2.500 (ref) † | 5.188 (-51.81% speed) † | 2.898 (-13.73% speed) † |
-| original22-v1/threads/notify-empty | 3.390 (+179.04% speed) † | 2.175 (+334.87% speed) † | 28.248 (-66.52% speed) † | 9.458 (ref) † | 8.048 (+17.53% speed) † | 11.454 (-17.42% speed) † |
-| original22-v1/threads/wait-mismatch | 3.379 (+234.09% speed) † | 2.240 (+404.10% speed) † | 29.604 (-61.86% speed) † | 11.290 (ref) † | 3.656 (+208.78% speed) † | 4.696 (+140.42% speed) † |
-| original22-v1/threads/wait-timeout | 3.365 (+1464.88% speed) † | 3.329 (+1481.55% speed) † | 426.58 (-87.66% speed) † | 52.652 (ref) † | 208.10 (-74.70% speed) † | 96.435 (-45.40% speed) † |
-| original22-v1/applications/sha256-clang | 240.87 (-8.31% speed) † | 250.93 (-11.99% speed) † | 350.00 (-36.90% speed) † | 220.85 (ref) † | 239.34 (-7.73% speed) † | 209.98 (+5.18% speed) † |
-| original22-v1/applications/sha256-rust | 249.42 (-12.47% speed) † | 244.33 (-10.65% speed) † | 380.07 (-42.56% speed) † | 218.32 (ref) † | 222.76 (-2.00% speed) † | 218.43 (-0.05% speed) † |
-| gc-sustained-v1/gc/i31-roundtrip | 1.595 (+34.60% speed) † | 1.591 (+34.93% speed) † | US | 2.147 (ref) † | US | 1.525 (+40.78% speed) † |
-| gc-sustained-v1/gc/struct-access | 1.284 (-4.62% speed) † | 1.231 (-0.49% speed) † | US | 1.224 (ref) † | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-allocation | 38.531 (+55.93% speed) † | 39.356 (+52.66% speed) † | US | 60.081 (ref) † | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-indirect-access | 1.965 (+52.93% speed) † | 1.910 (+57.32% speed) † | US | 3.005 (ref) † | US | **FAIL: SIGSEGV** |
-| threads-sustained-v2/threads/private-memory | 0.545 (+132.83% speed) † | 0.408 (+211.50% speed) † | 1.387 (-8.46% speed) † | 1.269 (ref) † | 1.256 (+1.03% speed) † | 1.300 (-2.34% speed) † |
-| threads-sustained-v2/threads/shared-memory | 1.705 (-19.97% speed) † | 1.886 (-27.65% speed) † | 1.513 (-9.83% speed) † | 1.364 (ref) † | 1.335 (+2.20% speed) † | 1.348 (+1.19% speed) † |
-| threads-sustained-v2/threads/atomic-rmw | 2.379 (-7.50% speed) † | 2.230 (-1.33% speed) † | 2.473 (-11.01% speed) † | 2.201 (ref) † | 4.745 (-53.62% speed) † | 2.217 (-0.71% speed) † |
-| threads-sustained-v2/threads/notify-empty | 1.303 (+542.92% speed) † | 1.149 (+628.80% speed) † | 25.701 (-67.41% speed) † | 8.377 (ref) † | 5.767 (+45.26% speed) † | 10.804 (-22.46% speed) † |
-| threads-sustained-v2/threads/wait-mismatch | 1.422 (+600.66% speed) † | 1.244 (+701.09% speed) † | 27.442 (-63.68% speed) † | 9.967 (ref) | 2.814 (+254.19% speed) † | 3.613 (+175.88% speed) † |
-| threads-sustained-v2/threads/wait-timeout | 1.275 (+3920.55% speed) † | 1.175 (+4260.46% speed) † | 350.39 (-85.37% speed) † | 51.254 (ref) † | 202.61 (-74.70% speed) † | 71.014 (-27.83% speed) † |
-| generic-calls-v1/core/generic-calls | 1.215 (+94.04% speed) | 1.206 (+95.47% speed) † | 2.446 (-3.60% speed) † | 2.358 (ref) | 2.395 (-1.56% speed) | 1.214 (+94.13% speed) † |
+| original22-v1/core/call-control | 3,563.00 (-59.64% speed) † | 2,875.00 (-49.98% speed) † | 666.50 (+115.75% speed) † | 1,438.00 (ref) † | 4,083.00 (-64.78% speed) † | 4,771.00 (-69.86% speed) † |
+| original22-v1/core/integer-loop | 1.598 (+0.21% speed) † | 1.622 (-1.27% speed) † | 1.730 (-7.47% speed) † | 1.601 (ref) † | 1.627 (-1.59% speed) † | 1.571 (+1.89% speed) † |
+| original22-v1/core/function-calls | 0.802 (+13.31% speed) † | 0.788 (+15.37% speed) † | 1.430 (-36.41% speed) † | 0.909 (ref) | 0.786 (+15.69% speed) † | 0.786 (+15.64% speed) † |
+| original22-v1/core/memory-load-store | 0.447 (+7.83% speed) † | 0.438 (+10.05% speed) † | 0.874 (-44.82% speed) † | 0.482 (ref) † | 0.536 (-9.95% speed) † | 0.286 (+68.57% speed) † |
+| original22-v1/memory/narrow-unaligned | 0.731 (+4.17% speed) † | 0.742 (+2.64% speed) † | 1.132 (-32.73% speed) † | 0.762 (ref) † | 0.809 (-5.81% speed) † | 0.571 (+33.33% speed) † |
+| original22-v1/memory/dependent-address | 1.894 (+9.89% speed) † | 1.861 (+11.84% speed) † | 3.173 (-34.41% speed) † | 2.081 (ref) † | 2.124 (-2.01% speed) † | 1.446 (+43.94% speed) † |
+| original22-v1/memory/float64-unaligned | 0.815 (-5.89% speed) † | 0.791 (-2.94% speed) † | 0.897 (-14.44% speed) † | 0.767 (ref) † | 0.772 (-0.56% speed) † | 0.710 (+8.07% speed) † |
+| original22-v1/runtime/simd-memory-full | 3.384 (+7.04% speed) † | 3.364 (+7.67% speed) | 3.884 (-6.74% speed) † | 3.622 (ref) | 3.457 (+4.77% speed) | 3.605 (+0.49% speed) |
+| original22-v1/runtime/simd-memory-widen | 1.055 (-0.75% speed) | 1.046 (+0.15% speed) † | 1.143 (-8.33% speed) † | 1.047 (ref) | 1.045 (+0.19% speed) | 1.044 (+0.28% speed) |
+| original22-v1/runtime/simd-memory-lanes | 5.100 (+15.40% speed) † | 5.094 (+15.54% speed) † | 6.129 (-3.96% speed) † | 5.886 (ref) † | 5.888 (-0.04% speed) † | 5.063 (+16.26% speed) † |
+| original22-v1/gc/i31-roundtrip | 2.050 (+4.07% speed) † | 1.790 (+19.21% speed) † | US | 2.133 (ref) † | US | 1.829 (+16.62% speed) † |
+| original22-v1/gc/struct-access | 2.413 (-31.95% speed) † | 2.033 (-19.27% speed) † | US | 1.642 (ref) † | US | 10.342 (-84.13% speed) † |
+| original22-v1/gc/struct-allocation | 28.926 (+144.10% speed) † | 28.142 (+150.91% speed) † | US | 70.610 (ref) † | US | 39.276 (+79.78% speed) † |
+| original22-v1/gc/struct-indirect-access | 3.727 (-13.47% speed) † | 2.629 (+22.66% speed) † | US | 3.225 (ref) † | US | 28.788 (-88.80% speed) † |
+| original22-v1/threads/private-memory | 1.350 (+6.64% speed) † | 0.850 (+69.36% speed) † | 1.563 (-7.87% speed) † | 1.440 (ref) † | 1.740 (-17.25% speed) † | 1.679 (-14.27% speed) † |
+| original22-v1/threads/shared-memory | 2.554 (-41.93% speed) † | 1.910 (-22.35% speed) † | 1.710 (-13.28% speed) † | 1.483 (ref) † | 1.706 (-13.06% speed) † | 1.704 (-12.96% speed) † |
+| original22-v1/threads/atomic-rmw | 3.379 (-30.21% speed) † | 2.735 (-13.79% speed) † | 2.581 (-8.64% speed) † | 2.358 (ref) † | 4.650 (-49.28% speed) † | 2.567 (-8.12% speed) † |
+| original22-v1/threads/notify-empty | 1.673 (+328.02% speed) † | 1.387 (+416.08% speed) † | 21.888 (-67.29% speed) † | 7.160 (ref) | 5.183 (+38.14% speed) † | 9.471 (-24.39% speed) † |
+| original22-v1/threads/wait-mismatch | 2.902 (+236.11% speed) † | 2.190 (+345.48% speed) † | 27.233 (-64.18% speed) † | 9.754 (ref) † | 3.352 (+190.99% speed) † | 4.040 (+141.47% speed) † |
+| original22-v1/threads/wait-timeout | 2.808 (+1464.13% speed) † | 1.869 (+2250.61% speed) † | 307.84 (-85.73% speed) † | 43.927 (ref) † | 174.42 (-74.82% speed) † | 62.219 (-29.40% speed) † |
+| original22-v1/applications/sha256-clang | 205.36 (+1.06% speed) † | 204.83 (+1.32% speed) † | 296.57 (-30.02% speed) † | 207.54 (ref) † | 213.62 (-2.85% speed) † | 189.53 (+9.50% speed) † |
+| original22-v1/applications/sha256-rust | 209.95 (-11.26% speed) † | 209.47 (-11.06% speed) † | 322.70 (-42.27% speed) † | 186.30 (ref) † | 188.70 (-1.27% speed) † | 182.80 (+1.92% speed) † |
+| gc-sustained-v1/gc/i31-roundtrip | 1.376 (+32.87% speed) † | 1.367 (+33.77% speed) † | US | 1.829 (ref) † | US | 1.322 (+38.36% speed) † |
+| gc-sustained-v1/gc/struct-access | 1.077 (-0.38% speed) † | 1.072 (+0.02% speed) † | US | 1.073 (ref) † | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-allocation | 32.791 (+54.04% speed) † | 33.589 (+50.37% speed) † | US | 50.510 (ref) † | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-indirect-access | 1.813 (+56.23% speed) † | 1.745 (+62.31% speed) † | US | 2.832 (ref) † | US | **FAIL: SIGSEGV** |
+| threads-sustained-v2/threads/private-memory | 0.438 (+146.67% speed) † | 0.349 (+209.66% speed) † | 1.204 (-10.22% speed) † | 1.081 (ref) † | 1.114 (-2.95% speed) † | 1.113 (-2.81% speed) † |
+| threads-sustained-v2/threads/shared-memory | 1.409 (-23.42% speed) † | 1.308 (-17.46% speed) † | 1.223 (-11.75% speed) † | 1.079 (ref) † | 1.114 (-3.12% speed) † | 1.115 (-3.18% speed) † |
+| threads-sustained-v2/threads/atomic-rmw | 2.079 (-8.45% speed) † | 1.919 (-0.81% speed) † | 2.061 (-7.68% speed) † | 1.903 (ref) † | 3.960 (-51.94% speed) † | 1.906 (-0.15% speed) † |
+| threads-sustained-v2/threads/notify-empty | 1.086 (+530.74% speed) † | 0.973 (+603.96% speed) † | 21.307 (-67.86% speed) | 6.848 (ref) | 4.681 (+46.29% speed) † | 8.989 (-23.82% speed) |
+| threads-sustained-v2/threads/wait-mismatch | 1.230 (+622.83% speed) † | 1.121 (+693.21% speed) † | 24.476 (-63.67% speed) † | 8.892 (ref) † | 2.418 (+267.77% speed) † | 3.207 (+177.27% speed) † |
+| threads-sustained-v2/threads/wait-timeout | 1.224 (+3799.47% speed) † | 1.054 (+4426.76% speed) † | 331.42 (-85.60% speed) † | 47.720 (ref) † | 181.24 (-73.67% speed) † | 66.283 (-28.01% speed) † |
+| generic-calls-v1/core/generic-calls | 1.052 (+103.49% speed) † | 1.044 (+105.05% speed) † | 2.151 (-0.45% speed) † | 2.141 (ref) † | 2.189 (-2.21% speed) † | 1.046 (+104.77% speed) † |
 
 ## Interpreter execution
 
@@ -79,39 +80,39 @@ The reference runtime is **wazero**. GC rows use **WasmEdge**.
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 3,937.50 (-42.32% speed) † | 4,896.00 (-53.62% speed) † | 2,271.00 (ref) † | NM | NM | 6,375.00 (-64.38% speed) † |
-| original22-v1/core/integer-loop | 38.000 (+162.78% speed) † | 31.743 (+214.57% speed) † | 99.855 (ref) † | NM | NM | 59.209 (+68.65% speed) † |
-| original22-v1/core/function-calls | 59.738 (+91.07% speed) † | 55.672 (+105.03% speed) † | 114.14 (ref) † | NM | NM | 74.510 (+53.19% speed) † |
-| original22-v1/core/memory-load-store | 78.713 (+121.16% speed) † | 69.944 (+148.89% speed) † | 174.08 (ref) † | NM | NM | 108.69 (+60.16% speed) † |
-| original22-v1/memory/narrow-unaligned | 102.28 (+114.11% speed) † | 92.447 (+136.89% speed) † | 219.00 (ref) † | NM | NM | 135.66 (+61.43% speed) † |
-| original22-v1/memory/dependent-address | 47.886 (+137.07% speed) † | 41.759 (+171.85% speed) † | 113.52 (ref) † | NM | NM | 63.199 (+79.63% speed) † |
-| original22-v1/memory/float64-unaligned | 80.301 (+103.08% speed) | 71.525 (+128.00% speed) † | 163.08 (ref) | NM | NM | 99.897 (+63.25% speed) † |
-| original22-v1/runtime/simd-memory-full | 93.436 (+96.50% speed) † | 84.840 (+116.41% speed) † | 183.60 (ref) † | NM | NM | 95.950 (+91.35% speed) † |
-| original22-v1/runtime/simd-memory-widen | 72.369 (+128.86% speed) † | 63.773 (+159.71% speed) † | 165.63 (ref) † | NM | NM | 70.052 (+136.43% speed) † |
-| original22-v1/runtime/simd-memory-lanes | 114.49 (+101.35% speed) † | 104.87 (+119.82% speed) † | 230.52 (ref) † | NM | NM | 109.30 (+110.91% speed) † |
-| original22-v1/gc/i31-roundtrip (vs WasmEdge) | 43.748 (+22.51% speed) † | 39.552 (+35.51% speed) † | US | NM | NM | 53.596 (ref) † |
-| original22-v1/gc/struct-access (vs WasmEdge) | 48.679 (+32.13% speed) † | 46.204 (+39.21% speed) † | US | NM | NM | 64.321 (ref) † |
-| original22-v1/gc/struct-allocation (vs WasmEdge) | 105.65 (+20.38% speed) † | 115.42 (+10.19% speed) † | US | NM | NM | 127.18 (ref) † |
-| original22-v1/gc/struct-indirect-access (vs WasmEdge) | 87.483 (+28.05% speed) † | 83.390 (+34.34% speed) † | US | NM | NM | 112.03 (ref) † |
-| original22-v1/threads/private-memory | 46.775 (+59.24% speed) † | 40.110 (+85.70% speed) † | 74.485 (ref) | NM | NM | 46.715 (+59.45% speed) † |
-| original22-v1/threads/shared-memory | 87.271 (-17.36% speed) † | 40.367 (+78.65% speed) † | 72.117 (ref) † | NM | NM | 44.573 (+61.79% speed) † |
-| original22-v1/threads/atomic-rmw | 61.367 (-10.22% speed) † | 38.694 (+42.39% speed) † | 55.098 (ref) † | NM | NM | 38.117 (+44.55% speed) † |
-| original22-v1/threads/notify-empty | 40.675 (+28.37% speed) † | 36.381 (+43.51% speed) † | 52.212 (ref) † | NM | NM | 53.858 (-3.06% speed) † |
-| original22-v1/threads/wait-mismatch | 69.004 (+20.67% speed) † | 48.485 (+71.74% speed) † | 83.269 (ref) † | NM | NM | 57.419 (+45.02% speed) † |
-| original22-v1/threads/wait-timeout | 68.002 (+629.85% speed) † | 50.196 (+888.76% speed) † | 496.31 (ref) † | NM | NM | 121.33 (+309.06% speed) † |
-| original22-v1/applications/sha256-clang | 21,438.31 (+122.53% speed) † | 19,069.73 (+150.16% speed) † | 47,705.74 (ref) † | NM | NM | 30,067.10 (+58.66% speed) † |
-| original22-v1/applications/sha256-rust | 20,876.37 (+126.38% speed) † | 18,400.94 (+156.83% speed) † | 47,259.65 (ref) † | NM | NM | 28,694.83 (+64.70% speed) † |
-| gc-sustained-v1/gc/i31-roundtrip (vs WasmEdge) | 40.726 (+23.77% speed) † | 37.534 (+34.30% speed) † | US | NM | NM | 50.409 (ref) † |
-| gc-sustained-v1/gc/struct-access (vs WasmEdge) | 47.412 (+36.62% speed) | 46.232 (+40.11% speed) † | US | NM | NM | 64.774 (ref) |
-| gc-sustained-v1/gc/struct-allocation (vs WasmEdge) | 121.49 (+2.87% speed) † | 123.66 (+1.07% speed) † | US | NM | NM | 124.98 (ref) † |
-| gc-sustained-v1/gc/struct-indirect-access (vs WasmEdge) | 85.508 (+32.19% speed) † | 81.116 (+39.34% speed) | US | NM | NM | 113.03 (ref) |
-| threads-sustained-v2/threads/private-memory | 45.751 (+64.71% speed) † | 40.351 (+86.75% speed) † | 75.356 (ref) † | NM | NM | 45.851 (+64.35% speed) † |
-| threads-sustained-v2/threads/shared-memory | 90.740 (-15.54% speed) † | 40.321 (+90.07% speed) † | 76.637 (ref) † | NM | NM | 47.313 (+61.98% speed) † |
-| threads-sustained-v2/threads/atomic-rmw | 60.346 (-9.97% speed) † | 38.910 (+39.63% speed) † | 54.332 (ref) † | NM | NM | 37.981 (+43.05% speed) † |
-| threads-sustained-v2/threads/notify-empty | 36.276 (+40.31% speed) † | 33.372 (+52.52% speed) † | 50.900 (ref) † | NM | NM | 47.436 (+7.30% speed) † |
-| threads-sustained-v2/threads/wait-mismatch | 63.588 (+20.57% speed) † | 40.604 (+88.82% speed) | 76.668 (ref) | NM | NM | 48.375 (+58.49% speed) † |
-| threads-sustained-v2/threads/wait-timeout | 65.817 (+534.75% speed) † | 41.083 (+916.91% speed) † | 417.78 (ref) † | NM | NM | 116.22 (+259.48% speed) † |
-| generic-calls-v1/core/generic-calls | 127.64 (+76.17% speed) † | 109.52 (+105.31% speed) † | 224.86 (ref) † | NM | NM | 139.77 (+60.88% speed) † |
+| original22-v1/core/call-control | 2,645.50 (-52.75% speed) † | 2,458.50 (-49.16% speed) † | 1,250.00 (ref) † | NM | NM | 3,458.50 (-63.86% speed) † |
+| original22-v1/core/integer-loop | 33.098 (+161.09% speed) † | 27.753 (+211.38% speed) † | 86.416 (ref) † | NM | NM | 51.724 (+67.07% speed) † |
+| original22-v1/core/function-calls | 48.847 (+86.58% speed) † | 46.102 (+97.69% speed) † | 91.138 (ref) † | NM | NM | 63.044 (+44.56% speed) † |
+| original22-v1/core/memory-load-store | 67.573 (+119.47% speed) † | 57.937 (+155.97% speed) † | 148.30 (ref) † | NM | NM | 93.606 (+58.43% speed) † |
+| original22-v1/memory/narrow-unaligned | 96.276 (+118.80% speed) † | 81.173 (+159.52% speed) † | 210.66 (ref) † | NM | NM | 131.59 (+60.09% speed) † |
+| original22-v1/memory/dependent-address | 41.265 (+143.98% speed) † | 35.281 (+185.36% speed) † | 100.68 (ref) † | NM | NM | 55.156 (+82.53% speed) † |
+| original22-v1/memory/float64-unaligned | 73.271 (+99.82% speed) † | 64.021 (+128.69% speed) † | 146.41 (ref) † | NM | NM | 89.849 (+62.95% speed) † |
+| original22-v1/runtime/simd-memory-full | 76.980 (+98.05% speed) † | 67.616 (+125.47% speed) † | 152.45 (ref) † | NM | NM | 79.750 (+91.17% speed) † |
+| original22-v1/runtime/simd-memory-widen | 63.069 (+130.37% speed) † | 55.253 (+162.96% speed) † | 145.29 (ref) † | NM | NM | 61.920 (+134.65% speed) † |
+| original22-v1/runtime/simd-memory-lanes | 97.133 (+95.79% speed) † | 87.663 (+116.94% speed) † | 190.18 (ref) † | NM | NM | 91.701 (+107.39% speed) † |
+| original22-v1/gc/i31-roundtrip (vs WasmEdge) | 36.763 (+22.71% speed) † | 33.085 (+36.35% speed) † | US | NM | NM | 45.110 (ref) † |
+| original22-v1/gc/struct-access (vs WasmEdge) | 46.262 (+27.21% speed) † | 42.475 (+38.56% speed) † | US | NM | NM | 58.852 (ref) † |
+| original22-v1/gc/struct-allocation (vs WasmEdge) | 93.017 (+17.68% speed) † | 101.89 (+7.43% speed) † | US | NM | NM | 109.46 (ref) † |
+| original22-v1/gc/struct-indirect-access (vs WasmEdge) | 82.817 (+24.89% speed) † | 82.127 (+25.94% speed) † | US | NM | NM | 103.43 (ref) † |
+| original22-v1/threads/private-memory | 39.985 (+57.64% speed) † | 34.183 (+84.39% speed) † | 63.031 (ref) † | NM | NM | 39.396 (+59.99% speed) † |
+| original22-v1/threads/shared-memory | 78.004 (-17.68% speed) † | 33.577 (+91.23% speed) † | 64.210 (ref) † | NM | NM | 39.660 (+61.90% speed) † |
+| original22-v1/threads/atomic-rmw | 55.502 (-10.34% speed) † | 33.896 (+46.81% speed) † | 49.763 (ref) † | NM | NM | 33.104 (+50.32% speed) † |
+| original22-v1/threads/notify-empty | 32.010 (+35.30% speed) † | 28.185 (+53.66% speed) † | 43.310 (ref) † | NM | NM | 40.552 (+6.80% speed) † |
+| original22-v1/threads/wait-mismatch | 59.677 (+20.86% speed) † | 40.002 (+80.30% speed) † | 72.125 (ref) † | NM | NM | 45.977 (+56.87% speed) † |
+| original22-v1/threads/wait-timeout | 58.948 (+488.54% speed) † | 37.779 (+818.31% speed) † | 346.93 (ref) † | NM | NM | 98.998 (+250.44% speed) † |
+| original22-v1/applications/sha256-clang | 19,394.49 (+119.45% speed) † | 16,293.77 (+161.21% speed) † | 42,560.62 (ref) † | NM | NM | 27,535.03 (+54.57% speed) † |
+| original22-v1/applications/sha256-rust | 17,867.20 (+132.83% speed) † | 15,763.63 (+163.91% speed) † | 41,601.03 (ref) † | NM | NM | 24,459.38 (+70.08% speed) † |
+| gc-sustained-v1/gc/i31-roundtrip (vs WasmEdge) | 35.977 (+24.96% speed) † | 32.261 (+39.35% speed) † | US | NM | NM | 44.956 (ref) † |
+| gc-sustained-v1/gc/struct-access (vs WasmEdge) | 42.228 (+33.46% speed) † | 40.999 (+37.46% speed) † | US | NM | NM | 56.357 (ref) |
+| gc-sustained-v1/gc/struct-allocation (vs WasmEdge) | 94.278 (+12.39% speed) † | 107.01 (-0.98% speed) † | US | NM | NM | 105.96 (ref) † |
+| gc-sustained-v1/gc/struct-indirect-access (vs WasmEdge) | 82.759 (+30.88% speed) † | 78.408 (+38.14% speed) † | US | NM | NM | 108.31 (ref) † |
+| threads-sustained-v2/threads/private-memory | 38.491 (+65.05% speed) † | 33.316 (+90.68% speed) † | 63.529 (ref) † | NM | NM | 38.716 (+64.09% speed) † |
+| threads-sustained-v2/threads/shared-memory | 75.978 (-16.05% speed) † | 33.451 (+90.69% speed) † | 63.786 (ref) † | NM | NM | 38.752 (+64.60% speed) † |
+| threads-sustained-v2/threads/atomic-rmw | 52.052 (-6.50% speed) † | 32.914 (+47.87% speed) † | 48.671 (ref) † | NM | NM | 32.062 (+51.80% speed) † |
+| threads-sustained-v2/threads/notify-empty | 30.615 (+31.35% speed) † | 27.819 (+44.55% speed) † | 40.213 (ref) | NM | NM | 39.834 (+0.95% speed) |
+| threads-sustained-v2/threads/wait-mismatch | 56.287 (+24.52% speed) † | 36.788 (+90.52% speed) † | 70.087 (ref) † | NM | NM | 43.148 (+62.43% speed) † |
+| threads-sustained-v2/threads/wait-timeout | 60.318 (+544.19% speed) † | 37.969 (+923.35% speed) † | 388.56 (ref) † | NM | NM | 106.46 (+264.98% speed) † |
+| generic-calls-v1/core/generic-calls | 108.29 (+78.61% speed) † | 97.034 (+99.32% speed) † | 193.41 (ref) † | NM | NM | 125.23 (+54.44% speed) † |
 
 ### Warm speed against the fastest observed competitor
 
@@ -121,77 +122,77 @@ Each row selects the fastest measured competitor median for that backend and wor
 
 | Workload | Fastest observed competitor | wasmvm Go speed Δ | wasmvm LLGo speed Δ |
 | --- | ---: | ---: | ---: |
-| original22-v1/core/call-control | wazero-compiler | -77.90% † | -75.50% † |
-| original22-v1/core/integer-loop | wasmedge-compiler | -1.71% † | -2.32% † |
-| original22-v1/core/function-calls | wasmer-compiler | -2.18% † | -1.65% † |
-| original22-v1/core/memory-load-store | wasmedge-compiler | -35.68% † | -34.48% † |
-| original22-v1/memory/narrow-unaligned | wasmedge-compiler | -21.28% † | -21.34% † |
-| original22-v1/memory/dependent-address | wasmedge-compiler | -22.17% † | -24.67% † |
-| original22-v1/memory/float64-unaligned | wasmedge-compiler | -9.91% † | -8.98% † |
-| original22-v1/runtime/simd-memory-full | wasmer-compiler | +3.19% † | +3.33% † |
-| original22-v1/runtime/simd-memory-widen | wasmtime-compiler | -1.91% † | -0.50% † |
-| original22-v1/runtime/simd-memory-lanes | wasmedge-compiler | +1.39% † | -0.84% |
-| original22-v1/gc/i31-roundtrip | wasmedge-compiler | -13.40% † | +8.23% † |
-| original22-v1/gc/struct-access | wasmtime-compiler | -37.33% † | -32.70% † |
-| original22-v1/gc/struct-allocation | wasmedge-compiler | +42.29% † | +35.23% † |
-| original22-v1/gc/struct-indirect-access | wasmtime-compiler | -3.49% † | +19.94% † |
-| original22-v1/threads/private-memory | wasmtime-compiler | -3.83% † | +62.17% † |
-| original22-v1/threads/shared-memory | wasmtime-compiler | -47.69% † | -28.00% † |
-| original22-v1/threads/atomic-rmw | wasmtime-compiler | -31.55% † | -17.07% † |
-| original22-v1/threads/notify-empty | wasmer-compiler | +137.43% † | +270.02% † |
-| original22-v1/threads/wait-mismatch | wasmer-compiler | +8.20% † | +63.26% † |
-| original22-v1/threads/wait-timeout | wasmtime-compiler | +1464.88% † | +1481.55% † |
-| original22-v1/applications/sha256-clang | wasmedge-compiler | -12.83% † | -16.32% † |
-| original22-v1/applications/sha256-rust | wasmtime-compiler | -12.47% † | -10.65% † |
-| gc-sustained-v1/gc/i31-roundtrip | wasmedge-compiler | -4.39% † | -4.15% † |
-| gc-sustained-v1/gc/struct-access | wasmtime-compiler | -4.62% † | -0.49% † |
-| gc-sustained-v1/gc/struct-allocation | wasmtime-compiler | +55.93% † | +52.66% † |
-| gc-sustained-v1/gc/struct-indirect-access | wasmtime-compiler | +52.93% † | +57.32% † |
-| threads-sustained-v2/threads/private-memory | wasmer-compiler | +130.46% † | +208.33% † |
-| threads-sustained-v2/threads/shared-memory | wasmer-compiler | -21.69% † | -29.21% † |
-| threads-sustained-v2/threads/atomic-rmw | wasmtime-compiler | -7.50% † | -1.33% † |
-| threads-sustained-v2/threads/notify-empty | wasmer-compiler | +342.60% † | +401.72% † |
-| threads-sustained-v2/threads/wait-mismatch | wasmer-compiler | +97.82% † | +126.17% † |
-| threads-sustained-v2/threads/wait-timeout | wasmtime-compiler | +3920.55% † | +4260.46% † |
-| generic-calls-v1/core/generic-calls | wasmedge-compiler | -0.05% † | +0.69% † |
+| original22-v1/core/call-control | wazero-compiler | -81.29% † | -76.82% † |
+| original22-v1/core/integer-loop | wasmedge-compiler | -1.65% † | -3.10% † |
+| original22-v1/core/function-calls | wasmer-compiler | -2.05% † | -0.28% † |
+| original22-v1/core/memory-load-store | wasmedge-compiler | -36.03% † | -34.71% † |
+| original22-v1/memory/narrow-unaligned | wasmedge-compiler | -21.87% † | -23.02% † |
+| original22-v1/memory/dependent-address | wasmedge-compiler | -23.65% † | -22.30% † |
+| original22-v1/memory/float64-unaligned | wasmedge-compiler | -12.92% † | -10.19% † |
+| original22-v1/runtime/simd-memory-full | wasmer-compiler | +2.17% † | +2.77% |
+| original22-v1/runtime/simd-memory-widen | wasmedge-compiler | -1.03% | -0.14% † |
+| original22-v1/runtime/simd-memory-lanes | wasmedge-compiler | -0.74% | -0.62% † |
+| original22-v1/gc/i31-roundtrip | wasmedge-compiler | -10.77% † | +2.22% † |
+| original22-v1/gc/struct-access | wasmtime-compiler | -31.95% † | -19.27% † |
+| original22-v1/gc/struct-allocation | wasmedge-compiler | +35.78% † | +39.56% † |
+| original22-v1/gc/struct-indirect-access | wasmtime-compiler | -13.47% † | +22.66% † |
+| original22-v1/threads/private-memory | wasmtime-compiler | +6.64% † | +69.36% † |
+| original22-v1/threads/shared-memory | wasmtime-compiler | -41.93% † | -22.35% † |
+| original22-v1/threads/atomic-rmw | wasmtime-compiler | -30.21% † | -13.79% † |
+| original22-v1/threads/notify-empty | wasmer-compiler | +209.84% † | +273.59% † |
+| original22-v1/threads/wait-mismatch | wasmer-compiler | +15.51% † | +53.09% † |
+| original22-v1/threads/wait-timeout | wasmtime-compiler | +1464.13% † | +2250.61% † |
+| original22-v1/applications/sha256-clang | wasmedge-compiler | -7.71% † | -7.47% † |
+| original22-v1/applications/sha256-rust | wasmedge-compiler | -12.93% † | -12.73% † |
+| gc-sustained-v1/gc/i31-roundtrip | wasmedge-compiler | -3.97% † | -3.32% † |
+| gc-sustained-v1/gc/struct-access | wasmtime-compiler | -0.38% † | +0.02% † |
+| gc-sustained-v1/gc/struct-allocation | wasmtime-compiler | +54.04% † | +50.37% † |
+| gc-sustained-v1/gc/struct-indirect-access | wasmtime-compiler | +56.23% † | +62.31% † |
+| threads-sustained-v2/threads/private-memory | wasmtime-compiler | +146.67% † | +209.66% † |
+| threads-sustained-v2/threads/shared-memory | wasmtime-compiler | -23.42% † | -17.46% † |
+| threads-sustained-v2/threads/atomic-rmw | wasmtime-compiler | -8.45% † | -0.81% † |
+| threads-sustained-v2/threads/notify-empty | wasmer-compiler | +331.16% † | +381.22% † |
+| threads-sustained-v2/threads/wait-mismatch | wasmer-compiler | +96.54% † | +115.68% † |
+| threads-sustained-v2/threads/wait-timeout | wasmtime-compiler | +3799.47% † | +4426.76% † |
+| generic-calls-v1/core/generic-calls | wasmedge-compiler | -0.63% † | +0.14% † |
 
 #### Interpreter
 
 | Workload | Fastest observed competitor | wasmvm Go speed Δ | wasmvm LLGo speed Δ |
 | --- | ---: | ---: | ---: |
-| original22-v1/core/call-control | wazero-interpreter | -42.32% † | -53.62% † |
-| original22-v1/core/integer-loop | wasmedge-interpreter | +55.81% † | +86.53% † |
-| original22-v1/core/function-calls | wasmedge-interpreter | +24.73% † | +33.84% † |
-| original22-v1/core/memory-load-store | wasmedge-interpreter | +38.09% † | +55.40% † |
-| original22-v1/memory/narrow-unaligned | wasmedge-interpreter | +32.63% † | +46.74% † |
-| original22-v1/memory/dependent-address | wasmedge-interpreter | +31.98% † | +51.34% † |
-| original22-v1/memory/float64-unaligned | wasmedge-interpreter | +24.40% † | +39.67% † |
-| original22-v1/runtime/simd-memory-full | wasmedge-interpreter | +2.69% † | +13.10% † |
-| original22-v1/runtime/simd-memory-widen | wasmedge-interpreter | -3.20% | +9.85% |
-| original22-v1/runtime/simd-memory-lanes | wasmedge-interpreter | -4.53% † | +4.23% † |
-| original22-v1/gc/i31-roundtrip | wasmedge-interpreter | +22.51% † | +35.51% † |
-| original22-v1/gc/struct-access | wasmedge-interpreter | +32.13% † | +39.21% † |
-| original22-v1/gc/struct-allocation | wasmedge-interpreter | +20.38% † | +10.19% † |
-| original22-v1/gc/struct-indirect-access | wasmedge-interpreter | +28.05% † | +34.34% † |
-| original22-v1/threads/private-memory | wasmedge-interpreter | -0.13% † | +16.47% † |
-| original22-v1/threads/shared-memory | wasmedge-interpreter | -48.93% † | +10.42% † |
-| original22-v1/threads/atomic-rmw | wasmedge-interpreter | -37.89% † | -1.49% † |
-| original22-v1/threads/notify-empty | wazero-interpreter | +28.37% † | +43.51% † |
-| original22-v1/threads/wait-mismatch | wasmedge-interpreter | -16.79% † | +18.42% † |
-| original22-v1/threads/wait-timeout | wasmedge-interpreter | +78.42% † | +141.71% † |
-| original22-v1/applications/sha256-clang | wasmedge-interpreter | +40.25% † | +57.67% † |
-| original22-v1/applications/sha256-rust | wasmedge-interpreter | +37.45% † | +55.94% † |
-| gc-sustained-v1/gc/i31-roundtrip | wasmedge-interpreter | +23.77% † | +34.30% † |
-| gc-sustained-v1/gc/struct-access | wasmedge-interpreter | +36.62% | +40.11% † |
-| gc-sustained-v1/gc/struct-allocation | wasmedge-interpreter | +2.87% † | +1.07% † |
-| gc-sustained-v1/gc/struct-indirect-access | wasmedge-interpreter | +32.19% † | +39.34% |
-| threads-sustained-v2/threads/private-memory | wasmedge-interpreter | +0.22% † | +13.63% † |
-| threads-sustained-v2/threads/shared-memory | wasmedge-interpreter | -47.86% † | +17.34% † |
-| threads-sustained-v2/threads/atomic-rmw | wasmedge-interpreter | -37.06% † | -2.39% † |
-| threads-sustained-v2/threads/notify-empty | wasmedge-interpreter | +30.76% † | +42.15% † |
-| threads-sustained-v2/threads/wait-mismatch | wasmedge-interpreter | -23.92% † | +19.14% † |
-| threads-sustained-v2/threads/wait-timeout | wasmedge-interpreter | +76.57% † | +182.88% † |
-| generic-calls-v1/core/generic-calls | wasmedge-interpreter | +9.50% † | +27.62% † |
+| original22-v1/core/call-control | wazero-interpreter | -52.75% † | -49.16% † |
+| original22-v1/core/integer-loop | wasmedge-interpreter | +56.28% † | +86.38% † |
+| original22-v1/core/function-calls | wasmedge-interpreter | +29.06% | +36.75% |
+| original22-v1/core/memory-load-store | wasmedge-interpreter | +38.53% † | +61.56% † |
+| original22-v1/memory/narrow-unaligned | wasmedge-interpreter | +36.68% † | +62.11% † |
+| original22-v1/memory/dependent-address | wasmedge-interpreter | +33.66% † | +56.33% † |
+| original22-v1/memory/float64-unaligned | wasmedge-interpreter | +22.63% † | +40.34% † |
+| original22-v1/runtime/simd-memory-full | wasmedge-interpreter | +3.60% † | +17.95% † |
+| original22-v1/runtime/simd-memory-widen | wasmedge-interpreter | -1.82% † | +12.06% † |
+| original22-v1/runtime/simd-memory-lanes | wasmedge-interpreter | -5.59% † | +4.61% |
+| original22-v1/gc/i31-roundtrip | wasmedge-interpreter | +22.71% † | +36.35% † |
+| original22-v1/gc/struct-access | wasmedge-interpreter | +27.21% † | +38.56% † |
+| original22-v1/gc/struct-allocation | wasmedge-interpreter | +17.68% † | +7.43% † |
+| original22-v1/gc/struct-indirect-access | wasmedge-interpreter | +24.89% † | +25.94% † |
+| original22-v1/threads/private-memory | wasmedge-interpreter | -1.47% † | +15.25% † |
+| original22-v1/threads/shared-memory | wasmedge-interpreter | -49.16% † | +18.12% † |
+| original22-v1/threads/atomic-rmw | wasmedge-interpreter | -40.35% † | -2.34% † |
+| original22-v1/threads/notify-empty | wasmedge-interpreter | +26.68% † | +43.88% † |
+| original22-v1/threads/wait-mismatch | wasmedge-interpreter | -22.96% † | +14.94% † |
+| original22-v1/threads/wait-timeout | wasmedge-interpreter | +67.94% † | +162.04% † |
+| original22-v1/applications/sha256-clang | wasmedge-interpreter | +41.97% † | +68.99% † |
+| original22-v1/applications/sha256-rust | wasmedge-interpreter | +36.90% † | +55.16% † |
+| gc-sustained-v1/gc/i31-roundtrip | wasmedge-interpreter | +24.96% † | +39.35% † |
+| gc-sustained-v1/gc/struct-access | wasmedge-interpreter | +33.46% † | +37.46% † |
+| gc-sustained-v1/gc/struct-allocation | wasmedge-interpreter | +12.39% † | -0.98% † |
+| gc-sustained-v1/gc/struct-indirect-access | wasmedge-interpreter | +30.88% † | +38.14% † |
+| threads-sustained-v2/threads/private-memory | wasmedge-interpreter | +0.58% † | +16.21% † |
+| threads-sustained-v2/threads/shared-memory | wasmedge-interpreter | -49.00% † | +15.85% † |
+| threads-sustained-v2/threads/atomic-rmw | wasmedge-interpreter | -38.40% † | -2.59% † |
+| threads-sustained-v2/threads/notify-empty | wasmedge-interpreter | +30.12% † | +43.19% † |
+| threads-sustained-v2/threads/wait-mismatch | wasmedge-interpreter | -23.34% † | +17.29% † |
+| threads-sustained-v2/threads/wait-timeout | wasmedge-interpreter | +76.50% † | +180.39% † |
+| generic-calls-v1/core/generic-calls | wasmedge-interpreter | +15.65% † | +29.06% † |
 
 ## Complete P3 HTTP requests
 
@@ -199,25 +200,25 @@ P3 competitor cells marked `NM` have no measured adapter for the pinned componen
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| 16 B CPU, us/request | 72.707 (-40.01% speed) † | 206.18 (-78.84% speed) † | NM | 43.620 (ref) † | NM | NM |
-| 16 B instructions/request | 684,521.06 (+203.82% Δ) † | 1,274,348.71 (+465.61% Δ) † | NM | 225,307.13 (ref) † | NM | NM |
-| 16 B requests/s | 54,254.48 (-4.21% speed) † | 22,603.74 (-60.09% speed) † | NM | 56,636.99 (ref) † | NM | NM |
-| 65536 B CPU, us/request | 108.74 (-45.64% speed) † | 244.47 (-75.82% speed) † | NM | 59.112 (ref) † | NM | NM |
-| 65536 B instructions/request | 970,129.35 (+202.82% Δ) † | 1,597,952.35 (+398.80% Δ) † | NM | 320,361.46 (ref) † | NM | NM |
-| 65536 B requests/s | 35,268.67 (-21.74% speed) † | 17,167.43 (-61.90% speed) † | NM | 45,063.48 (ref) † | NM | NM |
+| 16 B CPU, us/request | 63.286 (-54.36% speed) † | 186.19 (-84.49% speed) † | NM | 28.884 (ref) † | NM | NM |
+| 16 B instructions/request | 684,784.79 (+221.82% Δ) | 1,270,961.23 (+497.30% Δ) | NM | 212,785.75 (ref) | NM | NM |
+| 16 B requests/s | 62,613.51 (-10.39% speed) † | 26,608.55 (-61.92% speed) † | NM | 69,876.94 (ref) † | NM | NM |
+| 65536 B CPU, us/request | 90.210 (-51.35% speed) † | 223.15 (-80.33% speed) † | NM | 43.890 (ref) † | NM | NM |
+| 65536 B instructions/request | 969,773.66 (+212.33% Δ) † | 1,620,064.97 (+421.76% Δ) † | NM | 310,501.05 (ref) † | NM | NM |
+| 65536 B requests/s | 43,881.66 (-24.31% speed) † | 21,609.08 (-62.73% speed) † | NM | 57,977.00 (ref) † | NM | NM |
 
 ### P3 source contrasts
 
 | Metric | Go source head/base | LLGo source head/base |
 | --- | ---: | ---: |
-| 16 B cpuUs | 0.976 [0.961, 0.992]; Δ -2.38%; speed +2.43% [+0.82%, +4.07%]; unresolved | 0.996 [0.990, 1.002]; Δ -0.39%; speed +0.39% [-0.19%, +0.97%]; pass |
-| 16 B instructions | 0.970 [0.968, 0.972]; Δ -3.03%; pass | 0.976 [0.972, 0.979]; Δ -2.41%; pass |
-| 16 B throughput | 1.033 [1.007, 1.058]; Δ +3.26%; speed +3.26% [+0.69%, +5.79%]; pass | 1.003 [0.980, 1.020]; Δ +0.34%; speed +0.34% [-1.96%, +2.04%]; unresolved |
+| 16 B cpuUs | 0.983 [0.970, 0.996]; Δ -1.69%; speed +1.72% [+0.35%, +3.14%]; pass | 0.994 [0.983, 1.005]; Δ -0.63%; speed +0.64% [-0.48%, +1.72%]; pass |
+| 16 B instructions | 0.969 [0.968, 0.970]; Δ -3.12%; pass | 0.977 [0.971, 0.982]; Δ -2.30%; pass |
+| 16 B throughput | 1.020 [1.004, 1.035]; Δ +1.97%; speed +1.97% [+0.40%, +3.51%]; pass | 1.027 [1.007, 1.044]; Δ +2.69%; speed +2.69% [+0.66%, +4.40%]; unresolved |
 | 16 B allocsPerRequest | 0.979 [0.979, 0.979]; Δ -2.12%; pass | 0.982 [0.982, 0.982]; Δ -1.85%; pass |
 | 16 B bytesPerRequest | 0.964 [0.964, 0.964]; Δ -3.56%; pass | 0.967 [0.967, 0.967]; Δ -3.26%; pass |
-| 65536 B cpuUs | 0.980 [0.966, 1.001]; Δ -1.99%; speed +2.03% [-0.12%, +3.50%]; pass | 0.971 [0.962, 0.980]; Δ -2.87%; speed +2.95% [+2.07%, +3.91%]; unresolved |
-| 65536 B instructions | 0.982 [0.980, 0.984]; Δ -1.84%; pass | 0.973 [0.966, 0.980]; Δ -2.74%; unresolved |
-| 65536 B throughput | 1.019 [0.999, 1.042]; Δ +1.89%; speed +1.89% [-0.15%, +4.20%]; unresolved | 1.019 [1.000, 1.035]; Δ +1.86%; speed +1.86% [-0.01%, +3.54%]; unresolved |
+| 65536 B cpuUs | 1.001 [0.992, 1.011]; Δ +0.14%; speed -0.14% [-1.07%, +0.78%]; pass | 0.995 [0.985, 1.004]; Δ -0.53%; speed +0.54% [-0.37%, +1.55%]; unresolved |
+| 65536 B instructions | 0.981 [0.979, 0.982]; Δ -1.92%; pass | 0.984 [0.973, 0.993]; Δ -1.64%; pass |
+| 65536 B throughput | 1.005 [0.996, 1.015]; Δ +0.50%; speed +0.50% [-0.42%, +1.46%]; pass | 1.016 [1.004, 1.026]; Δ +1.57%; speed +1.57% [+0.40%, +2.56%]; unresolved |
 | 65536 B allocsPerRequest | 0.980 [0.980, 0.980]; Δ -1.96%; pass | 0.983 [0.983, 0.983]; Δ -1.65%; pass |
 | 65536 B bytesPerRequest | 0.986 [0.986, 0.986]; Δ -1.37%; pass | 0.986 [0.986, 0.986]; Δ -1.39%; pass |
 
@@ -227,10 +228,10 @@ Throughput ratios above one improve. CPU, instruction and allocation ratios belo
 
 | Payload / compiler | CPU ratio to Wasmtime [95% CI]; controls | Throughput ratio to Wasmtime [95% CI]; controls |
 | --- | ---: | ---: |
-| 16 B go | 1.741 [1.598, 1.900]; Δ +74.11%; speed -42.56% [-47.37%, -37.43%]; unresolved | 0.949 [0.909, 0.989]; Δ -5.10%; speed -5.10% [-9.09%, -1.12%]; unresolved |
-| 16 B llgo | 4.906 [4.503, 5.359]; Δ +390.59%; speed -79.62% [-81.34%, -77.79%]; unresolved | 0.385 [0.372, 0.392]; Δ -61.53%; speed -61.53% [-62.78%, -60.75%]; unresolved |
-| 65536 B go | 1.841 [1.699, 1.974]; Δ +84.09%; speed -45.68% [-49.33%, -41.14%]; unresolved | 0.802 [0.761, 0.855]; Δ -19.81%; speed -19.81% [-23.94%, -14.55%]; unresolved |
-| 65536 B llgo | 4.252 [3.844, 4.737]; Δ +325.24%; speed -76.48% [-78.89%, -73.98%]; unresolved | 0.386 [0.377, 0.395]; Δ -61.40%; speed -61.40% [-62.25%, -60.47%]; unresolved |
+| 16 B go | 2.112 [1.968, 2.242]; Δ +111.19%; speed -52.65% [-55.40%, -49.19%]; unresolved | 0.910 [0.883, 0.940]; Δ -9.05%; speed -9.05% [-11.70%, -5.95%]; unresolved |
+| 16 B llgo | 6.217 [5.798, 6.585]; Δ +521.66%; speed -83.91% [-84.81%, -82.75%]; unresolved | 0.384 [0.378, 0.393]; Δ -61.59%; speed -61.59% [-62.19%, -60.72%]; unresolved |
+| 65536 B go | 2.127 [1.986, 2.283]; Δ +112.73%; speed -52.99% [-56.19%, -49.65%]; unresolved | 0.762 [0.746, 0.780]; Δ -23.78%; speed -23.78% [-25.43%, -22.02%]; unresolved |
+| 65536 B llgo | 5.367 [4.877, 5.932]; Δ +436.66%; speed -81.37% [-83.14%, -79.49%]; unresolved | 0.371 [0.365, 0.377]; Δ -62.92%; speed -62.92% [-63.54%, -62.29%]; unresolved |
 
 ## Core source baseline
 
@@ -240,77 +241,77 @@ Head/base ratios below one improve. These marginal intervals describe this event
 
 | Workload | Go source head/base | LLGo source head/base |
 | --- | ---: | ---: |
-| original22-v1/core/call-control | 1.067 [0.826, 1.429]; Δ +6.69%; speed -6.27% [-30.01%, +21.05%]; unresolved | 1.060 [0.909, 1.282]; Δ +6.02%; speed -5.68% [-22.00%, +9.98%]; unresolved |
-| original22-v1/core/integer-loop | 0.988 [0.972, 1.004]; Δ -1.18%; speed +1.20% [-0.39%, +2.84%]; unresolved | 0.988 [0.974, 1.001]; Δ -1.22%; speed +1.24% [-0.06%, +2.68%]; unresolved |
-| original22-v1/core/function-calls | 0.997 [0.980, 1.007]; Δ -0.30%; speed +0.30% [-0.72%, +2.05%]; unresolved | 1.003 [0.972, 1.034]; Δ +0.35%; speed -0.35% [-3.28%, +2.83%]; unresolved |
-| original22-v1/core/memory-load-store | 1.086 [1.008, 1.193]; Δ +8.60%; speed -7.92% [-16.14%, -0.82%]; unresolved | 0.968 [0.906, 1.013]; Δ -3.23%; speed +3.33% [-1.24%, +10.42%]; unresolved |
-| original22-v1/memory/narrow-unaligned | 0.949 [0.842, 1.032]; Δ -5.12%; speed +5.39% [-3.09%, +18.83%]; unresolved | 0.985 [0.944, 1.021]; Δ -1.48%; speed +1.50% [-2.10%, +5.89%]; unresolved |
-| original22-v1/memory/dependent-address | 0.994 [0.984, 1.004]; Δ -0.57%; speed +0.57% [-0.41%, +1.64%]; unresolved | 0.985 [0.965, 1.000]; Δ -1.48%; speed +1.50% [+0.00%, +3.62%]; unresolved |
-| original22-v1/memory/float64-unaligned | 0.987 [0.958, 1.010]; Δ -1.32%; speed +1.34% [-1.03%, +4.35%]; unresolved | 0.976 [0.929, 1.008]; Δ -2.39%; speed +2.45% [-0.78%, +7.67%]; unresolved |
-| original22-v1/runtime/simd-memory-full | 0.998 [0.992, 1.007]; Δ -0.15%; speed +0.15% [-0.69%, +0.86%]; unresolved | 0.996 [0.988, 1.006]; Δ -0.41%; speed +0.42% [-0.58%, +1.24%]; unresolved |
-| original22-v1/runtime/simd-memory-widen | 1.018 [0.992, 1.061]; Δ +1.79%; speed -1.76% [-5.76%, +0.81%]; unresolved | 1.006 [0.984, 1.043]; Δ +0.62%; speed -0.62% [-4.16%, +1.67%]; unresolved |
-| original22-v1/runtime/simd-memory-lanes | 0.996 [0.986, 1.006]; Δ -0.38%; speed +0.38% [-0.57%, +1.38%]; unresolved | 0.993 [0.989, 0.997]; Δ -0.69%; speed +0.69% [+0.34%, +1.11%]; pass |
-| original22-v1/gc/i31-roundtrip | 1.031 [0.959, 1.122]; Δ +3.12%; speed -3.02% [-10.84%, +4.27%]; unresolved | 1.009 [0.973, 1.054]; Δ +0.94%; speed -0.94% [-5.14%, +2.76%]; unresolved |
-| original22-v1/gc/struct-access | 0.991 [0.948, 1.036]; Δ -0.87%; speed +0.88% [-3.51%, +5.48%]; unresolved | 1.036 [0.937, 1.142]; Δ +3.57%; speed -3.44% [-12.44%, +6.75%]; unresolved |
-| original22-v1/gc/struct-allocation | 0.965 [0.825, 1.094]; Δ -3.52%; speed +3.64% [-8.62%, +21.19%]; unresolved | 1.034 [0.984, 1.083]; Δ +3.36%; speed -3.25% [-7.62%, +1.62%]; unresolved |
-| original22-v1/gc/struct-indirect-access | 0.961 [0.920, 1.017]; Δ -3.86%; speed +4.02% [-1.64%, +8.75%]; unresolved | 1.020 [1.004, 1.035]; Δ +1.98%; speed -1.94% [-3.36%, -0.41%]; unresolved |
-| original22-v1/threads/private-memory | 1.000 [0.900, 1.114]; Δ +0.05%; speed -0.05% [-10.21%, +11.08%]; unresolved | 0.884 [0.726, 1.024]; Δ -11.58%; speed +13.10% [-2.32%, +37.71%]; unresolved |
-| original22-v1/threads/shared-memory | 1.055 [0.971, 1.164]; Δ +5.49%; speed -5.21% [-14.12%, +2.97%]; unresolved | 1.107 [0.990, 1.257]; Δ +10.72%; speed -9.68% [-20.45%, +1.04%]; unresolved |
-| original22-v1/threads/atomic-rmw | 1.021 [0.931, 1.127]; Δ +2.09%; speed -2.05% [-11.28%, +7.40%]; unresolved | 0.985 [0.949, 1.014]; Δ -1.47%; speed +1.49% [-1.36%, +5.34%]; unresolved |
-| original22-v1/threads/notify-empty | 1.118 [0.922, 1.323]; Δ +11.76%; speed -10.52% [-24.42%, +8.49%]; unresolved | 1.106 [0.905, 1.376]; Δ +10.61%; speed -9.59% [-27.31%, +10.53%]; unresolved |
-| original22-v1/threads/wait-mismatch | 0.970 [0.858, 1.093]; Δ -2.95%; speed +3.04% [-8.55%, +16.52%]; unresolved | 1.051 [0.997, 1.129]; Δ +5.14%; speed -4.89% [-11.42%, +0.31%]; unresolved |
-| original22-v1/threads/wait-timeout | 0.991 [0.880, 1.115]; Δ -0.93%; speed +0.94% [-10.32%, +13.61%]; unresolved | 1.021 [0.778, 1.277]; Δ +2.12%; speed -2.08% [-21.70%, +28.62%]; unresolved |
-| original22-v1/applications/sha256-clang | 0.983 [0.919, 1.039]; Δ -1.74%; speed +1.77% [-3.74%, +8.77%]; unresolved | 0.963 [0.884, 1.024]; Δ -3.66%; speed +3.80% [-2.37%, +13.07%]; unresolved |
-| original22-v1/applications/sha256-rust | 1.027 [0.972, 1.106]; Δ +2.65%; speed -2.59% [-9.56%, +2.88%]; unresolved | 1.046 [0.998, 1.139]; Δ +4.56%; speed -4.36% [-12.24%, +0.23%]; unresolved |
-| gc-sustained-v1/gc/i31-roundtrip | 0.972 [0.947, 0.994]; Δ -2.77%; speed +2.85% [+0.64%, +5.64%]; unresolved | 0.992 [0.953, 1.022]; Δ -0.75%; speed +0.76% [-2.13%, +4.88%]; unresolved |
-| gc-sustained-v1/gc/struct-access | 1.003 [0.985, 1.020]; Δ +0.28%; speed -0.28% [-2.01%, +1.57%]; unresolved | 1.001 [0.986, 1.023]; Δ +0.13%; speed -0.13% [-2.25%, +1.39%]; unresolved |
-| gc-sustained-v1/gc/struct-allocation | 0.981 [0.953, 1.007]; Δ -1.90%; speed +1.94% [-0.72%, +4.98%]; unresolved | 0.922 [0.901, 0.939]; Δ -7.77%; speed +8.43% [+6.53%, +10.96%]; unresolved |
-| gc-sustained-v1/gc/struct-indirect-access | 1.024 [0.977, 1.082]; Δ +2.43%; speed -2.37% [-7.54%, +2.37%]; unresolved | 0.994 [0.974, 1.015]; Δ -0.63%; speed +0.64% [-1.44%, +2.62%]; unresolved |
-| threads-sustained-v2/threads/private-memory | 0.971 [0.813, 1.094]; Δ -2.87%; speed +2.95% [-8.60%, +23.01%]; unresolved | 0.966 [0.882, 1.055]; Δ -3.40%; speed +3.52% [-5.24%, +13.33%]; unresolved |
-| threads-sustained-v2/threads/shared-memory | 0.919 [0.851, 0.990]; Δ -8.11%; speed +8.82% [+0.99%, +17.45%]; unresolved | 1.028 [0.936, 1.165]; Δ +2.85%; speed -2.77% [-14.17%, +6.88%]; unresolved |
-| threads-sustained-v2/threads/atomic-rmw | 0.984 [0.955, 1.012]; Δ -1.64%; speed +1.67% [-1.16%, +4.72%]; unresolved | 0.994 [0.976, 1.009]; Δ -0.64%; speed +0.64% [-0.90%, +2.45%]; unresolved |
-| threads-sustained-v2/threads/notify-empty | 0.958 [0.805, 1.064]; Δ -4.23%; speed +4.42% [-6.03%, +24.21%]; unresolved | 1.015 [0.941, 1.110]; Δ +1.54%; speed -1.52% [-9.95%, +6.22%]; unresolved |
-| threads-sustained-v2/threads/wait-mismatch | 0.975 [0.937, 1.006]; Δ -2.51%; speed +2.58% [-0.55%, +6.67%]; unresolved | 1.032 [0.974, 1.129]; Δ +3.21%; speed -3.11% [-11.44%, +2.64%]; unresolved |
-| threads-sustained-v2/threads/wait-timeout | 1.051 [0.998, 1.105]; Δ +5.09%; speed -4.84% [-9.50%, +0.22%]; unresolved | 1.060 [0.979, 1.209]; Δ +6.03%; speed -5.68% [-17.28%, +2.16%]; unresolved |
-| generic-calls-v1/core/generic-calls | 1.007 [0.998, 1.017]; Δ +0.66%; speed -0.65% [-1.71%, +0.16%]; pass | 1.007 [0.994, 1.016]; Δ +0.71%; speed -0.70% [-1.59%, +0.61%]; unresolved |
+| original22-v1/core/call-control | 0.901 [0.834, 0.981]; Δ -9.94%; speed +11.04% [+1.96%, +19.85%]; unresolved | 0.912 [0.809, 1.007]; Δ -8.82%; speed +9.67% [-0.69%, +23.60%]; unresolved |
+| original22-v1/core/integer-loop | 1.036 [0.991, 1.110]; Δ +3.64%; speed -3.52% [-9.88%, +0.89%]; unresolved | 0.993 [0.948, 1.034]; Δ -0.71%; speed +0.71% [-3.28%, +5.49%]; unresolved |
+| original22-v1/core/function-calls | 1.011 [0.996, 1.037]; Δ +1.14%; speed -1.12% [-3.61%, +0.37%]; unresolved | 0.990 [0.964, 1.006]; Δ -0.98%; speed +0.99% [-0.55%, +3.76%]; unresolved |
+| original22-v1/core/memory-load-store | 1.018 [0.957, 1.112]; Δ +1.78%; speed -1.75% [-10.07%, +4.55%]; unresolved | 1.155 [0.996, 1.358]; Δ +15.46%; speed -13.39% [-26.34%, +0.44%]; unresolved |
+| original22-v1/memory/narrow-unaligned | 0.981 [0.923, 1.024]; Δ -1.89%; speed +1.93% [-2.33%, +8.37%]; unresolved | 1.010 [0.820, 1.227]; Δ +0.96%; speed -0.95% [-18.53%, +21.93%]; unresolved |
+| original22-v1/memory/dependent-address | 0.978 [0.921, 1.018]; Δ -2.17%; speed +2.22% [-1.75%, +8.61%]; unresolved | 1.008 [0.992, 1.033]; Δ +0.80%; speed -0.80% [-3.22%, +0.82%]; unresolved |
+| original22-v1/memory/float64-unaligned | 1.010 [0.987, 1.040]; Δ +0.99%; speed -0.98% [-3.87%, +1.34%]; pass | 0.986 [0.967, 1.004]; Δ -1.36%; speed +1.38% [-0.40%, +3.41%]; unresolved |
+| original22-v1/runtime/simd-memory-full | 0.997 [0.992, 1.002]; Δ -0.29%; speed +0.29% [-0.20%, +0.82%]; unresolved | 0.995 [0.988, 1.002]; Δ -0.50%; speed +0.51% [-0.17%, +1.25%]; pass |
+| original22-v1/runtime/simd-memory-widen | 1.015 [0.993, 1.042]; Δ +1.46%; speed -1.44% [-4.02%, +0.67%]; unresolved | 0.995 [0.983, 1.004]; Δ -0.54%; speed +0.54% [-0.42%, +1.74%]; unresolved |
+| original22-v1/runtime/simd-memory-lanes | 0.996 [0.989, 1.003]; Δ -0.41%; speed +0.41% [-0.31%, +1.06%]; unresolved | 0.997 [0.985, 1.007]; Δ -0.34%; speed +0.34% [-0.68%, +1.55%]; unresolved |
+| original22-v1/gc/i31-roundtrip | 0.965 [0.939, 0.992]; Δ -3.51%; speed +3.64% [+0.82%, +6.44%]; unresolved | 1.015 [0.997, 1.036]; Δ +1.46%; speed -1.44% [-3.49%, +0.31%]; unresolved |
+| original22-v1/gc/struct-access | 1.013 [0.939, 1.104]; Δ +1.34%; speed -1.32% [-9.46%, +6.53%]; unresolved | 1.032 [0.961, 1.121]; Δ +3.25%; speed -3.15% [-10.76%, +4.01%]; unresolved |
+| original22-v1/gc/struct-allocation | 0.995 [0.942, 1.043]; Δ -0.48%; speed +0.48% [-4.17%, +6.11%]; unresolved | 0.959 [0.906, 1.006]; Δ -4.11%; speed +4.28% [-0.63%, +10.38%]; unresolved |
+| original22-v1/gc/struct-indirect-access | 1.149 [0.798, 1.715]; Δ +14.93%; speed -12.99% [-41.67%, +25.35%]; unresolved | 0.836 [0.684, 1.020]; Δ -16.41%; speed +19.63% [-2.00%, +46.20%]; unresolved |
+| original22-v1/threads/private-memory | 1.013 [0.874, 1.156]; Δ +1.25%; speed -1.24% [-13.49%, +14.45%]; unresolved | 0.987 [0.933, 1.058]; Δ -1.32%; speed +1.34% [-5.50%, +7.23%]; unresolved |
+| original22-v1/threads/shared-memory | 0.959 [0.821, 1.115]; Δ -4.07%; speed +4.25% [-10.31%, +21.78%]; unresolved | 1.013 [0.951, 1.085]; Δ +1.33%; speed -1.32% [-7.87%, +5.11%]; unresolved |
+| original22-v1/threads/atomic-rmw | 1.053 [0.986, 1.142]; Δ +5.30%; speed -5.03% [-12.43%, +1.46%]; unresolved | 1.004 [0.979, 1.027]; Δ +0.41%; speed -0.41% [-2.65%, +2.18%]; unresolved |
+| original22-v1/threads/notify-empty | 0.945 [0.890, 1.017]; Δ -5.52%; speed +5.84% [-1.70%, +12.32%]; unresolved | 0.966 [0.872, 1.036]; Δ -3.44%; speed +3.56% [-3.46%, +14.72%]; unresolved |
+| original22-v1/threads/wait-mismatch | 1.059 [0.968, 1.142]; Δ +5.94%; speed -5.61% [-12.41%, +3.31%]; unresolved | 0.940 [0.832, 1.035]; Δ -5.96%; speed +6.33% [-3.38%, +20.13%]; unresolved |
+| original22-v1/threads/wait-timeout | 0.999 [0.794, 1.173]; Δ -0.10%; speed +0.10% [-14.75%, +25.93%]; unresolved | 1.034 [0.906, 1.170]; Δ +3.40%; speed -3.29% [-14.53%, +10.34%]; unresolved |
+| original22-v1/applications/sha256-clang | 0.993 [0.982, 1.004]; Δ -0.66%; speed +0.67% [-0.39%, +1.79%]; unresolved | 0.999 [0.988, 1.011]; Δ -0.06%; speed +0.06% [-1.04%, +1.25%]; unresolved |
+| original22-v1/applications/sha256-rust | 0.989 [0.969, 1.005]; Δ -1.10%; speed +1.11% [-0.52%, +3.22%]; unresolved | 0.993 [0.984, 1.000]; Δ -0.74%; speed +0.75% [-0.04%, +1.60%]; unresolved |
+| gc-sustained-v1/gc/i31-roundtrip | 1.022 [0.991, 1.071]; Δ +2.17%; speed -2.12% [-6.66%, +0.91%]; unresolved | 0.962 [0.926, 0.999]; Δ -3.79%; speed +3.94% [+0.12%, +8.01%]; unresolved |
+| gc-sustained-v1/gc/struct-access | 0.993 [0.978, 1.008]; Δ -0.72%; speed +0.73% [-0.78%, +2.25%]; unresolved | 0.983 [0.924, 1.024]; Δ -1.66%; speed +1.69% [-2.31%, +8.24%]; unresolved |
+| gc-sustained-v1/gc/struct-allocation | 1.006 [0.991, 1.022]; Δ +0.58%; speed -0.58% [-2.12%, +0.86%]; unresolved | 0.919 [0.895, 0.948]; Δ -8.09%; speed +8.80% [+5.46%, +11.77%]; unresolved |
+| gc-sustained-v1/gc/struct-indirect-access | 1.041 [0.982, 1.109]; Δ +4.08%; speed -3.92% [-9.79%, +1.83%]; unresolved | 1.014 [0.984, 1.040]; Δ +1.38%; speed -1.36% [-3.84%, +1.60%]; unresolved |
+| threads-sustained-v2/threads/private-memory | 1.003 [0.953, 1.052]; Δ +0.30%; speed -0.29% [-4.94%, +4.92%]; unresolved | 1.007 [0.991, 1.022]; Δ +0.73%; speed -0.73% [-2.16%, +0.88%]; unresolved |
+| threads-sustained-v2/threads/shared-memory | 1.026 [0.978, 1.102]; Δ +2.56%; speed -2.49% [-9.29%, +2.26%]; unresolved | 1.037 [1.003, 1.080]; Δ +3.72%; speed -3.59% [-7.44%, -0.27%]; unresolved |
+| threads-sustained-v2/threads/atomic-rmw | 1.006 [0.985, 1.026]; Δ +0.57%; speed -0.57% [-2.57%, +1.57%]; unresolved | 0.997 [0.990, 1.004]; Δ -0.30%; speed +0.30% [-0.43%, +1.01%]; unresolved |
+| threads-sustained-v2/threads/notify-empty | 1.013 [0.991, 1.033]; Δ +1.27%; speed -1.26% [-3.23%, +0.88%]; unresolved | 1.006 [0.998, 1.014]; Δ +0.57%; speed -0.56% [-1.38%, +0.22%]; unresolved |
+| threads-sustained-v2/threads/wait-mismatch | 1.089 [0.961, 1.322]; Δ +8.95%; speed -8.21% [-24.37%, +4.06%]; unresolved | 1.036 [0.994, 1.086]; Δ +3.60%; speed -3.48% [-7.92%, +0.58%]; unresolved |
+| threads-sustained-v2/threads/wait-timeout | 1.079 [0.985, 1.245]; Δ +7.85%; speed -7.28% [-19.70%, +1.49%]; unresolved | 0.999 [0.966, 1.031]; Δ -0.06%; speed +0.06% [-3.01%, +3.53%]; unresolved |
+| generic-calls-v1/core/generic-calls | 1.001 [0.979, 1.024]; Δ +0.14%; speed -0.14% [-2.32%, +2.12%]; unresolved | 1.006 [0.996, 1.016]; Δ +0.59%; speed -0.59% [-1.58%, +0.40%]; unresolved |
 
 ### interpreter
 
 | Workload | Go source head/base | LLGo source head/base |
 | --- | ---: | ---: |
-| original22-v1/core/call-control | 0.944 [0.832, 1.048]; Δ -5.64%; speed +5.98% [-4.60%, +20.14%]; unresolved | 1.021 [0.836, 1.286]; Δ +2.13%; speed -2.09% [-22.26%, +19.63%]; unresolved |
-| original22-v1/core/integer-loop | 1.002 [0.980, 1.029]; Δ +0.18%; speed -0.18% [-2.82%, +2.08%]; unresolved | 1.039 [1.017, 1.062]; Δ +3.95%; speed -3.80% [-5.87%, -1.68%]; unresolved |
-| original22-v1/core/function-calls | 0.994 [0.954, 1.026]; Δ -0.63%; speed +0.63% [-2.56%, +4.78%]; unresolved | 0.923 [0.885, 0.961]; Δ -7.71%; speed +8.35% [+4.07%, +13.04%]; unresolved |
-| original22-v1/core/memory-load-store | 0.997 [0.973, 1.027]; Δ -0.34%; speed +0.34% [-2.66%, +2.75%]; unresolved | 0.992 [0.979, 1.004]; Δ -0.83%; speed +0.84% [-0.43%, +2.16%]; unresolved |
-| original22-v1/memory/narrow-unaligned | 1.026 [0.984, 1.096]; Δ +2.58%; speed -2.52% [-8.80%, +1.63%]; unresolved | 1.035 [1.009, 1.073]; Δ +3.53%; speed -3.41% [-6.83%, -0.90%]; unresolved |
-| original22-v1/memory/dependent-address | 0.985 [0.963, 1.002]; Δ -1.46%; speed +1.48% [-0.20%, +3.87%]; unresolved | 1.013 [0.995, 1.045]; Δ +1.30%; speed -1.28% [-4.27%, +0.52%]; unresolved |
-| original22-v1/memory/float64-unaligned | 0.987 [0.981, 0.992]; Δ -1.29%; speed +1.30% [+0.82%, +1.89%]; pass | 0.991 [0.978, 1.003]; Δ -0.90%; speed +0.91% [-0.29%, +2.28%]; unresolved |
-| original22-v1/runtime/simd-memory-full | 0.981 [0.918, 1.025]; Δ -1.91%; speed +1.94% [-2.47%, +8.93%]; unresolved | 1.014 [0.999, 1.033]; Δ +1.45%; speed -1.43% [-3.16%, +0.15%]; unresolved |
-| original22-v1/runtime/simd-memory-widen | 0.993 [0.979, 1.005]; Δ -0.73%; speed +0.74% [-0.53%, +2.19%]; unresolved | 0.984 [0.969, 0.998]; Δ -1.60%; speed +1.62% [+0.23%, +3.17%]; unresolved |
-| original22-v1/runtime/simd-memory-lanes | 1.009 [0.987, 1.028]; Δ +0.88%; speed -0.87% [-2.77%, +1.37%]; unresolved | 0.827 [0.755, 0.871]; Δ -17.26%; speed +20.86% [+14.79%, +32.49%]; unresolved |
-| original22-v1/gc/i31-roundtrip | 0.977 [0.959, 0.996]; Δ -2.29%; speed +2.34% [+0.36%, +4.26%]; unresolved | 1.078 [1.020, 1.175]; Δ +7.79%; speed -7.22% [-14.86%, -1.96%]; unresolved |
-| original22-v1/gc/struct-access | 0.977 [0.954, 1.002]; Δ -2.34%; speed +2.39% [-0.17%, +4.81%]; unresolved | 0.991 [0.965, 1.017]; Δ -0.88%; speed +0.89% [-1.71%, +3.62%]; unresolved |
-| original22-v1/gc/struct-allocation | 0.918 [0.811, 1.002]; Δ -8.19%; speed +8.92% [-0.25%, +23.33%]; unresolved | 0.984 [0.951, 1.005]; Δ -1.62%; speed +1.65% [-0.45%, +5.20%]; unresolved |
-| original22-v1/gc/struct-indirect-access | 1.008 [0.988, 1.035]; Δ +0.80%; speed -0.79% [-3.39%, +1.19%]; unresolved | 1.011 [0.991, 1.028]; Δ +1.06%; speed -1.05% [-2.71%, +0.93%]; unresolved |
-| original22-v1/threads/private-memory | 1.000 [0.969, 1.034]; Δ -0.01%; speed +0.01% [-3.30%, +3.21%]; unresolved | 0.997 [0.966, 1.028]; Δ -0.32%; speed +0.32% [-2.68%, +3.54%]; unresolved |
-| original22-v1/threads/shared-memory | 1.028 [1.008, 1.055]; Δ +2.78%; speed -2.71% [-5.23%, -0.76%]; unresolved | 0.997 [0.978, 1.019]; Δ -0.25%; speed +0.26% [-1.85%, +2.24%]; unresolved |
-| original22-v1/threads/atomic-rmw | 1.011 [0.994, 1.029]; Δ +1.10%; speed -1.08% [-2.81%, +0.59%]; unresolved | 1.005 [0.986, 1.023]; Δ +0.54%; speed -0.54% [-2.21%, +1.40%]; unresolved |
-| original22-v1/threads/notify-empty | 0.950 [0.893, 1.014]; Δ -4.98%; speed +5.24% [-1.39%, +11.94%]; unresolved | 1.000 [0.919, 1.078]; Δ +0.00%; speed +0.00% [-7.26%, +8.77%]; unresolved |
-| original22-v1/threads/wait-mismatch | 0.965 [0.894, 1.036]; Δ -3.50%; speed +3.63% [-3.52%, +11.89%]; unresolved | 1.118 [0.981, 1.333]; Δ +11.77%; speed -10.53% [-24.98%, +1.92%]; unresolved |
-| original22-v1/threads/wait-timeout | 1.012 [0.912, 1.156]; Δ +1.20%; speed -1.18% [-13.52%, +9.64%]; unresolved | 1.127 [0.993, 1.294]; Δ +12.72%; speed -11.28% [-22.72%, +0.67%]; unresolved |
-| original22-v1/applications/sha256-clang | 0.993 [0.972, 1.008]; Δ -0.69%; speed +0.69% [-0.78%, +2.85%]; unresolved | 1.012 [0.975, 1.054]; Δ +1.25%; speed -1.23% [-5.16%, +2.57%]; unresolved |
-| original22-v1/applications/sha256-rust | 1.005 [0.984, 1.035]; Δ +0.49%; speed -0.49% [-3.39%, +1.58%]; unresolved | 1.011 [1.002, 1.020]; Δ +1.09%; speed -1.08% [-1.98%, -0.16%]; unresolved |
-| gc-sustained-v1/gc/i31-roundtrip | 1.002 [0.975, 1.044]; Δ +0.20%; speed -0.20% [-4.24%, +2.52%]; unresolved | 1.032 [1.021, 1.044]; Δ +3.22%; speed -3.12% [-4.20%, -2.08%]; unresolved |
-| gc-sustained-v1/gc/struct-access | 0.983 [0.968, 1.000]; Δ -1.66%; speed +1.69% [-0.05%, +3.26%]; unresolved | 0.990 [0.972, 1.007]; Δ -0.98%; speed +0.99% [-0.71%, +2.84%]; unresolved |
-| gc-sustained-v1/gc/struct-allocation | 1.054 [1.000, 1.128]; Δ +5.41%; speed -5.14% [-11.35%, -0.02%]; unresolved | 0.990 [0.985, 0.997]; Δ -1.00%; speed +1.01% [+0.33%, +1.56%]; unresolved |
-| gc-sustained-v1/gc/struct-indirect-access | 1.005 [0.993, 1.015]; Δ +0.46%; speed -0.46% [-1.52%, +0.74%]; unresolved | 0.999 [0.986, 1.013]; Δ -0.07%; speed +0.07% [-1.29%, +1.45%]; pass |
-| threads-sustained-v2/threads/private-memory | 0.968 [0.896, 1.012]; Δ -3.25%; speed +3.35% [-1.20%, +11.65%]; unresolved | 1.002 [0.972, 1.045]; Δ +0.21%; speed -0.21% [-4.31%, +2.93%]; unresolved |
-| threads-sustained-v2/threads/shared-memory | 1.021 [0.986, 1.070]; Δ +2.15%; speed -2.10% [-6.52%, +1.41%]; unresolved | 0.983 [0.946, 1.033]; Δ -1.71%; speed +1.73% [-3.24%, +5.66%]; unresolved |
-| threads-sustained-v2/threads/atomic-rmw | 1.009 [0.968, 1.069]; Δ +0.86%; speed -0.85% [-6.44%, +3.31%]; unresolved | 1.042 [1.001, 1.115]; Δ +4.18%; speed -4.01% [-10.33%, -0.09%]; unresolved |
-| threads-sustained-v2/threads/notify-empty | 0.959 [0.924, 0.992]; Δ -4.07%; speed +4.25% [+0.85%, +8.23%]; unresolved | 0.987 [0.942, 1.019]; Δ -1.29%; speed +1.31% [-1.84%, +6.15%]; unresolved |
-| threads-sustained-v2/threads/wait-mismatch | 1.006 [0.994, 1.022]; Δ +0.60%; speed -0.59% [-2.11%, +0.65%]; unresolved | 0.988 [0.974, 1.001]; Δ -1.24%; speed +1.25% [-0.15%, +2.69%]; unresolved |
-| threads-sustained-v2/threads/wait-timeout | 0.994 [0.973, 1.021]; Δ -0.65%; speed +0.65% [-2.02%, +2.78%]; unresolved | 0.991 [0.971, 1.012]; Δ -0.87%; speed +0.87% [-1.17%, +2.95%]; unresolved |
-| generic-calls-v1/core/generic-calls | 0.966 [0.849, 1.067]; Δ -3.45%; speed +3.57% [-6.32%, +17.72%]; unresolved | 1.020 [0.970, 1.117]; Δ +2.00%; speed -1.96% [-10.51%, +3.14%]; unresolved |
+| original22-v1/core/call-control | 1.040 [0.922, 1.135]; Δ +3.96%; speed -3.81% [-11.93%, +8.42%]; unresolved | 1.065 [1.012, 1.144]; Δ +6.46%; speed -6.07% [-12.56%, -1.16%]; unresolved |
+| original22-v1/core/integer-loop | 0.990 [0.959, 1.018]; Δ -1.01%; speed +1.02% [-1.74%, +4.28%]; unresolved | 1.011 [0.979, 1.040]; Δ +1.13%; speed -1.11% [-3.87%, +2.12%]; unresolved |
+| original22-v1/core/function-calls | 0.990 [0.975, 1.001]; Δ -1.01%; speed +1.02% [-0.11%, +2.57%]; pass | 0.997 [0.981, 1.010]; Δ -0.26%; speed +0.26% [-0.94%, +1.93%]; pass |
+| original22-v1/core/memory-load-store | 1.030 [0.996, 1.068]; Δ +2.97%; speed -2.88% [-6.38%, +0.36%]; unresolved | 0.979 [0.972, 0.986]; Δ -2.09%; speed +2.14% [+1.45%, +2.92%]; unresolved |
+| original22-v1/memory/narrow-unaligned | 0.991 [0.963, 1.031]; Δ -0.89%; speed +0.89% [-3.05%, +3.89%]; unresolved | 0.954 [0.933, 0.969]; Δ -4.65%; speed +4.88% [+3.22%, +7.15%]; unresolved |
+| original22-v1/memory/dependent-address | 0.986 [0.974, 1.001]; Δ -1.43%; speed +1.45% [-0.05%, +2.72%]; unresolved | 0.967 [0.950, 0.987]; Δ -3.29%; speed +3.40% [+1.31%, +5.28%]; unresolved |
+| original22-v1/memory/float64-unaligned | 0.997 [0.982, 1.020]; Δ -0.28%; speed +0.28% [-2.00%, +1.86%]; unresolved | 0.967 [0.957, 0.977]; Δ -3.27%; speed +3.38% [+2.38%, +4.48%]; unresolved |
+| original22-v1/runtime/simd-memory-full | 1.009 [0.996, 1.023]; Δ +0.91%; speed -0.91% [-2.29%, +0.43%]; unresolved | 1.002 [0.964, 1.037]; Δ +0.24%; speed -0.24% [-3.55%, +3.70%]; unresolved |
+| original22-v1/runtime/simd-memory-widen | 0.987 [0.972, 0.998]; Δ -1.34%; speed +1.36% [+0.19%, +2.89%]; unresolved | 0.954 [0.923, 0.980]; Δ -4.64%; speed +4.87% [+2.01%, +8.33%]; unresolved |
+| original22-v1/runtime/simd-memory-lanes | 1.020 [1.008, 1.034]; Δ +2.03%; speed -1.99% [-3.32%, -0.84%]; unresolved | 1.005 [0.993, 1.019]; Δ +0.46%; speed -0.46% [-1.89%, +0.70%]; unresolved |
+| original22-v1/gc/i31-roundtrip | 1.008 [0.981, 1.036]; Δ +0.81%; speed -0.81% [-3.47%, +1.97%]; unresolved | 0.985 [0.950, 1.016]; Δ -1.46%; speed +1.48% [-1.55%, +5.28%]; unresolved |
+| original22-v1/gc/struct-access | 1.033 [1.009, 1.059]; Δ +3.32%; speed -3.21% [-5.55%, -0.86%]; unresolved | 1.034 [1.007, 1.061]; Δ +3.43%; speed -3.32% [-5.78%, -0.69%]; unresolved |
+| original22-v1/gc/struct-allocation | 1.013 [1.008, 1.018]; Δ +1.28%; speed -1.26% [-1.75%, -0.81%]; unresolved | 0.842 [0.825, 0.865]; Δ -15.85%; speed +18.84% [+15.54%, +21.28%]; unresolved |
+| original22-v1/gc/struct-indirect-access | 0.983 [0.928, 1.015]; Δ -1.67%; speed +1.70% [-1.50%, +7.81%]; unresolved | 0.964 [0.879, 1.033]; Δ -3.61%; speed +3.74% [-3.22%, +13.79%]; unresolved |
+| original22-v1/threads/private-memory | 0.988 [0.974, 1.003]; Δ -1.18%; speed +1.19% [-0.28%, +2.62%]; unresolved | 0.925 [0.841, 0.982]; Δ -7.49%; speed +8.10% [+1.79%, +18.98%]; unresolved |
+| original22-v1/threads/shared-memory | 0.980 [0.891, 1.044]; Δ -1.98%; speed +2.01% [-4.22%, +12.27%]; unresolved | 0.941 [0.878, 0.987]; Δ -5.92%; speed +6.29% [+1.34%, +13.92%]; unresolved |
+| original22-v1/threads/atomic-rmw | 0.999 [0.982, 1.014]; Δ -0.15%; speed +0.15% [-1.34%, +1.86%]; unresolved | 0.979 [0.963, 0.993]; Δ -2.15%; speed +2.20% [+0.71%, +3.87%]; unresolved |
+| original22-v1/threads/notify-empty | 1.014 [1.004, 1.025]; Δ +1.41%; speed -1.39% [-2.41%, -0.42%]; unresolved | 0.994 [0.982, 1.007]; Δ -0.56%; speed +0.57% [-0.72%, +1.82%]; unresolved |
+| original22-v1/threads/wait-mismatch | 0.993 [0.979, 1.009]; Δ -0.73%; speed +0.74% [-0.86%, +2.11%]; unresolved | 0.986 [0.930, 1.029]; Δ -1.37%; speed +1.39% [-2.79%, +7.50%]; unresolved |
+| original22-v1/threads/wait-timeout | 0.998 [0.881, 1.130]; Δ -0.17%; speed +0.17% [-11.48%, +13.46%]; unresolved | 0.998 [0.934, 1.046]; Δ -0.20%; speed +0.20% [-4.42%, +7.10%]; unresolved |
+| original22-v1/applications/sha256-clang | 0.988 [0.978, 0.998]; Δ -1.18%; speed +1.19% [+0.24%, +2.20%]; unresolved | 0.991 [0.968, 1.019]; Δ -0.90%; speed +0.91% [-1.82%, +3.28%]; unresolved |
+| original22-v1/applications/sha256-rust | 0.978 [0.967, 0.988]; Δ -2.16%; speed +2.21% [+1.20%, +3.46%]; unresolved | 0.981 [0.960, 0.996]; Δ -1.93%; speed +1.97% [+0.39%, +4.20%]; pass |
+| gc-sustained-v1/gc/i31-roundtrip | 0.999 [0.989, 1.012]; Δ -0.06%; speed +0.06% [-1.14%, +1.15%]; unresolved | 1.016 [0.994, 1.040]; Δ +1.63%; speed -1.61% [-3.87%, +0.62%]; unresolved |
+| gc-sustained-v1/gc/struct-access | 1.016 [0.988, 1.058]; Δ +1.55%; speed -1.53% [-5.46%, +1.19%]; unresolved | 1.024 [1.006, 1.039]; Δ +2.35%; speed -2.30% [-3.71%, -0.62%]; unresolved |
+| gc-sustained-v1/gc/struct-allocation | 0.988 [0.977, 0.999]; Δ -1.23%; speed +1.24% [+0.07%, +2.39%]; unresolved | 0.828 [0.794, 0.856]; Δ -17.22%; speed +20.80% [+16.86%, +25.99%]; unresolved |
+| gc-sustained-v1/gc/struct-indirect-access | 1.002 [0.981, 1.023]; Δ +0.22%; speed -0.22% [-2.26%, +1.96%]; unresolved | 1.032 [1.013, 1.051]; Δ +3.19%; speed -3.09% [-4.85%, -1.31%]; unresolved |
+| threads-sustained-v2/threads/private-memory | 0.987 [0.979, 0.996]; Δ -1.27%; speed +1.29% [+0.41%, +2.17%]; unresolved | 0.974 [0.965, 0.982]; Δ -2.62%; speed +2.69% [+1.87%, +3.67%]; pass |
+| threads-sustained-v2/threads/shared-memory | 1.080 [1.020, 1.198]; Δ +8.00%; speed -7.41% [-16.53%, -1.95%]; unresolved | 0.960 [0.950, 0.971]; Δ -3.99%; speed +4.15% [+3.01%, +5.31%]; unresolved |
+| threads-sustained-v2/threads/atomic-rmw | 0.993 [0.986, 0.999]; Δ -0.74%; speed +0.74% [+0.11%, +1.43%]; unresolved | 0.989 [0.975, 1.002]; Δ -1.06%; speed +1.07% [-0.20%, +2.56%]; pass |
+| threads-sustained-v2/threads/notify-empty | 1.014 [0.996, 1.040]; Δ +1.43%; speed -1.41% [-3.83%, +0.40%]; unresolved | 1.001 [0.984, 1.020]; Δ +0.10%; speed -0.10% [-1.92%, +1.68%]; unresolved |
+| threads-sustained-v2/threads/wait-mismatch | 1.027 [1.000, 1.076]; Δ +2.75%; speed -2.67% [-7.04%, +0.04%]; unresolved | 1.040 [0.987, 1.116]; Δ +3.97%; speed -3.82% [-10.40%, +1.29%]; unresolved |
+| threads-sustained-v2/threads/wait-timeout | 0.999 [0.960, 1.025]; Δ -0.06%; speed +0.06% [-2.47%, +4.13%]; unresolved | 0.993 [0.967, 1.019]; Δ -0.74%; speed +0.74% [-1.88%, +3.43%]; unresolved |
+| generic-calls-v1/core/generic-calls | 0.949 [0.887, 0.988]; Δ -5.13%; speed +5.41% [+1.22%, +12.72%]; unresolved | 0.969 [0.910, 1.006]; Δ -3.12%; speed +3.22% [-0.61%, +9.88%]; unresolved |
 
 ## Preparation, first call and cleanup
 
@@ -323,305 +324,305 @@ All entries below are **microseconds per process or invocation**, including unre
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 4,736.65 | 7,801.06 | 5,076.94 | 5,519.94 | 7,380.21 | 19,648.23 |
-| original22-v1/core/integer-loop | 5,461.79 | 7,261.10 | 5,416.71 | 7,650.46 | 7,354.04 | 19,864.90 |
-| original22-v1/core/function-calls | 7,573.29 | 7,021.04 | 5,440.48 | 5,290.54 | 7,793.46 | 20,412.73 |
-| original22-v1/core/memory-load-store | 6,508.67 | 8,447.62 | 5,426.67 | 6,037.96 | 7,565.35 | 19,415.98 |
-| original22-v1/memory/narrow-unaligned | 5,619.58 | 7,699.00 | 5,728.17 | 5,988.60 | 6,938.46 | 19,945.29 |
-| original22-v1/memory/dependent-address | 6,110.92 | 7,829.06 | 6,118.37 | 6,890.08 | 8,001.56 | 20,873.77 |
-| original22-v1/memory/float64-unaligned | 4,875.73 | 7,173.17 | 5,866.35 | 5,896.56 | 7,013.75 | 19,344.08 |
-| original22-v1/runtime/simd-memory-full | 5,408.37 | 8,581.17 | 5,261.79 | 5,695.04 | 7,372.69 | 21,155.35 |
-| original22-v1/runtime/simd-memory-widen | 5,318.40 | 7,528.48 | 5,023.31 | 5,092.46 | 7,108.42 | 19,290.29 |
-| original22-v1/runtime/simd-memory-lanes | 5,693.27 | 9,068.08 | 5,907.77 | 6,697.12 | 8,162.60 | 19,773.02 |
-| original22-v1/gc/i31-roundtrip | 4,999.48 | 6,859.58 | US | 4,772.98 | US | 19,179.52 |
-| original22-v1/gc/struct-access | 4,847.83 | 6,873.63 | US | 5,101.62 | US | 18,545.27 |
-| original22-v1/gc/struct-allocation | 5,042.40 | 7,667.13 | US | 4,903.96 | US | 18,721.58 |
-| original22-v1/gc/struct-indirect-access | 5,550.92 | 6,903.21 | US | 6,203.52 | US | 19,666.08 |
-| original22-v1/threads/private-memory | 5,498.52 | 7,795.67 | 5,412.35 | 4,851.71 | 6,748.15 | 18,860.85 |
-| original22-v1/threads/shared-memory | 5,070.88 | 8,218.35 | 4,921.56 | 4,996.02 | 6,862.29 | 19,239.52 |
-| original22-v1/threads/atomic-rmw | 5,021.96 | 7,009.15 | 5,468.19 | 4,902.85 | 6,843.42 | 19,023.67 |
-| original22-v1/threads/notify-empty | 5,525.27 | 8,756.62 | 5,819.48 | 6,265.29 | 7,959.96 | 20,561.02 |
-| original22-v1/threads/wait-mismatch | 5,732.48 | 7,270.12 | 5,663.69 | 5,027.46 | 7,130.92 | 19,262.40 |
-| original22-v1/threads/wait-timeout | 5,344.90 | 8,398.56 | 5,835.56 | 6,229.85 | 7,880.67 | 19,992.31 |
-| original22-v1/applications/sha256-clang | 5,148.69 | 7,317.73 | 5,313.15 | 5,052.73 | 6,852.42 | 19,518.75 |
-| original22-v1/applications/sha256-rust | 5,835.33 | 7,675.40 | 5,625.48 | 5,624.17 | 9,104.58 | 19,915.31 |
-| gc-sustained-v1/gc/i31-roundtrip | 5,266.06 | 7,953.77 | US | 5,523.10 | US | 19,256.67 |
-| gc-sustained-v1/gc/struct-access | 5,946.29 | 8,531.56 | US | 5,192.17 | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-allocation | 5,589.73 | 7,696.58 | US | 6,434.00 | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-indirect-access | 5,325.50 | 7,522.85 | US | 5,835.90 | US | **FAIL: SIGSEGV** |
-| threads-sustained-v2/threads/private-memory | 5,176.29 | 7,193.90 | 5,738.10 | 4,771.38 | 7,242.08 | 19,053.90 |
-| threads-sustained-v2/threads/shared-memory | 5,149.31 | 7,490.56 | 5,922.75 | 5,385.38 | 7,539.60 | 20,306.73 |
-| threads-sustained-v2/threads/atomic-rmw | 5,165.25 | 8,964.60 | 5,291.04 | 5,117.96 | 6,963.40 | 18,490.96 |
-| threads-sustained-v2/threads/notify-empty | 5,133.94 | 7,865.98 | 6,103.65 | 5,222.46 | 7,543.33 | 19,700.31 |
-| threads-sustained-v2/threads/wait-mismatch | 5,249.19 | 7,105.17 | 5,602.12 | 4,893.81 | 6,539.58 | 19,017.58 |
-| threads-sustained-v2/threads/wait-timeout | 5,498.96 | 7,133.02 | 5,071.48 | 5,265.10 | 7,373.48 | 18,752.75 |
-| generic-calls-v1/core/generic-calls | 6,066.96 | 7,938.52 | 5,744.10 | 5,840.67 | 9,359.54 | 21,416.35 |
+| original22-v1/core/call-control | 4,480.46 | 6,376.69 | 4,808.02 | 4,795.50 | 6,239.27 | 19,024.79 |
+| original22-v1/core/integer-loop | 4,372.98 | 6,486.10 | 4,559.77 | 4,533.04 | 6,019.46 | 16,503.38 |
+| original22-v1/core/function-calls | 4,286.44 | 6,086.83 | 4,197.92 | 4,191.73 | 5,930.15 | 16,565.42 |
+| original22-v1/core/memory-load-store | 5,207.56 | 6,150.92 | 4,403.02 | 4,375.96 | 6,176.69 | 16,681.08 |
+| original22-v1/memory/narrow-unaligned | 4,627.83 | 5,928.21 | 4,518.00 | 4,742.35 | 6,430.19 | 16,229.92 |
+| original22-v1/memory/dependent-address | 4,627.10 | 7,561.94 | 4,754.92 | 4,329.12 | 6,120.79 | 16,872.58 |
+| original22-v1/memory/float64-unaligned | 4,980.50 | 6,410.60 | 4,461.85 | 4,421.02 | 7,174.96 | 16,783.92 |
+| original22-v1/runtime/simd-memory-full | 4,237.60 | 5,648.42 | 4,456.17 | 4,233.58 | 6,008.81 | 15,945.88 |
+| original22-v1/runtime/simd-memory-widen | 4,018.33 | 5,862.54 | 4,204.52 | 4,225.48 | 5,871.73 | 16,289.85 |
+| original22-v1/runtime/simd-memory-lanes | 4,187.42 | 6,110.90 | 4,281.85 | 4,359.94 | 6,112.58 | 16,421.48 |
+| original22-v1/gc/i31-roundtrip | 3,812.21 | 5,735.17 | US | 4,127.33 | US | 15,963.12 |
+| original22-v1/gc/struct-access | 4,443.92 | 6,588.44 | US | 4,382.54 | US | 16,891.10 |
+| original22-v1/gc/struct-allocation | 4,107.40 | 5,956.33 | US | 4,280.73 | US | 16,227.19 |
+| original22-v1/gc/struct-indirect-access | 4,153.69 | 5,844.00 | US | 4,163.71 | US | 16,768.71 |
+| original22-v1/threads/private-memory | 3,753.54 | 5,998.38 | 4,393.40 | 4,114.50 | 5,953.15 | 16,201.12 |
+| original22-v1/threads/shared-memory | 4,315.79 | 5,942.77 | 3,983.15 | 4,052.29 | 5,856.60 | 16,043.52 |
+| original22-v1/threads/atomic-rmw | 3,940.25 | 5,905.71 | 4,370.50 | 4,214.38 | 5,912.00 | 16,666.00 |
+| original22-v1/threads/notify-empty | 3,845.46 | 5,853.98 | 3,937.08 | 3,995.06 | 5,848.69 | 15,659.46 |
+| original22-v1/threads/wait-mismatch | 4,204.27 | 6,617.42 | 4,594.00 | 5,466.50 | 6,712.42 | 17,067.40 |
+| original22-v1/threads/wait-timeout | 4,211.10 | 6,088.00 | 4,522.08 | 4,696.17 | 6,163.08 | 17,536.29 |
+| original22-v1/applications/sha256-clang | 4,303.67 | 5,947.87 | 4,104.44 | 4,479.12 | 5,956.19 | 16,447.56 |
+| original22-v1/applications/sha256-rust | 4,324.19 | 6,149.04 | 4,316.48 | 4,403.12 | 6,198.96 | 16,190.54 |
+| gc-sustained-v1/gc/i31-roundtrip | 4,244.35 | 6,313.96 | US | 4,358.46 | US | 16,409.23 |
+| gc-sustained-v1/gc/struct-access | 4,352.10 | 6,134.98 | US | 4,285.83 | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-allocation | 4,589.62 | 6,108.44 | US | 4,236.08 | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-indirect-access | 4,270.17 | 6,027.17 | US | 4,584.06 | US | **FAIL: SIGSEGV** |
+| threads-sustained-v2/threads/private-memory | 4,587.77 | 5,987.15 | 4,806.42 | 4,217.85 | 6,070.69 | 16,749.83 |
+| threads-sustained-v2/threads/shared-memory | 4,210.81 | 5,987.65 | 4,170.02 | 4,317.81 | 6,095.25 | 16,333.44 |
+| threads-sustained-v2/threads/atomic-rmw | 4,217.65 | 5,716.87 | 4,182.98 | 4,115.04 | 6,205.83 | 16,288.13 |
+| threads-sustained-v2/threads/notify-empty | 4,210.88 | 6,159.60 | 4,181.02 | 4,340.37 | 5,905.31 | 16,221.12 |
+| threads-sustained-v2/threads/wait-mismatch | 4,234.40 | 7,034.54 | 4,461.13 | 4,438.46 | 6,451.46 | 16,349.08 |
+| threads-sustained-v2/threads/wait-timeout | 4,644.02 | 6,926.81 | 4,529.42 | 4,357.35 | 6,371.31 | 16,831.19 |
+| generic-calls-v1/core/generic-calls | 4,177.60 | 5,904.04 | 4,466.10 | 4,759.06 | 5,942.83 | 16,184.58 |
 
 ### load
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 42.916 | 47.501 | 59.229 | 47.958 | 36.270 | 59.688 |
-| original22-v1/core/integer-loop | 50.750 | 54.001 | 48.000 | 75.354 | 63.563 | 56.376 |
-| original22-v1/core/function-calls | 58.062 | 53.667 | 49.562 | 36.895 | 49.062 | 49.375 |
-| original22-v1/core/memory-load-store | 54.208 | 57.188 | 43.499 | 40.854 | 49.375 | 58.855 |
-| original22-v1/memory/narrow-unaligned | 53.354 | 77.084 | 51.562 | 59.604 | 55.270 | 56.542 |
-| original22-v1/memory/dependent-address | 55.312 | 51.666 | 50.354 | 45.417 | 43.541 | 53.104 |
-| original22-v1/memory/float64-unaligned | 49.250 | 53.874 | 41.209 | 44.812 | 45.084 | 64.271 |
-| original22-v1/runtime/simd-memory-full | 47.084 | 63.041 | 52.604 | 43.709 | 47.855 | 50.291 |
-| original22-v1/runtime/simd-memory-widen | 53.292 | 56.375 | 47.291 | 43.896 | 41.042 | 61.416 |
-| original22-v1/runtime/simd-memory-lanes | 68.874 | 56.938 | 53.000 | 39.750 | 54.126 | 56.999 |
-| original22-v1/gc/i31-roundtrip | 47.354 | 52.188 | US | 39.041 | US | 65.125 |
-| original22-v1/gc/struct-access | 44.041 | 51.291 | US | 51.271 | US | 44.876 |
-| original22-v1/gc/struct-allocation | 46.375 | 50.521 | US | 35.667 | US | 55.166 |
-| original22-v1/gc/struct-indirect-access | 44.000 | 46.562 | US | 35.791 | US | 43.500 |
-| original22-v1/threads/private-memory | 42.188 | 45.771 | 40.980 | 41.208 | 36.688 | 45.187 |
-| original22-v1/threads/shared-memory | 40.749 | 52.084 | 38.959 | 38.438 | 43.605 | 49.916 |
-| original22-v1/threads/atomic-rmw | 43.355 | 46.166 | 41.376 | 51.166 | 36.688 | 67.124 |
-| original22-v1/threads/notify-empty | 54.230 | 63.125 | 46.000 | 77.938 | 42.854 | 90.688 |
-| original22-v1/threads/wait-mismatch | 49.792 | 50.437 | 51.105 | 50.354 | 42.167 | 44.709 |
-| original22-v1/threads/wait-timeout | 48.334 | 58.584 | 50.396 | 50.251 | 47.125 | 48.938 |
-| original22-v1/applications/sha256-clang | 63.501 | 61.062 | 50.166 | 50.041 | 53.624 | 63.834 |
-| original22-v1/applications/sha256-rust | 50.416 | 55.334 | 48.812 | 41.146 | 73.188 | 64.312 |
-| gc-sustained-v1/gc/i31-roundtrip | 48.042 | 61.417 | US | 36.145 | US | 50.438 |
-| gc-sustained-v1/gc/struct-access | 49.541 | 49.395 | US | 49.603 | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-allocation | 45.542 | 52.188 | US | 42.041 | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-indirect-access | 46.001 | 56.167 | US | 88.959 | US | **FAIL: SIGSEGV** |
-| threads-sustained-v2/threads/private-memory | 46.625 | 53.521 | 49.625 | 36.042 | 41.938 | 55.542 |
-| threads-sustained-v2/threads/shared-memory | 46.938 | 51.645 | 60.688 | 39.187 | 45.813 | 55.000 |
-| threads-sustained-v2/threads/atomic-rmw | 41.605 | 55.312 | 43.688 | 42.459 | 38.875 | 50.834 |
-| threads-sustained-v2/threads/notify-empty | 41.354 | 65.854 | 44.938 | 87.563 | 39.334 | 49.541 |
-| threads-sustained-v2/threads/wait-mismatch | 42.105 | 48.562 | 48.605 | 34.355 | 41.896 | 48.166 |
-| threads-sustained-v2/threads/wait-timeout | 41.792 | 48.375 | 45.125 | 42.625 | 42.874 | 54.209 |
-| generic-calls-v1/core/generic-calls | 82.979 | 52.312 | 59.292 | 59.375 | 56.500 | 66.229 |
+| original22-v1/core/call-control | 41.500 | 46.209 | 38.062 | 32.084 | 43.020 | 48.167 |
+| original22-v1/core/integer-loop | 37.416 | 39.001 | 41.083 | 35.603 | 31.458 | 41.355 |
+| original22-v1/core/function-calls | 36.688 | 46.624 | 38.334 | 32.395 | 39.541 | 43.958 |
+| original22-v1/core/memory-load-store | 42.688 | 39.833 | 40.834 | 33.729 | 36.562 | 43.791 |
+| original22-v1/memory/narrow-unaligned | 44.812 | 46.541 | 40.958 | 39.416 | 38.749 | 41.354 |
+| original22-v1/memory/dependent-address | 44.021 | 44.374 | 44.625 | 40.499 | 45.458 | 42.000 |
+| original22-v1/memory/float64-unaligned | 37.355 | 45.041 | 41.021 | 39.834 | 65.166 | 40.209 |
+| original22-v1/runtime/simd-memory-full | 38.208 | 38.334 | 36.041 | 32.103 | 36.229 | 39.834 |
+| original22-v1/runtime/simd-memory-widen | 38.270 | 39.209 | 37.812 | 33.208 | 32.500 | 46.833 |
+| original22-v1/runtime/simd-memory-lanes | 38.291 | 41.854 | 36.104 | 30.855 | 34.312 | 43.667 |
+| original22-v1/gc/i31-roundtrip | 31.750 | 34.770 | US | 25.062 | US | 37.312 |
+| original22-v1/gc/struct-access | 39.021 | 42.541 | US | 35.999 | US | 40.188 |
+| original22-v1/gc/struct-allocation | 31.541 | 34.084 | US | 29.458 | US | 33.562 |
+| original22-v1/gc/struct-indirect-access | 33.541 | 41.895 | US | 28.458 | US | 40.749 |
+| original22-v1/threads/private-memory | 32.791 | 32.708 | 36.291 | 33.166 | 29.333 | 42.208 |
+| original22-v1/threads/shared-memory | 36.104 | 33.896 | 34.730 | 30.270 | 30.938 | 40.292 |
+| original22-v1/threads/atomic-rmw | 40.416 | 37.146 | 35.938 | 27.209 | 33.229 | 38.188 |
+| original22-v1/threads/notify-empty | 29.042 | 34.354 | 30.375 | 29.084 | 25.500 | 40.292 |
+| original22-v1/threads/wait-mismatch | 40.938 | 45.520 | 36.625 | 67.813 | 41.959 | 46.437 |
+| original22-v1/threads/wait-timeout | 44.854 | 44.458 | 45.980 | 37.584 | 31.500 | 38.896 |
+| original22-v1/applications/sha256-clang | 40.145 | 34.688 | 42.104 | 46.104 | 42.250 | 39.605 |
+| original22-v1/applications/sha256-rust | 43.146 | 35.395 | 41.354 | 31.354 | 35.230 | 40.188 |
+| gc-sustained-v1/gc/i31-roundtrip | 38.666 | 39.104 | US | 30.687 | US | 37.146 |
+| gc-sustained-v1/gc/struct-access | 35.937 | 39.145 | US | 33.251 | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-allocation | 36.521 | 40.500 | US | 37.146 | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-indirect-access | 39.166 | 46.854 | US | 35.355 | US | **FAIL: SIGSEGV** |
+| threads-sustained-v2/threads/private-memory | 37.916 | 44.001 | 39.562 | 30.271 | 29.312 | 41.250 |
+| threads-sustained-v2/threads/shared-memory | 43.480 | 38.000 | 38.833 | 28.542 | 32.312 | 39.292 |
+| threads-sustained-v2/threads/atomic-rmw | 34.355 | 32.979 | 36.605 | 31.562 | 31.208 | 35.125 |
+| threads-sustained-v2/threads/notify-empty | 34.292 | 38.145 | 32.666 | 26.312 | 33.208 | 40.792 |
+| threads-sustained-v2/threads/wait-mismatch | 42.375 | 41.709 | 41.750 | 30.834 | 42.146 | 46.729 |
+| threads-sustained-v2/threads/wait-timeout | 38.395 | 49.479 | 51.230 | 34.291 | 40.688 | 57.083 |
+| generic-calls-v1/core/generic-calls | 42.562 | 41.812 | 41.041 | 36.375 | 35.188 | 46.105 |
 
 ### engineSetup
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 6.958 | 5.729 | 71.584 | 134.15 | 50.125 | 38.250 |
-| original22-v1/core/integer-loop | 7.667 | 6.208 | 74.042 | 244.67 | 48.208 | 39.770 |
-| original22-v1/core/function-calls | 7.833 | 6.479 | 65.354 | 142.67 | 49.166 | 39.584 |
-| original22-v1/core/memory-load-store | 6.937 | 6.271 | 67.625 | 148.29 | 51.021 | 41.583 |
-| original22-v1/memory/narrow-unaligned | 6.979 | 6.208 | 66.375 | 157.10 | 51.333 | 39.479 |
-| original22-v1/memory/dependent-address | 7.438 | 6.208 | 67.041 | 149.60 | 49.166 | 42.625 |
-| original22-v1/memory/float64-unaligned | 7.146 | 6.417 | 66.626 | 151.40 | 43.334 | 35.458 |
-| original22-v1/runtime/simd-memory-full | 6.792 | 6.938 | 70.709 | 152.96 | 47.397 | 36.730 |
-| original22-v1/runtime/simd-memory-widen | 7.354 | 6.000 | 63.041 | 153.33 | 48.854 | 41.334 |
-| original22-v1/runtime/simd-memory-lanes | 7.271 | 6.021 | 67.104 | 148.58 | 53.896 | 38.688 |
-| original22-v1/gc/i31-roundtrip | 7.354 | 6.125 | US | 152.50 | US | 38.876 |
-| original22-v1/gc/struct-access | 6.604 | 5.792 | US | 144.98 | US | 36.145 |
-| original22-v1/gc/struct-allocation | 7.000 | 6.188 | US | 147.27 | US | 51.645 |
-| original22-v1/gc/struct-indirect-access | 6.812 | 4.771 | US | 143.92 | US | 39.146 |
-| original22-v1/threads/private-memory | 7.667 | 5.979 | 62.812 | 152.92 | 51.000 | 38.500 |
-| original22-v1/threads/shared-memory | 6.854 | 6.333 | 63.604 | 141.27 | 48.980 | 43.813 |
-| original22-v1/threads/atomic-rmw | 7.458 | 5.500 | 65.709 | 144.96 | 45.500 | 40.312 |
-| original22-v1/threads/notify-empty | 11.938 | 6.792 | 77.688 | 181.52 | 46.334 | 54.916 |
-| original22-v1/threads/wait-mismatch | 7.146 | 6.104 | 86.145 | 147.31 | 45.000 | 35.625 |
-| original22-v1/threads/wait-timeout | 7.521 | 6.250 | 69.459 | 147.73 | 52.604 | 39.021 |
-| original22-v1/applications/sha256-clang | 8.312 | 6.396 | 67.083 | 150.98 | 47.417 | 42.584 |
-| original22-v1/applications/sha256-rust | 7.188 | 5.750 | 66.167 | 144.58 | 51.270 | 48.229 |
-| gc-sustained-v1/gc/i31-roundtrip | 7.125 | 6.500 | US | 144.44 | US | 38.126 |
-| gc-sustained-v1/gc/struct-access | 6.812 | 5.708 | US | 166.69 | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-allocation | 6.958 | 5.875 | US | 151.77 | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-indirect-access | 7.896 | 5.708 | US | 197.98 | US | **FAIL: SIGSEGV** |
-| threads-sustained-v2/threads/private-memory | 6.958 | 6.625 | 67.938 | 147.10 | 48.938 | 45.375 |
-| threads-sustained-v2/threads/shared-memory | 7.229 | 6.146 | 66.396 | 150.73 | 47.334 | 39.522 |
-| threads-sustained-v2/threads/atomic-rmw | 6.875 | 5.667 | 66.062 | 141.38 | 47.041 | 38.541 |
-| threads-sustained-v2/threads/notify-empty | 7.208 | 6.854 | 66.979 | 154.62 | 55.959 | 35.646 |
-| threads-sustained-v2/threads/wait-mismatch | 6.667 | 6.500 | 64.103 | 147.38 | 50.395 | 35.458 |
-| threads-sustained-v2/threads/wait-timeout | 7.062 | 5.542 | 65.979 | 149.88 | 49.062 | 37.145 |
-| generic-calls-v1/core/generic-calls | 7.875 | 6.708 | 74.063 | 175.65 | 83.895 | 188.81 |
+| original22-v1/core/call-control | 6.938 | 5.584 | 60.626 | 134.77 | 46.250 | 29.834 |
+| original22-v1/core/integer-loop | 5.625 | 5.542 | 58.792 | 126.81 | 44.229 | 26.167 |
+| original22-v1/core/function-calls | 6.125 | 5.500 | 59.459 | 132.90 | 41.417 | 25.312 |
+| original22-v1/core/memory-load-store | 6.542 | 5.062 | 59.480 | 121.42 | 43.084 | 28.209 |
+| original22-v1/memory/narrow-unaligned | 6.438 | 5.250 | 61.916 | 144.65 | 45.167 | 29.291 |
+| original22-v1/memory/dependent-address | 6.312 | 5.458 | 57.646 | 128.92 | 44.542 | 29.125 |
+| original22-v1/memory/float64-unaligned | 6.125 | 5.396 | 95.854 | 143.25 | 74.666 | 32.375 |
+| original22-v1/runtime/simd-memory-full | 5.792 | 4.896 | 55.834 | 121.40 | 39.750 | 25.541 |
+| original22-v1/runtime/simd-memory-widen | 5.958 | 4.812 | 56.083 | 120.35 | 40.958 | 26.791 |
+| original22-v1/runtime/simd-memory-lanes | 6.521 | 4.896 | 55.416 | 125.88 | 40.896 | 27.584 |
+| original22-v1/gc/i31-roundtrip | 5.688 | 4.604 | US | 122.79 | US | 25.750 |
+| original22-v1/gc/struct-access | 6.000 | 5.146 | US | 130.27 | US | 26.709 |
+| original22-v1/gc/struct-allocation | 5.583 | 4.750 | US | 127.73 | US | 25.541 |
+| original22-v1/gc/struct-indirect-access | 6.146 | 5.333 | US | 133.06 | US | 28.105 |
+| original22-v1/threads/private-memory | 5.750 | 4.687 | 58.999 | 121.58 | 40.688 | 27.334 |
+| original22-v1/threads/shared-memory | 6.438 | 5.000 | 56.917 | 125.44 | 42.083 | 29.312 |
+| original22-v1/threads/atomic-rmw | 6.208 | 5.083 | 57.812 | 128.52 | 43.791 | 29.062 |
+| original22-v1/threads/notify-empty | 5.750 | 4.854 | 57.916 | 124.62 | 38.209 | 28.667 |
+| original22-v1/threads/wait-mismatch | 6.188 | 5.479 | 65.145 | 136.06 | 46.834 | 32.375 |
+| original22-v1/threads/wait-timeout | 6.729 | 5.375 | 64.438 | 137.15 | 41.396 | 30.000 |
+| original22-v1/applications/sha256-clang | 6.312 | 4.979 | 59.584 | 134.21 | 42.854 | 26.895 |
+| original22-v1/applications/sha256-rust | 6.688 | 4.875 | 59.230 | 129.81 | 40.354 | 27.125 |
+| gc-sustained-v1/gc/i31-roundtrip | 5.729 | 5.312 | US | 125.33 | US | 27.730 |
+| gc-sustained-v1/gc/struct-access | 5.646 | 5.375 | US | 124.52 | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-allocation | 5.938 | 4.521 | US | 120.92 | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-indirect-access | 6.250 | 5.479 | US | 129.31 | US | **FAIL: SIGSEGV** |
+| threads-sustained-v2/threads/private-memory | 6.313 | 5.312 | 56.292 | 129.19 | 41.541 | 30.521 |
+| threads-sustained-v2/threads/shared-memory | 6.354 | 4.708 | 61.062 | 124.96 | 41.521 | 25.646 |
+| threads-sustained-v2/threads/atomic-rmw | 6.021 | 4.729 | 61.166 | 122.13 | 41.646 | 25.584 |
+| threads-sustained-v2/threads/notify-empty | 5.521 | 4.792 | 59.354 | 122.17 | 42.916 | 25.896 |
+| threads-sustained-v2/threads/wait-mismatch | 6.500 | 5.979 | 60.105 | 127.06 | 42.979 | 27.542 |
+| threads-sustained-v2/threads/wait-timeout | 6.958 | 5.000 | 61.334 | 122.23 | 46.499 | 31.209 |
+| generic-calls-v1/core/generic-calls | 6.104 | 5.021 | 62.271 | 128.44 | 41.583 | 26.709 |
 
 ### compileValidate
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 215.12 | 167.33 | 109.81 | 1,159.85 | 1,326.50 | 276,372.98 |
-| original22-v1/core/integer-loop | 278.96 | 222.33 | 134.96 | 3,659.27 | 1,374.90 | 281,680.35 |
-| original22-v1/core/function-calls | 344.31 | 296.27 | 142.21 | 1,187.75 | 1,314.00 | 277,816.62 |
-| original22-v1/core/memory-load-store | 390.81 | 334.79 | 167.63 | 1,029.71 | 1,410.44 | 285,015.60 |
-| original22-v1/memory/narrow-unaligned | 347.00 | 331.42 | 169.37 | 1,039.23 | 1,334.17 | 277,697.42 |
-| original22-v1/memory/dependent-address | 341.71 | 305.96 | 166.96 | 1,268.60 | 1,333.79 | 280,658.29 |
-| original22-v1/memory/float64-unaligned | 392.98 | 333.46 | 171.77 | 1,170.96 | 1,349.46 | 281,231.54 |
-| original22-v1/runtime/simd-memory-full | 336.12 | 314.10 | 144.71 | 1,552.04 | 1,403.48 | 275,682.02 |
-| original22-v1/runtime/simd-memory-widen | 309.83 | 270.02 | 142.79 | 1,269.35 | 1,319.27 | 272,543.75 |
-| original22-v1/runtime/simd-memory-lanes | 334.75 | 336.00 | 151.58 | 4,463.21 | 1,429.63 | 280,836.73 |
-| original22-v1/gc/i31-roundtrip | 244.12 | 195.35 | US | 1,048.81 | US | 275,191.23 |
-| original22-v1/gc/struct-access | 273.31 | 237.54 | US | 1,112.56 | US | 278,920.65 |
-| original22-v1/gc/struct-allocation | 258.08 | 214.58 | US | 3,825.81 | US | 276,019.06 |
-| original22-v1/gc/struct-indirect-access | 314.29 | 282.40 | US | 8,149.10 | US | 275,504.29 |
-| original22-v1/threads/private-memory | 264.44 | 213.71 | 138.94 | 1,004.37 | 1,330.54 | 275,450.56 |
-| original22-v1/threads/shared-memory | 269.54 | 217.85 | 138.31 | 858.27 | 1,232.96 | 280,128.15 |
-| original22-v1/threads/atomic-rmw | 260.21 | 193.94 | 147.40 | 1,097.29 | 1,243.69 | 274,628.48 |
-| original22-v1/threads/notify-empty | 292.27 | 264.15 | 160.90 | 1,331.54 | 1,453.69 | 284,362.75 |
-| original22-v1/threads/wait-mismatch | 252.96 | 206.69 | 161.04 | 1,067.98 | 1,250.56 | 278,935.40 |
-| original22-v1/threads/wait-timeout | 262.12 | 289.88 | 150.46 | 1,572.00 | 1,883.81 | 281,141.85 |
-| original22-v1/applications/sha256-clang | 1,713.77 | 2,073.92 | 354.62 | 4,142.25 | 2,714.60 | 286,205.08 |
-| original22-v1/applications/sha256-rust | 1,627.48 | 2,081.10 | 377.02 | 3,045.19 | 2,910.60 | 285,332.02 |
-| gc-sustained-v1/gc/i31-roundtrip | 234.69 | 187.75 | US | 865.48 | US | 279,686.02 |
-| gc-sustained-v1/gc/struct-access | 268.88 | 226.58 | US | 1,154.96 | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-allocation | 271.04 | 245.21 | US | 6,507.31 | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-indirect-access | 342.83 | 280.77 | US | 2,501.81 | US | **FAIL: SIGSEGV** |
-| threads-sustained-v2/threads/private-memory | 262.27 | 212.52 | 141.46 | 1,089.10 | 1,181.54 | 280,391.90 |
-| threads-sustained-v2/threads/shared-memory | 288.10 | 215.40 | 151.00 | 1,031.92 | 1,256.69 | 278,531.85 |
-| threads-sustained-v2/threads/atomic-rmw | 250.46 | 200.38 | 139.21 | 1,040.56 | 1,224.94 | 280,945.29 |
-| threads-sustained-v2/threads/notify-empty | 251.75 | 208.67 | 142.23 | 1,513.29 | 1,641.25 | 274,938.02 |
-| threads-sustained-v2/threads/wait-mismatch | 252.67 | 201.85 | 141.83 | 1,146.08 | 1,238.33 | 274,153.00 |
-| threads-sustained-v2/threads/wait-timeout | 247.17 | 206.65 | 158.73 | 1,103.40 | 1,277.48 | 276,072.56 |
-| generic-calls-v1/core/generic-calls | 350.44 | 324.46 | 161.12 | 2,564.85 | 2,347.00 | 286,314.77 |
+| original22-v1/core/call-control | 206.37 | 160.44 | 100.29 | 855.12 | 1,096.52 | 286,750.27 |
+| original22-v1/core/integer-loop | 241.15 | 209.27 | 126.29 | 756.48 | 1,156.90 | 275,238.85 |
+| original22-v1/core/function-calls | 307.52 | 257.83 | 132.21 | 767.79 | 1,249.56 | 281,569.85 |
+| original22-v1/core/memory-load-store | 336.67 | 291.15 | 139.04 | 722.40 | 1,224.08 | 284,949.50 |
+| original22-v1/memory/narrow-unaligned | 311.42 | 287.60 | 154.75 | 889.54 | 1,308.71 | 278,682.56 |
+| original22-v1/memory/dependent-address | 300.31 | 273.15 | 162.44 | 797.60 | 1,214.90 | 282,388.21 |
+| original22-v1/memory/float64-unaligned | 332.19 | 297.15 | 201.67 | 964.94 | 2,010.92 | 275,229.00 |
+| original22-v1/runtime/simd-memory-full | 277.25 | 253.48 | 130.69 | 1,019.54 | 1,174.46 | 272,927.23 |
+| original22-v1/runtime/simd-memory-widen | 264.50 | 234.96 | 126.67 | 1,020.44 | 1,142.08 | 278,813.52 |
+| original22-v1/runtime/simd-memory-lanes | 293.69 | 255.12 | 127.06 | 989.42 | 1,209.69 | 273,522.83 |
+| original22-v1/gc/i31-roundtrip | 203.50 | 158.17 | US | 721.58 | US | 273,836.52 |
+| original22-v1/gc/struct-access | 245.85 | 213.48 | US | 958.56 | US | 289,449.27 |
+| original22-v1/gc/struct-allocation | 226.92 | 187.54 | US | 1,136.23 | US | 278,053.62 |
+| original22-v1/gc/struct-indirect-access | 287.10 | 249.50 | US | 1,626.31 | US | 283,526.83 |
+| original22-v1/threads/private-memory | 229.17 | 187.58 | 125.67 | 753.50 | 1,118.62 | 279,303.94 |
+| original22-v1/threads/shared-memory | 247.69 | 197.23 | 135.52 | 754.83 | 1,137.50 | 278,300.73 |
+| original22-v1/threads/atomic-rmw | 219.50 | 184.29 | 129.67 | 763.96 | 1,253.52 | 277,400.15 |
+| original22-v1/threads/notify-empty | 218.92 | 180.02 | 129.12 | 867.48 | 1,144.27 | 281,334.33 |
+| original22-v1/threads/wait-mismatch | 232.15 | 199.12 | 137.79 | 1,383.52 | 1,164.83 | 277,539.71 |
+| original22-v1/threads/wait-timeout | 240.38 | 192.23 | 155.73 | 1,025.19 | 1,201.60 | 278,378.00 |
+| original22-v1/applications/sha256-clang | 1,395.17 | 1,749.83 | 302.00 | 1,429.94 | 1,791.92 | 284,814.79 |
+| original22-v1/applications/sha256-rust | 1,402.88 | 1,736.75 | 340.98 | 1,457.62 | 2,023.83 | 282,253.94 |
+| gc-sustained-v1/gc/i31-roundtrip | 202.92 | 168.65 | US | 761.73 | US | 278,793.71 |
+| gc-sustained-v1/gc/struct-access | 241.65 | 205.58 | US | 915.15 | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-allocation | 227.77 | 186.81 | US | 1,121.69 | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-indirect-access | 302.44 | 255.10 | US | 1,625.58 | US | **FAIL: SIGSEGV** |
+| threads-sustained-v2/threads/private-memory | 237.19 | 192.81 | 127.06 | 772.27 | 1,176.58 | 276,878.08 |
+| threads-sustained-v2/threads/shared-memory | 244.35 | 190.60 | 135.90 | 795.94 | 1,161.88 | 275,713.08 |
+| threads-sustained-v2/threads/atomic-rmw | 211.04 | 174.23 | 125.04 | 769.35 | 1,193.60 | 278,786.50 |
+| threads-sustained-v2/threads/notify-empty | 214.98 | 176.81 | 131.48 | 900.10 | 1,252.15 | 277,894.56 |
+| threads-sustained-v2/threads/wait-mismatch | 229.10 | 188.48 | 138.65 | 942.65 | 1,351.35 | 273,997.25 |
+| threads-sustained-v2/threads/wait-timeout | 251.96 | 206.73 | 135.15 | 991.04 | 1,239.65 | 285,416.83 |
+| generic-calls-v1/core/generic-calls | 315.33 | 269.96 | 130.44 | 977.23 | 1,731.71 | 279,490.81 |
 
 ### instantiate
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 9.875 | 10.208 | 15.979 | 8.875 | 20.291 | 17.625 |
-| original22-v1/core/integer-loop | 9.084 | 10.208 | 16.438 | 9.896 | 19.979 | 18.021 |
-| original22-v1/core/function-calls | 10.562 | 10.938 | 15.646 | 8.376 | 20.229 | 18.605 |
-| original22-v1/core/memory-load-store | 15.563 | 16.188 | 20.312 | 23.938 | 37.084 | 39.167 |
-| original22-v1/memory/narrow-unaligned | 15.917 | 17.062 | 19.729 | 24.291 | 35.562 | 40.084 |
-| original22-v1/memory/dependent-address | 16.687 | 17.708 | 22.375 | 23.958 | 36.979 | 36.687 |
-| original22-v1/memory/float64-unaligned | 15.834 | 16.041 | 20.229 | 24.562 | 34.750 | 39.875 |
-| original22-v1/runtime/simd-memory-full | 17.395 | 19.666 | 22.375 | 65.812 | 40.000 | 45.583 |
-| original22-v1/runtime/simd-memory-widen | 18.208 | 18.125 | 21.730 | 64.105 | 40.896 | 47.875 |
-| original22-v1/runtime/simd-memory-lanes | 18.000 | 19.021 | 21.771 | 66.876 | 42.001 | 48.062 |
-| original22-v1/gc/i31-roundtrip | 9.584 | 10.729 | US | 8.708 | US | 16.605 |
-| original22-v1/gc/struct-access | 10.708 | 11.562 | US | 25.583 | US | 17.438 |
-| original22-v1/gc/struct-allocation | 11.209 | 11.916 | US | 65.020 | US | 22.021 |
-| original22-v1/gc/struct-indirect-access | 22.459 | 25.250 | US | 78.416 | US | 24.834 |
-| original22-v1/threads/private-memory | 15.229 | 15.417 | 18.125 | 24.021 | 36.541 | 41.438 |
-| original22-v1/threads/shared-memory | 14.562 | 16.271 | 18.959 | 23.125 | 40.750 | 39.584 |
-| original22-v1/threads/atomic-rmw | 15.583 | 15.750 | 19.791 | 24.270 | 38.750 | 38.167 |
-| original22-v1/threads/notify-empty | 17.584 | 17.604 | 23.125 | 24.917 | 39.459 | 42.291 |
-| original22-v1/threads/wait-mismatch | 16.605 | 15.896 | 19.166 | 25.104 | 39.791 | 40.229 |
-| original22-v1/threads/wait-timeout | 16.229 | 18.812 | 21.896 | 24.812 | 41.812 | 37.645 |
-| original22-v1/applications/sha256-clang | 21.041 | 21.937 | 18.938 | 64.521 | 41.500 | 48.750 |
-| original22-v1/applications/sha256-rust | 22.520 | 22.541 | 22.895 | 61.229 | 44.459 | 47.625 |
-| gc-sustained-v1/gc/i31-roundtrip | 9.187 | 11.021 | US | 8.938 | US | 15.562 |
-| gc-sustained-v1/gc/struct-access | 11.250 | 10.812 | US | 26.187 | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-allocation | 11.083 | 11.875 | US | 63.375 | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-indirect-access | 25.105 | 25.791 | US | 78.188 | US | **FAIL: SIGSEGV** |
-| threads-sustained-v2/threads/private-memory | 15.917 | 16.166 | 22.541 | 23.521 | 35.334 | 42.459 |
-| threads-sustained-v2/threads/shared-memory | 16.062 | 16.542 | 22.604 | 24.520 | 39.916 | 40.333 |
-| threads-sustained-v2/threads/atomic-rmw | 14.916 | 18.896 | 18.979 | 23.584 | 40.584 | 39.583 |
-| threads-sustained-v2/threads/notify-empty | 15.188 | 17.605 | 18.334 | 24.291 | 41.438 | 43.541 |
-| threads-sustained-v2/threads/wait-mismatch | 16.208 | 15.437 | 20.791 | 24.438 | 40.000 | 37.959 |
-| threads-sustained-v2/threads/wait-timeout | 16.854 | 17.083 | 20.500 | 25.021 | 43.062 | 42.083 |
-| generic-calls-v1/core/generic-calls | 11.146 | 12.833 | 16.666 | 10.229 | 23.667 | 19.167 |
+| original22-v1/core/call-control | 9.271 | 8.459 | 14.812 | 8.791 | 18.604 | 18.375 |
+| original22-v1/core/integer-loop | 8.062 | 8.250 | 14.396 | 7.854 | 17.041 | 15.333 |
+| original22-v1/core/function-calls | 8.896 | 8.042 | 13.813 | 6.979 | 17.125 | 20.416 |
+| original22-v1/core/memory-load-store | 13.479 | 13.771 | 16.875 | 21.312 | 31.958 | 34.500 |
+| original22-v1/memory/narrow-unaligned | 14.459 | 13.626 | 20.521 | 22.250 | 32.499 | 34.958 |
+| original22-v1/memory/dependent-address | 13.854 | 13.959 | 19.250 | 21.980 | 31.521 | 33.834 |
+| original22-v1/memory/float64-unaligned | 14.271 | 14.625 | 20.041 | 23.209 | 47.291 | 37.479 |
+| original22-v1/runtime/simd-memory-full | 14.562 | 14.521 | 19.146 | 56.041 | 34.625 | 44.334 |
+| original22-v1/runtime/simd-memory-widen | 14.729 | 15.021 | 17.271 | 57.688 | 36.334 | 43.854 |
+| original22-v1/runtime/simd-memory-lanes | 14.979 | 14.542 | 18.605 | 53.376 | 35.459 | 42.541 |
+| original22-v1/gc/i31-roundtrip | 8.292 | 8.250 | US | 7.396 | US | 14.312 |
+| original22-v1/gc/struct-access | 9.709 | 9.249 | US | 24.188 | US | 18.209 |
+| original22-v1/gc/struct-allocation | 10.062 | 9.292 | US | 53.916 | US | 21.125 |
+| original22-v1/gc/struct-indirect-access | 20.562 | 21.458 | US | 67.396 | US | 28.438 |
+| original22-v1/threads/private-memory | 12.771 | 12.792 | 18.146 | 20.875 | 31.687 | 35.812 |
+| original22-v1/threads/shared-memory | 14.084 | 13.479 | 17.604 | 22.187 | 34.728 | 35.666 |
+| original22-v1/threads/atomic-rmw | 14.521 | 14.958 | 16.105 | 22.312 | 34.999 | 36.209 |
+| original22-v1/threads/notify-empty | 12.979 | 14.166 | 18.896 | 20.917 | 36.666 | 35.541 |
+| original22-v1/threads/wait-mismatch | 14.438 | 15.084 | 19.145 | 23.959 | 37.980 | 39.938 |
+| original22-v1/threads/wait-timeout | 15.291 | 15.041 | 19.709 | 22.230 | 38.729 | 38.000 |
+| original22-v1/applications/sha256-clang | 18.188 | 17.687 | 16.333 | 57.312 | 36.000 | 43.895 |
+| original22-v1/applications/sha256-rust | 17.750 | 18.395 | 19.334 | 52.959 | 36.500 | 42.250 |
+| gc-sustained-v1/gc/i31-roundtrip | 8.604 | 9.291 | US | 8.271 | US | 16.480 |
+| gc-sustained-v1/gc/struct-access | 9.583 | 8.750 | US | 23.125 | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-allocation | 10.104 | 9.500 | US | 57.042 | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-indirect-access | 22.354 | 21.188 | US | 67.292 | US | **FAIL: SIGSEGV** |
+| threads-sustained-v2/threads/private-memory | 14.979 | 14.625 | 16.062 | 22.459 | 31.146 | 38.312 |
+| threads-sustained-v2/threads/shared-memory | 13.062 | 13.854 | 17.896 | 22.229 | 36.291 | 34.312 |
+| threads-sustained-v2/threads/atomic-rmw | 12.916 | 14.688 | 18.291 | 21.375 | 35.792 | 38.855 |
+| threads-sustained-v2/threads/notify-empty | 13.146 | 13.521 | 18.000 | 21.521 | 37.688 | 36.562 |
+| threads-sustained-v2/threads/wait-mismatch | 14.626 | 15.917 | 18.667 | 22.541 | 37.978 | 36.271 |
+| threads-sustained-v2/threads/wait-timeout | 15.042 | 15.271 | 19.375 | 23.063 | 35.729 | 37.771 |
+| generic-calls-v1/core/generic-calls | 10.542 | 9.959 | 15.791 | 8.416 | 19.125 | 16.334 |
 
 ### exportLookup
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 0.333 | 0.521 | 2.521 | 4.708 | 5.312 | 0.292 |
-| original22-v1/core/integer-loop | 0.333 | 0.479 | 2.542 | 4.500 | 5.479 | 0.312 |
-| original22-v1/core/function-calls | 0.291 | 0.479 | 1.855 | 4.875 | 5.083 | 0.291 |
-| original22-v1/core/memory-load-store | 0.292 | 0.500 | 3.125 | 4.458 | 5.396 | 0.250 |
-| original22-v1/memory/narrow-unaligned | 0.292 | 0.500 | 2.333 | 5.021 | 5.292 | 0.291 |
-| original22-v1/memory/dependent-address | 0.292 | 0.521 | 3.146 | 4.688 | 5.229 | 0.292 |
-| original22-v1/memory/float64-unaligned | 0.291 | 0.500 | 2.292 | 4.625 | 5.188 | 0.209 |
-| original22-v1/runtime/simd-memory-full | 0.312 | 0.562 | 2.417 | 2.376 | 5.333 | 0.229 |
-| original22-v1/runtime/simd-memory-widen | 0.312 | 0.479 | 2.250 | 2.250 | 5.208 | 0.250 |
-| original22-v1/runtime/simd-memory-lanes | 0.334 | 0.563 | 3.000 | 2.229 | 5.604 | 0.334 |
-| original22-v1/gc/i31-roundtrip | 0.334 | 0.438 | US | 4.458 | US | 0.312 |
-| original22-v1/gc/struct-access | 0.271 | 0.375 | US | 4.521 | US | 0.250 |
-| original22-v1/gc/struct-allocation | 0.250 | 0.459 | US | 2.021 | US | 0.208 |
-| original22-v1/gc/struct-indirect-access | 0.292 | 0.521 | US | 2.188 | US | 0.250 |
-| original22-v1/threads/private-memory | 0.292 | 0.520 | 2.208 | 4.396 | 5.208 | 0.354 |
-| original22-v1/threads/shared-memory | 0.271 | 0.500 | 2.875 | 4.625 | 5.333 | 0.291 |
-| original22-v1/threads/atomic-rmw | 0.292 | 0.521 | 2.812 | 4.708 | 5.354 | 0.271 |
-| original22-v1/threads/notify-empty | 0.334 | 0.604 | 2.667 | 4.792 | 5.146 | 0.334 |
-| original22-v1/threads/wait-mismatch | 0.312 | 0.479 | 2.979 | 4.750 | 5.333 | 0.312 |
-| original22-v1/threads/wait-timeout | 0.334 | 0.604 | 2.833 | 4.583 | 5.125 | 0.250 |
-| original22-v1/applications/sha256-clang | 0.292 | 0.500 | 2.667 | 2.333 | 5.875 | 0.291 |
-| original22-v1/applications/sha256-rust | 0.292 | 0.500 | 3.000 | 2.312 | 6.083 | 0.291 |
-| gc-sustained-v1/gc/i31-roundtrip | 0.271 | 0.500 | US | 4.479 | US | 0.271 |
-| gc-sustained-v1/gc/struct-access | 0.250 | 0.396 | US | 4.479 | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-allocation | 0.291 | 0.438 | US | 2.208 | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-indirect-access | 0.334 | 0.520 | US | 2.250 | US | **FAIL: SIGSEGV** |
-| threads-sustained-v2/threads/private-memory | 0.291 | 0.500 | 2.667 | 4.646 | 5.396 | 0.292 |
-| threads-sustained-v2/threads/shared-memory | 0.292 | 0.520 | 3.562 | 4.854 | 5.542 | 0.250 |
-| threads-sustained-v2/threads/atomic-rmw | 0.271 | 0.520 | 3.063 | 4.709 | 5.396 | 0.271 |
-| threads-sustained-v2/threads/notify-empty | 0.292 | 0.500 | 2.292 | 4.438 | 5.500 | 0.208 |
-| threads-sustained-v2/threads/wait-mismatch | 0.292 | 0.541 | 3.208 | 4.979 | 5.208 | 0.292 |
-| threads-sustained-v2/threads/wait-timeout | 0.333 | 0.500 | 2.708 | 4.625 | 5.500 | 0.292 |
-| generic-calls-v1/core/generic-calls | 0.312 | 0.479 | 3.146 | 4.729 | 6.354 | 0.312 |
+| original22-v1/core/call-control | 0.250 | 0.438 | 2.146 | 4.250 | 4.771 | 0.292 |
+| original22-v1/core/integer-loop | 0.250 | 0.459 | 2.312 | 3.938 | 4.604 | 0.208 |
+| original22-v1/core/function-calls | 0.250 | 0.438 | 1.854 | 3.958 | 4.792 | 0.334 |
+| original22-v1/core/memory-load-store | 0.271 | 0.458 | 2.083 | 4.062 | 4.688 | 0.230 |
+| original22-v1/memory/narrow-unaligned | 0.333 | 0.459 | 2.354 | 4.354 | 5.042 | 0.271 |
+| original22-v1/memory/dependent-address | 0.250 | 0.479 | 2.417 | 4.396 | 4.833 | 0.230 |
+| original22-v1/memory/float64-unaligned | 0.250 | 0.479 | 2.499 | 4.271 | 6.667 | 0.271 |
+| original22-v1/runtime/simd-memory-full | 0.292 | 0.500 | 2.750 | 2.042 | 4.604 | 0.229 |
+| original22-v1/runtime/simd-memory-widen | 0.292 | 0.459 | 2.125 | 2.146 | 4.646 | 0.250 |
+| original22-v1/runtime/simd-memory-lanes | 0.250 | 0.458 | 2.229 | 1.917 | 4.583 | 0.208 |
+| original22-v1/gc/i31-roundtrip | 0.250 | 0.459 | US | 3.979 | US | 0.271 |
+| original22-v1/gc/struct-access | 0.250 | 0.416 | US | 4.021 | US | 0.250 |
+| original22-v1/gc/struct-allocation | 0.250 | 0.458 | US | 1.792 | US | 0.291 |
+| original22-v1/gc/struct-indirect-access | 0.292 | 0.500 | US | 2.042 | US | 0.291 |
+| original22-v1/threads/private-memory | 0.250 | 0.521 | 2.333 | 4.083 | 4.708 | 0.271 |
+| original22-v1/threads/shared-memory | 0.291 | 0.520 | 2.604 | 4.333 | 4.688 | 0.291 |
+| original22-v1/threads/atomic-rmw | 0.271 | 0.479 | 1.834 | 4.354 | 4.938 | 0.292 |
+| original22-v1/threads/notify-empty | 0.250 | 0.500 | 1.896 | 4.042 | 4.875 | 0.271 |
+| original22-v1/threads/wait-mismatch | 0.292 | 0.438 | 2.896 | 4.708 | 4.979 | 0.250 |
+| original22-v1/threads/wait-timeout | 0.292 | 0.500 | 2.729 | 4.333 | 4.854 | 0.271 |
+| original22-v1/applications/sha256-clang | 0.250 | 0.438 | 2.417 | 2.104 | 5.104 | 0.291 |
+| original22-v1/applications/sha256-rust | 0.250 | 0.459 | 2.438 | 1.958 | 5.167 | 0.209 |
+| gc-sustained-v1/gc/i31-roundtrip | 0.291 | 0.459 | US | 4.167 | US | 0.292 |
+| gc-sustained-v1/gc/struct-access | 0.208 | 0.375 | US | 4.104 | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-allocation | 0.271 | 0.438 | US | 1.750 | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-indirect-access | 0.312 | 0.500 | US | 2.021 | US | **FAIL: SIGSEGV** |
+| threads-sustained-v2/threads/private-memory | 0.292 | 0.458 | 2.333 | 4.125 | 4.792 | 0.250 |
+| threads-sustained-v2/threads/shared-memory | 0.271 | 0.459 | 2.521 | 4.354 | 4.812 | 0.271 |
+| threads-sustained-v2/threads/atomic-rmw | 0.250 | 0.500 | 2.417 | 4.229 | 4.833 | 0.271 |
+| threads-sustained-v2/threads/notify-empty | 0.271 | 0.458 | 2.042 | 4.208 | 4.646 | 0.209 |
+| threads-sustained-v2/threads/wait-mismatch | 0.250 | 0.500 | 2.896 | 4.188 | 4.979 | 0.312 |
+| threads-sustained-v2/threads/wait-timeout | 0.313 | 0.500 | 2.624 | 4.375 | 4.937 | 0.208 |
+| generic-calls-v1/core/generic-calls | 0.250 | 0.396 | 2.708 | 3.979 | 4.896 | 0.291 |
 
 ### firstCall
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 11.979 | 8.666 | 9.875 | 31.000 | 16.041 | 15.854 |
-| original22-v1/core/integer-loop | 1,839.96 | 1,830.25 | 1,809.75 | 1,858.42 | 1,835.52 | 1,863.48 |
-| original22-v1/core/function-calls | 963.06 | 884.40 | 1,526.63 | 1,096.88 | 931.27 | 923.58 |
-| original22-v1/core/memory-load-store | 518.40 | 512.65 | 944.69 | 593.69 | 656.60 | 346.48 |
-| original22-v1/memory/narrow-unaligned | 760.21 | 761.48 | 1,130.29 | 889.02 | 854.08 | 615.73 |
-| original22-v1/memory/dependent-address | 2,193.23 | 2,175.08 | 3,512.38 | 2,576.81 | 2,478.54 | 1,688.06 |
-| original22-v1/memory/float64-unaligned | 831.00 | 844.65 | 906.83 | 839.02 | 815.44 | 769.06 |
-| original22-v1/runtime/simd-memory-full | 3,963.46 | 3,907.06 | 4,263.73 | 4,261.40 | 4,031.50 | 4,065.60 |
-| original22-v1/runtime/simd-memory-widen | 1,229.02 | 1,222.27 | 1,198.19 | 1,254.21 | 1,204.58 | 1,189.04 |
-| original22-v1/runtime/simd-memory-lanes | 5,770.77 | 5,925.92 | 6,793.69 | 6,877.81 | 6,824.00 | 5,907.23 |
-| original22-v1/gc/i31-roundtrip | 28.980 | 24.604 | US | 54.084 | US | 30.291 |
-| original22-v1/gc/struct-access | 34.063 | 35.666 | US | 59.145 | US | 143.75 |
-| original22-v1/gc/struct-allocation | 413.33 | 630.81 | US | 157.98 | US | 573.50 |
-| original22-v1/gc/struct-indirect-access | 32.521 | 27.875 | US | 35.104 | US | 357.40 |
-| original22-v1/threads/private-memory | 18.041 | 13.979 | 22.187 | 51.771 | 30.459 | 37.520 |
-| original22-v1/threads/shared-memory | 28.750 | 25.709 | 22.437 | 46.750 | 29.583 | 34.270 |
-| original22-v1/threads/atomic-rmw | 36.438 | 30.812 | 31.271 | 58.041 | 63.250 | 41.791 |
-| original22-v1/threads/notify-empty | 25.896 | 21.855 | 263.98 | 120.79 | 72.021 | 148.50 |
-| original22-v1/threads/wait-mismatch | 27.083 | 22.355 | 303.92 | 144.19 | 43.770 | 57.542 |
-| original22-v1/threads/wait-timeout | 27.396 | 23.395 | 3,139.35 | 537.27 | 2,211.83 | 742.42 |
-| original22-v1/applications/sha256-clang | 1,199.75 | 1,172.54 | 1,541.60 | 1,170.33 | 1,110.31 | 996.98 |
-| original22-v1/applications/sha256-rust | 1,221.96 | 1,219.37 | 1,658.38 | 1,096.62 | 1,152.94 | 1,049.65 |
-| gc-sustained-v1/gc/i31-roundtrip | 1,594.54 | 1,591.65 | US | 2,084.17 | US | 1,465.94 |
-| gc-sustained-v1/gc/struct-access | 1,239.81 | 1,256.96 | US | 1,261.12 | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-allocation | 31,618.50 | 24,698.67 | US | 3,949.73 | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-indirect-access | 1,894.44 | 1,944.94 | US | 3,011.02 | US | **FAIL: SIGSEGV** |
-| threads-sustained-v2/threads/private-memory | 44.666 | 40.709 | 129.98 | 152.83 | 133.69 | 135.54 |
-| threads-sustained-v2/threads/shared-memory | 160.90 | 155.17 | 131.15 | 158.81 | 139.88 | 139.96 |
-| threads-sustained-v2/threads/atomic-rmw | 227.52 | 222.56 | 221.00 | 241.98 | 463.56 | 232.75 |
-| threads-sustained-v2/threads/notify-empty | 115.69 | 114.50 | 2,484.17 | 832.79 | 580.90 | 1,063.88 |
-| threads-sustained-v2/threads/wait-mismatch | 132.75 | 125.96 | 2,752.10 | 1,038.21 | 277.60 | 360.40 |
-| threads-sustained-v2/threads/wait-timeout | 118.17 | 111.90 | 33,911.08 | 5,099.27 | 20,161.69 | 7,015.44 |
-| generic-calls-v1/core/generic-calls | 6,091.08 | 5,975.17 | 12,471.44 | 12,179.15 | 12,173.73 | 6,108.42 |
+| original22-v1/core/call-control | 11.000 | 8.584 | 9.375 | 32.105 | 14.854 | 12.687 |
+| original22-v1/core/integer-loop | 1,583.54 | 1,622.94 | 1,573.71 | 1,621.77 | 1,566.50 | 1,576.63 |
+| original22-v1/core/function-calls | 794.33 | 787.79 | 1,296.83 | 926.54 | 791.25 | 805.42 |
+| original22-v1/core/memory-load-store | 448.06 | 436.27 | 803.92 | 505.50 | 539.54 | 293.23 |
+| original22-v1/memory/narrow-unaligned | 675.15 | 667.27 | 1,009.77 | 777.71 | 805.44 | 540.02 |
+| original22-v1/memory/dependent-address | 1,892.69 | 1,882.12 | 3,086.73 | 2,187.94 | 2,132.79 | 1,478.73 |
+| original22-v1/memory/float64-unaligned | 765.08 | 765.98 | 846.90 | 765.04 | 869.27 | 704.12 |
+| original22-v1/runtime/simd-memory-full | 3,399.94 | 3,386.10 | 3,681.73 | 3,602.15 | 3,618.31 | 3,624.96 |
+| original22-v1/runtime/simd-memory-widen | 1,045.77 | 1,042.65 | 1,052.81 | 1,041.98 | 1,074.42 | 1,054.81 |
+| original22-v1/runtime/simd-memory-lanes | 4,918.98 | 5,007.77 | 5,873.04 | 5,802.77 | 5,726.75 | 5,000.15 |
+| original22-v1/gc/i31-roundtrip | 23.729 | 21.375 | US | 46.104 | US | 27.187 |
+| original22-v1/gc/struct-access | 30.625 | 30.104 | US | 51.625 | US | 137.88 |
+| original22-v1/gc/struct-allocation | 366.19 | 405.42 | US | 143.42 | US | 532.81 |
+| original22-v1/gc/struct-indirect-access | 27.959 | 24.979 | US | 30.729 | US | 318.98 |
+| original22-v1/threads/private-memory | 15.416 | 11.729 | 20.041 | 45.771 | 27.916 | 31.270 |
+| original22-v1/threads/shared-memory | 27.188 | 22.750 | 21.625 | 46.562 | 29.666 | 31.437 |
+| original22-v1/threads/atomic-rmw | 32.792 | 28.250 | 27.375 | 52.021 | 54.166 | 37.209 |
+| original22-v1/threads/notify-empty | 22.645 | 18.375 | 230.02 | 105.60 | 71.770 | 110.71 |
+| original22-v1/threads/wait-mismatch | 25.729 | 20.458 | 283.40 | 141.17 | 42.396 | 55.562 |
+| original22-v1/threads/wait-timeout | 24.834 | 19.584 | 2,867.29 | 507.00 | 1,903.71 | 665.02 |
+| original22-v1/applications/sha256-clang | 1,161.35 | 1,015.81 | 1,348.27 | 1,045.08 | 962.88 | 1,008.38 |
+| original22-v1/applications/sha256-rust | 1,089.71 | 1,087.06 | 1,504.54 | 968.60 | 948.19 | 913.31 |
+| gc-sustained-v1/gc/i31-roundtrip | 1,359.21 | 1,378.06 | US | 1,869.79 | US | 1,321.71 |
+| gc-sustained-v1/gc/struct-access | 1,115.10 | 1,097.33 | US | 1,099.31 | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-allocation | 25,881.54 | 15,473.60 | US | 3,079.77 | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-indirect-access | 1,799.08 | 1,670.48 | US | 2,673.56 | US | **FAIL: SIGSEGV** |
+| threads-sustained-v2/threads/private-memory | 39.959 | 36.437 | 112.67 | 136.06 | 119.79 | 126.33 |
+| threads-sustained-v2/threads/shared-memory | 140.15 | 130.83 | 115.75 | 137.50 | 119.42 | 123.83 |
+| threads-sustained-v2/threads/atomic-rmw | 199.25 | 191.54 | 191.83 | 213.88 | 405.88 | 201.98 |
+| threads-sustained-v2/threads/notify-empty | 107.17 | 95.459 | 2,114.02 | 733.77 | 471.00 | 929.38 |
+| threads-sustained-v2/threads/wait-mismatch | 119.71 | 114.75 | 2,532.02 | 953.85 | 268.98 | 341.04 |
+| threads-sustained-v2/threads/wait-timeout | 165.19 | 106.60 | 29,164.85 | 4,496.00 | 17,867.54 | 6,307.33 |
+| generic-calls-v1/core/generic-calls | 5,184.77 | 5,259.54 | 10,787.69 | 10,351.15 | 10,386.67 | 5,318.69 |
 
 ### cleanup
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 6.500 | 5.562 | 10.938 | 82.604 | 33.562 | 401.00 |
-| original22-v1/core/integer-loop | 12.438 | 11.604 | 11.396 | 87.791 | 42.667 | 428.73 |
-| original22-v1/core/function-calls | 14.083 | 6.354 | 12.354 | 86.916 | 40.125 | 444.00 |
-| original22-v1/core/memory-load-store | 21.000 | 15.479 | 11.334 | 116.71 | 72.730 | 515.25 |
-| original22-v1/memory/narrow-unaligned | 15.854 | 14.208 | 8.874 | 117.60 | 72.375 | 502.35 |
-| original22-v1/memory/dependent-address | 15.500 | 11.604 | 12.271 | 108.87 | 63.208 | 471.27 |
-| original22-v1/memory/float64-unaligned | 14.416 | 8.874 | 6.917 | 93.291 | 66.791 | 500.02 |
-| original22-v1/runtime/simd-memory-full | 18.021 | 14.709 | 10.396 | 130.85 | 71.396 | 520.31 |
-| original22-v1/runtime/simd-memory-widen | 16.895 | 8.938 | 8.833 | 119.25 | 59.875 | 488.06 |
-| original22-v1/runtime/simd-memory-lanes | 20.334 | 19.521 | 10.771 | 116.90 | 80.459 | 500.40 |
-| original22-v1/gc/i31-roundtrip | 10.375 | 5.562 | US | 88.917 | US | 413.96 |
-| original22-v1/gc/struct-access | 19.042 | 19.541 | US | 130.90 | US | 413.77 |
-| original22-v1/gc/struct-allocation | 157.27 | 100.88 | US | 127.02 | US | 2,201.35 |
-| original22-v1/gc/struct-indirect-access | 16.750 | 15.541 | US | 117.40 | US | 412.27 |
-| original22-v1/threads/private-memory | 15.791 | 15.541 | 9.438 | 100.85 | 62.312 | 447.48 |
-| original22-v1/threads/shared-memory | 19.625 | 10.166 | 9.209 | 88.083 | 60.541 | 467.96 |
-| original22-v1/threads/atomic-rmw | 16.416 | 7.354 | 11.271 | 111.27 | 64.145 | 454.50 |
-| original22-v1/threads/notify-empty | 11.562 | 6.959 | 5.188 | 87.249 | 63.729 | 441.73 |
-| original22-v1/threads/wait-mismatch | 16.605 | 11.771 | 6.458 | 83.584 | 64.751 | 456.79 |
-| original22-v1/threads/wait-timeout | 18.541 | 8.291 | 6.583 | 120.58 | 64.416 | 483.98 |
-| original22-v1/applications/sha256-clang | 21.438 | 13.146 | 12.875 | 154.79 | 83.459 | 507.27 |
-| original22-v1/applications/sha256-rust | 11.229 | 12.958 | 12.688 | 169.25 | 79.584 | 478.94 |
-| gc-sustained-v1/gc/i31-roundtrip | 11.542 | 6.938 | US | 94.291 | US | 430.67 |
-| gc-sustained-v1/gc/struct-access | 24.917 | 20.479 | US | 130.15 | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-allocation | 3,624.25 | 2,295.73 | US | 968.29 | US | **FAIL: SIGSEGV** |
-| gc-sustained-v1/gc/struct-indirect-access | 22.312 | 18.625 | US | 175.04 | US | **FAIL: SIGSEGV** |
-| threads-sustained-v2/threads/private-memory | 19.146 | 17.709 | 10.521 | 122.00 | 69.145 | 476.56 |
-| threads-sustained-v2/threads/shared-memory | 15.729 | 9.438 | 7.292 | 107.40 | 57.834 | 491.38 |
-| threads-sustained-v2/threads/atomic-rmw | 19.438 | 9.146 | 11.875 | 125.77 | 65.229 | 496.62 |
-| threads-sustained-v2/threads/notify-empty | 19.000 | 14.354 | 12.625 | 95.666 | 62.500 | 474.65 |
-| threads-sustained-v2/threads/wait-mismatch | 17.791 | 13.812 | 8.542 | 101.60 | 73.229 | 468.69 |
-| threads-sustained-v2/threads/wait-timeout | 18.312 | 13.334 | 5.146 | 115.77 | 66.791 | 487.85 |
-| generic-calls-v1/core/generic-calls | 17.271 | 9.938 | 13.000 | 149.27 | 52.229 | 465.33 |
+| original22-v1/core/call-control | 5.854 | 5.021 | 9.001 | 81.375 | 28.562 | 361.67 |
+| original22-v1/core/integer-loop | 7.688 | 7.729 | 6.271 | 83.333 | 31.250 | 374.06 |
+| original22-v1/core/function-calls | 10.541 | 6.104 | 8.854 | 82.667 | 34.416 | 379.29 |
+| original22-v1/core/memory-load-store | 10.250 | 7.458 | 5.208 | 80.625 | 55.812 | 429.06 |
+| original22-v1/memory/narrow-unaligned | 10.646 | 14.688 | 6.062 | 89.291 | 60.458 | 430.79 |
+| original22-v1/memory/dependent-address | 18.645 | 17.416 | 8.750 | 112.81 | 70.188 | 425.25 |
+| original22-v1/memory/float64-unaligned | 10.833 | 12.374 | 5.271 | 86.521 | 63.979 | 440.21 |
+| original22-v1/runtime/simd-memory-full | 13.063 | 12.584 | 7.958 | 141.77 | 65.500 | 449.83 |
+| original22-v1/runtime/simd-memory-widen | 17.334 | 9.667 | 11.396 | 117.65 | 58.999 | 445.21 |
+| original22-v1/runtime/simd-memory-lanes | 9.416 | 10.646 | 9.959 | 106.17 | 60.333 | 444.58 |
+| original22-v1/gc/i31-roundtrip | 4.917 | 3.812 | US | 57.209 | US | 351.44 |
+| original22-v1/gc/struct-access | 17.041 | 13.000 | US | 93.521 | US | 379.04 |
+| original22-v1/gc/struct-allocation | 138.38 | 91.812 | US | 111.25 | US | 1,994.19 |
+| original22-v1/gc/struct-indirect-access | 14.312 | 13.500 | US | 109.65 | US | 423.77 |
+| original22-v1/threads/private-memory | 6.875 | 7.396 | 7.438 | 82.875 | 53.729 | 406.92 |
+| original22-v1/threads/shared-memory | 9.479 | 7.625 | 4.896 | 84.562 | 57.104 | 377.58 |
+| original22-v1/threads/atomic-rmw | 10.313 | 6.125 | 3.917 | 78.104 | 53.480 | 400.79 |
+| original22-v1/threads/notify-empty | 12.666 | 9.062 | 4.625 | 88.499 | 51.000 | 426.52 |
+| original22-v1/threads/wait-mismatch | 16.209 | 9.771 | 6.292 | 93.167 | 57.396 | 423.40 |
+| original22-v1/threads/wait-timeout | 14.938 | 8.604 | 4.667 | 95.292 | 61.333 | 425.48 |
+| original22-v1/applications/sha256-clang | 15.104 | 15.521 | 13.062 | 168.25 | 65.125 | 447.75 |
+| original22-v1/applications/sha256-rust | 10.583 | 11.126 | 5.417 | 138.58 | 67.896 | 438.52 |
+| gc-sustained-v1/gc/i31-roundtrip | 9.541 | 8.874 | US | 95.187 | US | 377.77 |
+| gc-sustained-v1/gc/struct-access | 14.562 | 14.771 | US | 90.000 | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-allocation | 3,019.69 | 2,034.88 | US | 803.65 | US | **FAIL: SIGSEGV** |
+| gc-sustained-v1/gc/struct-indirect-access | 23.000 | 16.062 | US | 153.73 | US | **FAIL: SIGSEGV** |
+| threads-sustained-v2/threads/private-memory | 13.375 | 13.041 | 6.167 | 102.58 | 54.771 | 418.88 |
+| threads-sustained-v2/threads/shared-memory | 13.875 | 8.562 | 7.291 | 85.042 | 57.666 | 412.48 |
+| threads-sustained-v2/threads/atomic-rmw | 15.271 | 9.229 | 7.479 | 94.584 | 57.125 | 424.92 |
+| threads-sustained-v2/threads/notify-empty | 10.999 | 7.771 | 4.208 | 81.855 | 54.938 | 387.31 |
+| threads-sustained-v2/threads/wait-mismatch | 13.312 | 10.312 | 4.750 | 87.291 | 59.105 | 440.27 |
+| threads-sustained-v2/threads/wait-timeout | 17.583 | 13.229 | 3.917 | 86.980 | 62.250 | 441.83 |
+| generic-calls-v1/core/generic-calls | 11.459 | 5.333 | 8.042 | 73.104 | 37.541 | 404.12 |
 
 </details>
 
@@ -632,305 +633,305 @@ All entries below are **microseconds per process or invocation**, including unre
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 5,046.77 | 7,153.60 | 5,766.38 | NM | NM | 19,327.02 |
-| original22-v1/core/integer-loop | 5,678.67 | 7,341.15 | 5,582.92 | NM | NM | 20,655.27 |
-| original22-v1/core/function-calls | 5,431.44 | 7,786.69 | 5,893.35 | NM | NM | 19,837.88 |
-| original22-v1/core/memory-load-store | 6,538.79 | 8,448.92 | 5,818.15 | NM | NM | 20,775.46 |
-| original22-v1/memory/narrow-unaligned | 5,691.00 | 9,151.90 | 5,148.73 | NM | NM | 20,891.75 |
-| original22-v1/memory/dependent-address | 5,747.56 | 7,909.92 | 5,520.92 | NM | NM | 20,471.23 |
-| original22-v1/memory/float64-unaligned | 5,595.17 | 7,138.40 | 5,485.17 | NM | NM | 18,711.10 |
-| original22-v1/runtime/simd-memory-full | 6,782.04 | 8,731.46 | 5,979.90 | NM | NM | 18,907.50 |
-| original22-v1/runtime/simd-memory-widen | 4,842.56 | 7,569.75 | 5,192.21 | NM | NM | 18,952.77 |
-| original22-v1/runtime/simd-memory-lanes | 5,255.25 | 7,420.23 | 6,223.92 | NM | NM | 19,987.38 |
-| original22-v1/gc/i31-roundtrip | 4,694.71 | 6,511.79 | US | NM | NM | 18,564.42 |
-| original22-v1/gc/struct-access | 4,980.33 | 6,889.56 | US | NM | NM | 18,297.04 |
-| original22-v1/gc/struct-allocation | 5,328.33 | 6,988.77 | US | NM | NM | 18,487.54 |
-| original22-v1/gc/struct-indirect-access | 5,504.33 | 7,861.15 | US | NM | NM | 19,001.90 |
-| original22-v1/threads/private-memory | 5,405.98 | 6,944.23 | 4,952.60 | NM | NM | 18,272.21 |
-| original22-v1/threads/shared-memory | 5,592.48 | 6,995.17 | 5,035.98 | NM | NM | 18,420.94 |
-| original22-v1/threads/atomic-rmw | 5,231.42 | 7,576.81 | 4,997.73 | NM | NM | 19,170.81 |
-| original22-v1/threads/notify-empty | 5,958.33 | 8,230.21 | 5,413.79 | NM | NM | 19,451.56 |
-| original22-v1/threads/wait-mismatch | 5,235.77 | 6,817.04 | 5,422.10 | NM | NM | 19,400.48 |
-| original22-v1/threads/wait-timeout | 5,700.27 | 8,422.12 | 5,656.40 | NM | NM | 22,644.06 |
-| original22-v1/applications/sha256-clang | 5,682.62 | 7,239.25 | 5,888.50 | NM | NM | 20,302.10 |
-| original22-v1/applications/sha256-rust | 6,785.08 | 8,400.44 | 6,239.37 | NM | NM | 19,649.00 |
-| gc-sustained-v1/gc/i31-roundtrip | 4,876.48 | 8,105.52 | US | NM | NM | 19,105.44 |
-| gc-sustained-v1/gc/struct-access | 5,210.88 | 7,498.96 | US | NM | NM | 20,605.92 |
-| gc-sustained-v1/gc/struct-allocation | 5,656.94 | 7,634.58 | US | NM | NM | 19,441.83 |
-| gc-sustained-v1/gc/struct-indirect-access | 5,263.58 | 7,879.48 | US | NM | NM | 21,105.15 |
-| threads-sustained-v2/threads/private-memory | 5,197.31 | 7,824.31 | 4,910.15 | NM | NM | 19,793.29 |
-| threads-sustained-v2/threads/shared-memory | 6,667.92 | 7,463.71 | 5,873.27 | NM | NM | 20,053.50 |
-| threads-sustained-v2/threads/atomic-rmw | 4,920.48 | 6,995.54 | 4,870.96 | NM | NM | 18,636.94 |
-| threads-sustained-v2/threads/notify-empty | 5,495.06 | 7,851.25 | 5,132.96 | NM | NM | 19,930.23 |
-| threads-sustained-v2/threads/wait-mismatch | 5,393.27 | 6,945.48 | 5,202.48 | NM | NM | 17,727.77 |
-| threads-sustained-v2/threads/wait-timeout | 4,957.90 | 7,029.12 | 5,452.73 | NM | NM | 18,766.77 |
-| generic-calls-v1/core/generic-calls | 5,786.81 | 9,139.37 | 5,482.29 | NM | NM | 20,786.08 |
+| original22-v1/core/call-control | 4,466.75 | 7,639.23 | 5,008.42 | NM | NM | 18,189.90 |
+| original22-v1/core/integer-loop | 4,275.48 | 6,277.15 | 4,361.65 | NM | NM | 17,700.83 |
+| original22-v1/core/function-calls | 4,124.62 | 5,846.15 | 4,432.58 | NM | NM | 16,357.42 |
+| original22-v1/core/memory-load-store | 4,256.12 | 6,329.69 | 4,563.08 | NM | NM | 16,800.96 |
+| original22-v1/memory/narrow-unaligned | 4,216.81 | 6,373.31 | 4,760.10 | NM | NM | 17,769.88 |
+| original22-v1/memory/dependent-address | 4,493.00 | 7,726.67 | 4,419.29 | NM | NM | 16,372.58 |
+| original22-v1/memory/float64-unaligned | 4,605.77 | 5,935.02 | 4,413.10 | NM | NM | 16,918.94 |
+| original22-v1/runtime/simd-memory-full | 4,240.38 | 6,009.85 | 4,342.31 | NM | NM | 15,769.83 |
+| original22-v1/runtime/simd-memory-widen | 4,180.40 | 6,007.77 | 4,133.77 | NM | NM | 16,428.65 |
+| original22-v1/runtime/simd-memory-lanes | 4,283.06 | 6,212.65 | 4,528.69 | NM | NM | 16,033.21 |
+| original22-v1/gc/i31-roundtrip | 3,888.35 | 5,774.46 | US | NM | NM | 16,062.48 |
+| original22-v1/gc/struct-access | 4,209.48 | 6,761.58 | US | NM | NM | 17,270.77 |
+| original22-v1/gc/struct-allocation | 4,203.15 | 5,924.02 | US | NM | NM | 16,167.31 |
+| original22-v1/gc/struct-indirect-access | 4,114.42 | 6,062.44 | US | NM | NM | 17,028.52 |
+| original22-v1/threads/private-memory | 4,002.06 | 6,076.56 | 4,133.12 | NM | NM | 16,762.96 |
+| original22-v1/threads/shared-memory | 4,334.15 | 5,679.08 | 3,911.00 | NM | NM | 15,753.54 |
+| original22-v1/threads/atomic-rmw | 4,029.65 | 5,759.88 | 4,344.21 | NM | NM | 16,555.44 |
+| original22-v1/threads/notify-empty | 4,024.90 | 5,824.35 | 3,865.58 | NM | NM | 16,138.00 |
+| original22-v1/threads/wait-mismatch | 4,794.08 | 6,638.98 | 4,718.79 | NM | NM | 17,090.04 |
+| original22-v1/threads/wait-timeout | 4,599.46 | 6,333.35 | 4,502.54 | NM | NM | 16,737.06 |
+| original22-v1/applications/sha256-clang | 4,126.56 | 6,320.50 | 4,451.35 | NM | NM | 16,767.06 |
+| original22-v1/applications/sha256-rust | 4,119.50 | 6,184.00 | 4,475.90 | NM | NM | 16,142.46 |
+| gc-sustained-v1/gc/i31-roundtrip | 4,184.23 | 6,172.33 | US | NM | NM | 16,370.10 |
+| gc-sustained-v1/gc/struct-access | 4,244.46 | 6,242.44 | US | NM | NM | 16,714.06 |
+| gc-sustained-v1/gc/struct-allocation | 4,346.75 | 6,078.04 | US | NM | NM | 16,367.25 |
+| gc-sustained-v1/gc/struct-indirect-access | 4,429.98 | 6,256.83 | US | NM | NM | 17,043.85 |
+| threads-sustained-v2/threads/private-memory | 4,089.46 | 6,103.92 | 4,493.27 | NM | NM | 16,218.87 |
+| threads-sustained-v2/threads/shared-memory | 4,345.69 | 6,039.31 | 4,270.71 | NM | NM | 16,737.96 |
+| threads-sustained-v2/threads/atomic-rmw | 4,230.69 | 5,813.33 | 4,349.44 | NM | NM | 16,767.96 |
+| threads-sustained-v2/threads/notify-empty | 4,123.12 | 5,823.96 | 4,385.02 | NM | NM | 16,241.90 |
+| threads-sustained-v2/threads/wait-mismatch | 4,480.79 | 5,936.23 | 4,332.29 | NM | NM | 15,802.58 |
+| threads-sustained-v2/threads/wait-timeout | 5,151.88 | 6,794.85 | 5,095.81 | NM | NM | 17,301.69 |
+| generic-calls-v1/core/generic-calls | 4,473.12 | 5,935.37 | 4,551.77 | NM | NM | 15,864.71 |
 
 ### load
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 50.959 | 42.938 | 46.979 | NM | NM | 48.750 |
-| original22-v1/core/integer-loop | 47.855 | 52.645 | 99.667 | NM | NM | 52.354 |
-| original22-v1/core/function-calls | 53.291 | 61.125 | 86.604 | NM | NM | 92.834 |
-| original22-v1/core/memory-load-store | 52.270 | 51.709 | 49.770 | NM | NM | 53.958 |
-| original22-v1/memory/narrow-unaligned | 73.479 | 89.021 | 48.146 | NM | NM | 76.500 |
-| original22-v1/memory/dependent-address | 43.480 | 49.647 | 52.312 | NM | NM | 52.230 |
-| original22-v1/memory/float64-unaligned | 49.562 | 52.562 | 52.375 | NM | NM | 58.458 |
-| original22-v1/runtime/simd-memory-full | 50.520 | 58.688 | 51.500 | NM | NM | 75.188 |
-| original22-v1/runtime/simd-memory-widen | 45.604 | 50.021 | 50.125 | NM | NM | 54.270 |
-| original22-v1/runtime/simd-memory-lanes | 45.250 | 58.812 | 50.105 | NM | NM | 70.271 |
-| original22-v1/gc/i31-roundtrip | 58.270 | 48.541 | US | NM | NM | 48.521 |
-| original22-v1/gc/struct-access | 44.895 | 51.604 | US | NM | NM | 75.937 |
-| original22-v1/gc/struct-allocation | 42.541 | 42.980 | US | NM | NM | 50.791 |
-| original22-v1/gc/struct-indirect-access | 39.979 | 46.834 | US | NM | NM | 46.167 |
-| original22-v1/threads/private-memory | 39.188 | 48.812 | 43.063 | NM | NM | 48.647 |
-| original22-v1/threads/shared-memory | 43.749 | 52.750 | 43.105 | NM | NM | 47.229 |
-| original22-v1/threads/atomic-rmw | 45.709 | 46.313 | 43.688 | NM | NM | 44.730 |
-| original22-v1/threads/notify-empty | 52.166 | 54.521 | 66.396 | NM | NM | 59.125 |
-| original22-v1/threads/wait-mismatch | 44.166 | 48.104 | 58.979 | NM | NM | 51.480 |
-| original22-v1/threads/wait-timeout | 46.979 | 74.938 | 59.104 | NM | NM | 70.854 |
-| original22-v1/applications/sha256-clang | 44.209 | 61.334 | 54.666 | NM | NM | 52.896 |
-| original22-v1/applications/sha256-rust | 50.980 | 50.042 | 50.604 | NM | NM | 56.354 |
-| gc-sustained-v1/gc/i31-roundtrip | 41.021 | 50.604 | US | NM | NM | 50.770 |
-| gc-sustained-v1/gc/struct-access | 46.334 | 54.000 | US | NM | NM | 44.375 |
-| gc-sustained-v1/gc/struct-allocation | 49.145 | 48.166 | US | NM | NM | 54.188 |
-| gc-sustained-v1/gc/struct-indirect-access | 44.541 | 49.750 | US | NM | NM | 57.020 |
-| threads-sustained-v2/threads/private-memory | 39.875 | 43.125 | 38.542 | NM | NM | 49.396 |
-| threads-sustained-v2/threads/shared-memory | 88.042 | 56.020 | 50.209 | NM | NM | 91.167 |
-| threads-sustained-v2/threads/atomic-rmw | 49.104 | 57.396 | 50.375 | NM | NM | 61.770 |
-| threads-sustained-v2/threads/notify-empty | 57.125 | 52.125 | 41.062 | NM | NM | 57.999 |
-| threads-sustained-v2/threads/wait-mismatch | 49.854 | 45.730 | 40.188 | NM | NM | 54.917 |
-| threads-sustained-v2/threads/wait-timeout | 45.730 | 43.375 | 48.458 | NM | NM | 60.416 |
-| generic-calls-v1/core/generic-calls | 81.542 | 56.146 | 52.750 | NM | NM | 72.396 |
+| original22-v1/core/call-control | 37.166 | 45.687 | 41.916 | NM | NM | 46.895 |
+| original22-v1/core/integer-loop | 39.416 | 43.646 | 42.895 | NM | NM | 57.584 |
+| original22-v1/core/function-calls | 38.666 | 39.417 | 40.542 | NM | NM | 42.541 |
+| original22-v1/core/memory-load-store | 40.062 | 43.521 | 36.354 | NM | NM | 42.209 |
+| original22-v1/memory/narrow-unaligned | 45.001 | 46.041 | 43.230 | NM | NM | 55.812 |
+| original22-v1/memory/dependent-address | 45.645 | 51.020 | 40.396 | NM | NM | 52.124 |
+| original22-v1/memory/float64-unaligned | 45.208 | 44.271 | 39.520 | NM | NM | 48.355 |
+| original22-v1/runtime/simd-memory-full | 37.229 | 40.833 | 35.667 | NM | NM | 41.895 |
+| original22-v1/runtime/simd-memory-widen | 34.791 | 40.354 | 35.459 | NM | NM | 44.291 |
+| original22-v1/runtime/simd-memory-lanes | 44.250 | 42.938 | 36.812 | NM | NM | 37.666 |
+| original22-v1/gc/i31-roundtrip | 30.417 | 34.126 | US | NM | NM | 39.834 |
+| original22-v1/gc/struct-access | 36.396 | 40.750 | US | NM | NM | 48.021 |
+| original22-v1/gc/struct-allocation | 32.792 | 37.250 | US | NM | NM | 39.105 |
+| original22-v1/gc/struct-indirect-access | 32.417 | 44.854 | US | NM | NM | 45.500 |
+| original22-v1/threads/private-memory | 32.229 | 36.416 | 35.479 | NM | NM | 38.146 |
+| original22-v1/threads/shared-memory | 34.250 | 35.875 | 29.584 | NM | NM | 35.375 |
+| original22-v1/threads/atomic-rmw | 32.938 | 36.084 | 39.271 | NM | NM | 38.645 |
+| original22-v1/threads/notify-empty | 35.084 | 35.104 | 29.396 | NM | NM | 41.542 |
+| original22-v1/threads/wait-mismatch | 38.416 | 42.812 | 38.416 | NM | NM | 41.874 |
+| original22-v1/threads/wait-timeout | 41.021 | 50.145 | 45.458 | NM | NM | 49.604 |
+| original22-v1/applications/sha256-clang | 33.542 | 41.062 | 43.000 | NM | NM | 43.459 |
+| original22-v1/applications/sha256-rust | 39.459 | 40.625 | 42.521 | NM | NM | 40.604 |
+| gc-sustained-v1/gc/i31-roundtrip | 34.791 | 35.458 | US | NM | NM | 35.834 |
+| gc-sustained-v1/gc/struct-access | 34.396 | 38.959 | US | NM | NM | 45.895 |
+| gc-sustained-v1/gc/struct-allocation | 38.062 | 35.479 | US | NM | NM | 38.188 |
+| gc-sustained-v1/gc/struct-indirect-access | 35.980 | 39.230 | US | NM | NM | 40.230 |
+| threads-sustained-v2/threads/private-memory | 37.105 | 36.562 | 39.938 | NM | NM | 38.771 |
+| threads-sustained-v2/threads/shared-memory | 46.145 | 40.958 | 32.416 | NM | NM | 48.688 |
+| threads-sustained-v2/threads/atomic-rmw | 30.312 | 35.562 | 37.125 | NM | NM | 45.812 |
+| threads-sustained-v2/threads/notify-empty | 34.146 | 36.959 | 30.000 | NM | NM | 40.438 |
+| threads-sustained-v2/threads/wait-mismatch | 32.666 | 37.000 | 33.062 | NM | NM | 43.375 |
+| threads-sustained-v2/threads/wait-timeout | 45.375 | 49.729 | 45.145 | NM | NM | 47.396 |
+| generic-calls-v1/core/generic-calls | 41.062 | 48.521 | 33.021 | NM | NM | 39.041 |
 
 ### engineSetup
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 5.896 | 4.937 | 2.958 | NM | NM | 38.500 |
-| original22-v1/core/integer-loop | 5.750 | 5.938 | 3.438 | NM | NM | 47.395 |
-| original22-v1/core/function-calls | 5.875 | 5.604 | 3.104 | NM | NM | 38.812 |
-| original22-v1/core/memory-load-store | 6.458 | 6.250 | 3.250 | NM | NM | 36.188 |
-| original22-v1/memory/narrow-unaligned | 6.375 | 6.479 | 2.917 | NM | NM | 37.812 |
-| original22-v1/memory/dependent-address | 5.125 | 5.146 | 3.249 | NM | NM | 35.708 |
-| original22-v1/memory/float64-unaligned | 5.146 | 6.104 | 3.250 | NM | NM | 35.770 |
-| original22-v1/runtime/simd-memory-full | 5.396 | 6.708 | 3.062 | NM | NM | 46.584 |
-| original22-v1/runtime/simd-memory-widen | 5.250 | 5.792 | 2.917 | NM | NM | 34.584 |
-| original22-v1/runtime/simd-memory-lanes | 5.146 | 5.771 | 3.104 | NM | NM | 40.354 |
-| original22-v1/gc/i31-roundtrip | 6.292 | 5.458 | US | NM | NM | 36.729 |
-| original22-v1/gc/struct-access | 5.396 | 5.271 | US | NM | NM | 36.084 |
-| original22-v1/gc/struct-allocation | 5.167 | 5.458 | US | NM | NM | 38.459 |
-| original22-v1/gc/struct-indirect-access | 5.667 | 5.333 | US | NM | NM | 36.458 |
-| original22-v1/threads/private-memory | 4.875 | 5.771 | 2.812 | NM | NM | 34.459 |
-| original22-v1/threads/shared-memory | 5.583 | 6.167 | 2.854 | NM | NM | 38.125 |
-| original22-v1/threads/atomic-rmw | 5.854 | 5.562 | 2.646 | NM | NM | 39.250 |
-| original22-v1/threads/notify-empty | 5.625 | 5.938 | 4.375 | NM | NM | 38.354 |
-| original22-v1/threads/wait-mismatch | 5.229 | 5.750 | 3.188 | NM | NM | 37.021 |
-| original22-v1/threads/wait-timeout | 6.167 | 6.646 | 3.792 | NM | NM | 51.083 |
-| original22-v1/applications/sha256-clang | 6.146 | 5.167 | 2.875 | NM | NM | 35.291 |
-| original22-v1/applications/sha256-rust | 5.292 | 5.708 | 2.854 | NM | NM | 39.354 |
-| gc-sustained-v1/gc/i31-roundtrip | 5.750 | 5.854 | US | NM | NM | 37.438 |
-| gc-sustained-v1/gc/struct-access | 5.750 | 5.500 | US | NM | NM | 35.750 |
-| gc-sustained-v1/gc/struct-allocation | 5.396 | 5.750 | US | NM | NM | 40.104 |
-| gc-sustained-v1/gc/struct-indirect-access | 5.521 | 7.042 | US | NM | NM | 39.666 |
-| threads-sustained-v2/threads/private-memory | 5.479 | 5.729 | 2.792 | NM | NM | 46.646 |
-| threads-sustained-v2/threads/shared-memory | 7.708 | 5.896 | 3.354 | NM | NM | 33.958 |
-| threads-sustained-v2/threads/atomic-rmw | 6.208 | 5.750 | 3.229 | NM | NM | 39.021 |
-| threads-sustained-v2/threads/notify-empty | 6.104 | 6.188 | 2.938 | NM | NM | 38.563 |
-| threads-sustained-v2/threads/wait-mismatch | 5.750 | 5.229 | 3.146 | NM | NM | 36.916 |
-| threads-sustained-v2/threads/wait-timeout | 5.208 | 5.271 | 3.187 | NM | NM | 38.145 |
-| generic-calls-v1/core/generic-calls | 5.813 | 5.896 | 3.292 | NM | NM | 116.69 |
+| original22-v1/core/call-control | 4.667 | 5.521 | 2.562 | NM | NM | 29.750 |
+| original22-v1/core/integer-loop | 4.375 | 5.062 | 2.708 | NM | NM | 30.062 |
+| original22-v1/core/function-calls | 4.375 | 4.708 | 2.188 | NM | NM | 27.146 |
+| original22-v1/core/memory-load-store | 4.375 | 4.792 | 2.604 | NM | NM | 26.250 |
+| original22-v1/memory/narrow-unaligned | 4.625 | 5.271 | 2.667 | NM | NM | 29.062 |
+| original22-v1/memory/dependent-address | 5.333 | 4.896 | 2.979 | NM | NM | 28.209 |
+| original22-v1/memory/float64-unaligned | 5.021 | 4.958 | 2.375 | NM | NM | 29.604 |
+| original22-v1/runtime/simd-memory-full | 4.208 | 4.854 | 2.126 | NM | NM | 25.709 |
+| original22-v1/runtime/simd-memory-widen | 4.375 | 4.792 | 2.354 | NM | NM | 26.562 |
+| original22-v1/runtime/simd-memory-lanes | 4.312 | 4.500 | 2.479 | NM | NM | 26.063 |
+| original22-v1/gc/i31-roundtrip | 4.146 | 4.687 | US | NM | NM | 28.584 |
+| original22-v1/gc/struct-access | 4.667 | 4.500 | US | NM | NM | 29.354 |
+| original22-v1/gc/struct-allocation | 4.417 | 4.750 | US | NM | NM | 26.875 |
+| original22-v1/gc/struct-indirect-access | 5.000 | 4.875 | US | NM | NM | 27.104 |
+| original22-v1/threads/private-memory | 4.396 | 4.500 | 2.333 | NM | NM | 26.166 |
+| original22-v1/threads/shared-memory | 4.562 | 4.521 | 2.604 | NM | NM | 25.521 |
+| original22-v1/threads/atomic-rmw | 4.812 | 4.750 | 3.125 | NM | NM | 25.959 |
+| original22-v1/threads/notify-empty | 4.167 | 4.375 | 2.271 | NM | NM | 27.271 |
+| original22-v1/threads/wait-mismatch | 4.688 | 5.604 | 2.708 | NM | NM | 28.230 |
+| original22-v1/threads/wait-timeout | 4.812 | 5.229 | 2.688 | NM | NM | 30.270 |
+| original22-v1/applications/sha256-clang | 4.542 | 5.063 | 2.438 | NM | NM | 26.438 |
+| original22-v1/applications/sha256-rust | 4.646 | 4.771 | 2.417 | NM | NM | 28.437 |
+| gc-sustained-v1/gc/i31-roundtrip | 4.542 | 4.479 | US | NM | NM | 27.021 |
+| gc-sustained-v1/gc/struct-access | 4.604 | 5.083 | US | NM | NM | 26.083 |
+| gc-sustained-v1/gc/struct-allocation | 4.729 | 4.583 | US | NM | NM | 24.709 |
+| gc-sustained-v1/gc/struct-indirect-access | 4.604 | 4.750 | US | NM | NM | 33.312 |
+| threads-sustained-v2/threads/private-memory | 5.188 | 5.062 | 2.688 | NM | NM | 29.480 |
+| threads-sustained-v2/threads/shared-memory | 5.000 | 4.646 | 2.333 | NM | NM | 30.230 |
+| threads-sustained-v2/threads/atomic-rmw | 4.208 | 4.792 | 2.333 | NM | NM | 26.104 |
+| threads-sustained-v2/threads/notify-empty | 4.938 | 4.625 | 2.021 | NM | NM | 24.812 |
+| threads-sustained-v2/threads/wait-mismatch | 3.979 | 4.812 | 2.312 | NM | NM | 25.792 |
+| threads-sustained-v2/threads/wait-timeout | 4.812 | 5.250 | 2.958 | NM | NM | 27.750 |
+| generic-calls-v1/core/generic-calls | 5.688 | 4.896 | 2.521 | NM | NM | 23.875 |
 
 ### compileValidate
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 62.229 | 52.333 | 41.125 | NM | NM | 41.084 |
-| original22-v1/core/integer-loop | 76.063 | 65.021 | 53.480 | NM | NM | 42.355 |
-| original22-v1/core/function-calls | 110.42 | 75.291 | 51.583 | NM | NM | 43.479 |
-| original22-v1/core/memory-load-store | 93.459 | 87.875 | 64.791 | NM | NM | 45.812 |
-| original22-v1/memory/narrow-unaligned | 100.79 | 96.166 | 54.230 | NM | NM | 46.375 |
-| original22-v1/memory/dependent-address | 91.271 | 91.084 | 64.166 | NM | NM | 47.584 |
-| original22-v1/memory/float64-unaligned | 91.772 | 90.751 | 57.541 | NM | NM | 44.874 |
-| original22-v1/runtime/simd-memory-full | 89.521 | 80.250 | 60.000 | NM | NM | 50.375 |
-| original22-v1/runtime/simd-memory-widen | 85.541 | 74.584 | 58.062 | NM | NM | 45.291 |
-| original22-v1/runtime/simd-memory-lanes | 86.125 | 80.709 | 57.438 | NM | NM | 50.688 |
-| original22-v1/gc/i31-roundtrip | 76.583 | 57.812 | US | NM | NM | 40.812 |
-| original22-v1/gc/struct-access | 73.375 | 65.646 | US | NM | NM | 50.022 |
-| original22-v1/gc/struct-allocation | 77.896 | 64.354 | US | NM | NM | 55.667 |
-| original22-v1/gc/struct-indirect-access | 89.916 | 84.583 | US | NM | NM | 53.917 |
-| original22-v1/threads/private-memory | 73.542 | 60.980 | 47.541 | NM | NM | 42.729 |
-| original22-v1/threads/shared-memory | 74.291 | 61.021 | 46.021 | NM | NM | 43.833 |
-| original22-v1/threads/atomic-rmw | 71.063 | 58.062 | 48.896 | NM | NM | 44.729 |
-| original22-v1/threads/notify-empty | 72.541 | 63.896 | 66.562 | NM | NM | 42.729 |
-| original22-v1/threads/wait-mismatch | 73.750 | 60.833 | 48.855 | NM | NM | 42.292 |
-| original22-v1/threads/wait-timeout | 74.438 | 65.645 | 53.062 | NM | NM | 51.459 |
-| original22-v1/applications/sha256-clang | 309.42 | 400.60 | 91.541 | NM | NM | 90.084 |
-| original22-v1/applications/sha256-rust | 307.50 | 407.54 | 97.188 | NM | NM | 95.750 |
-| gc-sustained-v1/gc/i31-roundtrip | 70.105 | 60.521 | US | NM | NM | 39.605 |
-| gc-sustained-v1/gc/struct-access | 76.417 | 68.375 | US | NM | NM | 50.229 |
-| gc-sustained-v1/gc/struct-allocation | 78.125 | 64.938 | US | NM | NM | 55.958 |
-| gc-sustained-v1/gc/struct-indirect-access | 91.500 | 87.979 | US | NM | NM | 56.146 |
-| threads-sustained-v2/threads/private-memory | 71.104 | 59.188 | 45.000 | NM | NM | 42.833 |
-| threads-sustained-v2/threads/shared-memory | 76.062 | 61.875 | 49.354 | NM | NM | 43.501 |
-| threads-sustained-v2/threads/atomic-rmw | 72.395 | 60.834 | 59.542 | NM | NM | 42.854 |
-| threads-sustained-v2/threads/notify-empty | 73.396 | 76.041 | 50.646 | NM | NM | 44.520 |
-| threads-sustained-v2/threads/wait-mismatch | 72.750 | 58.917 | 48.208 | NM | NM | 47.605 |
-| threads-sustained-v2/threads/wait-timeout | 73.270 | 59.416 | 48.021 | NM | NM | 43.980 |
-| generic-calls-v1/core/generic-calls | 78.479 | 83.334 | 48.895 | NM | NM | 53.063 |
+| original22-v1/core/call-control | 62.501 | 55.313 | 41.375 | NM | NM | 35.979 |
+| original22-v1/core/integer-loop | 66.625 | 61.291 | 44.479 | NM | NM | 37.812 |
+| original22-v1/core/function-calls | 80.001 | 67.041 | 43.771 | NM | NM | 36.812 |
+| original22-v1/core/memory-load-store | 77.708 | 80.688 | 45.604 | NM | NM | 40.229 |
+| original22-v1/memory/narrow-unaligned | 93.209 | 88.854 | 52.229 | NM | NM | 43.875 |
+| original22-v1/memory/dependent-address | 83.958 | 79.750 | 49.312 | NM | NM | 44.416 |
+| original22-v1/memory/float64-unaligned | 83.001 | 83.938 | 49.750 | NM | NM | 43.271 |
+| original22-v1/runtime/simd-memory-full | 75.416 | 67.146 | 49.063 | NM | NM | 41.374 |
+| original22-v1/runtime/simd-memory-widen | 72.542 | 68.979 | 46.604 | NM | NM | 38.791 |
+| original22-v1/runtime/simd-memory-lanes | 74.459 | 69.895 | 49.291 | NM | NM | 41.520 |
+| original22-v1/gc/i31-roundtrip | 67.979 | 57.042 | US | NM | NM | 35.520 |
+| original22-v1/gc/struct-access | 69.896 | 60.416 | US | NM | NM | 45.459 |
+| original22-v1/gc/struct-allocation | 70.646 | 58.292 | US | NM | NM | 47.291 |
+| original22-v1/gc/struct-indirect-access | 83.271 | 80.126 | US | NM | NM | 52.250 |
+| original22-v1/threads/private-memory | 61.000 | 56.417 | 40.270 | NM | NM | 38.480 |
+| original22-v1/threads/shared-memory | 66.438 | 54.459 | 40.959 | NM | NM | 38.229 |
+| original22-v1/threads/atomic-rmw | 61.625 | 56.291 | 49.396 | NM | NM | 40.022 |
+| original22-v1/threads/notify-empty | 63.604 | 53.646 | 43.438 | NM | NM | 38.229 |
+| original22-v1/threads/wait-mismatch | 68.250 | 59.396 | 45.750 | NM | NM | 40.729 |
+| original22-v1/threads/wait-timeout | 67.417 | 60.041 | 46.209 | NM | NM | 40.916 |
+| original22-v1/applications/sha256-clang | 262.48 | 362.63 | 80.937 | NM | NM | 81.958 |
+| original22-v1/applications/sha256-rust | 281.33 | 346.94 | 88.625 | NM | NM | 77.730 |
+| gc-sustained-v1/gc/i31-roundtrip | 66.105 | 54.667 | US | NM | NM | 36.959 |
+| gc-sustained-v1/gc/struct-access | 70.853 | 62.375 | US | NM | NM | 44.313 |
+| gc-sustained-v1/gc/struct-allocation | 67.916 | 60.605 | US | NM | NM | 46.730 |
+| gc-sustained-v1/gc/struct-indirect-access | 84.897 | 75.688 | US | NM | NM | 53.187 |
+| threads-sustained-v2/threads/private-memory | 62.584 | 56.291 | 43.188 | NM | NM | 40.500 |
+| threads-sustained-v2/threads/shared-memory | 66.604 | 54.791 | 43.625 | NM | NM | 39.167 |
+| threads-sustained-v2/threads/atomic-rmw | 61.562 | 54.771 | 42.562 | NM | NM | 39.395 |
+| threads-sustained-v2/threads/notify-empty | 62.104 | 53.959 | 40.875 | NM | NM | 40.167 |
+| threads-sustained-v2/threads/wait-mismatch | 65.416 | 55.584 | 42.020 | NM | NM | 38.875 |
+| threads-sustained-v2/threads/wait-timeout | 66.604 | 59.062 | 47.291 | NM | NM | 39.916 |
+| generic-calls-v1/core/generic-calls | 76.209 | 66.438 | 41.270 | NM | NM | 41.605 |
 
 ### instantiate
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 8.688 | 9.188 | 18.188 | NM | NM | 32.459 |
-| original22-v1/core/integer-loop | 9.167 | 9.354 | 19.645 | NM | NM | 38.541 |
-| original22-v1/core/function-calls | 9.896 | 9.729 | 17.229 | NM | NM | 30.813 |
-| original22-v1/core/memory-load-store | 13.750 | 16.250 | 20.125 | NM | NM | 53.875 |
-| original22-v1/memory/narrow-unaligned | 13.833 | 16.895 | 19.270 | NM | NM | 55.791 |
-| original22-v1/memory/dependent-address | 13.959 | 17.146 | 20.146 | NM | NM | 54.334 |
-| original22-v1/memory/float64-unaligned | 13.542 | 17.000 | 18.521 | NM | NM | 50.667 |
-| original22-v1/runtime/simd-memory-full | 16.500 | 16.291 | 20.354 | NM | NM | 87.084 |
-| original22-v1/runtime/simd-memory-widen | 15.479 | 16.021 | 19.396 | NM | NM | 62.146 |
-| original22-v1/runtime/simd-memory-lanes | 15.500 | 16.084 | 19.084 | NM | NM | 67.146 |
-| original22-v1/gc/i31-roundtrip | 9.396 | 9.063 | US | NM | NM | 29.104 |
-| original22-v1/gc/struct-access | 9.312 | 10.896 | US | NM | NM | 30.333 |
-| original22-v1/gc/struct-allocation | 10.709 | 10.792 | US | NM | NM | 38.416 |
-| original22-v1/gc/struct-indirect-access | 16.167 | 18.375 | US | NM | NM | 38.250 |
-| original22-v1/threads/private-memory | 12.396 | 15.688 | 18.500 | NM | NM | 54.750 |
-| original22-v1/threads/shared-memory | 17.063 | 16.438 | 17.938 | NM | NM | 53.084 |
-| original22-v1/threads/atomic-rmw | 16.750 | 16.688 | 19.270 | NM | NM | 55.458 |
-| original22-v1/threads/notify-empty | 17.625 | 16.688 | 21.209 | NM | NM | 50.562 |
-| original22-v1/threads/wait-mismatch | 18.166 | 15.709 | 18.688 | NM | NM | 52.855 |
-| original22-v1/threads/wait-timeout | 17.500 | 16.938 | 19.167 | NM | NM | 58.334 |
-| original22-v1/applications/sha256-clang | 17.083 | 23.167 | 21.562 | NM | NM | 63.395 |
-| original22-v1/applications/sha256-rust | 18.000 | 92.687 | 35.104 | NM | NM | 66.645 |
-| gc-sustained-v1/gc/i31-roundtrip | 8.979 | 9.396 | US | NM | NM | 33.083 |
-| gc-sustained-v1/gc/struct-access | 9.438 | 10.646 | US | NM | NM | 31.605 |
-| gc-sustained-v1/gc/struct-allocation | 10.625 | 11.458 | US | NM | NM | 39.500 |
-| gc-sustained-v1/gc/struct-indirect-access | 17.166 | 18.646 | US | NM | NM | 40.355 |
-| threads-sustained-v2/threads/private-memory | 12.312 | 15.104 | 17.646 | NM | NM | 63.313 |
-| threads-sustained-v2/threads/shared-memory | 18.167 | 16.041 | 18.458 | NM | NM | 51.771 |
-| threads-sustained-v2/threads/atomic-rmw | 20.125 | 16.917 | 19.270 | NM | NM | 54.208 |
-| threads-sustained-v2/threads/notify-empty | 18.209 | 21.416 | 19.605 | NM | NM | 55.000 |
-| threads-sustained-v2/threads/wait-mismatch | 16.770 | 15.000 | 18.021 | NM | NM | 56.291 |
-| threads-sustained-v2/threads/wait-timeout | 17.291 | 15.854 | 18.625 | NM | NM | 55.666 |
-| generic-calls-v1/core/generic-calls | 9.562 | 11.521 | 18.541 | NM | NM | 35.729 |
+| original22-v1/core/call-control | 7.771 | 7.792 | 17.708 | NM | NM | 29.520 |
+| original22-v1/core/integer-loop | 7.979 | 7.771 | 16.166 | NM | NM | 29.584 |
+| original22-v1/core/function-calls | 7.958 | 7.271 | 14.396 | NM | NM | 25.438 |
+| original22-v1/core/memory-load-store | 11.624 | 13.750 | 16.584 | NM | NM | 45.291 |
+| original22-v1/memory/narrow-unaligned | 12.166 | 13.396 | 18.125 | NM | NM | 52.188 |
+| original22-v1/memory/dependent-address | 13.041 | 14.916 | 16.937 | NM | NM | 54.041 |
+| original22-v1/memory/float64-unaligned | 13.459 | 13.709 | 16.791 | NM | NM | 52.041 |
+| original22-v1/runtime/simd-memory-full | 13.229 | 13.521 | 16.729 | NM | NM | 51.541 |
+| original22-v1/runtime/simd-memory-widen | 13.792 | 12.312 | 16.333 | NM | NM | 55.688 |
+| original22-v1/runtime/simd-memory-lanes | 13.666 | 12.688 | 17.333 | NM | NM | 53.625 |
+| original22-v1/gc/i31-roundtrip | 7.708 | 7.229 | US | NM | NM | 26.250 |
+| original22-v1/gc/struct-access | 8.521 | 8.146 | US | NM | NM | 28.396 |
+| original22-v1/gc/struct-allocation | 9.417 | 9.063 | US | NM | NM | 29.959 |
+| original22-v1/gc/struct-indirect-access | 14.938 | 15.834 | US | NM | NM | 31.459 |
+| original22-v1/threads/private-memory | 10.583 | 12.666 | 16.437 | NM | NM | 46.250 |
+| original22-v1/threads/shared-memory | 15.125 | 12.688 | 15.646 | NM | NM | 47.083 |
+| original22-v1/threads/atomic-rmw | 15.104 | 15.209 | 16.771 | NM | NM | 46.521 |
+| original22-v1/threads/notify-empty | 14.584 | 12.250 | 16.584 | NM | NM | 47.291 |
+| original22-v1/threads/wait-mismatch | 16.979 | 13.479 | 17.854 | NM | NM | 50.979 |
+| original22-v1/threads/wait-timeout | 16.791 | 15.938 | 17.062 | NM | NM | 50.626 |
+| original22-v1/applications/sha256-clang | 15.000 | 22.083 | 18.541 | NM | NM | 57.396 |
+| original22-v1/applications/sha256-rust | 27.771 | 76.645 | 32.959 | NM | NM | 58.438 |
+| gc-sustained-v1/gc/i31-roundtrip | 8.251 | 7.354 | US | NM | NM | 28.895 |
+| gc-sustained-v1/gc/struct-access | 8.438 | 8.312 | US | NM | NM | 24.562 |
+| gc-sustained-v1/gc/struct-allocation | 9.521 | 9.646 | US | NM | NM | 28.521 |
+| gc-sustained-v1/gc/struct-indirect-access | 15.834 | 15.396 | US | NM | NM | 34.812 |
+| threads-sustained-v2/threads/private-memory | 10.667 | 13.562 | 16.646 | NM | NM | 50.980 |
+| threads-sustained-v2/threads/shared-memory | 15.458 | 14.021 | 16.584 | NM | NM | 47.770 |
+| threads-sustained-v2/threads/atomic-rmw | 14.312 | 13.749 | 17.041 | NM | NM | 46.479 |
+| threads-sustained-v2/threads/notify-empty | 15.271 | 13.729 | 16.042 | NM | NM | 46.395 |
+| threads-sustained-v2/threads/wait-mismatch | 14.667 | 13.688 | 16.270 | NM | NM | 47.355 |
+| threads-sustained-v2/threads/wait-timeout | 15.646 | 16.146 | 22.833 | NM | NM | 47.146 |
+| generic-calls-v1/core/generic-calls | 8.312 | 9.292 | 16.958 | NM | NM | 22.667 |
 
 ### exportLookup
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 0.250 | 0.459 | 0.229 | NM | NM | 0.230 |
-| original22-v1/core/integer-loop | 0.271 | 0.438 | 0.291 | NM | NM | 0.208 |
-| original22-v1/core/function-calls | 0.354 | 0.479 | 0.271 | NM | NM | 0.292 |
-| original22-v1/core/memory-load-store | 0.313 | 0.438 | 0.312 | NM | NM | 0.250 |
-| original22-v1/memory/narrow-unaligned | 0.375 | 0.520 | 0.291 | NM | NM | 0.271 |
-| original22-v1/memory/dependent-address | 0.292 | 0.458 | 0.333 | NM | NM | 0.208 |
-| original22-v1/memory/float64-unaligned | 0.333 | 0.459 | 0.271 | NM | NM | 0.230 |
-| original22-v1/runtime/simd-memory-full | 0.333 | 0.479 | 0.209 | NM | NM | 0.271 |
-| original22-v1/runtime/simd-memory-widen | 0.312 | 0.459 | 0.250 | NM | NM | 0.250 |
-| original22-v1/runtime/simd-memory-lanes | 0.333 | 0.479 | 0.250 | NM | NM | 0.250 |
-| original22-v1/gc/i31-roundtrip | 0.250 | 0.458 | US | NM | NM | 0.250 |
-| original22-v1/gc/struct-access | 0.230 | 0.437 | US | NM | NM | 0.230 |
-| original22-v1/gc/struct-allocation | 0.250 | 0.416 | US | NM | NM | 0.250 |
-| original22-v1/gc/struct-indirect-access | 0.271 | 0.458 | US | NM | NM | 0.209 |
-| original22-v1/threads/private-memory | 0.271 | 0.479 | 0.208 | NM | NM | 0.209 |
-| original22-v1/threads/shared-memory | 0.292 | 0.625 | 0.271 | NM | NM | 0.250 |
-| original22-v1/threads/atomic-rmw | 0.291 | 0.521 | 0.250 | NM | NM | 0.250 |
-| original22-v1/threads/notify-empty | 0.334 | 0.500 | 0.354 | NM | NM | 0.250 |
-| original22-v1/threads/wait-mismatch | 0.354 | 0.583 | 0.271 | NM | NM | 0.250 |
-| original22-v1/threads/wait-timeout | 0.291 | 0.542 | 0.292 | NM | NM | 0.312 |
-| original22-v1/applications/sha256-clang | 0.291 | 0.500 | 0.271 | NM | NM | 0.229 |
-| original22-v1/applications/sha256-rust | 0.271 | 0.459 | 0.333 | NM | NM | 0.250 |
-| gc-sustained-v1/gc/i31-roundtrip | 0.312 | 0.500 | US | NM | NM | 0.250 |
-| gc-sustained-v1/gc/struct-access | 0.250 | 0.416 | US | NM | NM | 0.250 |
-| gc-sustained-v1/gc/struct-allocation | 0.250 | 0.417 | US | NM | NM | 0.209 |
-| gc-sustained-v1/gc/struct-indirect-access | 0.250 | 0.479 | US | NM | NM | 0.208 |
-| threads-sustained-v2/threads/private-memory | 0.271 | 0.479 | 0.230 | NM | NM | 0.167 |
-| threads-sustained-v2/threads/shared-memory | 0.292 | 0.541 | 0.250 | NM | NM | 0.291 |
-| threads-sustained-v2/threads/atomic-rmw | 0.334 | 0.500 | 0.271 | NM | NM | 0.250 |
-| threads-sustained-v2/threads/notify-empty | 0.292 | 0.542 | 0.250 | NM | NM | 0.250 |
-| threads-sustained-v2/threads/wait-mismatch | 0.271 | 0.542 | 0.209 | NM | NM | 0.250 |
-| threads-sustained-v2/threads/wait-timeout | 0.271 | 0.500 | 0.271 | NM | NM | 0.291 |
-| generic-calls-v1/core/generic-calls | 0.292 | 0.459 | 0.334 | NM | NM | 0.208 |
+| original22-v1/core/call-control | 0.230 | 0.479 | 0.271 | NM | NM | 0.230 |
+| original22-v1/core/integer-loop | 0.230 | 0.417 | 0.208 | NM | NM | 0.250 |
+| original22-v1/core/function-calls | 0.230 | 0.438 | 0.230 | NM | NM | 0.208 |
+| original22-v1/core/memory-load-store | 0.230 | 0.416 | 0.250 | NM | NM | 0.188 |
+| original22-v1/memory/narrow-unaligned | 0.230 | 0.416 | 0.208 | NM | NM | 0.230 |
+| original22-v1/memory/dependent-address | 0.271 | 0.479 | 0.250 | NM | NM | 0.230 |
+| original22-v1/memory/float64-unaligned | 0.292 | 0.417 | 0.208 | NM | NM | 0.250 |
+| original22-v1/runtime/simd-memory-full | 0.250 | 0.458 | 0.229 | NM | NM | 0.208 |
+| original22-v1/runtime/simd-memory-widen | 0.209 | 0.375 | 0.208 | NM | NM | 0.230 |
+| original22-v1/runtime/simd-memory-lanes | 0.250 | 0.396 | 0.188 | NM | NM | 0.208 |
+| original22-v1/gc/i31-roundtrip | 0.209 | 0.416 | US | NM | NM | 0.271 |
+| original22-v1/gc/struct-access | 0.209 | 0.396 | US | NM | NM | 0.209 |
+| original22-v1/gc/struct-allocation | 0.271 | 0.417 | US | NM | NM | 0.209 |
+| original22-v1/gc/struct-indirect-access | 0.251 | 0.500 | US | NM | NM | 0.250 |
+| original22-v1/threads/private-memory | 0.250 | 0.416 | 0.230 | NM | NM | 0.208 |
+| original22-v1/threads/shared-memory | 0.250 | 0.479 | 0.187 | NM | NM | 0.208 |
+| original22-v1/threads/atomic-rmw | 0.250 | 0.458 | 0.230 | NM | NM | 0.209 |
+| original22-v1/threads/notify-empty | 0.250 | 0.500 | 0.167 | NM | NM | 0.208 |
+| original22-v1/threads/wait-mismatch | 0.291 | 0.500 | 0.250 | NM | NM | 0.188 |
+| original22-v1/threads/wait-timeout | 0.250 | 0.521 | 0.230 | NM | NM | 0.208 |
+| original22-v1/applications/sha256-clang | 0.188 | 0.417 | 0.208 | NM | NM | 0.208 |
+| original22-v1/applications/sha256-rust | 0.250 | 0.438 | 0.312 | NM | NM | 0.208 |
+| gc-sustained-v1/gc/i31-roundtrip | 0.208 | 0.459 | US | NM | NM | 0.208 |
+| gc-sustained-v1/gc/struct-access | 0.208 | 0.416 | US | NM | NM | 0.208 |
+| gc-sustained-v1/gc/struct-allocation | 0.230 | 0.417 | US | NM | NM | 0.250 |
+| gc-sustained-v1/gc/struct-indirect-access | 0.209 | 0.438 | US | NM | NM | 0.208 |
+| threads-sustained-v2/threads/private-memory | 0.230 | 0.438 | 0.229 | NM | NM | 0.250 |
+| threads-sustained-v2/threads/shared-memory | 0.312 | 0.438 | 0.208 | NM | NM | 0.229 |
+| threads-sustained-v2/threads/atomic-rmw | 0.292 | 0.459 | 0.208 | NM | NM | 0.208 |
+| threads-sustained-v2/threads/notify-empty | 0.250 | 0.459 | 0.187 | NM | NM | 0.271 |
+| threads-sustained-v2/threads/wait-mismatch | 0.230 | 0.417 | 0.208 | NM | NM | 0.209 |
+| threads-sustained-v2/threads/wait-timeout | 0.271 | 0.459 | 0.250 | NM | NM | 0.208 |
+| generic-calls-v1/core/generic-calls | 0.250 | 0.417 | 0.271 | NM | NM | 0.230 |
 
 ### firstCall
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 6.875 | 7.375 | 4.042 | NM | NM | 8.271 |
-| original22-v1/core/integer-loop | 36,501.08 | 31,644.40 | 98,437.90 | NM | NM | 58,442.75 |
-| original22-v1/core/function-calls | 64,473.46 | 56,135.44 | 102,796.13 | NM | NM | 78,009.65 |
-| original22-v1/core/memory-load-store | 78,322.33 | 69,109.12 | 203,014.94 | NM | NM | 112,400.81 |
-| original22-v1/memory/narrow-unaligned | 105,265.06 | 95,119.02 | 218,356.96 | NM | NM | 140,047.02 |
-| original22-v1/memory/dependent-address | 48,207.35 | 41,865.42 | 116,002.04 | NM | NM | 63,495.56 |
-| original22-v1/memory/float64-unaligned | 80,462.96 | 69,824.42 | 159,703.73 | NM | NM | 99,342.40 |
-| original22-v1/runtime/simd-memory-full | 89,806.73 | 81,918.33 | 182,647.75 | NM | NM | 95,358.33 |
-| original22-v1/runtime/simd-memory-widen | 73,694.58 | 65,077.48 | 166,107.52 | NM | NM | 71,991.90 |
-| original22-v1/runtime/simd-memory-lanes | 113,442.79 | 105,232.25 | 228,308.42 | NM | NM | 108,460.04 |
-| original22-v1/gc/i31-roundtrip | 422.15 | 377.33 | US | NM | NM | 526.12 |
-| original22-v1/gc/struct-access | 465.44 | 476.79 | US | NM | NM | 633.81 |
-| original22-v1/gc/struct-allocation | 1,041.23 | 1,148.73 | US | NM | NM | 1,386.00 |
-| original22-v1/gc/struct-indirect-access | 843.31 | 834.25 | US | NM | NM | 1,109.50 |
-| original22-v1/threads/private-memory | 465.48 | 404.35 | 737.27 | NM | NM | 466.56 |
-| original22-v1/threads/shared-memory | 860.75 | 405.21 | 724.75 | NM | NM | 449.94 |
-| original22-v1/threads/atomic-rmw | 605.56 | 397.00 | 540.15 | NM | NM | 415.48 |
-| original22-v1/threads/notify-empty | 377.81 | 342.94 | 510.62 | NM | NM | 482.42 |
-| original22-v1/threads/wait-mismatch | 696.40 | 442.17 | 803.40 | NM | NM | 520.00 |
-| original22-v1/threads/wait-timeout | 638.21 | 422.67 | 3,721.35 | NM | NM | 1,251.00 |
-| original22-v1/applications/sha256-clang | 110,186.92 | 93,602.58 | 243,397.00 | NM | NM | 156,107.67 |
-| original22-v1/applications/sha256-rust | 103,881.88 | 92,780.67 | 246,434.50 | NM | NM | 146,005.00 |
-| gc-sustained-v1/gc/i31-roundtrip | 39,262.25 | 37,850.81 | US | NM | NM | 52,357.50 |
-| gc-sustained-v1/gc/struct-access | 48,308.17 | 46,670.46 | US | NM | NM | 64,559.77 |
-| gc-sustained-v1/gc/struct-allocation | 60,235.38 | 41,823.27 | US | NM | NM | 37,554.15 |
-| gc-sustained-v1/gc/struct-indirect-access | 86,293.12 | 85,031.52 | US | NM | NM | 112,456.56 |
-| threads-sustained-v2/threads/private-memory | 4,456.00 | 3,902.08 | 7,082.10 | NM | NM | 4,549.17 |
-| threads-sustained-v2/threads/shared-memory | 9,074.44 | 4,079.10 | 7,452.42 | NM | NM | 4,533.44 |
-| threads-sustained-v2/threads/atomic-rmw | 6,033.58 | 3,888.40 | 5,363.33 | NM | NM | 3,664.73 |
-| threads-sustained-v2/threads/notify-empty | 3,560.98 | 3,295.83 | 5,153.96 | NM | NM | 4,724.04 |
-| threads-sustained-v2/threads/wait-mismatch | 6,171.65 | 3,986.92 | 7,678.65 | NM | NM | 4,958.54 |
-| threads-sustained-v2/threads/wait-timeout | 6,154.10 | 3,985.04 | 38,897.69 | NM | NM | 11,542.38 |
-| generic-calls-v1/core/generic-calls | 687,692.06 | 599,234.02 | 1,364,343.00 | NM | NM | 731,330.52 |
+| original22-v1/core/call-control | 6.771 | 7.667 | 4.000 | NM | NM | 8.062 |
+| original22-v1/core/integer-loop | 32,084.21 | 26,780.58 | 88,321.60 | NM | NM | 51,080.56 |
+| original22-v1/core/function-calls | 48,721.88 | 46,788.17 | 89,244.15 | NM | NM | 64,155.15 |
+| original22-v1/core/memory-load-store | 66,544.69 | 59,073.54 | 148,488.62 | NM | NM | 94,605.29 |
+| original22-v1/memory/narrow-unaligned | 89,189.23 | 76,404.15 | 205,054.56 | NM | NM | 124,329.48 |
+| original22-v1/memory/dependent-address | 42,236.46 | 35,647.67 | 99,711.40 | NM | NM | 55,616.44 |
+| original22-v1/memory/float64-unaligned | 69,419.15 | 61,789.71 | 142,335.50 | NM | NM | 90,929.79 |
+| original22-v1/runtime/simd-memory-full | 76,998.46 | 67,486.15 | 152,905.90 | NM | NM | 78,615.25 |
+| original22-v1/runtime/simd-memory-widen | 64,321.19 | 55,474.08 | 144,557.62 | NM | NM | 61,186.85 |
+| original22-v1/runtime/simd-memory-lanes | 95,155.48 | 86,996.42 | 186,899.27 | NM | NM | 91,698.73 |
+| original22-v1/gc/i31-roundtrip | 367.96 | 354.48 | US | NM | NM | 467.60 |
+| original22-v1/gc/struct-access | 442.71 | 437.00 | US | NM | NM | 565.81 |
+| original22-v1/gc/struct-allocation | 973.98 | 1,036.33 | US | NM | NM | 1,211.52 |
+| original22-v1/gc/struct-indirect-access | 787.19 | 760.23 | US | NM | NM | 1,013.25 |
+| original22-v1/threads/private-memory | 398.58 | 356.27 | 645.37 | NM | NM | 405.65 |
+| original22-v1/threads/shared-memory | 788.31 | 346.90 | 635.98 | NM | NM | 405.54 |
+| original22-v1/threads/atomic-rmw | 538.83 | 349.79 | 490.65 | NM | NM | 342.33 |
+| original22-v1/threads/notify-empty | 328.12 | 286.40 | 428.02 | NM | NM | 412.52 |
+| original22-v1/threads/wait-mismatch | 599.60 | 387.62 | 719.10 | NM | NM | 469.54 |
+| original22-v1/threads/wait-timeout | 587.10 | 385.90 | 3,300.77 | NM | NM | 1,128.27 |
+| original22-v1/applications/sha256-clang | 92,766.90 | 80,917.94 | 209,414.06 | NM | NM | 142,602.31 |
+| original22-v1/applications/sha256-rust | 90,795.96 | 81,094.42 | 211,405.10 | NM | NM | 126,135.37 |
+| gc-sustained-v1/gc/i31-roundtrip | 35,272.98 | 31,899.21 | US | NM | NM | 48,045.21 |
+| gc-sustained-v1/gc/struct-access | 43,403.52 | 42,041.08 | US | NM | NM | 57,106.35 |
+| gc-sustained-v1/gc/struct-allocation | 51,393.38 | 34,487.60 | US | NM | NM | 32,200.96 |
+| gc-sustained-v1/gc/struct-indirect-access | 77,379.85 | 73,297.94 | US | NM | NM | 101,843.33 |
+| threads-sustained-v2/threads/private-memory | 3,966.31 | 3,462.92 | 6,514.17 | NM | NM | 3,905.33 |
+| threads-sustained-v2/threads/shared-memory | 7,485.73 | 3,338.02 | 6,365.65 | NM | NM | 3,919.21 |
+| threads-sustained-v2/threads/atomic-rmw | 5,227.67 | 3,315.35 | 4,821.35 | NM | NM | 3,255.40 |
+| threads-sustained-v2/threads/notify-empty | 3,137.44 | 2,765.83 | 4,088.29 | NM | NM | 4,147.92 |
+| threads-sustained-v2/threads/wait-mismatch | 5,642.83 | 3,650.65 | 6,950.21 | NM | NM | 4,315.67 |
+| threads-sustained-v2/threads/wait-timeout | 5,630.00 | 3,715.83 | 37,003.92 | NM | NM | 10,180.46 |
+| generic-calls-v1/core/generic-calls | 570,971.77 | 477,417.65 | 956,255.48 | NM | NM | 596,493.38 |
 
 ### cleanup
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| original22-v1/core/call-control | 6.187 | 1.979 | 7.229 | NM | NM | 8.979 |
-| original22-v1/core/integer-loop | 6.312 | 2.146 | 11.021 | NM | NM | 13.459 |
-| original22-v1/core/function-calls | 6.750 | 2.125 | 4.521 | NM | NM | 10.584 |
-| original22-v1/core/memory-load-store | 2.479 | 2.271 | 12.146 | NM | NM | 58.916 |
-| original22-v1/memory/narrow-unaligned | 2.583 | 2.271 | 8.792 | NM | NM | 57.751 |
-| original22-v1/memory/dependent-address | 2.688 | 2.417 | 9.666 | NM | NM | 54.751 |
-| original22-v1/memory/float64-unaligned | 3.417 | 2.249 | 5.438 | NM | NM | 55.521 |
-| original22-v1/runtime/simd-memory-full | 2.667 | 2.438 | 10.937 | NM | NM | 54.938 |
-| original22-v1/runtime/simd-memory-widen | 2.729 | 2.312 | 9.459 | NM | NM | 54.083 |
-| original22-v1/runtime/simd-memory-lanes | 4.584 | 2.292 | 8.666 | NM | NM | 56.312 |
-| original22-v1/gc/i31-roundtrip | 5.292 | 1.833 | US | NM | NM | 6.146 |
-| original22-v1/gc/struct-access | 5.521 | 2.271 | US | NM | NM | 9.334 |
-| original22-v1/gc/struct-allocation | 107.38 | 61.375 | US | NM | NM | 1,740.19 |
-| original22-v1/gc/struct-indirect-access | 2.312 | 2.146 | US | NM | NM | 7.541 |
-| original22-v1/threads/private-memory | 2.333 | 2.250 | 9.792 | NM | NM | 47.125 |
-| original22-v1/threads/shared-memory | 14.708 | 5.396 | 8.626 | NM | NM | 47.584 |
-| original22-v1/threads/atomic-rmw | 16.500 | 8.125 | 11.021 | NM | NM | 47.355 |
-| original22-v1/threads/notify-empty | 12.438 | 7.063 | 5.938 | NM | NM | 45.562 |
-| original22-v1/threads/wait-mismatch | 16.916 | 5.104 | 7.146 | NM | NM | 48.459 |
-| original22-v1/threads/wait-timeout | 13.312 | 9.292 | 6.312 | NM | NM | 49.605 |
-| original22-v1/applications/sha256-clang | 2.542 | 2.312 | 6.541 | NM | NM | 62.959 |
-| original22-v1/applications/sha256-rust | 2.479 | 2.312 | 7.417 | NM | NM | 62.562 |
-| gc-sustained-v1/gc/i31-roundtrip | 6.938 | 2.063 | US | NM | NM | 11.312 |
-| gc-sustained-v1/gc/struct-access | 9.354 | 2.250 | US | NM | NM | 11.084 |
-| gc-sustained-v1/gc/struct-allocation | 3,125.50 | 1,881.23 | US | NM | NM | 69,602.40 |
-| gc-sustained-v1/gc/struct-indirect-access | 2.292 | 2.271 | US | NM | NM | 10.084 |
-| threads-sustained-v2/threads/private-memory | 2.667 | 2.479 | 12.354 | NM | NM | 54.021 |
-| threads-sustained-v2/threads/shared-memory | 15.188 | 8.771 | 7.688 | NM | NM | 53.729 |
-| threads-sustained-v2/threads/atomic-rmw | 19.395 | 9.542 | 9.396 | NM | NM | 52.188 |
-| threads-sustained-v2/threads/notify-empty | 17.812 | 10.708 | 10.729 | NM | NM | 54.438 |
-| threads-sustained-v2/threads/wait-mismatch | 18.145 | 16.229 | 7.729 | NM | NM | 51.834 |
-| threads-sustained-v2/threads/wait-timeout | 21.583 | 7.875 | 4.188 | NM | NM | 53.354 |
-| generic-calls-v1/core/generic-calls | 8.521 | 2.250 | 5.208 | NM | NM | 11.459 |
+| original22-v1/core/call-control | 2.354 | 1.854 | 6.979 | NM | NM | 7.750 |
+| original22-v1/core/integer-loop | 2.251 | 2.167 | 8.021 | NM | NM | 7.479 |
+| original22-v1/core/function-calls | 2.083 | 1.855 | 4.708 | NM | NM | 11.375 |
+| original22-v1/core/memory-load-store | 2.562 | 2.333 | 4.250 | NM | NM | 53.124 |
+| original22-v1/memory/narrow-unaligned | 2.458 | 2.271 | 4.875 | NM | NM | 52.666 |
+| original22-v1/memory/dependent-address | 3.792 | 2.208 | 9.792 | NM | NM | 52.688 |
+| original22-v1/memory/float64-unaligned | 2.438 | 2.188 | 5.083 | NM | NM | 47.749 |
+| original22-v1/runtime/simd-memory-full | 2.396 | 2.479 | 6.688 | NM | NM | 53.708 |
+| original22-v1/runtime/simd-memory-widen | 2.750 | 2.375 | 9.250 | NM | NM | 52.751 |
+| original22-v1/runtime/simd-memory-lanes | 2.542 | 2.292 | 7.000 | NM | NM | 58.980 |
+| original22-v1/gc/i31-roundtrip | 1.604 | 1.125 | US | NM | NM | 5.250 |
+| original22-v1/gc/struct-access | 2.146 | 2.021 | US | NM | NM | 10.646 |
+| original22-v1/gc/struct-allocation | 95.125 | 56.979 | US | NM | NM | 1,586.35 |
+| original22-v1/gc/struct-indirect-access | 1.875 | 2.062 | US | NM | NM | 8.541 |
+| original22-v1/threads/private-memory | 2.124 | 1.958 | 4.688 | NM | NM | 41.000 |
+| original22-v1/threads/shared-memory | 10.291 | 6.292 | 5.542 | NM | NM | 42.438 |
+| original22-v1/threads/atomic-rmw | 10.167 | 5.104 | 4.000 | NM | NM | 43.688 |
+| original22-v1/threads/notify-empty | 8.438 | 5.917 | 4.646 | NM | NM | 42.062 |
+| original22-v1/threads/wait-mismatch | 18.479 | 5.979 | 8.438 | NM | NM | 46.062 |
+| original22-v1/threads/wait-timeout | 14.667 | 7.000 | 5.688 | NM | NM | 43.959 |
+| original22-v1/applications/sha256-clang | 2.646 | 2.292 | 9.208 | NM | NM | 57.166 |
+| original22-v1/applications/sha256-rust | 2.292 | 2.249 | 4.625 | NM | NM | 54.833 |
+| gc-sustained-v1/gc/i31-roundtrip | 2.271 | 2.250 | US | NM | NM | 7.146 |
+| gc-sustained-v1/gc/struct-access | 2.312 | 2.229 | US | NM | NM | 8.708 |
+| gc-sustained-v1/gc/struct-allocation | 2,757.46 | 1,647.48 | US | NM | NM | 58,077.75 |
+| gc-sustained-v1/gc/struct-indirect-access | 2.292 | 2.229 | US | NM | NM | 9.834 |
+| threads-sustained-v2/threads/private-memory | 2.396 | 2.271 | 6.354 | NM | NM | 43.833 |
+| threads-sustained-v2/threads/shared-memory | 12.249 | 8.834 | 4.646 | NM | NM | 47.104 |
+| threads-sustained-v2/threads/atomic-rmw | 17.854 | 7.042 | 7.271 | NM | NM | 47.375 |
+| threads-sustained-v2/threads/notify-empty | 12.166 | 6.104 | 4.333 | NM | NM | 47.896 |
+| threads-sustained-v2/threads/wait-mismatch | 13.583 | 8.584 | 5.187 | NM | NM | 47.062 |
+| threads-sustained-v2/threads/wait-timeout | 14.917 | 8.438 | 4.000 | NM | NM | 48.229 |
+| generic-calls-v1/core/generic-calls | 2.167 | 2.062 | 4.875 | NM | NM | 6.542 |
 
 </details>
 
@@ -938,66 +939,66 @@ All entries below are **microseconds per process or invocation**, including unre
 
 | Workload | Compile + validation + artifact I/O, us | Native image load, us | Post-load validation, us |
 | --- | ---: | ---: | ---: |
-| original22-v1/core/call-control | 22,572.92 | 251,231.65 | 3.146 |
-| original22-v1/core/integer-loop | 26,396.10 | 254,763.35 | 6.188 |
-| original22-v1/core/function-calls | 25,521.17 | 250,730.96 | 5.458 |
-| original22-v1/core/memory-load-store | 28,123.77 | 252,816.42 | 7.333 |
-| original22-v1/memory/narrow-unaligned | 24,662.85 | 253,858.52 | 9.291 |
-| original22-v1/memory/dependent-address | 26,503.29 | 253,454.31 | 9.479 |
-| original22-v1/memory/float64-unaligned | 27,346.44 | 249,946.56 | 7.583 |
-| original22-v1/runtime/simd-memory-full | 25,555.96 | 250,344.35 | 7.646 |
-| original22-v1/runtime/simd-memory-widen | 23,678.48 | 250,614.08 | 8.104 |
-| original22-v1/runtime/simd-memory-lanes | 27,185.15 | 252,966.06 | 8.125 |
-| original22-v1/gc/i31-roundtrip | 22,879.19 | 250,548.75 | 5.729 |
-| original22-v1/gc/struct-access | 23,583.60 | 252,679.31 | 3.896 |
-| original22-v1/gc/struct-allocation | 22,718.40 | 249,763.92 | 7.208 |
-| original22-v1/gc/struct-indirect-access | 23,624.31 | 250,512.54 | 8.667 |
-| original22-v1/threads/private-memory | 22,185.08 | 253,024.46 | 6.708 |
-| original22-v1/threads/shared-memory | 25,653.79 | 252,459.10 | 6.708 |
-| original22-v1/threads/atomic-rmw | 21,191.12 | 251,252.38 | 6.146 |
-| original22-v1/threads/notify-empty | 28,688.85 | 250,096.56 | 6.458 |
-| original22-v1/threads/wait-mismatch | 24,832.81 | 250,742.08 | 5.458 |
-| original22-v1/threads/wait-timeout | 27,254.75 | 251,711.19 | 5.542 |
-| original22-v1/applications/sha256-clang | 29,964.21 | 256,201.52 | 12.437 |
-| original22-v1/applications/sha256-rust | 30,366.88 | 252,483.94 | 11.312 |
-| gc-sustained-v1/gc/i31-roundtrip | 23,585.12 | 254,955.08 | 5.708 |
+| original22-v1/core/call-control | 20,328.35 | 256,653.79 | 3.125 |
+| original22-v1/core/integer-loop | 19,220.31 | 254,017.06 | 7.292 |
+| original22-v1/core/function-calls | 19,032.69 | 255,892.46 | 5.500 |
+| original22-v1/core/memory-load-store | 23,106.04 | 259,058.21 | 6.250 |
+| original22-v1/memory/narrow-unaligned | 20,159.81 | 255,192.81 | 7.979 |
+| original22-v1/memory/dependent-address | 21,820.12 | 254,771.73 | 7.167 |
+| original22-v1/memory/float64-unaligned | 23,471.81 | 251,277.06 | 7.625 |
+| original22-v1/runtime/simd-memory-full | 18,348.25 | 254,431.52 | 7.271 |
+| original22-v1/runtime/simd-memory-widen | 19,262.15 | 258,162.69 | 6.979 |
+| original22-v1/runtime/simd-memory-lanes | 19,188.40 | 253,903.92 | 6.229 |
+| original22-v1/gc/i31-roundtrip | 18,133.94 | 252,682.52 | 4.583 |
+| original22-v1/gc/struct-access | 19,739.12 | 261,408.85 | 3.271 |
+| original22-v1/gc/struct-allocation | 18,247.92 | 256,852.04 | 8.313 |
+| original22-v1/gc/struct-indirect-access | 18,858.79 | 255,547.60 | 7.208 |
+| original22-v1/threads/private-memory | 18,045.50 | 253,830.48 | 5.375 |
+| original22-v1/threads/shared-memory | 17,974.44 | 256,090.31 | 5.938 |
+| original22-v1/threads/atomic-rmw | 18,131.02 | 259,040.29 | 5.125 |
+| original22-v1/threads/notify-empty | 17,534.23 | 261,647.83 | 5.604 |
+| original22-v1/threads/wait-mismatch | 20,098.67 | 254,710.31 | 6.750 |
+| original22-v1/threads/wait-timeout | 20,256.52 | 253,528.27 | 5.958 |
+| original22-v1/applications/sha256-clang | 23,958.92 | 256,966.21 | 12.438 |
+| original22-v1/applications/sha256-rust | 23,678.27 | 256,960.85 | 9.438 |
+| gc-sustained-v1/gc/i31-roundtrip | 17,714.25 | 257,809.33 | 5.167 |
 | gc-sustained-v1/gc/struct-access | **FAIL: SIGSEGV** | **FAIL: SIGSEGV** | **FAIL: SIGSEGV** |
 | gc-sustained-v1/gc/struct-allocation | **FAIL: SIGSEGV** | **FAIL: SIGSEGV** | **FAIL: SIGSEGV** |
 | gc-sustained-v1/gc/struct-indirect-access | **FAIL: SIGSEGV** | **FAIL: SIGSEGV** | **FAIL: SIGSEGV** |
-| threads-sustained-v2/threads/private-memory | 21,975.38 | 254,335.15 | 6.271 |
-| threads-sustained-v2/threads/shared-memory | 22,689.17 | 252,572.27 | 5.792 |
-| threads-sustained-v2/threads/atomic-rmw | 23,943.73 | 254,500.94 | 5.458 |
-| threads-sustained-v2/threads/notify-empty | 25,460.44 | 250,032.48 | 7.417 |
-| threads-sustained-v2/threads/wait-mismatch | 20,546.40 | 249,847.88 | 7.312 |
-| threads-sustained-v2/threads/wait-timeout | 21,893.25 | 252,246.21 | 6.375 |
-| generic-calls-v1/core/generic-calls | 26,982.25 | 254,516.38 | 6.812 |
+| threads-sustained-v2/threads/private-memory | 19,513.50 | 256,863.40 | 7.354 |
+| threads-sustained-v2/threads/shared-memory | 18,023.40 | 252,028.62 | 6.229 |
+| threads-sustained-v2/threads/atomic-rmw | 18,500.04 | 259,493.67 | 5.375 |
+| threads-sustained-v2/threads/notify-empty | 17,976.79 | 258,439.75 | 5.562 |
+| threads-sustained-v2/threads/wait-mismatch | 19,763.88 | 252,008.29 | 5.896 |
+| threads-sustained-v2/threads/wait-timeout | 22,746.56 | 259,502.54 | 5.479 |
+| generic-calls-v1/core/generic-calls | 18,427.52 | 258,739.54 | 4.500 |
 
 ### P3 phase observations
 
 | Workload / metric | wasmvm Go | wasmvm LLGo | wazero | Wasmtime | Wasmer | WasmEdge |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| 16 B / cleanup | 63.791 | 589.67 | NM | 247.50 | NM | NM |
-| 16 B / compileValidate | 64,530.27 | 104,961.56 | NM | 54,463.10 | NM | NM |
-| 16 B / engineSetup | 0.479 | 0.209 | NM | 156.67 | NM | NM |
-| 16 B / executorSetup | N/A | N/A | NM | 47.146 | NM | NM |
-| 16 B / exportLookup | 0.729 | 1.042 | NM | 9.627 | NM | NM |
-| 16 B / firstCall | 9,898.42 | 24,342.48 | NM | 10,406.90 | NM | NM |
-| 16 B / instantiate | 503.94 | 787.02 | NM | 203.83 | NM | NM |
-| 16 B / load | 72.167 | 70.291 | NM | 64.480 | NM | NM |
-| 16 B / processStartup | 6,368.17 | 13,786.46 | NM | 6,761.13 | NM | NM |
-| 16 B / providerSetup | 51.728 | 231.58 | NM | 237.83 | NM | NM |
-| 16 B / requestPreparation | 0.771 | 0.895 | NM | N/A | NM | NM |
-| 65536 B / cleanup | 83.895 | 698.44 | NM | 317.29 | NM | NM |
-| 65536 B / compileValidate | 64,937.60 | 103,768.31 | NM | 54,542.83 | NM | NM |
-| 65536 B / engineSetup | 0.459 | 0.188 | NM | 155.58 | NM | NM |
-| 65536 B / executorSetup | N/A | N/A | NM | 45.230 | NM | NM |
-| 65536 B / exportLookup | 0.729 | 1.230 | NM | 9.416 | NM | NM |
-| 65536 B / firstCall | 14,706.50 | 25,477.94 | NM | 10,348.25 | NM | NM |
-| 65536 B / instantiate | 569.89 | 831.87 | NM | 218.04 | NM | NM |
-| 65536 B / load | 63.104 | 71.791 | NM | 61.208 | NM | NM |
-| 65536 B / processStartup | 6,657.77 | 13,541.15 | NM | 6,802.85 | NM | NM |
-| 65536 B / providerSetup | 50.541 | 211.40 | NM | 247.23 | NM | NM |
-| 65536 B / requestPreparation | 11.458 | 17.311 | NM | N/A | NM | NM |
+| 16 B / cleanup | 53.667 | 495.75 | NM | 237.83 | NM | NM |
+| 16 B / compileValidate | 58,450.83 | 91,224.21 | NM | 51,310.10 | NM | NM |
+| 16 B / engineSetup | 0.354 | 0.167 | NM | 142.54 | NM | NM |
+| 16 B / executorSetup | N/A | N/A | NM | 44.209 | NM | NM |
+| 16 B / exportLookup | 0.645 | 0.979 | NM | 8.918 | NM | NM |
+| 16 B / firstCall | 8,684.60 | 19,821.38 | NM | 7,904.87 | NM | NM |
+| 16 B / instantiate | 509.44 | 731.23 | NM | 197.90 | NM | NM |
+| 16 B / load | 62.666 | 64.000 | NM | 56.188 | NM | NM |
+| 16 B / processStartup | 6,160.38 | 12,253.67 | NM | 6,369.52 | NM | NM |
+| 16 B / providerSetup | 47.479 | 189.62 | NM | 228.29 | NM | NM |
+| 16 B / requestPreparation | 0.750 | 0.750 | NM | N/A | NM | NM |
+| 65536 B / cleanup | 51.688 | 542.52 | NM | 248.42 | NM | NM |
+| 65536 B / compileValidate | 59,682.58 | 94,623.58 | NM | 51,696.06 | NM | NM |
+| 65536 B / engineSetup | 0.375 | 0.167 | NM | 136.77 | NM | NM |
+| 65536 B / executorSetup | N/A | N/A | NM | 42.625 | NM | NM |
+| 65536 B / exportLookup | 0.730 | 1.145 | NM | 9.104 | NM | NM |
+| 65536 B / firstCall | 12,755.58 | 23,005.00 | NM | 9,076.56 | NM | NM |
+| 65536 B / instantiate | 503.98 | 742.90 | NM | 199.88 | NM | NM |
+| 65536 B / load | 59.999 | 59.312 | NM | 51.812 | NM | NM |
+| 65536 B / processStartup | 6,043.69 | 12,448.65 | NM | 6,417.17 | NM | NM |
+| 65536 B / providerSetup | 47.438 | 173.27 | NM | 232.29 | NM | NM |
+| 65536 B / requestPreparation | 8.291 | 6.770 | NM | N/A | NM | NM |
 
 ## Native controls (different contracts)
 
@@ -1005,23 +1006,23 @@ Unchecked C kernels omit runtime safety/lifetime contracts; native Go implements
 
 | Workload | Unchecked native C, ns/iteration |
 | --- | ---: |
-| original22-v1/core/integer-loop | 1.847 |
-| original22-v1/core/function-calls | 0.931 |
-| original22-v1/core/memory-load-store | 0.325 |
-| original22-v1/memory/narrow-unaligned | 0.544 |
-| original22-v1/memory/dependent-address | 1.644 |
-| original22-v1/memory/float64-unaligned | 0.796 |
-| original22-v1/runtime/simd-memory-full | 4.207 |
-| original22-v1/runtime/simd-memory-widen | 1.200 |
-| original22-v1/runtime/simd-memory-lanes | 5.418 |
-| original22-v1/applications/sha256-clang | 196.65 |
-| original22-v1/applications/sha256-rust | 195.95 |
-| generic-calls-v1/core/generic-calls | 2.373 |
+| original22-v1/core/integer-loop | 1.614 |
+| original22-v1/core/function-calls | 0.775 |
+| original22-v1/core/memory-load-store | 0.272 |
+| original22-v1/memory/narrow-unaligned | 0.485 |
+| original22-v1/memory/dependent-address | 1.426 |
+| original22-v1/memory/float64-unaligned | 0.722 |
+| original22-v1/runtime/simd-memory-full | 3.669 |
+| original22-v1/runtime/simd-memory-widen | 1.038 |
+| original22-v1/runtime/simd-memory-lanes | 4.494 |
+| original22-v1/applications/sha256-clang | 170.37 |
+| original22-v1/applications/sha256-rust | 160.83 |
+| generic-calls-v1/core/generic-calls | 2.133 |
 
 | Payload | Native Go CPU, us/request | Native Go requests/s |
 | --- | ---: | ---: |
-| 16 B | 3.563 | 1,104,020.95 |
-| 65536 B | 98.540 | 25,159.32 |
+| 16 B | 2.757 | 1,355,705.60 |
+| 65536 B | 77.718 | 33,468.87 |
 
 ## WasmEdge sustained AOT failures
 
@@ -1090,32 +1091,72 @@ be used as a lower bound on VM overhead.
 - [Wasmtime HTTP provider](https://github.com/cpunion/wasmvm/blob/57e67995b4122ca8d73540eee525c804c12c6b55/benchmarks/p3io/rust/src/lib.rs#L211-L250)
 
 
-### Core source replay
+### Narrow memory investigation
 
-The primary Core event produced ten apparent source slowdowns. All ten had
-unresolved same-binary controls. A separate 240-process replay checked those
-ten intervals with CPU, retired-instruction and cycle counters on the exact
-primary binaries. Only LLGo interpretation of narrow unaligned memory retained
-a resolved higher CPU time.
+The initial PR revision exposed a +3.09% CPU time increase in the LLGo
+interpreter for narrow unaligned accesses. Retired instructions differed
+by +0.002%, and cycles per instruction increased 3.30%. Matching the
+interpreter loop address left a +3.03% increase in CPU time. The initial
+report links both counter replays and the disassembly.
 
-| Narrow unaligned memory, LLGo interpreter | Head/base CPU time Δ | Head/base retired instructions Δ | Head/base cycles per instruction Δ |
-| --- | ---: | ---: | ---: |
-| Independent replay, original binaries | +3.09% [1.81%, 4.49%] | +0.002% [−0.015%, 0.026%] | +3.30% [2.29%, 4.32%] |
-| Matched interpreter entry address | +3.03% [2.42%, 3.79%] | +0.000% [−0.002%, 0.001%] | +3.24% [2.66%, 3.76%] |
+A scalar load descriptor records the width, extension shift and result mask.
+The range helper validates both unsigned address additions and checks the
+exclusive endpoint against the current logical size. Existing exhaustive
+tests cover widths, signed results, carry, logical limits, and rejected stores.
 
-The default links emit 2,052 instructions and the same opcode sequence in
-`runSlotsLoop`. The changed encodings occur at linked data references and
-call sites. The second replay reordered six interpreter and memory functions
-for both sources. Both `runSlotsLoop` entries landed at `0x100000a40`.
-The integer-loop signal flipped direction with that intervention. The
-unaligned-memory signal persisted, and some callee and data locations still
-differ. The exact cause of the extra cycles remains open. The contribution
-remains under review pending resolution. Both diagnostic replays and the
-disassembly are archived separately from the primary event.
+The independent 288-process screen uses identical guest inputs and checksums
+across both compilers, the initial PR build, and main. It reports **+1.37% CPU
+speed** for Go and **+2.46%** for LLGo against main in the previously regressing
+narrow case, with resolved A/A controls. The four fixtures each retire fewer
+instructions with both compilers. The separate shape-only arm leaves the
+LLGo narrow CPU interval crossing parity. The screen, its exact source
+overlay, and initial diagnosis are archived independently from this report's
+fresh full comparison.
+
+- [Initial PR revision and adverse evidence](https://github.com/cpunion/wasmvm/blob/d4c62f8f790eb402119e309d20c21d7d78edd173/docs/research/performance-p3-scalar-leaves-2026-11-21.md)
+
+### Earlier full-candidate follow-up
+
+The independently rebuilt exact candidate passed a 408-process counter replay.
+Go and LLGo respectively reduced CPU time in the narrow unaligned interpreter
+by 0.71% and 2.58% versus main. Both controls resolved. The primary LLGo
+empty-notify interval indicated a slowdown. The replay measured 1.47% lower
+CPU time, alongside 0.44% fewer retired instructions.
+
+The same replay resolves excess work in two call profiles. Go nested
+interpretation uses 1.06% more CPU and retires 0.81% more instructions. LLGo
+generic-call interpretation uses 0.96% more CPU and retires 0.31% more
+instructions. Go interpretation of sustained GC indirect access uses 1.24%
+more CPU and retires 0.003% more instructions. Its extra cycles remain a
+separate observation. The source now classifies scalar descriptors only on the host path. An
+independent 216-process screen removes 1.04% of Go nested-call instructions
+and 0.83% of LLGo generic-call instructions relative to the previous source.
+Both equivalent guest call profiles return to near the main branch's CPU
+time. Narrow accesses retain their gains. The screen keeps CPU, wall time,
+retired instructions and cycles separate.
+
+### Final candidate verification
+
+A fresh 288-process check investigates all ten unresolved adverse Core
+intervals from the final primary event along with both narrow-memory
+interpreter arms. Narrow-memory CPU speed improves 1.58% with Go and 2.81%
+with LLGo against main. Both controls resolve. The adverse primary cases
+remain unresolved in the replay. Go shared-memory interpreter CPU has a
++2.27% time point with unresolved controls and a resolved −0.26% retired
+instruction change. The measured runtime cost there remains open.
+
+A separate 96-process linker experiment examines GC indirect access. The
+sustained Go interpreter's default-link CPU interval is +1.66%
+[+1.04%, +2.29%]. With both source revisions linked at 64-byte
+function alignment, the CPU difference is −0.24% [−0.60%, +0.31%].
+Retired instructions match within 0.01% in both comparisons. The linker
+intervention moves several code and data addresses. It identifies layout
+sensitivity and leaves the exact microarchitectural cause open. The primary
+matrix uses the default linker.
 
 ## Reproducible evidence
 
 - [Machine-readable results, all controls and source contrasts](data/p3-scalar-leaves-2026-11-21.json).
-- [All 5,508 primary process records](data/p3-scalar-leaves-2026-11-21-raw.jsonl.gz), SHA-256 `75b2463f21a36375025deee49c7397f5093635f7f02ae61243f2115dc662a94b`.
-- [Frozen plans, commands, hashes, analysis/export scripts, semantic checks and failure evidence](data/p3-scalar-leaves-2026-11-21-protocol.tar.gz), SHA-256 `f8f201e631d37f44ae88bfdfd6b27691bea1c73322dc93c6a78dc0971ca1b3e6`.
+- [All 5,508 primary process records](data/p3-scalar-leaves-2026-11-21-raw.jsonl.gz), SHA-256 `977695cc33128834b4dc8258876b250b725d3c04b76f9bdb932619db2b720140`.
+- [Frozen plans, commands, hashes, analysis/export scripts, semantic checks and failure evidence](data/p3-scalar-leaves-2026-11-21-protocol.tar.gz), SHA-256 `f8190950f4d2b4c9a18498280eff7d0c32988be599a77d7788283745135c37a0`.
 - Per-request vectors unused by these metrics are projected to count/extrema/hash; no latency-tail claim. Public load records omit unrelated desktop command arguments. The separately archived screening observations are excluded from primary ratios.
