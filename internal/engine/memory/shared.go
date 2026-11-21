@@ -49,6 +49,16 @@ func (d *Domain) Fence() {
 func (d *Domain) Waiters() uint32 { d.mu.Lock(); defer d.mu.Unlock(); return d.waiting }
 
 func NewShared(declared module.Limits, quota uint32, domain *Domain) (*Memory, error) {
+	return newShared(declared, quota, domain, true)
+}
+
+// NewStoreLocalShared preserves all shared-memory instructions and quota
+// accounting. Its backing is never lent to a different Store.
+func NewStoreLocalShared(declared module.Limits, quota uint32, domain *Domain) (*Memory, error) {
+	return newShared(declared, quota, domain, false)
+}
+
+func newShared(declared module.Limits, quota uint32, domain *Domain, shareable bool) (*Memory, error) {
 	if domain == nil || !declared.Shared || !declared.HasMax {
 		return nil, wasm.ErrInvalid
 	}
@@ -57,13 +67,20 @@ func NewShared(declared module.Limits, quota uint32, domain *Domain) (*Memory, e
 		return nil, err
 	}
 	m.domain, m.refs, m.reservation = domain, 1, QuotaPages(declared, m.maximum)
+	if shareable {
+		m.accessClass = lockedSharedBytes
+		if m.sharedSize != nil {
+			m.accessClass = nativeSharedBytes
+		}
+	}
 	return m, nil
 }
 func (m *Memory) Shared() bool             { return m.domain != nil }
 func (m *Memory) Domain() *Domain          { return m.domain }
 func (m *Memory) ReservationPages() uint64 { return m.reservation }
+func (m *Memory) Shareable() bool          { return m.accessClass != storeLocalBytes }
 func (m *Memory) Retain() bool {
-	if m.domain == nil {
+	if !m.Shareable() {
 		return false
 	}
 	m.domain.mu.Lock()
@@ -123,7 +140,7 @@ func (m *Memory) rangeLocked(at, n uint64) bool {
 	return m.rangeBytes(at, n)
 }
 func (m *Memory) Read(at uint64, p []byte) bool {
-	if m.domain == nil || m.sharedSize != nil {
+	if m.accessClass != lockedSharedBytes {
 		return m.readBytes(at, p)
 	}
 	return m.readLocked(at, p)
@@ -134,7 +151,7 @@ func (m *Memory) readLocked(at uint64, p []byte) bool {
 	return m.readBytes(at, p)
 }
 func (m *Memory) Write(at uint64, p []byte) bool {
-	if m.domain == nil || m.sharedSize != nil {
+	if m.accessClass != lockedSharedBytes {
 		return m.writeBytes(at, p)
 	}
 	return m.writeLocked(at, p)
@@ -146,16 +163,16 @@ func (m *Memory) writeLocked(at uint64, p []byte) bool {
 }
 
 // ReadString returns an immutable snapshot, never a view of guest storage.
-// Native shared memory retains its byte-wise synchronized transfer path.
+// Cross-Store native memory retains its byte-wise synchronized transfer path.
 func (m *Memory) ReadString(at, n uint64) (string, bool) {
-	if m.domain != nil && m.sharedSize == nil {
+	if m.accessClass == lockedSharedBytes {
 		m.domain.mu.Lock()
 		defer m.domain.mu.Unlock()
 	}
 	if !m.rangeBytes(at, n) {
 		return "", false
 	}
-	if m.sharedSize != nil {
+	if m.accessClass == nativeSharedBytes {
 		data := make([]byte, int(n))
 		m.readBytes(at, data)
 		return string(data), true
@@ -164,23 +181,23 @@ func (m *Memory) ReadString(at, n uint64) (string, bool) {
 }
 
 // WriteString copies immutable host bytes without an intermediate byte slice
-// for private memory. Rejected ranges leave memory unchanged.
+// for Store-local memory. Rejected ranges leave memory unchanged.
 func (m *Memory) WriteString(at uint64, data string) bool {
-	if m.domain != nil && m.sharedSize == nil {
+	if m.accessClass == lockedSharedBytes {
 		m.domain.mu.Lock()
 		defer m.domain.mu.Unlock()
 	}
 	if !m.rangeBytes(at, uint64(len(data))) {
 		return false
 	}
-	if m.sharedSize != nil {
+	if m.accessClass == nativeSharedBytes {
 		return m.writeBytes(at, []byte(data))
 	}
 	copy(m.bytes[int(at):], data)
 	return true
 }
 func (m *Memory) Fill(at uint64, b byte, n uint64) bool {
-	if m.domain == nil || m.sharedSize != nil {
+	if m.accessClass != lockedSharedBytes {
 		return m.fill(at, b, n)
 	}
 	return m.fillLocked(at, b, n)
@@ -191,7 +208,7 @@ func (m *Memory) fillLocked(at uint64, b byte, n uint64) bool {
 	return m.fill(at, b, n)
 }
 func (m *Memory) Init(dst, src, n uint64, p []byte) bool {
-	if m.domain == nil || m.sharedSize != nil {
+	if m.accessClass != lockedSharedBytes {
 		return m.initBytes(dst, src, n, p)
 	}
 	return m.initLocked(dst, src, n, p)
@@ -210,14 +227,14 @@ func (m *Memory) CopyFrom(source *Memory, dst, src, n uint64) bool {
 	if m.domain != nil && source.domain != nil && m.domain != source.domain {
 		return false
 	}
-	if d != nil && (m.domain != nil && m.sharedSize == nil || source.domain != nil && source.sharedSize == nil) {
+	if d != nil && (m.accessClass == lockedSharedBytes || source.accessClass == lockedSharedBytes) {
 		d.mu.Lock()
 		defer d.mu.Unlock()
 	}
 	return m.copyFrom(source, dst, src, n)
 }
 func (m *Memory) Load(op uint32, address, offset uint64, lane byte, previous value.Value) (value.Value, wasm.TrapCode) {
-	if m.domain == nil || m.sharedSize != nil {
+	if m.accessClass != lockedSharedBytes {
 		return m.load(op, address, offset, lane, previous)
 	}
 	return m.loadLocked(op, address, offset, lane, previous)
@@ -228,7 +245,7 @@ func (m *Memory) loadLocked(op uint32, address, offset uint64, lane byte, previo
 	return m.load(op, address, offset, lane, previous)
 }
 func (m *Memory) Store(op uint32, address, offset uint64, lane byte, v value.Value) wasm.TrapCode {
-	if m.domain == nil || m.sharedSize != nil {
+	if m.accessClass != lockedSharedBytes {
 		return m.store(op, address, offset, lane, v)
 	}
 	return m.storeLocked(op, address, offset, lane, v)

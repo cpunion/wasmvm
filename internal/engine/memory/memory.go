@@ -18,6 +18,14 @@ const PageSize uint64 = 65536
 const MaxPages = 65536
 const MaxPages64 = 1 << 48
 
+type byteAccess uint8
+
+const (
+	storeLocalBytes byteAccess = iota
+	lockedSharedBytes
+	nativeSharedBytes
+)
+
 type Memory struct {
 	bytes         []byte
 	owner         *native.Memory
@@ -28,6 +36,7 @@ type Memory struct {
 	maximum       uint64
 	sharedSize    *uint64
 	sharedWaiters *uint64
+	accessClass   byteAccess
 }
 
 // New applies the host page quota independently of the module declaration.
@@ -184,7 +193,7 @@ func (m *Memory) readBytes(offset uint64, dst []byte) bool {
 	if !m.rangeBytes(offset, uint64(len(dst))) {
 		return false
 	}
-	if m.sharedSize != nil {
+	if m.accessClass == nativeSharedBytes {
 		checkedShared(native.SharedTransfer(bytePointer(dst, 0), bytePointer(m.bytes, offset), uint64(len(dst)), false, true))
 	} else {
 		copy(dst, m.bytes[int(offset):])
@@ -195,7 +204,7 @@ func (m *Memory) writeBytes(offset uint64, src []byte) bool {
 	if !m.rangeBytes(offset, uint64(len(src))) {
 		return false
 	}
-	if m.sharedSize != nil {
+	if m.accessClass == nativeSharedBytes {
 		checkedShared(native.SharedTransfer(bytePointer(m.bytes, offset), bytePointer(src, 0), uint64(len(src)), true, false))
 	} else {
 		copy(m.bytes[int(offset):], src)
@@ -210,7 +219,7 @@ func (m *Memory) fill(dst uint64, b byte, count uint64) bool {
 	if !m.rangeBytes(dst, count) {
 		return false
 	}
-	if m.sharedSize != nil {
+	if m.accessClass == nativeSharedBytes {
 		checkedShared(native.SharedFill(bytePointer(m.bytes, dst), count, b))
 		return true
 	}
@@ -229,8 +238,8 @@ func (m *Memory) copyFrom(source *Memory, dst, src, count uint64) bool {
 	if !m.rangeBytes(dst, count) || !source.rangeBytes(src, count) {
 		return false
 	}
-	if m.sharedSize != nil || source.sharedSize != nil {
-		checkedShared(native.SharedTransfer(bytePointer(m.bytes, dst), bytePointer(source.bytes, src), count, m.sharedSize != nil, source.sharedSize != nil))
+	if m.accessClass == nativeSharedBytes || source.accessClass == nativeSharedBytes {
+		checkedShared(native.SharedTransfer(bytePointer(m.bytes, dst), bytePointer(source.bytes, src), count, m.accessClass == nativeSharedBytes, source.accessClass == nativeSharedBytes))
 	} else {
 		copy(m.bytes[int(dst):int(dst+count)], source.bytes[int(src):int(src+count)])
 	}
@@ -240,7 +249,7 @@ func (m *Memory) initBytes(dst, src, count uint64, data []byte) bool {
 	if !m.rangeBytes(dst, count) || !fits(uint64(len(data)), src, count) {
 		return false
 	}
-	if m.sharedSize != nil {
+	if m.accessClass == nativeSharedBytes {
 		checkedShared(native.SharedTransfer(bytePointer(m.bytes, dst), bytePointer(data, src), count, true, false))
 	} else {
 		copy(m.bytes[int(dst):int(dst+count)], data[int(src):int(src+count)])
@@ -361,8 +370,8 @@ func (m *Memory) loadVector(op uint32, address, offset uint64, lane byte, previo
 	case sub == 0:
 		return value.Value{Lo: m.readAccess(b, 8), Hi: m.readAccess(b[8:], 8)}, wasm.NoTrap
 	case sub >= 1 && sub <= 6:
-		if m.sharedSize == nil {
-			// Private bytes, or portable shared bytes under the domain lock,
+		if m.accessClass != nativeSharedBytes {
+			// Store-local bytes, or portable shared bytes under the domain lock,
 			// can be read once. Concurrent native shared bytes retain their
 			// existing per-lane accesses below.
 			return widenLoad(binary.LittleEndian.Uint64(b), sub), wasm.NoTrap

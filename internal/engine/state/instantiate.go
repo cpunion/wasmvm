@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/cpunion/wasmvm/internal/compiler/slots"
 	"github.com/cpunion/wasmvm/internal/core/module"
@@ -140,8 +141,22 @@ func (s *Store) AllocateContext(ctx context.Context, compiled *slots.Module, res
 		ex.Table.OwnerInstance = instance
 		instance.Tables = append(instance.Tables, ex.Table)
 	}
-	for _, m := range definition.Memories {
-		ex, e := s.NewMemory(m)
+	// Imports already have a backing and publication policy. A fresh shared
+	// definition can leave the Store only when this module exports its index.
+	memoryBase := uint32(len(instance.Memories))
+	var exportedShared map[uint32]bool
+	if slices.ContainsFunc(definition.Memories, func(m module.Limits) bool { return m.Shared }) {
+		for _, export := range definition.Exports {
+			if export.Kind == 2 && export.Index >= memoryBase && definition.Memories[export.Index-memoryBase].Shared {
+				if exportedShared == nil {
+					exportedShared = make(map[uint32]bool)
+				}
+				exportedShared[export.Index] = true
+			}
+		}
+	}
+	for i, m := range definition.Memories {
+		ex, e := s.newMemory(m, m.Shared && !exportedShared[memoryBase+uint32(i)])
 		if e != nil {
 			return nil, e
 		}
