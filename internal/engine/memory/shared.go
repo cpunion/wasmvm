@@ -239,10 +239,28 @@ func (m *Memory) storeLocked(op uint32, address, offset uint64, lane byte, v val
 	return m.store(op, address, offset, lane, v)
 }
 
+type atomicShape struct {
+	width     uint32
+	operation native.AtomicOperation
+}
+
+// Wait and notify use the opcode directly. Ordinary operations share the
+// width sequence for each load, store, and read-modify-write family.
+var atomicShapes = func() [0x4f]atomicShape {
+	var shapes [0x4f]atomicShape
+	shapes[0].width, shapes[1].width, shapes[2].width = 4, 4, 8
+	widths := [...]uint32{4, 8, 1, 2, 1, 2, 4}
+	for i := 0x10; i < len(shapes); i++ {
+		shapes[i] = atomicShape{width: widths[(i-0x10)%len(widths)],
+			operation: native.AtomicOperation((i - 0x10) / len(widths))}
+	}
+	return shapes
+}()
+
 // Atomic executes one validated atomic opcode. Both execution backends use
 // these typed, individual helpers; no Go pointer is stored in guest frames.
 func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, offset uint64, a, b uint64) (value.Value, wasm.TrapCode, error) {
-	if sub == 3 || sub > 0x4e || sub > 2 && sub < 0x10 {
+	if sub >= uint32(len(atomicShapes)) || atomicShapes[sub].width == 0 {
 		return value.Value{}, wasm.NoTrap, wasm.ErrInvalid
 	}
 	if ctx == nil {
@@ -254,12 +272,8 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 	if d == nil || m.domain != nil && m.domain != d {
 		return value.Value{}, wasm.NoTrap, wasm.ErrInvalid
 	}
-	n := uint(4)
-	if sub == 2 {
-		n = 8
-	} else if sub >= 0x10 {
-		n = [7]uint{4, 8, 1, 2, 1, 2, 4}[(sub-0x10)%7]
-	}
+	shape := atomicShapes[sub]
+	n := uint(shape.width)
 	if m.owner != nil {
 		bytes, ok := m.access(address, offset, n)
 		if !ok {
@@ -270,7 +284,7 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 			return value.Value{}, wasm.TrapAtomicUnaligned, nil
 		}
 		if sub >= 0x10 {
-			old, err := native.SharedAtomicContext(ctx, unsafe.Pointer(unsafe.SliceData(bytes)), uint32(n), native.AtomicOperation((sub-0x10)/7), a, b)
+			old, err := native.SharedAtomicContext(ctx, unsafe.Pointer(unsafe.SliceData(bytes)), shape.width, shape.operation, a, b)
 			return value.Value{Lo: old}, wasm.NoTrap, err
 		}
 		if sub == 0 {
