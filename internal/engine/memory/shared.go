@@ -49,6 +49,16 @@ func (d *Domain) Fence() {
 func (d *Domain) Waiters() uint32 { d.mu.Lock(); defer d.mu.Unlock(); return d.waiting }
 
 func NewShared(declared module.Limits, quota uint32, domain *Domain) (*Memory, error) {
+	return newShared(declared, quota, domain, true)
+}
+
+// NewStoreLocalShared preserves all shared-memory instructions and quota
+// accounting. Its backing is never lent to a different Store.
+func NewStoreLocalShared(declared module.Limits, quota uint32, domain *Domain) (*Memory, error) {
+	return newShared(declared, quota, domain, false)
+}
+
+func newShared(declared module.Limits, quota uint32, domain *Domain, shareable bool) (*Memory, error) {
 	if domain == nil || !declared.Shared || !declared.HasMax {
 		return nil, wasm.ErrInvalid
 	}
@@ -57,13 +67,23 @@ func NewShared(declared module.Limits, quota uint32, domain *Domain) (*Memory, e
 		return nil, err
 	}
 	m.domain, m.refs, m.reservation = domain, 1, QuotaPages(declared, m.maximum)
+	m.shareable = shareable
+	if shareable {
+		m.lockedShared = m.sharedSize == nil
+	} else if m.sharedSize != nil {
+		// Keep the reserved capacity for growth, but bound ordinary accesses
+		// by the slice length. The Store serializes every user of this view.
+		m.bytes = m.bytes[:declared.Min*declared.PageBytes()]
+		m.sharedSize = nil
+	}
 	return m, nil
 }
 func (m *Memory) Shared() bool             { return m.domain != nil }
 func (m *Memory) Domain() *Domain          { return m.domain }
 func (m *Memory) ReservationPages() uint64 { return m.reservation }
+func (m *Memory) Shareable() bool          { return m.shareable }
 func (m *Memory) Retain() bool {
-	if m.domain == nil {
+	if !m.Shareable() {
 		return false
 	}
 	m.domain.mu.Lock()
@@ -90,7 +110,7 @@ func (m *Memory) Release() {
 	}
 }
 func (m *Memory) Pages() uint64 {
-	if m.domain == nil || m.sharedSize != nil {
+	if !m.lockedShared {
 		return m.pages()
 	}
 	return m.pagesLocked()
@@ -112,7 +132,7 @@ func (m *Memory) Grow(n uint64) (uint64, bool) {
 	return m.grow(n)
 }
 func (m *Memory) Range(at, n uint64) bool {
-	if m.domain == nil || m.sharedSize != nil {
+	if !m.lockedShared {
 		return m.rangeBytes(at, n)
 	}
 	return m.rangeLocked(at, n)
@@ -123,7 +143,7 @@ func (m *Memory) rangeLocked(at, n uint64) bool {
 	return m.rangeBytes(at, n)
 }
 func (m *Memory) Read(at uint64, p []byte) bool {
-	if m.domain == nil || m.sharedSize != nil {
+	if !m.lockedShared {
 		return m.readBytes(at, p)
 	}
 	return m.readLocked(at, p)
@@ -134,7 +154,7 @@ func (m *Memory) readLocked(at uint64, p []byte) bool {
 	return m.readBytes(at, p)
 }
 func (m *Memory) Write(at uint64, p []byte) bool {
-	if m.domain == nil || m.sharedSize != nil {
+	if !m.lockedShared {
 		return m.writeBytes(at, p)
 	}
 	return m.writeLocked(at, p)
@@ -146,9 +166,9 @@ func (m *Memory) writeLocked(at uint64, p []byte) bool {
 }
 
 // ReadString returns an immutable snapshot, never a view of guest storage.
-// Native shared memory retains its byte-wise synchronized transfer path.
+// Cross-Store native memory retains its byte-wise synchronized transfer path.
 func (m *Memory) ReadString(at, n uint64) (string, bool) {
-	if m.domain != nil && m.sharedSize == nil {
+	if m.lockedShared {
 		m.domain.mu.Lock()
 		defer m.domain.mu.Unlock()
 	}
@@ -164,9 +184,9 @@ func (m *Memory) ReadString(at, n uint64) (string, bool) {
 }
 
 // WriteString copies immutable host bytes without an intermediate byte slice
-// for private memory. Rejected ranges leave memory unchanged.
+// for Store-local memory. Rejected ranges leave memory unchanged.
 func (m *Memory) WriteString(at uint64, data string) bool {
-	if m.domain != nil && m.sharedSize == nil {
+	if m.lockedShared {
 		m.domain.mu.Lock()
 		defer m.domain.mu.Unlock()
 	}
@@ -180,7 +200,7 @@ func (m *Memory) WriteString(at uint64, data string) bool {
 	return true
 }
 func (m *Memory) Fill(at uint64, b byte, n uint64) bool {
-	if m.domain == nil || m.sharedSize != nil {
+	if !m.lockedShared {
 		return m.fill(at, b, n)
 	}
 	return m.fillLocked(at, b, n)
@@ -191,7 +211,7 @@ func (m *Memory) fillLocked(at uint64, b byte, n uint64) bool {
 	return m.fill(at, b, n)
 }
 func (m *Memory) Init(dst, src, n uint64, p []byte) bool {
-	if m.domain == nil || m.sharedSize != nil {
+	if !m.lockedShared {
 		return m.initBytes(dst, src, n, p)
 	}
 	return m.initLocked(dst, src, n, p)
@@ -210,14 +230,14 @@ func (m *Memory) CopyFrom(source *Memory, dst, src, n uint64) bool {
 	if m.domain != nil && source.domain != nil && m.domain != source.domain {
 		return false
 	}
-	if d != nil && (m.domain != nil && m.sharedSize == nil || source.domain != nil && source.sharedSize == nil) {
+	if d != nil && (m.lockedShared || source.lockedShared) {
 		d.mu.Lock()
 		defer d.mu.Unlock()
 	}
 	return m.copyFrom(source, dst, src, n)
 }
 func (m *Memory) Load(op uint32, address, offset uint64, lane byte, previous value.Value) (value.Value, wasm.TrapCode) {
-	if m.domain == nil || m.sharedSize != nil {
+	if !m.lockedShared {
 		return m.load(op, address, offset, lane, previous)
 	}
 	return m.loadLocked(op, address, offset, lane, previous)
@@ -228,7 +248,7 @@ func (m *Memory) loadLocked(op uint32, address, offset uint64, lane byte, previo
 	return m.load(op, address, offset, lane, previous)
 }
 func (m *Memory) Store(op uint32, address, offset uint64, lane byte, v value.Value) wasm.TrapCode {
-	if m.domain == nil || m.sharedSize != nil {
+	if !m.lockedShared {
 		return m.store(op, address, offset, lane, v)
 	}
 	return m.storeLocked(op, address, offset, lane, v)
@@ -239,10 +259,28 @@ func (m *Memory) storeLocked(op uint32, address, offset uint64, lane byte, v val
 	return m.store(op, address, offset, lane, v)
 }
 
+type atomicShape struct {
+	width     uint32
+	operation native.AtomicOperation
+}
+
+// Wait and notify use the opcode directly. Ordinary operations share the
+// width sequence for each load, store, and read-modify-write family.
+var atomicShapes = func() [0x4f]atomicShape {
+	var shapes [0x4f]atomicShape
+	shapes[0].width, shapes[1].width, shapes[2].width = 4, 4, 8
+	widths := [...]uint32{4, 8, 1, 2, 1, 2, 4}
+	for i := 0x10; i < len(shapes); i++ {
+		shapes[i] = atomicShape{width: widths[(i-0x10)%len(widths)],
+			operation: native.AtomicOperation((i - 0x10) / len(widths))}
+	}
+	return shapes
+}()
+
 // Atomic executes one validated atomic opcode. Both execution backends use
 // these typed, individual helpers; no Go pointer is stored in guest frames.
 func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, offset uint64, a, b uint64) (value.Value, wasm.TrapCode, error) {
-	if sub == 3 || sub > 0x4e || sub > 2 && sub < 0x10 {
+	if sub >= uint32(len(atomicShapes)) || atomicShapes[sub].width == 0 {
 		return value.Value{}, wasm.NoTrap, wasm.ErrInvalid
 	}
 	if ctx == nil {
@@ -254,12 +292,8 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 	if d == nil || m.domain != nil && m.domain != d {
 		return value.Value{}, wasm.NoTrap, wasm.ErrInvalid
 	}
-	n := uint(4)
-	if sub == 2 {
-		n = 8
-	} else if sub >= 0x10 {
-		n = [7]uint{4, 8, 1, 2, 1, 2, 4}[(sub-0x10)%7]
-	}
+	shape := atomicShapes[sub]
+	n := uint(shape.width)
 	if m.owner != nil {
 		bytes, ok := m.access(address, offset, n)
 		if !ok {
@@ -270,7 +304,7 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 			return value.Value{}, wasm.TrapAtomicUnaligned, nil
 		}
 		if sub >= 0x10 {
-			old, err := native.SharedAtomicContext(ctx, unsafe.Pointer(unsafe.SliceData(bytes)), uint32(n), native.AtomicOperation((sub-0x10)/7), a, b)
+			old, err := native.SharedAtomicInRange(ctx, unsafe.Pointer(unsafe.SliceData(bytes)), shape.width, shape.operation, a, b)
 			return value.Value{Lo: old}, wasm.NoTrap, err
 		}
 		if sub == 0 {
@@ -281,10 +315,10 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 			if m.domain == nil {
 				return value.Value{}, wasm.TrapWaitUnshared, nil
 			}
-			observed, err := native.SharedAtomicContext(ctx, unsafe.Pointer(unsafe.SliceData(bytes)), uint32(n), native.AtomicLoad, 0, 0)
-			if err != nil {
+			if err := ctx.Err(); err != nil {
 				return value.Value{}, wasm.NoTrap, err
 			}
+			observed := loadNativeWaitWord(bytes, n)
 			mask := ^uint64(0) >> (64 - n*8)
 			if observed != a&mask {
 				return value.Value{Lo: 1}, wasm.NoTrap, nil
@@ -295,6 +329,16 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 		}
 	}
 	return m.atomicSlow(ctx, d, sub, address, offset, a, b, n)
+}
+
+// Wait compares a checked, naturally aligned i32 or i64 word in a retained
+// native mapping. The comparison is sequentially consistent.
+func loadNativeWaitWord(bytes []byte, width uint) uint64 {
+	p := unsafe.Pointer(unsafe.SliceData(bytes))
+	if width == 4 {
+		return uint64(atomic.LoadUint32((*uint32)(p)))
+	}
+	return atomic.LoadUint64((*uint64)(p))
 }
 
 // The queue path owns timers and deferred cleanup; scalar fast paths never
@@ -343,13 +387,7 @@ func (m *Memory) atomicSlow(ctx context.Context, d *Domain, sub uint32, address,
 		mask := ^uint64(0) >> (64 - n*8)
 		var observed uint64
 		if m.owner != nil {
-			var err error
-			observed, err = native.SharedAtomic(unsafe.Pointer(unsafe.SliceData(bytes)), uint32(n), native.AtomicLoad, 0, 0)
-			if err != nil {
-				m.releaseNativeWaiter()
-				d.mu.Unlock()
-				return value.Value{}, wasm.NoTrap, err
-			}
+			observed = loadNativeWaitWord(bytes, n)
 		} else {
 			observed = read(bytes, n)
 		}

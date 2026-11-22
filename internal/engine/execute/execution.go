@@ -365,6 +365,7 @@ func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 				steps++
 			}
 			var result value.Value
+			var edge slots.Edge
 			trap := wasm.NoTrap
 			// Internal control instructions have their own dispatch cases below.
 			// Classify only Wasm opcodes through the extension prefixes.
@@ -480,48 +481,70 @@ func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 				switch op {
 				case 0x45:
 					result.Lo = numeric.I32Eqz(values[in.A].Lo)
+					goto condition
 				case 0x46:
 					result.Lo = numeric.I32Eq(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x47:
 					result.Lo = numeric.I32Ne(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x48:
 					result.Lo = numeric.I32LtS(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x49:
 					result.Lo = numeric.I32LtU(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x4a:
 					result.Lo = numeric.I32GtS(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x4b:
 					result.Lo = numeric.I32GtU(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x4c:
 					result.Lo = numeric.I32LeS(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x4d:
 					result.Lo = numeric.I32LeU(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x4e:
 					result.Lo = numeric.I32GeS(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x4f:
 					result.Lo = numeric.I32GeU(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x50:
 					result.Lo = numeric.I64Eqz(values[in.A].Lo)
+					goto condition
 				case 0x51:
 					result.Lo = numeric.I64Eq(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x52:
 					result.Lo = numeric.I64Ne(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x53:
 					result.Lo = numeric.I64LtS(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x54:
 					result.Lo = numeric.I64LtU(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x55:
 					result.Lo = numeric.I64GtS(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x56:
 					result.Lo = numeric.I64GtU(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x57:
 					result.Lo = numeric.I64LeS(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x58:
 					result.Lo = numeric.I64LeU(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x59:
 					result.Lo = numeric.I64GeS(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x5a:
 					result.Lo = numeric.I64GeU(values[in.A].Lo, values[in.B].Lo)
+					goto condition
 				case 0x67:
 					result.Lo = numeric.I32Clz(values[in.A].Lo)
 				case 0x68:
@@ -617,6 +640,18 @@ func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 					}
 				}
 				goto write
+			condition:
+				// Keep the comparison result for edge moves and other readers.
+				// Bypass only the next dispatch and its redundant operand load.
+				if in.Count != 0 && !metered && steps&63 != 63 {
+					values[in.Dst] = result
+					pc++
+					steps++
+					branch := &instructions[pc]
+					edge = code.Edges[branch.Extra+(uint32(result.Lo)^1)]
+					goto applyEdge
+				}
+				goto write
 			}
 			switch op := in.Op; op {
 			case slots.ControlBase + uint32(ir.Return):
@@ -648,17 +683,8 @@ func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 						index = in.Count - 1
 					}
 				}
-				edge := code.Edges[in.Extra+index]
-				if edge.PC <= pc {
-					if err := e.poll(); err != nil {
-						return e.fail(err), steps
-					}
-				}
-				for _, move := range code.Moves[edge.Start : edge.Start+edge.Count] {
-					values[int(move.Dst)] = values[int(move.Src)]
-				}
-				pc = edge.PC
-				goto next
+				edge = code.Edges[in.Extra+index]
+				goto applyEdge
 
 			case 8, 10:
 				f.pc = pc
@@ -700,6 +726,18 @@ func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 				}
 			case 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
 				0x30, 0x31, 0x32, 0x33, 0x34, 0x35:
+				if in.Count == slots.LocalI32Update && !metered && steps&63 < 64-slots.LocalI32Update {
+					applied, failure := updateLocalI32(instance, code, values, pc)
+					if applied {
+						if failure != wasm.NoTrap {
+							trap = failure
+							goto commit
+						}
+						steps += slots.LocalI32Update
+						pc += slots.LocalI32Update + 1
+						goto next
+					}
+				}
 				im := &code.Sources[in.Source].Wasm
 				result, trap = instance.Memories[im.Memory].Load(op, values[in.A].Lo, im.MemoryOffset(), 0, value.Value{})
 			case 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d,
@@ -790,6 +828,17 @@ func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 				values[int(in.Dst)] = result
 			}
 			pc++
+			goto next
+		applyEdge:
+			if edge.PC <= pc {
+				if err := e.poll(); err != nil {
+					return e.fail(err), steps
+				}
+			}
+			for _, move := range code.Moves[edge.Start : edge.Start+edge.Count] {
+				values[int(move.Dst)] = values[int(move.Src)]
+			}
+			pc = edge.PC
 		next:
 		}
 	transferred:
