@@ -90,7 +90,7 @@ func (e *Execution) runRuntime() Status {
 	case 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d,
 		0x3e:
 		im := &code.ReadSource(in.Source, &e.source).Wasm
-		trap = instance.Memories[im.Memory].Store(op, a.Lo, im.MemoryOffset(), 0, b)
+		trap = instance.Memories[im.Memory].StoreScalar(op, a.Lo, im.MemoryOffset(), b.Lo)
 	case 0x3f:
 		result.Lo = uint64(instance.Memories[in.Extra].Pages())
 	case 0x40:

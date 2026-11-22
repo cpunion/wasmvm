@@ -425,40 +425,52 @@ func withLane(v value.Value, size, index uint, x uint64) value.Value {
 
 // Store implements every scalar and fixed-SIMD store. An invalid range causes
 // no write, including vector and lane stores that straddle the memory end.
-func (m *Memory) store(op uint32, address, offset uint64, lane byte, v value.Value) wasm.TrapCode {
-	var n uint
-	x := v.Lo
+func (m *Memory) Store(op uint32, address, offset uint64, lane byte, v value.Value) wasm.TrapCode {
 	switch {
 	case op >= 0x36 && op <= 0x3e:
-		n = uint(scalarStoreWidths[op-0x36])
+		return m.StoreScalar(op, address, offset, v.Lo)
 	case op == 0xfd000b:
-		n = 16
+		return m.storeVector(address, offset, v)
 	case op >= 0xfd0058 && op <= 0xfd005b:
-		n = 1 << (op - 0xfd0058)
+		n := uint(1) << (op - 0xfd0058)
 		shift := uint(lane) * n * 8
+		x := v.Lo
 		if shift >= 64 {
 			x = v.Hi
 			shift -= 64
 		}
-		x >>= shift
+		return m.storeWord(address, offset, n, x>>shift)
 	default:
 		panic("memory: non-store opcode")
 	}
-	b, ok := m.access(address, offset, n)
+}
+
+// StoreScalar executes a validated scalar store with one word of input.
+func (m *Memory) StoreScalar(op uint32, address, offset, x uint64) wasm.TrapCode {
+	return m.storeWord(address, offset, uint(scalarStoreWidths[op-0x36]), x)
+}
+
+func (m *Memory) storeWordChecked(address, offset uint64, width uint, x uint64) wasm.TrapCode {
+	b, ok := m.access(address, offset, width)
 	if !ok {
 		return wasm.TrapMemoryBounds
 	}
-	if n == 16 {
-		if m.sharedSize == nil {
-			_ = b[15]
-			binary.LittleEndian.PutUint64(b, v.Lo)
-			binary.LittleEndian.PutUint64(b[8:], v.Hi)
-		} else {
-			m.writeAccess(b, 8, v.Lo)
-			m.writeAccess(b[8:], 8, v.Hi)
-		}
+	m.writeAccess(b, width, x)
+	return wasm.NoTrap
+}
+
+func (m *Memory) storeVectorChecked(address, offset uint64, v value.Value) wasm.TrapCode {
+	b, ok := m.access(address, offset, 16)
+	if !ok {
+		return wasm.TrapMemoryBounds
+	}
+	if m.sharedSize == nil {
+		_ = b[15]
+		binary.LittleEndian.PutUint64(b, v.Lo)
+		binary.LittleEndian.PutUint64(b[8:], v.Hi)
 	} else {
-		m.writeAccess(b, n, x)
+		m.writeAccess(b, 8, v.Lo)
+		m.writeAccess(b[8:], 8, v.Hi)
 	}
 	return wasm.NoTrap
 }

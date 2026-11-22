@@ -743,7 +743,7 @@ func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 			case 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d,
 				0x3e:
 				im := &code.Sources[in.Source].Wasm
-				trap = instance.Memories[im.Memory].Store(op, values[in.A].Lo, im.MemoryOffset(), 0, value.Value{Lo: values[in.B].Lo})
+				trap = instance.Memories[im.Memory].StoreScalar(op, values[in.A].Lo, im.MemoryOffset(), values[in.B].Lo)
 			case 0x3f:
 				result.Lo = uint64(instance.Memories[in.Extra].Pages())
 			case 0x40:

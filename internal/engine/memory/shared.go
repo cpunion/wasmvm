@@ -247,16 +247,27 @@ func (m *Memory) loadLocked(op uint32, address, offset uint64, lane byte, previo
 	defer m.domain.mu.Unlock()
 	return m.load(op, address, offset, lane, previous)
 }
-func (m *Memory) Store(op uint32, address, offset uint64, lane byte, v value.Value) wasm.TrapCode {
+func (m *Memory) storeWord(address, offset uint64, width uint, x uint64) wasm.TrapCode {
 	if !m.lockedShared {
-		return m.store(op, address, offset, lane, v)
+		return m.storeWordChecked(address, offset, width, x)
 	}
-	return m.storeLocked(op, address, offset, lane, v)
+	return m.storeWordLocked(address, offset, width, x)
 }
-func (m *Memory) storeLocked(op uint32, address, offset uint64, lane byte, v value.Value) wasm.TrapCode {
+func (m *Memory) storeWordLocked(address, offset uint64, width uint, x uint64) wasm.TrapCode {
 	m.domain.mu.Lock()
 	defer m.domain.mu.Unlock()
-	return m.store(op, address, offset, lane, v)
+	return m.storeWordChecked(address, offset, width, x)
+}
+func (m *Memory) storeVector(address, offset uint64, v value.Value) wasm.TrapCode {
+	if !m.lockedShared {
+		return m.storeVectorChecked(address, offset, v)
+	}
+	return m.storeVectorLocked(address, offset, v)
+}
+func (m *Memory) storeVectorLocked(address, offset uint64, v value.Value) wasm.TrapCode {
+	m.domain.mu.Lock()
+	defer m.domain.mu.Unlock()
+	return m.storeVectorChecked(address, offset, v)
 }
 
 type atomicShape struct {
