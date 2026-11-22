@@ -726,6 +726,18 @@ func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 				}
 			case 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
 				0x30, 0x31, 0x32, 0x33, 0x34, 0x35:
+				if in.Count == slots.LocalI32Update && !metered && steps&63 < 64-slots.LocalI32Update {
+					applied, failure := updateLocalI32(instance, code, values, pc)
+					if applied {
+						if failure != wasm.NoTrap {
+							trap = failure
+							goto commit
+						}
+						steps += slots.LocalI32Update
+						pc += slots.LocalI32Update + 1
+						goto next
+					}
+				}
 				im := &code.Sources[in.Source].Wasm
 				result, trap = instance.Memories[im.Memory].Load(op, values[in.A].Lo, im.MemoryOffset(), 0, value.Value{})
 			case 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d,
