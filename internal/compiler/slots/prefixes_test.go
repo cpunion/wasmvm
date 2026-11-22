@@ -1,6 +1,10 @@
 package slots
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/cpunion/wasmvm/internal/compiler/ir"
+)
 
 func TestPrefixHintsKeepCopiesSourcesAndConstantWords(t *testing.T) {
 	f := &Function{Code: []Instruction{
@@ -27,5 +31,28 @@ func TestPrefixHintsKeepCopiesSourcesAndConstantWords(t *testing.T) {
 		if f.Code[pc] != want {
 			t.Fatal("incorrect hint or changed source metadata", pc, f.Code[pc], want)
 		}
+	}
+}
+
+func TestLocalWordUpdateCachesLeadingAddressConstants(t *testing.T) {
+	f := &Function{Sources: []ir.Source{{}}, Code: []Instruction{
+		{Op: 0x41, Dst: 0, Extra: 4},
+		{Op: 0x41, Dst: 1, Extra: 4},
+		{Op: 0x28, Dst: 1, A: 1},
+		{Op: 0x41, Dst: 2, Extra: 3},
+		{Op: 0x6a, Dst: 1, A: 1, B: 2},
+		{Op: 0x36, Dst: NoSlot, A: 0, B: 1},
+	}}
+	before := append([]Instruction(nil), f.Code...)
+	b := budget{nodes: uint64(len(f.Code))}
+	cachePrefixes(f, &b)
+	before[0].Count, before[1].Count, before[2].Count = 1, 1, LocalI32Update
+	for i, original := range before {
+		if got := f.Code[i]; i != 3 && got != original {
+			t.Fatal("changed source or address metadata", i, got, original)
+		}
+	}
+	if b.nodes != 0 || f.Code[3].Count != 1 {
+		t.Fatal("existing immediate or budget was lost", f.Code[3], b.nodes)
 	}
 }

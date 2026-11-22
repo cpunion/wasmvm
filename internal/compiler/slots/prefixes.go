@@ -15,6 +15,20 @@ func cachePrefixes(f *Function, budget *budget) {
 		in, next := &f.Code[pc], f.Code[pc+1]
 		if in.Op == 0x28 && pc+LocalI32Update < len(f.Code) && cacheLocalI32Update(f, pc) {
 			in.Count = LocalI32Update
+			// Preserve both address writes while dispatching their common
+			// consumer. No other prefix is needed for this group.
+			if pc > 0 {
+				addr := &f.Code[pc-1]
+				if addr.Op == 0x41 && addr.Dst == in.A {
+					addr.Count = 1
+					if pc > 1 {
+						dest := &f.Code[pc-2]
+						if dest.Op == 0x41 && dest.Dst == f.Code[pc+LocalI32Update].A {
+							dest.Count = 1
+						}
+					}
+				}
+			}
 			continue
 		}
 		if in.Op == 0x20 && in.Dst != NoSlot && uint32(in.Dst) == in.Extra {
