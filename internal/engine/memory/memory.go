@@ -370,6 +370,11 @@ func (m *Memory) loadVector(op uint32, address, offset uint64, lane byte, previo
 	}
 	switch {
 	case sub == 0:
+		if m.sharedSize == nil {
+			// The span is already checked and the Store or domain owns it.
+			_ = b[15]
+			return value.Value{Lo: binary.LittleEndian.Uint64(b), Hi: binary.LittleEndian.Uint64(b[8:])}, wasm.NoTrap
+		}
 		return value.Value{Lo: m.readAccess(b, 8), Hi: m.readAccess(b[8:], 8)}, wasm.NoTrap
 	case sub >= 1 && sub <= 6:
 		if m.sharedSize == nil {
@@ -444,8 +449,14 @@ func (m *Memory) store(op uint32, address, offset uint64, lane byte, v value.Val
 		return wasm.TrapMemoryBounds
 	}
 	if n == 16 {
-		m.writeAccess(b, 8, v.Lo)
-		m.writeAccess(b[8:], 8, v.Hi)
+		if m.sharedSize == nil {
+			_ = b[15]
+			binary.LittleEndian.PutUint64(b, v.Lo)
+			binary.LittleEndian.PutUint64(b[8:], v.Hi)
+		} else {
+			m.writeAccess(b, 8, v.Lo)
+			m.writeAccess(b[8:], 8, v.Hi)
+		}
 	} else {
 		m.writeAccess(b, n, x)
 	}
