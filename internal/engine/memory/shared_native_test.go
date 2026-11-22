@@ -12,6 +12,58 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
+func TestSharedFullVectorBoundsAcrossGrowth(t *testing.T) {
+	for _, offheap := range []bool{false, true} {
+		if offheap && !native.Available {
+			continue
+		}
+		t.Run(fmt.Sprint(offheap), func(t *testing.T) {
+			limits := module.Limits{Min: 64, Max: 128, HasMax: true, Shared: true, PageSize: 1}
+			m, err := NewShared(limits, 1, NewDomain(1, offheap))
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer m.Release()
+			if (m.sharedSize != nil) != offheap {
+				t.Fatal("wrong shared backing")
+			}
+
+			const load, store = 0xfd0000, 0xfd000b
+			v := value.Value{Lo: 0x0123456789abcdef, Hi: 0xfedcba9876543210}
+			if trap := m.Store(store, 46, 1, 0, v); trap != wasm.NoTrap {
+				t.Fatal("unaligned store", trap)
+			}
+			if got, trap := m.Load(load, 46, 1, 0, value.Value{}); got != v || trap != wasm.NoTrap {
+				t.Fatal("unaligned load", got, trap)
+			}
+
+			var before, after [64]byte
+			if !m.Read(0, before[:]) {
+				t.Fatal("snapshot before the trapping store")
+			}
+			if trap := m.Store(store, 48, 1, 0, value.Value{}); trap != wasm.TrapMemoryBounds {
+				t.Fatal("store crossed the logical end", trap)
+			}
+			if got, trap := m.Load(load, 48, 1, 0, v); got != (value.Value{}) || trap != wasm.TrapMemoryBounds {
+				t.Fatal("load crossed the logical end", got, trap)
+			}
+			if !m.Read(0, after[:]) || before != after {
+				t.Fatal("trapping store changed the visible prefix")
+			}
+
+			if old, ok := m.Grow(64); !ok || old != 64 {
+				t.Fatal("grow", old, ok)
+			}
+			if trap := m.Store(store, 48, 1, 0, v); trap != wasm.NoTrap {
+				t.Fatal("store into the grown span", trap)
+			}
+			if got, trap := m.Load(load, 48, 1, 0, value.Value{}); got != v || trap != wasm.NoTrap {
+				t.Fatal("load from the grown span", got, trap)
+			}
+		})
+	}
+}
+
 func TestNativeSharedReservationKeepsLogicalBoundsAndStableGrowth(t *testing.T) {
 	if !native.Available {
 		t.Skip("native platform unavailable")
