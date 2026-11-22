@@ -1,5 +1,7 @@
 package slots
 
+import "github.com/cpunion/wasmvm/internal/compiler/ir"
+
 // Keep original PCs and semantics. A coalesced local read changes no value;
 // the constant hint requires a pure following consumer. Only uninterrupted
 // unmetered interpretation can consume these prefixes without redispatching.
@@ -8,6 +10,11 @@ func cachePrefixes(f *Function, budget *budget) {
 	for pc := 0; pc+1 < len(f.Code); pc++ {
 		in, next := &f.Code[pc], f.Code[pc+1]
 		if in.Op == 0x20 && in.Dst != NoSlot && uint32(in.Dst) == in.Extra {
+			in.Count = 1
+			continue
+		}
+		if in.Op >= 0x45 && in.Op <= 0x5a && in.Dst != NoSlot &&
+			next.Op == ControlBase+uint32(ir.If) && next.A == in.Dst {
 			in.Count = 1
 			continue
 		}
