@@ -6,6 +6,9 @@ import "github.com/cpunion/wasmvm/internal/compiler/ir"
 // It does not grant access to a memory or affect the original PCs.
 const LocalI32Update = 3
 
+// SIMDLoadConstantBinary counts the two pure instructions after a SIMD load.
+const SIMDLoadConstantBinary = 2
+
 // Keep original PCs and semantics. A coalesced local read changes no value;
 // constants can supply an adjacent pure or atomic consumer. Unmetered
 // interpretation commits each prefix before dispatching the consumer.
@@ -13,6 +16,11 @@ func cachePrefixes(f *Function, budget *budget) {
 	budget.charge(uint64(len(f.Code)))
 	for pc := 0; pc+1 < len(f.Code); pc++ {
 		in, next := &f.Code[pc], f.Code[pc+1]
+		if in.Op>>16 == 0xfd && next.Op == 0xfd000c && pc+SIMDLoadConstantBinary < len(f.Code) &&
+			cacheSIMDLoadConstantBinary(in, &next, &f.Code[pc+SIMDLoadConstantBinary]) {
+			in.Count = SIMDLoadConstantBinary
+			continue
+		}
 		if in.Op == 0x28 && pc+LocalI32Update < len(f.Code) && cacheLocalI32Update(f, pc) {
 			in.Count = LocalI32Update
 			// Preserve both address writes while dispatching their common
@@ -59,6 +67,24 @@ func cachePrefixes(f *Function, budget *budget) {
 			in.Count = 1
 		}
 	}
+}
+
+func cacheSIMDLoadConstantBinary(load, literal, binary *Instruction) bool {
+	sub := load.Op & 0xffff
+	if !(sub <= 10 || sub >= 84 && sub <= 87 || sub == 92 || sub == 93) ||
+		load.Dst == NoSlot || literal.Dst == NoSlot || load.Dst == literal.Dst ||
+		binary.Dst == NoSlot || binary.C != NoSlot {
+		return false
+	}
+	if !(binary.A == load.Dst && binary.B == literal.Dst || binary.A == literal.Dst && binary.B == load.Dst) {
+		return false
+	}
+	switch binary.Op {
+	case 0xfd004e, 0xfd004f, 0xfd0050, 0xfd0051, // v128 bitwise operators
+		0xfd006e, 0xfd0071, 0xfd008e, 0xfd0091, 0xfd00ae, 0xfd00b1, 0xfd00ce, 0xfd00d1:
+		return true
+	}
+	return false
 }
 
 func cacheLocalI32Update(f *Function, pc int) bool {

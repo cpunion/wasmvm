@@ -48,6 +48,11 @@ func saturate(x int64, width uint, unsigned bool) uint64 {
 	return uint64(x)
 }
 
+// Constant reads the words of a validated v128.const instruction.
+func Constant(in *module.Instr) Value {
+	return Value{Lo: binary.LittleEndian.Uint64(in.Vector[:8]), Hi: binary.LittleEndian.Uint64(in.Vector[8:])}
+}
+
 // Eval executes a validated nonmemory SIMD instruction. Operands use Wasm
 // stack order, including scalar lane/shift inputs in Lo. Unknown and memory
 // opcodes panic as caller bugs; no pure SIMD instruction traps.
@@ -62,7 +67,7 @@ func Eval(in *module.Instr, a, b, c Value) (r Value) {
 	}
 	switch {
 	case op == 12:
-		return Value{Lo: binary.LittleEndian.Uint64(in.Vector[:8]), Hi: binary.LittleEndian.Uint64(in.Vector[8:])}
+		return Constant(in)
 	case op == 13:
 		for i, n := range in.Vector {
 			v := a

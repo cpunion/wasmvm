@@ -7,6 +7,17 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
+func commitSIMDLoadConstantBinary(code *slots.Function, pc uint32, values []value.Value, loaded value.Value) {
+	seq := (*[1 + slots.SIMDLoadConstantBinary]slots.Instruction)(code.Code[pc:])
+	load, constant, binary := &seq[0], &seq[1], &seq[2]
+	literal := simd.Constant(&code.Sources[constant.Source].Wasm)
+	values[load.Dst], values[constant.Dst] = loaded, literal
+	if binary.A == constant.Dst {
+		loaded, literal = literal, loaded
+	}
+	values[binary.Dst] = simd.Eval(&code.Sources[binary.Source].Wasm, loaded, literal, value.Value{})
+}
+
 func (e *Execution) runSIMD() Status {
 	f := &e.frames[len(e.frames)-1]
 	fn := f.function

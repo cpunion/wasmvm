@@ -388,6 +388,13 @@ func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 					switch {
 					case sub <= 10 || sub >= 84 && sub <= 87 || sub == 92 || sub == 93:
 						result, trap = instance.Memories[im.Memory].Load(op, a.Lo, im.MemoryOffset(), im.Lane, b)
+						if in.Count == slots.SIMDLoadConstantBinary && trap == wasm.NoTrap &&
+							!metered && steps&63 < 64-slots.SIMDLoadConstantBinary {
+							commitSIMDLoadConstantBinary(code, pc, values, result)
+							pc += 1 + slots.SIMDLoadConstantBinary
+							steps += slots.SIMDLoadConstantBinary
+							continue
+						}
 					case sub == 11 || sub >= 88 && sub <= 91:
 						trap = instance.Memories[im.Memory].Store(op, a.Lo, im.MemoryOffset(), im.Lane, b)
 					default:
