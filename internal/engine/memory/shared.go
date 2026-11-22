@@ -284,7 +284,7 @@ func (m *Memory) Atomic(ctx context.Context, d *Domain, sub uint32, address, off
 			return value.Value{}, wasm.TrapAtomicUnaligned, nil
 		}
 		if sub >= 0x10 {
-			old, err := native.SharedAtomicContext(ctx, unsafe.Pointer(unsafe.SliceData(bytes)), shape.width, shape.operation, a, b)
+			old, err := native.SharedAtomicInRange(ctx, unsafe.Pointer(unsafe.SliceData(bytes)), shape.width, shape.operation, a, b)
 			return value.Value{Lo: old}, wasm.NoTrap, err
 		}
 		if sub == 0 {

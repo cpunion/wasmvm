@@ -56,3 +56,50 @@ func TestNativeSharedReservationKeepsLogicalBoundsAndStableGrowth(t *testing.T) 
 		}
 	}
 }
+
+func TestSharedAtomicCheckedAddressAcrossGrowth(t *testing.T) {
+	for _, offheap := range []bool{false, true} {
+		if offheap && !native.Available {
+			continue
+		}
+		for _, index64 := range []bool{false, true} {
+			t.Run(fmt.Sprint(offheap, "/", index64), func(t *testing.T) {
+				domain := NewDomain(1, offheap)
+				limits := module.Limits{Min: 16, Max: 32, HasMax: true, Shared: true, PageSize: 1, Index64: index64}
+				m, err := NewShared(limits, 1, domain)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer m.Release()
+				check := func(op uint32, address, offset uint64, expected wasm.TrapCode) {
+					t.Helper()
+					got, trap, err := m.Atomic(nil, domain, op, address, offset, 0, 0)
+					if trap != expected || err != nil || got != (value.Value{}) {
+						t.Fatalf("op %#x address %#x offset %#x = %+v, %v, %v", op, address, offset, got, trap, err)
+					}
+				}
+				widths := [...]uint64{4, 8, 1, 2}
+				for i, width := range widths {
+					op := uint32(0x10 + i)
+					check(op, 16-width, 0, wasm.NoTrap)
+					check(op, 17-width, 0, wasm.TrapMemoryBounds)
+					if width > 1 {
+						check(op, 1, 0, wasm.TrapAtomicUnaligned)
+					}
+					check(op, 1, ^uint64(0), wasm.TrapMemoryBounds)
+					if !index64 {
+						check(op, 1<<32, 0, wasm.NoTrap)
+					} else {
+						check(op, 1<<32, 0, wasm.TrapMemoryBounds)
+					}
+				}
+				if old, ok := m.Grow(8); !ok || old != 16 {
+					t.Fatal("grow", old, ok)
+				}
+				for i := range widths {
+					check(uint32(0x10+i), 16, 0, wasm.NoTrap)
+				}
+			})
+		}
+	}
+}

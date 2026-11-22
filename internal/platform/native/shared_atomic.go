@@ -36,6 +36,14 @@ func SharedAtomicContext(ctx context.Context, address unsafe.Pointer, width uint
 	if address == nil || width != 1 && width != 2 && width != 4 && width != 8 || uintptr(address)&uintptr(width-1) != 0 || operation > AtomicCompareExchange {
 		return 0, ErrInvalid
 	}
+	return SharedAtomicInRange(ctx, address, width, operation, a, b)
+}
+
+// SharedAtomicInRange executes a previously admitted operation. The caller
+// retains native memory and supplies a nonnil naturally aligned address in
+// range, a WebAssembly atomic width, and a valid operation. Every retry still
+// polls cancellation before attempting the next bounded batch.
+func SharedAtomicInRange(ctx context.Context, address unsafe.Pointer, width uint32, operation AtomicOperation, a, b uint64) (uint64, error) {
 	for {
 		if ctx != nil {
 			if err := ctx.Err(); err != nil {
