@@ -12,7 +12,7 @@ func (s *Store) ImportShared(m *memory.Memory) (Extern, error) {
 	if s.closed {
 		return Extern{}, wasm.ErrClosed
 	}
-	if m == nil || !m.Shared() || m.Domain() != s.Domain {
+	if m == nil || !m.Shareable() || m.Domain() != s.Domain {
 		return Extern{}, ErrReference
 	}
 	for _, existing := range s.memories {

@@ -196,6 +196,9 @@ func (s *Store) NewHost(t module.FuncType, host any, referenceType ...wasm.Value
 	return Extern{Owner: s, Kind: 0, Function: id}, nil
 }
 func (s *Store) NewMemory(t module.Limits) (Extern, error) {
+	return s.newMemory(t, false)
+}
+func (s *Store) newMemory(t module.Limits, localShared bool) (Extern, error) {
 	if s.closed {
 		return Extern{}, wasm.ErrClosed
 	}
@@ -212,7 +215,11 @@ func (s *Store) NewMemory(t module.Limits) (Extern, error) {
 	var m *memory.Memory
 	var err error
 	if t.Shared {
-		m, err = memory.NewShared(t, uint32(uint64(s.limits.MaxMemoryPages)-s.usage.MemoryPages-s.reservedShared), s.Domain)
+		allocateShared := memory.NewShared
+		if localShared {
+			allocateShared = memory.NewStoreLocalShared
+		}
+		m, err = allocateShared(t, uint32(uint64(s.limits.MaxMemoryPages)-s.usage.MemoryPages-s.reservedShared), s.Domain)
 	} else {
 		m, err = allocate(t, s.limits.MaxMemoryPages)
 	}

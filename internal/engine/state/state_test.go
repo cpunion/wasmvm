@@ -15,7 +15,11 @@ import (
 
 func build(t *testing.T, m *module.Module) *slots.Module {
 	t.Helper()
-	v, err := validate.Check(m, validate.DefaultLimits())
+	return buildWithFeatures(t, m, 0)
+}
+func buildWithFeatures(t *testing.T, m *module.Module, features wasm.Features) *slots.Module {
+	t.Helper()
+	v, err := validate.CheckWithFeatures(m, validate.DefaultLimits(), features)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,6 +36,53 @@ func build(t *testing.T, m *module.Module) *slots.Module {
 func expression(op uint32, bits uint64) module.Expr {
 	return module.Expr{{Op: op, Bits: bits}, {Op: 0xb}}
 }
+func TestDefinedSharedMemoryUsesItsExportIndex(t *testing.T) {
+	owner := New(DefaultLimits())
+	defer owner.Close()
+	borrower := New(DefaultLimits())
+	defer borrower.Close()
+	borrower.Domain = owner.Domain
+	limits := module.Limits{Min: 1, Max: 2, HasMax: true, Shared: true}
+	imported, err := owner.NewMemory(limits)
+	if err != nil {
+		t.Fatal(err)
+	}
+	compiled := buildWithFeatures(t, &module.Module{
+		Imports:  []module.Import{{Module: "env", Name: "imported", Kind: 2, Memory: limits}},
+		Memories: []module.Limits{limits, limits},
+		Exports:  []module.Export{{Name: "published", Kind: 2, Index: 2}},
+	}, wasm.Threads|wasm.MultiMemory)
+	instance, err := owner.Allocate(compiled, func(module, name string) (Extern, bool) {
+		return imported, module == "env" && name == "imported"
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	local := instance.Memories[1]
+	if !local.Shared() || local.Shareable() || local.Retain() {
+		t.Fatal("shared instructions require a local backing that stays in its Store")
+	}
+	if _, err := borrower.ImportShared(local.Memory); !errors.Is(err, ErrReference) {
+		t.Fatal("Store-local backing can be imported into another Store", err)
+	}
+	for _, m := range []*Memory{instance.Memories[0], instance.Memories[2]} {
+		binding, err := borrower.ImportShared(m.Memory)
+		if err != nil || binding.Memory.Memory != m.Memory {
+			t.Fatal("published backing lost its sharing capability", err)
+		}
+	}
+	if trap := local.Store(0x36, 4, 0, 0, value.Value{Lo: 3}); trap != wasm.NoTrap {
+		t.Fatal(trap)
+	}
+	old, trap, err := local.Atomic(nil, owner.Domain, 0x1e, 4, 0, 5, 0)
+	if err != nil || trap != wasm.NoTrap || old.Lo != 3 {
+		t.Fatal(old, trap, err)
+	}
+	if v, trap := local.Load(0x28, 4, 0, 0, value.Value{}); trap != wasm.NoTrap || v.Lo != 8 {
+		t.Fatal(v, trap)
+	}
+}
+
 func TestOwnershipLimitsAndGrowth(t *testing.T) {
 	s := New(Limits{MaxTypes: 2, MaxFunctions: 1, MaxGlobals: 1, MaxMemories: 2, MaxTables: 2, MaxMemoryPages: 3, MaxTableElements: 4})
 	sig := module.FuncType{Params: []wasm.ValueType{wasm.I32}}
