@@ -332,16 +332,18 @@ func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]valu
 	}
 	caller := op.newCaller(in)
 	guard := caller.callerState
-	panicked := true
+	panicked, expired := true, false
 	// Invalidate the capability and drain an in-flight capability operation
 	// before touching the suspended continuation, including on host panic.
 	defer func() {
 		if panicked {
 			op.cancel()
 		}
-		guard.mu.Lock()
-		guard.active = false
-		guard.mu.Unlock()
+		if !expired {
+			guard.mu.Lock()
+			guard.active = false
+			guard.mu.Unlock()
+		}
 		for _, v := range args {
 			v.Release()
 		}
@@ -373,6 +375,7 @@ func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]valu
 		guard.mu.Lock()
 		guard.active = false
 		guard.mu.Unlock()
+		expired = true
 		return scalarResults(request.Args, stack, signature.Results), nil
 	}
 	var results []Value
@@ -396,6 +399,7 @@ func (op *operation) host(request *execute.HostCall, in *state.Instance) ([]valu
 	guard.mu.Lock()
 	guard.active = false
 	guard.mu.Unlock()
+	expired = true
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.decodeValuesLocked(results, request.Function.Signature.Results)
