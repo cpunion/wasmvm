@@ -109,10 +109,13 @@ func (h *hostCall) invoke(core *vm.Caller, fn func(*Caller) (*Value, error)) (*V
 	defer h.expire(c)
 	return fn(c)
 }
-func (h *hostCall) start(core *vm.Caller) (p *HostCompletion, err error) {
+func (h *hostCall) start(core *vm.Caller, work *workState) (*HostCompletion, error) {
 	c := h.caller(core)
 	c.ctx = h.ctx
 	defer h.expire(c)
+	if work != nil {
+		return work.start(c, append([]*Resource(nil), work.refs...))
+	}
 	return h.function.asyncHost(c, h.args)
 }
 func (h *hostCall) accept(result *Value) (*Value, error) {

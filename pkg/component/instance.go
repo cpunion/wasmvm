@@ -61,6 +61,7 @@ type Instance struct {
 	canonicalFrames       *canonicalFrame
 	references            canonical.ReferenceAllocator
 	tasks                 *taskScheduler
+	scheduledWork         *Function
 	heldValues, heldBytes uint64
 	bufferTypes           map[*model.Type]*model.Type
 	comparisons           validate.ValueComparisons

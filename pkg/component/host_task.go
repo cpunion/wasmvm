@@ -48,7 +48,7 @@ func (t *componentTask) resumeHost(c *vm.Caller) error {
 			t.work.control.bind(h.cancel)
 		}
 
-		p, err := h.start(c)
+		p, err := h.start(c, t.work)
 		if err != nil {
 			return err
 		}

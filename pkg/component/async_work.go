@@ -78,10 +78,13 @@ type AsyncWork struct {
 	Cleanup func()
 }
 type workState struct {
+	host          hostCall
 	prompt        bool
 	control       *Cancellation
 	refs          []*Resource
 	values, bytes uint64
+	start         func(*Caller, []*Resource) (*HostCompletion, error)
+	done          func(*Caller, bool) error
 	cleanup       func()
 }
 
@@ -132,24 +135,22 @@ func (c *Caller) Schedule(work AsyncWork) error {
 	if n > uint64(in.config.MaxResources) || n > in.config.MaxValues-in.heldValues || bytes > in.config.MaxBytes-in.heldBytes {
 		return wasm.ErrLimit
 	}
-	seen := map[any]bool{}
+	var seen referenceSet
 	for _, ref := range work.Owned {
 		if err := in.checkOwned(ref); err != nil {
 			return err
 		}
-		key := canonical.ReferenceKey(ref)
-		if seen[key] {
+		if !seen.add(canonical.ReferenceKey(ref), model.Own) {
 			return vm.ErrType
 		}
-		seen[key] = true
 	}
+	state := &workState{control: work.Cancel, prompt: work.Prompt}
+	// Each scheduled task has its own entry and backpressure state.
 	scope := &namespace{handles: in.hostResources}
-	f := &Function{instance: in, scope: scope, typ: &scheduledWorkType}
 	t, err := in.makeTask(c.core, scope, nil, vm.Extern{}, nil, nil)
 	if err != nil {
 		return err
 	}
-	state := &workState{control: work.Cancel, prompt: work.Prompt}
 	if state.control == nil {
 		state.control = NewCancellation()
 	}
@@ -169,24 +170,14 @@ func (c *Caller) Schedule(work AsyncWork) error {
 			return err
 		}
 	}
-	t.hostFunction = f
-	t.host, err = f.hostCall(c.core, nil)
-	if err != nil {
-		t.finish(c.core, err)
-		return err
+	if in.scheduledWork == nil {
+		in.scheduledWork = &Function{instance: in, typ: &scheduledWorkType}
 	}
-	t.host.prompt = work.Prompt
-	f.asyncHost = func(caller *Caller, _ []Value) (*HostCompletion, error) {
-		return work.Start(caller, append([]*Resource(nil), state.refs...))
-	}
-	t.onResolve = func(core *vm.Caller, _ *Value, cancelled bool) error {
-		if work.Done == nil {
-			return nil
-		}
-		_, err := t.host.invoke(core, func(fresh *Caller) (*Value, error) { return nil, work.Done(fresh, cancelled) })
-		return err
-	}
-	state.cleanup = work.Cleanup
+	// This host transaction has no canonical parameters or result. Owned
+	// references are accounted for and released by the work state.
+	state.host.function, state.host.prompt = in.scheduledWork, work.Prompt
+	t.hostFunction, t.host = in.scheduledWork, &state.host
+	state.start, state.done, state.cleanup = work.Start, work.Done, work.Cleanup
 	if work.Prompt {
 		return t.resume(c.core)
 	}

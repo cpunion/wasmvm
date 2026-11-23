@@ -73,6 +73,10 @@ func TestScheduledWorkConsumesGuestStreams(t *testing.T) {
 					old = c
 					err := c.Schedule(AsyncWork{Owned: []*Resource{v.Resource}, Cancel: signal, Start: func(fresh *Caller, refs []*Resource) (*HostCompletion, error) {
 						starts++
+						info := fresh.FunctionInfo()
+						if !info.Async() || info.ParameterCount() != 0 || info.Result().Valid() {
+							t.Fatal("scheduled work changed its callback signature", info)
+						}
 						if fresh == old {
 							return nil, vm.ErrType
 						}

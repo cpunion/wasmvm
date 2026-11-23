@@ -144,6 +144,12 @@ func bindResourceCaller(codec *canonical.Codec, c *vm.Caller) {
 	}
 }
 func (t *componentTask) resolve(c *vm.Caller, value *Value, cancelled bool) error {
+	if t.work != nil && t.work.done != nil {
+		_, err := t.host.invoke(c, func(fresh *Caller) (*Value, error) {
+			return nil, t.work.done(fresh, cancelled)
+		})
+		return err
+	}
 	if t.onResolve != nil {
 		return t.onResolve(c, value, cancelled)
 	}
