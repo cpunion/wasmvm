@@ -306,7 +306,7 @@ func (in *Instance) startSourceRead(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 		defer func() {
 			guard := cleanupGuard{panicked: recover()}
 			if output != nil {
-				guard.run(func() { err = finishResources(output, complete, err) })
+				err = guard.finishCodec(output, complete, err)
 			}
 			guard.finish()
 		}()

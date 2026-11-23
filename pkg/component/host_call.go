@@ -185,7 +185,7 @@ func (h *hostCall) finish(core *vm.Caller, complete bool, err error) error {
 		}
 	}
 	bindResourceCaller(&h.codec, core)
-	guard.run(func() { err = finishResources(&h.codec, complete, err) })
+	err = guard.finishCodec(&h.codec, complete, err)
 	guard.finish()
 	return err
 

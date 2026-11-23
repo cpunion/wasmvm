@@ -10,7 +10,7 @@ import (
 // Already available bytes need a checked copy, not a host invocation and its
 // external-work completion. Keep admission and value reservations identical to
 // the ordinary source path, including while a destination callback runs.
-func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer, batch *model.Type) (handled bool, err error) {
+func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer, batch *model.Type) (bool, error) {
 	source := w.source
 	if source.source.ReadBytes == nil {
 		return false, nil
@@ -27,14 +27,20 @@ func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 	if source.closed.Load() {
 		return true, wasm.ErrClosed
 	}
+	// Both codecs belong to this read, including across copy cleanup.
 	var inputState, outputState canonical.Codec
+	return in.copySourceBytes(c, r, w, b, batch, &inputState, &outputState)
+}
+
+func (in *Instance) copySourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer, batch *model.Type, inputState, outputState *canonical.Codec) (handled bool, err error) {
+	source := w.source
 	complete := false
 	var codec, output *canonical.Codec
 	var values, bytes uint64
 	defer func() {
 		guard := cleanupGuard{panicked: recover()}
 		if output != nil {
-			guard.run(func() { err = finishResources(output, complete, err) })
+			err = guard.finishCodec(output, complete, err)
 		}
 		if !complete {
 			guard.run(func() {
@@ -43,7 +49,7 @@ func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 			})
 		}
 		if codec != nil {
-			guard.run(func() { err = finishResources(codec, complete, err) })
+			err = guard.finishCodec(codec, complete, err)
 		}
 		in.heldValues -= values
 		in.heldBytes -= bytes
@@ -64,7 +70,7 @@ func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 	if result.Values != nil || count > uint64(b.remain()) || result.Count != 0 && uint64(result.Count) != count || count == 0 && !result.Closed && b.remain() != 0 {
 		return true, vm.ErrType
 	}
-	codec = in.initBufferCodec(&inputState, c, w.scope, nil, r.typ.Element)
+	codec = in.initBufferCodec(inputState, c, w.scope, nil, r.typ.Element)
 	codec.MaxValues = in.config.MaxValues - in.heldValues
 	codec.Transfer.MaxBytes = in.config.MaxBytes - in.heldBytes
 	value, err := codec.Clone(batch, Value{Text: result.Bytes})
@@ -75,7 +81,7 @@ func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 		return true, err
 	}
 	if count != 0 {
-		output, err = b.storeCodec(c, value, &outputState)
+		output, err = b.storeCodec(c, value, outputState)
 		if err != nil {
 			if !r.rejectCopy(err) {
 				return true, err

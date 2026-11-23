@@ -47,12 +47,12 @@ func (c *Codec) AcceptResult(t *model.Type, value *Value) error {
 }
 
 func (c *Codec) accept(t *model.Type, v *Value, commit bool) error {
+	resources := c.Resources
 	return walkResources(t, v, func(t *model.Type, v *Value) error {
-		r, err := c.resource()
-		if err != nil {
-			return err
+		if resources == nil {
+			return wasm.ErrUnsupported
 		}
-		value, err := r.Accept(t, *v, commit)
+		value, err := resources.Accept(t, *v, commit)
 		if err == nil && commit {
 			*v = value
 		}

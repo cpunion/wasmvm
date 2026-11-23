@@ -454,7 +454,7 @@ func (in *Instance) canonical(caller *vm.Caller, n *namespace, plan *validate.Ca
 					n.failed = true
 				}
 				if task.returned != nil {
-					guard.run(func() { err = finishResources(task.returned, complete, err) })
+					err = guard.finishCodec(task.returned, complete, err)
 				}
 				guard.finish()
 			}()
