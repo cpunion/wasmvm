@@ -27,14 +27,13 @@ func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 	if source.closed.Load() {
 		return true, wasm.ErrClosed
 	}
-	// The input codec belongs to this read, including across copy cleanup.
-	var inputState canonical.Codec
-	return in.copySourceBytes(c, r, w, b, batch, &inputState)
+	// Both codecs belong to this read, including across copy cleanup.
+	var inputState, outputState canonical.Codec
+	return in.copySourceBytes(c, r, w, b, batch, &inputState, &outputState)
 }
 
-func (in *Instance) copySourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer, batch *model.Type, inputState *canonical.Codec) (handled bool, err error) {
+func (in *Instance) copySourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer, batch *model.Type, inputState, outputState *canonical.Codec) (handled bool, err error) {
 	source := w.source
-	var outputState canonical.Codec
 	complete := false
 	var codec, output *canonical.Codec
 	var values, bytes uint64
@@ -82,7 +81,7 @@ func (in *Instance) copySourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 		return true, err
 	}
 	if count != 0 {
-		output, err = b.storeCodec(c, value, &outputState)
+		output, err = b.storeCodec(c, value, outputState)
 		if err != nil {
 			if !r.rejectCopy(err) {
 				return true, err
