@@ -35,6 +35,7 @@ func TestReadyByteSourceAndDeferredFallback(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			var retained *byteSourceCodecs
 			for _, want := range []string{"", "\x00\xff", "\x80b"} {
 				limit := uint32(len(want))
 				r, err := in.ReadAsync(nil, v.Resource, limit, CallOptions{})
@@ -44,9 +45,23 @@ func TestReadyByteSourceAndDeferredFallback(t *testing.T) {
 				if in.heldValues != 0 || in.heldBytes != 0 {
 					t.Fatal("completed bytes retained value reservations")
 				}
+				scratch := in.byteCodecs
+				if scratch == nil || retained != nil && retained != scratch {
+					t.Fatal("byte codec scratch was not reused")
+				}
+				if scratch.input.Transfer.Context != nil || scratch.output.Transfer.Context != nil ||
+					scratch.input.Transfer.Memory != nil || scratch.output.Transfer.Memory != nil ||
+					scratch.input.Layouts != nil || scratch.output.Layouts != nil {
+					t.Fatal("idle byte codecs retained invocation state")
+				}
+				retained = scratch
 			}
 			if _, err := in.DropAsync(nil, v.Resource, CallOptions{}); err != nil || probes != 3 || starts != 1 || closes != 1 {
 				t.Fatal(probes, starts, closes, err)
+			}
+			in.Close()
+			if err := in.WaitClosed(nil); err != nil || in.byteCodecs != nil {
+				t.Fatal("closed instance retained byte codec scratch", err)
 			}
 		})
 	}

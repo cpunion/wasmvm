@@ -7,6 +7,10 @@ import (
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
 
+type byteSourceCodecs struct {
+	input, output canonical.Codec
+}
+
 // Already available bytes need a checked copy, not a host invocation and its
 // external-work completion. Keep admission and value reservations identical to
 // the ordinary source path, including while a destination callback runs.
@@ -27,7 +31,7 @@ func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 	if source.closed.Load() {
 		return true, wasm.ErrClosed
 	}
-	var inputState, outputState canonical.Codec
+	var scratch *byteSourceCodecs
 	complete := false
 	var codec, output *canonical.Codec
 	var values, bytes uint64
@@ -47,6 +51,10 @@ func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 		}
 		in.heldValues -= values
 		in.heldBytes -= bytes
+		if scratch != nil {
+			*scratch = byteSourceCodecs{}
+			in.byteCodecs = scratch
+		}
 		guard.finish()
 	}()
 	result, ready, err := source.readBytes(b.remain())
@@ -64,7 +72,13 @@ func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 	if result.Values != nil || count > uint64(b.remain()) || result.Count != 0 && uint64(result.Count) != count || count == 0 && !result.Closed && b.remain() != 0 {
 		return true, vm.ErrType
 	}
-	codec = in.initBufferCodec(&inputState, c, w.scope, nil, r.typ.Element)
+	// Detach the scratch until cleanup. A destination may reenter and use
+	// its own storage while this transfer still holds an input reservation.
+	scratch, in.byteCodecs = in.byteCodecs, nil
+	if scratch == nil {
+		scratch = &byteSourceCodecs{}
+	}
+	codec = in.initBufferCodec(&scratch.input, c, w.scope, nil, r.typ.Element)
 	codec.MaxValues = in.config.MaxValues - in.heldValues
 	codec.Transfer.MaxBytes = in.config.MaxBytes - in.heldBytes
 	value, err := codec.Clone(batch, Value{Text: result.Bytes})
@@ -75,7 +89,7 @@ func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 		return true, err
 	}
 	if count != 0 {
-		output, err = b.storeCodec(c, value, &outputState)
+		output, err = b.storeCodec(c, value, &scratch.output)
 		if err != nil {
 			if !r.rejectCopy(err) {
 				return true, err

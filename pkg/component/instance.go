@@ -59,6 +59,7 @@ type Instance struct {
 	instances, depth      uint32
 	callDepth             uint32
 	canonicalFrames       *canonicalFrame
+	byteCodecs            *byteSourceCodecs
 	references            canonical.ReferenceAllocator
 	tasks                 *taskScheduler
 	scheduledWork         *Function
@@ -127,6 +128,7 @@ func (in *Instance) finishShutdown() {
 	defer in.comparisons.Clear()
 	in.store.WaitClosed(nil)
 	in.canonicalFrames = nil
+	in.byteCodecs = nil
 	in.references.Clear()
 	in.flushSourceCleanup(nil)
 }
