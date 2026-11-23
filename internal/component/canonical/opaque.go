@@ -18,18 +18,26 @@ func (r *Resources) AddOpaque(value any) (uint32, error) {
 }
 
 func (r *Resources) Opaque(id uint32) (any, error) {
+	// Capture the interface while the entry is stable. A concurrent move or
+	// close may change the table as soon as the mutex is released.
 	r.mu.Lock()
-	defer r.mu.Unlock()
+	closed := r.closed
+	var value any
+	if !closed {
+		if e := r.entryLocked(id); e != nil {
+			value = e.opaque
+		}
+	}
+	r.mu.Unlock()
 	// Closing the owner can race an already admitted canonical operation.
 	// Match resource/error-context domains: shutdown is not a guest trap.
-	if r.closed {
+	if closed {
 		return nil, wasm.ErrClosed
 	}
-	e := r.entryLocked(id)
-	if e == nil || e.opaque == nil {
+	if value == nil {
 		return nil, scalarTrap("invalid async handle")
 	}
-	return e.opaque, nil
+	return value, nil
 }
 
 func (r *Resources) RemoveOpaque(id uint32) error {

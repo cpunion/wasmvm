@@ -170,13 +170,14 @@ func visitResourceEntries(entries map[uint32]*resourceEntry, guest []*resourceEn
 // Rollback must not consume a later publication at the same guest index.
 func (r *Resources) EntryGeneration(id uint32) uint64 {
 	r.mu.Lock()
-	defer r.mu.Unlock()
+	var generation uint64
 	if !r.closed {
 		if entry := r.entryLocked(id); entry != nil {
-			return entry.generation
+			generation = entry.generation
 		}
 	}
-	return 0
+	r.mu.Unlock()
+	return generation
 }
 
 // Allocate fresh identities in small groups. Slots are consumed once and never
