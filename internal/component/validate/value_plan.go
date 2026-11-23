@@ -9,9 +9,11 @@ import (
 const maxValueComparisons = 64
 const maxComparisonNominals = 4096
 
+// A word-sized budget fills the trailing space after the pointer pair.
+// Padding-free keys can use the runtime's regular-memory hash.
 type comparisonKey struct {
 	left, right *model.Type
-	budget      uint32
+	budget      uintptr
 }
 
 type comparisonNominal struct{ left, right uint64 }
@@ -57,7 +59,7 @@ type ValueComparisons struct {
 func (c *ValueComparisons) Len() int { return len(c.entries) }
 
 func (c *ValueComparisons) Get(a, b *model.Type, budget uint32) *ValueComparison {
-	key := comparisonKey{a, b, budget}
+	key := comparisonKey{a, b, uintptr(budget)}
 	if c.last != nil && c.lastKey == key {
 		return c.last
 	}
@@ -74,7 +76,7 @@ func (c *ValueComparisons) compile(key comparisonKey) *ValueComparison {
 		return nil
 	}
 	b := comparisonBuilder{remaining: maxComparisonNominals - c.nominal}
-	e := equality{remaining: key.budget, resources: b.record}
+	e := equality{remaining: uint32(key.budget), resources: b.record}
 	equal, err := e.value(key.left, key.right)
 	if b.overflow || err != nil && !errors.Is(err, wasm.ErrLimit) {
 		return nil
