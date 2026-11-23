@@ -4,6 +4,7 @@ package codegen
 import (
 	"encoding/binary"
 	"math"
+	"runtime"
 
 	"github.com/cpunion/wasmvm/internal/compiler/nativeabi"
 	"github.com/cpunion/wasmvm/pkg/wasm"
@@ -69,6 +70,16 @@ func (a *assembler) reserve(n uint64) {
 func (a *assembler) bytes(b ...byte) { a.reserve(uint64(len(b))); a.code = append(a.code, b...) }
 func (a *assembler) word(w uint32) {
 	a.reserve(4)
+	// LLGo lowers AppendUint32 to a generic slice append. Keep the common
+	// capacity case in place while Go uses its inlined append sequence.
+	if runtime.Compiler == "llgo" {
+		at := len(a.code)
+		if cap(a.code)-at >= 4 {
+			a.code = a.code[:at+4]
+			binary.LittleEndian.PutUint32(a.code[at:], w)
+			return
+		}
+	}
 	a.code = binary.LittleEndian.AppendUint32(a.code, w)
 }
 func (a *assembler) imm64(w uint64) {
