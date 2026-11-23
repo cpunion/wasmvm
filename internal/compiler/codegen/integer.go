@@ -69,7 +69,13 @@ func (a *assembler) reserve(n uint64) {
 func (a *assembler) bytes(b ...byte) { a.reserve(uint64(len(b))); a.code = append(a.code, b...) }
 func (a *assembler) word(w uint32) {
 	a.reserve(4)
-	a.code = binary.LittleEndian.AppendUint32(a.code, w)
+	at := len(a.code)
+	if cap(a.code)-at < 4 {
+		a.code = binary.LittleEndian.AppendUint32(a.code, w)
+		return
+	}
+	a.code = a.code[:at+4]
+	binary.LittleEndian.PutUint32(a.code[at:], w)
 }
 func (a *assembler) imm64(w uint64) {
 	a.reserve(8)
