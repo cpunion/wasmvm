@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -130,7 +131,7 @@ func TestHTTPBodyTrailerAndHandlingFailure(t *testing.T) {
 					trailing = httpOK(httpSome(f))
 				}
 				if mode == "trailer-error" {
-					trailing = httpErrorResult(httpErr("HTTP-response-incomplete"))
+					trailing = httpErrorResult(httpSizeError("HTTP-response-body-size", 7))
 				}
 				message, tx := a.message("response", "body", trailing, component.Value{})
 				if mode == "drop-message" || mode == "provider-close" {
@@ -186,6 +187,9 @@ func TestHTTPBodyTrailerAndHandlingFailure(t *testing.T) {
 				r := a.read(tx, 1)
 				if len(r.Values) != 1 || mode == "trailers" && r.Values[0].Case != 0 || mode != "trailers" && r.Values[0].Case != 1 {
 					t.Fatal(mode, r)
+				}
+				if mode == "trailer-error" && !reflect.DeepEqual(r.Values[0], trailing) {
+					t.Fatalf("transmit error = %+v, want %+v", r.Values[0], trailing)
 				}
 				a.dropAsync(tx)
 			})

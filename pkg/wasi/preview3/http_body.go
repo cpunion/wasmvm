@@ -18,35 +18,43 @@ import (
 type httpCell struct {
 	mu      sync.Mutex
 	ready   bool
-	value   component.Value
+	failure []component.Value
 	pending *component.ReadCompletion
 	stop    func() bool
 }
 
-func (s *httpCell) set(value component.Value) {
+// A transmit future yields result<_, error-code>. Success has no payload.
+func transmitResult(failure []component.Value) component.Value {
+	if failure == nil {
+		return component.Value{}
+	}
+	return component.Value{Case: 1, Elements: failure}
+}
+
+func (s *httpCell) set(failure []component.Value) {
 	s.mu.Lock()
 	if s.ready {
 		s.mu.Unlock()
 		return
 	}
 	s.ready = true
-	s.value = value
+	s.failure = failure
 	pending, stop := s.pending, s.stop
 	s.pending, s.stop = nil, nil
 	s.mu.Unlock()
 	if pending != nil && stop() {
-		resolveHTTPCell(pending, value)
+		resolveHTTPCell(pending, transmitResult(failure))
 	}
 }
 
 func (s *httpCell) readReady(*component.Caller, uint32) (component.ReadResult, bool, error) {
 	s.mu.Lock()
-	value, ready := s.value, s.ready
+	failure, ready := s.failure, s.ready
 	s.mu.Unlock()
 	if !ready {
 		return component.ReadResult{}, false, nil
 	}
-	return component.ReadResult{Values: []component.Value{value}, Closed: true}, true, nil
+	return component.ReadResult{Values: []component.Value{transmitResult(failure)}, Closed: true}, true, nil
 }
 
 func resolveHTTPCell(completion *component.ReadCompletion, value component.Value) {
@@ -60,10 +68,10 @@ func resolveHTTPCell(completion *component.ReadCompletion, value component.Value
 func (s *httpCell) read(c *component.Caller, _ uint32) (*component.ReadCompletion, error) {
 	s.mu.Lock()
 	if s.ready {
-		value := s.value
+		failure := s.failure
 		s.mu.Unlock()
 		completion := component.NewReadCompletion()
-		resolveHTTPCell(completion, value)
+		resolveHTTPCell(completion, transmitResult(failure))
 		return completion, nil
 	}
 	if s.pending != nil {
@@ -218,9 +226,9 @@ func (b *httpBody) transferred() {
 	failure := b.failure
 	b.mu.Unlock()
 	if failure != nil {
-		b.tx.set(httpErrorResult(failure))
+		b.tx.set(httpErrorResult(failure).Elements)
 	} else if ready {
-		b.tx.set(component.Value{})
+		b.tx.set(nil)
 	}
 }
 func (b *httpBody) handled() {
@@ -230,9 +238,9 @@ func (b *httpBody) handled() {
 	failure := b.failure
 	b.mu.Unlock()
 	if failure != nil {
-		b.tx.set(httpErrorResult(failure))
+		b.tx.set(httpErrorResult(failure).Elements)
 	} else if ready {
-		b.tx.set(component.Value{})
+		b.tx.set(nil)
 	}
 }
 func (b *httpBody) end(err error) {
@@ -247,7 +255,7 @@ func (b *httpBody) end(err error) {
 	}
 	b.mu.Unlock()
 	if err != nil {
-		b.tx.set(httpErrorResult(err))
+		b.tx.set(httpErrorResult(err).Elements)
 	}
 }
 func (b *httpBody) dispose(c *component.Caller, err error) {
@@ -656,7 +664,7 @@ func (b *httpBody) trailerResult(c *component.Caller, resolved *atomic.Bool) (co
 		value = httpOK(component.Value{})
 	}
 	if value.Case == 1 {
-		b.tx.set(value)
+		b.tx.set(value.Elements)
 	} else {
 		b.transferred()
 	}
