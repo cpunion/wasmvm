@@ -36,7 +36,7 @@ func expandPackedBytes(t *model.Type, v Value) Value {
 		case model.List, model.FixedList:
 			v.Elements[i] = expandPackedBytes(t.Element, v.Elements[i])
 		case model.Variant, model.Result, model.Option:
-			v.Elements[i] = expandPackedBytes(cases(t)[v.Case].Type, v.Elements[i])
+			v.Elements[i] = expandPackedBytes(casePayload(t, v.Case), v.Elements[i])
 		case model.Map:
 			entry := v.Elements[i]
 			entry.Elements = []Value{expandPackedBytes(t.Key, entry.Elements[0]), expandPackedBytes(t.Element, entry.Elements[1])}

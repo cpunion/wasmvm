@@ -91,7 +91,7 @@ func walkResources(t *model.Type, v *Value, visit func(*model.Type, *Value) erro
 		}
 	case model.Variant, model.Option, model.Result:
 		if len(v.Elements) != 0 {
-			return walkResources(cases(t)[v.Case].Type, &v.Elements[0], visit)
+			return walkResources(casePayload(t, v.Case), &v.Elements[0], visit)
 		}
 	}
 	return nil

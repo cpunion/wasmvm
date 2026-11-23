@@ -111,16 +111,15 @@ func (c *Codec) liftFlat(t *model.Type, slots []Slot, at *int, depth uint32) (Va
 		}
 		return Value{Bits: bits}, nil
 	case model.Variant, model.Option, model.Result:
-		cs := cases(t)
 		index := slots[*at].Bits
 		*at++
-		if index >= uint64(len(cs)) {
+		if index >= uint64(caseCount(t)) {
 			return Value{}, scalarTrap("invalid variant discriminant")
 		}
 		layout, _ := c.Layouts.Build(t)
 		payload := int(layout.FlatCount) - 1
 		v := Value{Case: uint32(index)}
-		if child := cs[index].Type; child != nil {
+		if child := casePayload(t, v.Case); child != nil {
 			cl, _ := c.Layouts.Build(child)
 			var converted [MaxFlatParams]Slot
 			for i, want := range cl.Flat {
@@ -237,7 +236,7 @@ func (c *Codec) lowerFlat(t *model.Type, v Value, out []Slot, depth uint32) ([]S
 		l, _ := c.Layouts.Build(t)
 		start := len(out)
 		out = append(out, Slot{wasm.I32, uint64(v.Case)})
-		if child := cases(t)[v.Case].Type; child != nil {
+		if child := casePayload(t, v.Case); child != nil {
 			var err error
 			out, err = c.lowerFlat(child, v.Elements[0], out, depth+1)
 			if err != nil {

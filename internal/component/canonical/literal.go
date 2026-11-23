@@ -226,14 +226,13 @@ func (d *literalDecoder) value(t *model.Type, depth uint32) (Value, error) {
 			n, err = d.reader.Byte()
 			v.Case = uint32(n)
 		}
-		cs := cases(t)
 		if err != nil {
 			return v, err
 		}
-		if uint64(v.Case) >= uint64(len(cs)) {
+		if uint64(v.Case) >= uint64(caseCount(t)) {
 			return v, invalid("literal variant discriminant")
 		}
-		if payload := cs[v.Case].Type; payload != nil {
+		if payload := casePayload(t, v.Case); payload != nil {
 			v.Elements, err = d.elements(1)
 			if err == nil {
 				v.Elements[0], err = d.value(payload, depth+1)

@@ -108,7 +108,7 @@ func (c *Codec) copyValue(t *model.Type, v Value, owned bool) (Value, error) {
 		case model.Record, model.Tuple:
 			child = t.Fields[i].Type
 		case model.Variant, model.Option, model.Result:
-			child = cases(t)[v.Case].Type
+			child = casePayload(t, v.Case)
 		case model.List, model.FixedList:
 			child = t.Element
 		case model.Map:
@@ -152,11 +152,18 @@ func (c *Codec) visit(depth uint32) error {
 
 func scalarKind(k model.Kind) bool { return k >= model.Char && k <= model.Bool }
 
-func cases(t *model.Type) []model.Field {
+func caseCount(t *model.Type) int {
 	if t.Kind == model.Option {
-		return []model.Field{{}, {Type: t.Element}}
+		return 2
 	}
-	return t.Cases
+	return len(t.Cases)
+}
+
+func casePayload(t *model.Type, index uint32) *model.Type {
+	if t.Kind == model.Option {
+		return [2]*model.Type{nil, t.Element}[index]
+	}
+	return t.Cases[index].Type
 }
 
 func (c *Codec) Load(t *model.Type, at uint64) (Value, error) { return c.load(t, at, 0) }
@@ -235,21 +242,21 @@ func (c *Codec) load(t *model.Type, at uint64, depth uint32) (Value, error) {
 		}
 		return Value{Bits: bits}, nil
 	case model.Variant, model.Option, model.Result:
-		cs := cases(t)
-		size, _ := discriminant(len(cs))
+		count := caseCount(t)
+		size, _ := discriminant(count)
 		index, err := c.loadInt(at, size)
 		if err != nil {
 			return Value{}, err
 		}
-		if index >= uint64(len(cs)) {
+		if index >= uint64(count) {
 			return Value{}, scalarTrap("invalid variant discriminant")
 		}
 		v := Value{Case: uint32(index)}
-		if cs[index].Type != nil {
+		if payload := casePayload(t, v.Case); payload != nil {
 			if err := c.Transfer.charge(64); err != nil {
 				return Value{}, err
 			}
-			child, err := c.load(cs[index].Type, at+l.PayloadOffset, depth+1)
+			child, err := c.load(payload, at+l.PayloadOffset, depth+1)
 			if err != nil {
 				return Value{}, err
 			}
@@ -409,11 +416,10 @@ func (c *Codec) validateLayout(t *model.Type, v Value, depth uint32, layout *Lay
 			return invalid("host enum discriminant")
 		}
 	case model.Variant, model.Option, model.Result:
-		cs := cases(t)
-		if uint64(v.Case) >= uint64(len(cs)) {
+		if uint64(v.Case) >= uint64(caseCount(t)) {
 			return invalid("host variant discriminant")
 		}
-		child := cs[v.Case].Type
+		child := casePayload(t, v.Case)
 		if child == nil {
 			if len(v.Elements) != 0 {
 				return invalid("unexpected variant payload")
@@ -497,12 +503,11 @@ func (c *Codec) store(t *model.Type, at uint64, v Value, depth uint32) error {
 	case model.Flags, model.Enum:
 		return c.storeInt(at, l.Size, v.Bits)
 	case model.Variant, model.Option, model.Result:
-		cs := cases(t)
-		size, _ := discriminant(len(cs))
+		size, _ := discriminant(caseCount(t))
 		if err := c.storeInt(at, size, uint64(v.Case)); err != nil {
 			return err
 		}
-		if child := cs[v.Case].Type; child != nil {
+		if child := casePayload(t, v.Case); child != nil {
 			return c.store(child, at+l.PayloadOffset, v.Elements[0], depth+1)
 		}
 	default:

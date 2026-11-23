@@ -57,6 +57,7 @@ func TestNestedMemoryValues(t *testing.T) {
 func TestHostAggregateValidationPrecedesEffects(t *testing.T) {
 	scalar := typ(model.U8)
 	variant := &model.Type{Kind: model.Variant, Cases: []model.Field{{}, {Type: scalar}}}
+	option := &model.Type{Kind: model.Option, Element: scalar}
 	for _, row := range []struct {
 		tpe *model.Type
 		v   Value
@@ -69,6 +70,7 @@ func TestHostAggregateValidationPrecedesEffects(t *testing.T) {
 		{&model.Type{Kind: model.Enum, Labels: []string{"a"}}, Value{Bits: 1}},
 		{variant, Value{Case: 2}}, {variant, Value{Elements: []Value{{}}}}, {variant, Value{Case: 1}},
 		{variant, Value{Case: 1, Elements: []Value{{Bits: 256}}}},
+		{option, Value{Case: 2}}, {option, Value{Elements: []Value{{}}}}, {option, Value{Case: 1}},
 		{typ(model.String), Value{Text: string([]byte{0xff})}},
 	} {
 		c := valueCodec(false)
