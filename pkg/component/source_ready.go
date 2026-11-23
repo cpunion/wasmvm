@@ -51,7 +51,7 @@ func (in *Instance) readReadySource(core *vm.Caller, r, w *asyncEnd, b *guestBuf
 	defer func() {
 		guard := cleanupGuard{panicked: recover()}
 		if output != nil {
-			guard.run(func() { err = finishResources(output, complete, err) })
+			err = guard.finishCodec(output, complete, err)
 		}
 		if handled && !complete {
 			guard.run(func() { r.buffer, r.state = nil, endDone; w.closeSource() })

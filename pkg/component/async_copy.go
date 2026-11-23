@@ -83,9 +83,9 @@ func copyGuestBuffers(c *vm.Caller, src, dst *guestBuffer, count uint32) (err er
 	defer func() {
 		guard := cleanupGuard{panicked: recover()}
 		if write != nil {
-			guard.run(func() { err = finishResources(write, complete, err) })
+			err = guard.finishCodec(write, complete, err)
 		}
-		guard.run(func() { err = finishResources(read, complete, err) })
+		err = guard.finishCodec(read, complete, err)
 		guard.finish()
 	}()
 

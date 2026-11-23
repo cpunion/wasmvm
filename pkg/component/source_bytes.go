@@ -34,7 +34,7 @@ func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 	defer func() {
 		guard := cleanupGuard{panicked: recover()}
 		if output != nil {
-			guard.run(func() { err = finishResources(output, complete, err) })
+			err = guard.finishCodec(output, complete, err)
 		}
 		if !complete {
 			guard.run(func() {
@@ -43,7 +43,7 @@ func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 			})
 		}
 		if codec != nil {
-			guard.run(func() { err = finishResources(codec, complete, err) })
+			err = guard.finishCodec(codec, complete, err)
 		}
 		in.heldValues -= values
 		in.heldBytes -= bytes
