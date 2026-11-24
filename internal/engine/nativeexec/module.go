@@ -60,8 +60,19 @@ func Compile(ctx context.Context, m *slots.Module, limits codegen.Limits) (*Modu
 
 func compileModule(ctx context.Context, m *slots.Module, limits codegen.Limits, allowLink bool) (*Module, error) {
 	out := &Module{}
+	var totalInstrs uint64
+	for _, f := range m.Functions {
+		totalInstrs += uint64(len(f.Code))
+	}
+	codeCap := min(limits.MaxCodeBytes, uint64(math.MaxUint32), uint64(16<<20))
+	if est := totalInstrs * 128; est < codeCap {
+		codeCap = est
+	}
 	var code []byte
-	var entries []uint32
+	if codeCap > 0 {
+		code = make([]byte, 0, int(codeCap))
+	}
+	entries := make([]uint32, 0, len(m.Functions)*2)
 	definition := m.IR.Validated.Definition()
 	var minimum uint32
 	var importedFunctions uint32

@@ -16,7 +16,7 @@ type functionCompileResult struct {
 	panicValue any
 }
 
-func compileFunction(ctx context.Context, f *slots.Function, limits codegen.Limits, config codegen.Config) (result functionCompileResult) {
+func compileFunction(ctx context.Context, compiler *codegen.Compiler, f *slots.Function, limits codegen.Limits, config codegen.Config) (result functionCompileResult) {
 	panicking := true
 	defer func() {
 		if panicking {
@@ -25,7 +25,7 @@ func compileFunction(ctx context.Context, f *slots.Function, limits codegen.Limi
 		}
 	}()
 	if result.err = ctx.Err(); result.err == nil {
-		result.body, result.err = codegen.CompileFunctionWithConfig(runtime.GOARCH, f, limits, config)
+		result.body, result.err = compiler.CompileFunction(runtime.GOARCH, f, limits, config)
 	}
 	panicking = false
 	return
@@ -50,6 +50,7 @@ type functionCompiler struct {
 	queued, taken int
 	jobs          chan compilationJob
 	results       []chan functionCompileResult
+	serial        codegen.Compiler
 	joined        sync.WaitGroup
 	once          sync.Once
 }
@@ -83,10 +84,11 @@ func newFunctionCompiler(ctx context.Context, functions []*slots.Function, limit
 	for i := 0; i < workers; i++ {
 		go func() {
 			defer p.joined.Done()
+			var compiler codegen.Compiler
 			for job := range p.jobs {
 				bounded := p.limits
 				bounded.MaxCodeBytes = job.maximum
-				job.result <- compileFunction(p.ctx, p.functions[job.index], bounded, p.functionConfig(job.index))
+				job.result <- compileFunction(p.ctx, &compiler, p.functions[job.index], bounded, p.functionConfig(job.index))
 			}
 		}()
 	}
@@ -98,7 +100,7 @@ func (p *functionCompiler) next(maximum uint64) functionCompileResult {
 		p.taken++
 		bounded := p.limits
 		bounded.MaxCodeBytes = maximum
-		return compileFunction(p.ctx, p.functions[i], bounded, p.functionConfig(i))
+		return compileFunction(p.ctx, &p.serial, p.functions[i], bounded, p.functionConfig(i))
 	}
 	for p.queued < len(p.indices) && p.queued-p.taken < len(p.results) {
 		slot := p.queued % len(p.results)

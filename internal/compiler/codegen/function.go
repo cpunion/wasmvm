@@ -89,7 +89,7 @@ type CompiledFunction struct {
 // Move publishes a large edge-copy plan in Payload[0] and its destination PC
 // in Continuation; the driver copies it in bounded, cancelable chunks.
 func CompileFunction(arch string, f *slots.Function, limits Limits) (*CompiledFunction, error) {
-	return compileFunction(arch, f, limits, Config{})
+	return compileFunction(arch, f, limits, Config{}, nil)
 }
 
 // CompileUnmeteredFunction emits bounded interrupt polls without periodic host
@@ -98,7 +98,7 @@ func CompileFunction(arch string, f *slots.Function, limits Limits) (*CompiledFu
 // unused. All scalar slots are canonical on exit; vectors retain all 128 bits.
 // The shared runtime selects this tier for calls without semantic fuel.
 func CompileUnmeteredFunction(arch string, f *slots.Function, limits Limits) (*CompiledFunction, error) {
-	return compileFunction(arch, f, limits, Config{Unmetered: true})
+	return compileFunction(arch, f, limits, Config{Unmetered: true}, nil)
 }
 
 // Config records validated module assumptions. Entry checks the minimum memory
@@ -158,11 +158,41 @@ type Config struct {
 	NativeCallLimits bool
 }
 
-func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
-	return compileFunction(arch, f, limits, config)
+const (
+	maxRetainedCodeBytes   = 1 << 20
+	maxRetainedLabels      = 1 << 16
+	maxRetainedRelocations = 1 << 15
+)
+
+// Compiler reuses bounded assembler scratch buffers across sequential function
+// compilations on one worker. It must not be shared concurrently.
+type Compiler struct {
+	code                []byte
+	labels              []int
+	fixups              []relocation
+	tables              []tableRelocation
+	addresses           []addressRelocation
+	conditionalBranches []conditionalRelocation
+	layoutBlocks        []branchLayoutBlock
+	pcs                 []int
 }
 
-func compileFunction(arch string, f *slots.Function, limits Limits, config Config) (out *CompiledFunction, err error) {
+func retainScratch[T any](buf []T, maxCap int) []T {
+	if cap(buf) > maxCap {
+		return nil
+	}
+	return buf[:0]
+}
+
+func (c *Compiler) CompileFunction(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
+	return compileFunction(arch, f, limits, config, c)
+}
+
+func CompileFunctionWithConfig(arch string, f *slots.Function, limits Limits, config Config) (*CompiledFunction, error) {
+	return compileFunction(arch, f, limits, config, nil)
+}
+
+func compileFunction(arch string, f *slots.Function, limits Limits, config Config, scratch *Compiler) (out *CompiledFunction, err error) {
 	unmetered := config.Unmetered
 	if config.NativeFrameRegisters && (!unmetered || config.LinkedCallees == nil) {
 		return nil, wasm.ErrInvalid
@@ -219,11 +249,48 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	if !config.NativeThreads {
 		f = sharedMemoryHelpers(f, config.SharedMemories)
 	}
-	empty, err := nativeabi.Wrap(arch, nil, limits.MaxCodeBytes)
+	overhead, err := nativeabi.Overhead(arch)
 	if err != nil {
 		return nil, err
 	}
-	a := assembler{arch: arch, labels: make([]int, 1, len(f.Code)+8), bounded: true, limit: limits.MaxCodeBytes - uint64(len(empty.Code)), longBranches: true, compactBranches: arch == "arm64"}
+	if overhead > limits.MaxCodeBytes {
+		return nil, wasm.ErrLimit
+	}
+	a := assembler{arch: arch, bounded: true, limit: limits.MaxCodeBytes - overhead, longBranches: true, compactBranches: arch == "arm64"}
+	var pcs []int
+	if scratch != nil {
+		a.code = scratch.code[:0]
+		if cap(scratch.labels) >= len(f.Code)+8 {
+			a.labels = scratch.labels[:1]
+			a.labels[0] = 0
+		} else {
+			a.labels = make([]int, 1, len(f.Code)+8)
+		}
+		a.fixups = scratch.fixups[:0]
+		a.tables = scratch.tables[:0]
+		a.addresses = scratch.addresses[:0]
+		a.conditionalBranches = scratch.conditionalBranches[:0]
+		a.layoutBlocks = scratch.layoutBlocks[:0]
+		if cap(scratch.pcs) >= len(f.Code) {
+			pcs = scratch.pcs[:len(f.Code)]
+		} else {
+			pcs = make([]int, len(f.Code))
+		}
+		defer func() {
+			clear(a.labels)
+			scratch.code = retainScratch(a.code, maxRetainedCodeBytes)
+			scratch.labels = retainScratch(a.labels, maxRetainedLabels)
+			scratch.fixups = retainScratch(a.fixups, maxRetainedRelocations)
+			scratch.tables = retainScratch(a.tables, maxRetainedRelocations)
+			scratch.addresses = retainScratch(a.addresses, maxRetainedRelocations)
+			scratch.conditionalBranches = retainScratch(a.conditionalBranches, maxRetainedRelocations)
+			scratch.layoutBlocks = retainScratch(a.layoutBlocks, maxRetainedRelocations)
+			scratch.pcs = retainScratch(pcs, maxRetainedLabels)
+		}()
+	} else {
+		a.labels = make([]int, 1, len(f.Code)+8)
+		pcs = make([]int, len(f.Code))
+	}
 	e := functionEmitter{a: &a, f: f, exit: a.label(), bad: a.label(), zero: a.label(), overflow: a.label(), unmetered: unmetered, memoryMinimum: uint64(config.MemoryMinimumPages) * pageSize, memoryPageSizes: config.MemoryPageSizes}
 	e.frameRegisters = config.NativeFrameRegisters
 	e.nativeFunction = config.NativeFunction
@@ -234,7 +301,6 @@ func compileFunction(arch string, f *slots.Function, limits Limits, config Confi
 	e.sharedMemories = config.SharedMemories
 	e.sharedDefaultMemory = config.NativeThreads && len(config.SharedMemories) != 0 && config.SharedMemories[0]
 	e.nativeBulk = unmetered && config.MemoryCount == 1 && (len(config.SharedMemories) == 0 || !config.SharedMemories[0])
-	pcs := make([]int, len(f.Code))
 	for i := range pcs {
 		pcs[i] = a.label()
 	}
