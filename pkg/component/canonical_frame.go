@@ -24,11 +24,15 @@ type canonicalFrame struct {
 	hostValue   Value
 	cloneValues [8]Value
 	cloneBuf    []Value
-	caller      *vm.Caller
-	n           *namespace
-	plan        *validate.CanonicalFunction
-	realloc     func(uint64, uint64, uint64, uint64) (uint64, error)
-	next        *canonicalFrame
+	caller       *vm.Caller
+	n            *namespace
+	plan         *validate.CanonicalFunction
+	realloc      func(uint64, uint64, uint64, uint64) (uint64, error)
+	next         *canonicalFrame
+	stateUsed    bool
+	auxUsed      bool
+	hostUsed     bool
+	hostReadUsed bool
 }
 
 func (in *Instance) acquireFrame() *canonicalFrame {
@@ -42,15 +46,32 @@ func (in *Instance) acquireFrame() *canonicalFrame {
 	return frame
 }
 
+func (frame *canonicalFrame) primaryState() *resourceCodecState {
+	frame.stateUsed = true
+	return &frame.state
+}
+
+func (frame *canonicalFrame) aux() *resourceCodecState {
+	frame.auxUsed = true
+	return &frame.auxState
+}
+
+func (frame *canonicalFrame) hostReadStorage() *hostReadBuffer {
+	frame.hostReadUsed = true
+	return &frame.hostRead
+}
+
 func (frame *canonicalFrame) hostStorage() *resourceHostCall {
 	if frame.host == nil {
 		frame.host = &resourceHostCall{}
 	}
+	frame.hostUsed = true
 	return frame.host
 }
 
 func (in *Instance) acquireCanonicalFrame(c *vm.Caller, n *namespace, plan *validate.CanonicalFunction) *canonicalFrame {
 	frame := in.acquireFrame()
+	frame.stateUsed = true
 	frame.caller, frame.n, frame.plan = c, n, plan
 	if n != nil && (len(n.resources) != 0 || n.handles != nil) {
 		// Release already zeroed the state. Rebind only the active owners.
@@ -70,22 +91,40 @@ func (frame *canonicalFrame) reallocate(old, size, alignment, next uint64) (uint
 // Never retain a Caller, Context, memory capability, value or resource between
 // invocations. Reentrant calls acquire a different frame until this one returns.
 func (in *Instance) releaseCanonicalFrame(frame *canonicalFrame) {
-	if frame.host != nil {
+	if frame.hostUsed {
 		*frame.host = resourceHostCall{}
+		frame.hostUsed = false
 	}
-	clear(frame.args)
-	frame.args = frame.args[:0]
+	if len(frame.args) != 0 {
+		clear(frame.args)
+		frame.args = frame.args[:0]
+	}
 	if cap(frame.args) > canonical.MaxFlatParams {
 		frame.args = nil
 	}
-	frame.state = resourceCodecState{}
-	frame.auxState = resourceCodecState{}
-	frame.hostRead = hostReadBuffer{}
-	frame.readFn = Function{}
+	if frame.stateUsed {
+		frame.state = resourceCodecState{}
+		frame.stateUsed = false
+	}
+	if frame.auxUsed {
+		frame.auxState = resourceCodecState{}
+		frame.auxUsed = false
+	}
+	if frame.hostReadUsed {
+		frame.hostRead = hostReadBuffer{}
+		frame.hostReadUsed = false
+	}
+	if frame.readFn.instance != nil {
+		frame.readFn = Function{}
+	}
+	if frame.cloneBuf != nil {
+		frame.cloneValues = [8]Value{}
+		frame.cloneBuf = nil
+	}
 	frame.hostValue = Value{}
-	frame.cloneValues = [8]Value{}
-	frame.cloneBuf = nil
-	frame.memory = memory{}
+	if frame.memory.caller != nil {
+		frame.memory = memory{}
+	}
 	frame.caller, frame.n, frame.plan = nil, nil, nil
 	frame.next = in.canonicalFrames
 	in.canonicalFrames = frame

@@ -185,7 +185,7 @@ func (in *Instance) readAsyncContexts(c *vm.Caller, ref *Resource, limit uint32,
 	}
 	frame := in.acquireFrame()
 	defer in.releaseCanonicalFrame(frame)
-	b := in.initHostReadBuffer(&frame.hostRead, e, batch, limit, nil, into)
+	b := in.initHostReadBuffer(frame.hostReadStorage(), e, batch, limit, nil, into)
 	defer func() {
 		if b.hooks != nil {
 			b.hooks.into = nil

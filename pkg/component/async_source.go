@@ -362,7 +362,7 @@ func (sr *sourceReadTask) resolve(current *vm.Caller, value *Value, cancelled bo
 			return vm.ErrType
 		}
 		if !sr.unit && count != 0 {
-			output, err = b.storeCodec(current, *value, &frame.auxState)
+			output, err = b.storeCodec(current, *value, frame.aux())
 			if err != nil {
 				if !r.rejectCopy(err) {
 					return err

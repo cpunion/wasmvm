@@ -30,7 +30,7 @@ func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 	// Both codecs belong to this read, including across copy cleanup.
 	frame := in.acquireFrame()
 	defer in.releaseCanonicalFrame(frame)
-	return in.copySourceBytes(c, r, w, b, batch, &frame.state, &frame.auxState)
+	return in.copySourceBytes(c, r, w, b, batch, frame.primaryState(), frame.aux())
 }
 
 func (in *Instance) copySourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer, batch *model.Type, inputState, outputState *resourceCodecState) (handled bool, err error) {

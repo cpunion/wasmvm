@@ -90,7 +90,7 @@ func copyGuestBuffers(c *vm.Caller, src, dst *guestBuffer, count uint32) (err er
 	}
 	frame := src.in.acquireFrame()
 	defer src.in.releaseCanonicalFrame(frame)
-	read := src.in.initBufferCodec(&frame.state, c, src.n, src.plan, src.typ)
+	read := src.in.initBufferCodec(frame.primaryState(), c, src.n, src.plan, src.typ)
 	complete := false
 	var write *canonical.Codec
 	defer func() {
@@ -105,7 +105,7 @@ func copyGuestBuffers(c *vm.Caller, src, dst *guestBuffer, count uint32) (err er
 	if dst.hooks != nil && dst.hooks.into != nil {
 		err = read.ReadBufferInto(src.ptr, uint64(count), func() ([]byte, error) {
 			var target []byte
-			write, target, err = dst.prepareInto(c, uint64(count), &frame.auxState)
+			write, target, err = dst.prepareInto(c, uint64(count), frame.aux())
 			if err != nil {
 				return nil, err
 			}
@@ -115,7 +115,7 @@ func copyGuestBuffers(c *vm.Caller, src, dst *guestBuffer, count uint32) (err er
 		var values Value
 		values, err = read.LoadBuffer(src.typ, src.ptr, uint64(count))
 		if err == nil {
-			write, err = dst.storeCodec(c, values, &frame.auxState)
+			write, err = dst.storeCodec(c, values, frame.aux())
 		}
 	}
 	if err != nil {

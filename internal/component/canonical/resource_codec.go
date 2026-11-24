@@ -47,8 +47,14 @@ func (c *Codec) AcceptResult(t *model.Type, value *Value) error {
 }
 
 func (c *Codec) accept(t *model.Type, v *Value, commit bool) error {
-	resources := c.Resources
-	return walkResources(t, v, func(t *model.Type, v *Value) error {
+	return acceptResource(c.Resources, t, v, commit)
+}
+
+func acceptResource(resources ResourceCodec, t *model.Type, v *Value, commit bool) error {
+	if t == nil {
+		return nil
+	}
+	if t.Kind == model.Own || t.Kind == model.Borrow || t.Kind == model.Future || t.Kind == model.Stream {
 		if resources == nil {
 			return wasm.ErrUnsupported
 		}
@@ -57,41 +63,32 @@ func (c *Codec) accept(t *model.Type, v *Value, commit bool) error {
 			*v = value
 		}
 		return err
-	})
-}
-
-func walkResources(t *model.Type, v *Value, visit func(*model.Type, *Value) error) error {
-	if t == nil {
-		return nil
-	}
-	if t.Kind == model.Own || t.Kind == model.Borrow || t.Kind == model.Future || t.Kind == model.Stream {
-		return visit(t, v)
 	}
 	switch t.Kind {
 	case model.Record, model.Tuple:
 		for i, f := range t.Fields {
-			if err := walkResources(f.Type, &v.Elements[i], visit); err != nil {
+			if err := acceptResource(resources, f.Type, &v.Elements[i], commit); err != nil {
 				return err
 			}
 		}
 	case model.List, model.FixedList:
 		for i := range v.Elements {
-			if err := walkResources(t.Element, &v.Elements[i], visit); err != nil {
+			if err := acceptResource(resources, t.Element, &v.Elements[i], commit); err != nil {
 				return err
 			}
 		}
 	case model.Map:
 		for i := range v.Elements {
-			if err := walkResources(t.Key, &v.Elements[i].Elements[0], visit); err != nil {
+			if err := acceptResource(resources, t.Key, &v.Elements[i].Elements[0], commit); err != nil {
 				return err
 			}
-			if err := walkResources(t.Element, &v.Elements[i].Elements[1], visit); err != nil {
+			if err := acceptResource(resources, t.Element, &v.Elements[i].Elements[1], commit); err != nil {
 				return err
 			}
 		}
 	case model.Variant, model.Option, model.Result:
 		if len(v.Elements) != 0 {
-			return walkResources(cases(t)[v.Case].Type, &v.Elements[0], visit)
+			return acceptResource(resources, cases(t)[v.Case].Type, &v.Elements[0], commit)
 		}
 	}
 	return nil
@@ -99,7 +96,32 @@ func walkResources(t *model.Type, v *Value, visit func(*model.Type, *Value) erro
 
 // VisitReferences visits capabilities in an already validated owned shape.
 func VisitReferences(t *model.Type, v *Value, visit func(*Reference)) {
-	walkResources(t, v, func(t *model.Type, v *Value) error { visit(v.Resource); return nil })
+	if t == nil {
+		return
+	}
+	if t.Kind == model.Own || t.Kind == model.Borrow || t.Kind == model.Future || t.Kind == model.Stream {
+		visit(v.Resource)
+		return
+	}
+	switch t.Kind {
+	case model.Record, model.Tuple:
+		for i, f := range t.Fields {
+			VisitReferences(f.Type, &v.Elements[i], visit)
+		}
+	case model.List, model.FixedList:
+		for i := range v.Elements {
+			VisitReferences(t.Element, &v.Elements[i], visit)
+		}
+	case model.Map:
+		for i := range v.Elements {
+			VisitReferences(t.Key, &v.Elements[i].Elements[0], visit)
+			VisitReferences(t.Element, &v.Elements[i].Elements[1], visit)
+		}
+	case model.Variant, model.Option, model.Result:
+		if len(v.Elements) != 0 {
+			VisitReferences(cases(t)[v.Case].Type, &v.Elements[0], visit)
+		}
+	}
 }
 
 func (c *Codec) Finish(err error) error {

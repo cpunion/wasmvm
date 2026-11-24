@@ -116,10 +116,11 @@ func (in *Instance) asyncValueBuiltin(caller *vm.Caller, n *namespace, p *valida
 func (in *Instance) copyGuestBuiltin(c *vm.Caller, n *namespace, p *validate.CanonicalFunction, e *asyncEnd, ptr, length uint64) error {
 	frame := in.acquireFrame()
 	defer in.releaseCanonicalFrame(frame)
-	if err := in.initGuestBuffer(&frame.hostRead.buffer, c, n, p, ptr, length); err != nil {
+	buf := &frame.hostReadStorage().buffer
+	if err := in.initGuestBuffer(buf, c, n, p, ptr, length); err != nil {
 		return err
 	}
-	return e.copyImmediate(c, &frame.hostRead.buffer)
+	return e.copyImmediate(c, buf)
 }
 
 func (e *asyncEnd) pollScalarResult(current *vm.Caller) (uint64, error) {

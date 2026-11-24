@@ -96,7 +96,7 @@ func (in *Instance) readReadySource(core *vm.Caller, r, w *asyncEnd, b *guestBuf
 		return true, err
 	}
 	if !unit && count != 0 {
-		output, err = b.storeCodec(core, frame.hostValue, &frame.auxState)
+		output, err = b.storeCodec(core, frame.hostValue, frame.aux())
 		if err != nil {
 			if !r.rejectCopy(err) {
 				return true, err
