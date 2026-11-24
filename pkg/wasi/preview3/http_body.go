@@ -16,12 +16,16 @@ import (
 )
 
 type httpCell struct {
-	mu      sync.Mutex
-	ready   bool
-	value   component.Value
-	pending *component.ReadCompletion
-	stop    func() bool
+	mu        sync.Mutex
+	ready     bool
+	readyFlag atomic.Bool
+	value     component.Value
+	resultVal [1]component.Value
+	pending   *component.ReadCompletion
+	stop      func() bool
 }
+
+func (s *httpCell) isReady() bool { return s.readyFlag.Load() }
 
 func (s *httpCell) set(value component.Value) {
 	s.mu.Lock()
@@ -31,27 +35,26 @@ func (s *httpCell) set(value component.Value) {
 	}
 	s.ready = true
 	s.value = value
+	s.resultVal[0] = value
+	s.readyFlag.Store(true)
 	pending, stop := s.pending, s.stop
 	s.pending, s.stop = nil, nil
 	s.mu.Unlock()
 	if pending != nil && stop() {
-		resolveHTTPCell(pending, value)
+		s.resolveCompletion(pending)
 	}
 }
 
 func (s *httpCell) readReady(*component.Caller, uint32) (component.ReadResult, bool, error) {
-	s.mu.Lock()
-	value, ready := s.value, s.ready
-	s.mu.Unlock()
-	if !ready {
+	if !s.readyFlag.Load() {
 		return component.ReadResult{}, false, nil
 	}
-	return component.ReadResult{Values: []component.Value{value}, Closed: true}, true, nil
+	return component.ReadResult{Values: s.resultVal[:1], Closed: true}, true, nil
 }
 
-func resolveHTTPCell(completion *component.ReadCompletion, value component.Value) {
+func (s *httpCell) resolveCompletion(completion *component.ReadCompletion) {
 	_ = completion.Resolve(func(*component.Caller) (component.ReadResult, error) {
-		return component.ReadResult{Values: []component.Value{value}, Closed: true}, nil
+		return component.ReadResult{Values: s.resultVal[:1], Closed: true}, nil
 	})
 }
 
@@ -60,10 +63,9 @@ func resolveHTTPCell(completion *component.ReadCompletion, value component.Value
 func (s *httpCell) read(c *component.Caller, _ uint32) (*component.ReadCompletion, error) {
 	s.mu.Lock()
 	if s.ready {
-		value := s.value
 		s.mu.Unlock()
 		completion := component.NewReadCompletion()
-		resolveHTTPCell(completion, value)
+		s.resolveCompletion(completion)
 		return completion, nil
 	}
 	if s.pending != nil {
@@ -97,14 +99,26 @@ type httpBody struct {
 	closed, bodyDone, eof      bool
 	readerClosed, closeQueued  bool
 	transmitted, handlingDone  bool
+	hasTrailers                bool
+	consumeHandled             bool
+	trailerObserved            bool
 	failure                    error
 	done                       chan struct{}
 	tx                         httpCell
 	original, trailers, anchor *component.Resource
+	inlineControls             [2]*component.Cancellation
 	controls                   []*component.Cancellation
+	anchorCancel               component.Cancellation
+	byteCancel                 component.Cancellation
+	readBuf                    httpReadBuffer
+	trailerResolved            atomic.Bool
+	trailerResultBuf           [1]component.Value
+	pairBuf                    [2]component.Value
+	pairVal                    component.Value
 	reader                     io.ReadCloser
 	requestBody                io.ReadCloser
 	readTimeout                time.Duration
+	expectedValue              uint64
 	expected                   *uint64
 	received                   uint64
 	sizeFailure                string
@@ -129,7 +143,7 @@ func (p *HTTP) newBody() (*httpBody, error) {
 		return nil, wasm.ErrLimit
 	}
 	ctx, cancel := context.WithCancel(p.ctx)
-	b := &httpBody{owner: p, refs: 1, ctx: ctx, cancel: cancel, done: make(chan struct{})}
+	b := &httpBody{owner: p, refs: 1, ctx: ctx, cancel: cancel}
 	p.bodies[b] = struct{}{}
 	return b, nil
 }
@@ -138,11 +152,16 @@ func (b *httpBody) release() {
 	b.mu.Lock()
 	b.refs--
 	last := b.refs == 0
+	alreadyDone := b.closed || b.bodyDone && b.tx.isReady()
 	b.mu.Unlock()
 	if !last {
 		return
 	}
-	b.dispose(nil, httpErr("connection-terminated"))
+	if alreadyDone {
+		b.dispose(nil, nil)
+	} else {
+		b.dispose(nil, errConnectionTerminated)
+	}
 	b.mu.Lock()
 	reader, closed, queued := b.reader, b.readerClosed, b.closeQueued
 	b.mu.Unlock()
@@ -204,6 +223,9 @@ func (b *httpBody) closeReader() {
 }
 func (b *httpBody) control(signal *component.Cancellation) {
 	b.mu.Lock()
+	if b.controls == nil {
+		b.controls = b.inlineControls[:0]
+	}
 	b.controls = append(b.controls, signal)
 	closed := b.closed
 	b.mu.Unlock()
@@ -218,7 +240,9 @@ func (b *httpBody) transferred() {
 	failure := b.failure
 	b.mu.Unlock()
 	if failure != nil {
-		b.tx.set(httpErrorResult(failure))
+		if !b.tx.isReady() {
+			b.tx.set(httpErrorResult(failure))
+		}
 	} else if ready {
 		b.tx.set(component.Value{})
 	}
@@ -230,7 +254,9 @@ func (b *httpBody) handled() {
 	failure := b.failure
 	b.mu.Unlock()
 	if failure != nil {
-		b.tx.set(httpErrorResult(failure))
+		if !b.tx.isReady() {
+			b.tx.set(httpErrorResult(failure))
+		}
 	} else if ready {
 		b.tx.set(component.Value{})
 	}
@@ -243,14 +269,29 @@ func (b *httpBody) end(err error) {
 	if !b.bodyDone {
 		b.bodyDone = true
 		b.eof = err == nil
-		close(b.done)
+		if b.done != nil {
+			close(b.done)
+		}
 	}
 	b.mu.Unlock()
-	if err != nil {
+	if err != nil && !b.tx.isReady() {
 		b.tx.set(httpErrorResult(err))
 	}
 }
+func (b *httpBody) bodyDoneChan() (chan struct{}, bool) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.bodyDone {
+		return nil, true
+	}
+	if b.done == nil {
+		b.done = make(chan struct{})
+	}
+	return b.done, false
+}
 func (b *httpBody) dispose(c *component.Caller, err error) {
+	var localControls [2]*component.Cancellation
+	var controls []*component.Cancellation
 	b.mu.Lock()
 	first := !b.closed
 	b.closed = true
@@ -259,10 +300,19 @@ func (b *httpBody) dispose(c *component.Caller, err error) {
 		b.original, b.trailers, b.anchor = nil, nil, nil
 	}
 	cancel := b.networkCancel
-	controls := append([]*component.Cancellation(nil), b.controls...)
+	if n := len(b.controls); n != 0 {
+		if n <= len(localControls) {
+			copy(localControls[:n], b.controls)
+			controls = localControls[:n]
+		} else {
+			controls = append([]*component.Cancellation(nil), b.controls...)
+		}
+	}
 	b.mu.Unlock()
 	if first {
-		b.end(err)
+		if err != nil {
+			b.end(err)
+		}
 		b.cancel()
 		if cancel != nil {
 			cancel()
@@ -273,10 +323,14 @@ func (b *httpBody) dispose(c *component.Caller, err error) {
 		b.queueReaderClose()
 	}
 	if c != nil {
-		for _, r := range []*component.Resource{anchor, original, trailers} {
-			if r != nil {
-				_ = c.DropAsync(r)
-			}
+		if anchor != nil {
+			_ = c.DropAsync(anchor)
+		}
+		if original != nil {
+			_ = c.DropAsync(original)
+		}
+		if trailers != nil {
+			_ = c.DropAsync(trailers)
 		}
 	}
 }
@@ -316,8 +370,17 @@ func (p *HTTP) newMessage(c *component.Caller, kind string, args []component.Val
 		return nil, err
 	}
 	headers.fields.Freeze()
-	message := &httpMessage{headers: headers.fields, method: "GET", status: 200, body: b}
-	b.sizeFailure = "HTTP-" + kind + "-body-size"
+	entryAlloc := &httpMessageEntry{
+		entry:   httpEntry{kind: kind},
+		message: httpMessage{headers: headers.fields, method: "GET", status: 200, body: b},
+	}
+	entryAlloc.entry.message = &entryAlloc.message
+	message := &entryAlloc.message
+	if kind == "request" {
+		b.sizeFailure = "HTTP-request-body-size"
+	} else {
+		b.sizeFailure = "HTTP-response-body-size"
+	}
 	if kind == "request" && args[3].Case == 1 {
 		options, err := p.take(c, args[3].Elements[0], "request-options", false)
 		if err != nil {
@@ -327,12 +390,13 @@ func (p *HTTP) newMessage(c *component.Caller, kind string, args []component.Val
 		message.options = &copy
 	}
 	_, futureType := c.FunctionInfo().Result().Field(1)
-	var owned []*component.Resource
+	var ownedBuf [2]*component.Resource
+	owned := ownedBuf[:0]
 	if args[1].Case == 1 {
 		owned = append(owned, args[1].Elements[0].Resource)
 	}
 	owned = append(owned, args[2].Resource)
-	signal := component.NewCancellation()
+	signal := &b.anchorCancel
 	anchor, refs, err := c.NewOwnedSource(futureType, component.AsyncSource{Owned: owned, Cancel: signal, Read: func(*component.Caller, uint32) (*component.ReadCompletion, error) { return nil, wasm.ErrTrap }})
 	if err != nil {
 		return nil, err
@@ -343,19 +407,21 @@ func (p *HTTP) newMessage(c *component.Caller, kind string, args []component.Val
 		b.original = refs[0]
 	}
 	b.trailers = refs[len(refs)-1]
-	b.trailerDone = make(chan struct{})
+	b.hasTrailers = true
 	b.mu.Unlock()
 	b.control(signal)
 	future, err := b.txSource(c, futureType)
 	if err != nil {
 		return nil, err
 	}
-	value, err := p.publish(c, &httpEntry{kind: kind, message: message})
+	value, err := p.publish(c, &entryAlloc.entry)
 	if err != nil {
 		return nil, err
 	}
 	published = true
-	return &component.Value{Elements: []component.Value{value, future}}, nil
+	b.pairBuf[0], b.pairBuf[1] = value, future
+	b.pairVal = component.Value{Elements: b.pairBuf[:2]}
+	return &b.pairVal, nil
 }
 func (p *HTTP) consumeBody(c *component.Caller, kind string, args []component.Value) (out *component.Value, err error) {
 	entry, err := p.take(c, args[0], kind, true)
@@ -368,7 +434,7 @@ func (p *HTTP) consumeBody(c *component.Caller, kind string, args []component.Va
 	accepted := false
 	defer func() {
 		if !accepted {
-			b.dispose(c, httpErr("connection-terminated"))
+			b.dispose(c, errConnectionTerminated)
 			_ = c.DropAsync(args[1].Resource)
 		}
 	}()
@@ -386,12 +452,13 @@ func (p *HTTP) consumeBody(c *component.Caller, kind string, args []component.Va
 		return nil, err
 	}
 	b.acquire()
-	handled := false
-	if err := c.Schedule(component.AsyncWork{Owned: []*component.Resource{args[1].Resource}, Start: func(c *component.Caller, refs []*component.Resource) (*component.HostCompletion, error) {
+	b.consumeHandled = false
+	owned := [1]*component.Resource{args[1].Resource}
+	if err := c.Schedule(component.AsyncWork{Owned: owned[:], Start: func(c *component.Caller, refs []*component.Resource) (*component.HostCompletion, error) {
 		r, err := c.ReadAsyncContext(b.ctx, refs[0], 1)
 		completion := component.NewHostCompletion()
 		if err != nil {
-			b.dispose(nil, httpErr("connection-terminated"))
+			b.dispose(nil, errConnectionTerminated)
 			if c.Context().Err() != nil {
 				completion.Cancelled()
 				return completion, nil
@@ -407,12 +474,12 @@ func (p *HTTP) consumeBody(c *component.Caller, kind string, args []component.Va
 		} else {
 			b.handled()
 		}
-		handled = true
+		b.consumeHandled = true
 		completion.Resolve(func(*component.Caller) (*component.Value, error) { return nil, nil })
 		return completion, nil
 	}, Cleanup: func() {
-		if !handled {
-			b.dispose(nil, httpErr("connection-terminated"))
+		if !b.consumeHandled {
+			b.dispose(nil, errConnectionTerminated)
 		}
 		b.release()
 	}}); err != nil {
@@ -427,27 +494,31 @@ func (p *HTTP) consumeBody(c *component.Caller, kind string, args []component.Va
 		_ = c.DropAsync(anchor)
 	}
 	accepted = true
-	return &component.Value{Elements: []component.Value{stream, future}}, nil
+	b.pairBuf[0], b.pairBuf[1] = stream, future
+	b.pairVal = component.Value{Elements: b.pairBuf[:2]}
+	return &b.pairVal, nil
 }
 func (b *httpBody) byteSource(c *component.Caller, t component.ValueType) (component.Value, error) {
 	b.mu.Lock()
 	original := b.original
 	b.mu.Unlock()
 	b.acquire()
-	signal := component.NewCancellation()
-	buffered := &httpReadBuffer{}
+	signal := &b.byteCancel
+	buffered := &b.readBuf
 	source := component.AsyncSource{Cancel: signal, Close: func() {
 		buffered.close()
 		b.mu.Lock()
 		done := b.bodyDone
 		b.mu.Unlock()
 		if !done {
-			b.dispose(nil, httpErr("connection-terminated"))
+			b.dispose(nil, errConnectionTerminated)
 		}
 		b.release()
 	}}
+	var ownedBuf [1]*component.Resource
 	if original != nil {
-		source.Owned = []*component.Resource{original}
+		ownedBuf[0] = original
+		source.Owned = ownedBuf[:]
 		source.ReadOwned = func(c *component.Caller, refs []*component.Resource, limit uint32) (*component.ReadCompletion, error) {
 			return c.AwaitSourceRead(b.ctx, refs[0], limit, func(c *component.Caller, r component.ReadResult, err error) (component.ReadResult, error) {
 				if err != nil {
@@ -572,30 +643,30 @@ func (b *httpBody) byteSource(c *component.Caller, t component.ValueType) (compo
 }
 func (b *httpBody) trailerSource(c *component.Caller, t component.ValueType) (component.Value, error) {
 	b.acquire()
-	var resolved atomic.Bool
 	source := component.AsyncSource{Close: func() {
-		if !resolved.Load() {
-			b.dispose(nil, httpErr("connection-terminated"))
+		if !b.trailerResolved.Load() {
+			b.dispose(nil, errConnectionTerminated)
 		}
 		b.release()
 	}}
 	source.ReadReady = func(c *component.Caller, _ uint32) (component.ReadResult, bool, error) {
 		b.mu.Lock()
-		ready := b.bodyDone && (b.trailerDone == nil || b.trailerReady)
+		ready := b.bodyDone && (!b.hasTrailers || b.trailerReady)
 		b.mu.Unlock()
 		if !ready {
 			return component.ReadResult{}, false, nil
 		}
-		value, err := b.trailerResult(c, &resolved)
-		return component.ReadResult{Values: []component.Value{value}, Closed: true}, true, err
+		value, err := b.trailerResult(c, &b.trailerResolved)
+		if err != nil {
+			return component.ReadResult{}, true, err
+		}
+		b.trailerResultBuf[0] = value
+		return component.ReadResult{Values: b.trailerResultBuf[:1], Closed: true}, true, nil
 	}
 	source.ReadOwned = func(c *component.Caller, refs []*component.Resource, _ uint32) (*component.ReadCompletion, error) {
 		completion := component.NewReadCompletion()
-		b.mu.Lock()
-		done := b.bodyDone
-		b.mu.Unlock()
-		if !done {
-			if err := c.WaitSignal(b.ctx, b.done); err != nil {
+		if doneChan, done := b.bodyDoneChan(); !done {
+			if err := c.WaitSignal(b.ctx, doneChan); err != nil {
 				if c.Context().Err() != nil {
 					completion.Cancelled()
 					return completion, nil
@@ -612,12 +683,13 @@ func (b *httpBody) trailerSource(c *component.Caller, t component.ValueType) (co
 			}
 			return nil, err
 		}
-		value, err := b.trailerResult(c, &resolved)
+		value, err := b.trailerResult(c, &b.trailerResolved)
 		if err != nil {
 			return nil, err
 		}
+		b.trailerResultBuf[0] = value
 		completion.Resolve(func(*component.Caller) (component.ReadResult, error) {
-			return component.ReadResult{Values: []component.Value{value}, Closed: true}, nil
+			return component.ReadResult{Values: b.trailerResultBuf[:1], Closed: true}, nil
 		})
 		return completion, nil
 	}
@@ -757,8 +829,9 @@ func (b *httpBody) watchTrailers(c *component.Caller) error {
 		return nil
 	}
 	b.acquire()
-	observed := false
-	err := c.Schedule(component.AsyncWork{Owned: []*component.Resource{ref}, Start: func(c *component.Caller, refs []*component.Resource) (*component.HostCompletion, error) {
+	b.trailerObserved = false
+	owned := [1]*component.Resource{ref}
+	err := c.Schedule(component.AsyncWork{Owned: owned[:], Start: func(c *component.Caller, refs []*component.Resource) (*component.HostCompletion, error) {
 		return c.AwaitRead(b.ctx, refs[0], 1, func(c *component.Caller, result component.ReadResult, err error) (*component.Value, error) {
 			var fields *host.HTTPFields
 			if err == nil {
@@ -782,12 +855,12 @@ func (b *httpBody) watchTrailers(c *component.Caller) error {
 				err = httpTransportError(err, "connection-terminated")
 			}
 			b.finishTrailers(fields, err)
-			observed = true
+			b.trailerObserved = true
 			return nil, nil
 		})
 	}, Cleanup: func() {
-		if !observed {
-			b.finishTrailers(nil, httpErr("connection-terminated"))
+		if !b.trailerObserved {
+			b.finishTrailers(nil, errConnectionTerminated)
 		}
 		b.release()
 	}})
@@ -808,18 +881,29 @@ func (b *httpBody) finishTrailers(fields *host.HTTPFields, err error) {
 		if err != nil && b.failure == nil {
 			b.failure = err
 		}
-		close(b.trailerDone)
+		if b.trailerDone != nil {
+			close(b.trailerDone)
+		}
 	}
 	b.mu.Unlock()
 	if err != nil {
 		b.dispose(nil, err)
 	}
 }
-func (b *httpBody) waitTrailers(c *component.Caller) error {
+func (b *httpBody) trailerDoneChan() chan struct{} {
 	b.mu.Lock()
-	done, ready := b.trailerDone, b.trailerReady
-	b.mu.Unlock()
-	if done == nil || ready {
+	defer b.mu.Unlock()
+	if !b.hasTrailers || b.trailerReady {
+		return nil
+	}
+	if b.trailerDone == nil {
+		b.trailerDone = make(chan struct{})
+	}
+	return b.trailerDone
+}
+func (b *httpBody) waitTrailers(c *component.Caller) error {
+	done := b.trailerDoneChan()
+	if done == nil {
 		return nil
 	}
 	err := c.WaitSignal(b.ctx, done)

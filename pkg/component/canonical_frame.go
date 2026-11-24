@@ -20,6 +20,7 @@ type canonicalFrame struct {
 	// Callers and parameter/result snapshots never point into this object.
 	host        *resourceHostCall
 	hostRead    hostReadBuffer
+	readFn      Function
 	hostValue   Value
 	cloneValues [8]Value
 	cloneBuf    []Value
@@ -80,6 +81,7 @@ func (in *Instance) releaseCanonicalFrame(frame *canonicalFrame) {
 	frame.state = resourceCodecState{}
 	frame.auxState = resourceCodecState{}
 	frame.hostRead = hostReadBuffer{}
+	frame.readFn = Function{}
 	frame.hostValue = Value{}
 	frame.cloneValues = [8]Value{}
 	frame.cloneBuf = nil

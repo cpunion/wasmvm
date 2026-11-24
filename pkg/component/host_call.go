@@ -12,7 +12,7 @@ type hostCall struct {
 	function      *Function
 	codec         canonical.Codec
 	args          []Value
-	inlineCreated [2]*Resource
+	inlineCreated [3]*Resource
 	inlineReads   [1]*pendingHostRead
 	created       []*Resource
 	reads         []*pendingHostRead
@@ -113,7 +113,7 @@ func (h *hostCall) expire(c *Caller) {
 			h.created = append(h.created, c.created...)
 		}
 		c.created = nil
-		c.inlineCreated = [2]*Resource{}
+		c.inlineCreated = [3]*Resource{}
 	}
 	if len(c.reads) != 0 {
 		if len(h.reads) == 0 && len(c.reads) > len(h.inlineReads) {
@@ -191,7 +191,7 @@ func (h *hostCall) finish(core *vm.Caller, complete bool, err error) error {
 		in.heldValues -= h.values
 		in.heldBytes -= h.bytes
 		h.values, h.bytes = 0, 0
-		h.inlineCreated = [2]*Resource{}
+		h.inlineCreated = [3]*Resource{}
 		h.inlineReads = [1]*pendingHostRead{}
 	}()
 	if h.cancel != nil {

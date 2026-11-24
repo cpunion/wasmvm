@@ -191,9 +191,7 @@ func (p *httpPump) scheduleWrite(c *component.Caller, refs []*component.Resource
 			}
 			if failure == nil && batch.Closed {
 				p.body.end(nil)
-				p.body.mu.Lock()
-				done := p.body.trailerDone
-				p.body.mu.Unlock()
+				done := p.body.trailerDoneChan()
 				if done != nil {
 					select {
 					case <-done:

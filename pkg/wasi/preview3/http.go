@@ -70,10 +70,22 @@ type httpEntry struct {
 type httpMessage struct {
 	headers                 *host.HTTPFields
 	method                  string
+	pathVal, schemeVal      string
+	authorityVal            string
 	path, scheme, authority *string
 	status                  uint16
 	options                 *[3]*uint64
 	body                    *httpBody
+}
+
+type httpMessageEntry struct {
+	entry   httpEntry
+	message httpMessage
+}
+
+type httpFieldsEntry struct {
+	entry  httpEntry
+	fields host.HTTPFields
 }
 
 func NewHTTP(network *Sockets, config HTTPConfig) (*HTTP, error) {

@@ -57,9 +57,9 @@ func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.
 		}
 		var codec *canonical.Codec
 		if task.runtime != nil && task.runtime.codecs != nil {
-			codec = in.initResourceCodecState(&task.runtime.codecs.result, c, n, plan, true)
+			codec = in.initResourceCodecState(&task.runtime.codecs.result, c, n, plan, false)
 		} else {
-			codec = in.codec(c, n, plan)
+			codec = in.initResourceCodecState(&resourceCodecState{}, c, n, plan, false)
 		}
 		if r, ok := codec.Resources.(*resourceCodec); ok {
 			// Cleanup happens after this builtin's Caller expires. Retain the

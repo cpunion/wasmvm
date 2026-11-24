@@ -67,9 +67,10 @@ func (c *Caller) awaitRead(ctx context.Context, ref *Resource, limit uint32, che
 		state.resolve()
 		return &state.completion, nil
 	}
-	state.stopOperation = context.AfterFunc(ctx, state.resolve)
+	fn := state.resolve
+	state.stopOperation = context.AfterFunc(ctx, fn)
 	if parent != ctx {
-		state.stopParent = context.AfterFunc(parent, state.resolve)
+		state.stopParent = context.AfterFunc(parent, fn)
 	}
 	return &state.completion, nil
 }

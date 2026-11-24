@@ -23,7 +23,7 @@ func checkCanonicalFramesCleared(t *testing.T, in *Instance) int {
 		if count > 8 {
 			t.Fatal("cyclic frame cache")
 		}
-		if frame.caller != nil || frame.n != nil || frame.plan != nil || frame.memory.caller != nil || frame.state.codec.Resources != nil || frame.state.codec.Transfer.Context != nil || frame.state.codec.Transfer.Memory != nil || frame.state.codec.Transfer.Realloc != nil || frame.state.resources.core != nil || frame.state.memory.caller != nil || frame.auxState.codec.Resources != nil || frame.auxState.codec.Transfer.Context != nil || frame.auxState.codec.Transfer.Memory != nil || frame.auxState.resources.core != nil || frame.auxState.memory.caller != nil || frame.hostRead.buffer.in != nil || frame.hostRead.hooks.check != nil || frame.hostRead.hooks.into != nil || frame.cloneBuf != nil || len(frame.args) != 0 {
+		if frame.caller != nil || frame.n != nil || frame.plan != nil || frame.memory.caller != nil || frame.state.codec.Resources != nil || frame.state.codec.Transfer.Context != nil || frame.state.codec.Transfer.Memory != nil || frame.state.codec.Transfer.Realloc != nil || frame.state.resources.core != nil || frame.state.memory.caller != nil || frame.auxState.codec.Resources != nil || frame.auxState.codec.Transfer.Context != nil || frame.auxState.codec.Transfer.Memory != nil || frame.auxState.resources.core != nil || frame.auxState.memory.caller != nil || frame.hostRead.buffer.in != nil || frame.hostRead.hooks.check != nil || frame.hostRead.hooks.into != nil || frame.readFn.instance != nil || frame.cloneBuf != nil || len(frame.args) != 0 {
 			t.Fatal("released frame retains invocation state")
 		}
 		for _, v := range frame.cloneValues {

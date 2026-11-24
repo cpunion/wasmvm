@@ -19,6 +19,7 @@ type HTTPFields struct {
 	mu        sync.RWMutex
 	limits    HTTPFieldLimits
 	immutable bool
+	inline    [4]HTTPField
 	fields    []HTTPField
 	size      uint64
 }
@@ -78,30 +79,45 @@ func HTTPFieldValue(text string) bool {
 	return true
 }
 func NewHTTPFields(limits HTTPFieldLimits, fields []HTTPField, immutable bool) (*HTTPFields, error) {
-	if limits.Count == 0 || limits.Bytes == 0 {
-		return nil, wasm.ErrLimit
+	out := &HTTPFields{}
+	if err := InitHTTPFields(out, limits, fields, immutable); err != nil {
+		return nil, err
 	}
-	out := &HTTPFields{limits: limits, immutable: immutable}
+	return out, nil
+}
+
+func InitHTTPFields(out *HTTPFields, limits HTTPFieldLimits, fields []HTTPField, immutable bool) error {
+	if limits.Count == 0 || limits.Bytes == 0 {
+		return wasm.ErrLimit
+	}
 	if uint64(len(fields)) > uint64(limits.Count) {
-		return nil, wasm.ErrLimit
+		return wasm.ErrLimit
+	}
+	*out = HTTPFields{limits: limits, immutable: immutable}
+	if len(fields) != 0 {
+		if len(fields) <= len(out.inline) {
+			out.fields = out.inline[:0]
+		} else {
+			out.fields = make([]HTTPField, 0, len(fields))
+		}
 	}
 	for _, field := range fields {
 		if err := out.checkSize(out.size, len(field.Name), len(field.Value)); err != nil {
-			return nil, err
+			return err
 		}
 		if !HTTPToken(field.Name) || !HTTPFieldValue(field.Value) {
-			return nil, HTTPHeaderSyntax
+			return HTTPHeaderSyntax
 		}
 		if limits.Forbidden[strings.ToLower(field.Name)] {
 			if immutable {
 				continue
 			}
-			return nil, HTTPHeaderForbidden
+			return HTTPHeaderForbidden
 		}
 		out.fields = append(out.fields, field)
 		out.size += uint64(len(field.Name)) + uint64(len(field.Value))
 	}
-	return out, nil
+	return nil
 }
 func (h *HTTPFields) checkSize(size uint64, name, value int) error {
 	if size > h.limits.Bytes || uint64(name) > h.limits.Bytes-size || uint64(value) > h.limits.Bytes-size-uint64(name) {
@@ -140,6 +156,19 @@ func (h *HTTPFields) Entries() []HTTPField {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	return append([]HTTPField(nil), h.fields...)
+}
+func (h *HTTPFields) Len() int {
+	h.mu.RLock()
+	n := len(h.fields)
+	h.mu.RUnlock()
+	return n
+}
+func (h *HTTPFields) ForEach(fn func(HTTPField)) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	for _, field := range h.fields {
+		fn(field)
+	}
 }
 func (h *HTTPFields) Clone() *HTTPFields {
 	h.mu.RLock()
@@ -186,9 +215,40 @@ func (h *HTTPFields) mutate(name string, values []string, appendOnly bool) error
 		size += uint64(len(name)) + uint64(len(value))
 	}
 	// Validation completes before modifying the original value.
-	fields := make([]HTTPField, 0, int(count)+len(values))
+	if appendOnly {
+		if len(values) != 0 {
+			if h.fields == nil {
+				h.fields = h.inline[:0]
+			}
+			for _, value := range values {
+				h.fields = append(h.fields, HTTPField{name, value})
+			}
+		}
+		h.size = size
+		return nil
+	}
+	total := int(count) + len(values)
+	if total <= len(h.inline) {
+		var next [4]HTTPField
+		n := 0
+		for _, field := range h.fields {
+			if !strings.EqualFold(field.Name, name) {
+				next[n] = field
+				n++
+			}
+		}
+		for _, value := range values {
+			next[n] = HTTPField{name, value}
+			n++
+		}
+		h.inline = next
+		h.fields = h.inline[:n]
+		h.size = size
+		return nil
+	}
+	fields := make([]HTTPField, 0, total)
 	for _, field := range h.fields {
-		if appendOnly || !strings.EqualFold(field.Name, name) {
+		if !strings.EqualFold(field.Name, name) {
 			fields = append(fields, field)
 		}
 	}

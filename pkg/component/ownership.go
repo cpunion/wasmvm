@@ -18,7 +18,7 @@ type resourceCodec struct {
 	core          *vm.Caller
 	n             *namespace
 	scope         *canonical.BorrowScope
-	inlineCreated [4]*Resource
+	inlineCreated [6]*Resource
 	inlineLowered [2]ownedHandle
 	created       []*Resource
 	escaped       []*Resource
@@ -205,7 +205,7 @@ func (r *resourceCodec) Finish(err error) error {
 	r.scope, r.created, r.lowered, r.escaped = nil, nil, nil, nil
 	r.seen = referenceSet{}
 	defer func() {
-		r.inlineCreated = [4]*Resource{}
+		r.inlineCreated = [6]*Resource{}
 		r.inlineLowered = [2]ownedHandle{}
 	}()
 	guard := cleanupGuard{}
@@ -376,7 +376,7 @@ type referenceEntry struct {
 }
 
 type referenceSet struct {
-	inline [4]referenceEntry
+	inline [6]referenceEntry
 	count  uint8
 	rest   map[any]model.Kind
 }

@@ -19,10 +19,13 @@ import (
 type httpReply struct {
 	mu               sync.Mutex
 	ready, abandoned bool
+	readyFlag        atomic.Bool
 	done             chan struct{}
 	response         *http.Response
 	failure          error
 }
+
+func (r *httpReply) isReady() bool { return r.readyFlag.Load() }
 
 func (r *httpReply) set(response *http.Response, err error) {
 	r.mu.Lock()
@@ -34,6 +37,7 @@ func (r *httpReply) set(response *http.Response, err error) {
 		return
 	}
 	r.ready = true
+	r.readyFlag.Store(true)
 	r.response = response
 	r.failure = err
 	if r.done != nil {
@@ -106,24 +110,29 @@ func (p *HTTP) callIncoming(ctx context.Context, in *component.Instance, request
 	if reader == nil {
 		reader = http.NoBody
 	}
+	_, isSnapshot := reader.(*snapshotReader)
 	body.mu.Lock()
 	body.reader = reader
-	body.networkStop = context.AfterFunc(callCtx, func() { body.dispose(nil, callCtx.Err()) })
+	if collector == nil || !isSnapshot {
+		body.networkStop = context.AfterFunc(callCtx, func() { body.dispose(nil, callCtx.Err()) })
+	}
 	body.readTimeout = p.config.Timeout
 	body.sizeFailure = "HTTP-request-body-size"
-	body.trailerSnapshot = func() (*host.HTTPFields, error) {
-		if len(request.Trailer) == 0 {
-			return nil, nil
+	if !isSnapshot || len(request.Trailer) != 0 {
+		body.trailerSnapshot = func() (*host.HTTPFields, error) {
+			if len(request.Trailer) == 0 {
+				return nil, nil
+			}
+			fields, err := p.fieldsFromHeader(request.Trailer)
+			if err != nil {
+				return nil, httpErr("HTTP-request-trailer-section-size")
+			}
+			return fields, nil
 		}
-		fields, err := p.fieldsFromHeader(request.Trailer)
-		if err != nil {
-			return nil, httpErr("HTTP-request-trailer-section-size")
-		}
-		return fields, nil
 	}
 	if request.ContentLength >= 0 {
-		n := uint64(request.ContentLength)
-		body.expected = &n
+		body.expectedValue = uint64(request.ContentLength)
+		body.expected = &body.expectedValue
 	}
 	body.mu.Unlock()
 	if err = p.reserveRequest(); err != nil {
@@ -147,94 +156,20 @@ func (p *HTTP) callIncoming(ctx context.Context, in *component.Instance, request
 		}
 	}
 	path := request.URL.RequestURI()
-	reply := &httpReply{}
+	var reply *httpReply
 	var callDone chan struct{}
 	if collector == nil {
-		reply.done = make(chan struct{})
+		reply = &httpReply{done: make(chan struct{})}
 		callDone = make(chan struct{})
-	}
-	run := func() {
-		if callDone != nil {
-			defer close(callDone)
-		}
-		defer func() {
-			if recover() != nil {
-				body.dispose(nil, httpErr("internal-error"))
-				reply.set(nil, httpErr("internal-error"))
-				if collector != nil {
-					collector.failure = httpErr("internal-error")
-				}
-				cancel()
-			}
-		}()
-		defer p.releaseRequest()
-		fuel, failed := function.CallWithResultPrepared(callCtx, options, func(c *component.Caller) ([]component.Value, error) {
-			input, failed := p.publish(c, &httpEntry{kind: "request", message: &httpMessage{headers: fields, method: request.Method, path: &path, scheme: &scheme, authority: &authority, body: body}})
-			return []component.Value{input}, failed
-		}, func(c *component.Caller, v *component.Value) error {
-			if v == nil {
-				return vm.ErrType
-			}
-			if v.Case == 1 {
-				reply.set(nil, &httpError{value: v.Elements[0]})
-				return nil
-			}
-			entry, failed := p.take(c, v.Elements[0], "response", false)
-			if failed != nil {
-				return failed
-			}
-			message := entry.message
-			owned := true
-			defer func() {
-				if owned {
-					message.body.dispose(c, httpErr("connection-terminated"))
-					message.body.release()
-				}
-			}()
-			if message.status < 200 {
-				return httpErr("HTTP-protocol-error")
-			}
-			length, failed := httpContentLength(message.headers)
-			if failed != nil {
-				return failed
-			}
-			response := &http.Response{StatusCode: int(message.status), Header: httpHeader(message.headers), Trailer: http.Header{}, ContentLength: -1}
-			var stream io.ReadCloser
-			if collector == nil {
-				stream, failed = message.body.pump(c, response.Trailer, length)
-			} else {
-				collector.data, failed = message.body.collect(c, response.Trailer, length, collector.limit, collector.data)
-				stream = http.NoBody
-			}
-			if failed != nil {
-				return failed
-			}
-			message.body.handled()
-			if collector == nil {
-				response.Body = &httpCallBody{ReadCloser: stream, done: callDone, interrupt: context.AfterFunc(callCtx, func() { message.body.dispose(nil, callCtx.Err()) }), release: message.body.release, cancel: cancel, stop: stop}
-			} else {
-				collector.body = message.body
-				response.Body = http.NoBody
-			}
-			owned = false
-			reply.set(response, nil)
-			return nil
-		})
-		if collector != nil {
-			collector.fuel, collector.failure = fuel, failed
-		}
-		if failed != nil {
-			body.dispose(nil, failed)
-			reply.set(nil, failed)
-			cancel()
-		} else {
-			reply.set(nil, httpErr("HTTP-response-incomplete"))
-		}
+	} else {
+		reply = &collector.reply
 	}
 	if collector != nil {
-		run()
+		p.runIncoming(callCtx, cancel, stop, function, options, fields, body, request.Method, path, scheme, authority, reply, callDone, collector)
 	} else {
-		if err = p.worker(run); err != nil {
+		if err = p.worker(func() {
+			p.runIncoming(callCtx, cancel, stop, function, options, fields, body, request.Method, path, scheme, authority, reply, callDone, nil)
+		}); err != nil {
 			return nil, err
 		}
 	}
@@ -247,7 +182,7 @@ func (p *HTTP) callIncoming(ctx context.Context, in *component.Instance, request
 		if collector.failure != nil {
 			return nil, collector.failure
 		}
-		// run joined the guest tasks synchronously. The complete reply has
+		// runIncoming joined the guest tasks synchronously. The complete reply has
 		// no channel handoff or streaming body lifetime left to manage.
 		return reply.response, reply.failure
 	}
@@ -272,6 +207,102 @@ func (p *HTTP) callIncoming(ctx context.Context, in *component.Instance, request
 			return nil, failure
 		}
 		return nil, callCtx.Err()
+	}
+}
+
+func (p *HTTP) runIncoming(callCtx context.Context, cancel context.CancelFunc, stop func() bool, function *component.Function, options component.CallOptions, fields *host.HTTPFields, body *httpBody, method, path, scheme, authority string, reply *httpReply, callDone chan struct{}, collector *httpCollector) {
+	if callDone != nil {
+		defer close(callDone)
+	}
+	defer func() {
+		if recover() != nil {
+			body.dispose(nil, httpErr("internal-error"))
+			reply.set(nil, httpErr("internal-error"))
+			if collector != nil {
+				collector.failure = httpErr("internal-error")
+			}
+			cancel()
+		}
+	}()
+	defer p.releaseRequest()
+	fuel, failed := function.CallWithResultPrepared(callCtx, options, func(c *component.Caller) ([]component.Value, error) {
+		alloc := &httpMessageEntry{
+			entry: httpEntry{kind: "request"},
+			message: httpMessage{
+				headers:      fields,
+				method:       method,
+				pathVal:      path,
+				schemeVal:    scheme,
+				authorityVal: authority,
+				body:         body,
+			},
+		}
+		alloc.message.path = &alloc.message.pathVal
+		alloc.message.scheme = &alloc.message.schemeVal
+		alloc.message.authority = &alloc.message.authorityVal
+		alloc.entry.message = &alloc.message
+		input, failed := p.publish(c, &alloc.entry)
+		return []component.Value{input}, failed
+	}, func(c *component.Caller, v *component.Value) error {
+		if v == nil {
+			return vm.ErrType
+		}
+		if v.Case == 1 {
+			reply.set(nil, &httpError{value: v.Elements[0]})
+			return nil
+		}
+		entry, failed := p.take(c, v.Elements[0], "response", false)
+		if failed != nil {
+			return failed
+		}
+		message := entry.message
+		owned := true
+		defer func() {
+			if owned {
+				message.body.dispose(c, errConnectionTerminated)
+				message.body.release()
+			}
+		}()
+		if message.status < 200 {
+			return httpErr("HTTP-protocol-error")
+		}
+		length, failed := httpContentLength(message.headers)
+		if failed != nil {
+			return failed
+		}
+		if collector == nil {
+			response := &http.Response{StatusCode: int(message.status), Header: httpHeader(message.headers), Trailer: http.Header{}, ContentLength: -1}
+			stream, failed := message.body.pump(c, response.Trailer, length)
+			if failed != nil {
+				return failed
+			}
+			message.body.handled()
+			response.Body = &httpCallBody{ReadCloser: stream, done: callDone, interrupt: context.AfterFunc(callCtx, func() { message.body.dispose(nil, callCtx.Err()) }), release: message.body.release, cancel: cancel, stop: stop}
+			owned = false
+			reply.set(response, nil)
+			return nil
+		}
+		collector.statusCode = int(message.status)
+		collector.header = httpHeader(message.headers)
+		collector.trailer = http.Header{}
+		if failed = collector.collectBody(c, message.body, length); failed != nil {
+			return failed
+		}
+		message.body.handled()
+		collector.body = message.body
+		owned = false
+		reply.set(nil, nil)
+		return nil
+	})
+	if collector != nil {
+		collector.fuel, collector.failure = fuel, failed
+	}
+	if failed != nil {
+		body.dispose(nil, failed)
+		reply.set(nil, failed)
+		cancel()
+	} else if !reply.isReady() {
+		reply.set(nil, errResponseIncomplete)
 	}
 }
 

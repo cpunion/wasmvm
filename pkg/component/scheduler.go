@@ -392,7 +392,7 @@ func (t *componentTask) resume(c *vm.Caller) (err error) {
 	t.core = nil
 	if !plan.Async {
 		codec := t.task.parameters
-		t.in.configureCodecMemory(codec, &t.codecs.param.memory, c, t.n, plan, true)
+		t.in.configureCodecMemory(codec, &t.codecs.param.memory, c, t.n, plan, false)
 		bindResourceCaller(codec, c)
 		t.task.result, err = liftResult(codec, plan, called.Values)
 		if err != nil {

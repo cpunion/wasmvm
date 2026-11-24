@@ -453,23 +453,28 @@ type sourceState struct {
 type sourceReadPlan struct {
 	typ    validate.Type
 	values functionValues
-	fn     Function
+}
+
+func (in *Instance) sourceReadPlan(batch *model.Type) *sourceReadPlan {
+	if plan := in.sourceReadPlans[batch]; plan != nil {
+		return plan
+	}
+	plan := &sourceReadPlan{
+		typ:    validate.Type{Kind: model.AsyncFunction, Result: batch},
+		values: functionValues{result: canonical.NewValuePlan(batch)},
+	}
+	if in.sourceReadPlans == nil {
+		in.sourceReadPlans = map[*model.Type]*sourceReadPlan{}
+	}
+	in.sourceReadPlans[batch] = plan
+	return plan
 }
 
 func (s *sourceState) ensureReadPlan(batch *model.Type) *sourceReadPlan {
 	if s.readPlan == nil {
-		plan := &sourceReadPlan{
-			typ:    validate.Type{Kind: model.AsyncFunction, Result: batch},
-			values: functionValues{result: canonical.NewValuePlan(batch)},
-		}
-		plan.fn = Function{instance: s.in, scope: s.writer.scope, typ: &plan.typ, values: &plan.values}
-		s.readPlan = plan
+		s.readPlan = s.in.sourceReadPlan(batch)
 	}
 	return s.readPlan
-}
-
-func (s *sourceState) readyFunction(batch *model.Type) *Function {
-	return &s.ensureReadPlan(batch).fn
 }
 
 func (s *sourceState) readFunction(batch *model.Type) *Function {

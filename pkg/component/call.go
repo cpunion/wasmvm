@@ -149,7 +149,7 @@ type callerState struct {
 	core          *vm.Caller
 	instance      *Instance
 	function      *Function
-	inlineCreated [2]*Resource
+	inlineCreated [3]*Resource
 	inlineReads   [1]*pendingHostRead
 	created       []*Resource
 	reads         []*pendingHostRead

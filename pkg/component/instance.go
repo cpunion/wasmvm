@@ -65,6 +65,7 @@ type Instance struct {
 	tasks                 *taskScheduler
 	heldValues, heldBytes uint64
 	bufferTypes           map[*model.Type]*model.Type
+	sourceReadPlans       map[*model.Type]*sourceReadPlan
 	comparisons           validate.ValueComparisons
 	work                  uint64
 	bindings              map[any]Value

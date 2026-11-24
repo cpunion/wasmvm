@@ -83,7 +83,7 @@ func (rt *resourceType) destroyHost(core *vm.Caller, rep uint64) error {
 			}
 		}
 		c.created = nil
-		c.inlineCreated = [2]*Resource{}
+		c.inlineCreated = [3]*Resource{}
 	}()
 	err := rt.host.destructor(c, uint32(rep))
 	complete = err == nil
