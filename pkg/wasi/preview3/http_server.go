@@ -84,8 +84,11 @@ func (p *HTTP) callIncoming(ctx context.Context, in *component.Instance, request
 	if err != nil {
 		return nil, err
 	}
-	if err = httpWITFunctions["handler"]["handle"].check(p.types)(function.Info()); err != nil {
-		return nil, err
+	if p.checkedHandler.Load() != function {
+		if err = httpWITFunctions["handler"]["handle"].check(p.types)(function.Info()); err != nil {
+			return nil, err
+		}
+		p.checkedHandler.Store(function)
 	}
 	fields, err := p.fieldsFromHeader(request.Header)
 	if err != nil {

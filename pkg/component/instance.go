@@ -153,24 +153,29 @@ func (in *Instance) WaitClosed(ctx context.Context) error {
 
 func (in *Instance) Function(path ...string) (*Function, error) {
 	in.mu.Lock()
-	defer in.mu.Unlock()
 	if in.closed {
+		in.mu.Unlock()
 		return nil, wasm.ErrClosed
 	}
 	exports := in.exports
 	for i, name := range path {
 		e, ok, _ := lookupName(exports, name, nil)
 		if !ok {
+			in.mu.Unlock()
 			return nil, vm.ErrLink
 		}
 		if i == len(path)-1 && e.function != nil {
-			return e.function, nil
+			fn := e.function
+			in.mu.Unlock()
+			return fn, nil
 		}
 		if e.instance == nil {
+			in.mu.Unlock()
 			return nil, vm.ErrType
 		}
 		exports = e.instance
 	}
+	in.mu.Unlock()
 	return nil, vm.ErrLink
 }
 

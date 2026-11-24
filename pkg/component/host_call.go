@@ -165,36 +165,73 @@ func (h *hostCall) acceptInto(result, accepted *Value) error {
 
 func (h *hostCall) acceptIntoScratch(result, accepted *Value, scratch *[]Value) error {
 	h.limit()
-	defer h.account()
 	if (result == nil) != (h.function.typ.Result == nil) {
+		h.account()
 		return vm.ErrType
 	}
 	if result == nil {
+		h.account()
 		return nil
 	}
 	v, err := h.function.valuePlans().result.CloneScratch(&h.codec, *result, scratch)
 	if err != nil {
+		h.account()
 		return err
 	}
 	*accepted = v
 	if h.codec.Resources != nil {
-		return h.codec.AcceptResult(h.function.typ.Result, accepted)
+		err = h.codec.AcceptResult(h.function.typ.Result, accepted)
 	}
-	return nil
+	h.account()
+	return err
+}
+func (h *hostCall) releaseAccounting() {
+	in := h.function.instance
+	in.heldValues -= h.values
+	in.heldBytes -= h.bytes
+	h.values, h.bytes = 0, 0
+	h.inlineCreated = [3]*Resource{}
+	h.inlineReads = [1]*pendingHostRead{}
 }
 func (h *hostCall) finish(core *vm.Caller, complete bool, err error) error {
 	if h.closed {
 		return err
 	}
+	if complete && err == nil && len(h.reads) == 0 && h.completion == nil {
+		if r, ok := h.codec.Resources.(*resourceCodec); h.codec.Resources == nil || ok {
+			h.closed = true
+			if h.cancel != nil {
+				h.cancel()
+			}
+			created := h.created
+			h.created = nil
+			h.args = nil
+			for _, ref := range created {
+				h.function.instance.publishReference(ref)
+			}
+			if r != nil {
+				bindResourceCaller(&h.codec, core)
+				ended, done := r.finishSuccess()
+				if !done {
+					return h.finishRollbackAfterSuccess(r, ended)
+				}
+			}
+			h.releaseAccounting()
+			return nil
+		}
+	}
+	return h.finishSlow(core, complete, err)
+}
+func (h *hostCall) finishRollbackAfterSuccess(r *resourceCodec, err error) error {
+	defer h.releaseAccounting()
+	guard := cleanupGuard{}
+	err = guard.finishResourceRollback(r, err)
+	guard.finish()
+	return err
+}
+func (h *hostCall) finishSlow(core *vm.Caller, complete bool, err error) error {
 	h.closed = true
-	defer func() {
-		in := h.function.instance
-		in.heldValues -= h.values
-		in.heldBytes -= h.bytes
-		h.values, h.bytes = 0, 0
-		h.inlineCreated = [3]*Resource{}
-		h.inlineReads = [1]*pendingHostRead{}
-	}()
+	defer h.releaseAccounting()
 	if h.cancel != nil {
 		h.cancel()
 	}
@@ -230,7 +267,6 @@ func (h *hostCall) finish(core *vm.Caller, complete bool, err error) error {
 	err = guard.finishCodec(&h.codec, complete, err)
 	guard.finish()
 	return err
-
 }
 
 func (h *hostCall) limit() {
@@ -251,7 +287,12 @@ func (h *hostCall) account() {
 }
 
 func (h *hostCall) finishDeferred(core *vm.Caller, complete *bool, err *error) {
-	guard := cleanupGuard{panicked: recover()}
+	p := recover()
+	if p == nil && *complete && *err == nil && len(h.reads) == 0 && h.completion == nil {
+		*err = h.finish(core, true, nil)
+		return
+	}
+	guard := cleanupGuard{panicked: p}
 	guard.run(func() { *err = h.finish(core, *complete, *err) })
 	guard.finish()
 }

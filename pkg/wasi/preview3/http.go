@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/cpunion/wasmvm/internal/wasi/host"
@@ -48,6 +49,7 @@ type HTTP struct {
 	entries         map[uint32]*httpEntry
 	bodies          map[*httpBody]struct{}
 	freeBodies      []*httpBody
+	checkedHandler  atomic.Pointer[component.Function]
 	requests        uint32
 	cleanup         chan func()
 	cleanupDone     chan struct{}
@@ -304,6 +306,7 @@ func (p *HTTP) Close() {
 	}
 	p.bodies = nil
 	p.freeBodies = nil
+	p.checkedHandler.Store(nil)
 	transports := p.transports
 	p.transports = nil
 	p.mu.Unlock()
@@ -326,6 +329,7 @@ func (p *HTTP) Close() {
 		p.workers.Wait()
 		p.mu.Lock()
 		p.freeBodies = nil
+		p.checkedHandler.Store(nil)
 		p.cleanupStopping = true
 		p.mu.Unlock()
 		p.cleanup <- nil
