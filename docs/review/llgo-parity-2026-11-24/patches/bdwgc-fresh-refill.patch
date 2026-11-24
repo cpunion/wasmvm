@@ -1,0 +1,11 @@
+--- a/mallocx.c
++++ b/mallocx.c
+@@ -448,7 +448,7 @@
+         if (h /* != NULL */) { /* CPPCHECK */
+           if (IS_UNCOLLECTABLE(k)) GC_set_hdr_marks(HDR(h));
+           GC_bytes_allocd += HBLKSIZE - HBLKSIZE % lb;
+-#         ifdef PARALLEL_MARK
++#         if defined(PARALLEL_MARK) && !defined(WASMVM_SERIAL_FRESH)
+             if (GC_parallel) {
+               GC_acquire_mark_lock();
+               ++ GC_fl_builder_count;

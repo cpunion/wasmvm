@@ -1,0 +1,2999 @@
+{
+  "blocks": 10,
+  "source": "b66873058b7dc99667404a895086050adb000279",
+  "base": "ec3b3a42eab7f82a2c5a3e682f127abd55c2240e",
+  "results": {
+    "original22-v1/gc/struct-access/interpreter": {
+      "warmNs": {
+        "medians": {
+          "base-go-interpreter": 39.90415,
+          "base-llgo-main-interpreter": 37.7083,
+          "head-go-interpreter": 40.0917,
+          "head-llgo-main-interpreter": 36.6146
+        },
+        "AA": {
+          "base-go-interpreter": {
+            "ratio": 0.9992125144740094,
+            "ci95": [
+              0.9801575438997234,
+              1.0161294908143057
+            ]
+          },
+          "base-llgo-main-interpreter": {
+            "ratio": 0.9981133547665932,
+            "ci95": [
+              0.9861775167910177,
+              1.0122983497792242
+            ]
+          },
+          "head-go-interpreter": {
+            "ratio": 0.9960946658232444,
+            "ci95": [
+              0.9839453104496113,
+              1.0088669405433126
+            ]
+          },
+          "head-llgo-main-interpreter": {
+            "ratio": 0.9928794535178131,
+            "ci95": [
+              0.9721808766396429,
+              1.0119519397866776
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-interpreter/head-go-interpreter": {
+            "ratio": 0.9104104165754127,
+            "ci95": [
+              0.900873344692802,
+              0.9218694386816629
+            ],
+            "controlsResolve": false,
+            "speedChangePct": 9.840570998911268,
+            "speedChangeCI95Pct": [
+              8.4752306606529,
+              11.00339530425336
+            ]
+          },
+          "base-llgo-main-interpreter/base-go-interpreter": {
+            "ratio": 0.9409076909233757,
+            "ci95": [
+              0.9342556747448367,
+              0.9474414272022615
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 6.280351372049386,
+            "speedChangeCI95Pct": [
+              5.547421855189594,
+              7.037080644237914
+            ]
+          },
+          "head-go-interpreter/base-go-interpreter": {
+            "ratio": 1.0074529918677007,
+            "ci95": [
+              0.9980952803373103,
+              1.0176213757375132
+            ],
+            "controlsResolve": true,
+            "speedChangePct": -0.7397855709261103,
+            "speedChangeCI95Pct": [
+              -1.7316239770162278,
+              0.19083545431113347
+            ]
+          },
+          "head-llgo-main-interpreter/base-llgo-main-interpreter": {
+            "ratio": 0.9747988106105433,
+            "ci95": [
+              0.9630746339313879,
+              0.9886563840778843
+            ],
+            "controlsResolve": false,
+            "speedChangePct": 2.5852708389819012,
+            "speedChangeCI95Pct": [
+              1.1473769961740432,
+              3.83411261886093
+            ]
+          }
+        },
+        "missing": []
+      },
+      "cpuNs": {
+        "medians": {
+          "base-go-interpreter": 44.26875,
+          "base-llgo-main-interpreter": 38.728125,
+          "head-go-interpreter": 44.82118055555556,
+          "head-llgo-main-interpreter": 37.65277777777778
+        },
+        "AA": {
+          "base-go-interpreter": {
+            "ratio": 0.9933914008161924,
+            "ci95": [
+              0.9735696372943861,
+              1.010925693722525
+            ]
+          },
+          "base-llgo-main-interpreter": {
+            "ratio": 1.0080199052455163,
+            "ci95": [
+              0.9933642068443358,
+              1.0237731498821685
+            ]
+          },
+          "head-go-interpreter": {
+            "ratio": 1.010389782166526,
+            "ci95": [
+              0.9986185695470959,
+              1.0237927580678905
+            ]
+          },
+          "head-llgo-main-interpreter": {
+            "ratio": 0.9965502931243632,
+            "ci95": [
+              0.9777167996508763,
+              1.0126674315077915
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-interpreter/head-go-interpreter": {
+            "ratio": 0.8422274184045425,
+            "ci95": [
+              0.8349638214700552,
+              0.8509227064462382
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 18.732776699947728,
+            "speedChangeCI95Pct": [
+              17.519487072611174,
+              19.765668198578766
+            ]
+          },
+          "base-llgo-main-interpreter/base-go-interpreter": {
+            "ratio": 0.8729594002988967,
+            "ci95": [
+              0.8660284346650645,
+              0.8804612041614475
+            ],
+            "controlsResolve": false,
+            "speedChangePct": 14.552864618630057,
+            "speedChangeCI95Pct": [
+              13.576838510721378,
+              15.469649721922686
+            ]
+          },
+          "head-go-interpreter/base-go-interpreter": {
+            "ratio": 1.0108948530222626,
+            "ci95": [
+              1.0006889892932267,
+              1.020406816656864
+            ],
+            "controlsResolve": false,
+            "speedChangePct": -1.0777434457886814,
+            "speedChangeCI95Pct": [
+              -1.999870671554549,
+              -0.06885149138228241
+            ]
+          },
+          "head-llgo-main-interpreter/base-llgo-main-interpreter": {
+            "ratio": 0.9753069410190939,
+            "ci95": [
+              0.9654863955674108,
+              0.9857970208532878
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 2.531824387008297,
+            "speedChangeCI95Pct": [
+              1.440761013298486,
+              3.5747375199736364
+            ]
+          }
+        },
+        "missing": []
+      },
+      "instructions": {
+        "medians": {
+          "base-go-interpreter": 1015.68325,
+          "base-llgo-main-interpreter": 930.7770916666666,
+          "head-go-interpreter": 981.524975,
+          "head-llgo-main-interpreter": 881.8184083333333
+        },
+        "AA": {
+          "base-go-interpreter": {
+            "ratio": 0.9998878164732627,
+            "ci95": [
+              0.9994155876624374,
+              1.0002970993265778
+            ]
+          },
+          "base-llgo-main-interpreter": {
+            "ratio": 0.9999652928635983,
+            "ci95": [
+              0.9998403687960878,
+              1.0000770704995616
+            ]
+          },
+          "head-go-interpreter": {
+            "ratio": 1.000223676785184,
+            "ci95": [
+              0.9999243376261394,
+              1.0004951245343392
+            ]
+          },
+          "head-llgo-main-interpreter": {
+            "ratio": 1.0000765945150842,
+            "ci95": [
+              0.9998939306589473,
+              1.0002597112045146
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-interpreter/head-go-interpreter": {
+            "ratio": 0.8983635896688519,
+            "ci95": [
+              0.8980625023940524,
+              0.8986907308564591
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -10.163641033114812,
+            "quantityChangeCI95Pct": [
+              -10.193749760594761,
+              -10.130926914354088
+            ]
+          },
+          "base-llgo-main-interpreter/base-go-interpreter": {
+            "ratio": 0.9165114119508176,
+            "ci95": [
+              0.916356213492177,
+              0.9166660242363845
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -8.348858804918235,
+            "quantityChangeCI95Pct": [
+              -8.3643786507823,
+              -8.333397576361545
+            ]
+          },
+          "head-go-interpreter/base-go-interpreter": {
+            "ratio": 0.9665625455821006,
+            "ci95": [
+              0.966304724995343,
+              0.9668209802006594
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -3.343745441789936,
+            "quantityChangeCI95Pct": [
+              -3.3695275004656966,
+              -3.317901979934057
+            ]
+          },
+          "head-llgo-main-interpreter/base-llgo-main-interpreter": {
+            "ratio": 0.947423661905473,
+            "ci95": [
+              0.9473328761422736,
+              0.9475133043055839
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -5.2576338094527,
+            "quantityChangeCI95Pct": [
+              -5.266712385772642,
+              -5.248669569441611
+            ]
+          }
+        },
+        "missing": []
+      },
+      "cycles": {
+        "medians": {
+          "base-go-interpreter": 167.47050833333333,
+          "base-llgo-main-interpreter": 147.52833333333334,
+          "head-go-interpreter": 169.09756666666667,
+          "head-llgo-main-interpreter": 144.09904166666666
+        },
+        "AA": {
+          "base-go-interpreter": {
+            "ratio": 0.9914660812703031,
+            "ci95": [
+              0.9748528129589994,
+              1.005498181685124
+            ]
+          },
+          "base-llgo-main-interpreter": {
+            "ratio": 1.0088915139813595,
+            "ci95": [
+              0.9959681162947647,
+              1.0225517946305518
+            ]
+          },
+          "head-go-interpreter": {
+            "ratio": 1.0114361258248226,
+            "ci95": [
+              0.9991758278206825,
+              1.023342851314127
+            ]
+          },
+          "head-llgo-main-interpreter": {
+            "ratio": 0.9992596376415942,
+            "ci95": [
+              0.9818421924264568,
+              1.0177938674438514
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-interpreter/head-go-interpreter": {
+            "ratio": 0.8526385736140785,
+            "ci95": [
+              0.8443177386418397,
+              0.8635982666861052
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -14.736142638592153,
+            "quantityChangeCI95Pct": [
+              -15.568226135816033,
+              -13.640173331389482
+            ]
+          },
+          "base-llgo-main-interpreter/base-go-interpreter": {
+            "ratio": 0.8762509119468724,
+            "ci95": [
+              0.8708785200749658,
+              0.8817143113458953
+            ],
+            "controlsResolve": false,
+            "quantityChangePct": -12.374908805312756,
+            "quantityChangeCI95Pct": [
+              -12.91214799250342,
+              -11.828568865410471
+            ]
+          },
+          "head-go-interpreter/base-go-interpreter": {
+            "ratio": 1.0059516722348345,
+            "ci95": [
+              0.9974982705117861,
+              1.0137996231055417
+            ],
+            "controlsResolve": false,
+            "quantityChangePct": 0.5951672234834504,
+            "quantityChangeCI95Pct": [
+              -0.2501729488213922,
+              1.3799623105541725
+            ]
+          },
+          "head-llgo-main-interpreter/base-llgo-main-interpreter": {
+            "ratio": 0.9788442867732045,
+            "ci95": [
+              0.9719751866975247,
+              0.9854721973479103
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -2.1155713226795547,
+            "quantityChangeCI95Pct": [
+              -2.8024813302475304,
+              -1.452780265208975
+            ]
+          }
+        },
+        "missing": []
+      }
+    },
+    "original22-v1/gc/struct-access/native": {
+      "warmNs": {
+        "medians": {
+          "base-go-native": 1.84795,
+          "base-llgo-main-native": 1.57085,
+          "head-go-native": 1.8624999999999998,
+          "head-llgo-main-native": 1.59795
+        },
+        "AA": {
+          "base-go-native": {
+            "ratio": 0.9931634375466335,
+            "ci95": [
+              0.9487315694968822,
+              1.0436379948781067
+            ]
+          },
+          "base-llgo-main-native": {
+            "ratio": 0.9646058289632818,
+            "ci95": [
+              0.9052742842314613,
+              1.0185238884272745
+            ]
+          },
+          "head-go-native": {
+            "ratio": 1.0144731838618444,
+            "ci95": [
+              0.9221377979455716,
+              1.1079709576726469
+            ]
+          },
+          "head-llgo-main-native": {
+            "ratio": 0.9755905209038298,
+            "ci95": [
+              0.9298730506097482,
+              1.0203262962868491
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-native/head-go-native": {
+            "ratio": 0.8850735351165858,
+            "ci95": [
+              0.8417724886603964,
+              0.9351921049188126
+            ],
+            "controlsResolve": false,
+            "speedChangePct": 12.984962302400739,
+            "speedChangeCI95Pct": [
+              6.929901860838927,
+              18.796944954973306
+            ]
+          },
+          "base-llgo-main-native/base-go-native": {
+            "ratio": 0.8559278635448551,
+            "ci95": [
+              0.8324406002442507,
+              0.878925947631209
+            ],
+            "controlsResolve": false,
+            "speedChangePct": 16.8322755446312,
+            "speedChangeCI95Pct": [
+              13.7752279011784,
+              20.128691429344613
+            ]
+          },
+          "head-go-native/base-go-native": {
+            "ratio": 0.9923121134246569,
+            "ci95": [
+              0.9401816642526017,
+              1.0453040515042265
+            ],
+            "controlsResolve": false,
+            "speedChangePct": 0.7747448077410679,
+            "speedChangeCI95Pct": [
+              -4.33405490383707,
+              6.362423138186912
+            ]
+          },
+          "head-llgo-main-native/base-llgo-main-native": {
+            "ratio": 1.0261018802804118,
+            "ci95": [
+              1.0000868320083904,
+              1.0505940390442776
+            ],
+            "controlsResolve": false,
+            "speedChangePct": -2.5437903177098486,
+            "speedChangeCI95Pct": [
+              -4.8157553882851705,
+              -0.008682446924734855
+            ]
+          }
+        },
+        "missing": []
+      },
+      "cpuNs": {
+        "medians": {
+          "base-go-native": 3.8885416666666663,
+          "base-llgo-main-native": 2.5243055555555554,
+          "head-go-native": 3.8576388888888884,
+          "head-llgo-main-native": 2.604861111111111
+        },
+        "AA": {
+          "base-go-native": {
+            "ratio": 0.961212815628474,
+            "ci95": [
+              0.9201644759702559,
+              1.003859502555364
+            ]
+          },
+          "base-llgo-main-native": {
+            "ratio": 0.9445641463524714,
+            "ci95": [
+              0.8482371610480002,
+              1.0184518128595588
+            ]
+          },
+          "head-go-native": {
+            "ratio": 0.9686859580226126,
+            "ci95": [
+              0.9050599823014036,
+              1.0302004196234005
+            ]
+          },
+          "head-llgo-main-native": {
+            "ratio": 0.9755320760879719,
+            "ci95": [
+              0.9217099245705855,
+              1.0392505370034897
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-native/head-go-native": {
+            "ratio": 0.6659187041896713,
+            "ci95": [
+              0.6501841575044468,
+              0.6831420131190186
+            ],
+            "controlsResolve": false,
+            "speedChangePct": 50.16848058305532,
+            "speedChangeCI95Pct": [
+              46.38244768965449,
+              53.80257861683759
+            ]
+          },
+          "base-llgo-main-native/base-go-native": {
+            "ratio": 0.6674927986692522,
+            "ci95": [
+              0.6443028991886373,
+              0.6980230922285232
+            ],
+            "controlsResolve": false,
+            "speedChangePct": 49.814350356086436,
+            "speedChangeCI95Pct": [
+              43.26173605623546,
+              55.20650322376133
+            ]
+          },
+          "head-go-native/base-go-native": {
+            "ratio": 1.0074716665605168,
+            "ci95": [
+              0.9725033025130233,
+              1.0478453533364651
+            ],
+            "controlsResolve": false,
+            "speedChangePct": -0.7416254777690034,
+            "speedChangeCI95Pct": [
+              -4.56607009651947,
+              2.827414304498821
+            ]
+          },
+          "head-llgo-main-native/base-llgo-main-native": {
+            "ratio": 1.0050958273127695,
+            "ci95": [
+              0.9707079710465903,
+              1.0399643609477924
+            ],
+            "controlsResolve": false,
+            "speedChangePct": -0.506999151154941,
+            "speedChangeCI95Pct": [
+              -3.8428587025203576,
+              3.0175943566042696
+            ]
+          }
+        },
+        "missing": []
+      },
+      "instructions": {
+        "medians": {
+          "base-go-native": 15.836408333333333,
+          "base-llgo-main-native": 12.390183333333333,
+          "head-go-native": 15.877625,
+          "head-llgo-main-native": 12.435566666666666
+        },
+        "AA": {
+          "base-go-native": {
+            "ratio": 0.9885859290798337,
+            "ci95": [
+              0.9720353031004513,
+              1.006284692446355
+            ]
+          },
+          "base-llgo-main-native": {
+            "ratio": 1.0001748409772877,
+            "ci95": [
+              0.9961510728336281,
+              1.0049752670481429
+            ]
+          },
+          "head-go-native": {
+            "ratio": 0.9979661059268622,
+            "ci95": [
+              0.979332593302045,
+              1.0179650898062853
+            ]
+          },
+          "head-llgo-main-native": {
+            "ratio": 0.993198829855715,
+            "ci95": [
+              0.9836380976814262,
+              1.001559418663385
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-native/head-go-native": {
+            "ratio": 0.7887600626749334,
+            "ci95": [
+              0.7846865972397085,
+              0.7927296776501428
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -21.123993732506662,
+            "quantityChangeCI95Pct": [
+              -21.531340276029155,
+              -20.72703223498572
+            ]
+          },
+          "base-llgo-main-native/base-go-native": {
+            "ratio": 0.7843717753191488,
+            "ci95": [
+              0.7775595234678038,
+              0.7916681132712406
+            ],
+            "controlsResolve": false,
+            "quantityChangePct": -21.56282246808512,
+            "quantityChangeCI95Pct": [
+              -22.244047653219624,
+              -20.833188672875934
+            ]
+          },
+          "head-go-native/base-go-native": {
+            "ratio": 0.9983774468435486,
+            "ci95": [
+              0.9852209446709498,
+              1.0120948593102628
+            ],
+            "controlsResolve": false,
+            "quantityChangePct": -0.1622553156451434,
+            "quantityChangeCI95Pct": [
+              -1.4779055329050217,
+              1.2094859310262773
+            ]
+          },
+          "head-llgo-main-native/base-llgo-main-native": {
+            "ratio": 1.003963021521451,
+            "ci95": [
+              0.9978682902756236,
+              1.010233712748732
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": 0.39630215214510045,
+            "quantityChangeCI95Pct": [
+              -0.21317097243763738,
+              1.0233712748731971
+            ]
+          }
+        },
+        "missing": []
+      },
+      "cycles": {
+        "medians": {
+          "base-go-native": 13.505275000000001,
+          "base-llgo-main-native": 9.142225,
+          "head-go-native": 13.9243,
+          "head-llgo-main-native": 9.247333333333334
+        },
+        "AA": {
+          "base-go-native": {
+            "ratio": 0.9594461422483744,
+            "ci95": [
+              0.9143347225787106,
+              1.0022455731918563
+            ]
+          },
+          "base-llgo-main-native": {
+            "ratio": 0.9834693920974712,
+            "ci95": [
+              0.9522407188707223,
+              1.014813057052364
+            ]
+          },
+          "head-go-native": {
+            "ratio": 0.9689433223619075,
+            "ci95": [
+              0.9054979838568259,
+              1.028210329256043
+            ]
+          },
+          "head-llgo-main-native": {
+            "ratio": 0.993268296657414,
+            "ci95": [
+              0.9416443395620515,
+              1.0601774149668448
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-native/head-go-native": {
+            "ratio": 0.6664605205350927,
+            "ci95": [
+              0.6473507560747146,
+              0.6843561298001939
+            ],
+            "controlsResolve": false,
+            "quantityChangePct": -33.35394794649073,
+            "quantityChangeCI95Pct": [
+              -35.26492439252854,
+              -31.56438701998061
+            ]
+          },
+          "base-llgo-main-native/base-go-native": {
+            "ratio": 0.6582499039022183,
+            "ci95": [
+              0.6432290064534443,
+              0.6751916265908948
+            ],
+            "controlsResolve": false,
+            "quantityChangePct": -34.17500960977817,
+            "quantityChangeCI95Pct": [
+              -35.677099354655574,
+              -32.48083734091052
+            ]
+          },
+          "head-go-native/base-go-native": {
+            "ratio": 1.0022151840109847,
+            "ci95": [
+              0.9714786593513115,
+              1.0341760230267096
+            ],
+            "controlsResolve": false,
+            "quantityChangePct": 0.22151840109847498,
+            "quantityChangeCI95Pct": [
+              -2.85213406486885,
+              3.4176023026709634
+            ]
+          },
+          "head-llgo-main-native/base-llgo-main-native": {
+            "ratio": 1.0147162183609755,
+            "ci95": [
+              0.9915153944751606,
+              1.0398695624683805
+            ],
+            "controlsResolve": false,
+            "quantityChangePct": 1.4716218360975475,
+            "quantityChangeCI95Pct": [
+              -0.8484605524839428,
+              3.986956246838047
+            ]
+          }
+        },
+        "missing": []
+      }
+    },
+    "original22-v1/gc/struct-allocation/interpreter": {
+      "warmNs": {
+        "medians": {
+          "base-go-interpreter": 88.35328571428572,
+          "base-llgo-main-interpreter": 96.31725714285714,
+          "head-go-interpreter": 78.24227857142859,
+          "head-llgo-main-interpreter": 80.20773571428572
+        },
+        "AA": {
+          "base-go-interpreter": {
+            "ratio": 0.9988901642710512,
+            "ci95": [
+              0.9865447266007471,
+              1.0120457153723905
+            ]
+          },
+          "base-llgo-main-interpreter": {
+            "ratio": 0.9982289619571126,
+            "ci95": [
+              0.9904578914529754,
+              1.0065467001841415
+            ]
+          },
+          "head-go-interpreter": {
+            "ratio": 0.9993827907201067,
+            "ci95": [
+              0.9842974578670084,
+              1.0161634755209183
+            ]
+          },
+          "head-llgo-main-interpreter": {
+            "ratio": 1.0004687661462297,
+            "ci95": [
+              0.9916117099515529,
+              1.0108346235745578
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-interpreter/head-go-interpreter": {
+            "ratio": 1.0251244937729067,
+            "ci95": [
+              1.0151111431337654,
+              1.0352630787195778
+            ],
+            "controlsResolve": true,
+            "speedChangePct": -2.4508724477392607,
+            "speedChangeCI95Pct": [
+              -3.4061949512573575,
+              -1.4886195699828075
+            ]
+          },
+          "base-llgo-main-interpreter/base-go-interpreter": {
+            "ratio": 1.0812598817355346,
+            "ci95": [
+              1.0717036399668665,
+              1.0899597260995901
+            ],
+            "controlsResolve": true,
+            "speedChangePct": -7.515296101165248,
+            "speedChangeCI95Pct": [
+              -8.253490835070586,
+              -6.690622042590366
+            ]
+          },
+          "head-go-interpreter/base-go-interpreter": {
+            "ratio": 0.8787566009405529,
+            "ci95": [
+              0.8712291881563649,
+              0.886872327605828
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 13.797153720345046,
+            "speedChangeCI95Pct": [
+              12.755801356387764,
+              14.780360161730922
+            ]
+          },
+          "head-llgo-main-interpreter/base-llgo-main-interpreter": {
+            "ratio": 0.83313450439209,
+            "ci95": [
+              0.8279777531296748,
+              0.8386558235853656
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 20.028638200462723,
+            "speedChangeCI95Pct": [
+              19.238425570678853,
+              20.776191898888328
+            ]
+          }
+        },
+        "missing": []
+      },
+      "cpuNs": {
+        "medians": {
+          "base-go-interpreter": 96.32083333333333,
+          "base-llgo-main-interpreter": 97.15243055555555,
+          "head-go-interpreter": 85.671875,
+          "head-llgo-main-interpreter": 80.60868055555557
+        },
+        "AA": {
+          "base-go-interpreter": {
+            "ratio": 1.0038956282058802,
+            "ci95": [
+              0.9901798564843622,
+              1.0169387437017563
+            ]
+          },
+          "base-llgo-main-interpreter": {
+            "ratio": 0.9977204740992838,
+            "ci95": [
+              0.9904857502078479,
+              1.0060668070639593
+            ]
+          },
+          "head-go-interpreter": {
+            "ratio": 0.9962760678654883,
+            "ci95": [
+              0.9770752028273779,
+              1.0147349470862885
+            ]
+          },
+          "head-llgo-main-interpreter": {
+            "ratio": 1.0014751665392985,
+            "ci95": [
+              0.9893603767377267,
+              1.0168215996196819
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-interpreter/head-go-interpreter": {
+            "ratio": 0.9473127236177633,
+            "ci95": [
+              0.933747290425594,
+              0.9600177960661793
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 5.5617617148670195,
+            "speedChangeCI95Pct": [
+              4.164735705697731,
+              7.095357625531484
+            ]
+          },
+          "base-llgo-main-interpreter/base-go-interpreter": {
+            "ratio": 0.9983732627522218,
+            "ci95": [
+              0.9833358827251196,
+              1.01008664087215
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 0.16293878336581802,
+            "speedChangeCI95Pct": [
+              -0.9985916518449156,
+              1.69465160049882
+            ]
+          },
+          "head-go-interpreter/base-go-interpreter": {
+            "ratio": 0.8788329973418234,
+            "ci95": [
+              0.8698985009423186,
+              0.8878736717615524
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 13.787261405143681,
+            "speedChangeCI95Pct": [
+              12.628635334572724,
+              14.955940137469925
+            ]
+          },
+          "head-llgo-main-interpreter/base-llgo-main-interpreter": {
+            "ratio": 0.8338861940493133,
+            "ci95": [
+              0.8279373082105976,
+              0.8401866199008272
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 19.920440839060504,
+            "speedChangeCI95Pct": [
+              19.02117652362003,
+              20.78209184234947
+            ]
+          }
+        },
+        "missing": []
+      },
+      "instructions": {
+        "medians": {
+          "base-go-interpreter": 2207.03865,
+          "base-llgo-main-interpreter": 2321.3256833333335,
+          "head-go-interpreter": 1946.109275,
+          "head-llgo-main-interpreter": 1870.4964166666668
+        },
+        "AA": {
+          "base-go-interpreter": {
+            "ratio": 0.999685577355997,
+            "ci95": [
+              0.9990362193179501,
+              1.0003148586957114
+            ]
+          },
+          "base-llgo-main-interpreter": {
+            "ratio": 1.0000151599605172,
+            "ci95": [
+              0.9998425473352675,
+              1.0001948587460407
+            ]
+          },
+          "head-go-interpreter": {
+            "ratio": 0.9997622147183481,
+            "ci95": [
+              0.9988555527265616,
+              1.0006162660294116
+            ]
+          },
+          "head-llgo-main-interpreter": {
+            "ratio": 0.9999327503704737,
+            "ci95": [
+              0.9997470843988933,
+              1.0001282303415002
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-interpreter/head-go-interpreter": {
+            "ratio": 0.9611791771823808,
+            "ci95": [
+              0.9607615825520147,
+              0.9615927457535087
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -3.8820822817619227,
+            "quantityChangeCI95Pct": [
+              -3.9238417447985285,
+              -3.8407254246491274
+            ]
+          },
+          "base-llgo-main-interpreter/base-go-interpreter": {
+            "ratio": 1.052009591027469,
+            "ci95": [
+              1.0515267527169465,
+              1.0525188089670394
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": 5.200959102746894,
+            "quantityChangeCI95Pct": [
+              5.152675271694651,
+              5.251880896703942
+            ]
+          },
+          "head-go-interpreter/base-go-interpreter": {
+            "ratio": 0.8819026423513788,
+            "ci95": [
+              0.8813261397843147,
+              0.8825131852470015
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -11.809735764862117,
+            "quantityChangeCI95Pct": [
+              -11.867386021568526,
+              -11.748681475299849
+            ]
+          },
+          "head-llgo-main-interpreter/base-llgo-main-interpreter": {
+            "ratio": 0.8057592472159624,
+            "ci95": [
+              0.8056405079351511,
+              0.8058586694875736
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -19.424075278403762,
+            "quantityChangeCI95Pct": [
+              -19.435949206484892,
+              -19.414133051242644
+            ]
+          }
+        },
+        "missing": []
+      },
+      "cycles": {
+        "medians": {
+          "base-go-interpreter": 370.3287,
+          "base-llgo-main-interpreter": 373.147025,
+          "head-go-interpreter": 324.7254916666667,
+          "head-llgo-main-interpreter": 311.2121083333333
+        },
+        "AA": {
+          "base-go-interpreter": {
+            "ratio": 1.001268913025319,
+            "ci95": [
+              0.9884519828300812,
+              1.013403909344766
+            ]
+          },
+          "base-llgo-main-interpreter": {
+            "ratio": 1.0047931466331066,
+            "ci95": [
+              0.9963273354398959,
+              1.0126851489275344
+            ]
+          },
+          "head-go-interpreter": {
+            "ratio": 0.9955996391389058,
+            "ci95": [
+              0.978942623822038,
+              1.0092887556730412
+            ]
+          },
+          "head-llgo-main-interpreter": {
+            "ratio": 1.0004932215847069,
+            "ci95": [
+              0.9913253800139149,
+              1.0139706996054942
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-interpreter/head-go-interpreter": {
+            "ratio": 0.9541106268146893,
+            "ci95": [
+              0.9430746767494457,
+              0.9648138819819096
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -4.588937318531072,
+            "quantityChangeCI95Pct": [
+              -5.692532325055433,
+              -3.518611801809035
+            ]
+          },
+          "base-llgo-main-interpreter/base-go-interpreter": {
+            "ratio": 1.0070051718298751,
+            "ci95": [
+              1.0003160492281464,
+              1.0143464203686114
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": 0.7005171829875145,
+            "quantityChangeCI95Pct": [
+              0.03160492281464311,
+              1.4346420368611446
+            ]
+          },
+          "head-go-interpreter/base-go-interpreter": {
+            "ratio": 0.8780603052876672,
+            "ci95": [
+              0.8735801987245637,
+              0.882553654215166
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -12.19396947123328,
+            "quantityChangeCI95Pct": [
+              -12.64198012754363,
+              -11.744634578483403
+            ]
+          },
+          "head-llgo-main-interpreter/base-llgo-main-interpreter": {
+            "ratio": 0.8319387940548205,
+            "ci95": [
+              0.8267342345489395,
+              0.8385252503390785
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -16.80612059451795,
+            "quantityChangeCI95Pct": [
+              -17.326576545106054,
+              -16.147474966092147
+            ]
+          }
+        },
+        "missing": []
+      }
+    },
+    "original22-v1/gc/struct-allocation/native": {
+      "warmNs": {
+        "medians": {
+          "base-go-native": 27.320821428571428,
+          "base-llgo-main-native": 26.332742857142854,
+          "head-go-native": 27.09315,
+          "head-llgo-main-native": 26.52110714285714
+        },
+        "AA": {
+          "base-go-native": {
+            "ratio": 1.0013043575929188,
+            "ci95": [
+              0.9866512997229403,
+              1.0171310964351585
+            ]
+          },
+          "base-llgo-main-native": {
+            "ratio": 0.9904647201701124,
+            "ci95": [
+              0.9753646266163396,
+              1.006633884742812
+            ]
+          },
+          "head-go-native": {
+            "ratio": 1.0029902133743496,
+            "ci95": [
+              0.9915985438140932,
+              1.0140384278969679
+            ]
+          },
+          "head-llgo-main-native": {
+            "ratio": 1.0204562655113303,
+            "ci95": [
+              1.00532336331999,
+              1.035592826714911
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-native/head-go-native": {
+            "ratio": 0.9799906076956887,
+            "ci95": [
+              0.9638075000423018,
+              0.9963455141677849
+            ],
+            "controlsResolve": false,
+            "speedChangePct": 2.041794293453547,
+            "speedChangeCI95Pct": [
+              0.3667890084563252,
+              3.75515857223665
+            ]
+          },
+          "base-llgo-main-native/base-go-native": {
+            "ratio": 0.9587029497487016,
+            "ci95": [
+              0.9478974991806266,
+              0.9697203210861798
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 4.307596035051664,
+            "speedChangeCI95Pct": [
+              3.1225166942881133,
+              5.496638704544687
+            ]
+          },
+          "head-go-native/base-go-native": {
+            "ratio": 0.9923744412195804,
+            "ci95": [
+              0.9850857751058254,
+              1.0009067914360237
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 0.7684154754175498,
+            "speedChangeCI95Pct": [
+              -0.0905969910267701,
+              1.5140026656635497
+            ]
+          },
+          "head-llgo-main-native/base-llgo-main-native": {
+            "ratio": 1.0144097626562696,
+            "ci95": [
+              1.0001484175479138,
+              1.0296299361444101
+            ],
+            "controlsResolve": false,
+            "speedChangePct": -1.4205070955288446,
+            "speedChangeCI95Pct": [
+              -2.8777267544651486,
+              -0.014839552341416873
+            ]
+          }
+        },
+        "missing": []
+      },
+      "cpuNs": {
+        "medians": {
+          "base-go-native": 31.101388888888888,
+          "base-llgo-main-native": 27.007291666666667,
+          "head-go-native": 30.691666666666663,
+          "head-llgo-main-native": 27.34236111111111
+        },
+        "AA": {
+          "base-go-native": {
+            "ratio": 0.9985715068433076,
+            "ci95": [
+              0.9762945320324712,
+              1.0245291197367057
+            ]
+          },
+          "base-llgo-main-native": {
+            "ratio": 0.9919579953730797,
+            "ci95": [
+              0.9787107450962155,
+              1.0042031003914904
+            ]
+          },
+          "head-go-native": {
+            "ratio": 1.0006146575056187,
+            "ci95": [
+              0.9811076538898245,
+              1.0206207288733686
+            ]
+          },
+          "head-llgo-main-native": {
+            "ratio": 1.01571064118543,
+            "ci95": [
+              1.0028569308448276,
+              1.028769752191361
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-native/head-go-native": {
+            "ratio": 0.8963267514743092,
+            "ci95": [
+              0.883710589209976,
+              0.9096588704296213
+            ],
+            "controlsResolve": false,
+            "speedChangePct": 11.566457026432108,
+            "speedChangeCI95Pct": [
+              9.931319586617304,
+              13.159218890200798
+            ]
+          },
+          "base-llgo-main-native/base-go-native": {
+            "ratio": 0.8741641573133428,
+            "ci95": [
+              0.8596901916446872,
+              0.8878803971878664
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 14.394989960855998,
+            "speedChangeCI95Pct": [
+              12.627782206617443,
+              16.320973499404936
+            ]
+          },
+          "head-go-native/base-go-native": {
+            "ratio": 0.9869967597490376,
+            "ci95": [
+              0.9741815323812403,
+              0.9994845261267156
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 1.3174552117342975,
+            "speedChangeCI95Pct": [
+              0.05157397236372763,
+              2.650272742868598
+            ]
+          },
+          "head-llgo-main-native/base-llgo-main-native": {
+            "ratio": 1.0120199872990385,
+            "ci95": [
+              1.000395430735789,
+              1.0257524674211644
+            ],
+            "controlsResolve": false,
+            "speedChangePct": -1.1877223226705702,
+            "speedChangeCI95Pct": [
+              -2.5105927832577923,
+              -0.039527443212938884
+            ]
+          }
+        },
+        "missing": []
+      },
+      "instructions": {
+        "medians": {
+          "base-go-native": 535.4534416666668,
+          "base-llgo-main-native": 539.6123749999999,
+          "head-go-native": 533.2641583333334,
+          "head-llgo-main-native": 537.9556
+        },
+        "AA": {
+          "base-go-native": {
+            "ratio": 1.0026031064180045,
+            "ci95": [
+              0.9989633120696618,
+              1.0062957337370046
+            ]
+          },
+          "base-llgo-main-native": {
+            "ratio": 0.99991087537845,
+            "ci95": [
+              0.9994766621710185,
+              1.0004004706087426
+            ]
+          },
+          "head-go-native": {
+            "ratio": 1.001697717184886,
+            "ci95": [
+              0.9963404999699699,
+              1.006765410224416
+            ]
+          },
+          "head-llgo-main-native": {
+            "ratio": 1.0001238888844297,
+            "ci95": [
+              0.9994909888964257,
+              1.0007419741002586
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-native/head-go-native": {
+            "ratio": 1.0084496444446707,
+            "ci95": [
+              1.006480832089256,
+              1.0099834975878996
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": 0.8449644444670668,
+            "quantityChangeCI95Pct": [
+              0.6480832089255983,
+              0.9983497587899626
+            ]
+          },
+          "base-llgo-main-native/base-go-native": {
+            "ratio": 1.0087553197406434,
+            "ci95": [
+              1.0070819465252119,
+              1.0105519609961924
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": 0.8755319740643364,
+            "quantityChangeCI95Pct": [
+              0.708194652521188,
+              1.0551960996192378
+            ]
+          },
+          "head-go-native/base-go-native": {
+            "ratio": 0.997471610231991,
+            "ci95": [
+              0.9951417409756079,
+              1.000735154821965
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -0.2528389768008954,
+            "quantityChangeCI95Pct": [
+              -0.48582590243920754,
+              0.07351548219649562
+            ]
+          },
+          "head-llgo-main-native/base-llgo-main-native": {
+            "ratio": 0.9971693541509423,
+            "ci95": [
+              0.9967483243105496,
+              0.9975827011560606
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -0.2830645849057678,
+            "quantityChangeCI95Pct": [
+              -0.3251675689450395,
+              -0.2417298843939375
+            ]
+          }
+        },
+        "missing": []
+      },
+      "cycles": {
+        "medians": {
+          "base-go-native": 116.8117,
+          "base-llgo-main-native": 103.87953333333334,
+          "head-go-native": 116.23218333333332,
+          "head-llgo-main-native": 103.97725833333334
+        },
+        "AA": {
+          "base-go-native": {
+            "ratio": 0.9933444781944322,
+            "ci95": [
+              0.9703250710415204,
+              1.0161199897206463
+            ]
+          },
+          "base-llgo-main-native": {
+            "ratio": 0.9951434291533379,
+            "ci95": [
+              0.9794769297112994,
+              1.0103181312452456
+            ]
+          },
+          "head-go-native": {
+            "ratio": 0.9996353467255459,
+            "ci95": [
+              0.9828612101275984,
+              1.0166512352725183
+            ]
+          },
+          "head-llgo-main-native": {
+            "ratio": 1.008458009639683,
+            "ci95": [
+              0.9972727371117698,
+              1.0205834356251324
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-native/head-go-native": {
+            "ratio": 0.9049448678458608,
+            "ci95": [
+              0.8972743876026751,
+              0.913483955531328
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -9.505513215413918,
+            "quantityChangeCI95Pct": [
+              -10.272561239732491,
+              -8.6516044468672
+            ]
+          },
+          "base-llgo-main-native/base-go-native": {
+            "ratio": 0.8831185968914137,
+            "ci95": [
+              0.8689310639041838,
+              0.896776746747657
+            ],
+            "controlsResolve": false,
+            "quantityChangePct": -11.68814031085863,
+            "quantityChangeCI95Pct": [
+              -13.106893609581615,
+              -10.322325325234305
+            ]
+          },
+          "head-go-native/base-go-native": {
+            "ratio": 0.9885213194139995,
+            "ci95": [
+              0.9788240323443068,
+              0.9965387819034933
+            ],
+            "controlsResolve": false,
+            "quantityChangePct": -1.1478680586000545,
+            "quantityChangeCI95Pct": [
+              -2.1175967655693184,
+              -0.34612180965066797
+            ]
+          },
+          "head-llgo-main-native/base-llgo-main-native": {
+            "ratio": 1.0129526180388095,
+            "ci95": [
+              1.0016642329291439,
+              1.025804544468558
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": 1.2952618038809538,
+            "quantityChangeCI95Pct": [
+              0.16642329291438607,
+              2.5804544468557955
+            ]
+          }
+        },
+        "missing": []
+      }
+    },
+    "gc-sustained-v1/gc/struct-access/interpreter": {
+      "warmNs": {
+        "medians": {
+          "base-go-interpreter": 38.596916,
+          "base-llgo-main-interpreter": 36.6633545,
+          "head-go-interpreter": 38.5353955,
+          "head-llgo-main-interpreter": 36.2212915
+        },
+        "AA": {
+          "base-go-interpreter": {
+            "ratio": 0.9977505063891632,
+            "ci95": [
+              0.9910155615284523,
+              1.004863827126586
+            ]
+          },
+          "base-llgo-main-interpreter": {
+            "ratio": 0.9943825657212688,
+            "ci95": [
+              0.97934426016094,
+              1.0089308744050893
+            ]
+          },
+          "head-go-interpreter": {
+            "ratio": 0.9996520627853014,
+            "ci95": [
+              0.9883118711107397,
+              1.0097858445915318
+            ]
+          },
+          "head-llgo-main-interpreter": {
+            "ratio": 1.0058220229358648,
+            "ci95": [
+              0.9955882269004032,
+              1.0163982054149001
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-interpreter/head-go-interpreter": {
+            "ratio": 0.9365045389145729,
+            "ci95": [
+              0.9297897748752276,
+              0.943137124967918
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 6.780048408416639,
+            "speedChangeCI95Pct": [
+              6.02912063651575,
+              7.551193508682563
+            ]
+          },
+          "base-llgo-main-interpreter/base-go-interpreter": {
+            "ratio": 0.9530397623090616,
+            "ci95": [
+              0.9494314965415075,
+              0.956482541923571
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 4.927416415151598,
+            "speedChangeCI95Pct": [
+              4.549738878548859,
+              5.326187686283657
+            ]
+          },
+          "head-go-interpreter/base-go-interpreter": {
+            "ratio": 1.001615399276343,
+            "ci95": [
+              0.9963265886541933,
+              1.006810626248424
+            ],
+            "controlsResolve": true,
+            "speedChangePct": -0.16127939701308103,
+            "speedChangeCI95Pct": [
+              -0.6764555389926485,
+              0.36869550483127345
+            ]
+          },
+          "head-llgo-main-interpreter/base-llgo-main-interpreter": {
+            "ratio": 0.984237389420524,
+            "ci95": [
+              0.9789185025719331,
+              0.989256648062374
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 1.6015049569247042,
+            "speedChangeCI95Pct": [
+              1.0860025008341934,
+              2.153549797320098
+            ]
+          }
+        },
+        "missing": []
+      },
+      "cpuNs": {
+        "medians": {
+          "base-go-interpreter": 38.70253124999999,
+          "base-llgo-main-interpreter": 36.628156249999996,
+          "head-go-interpreter": 38.647670138888884,
+          "head-llgo-main-interpreter": 36.045260416666665
+        },
+        "AA": {
+          "base-go-interpreter": {
+            "ratio": 0.9986923786081737,
+            "ci95": [
+              0.9914818027457637,
+              1.005518134864027
+            ]
+          },
+          "base-llgo-main-interpreter": {
+            "ratio": 0.9976290531618787,
+            "ci95": [
+              0.9840314243918853,
+              1.0122149574249741
+            ]
+          },
+          "head-go-interpreter": {
+            "ratio": 0.9957502989437191,
+            "ci95": [
+              0.9895313668887336,
+              1.0019420418466887
+            ]
+          },
+          "head-llgo-main-interpreter": {
+            "ratio": 1.0084949926796536,
+            "ci95": [
+              0.9973900881078889,
+              1.0191099018538696
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-interpreter/head-go-interpreter": {
+            "ratio": 0.9309763107866622,
+            "ci95": [
+              0.9238010698585963,
+              0.9381936209287055
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 7.414118749704146,
+            "speedChangeCI95Pct": [
+              6.58780636454479,
+              8.24841328155934
+            ]
+          },
+          "base-llgo-main-interpreter/base-go-interpreter": {
+            "ratio": 0.949689950790334,
+            "ci95": [
+              0.9449744287965336,
+              0.9545963053011647
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 5.297523593652631,
+            "speedChangeCI95Pct": [
+              4.756324159929681,
+              5.822969334053196
+            ]
+          },
+          "head-go-interpreter/base-go-interpreter": {
+            "ratio": 1.0013937252451146,
+            "ci95": [
+              0.9961448354577449,
+              1.0060182922345604
+            ],
+            "controlsResolve": true,
+            "speedChangePct": -0.13917854785573391,
+            "speedChangeCI95Pct": [
+              -0.5982289070701308,
+              0.3870084354232972
+            ]
+          },
+          "head-llgo-main-interpreter/base-llgo-main-interpreter": {
+            "ratio": 0.9816612623917615,
+            "ci95": [
+              0.975361169824203,
+              0.9877447489167778
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 1.868132961013158,
+            "speedChangeCI95Pct": [
+              1.2407305730212315,
+              2.526123751700915
+            ]
+          }
+        },
+        "missing": []
+      },
+      "instructions": {
+        "medians": {
+          "base-go-interpreter": 994.2879715,
+          "base-llgo-main-interpreter": 927.87137075,
+          "head-go-interpreter": 960.2939599166666,
+          "head-llgo-main-interpreter": 878.8466839166666
+        },
+        "AA": {
+          "base-go-interpreter": {
+            "ratio": 0.9999856938888897,
+            "ci95": [
+              0.9999526535444088,
+              1.0000191039234907
+            ]
+          },
+          "base-llgo-main-interpreter": {
+            "ratio": 1.0000379108774657,
+            "ci95": [
+              1.0000063445442253,
+              1.0000762916524637
+            ]
+          },
+          "head-go-interpreter": {
+            "ratio": 1.0000123559041554,
+            "ci95": [
+              0.9999832002367743,
+              1.000040988488611
+            ]
+          },
+          "head-llgo-main-interpreter": {
+            "ratio": 0.9999897089212957,
+            "ci95": [
+              0.999966198780523,
+              1.0000119788763404
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-interpreter/head-go-interpreter": {
+            "ratio": 0.915195194840435,
+            "ci95": [
+              0.9151766487801138,
+              0.9152144468600947
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -8.4804805159565,
+            "quantityChangeCI95Pct": [
+              -8.482335121988616,
+              -8.478555313990533
+            ]
+          },
+          "base-llgo-main-interpreter/base-go-interpreter": {
+            "ratio": 0.9332111741503067,
+            "ci95": [
+              0.9331881192661621,
+              0.9332322429315769
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -6.678882584969326,
+            "quantityChangeCI95Pct": [
+              -6.681188073383792,
+              -6.676775706842308
+            ]
+          },
+          "head-go-interpreter/base-go-interpreter": {
+            "ratio": 0.9658186735603069,
+            "ci95": [
+              0.9657982316326911,
+              0.9658387576046181
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -3.418132643969307,
+            "quantityChangeCI95Pct": [
+              -3.4201768367308927,
+              -3.4161242395381874
+            ]
+          },
+          "head-llgo-main-interpreter/base-llgo-main-interpreter": {
+            "ratio": 0.947173194678431,
+            "ci95": [
+              0.9471534335804656,
+              0.9471961292165797
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -5.282680532156903,
+            "quantityChangeCI95Pct": [
+              -5.284656641953445,
+              -5.280387078342031
+            ]
+          }
+        },
+        "missing": []
+      },
+      "cycles": {
+        "medians": {
+          "base-go-interpreter": 149.13080275,
+          "base-llgo-main-interpreter": 141.83788683333333,
+          "head-go-interpreter": 149.2743855,
+          "head-llgo-main-interpreter": 139.04180991666667
+        },
+        "AA": {
+          "base-go-interpreter": {
+            "ratio": 0.997529449482373,
+            "ci95": [
+              0.9908317041603666,
+              1.0040132023314592
+            ]
+          },
+          "base-llgo-main-interpreter": {
+            "ratio": 0.9965127876969507,
+            "ci95": [
+              0.9856706865902936,
+              1.007180095049592
+            ]
+          },
+          "head-go-interpreter": {
+            "ratio": 0.9945330854617387,
+            "ci95": [
+              0.9884379906392914,
+              1.0012021273147638
+            ]
+          },
+          "head-llgo-main-interpreter": {
+            "ratio": 1.0073494886198788,
+            "ci95": [
+              0.997232708728924,
+              1.016772219079929
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-interpreter/head-go-interpreter": {
+            "ratio": 0.9316048451437141,
+            "ci95": [
+              0.9260964441961314,
+              0.9371671715039238
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -6.8395154856285885,
+            "quantityChangeCI95Pct": [
+              -7.390355580386865,
+              -6.283282849607619
+            ]
+          },
+          "base-llgo-main-interpreter/base-go-interpreter": {
+            "ratio": 0.9505645457160187,
+            "ci95": [
+              0.9455675714856274,
+              0.9555341153812048
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -4.943545428398133,
+            "quantityChangeCI95Pct": [
+              -5.443242851437258,
+              -4.44658846187952
+            ]
+          },
+          "head-go-interpreter/base-go-interpreter": {
+            "ratio": 1.0023207045381541,
+            "ci95": [
+              0.9974429376889334,
+              1.006647342215722
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": 0.2320704538154139,
+            "quantityChangeCI95Pct": [
+              -0.255706231106656,
+              0.6647342215722052
+            ]
+          },
+          "head-llgo-main-interpreter/base-llgo-main-interpreter": {
+            "ratio": 0.9823286897706035,
+            "ci95": [
+              0.9772271106543797,
+              0.9875455787541008
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -1.7671310229396497,
+            "quantityChangeCI95Pct": [
+              -2.2772889345620273,
+              -1.2454421245899239
+            ]
+          }
+        },
+        "missing": []
+      }
+    },
+    "gc-sustained-v1/gc/struct-access/native": {
+      "warmNs": {
+        "medians": {
+          "base-go-native": 1.0710415,
+          "base-llgo-main-native": 1.0596869999999998,
+          "head-go-native": 1.072333,
+          "head-llgo-main-native": 1.0572080000000001
+        },
+        "AA": {
+          "base-go-native": {
+            "ratio": 1.008706070869423,
+            "ci95": [
+              0.9985465051806307,
+              1.0208539420497145
+            ]
+          },
+          "base-llgo-main-native": {
+            "ratio": 0.9964350063708384,
+            "ci95": [
+              0.9907535337475195,
+              1.002399128990218
+            ]
+          },
+          "head-go-native": {
+            "ratio": 1.00195100068695,
+            "ci95": [
+              0.9909514319900533,
+              1.0127176513010574
+            ]
+          },
+          "head-llgo-main-native": {
+            "ratio": 1.0030489585105427,
+            "ci95": [
+              0.9929414145720409,
+              1.0134396654268352
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-native/head-go-native": {
+            "ratio": 0.9869115582071208,
+            "ci95": [
+              0.9816277838063237,
+              0.9926848508500311
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 1.3262020982565348,
+            "speedChangeCI95Pct": [
+              0.7369054885550952,
+              1.871607191316138
+            ]
+          },
+          "base-llgo-main-native/base-go-native": {
+            "ratio": 0.9861261254115449,
+            "ci95": [
+              0.9777163401861338,
+              0.9936201773528842
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 1.4069067060427987,
+            "speedChangeCI95Pct": [
+              0.6420786123841005,
+              2.279153870909423
+            ]
+          },
+          "head-go-native/base-go-native": {
+            "ratio": 0.9998987000081209,
+            "ci95": [
+              0.9922238592387774,
+              1.00708906837387
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 0.010131025460702325,
+            "speedChangeCI95Pct": [
+              -0.703916723603859,
+              0.7837083021958735
+            ]
+          },
+          "head-llgo-main-native/base-llgo-main-native": {
+            "ratio": 1.0006951024266373,
+            "ci95": [
+              0.9947758828607041,
+              1.0064929881786187
+            ],
+            "controlsResolve": true,
+            "speedChangePct": -0.06946195948712708,
+            "speedChangeCI95Pct": [
+              -0.6451101254434488,
+              0.525155186138293
+            ]
+          }
+        },
+        "missing": []
+      },
+      "cpuNs": {
+        "medians": {
+          "base-go-native": 1.1140590277777778,
+          "base-llgo-main-native": 1.076625,
+          "head-go-native": 1.123753472222222,
+          "head-llgo-main-native": 1.075013888888889
+        },
+        "AA": {
+          "base-go-native": {
+            "ratio": 1.011251793084647,
+            "ci95": [
+              0.9965778925485398,
+              1.0318370868573212
+            ]
+          },
+          "base-llgo-main-native": {
+            "ratio": 0.99808335293927,
+            "ci95": [
+              0.990553140519365,
+              1.0067326811130963
+            ]
+          },
+          "head-go-native": {
+            "ratio": 1.009452765352294,
+            "ci95": [
+              0.9997026797370828,
+              1.0193318112180094
+            ]
+          },
+          "head-llgo-main-native": {
+            "ratio": 1.0056491086543808,
+            "ci95": [
+              0.9942845341631231,
+              1.0173729282393427
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-native/head-go-native": {
+            "ratio": 0.9587911599911662,
+            "ci95": [
+              0.9531679957135766,
+              0.9640781709302749
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 4.297999577844824,
+            "speedChangeCI95Pct": [
+              3.726028672038373,
+              4.9133001209680005
+            ]
+          },
+          "base-llgo-main-native/base-go-native": {
+            "ratio": 0.9585831162949054,
+            "ci95": [
+              0.9505097687889112,
+              0.9666977565876888
+            ],
+            "controlsResolve": false,
+            "speedChangePct": 4.320635634099013,
+            "speedChangeCI95Pct": [
+              3.4449488669409556,
+              5.206704111431337
+            ]
+          },
+          "head-go-native/base-go-native": {
+            "ratio": 1.0020553684716844,
+            "ci95": [
+              0.9937766695389064,
+              1.0099860067070834
+            ],
+            "controlsResolve": false,
+            "speedChangePct": -0.20511525973052613,
+            "speedChangeCI95Pct": [
+              -0.9887272339189512,
+              0.6262302841121281
+            ]
+          },
+          "head-llgo-main-native/base-llgo-main-native": {
+            "ratio": 1.002272847059791,
+            "ci95": [
+              0.997584265478037,
+              1.007420836626988
+            ],
+            "controlsResolve": true,
+            "speedChangePct": -0.22676929405586188,
+            "speedChangeCI95Pct": [
+              -0.7366173457196035,
+              0.24215844270611964
+            ]
+          }
+        },
+        "missing": []
+      },
+      "instructions": {
+        "medians": {
+          "base-go-native": 9.1659085,
+          "base-llgo-main-native": 9.037385333333333,
+          "head-go-native": 9.16402475,
+          "head-llgo-main-native": 9.037775916666668
+        },
+        "AA": {
+          "base-go-native": {
+            "ratio": 0.9998687904523272,
+            "ci95": [
+              0.999166983824698,
+              1.000650242345605
+            ]
+          },
+          "base-llgo-main-native": {
+            "ratio": 0.9996862722749847,
+            "ci95": [
+              0.9994765305683194,
+              0.9998935196443645
+            ]
+          },
+          "head-go-native": {
+            "ratio": 1.0000608700945266,
+            "ci95": [
+              0.9992338034115135,
+              1.0008959751499955
+            ]
+          },
+          "head-llgo-main-native": {
+            "ratio": 1.0006480028049136,
+            "ci95": [
+              1.0000511602273265,
+              1.0011950016365048
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-native/head-go-native": {
+            "ratio": 0.9865491594635374,
+            "ci95": [
+              0.9861400087181625,
+              0.9870166412916141
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -1.3450840536462616,
+            "quantityChangeCI95Pct": [
+              -1.3859991281837458,
+              -1.298335870838585
+            ]
+          },
+          "base-llgo-main-native/base-go-native": {
+            "ratio": 0.9861216596519405,
+            "ci95": [
+              0.9856269595196456,
+              0.9866688498141253
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -1.387834034805946,
+            "quantityChangeCI95Pct": [
+              -1.437304048035437,
+              -1.3331150185874718
+            ]
+          },
+          "head-go-native/base-go-native": {
+            "ratio": 0.9997637399839548,
+            "ci95": [
+              0.9991826586685493,
+              1.0002891474055666
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -0.023626001604515334,
+            "quantityChangeCI95Pct": [
+              -0.08173413314507272,
+              0.028914740556662544
+            ]
+          },
+          "head-llgo-main-native/base-llgo-main-native": {
+            "ratio": 1.0001971538597187,
+            "ci95": [
+              0.9997896657247666,
+              1.0005413211933447
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": 0.01971538597187461,
+            "quantityChangeCI95Pct": [
+              -0.021033427523342585,
+              0.05413211933447126
+            ]
+          }
+        },
+        "missing": []
+      },
+      "cycles": {
+        "medians": {
+          "base-go-native": 4.2827416666666664,
+          "base-llgo-main-native": 4.110464166666667,
+          "head-go-native": 4.279257833333333,
+          "head-llgo-main-native": 4.115937083333334
+        },
+        "AA": {
+          "base-go-native": {
+            "ratio": 0.9975186187967392,
+            "ci95": [
+              0.9941904233478575,
+              1.000642449408943
+            ]
+          },
+          "base-llgo-main-native": {
+            "ratio": 0.999632591626026,
+            "ci95": [
+              0.99797354759569,
+              1.0011937087979446
+            ]
+          },
+          "head-go-native": {
+            "ratio": 1.001835447008855,
+            "ci95": [
+              0.9963309336964552,
+              1.0076943752634877
+            ]
+          },
+          "head-llgo-main-native": {
+            "ratio": 1.0022396783148273,
+            "ci95": [
+              1.0010901417119615,
+              1.0032921294569987
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-native/head-go-native": {
+            "ratio": 0.961478796689416,
+            "ci95": [
+              0.9589365524714634,
+              0.9642319819505148
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -3.852120331058395,
+            "quantityChangeCI95Pct": [
+              -4.106344752853664,
+              -3.576801804948515
+            ]
+          },
+          "base-llgo-main-native/base-go-native": {
+            "ratio": 0.960304026964408,
+            "ci95": [
+              0.9576011109593062,
+              0.9628449730299062
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -3.9695973035592025,
+            "quantityChangeCI95Pct": [
+              -4.239888904069378,
+              -3.7155026970093763
+            ]
+          },
+          "head-go-native/base-go-native": {
+            "ratio": 1.000019572603513,
+            "ci95": [
+              0.9960622188069236,
+              1.0038082633688017
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": 0.0019572603513040576,
+            "quantityChangeCI95Pct": [
+              -0.3937781193076417,
+              0.380826336880169
+            ]
+          },
+          "head-llgo-main-native/base-llgo-main-native": {
+            "ratio": 1.0012429275883126,
+            "ci95": [
+              0.9993768511811363,
+              1.002578762597022
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": 0.12429275883125701,
+            "quantityChangeCI95Pct": [
+              -0.06231488188637169,
+              0.2578762597021944
+            ]
+          }
+        },
+        "missing": []
+      }
+    },
+    "gc-sustained-v1/gc/struct-allocation/interpreter": {
+      "warmNs": {
+        "medians": {
+          "base-go-interpreter": 91.32942452380952,
+          "base-llgo-main-interpreter": 102.27761952380952,
+          "head-go-interpreter": 80.90819476190477,
+          "head-llgo-main-interpreter": 86.55540666666667
+        },
+        "AA": {
+          "base-go-interpreter": {
+            "ratio": 1.0056615751374547,
+            "ci95": [
+              0.9791921539984786,
+              1.0350687679277184
+            ]
+          },
+          "base-llgo-main-interpreter": {
+            "ratio": 1.0044202877333135,
+            "ci95": [
+              0.997346100374281,
+              1.0124356079480834
+            ]
+          },
+          "head-go-interpreter": {
+            "ratio": 0.9994128906247068,
+            "ci95": [
+              0.9829201073529448,
+              1.0129129065639866
+            ]
+          },
+          "head-llgo-main-interpreter": {
+            "ratio": 0.998528751462394,
+            "ci95": [
+              0.9947790800084229,
+              1.002325328967921
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-interpreter/head-go-interpreter": {
+            "ratio": 1.0656195146606005,
+            "ci95": [
+              1.0525366631987032,
+              1.0757333302353125
+            ],
+            "controlsResolve": true,
+            "speedChangePct": -6.157874715864253,
+            "speedChangeCI95Pct": [
+              -7.040158383746098,
+              -4.991433081204233
+            ]
+          },
+          "base-llgo-main-interpreter/base-go-interpreter": {
+            "ratio": 1.1110075107712265,
+            "ci95": [
+              1.0939648331548981,
+              1.12598183590108
+            ],
+            "controlsResolve": false,
+            "speedChangePct": -9.991607589958463,
+            "speedChangeCI95Pct": [
+              -11.188620622841716,
+              -8.589383342781854
+            ]
+          },
+          "head-go-interpreter/base-go-interpreter": {
+            "ratio": 0.8816626837112064,
+            "ci95": [
+              0.8657435290082525,
+              0.8972771871858215
+            ],
+            "controlsResolve": false,
+            "speedChangePct": 13.422062482067766,
+            "speedChangeCI95Pct": [
+              11.448280897049612,
+              15.507649378048981
+            ]
+          },
+          "head-llgo-main-interpreter/base-llgo-main-interpreter": {
+            "ratio": 0.8456441131154148,
+            "ci95": [
+              0.8378486222064154,
+              0.8529122388921895
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 18.25305521443612,
+            "speedChangeCI95Pct": [
+              17.245357072007362,
+              19.35330243386573
+            ]
+          }
+        },
+        "missing": []
+      },
+      "cpuNs": {
+        "medians": {
+          "base-go-interpreter": 91.9833449074074,
+          "base-llgo-main-interpreter": 110.91947916666666,
+          "head-go-interpreter": 81.51461805555556,
+          "head-llgo-main-interpreter": 95.58938657407407
+        },
+        "AA": {
+          "base-go-interpreter": {
+            "ratio": 1.0065757292670872,
+            "ci95": [
+              0.9749532209662338,
+              1.040496859497156
+            ]
+          },
+          "base-llgo-main-interpreter": {
+            "ratio": 1.0025885134578723,
+            "ci95": [
+              0.9885220009061354,
+              1.0150189195073809
+            ]
+          },
+          "head-go-interpreter": {
+            "ratio": 1.0041614020879488,
+            "ci95": [
+              0.9914525387979748,
+              1.016374603546627
+            ]
+          },
+          "head-llgo-main-interpreter": {
+            "ratio": 0.9867902878788892,
+            "ci95": [
+              0.97405098532053,
+              1.000190805424983
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-interpreter/head-go-interpreter": {
+            "ratio": 1.1692390634885308,
+            "ci95": [
+              1.1555603231545364,
+              1.1821662053530841
+            ],
+            "controlsResolve": false,
+            "speedChangePct": -14.474290910499576,
+            "speedChangeCI95Pct": [
+              -15.409525710361137,
+              -13.461895501039356
+            ]
+          },
+          "base-llgo-main-interpreter/base-go-interpreter": {
+            "ratio": 1.1943218508913973,
+            "ci95": [
+              1.1708867596588133,
+              1.21596795378831
+            ],
+            "controlsResolve": false,
+            "speedChangePct": -16.270476065255167,
+            "speedChangeCI95Pct": [
+              -17.760990584946633,
+              -14.594644464901819
+            ]
+          },
+          "head-go-interpreter/base-go-interpreter": {
+            "ratio": 0.878411020974073,
+            "ci95": [
+              0.8617974924339056,
+              0.8933121619841324
+            ],
+            "controlsResolve": false,
+            "speedChangePct": 13.841923213929697,
+            "speedChangeCI95Pct": [
+              11.942951473861463,
+              16.036540925151698
+            ]
+          },
+          "head-llgo-main-interpreter/base-llgo-main-interpreter": {
+            "ratio": 0.8599628975683236,
+            "ci95": [
+              0.8525925416394372,
+              0.8667400300653237
+            ],
+            "controlsResolve": false,
+            "speedChangePct": 16.284086537646303,
+            "speedChangeCI95Pct": [
+              15.374848894960213,
+              17.289320649828266
+            ]
+          }
+        },
+        "missing": []
+      },
+      "instructions": {
+        "medians": {
+          "base-go-interpreter": 2310.3549830555557,
+          "base-llgo-main-interpreter": 2532.567093888889,
+          "head-go-interpreter": 2054.0802575,
+          "head-llgo-main-interpreter": 2081.4029061111114
+        },
+        "AA": {
+          "base-go-interpreter": {
+            "ratio": 1.0015971987404282,
+            "ci95": [
+              0.9643867743032545,
+              1.0418470789825964
+            ]
+          },
+          "base-llgo-main-interpreter": {
+            "ratio": 1.0034560809076567,
+            "ci95": [
+              0.9995461780816327,
+              1.0088373577219896
+            ]
+          },
+          "head-go-interpreter": {
+            "ratio": 0.9999120987406963,
+            "ci95": [
+              0.9998240189843336,
+              0.9999859587791086
+            ]
+          },
+          "head-llgo-main-interpreter": {
+            "ratio": 0.994978577654549,
+            "ci95": [
+              0.989435287874689,
+              0.9993650363794138
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-interpreter/head-go-interpreter": {
+            "ratio": 1.0160586454927878,
+            "ci95": [
+              1.0135538474450636,
+              1.019195993269521
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": 1.6058645492787793,
+            "quantityChangeCI95Pct": [
+              1.3553847445063605,
+              1.9195993269520928
+            ]
+          },
+          "base-llgo-main-interpreter/base-go-interpreter": {
+            "ratio": 1.084238142337934,
+            "ci95": [
+              1.0634993595883262,
+              1.099864035797687
+            ],
+            "controlsResolve": false,
+            "quantityChangePct": 8.423814233793392,
+            "quantityChangeCI95Pct": [
+              6.34993595883262,
+              9.986403579768698
+            ]
+          },
+          "head-go-interpreter/base-go-interpreter": {
+            "ratio": 0.877697452367592,
+            "ci95": [
+              0.8611931210228647,
+              0.8891162662133674
+            ],
+            "controlsResolve": false,
+            "quantityChangePct": -12.2302547632408,
+            "quantityChangeCI95Pct": [
+              -13.880687897713528,
+              -11.088373378663263
+            ]
+          },
+          "head-llgo-main-interpreter/base-llgo-main-interpreter": {
+            "ratio": 0.822505729859422,
+            "ci95": [
+              0.8209791075701397,
+              0.8249221117459512
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -17.749427014057794,
+            "quantityChangeCI95Pct": [
+              -17.90208924298603,
+              -17.50778882540488
+            ]
+          }
+        },
+        "missing": []
+      },
+      "cycles": {
+        "medians": {
+          "base-go-interpreter": 354.4637036111111,
+          "base-llgo-main-interpreter": 426.866585,
+          "head-go-interpreter": 313.56644833333337,
+          "head-llgo-main-interpreter": 366.05510444444445
+        },
+        "AA": {
+          "base-go-interpreter": {
+            "ratio": 1.0048700515324027,
+            "ci95": [
+              0.9726421249371415,
+              1.039352681066696
+            ]
+          },
+          "base-llgo-main-interpreter": {
+            "ratio": 1.0037033048413582,
+            "ci95": [
+              0.9912363073177386,
+              1.0152022862863763
+            ]
+          },
+          "head-go-interpreter": {
+            "ratio": 1.0028225445397616,
+            "ci95": [
+              0.9945562254220996,
+              1.0120854571884688
+            ]
+          },
+          "head-llgo-main-interpreter": {
+            "ratio": 0.9849753606152182,
+            "ci95": [
+              0.9750165502961106,
+              0.9950361819397303
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-interpreter/head-go-interpreter": {
+            "ratio": 1.1660822486229925,
+            "ci95": [
+              1.1562065396875436,
+              1.1754415684653858
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": 16.60822486229925,
+            "quantityChangeCI95Pct": [
+              15.620653968754361,
+              17.544156846538584
+            ]
+          },
+          "base-llgo-main-interpreter/base-go-interpreter": {
+            "ratio": 1.1955852376049407,
+            "ci95": [
+              1.1736362657610193,
+              1.2155317848165663
+            ],
+            "controlsResolve": false,
+            "quantityChangePct": 19.558523760494072,
+            "quantityChangeCI95Pct": [
+              17.363626576101932,
+              21.55317848165663
+            ]
+          },
+          "head-go-interpreter/base-go-interpreter": {
+            "ratio": 0.8772041489844571,
+            "ci95": [
+              0.8616030756085676,
+              0.891078134325519
+            ],
+            "controlsResolve": false,
+            "quantityChangePct": -12.279585101554291,
+            "quantityChangeCI95Pct": [
+              -13.839692439143237,
+              -10.892186567448103
+            ]
+          },
+          "head-llgo-main-interpreter/base-llgo-main-interpreter": {
+            "ratio": 0.8555577255188643,
+            "ci95": [
+              0.8491591434074885,
+              0.861307815718255
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -14.444227448113567,
+            "quantityChangeCI95Pct": [
+              -15.084085659251144,
+              -13.869218428174502
+            ]
+          }
+        },
+        "missing": []
+      }
+    },
+    "gc-sustained-v1/gc/struct-allocation/native": {
+      "warmNs": {
+        "medians": {
+          "base-go-native": 31.659087380952382,
+          "base-llgo-main-native": 32.82158738095238,
+          "head-go-native": 31.641666666666666,
+          "head-llgo-main-native": 33.69298642857143
+        },
+        "AA": {
+          "base-go-native": {
+            "ratio": 0.9951365492307072,
+            "ci95": [
+              0.9871088597598213,
+              1.0021914817617572
+            ]
+          },
+          "base-llgo-main-native": {
+            "ratio": 0.9891282968700708,
+            "ci95": [
+              0.9781543758811443,
+              0.9997641742291061
+            ]
+          },
+          "head-go-native": {
+            "ratio": 1.001218123899736,
+            "ci95": [
+              0.9922492843892766,
+              1.01044514337594
+            ]
+          },
+          "head-llgo-main-native": {
+            "ratio": 0.9936008453163766,
+            "ci95": [
+              0.9787239197612498,
+              1.0055536190557022
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-native/head-go-native": {
+            "ratio": 1.0611935107977712,
+            "ci95": [
+              1.0524319408523855,
+              1.0699490190770398
+            ],
+            "controlsResolve": true,
+            "speedChangePct": -5.766479928035739,
+            "speedChangeCI95Pct": [
+              -6.537602991344316,
+              -4.9819792441798905
+            ]
+          },
+          "base-llgo-main-native/base-go-native": {
+            "ratio": 1.0359734291152527,
+            "ci95": [
+              1.030198542851808,
+              1.0419278411935864
+            ],
+            "controlsResolve": true,
+            "speedChangePct": -3.472427777030429,
+            "speedChangeCI95Pct": [
+              -4.024063810940659,
+              -2.9313323204876562
+            ]
+          },
+          "head-go-native/base-go-native": {
+            "ratio": 0.9972411945086385,
+            "ci95": [
+              0.9924129356560878,
+              1.0017702727858369
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 0.27664375544782516,
+            "speedChangeCI95Pct": [
+              -0.17671444580940054,
+              0.7645067966487451
+            ]
+          },
+          "head-llgo-main-native/base-llgo-main-native": {
+            "ratio": 1.0215183657910711,
+            "ci95": [
+              1.0144259297351557,
+              1.0283459763772709
+            ],
+            "controlsResolve": true,
+            "speedChangePct": -2.106507970065441,
+            "speedChangeCI95Pct": [
+              -2.7564630025713743,
+              -1.4220781737038113
+            ]
+          }
+        },
+        "missing": []
+      },
+      "cpuNs": {
+        "medians": {
+          "base-go-native": 32.13789351851852,
+          "base-llgo-main-native": 32.954166666666666,
+          "head-go-native": 32.104490740740744,
+          "head-llgo-main-native": 33.74814814814815
+        },
+        "AA": {
+          "base-go-native": {
+            "ratio": 0.9943337919188517,
+            "ci95": [
+              0.9841213972306363,
+              1.00384874865495
+            ]
+          },
+          "base-llgo-main-native": {
+            "ratio": 0.9898052185605465,
+            "ci95": [
+              0.9759741243203083,
+              1.0028603249561971
+            ]
+          },
+          "head-go-native": {
+            "ratio": 1.002626549560901,
+            "ci95": [
+              0.9954346480486094,
+              1.009720897346346
+            ]
+          },
+          "head-llgo-main-native": {
+            "ratio": 0.9930291080231889,
+            "ci95": [
+              0.9771475227466822,
+              1.0066494160245187
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-native/head-go-native": {
+            "ratio": 1.0503045840676704,
+            "ci95": [
+              1.0431552651793954,
+              1.057129399606792
+            ],
+            "controlsResolve": true,
+            "speedChangePct": -4.789523423086317,
+            "speedChangeCI95Pct": [
+              -5.404201191267766,
+              -4.136993467791572
+            ]
+          },
+          "base-llgo-main-native/base-go-native": {
+            "ratio": 1.0202719184502795,
+            "ci95": [
+              1.0133134619286825,
+              1.0272781589192752
+            ],
+            "controlsResolve": true,
+            "speedChangePct": -1.9869133006298112,
+            "speedChangeCI95Pct": [
+              -2.655381960809189,
+              -1.3138542444055212
+            ]
+          },
+          "head-go-native/base-go-native": {
+            "ratio": 0.9948554969480129,
+            "ci95": [
+              0.9913475625263,
+              0.9984029631996055
+            ],
+            "controlsResolve": true,
+            "speedChangePct": 0.5171105821668798,
+            "speedChangeCI95Pct": [
+              0.15995914067366002,
+              0.8727955563486267
+            ]
+          },
+          "head-llgo-main-native/base-llgo-main-native": {
+            "ratio": 1.0241400062412271,
+            "ci95": [
+              1.0161820253333231,
+              1.032200535234589
+            ],
+            "controlsResolve": true,
+            "speedChangePct": -2.357100210334051,
+            "speedChangeCI95Pct": [
+              -3.119600710851289,
+              -1.5924337303658942
+            ]
+          }
+        },
+        "missing": []
+      },
+      "instructions": {
+        "medians": {
+          "base-go-native": 732.7860441666667,
+          "base-llgo-main-native": 733.13078,
+          "head-go-native": 731.8486913888889,
+          "head-llgo-main-native": 731.4796555555556
+        },
+        "AA": {
+          "base-go-native": {
+            "ratio": 0.9999952100172939,
+            "ci95": [
+              0.9999446768201685,
+              1.0000475921224778
+            ]
+          },
+          "base-llgo-main-native": {
+            "ratio": 1.0000058222216324,
+            "ci95": [
+              0.9999673780387681,
+              1.000047232916713
+            ]
+          },
+          "head-go-native": {
+            "ratio": 1.0000636014886182,
+            "ci95": [
+              0.9999526445940344,
+              1.0001814495778423
+            ]
+          },
+          "head-llgo-main-native": {
+            "ratio": 0.9999884335787572,
+            "ci95": [
+              0.9999441603059368,
+              1.0000283444569915
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-native/head-go-native": {
+            "ratio": 0.9995181670383168,
+            "ci95": [
+              0.9994678840152136,
+              0.9995825047225054
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -0.04818329616832484,
+            "quantityChangeCI95Pct": [
+              -0.053211598478641875,
+              -0.04174952774945728
+            ]
+          },
+          "base-llgo-main-native/base-go-native": {
+            "ratio": 1.000479232497978,
+            "ci95": [
+              1.0004570142952043,
+              1.0005029601163185
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": 0.04792324979780993,
+            "quantityChangeCI95Pct": [
+              0.04570142952042833,
+              0.05029601163184516
+            ]
+          },
+          "head-go-native/base-go-native": {
+            "ratio": 0.9987099814781942,
+            "ci95": [
+              0.9986379858783537,
+              0.9987676743451248
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -0.12900185218057691,
+            "quantityChangeCI95Pct": [
+              -0.1362014121646271,
+              -0.12323256548751882
+            ]
+          },
+          "head-llgo-main-native/base-llgo-main-native": {
+            "ratio": 0.997750615570097,
+            "ci95": [
+              0.9977269031822168,
+              0.9977763454707957
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -0.22493844299029675,
+            "quantityChangeCI95Pct": [
+              -0.22730968177832045,
+              -0.22236545292042553
+            ]
+          }
+        },
+        "missing": []
+      },
+      "cycles": {
+        "medians": {
+          "base-go-native": 124.46467694444445,
+          "base-llgo-main-native": 127.11328222222221,
+          "head-go-native": 123.32926472222222,
+          "head-llgo-main-native": 130.5094338888889
+        },
+        "AA": {
+          "base-go-native": {
+            "ratio": 0.9935938691263518,
+            "ci95": [
+              0.9845089661101408,
+              1.002181544366185
+            ]
+          },
+          "base-llgo-main-native": {
+            "ratio": 0.9940396784605813,
+            "ci95": [
+              0.9858221380082195,
+              1.0016592513342566
+            ]
+          },
+          "head-go-native": {
+            "ratio": 1.0000710980966765,
+            "ci95": [
+              0.9937938174162542,
+              1.0047709362563406
+            ]
+          },
+          "head-llgo-main-native": {
+            "ratio": 1.0003953419219467,
+            "ci95": [
+              0.9877717030310785,
+              1.0110389582778074
+            ]
+          }
+        },
+        "paired": {
+          "head-llgo-main-native/head-go-native": {
+            "ratio": 1.0544674634468245,
+            "ci95": [
+              1.0487723469970733,
+              1.0599347487270492
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": 5.446746344682452,
+            "quantityChangeCI95Pct": [
+              4.8772346997073335,
+              5.993474872704918
+            ]
+          },
+          "base-llgo-main-native/base-go-native": {
+            "ratio": 1.017606419475357,
+            "ci95": [
+              1.013266073835676,
+              1.0219701400130687
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": 1.7606419475356905,
+            "quantityChangeCI95Pct": [
+              1.3266073835676018,
+              2.197014001306874
+            ]
+          },
+          "head-go-native/base-go-native": {
+            "ratio": 0.9906978772113161,
+            "ci95": [
+              0.9860914157511165,
+              0.995038391475361
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": -0.930212278868392,
+            "quantityChangeCI95Pct": [
+              -1.3908584248883527,
+              -0.4961608524639005
+            ]
+          },
+          "head-llgo-main-native/base-llgo-main-native": {
+            "ratio": 1.0265842054767702,
+            "ci95": [
+              1.019955111044188,
+              1.0334586444520621
+            ],
+            "controlsResolve": true,
+            "quantityChangePct": 2.6584205476770206,
+            "quantityChangeCI95Pct": [
+              1.9955111044188012,
+              3.3458644452062147
+            ]
+          }
+        },
+        "missing": []
+      }
+    }
+  }
+}

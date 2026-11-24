@@ -1,0 +1,136 @@
+{
+  "source": {
+    "base": "ec3b3a42eab7f82a2c5a3e682f127abd55c2240e",
+    "head": "7fd13e7c1a326d41051a028835b3953cb9089bb6",
+    "selectedScreen": "Reuse unchanged native register bank plans",
+    "files": {
+      "internal/compiler/codegen/linear_scan.go": "f55feced7eb9c5e6c14b0bab3207efa4178bf1db2974de96976c6dd24ffabae5",
+      "internal/compiler/codegen/linear_scan_test.go": "b3fd24d340693c995ad8bf19d79e870ba8d6a07b1fcd4b61c438103c55027299",
+      "internal/compiler/codegen/value_loops.go": "f54cba4e3011a403391e997ee6bb3301bf79e68f7df94404621e5050afc0ac07"
+    }
+  },
+  "reusedCoreScreen": "Reuse unchanged native register bank plans",
+  "commonHarnessSHA256": "6c2d3143c1fe6f1aafa3076e4d58509f7ff2aa53f96deff9cb6f17fd3e977cb9",
+  "sourceDiffFiles": [
+    "internal/compiler/codegen/linear_scan.go",
+    "internal/compiler/codegen/linear_scan_test.go",
+    "internal/compiler/codegen/value_loops.go"
+  ],
+  "binaries": {
+    "base-go": {
+      "source": "ec3b3a42eab7f82a2c5a3e682f127abd55c2240e",
+      "compiler": "go1.27.3",
+      "path": "head-go-phase",
+      "flags": [],
+      "sha256": "4d8736fe468629220391e8db4be87c7da1e25d1d9fda2a3cdc9a399d979e063f"
+    },
+    "base-llgo": {
+      "source": "ec3b3a42eab7f82a2c5a3e682f127abd55c2240e",
+      "compiler": "3c6b33ecc62036b69605fa6492f27f97f858e47a",
+      "path": "head-llgo-phase",
+      "flags": [
+        "-O3",
+        "-lto=full"
+      ],
+      "sha256": "d9d655864373162292a6a0777c75968a06e21251c773c4ac45de0b22c86c0448"
+    },
+    "base-llgo-main": {
+      "source": "ec3b3a42eab7f82a2c5a3e682f127abd55c2240e",
+      "compiler": "42efacaeff2e196622296415540e927724f7dcef",
+      "path": "base-llgo-main-phase",
+      "flags": [
+        "-O3",
+        "-lto=full"
+      ],
+      "sha256": "734df26f301467bd00477f028f2045ccb7ffb7f90f435edf89240ee19ccbb69a"
+    },
+    "head-go": {
+      "source": "7fd13e7c1a326d41051a028835b3953cb9089bb6",
+      "compiler": "go1.27.3",
+      "path": "head-go-phase",
+      "flags": [],
+      "sha256": "8ce1d74d9a6cbb07736f6ceb3484b4530a3093483b301322938febbadcf463a7"
+    },
+    "head-llgo": {
+      "source": "7fd13e7c1a326d41051a028835b3953cb9089bb6",
+      "compiler": "3c6b33ecc62036b69605fa6492f27f97f858e47a",
+      "path": "head-llgo-phase",
+      "flags": [
+        "-O3",
+        "-lto=full"
+      ],
+      "sha256": "e9b03ba33a680bb3f7703a8d20f0f1681c8badb7575fc5ce01ffbdcea01d44e2"
+    },
+    "head-llgo-main": {
+      "source": "7fd13e7c1a326d41051a028835b3953cb9089bb6",
+      "compiler": "42efacaeff2e196622296415540e927724f7dcef",
+      "path": "head-llgo-main-phase",
+      "flags": [
+        "-O3",
+        "-lto=full"
+      ],
+      "sha256": "f7558699d7ab5a2d608464f8a862164ee62fe73a2f124bf6c778ba08e88b8469"
+    }
+  },
+  "p3Binaries": {
+    "base-go": {
+      "source": "ec3b3a42eab7f82a2c5a3e682f127abd55c2240e",
+      "compiler": "go1.27.3",
+      "path": "head-go-p3",
+      "flags": [],
+      "sha256": "e26382930b599cf3db8a1c31b798ef9eb5155f9c5200a83d362ca11f2375ab6b"
+    },
+    "base-llgo": {
+      "source": "ec3b3a42eab7f82a2c5a3e682f127abd55c2240e",
+      "compiler": "3c6b33ecc62036b69605fa6492f27f97f858e47a",
+      "path": "head-llgo-p3",
+      "flags": [
+        "-O3",
+        "-lto=full"
+      ],
+      "sha256": "bd3812a339dd7c273beccb6b0f82e687462e5e1d2b8206c01790c3936adcb567"
+    },
+    "base-llgo-main": {
+      "source": "ec3b3a42eab7f82a2c5a3e682f127abd55c2240e",
+      "compiler": "42efacaeff2e196622296415540e927724f7dcef",
+      "path": "base-llgo-main-p3",
+      "flags": [
+        "-O3",
+        "-lto=full"
+      ],
+      "sha256": "3ee5fc81db3a4eb5933dc6ca139a5dbca642296cc883ac59774cb0222d3c4d1a"
+    },
+    "head-go": {
+      "source": "7fd13e7c1a326d41051a028835b3953cb9089bb6",
+      "compiler": "go1.27.3",
+      "path": "head-go-p3",
+      "flags": [],
+      "sha256": "b706bf68433a6ff56fc602154f5bc0c093a26e0a4a464554a5f9ea7bf652f874"
+    },
+    "head-llgo": {
+      "source": "7fd13e7c1a326d41051a028835b3953cb9089bb6",
+      "compiler": "3c6b33ecc62036b69605fa6492f27f97f858e47a",
+      "path": "head-llgo-p3",
+      "flags": [
+        "-O3",
+        "-lto=full"
+      ],
+      "sha256": "fe3116418ed0a17516c0fb8117b8e9680eb9e6fab98a06d8c3b85a0072b82ad2"
+    },
+    "head-llgo-main": {
+      "source": "7fd13e7c1a326d41051a028835b3953cb9089bb6",
+      "compiler": "42efacaeff2e196622296415540e927724f7dcef",
+      "path": "head-llgo-main-p3",
+      "flags": [
+        "-O3",
+        "-lto=full"
+      ],
+      "sha256": "981cf98a92ae6c09426fe49fb4baf0737d488904fa822fe3b3493139c8e3c6e4"
+    }
+  },
+  "refreshedLLGo": {
+    "version": "42efacaeff2e196622296415540e927724f7dcef",
+    "versionOutput": "llgo 42efacaeff2e196622296415540e927724f7dcef darwin/arm64\n",
+    "compilerSha256": "fb56babc4e7a23583fcc47defd7bcf4775e022038f8da9b7b557ffdc8fc92a29"
+  }
+}

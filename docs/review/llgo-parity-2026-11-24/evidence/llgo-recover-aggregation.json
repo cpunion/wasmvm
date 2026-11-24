@@ -1,0 +1,865 @@
+{
+  "wasmvm": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+  "results": {
+    "p3-16-workers-4": {
+      "plan": {
+        "blocks": 12,
+        "samples": 20,
+        "batchRequests": 512,
+        "seed": 202611240921,
+        "payloadBytes": 16,
+        "hostCompiler": "mixed",
+        "variants": {
+          "go": "head-go-p3",
+          "llgo-base": "llgo-current-p3",
+          "llgo-head": "llgo-head-p3"
+        },
+        "sourceBase": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "sourceHead": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "qualificationHead": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "scope": "Compare the recover-visible storage compiler change under the same current Preview 3 source.",
+        "binarySHA256": {
+          "go": "e26382930b599cf3db8a1c31b798ef9eb5155f9c5200a83d362ca11f2375ab6b",
+          "llgo-base": "0c4ca10681e65c613f4c59ddbf3469bad88b1a358aab4e97b6170073760b4f34",
+          "llgo-head": "d8545a7963b7950900c2bdc335bc4d866490a7931c092fd48e1d88fa8db828ef"
+        },
+        "machTimebase": {
+          "numer": 125,
+          "denom": 3
+        },
+        "wasmSHA256": "1d583dc670704a021f06d8437bc8834c8adb9feaf1a654cb16faa7e1de3bbdd2",
+        "workers": 4,
+        "clients": 16,
+        "requestsPerClient": 32,
+        "runtimeBase": "42efacaeff2e196622296415540e927724f7dcef",
+        "runtimeHead": "9806ccca7b03b403d466d2b31d4be01d494c87a8"
+      },
+      "processes": 72,
+      "requests": 737280,
+      "metrics": {
+        "throughput": {
+          "medians": {
+            "go": 50907.28714301679,
+            "llgo-base": 29174.466400266283,
+            "llgo-head": 29859.861581319732
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9970627879379648,
+              "ci95": [
+                0.9885947874746785,
+                1.0068181901222333
+              ]
+            },
+            "llgo-base": {
+              "ratio": 0.9879627976847544,
+              "ci95": [
+                0.968618776293475,
+                1.0062786597373592
+              ]
+            },
+            "llgo-head": {
+              "ratio": 0.9964209927352397,
+              "ci95": [
+                0.9639482354647148,
+                1.0233435988074098
+              ]
+            }
+          },
+          "comparisons": {
+            "llgo-head/llgo-base": {
+              "ratio": 1.0189173869744261,
+              "ci95": [
+                0.9974519181928333,
+                1.040956873027968
+              ],
+              "controlsResolve": false
+            },
+            "llgo-head/go": {
+              "ratio": 0.5761591936589636,
+              "ci95": [
+                0.5615895423838003,
+                0.5887760960416237
+              ],
+              "controlsResolve": false
+            },
+            "llgo-base/go": {
+              "ratio": 0.565462127768583,
+              "ci95": [
+                0.5519977359361108,
+                0.5770646471254187
+              ],
+              "controlsResolve": false
+            }
+          }
+        },
+        "cpuUs": {
+          "medians": {
+            "go": 72.45264485677083,
+            "llgo-base": 137.26201171875,
+            "llgo-head": 137.01600748697916
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.0003042051144175,
+              "ci95": [
+                0.9926617493365236,
+                1.007835784791136
+              ]
+            },
+            "llgo-base": {
+              "ratio": 1.0003211922662019,
+              "ci95": [
+                0.9919770752988967,
+                1.0083942183552945
+              ]
+            },
+            "llgo-head": {
+              "ratio": 0.9923419483632755,
+              "ci95": [
+                0.9844380625250951,
+                1.0005467447700793
+              ]
+            }
+          },
+          "comparisons": {
+            "llgo-head/llgo-base": {
+              "ratio": 0.991761214231138,
+              "ci95": [
+                0.9839293318193386,
+                0.9996764579752003
+              ],
+              "controlsResolve": true
+            },
+            "llgo-head/go": {
+              "ratio": 1.8957649857121681,
+              "ci95": [
+                1.84011719727945,
+                1.9544449445424354
+              ],
+              "controlsResolve": true
+            },
+            "llgo-base/go": {
+              "ratio": 1.9115135362314588,
+              "ci95": [
+                1.860263249308403,
+                1.9633089595928717
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "userUs": {
+          "medians": {
+            "go": 70.64074300130207,
+            "llgo-base": 100.32697347005205,
+            "llgo-head": 100.89527791341143
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9999497108289582,
+              "ci95": [
+                0.9926560733432923,
+                1.0075050864558794
+              ]
+            },
+            "llgo-base": {
+              "ratio": 1.0039277189280291,
+              "ci95": [
+                0.9899829512319156,
+                1.0175333437278973
+              ]
+            },
+            "llgo-head": {
+              "ratio": 0.99172925572551,
+              "ci95": [
+                0.979287313317502,
+                1.0043661996597586
+              ]
+            }
+          },
+          "comparisons": {
+            "llgo-head/llgo-base": {
+              "ratio": 0.9952941362031728,
+              "ci95": [
+                0.9856961578045466,
+                1.0035431750855812
+              ],
+              "controlsResolve": true
+            },
+            "llgo-head/go": {
+              "ratio": 1.440606322130944,
+              "ci95": [
+                1.4143971483381492,
+                1.4707341136587162
+              ],
+              "controlsResolve": true
+            },
+            "llgo-base/go": {
+              "ratio": 1.4474176725551091,
+              "ci95": [
+                1.4226742374357444,
+                1.4743871695696893
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "systemUs": {
+          "medians": {
+            "go": 1.7593383789062496,
+            "llgo-base": 36.417993164062494,
+            "llgo-head": 35.92796630859374
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.014722823385769,
+              "ci95": [
+                0.975460019096047,
+                1.0563528310629684
+              ]
+            },
+            "llgo-base": {
+              "ratio": 0.9899171721013058,
+              "ci95": [
+                0.9734431605895997,
+                1.0050676168859778
+              ]
+            },
+            "llgo-head": {
+              "ratio": 0.9934561650549472,
+              "ci95": [
+                0.9762358759661355,
+                1.010640405404566
+              ]
+            }
+          },
+          "comparisons": {
+            "llgo-head/llgo-base": {
+              "ratio": 0.9803659131287206,
+              "ci95": [
+                0.9643990310798284,
+                0.9968667527001309
+              ],
+              "controlsResolve": false
+            },
+            "llgo-head/go": {
+              "ratio": 19.855068930604435,
+              "ci95": [
+                16.78043412780052,
+                23.269609042318425
+              ],
+              "controlsResolve": false
+            },
+            "llgo-base/go": {
+              "ratio": 20.25271244615121,
+              "ci95": [
+                17.334720056043466,
+                23.434518327809826
+              ],
+              "controlsResolve": false
+            }
+          }
+        },
+        "instructions": {
+          "medians": {
+            "go": 647902.0447265625,
+            "llgo-base": 937129.9380859375,
+            "llgo-head": 933392.8125976563
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9981864728922154,
+              "ci95": [
+                0.9940772875346762,
+                1.0018446959842473
+              ]
+            },
+            "llgo-base": {
+              "ratio": 1.0020941650800317,
+              "ci95": [
+                0.9983272485437519,
+                1.0061902641823819
+              ]
+            },
+            "llgo-head": {
+              "ratio": 1.0000496611592344,
+              "ci95": [
+                0.9941658203447905,
+                1.0056753049093083
+              ]
+            }
+          },
+          "comparisons": {
+            "llgo-head/llgo-base": {
+              "ratio": 0.9972100355221464,
+              "ci95": [
+                0.9936110680604348,
+                1.0012023669382224
+              ],
+              "controlsResolve": true
+            },
+            "llgo-head/go": {
+              "ratio": 1.4375515621899018,
+              "ci95": [
+                1.4232624289657838,
+                1.450647153509688
+              ],
+              "controlsResolve": true
+            },
+            "llgo-base/go": {
+              "ratio": 1.4415735010500466,
+              "ci95": [
+                1.4291212477212383,
+                1.4524851218425912
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "publicAPINs": {
+          "medians": {
+            "go": 59562.5,
+            "llgo-base": 111281.0,
+            "llgo-head": 109489.25
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9996679250868739,
+              "ci95": [
+                0.9902529142617281,
+                1.0088245939976308
+              ]
+            },
+            "llgo-base": {
+              "ratio": 0.993210631480873,
+              "ci95": [
+                0.9806515211580703,
+                1.004855952680106
+              ]
+            },
+            "llgo-head": {
+              "ratio": 0.9959618167524062,
+              "ci95": [
+                0.9836573045282441,
+                1.0092853591750561
+              ]
+            }
+          },
+          "comparisons": {
+            "llgo-head/llgo-base": {
+              "ratio": 0.982084809277389,
+              "ci95": [
+                0.9737641093688634,
+                0.9908858517470841
+              ],
+              "controlsResolve": true
+            },
+            "llgo-head/go": {
+              "ratio": 1.9045630261171473,
+              "ci95": [
+                1.8625575406459067,
+                1.9575668141520728
+              ],
+              "controlsResolve": true
+            },
+            "llgo-base/go": {
+              "ratio": 1.9393060641254716,
+              "ci95": [
+                1.8929315706005345,
+                1.9979478405067395
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "allocsPerRequest": {
+          "medians": {
+            "go": 424.75126953125,
+            "llgo-base": 485.75,
+            "llgo-head": 473.75
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9999998467241297,
+              "ci95": [
+                0.9999990037067737,
+                1.0000007280608525
+              ]
+            },
+            "llgo-base": {
+              "ratio": 1.0000000670140732,
+              "ci95": [
+                0.9999999664929768,
+                1.000000167535183
+              ]
+            },
+            "llgo-head": {
+              "ratio": 0.9999998797548427,
+              "ci95": [
+                0.9999997595097071,
+                0.999999982822118
+              ]
+            }
+          },
+          "comparisons": {
+            "llgo-head/llgo-base": {
+              "ratio": 0.9752958926525783,
+              "ci95": [
+                0.9752958103335789,
+                0.9752959749715845
+              ],
+              "controlsResolve": true
+            },
+            "llgo-head/go": {
+              "ratio": 1.1153584015132039,
+              "ci95": [
+                1.1153580415436744,
+                1.1153587412181516
+              ],
+              "controlsResolve": true
+            },
+            "llgo-base/go": {
+              "ratio": 1.1436102724473576,
+              "ci95": [
+                1.143609904087816,
+                1.1436106093163314
+              ],
+              "controlsResolve": true
+            }
+          }
+        }
+      }
+    },
+    "p3-65536-workers-4": {
+      "plan": {
+        "blocks": 12,
+        "samples": 20,
+        "batchRequests": 512,
+        "seed": 202611306441,
+        "payloadBytes": 65536,
+        "hostCompiler": "mixed",
+        "variants": {
+          "go": "head-go-p3",
+          "llgo-base": "llgo-current-p3",
+          "llgo-head": "llgo-head-p3"
+        },
+        "sourceBase": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "sourceHead": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "qualificationHead": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "scope": "Compare the recover-visible storage compiler change under the same current Preview 3 source.",
+        "binarySHA256": {
+          "go": "e26382930b599cf3db8a1c31b798ef9eb5155f9c5200a83d362ca11f2375ab6b",
+          "llgo-base": "0c4ca10681e65c613f4c59ddbf3469bad88b1a358aab4e97b6170073760b4f34",
+          "llgo-head": "d8545a7963b7950900c2bdc335bc4d866490a7931c092fd48e1d88fa8db828ef"
+        },
+        "machTimebase": {
+          "numer": 125,
+          "denom": 3
+        },
+        "wasmSHA256": "1d583dc670704a021f06d8437bc8834c8adb9feaf1a654cb16faa7e1de3bbdd2",
+        "workers": 4,
+        "clients": 16,
+        "requestsPerClient": 32,
+        "runtimeBase": "42efacaeff2e196622296415540e927724f7dcef",
+        "runtimeHead": "9806ccca7b03b403d466d2b31d4be01d494c87a8"
+      },
+      "processes": 72,
+      "requests": 737280,
+      "metrics": {
+        "throughput": {
+          "medians": {
+            "go": 42857.64987286052,
+            "llgo-base": 28013.319583272114,
+            "llgo-head": 28808.198373715873
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.0008253485734677,
+              "ci95": [
+                0.9885184203339497,
+                1.012317614623846
+              ]
+            },
+            "llgo-base": {
+              "ratio": 1.0009240860114321,
+              "ci95": [
+                0.9809204097811892,
+                1.0267367393878917
+              ]
+            },
+            "llgo-head": {
+              "ratio": 0.9925310144663307,
+              "ci95": [
+                0.980281385762294,
+                1.0048100798220834
+              ]
+            }
+          },
+          "comparisons": {
+            "llgo-head/llgo-base": {
+              "ratio": 1.0078229056993753,
+              "ci95": [
+                0.9960108360354188,
+                1.01746537742744
+              ],
+              "controlsResolve": false
+            },
+            "llgo-head/go": {
+              "ratio": 0.6483749674595888,
+              "ci95": [
+                0.6192533383733009,
+                0.6686417635957962
+              ],
+              "controlsResolve": true
+            },
+            "llgo-base/go": {
+              "ratio": 0.6433421623907736,
+              "ci95": [
+                0.6212393686555976,
+                0.6595691723987048
+              ],
+              "controlsResolve": false
+            }
+          }
+        },
+        "cpuUs": {
+          "medians": {
+            "go": 86.72163696289061,
+            "llgo-base": 159.84575805664062,
+            "llgo-head": 157.9700236002604
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9997606745483774,
+              "ci95": [
+                0.9902197299752507,
+                1.0098767930094374
+              ]
+            },
+            "llgo-base": {
+              "ratio": 0.9997536693808924,
+              "ci95": [
+                0.9803427790874933,
+                1.0146614824774896
+              ]
+            },
+            "llgo-head": {
+              "ratio": 0.994147549205807,
+              "ci95": [
+                0.9862052667691364,
+                1.0017577484929907
+              ]
+            }
+          },
+          "comparisons": {
+            "llgo-head/llgo-base": {
+              "ratio": 1.0019830013507072,
+              "ci95": [
+                0.9944653886661845,
+                1.01048387897484
+              ],
+              "controlsResolve": true
+            },
+            "llgo-head/go": {
+              "ratio": 1.810612146767358,
+              "ci95": [
+                1.7816509781491796,
+                1.8365652488273063
+              ],
+              "controlsResolve": true
+            },
+            "llgo-base/go": {
+              "ratio": 1.8070288062038888,
+              "ci95": [
+                1.7701468990348446,
+                1.8391695756569348
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "userUs": {
+          "medians": {
+            "go": 84.2901652018229,
+            "llgo-base": 120.20950927734373,
+            "llgo-head": 119.6568420410156
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9986378604142021,
+              "ci95": [
+                0.989272647672285,
+                1.008126750684243
+              ]
+            },
+            "llgo-base": {
+              "ratio": 1.0025554830487453,
+              "ci95": [
+                0.9831095427567377,
+                1.0193122452976944
+              ]
+            },
+            "llgo-head": {
+              "ratio": 0.9939207886989536,
+              "ci95": [
+                0.9822635576289466,
+                1.0047919866901858
+              ]
+            }
+          },
+          "comparisons": {
+            "llgo-head/llgo-base": {
+              "ratio": 1.0072658204580092,
+              "ci95": [
+                1.0006511026434193,
+                1.0141188548486568
+              ],
+              "controlsResolve": true
+            },
+            "llgo-head/go": {
+              "ratio": 1.4047612749613663,
+              "ci95": [
+                1.37745221588048,
+                1.429309442849408
+              ],
+              "controlsResolve": true
+            },
+            "llgo-base/go": {
+              "ratio": 1.3946281571657162,
+              "ci95": [
+                1.361117126150574,
+                1.4244595753192606
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "systemUs": {
+          "medians": {
+            "go": 2.4516235351562496,
+            "llgo-base": 39.867030843098945,
+            "llgo-head": 38.24998372395832
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.0315313753338162,
+              "ci95": [
+                0.9896897560462079,
+                1.087631385068775
+              ]
+            },
+            "llgo-base": {
+              "ratio": 0.9925690236168188,
+              "ci95": [
+                0.9674506400585366,
+                1.0135352164972768
+              ]
+            },
+            "llgo-head": {
+              "ratio": 0.9960923450197594,
+              "ci95": [
+                0.9786911019837835,
+                1.0115293845842355
+              ]
+            }
+          },
+          "comparisons": {
+            "llgo-head/llgo-base": {
+              "ratio": 0.9859711399846717,
+              "ci95": [
+                0.9715428584499854,
+                1.001931573834922
+              ],
+              "controlsResolve": false
+            },
+            "llgo-head/go": {
+              "ratio": 14.467955130705407,
+              "ci95": [
+                13.23256748281326,
+                15.639814283173633
+              ],
+              "controlsResolve": false
+            },
+            "llgo-base/go": {
+              "ratio": 14.673811984933286,
+              "ci95": [
+                13.304031660070018,
+                15.939935571716637
+              ],
+              "controlsResolve": false
+            }
+          }
+        },
+        "instructions": {
+          "medians": {
+            "go": 927066.1565917969,
+            "llgo-base": 1264071.1971191405,
+            "llgo-head": 1255557.7565429688
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9985891588431429,
+              "ci95": [
+                0.995962247804291,
+                1.000934676161663
+              ]
+            },
+            "llgo-base": {
+              "ratio": 1.0026527586650311,
+              "ci95": [
+                0.9911207351552307,
+                1.014372083023
+              ]
+            },
+            "llgo-head": {
+              "ratio": 0.9971073275767525,
+              "ci95": [
+                0.9891293387100358,
+                1.0043686189995382
+              ]
+            }
+          },
+          "comparisons": {
+            "llgo-head/llgo-base": {
+              "ratio": 1.001037534311271,
+              "ci95": [
+                0.9957184828079707,
+                1.0070882274663138
+              ],
+              "controlsResolve": true
+            },
+            "llgo-head/go": {
+              "ratio": 1.3550585926983398,
+              "ci95": [
+                1.3490403231087076,
+                1.3615367515825505
+              ],
+              "controlsResolve": true
+            },
+            "llgo-base/go": {
+              "ratio": 1.353654130092775,
+              "ci95": [
+                1.3412433979432583,
+                1.365013546227728
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "publicAPINs": {
+          "medians": {
+            "go": 67521.0,
+            "llgo-base": 114771.0,
+            "llgo-head": 111906.5
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.0028389219135114,
+              "ci95": [
+                0.990521384401705,
+                1.0155993954928382
+              ]
+            },
+            "llgo-base": {
+              "ratio": 1.0011733436371955,
+              "ci95": [
+                0.984557563082237,
+                1.0163229905532383
+              ]
+            },
+            "llgo-head": {
+              "ratio": 1.0031970664493264,
+              "ci95": [
+                0.9958991958088271,
+                1.0093602144806828
+              ]
+            }
+          },
+          "comparisons": {
+            "llgo-head/llgo-base": {
+              "ratio": 0.9845512374996408,
+              "ci95": [
+                0.9787913837115635,
+                0.9899063652865039
+              ],
+              "controlsResolve": true
+            },
+            "llgo-head/go": {
+              "ratio": 1.7075463098856583,
+              "ci95": [
+                1.6519436255448372,
+                1.7842813777535371
+              ],
+              "controlsResolve": true
+            },
+            "llgo-base/go": {
+              "ratio": 1.7343397121942892,
+              "ci95": [
+                1.6806950779392085,
+                1.8063603518587008
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "allocsPerRequest": {
+          "medians": {
+            "go": 463.7517578125,
+            "llgo-base": 524.75,
+            "llgo-head": 512.75
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9999990699446576,
+              "ci95": [
+                0.9999981574381505,
+                0.9999999473559744
+              ]
+            },
+            "llgo-base": {
+              "ratio": 0.9999999534748716,
+              "ci95": [
+                0.9999997983911063,
+                1.000000124067041
+              ]
+            },
+            "llgo-head": {
+              "ratio": 1.0000000476139594,
+              "ci95": [
+                0.9999999365146982,
+                1.000000174584554
+              ]
+            }
+          },
+          "comparisons": {
+            "llgo-head/llgo-base": {
+              "ratio": 0.9771319667170064,
+              "ci95": [
+                0.9771318745533552,
+                0.97713204408157
+              ],
+              "controlsResolve": true
+            },
+            "llgo-head/go": {
+              "ratio": 1.1056562104830032,
+              "ci95": [
+                1.1056557633028248,
+                1.1056567047458377
+              ],
+              "controlsResolve": true
+            },
+            "llgo-base/go": {
+              "ratio": 1.1315321247730907,
+              "ci95": [
+                1.131531634829408,
+                1.1315326498134164
+              ],
+              "controlsResolve": true
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "base": "ec3b3a42eab7f82a2c5a3e682f127abd55c2240e",
+  "head": "7fd13e7c1a326d41051a028835b3953cb9089bb6",
+  "selectedScreen": "Reuse unchanged native register bank plans",
+  "files": {
+    "internal/compiler/codegen/linear_scan.go": "f55feced7eb9c5e6c14b0bab3207efa4178bf1db2974de96976c6dd24ffabae5",
+    "internal/compiler/codegen/linear_scan_test.go": "b3fd24d340693c995ad8bf19d79e870ba8d6a07b1fcd4b61c438103c55027299",
+    "internal/compiler/codegen/value_loops.go": "f54cba4e3011a403391e997ee6bb3301bf79e68f7df94404621e5050afc0ac07"
+  }
+}

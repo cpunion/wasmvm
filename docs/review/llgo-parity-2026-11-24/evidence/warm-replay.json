@@ -1,0 +1,178 @@
+{
+  "original22-v1/core/integer-loop": {
+    "original": {
+      "ratio": 1.0054832035700791,
+      "ci95": [
+        1.0020762069827194,
+        1.0090114561629913
+      ],
+      "controlsResolve": true,
+      "upper95AtMostOne": false,
+      "resolvedRegression": true
+    },
+    "replay": {
+      "ratio": 1.0012026882078546,
+      "ci95": [
+        0.9976852037218147,
+        1.0051157112717002
+      ],
+      "controlsResolve": true,
+      "upper95AtMostOne": false,
+      "resolvedRegression": false
+    }
+  },
+  "original22-v1/core/function-calls": {
+    "original": {
+      "ratio": 1.0140823388046654,
+      "ci95": [
+        1.00839011733577,
+        1.0193253906300026
+      ],
+      "controlsResolve": true,
+      "upper95AtMostOne": false,
+      "resolvedRegression": true
+    },
+    "replay": {
+      "ratio": 1.0135046017122897,
+      "ci95": [
+        1.0099768793767965,
+        1.0169204490084087
+      ],
+      "controlsResolve": true,
+      "upper95AtMostOne": false,
+      "resolvedRegression": true
+    }
+  },
+  "original22-v1/core/memory-load-store": {
+    "original": {
+      "ratio": 1.0061190318118036,
+      "ci95": [
+        1.0008692300361042,
+        1.0121963088486452
+      ],
+      "controlsResolve": true,
+      "upper95AtMostOne": false,
+      "resolvedRegression": true
+    },
+    "replay": {
+      "ratio": 0.9984882664584286,
+      "ci95": [
+        0.9950909945508782,
+        1.001918183208879
+      ],
+      "controlsResolve": true,
+      "upper95AtMostOne": false,
+      "resolvedRegression": false
+    }
+  },
+  "original22-v1/memory/float64-unaligned": {
+    "original": {
+      "ratio": 1.0055395133673806,
+      "ci95": [
+        1.0027706382979302,
+        1.0083194024150444
+      ],
+      "controlsResolve": true,
+      "upper95AtMostOne": false,
+      "resolvedRegression": true
+    },
+    "replay": {
+      "ratio": 0.999515106225187,
+      "ci95": [
+        0.9958468956131149,
+        1.00304485535594
+      ],
+      "controlsResolve": true,
+      "upper95AtMostOne": false,
+      "resolvedRegression": false
+    }
+  },
+  "original22-v1/threads/private-memory": {
+    "original": {
+      "ratio": 1.0129601199197484,
+      "ci95": [
+        1.001499960567378,
+        1.023662772251031
+      ],
+      "controlsResolve": true,
+      "upper95AtMostOne": false,
+      "resolvedRegression": true
+    },
+    "replay": {
+      "ratio": 0.9916936873847915,
+      "ci95": [
+        0.9818407336050665,
+        1.0020188248893556
+      ],
+      "controlsResolve": false,
+      "upper95AtMostOne": false,
+      "resolvedRegression": false
+    }
+  },
+  "gc-sustained-v1/gc/i31-roundtrip": {
+    "original": {
+      "ratio": 1.012140418759236,
+      "ci95": [
+        1.0028461852692783,
+        1.0212322431079133
+      ],
+      "controlsResolve": true,
+      "upper95AtMostOne": false,
+      "resolvedRegression": true
+    },
+    "replay": {
+      "ratio": 0.9953899383564659,
+      "ci95": [
+        0.9907786862463714,
+        1.0003720735246449
+      ],
+      "controlsResolve": true,
+      "upper95AtMostOne": false,
+      "resolvedRegression": false
+    }
+  },
+  "threads-sustained-v2/threads/private-memory": {
+    "original": {
+      "ratio": 1.0132890119192146,
+      "ci95": [
+        1.0053098418237025,
+        1.0211782612987201
+      ],
+      "controlsResolve": true,
+      "upper95AtMostOne": false,
+      "resolvedRegression": true
+    },
+    "replay": {
+      "ratio": 1.0045784461237008,
+      "ci95": [
+        0.9993543766627816,
+        1.0098428241874529
+      ],
+      "controlsResolve": true,
+      "upper95AtMostOne": false,
+      "resolvedRegression": false
+    }
+  },
+  "threads-sustained-v2/threads/notify-empty": {
+    "original": {
+      "ratio": 1.0102787610054942,
+      "ci95": [
+        1.0042097625575324,
+        1.0157632668575656
+      ],
+      "controlsResolve": true,
+      "upper95AtMostOne": false,
+      "resolvedRegression": true
+    },
+    "replay": {
+      "ratio": 1.008685739458615,
+      "ci95": [
+        1.0027583892406697,
+        1.0145919211269847
+      ],
+      "controlsResolve": false,
+      "upper95AtMostOne": false,
+      "resolvedRegression": false
+    }
+  }
+}

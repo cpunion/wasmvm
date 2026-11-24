@@ -1,0 +1,2653 @@
+{
+  "source": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+  "results": {
+    "p3-65536-workers-4": {
+      "plan": {
+        "blocks": 10,
+        "samples": 20,
+        "batchRequests": 512,
+        "seed": 20261124167340,
+        "payloadBytes": 65536,
+        "hostCompiler": "mixed",
+        "variants": {
+          "go": "head-go-p3",
+          "stock": "llgo-current-p3",
+          "recover": "llgo-head-p3",
+          "runtime": "wasmvm",
+          "runtime-collector": "wasmvm"
+        },
+        "sourceBase": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "sourceHead": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "qualificationHead": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "scope": "Current LLGo compiler, reviewed runtime changes and the isolated Darwin collector contrast.",
+        "binarySHA256": {
+          "go": "e26382930b599cf3db8a1c31b798ef9eb5155f9c5200a83d362ca11f2375ab6b",
+          "stock": "0c4ca10681e65c613f4c59ddbf3469bad88b1a358aab4e97b6170073760b4f34",
+          "recover": "d8545a7963b7950900c2bdc335bc4d866490a7931c092fd48e1d88fa8db828ef",
+          "runtime": "7abccaaac84a20830747850f0554e90d6aae0ee2154fc01fc564bbb7bba93c47",
+          "runtime-collector": "7abccaaac84a20830747850f0554e90d6aae0ee2154fc01fc564bbb7bba93c47"
+        },
+        "machTimebase": {
+          "numer": 125,
+          "denom": 3
+        },
+        "wasmSHA256": "1d583dc670704a021f06d8437bc8834c8adb9feaf1a654cb16faa7e1de3bbdd2",
+        "workers": 4,
+        "clients": 16,
+        "requestsPerClient": 32,
+        "runtimeBase": "7ae93d50ec85fa125dd45751489b8e045a3cc8a3",
+        "runtimeHead": "6fba0d51b45729b62e3113420cd51f83d55e0a54",
+        "libraries": {
+          "runtime": "84ed86e53e8e595d7942ad31387d0faab9d04ecbf9ec27a1870fa096fa5aa95b",
+          "runtime-collector": "9974a1937a77b06fc3f305ca1524eeb24d3ce363c92d545ce33ece233214525f"
+        }
+      },
+      "processes": 100,
+      "requests": 1024000,
+      "metrics": {
+        "throughput": {
+          "medians": {
+            "go": 24530.696777055728,
+            "stock": 17753.43415668813,
+            "recover": 18394.08755532698,
+            "runtime": 18042.33219761608,
+            "runtime-collector": 22008.455742501206
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.004533305328724,
+              "ci95": [
+                0.9747137157467315,
+                1.041623601539237
+              ]
+            },
+            "stock": {
+              "ratio": 1.0202105675666548,
+              "ci95": [
+                0.993725698090752,
+                1.0452900110707983
+              ]
+            },
+            "recover": {
+              "ratio": 0.9902502005851984,
+              "ci95": [
+                0.9489037780566396,
+                1.0309577174081561
+              ]
+            },
+            "runtime": {
+              "ratio": 0.985991175618581,
+              "ci95": [
+                0.9424897677205957,
+                1.0294177619642542
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 0.9911271400451893,
+              "ci95": [
+                0.9438679620710388,
+                1.033315321069424
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.9879317094003275,
+              "ci95": [
+                0.9558502187300906,
+                1.0211639651670914
+              ],
+              "controlsResolve": false
+            },
+            "runtime/recover": {
+              "ratio": 1.0191155022003828,
+              "ci95": [
+                0.9803607648990623,
+                1.053862719646835
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/runtime": {
+              "ratio": 1.2044124670775542,
+              "ci95": [
+                1.1722311597699107,
+                1.240728511127199
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/go": {
+              "ratio": 0.8870673170558595,
+              "ci95": [
+                0.8667766779280599,
+                0.9078597021742957
+              ],
+              "controlsResolve": false
+            },
+            "stock/go": {
+              "ratio": 0.7315280830803482,
+              "ci95": [
+                0.7135757100322618,
+                0.7541323510024396
+              ],
+              "controlsResolve": false
+            }
+          }
+        },
+        "cpuUs": {
+          "medians": {
+            "go": 122.7738057454427,
+            "stock": 163.34664103190104,
+            "recover": 162.82248128255208,
+            "runtime": 156.24107869466144,
+            "runtime-collector": 143.66152547200522
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9964333566189536,
+              "ci95": [
+                0.9859844670759473,
+                1.007203528574895
+              ]
+            },
+            "stock": {
+              "ratio": 0.9955410257170169,
+              "ci95": [
+                0.9813327667945058,
+                1.0117128683299395
+              ]
+            },
+            "recover": {
+              "ratio": 1.0136839140611562,
+              "ci95": [
+                1.0012482817292425,
+                1.0268017484305683
+              ]
+            },
+            "runtime": {
+              "ratio": 0.9984643852682547,
+              "ci95": [
+                0.9847081125559294,
+                1.0110182938410675
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 1.0062807236283202,
+              "ci95": [
+                0.9954346250228743,
+                1.0162853818496422
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.9972998313847894,
+              "ci95": [
+                0.9846131904118393,
+                1.00810132814198
+              ],
+              "controlsResolve": false
+            },
+            "runtime/recover": {
+              "ratio": 0.9623182391391348,
+              "ci95": [
+                0.9506539097602745,
+                0.9739154360032135
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.9213592049318268,
+              "ci95": [
+                0.9030272660289895,
+                0.9380803251129352
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 1.24154736086171,
+              "ci95": [
+                1.1938928845996832,
+                1.2914927943815444
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 1.4040735210287703,
+              "ci95": [
+                1.325290557817647,
+                1.490537003436844
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "userUs": {
+          "medians": {
+            "go": 116.97956136067705,
+            "stock": 133.94728190104166,
+            "recover": 132.31536865234372,
+            "runtime": 131.9360392252604,
+            "runtime-collector": 126.5232950846354
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9971032206300607,
+              "ci95": [
+                0.9874451538891992,
+                1.0074372142086236
+              ]
+            },
+            "stock": {
+              "ratio": 0.9958080877943197,
+              "ci95": [
+                0.9821738875871634,
+                1.0109041324828583
+              ]
+            },
+            "recover": {
+              "ratio": 1.0105736087101966,
+              "ci95": [
+                0.9978783250910829,
+                1.022915121838696
+              ]
+            },
+            "runtime": {
+              "ratio": 1.0026968045000801,
+              "ci95": [
+                0.9891434892018252,
+                1.0156432467698462
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 1.001720789054959,
+              "ci95": [
+                0.9908973674096205,
+                1.0119964235350405
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 1.0022953013942046,
+              "ci95": [
+                0.9900974073710774,
+                1.014046815855119
+              ],
+              "controlsResolve": true
+            },
+            "runtime/recover": {
+              "ratio": 0.9921059950102962,
+              "ci95": [
+                0.9844584295824096,
+                1.0002817245772122
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.956633742956096,
+              "ci95": [
+                0.9426432770220206,
+                0.9690460429730455
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 1.125057404027272,
+              "ci95": [
+                1.0964165420140048,
+                1.1555296438097309
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 1.182701692186604,
+              "ci95": [
+                1.1476816070765377,
+                1.2210741713709274
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "systemUs": {
+          "medians": {
+            "go": 5.864601643880206,
+            "stock": 30.203462727864576,
+            "recover": 30.232887776692703,
+            "runtime": 25.54844563802083,
+            "runtime-collector": 20.046107991536452
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9813391322249335,
+              "ci95": [
+                0.9373282170058694,
+                1.0279158690515289
+              ]
+            },
+            "stock": {
+              "ratio": 0.996082560338562,
+              "ci95": [
+                0.9682603393544271,
+                1.0246491207094264
+              ]
+            },
+            "recover": {
+              "ratio": 1.0269699471678044,
+              "ci95": [
+                1.0052531082758591,
+                1.0539329140859488
+              ]
+            },
+            "runtime": {
+              "ratio": 0.9767022999318715,
+              "ci95": [
+                0.9494213540340374,
+                1.0035875240999683
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 1.0367817101577281,
+              "ci95": [
+                1.013038871367117,
+                1.059278972504518
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.9782329327456123,
+              "ci95": [
+                0.9564094163538923,
+                0.9965004816498317
+              ],
+              "controlsResolve": false
+            },
+            "runtime/recover": {
+              "ratio": 0.8409190052123745,
+              "ci95": [
+                0.8128902245117443,
+                0.8685094499359483
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.746684676394877,
+              "ci95": [
+                0.7179847064673975,
+                0.7754582059869798
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/go": {
+              "ratio": 3.7643226027134764,
+              "ci95": [
+                3.113313518638236,
+                4.584860397687531
+              ],
+              "controlsResolve": false
+            },
+            "stock/go": {
+              "ratio": 6.128485308245765,
+              "ci95": [
+                4.791027251631436,
+                7.944189558570561
+              ],
+              "controlsResolve": false
+            }
+          }
+        },
+        "instructions": {
+          "medians": {
+            "go": 968761.5251953125,
+            "stock": 1208810.6205078126,
+            "recover": 1209002.52578125,
+            "runtime": 1194961.4012695313,
+            "runtime-collector": 1170117.1645019532
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9930851206332469,
+              "ci95": [
+                0.9854356305161177,
+                0.9993263435119002
+              ]
+            },
+            "stock": {
+              "ratio": 0.9989793500686177,
+              "ci95": [
+                0.9929651664744641,
+                1.0041614821952207
+              ]
+            },
+            "recover": {
+              "ratio": 1.0010298305214733,
+              "ci95": [
+                0.9950077977796269,
+                1.0062758143485095
+              ]
+            },
+            "runtime": {
+              "ratio": 0.9966220314473909,
+              "ci95": [
+                0.9931532332111507,
+                1.000138175749134
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 1.002370693695003,
+              "ci95": [
+                0.9982672963994482,
+                1.0060082549023446
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.9988969518401607,
+              "ci95": [
+                0.9947469102807812,
+                1.0030629976536802
+              ],
+              "controlsResolve": true
+            },
+            "runtime/recover": {
+              "ratio": 0.9889780187555318,
+              "ci95": [
+                0.9858267546729848,
+                0.9919077386476531
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.9753624165663628,
+              "ci95": [
+                0.9707920945149875,
+                0.9792708947518896
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 1.2077129990355004,
+              "ci95": [
+                1.1777102048534018,
+                1.2395884041539402
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 1.2534020392185095,
+              "ci95": [
+                1.2185818507163941,
+                1.2899048047660324
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "publicAPINs": {
+          "medians": {
+            "go": 82479.5,
+            "stock": 131250.0,
+            "recover": 126708.25,
+            "runtime": 123010.5,
+            "runtime-collector": 104198.0
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9956347934831795,
+              "ci95": [
+                0.9865250884228514,
+                1.00569936018789
+              ]
+            },
+            "stock": {
+              "ratio": 0.9872026814360049,
+              "ci95": [
+                0.9609167017222741,
+                1.011169171697049
+              ]
+            },
+            "recover": {
+              "ratio": 1.0221595827210899,
+              "ci95": [
+                0.9880487088124343,
+                1.057680936231072
+              ]
+            },
+            "runtime": {
+              "ratio": 1.003000638060138,
+              "ci95": [
+                0.9751446322186643,
+                1.0320325169638167
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 1.0096336848195493,
+              "ci95": [
+                0.990620644717944,
+                1.027829582128996
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.9810645391499535,
+              "ci95": [
+                0.9580572403948433,
+                1.0005509637314123
+              ],
+              "controlsResolve": false
+            },
+            "runtime/recover": {
+              "ratio": 0.9571620751458436,
+              "ci95": [
+                0.940273999671232,
+                0.9762114140913801
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.8569985679780048,
+              "ci95": [
+                0.8360081125718004,
+                0.8781240259015982
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/go": {
+              "ratio": 1.2907879209530706,
+              "ci95": [
+                1.272642320228735,
+                1.3100939860224454
+              ],
+              "controlsResolve": false
+            },
+            "stock/go": {
+              "ratio": 1.6039533596489302,
+              "ci95": [
+                1.580786926145094,
+                1.6281943732647903
+              ],
+              "controlsResolve": false
+            }
+          }
+        },
+        "allocsPerRequest": {
+          "medians": {
+            "go": 463.751806640625,
+            "stock": 524.75,
+            "recover": 512.75,
+            "runtime": 512.75,
+            "runtime-collector": 512.75
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.0000005053902095,
+              "ci95": [
+                0.9999993261513845,
+                1.0000015161682727
+              ]
+            },
+            "stock": {
+              "ratio": 1.0000000186100544,
+              "ci95": [
+                0.999999906949751,
+                1.0000001302703772
+              ]
+            },
+            "recover": {
+              "ratio": 0.9999999809544109,
+              "ci95": [
+                0.9999998666808764,
+                1.000000114273528
+              ]
+            },
+            "runtime": {
+              "ratio": 1.0,
+              "ci95": [
+                0.9999999047720723,
+                1.0000000952279366
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 1.0000000571367624,
+              "ci95": [
+                0.9999999238176601,
+                1.0000001904558895
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.9771319868520306,
+              "ci95": [
+                0.9771318853478971,
+                0.9771320794767235
+              ],
+              "controlsResolve": true
+            },
+            "runtime/recover": {
+              "ratio": 0.9999999714316273,
+              "ci95": [
+                0.9999999142948662,
+                1.0000000285683934
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.9999999904772018,
+              "ci95": [
+                0.9999999047720634,
+                1.000000066659554
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 1.1056558244508303,
+              "ci95": [
+                1.1056549258403814,
+                1.1056566709337727
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 1.1315317494912678,
+              "ci95": [
+                1.131530860109993,
+                1.131532583458688
+              ],
+              "controlsResolve": true
+            }
+          }
+        }
+      }
+    },
+    "p3-16-workers-4": {
+      "plan": {
+        "blocks": 10,
+        "samples": 20,
+        "batchRequests": 512,
+        "seed": 20261124101820,
+        "payloadBytes": 16,
+        "hostCompiler": "mixed",
+        "variants": {
+          "go": "head-go-p3",
+          "stock": "llgo-current-p3",
+          "recover": "llgo-head-p3",
+          "runtime": "wasmvm",
+          "runtime-collector": "wasmvm"
+        },
+        "sourceBase": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "sourceHead": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "qualificationHead": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "scope": "Current LLGo compiler, reviewed runtime changes and the isolated Darwin collector contrast.",
+        "binarySHA256": {
+          "go": "e26382930b599cf3db8a1c31b798ef9eb5155f9c5200a83d362ca11f2375ab6b",
+          "stock": "0c4ca10681e65c613f4c59ddbf3469bad88b1a358aab4e97b6170073760b4f34",
+          "recover": "d8545a7963b7950900c2bdc335bc4d866490a7931c092fd48e1d88fa8db828ef",
+          "runtime": "7abccaaac84a20830747850f0554e90d6aae0ee2154fc01fc564bbb7bba93c47",
+          "runtime-collector": "7abccaaac84a20830747850f0554e90d6aae0ee2154fc01fc564bbb7bba93c47"
+        },
+        "machTimebase": {
+          "numer": 125,
+          "denom": 3
+        },
+        "wasmSHA256": "1d583dc670704a021f06d8437bc8834c8adb9feaf1a654cb16faa7e1de3bbdd2",
+        "workers": 4,
+        "clients": 16,
+        "requestsPerClient": 32,
+        "runtimeBase": "7ae93d50ec85fa125dd45751489b8e045a3cc8a3",
+        "runtimeHead": "6fba0d51b45729b62e3113420cd51f83d55e0a54",
+        "libraries": {
+          "runtime": "84ed86e53e8e595d7942ad31387d0faab9d04ecbf9ec27a1870fa096fa5aa95b",
+          "runtime-collector": "9974a1937a77b06fc3f305ca1524eeb24d3ce363c92d545ce33ece233214525f"
+        }
+      },
+      "processes": 100,
+      "requests": 1024000,
+      "metrics": {
+        "throughput": {
+          "medians": {
+            "go": 45934.58566754748,
+            "stock": 27787.93844499893,
+            "recover": 28345.18641844261,
+            "runtime": 29323.31477668874,
+            "runtime-collector": 33911.33956070404
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9861422142322894,
+              "ci95": [
+                0.9645948528052267,
+                1.006355889935644
+              ]
+            },
+            "stock": {
+              "ratio": 1.0257902328130812,
+              "ci95": [
+                0.9875711838316092,
+                1.0627291524085092
+              ]
+            },
+            "recover": {
+              "ratio": 1.0093212026726548,
+              "ci95": [
+                0.9727340731877692,
+                1.0536294709258203
+              ]
+            },
+            "runtime": {
+              "ratio": 0.9995404788341707,
+              "ci95": [
+                0.9678025337984586,
+                1.0247633605547386
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 0.9995730107860877,
+              "ci95": [
+                0.977789819700627,
+                1.0249625493741998
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 1.0090354767325094,
+              "ci95": [
+                0.9905613056268899,
+                1.029420231263091
+              ],
+              "controlsResolve": false
+            },
+            "runtime/recover": {
+              "ratio": 1.0425286198408656,
+              "ci95": [
+                1.0000806890649188,
+                1.0803822202439395
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/runtime": {
+              "ratio": 1.173963805572134,
+              "ci95": [
+                1.144291601873765,
+                1.206216661902021
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/go": {
+              "ratio": 0.7270535777713152,
+              "ci95": [
+                0.7050536029311071,
+                0.7481727709845399
+              ],
+              "controlsResolve": false
+            },
+            "stock/go": {
+              "ratio": 0.5887315177752137,
+              "ci95": [
+                0.5724984117732684,
+                0.6047372223753911
+              ],
+              "controlsResolve": false
+            }
+          }
+        },
+        "cpuUs": {
+          "medians": {
+            "go": 78.8277587890625,
+            "stock": 129.49383544921875,
+            "recover": 130.4077107747396,
+            "runtime": 123.03086954752604,
+            "runtime-collector": 111.24469401041667
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9989207355963483,
+              "ci95": [
+                0.989504567231051,
+                1.0092559642997176
+              ]
+            },
+            "stock": {
+              "ratio": 0.986020718672,
+              "ci95": [
+                0.9753540839569946,
+                0.9970340185089671
+              ]
+            },
+            "recover": {
+              "ratio": 1.003532550310159,
+              "ci95": [
+                0.9893465023831023,
+                1.018043183235314
+              ]
+            },
+            "runtime": {
+              "ratio": 0.9953826569786919,
+              "ci95": [
+                0.9766217480157284,
+                1.0133370700918984
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 0.9992526804546301,
+              "ci95": [
+                0.9845988658335532,
+                1.011989782351024
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.9983289877859368,
+              "ci95": [
+                0.9900655277236471,
+                1.0070510243195825
+              ],
+              "controlsResolve": true
+            },
+            "runtime/recover": {
+              "ratio": 0.947560293423956,
+              "ci95": [
+                0.9327486457215289,
+                0.9634946887461717
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.9084776684101925,
+              "ci95": [
+                0.8915601240647324,
+                0.9239453970772925
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 1.456995284616762,
+              "ci95": [
+                1.4102745142054205,
+                1.5145420767319862
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 1.6953655524789308,
+              "ci95": [
+                1.6016520912312535,
+                1.80637104514774
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "userUs": {
+          "medians": {
+            "go": 76.08621215820311,
+            "stock": 98.99752400716145,
+            "recover": 99.0307169596354,
+            "runtime": 98.6483235677083,
+            "runtime-collector": 94.4356241861979
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.0002338336045282,
+              "ci95": [
+                0.9911683212024733,
+                1.009688871519267
+              ]
+            },
+            "stock": {
+              "ratio": 0.9843869039823617,
+              "ci95": [
+                0.9715950867308457,
+                0.999540340886737
+              ]
+            },
+            "recover": {
+              "ratio": 1.0026772121779277,
+              "ci95": [
+                0.9837507703469278,
+                1.0210761106988326
+              ]
+            },
+            "runtime": {
+              "ratio": 0.9951475732951002,
+              "ci95": [
+                0.9749510069560214,
+                1.0148989434176376
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 0.9993387565612306,
+              "ci95": [
+                0.9871185188161005,
+                1.0121331841045642
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.9991441105309118,
+              "ci95": [
+                0.9899588759719408,
+                1.0083470755560195
+              ],
+              "controlsResolve": false
+            },
+            "runtime/recover": {
+              "ratio": 0.9975994038735795,
+              "ci95": [
+                0.9876065937596995,
+                1.007663022316216
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.9601095479428884,
+              "ci95": [
+                0.9470865448659462,
+                0.9701126415437066
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/go": {
+              "ratio": 1.278211307802756,
+              "ci95": [
+                1.2457494031889254,
+                1.3198819417949215
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 1.335665021913419,
+              "ci95": [
+                1.2940875857251433,
+                1.3861717496366388
+              ],
+              "controlsResolve": false
+            }
+          }
+        },
+        "systemUs": {
+          "medians": {
+            "go": 2.723138427734374,
+            "stock": 30.567590332031244,
+            "recover": 30.446655273437493,
+            "runtime": 23.673681640624995,
+            "runtime-collector": 16.580029296874997
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9544876689073162,
+              "ci95": [
+                0.9006226315053717,
+                1.0081119565347678
+              ]
+            },
+            "stock": {
+              "ratio": 0.9930939834806374,
+              "ci95": [
+                0.9727024635250425,
+                1.0163904515061966
+              ]
+            },
+            "recover": {
+              "ratio": 1.006858883266098,
+              "ci95": [
+                0.9864074444007145,
+                1.0249754362465708
+              ]
+            },
+            "runtime": {
+              "ratio": 0.9979427170116618,
+              "ci95": [
+                0.9643358427883734,
+                1.0271516638139524
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 0.9981659588079254,
+              "ci95": [
+                0.9518633689265794,
+                1.0401456202062334
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.997100993047946,
+              "ci95": [
+                0.9787635104416856,
+                1.0177671639047423
+              ],
+              "controlsResolve": false
+            },
+            "runtime/recover": {
+              "ratio": 0.789431456616702,
+              "ci95": [
+                0.7595362582545855,
+                0.8233199712691485
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.6972357121234993,
+              "ci95": [
+                0.6657830110290739,
+                0.7302052437137588
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/go": {
+              "ratio": 7.172461575207269,
+              "ci95": [
+                6.03742958763151,
+                8.664570602058573
+              ],
+              "controlsResolve": false
+            },
+            "stock/go": {
+              "ratio": 13.0687794943432,
+              "ci95": [
+                10.242012168326193,
+                16.97881728114074
+              ],
+              "controlsResolve": false
+            }
+          }
+        },
+        "instructions": {
+          "medians": {
+            "go": 660736.5830566406,
+            "stock": 917671.0668457032,
+            "recover": 914162.2008300782,
+            "runtime": 903164.7848632813,
+            "runtime-collector": 877664.2193359375
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.0019180750229333,
+              "ci95": [
+                0.9929615194207924,
+                1.0121390039488567
+              ]
+            },
+            "stock": {
+              "ratio": 0.9987549574933042,
+              "ci95": [
+                0.9946833838511739,
+                1.003166263227167
+              ]
+            },
+            "recover": {
+              "ratio": 0.998127613117068,
+              "ci95": [
+                0.9927609168836625,
+                1.0033680541177004
+              ]
+            },
+            "runtime": {
+              "ratio": 0.999879757623606,
+              "ci95": [
+                0.9933461377161049,
+                1.0057576740590526
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 0.9990767048694614,
+              "ci95": [
+                0.9927965555480244,
+                1.005518130967622
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.9959594472139277,
+              "ci95": [
+                0.9933604455428131,
+                0.9982414846772075
+              ],
+              "controlsResolve": true
+            },
+            "runtime/recover": {
+              "ratio": 0.9864882023385166,
+              "ci95": [
+                0.9820036290003896,
+                0.9900838910555274
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.9706923587742546,
+              "ci95": [
+                0.9659105083837131,
+                0.9756369871526014
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 1.3288772905678554,
+              "ci95": [
+                1.3088591534219152,
+                1.349219570975299
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 1.3933804652859527,
+              "ci95": [
+                1.3636445303282596,
+                1.424278806406985
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "publicAPINs": {
+          "medians": {
+            "go": 61395.5,
+            "stock": 107041.75,
+            "recover": 105792.0,
+            "runtime": 100365.0,
+            "runtime-collector": 81926.75
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.0015662606157978,
+              "ci95": [
+                0.9942753897843071,
+                1.008534030520599
+              ]
+            },
+            "stock": {
+              "ratio": 0.9773802889957642,
+              "ci95": [
+                0.9566638794845886,
+                0.9948301930690203
+              ]
+            },
+            "recover": {
+              "ratio": 1.0120716081307015,
+              "ci95": [
+                0.9979904923020362,
+                1.0256033409188743
+              ]
+            },
+            "runtime": {
+              "ratio": 0.9939601510088608,
+              "ci95": [
+                0.9692677477907088,
+                1.018602208794919
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 0.9949667149383828,
+              "ci95": [
+                0.9726730699257021,
+                1.0131191494106262
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.993656124183119,
+              "ci95": [
+                0.9803338093375347,
+                1.0085391646000537
+              ],
+              "controlsResolve": false
+            },
+            "runtime/recover": {
+              "ratio": 0.9451075982859936,
+              "ci95": [
+                0.9261744656548255,
+                0.965617206242974
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.8228446748991383,
+              "ci95": [
+                0.8024039402033847,
+                0.841925148789509
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/go": {
+              "ratio": 1.3854412979535098,
+              "ci95": [
+                1.348222247458569,
+                1.4257559696220226
+              ],
+              "controlsResolve": false
+            },
+            "stock/go": {
+              "ratio": 1.7928869163631318,
+              "ci95": [
+                1.7378615416214003,
+                1.8583952238564092
+              ],
+              "controlsResolve": false
+            }
+          }
+        },
+        "allocsPerRequest": {
+          "medians": {
+            "go": 424.751416015625,
+            "stock": 485.75,
+            "recover": 473.75,
+            "runtime": 473.75,
+            "runtime-collector": 473.75
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.0000002069227596,
+              "ci95": [
+                0.9999993332500122,
+                1.0000011495706935
+              ]
+            },
+            "stock": {
+              "ratio": 1.0000000402084455,
+              "ci95": [
+                0.9999998793746856,
+                1.000000201042227
+              ]
+            },
+            "recover": {
+              "ratio": 0.9999999587730751,
+              "ci95": [
+                0.9999997938654439,
+                1.0000001236807379
+              ]
+            },
+            "runtime": {
+              "ratio": 1.0000000412269137,
+              "ci95": [
+                0.9999998969327208,
+                1.0000001649076737
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 0.9999999793865502,
+              "ci95": [
+                0.9999998350923619,
+                1.0000001236807592
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.9752959336258301,
+              "ci95": [
+                0.9752958431568381,
+                0.9752960331536246
+              ],
+              "controlsResolve": true
+            },
+            "runtime/recover": {
+              "ratio": 0.9999999793865523,
+              "ci95": [
+                0.9999998969327336,
+                1.000000051533652
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/runtime": {
+              "ratio": 1.0000000103067272,
+              "ci95": [
+                0.9999999278529039,
+                1.0000001030672898
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 1.1153584171351067,
+              "ci95": [
+                1.115357944053869,
+                1.1153588747425378
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 1.14361025220751,
+              "ci95": [
+                1.143609749395908,
+                1.143610743523735
+              ],
+              "controlsResolve": true
+            }
+          }
+        }
+      }
+    },
+    "p3-65536-workers-1": {
+      "plan": {
+        "blocks": 10,
+        "samples": 20,
+        "batchRequests": 512,
+        "seed": 20261124167337,
+        "payloadBytes": 65536,
+        "hostCompiler": "mixed",
+        "variants": {
+          "go": "head-go-p3",
+          "stock": "llgo-current-p3",
+          "recover": "llgo-head-p3",
+          "runtime": "wasmvm",
+          "runtime-collector": "wasmvm"
+        },
+        "sourceBase": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "sourceHead": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "qualificationHead": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "scope": "Current LLGo compiler, reviewed runtime changes and the isolated Darwin collector contrast.",
+        "binarySHA256": {
+          "go": "e26382930b599cf3db8a1c31b798ef9eb5155f9c5200a83d362ca11f2375ab6b",
+          "stock": "0c4ca10681e65c613f4c59ddbf3469bad88b1a358aab4e97b6170073760b4f34",
+          "recover": "d8545a7963b7950900c2bdc335bc4d866490a7931c092fd48e1d88fa8db828ef",
+          "runtime": "7abccaaac84a20830747850f0554e90d6aae0ee2154fc01fc564bbb7bba93c47",
+          "runtime-collector": "7abccaaac84a20830747850f0554e90d6aae0ee2154fc01fc564bbb7bba93c47"
+        },
+        "machTimebase": {
+          "numer": 125,
+          "denom": 3
+        },
+        "wasmSHA256": "1d583dc670704a021f06d8437bc8834c8adb9feaf1a654cb16faa7e1de3bbdd2",
+        "workers": 1,
+        "clients": 1,
+        "requestsPerClient": 512,
+        "runtimeBase": "7ae93d50ec85fa125dd45751489b8e045a3cc8a3",
+        "runtimeHead": "6fba0d51b45729b62e3113420cd51f83d55e0a54",
+        "libraries": {
+          "runtime": "84ed86e53e8e595d7942ad31387d0faab9d04ecbf9ec27a1870fa096fa5aa95b",
+          "runtime-collector": "9974a1937a77b06fc3f305ca1524eeb24d3ce363c92d545ce33ece233214525f"
+        }
+      },
+      "processes": 100,
+      "requests": 1024000,
+      "metrics": {
+        "throughput": {
+          "medians": {
+            "go": 14893.569667089767,
+            "stock": 11131.835073200004,
+            "recover": 11117.645650185972,
+            "runtime": 11455.338239609615,
+            "runtime-collector": 11722.604622975592
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9990092135469327,
+              "ci95": [
+                0.9923048216652887,
+                1.005262047296104
+              ]
+            },
+            "stock": {
+              "ratio": 1.0020463754162998,
+              "ci95": [
+                0.9881998798294361,
+                1.0136143204851304
+              ]
+            },
+            "recover": {
+              "ratio": 0.9975034264828291,
+              "ci95": [
+                0.9862153828240156,
+                1.0074414429131604
+              ]
+            },
+            "runtime": {
+              "ratio": 1.0065897088144409,
+              "ci95": [
+                0.9933830431216799,
+                1.0283858801668078
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 0.9970663619158637,
+              "ci95": [
+                0.9879126896617987,
+                1.006326553230518
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.9994308510733363,
+              "ci95": [
+                0.9918184063341293,
+                1.0065866425484415
+              ],
+              "controlsResolve": true
+            },
+            "runtime/recover": {
+              "ratio": 1.0248531605605644,
+              "ci95": [
+                1.0078664531502943,
+                1.0361442404359724
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/runtime": {
+              "ratio": 1.0266375078391883,
+              "ci95": [
+                1.01413477451562,
+                1.0444643394343314
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/go": {
+              "ratio": 0.787587087811593,
+              "ci95": [
+                0.7808637184402089,
+                0.794136928187702
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 0.7489745560946658,
+              "ci95": [
+                0.7420139012031018,
+                0.7571197723730998
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "cpuUs": {
+          "medians": {
+            "go": 78.60077107747395,
+            "stock": 119.94000651041665,
+            "recover": 119.35813395182291,
+            "runtime": 109.4346964518229,
+            "runtime-collector": 99.72491861979165
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.0125661989881645,
+              "ci95": [
+                0.9999833480857728,
+                1.0315513522757827
+              ]
+            },
+            "stock": {
+              "ratio": 0.977319110277404,
+              "ci95": [
+                0.9480201557529261,
+                1.0046698895072237
+              ]
+            },
+            "recover": {
+              "ratio": 0.9853126335711851,
+              "ci95": [
+                0.9723018717444424,
+                0.996386874255458
+              ]
+            },
+            "runtime": {
+              "ratio": 1.002223670208063,
+              "ci95": [
+                0.9952796092191372,
+                1.0095770243912077
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 1.000528030797702,
+              "ci95": [
+                0.9940773982663393,
+                1.0076937547136309
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 1.0039691434508864,
+              "ci95": [
+                0.9906340052656623,
+                1.0176523333364076
+              ],
+              "controlsResolve": false
+            },
+            "runtime/recover": {
+              "ratio": 0.9154948938921248,
+              "ci95": [
+                0.9107431665050196,
+                0.9201471747312351
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.9239977376971497,
+              "ci95": [
+                0.9094608684369736,
+                0.9449246942706565
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 1.277143705377805,
+              "ci95": [
+                1.2553624400597791,
+                1.3068699594048305
+              ],
+              "controlsResolve": false
+            },
+            "stock/go": {
+              "ratio": 1.503808612521647,
+              "ci95": [
+                1.4821144322280917,
+                1.5301271992768632
+              ],
+              "controlsResolve": false
+            }
+          }
+        },
+        "userUs": {
+          "medians": {
+            "go": 73.36830647786456,
+            "stock": 99.03131510416665,
+            "recover": 98.77301025390622,
+            "runtime": 97.08494262695311,
+            "runtime-collector": 87.87877807617186
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.01056830097624,
+              "ci95": [
+                0.9995460277043239,
+                1.0257098763207713
+              ]
+            },
+            "stock": {
+              "ratio": 0.980837652078142,
+              "ci95": [
+                0.9553866842602968,
+                1.004310216939249
+              ]
+            },
+            "recover": {
+              "ratio": 0.9873765603237925,
+              "ci95": [
+                0.9759960409319357,
+                0.9968290693203007
+              ]
+            },
+            "runtime": {
+              "ratio": 0.9985402679454315,
+              "ci95": [
+                0.9920286426810294,
+                1.00512245160638
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 0.9980670274621862,
+              "ci95": [
+                0.9916496284501031,
+                1.004798848835999
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 1.00429189013666,
+              "ci95": [
+                0.992185849510612,
+                1.0169867510664892
+              ],
+              "controlsResolve": false
+            },
+            "runtime/recover": {
+              "ratio": 0.9773775851093244,
+              "ci95": [
+                0.9735714178127266,
+                0.9815953463219237
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.9189269850858881,
+              "ci95": [
+                0.9053317046102518,
+                0.9383436072813626
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 1.2044322561876446,
+              "ci95": [
+                1.1872729370692923,
+                1.230501130820058
+              ],
+              "controlsResolve": false
+            },
+            "stock/go": {
+              "ratio": 1.3353005942609673,
+              "ci95": [
+                1.320497636005683,
+                1.3532991949852509
+              ],
+              "controlsResolve": false
+            }
+          }
+        },
+        "systemUs": {
+          "medians": {
+            "go": 5.1255126953125,
+            "stock": 20.631679280598952,
+            "recover": 20.442307535807288,
+            "runtime": 12.563279215494788,
+            "runtime-collector": 11.96090901692708
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.0324215063922757,
+              "ci95": [
+                0.9889589044001091,
+                1.0946725991961002
+              ]
+            },
+            "stock": {
+              "ratio": 0.9597045190919024,
+              "ci95": [
+                0.9113050780801067,
+                1.007018680022775
+              ]
+            },
+            "recover": {
+              "ratio": 0.9759372684087383,
+              "ci95": [
+                0.9537979705751023,
+                0.9971210723547363
+              ]
+            },
+            "runtime": {
+              "ratio": 1.0274683722151678,
+              "ci95": [
+                0.9975566123882351,
+                1.0613717758065098
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 1.0187602177549808,
+              "ci95": [
+                0.9897298197635037,
+                1.0532872886811662
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 1.003240112703292,
+              "ci95": [
+                0.9809994759962983,
+                1.027180160191344
+              ],
+              "controlsResolve": false
+            },
+            "runtime/recover": {
+              "ratio": 0.6184061793808764,
+              "ci95": [
+                0.5991628814148385,
+                0.6359639007376477
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.9615126906581042,
+              "ci95": [
+                0.9349928863957528,
+                0.9933500031590505
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/go": {
+              "ratio": 2.2712289804657217,
+              "ci95": [
+                2.1527682305039124,
+                2.396311917759181
+              ],
+              "controlsResolve": false
+            },
+            "stock/go": {
+              "ratio": 3.807388479557589,
+              "ci95": [
+                3.552964842294373,
+                4.060917138281047
+              ],
+              "controlsResolve": false
+            }
+          }
+        },
+        "instructions": {
+          "medians": {
+            "go": 884712.6555664062,
+            "stock": 1201108.7607421875,
+            "recover": 1192805.260058594,
+            "runtime": 1161532.3307128907,
+            "runtime-collector": 1150010.3951171874
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.0009351192536449,
+              "ci95": [
+                0.9990803343505302,
+                1.003084692653164
+              ]
+            },
+            "stock": {
+              "ratio": 0.9908919895792958,
+              "ci95": [
+                0.9769513445843664,
+                1.004245895216618
+              ]
+            },
+            "recover": {
+              "ratio": 0.9985378595034687,
+              "ci95": [
+                0.9966061370819099,
+                1.000790340823933
+              ]
+            },
+            "runtime": {
+              "ratio": 0.9994495738497627,
+              "ci95": [
+                0.997436821959068,
+                1.001298828446599
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 1.0013685493506073,
+              "ci95": [
+                0.9986534981443292,
+                1.004145769914384
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.998642721451553,
+              "ci95": [
+                0.9926623216651023,
+                1.0047917807359756
+              ],
+              "controlsResolve": true
+            },
+            "runtime/recover": {
+              "ratio": 0.9727976436414595,
+              "ci95": [
+                0.9707333242153602,
+                0.9748088195840297
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.9907101982116658,
+              "ci95": [
+                0.9880408217405597,
+                0.9931025977711524
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 1.2984046915390504,
+              "ci95": [
+                1.2948602138014593,
+                1.3020192203487087
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 1.3490585275297193,
+              "ci95": [
+                1.3416938580990925,
+                1.3565737027455627
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "publicAPINs": {
+          "medians": {
+            "go": 58125.5,
+            "stock": 70896.0,
+            "recover": 70927.25,
+            "runtime": 67937.5,
+            "runtime-collector": 67354.5
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.0041091613474473,
+              "ci95": [
+                0.9969343656571732,
+                1.0109611866595112
+              ]
+            },
+            "stock": {
+              "ratio": 1.0014940657732825,
+              "ci95": [
+                0.997392461531374,
+                1.005908014269322
+              ]
+            },
+            "recover": {
+              "ratio": 0.9933304584226644,
+              "ci95": [
+                0.9890254050251808,
+                0.9965281324470414
+              ]
+            },
+            "runtime": {
+              "ratio": 0.9985263085479865,
+              "ci95": [
+                0.9896512450196512,
+                1.0061950646171651
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 0.998510009755301,
+              "ci95": [
+                0.9940786978220579,
+                1.0033146322780848
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.9984611568217211,
+              "ci95": [
+                0.991021563416755,
+                1.0041476948545807
+              ],
+              "controlsResolve": true
+            },
+            "runtime/recover": {
+              "ratio": 0.9618604298398594,
+              "ci95": [
+                0.956838497979787,
+                0.9685042109094502
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.9915243308272391,
+              "ci95": [
+                0.9876730377366146,
+                0.9948109212292856
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 1.1608587925268858,
+              "ci95": [
+                1.149445896197066,
+                1.1709770932083692
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 1.2190816289018511,
+              "ci95": [
+                1.2059720778106142,
+                1.2324421257554699
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "allocsPerRequest": {
+          "medians": {
+            "go": 463.75078125,
+            "stock": 524.75,
+            "recover": 512.75,
+            "runtime": 512.75,
+            "runtime-collector": 512.75
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9999997894209995,
+              "ci95": [
+                0.999999115568655,
+                1.0000005264478813
+              ]
+            },
+            "stock": {
+              "ratio": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ]
+            },
+            "recover": {
+              "ratio": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ]
+            },
+            "runtime": {
+              "ratio": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.9771319676036208,
+              "ci95": [
+                0.9771319676036208,
+                0.9771319676036208
+              ],
+              "controlsResolve": true
+            },
+            "runtime/recover": {
+              "ratio": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/runtime": {
+              "ratio": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 1.105658444877997,
+              "ci95": [
+                1.1056580374282952,
+                1.1056588174038697
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 1.131534410433406,
+              "ci95": [
+                1.1315339934480702,
+                1.1315347916775829
+              ],
+              "controlsResolve": true
+            }
+          }
+        }
+      }
+    },
+    "p3-16-workers-1": {
+      "plan": {
+        "blocks": 10,
+        "samples": 20,
+        "batchRequests": 512,
+        "seed": 20261124101817,
+        "payloadBytes": 16,
+        "hostCompiler": "mixed",
+        "variants": {
+          "go": "head-go-p3",
+          "stock": "llgo-current-p3",
+          "recover": "llgo-head-p3",
+          "runtime": "wasmvm",
+          "runtime-collector": "wasmvm"
+        },
+        "sourceBase": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "sourceHead": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "qualificationHead": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+        "scope": "Current LLGo compiler, reviewed runtime changes and the isolated Darwin collector contrast.",
+        "binarySHA256": {
+          "go": "e26382930b599cf3db8a1c31b798ef9eb5155f9c5200a83d362ca11f2375ab6b",
+          "stock": "0c4ca10681e65c613f4c59ddbf3469bad88b1a358aab4e97b6170073760b4f34",
+          "recover": "d8545a7963b7950900c2bdc335bc4d866490a7931c092fd48e1d88fa8db828ef",
+          "runtime": "7abccaaac84a20830747850f0554e90d6aae0ee2154fc01fc564bbb7bba93c47",
+          "runtime-collector": "7abccaaac84a20830747850f0554e90d6aae0ee2154fc01fc564bbb7bba93c47"
+        },
+        "machTimebase": {
+          "numer": 125,
+          "denom": 3
+        },
+        "wasmSHA256": "1d583dc670704a021f06d8437bc8834c8adb9feaf1a654cb16faa7e1de3bbdd2",
+        "workers": 1,
+        "clients": 1,
+        "requestsPerClient": 512,
+        "runtimeBase": "7ae93d50ec85fa125dd45751489b8e045a3cc8a3",
+        "runtimeHead": "6fba0d51b45729b62e3113420cd51f83d55e0a54",
+        "libraries": {
+          "runtime": "84ed86e53e8e595d7942ad31387d0faab9d04ecbf9ec27a1870fa096fa5aa95b",
+          "runtime-collector": "9974a1937a77b06fc3f305ca1524eeb24d3ce363c92d545ce33ece233214525f"
+        }
+      },
+      "processes": 100,
+      "requests": 1024000,
+      "metrics": {
+        "throughput": {
+          "medians": {
+            "go": 19133.32995250442,
+            "stock": 13720.50010570589,
+            "recover": 13789.6611029467,
+            "runtime": 14381.925205629357,
+            "runtime-collector": 14715.197763153927
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.993014387909621,
+              "ci95": [
+                0.9887782973784709,
+                0.9980096892334399
+              ]
+            },
+            "stock": {
+              "ratio": 1.0106224954653784,
+              "ci95": [
+                1.0029565222711792,
+                1.019611516551782
+              ]
+            },
+            "recover": {
+              "ratio": 0.9906829224181293,
+              "ci95": [
+                0.9771661176757989,
+                1.0033083272490326
+              ]
+            },
+            "runtime": {
+              "ratio": 0.9946929490768133,
+              "ci95": [
+                0.983364293660732,
+                1.0053270590989651
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 1.0042232171479377,
+              "ci95": [
+                0.9992546102572862,
+                1.0095199948485845
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.998943829970316,
+              "ci95": [
+                0.9931077733928105,
+                1.0046176982267716
+              ],
+              "controlsResolve": true
+            },
+            "runtime/recover": {
+              "ratio": 1.047649465914438,
+              "ci95": [
+                1.0357691823947064,
+                1.0611401007557066
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/runtime": {
+              "ratio": 1.0178548264426257,
+              "ci95": [
+                1.0092370712652228,
+                1.026267899921747
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 0.7703590186256482,
+              "ci95": [
+                0.762632962851839,
+                0.7787207809765878
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 0.7231864264233574,
+              "ci95": [
+                0.7150603674018573,
+                0.7342060864985617
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "cpuUs": {
+          "medians": {
+            "go": 59.407405598958334,
+            "stock": 89.95406494140624,
+            "recover": 89.96300455729165,
+            "runtime": 79.39879964192708,
+            "runtime-collector": 75.23662109374999
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.0006633635568356,
+              "ci95": [
+                0.985191748100403,
+                1.0110268215029132
+              ]
+            },
+            "stock": {
+              "ratio": 0.9987210849777916,
+              "ci95": [
+                0.9909165431386157,
+                1.0076207630575749
+              ]
+            },
+            "recover": {
+              "ratio": 1.0040876144265138,
+              "ci95": [
+                0.9901969305956333,
+                1.0182994515954171
+              ]
+            },
+            "runtime": {
+              "ratio": 1.003279158895898,
+              "ci95": [
+                0.9925947467753383,
+                1.0168571216949243
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 0.997809528263672,
+              "ci95": [
+                0.9910765349917321,
+                1.0034407691213485
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.9979566653540226,
+              "ci95": [
+                0.9910461622458302,
+                1.004483490910281
+              ],
+              "controlsResolve": true
+            },
+            "runtime/recover": {
+              "ratio": 0.88244752773298,
+              "ci95": [
+                0.8771818308928665,
+                0.8877217599410882
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.9497297416569749,
+              "ci95": [
+                0.9429811746564402,
+                0.9565892724659694
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 1.2676567810586281,
+              "ci95": [
+                1.2588808369021074,
+                1.2777845294604886
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 1.5156574951422717,
+              "ci95": [
+                1.5008831115581727,
+                1.5295832211277467
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "userUs": {
+          "medians": {
+            "go": 55.05393269856769,
+            "stock": 74.06413574218749,
+            "recover": 73.95836588541664,
+            "runtime": 71.18548787434895,
+            "runtime-collector": 66.85194702148436
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.00096986534525,
+              "ci95": [
+                0.9884424388056521,
+                1.0095107910029297
+              ]
+            },
+            "stock": {
+              "ratio": 1.0011869869699457,
+              "ci95": [
+                0.9941679086126424,
+                1.0084033477353131
+              ]
+            },
+            "recover": {
+              "ratio": 1.0029156701045234,
+              "ci95": [
+                0.9904817078717055,
+                1.0164186374250275
+              ]
+            },
+            "runtime": {
+              "ratio": 1.0032978932678955,
+              "ci95": [
+                0.9944751941553517,
+                1.0151453737834588
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 0.999654769758529,
+              "ci95": [
+                0.9953164558838399,
+                1.0041187945346501
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.9982863521980601,
+              "ci95": [
+                0.9915313393753442,
+                1.0056033870070338
+              ],
+              "controlsResolve": true
+            },
+            "runtime/recover": {
+              "ratio": 0.9610719474956823,
+              "ci95": [
+                0.9559106261548311,
+                0.9658977851809398
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.9451006857811366,
+              "ci95": [
+                0.9383395210685107,
+                0.9517835112321779
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 1.2203657600796545,
+              "ci95": [
+                1.212871796094128,
+                1.230067008215529
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 1.3458631464414197,
+              "ci95": [
+                1.3346684952880332,
+                1.3567964434943172
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "systemUs": {
+          "medians": {
+            "go": 4.347308349609374,
+            "stock": 15.966084798177079,
+            "recover": 16.003910319010412,
+            "runtime": 8.353275553385414,
+            "runtime-collector": 8.220703124999998
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.0029132156835072,
+              "ci95": [
+                0.9605322337494897,
+                1.0366013803286853
+              ]
+            },
+            "stock": {
+              "ratio": 0.9875805801227157,
+              "ci95": [
+                0.9696452970763667,
+                1.0083867452771573
+              ]
+            },
+            "recover": {
+              "ratio": 1.0110521911936285,
+              "ci95": [
+                0.9843613831890378,
+                1.0363230864640354
+              ]
+            },
+            "runtime": {
+              "ratio": 1.0048595386981007,
+              "ci95": [
+                0.9678542547789967,
+                1.04372968877336
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 0.9890053467997667,
+              "ci95": [
+                0.9467375346161747,
+                1.0256185921977128
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.9960470198338548,
+              "ci95": [
+                0.9831133423431623,
+                1.0068949287046869
+              ],
+              "controlsResolve": false
+            },
+            "runtime/recover": {
+              "ratio": 0.5246646554094073,
+              "ci95": [
+                0.5105964629092181,
+                0.540404633110294
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.9871866090891291,
+              "ci95": [
+                0.9535272466040717,
+                1.0130719885782504
+              ],
+              "controlsResolve": false
+            },
+            "runtime-collector/go": {
+              "ratio": 1.840973154842192,
+              "ci95": [
+                1.7641856634707809,
+                1.9096593870514715
+              ],
+              "controlsResolve": false
+            },
+            "stock/go": {
+              "ratio": 3.568506984505172,
+              "ci95": [
+                3.3599715761807465,
+                3.739195879114581
+              ],
+              "controlsResolve": false
+            }
+          }
+        },
+        "instructions": {
+          "medians": {
+            "go": 644053.0703125,
+            "stock": 897328.6755859375,
+            "recover": 893426.510546875,
+            "runtime": 859969.6962402344,
+            "runtime-collector": 853088.3755859374
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9998301686264868,
+              "ci95": [
+                0.9981208706378512,
+                1.0010714756602739
+              ]
+            },
+            "stock": {
+              "ratio": 0.999454461366197,
+              "ci95": [
+                0.9953794891186836,
+                1.002637563289234
+              ]
+            },
+            "recover": {
+              "ratio": 1.0007719337853602,
+              "ci95": [
+                0.9974298195979568,
+                1.0040918498916327
+              ]
+            },
+            "runtime": {
+              "ratio": 0.9995052095807406,
+              "ci95": [
+                0.9964403942949825,
+                1.00254011485406
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 0.9973770239177223,
+              "ci95": [
+                0.9935646045904823,
+                1.0018411312741247
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.997507818546887,
+              "ci95": [
+                0.9953453094298358,
+                0.9999573874260307
+              ],
+              "controlsResolve": true
+            },
+            "runtime/recover": {
+              "ratio": 0.9609839681468471,
+              "ci95": [
+                0.9582825638086773,
+                0.9635945695392566
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.991496638313413,
+              "ci95": [
+                0.9887883946341631,
+                0.9939961545979101
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 1.322911077706253,
+              "ci95": [
+                1.3182526472173755,
+                1.3274295232958444
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 1.3918965428943915,
+              "ci95": [
+                1.3900606275983272,
+                1.393885773813962
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "publicAPINs": {
+          "medians": {
+            "go": 47250.0,
+            "stock": 57958.5,
+            "recover": 58374.75,
+            "runtime": 54125.0,
+            "runtime-collector": 53479.5
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 1.008163822367075,
+              "ci95": [
+                1.0025186723966586,
+                1.0139359828303165
+              ]
+            },
+            "stock": {
+              "ratio": 0.9967144153150344,
+              "ci95": [
+                0.993384182034606,
+                1.000086643916684
+              ]
+            },
+            "recover": {
+              "ratio": 1.0058701548411055,
+              "ci95": [
+                0.9994150821484622,
+                1.0124851672029584
+              ]
+            },
+            "runtime": {
+              "ratio": 1.001676584554423,
+              "ci95": [
+                0.9935795410000566,
+                1.010002263244113
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 0.9990000044569427,
+              "ci95": [
+                0.9941796941567796,
+                1.0033389773089627
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 1.0017126836750685,
+              "ci95": [
+                0.9966830684462743,
+                1.0068267303810274
+              ],
+              "controlsResolve": true
+            },
+            "runtime/recover": {
+              "ratio": 0.9359691982803123,
+              "ci95": [
+                0.9280883686834428,
+                0.9435165664786173
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/runtime": {
+              "ratio": 0.9897557713195108,
+              "ci95": [
+                0.9862336578425138,
+                0.993444492934403
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 1.138545401106907,
+              "ci95": [
+                1.1295926038967217,
+                1.1485162933890498
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 1.2269237714191128,
+              "ci95": [
+                1.21684372038127,
+                1.238501320884478
+              ],
+              "controlsResolve": true
+            }
+          }
+        },
+        "allocsPerRequest": {
+          "medians": {
+            "go": 424.75029296875,
+            "stock": 485.75,
+            "recover": 473.75,
+            "runtime": 473.75,
+            "runtime-collector": 473.75
+          },
+          "sameBinary": {
+            "go": {
+              "ratio": 0.9999996091456032,
+              "ci95": [
+                0.9999990343599061,
+                1.0000002529060343
+              ]
+            },
+            "stock": {
+              "ratio": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ]
+            },
+            "recover": {
+              "ratio": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ]
+            },
+            "runtime": {
+              "ratio": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ]
+            },
+            "runtime-collector": {
+              "ratio": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          "comparisons": {
+            "recover/stock": {
+              "ratio": 0.975295934122491,
+              "ci95": [
+                0.975295934122491,
+                0.975295934122491
+              ],
+              "controlsResolve": true
+            },
+            "runtime/recover": {
+              "ratio": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/runtime": {
+              "ratio": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "controlsResolve": true
+            },
+            "runtime-collector/go": {
+              "ratio": 1.1153609134173201,
+              "ci95": [
+                1.1153604646517952,
+                1.115361310895439
+              ],
+              "controlsResolve": true
+            },
+            "stock/go": {
+              "ratio": 1.1436127993508458,
+              "ci95": [
+                1.143612339218173,
+                1.1436132068970122
+              ],
+              "controlsResolve": true
+            }
+          }
+        }
+      }
+    }
+  }
+}

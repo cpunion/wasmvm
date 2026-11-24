@@ -1,0 +1,280 @@
+{
+  "inputs": {
+    "main": {
+      "source": "ec3b3a42eab7f82a2c5a3e682f127abd55c2240e",
+      "compiler": "42efacaeff2e196622296415540e927724f7dcef",
+      "flags": [
+        "-O3",
+        "-lto=full"
+      ],
+      "path": "base-llgo-main-phase",
+      "sha256": "db09a8f4bac350c0a0aaae068c7cd91a0827f80109aeb2ca142b027530900759"
+    },
+    "conditional": {
+      "source": "b21262baffd49c89fc890ab04f592c66c06374ff",
+      "compiler": "42efacaeff2e196622296415540e927724f7dcef",
+      "flags": [
+        "-O3",
+        "-lto=full"
+      ],
+      "path": "head-llgo-main-phase",
+      "sha256": "646826ea90346c5eebf60f14caa1c24347d908adc670b8f17c1dd2aa79d71f3e"
+    },
+    "layout": {
+      "source": "b66873058b7dc99667404a895086050adb000279",
+      "compiler": "42efacaeff2e196622296415540e927724f7dcef",
+      "flags": [
+        "-O3",
+        "-lto=full"
+      ],
+      "path": "head-llgo-main-phase",
+      "sha256": "83160919039975e7e168b013b7aca33cfde4dc3c728a808e6a9911605a2ca965"
+    }
+  },
+  "results": {
+    "main": {
+      "runAllocations": {
+        "startDelta": 0,
+        "beforeInstructions": 183,
+        "afterInstructions": 183,
+        "equalOpcodes": true,
+        "immediateChanges": {
+          "branch-to-same-symbol-and-offset": 9
+        },
+        "otherChanges": []
+      },
+      "PrepareNativeAllocations": {
+        "startDelta": -220,
+        "beforeInstructions": 291,
+        "afterInstructions": 291,
+        "equalOpcodes": true,
+        "immediateChanges": {
+          "branch-to-same-symbol-and-offset": 6,
+          "add-immediate": 2,
+          "page-address-immediate": 1
+        },
+        "otherChanges": []
+      },
+      "FinishNativeAllocations": {
+        "startDelta": -344,
+        "beforeInstructions": 19,
+        "afterInstructions": 19,
+        "equalOpcodes": true,
+        "immediateChanges": {},
+        "otherChanges": []
+      },
+      "finishNativeAllocations": {
+        "startDelta": -344,
+        "beforeInstructions": 596,
+        "afterInstructions": 596,
+        "equalOpcodes": true,
+        "immediateChanges": {
+          "branch-to-same-symbol-and-offset": 26,
+          "page-address-immediate": 3
+        },
+        "otherChanges": []
+      },
+      "releaseNativeReservations": {
+        "startDelta": -348,
+        "beforeInstructions": 89,
+        "afterInstructions": 89,
+        "equalOpcodes": true,
+        "immediateChanges": {
+          "branch-to-same-symbol-and-offset": 7
+        },
+        "otherChanges": []
+      },
+      "reserveNativePayload": {
+        "startDelta": -100,
+        "beforeInstructions": 141,
+        "afterInstructions": 141,
+        "equalOpcodes": true,
+        "immediateChanges": {
+          "branch-to-same-symbol-and-offset": 7,
+          "add-immediate": 2
+        },
+        "otherChanges": []
+      },
+      "prepareHeapViews": {
+        "startDelta": -100,
+        "beforeInstructions": 157,
+        "afterInstructions": 157,
+        "equalOpcodes": true,
+        "immediateChanges": {
+          "branch-to-same-symbol-and-offset": 10,
+          "address-of-same-symbol": 2,
+          "add-immediate": 6
+        },
+        "otherChanges": []
+      },
+      "materializeObjectSlabs": {
+        "startDelta": -100,
+        "beforeInstructions": 278,
+        "afterInstructions": 278,
+        "equalOpcodes": true,
+        "immediateChanges": {
+          "branch-to-same-symbol-and-offset": 20,
+          "add-immediate": 10
+        },
+        "otherChanges": []
+      },
+      "GCAccess": {
+        "startDelta": -96,
+        "beforeInstructions": 217,
+        "afterInstructions": 173,
+        "equalOpcodes": false,
+        "immediateChanges": {},
+        "otherChanges": []
+      },
+      "getObject": {
+        "startDelta": 26296,
+        "beforeInstructions": 109,
+        "afterInstructions": 2,
+        "equalOpcodes": false,
+        "immediateChanges": {},
+        "otherChanges": []
+      },
+      "loadObjectField": {
+        "before": false,
+        "after": true
+      },
+      "runSlotsLoop": {
+        "startDelta": 0,
+        "beforeInstructions": 2299,
+        "afterInstructions": 2297,
+        "equalOpcodes": false,
+        "immediateChanges": {},
+        "otherChanges": []
+      },
+      "runGC": {
+        "startDelta": -8,
+        "beforeInstructions": 324,
+        "afterInstructions": 323,
+        "equalOpcodes": false,
+        "immediateChanges": {},
+        "otherChanges": []
+      }
+    },
+    "conditional": {
+      "runAllocations": {
+        "startDelta": 0,
+        "beforeInstructions": 183,
+        "afterInstructions": 183,
+        "equalOpcodes": true,
+        "immediateChanges": {
+          "branch-to-same-symbol-and-offset": 9
+        },
+        "otherChanges": []
+      },
+      "PrepareNativeAllocations": {
+        "startDelta": -128,
+        "beforeInstructions": 291,
+        "afterInstructions": 291,
+        "equalOpcodes": true,
+        "immediateChanges": {
+          "branch-to-same-symbol-and-offset": 6,
+          "add-immediate": 2
+        },
+        "otherChanges": []
+      },
+      "FinishNativeAllocations": {
+        "startDelta": -128,
+        "beforeInstructions": 19,
+        "afterInstructions": 19,
+        "equalOpcodes": true,
+        "immediateChanges": {},
+        "otherChanges": []
+      },
+      "finishNativeAllocations": {
+        "startDelta": -128,
+        "beforeInstructions": 596,
+        "afterInstructions": 596,
+        "equalOpcodes": true,
+        "immediateChanges": {
+          "branch-to-same-symbol-and-offset": 5
+        },
+        "otherChanges": []
+      },
+      "releaseNativeReservations": {
+        "startDelta": -132,
+        "beforeInstructions": 89,
+        "afterInstructions": 89,
+        "equalOpcodes": true,
+        "immediateChanges": {
+          "branch-to-same-symbol-and-offset": 7
+        },
+        "otherChanges": []
+      },
+      "reserveNativePayload": {
+        "startDelta": -140,
+        "beforeInstructions": 141,
+        "afterInstructions": 141,
+        "equalOpcodes": true,
+        "immediateChanges": {
+          "branch-to-same-symbol-and-offset": 7,
+          "add-immediate": 2
+        },
+        "otherChanges": []
+      },
+      "prepareHeapViews": {
+        "startDelta": -140,
+        "beforeInstructions": 157,
+        "afterInstructions": 157,
+        "equalOpcodes": true,
+        "immediateChanges": {
+          "branch-to-same-symbol-and-offset": 10,
+          "address-of-same-symbol": 2,
+          "add-immediate": 6
+        },
+        "otherChanges": []
+      },
+      "materializeObjectSlabs": {
+        "startDelta": -140,
+        "beforeInstructions": 278,
+        "afterInstructions": 278,
+        "equalOpcodes": true,
+        "immediateChanges": {
+          "branch-to-same-symbol-and-offset": 20,
+          "add-immediate": 10
+        },
+        "otherChanges": []
+      },
+      "GCAccess": {
+        "startDelta": -24,
+        "beforeInstructions": 217,
+        "afterInstructions": 173,
+        "equalOpcodes": false,
+        "immediateChanges": {},
+        "otherChanges": []
+      },
+      "getObject": {
+        "startDelta": 26368,
+        "beforeInstructions": 109,
+        "afterInstructions": 2,
+        "equalOpcodes": false,
+        "immediateChanges": {},
+        "otherChanges": []
+      },
+      "loadObjectField": {
+        "before": false,
+        "after": true
+      },
+      "runSlotsLoop": {
+        "startDelta": 0,
+        "beforeInstructions": 2299,
+        "afterInstructions": 2297,
+        "equalOpcodes": false,
+        "immediateChanges": {},
+        "otherChanges": []
+      },
+      "runGC": {
+        "startDelta": -8,
+        "beforeInstructions": 324,
+        "afterInstructions": 323,
+        "equalOpcodes": false,
+        "immediateChanges": {},
+        "otherChanges": []
+      }
+    }
+  }
+}
