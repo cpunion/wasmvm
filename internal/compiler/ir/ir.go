@@ -207,10 +207,12 @@ func (f *Function) Successors(b Block, visit func(BlockID)) {
 	for _, e := range b.Term.Edges {
 		visit(e.Target)
 	}
-	for _, op := range b.Ops {
-		for _, h := range f.Prompts[op.Source] {
-			if h.Kind == 0 {
-				visit(h.Target)
+	if len(f.Prompts) != 0 {
+		for _, op := range b.Ops {
+			for _, h := range f.Prompts[op.Source] {
+				if h.Kind == 0 {
+					visit(h.Target)
+				}
 			}
 		}
 	}

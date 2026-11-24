@@ -160,3 +160,29 @@ func TestFunctionTypesAndSharedBudget(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestVerifyBudgetReuseAfterFailureAndZeroAllocs(t *testing.T) {
+	valid := diamond()
+	invalid := diamond()
+	invalid.Blocks[2].Term.Edges[0].Args = []Value{1} // non-dominating definition
+
+	budget := VerifyBudget{Remaining: 100000}
+	if err := budget.Verify(valid); err != nil {
+		t.Fatal(err)
+	}
+	if err := budget.Verify(invalid); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("expected ErrInvalid, got %v", err)
+	}
+	if err := budget.Verify(valid); err != nil {
+		t.Fatalf("reused budget failed after invalid function: %v", err)
+	}
+	allocs := testing.AllocsPerRun(50, func() {
+		budget.Remaining = 10000
+		if err := budget.Verify(valid); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if allocs != 0 {
+		t.Fatalf("reused VerifyBudget allocated %.1f times per call, want 0", allocs)
+	}
+}
