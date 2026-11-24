@@ -278,3 +278,48 @@ func TestScheduledCancellationAcknowledgementAfterResumeSnapshot(t *testing.T) {
 		}
 	}
 }
+
+func TestAsyncWorkStartParameterSliceSurvivesFinish(t *testing.T) {
+	for _, prompt := range []bool{false, true} {
+		for _, count := range []int{1, 2, 3} {
+			in, typ := sourceType(t, "interpreter", "host-source-stream-u8")
+			var saved []*Resource
+			var want []*Resource
+			cleaned := false
+			_, err := in.WithCaller(nil, CallOptions{}, func(c *Caller) error {
+				owned := make([]*Resource, count)
+				for i := range owned {
+					v, err := c.NewSource(typ, AsyncSource{Read: func(*Caller, uint32) (*ReadCompletion, error) { return nil, vm.ErrLink }})
+					if err != nil {
+						return err
+					}
+					owned[i] = v.Resource
+				}
+				return c.Schedule(AsyncWork{
+					Prompt: prompt,
+					Owned:  owned,
+					Start: func(_ *Caller, refs []*Resource) (*HostCompletion, error) {
+						saved = refs
+						want = append([]*Resource(nil), refs...)
+						return voidCompletion(), nil
+					},
+					Cleanup: func() { cleaned = true },
+				})
+			})
+			if err != nil {
+				t.Fatalf("prompt=%v count=%d: %v", prompt, count, err)
+			}
+			if !cleaned {
+				t.Fatalf("prompt=%v count=%d: cleanup did not run", prompt, count)
+			}
+			if len(saved) != count || len(want) != count {
+				t.Fatalf("prompt=%v count=%d: len(saved)=%d len(want)=%d", prompt, count, len(saved), len(want))
+			}
+			for i := range saved {
+				if saved[i] == nil || saved[i] != want[i] {
+					t.Fatalf("prompt=%v count=%d: saved[%d]=%p want=%p", prompt, count, i, saved[i], want[i])
+				}
+			}
+		}
+	}
+}

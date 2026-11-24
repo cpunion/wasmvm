@@ -81,7 +81,6 @@ type workState struct {
 	prompt        bool
 	control       *Cancellation
 	refs          []*Resource
-	inlineArgRefs [2]*Resource
 	start         func(*Caller, []*Resource) (*HostCompletion, error)
 	done          func(*Caller, bool) error
 	values, bytes uint64
@@ -100,13 +99,8 @@ type scheduledTask struct {
 
 func (s *workState) startWork(caller *Caller) (*HostCompletion, error) {
 	var args []*Resource
-	if n := len(s.refs); n != 0 {
-		if n <= len(s.inlineArgRefs) {
-			copy(s.inlineArgRefs[:n], s.refs)
-			args = s.inlineArgRefs[:n:n]
-		} else {
-			args = append([]*Resource(nil), s.refs...)
-		}
+	if len(s.refs) != 0 {
+		args = append([]*Resource(nil), s.refs...)
 	}
 	return s.start(caller, args)
 }
@@ -288,12 +282,12 @@ func (s *workState) finish(c *vm.Caller, in *Instance) {
 	}()
 	refs := s.refs
 	s.refs = nil
-	s.inlineArgRefs = [2]*Resource{}
 	s.start, s.done = nil, nil
 	guard := cleanupGuard{}
 	for _, ref := range refs {
 		guard.run(func() { in.cleanupResource(c, ref) })
 	}
+	clear(refs)
 	cleanup := s.cleanup
 	s.cleanup = nil
 	if cleanup != nil {
