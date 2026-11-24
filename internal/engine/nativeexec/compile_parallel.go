@@ -34,12 +34,16 @@ func compileFunction(ctx context.Context, f *slots.Function, limits codegen.Limi
 type compilationJob struct {
 	index   int
 	maximum uint64
-	result  chan functionCompileResult
+}
+
+type compilationWorker struct {
+	jobs    chan compilationJob
+	results chan functionCompileResult
 }
 
 // At most four bodies can be running or awaiting ordered publication. The ring
 // grants a new job only after the preceding result in that slot was consumed.
-// Persistent workers avoid per-function goroutines and all close paths join them.
+// Each slot has a persistent worker and single-producer, single-consumer queues.
 type functionCompiler struct {
 	ctx           context.Context
 	cancel        context.CancelFunc
@@ -48,8 +52,7 @@ type functionCompiler struct {
 	config        codegen.Config
 	indices       []int
 	queued, taken int
-	jobs          chan compilationJob
-	results       []chan functionCompileResult
+	workers       []compilationWorker
 	joined        sync.WaitGroup
 	once          sync.Once
 }
@@ -74,47 +77,47 @@ func newFunctionCompiler(ctx context.Context, functions []*slots.Function, limit
 		return p
 	}
 	p.ctx, p.cancel = context.WithCancel(ctx)
-	p.jobs = make(chan compilationJob, workers)
-	p.results = make([]chan functionCompileResult, workers)
-	for i := range p.results {
-		p.results[i] = make(chan functionCompileResult, 1)
-	}
+	p.workers = make([]compilationWorker, workers)
 	p.joined.Add(workers)
-	for i := 0; i < workers; i++ {
-		go func() {
+	for i := range p.workers {
+		worker := compilationWorker{jobs: make(chan compilationJob, 1), results: make(chan functionCompileResult, 1)}
+		p.workers[i] = worker
+		go func(worker compilationWorker) {
 			defer p.joined.Done()
-			for job := range p.jobs {
+			for job := range worker.jobs {
 				bounded := p.limits
 				bounded.MaxCodeBytes = job.maximum
-				job.result <- compileFunction(p.ctx, p.functions[job.index], bounded, p.functionConfig(job.index))
+				worker.results <- compileFunction(p.ctx, p.functions[job.index], bounded, p.functionConfig(job.index))
 			}
-		}()
+		}(worker)
 	}
 	return p
 }
 func (p *functionCompiler) next(maximum uint64) functionCompileResult {
-	if p.jobs == nil {
+	workers := len(p.workers)
+	if workers == 0 {
 		i := p.indices[p.taken]
 		p.taken++
 		bounded := p.limits
 		bounded.MaxCodeBytes = maximum
 		return compileFunction(p.ctx, p.functions[i], bounded, p.functionConfig(i))
 	}
-	for p.queued < len(p.indices) && p.queued-p.taken < len(p.results) {
-		slot := p.queued % len(p.results)
-		p.jobs <- compilationJob{p.indices[p.queued], maximum, p.results[slot]}
+	for p.queued < len(p.indices) && p.queued-p.taken < workers {
+		worker := p.workers[p.queued%workers]
+		worker.jobs <- compilationJob{p.indices[p.queued], maximum}
 		p.queued++
 	}
-	slot := p.taken % len(p.results)
-	result := <-p.results[slot]
+	result := <-p.workers[p.taken%workers].results
 	p.taken++
 	return result
 }
 func (p *functionCompiler) close() {
 	p.once.Do(func() {
-		if p.jobs != nil {
+		if len(p.workers) != 0 {
 			p.cancel()
-			close(p.jobs)
+			for _, worker := range p.workers {
+				close(worker.jobs)
+			}
 			p.joined.Wait()
 		}
 	})

@@ -53,7 +53,7 @@ func TestCompilationOrderAndOptionalSelection(t *testing.T) {
 						if err != nil || got.err != nil || got.panicked || !bytes.Equal(got.body.Entry.Code, want.Entry.Code) {
 							t.Fatal("compilation reordered or changed a body", processors, optional, err, got.err, got.panicked)
 						}
-						if p.queued-p.taken > len(p.results) {
+						if p.queued-p.taken > len(p.workers) {
 							t.Fatal("unbounded outstanding bodies")
 						}
 					}
