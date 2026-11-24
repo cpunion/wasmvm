@@ -18,7 +18,15 @@ func (a *assembler) compact() error {
 	if a.arch != "arm64" {
 		return wasm.ErrInvalid
 	}
-	blocks := make([]branchLayoutBlock, len(a.code)/256+1)
+	nBlocks := len(a.code)/256 + 1
+	var blocks []branchLayoutBlock
+	if cap(a.layoutBlocks) >= nBlocks {
+		blocks = a.layoutBlocks[:nBlocks]
+		clear(blocks)
+	} else {
+		blocks = make([]branchLayoutBlock, nBlocks)
+	}
+	a.layoutBlocks = blocks
 	for _, encoded := range a.labels {
 		if encoded == 0 {
 			continue

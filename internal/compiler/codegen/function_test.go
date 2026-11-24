@@ -560,3 +560,39 @@ func testFunctionTupleCycles(t *testing.T, fast bool) {
 		}
 	}
 }
+
+func TestCompilerReuseMatchesFreshAndBoundsScratch(t *testing.T) {
+	s := functionModule(t, sumFixture())
+	f := s.Functions[0]
+	var compiler Compiler
+	for _, arch := range []string{"amd64", "arm64"} {
+		for _, unmetered := range []bool{false, true} {
+			cfg := Config{Unmetered: unmetered}
+			want, err := CompileFunctionWithConfig(arch, f, DefaultLimits(), cfg)
+			if err != nil {
+				t.Fatal(arch, unmetered, err)
+			}
+			got, err := compiler.CompileFunction(arch, f, DefaultLimits(), cfg)
+			if err != nil {
+				t.Fatal(arch, unmetered, err)
+			}
+			if string(got.Entry.Code) != string(want.Entry.Code) || len(got.Offsets) != len(want.Offsets) {
+				t.Fatalf("%s unmetered=%v: reused compiler diverged", arch, unmetered)
+			}
+			for i := range want.Offsets {
+				if got.Offsets[i] != want.Offsets[i] {
+					t.Fatalf("%s unmetered=%v offset %d: got %d want %d", arch, unmetered, i, got.Offsets[i], want.Offsets[i])
+				}
+			}
+		}
+	}
+	// Oversized scratch buffers must be dropped rather than pinned across calls.
+	compiler.code = make([]byte, 0, maxRetainedCodeBytes+16)
+	compiler.labels = make([]int, 0, maxRetainedLabels+16)
+	if _, err := compiler.CompileFunction(runtime.GOARCH, f, DefaultLimits(), Config{Unmetered: true}); err != nil {
+		t.Fatal(err)
+	}
+	if cap(compiler.code) > maxRetainedCodeBytes || cap(compiler.labels) > maxRetainedLabels {
+		t.Fatalf("oversized scratch retained: code=%d labels=%d", cap(compiler.code), cap(compiler.labels))
+	}
+}

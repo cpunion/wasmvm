@@ -54,6 +54,7 @@ type assembler struct {
 	tables              []tableRelocation
 	addresses           []addressRelocation
 	conditionalBranches []conditionalRelocation
+	layoutBlocks        []branchLayoutBlock
 }
 
 func (a *assembler) reserve(n uint64) {

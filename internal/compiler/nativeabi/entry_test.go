@@ -39,4 +39,20 @@ func TestEntryLayoutAndLimits(t *testing.T) {
 	if _, err := Wrap("riscv64", nil, 4096); err != wasm.ErrUnsupported {
 		t.Fatal(err)
 	}
+	for _, arch := range []string{"amd64", "arm64"} {
+		overhead, err := Overhead(arch)
+		if err != nil {
+			t.Fatal(arch, err)
+		}
+		empty, err := Wrap(arch, nil, 4096)
+		if err != nil {
+			t.Fatal(arch, err)
+		}
+		if overhead != uint64(len(empty.Code)) {
+			t.Fatalf("%s overhead %d != empty wrap %d", arch, overhead, len(empty.Code))
+		}
+	}
+	if _, err := Overhead("riscv64"); err != wasm.ErrUnsupported {
+		t.Fatal(err)
+	}
 }

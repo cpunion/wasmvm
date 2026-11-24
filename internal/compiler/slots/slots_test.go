@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/cpunion/wasmvm/internal/compiler/ir"
@@ -345,6 +346,74 @@ func TestTypedCyclicEdges(t *testing.T) {
 		}
 		checkSymbolic(t, "cyclic edge", f, out)
 	}
+}
+
+func TestSlotsLimitBoundsPreallocation(t *testing.T) {
+	t.Run("max-nodes-before-code-prealloc", func(t *testing.T) {
+		ops := make([]ir.Operation, 100_000)
+		for i := range ops {
+			ops[i] = ir.Operation{Source: 0}
+		}
+		f := &ir.Function{
+			Sources: []ir.Source{
+				{Wasm: module.Instr{Op: 0x01}}, // nop
+				{Wasm: module.Instr{Op: 0x0b}}, // end
+			},
+			Blocks: []ir.Block{
+				{Ops: ops, Term: ir.Terminator{Kind: ir.Return, Source: 1}},
+			},
+		}
+		m := &lower.Module{Functions: []*ir.Function{f}}
+		limits := Limits{MaxSlots: 1 << 20, MaxNodes: 2, MaxVerifyWork: 100 << 20}
+		// Warm up any one-time initialization before measuring allocation bytes.
+		if _, err := Compile(m, limits); !errors.Is(err, wasm.ErrLimit) {
+			t.Fatalf("expected ErrLimit, got %v", err)
+		}
+		var before, after runtime.MemStats
+		runtime.ReadMemStats(&before)
+		_, err := Compile(m, limits)
+		runtime.ReadMemStats(&after)
+		if !errors.Is(err, wasm.ErrLimit) {
+			t.Fatalf("expected ErrLimit, got %v", err)
+		}
+		allocated := after.TotalAlloc - before.TotalAlloc
+		t.Logf("100k-nop MaxNodes=2 allocated %d B", allocated)
+		if runtime.Compiler == "gc" && allocated > 2048 {
+			t.Fatalf("allocated %d B before rejecting MaxNodes=2 (want <= 2048 B)", allocated)
+		}
+	})
+	t.Run("max-slots-before-slots-prealloc", func(t *testing.T) {
+		locals := make([]wasm.ValueType, 100_000)
+		for i := range locals {
+			locals[i] = wasm.I32
+		}
+		f := &ir.Function{
+			Locals: locals,
+			Sources: []ir.Source{
+				{Wasm: module.Instr{Op: 0x0b}},
+			},
+			Blocks: []ir.Block{
+				{Term: ir.Terminator{Kind: ir.Return, Source: 0}},
+			},
+		}
+		m := &lower.Module{Functions: []*ir.Function{f}}
+		limits := Limits{MaxSlots: 2, MaxNodes: 1 << 20, MaxVerifyWork: 100 << 20}
+		if _, err := Compile(m, limits); !errors.Is(err, wasm.ErrLimit) {
+			t.Fatalf("expected ErrLimit, got %v", err)
+		}
+		var before, after runtime.MemStats
+		runtime.ReadMemStats(&before)
+		_, err := Compile(m, limits)
+		runtime.ReadMemStats(&after)
+		if !errors.Is(err, wasm.ErrLimit) {
+			t.Fatalf("expected ErrLimit, got %v", err)
+		}
+		allocated := after.TotalAlloc - before.TotalAlloc
+		t.Logf("100k-locals MaxSlots=2 allocated %d B", allocated)
+		if runtime.Compiler == "gc" && allocated > 2048 {
+			t.Fatalf("allocated %d B before rejecting MaxSlots=2 (want <= 2048 B)", allocated)
+		}
+	})
 }
 
 func FuzzSlots(f *testing.F) {

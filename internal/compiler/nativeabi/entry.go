@@ -13,6 +13,30 @@ type Entry struct {
 	StackBytes             uint32
 }
 
+var (
+	// Preserve rbp, rbx and r12-r15; keep rsp 16-byte aligned in the body.
+	amd64Prefix = []byte{0x55, 0x48, 0x89, 0xe5, 0x53, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x83, 0xec, 8}
+	amd64Suffix = []byte{0x48, 0x83, 0xc4, 8, 0x41, 0x5f, 0x41, 0x5e, 0x41, 0x5d, 0x41, 0x5c, 0x5b, 0x5d, 0xc3}
+	// Preserve x19-x30 and entire q8-q15, exceeding the C ABI's low-64-bit
+	// SIMD requirement. x18 remains reserved. All pushes are 16-byte aligned.
+	arm64Prefix = words(0xa9bf7bfd, 0x910003fd, 0xa9bf53f3, 0xa9bf5bf5, 0xa9bf63f7,
+		0xa9bf6bf9, 0xa9bf73fb, 0xadbf27e8, 0xadbf2fea, 0xadbf37ec, 0xadbf3fee)
+	arm64Suffix = words(0xacc13fee, 0xacc137ec, 0xacc12fea, 0xacc127e8, 0xa8c173fb,
+		0xa8c16bf9, 0xa8c163f7, 0xa8c15bf5, 0xa8c153f3, 0xa8c17bfd, 0xd65f03c0)
+)
+
+// Overhead returns the fixed prologue and epilogue byte count for arch.
+func Overhead(arch string) (uint64, error) {
+	switch arch {
+	case "amd64":
+		return uint64(len(amd64Prefix) + len(amd64Suffix)), nil
+	case "arm64":
+		return uint64(len(arm64Prefix) + len(arm64Suffix)), nil
+	default:
+		return 0, wasm.ErrUnsupported
+	}
+}
+
 // Wrap adds one C-ABI prologue and shared epilogue around trusted compiler output.
 // The body receives the record in rdi (amd64) or x0 (arm64), puts the exit status
 // in eax/w0, and falls through or branches to ExitOffset. It must not return
@@ -23,21 +47,12 @@ func Wrap(arch string, body []byte, maxBytes uint64) (Entry, error) {
 	var stack uint32
 	switch arch {
 	case "amd64":
-		// Preserve rbp, rbx and r12-r15; keep rsp 16-byte aligned in the body.
-		prefix = []byte{0x55, 0x48, 0x89, 0xe5, 0x53, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x83, 0xec, 8}
-		suffix = []byte{0x48, 0x83, 0xc4, 8, 0x41, 0x5f, 0x41, 0x5e, 0x41, 0x5d, 0x41, 0x5c, 0x5b, 0x5d, 0xc3}
-		stack = 56 // Excludes the incoming hardware return address.
+		prefix, suffix, stack = amd64Prefix, amd64Suffix, 56 // Excludes the incoming hardware return address.
 	case "arm64":
 		if len(body)%4 != 0 {
 			return Entry{}, wasm.ErrInvalid
 		}
-		// Preserve x19-x30 and entire q8-q15, exceeding the C ABI's low-64-bit
-		// SIMD requirement. x18 remains reserved. All pushes are 16-byte aligned.
-		prefix = words(0xa9bf7bfd, 0x910003fd, 0xa9bf53f3, 0xa9bf5bf5, 0xa9bf63f7,
-			0xa9bf6bf9, 0xa9bf73fb, 0xadbf27e8, 0xadbf2fea, 0xadbf37ec, 0xadbf3fee)
-		suffix = words(0xacc13fee, 0xacc137ec, 0xacc12fea, 0xacc127e8, 0xa8c173fb,
-			0xa8c16bf9, 0xa8c163f7, 0xa8c15bf5, 0xa8c153f3, 0xa8c17bfd, 0xd65f03c0)
-		stack = 224
+		prefix, suffix, stack = arm64Prefix, arm64Suffix, 224
 	default:
 		return Entry{}, wasm.ErrUnsupported
 	}
@@ -45,10 +60,10 @@ func Wrap(arch string, body []byte, maxBytes uint64) (Entry, error) {
 	if n > maxBytes || n > uint64(^uint32(0)) || n > uint64(^uint(0)>>1) {
 		return Entry{}, wasm.ErrLimit
 	}
-	code := make([]byte, 0, int(n))
-	code = append(code, prefix...)
-	code = append(code, body...)
-	code = append(code, suffix...)
+	code := make([]byte, int(n))
+	copy(code, prefix)
+	copy(code[len(prefix):], body)
+	copy(code[len(prefix)+len(body):], suffix)
 	return Entry{code, uint32(len(prefix)), uint32(len(prefix) + len(body)), stack}, nil
 }
 

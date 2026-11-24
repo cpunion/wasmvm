@@ -125,28 +125,108 @@ func Compile(m *lower.Module, limits Limits) (result *Module, err error) {
 	verify := ir.VerifyBudget{Remaining: limits.MaxVerifyWork}
 	b.charge(uint64(len(m.Functions)))
 	result = &Module{IR: m, Functions: make([]*Function, len(m.Functions))}
+	var compiler slotCompiler
 	for i, f := range m.Functions {
 		if err := verify.Verify(f); err != nil {
 			return nil, err
 		}
-		result.Functions[i] = compileFunction(f, &b)
+		result.Functions[i] = compiler.compileFunction(f, &b)
 	}
 	return result, nil
 }
 
-func compileFunction(f *ir.Function, budget *budget) *Function {
+type slotCompiler struct {
+	defs       []int
+	pinned     []bool
+	uses       []uint32
+	lastUse    []uint32
+	coalesced  []bool
+	writeBlock []uint32
+	nextWrite  []uint32
+	returns    []bool
+	free, all  [10][]Slot
+	literals   literalPool
+	moves      []Move
+	planner    movePlanner
+	scratch    map[wasm.ValueType]Slot
+}
+
+func storageBucket(t wasm.ValueType) int {
+	switch t.Storage() {
+	case wasm.I32:
+		return 0
+	case wasm.I64:
+		return 1
+	case wasm.F32:
+		return 2
+	case wasm.F64:
+		return 3
+	case wasm.V128:
+		return 4
+	case wasm.FuncRef:
+		return 5
+	case wasm.ExternRef:
+		return 6
+	case wasm.ExnRef:
+		return 7
+	case wasm.ContRef:
+		return 8
+	default:
+		return 9
+	}
+}
+
+func reuseSlice[T any](buf []T, n int) []T {
+	if cap(buf) < n {
+		return make([]T, n)
+	}
+	return buf[:n]
+}
+
+func (c *slotCompiler) compileFunction(f *ir.Function, budget *budget) *Function {
 	n := len(f.Values)
-	budget.charge(uint64(n)*4 + uint64(len(f.Blocks)))
-	out := &Function{Signature: f.Signature, Sources: f.Sources, LocalCount: uint32(len(f.Locals)), ValueSlots: make([]Slot, n), BlockPC: make([]uint32, len(f.Blocks))}
+	nBlocks := len(f.Blocks)
+	budget.charge(uint64(n)*4 + uint64(nBlocks))
+	slotCap := uint64(len(f.Locals))
+	if n > 0 {
+		slotCap += min(uint64(n), 8)
+	}
+	if uint64(budget.slots) < slotCap {
+		slotCap = uint64(budget.slots)
+	}
+	if budget.nodes < slotCap {
+		slotCap = budget.nodes
+	}
+	var initSlots []wasm.ValueType
+	if slotCap > 0 {
+		initSlots = make([]wasm.ValueType, 0, int(slotCap))
+	}
+	out := &Function{
+		Signature:  f.Signature,
+		Sources:    f.Sources,
+		LocalCount: uint32(len(f.Locals)),
+		Slots:      initSlots,
+		ValueSlots: make([]Slot, n),
+		BlockPC:    make([]uint32, nBlocks),
+	}
 	for _, t := range f.Locals {
 		budget.addSlot(out, t)
 	}
-	defs := make([]int, n)
-	pinned := make([]bool, n)
-	uses := make([]uint32, n)
+	defs := reuseSlice(c.defs, n)
+	clear(defs)
+	pinned := reuseSlice(c.pinned, n)
+	clear(pinned)
+	uses := reuseSlice(c.uses, n)
+	clear(uses)
 	budget.charge(uint64(n))
-	lastUse := make([]uint32, n)
+	lastUse := reuseSlice(c.lastUse, n)
+	clear(lastUse)
+	c.defs, c.pinned, c.uses, c.lastUse = defs, pinned, uses, lastUse
+	var totalOps uint64
 	for bi, b := range f.Blocks {
+		ops := uint64(len(b.Ops)) + 1
+		budget.charge(ops)
+		totalOps += ops
 		for _, v := range b.Params {
 			defs[v] = bi
 			pinned[v] = true
@@ -157,51 +237,67 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 			}
 		}
 	}
-	use := func(v ir.Value, bi, position int) {
-		uses[v]++
-		if defs[v] != bi {
-			pinned[v] = true
-		} else {
-			lastUse[v] = uint32(position)
-		}
-	}
 	for bi, b := range f.Blocks {
-		budget.charge(uint64(len(b.Ops)) + 1)
 		for oi, op := range b.Ops {
 			for _, v := range op.Args {
-				use(v, bi, oi)
+				uses[v]++
+				if defs[v] != bi {
+					pinned[v] = true
+				} else {
+					lastUse[v] = uint32(oi)
+				}
 			}
 		}
+		endPos := uint32(len(b.Ops))
 		for _, v := range b.Term.Args {
-			use(v, bi, len(b.Ops))
+			uses[v]++
+			if defs[v] != bi {
+				pinned[v] = true
+			} else {
+				lastUse[v] = endPos
+			}
 		}
 		for _, e := range b.Term.Edges {
 			for _, v := range e.Args {
-				use(v, bi, len(b.Ops))
+				uses[v]++
+				if defs[v] != bi {
+					pinned[v] = true
+				} else {
+					lastUse[v] = endPos
+				}
 			}
 		}
 	}
-	coalesced := coalesceLocals(f, out, pinned, lastUse, budget)
+	coalesced := c.coalesceLocals(f, out, pinned, lastUse, budget)
 	for v, t := range f.Values {
 		if pinned[v] {
 			out.ValueSlots[v] = budget.addSlot(out, t)
 		}
 	}
+	if codeCap := min(totalOps, budget.nodes); codeCap > 0 {
+		out.Code = make([]Instruction, 0, int(codeCap))
+	}
 	// Only block-local temporaries are recycled in this first allocator. Values
 	// crossing blocks and block parameters keep dedicated slots; this avoids a
 	// quadratic global interference graph and preserves loops conservatively.
-	var free, all [128][]Slot
-	var literals literalPool
+	for i := range c.all {
+		c.all[i] = c.all[i][:0]
+		c.free[i] = c.free[i][:0]
+	}
+	free, all := &c.free, &c.all
+	literals := &c.literals
 	release := func(v ir.Value) {
 		if !pinned[v] && !coalesced[v] && uses[v] == 0 && literals.release(out.ValueSlots[v]) {
-			t := f.Values[v]
-			free[t.Storage()] = append(free[t.Storage()], out.ValueSlots[v])
+			bucket := storageBucket(f.Values[v])
+			free[bucket] = append(free[bucket], out.ValueSlots[v])
 		}
 	}
 	for bi, b := range f.Blocks {
-		literals = literalPool{}
+		literals.reset()
 		for t := range free {
-			free[t] = append(free[t][:0], all[t]...)
+			if len(all[t]) != 0 || len(free[t]) != 0 {
+				free[t] = append(free[t][:0], all[t]...)
+			}
 		}
 		out.BlockPC[bi] = uint32(len(out.Code))
 		for _, op := range b.Ops {
@@ -227,18 +323,18 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 				t := f.Values[v]
 				key, constant := literalOf(src.Wasm, t)
 				if constant {
-					if shared := literals.values[key]; shared != nil {
-						shared.refs++
-						out.ValueSlots[v] = shared.slot
+					if slot, ok := literals.lookup(key); ok {
+						out.ValueSlots[v] = slot
 						continue
 					}
 				}
-				if k := len(free[t.Storage()]); k > 0 {
-					out.ValueSlots[v] = free[t.Storage()][k-1]
-					free[t.Storage()] = free[t.Storage()][:k-1]
+				bucket := storageBucket(t)
+				if k := len(free[bucket]); k > 0 {
+					out.ValueSlots[v] = free[bucket][k-1]
+					free[bucket] = free[bucket][:k-1]
 				} else {
 					s := budget.addSlot(out, t)
-					all[t.Storage()] = append(all[t.Storage()], s)
+					all[bucket] = append(all[bucket], s)
 					out.ValueSlots[v] = s
 				}
 				if constant {
@@ -329,8 +425,10 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 	}
 	// All target PCs and value locations now exist. Resolve each parallel tuple
 	// before flattening it into a sequential, allocation-free transfer program.
-	budget.charge(uint64(len(f.Blocks)))
-	returns := make([]bool, len(f.Blocks))
+	budget.charge(uint64(nBlocks))
+	returns := reuseSlice(c.returns, nBlocks)
+	clear(returns)
+	c.returns = returns
 	for bi, b := range f.Blocks {
 		if len(b.Ops) != 0 || b.Term.Kind != ir.Return || len(b.Term.Args) != len(b.Params) || f.Sources[b.Term.Source].Fuel() != 0 {
 			continue
@@ -344,7 +442,10 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 			}
 		}
 	}
-	scratch := make(map[wasm.ValueType]Slot)
+	if len(c.scratch) != 0 {
+		clear(c.scratch)
+	}
+	var scratchFn func(Slot) Slot
 	for bi, b := range f.Blocks {
 		at := out.BlockPC[bi] + uint32(len(b.Ops))
 		if len(b.Term.Edges) == 0 {
@@ -371,23 +472,45 @@ func compileFunction(f *ir.Function, budget *budget) *Function {
 		budget.charge(uint64(len(b.Term.Edges)))
 		for _, e := range b.Term.Edges {
 			budget.charge(uint64(len(e.Args)) * 4)
-			moves := make([]Move, 0, len(e.Args))
-			for i, v := range e.Args {
-				moves = append(moves, Move{out.ValueSlots[f.Blocks[e.Target].Params[i]], out.ValueSlots[v]})
-			}
-			ordered := parallelMoves(moves, func(dst Slot) Slot {
-				t := out.Slots[dst]
-				if s, ok := scratch[t]; ok {
-					return s
+			start := uint32(len(out.Moves))
+			switch len(e.Args) {
+			case 0:
+				out.Edges = append(out.Edges, Edge{PC: out.BlockPC[e.Target], Start: start, Count: 0})
+			case 1:
+				dst := out.ValueSlots[f.Blocks[e.Target].Params[0]]
+				src := out.ValueSlots[e.Args[0]]
+				if dst != src {
+					budget.charge(1)
+					out.Moves = append(out.Moves, Move{dst, src})
+					out.Edges = append(out.Edges, Edge{PC: out.BlockPC[e.Target], Start: start, Count: 1})
+				} else {
+					out.Edges = append(out.Edges, Edge{PC: out.BlockPC[e.Target], Start: start, Count: 0})
 				}
-				s := budget.addSlot(out, t)
-				scratch[t] = s
-				return s
-			})
-			edge := Edge{PC: out.BlockPC[e.Target], Start: uint32(len(out.Moves)), Count: uint32(len(ordered))}
-			budget.charge(uint64(len(ordered)))
-			out.Moves = append(out.Moves, ordered...)
-			out.Edges = append(out.Edges, edge)
+			default:
+				moves := c.moves[:0]
+				params := f.Blocks[e.Target].Params
+				for i, v := range e.Args {
+					moves = append(moves, Move{out.ValueSlots[params[i]], out.ValueSlots[v]})
+				}
+				c.moves = moves
+				if scratchFn == nil {
+					scratchFn = func(dst Slot) Slot {
+						t := out.Slots[dst]
+						if c.scratch == nil {
+							c.scratch = make(map[wasm.ValueType]Slot)
+						} else if s, ok := c.scratch[t]; ok {
+							return s
+						}
+						s := budget.addSlot(out, t)
+						c.scratch[t] = s
+						return s
+					}
+				}
+				ordered := c.planner.order(moves, scratchFn)
+				budget.charge(uint64(len(ordered)))
+				out.Moves = append(out.Moves, ordered...)
+				out.Edges = append(out.Edges, Edge{PC: out.BlockPC[e.Target], Start: start, Count: uint32(len(ordered))})
+			}
 		}
 	}
 
