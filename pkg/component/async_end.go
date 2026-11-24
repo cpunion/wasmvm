@@ -148,40 +148,46 @@ func (in *Instance) newEnds(n *namespace, t *model.Type) (*asyncEnd, *asyncEnd, 
 	return in.allocateEnds(n, n, t)
 }
 func (in *Instance) allocateEnds(n, scope *namespace, t *model.Type) (*asyncEnd, *asyncEnd, error) {
+	// The paired endpoints start together but retain independent handles and
+	// state transitions. Their shared allocation never reuses a retired endpoint.
+	pair := &[2]asyncEnd{}
+	return in.initEnds(pair, n, scope, t)
+}
+
+func (in *Instance) initEnds(pair *[2]asyncEnd, n, scope *namespace, t *model.Type) (*asyncEnd, *asyncEnd, error) {
 	table := in.hostResources
 	if n != nil {
 		in.resourceTable(n)
 		table = n.handles
 	}
-	// The paired endpoints start together but retain independent handles and
-	// state transitions. Their shared allocation never reuses a retired endpoint.
-	pair := &[2]asyncEnd{
-		{in: in, typ: t, scope: scope, n: n, read: true, state: endIdle},
-		{in: in, typ: t, scope: scope, n: n, state: endIdle},
-	}
+	pair[0] = asyncEnd{in: in, typ: t, scope: scope, n: n, read: true, state: endIdle}
+	pair[1] = asyncEnd{in: in, typ: t, scope: scope, n: n, state: endIdle}
 	r, w := &pair[0], &pair[1]
 	r.other, w.other = w, r
 	r.waitable.producer = r
 	w.waitable.producer = w
-	for _, e := range []*asyncEnd{r, w} {
-		id, err := table.AddOpaque(e)
-		if err != nil {
-			if r.id != 0 {
-				table.RemoveOpaque(r.id)
-			}
-			return nil, nil, err
-		}
-		e.id = id
+	id, err := table.AddOpaque(r)
+	if err != nil {
+		return nil, nil, err
 	}
+	r.id = id
+	id, err = table.AddOpaque(w)
+	if err != nil {
+		table.RemoveOpaque(r.id)
+		return nil, nil, err
+	}
+	w.id = id
 	s := in.scheduler()
-	for _, e := range []*asyncEnd{r, w} {
-		e.group = s
-		e.next = s.ends
-		if e.next != nil {
-			e.next.previous = e
-		}
-		s.ends = e
+	r.group, r.next = s, s.ends
+	if r.next != nil {
+		r.next.previous = r
 	}
+	s.ends = r
+	w.group, w.next = s, s.ends
+	if w.next != nil {
+		w.next.previous = w
+	}
+	s.ends = w
 	return r, w, nil
 }
 func (e *asyncEnd) copy(c *vm.Caller, b *guestBuffer) error {

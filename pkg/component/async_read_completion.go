@@ -51,27 +51,11 @@ func (c *Caller) awaitRead(ctx context.Context, ref *Resource, limit uint32, che
 	if err != nil {
 		return nil, err
 	}
-	b := in.hostReadBuffer(e, batch, limit, check, nil)
-	state := &pendingHostRead{in: in, end: e, buffer: b}
-	completion := NewHostCompletion()
-	resolve := func() {
-		_ = completion.Resolve(func(fresh *Caller) (*Value, error) {
-			failed := ctx.Err()
-			if failed == nil {
-				failed = parent.Err()
-			}
-			if failed == nil {
-				failed = fresh.Context().Err()
-			}
-			result, err := state.take(fresh.core, failed)
-			if err == nil {
-				canonical.VisitReferences(b.batch, &b.data, func(ref *Resource) { fresh.addCreated(ref) })
-			}
-			return consume(fresh, result, err)
-		})
-	}
+	state := &pendingHostRead{in: in, end: e, ctx: ctx, parent: parent, consume: consume}
+	b := in.initHostReadBuffer(&state.storage, e, batch, limit, check, nil)
+	state.buffer = b
 	e.waitable.syncWaiter = true
-	e.waitable.hostNotify = resolve
+	e.waitable.hostRead = state
 	if err = e.copy(c.core, b); err != nil {
 		state.abort(c.core)
 		return nil, err
@@ -80,13 +64,14 @@ func (c *Caller) awaitRead(ctx context.Context, ref *Resource, limit uint32, che
 	if e.waitable.pending {
 		// The resolver checks both cancellation scopes before accepting this
 		// already available event. No cancellation watcher is needed to wake it.
-		resolve()
-		return completion, nil
+		state.resolve()
+		return &state.completion, nil
 	}
-	stopOperation := context.AfterFunc(ctx, resolve)
-	stopParent := context.AfterFunc(parent, resolve)
-	state.stop = func() bool { a, b := stopOperation(), stopParent(); return a || b }
-	return completion, nil
+	state.stopOperation = context.AfterFunc(ctx, state.resolve)
+	if parent != ctx {
+		state.stopParent = context.AfterFunc(parent, state.resolve)
+	}
+	return &state.completion, nil
 }
 
 // AwaitSourceRead forwards an owned readable endpoint through an AsyncSource
@@ -96,7 +81,7 @@ func (c *Caller) AwaitSourceRead(ctx context.Context, ref *Resource, limit uint3
 	if transform == nil {
 		return nil, vm.ErrType
 	}
-	result := NewReadCompletion()
+	result := &ReadCompletion{}
 	completion, err := c.AwaitRead(ctx, ref, limit, func(fresh *Caller, value ReadResult, failed error) (*Value, error) {
 		value, failed = transform(fresh, value, failed)
 		if failed != nil {
@@ -112,19 +97,48 @@ func (c *Caller) AwaitSourceRead(ctx context.Context, ref *Resource, limit uint3
 }
 
 type pendingHostRead struct {
-	in       *Instance
-	end      *asyncEnd
-	buffer   *guestBuffer
-	finished bool
-	stop     func() bool
+	in            *Instance
+	end           *asyncEnd
+	buffer        *guestBuffer
+	storage       hostReadBuffer
+	completion    HostCompletion
+	ctx, parent   context.Context
+	consume       func(*Caller, ReadResult, error) (*Value, error)
+	finished      bool
+	stopOperation func() bool
+	stopParent    func() bool
+}
+
+func (r *pendingHostRead) resolve() {
+	_ = r.completion.Resolve(r.complete)
+}
+
+func (r *pendingHostRead) complete(fresh *Caller) (*Value, error) {
+	failed := r.ctx.Err()
+	if failed == nil {
+		failed = r.parent.Err()
+	}
+	if failed == nil {
+		failed = fresh.Context().Err()
+	}
+	result, err := r.take(fresh.core, failed)
+	if err == nil {
+		canonical.VisitReferences(r.buffer.batch, &r.buffer.data, func(ref *Resource) { fresh.addCreated(ref) })
+	}
+	return r.consume(fresh, result, err)
 }
 
 func (r *pendingHostRead) detach() {
 	r.finished = true
 	r.end.waitable.syncWaiter = false
-	r.end.waitable.hostNotify = nil
-	if r.stop != nil {
-		r.stop()
+	r.end.waitable.hostRead = nil
+	if r.stopOperation != nil {
+		r.stopOperation()
+		r.stopOperation = nil
+	}
+	if r.stopParent != nil {
+		r.stopParent()
+		r.stopParent = nil
 	}
 }
 func (r *pendingHostRead) take(c *vm.Caller, failed error) (ReadResult, error) {

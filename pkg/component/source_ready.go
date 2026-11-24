@@ -35,7 +35,7 @@ func (in *Instance) readReadySource(core *vm.Caller, r, w *asyncEnd, b *guestBuf
 	// until its transfer/cleanup ends, without allocating a scheduler node.
 	scheduler.live++
 	defer func() { scheduler.live-- }()
-	f := source.readFunction(batch)
+	f := source.readyFunction(batch)
 	frame := in.acquireFrame()
 	defer in.releaseCanonicalFrame(frame)
 	h, err := f.hostParameters(core, nil, false, frame.hostStorage())

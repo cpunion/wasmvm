@@ -72,6 +72,8 @@ func (f *Function) hostParameters(core *vm.Caller, args []Value, borrowed bool, 
 	h.limit()
 	if borrowed {
 		h.args = args
+	} else if len(args) == 0 {
+		h.args = nil
 	} else {
 		h.args = make([]Value, len(args))
 	}
@@ -128,6 +130,17 @@ func (h *hostCall) expire(c *Caller) {
 }
 func (h *hostCall) invoke(core *vm.Caller, fn func(*Caller) (*Value, error)) (*Value, error) {
 	c := h.caller(core)
+	defer h.expire(c)
+	return fn(c)
+}
+func (h *hostCall) invokeDone(core *vm.Caller, done func(*Caller, bool) error, cancelled bool) error {
+	c := h.caller(core)
+	defer h.expire(c)
+	return done(c, cancelled)
+}
+func (h *hostCall) startWith(core *vm.Caller, fn func(*Caller) (*HostCompletion, error)) (*HostCompletion, error) {
+	c := h.caller(core)
+	c.ctx = h.ctx
 	defer h.expire(c)
 	return fn(c)
 }

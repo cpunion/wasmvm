@@ -11,13 +11,14 @@ import (
 // One implicit thread belongs to each active canonical lift. The existing
 // Store session serializes execution; nested stackful calls save this state.
 type callTask struct {
-	plan       *validate.CanonicalFunction
-	parameters *canonical.Codec
-	returned   *canonical.Codec
-	result     *Value
-	resolved   bool
-	storage    [2]uint64
-	runtime    *componentTask
+	plan        *validate.CanonicalFunction
+	parameters  *canonical.Codec
+	returned    *canonical.Codec
+	resultValue Value
+	result      *Value
+	resolved    bool
+	storage     [2]uint64
+	runtime     *componentTask
 }
 
 func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {

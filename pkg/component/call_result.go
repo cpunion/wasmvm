@@ -42,7 +42,9 @@ func (f *Function) callWithResult(ctx context.Context, args []Value, options Cal
 		if prepare != nil {
 			// Preparation creates capabilities through its Caller, tracked by
 			// hostCall.created. It performs no canonical ownership conversion.
-			factory := in.newHostCall(c, f, nil, nil)
+			prepareFrame := in.acquireFrame()
+			defer in.releaseCanonicalFrame(prepareFrame)
+			factory := in.newHostCall(c, f, nil, prepareFrame.hostStorage())
 			factory.limit()
 			defer factory.finishDeferred(c, &complete, &err)
 			defer factory.account()
@@ -73,12 +75,16 @@ func (f *Function) callWithResult(ctx context.Context, args []Value, options Cal
 		if err != nil {
 			return err
 		}
-		values := []Value(nil)
+		var singleArg [1]Value
+		var values []Value
 		if result != nil {
-			values = []Value{*result}
+			singleArg[0] = *result
+			values = singleArg[:]
 		}
 		receiver := f.resultReceiver(result != nil)
-		handoff, err := receiver.hostCall(c, values)
+		handoffFrame := in.acquireFrame()
+		defer in.releaseCanonicalFrame(handoffFrame)
+		handoff, err := receiver.hostParameters(c, values, false, handoffFrame.hostStorage())
 		if err != nil {
 			return err
 		}

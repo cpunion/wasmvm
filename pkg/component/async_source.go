@@ -112,30 +112,25 @@ func (in *Instance) newSource(t ValueType, source AsyncSource) (Value, error) {
 	if _, err := in.layouts[0].Build(t.typ); err != nil {
 		return Value{}, err
 	}
-	owned := append([]*Resource(nil), source.Owned...)
+	owned := source.Owned
 	n := uint64(len(owned))
 	bytes := n * 128
 	if n > uint64(in.config.MaxResources) || n > in.config.MaxValues-in.heldValues || bytes > in.config.MaxBytes-in.heldBytes {
 		return Value{}, wasm.ErrLimit
 	}
-	seen := map[any]bool{}
-	for _, ref := range owned {
-		if err := in.checkOwned(ref); err != nil {
-			return Value{}, err
-		}
-		key := canonical.ReferenceKey(ref)
-		if seen[key] {
-			return Value{}, vm.ErrType
-		}
-		seen[key] = true
+	if err := in.checkUniqueOwned(owned); err != nil {
+		return Value{}, err
 	}
 	source.Owned = nil
-	scope := &namespace{resources: t.resources, handles: in.hostResources}
-	r, w, err := in.allocateEnds(nil, scope, t.typ)
+	alloc := &sourceAllocation{
+		scope: namespace{resources: t.resources, handles: in.hostResources},
+	}
+	r, w, err := in.initEnds(&alloc.ends, nil, &alloc.scope, t.typ)
 	if err != nil {
 		return Value{}, err
 	}
-	state := &sourceState{source: source, in: in, values: n, bytes: bytes, writer: w, hasOwned: n != 0}
+	state := &alloc.state
+	*state = sourceState{source: source, in: in, values: n, bytes: bytes, writer: w, hasOwned: n != 0}
 	if source.Cancel != nil {
 		if err := source.Cancel.attach(in.scheduler().wake); err != nil {
 			r.abort()
@@ -157,15 +152,22 @@ func (in *Instance) newSource(t ValueType, source AsyncSource) (Value, error) {
 	w.source = state
 	in.heldValues += n
 	in.heldBytes += bytes
-	for _, ref := range owned {
-		moved, err := in.references.Move(ref)
-		if err != nil {
-			in.mu.Unlock()
-			r.abort()
-			w.abort()
-			return Value{}, err
+	if len(owned) != 0 {
+		if len(owned) <= len(alloc.inlineOwned) {
+			state.owned = alloc.inlineOwned[:0]
+		} else {
+			state.owned = make([]*Resource, 0, len(owned))
 		}
-		state.owned = append(state.owned, moved)
+		for _, ref := range owned {
+			moved, err := in.references.Move(ref)
+			if err != nil {
+				in.mu.Unlock()
+				r.abort()
+				w.abort()
+				return Value{}, err
+			}
+			state.owned = append(state.owned, moved)
+		}
 	}
 	if in.sources == nil {
 		in.sources = map[*sourceState]struct{}{}
@@ -281,94 +283,128 @@ func (in *Instance) startSourceRead(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 	return in.startSourceJob(c, r, w, b, batch)
 }
 
+type sourceAllocation struct {
+	ends        [2]asyncEnd
+	scope       namespace
+	state       sourceState
+	inlineOwned [2]*Resource
+}
+
+type sourceReadTask struct {
+	task       componentTask
+	function   Function
+	host       resourceHostCall
+	r, w       *asyncEnd
+	b          *guestBuffer
+	completion *ReadCompletion
+	unit       bool
+	aborted    bool
+}
+
+func (sr *sourceReadTask) start(caller *Caller) (*HostCompletion, error) {
+	in := sr.task.in
+	if in.callDepth >= in.config.Store.MaxReentry {
+		return nil, wasm.ErrLimit
+	}
+	in.callDepth++
+	defer func() { in.callDepth-- }()
+	completion, err := sr.w.source.start(caller, sr.b.remain())
+	if err != nil {
+		return nil, err
+	}
+	if completion == nil || completion.completion == nil {
+		return nil, vm.ErrType
+	}
+	completion.unit = sr.unit
+	sr.completion = completion
+	return completion.completion, nil
+}
+
+func (sr *sourceReadTask) cleanup() {
+	if sr.aborted {
+		return
+	}
+	sr.aborted = true
+	if sr.completion != nil {
+		sr.completion.result = ReadResult{}
+	}
+	sr.r.sourceJob = nil
+	sr.r.buffer = nil
+	sr.r.state = endDone
+	sr.w.closeSource()
+}
+
+func (sr *sourceReadTask) resolve(current *vm.Caller, value *Value, cancelled bool) (err error) {
+	in, r, w, b := sr.task.in, sr.r, sr.w, sr.b
+	frame := in.acquireFrame()
+	defer in.releaseCanonicalFrame(frame)
+	var output *canonical.Codec
+	complete := false
+	defer func() {
+		guard := cleanupGuard{panicked: recover()}
+		if output != nil {
+			err = guard.finishCodec(output, complete, err)
+		}
+		guard.finish()
+	}()
+	if cancelled {
+		r.notify(0)
+	} else {
+		meta := sr.completion.result
+		sr.completion.result = ReadResult{}
+		count := uint64(len(value.Elements))
+		if sr.unit {
+			count = value.Bits
+		} else if r.typ.Element.Kind == model.U8 && value.Elements == nil {
+			count = uint64(len(value.Text))
+		}
+		if count > uint64(b.remain()) || meta.Count != 0 && uint64(meta.Count) != count || sr.unit && (len(meta.Values) != 0 || meta.Bytes != "") || r.typ.Kind == model.Future && count != 1 || count == 0 && !meta.Closed && b.remain() != 0 {
+			return vm.ErrType
+		}
+		if !sr.unit && count != 0 {
+			output, err = b.storeCodec(current, *value, &frame.auxState)
+			if err != nil {
+				if !r.rejectCopy(err) {
+					return err
+				}
+				r.sourceJob = nil
+				sr.aborted = true
+				complete = true
+				return nil
+			}
+		}
+		b.progress += uint32(count)
+		r.notify(b.progress)
+		if meta.Closed || r.typ.Kind == model.Future {
+			w.closeSource()
+		}
+	}
+	r.sourceJob = nil
+	sr.aborted = true
+	complete = true
+	return nil
+}
+
 func (in *Instance) startSourceJob(c *vm.Caller, r, w *asyncEnd, b *guestBuffer, batch *model.Type) error {
 	r.buffer = b
-	unit := r.typ.Element == nil
-	var completion *ReadCompletion
-	f := w.source.readFunction(batch)
-	f.asyncHost = func(caller *Caller, _ []Value) (*HostCompletion, error) {
-		var err error
-		if in.callDepth >= in.config.Store.MaxReentry {
-			return nil, wasm.ErrLimit
-		}
-		in.callDepth++
-		defer func() { in.callDepth-- }()
-		completion, err = w.source.start(caller, b.remain())
-		if err != nil {
-			return nil, err
-		}
-		if completion == nil || completion.completion == nil {
-			return nil, vm.ErrType
-		}
-		completion.unit = unit
-		return completion.completion, nil
+	plan := w.source.ensureReadPlan(batch)
+	sr := &sourceReadTask{
+		function: Function{instance: in, scope: w.scope, typ: &plan.typ, values: &plan.values},
+		r:        r,
+		w:        w,
+		b:        b,
+		unit:     r.typ.Element == nil,
 	}
-	t, err := in.makeTask(c, w.scope, nil, vm.Extern{}, func(*vm.Caller) ([]Value, error) { return nil, nil }, nil)
-	if err != nil {
+	t := &sr.task
+	if err := in.attachTask(t, w.scope, nil, vm.Extern{}, nil, nil); err != nil {
 		return err
 	}
-	t.hostFunction = f
+	t.hostFunction = &sr.function
+	t.sourceRead = sr
 	r.sourceJob = t
-	t.pendingCleanup = func() {
-		if completion != nil {
-			completion.result = ReadResult{}
-		}
-		r.sourceJob = nil
-		r.buffer = nil
-		r.state = endDone
-		w.closeSource()
-	}
-	t.onResolve = func(current *vm.Caller, value *Value, cancelled bool) (err error) {
-		frame := in.acquireFrame()
-		defer in.releaseCanonicalFrame(frame)
-		var output *canonical.Codec
-		complete := false
-		defer func() {
-			guard := cleanupGuard{panicked: recover()}
-			if output != nil {
-				err = guard.finishCodec(output, complete, err)
-			}
-			guard.finish()
-		}()
-		if cancelled {
-			r.notify(0)
-		} else {
-			meta := completion.result
-			completion.result = ReadResult{}
-			count := uint64(len(value.Elements))
-			if unit {
-				count = value.Bits
-			} else if r.typ.Element.Kind == model.U8 && value.Elements == nil {
-				count = uint64(len(value.Text))
-			}
-			if count > uint64(b.remain()) || meta.Count != 0 && uint64(meta.Count) != count || unit && (len(meta.Values) != 0 || meta.Bytes != "") || r.typ.Kind == model.Future && count != 1 || count == 0 && !meta.Closed && b.remain() != 0 {
-				return vm.ErrType
-			}
-			if !unit && count != 0 {
-				output, err = b.storeCodec(current, *value, &frame.auxState)
-				if err != nil {
-					if !r.rejectCopy(err) {
-						return err
-					}
-					r.sourceJob = nil
-					t.pendingCleanup = nil
-					complete = true
-					return nil
-				}
-			}
-			b.progress += uint32(count)
-			r.notify(b.progress)
-			if meta.Closed || r.typ.Kind == model.Future {
-				w.closeSource()
-			}
-		}
-		r.sourceJob = nil
-		t.pendingCleanup = nil
-		complete = true
-		return nil
-	}
 	if w.source.source.Prompt {
-		t.host, err = f.hostCall(c, nil)
+		var err error
+		t.host, err = sr.function.hostParameters(c, nil, false, &sr.host)
 		if err != nil {
 			return t.finish(c, err)
 		}
@@ -417,16 +453,28 @@ type sourceState struct {
 type sourceReadPlan struct {
 	typ    validate.Type
 	values functionValues
+	fn     Function
 }
 
-func (s *sourceState) readFunction(batch *model.Type) *Function {
+func (s *sourceState) ensureReadPlan(batch *model.Type) *sourceReadPlan {
 	if s.readPlan == nil {
-		s.readPlan = &sourceReadPlan{
+		plan := &sourceReadPlan{
 			typ:    validate.Type{Kind: model.AsyncFunction, Result: batch},
 			values: functionValues{result: canonical.NewValuePlan(batch)},
 		}
+		plan.fn = Function{instance: s.in, scope: s.writer.scope, typ: &plan.typ, values: &plan.values}
+		s.readPlan = plan
 	}
-	return &Function{instance: s.in, scope: s.writer.scope, typ: &s.readPlan.typ, values: &s.readPlan.values}
+	return s.readPlan
+}
+
+func (s *sourceState) readyFunction(batch *model.Type) *Function {
+	return &s.ensureReadPlan(batch).fn
+}
+
+func (s *sourceState) readFunction(batch *model.Type) *Function {
+	plan := s.ensureReadPlan(batch)
+	return &Function{instance: s.in, scope: s.writer.scope, typ: &plan.typ, values: &plan.values}
 }
 
 func (s *sourceState) start(c *Caller, limit uint32) (*ReadCompletion, error) {
@@ -434,7 +482,11 @@ func (s *sourceState) start(c *Caller, limit uint32) (*ReadCompletion, error) {
 		return nil, wasm.ErrClosed
 	}
 	if s.source.ReadOwned != nil {
-		return s.source.ReadOwned(c, append([]*Resource(nil), s.owned...), limit)
+		var owned []*Resource
+		if len(s.owned) != 0 {
+			owned = append([]*Resource(nil), s.owned...)
+		}
+		return s.source.ReadOwned(c, owned, limit)
 	}
 	return s.source.Read(c, limit)
 }

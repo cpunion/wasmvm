@@ -405,7 +405,9 @@ func canonicalReallocate(caller *vm.Caller, n *namespace, plan *validate.Canonic
 	if plan.Memory64 {
 		kind = wasm.I64
 	}
-	result, err := caller.Call(fn, vmValues([]canonical.Slot{{Type: kind, Bits: old}, {Type: kind, Bits: size}, {Type: kind, Bits: alignment}, {Type: kind, Bits: next}}))
+	var argBuf [4]vm.Value
+	slots := [4]canonical.Slot{{Type: kind, Bits: old}, {Type: kind, Bits: size}, {Type: kind, Bits: alignment}, {Type: kind, Bits: next}}
+	result, err := caller.Call(fn, vmValuesInto(slots[:], argBuf[:0]))
 	if err != nil {
 		return 0, err
 	}
@@ -429,20 +431,26 @@ func (in *Instance) canonicalLayouts(n *namespace, plan *validate.CanonicalFunct
 }
 
 func vmValues(slots []canonical.Slot) []vm.Value {
-	values := make([]vm.Value, len(slots))
-	for i, slot := range slots {
+	if len(slots) == 0 {
+		return nil
+	}
+	return vmValuesInto(slots, make([]vm.Value, 0, len(slots)))
+}
+
+func vmValuesInto(slots []canonical.Slot, dst []vm.Value) []vm.Value {
+	for _, slot := range slots {
 		switch slot.Type {
 		case wasm.I32:
-			values[i] = vm.I32(uint32(slot.Bits))
+			dst = append(dst, vm.I32(uint32(slot.Bits)))
 		case wasm.I64:
-			values[i] = vm.I64(slot.Bits)
+			dst = append(dst, vm.I64(slot.Bits))
 		case wasm.F32:
-			values[i] = vm.F32Bits(uint32(slot.Bits))
+			dst = append(dst, vm.F32Bits(uint32(slot.Bits)))
 		case wasm.F64:
-			values[i] = vm.F64Bits(slot.Bits)
+			dst = append(dst, vm.F64Bits(slot.Bits))
 		}
 	}
-	return values
+	return dst
 }
 
 func flatValues(values []vm.Value) ([]canonical.Slot, error) {

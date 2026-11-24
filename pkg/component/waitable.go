@@ -21,7 +21,7 @@ type waitable struct {
 	readyPrevious, readyNext *waitable
 	pending, syncWaiter      bool
 	producer                 eventProducer
-	hostNotify               func()
+	hostRead                 *pendingHostRead
 }
 
 type waitableSet struct {
@@ -68,8 +68,8 @@ func (w *waitable) notify() {
 		return
 	}
 	w.pending = true
-	if w.hostNotify != nil {
-		w.hostNotify()
+	if w.hostRead != nil {
+		w.hostRead.resolve()
 	}
 	if w.set != nil {
 		w.enqueue()

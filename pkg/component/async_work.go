@@ -81,8 +81,65 @@ type workState struct {
 	prompt        bool
 	control       *Cancellation
 	refs          []*Resource
+	inlineArgRefs [2]*Resource
+	start         func(*Caller, []*Resource) (*HostCompletion, error)
+	done          func(*Caller, bool) error
 	values, bytes uint64
 	cleanup       func()
+}
+
+type scheduledTask struct {
+	task       componentTask
+	scope      namespace
+	function   Function
+	work       workState
+	control    Cancellation
+	host       resourceHostCall
+	inlineRefs [2]*Resource
+}
+
+func (s *workState) startWork(caller *Caller) (*HostCompletion, error) {
+	var args []*Resource
+	if n := len(s.refs); n != 0 {
+		if n <= len(s.inlineArgRefs) {
+			copy(s.inlineArgRefs[:n], s.refs)
+			args = s.inlineArgRefs[:n:n]
+		} else {
+			args = append([]*Resource(nil), s.refs...)
+		}
+	}
+	return s.start(caller, args)
+}
+
+func (in *Instance) checkUniqueOwned(refs []*Resource) error {
+	if len(refs) <= 8 {
+		var seen [8]any
+		for i, ref := range refs {
+			if err := in.checkOwned(ref); err != nil {
+				return err
+			}
+			key := canonical.ReferenceKey(ref)
+			for j := range i {
+				if seen[j] == key {
+					return vm.ErrType
+				}
+			}
+			seen[i] = key
+		}
+		return nil
+	}
+	seen := make(map[any]bool, len(refs))
+	for _, ref := range refs {
+		if err := in.checkOwned(ref); err != nil {
+			return err
+		}
+		key := canonical.ReferenceKey(ref)
+		if seen[key] {
+			return vm.ErrType
+		}
+		seen[key] = true
+	}
+	return nil
 }
 
 func (in *Instance) checkOwned(ref *Resource) error {
@@ -132,26 +189,21 @@ func (c *Caller) Schedule(work AsyncWork) error {
 	if n > uint64(in.config.MaxResources) || n > in.config.MaxValues-in.heldValues || bytes > in.config.MaxBytes-in.heldBytes {
 		return wasm.ErrLimit
 	}
-	seen := map[any]bool{}
-	for _, ref := range work.Owned {
-		if err := in.checkOwned(ref); err != nil {
-			return err
-		}
-		key := canonical.ReferenceKey(ref)
-		if seen[key] {
-			return vm.ErrType
-		}
-		seen[key] = true
-	}
-	scope := &namespace{handles: in.hostResources}
-	f := &Function{instance: in, scope: scope, typ: &scheduledWorkType}
-	t, err := in.makeTask(c.core, scope, nil, vm.Extern{}, nil, nil)
-	if err != nil {
+	if err := in.checkUniqueOwned(work.Owned); err != nil {
 		return err
 	}
-	state := &workState{control: work.Cancel, prompt: work.Prompt}
+	alloc := &scheduledTask{
+		scope:    namespace{handles: in.hostResources},
+		work:     workState{control: work.Cancel, prompt: work.Prompt, start: work.Start, done: work.Done},
+	}
+	alloc.function = Function{instance: in, scope: &alloc.scope, typ: &scheduledWorkType}
+	t := &alloc.task
+	if err := in.attachTask(t, &alloc.scope, nil, vm.Extern{}, nil, nil); err != nil {
+		return err
+	}
+	state := &alloc.work
 	if state.control == nil {
-		state.control = NewCancellation()
+		state.control = &alloc.control
 	}
 	if err := state.control.attach(in.scheduler().wake); err != nil {
 		t.finish(c.core, err)
@@ -161,31 +213,28 @@ func (c *Caller) Schedule(work AsyncWork) error {
 	state.values, state.bytes = n, bytes
 	in.heldValues += n
 	in.heldBytes += bytes
-	state.refs = make([]*Resource, len(work.Owned))
+	if len(work.Owned) <= len(alloc.inlineRefs) {
+		state.refs = alloc.inlineRefs[:len(work.Owned)]
+	} else {
+		state.refs = make([]*Resource, len(work.Owned))
+	}
 	for i, ref := range work.Owned {
-		state.refs[i], err = in.references.Move(ref)
+		moved, err := in.references.Move(ref)
 		if err != nil {
 			t.finish(c.core, err)
 			return err
 		}
+		state.refs[i] = moved
 	}
+	f := &alloc.function
 	t.hostFunction = f
-	t.host, err = f.hostCall(c.core, nil)
+	host, err := f.hostParameters(c.core, nil, false, &alloc.host)
+	t.host = host
 	if err != nil {
 		t.finish(c.core, err)
 		return err
 	}
 	t.host.prompt = work.Prompt
-	f.asyncHost = func(caller *Caller, _ []Value) (*HostCompletion, error) {
-		return work.Start(caller, append([]*Resource(nil), state.refs...))
-	}
-	t.onResolve = func(core *vm.Caller, _ *Value, cancelled bool) error {
-		if work.Done == nil {
-			return nil
-		}
-		_, err := t.host.invoke(core, func(fresh *Caller) (*Value, error) { return nil, work.Done(fresh, cancelled) })
-		return err
-	}
 	state.cleanup = work.Cleanup
 	if work.Prompt {
 		return t.resume(c.core)
@@ -236,6 +285,8 @@ func (s *workState) finish(c *vm.Caller, in *Instance) {
 	}()
 	refs := s.refs
 	s.refs = nil
+	s.inlineArgRefs = [2]*Resource{}
+	s.start, s.done = nil, nil
 	guard := cleanupGuard{}
 	for _, ref := range refs {
 		guard.run(func() { in.cleanupResource(c, ref) })

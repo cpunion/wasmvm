@@ -39,10 +39,10 @@ func (op *operation) newCaller(instance *state.Instance) *Caller {
 		// Most leases need only their initial capability. Allocate a batch only
 		// after a callback actually creates another Caller in the same lease.
 		allocation = &callerAllocation{}
-		op.nextCaller = 4
+		op.nextCaller = 16
 	} else {
 		if op.callerBlock == nil || op.nextCaller == uint8(len(op.callerBlock)) {
-			op.callerBlock = new([4]callerAllocation)
+			op.callerBlock = new([16]callerAllocation)
 			op.nextCaller = 0
 		}
 		allocation = &op.callerBlock[op.nextCaller]
@@ -182,8 +182,9 @@ func (op *operation) callPublic(fn Extern, args []Value) (CallResult, error) {
 	if !ok {
 		return CallResult{}, ErrReference
 	}
+	var rawBuf [16]value.Value
 	s.mu.Lock()
-	raw, err := s.decodeValuesLocked(args, f.Signature.Params)
+	raw, err := s.decodeValuesIntoLocked(args, f.Signature.Params, rawBuf[:0])
 	s.mu.Unlock()
 	if err != nil {
 		return CallResult{}, err
@@ -198,10 +199,21 @@ func (op *operation) callPublic(fn Extern, args []Value) (CallResult, error) {
 	return CallResult{Values: out, FuelRemaining: op.fuel}, err
 }
 func (s *Store) decodeValuesLocked(values []Value, types []wasm.ValueType) ([]value.Value, error) {
+	return s.decodeValuesIntoLocked(values, types, nil)
+}
+func (s *Store) decodeValuesIntoLocked(values []Value, types []wasm.ValueType, dst []value.Value) ([]value.Value, error) {
 	if len(values) != len(types) {
 		return nil, ErrType
 	}
-	out := make([]value.Value, len(values))
+	if len(values) == 0 {
+		return nil, nil
+	}
+	var out []value.Value
+	if len(values) <= cap(dst) {
+		out = dst[:len(values)]
+	} else {
+		out = make([]value.Value, len(values))
+	}
 	for i, v := range values {
 		raw, err := s.rawLocked(v, types[i])
 		if err != nil {
@@ -212,11 +224,22 @@ func (s *Store) decodeValuesLocked(values []Value, types []wasm.ValueType) ([]va
 	return out, nil
 }
 func (s *Store) encodeValuesLocked(values []value.Value, types []wasm.ValueType) ([]Value, error) {
-	out := make([]Value, len(values))
+	return s.encodeValuesIntoLocked(values, types, nil)
+}
+func (s *Store) encodeValuesIntoLocked(values []value.Value, types []wasm.ValueType, dst []Value) ([]Value, error) {
+	if len(values) == 0 {
+		return nil, nil
+	}
+	var out []Value
+	if len(values) <= cap(dst) {
+		out = dst[:len(values)]
+	} else {
+		out = make([]Value, len(values))
+	}
 	for i, v := range values {
 		root, err := s.rootLocked(types[i], v)
 		if err != nil {
-			for _, p := range out {
+			for _, p := range out[:i] {
 				if p.ref != nil {
 					s.releaseLocked(p.ref)
 				}

@@ -43,11 +43,42 @@ type Continuation struct {
 	op        *operation
 	work      *callWorkspace
 	result    []wasm.ValueType
+	resultBuf [1]Value
 	pending   *HostSuspension
 	args      []Value
 	temporary []Value
 	running   bool
 	closed    bool
+}
+
+func (op *operation) newContinuation(work *callWorkspace, result []wasm.ValueType) *Continuation {
+	var call *Continuation
+	if op.contBlock == nil && op.nextCont == 0 {
+		call = &Continuation{}
+		op.nextCont = 8
+	} else {
+		if op.contBlock == nil || op.nextCont == uint8(len(op.contBlock)) {
+			op.contBlock = new([8]Continuation)
+			op.nextCont = 0
+		}
+		call = &op.contBlock[op.nextCont]
+		op.nextCont++
+	}
+	call.op = op
+	call.work = work
+	call.result = result
+	return call
+}
+
+func (op *operation) removeContinuation(target *Continuation) {
+	for i, c := range op.continuations {
+		if c == target {
+			last := len(op.continuations) - 1
+			op.continuations[i], op.continuations[last] = op.continuations[last], nil
+			op.continuations = op.continuations[:last]
+			return
+		}
+	}
 }
 
 func (c *Caller) NewSuspendableFunction(signature FunctionType, fn SuspendableHostFunction, referenceType ...wasm.ValueType) (Extern, error) {
@@ -118,8 +149,9 @@ func (c *Caller) Start(fn Extern, args []Value) (*Continuation, error) {
 	if !ok {
 		return nil, ErrReference
 	}
+	var rawBuf [16]value.Value
 	s.mu.Lock()
-	raw, err := s.decodeValuesLocked(args, f.Signature.Params)
+	raw, err := s.decodeValuesIntoLocked(args, f.Signature.Params, rawBuf[:0])
 	s.mu.Unlock()
 	if err != nil {
 		return nil, err
@@ -134,7 +166,6 @@ func (c *Caller) Start(fn Extern, args []Value) (*Continuation, error) {
 	if err != nil {
 		return nil, err
 	}
-	call := &Continuation{op: op, work: w, result: f.Signature.Results}
 	if err := w.execution.SetLimits(limits); err != nil {
 		op.releaseWorkspace(w)
 		return nil, err
@@ -143,10 +174,11 @@ func (c *Caller) Start(fn Extern, args []Value) (*Continuation, error) {
 		op.releaseWorkspace(w)
 		return nil, err
 	}
+	call := op.newContinuation(w, f.Signature.Results)
 	if op.continuations == nil {
-		op.continuations = map[*Continuation]struct{}{}
+		op.continuations = op.inlineConts[:0]
 	}
-	op.continuations[call] = struct{}{}
+	op.continuations = append(op.continuations, call)
 	return call, nil
 }
 
@@ -165,7 +197,7 @@ func (call *Continuation) abort() {
 	}
 	call.closed = true
 	call.work.execution.Abort(wasm.ErrClosed)
-	delete(call.op.continuations, call)
+	call.op.removeContinuation(call)
 	for _, v := range call.args {
 		v.Release()
 	}
@@ -272,7 +304,7 @@ func (c *Caller) Poll(call *Continuation) (result CallResult, done bool, err err
 		case execute.Done:
 			op.fuel = e.Fuel()
 			s.mu.Lock()
-			result.Values, err = s.encodeValuesLocked(e.Results(), call.result)
+			result.Values, err = s.encodeValuesIntoLocked(e.Results(), call.result, call.resultBuf[:0])
 			s.mu.Unlock()
 			result.FuelRemaining = op.fuel
 			if err != nil {
@@ -370,11 +402,12 @@ func (call *Continuation) resumeHost(request *execute.HostCall, fn func(*Caller)
 
 func (call *Continuation) resumeValues(values []Value, failed error) error {
 	op, s := call.op, call.op.store
+	var rawBuf [16]value.Value
 	var raw []value.Value
 	err := failed
 	if err == nil {
 		s.mu.Lock()
-		raw, err = s.decodeValuesLocked(values, call.work.execution.Host().Function.Signature.Results)
+		raw, err = s.decodeValuesIntoLocked(values, call.work.execution.Host().Function.Signature.Results, rawBuf[:0])
 		s.mu.Unlock()
 	} else {
 		err = op.hostError(err)
