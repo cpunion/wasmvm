@@ -170,13 +170,14 @@ func visitResourceEntries(entries map[uint32]*resourceEntry, guest []*resourceEn
 // Rollback must not consume a later publication at the same guest index.
 func (r *Resources) EntryGeneration(id uint32) uint64 {
 	r.mu.Lock()
-	defer r.mu.Unlock()
+	var gen uint64
 	if !r.closed {
 		if entry := r.entryLocked(id); entry != nil {
-			return entry.generation
+			gen = entry.generation
 		}
 	}
-	return 0
+	r.mu.Unlock()
+	return gen
 }
 
 // Allocate fresh identities in small groups. Slots are consumed once and never
@@ -218,11 +219,11 @@ func (r *Resources) New(t *ResourceType, rep uint64) (uint32, error) {
 		return 0, invalid("missing resource type")
 	}
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	e, id, err := r.addLocked()
 	if err == nil {
 		e.typeID, e.rep, e.owned = t, rep, true
 	}
+	r.mu.Unlock()
 	return id, err
 }
 
@@ -239,29 +240,34 @@ func (r *Resources) getLocked(t *ResourceType, id uint32) (*resourceEntry, error
 
 func (r *Resources) Rep(t *ResourceType, id uint32) (uint64, error) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	e, err := r.getLocked(t, id)
 	if err != nil {
+		r.mu.Unlock()
 		return 0, err
 	}
-	return e.rep, nil
+	rep := e.rep
+	r.mu.Unlock()
+	return rep, nil
 }
 
 // Take consumes an own handle without running its destructor. Publication in
 // another instance is performed by the call's ownership-transfer transaction.
 func (r *Resources) Take(t *ResourceType, id uint32) (uint64, error) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	e, err := r.getLocked(t, id)
 	if err != nil {
+		r.mu.Unlock()
 		return 0, err
 	}
 	if !e.owned || e.lends != 0 {
+		r.mu.Unlock()
 		return 0, scalarTrap("resource is borrowed")
 	}
+	rep := e.rep
 	r.removeLocked(id)
 	r.budget.release(1)
-	return e.rep, nil
+	r.mu.Unlock()
+	return rep, nil
 }
 
 func (r *Resources) Drop(ctx context.Context, t *ResourceType, id uint32) error {
@@ -366,25 +372,31 @@ func (s *BorrowScope) chargeLocked() error {
 
 func (s *BorrowScope) Lift(r *Resources, t *ResourceType, id uint32) (uint64, error) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	if err := s.chargeLocked(); err != nil {
+		s.mu.Unlock()
 		return 0, err
 	}
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	e, err := r.getLocked(t, id)
 	if err != nil {
+		r.mu.Unlock()
+		s.mu.Unlock()
 		return 0, err
 	}
 	if e.lends == ^uint32(0) {
+		r.mu.Unlock()
+		s.mu.Unlock()
 		return 0, exhausted()
 	}
 	e.lends++
+	rep := e.rep
+	r.mu.Unlock()
 	if s.lenders == nil {
 		s.lenders = s.inlineLenders[:0]
 	}
 	s.lenders = append(s.lenders, lender{r, e})
-	return e.rep, nil
+	s.mu.Unlock()
+	return rep, nil
 }
 
 // Lower publishes a borrowed representation in a foreign instance's handle
@@ -392,31 +404,35 @@ func (s *BorrowScope) Lift(r *Resources, t *ResourceType, id uint32) (uint64, er
 // this operation, as required by the canonical ABI.
 func (s *BorrowScope) Lower(r *Resources, t *ResourceType, rep uint64) (uint32, error) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	if err := s.chargeLocked(); err != nil {
+		s.mu.Unlock()
 		return 0, err
 	}
 	if t == nil {
+		s.mu.Unlock()
 		return 0, invalid("missing resource type")
 	}
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	e, id, err := r.addLocked()
 	if err != nil {
+		r.mu.Unlock()
+		s.mu.Unlock()
 		return 0, err
 	}
 	e.typeID, e.rep, e.scope = t, rep, s
+	r.mu.Unlock()
 	if s.borrows == nil {
 		s.borrows = map[*resourceEntry]lender{}
 	}
 	s.borrows[e] = lender{r, e}
+	s.mu.Unlock()
 	return id, nil
 }
 
 func (s *BorrowScope) End() error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	if s.ended {
+		s.mu.Unlock()
 		return nil
 	}
 	s.ended = true
@@ -438,6 +454,7 @@ func (s *BorrowScope) End() error {
 	s.inlineLenders = [2]lender{}
 	s.lenders = nil
 	s.borrows = nil
+	s.mu.Unlock()
 	if escaped {
 		return scalarTrap("borrowed handle escaped its call")
 	}
@@ -448,8 +465,9 @@ func (s *BorrowScope) End() error {
 // Guest code must drop foreign borrowed handles before publishing a result.
 func (s *BorrowScope) CheckReturned() error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.ended || len(s.borrows) != 0 {
+	bad := s.ended || len(s.borrows) != 0
+	s.mu.Unlock()
+	if bad {
 		return scalarTrap("task returned with outstanding borrows")
 	}
 	return nil

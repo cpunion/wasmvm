@@ -139,11 +139,12 @@ type httpBody struct {
 
 func (p *HTTP) newBody() (*httpBody, error) {
 	p.mu.Lock()
-	defer p.mu.Unlock()
 	if p.closed {
+		p.mu.Unlock()
 		return nil, wasm.ErrClosed
 	}
 	if uint64(len(p.bodies)) >= uint64(p.config.MaxMessages) {
+		p.mu.Unlock()
 		return nil, wasm.ErrLimit
 	}
 	ctx, cancel := context.WithCancel(p.ctx)
@@ -157,6 +158,7 @@ func (p *HTTP) newBody() (*httpBody, error) {
 		b = &httpBody{owner: p, refs: 1, ctx: ctx, cancel: cancel}
 	}
 	p.bodies[b] = struct{}{}
+	p.mu.Unlock()
 	return b, nil
 }
 func (b *httpBody) acquire() { b.mu.Lock(); b.refs++; b.mu.Unlock() }

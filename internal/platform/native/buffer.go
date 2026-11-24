@@ -10,11 +10,13 @@ import "unsafe"
 // contract, not a public guest-memory borrow API.
 func (m *Memory) Buffer() ([]byte, error) {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	if err := m.idle(); err != nil {
+		m.mu.Unlock()
 		return nil, err
 	}
-	return unsafe.Slice((*byte)(m.data), int(m.size)), nil
+	buf := unsafe.Slice((*byte)(m.data), int(m.size))
+	m.mu.Unlock()
+	return buf, nil
 }
 
 // ResizeArena grows the private frame arena while idle and returns its current
@@ -23,16 +25,18 @@ func (m *Memory) Buffer() ([]byte, error) {
 // outside the serialized execution runtime. A failed growth changes nothing.
 func (c *Context) ResizeArena(size, maximum uint64) ([]byte, error) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 	if err := c.idle(); err != nil {
+		c.mu.Unlock()
 		return nil, err
 	}
 	if size > maximum || size > uint64(^uint(0)>>1) {
+		c.mu.Unlock()
 		return nil, ErrLimit
 	}
 	if size > c.size {
 		p := allocate(size)
 		if p == nil {
+			c.mu.Unlock()
 			return nil, ErrLimit
 		}
 		copy(unsafe.Slice((*byte)(p), int(size)), unsafe.Slice((*byte)(c.arena), int(c.size)))
@@ -40,5 +44,7 @@ func (c *Context) ResizeArena(size, maximum uint64) ([]byte, error) {
 		c.arena, c.size = p, size
 		c.record.Arena, c.record.Capacity = uint64(uintptr(p)), size
 	}
-	return unsafe.Slice((*byte)(c.arena), int(c.size)), nil
+	buf := unsafe.Slice((*byte)(c.arena), int(c.size))
+	c.mu.Unlock()
+	return buf, nil
 }

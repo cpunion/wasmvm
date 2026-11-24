@@ -9,41 +9,46 @@ func (r *Resources) AddOpaque(value any) (uint32, error) {
 		return 0, invalid("missing opaque handle value")
 	}
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	e, id, err := r.addLocked()
 	if err == nil {
 		e.opaque, e.owned = value, true
 	}
+	r.mu.Unlock()
 	return id, err
 }
 
 func (r *Resources) Opaque(id uint32) (any, error) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	// Closing the owner can race an already admitted canonical operation.
 	// Match resource/error-context domains: shutdown is not a guest trap.
 	if r.closed {
+		r.mu.Unlock()
 		return nil, wasm.ErrClosed
 	}
 	e := r.entryLocked(id)
 	if e == nil || e.opaque == nil {
+		r.mu.Unlock()
 		return nil, scalarTrap("invalid async handle")
 	}
-	return e.opaque, nil
+	v := e.opaque
+	r.mu.Unlock()
+	return v, nil
 }
 
 func (r *Resources) RemoveOpaque(id uint32) error {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	if r.closed {
+		r.mu.Unlock()
 		return wasm.ErrClosed
 	}
 	e := r.entryLocked(id)
 	if e == nil || e.opaque == nil {
+		r.mu.Unlock()
 		return scalarTrap("invalid async handle")
 	}
 	r.removeLocked(id)
 	r.budget.release(1)
+	r.mu.Unlock()
 	return nil
 }
 
@@ -59,22 +64,28 @@ func (r *Resources) MoveOpaque(id uint32, dst *Resources) (uint32, error) {
 		first, second = second, first
 	}
 	first.mu.Lock()
-	defer first.mu.Unlock()
 	second.mu.Lock()
-	defer second.mu.Unlock()
 	if r.closed || dst.closed {
+		second.mu.Unlock()
+		first.mu.Unlock()
 		return 0, wasm.ErrClosed
 	}
 	e := r.entryLocked(id)
 	if e == nil || e.opaque == nil {
+		second.mu.Unlock()
+		first.mu.Unlock()
 		return 0, scalarTrap("invalid async handle")
 	}
 	if !dst.availableLocked() {
+		second.mu.Unlock()
+		first.mu.Unlock()
 		return 0, exhausted()
 	}
 	next := dst.indexLocked()
 	e.id, e.generation = next, dst.generation
 	dst.insertLocked(next, e)
 	r.removeLocked(id)
+	second.mu.Unlock()
+	first.mu.Unlock()
 	return next, nil
 }

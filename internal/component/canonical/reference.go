@@ -134,14 +134,16 @@ func InvalidateReference(r *Reference) {
 // movement with execution; outstanding lends prohibit both movement and drop.
 func (r *Resources) CheckOwn(t *ResourceType, id uint32) error {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	e, err := r.getLocked(t, id)
 	if err != nil {
+		r.mu.Unlock()
 		return err
 	}
 	if !e.owned || e.lends != 0 {
+		r.mu.Unlock()
 		return scalarTrap("resource is borrowed")
 	}
+	r.mu.Unlock()
 	return nil
 }
 

@@ -126,26 +126,30 @@ func (c *Caller) ReadMemory(index uint32, offset uint64, dst []byte) error {
 	if err := c.enter(); err != nil {
 		return err
 	}
-	defer c.mu.Unlock()
 	if c.instance == nil || uint64(index) >= uint64(len(c.instance.Memories)) {
+		c.mu.Unlock()
 		return ErrReference
 	}
 	if !c.instance.Memories[index].Read(offset, dst) {
+		c.mu.Unlock()
 		return &wasm.Trap{Code: wasm.TrapMemoryBounds}
 	}
+	c.mu.Unlock()
 	return nil
 }
 func (c *Caller) WriteMemory(index uint32, offset uint64, src []byte) error {
 	if err := c.enter(); err != nil {
 		return err
 	}
-	defer c.mu.Unlock()
 	if c.instance == nil || uint64(index) >= uint64(len(c.instance.Memories)) {
+		c.mu.Unlock()
 		return ErrReference
 	}
 	if !c.instance.Memories[index].Write(offset, src) {
+		c.mu.Unlock()
 		return &wasm.Trap{Code: wasm.TrapMemoryBounds}
 	}
+	c.mu.Unlock()
 	return nil
 }
 func (s *Store) Call(ctx context.Context, fn Extern, args []Value, options CallOptions) (CallResult, error) {

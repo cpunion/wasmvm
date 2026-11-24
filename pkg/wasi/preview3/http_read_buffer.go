@@ -18,11 +18,13 @@ type httpReadBuffer struct {
 
 func (b *httpReadBuffer) take(limit uint32) (component.ReadResult, bool) {
 	b.mu.Lock()
-	defer b.mu.Unlock()
 	if b.data == "" && !b.closed && !b.stopped && limit != 0 {
+		b.mu.Unlock()
 		return component.ReadResult{}, false
 	}
-	return b.takeLocked(limit), true
+	res := b.takeLocked(limit)
+	b.mu.Unlock()
+	return res, true
 }
 
 func (b *httpReadBuffer) takeLocked(limit uint32) component.ReadResult {
@@ -34,11 +36,12 @@ func (b *httpReadBuffer) takeLocked(limit uint32) component.ReadResult {
 
 func (b *httpReadBuffer) deliver(data string, closed bool, limit uint32) component.ReadResult {
 	b.mu.Lock()
-	defer b.mu.Unlock()
 	if !b.stopped {
 		b.data, b.closed = data, closed
 	}
-	return b.takeLocked(limit)
+	res := b.takeLocked(limit)
+	b.mu.Unlock()
+	return res
 }
 
 func (b *httpReadBuffer) close() {

@@ -164,26 +164,29 @@ func (p *HTTP) begin(ctx context.Context) error {
 		return err
 	}
 	p.mu.Lock()
-	defer p.mu.Unlock()
 	if p.closed {
+		p.mu.Unlock()
 		return wasm.ErrClosed
 	}
 	p.active.Add(1)
+	p.mu.Unlock()
 	return nil
 }
 func (p *HTTP) publish(c *component.Caller, e *httpEntry) (component.Value, error) {
 	p.mu.Lock()
-	defer p.mu.Unlock()
 	if p.closed {
+		p.mu.Unlock()
 		return component.Value{}, wasm.ErrClosed
 	}
 	if uint64(len(p.entries)) >= uint64(p.config.MaxResources) || p.next > 1<<32-1 {
+		p.mu.Unlock()
 		return component.Value{}, wasm.ErrLimit
 	}
 	id := uint32(p.next)
 	p.next++
 	v, err := c.NewResource(p.types[e.kind], id)
 	if err != nil {
+		p.mu.Unlock()
 		return component.Value{}, err
 	}
 	e.owner, e.id = p, id
@@ -194,6 +197,7 @@ func (p *HTTP) publish(c *component.Caller, e *httpEntry) (component.Value, erro
 	if e.message != nil {
 		e.message.body.acquire()
 	}
+	p.mu.Unlock()
 	return v, nil
 }
 func (p *HTTP) entry(c *component.Caller, v component.Value, kind string) (*httpEntry, error) {
@@ -202,14 +206,16 @@ func (p *HTTP) entry(c *component.Caller, v component.Value, kind string) (*http
 		return nil, err
 	}
 	p.mu.Lock()
-	defer p.mu.Unlock()
 	e := p.entries[id]
 	if p.closed {
+		p.mu.Unlock()
 		return nil, wasm.ErrClosed
 	}
 	if e == nil || e.dropped || e.kind != kind {
+		p.mu.Unlock()
 		return nil, vm.ErrReference
 	}
+	p.mu.Unlock()
 	return e, nil
 }
 func (p *HTTP) take(c *component.Caller, v component.Value, kind string, detachChildren bool) (*httpEntry, error) {
