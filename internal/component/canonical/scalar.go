@@ -137,6 +137,11 @@ func LowerScalar(value Scalar) (Slot, error) {
 }
 
 func LoadScalar(memory Memory, at uint64, kind model.Kind) (Scalar, error) {
+	var buf [8]byte
+	return loadScalarInto(memory, at, kind, &buf)
+}
+
+func loadScalarInto(memory Memory, at uint64, kind model.Kind, buf *[8]byte) (Scalar, error) {
 	size, flat, _, err := scalarInfo(kind)
 	if err != nil {
 		return Scalar{}, err
@@ -144,7 +149,7 @@ func LoadScalar(memory Memory, at uint64, kind model.Kind) (Scalar, error) {
 	if at%size != 0 || at > math.MaxUint64-size {
 		return Scalar{}, scalarTrap("unaligned or overflowing scalar")
 	}
-	var buf [8]byte
+	*buf = [8]byte{}
 	if err := memory.Read(at, buf[:size]); err != nil {
 		return Scalar{}, err
 	}
@@ -153,6 +158,11 @@ func LoadScalar(memory Memory, at uint64, kind model.Kind) (Scalar, error) {
 }
 
 func StoreScalar(memory Memory, at uint64, value Scalar) error {
+	var buf [8]byte
+	return storeScalarInto(memory, at, value, &buf)
+}
+
+func storeScalarInto(memory Memory, at uint64, value Scalar, buf *[8]byte) error {
 	slot, err := LowerScalar(value)
 	if err != nil {
 		return err
@@ -161,7 +171,6 @@ func StoreScalar(memory Memory, at uint64, value Scalar) error {
 	if at%size != 0 || at > math.MaxUint64-size {
 		return scalarTrap("unaligned or overflowing scalar")
 	}
-	var buf [8]byte
 	binary.LittleEndian.PutUint64(buf[:], slot.Bits)
 	return memory.Write(at, buf[:size])
 }

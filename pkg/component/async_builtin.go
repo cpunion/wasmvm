@@ -80,21 +80,12 @@ func (in *Instance) asyncValueBuiltin(caller *vm.Caller, n *namespace, p *valida
 			if e.typ.Kind == model.Stream {
 				length = args.at(2)
 			}
-			b, err := in.guestBuffer(c, n, p, ptr, length)
-			if err != nil {
+			if err := in.copyGuestBuiltin(c, n, p, e, ptr, length); err != nil {
 				return scalarStep{}, err
 			}
-			if err := e.copy(c, b); err != nil {
-				return scalarStep{}, err
-			}
-		}
-		result := func(current *vm.Caller) (uint64, error) {
-			e.waitable.syncWaiter = false
-			event, err := e.waitable.poll(current)
-			return uint64(event[2]), err
 		}
 		if e.waitable.pending {
-			bits, err := result(c)
+			bits, err := e.pollScalarResult(c)
 			return scalarStep{bits: bits}, err
 		}
 		if p.Async {
@@ -112,7 +103,7 @@ func (in *Instance) asyncValueBuiltin(caller *vm.Caller, n *namespace, p *valida
 		task.pendingCleanup = func() { e.waitable.syncWaiter = false }
 		return scalarStep{pending: &vm.HostSuspension{Ready: func() bool { return e.waitable.pending }, Resume: func(current *vm.Caller) (vm.HostResult, error) {
 			task.pendingCleanup = nil
-			bits, err := result(current)
+			bits, err := e.pollScalarResult(current)
 			return scalarHostResult(p.Signature, scalarStep{bits: bits}), err
 		}}}, nil
 	})
@@ -120,6 +111,22 @@ func (in *Instance) asyncValueBuiltin(caller *vm.Caller, n *namespace, p *valida
 		n.add(item{sort: model.CoreFunctionSort, core: fn})
 	}
 	return err
+}
+
+func (in *Instance) copyGuestBuiltin(c *vm.Caller, n *namespace, p *validate.CanonicalFunction, e *asyncEnd, ptr, length uint64) error {
+	frame := in.acquireFrame()
+	defer in.releaseCanonicalFrame(frame)
+	buf := &frame.hostReadStorage().buffer
+	if err := in.initGuestBuffer(buf, c, n, p, ptr, length); err != nil {
+		return err
+	}
+	return e.copyImmediate(c, buf)
+}
+
+func (e *asyncEnd) pollScalarResult(current *vm.Caller) (uint64, error) {
+	e.waitable.syncWaiter = false
+	event, err := e.waitable.poll(current)
+	return uint64(event[2]), err
 }
 func forwardEnds(c *vm.Caller, src, dst *asyncEnd) error {
 	if src.other == dst || src.other == nil || dst.other == nil {

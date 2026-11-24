@@ -31,12 +31,19 @@ func (t *componentTask) resumeHost(c *vm.Caller) error {
 	if !t.started {
 		h := t.host
 		if h == nil {
-			args, err := t.args(c)
-			if err != nil {
-				return err
+			var args []Value
+			if t.args != nil {
+				args, err = t.args(c)
+				if err != nil {
+					return err
+				}
+				t.args = nil
 			}
-			t.args = nil
-			h, err = t.hostFunction.hostCall(c, args)
+			var storage *resourceHostCall
+			if t.sourceRead != nil {
+				storage = &t.sourceRead.host
+			}
+			h, err = t.hostFunction.hostParameters(c, args, false, storage)
 			t.host = h
 			if err != nil {
 				return err
@@ -48,7 +55,14 @@ func (t *componentTask) resumeHost(c *vm.Caller) error {
 			t.work.control.bind(h.cancel)
 		}
 
-		p, err := h.start(c)
+		var p *HostCompletion
+		if t.work != nil && t.work.start != nil {
+			p, err = h.startWith(c, t.work.startWork)
+		} else if t.sourceRead != nil {
+			p, err = h.startWith(c, t.sourceRead.start)
+		} else {
+			p, err = h.start(c)
+		}
 		if err != nil {
 			return err
 		}
@@ -91,9 +105,11 @@ func (t *componentTask) resumeHost(c *vm.Caller) error {
 	if err != nil {
 		return err
 	}
-	value, err = h.accept(value)
-	if err != nil {
+	if err = h.acceptInto(value, &t.task.resultValue); err != nil {
 		return err
+	}
+	if value != nil {
+		value = &t.task.resultValue
 	}
 	t.task.result, t.task.resolved = value, true
 	if err := t.resolve(c, value, false); err != nil {

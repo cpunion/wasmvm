@@ -93,13 +93,45 @@ func (f *Function) Call(ctx context.Context, args []Value, options vm.CallOption
 type Caller struct{ *callerState }
 
 // Header copies keep the same guard while a callback's header and state share
-// one allocation. No public capability is reused for a later invocation.
+// one allocation. Slots are consumed once and never rebound for a later call.
 type callbackCallerAllocation struct {
 	caller Caller
 	state  callerState
 }
 
+type callbackCallerAllocator struct {
+	block *[16]callbackCallerAllocation
+	next  uint8
+}
+
+func (a *callbackCallerAllocator) new(core *vm.Caller, in *Instance, f *Function, prompt bool) *Caller {
+	var allocation *callbackCallerAllocation
+	if a.block == nil && a.next == 0 {
+		a.next = 16
+		allocation = &callbackCallerAllocation{}
+	} else {
+		if a.block == nil || a.next == uint8(len(a.block)) {
+			a.block = new([16]callbackCallerAllocation)
+			a.next = 0
+		}
+		allocation = &a.block[a.next]
+		a.next++
+	}
+	allocation.state.active = true
+	allocation.state.core = core
+	allocation.state.instance = in
+	allocation.state.function = f
+	allocation.state.prompt = prompt
+	allocation.caller.callerState = &allocation.state
+	return &allocation.caller
+}
+
+func (a *callbackCallerAllocator) clear() { a.block, a.next = nil, 0 }
+
 func newCallbackCaller(core *vm.Caller, in *Instance, f *Function, prompt bool) *Caller {
+	if in != nil {
+		return in.callers.new(core, in, f, prompt)
+	}
 	allocation := &callbackCallerAllocation{}
 	allocation.state.active = true
 	allocation.state.core = core
@@ -111,15 +143,31 @@ func newCallbackCaller(core *vm.Caller, in *Instance, f *Function, prompt bool) 
 }
 
 type callerState struct {
-	mu       sync.Mutex
-	active   bool
-	prompt   bool
-	core     *vm.Caller
-	instance *Instance
-	function *Function
-	created  []*Resource
-	reads    []*pendingHostRead
-	ctx      context.Context
+	mu            sync.Mutex
+	active        bool
+	prompt        bool
+	core          *vm.Caller
+	instance      *Instance
+	function      *Function
+	inlineCreated [3]*Resource
+	inlineReads   [1]*pendingHostRead
+	created       []*Resource
+	reads         []*pendingHostRead
+	ctx           context.Context
+}
+
+func (c *callerState) addCreated(ref *Resource) {
+	if c.created == nil {
+		c.created = c.inlineCreated[:0]
+	}
+	c.created = append(c.created, ref)
+}
+
+func (c *callerState) addRead(r *pendingHostRead) {
+	if c.reads == nil {
+		c.reads = c.inlineReads[:0]
+	}
+	c.reads = append(c.reads, r)
 }
 
 // FunctionInfo returns this callback's immutable, instance-bound signature.
@@ -199,7 +247,8 @@ func (f *Function) callWithParameters(core *vm.Caller, args []Value, borrowed bo
 		return nil, err
 	}
 	if borrowResult {
-		err = h.acceptInto(result, &frame.hostValue)
+		frame.cloneBuf = frame.cloneValues[:0]
+		err = h.acceptIntoScratch(result, &frame.hostValue, &frame.cloneBuf)
 		if err != nil {
 			return nil, err
 		}
@@ -260,57 +309,71 @@ func (m memory) WriteString(at uint64, data string) error {
 type resourceCodecState struct {
 	codec     canonical.Codec
 	resources resourceCodec
+	memory    memory
 }
 
-// Synchronous resource-free transfers can use fresh caller-owned codec state.
+func (in *Instance) initResourceCodecState(state *resourceCodecState, caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, realloc bool) *canonical.Codec {
+	codec := &state.codec
+	if n != nil && (len(n.resources) != 0 || n.handles != nil) {
+		state.resources = resourceCodec{in: in, n: n, core: caller}
+		codec.Resources = &state.resources
+	}
+	in.configureCodecMemory(codec, &state.memory, caller, n, plan, realloc)
+	return codec
+}
+
+// Synchronous transfers can use fresh caller-owned codec state from a frame.
 // Endpoints retain their immutable options, never this session-bound scratch.
-func (in *Instance) initBufferCodec(codec *canonical.Codec, caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, element *model.Type) *canonical.Codec {
+func (in *Instance) initBufferCodec(state *resourceCodecState, caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, element *model.Type) *canonical.Codec {
+	if state == nil {
+		state = &resourceCodecState{}
+	}
 	if element != nil {
 		switch element.Kind {
 		case model.Bool, model.S8, model.U8, model.S16, model.U16, model.S32, model.U32,
 			model.S64, model.U64, model.F32, model.F64, model.Char, model.String, model.Flags, model.Enum:
+			// Only strings among these leaf elements can need canonical reallocation.
+			in.configureCodecMemory(&state.codec, &state.memory, caller, n, plan, element.Kind == model.String)
+			return &state.codec
 		default:
-			return in.codec(caller, n, plan)
+			return in.initResourceCodecState(state, caller, n, plan, true)
 		}
 	}
-	if codec == nil {
-		codec = &canonical.Codec{}
-	}
-	// Only strings among these leaf elements can need canonical reallocation.
-	in.configureCodec(codec, caller, n, plan, element != nil && element.Kind == model.String)
-	return codec
+	in.configureCodecMemory(&state.codec, &state.memory, caller, n, plan, false)
+	return &state.codec
 }
 
 func (in *Instance) codec(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) *canonical.Codec {
-	var codec *canonical.Codec
-	if n != nil && (len(n.resources) != 0 || n.handles != nil) {
-		state := &resourceCodecState{}
-		codec = &state.codec
-		state.resources = resourceCodec{in: in, n: n, core: caller}
-		codec.Resources = &state.resources
-	} else {
-		codec = &canonical.Codec{}
-	}
-	in.configureCodec(codec, caller, n, plan, true)
-	return codec
+	return in.initResourceCodecState(&resourceCodecState{}, caller, n, plan, true)
 }
 
 func (in *Instance) configureCodec(codec *canonical.Codec, caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, realloc bool) {
-	in.configureCanonicalCodec(codec, caller, n, plan, realloc, nil)
+	in.configureCodecMemory(codec, nil, caller, n, plan, realloc)
+}
+
+func (in *Instance) configureCodecMemory(codec *canonical.Codec, mem *memory, caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, realloc bool) {
+	in.configureCanonicalCodecMemory(codec, mem, caller, n, plan, realloc, nil)
 }
 
 func (in *Instance) configureCanonicalCodec(codec *canonical.Codec, caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, realloc bool, frame *canonicalFrame) {
+	in.configureCanonicalCodecMemory(codec, nil, caller, n, plan, realloc, frame)
+}
+
+func (in *Instance) configureCanonicalCodecMemory(codec *canonical.Codec, mem *memory, caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction, realloc bool, frame *canonicalFrame) {
 	transfer := &codec.Transfer
 	*transfer = canonical.Transfer{Context: caller.Context(), MaxBytes: in.config.MaxBytes}
 	if plan != nil {
 		transfer.Memory64, transfer.Encoding = plan.Memory64, plan.Encoding
 		if plan.Memory != nil {
 			view := memory{caller: caller, extern: &n.items[model.CoreMemorySort][*plan.Memory].core}
-			if frame == nil {
-				transfer.Memory = view
-			} else {
+			if frame != nil {
 				frame.memory = view
 				transfer.Memory = &frame.memory
+			} else if mem != nil {
+				*mem = view
+				transfer.Memory = mem
+			} else {
+				transfer.Memory = view
 			}
 		}
 		if realloc && plan.Realloc != nil {
@@ -342,7 +405,9 @@ func canonicalReallocate(caller *vm.Caller, n *namespace, plan *validate.Canonic
 	if plan.Memory64 {
 		kind = wasm.I64
 	}
-	result, err := caller.Call(fn, vmValues([]canonical.Slot{{Type: kind, Bits: old}, {Type: kind, Bits: size}, {Type: kind, Bits: alignment}, {Type: kind, Bits: next}}))
+	var argBuf [4]vm.Value
+	slots := [4]canonical.Slot{{Type: kind, Bits: old}, {Type: kind, Bits: size}, {Type: kind, Bits: alignment}, {Type: kind, Bits: next}}
+	result, err := caller.Call(fn, vmValuesInto(slots[:], argBuf[:0]))
 	if err != nil {
 		return 0, err
 	}
@@ -366,20 +431,26 @@ func (in *Instance) canonicalLayouts(n *namespace, plan *validate.CanonicalFunct
 }
 
 func vmValues(slots []canonical.Slot) []vm.Value {
-	values := make([]vm.Value, len(slots))
-	for i, slot := range slots {
+	if len(slots) == 0 {
+		return nil
+	}
+	return vmValuesInto(slots, make([]vm.Value, 0, len(slots)))
+}
+
+func vmValuesInto(slots []canonical.Slot, dst []vm.Value) []vm.Value {
+	for _, slot := range slots {
 		switch slot.Type {
 		case wasm.I32:
-			values[i] = vm.I32(uint32(slot.Bits))
+			dst = append(dst, vm.I32(uint32(slot.Bits)))
 		case wasm.I64:
-			values[i] = vm.I64(slot.Bits)
+			dst = append(dst, vm.I64(slot.Bits))
 		case wasm.F32:
-			values[i] = vm.F32Bits(uint32(slot.Bits))
+			dst = append(dst, vm.F32Bits(uint32(slot.Bits)))
 		case wasm.F64:
-			values[i] = vm.F64Bits(slot.Bits)
+			dst = append(dst, vm.F64Bits(slot.Bits))
 		}
 	}
-	return values
+	return dst
 }
 
 func flatValues(values []vm.Value) ([]canonical.Slot, error) {
@@ -616,11 +687,14 @@ func (in *Instance) beginAsyncCall(c *vm.Caller, f *Function, plan *validate.Can
 	if n != nil && (n.failed || n.blocked) {
 		return nil, wasm.ErrTrap
 	}
-	codec := in.codec(c, n, plan)
+	frame := in.acquireCanonicalFrame(c, n, plan)
+	codec := &frame.state.codec
 	for i, p := range f.typ.Parameters {
 		if err := codec.Validate(p.Type, args[i]); err != nil {
+			in.releaseCanonicalFrame(frame)
 			return nil, err
 		}
 	}
+	in.releaseCanonicalFrame(frame)
 	return f.start(c, func(*vm.Caller) ([]Value, error) { return args, nil }, nil)
 }

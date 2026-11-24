@@ -65,6 +65,15 @@ func (p *ValuePlan) Clone(c *Codec, v Value) (Value, error) {
 	return c.clone(p.typ, v)
 }
 
+// CloneScratch validates and clones into private invocation-owned scratch when
+// space permits. The caller must ensure the cloned value never outlives scratch.
+func (p *ValuePlan) CloneScratch(c *Codec, v Value, scratch *[]Value) (Value, error) {
+	if err := p.validate(c, v); err != nil {
+		return Value{}, err
+	}
+	return c.copyValue(p.typ, v, true, scratch)
+}
+
 // RetainBorrowed validates and charges the same logical retention as Clone,
 // without allocating aggregate snapshots. Its caller owns normalized private
 // carriers and must not expose them to callbacks that retain aggregate slices.
@@ -72,7 +81,7 @@ func (p *ValuePlan) RetainBorrowed(c *Codec, v Value) error {
 	if err := p.validate(c, v); err != nil {
 		return err
 	}
-	_, err := c.copyValue(p.typ, v, false)
+	_, err := c.copyValue(p.typ, v, false, nil)
 	return err
 }
 

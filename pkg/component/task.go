@@ -11,13 +11,14 @@ import (
 // One implicit thread belongs to each active canonical lift. The existing
 // Store session serializes execution; nested stackful calls save this state.
 type callTask struct {
-	plan       *validate.CanonicalFunction
-	parameters *canonical.Codec
-	returned   *canonical.Codec
-	result     *Value
-	resolved   bool
-	storage    [2]uint64
-	runtime    *componentTask
+	plan        *validate.CanonicalFunction
+	parameters  *canonical.Codec
+	returned    *canonical.Codec
+	resultValue Value
+	result      *Value
+	resolved    bool
+	storage     [2]uint64
+	runtime     *componentTask
 }
 
 func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.CanonicalFunction) error {
@@ -54,7 +55,12 @@ func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.
 		if !equal {
 			return wasm.ErrTrap
 		}
-		codec := in.codec(c, n, plan)
+		var codec *canonical.Codec
+		if task.runtime != nil && task.runtime.codecs != nil {
+			codec = in.initResourceCodecState(&task.runtime.codecs.result, c, n, plan, false)
+		} else {
+			codec = in.initResourceCodecState(&resourceCodecState{}, c, n, plan, false)
+		}
 		if r, ok := codec.Resources.(*resourceCodec); ok {
 			// Cleanup happens after this builtin's Caller expires. Retain the
 			// outer canonical call's still-active session capability instead.

@@ -29,6 +29,7 @@ type Transfer struct {
 	MaxBytes uint64
 	Realloc  func(old, oldSize, alignment, newSize uint64) (uint64, error)
 	used     uint64
+	scratch  [16]byte
 }
 
 func (c *Transfer) check() error {
@@ -98,8 +99,8 @@ func (c *Transfer) LoadString(at uint64) (string, error) {
 // complete range and keeps its capability for the copy; no backing view escapes.
 // Shared adapters retain byte-wise synchronization, not descriptor atomicity.
 func (c *Transfer) loadPair(at uint64) (uint64, uint64, error) {
-	var pair [16]byte
-	if err := c.Memory.Read(at, pair[:2*c.pointerSize()]); err != nil {
+	pair := c.scratch[:2*c.pointerSize()]
+	if err := c.Memory.Read(at, pair); err != nil {
 		return 0, 0, err
 	}
 	if c.Memory64 {
@@ -109,7 +110,7 @@ func (c *Transfer) loadPair(at uint64) (uint64, uint64, error) {
 }
 
 func (c *Transfer) storePair(at, ptr, n uint64) error {
-	var pair [16]byte
+	pair := c.scratch[:2*c.pointerSize()]
 	if c.Memory64 {
 		binary.LittleEndian.PutUint64(pair[:], ptr)
 		binary.LittleEndian.PutUint64(pair[8:], n)
@@ -117,7 +118,7 @@ func (c *Transfer) storePair(at, ptr, n uint64) error {
 		binary.LittleEndian.PutUint32(pair[:], uint32(ptr))
 		binary.LittleEndian.PutUint32(pair[4:], uint32(n))
 	}
-	return c.Memory.Write(at, pair[:2*c.pointerSize()])
+	return c.Memory.Write(at, pair)
 }
 
 func (c *Transfer) LiftString(at, length uint64) (string, error) {

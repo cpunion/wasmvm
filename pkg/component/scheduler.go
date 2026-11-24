@@ -21,6 +21,7 @@ type componentTask struct {
 	in                               *Instance
 	n                                *namespace
 	task                             callTask
+	codecs                           *guestTaskCodecs
 	entry                            vm.Extern
 	args                             taskArguments
 	onResolve                        taskResolution
@@ -30,6 +31,7 @@ type componentTask struct {
 	hostFunction                     *Function
 	host                             *hostCall
 	work                             *workState
+	sourceRead                       *sourceReadTask
 	started, running, exited         bool
 	cancelRequested, cancelDelivered bool
 	waitingEnter                     bool
@@ -76,15 +78,46 @@ func (t *componentTask) canEnter() bool {
 	return true
 }
 
+type guestTaskCodecs struct {
+	param  resourceCodecState
+	result resourceCodecState
+}
+
+type guestComponentTask struct {
+	task   componentTask
+	codecs guestTaskCodecs
+}
+
 func (in *Instance) makeTask(c *vm.Caller, n *namespace, plan *validate.CanonicalFunction, entry vm.Extern, args taskArguments, resolve taskResolution) (*componentTask, error) {
 	if n.failed || n.blocked {
 		return nil, wasm.ErrTrap
 	}
-	s := in.scheduler()
-	if s.live >= in.config.MaxTasks {
+	if in.scheduler().live >= in.config.MaxTasks {
 		return nil, wasm.ErrLimit
 	}
-	t := &componentTask{in: in, n: n, entry: entry, args: args, onResolve: resolve}
+	var t *componentTask
+	if plan != nil {
+		alloc := &guestComponentTask{}
+		t = &alloc.task
+		t.codecs = &alloc.codecs
+	} else {
+		t = &componentTask{}
+	}
+	if err := in.attachTask(t, n, plan, entry, args, resolve); err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
+func (in *Instance) attachTask(t *componentTask, n *namespace, plan *validate.CanonicalFunction, entry vm.Extern, args taskArguments, resolve taskResolution) error {
+	if n.failed || n.blocked {
+		return wasm.ErrTrap
+	}
+	s := in.scheduler()
+	if s.live >= in.config.MaxTasks {
+		return wasm.ErrLimit
+	}
+	t.in, t.n, t.entry, t.args, t.onResolve = in, n, entry, args, resolve
 	t.task = callTask{plan: plan, runtime: t}
 	if !t.canEnter() || n.waitingEnter != 0 {
 		t.waitingEnter = true
@@ -98,7 +131,7 @@ func (in *Instance) makeTask(c *vm.Caller, n *namespace, plan *validate.Canonica
 	}
 	s.tail = t
 	s.live++
-	return t, nil
+	return nil
 }
 
 func (in *Instance) startTask(c *vm.Caller, n *namespace, plan *validate.CanonicalFunction, entry vm.Extern, args taskArguments, resolve taskResolution) (*componentTask, error) {
@@ -144,6 +177,15 @@ func bindResourceCaller(codec *canonical.Codec, c *vm.Caller) {
 	}
 }
 func (t *componentTask) resolve(c *vm.Caller, value *Value, cancelled bool) error {
+	if t.work != nil {
+		if t.work.done == nil {
+			return nil
+		}
+		return t.host.invokeDone(c, t.work.done, cancelled)
+	}
+	if t.sourceRead != nil {
+		return t.sourceRead.resolve(c, value, cancelled)
+	}
 	if t.onResolve != nil {
 		return t.onResolve(c, value, cancelled)
 	}
@@ -202,6 +244,10 @@ func (t *componentTask) finish(c *vm.Caller, failed error) error {
 	if pending != nil {
 		guard.run(pending)
 	}
+	if sr := t.sourceRead; sr != nil && !sr.aborted {
+		guard.run(sr.cleanup)
+	}
+	t.sourceRead = nil
 	if host != nil {
 		guard.run(func() { failed = host.finish(c, failed == nil, failed) })
 	}
@@ -293,7 +339,7 @@ func (t *componentTask) resume(c *vm.Caller) (err error) {
 		}
 		t.args = nil
 		t.started = true
-		codec := t.in.codec(c, t.n, plan)
+		codec := t.in.initResourceCodecState(&t.codecs.param, c, t.n, plan, true)
 		t.task.parameters = codec
 		for i, p := range plan.Type.Parameters {
 			if err = codec.Validate(p.Type, args[i]); err != nil {
@@ -309,7 +355,8 @@ func (t *componentTask) resume(c *vm.Caller) (err error) {
 		if failed != nil {
 			return failed
 		}
-		t.core, err = c.Start(t.entry, vmValues(slots))
+		var argBuf [canonical.MaxFlatParams]vm.Value
+		t.core, err = c.Start(t.entry, vmValuesInto(slots, argBuf[:0]))
 		if err != nil {
 			return err
 		}
@@ -328,7 +375,8 @@ func (t *componentTask) resume(c *vm.Caller) (err error) {
 			}
 		}
 		t.leaveWait()
-		t.core, err = c.Start(t.n.items[model.CoreFunctionSort][*plan.Callback].core, []vm.Value{vm.I32(event[0]), vm.I32(event[1]), vm.I32(event[2])})
+		eventArgs := [3]vm.Value{vm.I32(event[0]), vm.I32(event[1]), vm.I32(event[2])}
+		t.core, err = c.Start(t.n.items[model.CoreFunctionSort][*plan.Callback].core, eventArgs[:])
 		if err != nil {
 			return err
 		}
@@ -344,7 +392,7 @@ func (t *componentTask) resume(c *vm.Caller) (err error) {
 	t.core = nil
 	if !plan.Async {
 		codec := t.task.parameters
-		codec.Transfer = t.in.codec(c, t.n, plan).Transfer
+		t.in.configureCodecMemory(codec, &t.codecs.param.memory, c, t.n, plan, false)
 		bindResourceCaller(codec, c)
 		t.task.result, err = liftResult(codec, plan, called.Values)
 		if err != nil {

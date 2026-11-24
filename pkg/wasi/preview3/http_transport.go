@@ -170,6 +170,9 @@ func httpTransportError(err error, fallback string) error {
 	return e
 }
 func (p *HTTP) fieldsFromHeader(header http.Header) (*host.HTTPFields, error) {
+	if len(header) == 0 {
+		return host.NewHTTPFields(p.fields, nil, true)
+	}
 	if uint64(len(header)) > uint64(p.config.MaxHeaderFields) {
 		return nil, wasm.ErrLimit
 	}
@@ -190,12 +193,13 @@ func (p *HTTP) fieldsFromHeader(header http.Header) (*host.HTTPFields, error) {
 	return host.NewHTTPFields(p.fields, fields, true)
 }
 func httpHeader(fields *host.HTTPFields) http.Header {
-	out := http.Header{}
-	if fields != nil {
-		for _, field := range fields.Entries() {
-			out.Add(field.Name, field.Value)
-		}
+	if fields == nil {
+		return http.Header{}
 	}
+	out := make(http.Header, fields.Len())
+	fields.ForEach(func(field host.HTTPField) {
+		out.Add(field.Name, field.Value)
+	})
 	return out
 }
 func httpContentLength(fields *host.HTTPFields) (*uint64, error) {

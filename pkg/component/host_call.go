@@ -12,6 +12,8 @@ type hostCall struct {
 	function      *Function
 	codec         canonical.Codec
 	args          []Value
+	inlineCreated [3]*Resource
+	inlineReads   [1]*pendingHostRead
 	created       []*Resource
 	reads         []*pendingHostRead
 	ctx           context.Context
@@ -70,6 +72,8 @@ func (f *Function) hostParameters(core *vm.Caller, args []Value, borrowed bool, 
 	h.limit()
 	if borrowed {
 		h.args = args
+	} else if len(args) == 0 {
+		h.args = nil
 	} else {
 		h.args = make([]Value, len(args))
 	}
@@ -99,13 +103,44 @@ func (h *hostCall) expire(c *Caller) {
 	c.mu.Lock()
 	c.active = false
 	c.mu.Unlock()
-	h.created = append(h.created, c.created...)
-	c.created = nil
-	h.reads = append(h.reads, c.reads...)
-	c.reads = nil
+	if len(c.created) != 0 {
+		if len(h.created) == 0 && len(c.created) > len(h.inlineCreated) {
+			h.created = c.created
+		} else {
+			if h.created == nil {
+				h.created = h.inlineCreated[:0]
+			}
+			h.created = append(h.created, c.created...)
+		}
+		c.created = nil
+		c.inlineCreated = [3]*Resource{}
+	}
+	if len(c.reads) != 0 {
+		if len(h.reads) == 0 && len(c.reads) > len(h.inlineReads) {
+			h.reads = c.reads
+		} else {
+			if h.reads == nil {
+				h.reads = h.inlineReads[:0]
+			}
+			h.reads = append(h.reads, c.reads...)
+		}
+		c.reads = nil
+		c.inlineReads = [1]*pendingHostRead{}
+	}
 }
 func (h *hostCall) invoke(core *vm.Caller, fn func(*Caller) (*Value, error)) (*Value, error) {
 	c := h.caller(core)
+	defer h.expire(c)
+	return fn(c)
+}
+func (h *hostCall) invokeDone(core *vm.Caller, done func(*Caller, bool) error, cancelled bool) error {
+	c := h.caller(core)
+	defer h.expire(c)
+	return done(c, cancelled)
+}
+func (h *hostCall) startWith(core *vm.Caller, fn func(*Caller) (*HostCompletion, error)) (*HostCompletion, error) {
+	c := h.caller(core)
+	c.ctx = h.ctx
 	defer h.expire(c)
 	return fn(c)
 }
@@ -124,6 +159,10 @@ func (h *hostCall) accept(result *Value) (*Value, error) {
 }
 
 func (h *hostCall) acceptInto(result, accepted *Value) error {
+	return h.acceptIntoScratch(result, accepted, nil)
+}
+
+func (h *hostCall) acceptIntoScratch(result, accepted *Value, scratch *[]Value) error {
 	h.limit()
 	defer h.account()
 	if (result == nil) != (h.function.typ.Result == nil) {
@@ -132,7 +171,7 @@ func (h *hostCall) acceptInto(result, accepted *Value) error {
 	if result == nil {
 		return nil
 	}
-	v, err := h.function.valuePlans().result.Clone(&h.codec, *result)
+	v, err := h.function.valuePlans().result.CloneScratch(&h.codec, *result, scratch)
 	if err != nil {
 		return err
 	}
@@ -152,6 +191,8 @@ func (h *hostCall) finish(core *vm.Caller, complete bool, err error) error {
 		in.heldValues -= h.values
 		in.heldBytes -= h.bytes
 		h.values, h.bytes = 0, 0
+		h.inlineCreated = [3]*Resource{}
+		h.inlineReads = [1]*pendingHostRead{}
 	}()
 	if h.cancel != nil {
 		h.cancel()

@@ -68,12 +68,16 @@ func httpCopyOptions(options [3]*uint64) [3]*uint64 {
 func (p *HTTP) execute(c *component.Caller, key string, args []component.Value) (*component.Value, error) {
 	switch key {
 	case "[constructor]fields":
-		fields, err := host.NewHTTPFields(p.fields, nil, false)
+		alloc := &httpFieldsEntry{entry: httpEntry{kind: "fields"}}
+		if err := host.InitHTTPFields(&alloc.fields, p.fields, nil, false); err != nil {
+			return nil, err
+		}
+		alloc.entry.fields = &alloc.fields
+		v, err := p.publish(c, &alloc.entry)
 		if err != nil {
 			return nil, err
 		}
-		v, err := p.publish(c, &httpEntry{kind: "fields", fields: fields})
-		return &v, err
+		return &v, nil
 	case "[static]fields.from-list":
 		if uint64(len(args[0].Elements)) > uint64(p.config.MaxHeaderFields) {
 			v := httpHeaderFailure(wasm.ErrLimit)
@@ -226,7 +230,11 @@ func (p *HTTP) execute(c *component.Caller, key string, args []component.Value) 
 	default:
 		return nil, vm.ErrType
 	}
-	return &v, err
+	if err == nil && v.Bits == 0 && v.Case == 0 && v.Text == "" && v.Elements == nil && v.Resource == nil {
+		return &zeroHTTPValue, nil
+	}
+	out := v
+	return &out, err
 }
 func (p *HTTP) fieldMethod(c *component.Caller, e *httpEntry, name string, args []component.Value) (*component.Value, error) {
 	var v component.Value
@@ -251,13 +259,15 @@ func (p *HTTP) fieldMethod(c *component.Caller, e *httpEntry, name string, args 
 				v = httpOK(httpStringsValue(values))
 			}
 		} else {
+			var single [1]string
 			var values []string
 			if name == "append" {
 				text, failed := args[1].ByteString()
 				if failed != nil {
 					return nil, failed
 				}
-				values = []string{text}
+				single[0] = text
+				values = single[:]
 			} else if name == "set" {
 				for _, value := range args[1].Elements {
 					text, failed := value.ByteString()
@@ -275,5 +285,9 @@ func (p *HTTP) fieldMethod(c *component.Caller, e *httpEntry, name string, args 
 	default:
 		return nil, vm.ErrType
 	}
-	return &v, nil
+	if v.Bits == 0 && v.Case == 0 && v.Text == "" && v.Elements == nil && v.Resource == nil {
+		return &zeroHTTPValue, nil
+	}
+	out := v
+	return &out, nil
 }

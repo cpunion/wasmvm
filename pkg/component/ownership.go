@@ -14,15 +14,31 @@ import (
 type Resource = canonical.Reference
 
 type resourceCodec struct {
-	in      *Instance
-	core    *vm.Caller
-	n       *namespace
-	scope   *canonical.BorrowScope
-	created []*Resource
-	escaped []*Resource
-	seen    referenceSet
-	borrows uint32
-	lowered []ownedHandle
+	in            *Instance
+	core          *vm.Caller
+	n             *namespace
+	scope         *canonical.BorrowScope
+	inlineCreated [6]*Resource
+	inlineLowered [2]ownedHandle
+	created       []*Resource
+	escaped       []*Resource
+	seen          referenceSet
+	borrows       uint32
+	lowered       []ownedHandle
+}
+
+func (r *resourceCodec) addCreated(ref *Resource) {
+	if r.created == nil {
+		r.created = r.inlineCreated[:0]
+	}
+	r.created = append(r.created, ref)
+}
+
+func (r *resourceCodec) addLowered(h ownedHandle) {
+	if r.lowered == nil {
+		r.lowered = r.inlineLowered[:0]
+	}
+	r.lowered = append(r.lowered, h)
 }
 
 type ownedHandle struct {
@@ -43,7 +59,7 @@ func (r *resourceCodec) declaration(t *model.Type) (*resourceType, error) {
 
 func (r *resourceCodec) borrowScope() *canonical.BorrowScope {
 	if r.scope == nil {
-		r.scope = canonical.NewBorrowScope(r.in.config.MaxResources)
+		r.scope = r.in.borrowScopes.New(r.in.config.MaxResources)
 	}
 	return r.scope
 }
@@ -107,7 +123,7 @@ func (r *resourceCodec) Lift(t *model.Type, id uint32) (Value, error) {
 		return Value{}, err
 	}
 	ref := r.in.references.New(r.in.hostResources, rt.identity, id, rt, nil)
-	r.created = append(r.created, ref)
+	r.addCreated(ref)
 	return Value{Resource: ref}, nil
 }
 
@@ -119,7 +135,7 @@ func (r *resourceCodec) Lower(t *model.Type, v Value) (uint64, error) {
 	if t.Kind == model.ErrorContext {
 		id, err := r.n.handles.AddErrorContext(v)
 		if err == nil {
-			r.lowered = append(r.lowered, ownedHandle{table: r.n.handles, id: id, generation: r.n.handles.EntryGeneration(id)})
+			r.addLowered(ownedHandle{table: r.n.handles, id: id, generation: r.n.handles.EntryGeneration(id)})
 		}
 		return uint64(id), err
 	}
@@ -145,7 +161,7 @@ func (r *resourceCodec) Lower(t *model.Type, v Value) (uint64, error) {
 	canonical.InvalidateReference(v.Resource)
 	id, err = r.n.handles.New(rt.identity, rep)
 	if err == nil {
-		r.lowered = append(r.lowered, ownedHandle{table: r.n.handles, rt: rt, id: id, generation: r.n.handles.EntryGeneration(id)})
+		r.addLowered(ownedHandle{table: r.n.handles, rt: rt, id: id, generation: r.n.handles.EntryGeneration(id)})
 	}
 	return uint64(id), err
 }
@@ -180,7 +196,7 @@ func (r *resourceCodec) Accept(t *model.Type, v Value, commit bool) (Value, erro
 	if err != nil {
 		return Value{}, err
 	}
-	r.created = append(r.created, ref)
+	r.addCreated(ref)
 	return Value{Resource: ref}, nil
 }
 
@@ -188,6 +204,10 @@ func (r *resourceCodec) Finish(err error) error {
 	scope, created, lowered, escaped := r.scope, r.created, r.lowered, r.escaped
 	r.scope, r.created, r.lowered, r.escaped = nil, nil, nil, nil
 	r.seen = referenceSet{}
+	defer func() {
+		r.inlineCreated = [6]*Resource{}
+		r.inlineLowered = [2]ownedHandle{}
+	}()
 	guard := cleanupGuard{}
 	if scope != nil {
 		if ended := scope.End(); err == nil {
@@ -347,28 +367,35 @@ func (r *resourceCodec) ParametersAccepted() {
 	r.escaped = r.created
 }
 
-// Most ownership transactions contain one capability. Keep that identity in
-// the transaction itself; additional identities retain the ordinary map and
+// Most ownership transactions contain a few capabilities. Keep up to four
+// inline in the transaction; additional identities retain the ordinary map and
 // its duplicate-own / mixed-own-borrow checks. Repeated borrows remain legal.
+type referenceEntry struct {
+	key  any
+	kind model.Kind
+}
+
 type referenceSet struct {
-	first any
-	kind  model.Kind
-	rest  map[any]model.Kind
+	inline [6]referenceEntry
+	count  uint8
+	rest   map[any]model.Kind
 }
 
 func (s *referenceSet) add(key any, kind model.Kind) bool {
-	if s.first == nil {
-		s.first, s.kind = key, kind
+	for i := range int(s.count) {
+		if s.inline[i].key == key {
+			return s.inline[i].kind == model.Borrow && kind == model.Borrow
+		}
+	}
+	if s.rest != nil {
+		if previous := s.rest[key]; previous != 0 {
+			return previous == model.Borrow && kind == model.Borrow
+		}
+	}
+	if int(s.count) < len(s.inline) {
+		s.inline[s.count] = referenceEntry{key: key, kind: kind}
+		s.count++
 		return true
-	}
-	var previous model.Kind
-	if s.first == key {
-		previous = s.kind
-	} else if s.rest != nil {
-		previous = s.rest[key]
-	}
-	if previous != 0 {
-		return previous == model.Borrow && kind == model.Borrow
 	}
 	if s.rest == nil {
 		s.rest = map[any]model.Kind{}

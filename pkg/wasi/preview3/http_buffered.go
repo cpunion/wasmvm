@@ -6,6 +6,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/cpunion/wasmvm/internal/wasi/host"
 	"github.com/cpunion/wasmvm/pkg/component"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -22,11 +23,18 @@ type BufferedResponse struct {
 }
 
 type httpCollector struct {
-	limit   uint64
-	data    []byte
-	fuel    uint64
-	failure error
-	body    *httpBody
+	reply       httpReply
+	limit       uint64
+	data        []byte
+	fuel        uint64
+	failure     error
+	body        *httpBody
+	statusCode  int
+	header      http.Header
+	trailer     http.Header
+	expected    *uint64
+	sizeFailure string
+	reserved    uint32
 }
 
 // Retain the collected response through guest task cleanup. After that join,
@@ -46,7 +54,8 @@ func (p *HTTP) CallIncomingBuffered(ctx context.Context, in *component.Instance,
 	if maxBodyBytes == 0 || maxBodyBytes > uint64(^uint(0)>>1) {
 		return nil, wasm.ErrLimit
 	}
-	return p.collectIncoming(ctx, in, request, options, &httpCollector{limit: maxBodyBytes})
+	collector := httpCollector{limit: maxBodyBytes}
+	return p.collectIncoming(ctx, in, request, options, &collector)
 }
 
 // CallIncomingInto consumes and joins the complete response using dst as its
@@ -60,27 +69,47 @@ func (p *HTTP) CallIncomingInto(ctx context.Context, in *component.Instance, req
 	if len(dst) == 0 {
 		return nil, wasm.ErrLimit
 	}
-	return p.collectIncoming(ctx, in, request, options, &httpCollector{limit: uint64(len(dst)), data: dst[:0:len(dst)]})
+	collector := httpCollector{limit: uint64(len(dst)), data: dst[:0:len(dst)]}
+	return p.collectIncoming(ctx, in, request, options, &collector)
 }
 
 func (p *HTTP) collectIncoming(ctx context.Context, in *component.Instance, request *http.Request, options component.CallOptions, collector *httpCollector) (*BufferedResponse, error) {
-	response, err := p.callIncoming(ctx, in, request, options, collector)
-	if err != nil {
+	if _, err := p.callIncoming(ctx, in, request, options, collector); err != nil {
 		return nil, err
 	}
-	if err := response.Body.Close(); err != nil {
-		return nil, err
-	}
-	return &BufferedResponse{StatusCode: response.StatusCode, Header: response.Header, Trailer: response.Trailer, Body: collector.data, FuelRemaining: collector.fuel}, nil
+	return &BufferedResponse{StatusCode: collector.statusCode, Header: collector.header, Trailer: collector.trailer, Body: collector.data, FuelRemaining: collector.fuel}, nil
 }
 
-func (b *httpBody) collect(c *component.Caller, trailer http.Header, expected *uint64, limit uint64, storage []byte) (data []byte, err error) {
-	data = storage[:0:cap(storage)]
-	if expected != nil && *expected > limit {
+func (collector *httpCollector) destination(count uint32) ([]byte, error) {
+	remaining := collector.limit - uint64(len(collector.data))
+	if uint64(count) > remaining {
 		return nil, wasm.ErrLimit
 	}
+	size := uint64(len(collector.data)) + uint64(count)
+	if collector.expected != nil && size > *collector.expected {
+		return nil, httpSizeError(collector.sizeFailure, size)
+	}
+	if size > uint64(cap(collector.data)) {
+		capacity := min(max(size, 2*uint64(cap(collector.data))), collector.limit)
+		grown := make([]byte, len(collector.data), int(capacity))
+		// A single read may accept several guest writes before its event
+		// is observed. Preserve the current batch as well as prior reads.
+		copy(grown[:len(collector.data)+int(collector.reserved)], collector.data[:len(collector.data)+int(collector.reserved)])
+		collector.data = grown
+	}
+	collector.reserved = count
+	return collector.data[len(collector.data):int(size)], nil
+}
+
+func (collector *httpCollector) collectBody(c *component.Caller, b *httpBody, expected *uint64) (err error) {
+	collector.data = collector.data[:0:cap(collector.data)]
+	collector.expected = expected
+	collector.sizeFailure = b.sizeFailure
+	if expected != nil && *expected > collector.limit {
+		return wasm.ErrLimit
+	}
 	if err := b.watchTrailers(c); err != nil {
-		return nil, err
+		return err
 	}
 	b.mu.Lock()
 	original, anchor, external := b.original, b.anchor, b.reader != nil
@@ -103,72 +132,52 @@ func (b *httpBody) collect(c *component.Caller, trailer http.Header, expected *u
 	} else if external {
 		value, failed := b.byteSource(c, component.ByteStreamType())
 		if failed != nil {
-			return nil, failed
+			return failed
 		}
 		stream = value.Resource
 	}
-	var reserved uint32
-	destination := func(count uint32) ([]byte, error) {
-		remaining := limit - uint64(len(data))
-		if uint64(count) > remaining {
-			return nil, wasm.ErrLimit
-		}
-		size := uint64(len(data)) + uint64(count)
-		if expected != nil && size > *expected {
-			return nil, httpSizeError(b.sizeFailure, size)
-		}
-		if size > uint64(cap(data)) {
-			capacity := min(max(size, 2*uint64(cap(data))), limit)
-			grown := make([]byte, len(data), int(capacity))
-			// A single read may accept several guest writes before its event
-			// is observed. Preserve the current batch as well as prior reads.
-			copy(grown[:len(data)+int(reserved)], data[:len(data)+int(reserved)])
-			data = grown
-		}
-		reserved = count
-		return data[len(data):int(size)], nil
-	}
+	dest := collector.destination
 	for stream != nil {
 		// The extra byte detects overflow without materializing an invalid
 		// suffix. Empty/EOF batches never invoke the destination callback.
-		remaining := limit - uint64(len(data))
+		remaining := collector.limit - uint64(len(collector.data))
 		next := min(remaining+1, uint64(b.owner.network.io.config.MaxWriteBytes), uint64(b.owner.config.BodyBufferBytes))
-		reserved = 0
-		r, failed := c.ReadAsyncInto(b.ctx, stream, uint32(next), destination)
+		collector.reserved = 0
+		r, failed := c.ReadAsyncInto(b.ctx, stream, uint32(next), dest)
 		if failed != nil {
-			return nil, failed
+			return failed
 		}
-		size := uint64(len(data)) + uint64(r.Count)
+		size := uint64(len(collector.data)) + uint64(r.Count)
 		if expected != nil && r.Closed && size != *expected {
-			return nil, httpSizeError(b.sizeFailure, size)
+			return httpSizeError(b.sizeFailure, size)
 		}
-		data = data[:int(size)]
+		collector.data = collector.data[:int(size)]
 		if r.Closed {
 			break
 		}
 	}
 
-	if expected != nil && uint64(len(data)) != *expected {
-		return nil, httpSizeError(b.sizeFailure, uint64(len(data)))
+	if expected != nil && uint64(len(collector.data)) != *expected {
+		return httpSizeError(b.sizeFailure, uint64(len(collector.data)))
 	}
 	b.end(nil)
 	if err := b.waitTrailers(c); err != nil {
-		return nil, err
+		return err
 	}
 	b.mu.Lock()
 	fields, failure := b.trailersValue, b.failure
 	b.mu.Unlock()
 	if failure == nil && b.ctx.Err() != nil {
-		failure = httpErr("connection-terminated")
+		failure = errConnectionTerminated
 	}
 	if failure != nil {
-		return nil, failure
+		return failure
 	}
 	if fields != nil {
-		for _, field := range fields.Entries() {
-			trailer.Add(field.Name, field.Value)
-		}
+		fields.ForEach(func(field host.HTTPField) {
+			collector.trailer.Add(field.Name, field.Value)
+		})
 	}
 	b.transferred()
-	return data, nil
+	return nil
 }

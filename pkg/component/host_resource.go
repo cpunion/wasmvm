@@ -57,7 +57,7 @@ func (c *Caller) NewResource(t *HostResourceType, rep uint32) (Value, error) {
 	defer c.mu.Unlock()
 	v, err := c.instance.newResource(t, rep)
 	if err == nil {
-		c.created = append(c.created, v.Resource)
+		c.addCreated(v.Resource)
 	}
 	return v, err
 }
@@ -83,6 +83,7 @@ func (rt *resourceType) destroyHost(core *vm.Caller, rep uint64) error {
 			}
 		}
 		c.created = nil
+		c.inlineCreated = [3]*Resource{}
 	}()
 	err := rt.host.destructor(c, uint32(rep))
 	complete = err == nil

@@ -71,8 +71,11 @@ type operation struct {
 	depth         uint32
 	collect       bool
 	exposed       atomic.Bool
-	continuations map[*Continuation]struct{}
-	callerBlock   *[4]callerAllocation
+	inlineConts   [4]*Continuation
+	continuations []*Continuation
+	contBlock     *[8]Continuation
+	nextCont      uint8
+	callerBlock   *[16]callerAllocation
 	nextCaller    uint8
 }
 
@@ -175,6 +178,10 @@ func (op *operation) finish() {
 	// Retained capabilities own their blocks through interior pointers. The
 	// finished driver need not retain unrelated, expired capabilities.
 	op.callerBlock = nil
+	op.contBlock = nil
+	op.nextCont = 0
+	op.continuations = nil
+	op.inlineConts = [4]*Continuation{}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.active = nil
@@ -195,7 +202,8 @@ func (op *operation) finish() {
 }
 
 func (op *operation) finishContinuations() {
-	for call := range op.continuations {
+	for len(op.continuations) != 0 {
+		call := op.continuations[len(op.continuations)-1]
 		call.mu.Lock()
 		call.abort()
 		call.mu.Unlock()

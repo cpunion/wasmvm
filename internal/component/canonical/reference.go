@@ -49,7 +49,7 @@ func initializeReference(allocation *referenceAllocation, table *Resources, type
 // own block alive. This is allocation grouping, not capability pooling.
 type ReferenceAllocator struct {
 	_     referenceAllocatorNoCopy
-	block *[4]referenceAllocation
+	block *[16]referenceAllocation
 	next  uint8
 }
 
@@ -61,11 +61,11 @@ func (*referenceAllocatorNoCopy) Unlock() {}
 func (a *ReferenceAllocator) New(table *Resources, typeID *ResourceType, id uint32, owner any, scope *BorrowScope) *Reference {
 	if a.block == nil && a.next == 0 {
 		// An owner creating only one capability needs no partially used block.
-		a.next = 4
+		a.next = 16
 		return NewReference(table, typeID, id, owner, scope)
 	}
 	if a.block == nil || a.next == uint8(len(a.block)) {
-		a.block = new([4]referenceAllocation)
+		a.block = new([16]referenceAllocation)
 		a.next = 0
 	}
 	slot := &a.block[a.next]

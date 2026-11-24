@@ -36,39 +36,51 @@ type hostReadBuffer struct {
 	hooks  readBufferHooks
 }
 
-func (in *Instance) hostReadBuffer(e *asyncEnd, batch *model.Type, limit uint32, check func(ReadResult) error, into ByteDestination) *guestBuffer {
-	var b *guestBuffer
+func (in *Instance) initHostReadBuffer(storage *hostReadBuffer, e *asyncEnd, batch *model.Type, limit uint32, check func(ReadResult) error, into ByteDestination) *guestBuffer {
 	var hooks *readBufferHooks
 	if check != nil || into != nil {
-		state := &hostReadBuffer{hooks: readBufferHooks{check: check, into: into}}
-		b, hooks = &state.buffer, &state.hooks
-	} else {
-		b = &guestBuffer{}
+		storage.hooks = readBufferHooks{check: check, into: into}
+		hooks = &storage.hooks
 	}
-	*b = guestBuffer{in: in, scope: e.scope, typ: e.typ.Element, batch: batch, length: limit, hooks: hooks}
-	return b
+	storage.buffer = guestBuffer{in: in, scope: e.scope, typ: e.typ.Element, batch: batch, length: limit, hooks: hooks}
+	return &storage.buffer
+}
+
+func (in *Instance) hostReadBuffer(e *asyncEnd, batch *model.Type, limit uint32, check func(ReadResult) error, into ByteDestination) *guestBuffer {
+	if check != nil || into != nil {
+		return in.initHostReadBuffer(&hostReadBuffer{}, e, batch, limit, check, into)
+	}
+	return &guestBuffer{in: in, scope: e.scope, typ: e.typ.Element, batch: batch, length: limit}
 }
 
 func (b *guestBuffer) remain() uint32 { return b.length - b.progress }
 func (in *Instance) guestBuffer(c *vm.Caller, n *namespace, p *validate.CanonicalFunction, ptr, length uint64) (*guestBuffer, error) {
-	if length >= 1<<28 {
-		return nil, wasm.ErrTrap
+	b := &guestBuffer{}
+	if err := in.initGuestBuffer(b, c, n, p, ptr, length); err != nil {
+		return nil, err
 	}
-	b := &guestBuffer{in: in, n: n, plan: p, typ: p.Type.Value.Element, ptr: ptr, length: uint32(length)}
+	return b, nil
+}
+
+func (in *Instance) initGuestBuffer(b *guestBuffer, c *vm.Caller, n *namespace, p *validate.CanonicalFunction, ptr, length uint64) error {
+	if length >= 1<<28 {
+		return wasm.ErrTrap
+	}
+	*b = guestBuffer{in: in, n: n, plan: p, typ: p.Type.Value.Element, ptr: ptr, length: uint32(length)}
 	if b.typ != nil {
 		l, err := in.canonicalLayouts(n, p).Build(b.typ)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if ptr&(l.Align-1) != 0 || l.Size != 0 && length > (math.MaxUint64-ptr)/l.Size {
-			return nil, wasm.ErrTrap
+			return wasm.ErrTrap
 		}
 		b.stride = l.Size
 		if err := c.ReadExternalMemory(n.items[model.CoreMemorySort][*p.Memory].core, ptr+length*l.Size, nil); err != nil {
-			return nil, err
+			return err
 		}
 	}
-	return b, nil
+	return nil
 }
 func copyGuestBuffers(c *vm.Caller, src, dst *guestBuffer, count uint32) (err error) {
 	if src.typ == nil {
@@ -76,8 +88,9 @@ func copyGuestBuffers(c *vm.Caller, src, dst *guestBuffer, count uint32) (err er
 		dst.progress += count
 		return nil
 	}
-	var inputState, outputState canonical.Codec
-	read := src.in.initBufferCodec(&inputState, c, src.n, src.plan, src.typ)
+	frame := src.in.acquireFrame()
+	defer src.in.releaseCanonicalFrame(frame)
+	read := src.in.initBufferCodec(frame.primaryState(), c, src.n, src.plan, src.typ)
 	complete := false
 	var write *canonical.Codec
 	defer func() {
@@ -92,7 +105,7 @@ func copyGuestBuffers(c *vm.Caller, src, dst *guestBuffer, count uint32) (err er
 	if dst.hooks != nil && dst.hooks.into != nil {
 		err = read.ReadBufferInto(src.ptr, uint64(count), func() ([]byte, error) {
 			var target []byte
-			write, target, err = dst.prepareInto(c, uint64(count), &outputState)
+			write, target, err = dst.prepareInto(c, uint64(count), frame.aux())
 			if err != nil {
 				return nil, err
 			}
@@ -102,7 +115,7 @@ func copyGuestBuffers(c *vm.Caller, src, dst *guestBuffer, count uint32) (err er
 		var values Value
 		values, err = read.LoadBuffer(src.typ, src.ptr, uint64(count))
 		if err == nil {
-			write, err = dst.storeCodec(c, values, &outputState)
+			write, err = dst.storeCodec(c, values, frame.aux())
 		}
 	}
 	if err != nil {
@@ -124,7 +137,7 @@ func (b *guestBuffer) store(c *vm.Caller, values Value) (*canonical.Codec, error
 	return b.storeCodec(c, values, nil)
 }
 
-func (b *guestBuffer) storeCodec(c *vm.Caller, values Value, scratch *canonical.Codec) (*canonical.Codec, error) {
+func (b *guestBuffer) storeCodec(c *vm.Caller, values Value, scratch *resourceCodecState) (*canonical.Codec, error) {
 	if b.hooks != nil && b.hooks.check != nil {
 		data := values.Text
 		if values.Elements != nil {
@@ -183,7 +196,7 @@ func (b *guestBuffer) storeCodec(c *vm.Caller, values Value, scratch *canonical.
 	return codec, err
 }
 
-func (b *guestBuffer) prepareInto(c *vm.Caller, count uint64, scratch *canonical.Codec) (*canonical.Codec, []byte, error) {
+func (b *guestBuffer) prepareInto(c *vm.Caller, count uint64, scratch *resourceCodecState) (*canonical.Codec, []byte, error) {
 	total := uint64(b.progress) + count
 	if b.n != nil || b.typ == nil || b.typ.Kind != model.U8 || total > uint64(b.length) {
 		return nil, nil, wasm.ErrTrap

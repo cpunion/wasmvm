@@ -90,3 +90,46 @@ func TestReferenceAllocatorDoesNotReviveBorrowsOrInvalidatedNeighbors(t *testing
 		}
 	}
 }
+
+func TestBorrowScopeAllocatorKeepsExpiredScopesAcrossBlocksAndClear(t *testing.T) {
+	var scopes BorrowScopeAllocator
+	var refs ReferenceAllocator
+	table := NewResources(64)
+	typ := &ResourceType{}
+	id, err := table.New(typ, 99)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var expired []*Reference
+	seen := map[*BorrowScope]bool{}
+	for i := range 25 {
+		scope := scopes.New(4)
+		if seen[scope] {
+			t.Fatal("borrow scope allocator reused an earlier scope", i)
+		}
+		seen[scope] = true
+		if rep, err := scope.Lift(table, typ, id); err != nil || rep != 99 {
+			t.Fatal(rep, err)
+		}
+		ref := refs.New(table, typ, id, typ, scope)
+		alias := *ref
+		if err := scope.End(); err != nil {
+			t.Fatal(err)
+		}
+		expired = append(expired, ref, &alias)
+		if i%9 == 0 {
+			scopes.Clear()
+			runtime.GC()
+		}
+	}
+	scopes.Clear()
+	runtime.GC()
+	for i, stale := range expired {
+		if _, _, _, _, _, err := ReferenceInfo(stale); !errors.Is(err, wasm.ErrTrap) {
+			t.Fatal("expired borrow scope revived", i, err)
+		}
+	}
+	if rep, err := table.Take(typ, id); err != nil || rep != 99 {
+		t.Fatal("lender pin leaked after borrow scopes ended", rep, err)
+	}
+}

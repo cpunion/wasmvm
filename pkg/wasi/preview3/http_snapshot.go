@@ -6,7 +6,6 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"strings"
 	"sync"
 )
 
@@ -16,10 +15,11 @@ import (
 // cancellation follow CallIncoming's ordinary contract. Strings may contain
 // arbitrary bytes; callers can convert mutable input once before repeated calls.
 func NewSnapshotRequest(ctx context.Context, method, url, body string) (*http.Request, error) {
-	r, err := http.NewRequestWithContext(ctx, method, url, strings.NewReader(body))
+	r, err := http.NewRequestWithContext(ctx, method, url, nil)
 	if err != nil {
 		return nil, err
 	}
+	r.ContentLength = int64(len(body))
 	r.Body = &snapshotReader{data: body}
 	r.GetBody = func() (io.ReadCloser, error) { return &snapshotReader{data: body}, nil }
 	return r, nil

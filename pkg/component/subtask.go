@@ -13,6 +13,7 @@ type componentSubtask struct {
 	task                  *componentTask
 	n                     *namespace
 	codec                 *canonical.Codec
+	codecState            resourceCodecState
 	id, state             uint32
 	values                []vm.Value
 	delivered             bool
@@ -80,7 +81,7 @@ func (in *Instance) lowerTask(c *vm.Caller, n *namespace, plan *validate.Canonic
 		}
 	}()
 	t, err := callee.start(c, func(current *vm.Caller) ([]Value, error) {
-		s.codec = in.codec(current, n, plan)
+		s.codec = in.initResourceCodecState(&s.codecState, current, n, plan, true)
 		args, err := liftArguments(s.codec, plan, flat)
 		if err == nil {
 			s.state = 1
@@ -97,7 +98,7 @@ func (in *Instance) lowerTask(c *vm.Caller, n *namespace, plan *validate.Canonic
 				s.state = 4
 			}
 		} else {
-			s.codec.Transfer = in.codec(current, n, plan).Transfer
+			in.configureCodecMemory(s.codec, &s.codecState.memory, current, n, plan, true)
 			bindResourceCaller(s.codec, current)
 			var err error
 			s.values, err = lowerResult(s.codec, plan, flat, value)
