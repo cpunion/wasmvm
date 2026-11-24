@@ -21,6 +21,7 @@ type componentTask struct {
 	in                               *Instance
 	n                                *namespace
 	task                             callTask
+	codecs                           *guestTaskCodecs
 	entry                            vm.Extern
 	args                             taskArguments
 	onResolve                        taskResolution
@@ -76,6 +77,16 @@ func (t *componentTask) canEnter() bool {
 	return true
 }
 
+type guestTaskCodecs struct {
+	param  resourceCodecState
+	result resourceCodecState
+}
+
+type guestComponentTask struct {
+	task   componentTask
+	codecs guestTaskCodecs
+}
+
 func (in *Instance) makeTask(c *vm.Caller, n *namespace, plan *validate.CanonicalFunction, entry vm.Extern, args taskArguments, resolve taskResolution) (*componentTask, error) {
 	if n.failed || n.blocked {
 		return nil, wasm.ErrTrap
@@ -84,7 +95,15 @@ func (in *Instance) makeTask(c *vm.Caller, n *namespace, plan *validate.Canonica
 	if s.live >= in.config.MaxTasks {
 		return nil, wasm.ErrLimit
 	}
-	t := &componentTask{in: in, n: n, entry: entry, args: args, onResolve: resolve}
+	var t *componentTask
+	if plan != nil {
+		alloc := &guestComponentTask{}
+		t = &alloc.task
+		t.codecs = &alloc.codecs
+	} else {
+		t = &componentTask{}
+	}
+	t.in, t.n, t.entry, t.args, t.onResolve = in, n, entry, args, resolve
 	t.task = callTask{plan: plan, runtime: t}
 	if !t.canEnter() || n.waitingEnter != 0 {
 		t.waitingEnter = true
@@ -293,7 +312,7 @@ func (t *componentTask) resume(c *vm.Caller) (err error) {
 		}
 		t.args = nil
 		t.started = true
-		codec := t.in.codec(c, t.n, plan)
+		codec := t.in.initResourceCodecState(&t.codecs.param, c, t.n, plan, true)
 		t.task.parameters = codec
 		for i, p := range plan.Type.Parameters {
 			if err = codec.Validate(p.Type, args[i]); err != nil {
@@ -344,7 +363,7 @@ func (t *componentTask) resume(c *vm.Caller) (err error) {
 	t.core = nil
 	if !plan.Async {
 		codec := t.task.parameters
-		codec.Transfer = t.in.codec(c, t.n, plan).Transfer
+		t.in.configureCodecMemory(codec, &t.codecs.param.memory, c, t.n, plan, true)
 		bindResourceCaller(codec, c)
 		t.task.result, err = liftResult(codec, plan, called.Values)
 		if err != nil {

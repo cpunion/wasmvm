@@ -11,19 +11,23 @@ import (
 // these arguments only until return. Capabilities remain fresh. Suspended calls
 // use their existing task-owned state instead of these frames.
 type canonicalFrame struct {
-	state  resourceCodecState
-	args   []Value
-	result [canonical.MaxFlatResults]canonical.Slot
-	memory memory
+	state    resourceCodecState
+	auxState resourceCodecState
+	args     []Value
+	result   [canonical.MaxFlatResults]canonical.Slot
+	memory   memory
 	// Only the synchronous private transaction uses this lazy storage. Public
 	// Callers and parameter/result snapshots never point into this object.
-	host      *resourceHostCall
-	hostValue Value
-	caller    *vm.Caller
-	n         *namespace
-	plan      *validate.CanonicalFunction
-	realloc   func(uint64, uint64, uint64, uint64) (uint64, error)
-	next      *canonicalFrame
+	host        *resourceHostCall
+	hostRead    hostReadBuffer
+	hostValue   Value
+	cloneValues [8]Value
+	cloneBuf    []Value
+	caller      *vm.Caller
+	n           *namespace
+	plan        *validate.CanonicalFunction
+	realloc     func(uint64, uint64, uint64, uint64) (uint64, error)
+	next        *canonicalFrame
 }
 
 func (in *Instance) acquireFrame() *canonicalFrame {
@@ -74,7 +78,11 @@ func (in *Instance) releaseCanonicalFrame(frame *canonicalFrame) {
 		frame.args = nil
 	}
 	frame.state = resourceCodecState{}
+	frame.auxState = resourceCodecState{}
+	frame.hostRead = hostReadBuffer{}
 	frame.hostValue = Value{}
+	frame.cloneValues = [8]Value{}
+	frame.cloneBuf = nil
 	frame.memory = memory{}
 	frame.caller, frame.n, frame.plan = nil, nil, nil
 	frame.next = in.canonicalFrames

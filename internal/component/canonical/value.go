@@ -49,10 +49,21 @@ func (c *Codec) Clone(t *model.Type, v Value) (Value, error) {
 }
 
 func (c *Codec) clone(t *model.Type, v Value) (Value, error) {
-	return c.copyValue(t, v, true)
+	return c.copyValue(t, v, true, nil)
 }
 
-func (c *Codec) copyValue(t *model.Type, v Value, owned bool) (Value, error) {
+func allocCloneValues(n int, scratch *[]Value) []Value {
+	if scratch != nil && n <= cap(*scratch)-len(*scratch) {
+		start := len(*scratch)
+		end := start + n
+		out := (*scratch)[start:end:end]
+		*scratch = (*scratch)[:end]
+		return out
+	}
+	return make([]Value, n)
+}
+
+func (c *Codec) copyValue(t *model.Type, v Value, owned bool, scratch *[]Value) (Value, error) {
 	if t.Kind == model.Own || t.Kind == model.Borrow || t.Kind == model.ErrorContext || t.Kind == model.Future || t.Kind == model.Stream {
 		amount := uint64(128)
 		if t.Kind == model.ErrorContext {
@@ -97,7 +108,7 @@ func (c *Codec) copyValue(t *model.Type, v Value, owned bool) (Value, error) {
 	}
 	out := Value{}
 	if owned && len(v.Elements) != 0 {
-		out.Elements = make([]Value, len(v.Elements))
+		out.Elements = allocCloneValues(len(v.Elements), scratch)
 	}
 	if t.Kind == model.Variant || t.Kind == model.Option || t.Kind == model.Result {
 		out.Case = v.Case
@@ -115,20 +126,22 @@ func (c *Codec) copyValue(t *model.Type, v Value, owned bool) (Value, error) {
 			if err := c.Transfer.charge(128); err != nil {
 				return Value{}, err
 			}
-			key, err := c.copyValue(t.Key, element.Elements[0], owned)
+			key, err := c.copyValue(t.Key, element.Elements[0], owned, scratch)
 			if err != nil {
 				return Value{}, err
 			}
-			value, err := c.copyValue(t.Element, element.Elements[1], owned)
+			value, err := c.copyValue(t.Element, element.Elements[1], owned, scratch)
 			if err != nil {
 				return Value{}, err
 			}
 			if owned {
-				out.Elements[i] = Value{Elements: []Value{key, value}}
+				pair := allocCloneValues(2, scratch)
+				pair[0], pair[1] = key, value
+				out.Elements[i] = Value{Elements: pair}
 			}
 			continue
 		}
-		childValue, err := c.copyValue(child, element, owned)
+		childValue, err := c.copyValue(child, element, owned, scratch)
 		if err != nil {
 			return Value{}, err
 		}
@@ -173,7 +186,7 @@ func (c *Codec) load(t *model.Type, at uint64, depth uint32) (Value, error) {
 		return Value{}, err
 	}
 	if scalarKind(t.Kind) {
-		s, err := LoadScalar(c.Transfer.Memory, at, t.Kind)
+		s, err := loadScalarInto(c.Transfer.Memory, at, t.Kind, (*[8]byte)(c.Transfer.scratch[:8]))
 		return Value{Bits: s.Bits}, err
 	}
 	switch t.Kind {
@@ -289,16 +302,17 @@ func (c *Codec) loadList(t *model.Type, at, n uint64, depth uint32) (Value, erro
 }
 
 func (c *Codec) loadInt(at, size uint64) (uint64, error) {
-	var b [8]byte
+	b := c.Transfer.scratch[:8]
+	clear(b)
 	if err := c.Transfer.Memory.Read(at, b[:size]); err != nil {
 		return 0, err
 	}
-	return binary.LittleEndian.Uint64(b[:]), nil
+	return binary.LittleEndian.Uint64(b), nil
 }
 
 func (c *Codec) storeInt(at, size, value uint64) error {
-	var b [8]byte
-	binary.LittleEndian.PutUint64(b[:], value)
+	b := c.Transfer.scratch[:8]
+	binary.LittleEndian.PutUint64(b, value)
 	return c.Transfer.Memory.Write(at, b[:size])
 }
 
@@ -442,7 +456,7 @@ func (c *Codec) store(t *model.Type, at uint64, v Value, depth uint32) error {
 		return err
 	}
 	if scalarKind(t.Kind) {
-		return StoreScalar(c.Transfer.Memory, at, Scalar{t.Kind, v.Bits})
+		return storeScalarInto(c.Transfer.Memory, at, Scalar{t.Kind, v.Bits}, (*[8]byte)(c.Transfer.scratch[:8]))
 	}
 	switch t.Kind {
 	case model.Own, model.Borrow, model.ErrorContext, model.Future, model.Stream:

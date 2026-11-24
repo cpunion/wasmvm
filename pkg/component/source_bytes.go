@@ -28,11 +28,12 @@ func (in *Instance) readSourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 		return true, wasm.ErrClosed
 	}
 	// Both codecs belong to this read, including across copy cleanup.
-	var inputState, outputState canonical.Codec
-	return in.copySourceBytes(c, r, w, b, batch, &inputState, &outputState)
+	frame := in.acquireFrame()
+	defer in.releaseCanonicalFrame(frame)
+	return in.copySourceBytes(c, r, w, b, batch, &frame.state, &frame.auxState)
 }
 
-func (in *Instance) copySourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer, batch *model.Type, inputState, outputState *canonical.Codec) (handled bool, err error) {
+func (in *Instance) copySourceBytes(c *vm.Caller, r, w *asyncEnd, b *guestBuffer, batch *model.Type, inputState, outputState *resourceCodecState) (handled bool, err error) {
 	source := w.source
 	complete := false
 	var codec, output *canonical.Codec

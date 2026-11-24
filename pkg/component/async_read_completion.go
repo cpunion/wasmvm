@@ -65,7 +65,7 @@ func (c *Caller) awaitRead(ctx context.Context, ref *Resource, limit uint32, che
 			}
 			result, err := state.take(fresh.core, failed)
 			if err == nil {
-				canonical.VisitReferences(b.batch, &b.data, func(ref *Resource) { fresh.created = append(fresh.created, ref) })
+				canonical.VisitReferences(b.batch, &b.data, func(ref *Resource) { fresh.addCreated(ref) })
 			}
 			return consume(fresh, result, err)
 		})
@@ -76,7 +76,7 @@ func (c *Caller) awaitRead(ctx context.Context, ref *Resource, limit uint32, che
 		state.abort(c.core)
 		return nil, err
 	}
-	c.reads = append(c.reads, state)
+	c.addRead(state)
 	if e.waitable.pending {
 		// The resolver checks both cancellation scopes before accepting this
 		// already available event. No cancellation watcher is needed to wake it.

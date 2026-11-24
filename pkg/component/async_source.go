@@ -188,7 +188,7 @@ func (in *Instance) newSource(t ValueType, source AsyncSource) (Value, error) {
 	return Value{Resource: in.references.New(in.hostResources, nil, r.id, r, nil)}, nil
 }
 func (c *Caller) NewSource(t ValueType, source AsyncSource) (Value, error) {
-	v, _, err := c.NewOwnedSource(t, source)
+	v, _, err := c.newOwnedSource(t, source, false)
 	return v, err
 }
 
@@ -196,6 +196,10 @@ func (c *Caller) NewSource(t ValueType, source AsyncSource) (Value, error) {
 // that needs a private ownership anchor. Moving a returned reference onward
 // removes it from the source's eventual cleanup. Use only in this Store.
 func (c *Caller) NewOwnedSource(t ValueType, source AsyncSource) (v Value, owned []*Resource, err error) {
+	return c.newOwnedSource(t, source, true)
+}
+
+func (c *Caller) newOwnedSource(t ValueType, source AsyncSource, returnOwned bool) (v Value, owned []*Resource, err error) {
 	if err := c.enter(); err != nil {
 		return Value{}, nil, err
 	}
@@ -205,10 +209,16 @@ func (c *Caller) NewOwnedSource(t ValueType, source AsyncSource) (v Value, owned
 	if err != nil {
 		return v, nil, err
 	}
-	c.created = append(c.created, v.Resource)
+	c.addCreated(v.Resource)
+	if !returnOwned {
+		return v, nil, nil
+	}
 	end, err := c.instance.readable(v.Resource)
 	if err != nil {
 		return Value{}, nil, err
+	}
+	if len(end.other.source.owned) == 0 {
+		return v, nil, nil
 	}
 	return v, append([]*Resource(nil), end.other.source.owned...), nil
 }
@@ -253,17 +263,26 @@ func (w *asyncEnd) closeSource() {
 	}
 }
 
+func (in *Instance) tryImmediateSourceRead(c *vm.Caller, r, w *asyncEnd, b *guestBuffer, batch *model.Type) (bool, error) {
+	if handled, err := in.readSourceBytes(c, r, w, b, batch); handled {
+		return true, err
+	}
+	return in.readReadySource(c, r, w, b, batch)
+}
+
 func (in *Instance) startSourceRead(c *vm.Caller, r, w *asyncEnd, b *guestBuffer) error {
 	batch, err := in.bufferType(r.typ.Element)
 	if err != nil {
 		return err
 	}
-	if handled, err := in.readSourceBytes(c, r, w, b, batch); handled {
+	if handled, err := in.tryImmediateSourceRead(c, r, w, b, batch); handled || err != nil {
 		return err
 	}
-	if handled, err := in.readReadySource(c, r, w, b, batch); handled || err != nil {
-		return err
-	}
+	return in.startSourceJob(c, r, w, b, batch)
+}
+
+func (in *Instance) startSourceJob(c *vm.Caller, r, w *asyncEnd, b *guestBuffer, batch *model.Type) error {
+	r.buffer = b
 	unit := r.typ.Element == nil
 	var completion *ReadCompletion
 	f := w.source.readFunction(batch)
@@ -300,7 +319,8 @@ func (in *Instance) startSourceRead(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 		w.closeSource()
 	}
 	t.onResolve = func(current *vm.Caller, value *Value, cancelled bool) (err error) {
-		var outputState canonical.Codec
+		frame := in.acquireFrame()
+		defer in.releaseCanonicalFrame(frame)
 		var output *canonical.Codec
 		complete := false
 		defer func() {
@@ -325,7 +345,7 @@ func (in *Instance) startSourceRead(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 				return vm.ErrType
 			}
 			if !unit && count != 0 {
-				output, err = b.storeCodec(current, *value, &outputState)
+				output, err = b.storeCodec(current, *value, &frame.auxState)
 				if err != nil {
 					if !r.rejectCopy(err) {
 						return err

@@ -194,31 +194,76 @@ func (e *asyncEnd) copy(c *vm.Caller, b *guestBuffer) error {
 		return nil
 	}
 	if other.buffer == nil {
-		e.buffer = b
 		if e.read && other.source != nil {
 			return e.in.startSourceRead(c, e, other, b)
 		}
+		e.buffer = b
 		return nil
 	}
+	park, err := e.copyWithPeer(c, other, b)
+	if err == nil && park {
+		e.buffer = b
+	}
+	return err
+}
+
+// copyImmediate keeps a stack-allocated guestBuffer on the stack for immediate
+// transfers and synchronous source probes, copying it to the heap only on park.
+func (e *asyncEnd) copyImmediate(c *vm.Caller, b *guestBuffer) error {
+	e.state = endCopying
+	other := e.other
+	if other == nil {
+		if !e.waitable.pending {
+			return wasm.ErrTrap
+		}
+		return nil
+	}
+	if other.buffer == nil {
+		if e.read && other.source != nil {
+			batch, err := e.in.bufferType(e.typ.Element)
+			if err != nil {
+				return err
+			}
+			if handled, err := e.in.tryImmediateSourceRead(c, e, other, b, batch); handled || err != nil {
+				return err
+			}
+			parked := *b
+			return e.in.startSourceJob(c, e, other, &parked, batch)
+		}
+		parked := *b
+		e.buffer = &parked
+		return nil
+	}
+	park, err := e.copyWithPeer(c, other, b)
+	if err == nil && park {
+		parked := *b
+		e.buffer = &parked
+	}
+	return err
+}
+
+func (e *asyncEnd) copyWithPeer(c *vm.Caller, other *asyncEnd, b *guestBuffer) (bool, error) {
 	ob := other.buffer
 	if b.remain() > 0 && ob.remain() > 0 {
 		if e.n != nil && e.n == other.n && !numberOrUnit(e.typ.Element) {
-			return wasm.ErrTrap
+			return false, wasm.ErrTrap
 		}
 		count := min(b.remain(), ob.remain())
-		src, dst := b, ob
+		var err error
 		if e.read {
-			src, dst = ob, b
+			err = copyGuestBuffers(c, ob, b, count)
+		} else {
+			err = copyGuestBuffers(c, b, ob, count)
 		}
-		if err := copyGuestBuffers(c, src, dst, count); err != nil {
+		if err != nil {
 			reader := e
 			if !reader.read {
 				reader = other
 			}
 			if reader.rejectCopy(err) {
-				return nil
+				return false, nil
 			}
-			return err
+			return false, err
 		}
 		e.notify(b.progress)
 		other.notify(ob.progress)
@@ -228,11 +273,11 @@ func (e *asyncEnd) copy(c *vm.Caller, b *guestBuffer) error {
 	} else if b.remain() > 0 || e.read && ob.remain() == 0 {
 		other.notify(0)
 		other.buffer = nil
-		e.buffer = b
+		return true, nil
 	} else {
 		e.notify(0)
 	}
-	return nil
+	return false, nil
 }
 func numberOrUnit(t *model.Type) bool { return t == nil || t.Kind >= model.F64 && t.Kind <= model.S8 }
 

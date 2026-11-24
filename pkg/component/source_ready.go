@@ -46,7 +46,6 @@ func (in *Instance) readReadySource(core *vm.Caller, r, w *asyncEnd, b *guestBuf
 	complete := false
 	defer h.finishDeferred(core, &complete, &err)
 	handled = true
-	var outputState canonical.Codec
 	var output *canonical.Codec
 	defer func() {
 		guard := cleanupGuard{panicked: recover()}
@@ -91,11 +90,12 @@ func (in *Instance) readReadySource(core *vm.Caller, r, w *asyncEnd, b *guestBuf
 	if meta.Values != nil && meta.Bytes != "" || count > uint64(b.remain()) || meta.Count != 0 && uint64(meta.Count) != count || unit && (len(meta.Values) != 0 || meta.Bytes != "") || r.typ.Kind == model.Future && count != 1 || count == 0 && !meta.Closed && b.remain() != 0 {
 		return true, vm.ErrType
 	}
-	if err = h.acceptInto(&encoded, &frame.hostValue); err != nil {
+	frame.cloneBuf = frame.cloneValues[:0]
+	if err = h.acceptIntoScratch(&encoded, &frame.hostValue, &frame.cloneBuf); err != nil {
 		return true, err
 	}
 	if !unit && count != 0 {
-		output, err = b.storeCodec(core, frame.hostValue, &outputState)
+		output, err = b.storeCodec(core, frame.hostValue, &frame.auxState)
 		if err != nil {
 			if !r.rejectCopy(err) {
 				return true, err

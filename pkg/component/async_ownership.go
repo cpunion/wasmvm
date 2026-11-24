@@ -49,7 +49,7 @@ func (r *resourceCodec) liftAsync(t *model.Type, id uint32) (Value, error) {
 	}
 	e.n, e.id = nil, next
 	ref := r.in.references.New(r.in.hostResources, nil, next, e, nil)
-	r.created = append(r.created, ref)
+	r.addCreated(ref)
 	return Value{Resource: ref}, nil
 }
 func (r *resourceCodec) lowerAsync(t *model.Type, v Value) (uint32, error) {
@@ -64,7 +64,7 @@ func (r *resourceCodec) lowerAsync(t *model.Type, v Value) (uint32, error) {
 	}
 	e.n, e.id = r.n, next
 	canonical.InvalidateReference(v.Resource)
-	r.lowered = append(r.lowered, ownedHandle{table: r.n.handles, id: next, end: e, generation: r.n.handles.EntryGeneration(next)})
+	r.addLowered(ownedHandle{table: r.n.handles, id: next, end: e, generation: r.n.handles.EntryGeneration(next)})
 	return next, nil
 }
 func (r *resourceCodec) acceptAsync(t *model.Type, v Value, commit bool) (Value, error) {
@@ -81,7 +81,7 @@ func (r *resourceCodec) acceptAsync(t *model.Type, v Value, commit bool) (Value,
 	if err != nil {
 		return Value{}, err
 	}
-	r.created = append(r.created, ref)
+	r.addCreated(ref)
 	return Value{Resource: ref}, nil
 }
 

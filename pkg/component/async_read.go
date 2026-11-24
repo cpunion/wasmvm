@@ -3,6 +3,7 @@ package component
 import (
 	"context"
 	"github.com/cpunion/wasmvm/internal/component/canonical"
+	"github.com/cpunion/wasmvm/internal/component/model"
 	"github.com/cpunion/wasmvm/pkg/vm"
 	"github.com/cpunion/wasmvm/pkg/wasm"
 )
@@ -47,16 +48,17 @@ func (in *Instance) ReadAsyncInto(ctx context.Context, ref *Resource, limit uint
 }
 
 func (in *Instance) readAsyncCall(ctx context.Context, ref *Resource, limit uint32, options CallOptions, into ByteDestination) (result ReadResult, err error) {
-	var buffer *guestBuffer
+	var batch *model.Type
+	var data Value
 	_, err = in.store.WithCallerCleanup(ctx, options, func(c *vm.Caller) (err error) {
 		complete := false
 		defer in.finishTasks(c, &err, &complete)
-		result, buffer, err = in.readAsync(c, ref, limit, c.Context(), into)
+		result, batch, data, err = in.readAsync(c, ref, limit, c.Context(), into)
 		complete = err == nil
 		return err
 	}, func(c *vm.Caller) error {
-		if buffer != nil {
-			canonical.VisitReferences(buffer.batch, &buffer.data, func(r *Resource) { in.cleanupResource(c, r) })
+		if batch != nil {
+			canonical.VisitReferences(batch, &data, func(r *Resource) { in.cleanupResource(c, r) })
 		}
 		return nil
 	})
@@ -138,7 +140,7 @@ func (c *Caller) readAsyncContext(ctx context.Context, ref *Resource, limit uint
 	if ctx == nil {
 		ctx, parent = parent, nil
 	}
-	result, b, err := c.instance.readAsyncContexts(c.core, ref, limit, ctx, parent, into)
+	result, batch, data, err := c.instance.readAsyncContexts(c.core, ref, limit, ctx, parent, into)
 	// Both contexts are checked synchronously at publication. No asynchronous
 	// cancellation bridge is needed: the scheduler waits on both Done channels.
 	if err == nil {
@@ -147,12 +149,13 @@ func (c *Caller) readAsyncContext(ctx context.Context, ref *Resource, limit uint
 	if err == nil && parent != nil {
 		err = parent.Err()
 	}
-	if b != nil {
-		canonical.VisitReferences(b.batch, &b.data, func(ref *Resource) {
+	if batch != nil && (batch.Kind != model.List || batch.Element == nil || batch.Element.Kind != model.U8) {
+		copied := data
+		canonical.VisitReferences(batch, &copied, func(ref *Resource) {
 			if err != nil {
 				c.instance.cleanupResource(c.core, ref)
 			} else {
-				c.created = append(c.created, ref)
+				c.addCreated(ref)
 			}
 		})
 	}
@@ -161,26 +164,28 @@ func (c *Caller) readAsyncContext(ctx context.Context, ref *Resource, limit uint
 	}
 	return result, nil
 }
-func (in *Instance) readAsync(c *vm.Caller, ref *Resource, limit uint32, ctx context.Context, into ByteDestination) (result ReadResult, b *guestBuffer, err error) {
+func (in *Instance) readAsync(c *vm.Caller, ref *Resource, limit uint32, ctx context.Context, into ByteDestination) (result ReadResult, batch *model.Type, data Value, err error) {
 	return in.readAsyncContexts(c, ref, limit, ctx, nil, into)
 }
 
-func (in *Instance) readAsyncContexts(c *vm.Caller, ref *Resource, limit uint32, ctx, parent context.Context, into ByteDestination) (result ReadResult, b *guestBuffer, err error) {
+func (in *Instance) readAsyncContexts(c *vm.Caller, ref *Resource, limit uint32, ctx, parent context.Context, into ByteDestination) (result ReadResult, batch *model.Type, data Value, err error) {
 	e, err := in.readable(ref)
 	if err != nil {
-		return result, nil, err
+		return result, nil, Value{}, err
 	}
 	if into != nil && (e.typ.Kind != KindStream || e.typ.Element == nil || e.typ.Element.Kind != KindU8) {
-		return result, nil, vm.ErrType
+		return result, nil, Value{}, vm.ErrType
 	}
 	if e.state != endIdle || limit >= 1<<28 || e.typ.Kind == KindFuture && limit != 1 {
-		return result, nil, wasm.ErrTrap
+		return result, nil, Value{}, wasm.ErrTrap
 	}
-	batch, err := in.bufferType(e.typ.Element)
+	batch, err = in.bufferType(e.typ.Element)
 	if err != nil {
-		return result, nil, err
+		return result, nil, Value{}, err
 	}
-	b = in.hostReadBuffer(e, batch, limit, nil, into)
+	frame := in.acquireFrame()
+	defer in.releaseCanonicalFrame(frame)
+	b := in.initHostReadBuffer(&frame.hostRead, e, batch, limit, nil, into)
 	defer func() {
 		if b.hooks != nil {
 			b.hooks.into = nil
@@ -212,19 +217,20 @@ func (in *Instance) readAsyncContexts(c *vm.Caller, ref *Resource, limit uint32,
 	}()
 
 	if err := e.copy(c, b); err != nil {
-		return result, b, err
+		return result, nil, Value{}, err
 	}
 	if err := in.awaitTasksContexts(c, ctx, parent, func() bool { return e.waitable.pending }, nil); err != nil {
-		return result, b, err
+		return result, nil, Value{}, err
 	}
 	event, err := e.waitable.poll(c)
 	if err != nil {
-		return result, b, err
+		return result, nil, Value{}, err
 	}
 	result = ReadResult{Values: b.data.Elements, Bytes: b.data.Text, Count: b.progress, Closed: event[2]&15 == 1}
 	if e.typ.Kind == KindFuture {
 		result.Closed = true
 	}
+	data = b.data
 	complete = true
-	return result, b, nil
+	return result, batch, data, nil
 }

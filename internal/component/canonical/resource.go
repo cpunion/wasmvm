@@ -71,7 +71,7 @@ type Resources struct {
 	count        uint32
 	next         uint32
 	generation   uint64
-	entryBlock   *[4]resourceEntry
+	entryBlock   *[16]resourceEntry
 	entryNext    uint8
 	free         []uint32
 	reuse        bool
@@ -184,11 +184,11 @@ func (r *Resources) EntryGeneration(id uint32) uint64 {
 // A table with only one publication avoids a partially used group.
 func (r *Resources) newEntryLocked() *resourceEntry {
 	if r.entryBlock == nil && r.entryNext == 0 {
-		r.entryNext = 4
+		r.entryNext = 16
 		return &resourceEntry{}
 	}
 	if r.entryBlock == nil || r.entryNext == uint8(len(r.entryBlock)) {
-		r.entryBlock = new([4]resourceEntry)
+		r.entryBlock = new([16]resourceEntry)
 		r.entryNext = 0
 	}
 	e := &r.entryBlock[r.entryNext]
@@ -316,16 +316,43 @@ type lender struct {
 // lowered borrowed handles must be explicitly dropped before normal return.
 // End reports escaped borrows and invalidates them even on an error path.
 type BorrowScope struct {
-	mu      sync.Mutex
-	maximum uint32
-	ended   bool
-	lenders []lender
-	borrows map[*resourceEntry]lender
+	mu            sync.Mutex
+	maximum       uint32
+	ended         bool
+	inlineLenders [2]lender
+	lenders       []lender
+	borrows       map[*resourceEntry]lender
 }
 
 func NewBorrowScope(maximum uint32) *BorrowScope {
-	return &BorrowScope{maximum: maximum, borrows: map[*resourceEntry]lender{}}
+	return &BorrowScope{maximum: maximum}
 }
+
+// BorrowScopeAllocator groups fresh borrow scopes for one serialized owner.
+// Slots are consumed once and never reset or rebound: retained borrowed
+// capabilities continue observing ended=true across later blocks and Clear.
+type BorrowScopeAllocator struct {
+	_     referenceAllocatorNoCopy
+	block *[8]BorrowScope
+	next  uint8
+}
+
+func (a *BorrowScopeAllocator) New(maximum uint32) *BorrowScope {
+	if a.block == nil && a.next == 0 {
+		a.next = 8
+		return NewBorrowScope(maximum)
+	}
+	if a.block == nil || a.next == uint8(len(a.block)) {
+		a.block = new([8]BorrowScope)
+		a.next = 0
+	}
+	s := &a.block[a.next]
+	a.next++
+	s.maximum = maximum
+	return s
+}
+
+func (a *BorrowScopeAllocator) Clear() { a.block, a.next = nil, 0 }
 
 func (s *BorrowScope) chargeLocked() error {
 	if s.ended {
@@ -353,6 +380,9 @@ func (s *BorrowScope) Lift(r *Resources, t *ResourceType, id uint32) (uint64, er
 		return 0, exhausted()
 	}
 	e.lends++
+	if s.lenders == nil {
+		s.lenders = s.inlineLenders[:0]
+	}
 	s.lenders = append(s.lenders, lender{r, e})
 	return e.rep, nil
 }
@@ -376,6 +406,9 @@ func (s *BorrowScope) Lower(r *Resources, t *ResourceType, rep uint64) (uint32, 
 		return 0, err
 	}
 	e.typeID, e.rep, e.scope = t, rep, s
+	if s.borrows == nil {
+		s.borrows = map[*resourceEntry]lender{}
+	}
 	s.borrows[e] = lender{r, e}
 	return id, nil
 }
@@ -402,6 +435,7 @@ func (s *BorrowScope) End() error {
 		l.entry.lends--
 		l.table.mu.Unlock()
 	}
+	s.inlineLenders = [2]lender{}
 	s.lenders = nil
 	s.borrows = nil
 	if escaped {

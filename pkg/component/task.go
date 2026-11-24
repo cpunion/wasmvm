@@ -54,7 +54,12 @@ func (in *Instance) taskBuiltin(caller *vm.Caller, n *namespace, plan *validate.
 		if !equal {
 			return wasm.ErrTrap
 		}
-		codec := in.codec(c, n, plan)
+		var codec *canonical.Codec
+		if task.runtime != nil && task.runtime.codecs != nil {
+			codec = in.initResourceCodecState(&task.runtime.codecs.result, c, n, plan, true)
+		} else {
+			codec = in.codec(c, n, plan)
+		}
 		if r, ok := codec.Resources.(*resourceCodec); ok {
 			// Cleanup happens after this builtin's Caller expires. Retain the
 			// outer canonical call's still-active session capability instead.
