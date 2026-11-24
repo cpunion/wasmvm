@@ -200,51 +200,78 @@ func (r *resourceCodec) Accept(t *model.Type, v Value, commit bool) (Value, erro
 	return Value{Resource: ref}, nil
 }
 
-func (r *resourceCodec) Finish(err error) error {
-	scope, created, lowered, escaped := r.scope, r.created, r.lowered, r.escaped
-	r.scope, r.created, r.lowered, r.escaped = nil, nil, nil, nil
+// finishSuccess handles the common error-free completion without installing a
+// defer/recover frame. If ending the borrow scope reports escaped borrows, it
+// returns (ended, false) so the caller runs rollback under a panic guard.
+func (r *resourceCodec) finishSuccess() (error, bool) {
+	scope := r.scope
+	r.scope = nil
+	if scope != nil {
+		if ended := scope.End(); ended != nil {
+			return ended, false
+		}
+	}
+	escaped := r.escaped
+	r.created, r.lowered, r.escaped = nil, nil, nil
+	r.seen = referenceSet{}
+	for _, ref := range escaped {
+		r.in.publishReference(ref)
+	}
+	r.inlineCreated = [6]*Resource{}
+	r.inlineLowered = [2]ownedHandle{}
+	return nil, true
+}
+
+func (r *resourceCodec) finishRollback(err error) error {
+	created, lowered := r.created, r.lowered
+	r.created, r.lowered, r.escaped = nil, nil, nil
 	r.seen = referenceSet{}
 	defer func() {
 		r.inlineCreated = [6]*Resource{}
 		r.inlineLowered = [2]ownedHandle{}
 	}()
 	guard := cleanupGuard{}
-	if scope != nil {
-		if ended := scope.End(); err == nil {
-			err = ended
-		}
+	for _, ref := range created {
+		guard.run(func() { r.in.cleanupResource(r.core, ref) })
 	}
-	if err != nil {
-		for _, ref := range created {
-			guard.run(func() { r.in.cleanupResource(r.core, ref) })
-		}
-		for _, h := range lowered {
-			guard.run(func() {
-				if h.table.EntryGeneration(h.id) != h.generation {
-					return
+	for _, h := range lowered {
+		guard.run(func() {
+			if h.table.EntryGeneration(h.id) != h.generation {
+				return
+			}
+			if h.end != nil {
+				if h.end.table() == h.table && h.end.id == h.id {
+					h.end.abort()
 				}
-				if h.end != nil {
-					if h.end.table() == h.table && h.end.id == h.id {
-						h.end.abort()
-					}
-					return
-				}
-				if h.rt == nil {
-					h.table.DropErrorContext(h.id)
-					return
-				}
-				if rep, failed := h.table.Take(h.rt.identity, h.id); failed == nil {
-					r.in.cleanupRepresentation(r.core, h.rt, rep)
-				}
-			})
-		}
-	} else {
-		for _, ref := range escaped {
-			r.in.publishReference(ref)
-		}
+				return
+			}
+			if h.rt == nil {
+				h.table.DropErrorContext(h.id)
+				return
+			}
+			if rep, failed := h.table.Take(h.rt.identity, h.id); failed == nil {
+				r.in.cleanupRepresentation(r.core, h.rt, rep)
+			}
+		})
 	}
 	guard.finish()
 	return err
+}
+
+func (r *resourceCodec) Finish(err error) error {
+	if err == nil {
+		ended, done := r.finishSuccess()
+		if done {
+			return nil
+		}
+		return r.finishRollback(ended)
+	}
+	scope := r.scope
+	r.scope = nil
+	if scope != nil {
+		_ = scope.End()
+	}
+	return r.finishRollback(err)
 }
 
 func (in *Instance) discardResource(ref *Resource) {

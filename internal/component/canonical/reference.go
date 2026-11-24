@@ -47,9 +47,10 @@ func initializeReference(allocation *referenceAllocation, table *Resources, type
 // are consumed once: moving, invalidating or clearing the allocator never
 // rebinds a published header or affine state. Retained header copies keep their
 // own block alive. This is allocation grouping, not capability pooling.
+// Blocks stay <= 368 B so BDWGC serves them from lock-free thread-local freelists.
 type ReferenceAllocator struct {
 	_     referenceAllocatorNoCopy
-	block *[16]referenceAllocation
+	block *[5]referenceAllocation
 	next  uint8
 }
 
@@ -61,11 +62,11 @@ func (*referenceAllocatorNoCopy) Unlock() {}
 func (a *ReferenceAllocator) New(table *Resources, typeID *ResourceType, id uint32, owner any, scope *BorrowScope) *Reference {
 	if a.block == nil && a.next == 0 {
 		// An owner creating only one capability needs no partially used block.
-		a.next = 16
+		a.next = 5
 		return NewReference(table, typeID, id, owner, scope)
 	}
 	if a.block == nil || a.next == uint8(len(a.block)) {
-		a.block = new([16]referenceAllocation)
+		a.block = new([5]referenceAllocation)
 		a.next = 0
 	}
 	slot := &a.block[a.next]
@@ -133,14 +134,16 @@ func InvalidateReference(r *Reference) {
 // movement with execution; outstanding lends prohibit both movement and drop.
 func (r *Resources) CheckOwn(t *ResourceType, id uint32) error {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	e, err := r.getLocked(t, id)
 	if err != nil {
+		r.mu.Unlock()
 		return err
 	}
 	if !e.owned || e.lends != 0 {
+		r.mu.Unlock()
 		return scalarTrap("resource is borrowed")
 	}
+	r.mu.Unlock()
 	return nil
 }
 

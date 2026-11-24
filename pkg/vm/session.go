@@ -71,16 +71,19 @@ func (c *Caller) ReadExternalMemory(memory Extern, offset uint64, dst []byte) er
 	if err := c.enter(); err != nil {
 		return err
 	}
-	defer c.mu.Unlock()
 	if memory.store != c.op.store || memory.store == nil {
+		c.mu.Unlock()
 		return ErrReference
 	}
 	if memory.Kind() != MemoryKind {
+		c.mu.Unlock()
 		return ErrType
 	}
 	if !memory.external.Memory.Read(offset, dst) {
+		c.mu.Unlock()
 		return &wasm.Trap{Code: wasm.TrapMemoryBounds}
 	}
+	c.mu.Unlock()
 	return nil
 }
 
@@ -88,16 +91,19 @@ func (c *Caller) WriteExternalMemory(memory Extern, offset uint64, src []byte) e
 	if err := c.enter(); err != nil {
 		return err
 	}
-	defer c.mu.Unlock()
 	if memory.store != c.op.store || memory.store == nil {
+		c.mu.Unlock()
 		return ErrReference
 	}
 	if memory.Kind() != MemoryKind {
+		c.mu.Unlock()
 		return ErrType
 	}
 	if !memory.external.Memory.Write(offset, src) {
+		c.mu.Unlock()
 		return &wasm.Trap{Code: wasm.TrapMemoryBounds}
 	}
+	c.mu.Unlock()
 	return nil
 }
 
@@ -108,14 +114,16 @@ func (c *Caller) ReadExternalMemoryString(memory Extern, offset, size uint64) (s
 	if err := c.enter(); err != nil {
 		return "", err
 	}
-	defer c.mu.Unlock()
 	if memory.store != c.op.store || memory.store == nil {
+		c.mu.Unlock()
 		return "", ErrReference
 	}
 	if memory.Kind() != MemoryKind {
+		c.mu.Unlock()
 		return "", ErrType
 	}
 	data, ok := memory.external.Memory.ReadString(offset, size)
+	c.mu.Unlock()
 	if !ok {
 		return "", &wasm.Trap{Code: wasm.TrapMemoryBounds}
 	}
@@ -129,16 +137,19 @@ func (c *Caller) WriteExternalMemoryString(memory Extern, offset uint64, src str
 	if err := c.enter(); err != nil {
 		return err
 	}
-	defer c.mu.Unlock()
 	if memory.store != c.op.store || memory.store == nil {
+		c.mu.Unlock()
 		return ErrReference
 	}
 	if memory.Kind() != MemoryKind {
+		c.mu.Unlock()
 		return ErrType
 	}
 	if !memory.external.Memory.WriteString(offset, src) {
+		c.mu.Unlock()
 		return &wasm.Trap{Code: wasm.TrapMemoryBounds}
 	}
+	c.mu.Unlock()
 	return nil
 }
 

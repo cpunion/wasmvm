@@ -172,13 +172,15 @@ func (h *HTTPFields) ForEach(fn func(HTTPField)) {
 }
 func (h *HTTPFields) Clone() *HTTPFields {
 	h.mu.RLock()
-	defer h.mu.RUnlock()
-	return &HTTPFields{limits: h.limits, fields: append([]HTTPField(nil), h.fields...), size: h.size}
+	cp := &HTTPFields{limits: h.limits, fields: append([]HTTPField(nil), h.fields...), size: h.size}
+	h.mu.RUnlock()
+	return cp
 }
 func (h *HTTPFields) Mutate(name string, values []string, appendOnly bool) error {
 	h.mu.Lock()
-	defer h.mu.Unlock()
-	return h.mutate(name, values, appendOnly)
+	err := h.mutate(name, values, appendOnly)
+	h.mu.Unlock()
+	return err
 }
 func (h *HTTPFields) mutate(name string, values []string, appendOnly bool) error {
 	if h.immutable {

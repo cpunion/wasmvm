@@ -18,10 +18,28 @@ func (g *cleanupGuard) run(fn func()) {
 }
 
 func (g *cleanupGuard) finishCodec(codec *canonical.Codec, complete bool, err error) error {
-	if codec != nil && codec.Resources == nil {
+	if codec == nil {
+		return err
+	}
+	if codec.Resources == nil {
 		return finishResources(codec, complete, err)
 	}
+	if complete && err == nil {
+		if r, ok := codec.Resources.(*resourceCodec); ok {
+			if ended, done := r.finishSuccess(); done {
+				return ended
+			} else if ended != nil {
+				return g.finishResourceRollback(r, ended)
+			}
+		}
+	}
 	return g.finishResourceCodec(codec, complete, err)
+}
+
+func (g *cleanupGuard) finishResourceRollback(r *resourceCodec, err error) (result error) {
+	defer g.capturePanic()
+	result = err
+	return r.finishRollback(err)
 }
 
 func (g *cleanupGuard) finishResourceCodec(codec *canonical.Codec, complete bool, err error) (result error) {

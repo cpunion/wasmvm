@@ -54,11 +54,11 @@ func (c *Caller) NewResource(t *HostResourceType, rep uint32) (Value, error) {
 	if err := c.enter(); err != nil {
 		return Value{}, err
 	}
-	defer c.mu.Unlock()
 	v, err := c.instance.newResource(t, rep)
 	if err == nil {
 		c.addCreated(v.Resource)
 	}
+	c.mu.Unlock()
 	return v, err
 }
 
@@ -113,6 +113,7 @@ func (c *Caller) ResourceRep(t *HostResourceType, ref *Resource) (uint32, error)
 	if err := c.enter(); err != nil {
 		return 0, err
 	}
-	defer c.mu.Unlock()
-	return c.instance.resourceRep(t, ref)
+	rep, err := c.instance.resourceRep(t, ref)
+	c.mu.Unlock()
+	return rep, err
 }

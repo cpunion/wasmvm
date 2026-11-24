@@ -122,15 +122,13 @@ func (in *Instance) newSource(t ValueType, source AsyncSource) (Value, error) {
 		return Value{}, err
 	}
 	source.Owned = nil
-	alloc := &sourceAllocation{
-		scope: namespace{resources: t.resources, handles: in.hostResources},
-	}
-	r, w, err := in.initEnds(&alloc.ends, nil, &alloc.scope, t.typ)
+	ends := new([2]asyncEnd)
+	scope := &namespace{resources: t.resources, handles: in.hostResources}
+	r, w, err := in.initEnds(ends, nil, scope, t.typ)
 	if err != nil {
 		return Value{}, err
 	}
-	state := &alloc.state
-	*state = sourceState{source: source, in: in, values: n, bytes: bytes, writer: w, hasOwned: n != 0}
+	state := &sourceState{source: source, in: in, values: n, bytes: bytes, writer: w, hasOwned: n != 0}
 	if source.Cancel != nil {
 		if err := source.Cancel.attach(in.scheduler().wake); err != nil {
 			r.abort()
@@ -153,8 +151,8 @@ func (in *Instance) newSource(t ValueType, source AsyncSource) (Value, error) {
 	in.heldValues += n
 	in.heldBytes += bytes
 	if len(owned) != 0 {
-		if len(owned) <= len(alloc.inlineOwned) {
-			state.owned = alloc.inlineOwned[:0]
+		if len(owned) <= len(state.inlineOwned) {
+			state.owned = state.inlineOwned[:0]
 		} else {
 			state.owned = make([]*Resource, 0, len(owned))
 		}
@@ -283,13 +281,6 @@ func (in *Instance) startSourceRead(c *vm.Caller, r, w *asyncEnd, b *guestBuffer
 	return in.startSourceJob(c, r, w, b, batch)
 }
 
-type sourceAllocation struct {
-	ends        [2]asyncEnd
-	scope       namespace
-	state       sourceState
-	inlineOwned [2]*Resource
-}
-
 type sourceReadTask struct {
 	task       componentTask
 	function   Function
@@ -388,15 +379,14 @@ func (sr *sourceReadTask) resolve(current *vm.Caller, value *Value, cancelled bo
 func (in *Instance) startSourceJob(c *vm.Caller, r, w *asyncEnd, b *guestBuffer, batch *model.Type) error {
 	r.buffer = b
 	plan := w.source.ensureReadPlan(batch)
-	sr := &sourceReadTask{
-		function: Function{instance: in, scope: w.scope, typ: &plan.typ, values: &plan.values},
-		r:        r,
-		w:        w,
-		b:        b,
-		unit:     r.typ.Element == nil,
-	}
+	sr := in.acquireSourceReadTask()
+	sr.function = Function{instance: in, scope: w.scope, typ: &plan.typ, values: &plan.values}
+	sr.r, sr.w, sr.b, sr.unit = r, w, b, r.typ.Element == nil
 	t := &sr.task
+	t.readPool = sr
 	if err := in.attachTask(t, w.scope, nil, vm.Extern{}, nil, nil); err != nil {
+		t.readPool = nil
+		in.recycleTask(nil, nil, sr)
 		return err
 	}
 	t.hostFunction = &sr.function
@@ -434,6 +424,7 @@ func (in *Instance) bufferType(element *model.Type) (*model.Type, error) {
 
 type sourceState struct {
 	in                  *Instance
+	inlineOwned         [2]*Resource
 	owned               []*Resource
 	values, bytes       uint64
 	cleanupNext         *sourceState

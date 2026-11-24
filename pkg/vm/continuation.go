@@ -55,10 +55,10 @@ func (op *operation) newContinuation(work *callWorkspace, result []wasm.ValueTyp
 	var call *Continuation
 	if op.contBlock == nil && op.nextCont == 0 {
 		call = &Continuation{}
-		op.nextCont = 8
+		op.nextCont = 2
 	} else {
 		if op.contBlock == nil || op.nextCont == uint8(len(op.contBlock)) {
-			op.contBlock = new([8]Continuation)
+			op.contBlock = new([2]Continuation)
 			op.nextCont = 0
 		}
 		call = &op.contBlock[op.nextCont]

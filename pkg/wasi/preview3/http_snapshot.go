@@ -34,8 +34,9 @@ type snapshotReader struct {
 
 func (r *snapshotReader) take(limit int) (string, error) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
-	return r.takeLocked(limit)
+	data, err := r.takeLocked(limit)
+	r.mu.Unlock()
+	return data, err
 }
 
 func (r *snapshotReader) takeLocked(limit int) (string, error) {

@@ -84,8 +84,11 @@ func (p *HTTP) callIncoming(ctx context.Context, in *component.Instance, request
 	if err != nil {
 		return nil, err
 	}
-	if err = httpWITFunctions["handler"]["handle"].check(p.types)(function.Info()); err != nil {
-		return nil, err
+	if p.checkedHandler.Load() != function {
+		if err = httpWITFunctions["handler"]["handle"].check(p.types)(function.Info()); err != nil {
+			return nil, err
+		}
+		p.checkedHandler.Store(function)
 	}
 	fields, err := p.fieldsFromHeader(request.Header)
 	if err != nil {
@@ -277,6 +280,9 @@ func (p *HTTP) runIncoming(callCtx context.Context, cancel context.CancelFunc, s
 				return failed
 			}
 			message.body.handled()
+			message.body.mu.Lock()
+			message.body.unpooled = true
+			message.body.mu.Unlock()
 			response.Body = &httpCallBody{ReadCloser: stream, done: callDone, interrupt: context.AfterFunc(callCtx, func() { message.body.dispose(nil, callCtx.Err()) }), release: message.body.release, cancel: cancel, stop: stop}
 			owned = false
 			reply.set(response, nil)

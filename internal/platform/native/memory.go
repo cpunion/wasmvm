@@ -178,18 +178,22 @@ func (m *Memory) release() {
 }
 func (m *Memory) retain() error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	if m.retired {
+		m.mu.Unlock()
 		return ErrClosed
 	}
 	m.bindings++
+	m.mu.Unlock()
 	return nil
 }
 func (m *Memory) drop() {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	m.bindings--
-	m.release()
+	if m.retired && m.bindings == 0 && m.active == 0 {
+		m.releaseAndUnlock()
+		return
+	}
+	m.mu.Unlock()
 }
 func (m *Memory) begin() (uint64, uint64, error) {
 	m.mu.Lock()
@@ -249,9 +253,9 @@ func (c *Context) BindMemory(m *Memory) error {
 // The common unchanged binding needs no cleanup frame. Keep exceptional
 // cleanup around the ownership transfer, including its nested memory locks.
 func (c *Context) replaceMemoryLocked(m *Memory) error {
-	defer c.mu.Unlock()
 	if m != nil {
 		if err := m.retain(); err != nil {
+			c.mu.Unlock()
 			return err
 		}
 	}
@@ -260,5 +264,6 @@ func (c *Context) replaceMemoryLocked(m *Memory) error {
 	}
 	c.memory = m
 	c.record.MemoryBase, c.record.MemorySize = 0, 0
+	c.mu.Unlock()
 	return nil
 }

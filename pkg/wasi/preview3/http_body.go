@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -18,6 +19,7 @@ import (
 type httpCell struct {
 	mu        sync.Mutex
 	ready     bool
+	usedAsync bool
 	readyFlag atomic.Bool
 	value     component.Value
 	resultVal [1]component.Value
@@ -84,6 +86,7 @@ func (s *httpCell) read(c *component.Caller, _ uint32) (*component.ReadCompletio
 		s.mu.Unlock()
 		stop()
 	})
+	s.usedAsync = true
 	s.pending = completion
 	s.stop = context.AfterFunc(c.Context(), func() { _ = completion.Cancelled() })
 	s.mu.Unlock()
@@ -102,6 +105,7 @@ type httpBody struct {
 	hasTrailers                bool
 	consumeHandled             bool
 	trailerObserved            bool
+	unpooled                   bool
 	failure                    error
 	done                       chan struct{}
 	tx                         httpCell
@@ -135,16 +139,26 @@ type httpBody struct {
 
 func (p *HTTP) newBody() (*httpBody, error) {
 	p.mu.Lock()
-	defer p.mu.Unlock()
 	if p.closed {
+		p.mu.Unlock()
 		return nil, wasm.ErrClosed
 	}
 	if uint64(len(p.bodies)) >= uint64(p.config.MaxMessages) {
+		p.mu.Unlock()
 		return nil, wasm.ErrLimit
 	}
 	ctx, cancel := context.WithCancel(p.ctx)
-	b := &httpBody{owner: p, refs: 1, ctx: ctx, cancel: cancel}
+	var b *httpBody
+	if n := len(p.freeBodies); n != 0 {
+		b = p.freeBodies[n-1]
+		p.freeBodies[n-1] = nil
+		p.freeBodies = p.freeBodies[:n-1]
+		*b = httpBody{owner: p, refs: 1, ctx: ctx, cancel: cancel}
+	} else {
+		b = &httpBody{owner: p, refs: 1, ctx: ctx, cancel: cancel}
+	}
 	p.bodies[b] = struct{}{}
+	p.mu.Unlock()
 	return b, nil
 }
 func (b *httpBody) acquire() { b.mu.Lock(); b.refs++; b.mu.Unlock() }
@@ -163,20 +177,44 @@ func (b *httpBody) release() {
 		b.dispose(nil, errConnectionTerminated)
 	}
 	b.mu.Lock()
-	reader, closed, queued := b.reader, b.readerClosed, b.closeQueued
+	reader, requestBody, closed, queued, netStop, unpooled := b.reader, b.requestBody, b.readerClosed, b.closeQueued, b.networkStop, b.unpooled
 	b.mu.Unlock()
+	if reader != nil && !closed && !queued && requestBody == nil && isInlineCloseReader(reader) {
+		b.closeReader()
+		closed = true
+	}
 	if reader == nil || closed && !queued {
-		b.owner.mu.Lock()
-		delete(b.owner.bodies, b)
-		b.owner.mu.Unlock()
+		b.tx.mu.Lock()
+		usedAsync := b.tx.usedAsync
+		b.tx.mu.Unlock()
+		owner := b.owner
+		owner.mu.Lock()
+		delete(owner.bodies, b)
+		if !owner.closed && netStop == nil && !unpooled && !usedAsync && len(owner.freeBodies) < 8 {
+			*b = httpBody{}
+			owner.freeBodies = append(owner.freeBodies, b)
+		}
+		owner.mu.Unlock()
 	} else {
 		b.queueReaderClose()
 	}
+}
+func isInlineCloseReader(reader io.ReadCloser) bool {
+	if reader == http.NoBody {
+		return true
+	}
+	_, ok := reader.(*snapshotReader)
+	return ok
 }
 func (b *httpBody) queueReaderClose() {
 	b.mu.Lock()
 	if b.reader == nil || b.readerClosed || b.closeQueued {
 		b.mu.Unlock()
+		return
+	}
+	if b.requestBody == nil && isInlineCloseReader(b.reader) {
+		b.mu.Unlock()
+		b.closeReader()
 		return
 	}
 	b.closeQueued = true
@@ -755,6 +793,9 @@ func (p *HTTP) worker(fn func()) error {
 func (b *httpBody) readExternal(data []byte) (n int, err error) {
 	b.mu.Lock()
 	reader, timeout := b.reader, b.readTimeout
+	if timeout > 0 {
+		b.unpooled = true
+	}
 	b.mu.Unlock()
 	var timer *time.Timer
 	var expired atomic.Bool

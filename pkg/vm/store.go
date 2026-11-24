@@ -73,9 +73,9 @@ type operation struct {
 	exposed       atomic.Bool
 	inlineConts   [4]*Continuation
 	continuations []*Continuation
-	contBlock     *[8]Continuation
+	contBlock     *[2]Continuation
 	nextCont      uint8
-	callerBlock   *[16]callerAllocation
+	callerBlock   *[5]callerAllocation
 	nextCaller    uint8
 }
 

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/cpunion/wasmvm/internal/wasi/host"
@@ -47,6 +48,8 @@ type HTTP struct {
 	types           map[string]*component.HostResourceType
 	entries         map[uint32]*httpEntry
 	bodies          map[*httpBody]struct{}
+	freeBodies      []*httpBody
+	checkedHandler  atomic.Pointer[component.Function]
 	requests        uint32
 	cleanup         chan func()
 	cleanupDone     chan struct{}
@@ -163,26 +166,29 @@ func (p *HTTP) begin(ctx context.Context) error {
 		return err
 	}
 	p.mu.Lock()
-	defer p.mu.Unlock()
 	if p.closed {
+		p.mu.Unlock()
 		return wasm.ErrClosed
 	}
 	p.active.Add(1)
+	p.mu.Unlock()
 	return nil
 }
 func (p *HTTP) publish(c *component.Caller, e *httpEntry) (component.Value, error) {
 	p.mu.Lock()
-	defer p.mu.Unlock()
 	if p.closed {
+		p.mu.Unlock()
 		return component.Value{}, wasm.ErrClosed
 	}
 	if uint64(len(p.entries)) >= uint64(p.config.MaxResources) || p.next > 1<<32-1 {
+		p.mu.Unlock()
 		return component.Value{}, wasm.ErrLimit
 	}
 	id := uint32(p.next)
 	p.next++
 	v, err := c.NewResource(p.types[e.kind], id)
 	if err != nil {
+		p.mu.Unlock()
 		return component.Value{}, err
 	}
 	e.owner, e.id = p, id
@@ -193,6 +199,7 @@ func (p *HTTP) publish(c *component.Caller, e *httpEntry) (component.Value, erro
 	if e.message != nil {
 		e.message.body.acquire()
 	}
+	p.mu.Unlock()
 	return v, nil
 }
 func (p *HTTP) entry(c *component.Caller, v component.Value, kind string) (*httpEntry, error) {
@@ -201,14 +208,16 @@ func (p *HTTP) entry(c *component.Caller, v component.Value, kind string) (*http
 		return nil, err
 	}
 	p.mu.Lock()
-	defer p.mu.Unlock()
 	e := p.entries[id]
 	if p.closed {
+		p.mu.Unlock()
 		return nil, wasm.ErrClosed
 	}
 	if e == nil || e.dropped || e.kind != kind {
+		p.mu.Unlock()
 		return nil, vm.ErrReference
 	}
+	p.mu.Unlock()
 	return e, nil
 }
 func (p *HTTP) take(c *component.Caller, v component.Value, kind string, detachChildren bool) (*httpEntry, error) {
@@ -296,6 +305,8 @@ func (p *HTTP) Close() {
 		bodies = append(bodies, b)
 	}
 	p.bodies = nil
+	p.freeBodies = nil
+	p.checkedHandler.Store(nil)
 	transports := p.transports
 	p.transports = nil
 	p.mu.Unlock()
@@ -317,6 +328,8 @@ func (p *HTTP) Close() {
 		p.active.Wait()
 		p.workers.Wait()
 		p.mu.Lock()
+		p.freeBodies = nil
+		p.checkedHandler.Store(nil)
 		p.cleanupStopping = true
 		p.mu.Unlock()
 		p.cleanup <- nil

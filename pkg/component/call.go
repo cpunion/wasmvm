@@ -100,18 +100,18 @@ type callbackCallerAllocation struct {
 }
 
 type callbackCallerAllocator struct {
-	block *[16]callbackCallerAllocation
+	block *[2]callbackCallerAllocation
 	next  uint8
 }
 
 func (a *callbackCallerAllocator) new(core *vm.Caller, in *Instance, f *Function, prompt bool) *Caller {
 	var allocation *callbackCallerAllocation
 	if a.block == nil && a.next == 0 {
-		a.next = 16
+		a.next = 2
 		allocation = &callbackCallerAllocation{}
 	} else {
 		if a.block == nil || a.next == uint8(len(a.block)) {
-			a.block = new([16]callbackCallerAllocation)
+			a.block = new([2]callbackCallerAllocation)
 			a.next = 0
 		}
 		allocation = &a.block[a.next]
@@ -675,6 +675,7 @@ func (in *Instance) asyncLift(f *Function, plan *validate.CanonicalFunction) fun
 		if err != nil {
 			return nil, err
 		}
+		defer in.releaseGuestTask(t)
 		if err := in.awaitTasks(c, func() bool { return t.exited }); err != nil {
 			return nil, err
 		}

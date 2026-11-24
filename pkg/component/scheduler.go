@@ -36,6 +36,10 @@ type componentTask struct {
 	cancelRequested, cancelDelivered bool
 	waitingEnter                     bool
 	pendingCleanup                   func()
+	guestPool                        *guestComponentTask
+	guestPinned                      bool
+	schedPool                        *scheduledTask
+	readPool                         *sourceReadTask
 }
 
 type taskScheduler struct {
@@ -86,6 +90,67 @@ type guestTaskCodecs struct {
 type guestComponentTask struct {
 	task   componentTask
 	codecs guestTaskCodecs
+	argBuf [canonical.MaxFlatParams]vm.Value
+}
+
+func (in *Instance) acquireGuestTask() *guestComponentTask {
+	if n := len(in.freeGuestTasks); n != 0 {
+		alloc := in.freeGuestTasks[n-1]
+		in.freeGuestTasks[n-1] = nil
+		in.freeGuestTasks = in.freeGuestTasks[:n-1]
+		return alloc
+	}
+	return &guestComponentTask{}
+}
+
+func (in *Instance) acquireScheduledTask() *scheduledTask {
+	if n := len(in.freeScheduledTasks); n != 0 {
+		alloc := in.freeScheduledTasks[n-1]
+		in.freeScheduledTasks[n-1] = nil
+		in.freeScheduledTasks = in.freeScheduledTasks[:n-1]
+		return alloc
+	}
+	return &scheduledTask{}
+}
+
+func (in *Instance) acquireSourceReadTask() *sourceReadTask {
+	if n := len(in.freeSourceReads); n != 0 {
+		alloc := in.freeSourceReads[n-1]
+		in.freeSourceReads[n-1] = nil
+		in.freeSourceReads = in.freeSourceReads[:n-1]
+		return alloc
+	}
+	return &sourceReadTask{}
+}
+
+func (in *Instance) recycleTask(guest *guestComponentTask, sched *scheduledTask, read *sourceReadTask) {
+	if in == nil {
+		return
+	}
+	if guest != nil && len(in.freeGuestTasks) < 4 {
+		*guest = guestComponentTask{}
+		in.freeGuestTasks = append(in.freeGuestTasks, guest)
+	}
+	if sched != nil && len(in.freeScheduledTasks) < 4 {
+		*sched = scheduledTask{}
+		in.freeScheduledTasks = append(in.freeScheduledTasks, sched)
+	}
+	if read != nil && len(in.freeSourceReads) < 4 {
+		*read = sourceReadTask{}
+		in.freeSourceReads = append(in.freeSourceReads, read)
+	}
+}
+
+func (in *Instance) releaseGuestTask(t *componentTask) {
+	if in == nil || t == nil {
+		return
+	}
+	t.guestPinned = false
+	if t.exited && !t.running && t.guestPool != nil {
+		gp := t.guestPool
+		t.guestPool = nil
+		in.recycleTask(gp, nil, nil)
+	}
 }
 
 func (in *Instance) makeTask(c *vm.Caller, n *namespace, plan *validate.CanonicalFunction, entry vm.Extern, args taskArguments, resolve taskResolution) (*componentTask, error) {
@@ -97,13 +162,20 @@ func (in *Instance) makeTask(c *vm.Caller, n *namespace, plan *validate.Canonica
 	}
 	var t *componentTask
 	if plan != nil {
-		alloc := &guestComponentTask{}
+		alloc := in.acquireGuestTask()
 		t = &alloc.task
 		t.codecs = &alloc.codecs
+		t.guestPool = alloc
+		t.guestPinned = true
 	} else {
 		t = &componentTask{}
 	}
 	if err := in.attachTask(t, n, plan, entry, args, resolve); err != nil {
+		if t.guestPool != nil {
+			alloc := t.guestPool
+			t.guestPool = nil
+			in.recycleTask(alloc, nil, nil)
+		}
 		return nil, err
 	}
 	return t, nil
@@ -265,6 +337,16 @@ func (t *componentTask) finish(c *vm.Caller, failed error) error {
 		guard.run(func() { state.finish(c, t.in) })
 	}
 	guard.finish()
+	if !t.running {
+		in, sp, rp := t.in, t.schedPool, t.readPool
+		t.schedPool, t.readPool = nil, nil
+		var gp *guestComponentTask
+		if !t.guestPinned {
+			gp = t.guestPool
+			t.guestPool = nil
+		}
+		in.recycleTask(gp, sp, rp)
+	}
 	return failed
 }
 
@@ -302,6 +384,16 @@ func (t *componentTask) resume(c *vm.Caller) (err error) {
 			guard.finish()
 		} else if panicked != nil {
 			panic(panicked)
+		}
+		if t.exited {
+			in, sp, rp := t.in, t.schedPool, t.readPool
+			t.schedPool, t.readPool = nil, nil
+			var gp *guestComponentTask
+			if !t.guestPinned {
+				gp = t.guestPool
+				t.guestPool = nil
+			}
+			in.recycleTask(gp, sp, rp)
 		}
 	}()
 	if !t.started {
@@ -355,8 +447,17 @@ func (t *componentTask) resume(c *vm.Caller) (err error) {
 		if failed != nil {
 			return failed
 		}
-		var argBuf [canonical.MaxFlatParams]vm.Value
-		t.core, err = c.Start(t.entry, vmValuesInto(slots, argBuf[:0]))
+		var argSlice []vm.Value
+		if t.guestPool != nil {
+			argSlice = vmValuesInto(slots, t.guestPool.argBuf[:0])
+		} else {
+			var argBuf [canonical.MaxFlatParams]vm.Value
+			argSlice = vmValuesInto(slots, argBuf[:0])
+		}
+		t.core, err = c.Start(t.entry, argSlice)
+		if t.guestPool != nil {
+			clear(t.guestPool.argBuf[:len(argSlice)])
+		}
 		if err != nil {
 			return err
 		}

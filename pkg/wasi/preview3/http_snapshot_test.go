@@ -240,3 +240,54 @@ func TestHTTPSnapshotReadinessWithBusyIOWorkers(t *testing.T) {
 		}
 	})
 }
+
+func TestHTTPSnapshotInlineCloseBodyPoolAndShutdown(t *testing.T) {
+	p := httpOwner(t, HTTPConfig{})
+	b1, err := p.newBody()
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := &snapshotReader{data: "inline-close"}
+	b1.reader = r
+	b1.release()
+	if !r.closed {
+		t.Fatal("snapshotReader was not closed inline on release")
+	}
+	p.mu.Lock()
+	bodiesCount, freeCount := len(p.bodies), len(p.freeBodies)
+	p.mu.Unlock()
+	if bodiesCount != 0 || freeCount != 1 {
+		t.Fatalf("unexpected body tracking after inline close: bodies=%d free=%d", bodiesCount, freeCount)
+	}
+	b2, err := p.newBody()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b2 != b1 {
+		t.Fatal("expected recycled httpBody instance on subsequent newBody")
+	}
+	b2.reader = http.NoBody
+	b2.unpooled = true
+	b2.release()
+	p.mu.Lock()
+	bodiesCount, freeCount = len(p.bodies), len(p.freeBodies)
+	p.mu.Unlock()
+	if bodiesCount != 0 || freeCount != 0 {
+		t.Fatalf("unpooled body leaked or recycled: bodies=%d free=%d", bodiesCount, freeCount)
+	}
+	b3, err := p.newBody()
+	if err != nil {
+		t.Fatal(err)
+	}
+	b3.release()
+	p.Close()
+	if err := p.WaitClosed(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	p.mu.Lock()
+	freeCount = len(p.freeBodies)
+	p.mu.Unlock()
+	if freeCount != 0 || p.checkedHandler.Load() != nil {
+		t.Fatalf("shutdown retained pool/cache state: free=%d checkedHandler=%v", freeCount, p.checkedHandler.Load())
+	}
+}

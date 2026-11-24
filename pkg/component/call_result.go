@@ -67,6 +67,7 @@ func (f *Function) callWithResult(ctx context.Context, args []Value, options Cal
 			if failed != nil {
 				return failed
 			}
+			defer in.releaseGuestTask(task)
 			if err = in.awaitTasks(c, func() bool { return task.task.resolved }); err != nil {
 				return err
 			}
