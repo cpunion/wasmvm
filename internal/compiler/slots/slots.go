@@ -144,11 +144,36 @@ type slotCompiler struct {
 	writeBlock []uint32
 	nextWrite  []uint32
 	returns    []bool
-	free, all  [128][]Slot
+	free, all  [10][]Slot
 	literals   literalPool
 	moves      []Move
 	planner    movePlanner
 	scratch    map[wasm.ValueType]Slot
+}
+
+func storageBucket(t wasm.ValueType) int {
+	switch t.Storage() {
+	case wasm.I32:
+		return 0
+	case wasm.I64:
+		return 1
+	case wasm.F32:
+		return 2
+	case wasm.F64:
+		return 3
+	case wasm.V128:
+		return 4
+	case wasm.FuncRef:
+		return 5
+	case wasm.ExternRef:
+		return 6
+	case wasm.ExnRef:
+		return 7
+	case wasm.ContRef:
+		return 8
+	default:
+		return 9
+	}
 }
 
 func reuseSlice[T any](buf []T, n int) []T {
@@ -162,16 +187,25 @@ func (c *slotCompiler) compileFunction(f *ir.Function, budget *budget) *Function
 	n := len(f.Values)
 	nBlocks := len(f.Blocks)
 	budget.charge(uint64(n)*4 + uint64(nBlocks))
-	totalOps := nBlocks
-	for i := range f.Blocks {
-		totalOps += len(f.Blocks[i].Ops)
+	slotCap := uint64(len(f.Locals))
+	if n > 0 {
+		slotCap += min(uint64(n), 8)
+	}
+	if uint64(budget.slots) < slotCap {
+		slotCap = uint64(budget.slots)
+	}
+	if budget.nodes < slotCap {
+		slotCap = budget.nodes
+	}
+	var initSlots []wasm.ValueType
+	if slotCap > 0 {
+		initSlots = make([]wasm.ValueType, 0, int(slotCap))
 	}
 	out := &Function{
 		Signature:  f.Signature,
 		Sources:    f.Sources,
 		LocalCount: uint32(len(f.Locals)),
-		Slots:      make([]wasm.ValueType, 0, len(f.Locals)+8),
-		Code:       make([]Instruction, 0, totalOps),
+		Slots:      initSlots,
 		ValueSlots: make([]Slot, n),
 		BlockPC:    make([]uint32, nBlocks),
 	}
@@ -188,7 +222,11 @@ func (c *slotCompiler) compileFunction(f *ir.Function, budget *budget) *Function
 	lastUse := reuseSlice(c.lastUse, n)
 	clear(lastUse)
 	c.defs, c.pinned, c.uses, c.lastUse = defs, pinned, uses, lastUse
+	var totalOps uint64
 	for bi, b := range f.Blocks {
+		ops := uint64(len(b.Ops)) + 1
+		budget.charge(ops)
+		totalOps += ops
 		for _, v := range b.Params {
 			defs[v] = bi
 			pinned[v] = true
@@ -200,7 +238,6 @@ func (c *slotCompiler) compileFunction(f *ir.Function, budget *budget) *Function
 		}
 	}
 	for bi, b := range f.Blocks {
-		budget.charge(uint64(len(b.Ops)) + 1)
 		for oi, op := range b.Ops {
 			for _, v := range op.Args {
 				uses[v]++
@@ -237,6 +274,9 @@ func (c *slotCompiler) compileFunction(f *ir.Function, budget *budget) *Function
 			out.ValueSlots[v] = budget.addSlot(out, t)
 		}
 	}
+	if codeCap := min(totalOps, budget.nodes); codeCap > 0 {
+		out.Code = make([]Instruction, 0, int(codeCap))
+	}
 	// Only block-local temporaries are recycled in this first allocator. Values
 	// crossing blocks and block parameters keep dedicated slots; this avoids a
 	// quadratic global interference graph and preserves loops conservatively.
@@ -248,8 +288,8 @@ func (c *slotCompiler) compileFunction(f *ir.Function, budget *budget) *Function
 	literals := &c.literals
 	release := func(v ir.Value) {
 		if !pinned[v] && !coalesced[v] && uses[v] == 0 && literals.release(out.ValueSlots[v]) {
-			t := f.Values[v]
-			free[t.Storage()] = append(free[t.Storage()], out.ValueSlots[v])
+			bucket := storageBucket(f.Values[v])
+			free[bucket] = append(free[bucket], out.ValueSlots[v])
 		}
 	}
 	for bi, b := range f.Blocks {
@@ -288,12 +328,13 @@ func (c *slotCompiler) compileFunction(f *ir.Function, budget *budget) *Function
 						continue
 					}
 				}
-				if k := len(free[t.Storage()]); k > 0 {
-					out.ValueSlots[v] = free[t.Storage()][k-1]
-					free[t.Storage()] = free[t.Storage()][:k-1]
+				bucket := storageBucket(t)
+				if k := len(free[bucket]); k > 0 {
+					out.ValueSlots[v] = free[bucket][k-1]
+					free[bucket] = free[bucket][:k-1]
 				} else {
 					s := budget.addSlot(out, t)
-					all[t.Storage()] = append(all[t.Storage()], s)
+					all[bucket] = append(all[bucket], s)
 					out.ValueSlots[v] = s
 				}
 				if constant {
