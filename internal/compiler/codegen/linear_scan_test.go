@@ -51,12 +51,18 @@ func TestLinearScanSplitsAndReentersSpilledIntervals(t *testing.T) {
 
 func TestLinearScanKeepsCostlyLoopValuesAcrossShorterColdIntervals(t *testing.T) {
 	b := scanBank{pool: []byte{19}}
-	b.advance(0, []registerInterval{{0, 0, 10, 1000}})
-	b.advance(1, []registerInterval{{1, 1, 1, 10}})
+	if !b.advance(0, []registerInterval{{0, 0, 10, 1000}}) {
+		t.Fatal("initial residency did not report a new physical home")
+	}
+	if b.advance(1, []registerInterval{{1, 1, 1, 10}}) {
+		t.Fatal("a pending interval reported a change to a physical home")
+	}
 	if b.resident[0].interval.slot != 0 {
 		t.Fatal("loop accumulator evicted for a cheap temporary")
 	}
-	b.advance(2, []registerInterval{{2, 2, 3, 2000}})
+	if !b.advance(2, []registerInterval{{2, 2, 3, 2000}}) {
+		t.Fatal("resident replacement did not report a new physical home")
+	}
 	if b.resident[0].interval.slot != 2 {
 		t.Fatal("higher-cost value did not gain residency")
 	}
@@ -64,7 +70,9 @@ func TestLinearScanKeepsCostlyLoopValuesAcrossShorterColdIntervals(t *testing.T)
 	if b.resident[0].interval.slot != 0 {
 		t.Fatal("spilled accumulator did not regain residency")
 	}
-	b.advance(11, nil)
+	if !b.advance(11, nil) {
+		t.Fatal("resident expiry did not report a cleared physical home")
+	}
 	if b.resident[0].valid || len(b.pending) != 0 {
 		t.Fatal("expired values retained residency")
 	}

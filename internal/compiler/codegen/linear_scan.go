@@ -79,13 +79,16 @@ type scanBank struct {
 	pending  intervalQueue
 }
 
-func (b *scanBank) advance(block int, incoming []registerInterval) {
+// advance reports whether any physical home may have changed.
+func (b *scanBank) advance(block int, incoming []registerInterval) bool {
 	if b.resident == nil {
 		b.resident = make([]registerResident, len(b.pool))
 	}
+	changed := false
 	for i, r := range b.resident {
 		if r.valid && r.interval.last < block {
 			b.resident[i].valid = false
+			changed = true
 		}
 	}
 	for _, interval := range incoming {
@@ -118,7 +121,9 @@ func (b *scanBank) advance(block int, incoming []registerInterval) {
 			b.pending.push(b.resident[free].interval)
 		}
 		b.resident[free] = registerResident{candidate, true}
+		changed = true
 	}
+	return changed
 }
 
 func (e *functionEmitter) prepareSlotLinearScan(regions map[int]memoryRegion, maxCells int) {
@@ -264,7 +269,7 @@ func (e *functionEmitter) installRegisterPlans(order []registerInterval, blocks 
 	floats := scanBank{pool: e.floatRegisterPool()}
 	baseline := e.currentRegisterPlan()
 	plans := make([]*registerPlan, len(e.f.Code))
-	var previous *registerPlan
+	var plan *registerPlan
 	position := 0
 	useful := false
 	// Bound materialized register-map cells independently of instruction count.
@@ -283,21 +288,24 @@ func (e *functionEmitter) installRegisterPlans(order []registerInterval, blocks 
 			}
 			position++
 		}
-		integers.advance(start, inInteger)
-		floats.advance(start, inFloat)
-		plan := registerBankPlan(e.f, &integers, &floats, nil)
-		for _, slot := range plan.slots {
-			kind, _ := registerLocation(baseline, slot)
-			if kind == 0 {
-				useful = true
-			}
-		}
-		if equalRegisterPlans(previous, plan) {
-			plan = previous
-		} else {
-			remainingCells -= len(plan.slots) + 1
-			if remainingCells < 0 {
-				return
+		integerChanged := integers.advance(start, inInteger)
+		floatChanged := floats.advance(start, inFloat)
+		if plan == nil || integerChanged || floatChanged {
+			next := registerBankPlan(e.f, &integers, &floats, nil)
+			if !equalRegisterPlans(plan, next) {
+				remainingCells -= len(next.slots) + 1
+				if remainingCells < 0 {
+					return
+				}
+				plan = next
+				if !useful {
+					for _, slot := range plan.slots {
+						if kind, _ := registerLocation(baseline, slot); kind == 0 {
+							useful = true
+							break
+						}
+					}
+				}
 			}
 		}
 		end := len(plans)
@@ -307,7 +315,6 @@ func (e *functionEmitter) installRegisterPlans(order []registerInterval, blocks 
 		for pc := start; pc < end; pc++ {
 			plans[pc] = plan
 		}
-		previous = plan
 	}
 	if useful {
 		e.allocationPlans, e.allocationStarts = plans, blocks
