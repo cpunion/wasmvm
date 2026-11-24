@@ -190,8 +190,8 @@ func (c *Caller) Schedule(work AsyncWork) error {
 		return err
 	}
 	alloc := &scheduledTask{
-		scope:    namespace{handles: in.hostResources},
-		work:     workState{control: work.Cancel, prompt: work.Prompt, start: work.Start, done: work.Done},
+		scope: namespace{handles: in.hostResources},
+		work:  workState{control: work.Cancel, prompt: work.Prompt, start: work.Start, done: work.Done},
 	}
 	alloc.function = Function{instance: in, scope: &alloc.scope, typ: &scheduledWorkType, values: &scheduledWorkValues}
 	t := &alloc.task

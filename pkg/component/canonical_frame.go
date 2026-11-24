@@ -18,12 +18,12 @@ type canonicalFrame struct {
 	memory   memory
 	// Only the synchronous private transaction uses this lazy storage. Public
 	// Callers and parameter/result snapshots never point into this object.
-	host        *resourceHostCall
-	hostRead    hostReadBuffer
-	readFn      Function
-	hostValue   Value
-	cloneValues [8]Value
-	cloneBuf    []Value
+	host         *resourceHostCall
+	hostRead     hostReadBuffer
+	readFn       Function
+	hostValue    Value
+	cloneValues  [8]Value
+	cloneBuf     []Value
 	caller       *vm.Caller
 	n            *namespace
 	plan         *validate.CanonicalFunction
