@@ -189,13 +189,15 @@ func (c *Caller) Schedule(work AsyncWork) error {
 	if err := in.checkUniqueOwned(work.Owned); err != nil {
 		return err
 	}
-	alloc := &scheduledTask{
-		scope: namespace{handles: in.hostResources},
-		work:  workState{control: work.Cancel, prompt: work.Prompt, start: work.Start, done: work.Done},
-	}
+	alloc := in.acquireScheduledTask()
+	alloc.scope = namespace{handles: in.hostResources}
+	alloc.work = workState{control: work.Cancel, prompt: work.Prompt, start: work.Start, done: work.Done}
 	alloc.function = Function{instance: in, scope: &alloc.scope, typ: &scheduledWorkType, values: &scheduledWorkValues}
 	t := &alloc.task
+	t.schedPool = alloc
 	if err := in.attachTask(t, &alloc.scope, nil, vm.Extern{}, nil, nil); err != nil {
+		t.schedPool = nil
+		in.recycleTask(nil, alloc, nil)
 		return err
 	}
 	state := &alloc.work

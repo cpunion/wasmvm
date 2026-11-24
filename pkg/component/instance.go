@@ -59,6 +59,9 @@ type Instance struct {
 	instances, depth      uint32
 	callDepth             uint32
 	canonicalFrames       *canonicalFrame
+	freeGuestTasks        []*guestComponentTask
+	freeScheduledTasks    []*scheduledTask
+	freeSourceReads       []*sourceReadTask
 	references            canonical.ReferenceAllocator
 	borrowScopes          canonical.BorrowScopeAllocator
 	callers               callbackCallerAllocator
@@ -129,6 +132,9 @@ func (in *Instance) finishShutdown() {
 	defer in.comparisons.Clear()
 	in.store.WaitClosed(nil)
 	in.canonicalFrames = nil
+	in.freeGuestTasks = nil
+	in.freeScheduledTasks = nil
+	in.freeSourceReads = nil
 	in.references.Clear()
 	in.borrowScopes.Clear()
 	in.callers.clear()

@@ -71,7 +71,7 @@ type Resources struct {
 	count        uint32
 	next         uint32
 	generation   uint64
-	entryBlock   *[16]resourceEntry
+	entryBlock   *[4]resourceEntry
 	entryNext    uint8
 	free         []uint32
 	reuse        bool
@@ -184,11 +184,11 @@ func (r *Resources) EntryGeneration(id uint32) uint64 {
 // A table with only one publication avoids a partially used group.
 func (r *Resources) newEntryLocked() *resourceEntry {
 	if r.entryBlock == nil && r.entryNext == 0 {
-		r.entryNext = 16
+		r.entryNext = 4
 		return &resourceEntry{}
 	}
 	if r.entryBlock == nil || r.entryNext == uint8(len(r.entryBlock)) {
-		r.entryBlock = new([16]resourceEntry)
+		r.entryBlock = new([4]resourceEntry)
 		r.entryNext = 0
 	}
 	e := &r.entryBlock[r.entryNext]
@@ -333,17 +333,17 @@ func NewBorrowScope(maximum uint32) *BorrowScope {
 // capabilities continue observing ended=true across later blocks and Clear.
 type BorrowScopeAllocator struct {
 	_     referenceAllocatorNoCopy
-	block *[8]BorrowScope
+	block *[4]BorrowScope
 	next  uint8
 }
 
 func (a *BorrowScopeAllocator) New(maximum uint32) *BorrowScope {
 	if a.block == nil && a.next == 0 {
-		a.next = 8
+		a.next = 4
 		return NewBorrowScope(maximum)
 	}
 	if a.block == nil || a.next == uint8(len(a.block)) {
-		a.block = new([8]BorrowScope)
+		a.block = new([4]BorrowScope)
 		a.next = 0
 	}
 	s := &a.block[a.next]

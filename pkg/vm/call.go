@@ -39,10 +39,10 @@ func (op *operation) newCaller(instance *state.Instance) *Caller {
 		// Most leases need only their initial capability. Allocate a batch only
 		// after a callback actually creates another Caller in the same lease.
 		allocation = &callerAllocation{}
-		op.nextCaller = 16
+		op.nextCaller = 5
 	} else {
 		if op.callerBlock == nil || op.nextCaller == uint8(len(op.callerBlock)) {
-			op.callerBlock = new([16]callerAllocation)
+			op.callerBlock = new([5]callerAllocation)
 			op.nextCaller = 0
 		}
 		allocation = &op.callerBlock[op.nextCaller]

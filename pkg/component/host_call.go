@@ -102,6 +102,7 @@ func (h *hostCall) caller(core *vm.Caller) *Caller {
 func (h *hostCall) expire(c *Caller) {
 	c.mu.Lock()
 	c.active = false
+	c.function = nil
 	c.mu.Unlock()
 	if len(c.created) != 0 {
 		if len(h.created) == 0 && len(c.created) > len(h.inlineCreated) {

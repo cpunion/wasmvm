@@ -277,6 +277,9 @@ func (p *HTTP) runIncoming(callCtx context.Context, cancel context.CancelFunc, s
 				return failed
 			}
 			message.body.handled()
+			message.body.mu.Lock()
+			message.body.unpooled = true
+			message.body.mu.Unlock()
 			response.Body = &httpCallBody{ReadCloser: stream, done: callDone, interrupt: context.AfterFunc(callCtx, func() { message.body.dispose(nil, callCtx.Err()) }), release: message.body.release, cancel: cancel, stop: stop}
 			owned = false
 			reply.set(response, nil)

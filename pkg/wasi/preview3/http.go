@@ -47,6 +47,7 @@ type HTTP struct {
 	types           map[string]*component.HostResourceType
 	entries         map[uint32]*httpEntry
 	bodies          map[*httpBody]struct{}
+	freeBodies      []*httpBody
 	requests        uint32
 	cleanup         chan func()
 	cleanupDone     chan struct{}
@@ -296,6 +297,7 @@ func (p *HTTP) Close() {
 		bodies = append(bodies, b)
 	}
 	p.bodies = nil
+	p.freeBodies = nil
 	transports := p.transports
 	p.transports = nil
 	p.mu.Unlock()
@@ -317,6 +319,7 @@ func (p *HTTP) Close() {
 		p.active.Wait()
 		p.workers.Wait()
 		p.mu.Lock()
+		p.freeBodies = nil
 		p.cleanupStopping = true
 		p.mu.Unlock()
 		p.cleanup <- nil
