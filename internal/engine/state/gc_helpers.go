@@ -47,22 +47,34 @@ func (s *Store) popTemporary(mark int) {
 	s.temporary = s.temporary[:mark]
 }
 
-func (s *Store) gcAllocate(in *Instance, ins *module.Instr, args []value.Value, length uint32) (uint64, *heapObject, error) {
-	// Default constructors have no operand roots to borrow. Keep their path
-	// outside the rooted helper's deferred cleanup and exception frame.
-	if len(args) == 0 {
-		return s.gcAllocateObject(in.Types[ins.A], length)
+func (s *Store) gcAllocate(in *Instance, ins *module.Instr, args []value.Value, length uint32) (*heapObject, error) {
+	typ := in.Types[ins.A]
+	if len(args) != 0 && s.constructorMayCollect(typ, length) {
+		return s.gcAllocateRooted(typ, ins.Op&0xffff, args, length)
 	}
-	return s.gcAllocateRooted(in, ins, args, length)
+	return s.allocateHeapObject(typ, length, nil)
 }
 
-func (s *Store) gcAllocateRooted(in *Instance, ins *module.Instr, args []value.Value, length uint32) (uint64, *heapObject, error) {
+// Constructor operands need temporary roots when the serialized allocation
+// can call the collector. A missing layout keeps the rooted path.
+func (s *Store) constructorMayCollect(typ, length uint32) bool {
+	if s.HeapSafepoint == nil {
+		return false
+	}
+	if uint64(typ) < uint64(len(s.heapLayouts)) {
+		if layout := s.heapLayouts[typ]; layout != nil {
+			return s.objectCollectionDue(layout.payloadSize(length) + layout.overhead)
+		}
+	}
+	return true
+}
+
+func (s *Store) gcAllocateRooted(typ, op uint32, args []value.Value, length uint32) (*heapObject, error) {
 	// Operands stay rooted even on a constant-expression stack. Restore the
 	// borrowed root extent on ordinary errors and host-collector panics alike.
 	mark := len(s.temporary)
 	defer s.popTemporary(mark)
-	fs := s.registry.Types[in.Types[ins.A]].Definition.Fields
-	op := ins.Op & 0xffff
+	fs := s.registry.Types[typ].Definition.Fields
 	for i, a := range args {
 		ft := wasm.I32
 		if (op == 0 || op == 32) && i < len(fs) {
@@ -76,14 +88,5 @@ func (s *Store) gcAllocateRooted(in *Instance, ins *module.Instr, args []value.V
 			s.temporary = appendValue(s.temporary, ReferenceValue{ft, a})
 		}
 	}
-	return s.gcAllocateObject(in.Types[ins.A], length)
-}
-
-func (s *Store) gcAllocateObject(typ, length uint32) (uint64, *heapObject, error) {
-	ref, err := s.allocateObject(typ, length)
-	if err != nil {
-		return 0, nil, err
-	}
-	o, _ := s.heapObject(ref)
-	return ref, o, nil
+	return s.allocateHeapObject(typ, length, nil)
 }

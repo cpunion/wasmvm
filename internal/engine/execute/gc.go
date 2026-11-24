@@ -33,7 +33,7 @@ func (e *Execution) runGC() Status {
 		if n > 2 {
 			c = values[int(code.Args[in.Extra+2])]
 		}
-		result, err = e.store.GCAccess(instance, im, a, b, c)
+		result, err = e.store.GCAccess(im, a, b, c)
 	} else {
 		if int(in.Count) > cap(e.gcArgs) {
 			e.gcArgs = make([]value.Value, in.Count)

@@ -410,7 +410,7 @@ func (e *Execution) runSlotsLoop(steps uint64) (Status, uint64) {
 							c = values[int(code.Args[in.Extra+2])]
 						}
 						var err error
-						result, err = e.store.GCAccess(instance, &code.Sources[in.Source].Wasm, a, b, c)
+						result, err = e.store.GCAccess(&code.Sources[in.Source].Wasm, a, b, c)
 						if err != nil {
 							var t *wasm.Trap
 							if errors.As(err, &t) {

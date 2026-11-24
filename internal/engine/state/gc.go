@@ -20,7 +20,7 @@ func (s *Store) GC(ctx context.Context, in *Instance, ins *module.Instr, args []
 		if n > 2 {
 			c = args[2]
 		}
-		return s.GCAccess(in, ins, args[0], b, c)
+		return s.GCAccess(ins, args[0], b, c)
 	}
 	if s.HeapSafepoint == nil && (ins.Op&0xffff <= 1 || ins.Op&0xffff >= 6 && ins.Op&0xffff <= 10 || ins.Op&0xffff == 32 || ins.Op&0xffff == 33) {
 		return s.gcRooted(ctx, in, ins, args, roots...)
@@ -58,13 +58,13 @@ func (s *Store) gcSlow(ctx context.Context, in *Instance, ins *module.Instr, arg
 				return result, gcTrap(ins, wasm.TrapNullReference)
 			}
 		}
-		ref, o, err := s.gcAllocate(in, ins, args, uint32(len(fs)))
-		result.Lo = ref
+		o, err := s.gcAllocate(in, ins, args, uint32(len(fs)))
 		if err != nil {
 			return result, err
 		}
+		result.Lo = o.Ref
 		if descriptor != 0 {
-			s.objectExtras(ref).Descriptor = descriptor
+			s.objectExtras(o.Ref).Descriptor = descriptor
 		}
 		if op == 0 || op == 32 {
 			for i, a := range args[:len(fs)] {
@@ -78,11 +78,11 @@ func (s *Store) gcSlow(ctx context.Context, in *Instance, ins *module.Instr, arg
 		} else if op == 7 {
 			n = uint32(args[0].Lo)
 		}
-		ref, o, err := s.gcAllocate(in, ins, args, n)
-		result.Lo = ref
+		o, err := s.gcAllocate(in, ins, args, n)
 		if err != nil {
 			return result, err
 		}
+		result.Lo = o.Ref
 		f := s.gcElement(in, ins.A)
 		if op != 7 {
 			for i := range int(o.Length) {
@@ -108,11 +108,11 @@ func (s *Store) gcSlow(ctx context.Context, in *Instance, ins *module.Instr, arg
 			if uint64(start) > uint64(len(data)) || uint64(n)*uint64(width) > uint64(len(data))-uint64(start) {
 				return result, gcTrap(ins, wasm.TrapMemoryBounds)
 			}
-			ref, o, err := s.gcAllocate(in, ins, args, n)
-			result.Lo = ref
+			o, err := s.gcAllocate(in, ins, args, n)
 			if err != nil {
 				return result, err
 			}
+			result.Lo = o.Ref
 			for i := range int(o.Length) {
 				if err := gcPoll(ctx, i); err != nil {
 					return result, err
@@ -124,11 +124,11 @@ func (s *Store) gcSlow(ctx context.Context, in *Instance, ins *module.Instr, arg
 			if !Range(len(data), uint64(start), uint64(n)) {
 				return result, gcTrap(ins, wasm.TrapTableBounds)
 			}
-			ref, o, err := s.gcAllocate(in, ins, args, n)
-			result.Lo = ref
+			o, err := s.gcAllocate(in, ins, args, n)
 			if err != nil {
 				return result, err
 			}
+			result.Lo = o.Ref
 			for i := range int(o.Length) {
 				if err := gcPoll(ctx, i); err != nil {
 					return result, err

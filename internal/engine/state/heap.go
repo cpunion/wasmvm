@@ -162,27 +162,38 @@ func (s *Store) heapObject(ref uint64) (*heapObject, bool) {
 	}
 	return slot.Object, true
 }
+
+func (s *Store) objectCollectionDue(bytes uint64) bool {
+	return s.CollectEveryAllocation || s.usage.HeapObjects >= uint64(s.limits.MaxHeapObjects) ||
+		bytes > s.limits.MaxHeapBytes-s.usage.HeapBytes || s.usage.HeapBytes >= s.heapThreshold
+}
+
 func (s *Store) allocateObject(typ uint32, length uint32, extra ...uint64) (uint64, error) {
-	layout, err := s.layout(typ)
+	obj, err := s.allocateHeapObject(typ, length, extra)
 	if err != nil {
 		return 0, err
 	}
-	payload := layout.size
-	if layout.stride != 0 {
-		payload = uint64(length) * uint64(layout.stride)
+	return obj.Ref, nil
+}
+
+func (s *Store) allocateHeapObject(typ, length uint32, extra []uint64) (*heapObject, error) {
+	layout, err := s.layout(typ)
+	if err != nil {
+		return nil, err
 	}
+	payload := layout.payloadSize(length)
 	bytes := payload + layout.overhead
 	if len(extra) != 0 {
 		if extra[0] > math.MaxUint64-bytes {
-			return 0, limit("guest continuation bytes")
+			return nil, limit("guest continuation bytes")
 		}
 		bytes += extra[0]
 	}
-	if s.HeapSafepoint != nil && (s.CollectEveryAllocation || s.usage.HeapObjects >= uint64(s.limits.MaxHeapObjects) || bytes > s.limits.MaxHeapBytes-s.usage.HeapBytes || s.usage.HeapBytes >= s.heapThreshold) {
+	if s.HeapSafepoint != nil && s.objectCollectionDue(bytes) {
 		s.HeapSafepoint()
 	}
 	if s.usage.HeapObjects >= uint64(s.limits.MaxHeapObjects) || bytes > s.limits.MaxHeapBytes-s.usage.HeapBytes || payload > uint64(math.MaxInt) || s.heapSerial == math.MaxUint64 {
-		return 0, limit("guest heap")
+		return nil, limit("guest heap")
 	}
 	// Select a handle before reserving payload storage so limit failures cannot
 	// consume arena space. Commit the free list only after allocations succeed.
@@ -190,12 +201,12 @@ func (s *Store) allocateObject(typ uint32, length uint32, extra ...uint64) (uint
 	if s.heapFree != 0 {
 		index = s.heapFree
 	} else if uint64(len(s.heap)) > math.MaxUint32 || uint64(index) > uint64(s.limits.MaxHeapObjects) {
-		return 0, limit("guest heap handles")
+		return nil, limit("guest heap handles")
 	}
 	page := uint64(index) / heapObjectsPerPage
 	if page >= uint64(len(s.heapObjects)) {
 		if err := s.materializeObjectSlabs(page); err != nil {
-			return 0, err
+			return nil, err
 		}
 	}
 	o := &s.heapObjects[page].objects[uint64(index)%heapObjectsPerPage]
@@ -203,11 +214,11 @@ func (s *Store) allocateObject(typ uint32, length uint32, extra ...uint64) (uint
 	var offset uint64
 	if s.nativeHeap != nil {
 		if err := s.prepareHeapViews(uint64(index) + 1); err != nil {
-			return 0, err
+			return nil, err
 		}
 		data, offset, err = s.allocateNativePayload(payload)
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
 	} else {
 		data = make([]byte, int(payload))
@@ -240,7 +251,7 @@ func (s *Store) allocateObject(typ uint32, length uint32, extra ...uint64) (uint
 	if s.heapThreshold == 0 {
 		s.heapThreshold = 1 << 20
 	}
-	return ref, nil
+	return o, nil
 }
 func (s *Store) releaseObject(index uint32) {
 	slot := &s.heap[index]

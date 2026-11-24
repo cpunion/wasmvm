@@ -23,7 +23,7 @@ func GCAccessArity(op uint32) int {
 // The instruction must have been validated and classified by GCAccessArity.
 // Separate access from allocating callbacks so both host compilers can keep
 // ordinary interpreter access free of closure construction and safepoints.
-func (s *Store) GCAccess(in *Instance, ins *module.Instr, a, b, c value.Value) (value.Value, error) {
+func (s *Store) GCAccess(ins *module.Instr, a, b, c value.Value) (value.Value, error) {
 	op := ins.Op & 0xffff
 	var result value.Value
 	if op == 28 {
@@ -50,12 +50,8 @@ func (s *Store) GCAccess(in *Instance, ins *module.Instr, a, b, c value.Value) (
 	if op == 34 {
 		return value.Value{Lo: s.objectDescriptor(o)}, nil
 	}
-	fields := s.registry.Types[in.Types[ins.A]].Definition.Fields
 	index := ins.B
-	field := fields[0]
-	if op <= 5 {
-		field = fields[index]
-	} else {
+	if op > 5 {
 		index = uint32(b.Lo)
 		if index >= o.Length {
 			return result, &wasm.Trap{Code: wasm.TrapArrayBounds, Offset: ins.Offset}
@@ -66,16 +62,9 @@ func (s *Store) GCAccess(in *Instance, ins *module.Instr, a, b, c value.Value) (
 		if op == 14 {
 			v = c
 		}
-		if field.Packed != 0 {
-			v.Lo &= (1 << field.Packed) - 1
-			v.Hi = 0
-		}
+		// The admitted layout's byte width truncates packed writes.
 		s.setObject(o, index, v)
 		return result, nil
 	}
-	result = s.getObject(o, index)
-	if op == 3 || op == 12 {
-		result.Lo = uint64(uint32(int32(uint32(result.Lo)<<(32-field.Packed)) >> (32 - field.Packed)))
-	}
-	return result, nil
+	return s.loadObjectField(o, index, op == 3 || op == 12), nil
 }

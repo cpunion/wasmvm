@@ -118,13 +118,27 @@ func arrayFieldBounds() {
 // Exact-width byte arrays retain unaligned little-endian access without a
 // variable-length slice header for every scalar field.
 func (s *Store) getObject(o *heapObject, i uint32) value.Value {
+	return s.loadObjectField(o, i, false)
+}
+
+// Validation preserves the storage width of inherited packed fields. The
+// admitted layout therefore also supplies the width for signed loads.
+func (s *Store) loadObjectField(o *heapObject, i uint32, signed bool) value.Value {
 	offset, width := s.heapLayouts[o.Type].location(o.Length, i)
 	p := unsafe.Add(unsafe.Pointer(o.Data), offset)
 	switch width {
 	case 1:
-		return value.Value{Lo: uint64(*(*byte)(p))}
+		bits := *(*byte)(p)
+		if signed {
+			return value.Value{Lo: uint64(uint32(int32(int8(bits))))}
+		}
+		return value.Value{Lo: uint64(bits)}
 	case 2:
-		return value.Value{Lo: uint64(binary.LittleEndian.Uint16((*[2]byte)(p)[:]))}
+		bits := binary.LittleEndian.Uint16((*[2]byte)(p)[:])
+		if signed {
+			return value.Value{Lo: uint64(uint32(int32(int16(bits))))}
+		}
+		return value.Value{Lo: uint64(bits)}
 	case 4:
 		return value.Value{Lo: uint64(binary.LittleEndian.Uint32((*[4]byte)(p)[:]))}
 	case 8:

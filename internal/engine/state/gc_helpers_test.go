@@ -27,8 +27,16 @@ func TestGCAllocationRestoresBorrowedRootsAfterCollectorPanic(t *testing.T) {
 	in := &Instance{Types: ids}
 	ins := &module.Instr{Op: 0xfb0000}
 	args := []value.Value{{Lo: child}}
+	// Keep the constructor below the collection threshold. A successful
+	// allocation needs no temporary root storage in this case.
+	s.HeapSafepoint = func() { t.Fatal("ordinary allocation collected") }
+	parent, err := s.GC(context.Background(), in, ins, args)
+	if err != nil || !s.IsLiveReference(parent.Lo) || cap(s.temporary) != 0 {
+		t.Fatal("ordinary constructor used temporary roots", parent, err, s.temporary)
+	}
 	s.temporary = []ReferenceValue{{Type: wasm.AnyRef, Value: value.Value{Lo: I31(7)}}}
-	s.CollectEveryAllocation = true
+	heapByteLimit := s.limits.MaxHeapBytes
+	s.limits.MaxHeapBytes = s.usage.HeapBytes + 1
 	s.HeapSafepoint = func() {
 		if len(s.temporary) != 2 || s.temporary[1].Value.Lo != child {
 			t.Fatal("constructor operand was not rooted")
@@ -48,8 +56,8 @@ func TestGCAllocationRestoresBorrowedRootsAfterCollectorPanic(t *testing.T) {
 		t.Fatal("borrowed roots survived collector panic", s.temporary)
 	}
 	s.HeapSafepoint = nil
-	s.CollectEveryAllocation = false
-	parent, err := s.GC(context.Background(), in, ins, args)
+	s.limits.MaxHeapBytes = heapByteLimit
+	parent, err = s.GC(context.Background(), in, ins, args)
 	if err != nil {
 		t.Fatal(err)
 	}
