@@ -1,0 +1,47 @@
+{
+  "scope": "Exclusive running samples whose leaf is a named Darwin kernel boundary. System CPU may include other leaves. Profiles are separate from timing.",
+  "results": {
+    "wasmvm-go": {
+      "requests": 41472,
+      "allRunningSampleUsPerRequest": 77.25694444444444,
+      "namedKernelLeafUsPerRequest": {
+        "Other or incomplete stack": 0.5787037037037037
+      },
+      "details": {
+        "Other or incomplete stack / __psynch_cvwait": 0.2652391975308642,
+        "Other or incomplete stack / __semwait_signal": 0.19290123456790123,
+        "Other or incomplete stack / __psynch_cvsignal": 0.12056327160493827
+      }
+    },
+    "wasmvm-llgo-combined": {
+      "requests": 41472,
+      "allRunningSampleUsPerRequest": 120.92496141975309,
+      "namedKernelLeafUsPerRequest": {
+        "Channels and select": 7.474922839506172,
+        "Collector": 7.040895061728396,
+        "Collector freelist refill": 4.0509259259259265,
+        "Other allocator work": 1.3503086419753085,
+        "Host locks": 0.24112654320987653
+      },
+      "details": {
+        "Channels and select / __ulock_wait2": 4.340277777777778,
+        "Collector / __psynch_mutexwait": 3.158757716049383,
+        "Channels and select / __ulock_wake": 3.1346450617283947,
+        "Collector / __psynch_cvwait": 2.3630401234567904,
+        "Collector freelist refill / __ulock_wait2": 1.7843364197530864,
+        "Collector freelist refill / __ulock_wake": 1.4949845679012346,
+        "Collector / __psynch_mutexdrop": 1.2297453703703705,
+        "Other allocator work / __ulock_wait2": 0.9645061728395061,
+        "Other allocator work / __ulock_wake": 0.38580246913580246,
+        "Collector / __psynch_cvbroad": 0.28935185185185186,
+        "Collector freelist refill / __psynch_mutexwait": 0.2652391975308642,
+        "Collector freelist refill / __psynch_cvwait": 0.16878858024691357,
+        "Collector freelist refill / mach_msg2_trap": 0.16878858024691357,
+        "Collector freelist refill / __psynch_mutexdrop": 0.12056327160493827,
+        "Host locks / __psynch_mutexwait": 0.12056327160493827,
+        "Host locks / __psynch_mutexdrop": 0.12056327160493827,
+        "Collector freelist refill / __psynch_cvbroad": 0.04822530864197531
+      }
+    }
+  }
+}

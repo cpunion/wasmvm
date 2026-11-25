@@ -1,0 +1,164 @@
+#include <assert.h>
+#include <gc.h>
+#include <pthread.h>
+#include <sched.h>
+#include <stdatomic.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <time.h>
+#include <unistd.h>
+
+extern void *GC_malloc_atomic_zeroed(size_t size);
+
+static const size_t size = 17 * 65536;
+static atomic_uint ready, complete;
+static void **weak_slot;
+
+static size_t resident_pages(unsigned char *object, size_t bytes) {
+    size_t page = (size_t)getpagesize();
+    uintptr_t first = ((uintptr_t)object + page - 1) & ~(page - 1);
+    uintptr_t limit = ((uintptr_t)object + bytes) & ~(page - 1);
+    size_t count = (limit - first) / page;
+    char state[128];
+    assert(count <= sizeof(state));
+    assert(mincore((void *)first, limit - first, state) == 0);
+    size_t resident = 0;
+    for (size_t slot = 0; slot < count; slot++) resident += (state[slot] & MINCORE_INCORE) != 0;
+    return resident;
+}
+
+static void check_zero(unsigned char *object, size_t bytes) {
+    volatile const unsigned char *data = object;
+    for (size_t i = 0; i < bytes; i++) assert(data[i] == 0);
+    assert(GC_base(object + bytes - 1) == object);
+}
+
+static void *mutator(void *unused) {
+    (void)unused;
+    struct GC_stack_base stack;
+    assert(GC_get_stack_base(&stack) == GC_SUCCESS);
+    int registration = GC_register_my_thread(&stack);
+    assert(registration == GC_SUCCESS || registration == GC_DUPLICATE);
+    atomic_fetch_add_explicit(&ready, 1, memory_order_release);
+    while (atomic_load_explicit(&ready, memory_order_acquire) < 4) sched_yield();
+    for (unsigned i = 0; i < 48; i++) {
+        size_t bytes = (i % 4 + 1) * 65536 - i;
+        unsigned char *neighbor = GC_malloc_atomic(65536);
+        unsigned char *object = GC_malloc_atomic_zeroed(bytes);
+        assert(neighbor && object);
+        memset(neighbor, 0xb7, 65536);
+        check_zero(object, bytes);
+        memset(object, 0x5a, bytes);
+        assert(neighbor[0] == 0xb7 && neighbor[65535] == 0xb7);
+        GC_free(neighbor);
+        GC_free(object);
+    }
+    if (registration == GC_SUCCESS) assert(GC_unregister_my_thread() == GC_SUCCESS);
+    atomic_fetch_add_explicit(&complete, 1, memory_order_release);
+    return NULL;
+}
+
+static void verify_stress(void) {
+    pthread_t threads[4];
+    GC_allow_register_threads();
+    for (size_t i = 0; i < 4; i++) assert(pthread_create(&threads[i], NULL, mutator, NULL) == 0);
+    while (atomic_load_explicit(&ready, memory_order_acquire) < 4) sched_yield();
+    unsigned rounds = 0;
+    do {
+        if (rounds % 8 == 0) GC_gcollect_and_unmap();
+        else GC_gcollect();
+        rounds++;
+    } while (atomic_load_explicit(&complete, memory_order_acquire) < 4);
+    for (size_t i = 0; i < 4; i++) assert(pthread_join(threads[i], NULL) == 0);
+    printf("Verified 192 concurrent allocations and %u collection requests\n", rounds);
+}
+
+static void *make_weak_object(void *unused) {
+    (void)unused;
+    struct GC_stack_base stack;
+    assert(GC_get_stack_base(&stack) == GC_SUCCESS);
+    assert(GC_register_my_thread(&stack) == GC_SUCCESS);
+    unsigned char *object = GC_malloc_atomic_zeroed(size);
+    assert(object && resident_pages(object, size) <= 2);
+    *weak_slot = (void *)GC_HIDE_POINTER(object);
+    assert(GC_general_register_disappearing_link(weak_slot, object) == GC_SUCCESS);
+    assert(GC_unregister_my_thread() == GC_SUCCESS);
+    return NULL;
+}
+
+int main(int argc, char **argv) {
+    assert(argc == 1 || argc == 2);
+    GC_INIT();
+    if (argc == 2 && strcmp(argv[1], "weak") == 0) {
+        pthread_t thread;
+        GC_allow_register_threads();
+        weak_slot = GC_malloc_atomic(sizeof(*weak_slot));
+        assert(weak_slot != NULL);
+        assert(pthread_create(&thread, NULL, make_weak_object, NULL) == 0);
+        assert(pthread_join(thread, NULL) == 0);
+        assert(*weak_slot != NULL);
+        GC_gcollect();
+        assert(*weak_slot == NULL);
+        puts("Verified the freshly allocated object was reclaimed after its thread exited");
+        return 0;
+    }
+    if (argc == 2 && (strncmp(argv[1], "cold-", 5) == 0 || strncmp(argv[1], "dirty-", 6) == 0)) {
+        int dirty = strncmp(argv[1], "dirty-", 6) == 0;
+        const char *role = argv[1] + (dirty ? 6 : 5);
+        uintptr_t original = 0;
+        if (dirty) {
+            void *object = GC_malloc_atomic(size);
+            assert(object != NULL);
+            memset(object, 0x5a, size);
+            original = (uintptr_t)object;
+            GC_free(object);
+        }
+        uint64_t start = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+        unsigned char *object;
+        if (strcmp(role, "baseline") == 0) {
+            object = GC_malloc_atomic(size);
+            assert(object != NULL);
+            memset(object, 0, size);
+        } else {
+            assert(strcmp(role, "zero") == 0);
+            object = GC_malloc_atomic_zeroed(size);
+            assert(object != NULL);
+        }
+        uint64_t alloc_ns = clock_gettime_nsec_np(CLOCK_UPTIME_RAW) - start;
+        if (dirty) assert((uintptr_t)object == original);
+        size_t resident = resident_pages(object, size);
+        start = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+        check_zero(object, size);
+        uint64_t read_ns = clock_gettime_nsec_np(CLOCK_UPTIME_RAW) - start;
+        printf("%llu %zu %llu\n", (unsigned long long)alloc_ns, resident,
+               (unsigned long long)read_ns);
+        return 0;
+    }
+    if (argc == 2) {
+        assert(strcmp(argv[1], "incremental") == 0);
+        GC_enable_incremental();
+        assert(GC_is_incremental_mode());
+    }
+    unsigned char *object = GC_malloc_atomic_zeroed(size);
+    assert(object != NULL);
+    size_t resident = resident_pages(object, size);
+    printf("Initial interior resident pages: %zu (incremental %d)\n",
+           resident, GC_is_incremental_mode());
+    if (argc == 1) assert(resident <= 2);
+    else assert(resident > 2);
+    check_zero(object, size);
+    memset(object, 0xb7, size);
+    uintptr_t original = (uintptr_t)object;
+    GC_free(object);
+
+    object = GC_malloc_atomic_zeroed(size);
+    assert(object != NULL);
+    assert((uintptr_t)object == original);
+    check_zero(object, size);
+    printf("Verified every requested byte of the dirty reused allocation\n");
+    GC_free(object);
+    verify_stress();
+    return 0;
+}

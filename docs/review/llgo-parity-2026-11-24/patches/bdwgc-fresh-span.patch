@@ -1,0 +1,200 @@
+--- a/include/private/gc_priv.h
++++ b/include/private/gc_priv.h
+@@ -2257,6 +2257,15 @@
+                                 /* called by GC_new_hblk, but also      */
+                                 /* called explicitly without GC lock.   */
+
++#if defined(WASMVM_EXPERIMENT_FRESH_ZERO) && defined(DARWIN) \
++    && defined(USE_MMAP) && defined(USE_MMAP_ANON)
++# define GC_FRESH_ZERO
++# define GC_FRESH_ATOMIC_MIN (64 * 1024)
++GC_INNER void GC_note_fresh_heap(ptr_t start, size_t size);
++GC_INNER void GC_last_fresh_range(ptr_t object, size_t size,
++                                 size_t *begin, size_t *end);
++#endif
++
+ GC_INNER struct hblk * GC_allochblk(size_t size_in_bytes, int kind,
+                                     unsigned flags);
+                                 /* Allocate a heap block, inform        */
+--- a/alloc.c
++++ b/alloc.c
+@@ -1607,6 +1607,10 @@
+     GC_last_heap_addr = (ptr_t)space;
+
+     GC_add_to_heap(space, bytes);
++#   ifdef GC_FRESH_ZERO
++      /* GET_MEM on this configuration returns a new anonymous mapping. */
++      GC_note_fresh_heap((ptr_t)space, bytes);
++#   endif
+
+     /* Force GC before we are likely to allocate past expansion_slop.   */
+     GC_collect_at_heapsize =
+--- a/allchblk.c
++++ b/allchblk.c
+@@ -665,6 +665,69 @@
+                  int may_split);
+ #define AVOID_SPLIT_REMAPPED 2
+
++#ifdef GC_FRESH_ZERO
++  /* Track one contiguous range of never-issued anonymous storage under
++     the allocator lock. Adjacent fresh mappings can extend it. */
++  /* Complement addresses kept in static metadata so they are not roots. */
++  static word newest_start_hidden, newest_end_hidden;
++  static word last_fresh_start_hidden, last_fresh_end_hidden;
++
++  GC_INNER void GC_note_fresh_heap(ptr_t start, size_t size)
++  {
++      word first = (word)start;
++      word limit = first + size;
++
++      GC_ASSERT(I_HOLD_LOCK());
++      if (first == ~newest_end_hidden) {
++          newest_end_hidden = ~limit;
++      } else if (limit == ~newest_start_hidden) {
++          newest_start_hidden = ~first;
++      } else {
++          newest_start_hidden = ~first;
++          newest_end_hidden = ~limit;
++      }
++  }
++
++  GC_INNER void GC_last_fresh_range(ptr_t object, size_t size,
++                                   size_t *begin, size_t *end)
++  {
++      word first = (word)object;
++      word limit = first + size;
++      word last_fresh_start = ~last_fresh_start_hidden;
++      word last_fresh_end = ~last_fresh_end_hidden;
++
++      GC_ASSERT(I_HOLD_LOCK());
++      if (first < last_fresh_end && limit > last_fresh_start
++          && last_fresh_start < last_fresh_end) {
++          *begin = last_fresh_start > first ? last_fresh_start - first : 0;
++          *end = last_fresh_end < limit ? last_fresh_end - first : size;
++      }
++  }
++
++  STATIC void GC_consume_fresh_heap(ptr_t start, size_t size, GC_bool record)
++  {
++      word first = (word)start;
++      word limit = first + size;
++      word newest_start = ~newest_start_hidden;
++      word newest_end = ~newest_end_hidden;
++
++      GC_ASSERT(I_HOLD_LOCK());
++      last_fresh_start_hidden = last_fresh_end_hidden = 0;
++      if (first >= newest_end || limit <= newest_start) return;
++      if (record) {
++          last_fresh_start_hidden = ~(first > newest_start ? first : newest_start);
++          last_fresh_end_hidden = ~(limit < newest_end ? limit : newest_end);
++      }
++      if (limit < newest_end) {
++          newest_start_hidden = ~limit;
++      } else if (first > newest_start) {
++          newest_end_hidden = ~first;
++      } else {
++          newest_end_hidden = newest_start_hidden;
++      }
++  }
++#endif
++
+ /*
+  * Allocate (and return pointer to) a heap block
+  *   for objects of size sz bytes, searching the nth free list.
+@@ -856,6 +919,9 @@
+
+                       GC_large_free_bytes -= total_size;
+                       GC_bytes_dropped += total_size;
++#                     ifdef GC_FRESH_ZERO
++                        GC_consume_fresh_heap((ptr_t)hbp, total_size, FALSE);
++#                     endif
+                       GC_remove_from_fl_at(hhdr, n);
+                       for (h = hbp; (word)h < (word)limit; h++) {
+                         if (h != hbp) {
+@@ -920,6 +986,11 @@
+     /* consecutive failures.                                            */
+     GC_fail_count = 0;
+
++#   ifdef GC_FRESH_ZERO
++      GC_consume_fresh_heap((ptr_t)hbp, (size_t)size_needed,
++                            kind == PTRFREE && size_needed >= GC_FRESH_ATOMIC_MIN
++                            && !GC_incremental && !GC_debugging_started);
++#   endif
+     GC_large_free_bytes -= size_needed;
+     GC_ASSERT(IS_MAPPED(hhdr));
+     return( hbp );
+--- a/malloc.c
++++ b/malloc.c
+@@ -241,10 +241,18 @@
+ # endif
+ #endif
+
++#ifdef GC_FRESH_ZERO
++STATIC void * GC_generic_malloc_with_zeroing(size_t lb, int k,
++                                             GC_bool clear_atomic)
++#else
+ GC_API GC_ATTR_MALLOC void * GC_CALL GC_generic_malloc(size_t lb, int k)
++#endif
+ {
+     void * result;
+     DCL_LOCK_STATE;
++#ifdef GC_FRESH_ZERO
++    size_t zero_prefix = lb, zero_suffix = lb;
++#endif
+
+     GC_ASSERT(k < MAXOBJKINDS);
+     if (EXPECT(get_have_errors(), FALSE))
+@@ -268,6 +276,10 @@
+         LOCK();
+         result = (ptr_t)GC_alloc_large(lb_rounded, k, 0);
+         if (0 != result) {
++#         ifdef GC_FRESH_ZERO
++            if (clear_atomic)
++                GC_last_fresh_range((ptr_t)result, lb, &zero_prefix, &zero_suffix);
++#         endif
+           if (GC_debugging_started
+ #             ifndef THREADS
+                 || init
+@@ -295,12 +307,42 @@
+           }
+ #       endif
+     }
++#ifdef GC_FRESH_ZERO
++    if (result == NULL) result = (*GC_get_oom_fn())(lb);
++    if (result != NULL && clear_atomic) {
++        if (zero_prefix > 0) BZERO(result, zero_prefix);
++        if (zero_suffix < lb) BZERO((ptr_t)result + zero_suffix, lb - zero_suffix);
++    }
++    return result;
++}
++
++GC_API GC_ATTR_MALLOC void * GC_CALL GC_generic_malloc(size_t lb, int k)
++{
++    return GC_generic_malloc_with_zeroing(lb, k, FALSE);
++}
++
++/* Allocate pointer-free storage with the same object and OOM contracts
++   as GC_malloc_atomic, and deliver zeroed bytes to the caller. */
++GC_API GC_ATTR_MALLOC void * GC_CALL GC_malloc_atomic_zeroed(size_t lb)
++{
++    void *result;
++
++    if (lb >= GC_FRESH_ATOMIC_MIN) {
++        return GC_clear_stack(
++            GC_generic_malloc_with_zeroing(lb, PTRFREE, TRUE));
++    }
++    result = GC_malloc_atomic(lb);
++    if (result != NULL) BZERO(result, lb);
++    return result;
++}
++#else
+     if (0 == result) {
+         return((*GC_get_oom_fn())(lb));
+     } else {
+         return(result);
+     }
+ }
++#endif
+
+ #if defined(LINT2) || MAX_EXTRA_BYTES == 0
+ # define SMALL_OBJ_LINT(lb) SMALL_OBJ(lb)

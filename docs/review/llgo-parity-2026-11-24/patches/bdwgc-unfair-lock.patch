@@ -1,0 +1,77 @@
+--- a/include/private/gc_locks.h
++++ b/include/private/gc_locks.h
+@@ -92,6 +92,12 @@
+ #  elif defined(GC_PTHREADS)
+      EXTERN_C_END
+ #    include <pthread.h>
++#    if defined(GC_DARWIN_UNFAIR_ALLOC_LOCK)
++#      ifndef GC_DARWIN_THREADS
++#        error GC_DARWIN_UNFAIR_ALLOC_LOCK requires Darwin threads
++#      endif
++#      include <os/lock.h>
++#    endif
+      EXTERN_C_BEGIN
+      /* Posix allows pthread_t to be a struct, though it rarely is.     */
+      /* Unfortunately, we need to use a pthread_t to index a data       */
+@@ -140,6 +146,20 @@
+                               UNSET_LOCK_HOLDER(); \
+                               res = PSP2_MutexUnlock(&GC_allocate_ml_PSP2); \
+                               GC_ASSERT(0 == res); (void)res; }
++
++#    elif defined(GC_DARWIN_UNFAIR_ALLOC_LOCK)
++#      undef USE_PTHREAD_LOCKS
++#      undef USE_SPIN_LOCK
++       GC_EXTERN os_unfair_lock GC_allocate_unfair_lock;
++#      ifdef GC_ASSERTIONS
++#        define UNCOND_LOCK() { GC_ASSERT(I_DONT_HOLD_LOCK()); \
++                os_unfair_lock_lock(&GC_allocate_unfair_lock); SET_LOCK_HOLDER(); }
++#        define UNCOND_UNLOCK() { GC_ASSERT(I_HOLD_LOCK()); UNSET_LOCK_HOLDER(); \
++                os_unfair_lock_unlock(&GC_allocate_unfair_lock); }
++#      else
++#        define UNCOND_LOCK() os_unfair_lock_lock(&GC_allocate_unfair_lock)
++#        define UNCOND_UNLOCK() os_unfair_lock_unlock(&GC_allocate_unfair_lock)
++#      endif
+
+ #    elif (!defined(THREAD_LOCAL_ALLOC) || defined(USE_SPIN_LOCK)) \
+           && !defined(USE_PTHREAD_LOCKS)
+@@ -223,7 +243,8 @@
+ #    endif
+ #  endif /* GC_PTHREADS */
+ #  if defined(GC_ALWAYS_MULTITHREADED) \
+-      && (defined(USE_PTHREAD_LOCKS) || defined(USE_SPIN_LOCK))
++      && (defined(USE_PTHREAD_LOCKS) || defined(USE_SPIN_LOCK) \
++          || defined(GC_DARWIN_UNFAIR_ALLOC_LOCK))
+ #    define GC_need_to_lock TRUE
+ #    define set_need_to_lock() (void)0
+ #  else
+--- a/pthread_support.c
++++ b/pthread_support.c
+@@ -65,7 +65,9 @@
+ #endif /* GC_NETBSD_THREADS */
+
+ /* Allocator lock definitions.          */
+-#if !defined(USE_SPIN_LOCK)
++#if defined(GC_DARWIN_UNFAIR_ALLOC_LOCK)
++  GC_INNER os_unfair_lock GC_allocate_unfair_lock = OS_UNFAIR_LOCK_INIT;
++#elif !defined(USE_SPIN_LOCK)
+   GC_INNER pthread_mutex_t GC_allocate_ml = PTHREAD_MUTEX_INITIALIZER;
+ #endif
+
+@@ -1318,7 +1320,16 @@
+ #   ifdef GC_ASSERTIONS
+       BZERO(&GC_parent_pthread_self, sizeof(pthread_t));
+ #   endif
+-    UNLOCK();
++#   ifdef GC_DARWIN_UNFAIR_ALLOC_LOCK
++      /* The parent owner and waiters do not exist in the child. Reset
++       * the child's private lock without an owner-checked unlock. */
++#     ifdef GC_ASSERTIONS
++        UNSET_LOCK_HOLDER();
++#     endif
++      GC_allocate_unfair_lock = OS_UNFAIR_LOCK_INIT;
++#   else
++      UNLOCK();
++#   endif
+     /* Even though after a fork the child only inherits the single      */
+     /* thread that called the fork(), if another thread in the parent   */
+     /* was attempting to lock the mutex while being held in             */

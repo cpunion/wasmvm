@@ -1,0 +1,35 @@
+--- a/runtime/internal/runtime/z_gc.go
++++ b/runtime/internal/runtime/z_gc.go
+@@ -56,7 +56,20 @@
+ }
+
+ // AllocAtomicZ allocates zero-initialized memory that must never contain pointers.
++var probeLazyAtomicZero bool
++
++//go:linkname setProbeLazyZero wasmvmprobe.setAtomicZero
++func setProbeLazyZero(enable bool) { probeLazyAtomicZero = enable }
++
+ func AllocAtomicZ(size uintptr) unsafe.Pointer {
++	if size >= 64*1024 && probeLazyAtomicZero {
++		p := bdwgc.MallocAtomicZeroed(size)
++		if p == nil {
++			panic("out of memory")
++		}
++		recordMemProfileAlloc(size)
++		return p
++	}
+ 	p := AllocAtomicU(size)
+ 	// Atomic allocations are not guaranteed to be cleared by the collector.
+ 	c.Memset(p, 0, size)
+--- a/runtime/internal/clite/bdwgc/bdwgc.go
++++ b/runtime/internal/clite/bdwgc/bdwgc.go
+@@ -61,6 +61,9 @@
+ //
+ //go:linkname MallocAtomic C.GC_malloc_atomic
+ func MallocAtomic(size uintptr) c.Pointer
++
++//go:linkname MallocAtomicZeroed C.GC_malloc_atomic_zeroed
++func MallocAtomicZeroed(size uintptr) c.Pointer
+
+ // Memalign allocates scanned storage; the result may be an interior pointer.
+ //

@@ -109,7 +109,7 @@ func (e *functionEmitter) loopValuePlans(start int, r memoryRegion, exit *regist
 	result := &loopValuePlans{first: start, plans: make([]*registerPlan, end-start+1)}
 	position := 0
 	remaining := len(result.plans) * 128
-	var previous *registerPlan
+	var plan *registerPlan
 	for pc := start; pc <= end; pc++ {
 		var inInteger, inFloat []registerInterval
 		for position < len(order) && order[position].first == pc {
@@ -126,26 +126,27 @@ func (e *functionEmitter) loopValuePlans(start int, r memoryRegion, exit *regist
 			inInteger = integers.seed(old, inInteger, false)
 			inFloat = floats.seed(old, inFloat, true)
 		}
-		integers.advance(pc, inInteger)
-		floats.advance(pc, inFloat)
-		plan := registerBankPlan(e.f, &integers, &floats, pinned)
-		if equalRegisterPlans(plan, previous) {
-			plan = previous
-		} else {
-			remaining -= len(plan.slots) + 1
-			if remaining < 0 {
-				return nil
+		integerChanged := integers.advance(pc, inInteger)
+		floatChanged := floats.advance(pc, inFloat)
+		if plan == nil || integerChanged || floatChanged {
+			next := registerBankPlan(e.f, &integers, &floats, pinned)
+			if !equalRegisterPlans(plan, next) {
+				remaining -= len(next.slots) + 1
+				if remaining < 0 {
+					return nil
+				}
+				plan = next
+				result.usesCallRegs = result.usesCallRegs || e.usesLoopCallRegisters(plan)
 			}
-			result.usesCallRegs = result.usesCallRegs || e.usesLoopCallRegisters(plan)
 		}
-		result.plans[pc-start], previous = plan, plan
+		result.plans[pc-start] = plan
 	}
 	// Include all mapping transfers, the taken backedge and the ordinary exit.
 	// A cheaper analytical frame-access count is a selection heuristic only;
 	// elapsed competitive acceptance still requires the actual benchmark.
 	baseline := valuePlanTransitionCost(old, exit)
 	cost := valuePlanTransitionCost(old, result.at(start)) + valuePlanTransitionCost(result.at(end), exit) + valuePlanTransitionCost(result.at(end), result.at(start))
-	previous = result.at(start)
+	previous := result.at(start)
 	for pc := start; pc <= end; pc++ {
 		plan := result.at(pc)
 		cost += valuePlanTransitionCost(previous, plan) + e.valuePlanAccessCost(pc, plan, r)

@@ -1,0 +1,61 @@
+{
+  "records": {
+    "go": {
+      "source": "ec3b3a42eab7f82a2c5a3e682f127abd55c2240e",
+      "compiler": "go1.27.3",
+      "path": "head-go-p3",
+      "flags": [],
+      "sha256": "e26382930b599cf3db8a1c31b798ef9eb5155f9c5200a83d362ca11f2375ab6b"
+    },
+    "stock": {
+      "source": "ec3b3a42eab7f82a2c5a3e682f127abd55c2240e",
+      "compiler": "42efacaeff2e196622296415540e927724f7dcef",
+      "flags": [
+        "-O3",
+        "-lto=full"
+      ],
+      "path": "llgo-current-p3",
+      "sha256": "0c4ca10681e65c613f4c59ddbf3469bad88b1a358aab4e97b6170073760b4f34",
+      "compilerSHA256": "fb56babc4e7a23583fcc47defd7bcf4775e022038f8da9b7b557ffdc8fc92a29"
+    },
+    "recover": {
+      "path": "llgo-head-p3",
+      "sha256": "d8545a7963b7950900c2bdc335bc4d866490a7931c092fd48e1d88fa8db828ef",
+      "compiler": "9806ccca7b03b403d466d2b31d4be01d494c87a8",
+      "compilerSHA256": "11ebaa1a64327e3f50ba3eaeaeae2c5c322e1cfa8c706c293da5f68ee3d5545e",
+      "source": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+      "flags": [
+        "-O3",
+        "-lto=full"
+      ]
+    },
+    "runtime": {
+      "path": "wasmvm",
+      "sha256": "7abccaaac84a20830747850f0554e90d6aae0ee2154fc01fc564bbb7bba93c47",
+      "source": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+      "compiler": "9806ccca7b03b403d466d2b31d4be01d494c87a8",
+      "flags": [
+        "-O3",
+        "-lto=full"
+      ],
+      "library": "libgc.1.dylib",
+      "librarySHA256": "84ed86e53e8e595d7942ad31387d0faab9d04ecbf9ec27a1870fa096fa5aa95b"
+    },
+    "runtime-collector": {
+      "path": "wasmvm",
+      "sha256": "7abccaaac84a20830747850f0554e90d6aae0ee2154fc01fc564bbb7bba93c47",
+      "source": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+      "compiler": "9806ccca7b03b403d466d2b31d4be01d494c87a8",
+      "flags": [
+        "-O3",
+        "-lto=full"
+      ],
+      "library": "libgc.1.dylib",
+      "librarySHA256": "9974a1937a77b06fc3f305ca1524eeb24d3ce363c92d545ce33ece233214525f"
+    }
+  },
+  "source": "3d5c7e4c1d069defdbb6f53614b1d20477c5aba1",
+  "base": "42efacaeff2e196622296415540e927724f7dcef",
+  "timer": "7db8442004bab489e78e259676869341fb2c3b8f",
+  "channel": "6ae45e7177b1e7dc193217a5cd59ffa541ffb5aa"
+}

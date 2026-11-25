@@ -1,0 +1,671 @@
+{
+  "source": {
+    "base": "ec3b3a42eab7f82a2c5a3e682f127abd55c2240e",
+    "head": "7fd13e7c1a326d41051a028835b3953cb9089bb6",
+    "selectedScreen": "Reuse unchanged native register bank plans",
+    "files": {
+      "internal/compiler/codegen/linear_scan.go": "f55feced7eb9c5e6c14b0bab3207efa4178bf1db2974de96976c6dd24ffabae5",
+      "internal/compiler/codegen/linear_scan_test.go": "b3fd24d340693c995ad8bf19d79e870ba8d6a07b1fcd4b61c438103c55027299",
+      "internal/compiler/codegen/value_loops.go": "f54cba4e3011a403391e997ee6bb3301bf79e68f7df94404621e5050afc0ac07"
+    }
+  },
+  "core": {
+    "records": 7740,
+    "excludedFailures": 3,
+    "excludedUnsupported": 12,
+    "verifiedPerRole": {
+      "head-go-interpreter": 198,
+      "wasmedge-compiler-aa": 180,
+      "wasmedge-compiler": 180,
+      "head-llgo-main-interpreter-aa": 198,
+      "wazero-compiler-aa": 150,
+      "head-llgo-main-interpreter": 198,
+      "wasmtime-compiler-aa": 198,
+      "base-llgo-main-interpreter-aa": 198,
+      "wazero-compiler": 150,
+      "base-llgo-main-native": 198,
+      "wasmedge-0.18.1-compiler": 198,
+      "base-llgo-interpreter-aa": 198,
+      "wasmtime-compiler": 198,
+      "head-go-native-aa": 198,
+      "wasmer-compiler-aa": 150,
+      "wasmedge-interpreter": 198,
+      "base-go-interpreter": 198,
+      "wasmer-compiler": 150,
+      "head-go-interpreter-aa": 198,
+      "base-llgo-native-aa": 198,
+      "wasmedge-interpreter-aa": 198,
+      "base-llgo-native": 198,
+      "base-llgo-main-native-aa": 198,
+      "wasmedge-0.18.1-interpreter": 198,
+      "base-llgo-interpreter": 198,
+      "head-llgo-main-native": 198,
+      "base-go-interpreter-aa": 198,
+      "head-llgo-native-aa": 198,
+      "wasmedge-0.18.1-compiler-aa": 198,
+      "wasmedge-0.18.1-interpreter-aa": 198,
+      "wazero-interpreter": 150,
+      "base-go-native-aa": 198,
+      "head-llgo-main-native-aa": 198,
+      "head-go-native": 198,
+      "wazero-interpreter-aa": 150,
+      "base-go-native": 198,
+      "native-c": 72,
+      "head-llgo-native": 198,
+      "base-llgo-main-interpreter": 198,
+      "head-llgo-interpreter": 198,
+      "head-llgo-interpreter-aa": 198,
+      "native-c-aa": 72
+    }
+  },
+  "p3": {
+    "16": 96,
+    "65536": 96
+  },
+  "changes": {
+    "interpreter": {
+      "go": {
+        "improved": {
+          "original22-v1/memory/dependent-address": {
+            "ratio": 0.9707613959729758,
+            "ci95": [
+              0.9664437412366881,
+              0.974793814800793
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": true,
+            "resolvedRegression": false
+          },
+          "original22-v1/memory/float64-unaligned": {
+            "ratio": 0.9884145290192821,
+            "ci95": [
+              0.9850250057201113,
+              0.9908974752831309
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": true,
+            "resolvedRegression": false
+          },
+          "original22-v1/applications/sha256-clang": {
+            "ratio": 0.9916841540208876,
+            "ci95": [
+              0.9871191078359757,
+              0.9956853264894392
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": true,
+            "resolvedRegression": false
+          },
+          "original22-v1/applications/sha256-rust": {
+            "ratio": 0.9896089759775639,
+            "ci95": [
+              0.986731099271011,
+              0.9925671134625722
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": true,
+            "resolvedRegression": false
+          },
+          "gc-sustained-v1/gc/struct-indirect-access": {
+            "ratio": 0.9926948732452818,
+            "ci95": [
+              0.9882114518681772,
+              0.9973616786595861
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": true,
+            "resolvedRegression": false
+          }
+        },
+        "slower": {
+          "original22-v1/core/function-calls": {
+            "ratio": 1.0140823388046654,
+            "ci95": [
+              1.00839011733577,
+              1.0193253906300026
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": false,
+            "resolvedRegression": true
+          },
+          "gc-sustained-v1/gc/i31-roundtrip": {
+            "ratio": 1.012140418759236,
+            "ci95": [
+              1.0028461852692783,
+              1.0212322431079133
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": false,
+            "resolvedRegression": true
+          },
+          "threads-sustained-v2/threads/private-memory": {
+            "ratio": 1.0132890119192146,
+            "ci95": [
+              1.0053098418237025,
+              1.0211782612987201
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": false,
+            "resolvedRegression": true
+          },
+          "threads-sustained-v2/threads/notify-empty": {
+            "ratio": 1.0102787610054942,
+            "ci95": [
+              1.0042097625575324,
+              1.0157632668575656
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": false,
+            "resolvedRegression": true
+          }
+        },
+        "unresolved": [
+          "original22-v1/core/call-control",
+          "original22-v1/runtime/simd-memory-full",
+          "original22-v1/gc/i31-roundtrip",
+          "original22-v1/gc/struct-access",
+          "original22-v1/gc/struct-indirect-access",
+          "original22-v1/threads/private-memory",
+          "original22-v1/threads/shared-memory",
+          "original22-v1/threads/atomic-rmw",
+          "original22-v1/threads/notify-empty",
+          "original22-v1/threads/wait-mismatch",
+          "original22-v1/threads/wait-timeout",
+          "gc-sustained-v1/gc/struct-allocation",
+          "threads-sustained-v2/threads/shared-memory",
+          "threads-sustained-v2/threads/atomic-rmw",
+          "threads-sustained-v2/threads/wait-mismatch",
+          "threads-sustained-v2/threads/wait-timeout"
+        ]
+      },
+      "llgo": {
+        "improved": {
+          "original22-v1/memory/narrow-unaligned": {
+            "ratio": 0.9019244676867091,
+            "ci95": [
+              0.8956814752598625,
+              0.90844361633662
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": true,
+            "resolvedRegression": false
+          },
+          "original22-v1/runtime/simd-memory-full": {
+            "ratio": 0.8395787549528195,
+            "ci95": [
+              0.8354380249886851,
+              0.844623607301911
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": true,
+            "resolvedRegression": false
+          },
+          "gc-sustained-v1/gc/struct-allocation": {
+            "ratio": 0.990709971012763,
+            "ci95": [
+              0.9860251651743067,
+              0.9953766849923935
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": true,
+            "resolvedRegression": false
+          }
+        },
+        "slower": {
+          "original22-v1/core/memory-load-store": {
+            "ratio": 1.0061190318118036,
+            "ci95": [
+              1.0008692300361042,
+              1.0121963088486452
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": false,
+            "resolvedRegression": true
+          }
+        },
+        "unresolved": [
+          "original22-v1/core/call-control",
+          "original22-v1/gc/i31-roundtrip",
+          "original22-v1/gc/struct-access",
+          "original22-v1/gc/struct-allocation",
+          "original22-v1/gc/struct-indirect-access",
+          "original22-v1/threads/atomic-rmw",
+          "original22-v1/threads/notify-empty",
+          "original22-v1/threads/wait-mismatch",
+          "original22-v1/threads/wait-timeout",
+          "threads-sustained-v2/threads/shared-memory",
+          "threads-sustained-v2/threads/atomic-rmw",
+          "threads-sustained-v2/threads/notify-empty",
+          "threads-sustained-v2/threads/wait-mismatch",
+          "threads-sustained-v2/threads/wait-timeout"
+        ]
+      },
+      "llgo-main": {
+        "improved": {
+          "original22-v1/core/memory-load-store": {
+            "ratio": 0.9939302040069234,
+            "ci95": [
+              0.9902245310285273,
+              0.997750694429515
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": true,
+            "resolvedRegression": false
+          },
+          "original22-v1/runtime/simd-memory-lanes": {
+            "ratio": 0.9843607276616345,
+            "ci95": [
+              0.9755720168249715,
+              0.9935050172155728
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": true,
+            "resolvedRegression": false
+          }
+        },
+        "slower": {
+          "original22-v1/threads/private-memory": {
+            "ratio": 1.0129601199197484,
+            "ci95": [
+              1.001499960567378,
+              1.023662772251031
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": false,
+            "resolvedRegression": true
+          }
+        },
+        "unresolved": [
+          "original22-v1/core/call-control",
+          "original22-v1/gc/i31-roundtrip",
+          "original22-v1/gc/struct-access",
+          "original22-v1/gc/struct-allocation",
+          "original22-v1/gc/struct-indirect-access",
+          "original22-v1/threads/atomic-rmw",
+          "original22-v1/threads/notify-empty",
+          "original22-v1/threads/wait-mismatch",
+          "original22-v1/threads/wait-timeout",
+          "original22-v1/applications/sha256-rust",
+          "gc-sustained-v1/gc/i31-roundtrip",
+          "threads-sustained-v2/threads/private-memory",
+          "threads-sustained-v2/threads/shared-memory",
+          "threads-sustained-v2/threads/atomic-rmw",
+          "threads-sustained-v2/threads/notify-empty",
+          "threads-sustained-v2/threads/wait-timeout"
+        ]
+      }
+    },
+    "native": {
+      "go": {
+        "improved": {},
+        "slower": {
+          "original22-v1/core/integer-loop": {
+            "ratio": 1.0054832035700791,
+            "ci95": [
+              1.0020762069827194,
+              1.0090114561629913
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": false,
+            "resolvedRegression": true
+          }
+        },
+        "unresolved": [
+          "original22-v1/core/call-control",
+          "original22-v1/core/memory-load-store",
+          "original22-v1/memory/float64-unaligned",
+          "original22-v1/gc/i31-roundtrip",
+          "original22-v1/gc/struct-access",
+          "original22-v1/gc/struct-allocation",
+          "original22-v1/gc/struct-indirect-access",
+          "original22-v1/threads/private-memory",
+          "original22-v1/threads/shared-memory",
+          "original22-v1/threads/atomic-rmw",
+          "original22-v1/threads/notify-empty",
+          "original22-v1/threads/wait-mismatch",
+          "original22-v1/threads/wait-timeout",
+          "gc-sustained-v1/gc/struct-allocation",
+          "gc-sustained-v1/gc/struct-indirect-access",
+          "threads-sustained-v2/threads/private-memory",
+          "threads-sustained-v2/threads/shared-memory",
+          "threads-sustained-v2/threads/atomic-rmw",
+          "threads-sustained-v2/threads/notify-empty",
+          "threads-sustained-v2/threads/wait-mismatch",
+          "threads-sustained-v2/threads/wait-timeout"
+        ]
+      },
+      "llgo": {
+        "improved": {
+          "original22-v1/core/integer-loop": {
+            "ratio": 0.9951260353790999,
+            "ci95": [
+              0.9896973593145522,
+              0.9998851589858916
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": true,
+            "resolvedRegression": false
+          }
+        },
+        "slower": {},
+        "unresolved": [
+          "original22-v1/core/call-control",
+          "original22-v1/core/memory-load-store",
+          "original22-v1/gc/i31-roundtrip",
+          "original22-v1/gc/struct-access",
+          "original22-v1/gc/struct-allocation",
+          "original22-v1/gc/struct-indirect-access",
+          "original22-v1/threads/private-memory",
+          "original22-v1/threads/shared-memory",
+          "original22-v1/threads/atomic-rmw",
+          "original22-v1/threads/notify-empty",
+          "original22-v1/threads/wait-mismatch",
+          "original22-v1/threads/wait-timeout",
+          "gc-sustained-v1/gc/i31-roundtrip",
+          "gc-sustained-v1/gc/struct-allocation",
+          "gc-sustained-v1/gc/struct-indirect-access",
+          "threads-sustained-v2/threads/private-memory",
+          "threads-sustained-v2/threads/shared-memory",
+          "threads-sustained-v2/threads/atomic-rmw",
+          "threads-sustained-v2/threads/notify-empty",
+          "threads-sustained-v2/threads/wait-mismatch",
+          "threads-sustained-v2/threads/wait-timeout"
+        ]
+      },
+      "llgo-main": {
+        "improved": {},
+        "slower": {
+          "original22-v1/memory/float64-unaligned": {
+            "ratio": 1.0055395133673806,
+            "ci95": [
+              1.0027706382979302,
+              1.0083194024150444
+            ],
+            "controlsResolve": true,
+            "upper95AtMostOne": false,
+            "resolvedRegression": true
+          }
+        },
+        "unresolved": [
+          "original22-v1/core/call-control",
+          "original22-v1/gc/i31-roundtrip",
+          "original22-v1/gc/struct-access",
+          "original22-v1/gc/struct-allocation",
+          "original22-v1/gc/struct-indirect-access",
+          "original22-v1/threads/private-memory",
+          "original22-v1/threads/shared-memory",
+          "original22-v1/threads/atomic-rmw",
+          "original22-v1/threads/notify-empty",
+          "original22-v1/threads/wait-mismatch",
+          "original22-v1/threads/wait-timeout",
+          "gc-sustained-v1/gc/struct-allocation",
+          "gc-sustained-v1/gc/struct-indirect-access",
+          "threads-sustained-v2/threads/private-memory",
+          "threads-sustained-v2/threads/shared-memory",
+          "threads-sustained-v2/threads/atomic-rmw",
+          "threads-sustained-v2/threads/notify-empty",
+          "threads-sustained-v2/threads/wait-mismatch",
+          "threads-sustained-v2/threads/wait-timeout"
+        ]
+      }
+    },
+    "p3": {
+      "16": {
+        "go": {
+          "cpuUs": {
+            "ratio": 1.0054305716487415,
+            "ci95": [
+              0.9971409752675388,
+              1.013789082466185
+            ],
+            "controlsResolve": true
+          },
+          "instructions": {
+            "ratio": 1.001375612898894,
+            "ci95": [
+              0.9995226488389507,
+              1.00277591302139
+            ],
+            "controlsResolve": true
+          },
+          "throughput": {
+            "ratio": 0.9972143832086685,
+            "ci95": [
+              0.9895233879710369,
+              1.0049651561215571
+            ],
+            "controlsResolve": true
+          },
+          "allocsPerRequest": {
+            "ratio": 0.9999999042026961,
+            "ci95": [
+              0.9999993102587157,
+              1.0000004981469897
+            ],
+            "controlsResolve": true
+          },
+          "bytesPerRequest": {
+            "ratio": 1.0000022429287347,
+            "ci95": [
+              0.9999995796715729,
+              1.0000050130002711
+            ],
+            "controlsResolve": true
+          }
+        },
+        "llgo": {
+          "cpuUs": {
+            "ratio": 1.0042036801576633,
+            "ci95": [
+              0.9964982257889937,
+              1.0122500327307897
+            ],
+            "controlsResolve": true
+          },
+          "instructions": {
+            "ratio": 1.0006847998005832,
+            "ci95": [
+              0.9966588730672263,
+              1.004742490914851
+            ],
+            "controlsResolve": true
+          },
+          "throughput": {
+            "ratio": 0.9849162613791016,
+            "ci95": [
+              0.9616364596647811,
+              1.0089778290013895
+            ],
+            "controlsResolve": false
+          },
+          "allocsPerRequest": {
+            "ratio": 1.0000000670140665,
+            "ci95": [
+              0.9999998659718738,
+              1.0000002680562963
+            ],
+            "controlsResolve": true
+          },
+          "bytesPerRequest": {
+            "ratio": 0.9999929900429507,
+            "ci95": [
+              0.9999710024924571,
+              1.0000198141689531
+            ],
+            "controlsResolve": true
+          }
+        },
+        "llgo-main": {
+          "cpuUs": {
+            "ratio": 0.9970852897957037,
+            "ci95": [
+              0.9910475365600689,
+              1.003918059668306
+            ],
+            "controlsResolve": false
+          },
+          "instructions": {
+            "ratio": 0.9979721056411586,
+            "ci95": [
+              0.9939739399680574,
+              1.0013338627184125
+            ],
+            "controlsResolve": true
+          },
+          "throughput": {
+            "ratio": 1.0033768792449138,
+            "ci95": [
+              0.9819315546454151,
+              1.0285184460116632
+            ],
+            "controlsResolve": false
+          },
+          "allocsPerRequest": {
+            "ratio": 1.0000000502605468,
+            "ci95": [
+              0.9999998994788667,
+              1.0000002010422164
+            ],
+            "controlsResolve": true
+          },
+          "bytesPerRequest": {
+            "ratio": 1.0000154410576445,
+            "ci95": [
+              0.999991838669051,
+              1.000034843275709
+            ],
+            "controlsResolve": true
+          }
+        }
+      },
+      "65536": {
+        "go": {
+          "cpuUs": {
+            "ratio": 1.0058205322013862,
+            "ci95": [
+              0.9983731619267144,
+              1.0141285621901008
+            ],
+            "controlsResolve": true
+          },
+          "instructions": {
+            "ratio": 1.001615937898252,
+            "ci95": [
+              0.9978800833511456,
+              1.005295241093872
+            ],
+            "controlsResolve": true
+          },
+          "throughput": {
+            "ratio": 0.9963372769036428,
+            "ci95": [
+              0.9859355085549404,
+              1.005247769262061
+            ],
+            "controlsResolve": false
+          },
+          "allocsPerRequest": {
+            "ratio": 1.0000007370258943,
+            "ci95": [
+              1.0000001052891199,
+              1.0000012283768231
+            ],
+            "controlsResolve": true
+          },
+          "bytesPerRequest": {
+            "ratio": 1.000000748439491,
+            "ci95": [
+              0.9999979719324837,
+              1.0000032146838838
+            ],
+            "controlsResolve": true
+          }
+        },
+        "llgo": {
+          "cpuUs": {
+            "ratio": 1.0044009651061723,
+            "ci95": [
+              0.98711110541704,
+              1.018368616419113
+            ],
+            "controlsResolve": false
+          },
+          "instructions": {
+            "ratio": 1.0040682909052234,
+            "ci95": [
+              0.9955243227048095,
+              1.013285527270653
+            ],
+            "controlsResolve": false
+          },
+          "throughput": {
+            "ratio": 1.0012017312459218,
+            "ci95": [
+              0.9913264770895646,
+              1.011720330904959
+            ],
+            "controlsResolve": false
+          },
+          "allocsPerRequest": {
+            "ratio": 0.9999999689832552,
+            "ci95": [
+              0.9999998294078719,
+              1.0000001240670353
+            ],
+            "controlsResolve": true
+          },
+          "bytesPerRequest": {
+            "ratio": 1.000006856187025,
+            "ci95": [
+              0.9999991594834002,
+              1.0000160689993467
+            ],
+            "controlsResolve": true
+          }
+        },
+        "llgo-main": {
+          "cpuUs": {
+            "ratio": 1.0081300028271916,
+            "ci95": [
+              0.9927242507499832,
+              1.0270866507277827
+            ],
+            "controlsResolve": false
+          },
+          "instructions": {
+            "ratio": 1.0122681529515114,
+            "ci95": [
+              1.00526864768066,
+              1.0238039894955955
+            ],
+            "controlsResolve": false
+          },
+          "throughput": {
+            "ratio": 1.007508046546947,
+            "ci95": [
+              0.9956168257873313,
+              1.0197462828465464
+            ],
+            "controlsResolve": false
+          },
+          "allocsPerRequest": {
+            "ratio": 0.9999999534748716,
+            "ci95": [
+              0.9999998759329831,
+              1.0000000310167632
+            ],
+            "controlsResolve": true
+          },
+          "bytesPerRequest": {
+            "ratio": 0.9999964984342381,
+            "ci95": [
+              0.9999856317092487,
+              1.0000083845657013
+            ],
+            "controlsResolve": true
+          }
+        }
+      }
+    }
+  }
+}
